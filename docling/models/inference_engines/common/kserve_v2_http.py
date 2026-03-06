@@ -203,11 +203,10 @@ class KserveV2HttpClient:
             requests.exceptions.HTTPError: If server returns error status
             RuntimeError: If response format is invalid
         """
-        # --- PROFILING START (remove when done) ---
-        _batch_size = next(iter(inputs.values())).shape[0] if inputs else 0
-        t_ser_start = time.time()
-        t_ser_mono = time.monotonic()
-        # --- PROFILING END ---
+        if _log.isEnabledFor(logging.DEBUG):
+            _batch_size = next(iter(inputs.values())).shape[0] if inputs else 0
+            _t_ser_start = time.time()
+            _t_ser_mono = time.monotonic()
         payload: Dict[str, Any] = {
             "inputs": [
                 _encode_input_tensor(name=input_name, tensor=tensor)
@@ -221,35 +220,29 @@ class KserveV2HttpClient:
         if request_parameters:
             payload["parameters"] = dict(request_parameters)
 
-        # --- PROFILING START (remove when done) ---
-        t_ser_duration = time.monotonic() - t_ser_mono
-        t_ser_end = time.time()
-        _log.info(
-            "PIPELINE_PROFILING KServe infer serialization: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
-            _batch_size,
-            t_ser_start,
-            t_ser_end,
-            t_ser_duration,
-        )
-        t_http_start = time.time()
-        t_http_mono = time.monotonic()
-        # --- PROFILING END ---
+        if _log.isEnabledFor(logging.DEBUG):
+            _log.debug(
+                "PIPELINE_PROFILING KServe infer serialization: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
+                _batch_size,
+                _t_ser_start,
+                time.time(),
+                time.monotonic() - _t_ser_mono,
+            )
+            _t_http_start = time.time()
+            _t_http_mono = time.monotonic()
         response = self._execute_http_request(
             self.infer_url, method="POST", json=payload
         )
-        # --- PROFILING START (remove when done) ---
-        t_http_duration = time.monotonic() - t_http_mono
-        t_http_end = time.time()
-        _log.info(
-            "PIPELINE_PROFILING KServe infer http round-trip: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
-            _batch_size,
-            t_http_start,
-            t_http_end,
-            t_http_duration,
-        )
-        t_deser_start = time.time()
-        t_deser_mono = time.monotonic()
-        # --- PROFILING END ---
+        if _log.isEnabledFor(logging.DEBUG):
+            _log.debug(
+                "PIPELINE_PROFILING KServe infer http round-trip: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
+                _batch_size,
+                _t_http_start,
+                time.time(),
+                time.monotonic() - _t_http_mono,
+            )
+            _t_deser_start = time.time()
+            _t_deser_mono = time.monotonic()
 
         try:
             body = KserveV2InferResponse.model_validate(response.json())
@@ -262,16 +255,13 @@ class KserveV2HttpClient:
         for output in body.outputs:
             decoded_outputs[output.name] = _decode_output_tensor(output)
 
-        # --- PROFILING START (remove when done) ---
-        t_deser_duration = time.monotonic() - t_deser_mono
-        t_deser_end = time.time()
-        _log.info(
-            "PIPELINE_PROFILING KServe infer deserialization: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
-            _batch_size,
-            t_deser_start,
-            t_deser_end,
-            t_deser_duration,
-        )
-        # --- PROFILING END ---
+        if _log.isEnabledFor(logging.DEBUG):
+            _log.debug(
+                "PIPELINE_PROFILING KServe infer deserialization: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
+                _batch_size,
+                _t_deser_start,
+                time.time(),
+                time.monotonic() - _t_deser_mono,
+            )
 
         return decoded_outputs

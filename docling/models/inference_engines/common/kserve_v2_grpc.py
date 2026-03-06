@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-import time  # --- PROFILING (remove when done) ---
+import time
 from dataclasses import dataclass
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
@@ -127,27 +127,37 @@ def _decode_contents(
     contents: Any, np_dtype: np.dtype[Any], shape: tuple[int, ...]
 ) -> np.ndarray:
     """Decode an InferTensorContents message to a numpy array (non-binary path)."""
-    if np_dtype == np.float32:
+    canonical_dtype = np.dtype(np_dtype)
+
+    if canonical_dtype == np.dtype(np.float32):
         data = list(contents.fp32_contents)
-    elif np_dtype == np.float64:
+    elif canonical_dtype == np.dtype(np.float64):
         data = list(contents.fp64_contents)
-    elif np_dtype in (np.int8, np.int16, np.int32):
+    elif canonical_dtype in (
+        np.dtype(np.int8),
+        np.dtype(np.int16),
+        np.dtype(np.int32),
+    ):
         data = list(contents.int_contents)
-    elif np_dtype == np.int64:
+    elif canonical_dtype == np.dtype(np.int64):
         data = list(contents.int64_contents)
-    elif np_dtype in (np.uint8, np.uint16, np.uint32):
+    elif canonical_dtype in (
+        np.dtype(np.uint8),
+        np.dtype(np.uint16),
+        np.dtype(np.uint32),
+    ):
         data = list(contents.uint_contents)
-    elif np_dtype == np.uint64:
+    elif canonical_dtype == np.dtype(np.uint64):
         data = list(contents.uint64_contents)
-    elif np_dtype == np.bool_:
+    elif canonical_dtype == np.dtype(np.bool_):
         data = list(contents.bool_contents)
     else:
         raise RuntimeError(
-            f"Unsupported numpy dtype for gRPC inline (non-binary) decoding: {np_dtype!s}. "
+            f"Unsupported numpy dtype for gRPC inline (non-binary) decoding: {canonical_dtype!s}. "
             "Supported non-binary dtypes: bool, uint8/uint16/uint32/uint64, "
             "int8/int16/int32/int64, float32/float64."
         )
-    return np.asarray(data, dtype=np_dtype).reshape(shape)
+    return np.asarray(data, dtype=canonical_dtype).reshape(shape)
 
 
 @dataclass
@@ -251,10 +261,9 @@ class KserveV2GrpcClient:
     ) -> Dict[str, np.ndarray]:
         _batch_size = next(iter(inputs.values())).shape[0] if inputs else 0
 
-        # --- PROFILING START (remove when done) ---
-        t_ser_start = time.time()
-        t_ser_mono = time.monotonic()
-        # --- PROFILING END ---
+        if _log.isEnabledFor(logging.DEBUG):
+            _t_ser_start = time.time()
+            _t_ser_mono = time.monotonic()
 
         request = service_pb2.ModelInferRequest(model_name=self.model_name)
         if self.model_version:
@@ -291,22 +300,16 @@ class KserveV2GrpcClient:
             if self.use_binary_data:
                 output_tensor.parameters["binary_data"].bool_param = True
 
-        # --- PROFILING START (remove when done) ---
-        t_ser_duration = time.monotonic() - t_ser_mono
-        t_ser_end = time.time()
-        _log.info(
-            "PIPELINE_PROFILING KServe gRPC infer serialization: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
-            _batch_size,
-            t_ser_start,
-            t_ser_end,
-            t_ser_duration,
-        )
-        # --- PROFILING END ---
-
-        # --- PROFILING START (remove when done) ---
-        t_grpc_start = time.time()
-        t_grpc_mono = time.monotonic()
-        # --- PROFILING END ---
+        if _log.isEnabledFor(logging.DEBUG):
+            _log.debug(
+                "PIPELINE_PROFILING KServe gRPC infer serialization: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
+                _batch_size,
+                _t_ser_start,
+                time.time(),
+                time.monotonic() - _t_ser_mono,
+            )
+            _t_grpc_start = time.time()
+            _t_grpc_mono = time.monotonic()
 
         try:
             response = self._stub.ModelInfer(
@@ -319,22 +322,16 @@ class KserveV2GrpcClient:
                 f"gRPC infer call failed for model {self.model_name}: {exc}"
             ) from exc
 
-        # --- PROFILING START (remove when done) ---
-        t_grpc_duration = time.monotonic() - t_grpc_mono
-        t_grpc_end = time.time()
-        _log.info(
-            "PIPELINE_PROFILING KServe gRPC infer round-trip: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
-            _batch_size,
-            t_grpc_start,
-            t_grpc_end,
-            t_grpc_duration,
-        )
-        # --- PROFILING END ---
-
-        # --- PROFILING START (remove when done) ---
-        t_deser_start = time.time()
-        t_deser_mono = time.monotonic()
-        # --- PROFILING END ---
+        if _log.isEnabledFor(logging.DEBUG):
+            _log.debug(
+                "PIPELINE_PROFILING KServe gRPC infer round-trip: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
+                _batch_size,
+                _t_grpc_start,
+                time.time(),
+                time.monotonic() - _t_grpc_mono,
+            )
+            _t_deser_start = time.time()
+            _t_deser_mono = time.monotonic()
 
         decoded_outputs: Dict[str, np.ndarray] = {}
 
@@ -369,16 +366,13 @@ class KserveV2GrpcClient:
                     output_tensor.contents, np_dtype, shape
                 )
 
-        # --- PROFILING START (remove when done) ---
-        t_deser_duration = time.monotonic() - t_deser_mono
-        t_deser_end = time.time()
-        _log.info(
-            "PIPELINE_PROFILING KServe gRPC infer deserialization: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
-            _batch_size,
-            t_deser_start,
-            t_deser_end,
-            t_deser_duration,
-        )
-        # --- PROFILING END ---
+        if _log.isEnabledFor(logging.DEBUG):
+            _log.debug(
+                "PIPELINE_PROFILING KServe gRPC infer deserialization: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
+                _batch_size,
+                _t_deser_start,
+                time.time(),
+                time.monotonic() - _t_deser_mono,
+            )
 
         return decoded_outputs
