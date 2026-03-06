@@ -51,8 +51,7 @@ fn main() -> anyhow::Result<()> {
             fs::create_dir_all(output_dir)?;
 
             let input_format = args.from.map(|f| f.into());
-            let output_formats: Vec<OutputFormat> =
-                args.to.into_iter().map(|f| f.into()).collect();
+            let output_formats: Vec<OutputFormat> = args.to.into_iter().map(|f| f.into()).collect();
             let image_mode = args
                 .image_export_mode
                 .map(|m| m.into())
@@ -565,10 +564,7 @@ fn resolve_sources(sources: &[std::path::PathBuf]) -> anyhow::Result<Vec<std::pa
 fn warn_duplicate_stems(files: &[std::path::PathBuf]) {
     let mut seen = HashSet::new();
     for f in files {
-        let stem = f
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or("unknown");
+        let stem = f.file_stem().and_then(|s| s.to_str()).unwrap_or("unknown");
         if !seen.insert(stem.to_string()) {
             log::warn!(
                 "Multiple source files share the stem '{}' — output files may overwrite each other. \

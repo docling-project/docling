@@ -25,6 +25,15 @@
       },
       {
         "$ref": "#/texts/2"
+      },
+      {
+        "$ref": "#/texts/3"
+      },
+      {
+        "$ref": "#/texts/4"
+      },
+      {
+        "$ref": "#/texts/5"
       }
     ],
     "content_layer": "body",
@@ -45,10 +54,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 72.0,
+            "t": 44.0,
+            "r": 287.5999755859375,
+            "b": 72.0,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
@@ -59,7 +68,7 @@
       ],
       "orig": "Document Title",
       "text": "Document Title",
-      "level": 1
+      "level": 2
     },
     {
       "self_ref": "#/texts/1",
@@ -68,28 +77,57 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
+      "label": "section_header",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 72.0,
+            "t": 132.0,
+            "r": 259.0,
+            "b": 152.0,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            106
+            17
           ]
         }
       ],
-      "orig": "A paragraph under the title with enough text to be clearly body content in any analysis.\n1.1 First Section",
-      "text": "A paragraph under the title with enough text to be clearly body content in any analysis.\n1.1 First Section"
+      "orig": "1.1 First Section",
+      "text": "1.1 First Section",
+      "level": 2
     },
     {
       "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 72.0,
+            "t": 212.0,
+            "r": 270.0,
+            "b": 232.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            18
+          ]
+        }
+      ],
+      "orig": "1.2 Second Section",
+      "text": "1.2 Second Section",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/3",
       "parent": {
         "$ref": "#/body"
       },
@@ -100,20 +138,75 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 72.0,
+            "t": 180.0,
+            "r": 547.2003173828125,
+            "b": 192.0,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            151
+            72
           ]
         }
       ],
-      "orig": "Content of the first section that discusses important details at length.\n1.2 Second Section\nContent of the second section with more details to analyze.",
-      "text": "Content of the first section that discusses important details at length.\n1.2 Second Section\nContent of the second section with more details to analyze."
+      "orig": "Content of the first section that discusses important details at length.",
+      "text": "Content of the first section that discusses important details at length."
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 72.0,
+            "t": 260.0,
+            "r": 461.40020751953125,
+            "b": 272.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            59
+          ]
+        }
+      ],
+      "orig": "Content of the second section with more details to analyze.",
+      "text": "Content of the second section with more details to analyze."
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 72.0,
+            "t": 100.0,
+            "r": 652.800048828125,
+            "b": 112.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            88
+          ]
+        }
+      ],
+      "orig": "A paragraph under the title with enough text to be clearly body content in any analysis.",
+      "text": "A paragraph under the title with enough text to be clearly body content in any analysis.",
+      "level": 1
     }
   ],
   "pictures": [],

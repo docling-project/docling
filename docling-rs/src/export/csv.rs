@@ -37,7 +37,6 @@ fn export_node(doc: &DoclingDocument, ref_path: &str, output: &mut String) {
                 }
             }
         }
-        return;
     }
 }
 
@@ -62,9 +61,9 @@ fn table_to_csv(data: &TableData) -> String {
         let c0 = cell.start_col_offset_idx as usize;
         let r1 = (r0 + cell.row_span as usize).min(nrows);
         let c1 = (c0 + cell.col_span as usize).min(ncols);
-        for r in r0..r1 {
-            for c in c0..c1 {
-                flat_grid[r][c] = cell.text.clone();
+        for row in flat_grid.iter_mut().take(r1).skip(r0) {
+            for grid_cell in row.iter_mut().take(c1).skip(c0) {
+                *grid_cell = cell.text.clone();
             }
         }
     }

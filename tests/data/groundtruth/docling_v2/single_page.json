@@ -22,6 +22,9 @@
       },
       {
         "$ref": "#/texts/1"
+      },
+      {
+        "$ref": "#/texts/2"
       }
     ],
     "content_layer": "body",
@@ -42,10 +45,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 72.0,
+            "t": 68.0,
+            "r": 322.7999572753906,
+            "b": 92.0,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
@@ -70,20 +73,47 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 72.0,
+            "t": 120.0,
+            "r": 903.59912109375,
+            "b": 132.0,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            240
+            126
           ]
         }
       ],
-      "orig": "This is the first paragraph of the test document. It contains some text that should be extracted correctly by the PDF backend.\nThis is the second paragraph. It provides additional content for testing paragraph splitting and text extraction.",
-      "text": "This is the first paragraph of the test document. It contains some text that should be extracted correctly by the PDF backend.\nThis is the second paragraph. It provides additional content for testing paragraph splitting and text extraction."
+      "orig": "This is the first paragraph of the test document. It contains some text that should be extracted correctly by the PDF backend.",
+      "text": "This is the first paragraph of the test document. It contains some text that should be extracted correctly by the PDF backend."
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 72.0,
+            "t": 160.0,
+            "r": 817.7994384765625,
+            "b": 172.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            113
+          ]
+        }
+      ],
+      "orig": "This is the second paragraph. It provides additional content for testing paragraph splitting and text extraction.",
+      "text": "This is the second paragraph. It provides additional content for testing paragraph splitting and text extraction."
     }
   ],
   "pictures": [],

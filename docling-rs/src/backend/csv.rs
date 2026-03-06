@@ -119,12 +119,7 @@ fn count_unquoted(line: &str, ch: char) -> usize {
 fn detect_delimiter(content: &str) -> u8 {
     let first_line = content.lines().next().unwrap_or("");
 
-    let candidates: &[(u8, char)] = &[
-        (b'\t', '\t'),
-        (b'|', '|'),
-        (b';', ';'),
-        (b',', ','),
-    ];
+    let candidates: &[(u8, char)] = &[(b'\t', '\t'), (b'|', '|'), (b';', ';'), (b',', ',')];
 
     let mut best = b',';
     let mut best_count = 0;

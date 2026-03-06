@@ -32,29 +32,18 @@ impl Backend for XlsxBackend {
             let range = match workbook.worksheet_range(sheet_name) {
                 Ok(r) => r,
                 Err(_) => {
-                    doc.add_group(
-                        &format!("sheet: {}", sheet_name),
-                        GroupLabel::Section,
-                        None,
-                    );
+                    doc.add_group(&format!("sheet: {}", sheet_name), GroupLabel::Section, None);
                     continue;
                 }
             };
             let (height, width) = range.get_size();
             if height == 0 || width == 0 {
-                doc.add_group(
-                    &format!("sheet: {}", sheet_name),
-                    GroupLabel::Section,
-                    None,
-                );
+                doc.add_group(&format!("sheet: {}", sheet_name), GroupLabel::Section, None);
                 continue;
             }
 
-            let sheet_gidx = doc.add_group(
-                &format!("sheet: {}", sheet_name),
-                GroupLabel::Section,
-                None,
-            );
+            let sheet_gidx =
+                doc.add_group(&format!("sheet: {}", sheet_name), GroupLabel::Section, None);
             let sheet_parent = format!("#/groups/{}", sheet_gidx);
 
             let merges = all_merges
@@ -90,12 +79,7 @@ impl Backend for XlsxBackend {
                 let num_rows = bounds.max_row - bounds.min_row + 1;
                 let num_cols = bounds.max_col - bounds.min_col + 1;
                 if !cells.is_empty() {
-                    doc.add_table(
-                        cells,
-                        num_rows as u32,
-                        num_cols as u32,
-                        Some(&sheet_parent),
-                    );
+                    doc.add_table(cells, num_rows as u32, num_cols as u32, Some(&sheet_parent));
                 }
             }
 
@@ -187,9 +171,17 @@ fn build_occupancy_grid(
         let c_start = (dim.start.1 as usize).saturating_sub(col_off);
         let r_end = (dim.end.0 as usize).saturating_sub(row_off);
         let c_end = (dim.end.1 as usize).saturating_sub(col_off);
-        for r in r_start..=r_end.min(height.saturating_sub(1)) {
-            for c in c_start..=c_end.min(width.saturating_sub(1)) {
-                grid[r][c] = true;
+        for row in grid
+            .iter_mut()
+            .take(r_end.min(height.saturating_sub(1)) + 1)
+            .skip(r_start)
+        {
+            for cell in row
+                .iter_mut()
+                .take(c_end.min(width.saturating_sub(1)) + 1)
+                .skip(c_start)
+            {
+                *cell = true;
             }
         }
     }
@@ -202,11 +194,7 @@ const GAP_TOLERANCE: usize = 0;
 
 const DIRECTIONS: [(isize, isize); 4] = [(0, 1), (0, -1), (1, 0), (-1, 0)];
 
-fn find_tables_flood_fill(
-    occupied: &[Vec<bool>],
-    height: usize,
-    width: usize,
-) -> Vec<TableBounds> {
+fn find_tables_flood_fill(occupied: &[Vec<bool>], height: usize, width: usize) -> Vec<TableBounds> {
     let mut visited = vec![vec![false; width]; height];
     let mut tables = Vec::new();
 
@@ -319,18 +307,17 @@ fn extract_table_cells(
             let rel_row = (row_idx - base_row) as u32;
             let rel_col = (col_idx - base_col) as u32;
 
-            let (row_span, col_span) =
-                if let Some(dim) = find_merge_at(merges, abs_row, abs_col) {
-                    let abs_table_max_row = bounds.max_row + row_off;
-                    let abs_table_max_col = bounds.max_col + col_off;
-                    let clamped_end_row = (dim.end.0 as usize).min(abs_table_max_row);
-                    let clamped_end_col = (dim.end.1 as usize).min(abs_table_max_col);
-                    let rs = clamped_end_row.saturating_sub(dim.start.0 as usize) + 1;
-                    let cs = clamped_end_col.saturating_sub(dim.start.1 as usize) + 1;
-                    ((rs as u32).max(1), (cs as u32).max(1))
-                } else {
-                    (1, 1)
-                };
+            let (row_span, col_span) = if let Some(dim) = find_merge_at(merges, abs_row, abs_col) {
+                let abs_table_max_row = bounds.max_row + row_off;
+                let abs_table_max_col = bounds.max_col + col_off;
+                let clamped_end_row = (dim.end.0 as usize).min(abs_table_max_row);
+                let clamped_end_col = (dim.end.1 as usize).min(abs_table_max_col);
+                let rs = clamped_end_row.saturating_sub(dim.start.0 as usize) + 1;
+                let cs = clamped_end_col.saturating_sub(dim.start.1 as usize) + 1;
+                ((rs as u32).max(1), (cs as u32).max(1))
+            } else {
+                (1, 1)
+            };
 
             cells.push(TableCell {
                 row_span,
@@ -374,13 +361,11 @@ fn count_images_per_sheet(path: &Path, sheet_names: &[String]) -> HashMap<String
             .strip_prefix("/xl/")
             .or_else(|| sheet_file.strip_prefix("xl/"))
             .unwrap_or(sheet_file);
-        let file_name = normalized
-            .strip_prefix("worksheets/")
-            .unwrap_or(normalized);
+        let file_name = normalized.strip_prefix("worksheets/").unwrap_or(normalized);
         let rels_path = format!("xl/worksheets/_rels/{}.rels", file_name);
         let sheet_rels = parse_rels_from_zip(&mut archive, &rels_path);
 
-        for (_, (rel_type, target)) in &sheet_rels {
+        for (rel_type, target) in sheet_rels.values() {
             if !rel_type.contains("/drawing") {
                 continue;
             }
@@ -490,8 +475,7 @@ fn parse_workbook_sheet_map(
                     let mut name = String::new();
                     let mut rid = String::new();
                     for attr in e.attributes().flatten() {
-                        let key =
-                            String::from_utf8_lossy(attr.key.as_ref()).to_string();
+                        let key = String::from_utf8_lossy(attr.key.as_ref()).to_string();
                         let val = attr.unescape_value().unwrap_or_default().to_string();
                         if key == "name" {
                             name = val;

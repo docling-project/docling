@@ -91,10 +91,7 @@ impl Relationships {
     }
 }
 
-fn parse_relationships(
-    archive: &mut zip::ZipArchive<std::fs::File>,
-    path: &str,
-) -> Relationships {
+fn parse_relationships(archive: &mut zip::ZipArchive<std::fs::File>, path: &str) -> Relationships {
     let mut rels = Relationships::default();
     let xml = match read_zip_entry(archive, path) {
         Ok(x) => x,
@@ -106,11 +103,9 @@ fn parse_relationships(
             Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e)) => {
                 let local = get_local_name(e);
                 if local == "Relationship" {
-                    if let (Some(id), Some(target)) =
-                        (get_attr(e, "Id"), get_attr(e, "Target"))
-                    {
+                    if let (Some(id), Some(target)) = (get_attr(e, "Id"), get_attr(e, "Target")) {
                         let is_external = get_attr(e, "TargetMode")
-                            .map_or(false, |m| m.eq_ignore_ascii_case("External"));
+                            .is_some_and(|m| m.eq_ignore_ascii_case("External"));
                         rels.map.insert(id, (target, is_external));
                     }
                 }
@@ -212,9 +207,7 @@ fn parse_styles(archive: &mut zip::ZipArchive<std::fs::File>) -> Styles {
                         style_num_id = get_attr(e, "val").unwrap_or_default();
                     }
                     "ilvl" if in_style && in_style_num_pr => {
-                        style_ilvl = get_attr(e, "val")
-                            .and_then(|v| v.parse().ok())
-                            .unwrap_or(0);
+                        style_ilvl = get_attr(e, "val").and_then(|v| v.parse().ok()).unwrap_or(0);
                     }
                     "name" if in_style => {
                         current_style_name = get_attr(e, "val").unwrap_or_default();
@@ -243,13 +236,17 @@ fn parse_styles(archive: &mut zip::ZipArchive<std::fs::File>) -> Styles {
                 } else if local == "style" {
                     in_style = false;
                     if !style_num_id.is_empty() && style_num_id != "0" {
-                        styles.style_num_pr.insert(
-                            current_style_id.clone(),
-                            (style_num_id.clone(), style_ilvl),
-                        );
+                        styles
+                            .style_num_pr
+                            .insert(current_style_id.clone(), (style_num_id.clone(), style_ilvl));
                     }
                     let name_lower = current_style_name.to_lowercase();
-                    if name_lower == "title" || name_lower == "titre" || name_lower == "titel" || name_lower == "título" || name_lower == "titolo" {
+                    if name_lower == "title"
+                        || name_lower == "titre"
+                        || name_lower == "titel"
+                        || name_lower == "título"
+                        || name_lower == "titolo"
+                    {
                         styles.title_style_ids.push(current_style_id.clone());
                     }
                     if (name_lower.starts_with("heading")
@@ -314,8 +311,7 @@ fn parse_numbering(archive: &mut zip::ZipArchive<std::fs::File>) -> NumberingInf
                 match local.as_str() {
                     "abstractNum" => {
                         in_abstract = true;
-                        current_abstract_id =
-                            get_attr(e, "abstractNumId").unwrap_or_default();
+                        current_abstract_id = get_attr(e, "abstractNumId").unwrap_or_default();
                     }
                     "lvl" if in_abstract => {
                         in_lvl = true;
@@ -377,9 +373,7 @@ fn parse_numbering(archive: &mut zip::ZipArchive<std::fs::File>) -> NumberingInf
 // Comments
 // ---------------------------------------------------------------------------
 
-fn parse_comments_xml(
-    archive: &mut zip::ZipArchive<std::fs::File>,
-) -> HashMap<String, String> {
+fn parse_comments_xml(archive: &mut zip::ZipArchive<std::fs::File>) -> HashMap<String, String> {
     let mut comments = HashMap::new();
     let xml = match read_zip_entry(archive, "word/comments.xml") {
         Ok(x) => x,
@@ -411,8 +405,12 @@ fn parse_comments_xml(
             Ok(Event::GeneralRef(ref e)) if in_run && in_comment => {
                 let entity = String::from_utf8_lossy(e.as_ref());
                 let ch = match entity.as_ref() {
-                    "amp" => "&", "lt" => "<", "gt" => ">",
-                    "apos" => "'", "quot" => "\"", _ => "",
+                    "amp" => "&",
+                    "lt" => "<",
+                    "gt" => ">",
+                    "apos" => "'",
+                    "quot" => "\"",
+                    _ => "",
                 };
                 comment_text.push_str(ch);
             }
@@ -550,7 +548,11 @@ struct RunFmt {
 
 impl RunFmt {
     fn is_default(&self) -> bool {
-        !self.bold && !self.italic && !self.underline && !self.strikethrough && self.script.is_none()
+        !self.bold
+            && !self.italic
+            && !self.underline
+            && !self.strikethrough
+            && self.script.is_none()
     }
 
     fn to_text_formatting(&self) -> Option<TextFormatting> {
@@ -644,11 +646,7 @@ impl ListNesting {
 // Headers / Footers
 // ---------------------------------------------------------------------------
 
-fn parse_furniture_xml(
-    xml: &str,
-    label: DocItemLabel,
-    doc: &mut DoclingDocument,
-) {
+fn parse_furniture_xml(xml: &str, label: DocItemLabel, doc: &mut DoclingDocument) {
     let section_name = match label {
         DocItemLabel::PageHeader => "page header",
         DocItemLabel::PageFooter => "page footer",
@@ -720,8 +718,12 @@ fn parse_furniture_xml(
             Ok(Event::GeneralRef(ref e)) if in_run && in_paragraph && suppress_field == 0 => {
                 let entity = String::from_utf8_lossy(e.as_ref());
                 let ch = match entity.as_ref() {
-                    "amp" => "&", "lt" => "<", "gt" => ">",
-                    "apos" => "'", "quot" => "\"", _ => "",
+                    "amp" => "&",
+                    "lt" => "<",
+                    "gt" => ">",
+                    "apos" => "'",
+                    "quot" => "\"",
+                    _ => "",
                 };
                 current_run_text.push_str(ch);
             }
@@ -778,7 +780,9 @@ fn parse_furniture_xml(
             let inline_ref = format!("#/groups/{}", inline_idx);
             for run in para {
                 let text = run.text.trim();
-                if text.is_empty() { continue; }
+                if text.is_empty() {
+                    continue;
+                }
                 let fmt = if run.bold || run.italic || run.underline {
                     Some(TextFormatting {
                         bold: run.bold,
@@ -790,13 +794,7 @@ fn parse_furniture_xml(
                 } else {
                     None
                 };
-                doc.add_text_ext(
-                    DocItemLabel::Text,
-                    text,
-                    Some(&inline_ref),
-                    fmt,
-                    None,
-                );
+                doc.add_text_ext(DocItemLabel::Text, text, Some(&inline_ref), fmt, None);
             }
         } else {
             let full: String = para.iter().map(|r| r.text.as_str()).collect();
@@ -816,12 +814,21 @@ fn parse_furniture_xml(
 fn is_suppressed_text_element(local: &str) -> bool {
     matches!(
         local,
-        "extent" | "positionH" | "positionV" | "posOffset"
-            | "simplePos" | "effectExtent" | "wrapPolygon"
-            | "start" | "lineTo"
-            | "instrText" | "fldChar"
-            | "pctWidth" | "pctHeight"
-            | "sizeRelH" | "sizeRelV"
+        "extent"
+            | "positionH"
+            | "positionV"
+            | "posOffset"
+            | "simplePos"
+            | "effectExtent"
+            | "wrapPolygon"
+            | "start"
+            | "lineTo"
+            | "instrText"
+            | "fldChar"
+            | "pctWidth"
+            | "pctHeight"
+            | "sizeRelH"
+            | "sizeRelV"
     )
 }
 
@@ -952,7 +959,7 @@ fn parse_document_xml(
                         }
                     }
                     "tcPr" if !table_stack.is_empty() => {
-                        if table_stack.last().map_or(false, |ts| ts.in_cell) {
+                        if table_stack.last().is_some_and(|ts| ts.in_cell) {
                             in_tc_pr = true;
                         }
                     }
@@ -1051,14 +1058,10 @@ fn parse_document_xml(
 
                 match local.as_str() {
                     "p" if !in_math && !in_txbx_content => {
-                        let in_table_cell = table_stack.last().map_or(false, |ts| ts.in_cell);
+                        let in_table_cell = table_stack.last().is_some_and(|ts| ts.in_cell);
                         if !in_table_cell {
                             list_nesting.reset();
-                            doc.add_text(
-                                DocItemLabel::Text,
-                                "",
-                                current_parent.as_deref(),
-                            );
+                            doc.add_text(DocItemLabel::Text, "", current_parent.as_deref());
                         }
                     }
                     "pStyle" if in_paragraph && !in_math => {
@@ -1068,15 +1071,12 @@ fn parse_document_xml(
                         num_id = get_attr(e, "val").unwrap_or_default();
                     }
                     "ilvl" if has_num_pr => {
-                        num_ilvl = get_attr(e, "val")
-                            .and_then(|v| v.parse().ok())
-                            .unwrap_or(0);
+                        num_ilvl = get_attr(e, "val").and_then(|v| v.parse().ok()).unwrap_or(0);
                     }
                     "gridSpan" if in_tc_pr => {
                         if let Some(ts) = table_stack.last_mut() {
-                            ts.current_col_span = get_attr(e, "val")
-                                .and_then(|v| v.parse().ok())
-                                .unwrap_or(1);
+                            ts.current_col_span =
+                                get_attr(e, "val").and_then(|v| v.parse().ok()).unwrap_or(1);
                         }
                     }
                     "vMerge" if in_tc_pr => {
@@ -1098,8 +1098,7 @@ fn parse_document_xml(
                         current_run_text.push('\n');
                     }
                     "blip" if in_drawing => {
-                        drawing_blip_rid = get_attr(e, "embed")
-                            .or_else(|| get_attr(e, "link"));
+                        drawing_blip_rid = get_attr(e, "embed").or_else(|| get_attr(e, "link"));
                     }
                     "docPr" if in_drawing => {
                         drawing_alt_text = get_attr(e, "descr");
@@ -1124,7 +1123,7 @@ fn parse_document_xml(
                     "commentRangeEnd" => {
                         if let Some(id) = get_attr(e, "id") {
                             if let Some(text) = comments.get(&id) {
-                                let in_table_cell = table_stack.last().map_or(false, |ts| ts.in_cell);
+                                let in_table_cell = table_stack.last().is_some_and(|ts| ts.in_cell);
                                 if !in_table_cell {
                                     doc.add_text(
                                         DocItemLabel::Footnote,
@@ -1151,8 +1150,10 @@ fn parse_document_xml(
                     let raw = String::from_utf8_lossy(e.as_ref()).to_string();
                     let t = unicode_math_to_latex(&raw);
                     if let Some(frame) = math_stack.last_mut() {
-                        if t.starts_with('\\') && !frame.text.is_empty()
-                            && !frame.text.ends_with(' ') && !frame.text.ends_with('{')
+                        if t.starts_with('\\')
+                            && !frame.text.is_empty()
+                            && !frame.text.ends_with(' ')
+                            && !frame.text.ends_with('{')
                         {
                             frame.text.push(' ');
                         }
@@ -1198,7 +1199,11 @@ fn parse_document_xml(
                     }
                     "r" if !in_math => {
                         if in_run && !current_run_text.is_empty() {
-                            let link = if in_hyperlink { hyperlink_url.clone() } else { None };
+                            let link = if in_hyperlink {
+                                hyperlink_url.clone()
+                            } else {
+                                None
+                            };
                             // Merge consecutive runs with same hyperlink AND same formatting
                             let merged = if let Some(last) = para_runs.last_mut() {
                                 if last.hyperlink == link && last.fmt == run_fmt {
@@ -1232,10 +1237,8 @@ fn parse_document_xml(
                     "drawing" => {
                         if in_drawing {
                             if drawing_blip_rid.is_some() {
-                                pending_images.push((
-                                    drawing_blip_rid.take(),
-                                    drawing_alt_text.take(),
-                                ));
+                                pending_images
+                                    .push((drawing_blip_rid.take(), drawing_alt_text.take()));
                             } else {
                                 // DrawingML shape without blip — emit placeholder
                                 pending_images.push((None, drawing_alt_text.take()));
@@ -1264,7 +1267,7 @@ fn parse_document_xml(
                     "txbxContent" => {
                         in_txbx_content = false;
                         for txt in txbx_texts.drain(..) {
-                            let in_table_cell = table_stack.last().map_or(false, |ts| ts.in_cell);
+                            let in_table_cell = table_stack.last().is_some_and(|ts| ts.in_cell);
                             if in_table_cell {
                                 if let Some(ts) = table_stack.last_mut() {
                                     if !ts.cell_text.is_empty() {
@@ -1273,20 +1276,16 @@ fn parse_document_xml(
                                     ts.cell_text.push_str(&txt);
                                 }
                             } else {
-                                doc.add_text(
-                                    DocItemLabel::Text,
-                                    &txt,
-                                    current_parent.as_deref(),
-                                );
+                                doc.add_text(DocItemLabel::Text, &txt, current_parent.as_deref());
                             }
                         }
                     }
                     "p" if !in_math && !in_txbx_content => {
                         in_paragraph = false;
-                        let in_table_cell =
-                            table_stack.last().map_or(false, |ts| ts.in_cell);
+                        let in_table_cell = table_stack.last().is_some_and(|ts| ts.in_cell);
                         if in_table_cell {
-                            let combined: String = para_runs.iter().map(|r| r.text.as_str()).collect();
+                            let combined: String =
+                                para_runs.iter().map(|r| r.text.as_str()).collect();
                             let is_list_para = has_num_pr && !num_id.is_empty() && num_id != "0";
                             if let Some(ts) = table_stack.last_mut() {
                                 if !ts.cell_text.is_empty() && !combined.is_empty() {
@@ -1327,71 +1326,69 @@ fn parse_document_xml(
                                 }
                             }
 
-                            let full_text: String = para_runs.iter().map(|r| r.text.as_str()).collect();
+                            let full_text: String =
+                                para_runs.iter().map(|r| r.text.as_str()).collect();
                             let text = full_text.trim();
 
                             if !text.is_empty() {
-                                let is_title_style = styles.title_style_ids.contains(&para_style_id);
+                                let is_title_style =
+                                    styles.title_style_ids.contains(&para_style_id);
                                 if is_title_style {
                                     let idx = doc.add_title(text, None);
-                                    current_parent =
-                                        Some(format!("#/texts/{}", idx));
+                                    current_parent = Some(format!("#/texts/{}", idx));
                                     list_nesting.reset();
                                 } else if let Some(level) =
                                     styles.resolve_heading_level(&para_style_id)
                                 {
                                     // Resolve numbering: explicit numPr or style-level numPr
-                                    let effective_num = if has_num_pr && !num_id.is_empty() && num_id != "0" {
-                                        Some((num_id.clone(), num_ilvl))
-                                    } else {
-                                        styles.style_num_pr.get(&para_style_id).cloned()
-                                    };
-
-                                    let heading_text = if let Some((eff_num_id, eff_ilvl)) = effective_num {
-                                        let counter = heading_counters
-                                            .entry((eff_num_id.clone(), eff_ilvl))
-                                            .or_insert(0);
-                                        *counter += 1;
-
-                                        let keys_to_reset: Vec<_> = heading_counters.keys()
-                                            .filter(|(nid, lvl)| nid == &eff_num_id && *lvl > eff_ilvl)
-                                            .cloned()
-                                            .collect();
-                                        for key in keys_to_reset {
-                                            heading_counters.insert(key, 0);
-                                        }
-
-                                        let mut prefix_parts = Vec::new();
-                                        for lvl in 0..=eff_ilvl {
-                                            let c = heading_counters
-                                                .entry((eff_num_id.clone(), lvl))
-                                                .or_insert(0);
-                                            if *c == 0 {
-                                                *c = 1;
-                                            }
-                                            prefix_parts.push(c.to_string());
-                                        }
-                                        let prefix = prefix_parts.join(".");
-                                        if prefix.is_empty() {
-                                            text.to_string()
+                                    let effective_num =
+                                        if has_num_pr && !num_id.is_empty() && num_id != "0" {
+                                            Some((num_id.clone(), num_ilvl))
                                         } else {
-                                            format!("{} {}", prefix, text)
-                                        }
-                                    } else {
-                                        text.to_string()
-                                    };
-                                    let idx = doc.add_section_header(
-                                        &heading_text,
-                                        level,
-                                        None,
-                                    );
-                                    current_parent =
-                                        Some(format!("#/texts/{}", idx));
+                                            styles.style_num_pr.get(&para_style_id).cloned()
+                                        };
+
+                                    let heading_text =
+                                        if let Some((eff_num_id, eff_ilvl)) = effective_num {
+                                            let counter = heading_counters
+                                                .entry((eff_num_id.clone(), eff_ilvl))
+                                                .or_insert(0);
+                                            *counter += 1;
+
+                                            let keys_to_reset: Vec<_> = heading_counters
+                                                .keys()
+                                                .filter(|(nid, lvl)| {
+                                                    nid == &eff_num_id && *lvl > eff_ilvl
+                                                })
+                                                .cloned()
+                                                .collect();
+                                            for key in keys_to_reset {
+                                                heading_counters.insert(key, 0);
+                                            }
+
+                                            let mut prefix_parts = Vec::new();
+                                            for lvl in 0..=eff_ilvl {
+                                                let c = heading_counters
+                                                    .entry((eff_num_id.clone(), lvl))
+                                                    .or_insert(0);
+                                                if *c == 0 {
+                                                    *c = 1;
+                                                }
+                                                prefix_parts.push(c.to_string());
+                                            }
+                                            let prefix = prefix_parts.join(".");
+                                            if prefix.is_empty() {
+                                                text.to_string()
+                                            } else {
+                                                format!("{} {}", prefix, text)
+                                            }
+                                        } else {
+                                            text.to_string()
+                                        };
+                                    let idx = doc.add_section_header(&heading_text, level, None);
+                                    current_parent = Some(format!("#/texts/{}", idx));
                                     list_nesting.reset();
-                                } else if has_num_pr
-                                    && num_id != "0"
-                                    && !num_id.is_empty()
-                                {
+                                } else if has_num_pr && num_id != "0" && !num_id.is_empty() {
                                     let (is_ordered, _) = numbering
                                         .definitions
                                         .get(&(num_id.clone(), num_ilvl))
@@ -1409,22 +1406,27 @@ fn parse_document_xml(
 
                                     let has_mixed = para_runs.len() >= 2 && {
                                         let first_fmt = &para_runs[0].fmt;
-                                        para_runs.iter().skip(1).any(|r| r.fmt != *first_fmt || r.hyperlink.is_some())
+                                        para_runs
+                                            .iter()
+                                            .skip(1)
+                                            .any(|r| r.fmt != *first_fmt || r.hyperlink.is_some())
                                     };
 
                                     if has_mixed {
-                                        let li_idx = doc.add_list_item(
-                                            "",
-                                            is_ordered,
-                                            Some(&marker),
-                                            &gref,
-                                        );
+                                        let li_idx =
+                                            doc.add_list_item("", is_ordered, Some(&marker), &gref);
                                         let li_ref = format!("#/texts/{}", li_idx);
-                                        let inline_idx = doc.add_group("group", GroupLabel::Inline, Some(&li_ref));
+                                        let inline_idx = doc.add_group(
+                                            "group",
+                                            GroupLabel::Inline,
+                                            Some(&li_ref),
+                                        );
                                         let inline_ref = format!("#/groups/{}", inline_idx);
                                         for run in &para_runs {
                                             let run_text = run.text.trim();
-                                            if run_text.is_empty() { continue; }
+                                            if run_text.is_empty() {
+                                                continue;
+                                            }
                                             doc.add_text_ext(
                                                 DocItemLabel::Text,
                                                 run_text,
@@ -1434,21 +1436,12 @@ fn parse_document_xml(
                                             );
                                         }
                                     } else {
-                                        doc.add_list_item(
-                                            text,
-                                            is_ordered,
-                                            Some(&marker),
-                                            &gref,
-                                        );
+                                        doc.add_list_item(text, is_ordered, Some(&marker), &gref);
                                     }
                                 } else {
                                     list_nesting.reset();
                                     // Phase C: emit per-run formatting
-                                    emit_paragraph_runs(
-                                        &para_runs,
-                                        doc,
-                                        current_parent.as_deref(),
-                                    );
+                                    emit_paragraph_runs(&para_runs, doc, current_parent.as_deref());
                                 }
                             } else {
                                 for (img_rid, alt) in pending_images.drain(..) {
@@ -1480,13 +1473,9 @@ fn parse_document_xml(
                                             current_parent.as_deref(),
                                         );
                                         let marker = list_nesting.next_marker(is_ordered);
-                                        doc.add_list_item(
-                                            "",
-                                            is_ordered,
-                                            Some(&marker),
-                                            &gref,
-                                        );
-                                    } else if styles.resolve_heading_level(&para_style_id).is_none() {
+                                        doc.add_list_item("", is_ordered, Some(&marker), &gref);
+                                    } else if styles.resolve_heading_level(&para_style_id).is_none()
+                                    {
                                         list_nesting.reset();
                                         doc.add_text(
                                             DocItemLabel::Text,
@@ -1512,16 +1501,15 @@ fn parse_document_xml(
                                 let col_span = ts.current_col_span;
                                 let row = ts.row;
                                 let col = ts.col;
-                                let rich = std::mem::replace(
-                                    &mut ts.cell_content,
-                                    RichCellContent::new(),
-                                );
+                                let rich =
+                                    std::mem::replace(&mut ts.cell_content, RichCellContent::new());
                                 let md = rich.to_markdown();
-                                let formatted = if !md.is_empty() && md.len() >= text.len() && md != text {
-                                    Some(md)
-                                } else {
-                                    None
-                                };
+                                let formatted =
+                                    if !md.is_empty() && md.len() >= text.len() && md != text {
+                                        Some(md)
+                                    } else {
+                                        None
+                                    };
                                 ts.rich_cells.push((row, col, col_span, rich));
                                 ts.cells.push(TableCell {
                                     row_span: 1,
@@ -1556,31 +1544,51 @@ fn parse_document_xml(
                             if let Some((_, _, _, ref rich)) = ts.rich_cells.first() {
                                 let mut sc_list_nesting = ListNesting::new();
                                 for para in &rich.paragraphs {
-                                    let full: String = para.runs.iter().map(|r| r.text.as_str()).collect();
+                                    let full: String =
+                                        para.runs.iter().map(|r| r.text.as_str()).collect();
                                     let text = full.trim();
-                                    if para.has_num_pr && !para.num_id.is_empty() && para.num_id != "0" {
+                                    if para.has_num_pr
+                                        && !para.num_id.is_empty()
+                                        && para.num_id != "0"
+                                    {
                                         let (is_ordered, _) = numbering
                                             .definitions
                                             .get(&(para.num_id.clone(), para.num_ilvl))
                                             .map(|(ordered, _fmt)| (*ordered, ""))
                                             .unwrap_or((false, ""));
                                         let gref = sc_list_nesting.get_or_create_group(
-                                            &para.num_id, para.num_ilvl, is_ordered,
-                                            doc, current_parent.as_deref(),
+                                            &para.num_id,
+                                            para.num_ilvl,
+                                            is_ordered,
+                                            doc,
+                                            current_parent.as_deref(),
                                         );
                                         let marker = sc_list_nesting.next_marker(is_ordered);
                                         let sc_has_mixed = para.runs.len() >= 2 && {
                                             let first_fmt = &para.runs[0].fmt;
-                                            para.runs.iter().skip(1).any(|r| r.fmt != *first_fmt || r.hyperlink.is_some())
+                                            para.runs.iter().skip(1).any(|r| {
+                                                r.fmt != *first_fmt || r.hyperlink.is_some()
+                                            })
                                         };
                                         if sc_has_mixed {
-                                            let li_idx = doc.add_list_item("", is_ordered, Some(&marker), &gref);
+                                            let li_idx = doc.add_list_item(
+                                                "",
+                                                is_ordered,
+                                                Some(&marker),
+                                                &gref,
+                                            );
                                             let li_ref = format!("#/texts/{}", li_idx);
-                                            let inline_idx = doc.add_group("group", GroupLabel::Inline, Some(&li_ref));
+                                            let inline_idx = doc.add_group(
+                                                "group",
+                                                GroupLabel::Inline,
+                                                Some(&li_ref),
+                                            );
                                             let inline_ref = format!("#/groups/{}", inline_idx);
                                             for run in &para.runs {
                                                 let run_text = run.text.trim();
-                                                if run_text.is_empty() { continue; }
+                                                if run_text.is_empty() {
+                                                    continue;
+                                                }
                                                 doc.add_text_ext(
                                                     DocItemLabel::Text,
                                                     run_text,
@@ -1590,20 +1598,40 @@ fn parse_document_xml(
                                                 );
                                             }
                                         } else {
-                                            doc.add_list_item(text, is_ordered, Some(&marker), &gref);
+                                            doc.add_list_item(
+                                                text,
+                                                is_ordered,
+                                                Some(&marker),
+                                                &gref,
+                                            );
                                         }
                                     } else {
                                         sc_list_nesting.reset();
                                         if !text.is_empty() {
-                                            emit_paragraph_runs(&para.runs, doc, current_parent.as_deref());
+                                            emit_paragraph_runs(
+                                                &para.runs,
+                                                doc,
+                                                current_parent.as_deref(),
+                                            );
                                         } else {
-                                            doc.add_text(DocItemLabel::Text, "", current_parent.as_deref());
+                                            doc.add_text(
+                                                DocItemLabel::Text,
+                                                "",
+                                                current_parent.as_deref(),
+                                            );
                                         }
                                     }
                                 }
                                 for (img_rid, alt) in &rich.images {
                                     if let Some(rid) = img_rid {
-                                        emit_image(rid, alt.as_deref(), rels, media, doc, current_parent.as_deref());
+                                        emit_image(
+                                            rid,
+                                            alt.as_deref(),
+                                            rels,
+                                            media,
+                                            doc,
+                                            current_parent.as_deref(),
+                                        );
                                     } else {
                                         doc.add_picture(alt.as_deref(), current_parent.as_deref());
                                     }
@@ -1614,26 +1642,25 @@ fn parse_document_xml(
                                     for line in cell_text.split('\n') {
                                         let line = line.trim();
                                         if !line.is_empty() {
-                                            doc.add_text(DocItemLabel::Text, line, current_parent.as_deref());
+                                            doc.add_text(
+                                                DocItemLabel::Text,
+                                                line,
+                                                current_parent.as_deref(),
+                                            );
                                         }
                                     }
                                 }
                             }
                         } else if !ts.cells.is_empty() {
                             let table_idx = doc.tables_len();
-                            doc.add_table(
-                                ts.cells,
-                                ts.row,
-                                ts.max_cols,
-                                current_parent.as_deref(),
-                            );
+                            doc.add_table(ts.cells, ts.row, ts.max_cols, current_parent.as_deref());
                             let table_ref = format!("#/tables/{}", table_idx);
                             emit_rich_cell_groups(
                                 &ts.rich_cells,
                                 table_idx,
                                 &table_ref,
-                                &numbering,
-                                &styles,
+                                numbering,
+                                styles,
                                 rels,
                                 media,
                                 doc,
@@ -1649,14 +1676,10 @@ fn parse_document_xml(
                         }
                         if math_depth == 0 {
                             in_math = false;
-                            let latex = math_stack
-                                .pop()
-                                .map(|f| f.text)
-                                .unwrap_or_default();
+                            let latex = math_stack.pop().map(|f| f.text).unwrap_or_default();
                             let latex = latex.trim().to_string();
                             if !latex.is_empty() {
-                                let in_table_cell =
-                                    table_stack.last().map_or(false, |ts| ts.in_cell);
+                                let in_table_cell = table_stack.last().is_some_and(|ts| ts.in_cell);
                                 if in_table_cell {
                                     if let Some(ts) = table_stack.last_mut() {
                                         if !ts.cell_text.is_empty() {
@@ -1718,10 +1741,7 @@ fn parse_document_xml(
             }
             Ok(Event::Eof) => break,
             Err(e) => {
-                return Err(anyhow::anyhow!(
-                    "XML parse error in document.xml: {}",
-                    e
-                ));
+                return Err(anyhow::anyhow!("XML parse error in document.xml: {}", e));
             }
             _ => {}
         }
@@ -1741,18 +1761,16 @@ fn parse_document_xml(
 // Phase C: Emit paragraph with per-run formatting
 // ---------------------------------------------------------------------------
 
-fn emit_paragraph_runs(
-    runs: &[RunSegment],
-    doc: &mut DoclingDocument,
-    parent_ref: Option<&str>,
-) {
+fn emit_paragraph_runs(runs: &[RunSegment], doc: &mut DoclingDocument, parent_ref: Option<&str>) {
     if runs.is_empty() {
         return;
     }
 
     let has_formula = runs.iter().any(|r| r.is_formula);
     let all_same = !has_formula
-        && runs.iter().all(|r| r.fmt == runs[0].fmt && r.hyperlink.is_none());
+        && runs
+            .iter()
+            .all(|r| r.fmt == runs[0].fmt && r.hyperlink.is_none());
 
     if all_same {
         let full_text: String = runs.iter().map(|r| r.text.as_str()).collect();
@@ -1811,6 +1829,7 @@ fn emit_paragraph_runs(
 // Rich cell group emission
 // ---------------------------------------------------------------------------
 
+#[allow(clippy::too_many_arguments)]
 fn emit_rich_cell_groups(
     rich_cells: &[(u32, u32, u32, RichCellContent)],
     table_idx: usize,
@@ -1823,17 +1842,22 @@ fn emit_rich_cell_groups(
 ) {
     let any_rich = rich_cells.iter().any(|(_, _, _, content)| {
         let has_images = !content.images.is_empty();
-        let has_lists = content.paragraphs.iter().any(|p| {
-            p.has_num_pr && !p.num_id.is_empty() && p.num_id != "0"
-        });
+        let has_lists = content
+            .paragraphs
+            .iter()
+            .any(|p| p.has_num_pr && !p.num_id.is_empty() && p.num_id != "0");
         let has_mixed_fmt = content.paragraphs.iter().any(|p| {
-            if p.runs.len() < 2 { return false; }
+            if p.runs.len() < 2 {
+                return false;
+            }
             let first_fmt = &p.runs[0].fmt;
             p.runs.iter().skip(1).any(|r| r.fmt != *first_fmt)
         });
-        let non_empty_para_count = content.paragraphs.iter().filter(|p| {
-            p.runs.iter().any(|r| !r.text.trim().is_empty())
-        }).count();
+        let non_empty_para_count = content
+            .paragraphs
+            .iter()
+            .filter(|p| p.runs.iter().any(|r| !r.text.trim().is_empty()))
+            .count();
         let multi_para = non_empty_para_count > 1;
         has_images || has_lists || has_mixed_fmt || multi_para
     });
@@ -1843,24 +1867,15 @@ fn emit_rich_cell_groups(
     }
 
     for (row, col, _col_span, content) in rich_cells {
-        let has_any_content = !content.images.is_empty()
-            || content.paragraphs.iter().any(|p| !p.runs.is_empty());
+        let has_any_content =
+            !content.images.is_empty() || content.paragraphs.iter().any(|p| !p.runs.is_empty());
         if !has_any_content {
             continue;
         }
 
-        let group_name = format!(
-            "rich_cell_group_{}_{}_{}",
-            table_idx + 1,
-            row,
-            col
-        );
+        let group_name = format!("rich_cell_group_{}_{}_{}", table_idx + 1, row, col);
 
-        let gidx = doc.add_group(
-            &group_name,
-            GroupLabel::Unspecified,
-            Some(table_ref),
-        );
+        let gidx = doc.add_group(&group_name, GroupLabel::Unspecified, Some(table_ref));
         let group_ref = format!("#/groups/{}", gidx);
 
         for (img_rid, alt) in &content.images {
@@ -1875,7 +1890,10 @@ fn emit_rich_cell_groups(
 
         for para in &content.paragraphs {
             let all_same = para.runs.is_empty()
-                || para.runs.iter().all(|r| r.fmt == para.runs[0].fmt && r.hyperlink.is_none());
+                || para
+                    .runs
+                    .iter()
+                    .all(|r| r.fmt == para.runs[0].fmt && r.hyperlink.is_none());
             let full_text: String = para.runs.iter().map(|r| r.text.as_str()).collect();
             let text = full_text.trim();
 
@@ -1895,7 +1913,10 @@ fn emit_rich_cell_groups(
                 let marker = cell_list_nesting.next_marker(is_ordered);
                 let cell_li_mixed = para.runs.len() >= 2 && {
                     let first_fmt = &para.runs[0].fmt;
-                    para.runs.iter().skip(1).any(|r| r.fmt != *first_fmt || r.hyperlink.is_some())
+                    para.runs
+                        .iter()
+                        .skip(1)
+                        .any(|r| r.fmt != *first_fmt || r.hyperlink.is_some())
                 };
                 if cell_li_mixed {
                     let li_idx = doc.add_list_item("", is_ordered, Some(&marker), &gref);
@@ -1904,7 +1925,9 @@ fn emit_rich_cell_groups(
                     let inline_ref = format!("#/groups/{}", inline_idx);
                     for run in &para.runs {
                         let run_text = run.text.trim();
-                        if run_text.is_empty() { continue; }
+                        if run_text.is_empty() {
+                            continue;
+                        }
                         doc.add_text_ext(
                             DocItemLabel::Text,
                             run_text,
@@ -2043,11 +2066,10 @@ fn patch_vmerge_row_spans(ts: &mut TableState) {
         for (idx, cell) in ts.cells.iter().enumerate() {
             if cell.start_col_offset_idx == cont_col
                 && cell.start_row_offset_idx < cont_row
+                && (best_idx.is_none() || cell.start_row_offset_idx > best_row)
             {
-                if best_idx.is_none() || cell.start_row_offset_idx > best_row {
-                    best_idx = Some(idx);
-                    best_row = cell.start_row_offset_idx;
-                }
+                best_idx = Some(idx);
+                best_row = cell.start_row_offset_idx;
             }
         }
         if let Some(idx) = best_idx {
@@ -2115,11 +2137,7 @@ fn is_math_slot(name: &str) -> bool {
     )
 }
 
-fn handle_math_empty(
-    e: &quick_xml::events::BytesStart,
-    local: &str,
-    stack: &mut Vec<MathFrame>,
-) {
+fn handle_math_empty(e: &quick_xml::events::BytesStart, local: &str, stack: &mut [MathFrame]) {
     match local {
         "chr" => {
             if let Some(frame) = stack.last_mut() {
@@ -2154,9 +2172,7 @@ fn pop_math_frame(local: &str, stack: &mut Vec<MathFrame>) {
     if is_math_slot(local) {
         if let Some(frame) = stack.pop() {
             if let Some(parent) = stack.last_mut() {
-                parent
-                    .named_parts
-                    .insert(frame.tag.clone(), frame.text);
+                parent.named_parts.insert(frame.tag.clone(), frame.text);
             }
         }
     } else if is_math_structural(local) {
@@ -2301,10 +2317,7 @@ fn format_math_element(frame: &MathFrame) -> String {
             if rows.is_empty() {
                 frame.text.clone()
             } else {
-                format!(
-                    "\\begin{{matrix}} {} \\end{{matrix}}",
-                    rows.join(" \\\\ ")
-                )
+                format!("\\begin{{matrix}} {} \\end{{matrix}}", rows.join(" \\\\ "))
             }
         }
         "mr" => {
@@ -2470,4 +2483,3 @@ fn get_attr(e: &quick_xml::events::BytesStart, name: &str) -> Option<String> {
     }
     None
 }
-

@@ -93,21 +93,20 @@ impl DoclingDocument {
         }
     }
 
-    pub fn add_text(
-        &mut self,
-        label: DocItemLabel,
-        text: &str,
-        parent_ref: Option<&str>,
-    ) -> usize {
+    pub fn add_text(&mut self, label: DocItemLabel, text: &str, parent_ref: Option<&str>) -> usize {
         let idx = self.texts.len();
         let self_ref = format!("#/texts/{}", idx);
 
         let parent;
         if let Some(parent_path) = parent_ref {
-            parent = Some(RefItem { ref_path: parent_path.to_string() });
+            parent = Some(RefItem {
+                ref_path: parent_path.to_string(),
+            });
             self.add_child_ref(parent_path, &self_ref);
         } else {
-            parent = Some(RefItem { ref_path: "#/body".to_string() });
+            parent = Some(RefItem {
+                ref_path: "#/body".to_string(),
+            });
             self.body.children.push(RefItem {
                 ref_path: self_ref.clone(),
             });
@@ -143,10 +142,14 @@ impl DoclingDocument {
 
         let parent;
         if let Some(parent_path) = parent_ref {
-            parent = Some(RefItem { ref_path: parent_path.to_string() });
+            parent = Some(RefItem {
+                ref_path: parent_path.to_string(),
+            });
             self.add_child_ref(parent_path, &self_ref);
         } else {
-            parent = Some(RefItem { ref_path: "#/body".to_string() });
+            parent = Some(RefItem {
+                ref_path: "#/body".to_string(),
+            });
             self.body.children.push(RefItem {
                 ref_path: self_ref.clone(),
             });
@@ -177,10 +180,14 @@ impl DoclingDocument {
 
         let parent;
         if let Some(parent_path) = parent_ref {
-            parent = Some(RefItem { ref_path: parent_path.to_string() });
+            parent = Some(RefItem {
+                ref_path: parent_path.to_string(),
+            });
             self.add_child_ref(parent_path, &self_ref);
         } else {
-            parent = Some(RefItem { ref_path: "#/body".to_string() });
+            parent = Some(RefItem {
+                ref_path: "#/body".to_string(),
+            });
             self.body.children.push(RefItem {
                 ref_path: self_ref.clone(),
             });
@@ -238,21 +245,20 @@ impl DoclingDocument {
         idx
     }
 
-    pub fn add_group(
-        &mut self,
-        name: &str,
-        label: GroupLabel,
-        parent_ref: Option<&str>,
-    ) -> usize {
+    pub fn add_group(&mut self, name: &str, label: GroupLabel, parent_ref: Option<&str>) -> usize {
         let idx = self.groups.len();
         let self_ref = format!("#/groups/{}", idx);
 
         let parent;
         if let Some(parent_path) = parent_ref {
-            parent = Some(RefItem { ref_path: parent_path.to_string() });
+            parent = Some(RefItem {
+                ref_path: parent_path.to_string(),
+            });
             self.add_child_ref(parent_path, &self_ref);
         } else {
-            parent = Some(RefItem { ref_path: "#/body".to_string() });
+            parent = Some(RefItem {
+                ref_path: "#/body".to_string(),
+            });
             self.body.children.push(RefItem {
                 ref_path: self_ref.clone(),
             });
@@ -285,10 +291,14 @@ impl DoclingDocument {
 
         let parent;
         if let Some(parent_path) = parent_ref {
-            parent = Some(RefItem { ref_path: parent_path.to_string() });
+            parent = Some(RefItem {
+                ref_path: parent_path.to_string(),
+            });
             self.add_child_ref(parent_path, &self_ref);
         } else {
-            parent = Some(RefItem { ref_path: "#/body".to_string() });
+            parent = Some(RefItem {
+                ref_path: "#/body".to_string(),
+            });
             self.body.children.push(RefItem {
                 ref_path: self_ref.clone(),
             });
@@ -318,20 +328,20 @@ impl DoclingDocument {
         idx
     }
 
-    pub fn add_picture(
-        &mut self,
-        alt_text: Option<&str>,
-        parent_ref: Option<&str>,
-    ) -> usize {
+    pub fn add_picture(&mut self, alt_text: Option<&str>, parent_ref: Option<&str>) -> usize {
         let idx = self.pictures.len();
         let self_ref = format!("#/pictures/{}", idx);
 
         let parent;
         if let Some(parent_path) = parent_ref {
-            parent = Some(RefItem { ref_path: parent_path.to_string() });
+            parent = Some(RefItem {
+                ref_path: parent_path.to_string(),
+            });
             self.add_child_ref(parent_path, &self_ref);
         } else {
-            parent = Some(RefItem { ref_path: "#/body".to_string() });
+            parent = Some(RefItem {
+                ref_path: "#/body".to_string(),
+            });
             self.body.children.push(RefItem {
                 ref_path: self_ref.clone(),
             });
@@ -371,10 +381,14 @@ impl DoclingDocument {
 
         let parent;
         if let Some(parent_path) = parent_ref {
-            parent = Some(RefItem { ref_path: parent_path.to_string() });
+            parent = Some(RefItem {
+                ref_path: parent_path.to_string(),
+            });
             self.add_child_ref(parent_path, &self_ref);
         } else {
-            parent = Some(RefItem { ref_path: "#/body".to_string() });
+            parent = Some(RefItem {
+                ref_path: "#/body".to_string(),
+            });
             self.body.children.push(RefItem {
                 ref_path: self_ref.clone(),
             });
@@ -538,9 +552,7 @@ pub fn doc_name_from_path(path: &Path) -> String {
 }
 
 fn sanitize_name(name: &str) -> String {
-    let sanitized: String = name
-        .replace(['/', '\\'], "_")
-        .replace("..", "_");
+    let sanitized: String = name.replace(['/', '\\'], "_").replace("..", "_");
     if sanitized.is_empty() || sanitized == "." {
         "unknown".to_string()
     } else {

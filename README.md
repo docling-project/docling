@@ -4,8 +4,9 @@ A high-performance Rust rewrite of [Docling](https://github.com/docling-project/
 
 ## Highlights
 
-- **Single 8.7 MB binary** with zero external dependencies
+- **Single binary** with zero external dependencies
 - **100% compatible** with Python Docling output for DOCX, XLSX, and PPTX
+- **PDF extraction powered by `pdf_oxide`** for spatial text assembly with reading order, and **`pdfium-render`** for vector diagram rendering
 - **160+ end-to-end tests** validated against Python Docling groundtruth
 - Supports 15+ input formats and 7 output formats
 - Image extraction with `--image-export-mode referenced`
@@ -19,7 +20,7 @@ A high-performance Rust rewrite of [Docling](https://github.com/docling-project/
 | DOCX | `quick_xml` | 100% (tables, lists, images, equations, formatting) |
 | XLSX / XLSM | `quick_xml` | 100% (tables, merged cells, images, multi-sheet) |
 | PPTX | `quick_xml` | 100% (slides, tables, images, grouped shapes) |
-| PDF | `lopdf` | Text extraction with heuristics (no ML models) |
+| PDF | `pdf_oxide` + `pdfium-render` | Spatial text assembly, vector diagram extraction, raster image extraction |
 | CSV | Built-in parser | Full |
 | HTML | `scraper` | Full |
 | Markdown | `pulldown-cmark` | Full |
@@ -99,16 +100,40 @@ Verified against Python Docling with comprehensive end-to-end tests:
 | **DOCX** | 100% structural | Identical | Identical | Identical | Identical |
 | **XLSX** | 100% structural | Identical | Identical | Identical | Identical |
 | **PPTX** | 100% structural | Identical | Identical | Identical | Identical |
-| **PDF** | Heuristic-based | ~20% of Python count | Ruled-line only | Extracted | List groups |
+| **PDF** | High quality | Spatial text assembly | Ruled-line detection | Raster + vector diagrams | List groups |
 
-### PDF Limitations
+### PDF Pipeline
 
-The Rust PDF backend uses `lopdf` for direct text extraction with heuristic-based layout analysis. Python Docling uses ML models (RT-DETR, TableFormer, OCR) which provide significantly richer output. The Rust version:
-- Extracts embedded text (no OCR for scanned documents)
-- Detects tables from ruled lines only (no borderless tables)
-- Uses font-size heuristics for heading detection
-- Supports basic two-column layout reordering
-- No RTL (right-to-left) text reordering
+The Rust PDF backend uses a dual-library approach:
+
+- **`pdf_oxide`** for text extraction: spatial text assembly with XY-Cut reading order, font metadata, and PDF artifact detection. Produces properly ordered, non-fragmented text blocks.
+- **`pdfium-render`** for image extraction: renders page regions to capture vector-drawn diagrams (architecture diagrams, flowcharts) that are not embedded as raster images. The PDFium binary is auto-downloaded and cached via `pdfium-auto`.
+- **`lopdf`** for table detection from ruled lines.
+- Heuristic classification for headings, lists, captions, and footnotes using font-size ratios.
+- Edge density analysis and aspect ratio filtering to reject gradient backgrounds and decorative strips from rendered regions.
+
+### PDF Limitations (vs Python)
+
+Python Docling uses ML models (RT-DETR, TableFormer, OCR) which provide:
+- Visual layout classification (the ML model identifies picture regions on the page)
+- Borderless table detection
+- OCR for scanned documents
+- RTL text reordering
+
+The Rust version does not use ML models, relying on heuristics and PDF structure instead.
+
+## Feature Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `pdf-oxide` | Yes | Use `pdf_oxide` for spatial PDF text extraction |
+| `pdfium-render` | Yes | Use `pdfium-render` + `pdfium-auto` for vector diagram rendering |
+
+To build without pdfium (smaller binary, no diagram rendering):
+
+```bash
+cargo build --release --no-default-features --features pdf-oxide
+```
 
 ## Project Structure
 
@@ -118,7 +143,7 @@ docling-rs/          # Main Rust crate
     backend/         # Format-specific parsers (docx, xlsx, pptx, pdf, ...)
     models/          # DoclingDocument data model
     export/          # Output formatters (markdown, json, html, ...)
-    cli.rs           # CLI entry point
+    main.rs          # CLI entry point
 e2e/                 # End-to-end test suite (160+ tests)
 tests/data/          # Test fixtures and groundtruth
 ```

@@ -60,7 +60,91 @@
         "$ref": "#/texts/13"
       },
       {
-        "$ref": "#/tables/0"
+        "$ref": "#/texts/14"
+      },
+      {
+        "$ref": "#/texts/15"
+      },
+      {
+        "$ref": "#/texts/16"
+      },
+      {
+        "$ref": "#/texts/17"
+      },
+      {
+        "$ref": "#/texts/18"
+      },
+      {
+        "$ref": "#/texts/19"
+      },
+      {
+        "$ref": "#/texts/20"
+      },
+      {
+        "$ref": "#/texts/21"
+      },
+      {
+        "$ref": "#/texts/22"
+      },
+      {
+        "$ref": "#/texts/23"
+      },
+      {
+        "$ref": "#/texts/24"
+      },
+      {
+        "$ref": "#/texts/25"
+      },
+      {
+        "$ref": "#/texts/26"
+      },
+      {
+        "$ref": "#/texts/27"
+      },
+      {
+        "$ref": "#/texts/28"
+      },
+      {
+        "$ref": "#/texts/29"
+      },
+      {
+        "$ref": "#/texts/30"
+      },
+      {
+        "$ref": "#/texts/31"
+      },
+      {
+        "$ref": "#/texts/32"
+      },
+      {
+        "$ref": "#/texts/33"
+      },
+      {
+        "$ref": "#/texts/34"
+      },
+      {
+        "$ref": "#/texts/35"
+      },
+      {
+        "$ref": "#/texts/36"
+      },
+      {
+        "$ref": "#/texts/37"
+      },
+      {
+        "$ref": "#/texts/38"
+      },
+      {
+        "$ref": "#/texts/39"
+      },
+      {
+        "$ref": "#/texts/40"
+      },
+      {
+        "$ref": "#/texts/41"
+      },
+      {
+        "$ref": "#/texts/42"
       }
     ],
     "content_layer": "body",
@@ -76,26 +160,25 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 134.76499938964844,
+            "t": 505.06341552734375,
+            "r": 198.2890625,
+            "b": 662.9219970703125,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            62
+            698
           ]
         }
       ],
-      "orig": "Optimized Table Tokenization for Table Structure Recognition 9",
-      "text": "Optimized Table Tokenization for Table Structure Recognition 9",
-      "level": 2
+      "orig": "5.2 Results We picked the model parameter configuration that produced the best quality (enc=6, dec=6, heads=8) with alone, then trained and evaluated it on three publicly available data sets: (395k samples), FinTabNet (113k samples) and (about 1M Performance results are presented in Table. 2. It is clearly evident that the model trained on OTSL outperforms HTML across the board, keeping high TEDs and mAP scores even on di ffi cult financial tables that contain sparse and large tables. the results show that OTSL has an over when applied on a bigger data set like and achieves improved scores. Finally, OTSL achieves faster inference due to fewer steps which is a result of the reduced sequence",
+      "text": "5.2 Results We picked the model parameter configuration that produced the best quality (enc=6, dec=6, heads=8) with alone, then trained and evaluated it on three publicly available data sets: (395k samples), FinTabNet (113k samples) and (about 1M Performance results are presented in Table. 2. It is clearly evident that the model trained on OTSL outperforms HTML across the board, keeping high TEDs and mAP scores even on di ffi cult financial tables that contain sparse and large tables. the results show that OTSL has an over when applied on a bigger data set like and achieves improved scores. Finally, OTSL achieves faster inference due to fewer steps which is a result of the reduced sequence"
     },
     {
       "self_ref": "#/texts/1",
@@ -109,20 +192,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 161.906005859375,
+            "t": 423.2756042480469,
+            "r": 166.51473999023438,
+            "b": 432.24200439453125,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            163
+            1
           ]
         }
       ],
-      "orig": "order to compute the TED score. Inference timing results for all experiments\nwere obtained from the same machine on a single core with AMD EPYC 7763\nCPU @2.45 GHz.",
-      "text": "order to compute the TED score. Inference timing results for all experiments\nwere obtained from the same machine on a single core with AMD EPYC 7763\nCPU @2.45 GHz."
+      "orig": "2",
+      "text": "2"
     },
     {
       "self_ref": "#/texts/2",
@@ -136,20 +219,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 161.906005859375,
+            "t": 449.5776062011719,
+            "r": 166.51473999023438,
+            "b": 458.54400634765625,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            457
+            1
           ]
         }
       ],
-      "orig": "5.1 Hyper Parameter Optimization\nWe have chosen the PubTabNet data set to p erform HPO, since it includes a\nhighly diverse set of tables. Also we report TED scores separately for simple and\ncomplex tables (tables with cell spans). Results are presented in Table. 1. It is\nevident that with OTSL, our model achieves the same TED score and slightly\nbetter mAP scores in comparison to HTML. However OTSL yields a 2x speed\nup in the inference runtime over HTML.",
-      "text": "5.1 Hyper Parameter Optimization\nWe have chosen the PubTabNet data set to p erform HPO, since it includes a\nhighly diverse set of tables. Also we report TED scores separately for simple and\ncomplex tables (tables with cell spans). Results are presented in Table. 1. It is\nevident that with OTSL, our model achieves the same TED score and slightly\nbetter mAP scores in comparison to HTML. However OTSL yields a 2x speed\nup in the inference runtime over HTML."
+      "orig": "4",
+      "text": "4"
     },
     {
       "self_ref": "#/texts/3",
@@ -163,20 +246,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 161.906005859375,
+            "t": 370.6736145019531,
+            "r": 166.51473999023438,
+            "b": 379.6400146484375,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            398
+            1
           ]
         }
       ],
-      "orig": "Table 1. HPO performed in OTSL and HTML representation on the same\ntransformer-based TableFormer [9] architecture, trained only on PubTabNet [22]. Effects of reducing the # of layers in encoder and decoder stages of the model show that\nsmaller models trained on OTSL perform better, especially in recognizing complex\ntable structures, and maintain a much higher mAP score than the HTML counterpart.",
-      "text": "Table 1. HPO performed in OTSL and HTML representation on the same\ntransformer-based TableFormer [9] architecture, trained only on PubTabNet [22]. Effects of reducing the # of layers in encoder and decoder stages of the model show that\nsmaller models trained on OTSL perform better, especially in recognizing complex\ntable structures, and maintain a much higher mAP score than the HTML counterpart."
+      "orig": "6",
+      "text": "6"
     },
     {
       "self_ref": "#/texts/4",
@@ -190,20 +273,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 161.906005859375,
+            "t": 396.974609375,
+            "r": 166.51473999023438,
+            "b": 405.9410095214844,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            31
+            1
           ]
         }
       ],
-      "orig": "# # TEDs mAP Inference\nLanguage",
-      "text": "# # TEDs mAP Inference\nLanguage"
+      "orig": "4",
+      "text": "4"
     },
     {
       "self_ref": "#/texts/5",
@@ -217,20 +300,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 144.5919952392578,
+            "t": 338.8926086425781,
+            "r": 184.34901428222656,
+            "b": 360.80999755859375,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            36
+            12
           ]
         }
       ],
-      "orig": "OTSL 0.965 0.934 0.955 0.88 2.73\n6 6",
-      "text": "OTSL 0.965 0.934 0.955 0.88 2.73\n6 6"
+      "orig": "# enc-layers",
+      "text": "# enc-layers"
     },
     {
       "self_ref": "#/texts/6",
@@ -244,20 +327,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 134.76499938964844,
+            "t": 272.2926025390625,
+            "r": 197.4849395751953,
+            "b": 325.0950012207031,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            71
+            267
           ]
         }
       ],
-      "orig": "HTML 0.969 0.927 0.955 0.857 5.39\nOTSL 0.938 0.904 0.927 0.853 1.97\n4 4",
-      "text": "HTML 0.969 0.927 0.955 0.857 5.39\nOTSL 0.938 0.904 0.927 0.853 1.97\n4 4"
+      "orig": "Table 1. TableFormer [9] trained only on [22]. Ef- fects of reducing the # of layers in encoder and decoder stages of the model show that smaller models trained on OTSL perform better, especially in table structures, and maintain a much higher mAP score than the HTML",
+      "text": "Table 1. TableFormer [9] trained only on [22]. Ef- fects of reducing the # of layers in encoder and decoder stages of the model show that smaller models trained on OTSL perform better, especially in table structures, and maintain a much higher mAP score than the HTML"
     },
     {
       "self_ref": "#/texts/7",
@@ -271,20 +354,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 134.76499938964844,
+            "t": 166.097412109375,
+            "r": 195.83047485351562,
+            "b": 252.22601318359375,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            71
+            404
           ]
         }
       ],
-      "orig": "HTML 0.952 0.909 0.938 0.843 3.77\nOTSL 0.923 0.897 0.915 0.859 1.91\n2 4",
-      "text": "HTML 0.952 0.909 0.938 0.843 3.77\nOTSL 0.923 0.897 0.915 0.859 1.91\n2 4"
+      "orig": "5.1 Hyper Parameter We have chosen the PubTabNet data set to perform HPO, since it includes a highly diverse set of tables. Also we report TED scores for simple and complex tables (tables with cell spans). Results are in Table. 1. It is evident that with OTSL, our model achieves the same TED score and better mAP scores in comparison to HTML. However OTSL yields a up in the inference runtime over HTML.",
+      "text": "5.1 Hyper Parameter We have chosen the PubTabNet data set to perform HPO, since it includes a highly diverse set of tables. Also we report TED scores for simple and complex tables (tables with cell spans). Results are in Table. 1. It is evident that with OTSL, our model achieves the same TED score and better mAP scores in comparison to HTML. However OTSL yields a up in the inference runtime over HTML."
     },
     {
       "self_ref": "#/texts/8",
@@ -298,20 +381,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 134.76499938964844,
+            "t": 115.83538818359375,
+            "r": 195.12193298339844,
+            "b": 149.708984375,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            70
+            151
           ]
         }
       ],
-      "orig": "HTML 0.945 0.901 0.931 0.834 3.81\nOTSL 0.952 0.92 0.942 0.857 1.22\n4 2",
-      "text": "HTML 0.945 0.901 0.931 0.834 3.81\nOTSL 0.952 0.92 0.942 0.857 1.22\n4 2"
+      "orig": "order to compute the TED score. Inference timing results for all were obtained from the same machine on a single core with AMD EPYC 7763 CPU @2.45 GHz.",
+      "text": "order to compute the TED score. Inference timing results for all were obtained from the same machine on a single core with AMD EPYC 7763 CPU @2.45 GHz."
     },
     {
       "self_ref": "#/texts/9",
@@ -320,26 +403,25 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 149.70899963378906,
+            "t": 617.0944061279297,
+            "r": 206.71499633789062,
+            "b": 627.0570068359375,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            30
+            13
           ]
         }
       ],
-      "orig": "HTML 0.944 0.903 0.931 0.824 2",
-      "text": "HTML 0.944 0.903 0.931 0.824 2",
-      "level": 2
+      "orig": "Additionally,",
+      "text": "Additionally,"
     },
     {
       "self_ref": "#/texts/10",
@@ -348,26 +430,25 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 167.5186309814453,
+            "t": 641.00439453125,
+            "r": 205.9353485107422,
+            "b": 650.9669952392578,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            24
+            8
           ]
         }
       ],
-      "orig": "5.2 Quantitative Results",
-      "text": "5.2 Quantitative Results",
-      "level": 2
+      "orig": "decoding",
+      "text": "decoding"
     },
     {
       "self_ref": "#/texts/11",
@@ -381,20 +462,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 136.23428344726562,
+            "t": 505.06341552734375,
+            "r": 204.56253051757812,
+            "b": 543.3710021972656,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            560
+            33
           ]
         }
       ],
-      "orig": "We picked the mo del parameter configuration that pro duced the b est prediction\nquality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently\ntrained and evaluated it on three publicly available data sets: PubTabNet (395k\nsamples), FinTabNet (113k samples) and PubTables-1M (about 1M samples).\nPerformance results are presented in Table. 2. It is clearly evident that the model\ntrained on OTSL outperforms HTML across the board, keeping high TEDs and\nmAP scores even on di ffi cult financial tables (FinTabNet) that contain sparse\nand large tables.",
-      "text": "We picked the mo del parameter configuration that pro duced the b est prediction\nquality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently\ntrained and evaluated it on three publicly available data sets: PubTabNet (395k\nsamples), FinTabNet (113k samples) and PubTables-1M (about 1M samples).\nPerformance results are presented in Table. 2. It is clearly evident that the model\ntrained on OTSL outperforms HTML across the board, keeping high TEDs and\nmAP scores even on di ffi cult financial tables (FinTabNet) that contain sparse\nand large tables."
+      "orig": "Quantitative prediction PubTabNet",
+      "text": "Quantitative prediction PubTabNet"
     },
     {
       "self_ref": "#/texts/12",
@@ -408,20 +489,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 166.7481231689453,
+            "t": 557.3184051513672,
+            "r": 207.5229949951172,
+            "b": 567.281005859375,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            289
+            9
           ]
         }
       ],
-      "orig": "Additionally, the results show that OTSL has an advantage over HTML\nwhen applied on a bigger data set like PubTables-1M and achieves significantly\nimproved scores. Finally, OTSL achieves faster inference due to fewer decoding\nsteps which is a result of the reduced sequence representation.",
-      "text": "Additionally, the results show that OTSL has an advantage over HTML\nwhen applied on a bigger data set like PubTables-1M and achieves significantly\nimproved scores. Finally, OTSL achieves faster inference due to fewer decoding\nsteps which is a result of the reduced sequence representation."
+      "orig": "samples).",
+      "text": "samples)."
     },
     {
       "self_ref": "#/texts/13",
@@ -430,15 +511,717 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 134.76499938964844,
+            "t": 272.2926025390625,
+            "r": 207.37490844726562,
+            "b": 292.2179870605469,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            34
+          ]
+        }
+      ],
+      "orig": "in transformer-based architecture,",
+      "text": "in transformer-based architecture,"
+    },
+    {
+      "self_ref": "#/texts/14",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 171.42135620117188,
+            "t": 305.1695861816406,
+            "r": 204.68563842773438,
+            "b": 314.135986328125,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            7
+          ]
+        }
+      ],
+      "orig": "complex",
+      "text": "complex"
+    },
+    {
+      "self_ref": "#/texts/15",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 159.15383911132812,
+            "t": 194.44244384765625,
+            "r": 204.9195556640625,
+            "b": 228.31500244140625,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            29
+          ]
+        }
+      ],
+      "orig": "separately presented slightly",
+      "text": "separately presented slightly"
+    },
+    {
+      "self_ref": "#/texts/16",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 156.09962463378906,
+            "t": 593.1844024658203,
+            "r": 212.39024353027344,
+            "b": 603.1470031738281,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            11
+          ]
+        }
+      ],
+      "orig": "(FinTabNet)",
+      "text": "(FinTabNet)"
+    },
+    {
+      "self_ref": "#/texts/17",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 153.1772918701172,
+            "t": 617.0944061279297,
+            "r": 219.01170349121094,
+            "b": 639.0119934082031,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            41
+          ]
+        }
+      ],
+      "orig": "advantage HTML PubTables-1M significantly",
+      "text": "advantage HTML PubTables-1M significantly"
+    },
+    {
+      "self_ref": "#/texts/18",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 157.15411376953125,
+            "t": 652.9593963623047,
+            "r": 222.25067138671875,
+            "b": 662.9219970703125,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            15
+          ]
+        }
+      ],
+      "orig": "representation.",
+      "text": "representation."
+    },
+    {
+      "self_ref": "#/texts/19",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 154.0681610107422,
+            "t": 545.3634033203125,
+            "r": 218.4334716796875,
+            "b": 567.281005859375,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            22
+          ]
+        }
+      ],
+      "orig": "PubTabNet PubTables-1M",
+      "text": "PubTabNet PubTables-1M"
+    },
+    {
+      "self_ref": "#/texts/20",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 209.50900268554688,
+            "t": 449.5776062011719,
+            "r": 214.11773681640625,
+            "b": 458.54400634765625,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "2",
+      "text": "2"
+    },
+    {
+      "self_ref": "#/texts/21",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 209.50900268554688,
+            "t": 370.6736145019531,
+            "r": 214.11773681640625,
+            "b": 379.6400146484375,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "6",
+      "text": "6"
+    },
+    {
+      "self_ref": "#/texts/22",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 209.50900268554688,
+            "t": 396.974609375,
+            "r": 214.11773681640625,
+            "b": 405.9410095214844,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "4",
+      "text": "4"
+    },
+    {
+      "self_ref": "#/texts/23",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 209.50900268554688,
+            "t": 423.2756042480469,
+            "r": 214.11773681640625,
+            "b": 432.24200439453125,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "4",
+      "text": "4"
+    },
+    {
+      "self_ref": "#/texts/24",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 207.9739990234375,
+            "t": 338.8926086425781,
+            "r": 215.64923095703125,
+            "b": 347.8590087890625,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "#",
+      "text": "#"
+    },
+    {
+      "self_ref": "#/texts/25",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 165.24757385253906,
+            "t": 272.2926025390625,
+            "r": 222.69036865234375,
+            "b": 292.2179870605469,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            22
+          ]
+        }
+      ],
+      "orig": "HPO OTSL and PubTabNet",
+      "text": "HPO OTSL and PubTabNet"
+    },
+    {
+      "self_ref": "#/texts/26",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 165.6631317138672,
+            "t": 305.1695861816406,
+            "r": 220.18702697753906,
+            "b": 325.0950012207031,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            24
+          ]
+        }
+      ],
+      "orig": "recognizing counterpart.",
+      "text": "recognizing counterpart."
+    },
+    {
+      "self_ref": "#/texts/27",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "caption",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 199.1595001220703,
+            "t": 90.9285888671875,
+            "r": 222.44418334960938,
+            "b": 99.89501953125,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            9
+          ]
+        }
+      ],
+      "orig": "Table for",
+      "text": "Table for"
+    },
+    {
+      "self_ref": "#/texts/28",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 166.29501342773438,
+            "t": 115.83538818359375,
+            "r": 218.908447265625,
+            "b": 125.7979736328125,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            11
+          ]
+        }
+      ],
+      "orig": "experiments",
+      "text": "experiments"
+    },
+    {
+      "self_ref": "#/texts/29",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 146.72335815429688,
+            "t": 166.097412109375,
+            "r": 212.68666076660156,
+            "b": 176.05999755859375,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            12
+          ]
+        }
+      ],
+      "orig": "Optimization",
+      "text": "Optimization"
+    },
+    {
+      "self_ref": "#/texts/30",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 164.6472930908203,
+            "t": 533.4084167480469,
+            "r": 226.01783752441406,
+            "b": 543.3710021972656,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            13
+          ]
+        }
+      ],
+      "orig": "independently",
+      "text": "independently"
+    },
+    {
+      "self_ref": "#/texts/31",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 192.19500732421875,
+            "t": 351.8435974121094,
+            "r": 231.9251251220703,
+            "b": 360.80999755859375,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            10
+          ]
+        }
+      ],
+      "orig": "dec-layers",
+      "text": "dec-layers"
+    },
+    {
+      "self_ref": "#/texts/32",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 190.40249633789062,
+            "t": 272.2926025390625,
+            "r": 240.0978240966797,
+            "b": 281.2590026855469,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            26
+          ]
+        }
+      ],
+      "orig": "performed HTML on the same",
+      "text": "performed HTML on the same"
+    },
+    {
+      "self_ref": "#/texts/33",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 194.47799682617188,
+            "t": 90.9285888671875,
+            "r": 251.65081787109375,
+            "b": 99.89501953125,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            27
+          ]
+        }
+      ],
+      "orig": "Optimized Table 9 Structure",
+      "text": "Optimized Table 9 Structure"
+    },
+    {
+      "self_ref": "#/texts/34",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 239.79800415039062,
+            "t": 344.3716125488281,
+            "r": 278.33380126953125,
+            "b": 353.3380126953125,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            8
+          ]
+        }
+      ],
+      "orig": "Language",
+      "text": "Language"
+    },
+    {
+      "self_ref": "#/texts/35",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 245.17599487304688,
+            "t": 365.193603515625,
+            "r": 272.95391845703125,
+            "b": 466.0159912109375,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            39
+          ]
+        }
+      ],
+      "orig": "OTSL HTML OTSL HTML OTSL HTML OTSL HTML",
+      "text": "OTSL HTML OTSL HTML OTSL HTML OTSL HTML"
+    },
+    {
+      "self_ref": "#/texts/36",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 286.6860046386719,
+            "t": 351.8435974121094,
+            "r": 312.33709716796875,
+            "b": 466.0159912109375,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            54
+          ]
+        }
+      ],
+      "orig": "simple 0.965 0.969 0.938 0.952 0.923 0.945 0.952 0.944",
+      "text": "simple 0.965 0.969 0.938 0.952 0.923 0.945 0.952 0.944"
+    },
+    {
+      "self_ref": "#/texts/37",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 208.08245849609375,
+            "t": 272.2926025390625,
+            "r": 265.833984375,
+            "b": 281.2590026855469,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            14
+          ]
+        }
+      ],
+      "orig": "representation",
+      "text": "representation"
+    },
+    {
+      "self_ref": "#/texts/38",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 202.23541259765625,
+            "t": 90.9285888671875,
+            "r": 266.2722473144531,
+            "b": 99.89501953125,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            24
+          ]
+        }
+      ],
+      "orig": "Tokenization Recognition",
+      "text": "Tokenization Recognition"
+    },
+    {
+      "self_ref": "#/texts/39",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 320.7019958496094,
+            "t": 338.8926086425781,
+            "r": 353.69744873046875,
+            "b": 466.0159912109375,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
@@ -447,995 +1230,93 @@
           ]
         }
       ],
-      "orig": "(0.75) time (secs) enc-layers dec-layers simple complex all",
-      "text": "(0.75) time (secs) enc-layers dec-layers simple complex all",
-      "level": 2
-    }
-  ],
-  "pictures": [],
-  "tables": [
+      "orig": "TEDs complex 0.934 0.927 0.904 0.909 0.897 0.901 0.92 0.903",
+      "text": "TEDs complex 0.934 0.927 0.904 0.909 0.897 0.901 0.92 0.903"
+    },
     {
-      "self_ref": "#/tables/0",
+      "self_ref": "#/texts/40",
       "parent": {
         "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "table",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 140.6060028076172,
-            "t": 337.9960021972656,
-            "r": 474.74900817871094,
-            "b": 469.50299072265625,
+            "l": 362.0880126953125,
+            "t": 338.8926086425781,
+            "r": 418.7779846191406,
+            "b": 466.0159912109375,
             "coord_origin": "TOPLEFT"
-          }
+          },
+          "charspan": [
+            0,
+            109
+          ]
         }
       ],
-      "captions": [],
-      "references": [],
-      "footnotes": [],
-      "data": {
-        "table_cells": [
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 0,
-            "end_row_offset_idx": 1,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "# # Language Inference",
-            "column_header": true,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 0,
-            "end_row_offset_idx": 1,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 2,
-            "text": "",
-            "column_header": true,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 0,
-            "end_row_offset_idx": 1,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
-            "text": "",
-            "column_header": true,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 0,
-            "end_row_offset_idx": 1,
-            "start_col_offset_idx": 3,
-            "end_col_offset_idx": 4,
-            "text": "TEDs",
-            "column_header": true,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 0,
-            "end_row_offset_idx": 1,
-            "start_col_offset_idx": 4,
-            "end_col_offset_idx": 5,
-            "text": "",
-            "column_header": true,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 0,
-            "end_row_offset_idx": 1,
-            "start_col_offset_idx": 5,
-            "end_col_offset_idx": 6,
-            "text": "mAP",
-            "column_header": true,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 1,
-            "end_row_offset_idx": 2,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "enc-layers dec-layers",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 1,
-            "end_row_offset_idx": 2,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 2,
-            "text": "simple",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 1,
-            "end_row_offset_idx": 2,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
-            "text": "complex",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 1,
-            "end_row_offset_idx": 2,
-            "start_col_offset_idx": 3,
-            "end_col_offset_idx": 4,
-            "text": "",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 1,
-            "end_row_offset_idx": 2,
-            "start_col_offset_idx": 4,
-            "end_col_offset_idx": 5,
-            "text": "(0.75) all",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 1,
-            "end_row_offset_idx": 2,
-            "start_col_offset_idx": 5,
-            "end_col_offset_idx": 6,
-            "text": "time (secs)",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 2,
-            "end_row_offset_idx": 3,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "6 6 2.73 5.39",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 2,
-            "end_row_offset_idx": 3,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 2,
-            "text": "OTSL HTML",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 2,
-            "end_row_offset_idx": 3,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
-            "text": "0.965 0.969",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 2,
-            "end_row_offset_idx": 3,
-            "start_col_offset_idx": 3,
-            "end_col_offset_idx": 4,
-            "text": "0.934 0.927",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 2,
-            "end_row_offset_idx": 3,
-            "start_col_offset_idx": 4,
-            "end_col_offset_idx": 5,
-            "text": "0.955 0.955",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 2,
-            "end_row_offset_idx": 3,
-            "start_col_offset_idx": 5,
-            "end_col_offset_idx": 6,
-            "text": "0.88 0.857",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 3,
-            "end_row_offset_idx": 4,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "4 4 1.97 3.77",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 3,
-            "end_row_offset_idx": 4,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 2,
-            "text": "OTSL HTML",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 3,
-            "end_row_offset_idx": 4,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
-            "text": "0.938 0.952",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 3,
-            "end_row_offset_idx": 4,
-            "start_col_offset_idx": 3,
-            "end_col_offset_idx": 4,
-            "text": "0.904 0.909 0.938",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 3,
-            "end_row_offset_idx": 4,
-            "start_col_offset_idx": 4,
-            "end_col_offset_idx": 5,
-            "text": "0.927 0.853",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 3,
-            "end_row_offset_idx": 4,
-            "start_col_offset_idx": 5,
-            "end_col_offset_idx": 6,
-            "text": "0.843",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 4,
-            "end_row_offset_idx": 5,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "2 4 1.91 3.81",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 4,
-            "end_row_offset_idx": 5,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 2,
-            "text": "OTSL HTML",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 4,
-            "end_row_offset_idx": 5,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
-            "text": "0.923 0.945",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 4,
-            "end_row_offset_idx": 5,
-            "start_col_offset_idx": 3,
-            "end_col_offset_idx": 4,
-            "text": "0.897 0.901 0.931",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 4,
-            "end_row_offset_idx": 5,
-            "start_col_offset_idx": 4,
-            "end_col_offset_idx": 5,
-            "text": "0.915 0.859",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 4,
-            "end_row_offset_idx": 5,
-            "start_col_offset_idx": 5,
-            "end_col_offset_idx": 6,
-            "text": "0.834",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 5,
-            "end_row_offset_idx": 6,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "4 2 1.22 2",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 5,
-            "end_row_offset_idx": 6,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 2,
-            "text": "OTSL HTML",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 5,
-            "end_row_offset_idx": 6,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
-            "text": "0.952 0.944",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 5,
-            "end_row_offset_idx": 6,
-            "start_col_offset_idx": 3,
-            "end_col_offset_idx": 4,
-            "text": "0.92 0.942 0.903",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 5,
-            "end_row_offset_idx": 6,
-            "start_col_offset_idx": 4,
-            "end_col_offset_idx": 5,
-            "text": "0.857 0.931",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 5,
-            "end_row_offset_idx": 6,
-            "start_col_offset_idx": 5,
-            "end_col_offset_idx": 6,
-            "text": "0.824",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          }
-        ],
-        "num_rows": 6,
-        "num_cols": 6,
-        "grid": [
-          [
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 1,
-              "text": "# # Language Inference",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 2,
-              "text": "",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
-              "text": "",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
-              "start_col_offset_idx": 3,
-              "end_col_offset_idx": 4,
-              "text": "TEDs",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
-              "start_col_offset_idx": 4,
-              "end_col_offset_idx": 5,
-              "text": "",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
-              "start_col_offset_idx": 5,
-              "end_col_offset_idx": 6,
-              "text": "mAP",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            }
-          ],
-          [
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 1,
-              "text": "enc-layers dec-layers",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 2,
-              "text": "simple",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
-              "text": "complex",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 3,
-              "end_col_offset_idx": 4,
-              "text": "",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 4,
-              "end_col_offset_idx": 5,
-              "text": "(0.75) all",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 5,
-              "end_col_offset_idx": 6,
-              "text": "time (secs)",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            }
-          ],
-          [
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 2,
-              "end_row_offset_idx": 3,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 1,
-              "text": "6 6 2.73 5.39",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 2,
-              "end_row_offset_idx": 3,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 2,
-              "text": "OTSL HTML",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 2,
-              "end_row_offset_idx": 3,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
-              "text": "0.965 0.969",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 2,
-              "end_row_offset_idx": 3,
-              "start_col_offset_idx": 3,
-              "end_col_offset_idx": 4,
-              "text": "0.934 0.927",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 2,
-              "end_row_offset_idx": 3,
-              "start_col_offset_idx": 4,
-              "end_col_offset_idx": 5,
-              "text": "0.955 0.955",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 2,
-              "end_row_offset_idx": 3,
-              "start_col_offset_idx": 5,
-              "end_col_offset_idx": 6,
-              "text": "0.88 0.857",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            }
-          ],
-          [
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 4,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 1,
-              "text": "4 4 1.97 3.77",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 4,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 2,
-              "text": "OTSL HTML",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 4,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
-              "text": "0.938 0.952",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 4,
-              "start_col_offset_idx": 3,
-              "end_col_offset_idx": 4,
-              "text": "0.904 0.909 0.938",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 4,
-              "start_col_offset_idx": 4,
-              "end_col_offset_idx": 5,
-              "text": "0.927 0.853",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 4,
-              "start_col_offset_idx": 5,
-              "end_col_offset_idx": 6,
-              "text": "0.843",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            }
-          ],
-          [
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 4,
-              "end_row_offset_idx": 5,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 1,
-              "text": "2 4 1.91 3.81",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 4,
-              "end_row_offset_idx": 5,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 2,
-              "text": "OTSL HTML",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 4,
-              "end_row_offset_idx": 5,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
-              "text": "0.923 0.945",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 4,
-              "end_row_offset_idx": 5,
-              "start_col_offset_idx": 3,
-              "end_col_offset_idx": 4,
-              "text": "0.897 0.901 0.931",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 4,
-              "end_row_offset_idx": 5,
-              "start_col_offset_idx": 4,
-              "end_col_offset_idx": 5,
-              "text": "0.915 0.859",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 4,
-              "end_row_offset_idx": 5,
-              "start_col_offset_idx": 5,
-              "end_col_offset_idx": 6,
-              "text": "0.834",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            }
-          ],
-          [
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 5,
-              "end_row_offset_idx": 6,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 1,
-              "text": "4 2 1.22 2",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 5,
-              "end_row_offset_idx": 6,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 2,
-              "text": "OTSL HTML",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 5,
-              "end_row_offset_idx": 6,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
-              "text": "0.952 0.944",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 5,
-              "end_row_offset_idx": 6,
-              "start_col_offset_idx": 3,
-              "end_col_offset_idx": 4,
-              "text": "0.92 0.942 0.903",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 5,
-              "end_row_offset_idx": 6,
-              "start_col_offset_idx": 4,
-              "end_col_offset_idx": 5,
-              "text": "0.857 0.931",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 5,
-              "end_row_offset_idx": 6,
-              "start_col_offset_idx": 5,
-              "end_col_offset_idx": 6,
-              "text": "0.824",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            }
-          ]
-        ]
+      "orig": "mAP (0.75) all 0.955 0.88 0.955 0.857 0.927 0.853 0.938 0.843 0.915 0.859 0.931 0.834 0.942 0.857 0.931 0.824",
+      "text": "mAP (0.75) all 0.955 0.88 0.955 0.857 0.927 0.853 0.938 0.843 0.915 0.859 0.931 0.834 0.942 0.857 0.931 0.824"
+    },
+    {
+      "self_ref": "#/texts/41",
+      "parent": {
+        "$ref": "#/body"
       },
-      "annotations": []
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 427.14801025390625,
+            "t": 338.8926086425781,
+            "r": 467.1476745605469,
+            "b": 466.0159912109375,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            58
+          ]
+        }
+      ],
+      "orig": "Inference time (secs) 2.73 5.39 1.97 3.77 1.91 3.81 1.22 2",
+      "text": "Inference time (secs) 2.73 5.39 1.97 3.77 1.91 3.81 1.22 2"
+    },
+    {
+      "self_ref": "#/texts/42",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 444.8680114746094,
+            "t": 230.30743408203125,
+            "r": 469.5151062011719,
+            "b": 240.27001953125,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            8
+          ]
+        }
+      ],
+      "orig": "2x speed",
+      "text": "2x speed"
     }
   ],
+  "pictures": [],
+  "tables": [],
   "key_value_items": [],
   "form_items": [],
   "pages": {

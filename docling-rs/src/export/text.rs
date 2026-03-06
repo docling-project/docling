@@ -57,9 +57,7 @@ fn export_node(doc: &DoclingDocument, ref_path: &str, output: &mut String) {
         return;
     }
 
-    if ref_path.starts_with("#/pictures/") {
-        return;
-    }
+    if ref_path.starts_with("#/pictures/") {}
 }
 
 fn table_to_plain_text(data: &TableData) -> String {
@@ -85,7 +83,10 @@ fn table_to_plain_text(data: &TableData) -> String {
             .iter_mut()
             .map(|row| {
                 row.sort_by_key(|(col, _)| *col);
-                row.iter().map(|(_, txt)| *txt).collect::<Vec<_>>().join("\t")
+                row.iter()
+                    .map(|(_, txt)| *txt)
+                    .collect::<Vec<_>>()
+                    .join("\t")
             })
             .collect::<Vec<_>>()
             .join("\n")

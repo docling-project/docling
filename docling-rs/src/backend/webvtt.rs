@@ -15,10 +15,8 @@ impl Backend for WebVttBackend {
         let content = std::fs::read_to_string(path)?;
         let content = content.strip_prefix('\u{FEFF}').unwrap_or(&content);
 
-        let timestamp_re = Regex::new(
-            r"(\d+:)?(\d{2}:\d{2}\.\d{3})\s*-->\s*(\d+:)?(\d{2}:\d{2}\.\d{3})",
-        )
-        .unwrap();
+        let timestamp_re =
+            Regex::new(r"(\d+:)?(\d{2}:\d{2}\.\d{3})\s*-->\s*(\d+:)?(\d{2}:\d{2}\.\d{3})").unwrap();
         let tag_re = Regex::new(r"</?[a-zA-Z][a-zA-Z0-9.]*(?:\s[^>]*)?>").unwrap();
         let rt_re = Regex::new(r"<rt>[^<]*</rt>").unwrap();
 

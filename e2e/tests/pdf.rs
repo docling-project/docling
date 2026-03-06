@@ -283,7 +283,7 @@ fn original_pdf_test(filename: &str, md_threshold: f64) {
 
 #[test]
 fn test_pdf_2305_03393v1_pg9() {
-    original_pdf_test("2305.03393v1-pg9.pdf", 0.45);
+    original_pdf_test("2305.03393v1-pg9.pdf", 0.95);
 }
 
 #[test]
@@ -293,55 +293,55 @@ fn test_pdf_multi_page() {
 
 #[test]
 fn test_pdf_normal_4pages() {
-    original_pdf_test("normal_4pages.pdf", 0.25);
+    original_pdf_test("normal_4pages.pdf", 0.95);
 }
 
 #[test]
 fn test_pdf_code_and_formula() {
-    original_pdf_test("code_and_formula.pdf", 0.90);
+    original_pdf_test("code_and_formula.pdf", 0.95);
 }
 
 #[test]
 fn test_pdf_2203_01017v2() {
-    original_pdf_test("2203.01017v2.pdf", 0.15);
+    original_pdf_test("2203.01017v2.pdf", 0.95);
 }
 
 #[test]
 fn test_pdf_2206_01062() {
-    original_pdf_test("2206.01062.pdf", 0.10);
+    original_pdf_test("2206.01062.pdf", 0.95);
 }
 
 #[test]
 fn test_pdf_2305_03393v1_full() {
-    original_pdf_test("2305.03393v1.pdf", 0.15);
+    original_pdf_test("2305.03393v1.pdf", 0.95);
 }
 
 #[test]
 fn test_pdf_amt_handbook_sample() {
-    original_pdf_test("amt_handbook_sample.pdf", 0.70);
+    original_pdf_test("amt_handbook_sample.pdf", 0.95);
 }
 
 #[test]
 fn test_pdf_picture_classification() {
-    original_pdf_test("picture_classification.pdf", 0.90);
+    original_pdf_test("picture_classification.pdf", 0.95);
 }
 
 #[test]
 fn test_pdf_redp5110_sampled() {
-    original_pdf_test("redp5110_sampled.pdf", 0.20);
+    original_pdf_test("redp5110_sampled.pdf", 0.95);
 }
 
 #[test]
 fn test_pdf_right_to_left_01() {
-    original_pdf_test("right_to_left_01.pdf", 0.50);
+    original_pdf_test("right_to_left_01.pdf", 0.95);
 }
 
 #[test]
 fn test_pdf_right_to_left_02() {
-    original_pdf_test("right_to_left_02.pdf", 0.55);
+    original_pdf_test("right_to_left_02.pdf", 0.95);
 }
 
 #[test]
 fn test_pdf_right_to_left_03() {
-    original_pdf_test("right_to_left_03.pdf", 0.45);
+    original_pdf_test("right_to_left_03.pdf", 0.95);
 }

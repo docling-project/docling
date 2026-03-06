@@ -31,6 +31,9 @@
       },
       {
         "$ref": "#/texts/4"
+      },
+      {
+        "$ref": "#/texts/5"
       }
     ],
     "content_layer": "body",
@@ -51,10 +54,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 72.0,
+            "t": 72.0,
+            "r": 226.0,
+            "b": 92.0,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
@@ -79,10 +82,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 72.0,
+            "t": 120.0,
+            "r": 586.80029296875,
+            "b": 132.0,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
@@ -106,10 +109,10 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 72.0,
+            "t": 76.0,
+            "r": 151.20001220703125,
+            "b": 92.0,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
@@ -134,10 +137,10 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 72.0,
+            "t": 120.0,
+            "r": 448.2001953125,
+            "b": 132.0,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
@@ -161,21 +164,48 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 612.0,
-            "b": 792.0,
+            "l": 72.0,
+            "t": 76.0,
+            "r": 177.60000610351562,
+            "b": 92.0,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            54
+            12
           ]
         }
       ],
-      "orig": "3 Conclusion\nThe third page wraps up with conclusions.",
-      "text": "3 Conclusion\nThe third page wraps up with conclusions.",
+      "orig": "3 Conclusion",
+      "text": "3 Conclusion",
       "level": 1
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 72.0,
+            "t": 120.0,
+            "r": 342.60009765625,
+            "b": 132.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            41
+          ]
+        }
+      ],
+      "orig": "The third page wraps up with conclusions.",
+      "text": "The third page wraps up with conclusions."
     }
   ],
   "pictures": [],

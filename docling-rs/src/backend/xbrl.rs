@@ -189,8 +189,8 @@ fn find_case_insensitive(haystack: &str, needle: &str) -> Option<usize> {
         if hay_chars.len() - i < needle_len {
             break;
         }
-        let matches = (0..needle_len)
-            .all(|j| hay_chars[i + j].1.to_ascii_lowercase() == needle_lower[j]);
+        let matches =
+            (0..needle_len).all(|j| hay_chars[i + j].1.to_ascii_lowercase() == needle_lower[j]);
         if matches {
             return Some(hay_chars[i].0);
         }

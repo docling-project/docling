@@ -455,5 +455,15 @@ powerpoint_sample.json
 # External repos
 docsextract/
 
+# Large PDF groundtruth files (exceed GitHub 100MB limit)
+tests/data/groundtruth/docling_v2/2203.01017v2.json
+tests/data/groundtruth/docling_v2/2206.01062.json
+tests/data/groundtruth/docling_v2/2305.03393v1.json
+tests/data/groundtruth/docling_v2/redp5110_sampled.json
+
+# Plan/scratch files
+PDF_EXTRACTION_IMPROVEMENT_PLAN.md
+PDF_OXIDE_INTEGRATION_PLAN.md
+
 # Cursor IDE
 .cursor/

@@ -57,7 +57,10 @@ fn parse_modern_patent(root: &roxmltree::Node, doc: &mut DoclingDocument) {
         if node.has_tag_name("abstract") || node.has_tag_name("subdoc-abstract") {
             let idx = doc.add_section_header("Abstract", 1, None);
             let parent = format!("#/texts/{}", idx);
-            for p in node.descendants().filter(|n| n.has_tag_name("p") || n.has_tag_name("paragraph")) {
+            for p in node
+                .descendants()
+                .filter(|n| n.has_tag_name("p") || n.has_tag_name("paragraph"))
+            {
                 let text = collect_text(p);
                 if !text.is_empty() {
                     doc.add_text(DocItemLabel::Text, &text, Some(&parent));
@@ -81,7 +84,11 @@ fn parse_modern_patent(root: &roxmltree::Node, doc: &mut DoclingDocument) {
                     }
                 }
             } else {
-                for p in node.descendants().filter(|n| n.has_tag_name("p") || n.has_tag_name("paragraph") || n.has_tag_name("claim-text")) {
+                for p in node.descendants().filter(|n| {
+                    n.has_tag_name("p")
+                        || n.has_tag_name("paragraph")
+                        || n.has_tag_name("claim-text")
+                }) {
                     let text = collect_text(p);
                     if !text.is_empty() {
                         doc.add_text(DocItemLabel::Text, &text, Some(&parent));
@@ -103,11 +110,7 @@ fn parse_modern_patent(root: &roxmltree::Node, doc: &mut DoclingDocument) {
     }
 }
 
-fn extract_description_children(
-    node: &roxmltree::Node,
-    doc: &mut DoclingDocument,
-    parent: &str,
-) {
+fn extract_description_children(node: &roxmltree::Node, doc: &mut DoclingDocument, parent: &str) {
     for child in node.children() {
         if !child.is_element() {
             continue;
@@ -164,7 +167,11 @@ fn extract_table(node: &roxmltree::Node, doc: &mut DoclingDocument, parent_ref: 
     for group in node.children() {
         let rows: Vec<roxmltree::Node> = if group.has_tag_name("tr") || group.has_tag_name("row") {
             vec![group]
-        } else if group.has_tag_name("thead") || group.has_tag_name("tbody") || group.has_tag_name("tfoot") || group.has_tag_name("tgroup") {
+        } else if group.has_tag_name("thead")
+            || group.has_tag_name("tbody")
+            || group.has_tag_name("tfoot")
+            || group.has_tag_name("tgroup")
+        {
             group
                 .children()
                 .filter(|n| n.has_tag_name("tr") || n.has_tag_name("row"))
@@ -249,9 +256,12 @@ fn parse_generic_xml(root: &roxmltree::Node, doc: &mut DoclingDocument) {
 
     // Extract sections from PATDOC-style documents
     let section_tags = [
-        ("SDOAB", "Abstract"), ("sdoab", "Abstract"),
-        ("SDOCL", "Claims"), ("sdocl", "Claims"),
-        ("SDODE", "Description"), ("sdode", "Description"),
+        ("SDOAB", "Abstract"),
+        ("sdoab", "Abstract"),
+        ("SDOCL", "Claims"),
+        ("sdocl", "Claims"),
+        ("SDODE", "Description"),
+        ("sdode", "Description"),
     ];
     let mut found_sections = false;
     for (tag, label) in &section_tags {
@@ -294,9 +304,12 @@ fn extract_patdoc_section(node: &roxmltree::Node, doc: &mut DoclingDocument, par
                 let idx = doc.add_section_header(&text, 2, Some(parent));
                 current_parent = format!("#/texts/{}", idx);
             }
-        } else if tag == "PARA" || tag == "para"
-            || tag == "p" || tag == "paragraph"
-            || tag == "CLMSTEP" || tag == "clmstep"
+        } else if tag == "PARA"
+            || tag == "para"
+            || tag == "p"
+            || tag == "paragraph"
+            || tag == "CLMSTEP"
+            || tag == "clmstep"
         {
             let has_nested_paras = child.children().any(|c| {
                 let t = c.tag_name().name();
@@ -328,7 +341,11 @@ fn parse_aps_text(content: &str, doc: &mut DoclingDocument) {
         if line.starts_with("TTL ") || line.starts_with("TITL") {
             let text = line.split_once(' ').map(|(_, t)| t).unwrap_or(line);
             doc.add_title(text.trim(), None);
-        } else if line.starts_with("ABST") || line.starts_with("BSUM") || line.starts_with("CLMS") || line.starts_with("DETD") {
+        } else if line.starts_with("ABST")
+            || line.starts_with("BSUM")
+            || line.starts_with("CLMS")
+            || line.starts_with("DETD")
+        {
             let section_name = line.split_whitespace().next().unwrap_or(line);
             let idx = doc.add_section_header(section_name, 1, None);
             current_section = Some(format!("#/texts/{}", idx));

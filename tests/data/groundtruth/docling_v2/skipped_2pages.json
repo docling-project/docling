@@ -16,13 +16,1667 @@
   },
   "body": {
     "self_ref": "#/body",
-    "children": [],
+    "children": [
+      {
+        "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/texts/1"
+      },
+      {
+        "$ref": "#/texts/2"
+      },
+      {
+        "$ref": "#/texts/3"
+      },
+      {
+        "$ref": "#/texts/4"
+      },
+      {
+        "$ref": "#/texts/5"
+      },
+      {
+        "$ref": "#/texts/6"
+      },
+      {
+        "$ref": "#/texts/7"
+      },
+      {
+        "$ref": "#/texts/8"
+      },
+      {
+        "$ref": "#/texts/9"
+      },
+      {
+        "$ref": "#/texts/10"
+      },
+      {
+        "$ref": "#/texts/11"
+      },
+      {
+        "$ref": "#/texts/12"
+      },
+      {
+        "$ref": "#/texts/13"
+      },
+      {
+        "$ref": "#/texts/14"
+      },
+      {
+        "$ref": "#/texts/15"
+      },
+      {
+        "$ref": "#/texts/16"
+      },
+      {
+        "$ref": "#/texts/17"
+      },
+      {
+        "$ref": "#/texts/18"
+      },
+      {
+        "$ref": "#/texts/19"
+      },
+      {
+        "$ref": "#/texts/20"
+      },
+      {
+        "$ref": "#/texts/21"
+      },
+      {
+        "$ref": "#/texts/22"
+      },
+      {
+        "$ref": "#/texts/23"
+      },
+      {
+        "$ref": "#/texts/24"
+      },
+      {
+        "$ref": "#/texts/25"
+      },
+      {
+        "$ref": "#/texts/26"
+      },
+      {
+        "$ref": "#/texts/27"
+      },
+      {
+        "$ref": "#/texts/28"
+      },
+      {
+        "$ref": "#/texts/29"
+      },
+      {
+        "$ref": "#/texts/30"
+      },
+      {
+        "$ref": "#/texts/31"
+      },
+      {
+        "$ref": "#/texts/32"
+      },
+      {
+        "$ref": "#/texts/33"
+      },
+      {
+        "$ref": "#/texts/34"
+      },
+      {
+        "$ref": "#/texts/35"
+      },
+      {
+        "$ref": "#/texts/36"
+      },
+      {
+        "$ref": "#/texts/37"
+      },
+      {
+        "$ref": "#/texts/38"
+      },
+      {
+        "$ref": "#/texts/39"
+      },
+      {
+        "$ref": "#/texts/40"
+      },
+      {
+        "$ref": "#/texts/41"
+      },
+      {
+        "$ref": "#/texts/42"
+      },
+      {
+        "$ref": "#/texts/43"
+      },
+      {
+        "$ref": "#/texts/44"
+      },
+      {
+        "$ref": "#/texts/45"
+      },
+      {
+        "$ref": "#/texts/46"
+      },
+      {
+        "$ref": "#/texts/47"
+      },
+      {
+        "$ref": "#/texts/48"
+      },
+      {
+        "$ref": "#/texts/49"
+      },
+      {
+        "$ref": "#/groups/0"
+      },
+      {
+        "$ref": "#/texts/51"
+      },
+      {
+        "$ref": "#/texts/52"
+      },
+      {
+        "$ref": "#/texts/53"
+      }
+    ],
     "content_layer": "body",
     "name": "_root_",
     "label": "unspecified"
   },
-  "groups": [],
-  "texts": [],
+  "groups": [
+    {
+      "self_ref": "#/groups/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/50"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    }
+  ],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 65.1968994140625,
+            "t": 45.62774658203125,
+            "r": 81.84649658203125,
+            "b": 53.62774658203125,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
+      "orig": "78",
+      "text": "78",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 85.36260223388672,
+            "t": 97.8214111328125,
+            "r": 106.99259948730469,
+            "b": 108.3214111328125,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            9
+          ]
+        }
+      ],
+      "orig": "보안분",
+      "text": "보안분",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 78.43049621582031,
+            "t": 45.57073974609375,
+            "r": 197.23052978515625,
+            "b": 53.57073974609375,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            63
+          ]
+        }
+      ],
+      "orig": "ICT 기술변화에 따른 미래 보안기술 전망 보고서",
+      "text": "ICT 기술변화에 따른 미래 보안기술 전망 보고서",
+      "level": 3
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 88.16220092773438,
+            "t": 455.8017272949219,
+            "r": 104.63580322265625,
+            "b": 461.08172607421875,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            16
+          ]
+        }
+      ],
+      "orig": "4차산업혁명",
+      "text": "4차산업혁명"
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 91.70469665527344,
+            "t": 502.41082763671875,
+            "r": 112.46220397949219,
+            "b": 506.8108215332031,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            41
+          ]
+        }
+      ],
+      "orig": "초연결, 지능화 뉴노멀, 비대면",
+      "text": "초연결, 지능화 뉴노멀, 비대면"
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 102.41490173339844,
+            "t": 561.3829345703125,
+            "r": 125.29490661621094,
+            "b": 566.8829345703125,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            18
+          ]
+        }
+      ],
+      "orig": "4차 산업혁명,",
+      "text": "4차 산업혁명,"
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 143.7174072265625,
+            "t": 627.8117294311523,
+            "r": 185.0904083251953,
+            "b": 637.9617309570312,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            134
+          ]
+        }
+      ],
+      "orig": "국가 안보 : 국가 핵심 기능 : 안보 플랫폼(복원력, 억지력) : 기술 플랫폼(사이버 안보) 비기술 플랫폼",
+      "text": "국가 안보 : 국가 핵심 기능 : 안보 플랫폼(복원력, 억지력) : 기술 플랫폼(사이버 안보) 비기술 플랫폼"
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 152.24839782714844,
+            "t": 627.8117294311523,
+            "r": 206.9604034423828,
+            "b": 635.1117324829102,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            112
+          ]
+        }
+      ],
+      "orig": "포괄안보, 인간안보, 신흥안보, 신안보 등 경제, 군사, 정치, 재난/안전, 보건/의료 등",
+      "text": "포괄안보, 인간안보, 신흥안보, 신안보 등 경제, 군사, 정치, 재난/안전, 보건/의료 등"
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 166.61219787597656,
+            "t": 612.521728515625,
+            "r": 194.06820678710938,
+            "b": 617.8017272949219,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            26
+          ]
+        }
+      ],
+      "orig": "사이버 안보 플랫폼",
+      "text": "사이버 안보 플랫폼"
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 102.12090301513672,
+            "t": 558.0777282714844,
+            "r": 192.38160705566406,
+            "b": 568.0849304199219,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            64
+          ]
+        }
+      ],
+      "orig": "국가 핵심기능의 ICT기술 의존도 상승 COVID-19출현",
+      "text": "국가 핵심기능의 ICT기술 의존도 상승 COVID-19출현"
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 238.15589904785156,
+            "t": 558.0777282714844,
+            "r": 269.61590576171875,
+            "b": 565.9817199707031,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            50
+          ]
+        }
+      ],
+      "orig": "ICT 트렌드 분석 및 20대 유망기술 선정",
+      "text": "ICT 트렌드 분석 및 20대 유망기술 선정"
+    },
+    {
+      "self_ref": "#/texts/11",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 277.96649169921875,
+            "t": 612.5212326049805,
+            "r": 326.571533203125,
+            "b": 617.8012313842773,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            43
+          ]
+        }
+      ],
+      "orig": "보안 이슈, 보안 위협, 보안 대응",
+      "text": "보안 이슈, 보안 위협, 보안 대응"
+    },
+    {
+      "self_ref": "#/texts/12",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 313.0572814941406,
+            "t": 554.7725219726562,
+            "r": 333.0772705078125,
+            "b": 563.8785095214844,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            59
+          ]
+        }
+      ],
+      "orig": "유망기술별 보안위협 도출 및 대응방안 분석",
+      "text": "유망기술별 보안위협 도출 및 대응방안 분석"
+    },
+    {
+      "self_ref": "#/texts/13",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 375.5033874511719,
+            "t": 627.1403274536133,
+            "r": 381.77337646484375,
+            "b": 631.5403289794922,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            9
+          ]
+        }
+      ],
+      "orig": "내재화",
+      "text": "내재화"
+    },
+    {
+      "self_ref": "#/texts/14",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 375.5033874511719,
+            "t": 638.5076293945312,
+            "r": 381.77337646484375,
+            "b": 642.9076309204102,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            9
+          ]
+        }
+      ],
+      "orig": "자동화",
+      "text": "자동화"
+    },
+    {
+      "self_ref": "#/texts/15",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 375.5304870605469,
+            "t": 649.8750305175781,
+            "r": 381.80047607421875,
+            "b": 654.275032043457,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            9
+          ]
+        }
+      ],
+      "orig": "확장성",
+      "text": "확장성"
+    },
+    {
+      "self_ref": "#/texts/16",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 368.1033935546875,
+            "t": 612.5212326049805,
+            "r": 403.79620361328125,
+            "b": 617.8012313842773,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            35
+          ]
+        }
+      ],
+      "orig": "미래보안기술 발전 방향성",
+      "text": "미래보안기술 발전 방향성"
+    },
+    {
+      "self_ref": "#/texts/17",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 409.01708984375,
+            "t": 627.1403274536133,
+            "r": 415.2870788574219,
+            "b": 631.5403289794922,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            9
+          ]
+        }
+      ],
+      "orig": "지능화",
+      "text": "지능화"
+    },
+    {
+      "self_ref": "#/texts/18",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 409.0444030761719,
+            "t": 638.5076293945312,
+            "r": 415.31439208984375,
+            "b": 642.9076309204102,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            9
+          ]
+        }
+      ],
+      "orig": "견고성",
+      "text": "견고성"
+    },
+    {
+      "self_ref": "#/texts/19",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 381.03460693359375,
+            "t": 561.3829345703125,
+            "r": 398.1946105957031,
+            "b": 568.0849304199219,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            25
+          ]
+        }
+      ],
+      "orig": "미래보안기술 도출",
+      "text": "미래보안기술 도출"
+    },
+    {
+      "self_ref": "#/texts/20",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 134.7357940673828,
+            "t": 455.8017272949219,
+            "r": 156.70059204101562,
+            "b": 461.08172607421875,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            8
+          ]
+        }
+      ],
+      "orig": "COVID-19",
+      "text": "COVID-19"
+    },
+    {
+      "self_ref": "#/texts/21",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 184.47959899902344,
+            "t": 496.03172302246094,
+            "r": 221.85299682617188,
+            "b": 499.5517272949219,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            44
+          ]
+        }
+      ],
+      "orig": "스마트 헬스케어 스마트바이오랩",
+      "text": "스마트 헬스케어 스마트바이오랩"
+    },
+    {
+      "self_ref": "#/texts/22",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 242.96290588378906,
+            "t": 521.4417266845703,
+            "r": 264.9277038574219,
+            "b": 526.7217254638672,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            16
+          ]
+        }
+      ],
+      "orig": "ICT 미래기술",
+      "text": "ICT 미래기술"
+    },
+    {
+      "self_ref": "#/texts/23",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 183.84840393066406,
+            "t": 496.03172302246094,
+            "r": 273.54150390625,
+            "b": 504.55482482910156,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            82
+          ]
+        }
+      ],
+      "orig": "첨단재료 스마트 국방 (Smart Healthcare) (Smart Biolab) and Manufacturing)",
+      "text": "첨단재료 스마트 국방 (Smart Healthcare) (Smart Biolab) and Manufacturing)"
+    },
+    {
+      "self_ref": "#/texts/24",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 236.33470153808594,
+            "t": 496.03172302246094,
+            "r": 304.72607421875,
+            "b": 503.54283142089844,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            57
+          ]
+        }
+      ],
+      "orig": "항공우주 (Novel Materials (Smart Defense) (Aerospace)",
+      "text": "항공우주 (Novel Materials (Smart Defense) (Aerospace)"
+    },
+    {
+      "self_ref": "#/texts/25",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 309.6671142578125,
+            "t": 496.03172302246094,
+            "r": 357.1514892578125,
+            "b": 503.54283142089844,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            75
+          ]
+        }
+      ],
+      "orig": "미래형 농축산 스마트 에너지 (Future Agriculture) (Smart Energy)",
+      "text": "미래형 농축산 스마트 에너지 (Future Agriculture) (Smart Energy)"
+    },
+    {
+      "self_ref": "#/texts/26",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 364.4541931152344,
+            "t": 496.03172302246094,
+            "r": 432.5130920410156,
+            "b": 503.54283142089844,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            91
+          ]
+        }
+      ],
+      "orig": "그린 ICT 스마트 비즈니스 스마트시티 (Green ICT) (Smart Business) (Smart City)",
+      "text": "그린 ICT 스마트 비즈니스 스마트시티 (Green ICT) (Smart Business) (Smart City)"
+    },
+    {
+      "self_ref": "#/texts/27",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 187.66099548339844,
+            "t": 453.1317443847656,
+            "r": 325.99749755859375,
+            "b": 461.6549072265625,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            185
+          ]
+        }
+      ],
+      "orig": "4D 프린팅 차세대 AI 디지털 리얼리티 블록체인 초연결 네트워킹 데이터 (4D Printing) (Next AI) (Digital Reality) (Blockchain) (Hyper-Connected (DATA) Networking)",
+      "text": "4D 프린팅 차세대 AI 디지털 리얼리티 블록체인 초연결 네트워킹 데이터 (4D Printing) (Next AI) (Digital Reality) (Blockchain) (Hyper-Connected (DATA) Networking)"
+    },
+    {
+      "self_ref": "#/texts/28",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 339.7624816894531,
+            "t": 453.1317443847656,
+            "r": 431.3157958984375,
+            "b": 465.6462097167969,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            178
+          ]
+        }
+      ],
+      "orig": "양자기술 엣지컴퓨팅 웨어러블 컨트롤 센싱&모빌리티 인터페이스 (Quantum (Edge Computing) (Sensing and Technology) Mobility) (Wearable Control Interfaces)",
+      "text": "양자기술 엣지컴퓨팅 웨어러블 컨트롤 센싱&모빌리티 인터페이스 (Quantum (Edge Computing) (Sensing and Technology) Mobility) (Wearable Control Interfaces)"
+    },
+    {
+      "self_ref": "#/texts/29",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 195.58340454101562,
+            "t": 403.796630859375,
+            "r": 307.9034423828125,
+            "b": 412.796630859375,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            46
+          ]
+        }
+      ],
+      "orig": "[그림 4-3] 미래 보안기술 도출 과정",
+      "text": "[그림 4-3] 미래 보안기술 도출 과정",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/30",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 313.8763122558594,
+            "t": 45.1717529296875,
+            "r": 445.2490234375,
+            "b": 53.228759765625,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            56
+          ]
+        }
+      ],
+      "orig": "Ⅳ . 미래 국가 정보보안 기술 발전 방향 79",
+      "text": "Ⅳ . 미래 국가 정보보안 기술 발전 방향 79",
+      "level": 3
+    },
+    {
+      "self_ref": "#/texts/31",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 90.12460327148438,
+            "t": 625.132926940918,
+            "r": 111.92860412597656,
+            "b": 632.9784317016602,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            38
+          ]
+        }
+      ],
+      "orig": "웨어러블 컨트롤 인터페이스",
+      "text": "웨어러블 컨트롤 인터페이스"
+    },
+    {
+      "self_ref": "#/texts/32",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 89.45819854736328,
+            "t": 641.1915283203125,
+            "r": 132.3845977783203,
+            "b": 648.0760269165039,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            29
+          ]
+        }
+      ],
+      "orig": "(Wearable Control Interfaces)",
+      "text": "(Wearable Control Interfaces)"
+    },
+    {
+      "self_ref": "#/texts/33",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 153.37530517578125,
+            "t": 632.5448226928711,
+            "r": 168.48541259765625,
+            "b": 646.8664245605469,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            16
+          ]
+        }
+      ],
+      "orig": "데이터 (DATA)",
+      "text": "데이터 (DATA)"
+    },
+    {
+      "self_ref": "#/texts/34",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 85.44020080566406,
+            "t": 582.8074340820312,
+            "r": 191.80416870117188,
+            "b": 591.0932312011719,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            76
+          ]
+        }
+      ],
+      "orig": "젊기몒 인터페이스 몋에컪픦 캏오윦이캏맞지 기술",
+      "text": "젊기몒 인터페이스 몋에컪픦 캏오윦이캏맞지 기술",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/35",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 200.4199981689453,
+            "t": 630.1153259277344,
+            "r": 227.22340393066406,
+            "b": 645.4489288330078,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            34
+          ]
+        }
+      ],
+      "orig": "초연결 네트워킹 Networking)",
+      "text": "초연결 네트워킹 Networking)"
+    },
+    {
+      "self_ref": "#/texts/36",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 96.63050079345703,
+            "t": 514.6889190673828,
+            "r": 174.04039001464844,
+            "b": 529.088134765625,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            48
+          ]
+        }
+      ],
+      "orig": "블록체인 차세대 AI (Blockchain) (Next AI)",
+      "text": "블록체인 차세대 AI (Blockchain) (Next AI)"
+    },
+    {
+      "self_ref": "#/texts/37",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 199.62100219726562,
+            "t": 511.5595245361328,
+            "r": 237.77780151367188,
+            "b": 526.8932189941406,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            51
+          ]
+        }
+      ],
+      "orig": "초연결 네트워킹 (Hyper-Connected Networking)",
+      "text": "초연결 네트워킹 (Hyper-Connected Networking)"
+    },
+    {
+      "self_ref": "#/texts/38",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 81.95249938964844,
+            "t": 461.3482360839844,
+            "r": 197.98483276367188,
+            "b": 469.634033203125,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            83
+          ]
+        }
+      ],
+      "orig": "블록체인에컪픦 팢 솒빪 방지 짝 쭖쩣 먾래 헏방지 기술",
+      "text": "블록체인에컪픦 팢 솒빪 방지 짝 쭖쩣 먾래 헏방지 기술",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/39",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 98.97019958496094,
+            "t": 388.7945556640625,
+            "r": 114.0802993774414,
+            "b": 403.1158142089844,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            16
+          ]
+        }
+      ],
+      "orig": "데이터 (DATA)",
+      "text": "데이터 (DATA)"
+    },
+    {
+      "self_ref": "#/texts/40",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 149.73280334472656,
+            "t": 389.1344299316406,
+            "r": 217.95950317382812,
+            "b": 403.89361572265625,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            38
+          ]
+        }
+      ],
+      "orig": "엣지컴퓨팅 차세대 AI (Next AI)",
+      "text": "엣지컴퓨팅 차세대 AI (Next AI)"
+    },
+    {
+      "self_ref": "#/texts/41",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 101.67250061035156,
+            "t": 339.88824462890625,
+            "r": 190.50323486328125,
+            "b": 348.1740417480469,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            60
+          ]
+        }
+      ],
+      "orig": "스마트 데이터 컪비스 훟심 컴퓨팅 보안 기술",
+      "text": "스마트 데이터 컪비스 훟심 컴퓨팅 보안 기술",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/42",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 198.62460327148438,
+            "t": 397.5832214355469,
+            "r": 236.78140258789062,
+            "b": 403.4557189941406,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            16
+          ]
+        }
+      ],
+      "orig": "(Edge Computing)",
+      "text": "(Edge Computing)"
+    },
+    {
+      "self_ref": "#/texts/43",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 241.18460083007812,
+            "t": 639.5764312744141,
+            "r": 267.4173889160156,
+            "b": 645.4489288330078,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            11
+          ]
+        }
+      ],
+      "orig": "Networking)",
+      "text": "Networking)"
+    },
+    {
+      "self_ref": "#/texts/44",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 313.8763122558594,
+            "t": 45.1717529296875,
+            "r": 318.27630615234375,
+            "b": 53.1717529296875,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            3
+          ]
+        }
+      ],
+      "orig": "Ⅳ",
+      "text": "Ⅳ",
+      "level": 3
+    },
+    {
+      "self_ref": "#/texts/45",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 188.2259979248047,
+            "t": 170.17041015625,
+            "r": 314.5860595703125,
+            "b": 179.17041015625,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            51
+          ]
+        }
+      ],
+      "orig": "[그림 4-5] 8대 미래 유망 보안기술 도출",
+      "text": "[그림 4-5] 8대 미래 유망 보안기술 도출",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/46",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 199.77259826660156,
+            "t": 638.5644302368164,
+            "r": 362.2147216796875,
+            "b": 647.6405258178711,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            53
+          ]
+        }
+      ],
+      "orig": "(Hyper-Connected(Hyper-Connected (4D Printing) (DATA)",
+      "text": "(Hyper-Connected(Hyper-Connected (4D Printing) (DATA)"
+    },
+    {
+      "self_ref": "#/texts/47",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 314.7463073730469,
+            "t": 45.1717529296875,
+            "r": 445.2490234375,
+            "b": 53.228759765625,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            52
+          ]
+        }
+      ],
+      "orig": ". 미래 국가 정보보안 기술 발전 방향 83",
+      "text": ". 미래 국가 정보보안 기술 발전 방향 83",
+      "level": 3
+    },
+    {
+      "self_ref": "#/texts/48",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 275.1062927246094,
+            "t": 218.4283447265625,
+            "r": 397.2485656738281,
+            "b": 226.71414184570312,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            75
+          ]
+        }
+      ],
+      "orig": "묾푷 차세대 비체(1A7)킹 방지읊 퓒 칺몮 대픟 기술",
+      "text": "묾푷 차세대 비체(1A7)킹 방지읊 퓒 칺몮 대픟 기술",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/49",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 4,
+          "bbox": {
+            "l": 65.1968994140625,
+            "t": 45.62774658203125,
+            "r": 81.84649658203125,
+            "b": 53.62774658203125,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            2
+          ]
+        }
+      ],
+      "orig": "84",
+      "text": "84",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/50",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 4,
+          "bbox": {
+            "l": 87.8740005493164,
+            "t": 322.3340148925781,
+            "r": 92.55400085449219,
+            "b": 333.5190124511719,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            3
+          ]
+        }
+      ],
+      "orig": "-",
+      "text": "-",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/51",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 4,
+          "bbox": {
+            "l": 78.43049621582031,
+            "t": 45.57073974609375,
+            "r": 197.23052978515625,
+            "b": 53.57073974609375,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            63
+          ]
+        }
+      ],
+      "orig": "ICT 기술변화에 따른 미래 보안기술 전망 보고서",
+      "text": "ICT 기술변화에 따른 미래 보안기술 전망 보고서",
+      "level": 3
+    },
+    {
+      "self_ref": "#/texts/52",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 4,
+          "bbox": {
+            "l": 88.7040023803711,
+            "t": 326.07501220703125,
+            "r": 280.5841064453125,
+            "b": 335.07501220703125,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            99
+          ]
+        }
+      ],
+      "orig": "기법, 이전에 설명한 학습 방법을 지원하고 이를 통합할 수 있는 기술 필요",
+      "text": "기법, 이전에 설명한 학습 방법을 지원하고 이를 통합할 수 있는 기술 필요",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/53",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 4,
+          "bbox": {
+            "l": 88.67400360107422,
+            "t": 322.3340148925781,
+            "r": 355.4341735839844,
+            "b": 333.5190124511719,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            280
+          ]
+        }
+      ],
+      "orig": "AI 기술을 활용해 오탐율을 줄이고, 빠른 분석 탐지를 넘어 자동적인 격리까지 제공하는 방향으로 진화 각종 사이버위협에 대한 하나의 기법 또는 알고리즘이 아닌, 침해 대응의 각 요소별로 최적화된 알고리즘과",
+      "text": "AI 기술을 활용해 오탐율을 줄이고, 빠른 분석 탐지를 넘어 자동적인 격리까지 제공하는 방향으로 진화 각종 사이버위협에 대한 하나의 기법 또는 알고리즘이 아닌, 침해 대응의 각 요소별로 최적화된 알고리즘과"
+    }
+  ],
   "pictures": [],
   "tables": [],
   "key_value_items": [],

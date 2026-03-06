@@ -174,22 +174,13 @@ fn export_node(
     if let Some(idx_str) = ref_path.strip_prefix("#/groups/") {
         if let Ok(idx) = idx_str.parse::<usize>() {
             if let Some(group) = doc.groups.get(idx) {
-                let is_list = matches!(
-                    group.label,
-                    GroupLabel::List | GroupLabel::OrderedList
-                );
-                let is_inline = matches!(
-                    group.label,
-                    GroupLabel::Inline
-                );
+                let is_list = matches!(group.label, GroupLabel::List | GroupLabel::OrderedList);
+                let is_inline = matches!(group.label, GroupLabel::Inline);
 
                 if is_inline {
                     export_inline_group(doc, group, output, image_mode);
                 } else {
-                    if is_list
-                        && list_depth == 0
-                        && !output.is_empty()
-                        && !output.ends_with("\n\n")
+                    if is_list && list_depth == 0 && !output.is_empty() && !output.ends_with("\n\n")
                     {
                         output.push('\n');
                     }
@@ -258,7 +249,6 @@ fn export_node(
                 }
             }
         }
-        return;
     }
 }
 
@@ -280,7 +270,7 @@ fn export_inline_group(
                         continue;
                     }
                     if text_item.label == DocItemLabel::Formula {
-                        output.push_str("$");
+                        output.push('$');
                         output.push_str(text);
                         output.push_str("$ ");
                     } else if let Some(ref url) = text_item.hyperlink {
@@ -354,9 +344,9 @@ pub fn table_to_markdown(data: &TableData) -> String {
         let c0 = cell.start_col_offset_idx as usize;
         let r1 = (r0 + cell.row_span as usize).min(nrows);
         let c1 = (c0 + cell.col_span as usize).min(ncols);
-        for r in r0..r1 {
-            for c in c0..c1 {
-                flat_grid[r][c] = text.clone();
+        for row in flat_grid.iter_mut().take(r1).skip(r0) {
+            for grid_cell in row.iter_mut().take(c1).skip(c0) {
+                *grid_cell = text.clone();
             }
         }
     }

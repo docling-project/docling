@@ -22,6 +22,12 @@ use crate::models::document::DoclingDocument;
 
 pub struct DocumentConverter;
 
+impl Default for DocumentConverter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DocumentConverter {
     pub fn new() -> Self {
         Self

@@ -76,10 +76,7 @@ fn export_node(
                         }
                     }
                     DocItemLabel::Formula => {
-                        output.push_str(&format!(
-                            "<div class=\"formula\">{}</div>\n",
-                            escaped
-                        ));
+                        output.push_str(&format!("<div class=\"formula\">{}</div>\n", escaped));
                     }
                     DocItemLabel::Caption => {
                         output.push_str(&format!("<figcaption>{}</figcaption>\n", formatted));
@@ -176,10 +173,7 @@ fn export_node(
     if let Some(idx_str) = ref_path.strip_prefix("#/groups/") {
         if let Ok(idx) = idx_str.parse::<usize>() {
             if let Some(group) = doc.groups.get(idx) {
-                let is_list = matches!(
-                    group.label,
-                    GroupLabel::List | GroupLabel::OrderedList
-                );
+                let is_list = matches!(group.label, GroupLabel::List | GroupLabel::OrderedList);
                 let tag = if matches!(group.label, GroupLabel::OrderedList) {
                     "ol"
                 } else {

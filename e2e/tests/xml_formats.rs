@@ -5,7 +5,11 @@ use docling_e2e::helpers::*;
 fn assert_jats_fixture(fixture: &str, stem: &str) {
     let input = test_data_dir().join("jats").join(fixture);
     let result = run_convert(&input, &["json", "md"]);
-    assert_eq!(result.exit_code, 0, "convert failed for {}: {}", fixture, result.stderr);
+    assert_eq!(
+        result.exit_code, 0,
+        "convert failed for {}: {}",
+        fixture, result.stderr
+    );
 
     let gt_json_name = format!("{}.json", fixture);
     if groundtruth_dir().join(&gt_json_name).exists() {
@@ -16,7 +20,11 @@ fn assert_jats_fixture(fixture: &str, stem: &str) {
 
     let gt_md_name = format!("{}.md", fixture);
     let actual_md = read_output(&result, stem, "md");
-    assert!(!actual_md.is_empty(), "JATS {} should produce MD output", fixture);
+    assert!(
+        !actual_md.is_empty(),
+        "JATS {} should produce MD output",
+        fixture
+    );
     if groundtruth_dir().join(&gt_md_name).exists() {
         let expected_md = read_groundtruth(&gt_md_name);
         assert_md_similar(&actual_md, &expected_md, 0.20);
@@ -43,7 +51,11 @@ fn test_jats_pntd() {
 fn assert_uspto_fixture(fixture: &str, stem: &str) {
     let input = test_data_dir().join("uspto").join(fixture);
     let result = run_convert(&input, &["json", "md"]);
-    assert_eq!(result.exit_code, 0, "convert failed for {}: {}", fixture, result.stderr);
+    assert_eq!(
+        result.exit_code, 0,
+        "convert failed for {}: {}",
+        fixture, result.stderr
+    );
 
     let gt_json_name = format!("{}.json", stem);
     if groundtruth_dir().join(&gt_json_name).exists() {
@@ -54,7 +66,11 @@ fn assert_uspto_fixture(fixture: &str, stem: &str) {
 
     let gt_md_name = format!("{}.md", stem);
     let actual_md = read_output(&result, stem, "md");
-    assert!(!actual_md.is_empty(), "USPTO {} should produce MD output", fixture);
+    assert!(
+        !actual_md.is_empty(),
+        "USPTO {} should produce MD output",
+        fixture
+    );
     if groundtruth_dir().join(&gt_md_name).exists() {
         let expected_md = read_groundtruth(&gt_md_name);
         assert_md_similar(&actual_md, &expected_md, 0.15);
@@ -85,7 +101,11 @@ fn test_uspto_pg_grant() {
 fn test_uspto_aps() {
     let input = test_data_dir().join("uspto").join("pftaps057006474.txt");
     let result = run_convert_with_format(&input, &["json", "md"], "xml_uspto");
-    assert_eq!(result.exit_code, 0, "convert failed for APS: {}", result.stderr);
+    assert_eq!(
+        result.exit_code, 0,
+        "convert failed for APS: {}",
+        result.stderr
+    );
 
     let actual_md = read_output(&result, "pftaps057006474", "md");
     assert!(!actual_md.is_empty(), "APS patent should produce MD output");
@@ -155,5 +175,9 @@ fn test_json_docling_invalid_input() {
     let bad_json = dir.path().join("bad.json");
     std::fs::write(&bad_json, "{ invalid json }").expect("write");
     let result = run_convert_expect_failure(&bad_json, &["json"]);
-    assert_ne!(result.exit_code, 0, "invalid JSON should fail: {}", result.stderr);
+    assert_ne!(
+        result.exit_code, 0,
+        "invalid JSON should fail: {}",
+        result.stderr
+    );
 }

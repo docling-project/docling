@@ -81,11 +81,7 @@ fn extract_abstract(node: &roxmltree::Node, doc: &mut DoclingDocument) {
     }
 }
 
-fn extract_body(
-    node: &roxmltree::Node,
-    doc: &mut DoclingDocument,
-    parent_ref: Option<&str>,
-) {
+fn extract_body(node: &roxmltree::Node, doc: &mut DoclingDocument, parent_ref: Option<&str>) {
     for child in node.children() {
         if child.has_tag_name("sec") {
             extract_section(&child, doc, parent_ref, 1);
@@ -140,10 +136,19 @@ fn extract_section(
         } else if child.has_tag_name("p") {
             let text = collect_text(child);
             if !text.is_empty() {
-                doc.add_text(DocItemLabel::Text, &text, section_ref.as_deref().or(parent_ref));
+                doc.add_text(
+                    DocItemLabel::Text,
+                    &text,
+                    section_ref.as_deref().or(parent_ref),
+                );
             }
         } else if child.has_tag_name("sec") {
-            extract_section(&child, doc, section_ref.as_deref().or(parent_ref), depth + 1);
+            extract_section(
+                &child,
+                doc,
+                section_ref.as_deref().or(parent_ref),
+                depth + 1,
+            );
         } else if child.has_tag_name("table-wrap") {
             extract_table(&child, doc, section_ref.as_deref().or(parent_ref));
         } else if child.has_tag_name("list") {
@@ -151,18 +156,30 @@ fn extract_section(
         } else if child.has_tag_name("disp-formula") {
             let text = collect_text(child);
             if !text.is_empty() {
-                doc.add_text(DocItemLabel::Formula, &text, section_ref.as_deref().or(parent_ref));
+                doc.add_text(
+                    DocItemLabel::Formula,
+                    &text,
+                    section_ref.as_deref().or(parent_ref),
+                );
             }
         } else if child.has_tag_name("code") || child.has_tag_name("preformat") {
             let text = collect_text(child);
             if !text.is_empty() {
-                doc.add_text(DocItemLabel::Code, &text, section_ref.as_deref().or(parent_ref));
+                doc.add_text(
+                    DocItemLabel::Code,
+                    &text,
+                    section_ref.as_deref().or(parent_ref),
+                );
             }
         } else if child.has_tag_name("fn-group") {
             for fn_node in child.children().filter(|n| n.has_tag_name("fn")) {
                 let text = collect_text(fn_node);
                 if !text.is_empty() {
-                    doc.add_text(DocItemLabel::Footnote, &text, section_ref.as_deref().or(parent_ref));
+                    doc.add_text(
+                        DocItemLabel::Footnote,
+                        &text,
+                        section_ref.as_deref().or(parent_ref),
+                    );
                 }
             }
         }
@@ -170,7 +187,7 @@ fn extract_section(
 }
 
 fn extract_list(node: &roxmltree::Node, doc: &mut DoclingDocument, parent_ref: Option<&str>) {
-    let is_ordered = node.attribute("list-type").map_or(false, |t| t == "order");
+    let is_ordered = node.attribute("list-type") == Some("order");
     for item in node.children().filter(|n| n.has_tag_name("list-item")) {
         let text = collect_text(item);
         if !text.is_empty() {
@@ -183,11 +200,7 @@ fn extract_list(node: &roxmltree::Node, doc: &mut DoclingDocument, parent_ref: O
     }
 }
 
-fn extract_table(
-    node: &roxmltree::Node,
-    doc: &mut DoclingDocument,
-    parent_ref: Option<&str>,
-) {
+fn extract_table(node: &roxmltree::Node, doc: &mut DoclingDocument, parent_ref: Option<&str>) {
     let label_text = node
         .children()
         .find(|n| n.has_tag_name("label"))
@@ -223,7 +236,11 @@ fn extract_table(
     let mut occupied: std::collections::HashSet<(u32, u32)> = std::collections::HashSet::new();
 
     for group in table_node.children() {
-        if group.has_tag_name("thead") || group.has_tag_name("tbody") || group.has_tag_name("tfoot") || group.has_tag_name("tr") {
+        if group.has_tag_name("thead")
+            || group.has_tag_name("tbody")
+            || group.has_tag_name("tfoot")
+            || group.has_tag_name("tr")
+        {
             let rows: Vec<roxmltree::Node> = if group.has_tag_name("tr") {
                 vec![group]
             } else {
