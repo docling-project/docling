@@ -12,6 +12,7 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.image_classification_engine_options import (
     ApiKserveV2ImageClassificationEngineOptions,
 )
+from docling.datamodel.kserve_transport_utils import resolve_kserve_transport_base_url
 from docling.exceptions import OperationNotAllowed
 from docling.models.inference_engines.common import KserveV2Client, KserveV2HttpClient
 from docling.models.inference_engines.image_classification.base import (
@@ -101,9 +102,13 @@ class ApiKserveV2ImageClassificationEngine(HfImageClassificationEngineBase):
         if self._kserve_client is not None:
             self._kserve_client.close()
 
+        base_url = resolve_kserve_transport_base_url(
+            url=self.options.url,
+            transport=self.options.transport,
+        )
         if self.options.transport == "http":
             self._kserve_client = KserveV2HttpClient(
-                base_url=str(self.options.url),
+                base_url=base_url,
                 model_name=self._resolve_model_name(),
                 model_version=self._resolve_model_version(),
                 timeout=self.options.timeout,
@@ -115,7 +120,7 @@ class ApiKserveV2ImageClassificationEngine(HfImageClassificationEngineBase):
             )
 
             self._kserve_client = KserveV2GrpcClient(
-                base_url=str(self.options.url),
+                base_url=base_url,
                 model_name=self._resolve_model_name(),
                 model_version=self._resolve_model_version(),
                 timeout=self.options.timeout,

@@ -1,31 +1,14 @@
-"""Helpers for KServe transport URL normalization."""
+"""Helpers for KServe transport URL handling."""
 
 from __future__ import annotations
 
-from typing import Any
 
+def resolve_kserve_transport_base_url(*, url: str, transport: str) -> str:
+    """Resolve runtime base URL for KServe transport clients.
 
-def normalize_kserve_transport_url_data(data: Any) -> Any:
-    """Normalize plain host:port URL inputs based on selected transport.
-
-    Keeps full URLs unchanged. For plain host:port:
-    - transport=http -> prefixes http://
-    - transport=grpc (default) -> prefixes dns://
+    HTTP accepts either full http(s) URLs or plain host:port.
+    gRPC expects plain host:port only and is passed through as-is.
     """
-    if not isinstance(data, dict):
-        return data
-
-    raw_url = data.get("url")
-    if not isinstance(raw_url, str):
-        return data
-
-    if "://" in raw_url:
-        return data
-
-    normalized = dict(data)
-    transport = normalized.get("transport", "grpc")
-    if transport == "http":
-        normalized["url"] = f"http://{raw_url}"
-    else:
-        normalized["url"] = f"dns://{raw_url}"
-    return normalized
+    if transport == "http" and "://" not in url:
+        return f"http://{url}"
+    return url

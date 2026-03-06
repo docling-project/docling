@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import AnyUrl, Field, model_validator
+from pydantic import Field
 
-from docling.datamodel.kserve_transport_utils import normalize_kserve_transport_url_data
 from docling.datamodel.settings import default_compile_model
 from docling.models.inference_engines.object_detection.base import (
     BaseObjectDetectionEngineOptions,
@@ -61,11 +60,11 @@ class ApiKserveV2ObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
         ObjectDetectionEngineType.API_KSERVE_V2
     )
 
-    url: AnyUrl = Field(
+    url: str = Field(
         description=(
             "Endpoint URL for KServe v2 transport. "
             "For transport='http', use http(s)://host[:port] or plain host:port. "
-            "For transport='grpc', use dns://host:port, static://host:port, or plain host:port."
+            "For transport='grpc', use plain host:port."
         ),
     )
 
@@ -134,25 +133,3 @@ class ApiKserveV2ObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
         default_factory=dict,
         description="Optional top-level KServe v2 infer request parameters.",
     )
-
-    @model_validator(mode="before")
-    @classmethod
-    def normalize_transport_url(cls, data: Any) -> Any:
-        return normalize_kserve_transport_url_data(data)
-
-    @model_validator(mode="after")
-    def validate_transport_url(self) -> ApiKserveV2ObjectDetectionEngineOptions:
-        scheme = self.url.scheme.lower()
-        if self.transport == "grpc":
-            if scheme not in {"dns", "static"}:
-                raise ValueError(
-                    "For transport='grpc', url must use dns:// or static://, "
-                    "or be plain host:port."
-                )
-        else:
-            if scheme not in {"http", "https"}:
-                raise ValueError(
-                    "For transport='http', url must use http:// or https://, "
-                    "or be plain host:port."
-                )
-        return self

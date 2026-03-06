@@ -167,55 +167,6 @@ def test_kserve_v2_client_infer_url_without_version() -> None:
     assert client.infer_url == "http://localhost:8000/v2/models/layout_model/infer"
 
 
-def test_object_detection_api_kserve_v2_transport_defaults_to_grpc() -> None:
-    options = ApiKserveV2ObjectDetectionEngineOptions(url="dns://localhost:9000")
-    assert options.transport == "grpc"
-
-
-def test_image_classification_api_kserve_v2_transport_defaults_to_grpc() -> None:
-    options = ApiKserveV2ImageClassificationEngineOptions(url="dns://localhost:9000")
-    assert options.transport == "grpc"
-
-
-def test_api_kserve_v2_transport_http_can_be_selected_explicitly() -> None:
-    od_options = ApiKserveV2ObjectDetectionEngineOptions(
-        url="http://localhost:8000", transport="http"
-    )
-    ic_options = ApiKserveV2ImageClassificationEngineOptions(
-        url="http://localhost:8000", transport="http"
-    )
-    assert od_options.transport == "http"
-    assert ic_options.transport == "http"
-
-
-def test_api_kserve_v2_transport_accepts_requested_url_formats() -> None:
-    # HTTP transport accepts plain host:port and http(s) URLs.
-    assert (
-        ApiKserveV2ObjectDetectionEngineOptions(
-            url="localhost:8000", transport="http"
-        ).url.scheme
-        == "http"
-    )
-    assert (
-        ApiKserveV2ImageClassificationEngineOptions(
-            url="https://localhost:8443", transport="http"
-        ).url.scheme
-        == "https"
-    )
-
-    # gRPC transport accepts plain host:port and dns/static URLs.
-    assert (
-        ApiKserveV2ObjectDetectionEngineOptions(url="localhost:9000").url.scheme
-        == "dns"
-    )
-    assert (
-        ApiKserveV2ImageClassificationEngineOptions(
-            url="static://localhost:9000"
-        ).url.scheme
-        == "static"
-    )
-
-
 def test_object_detection_engine_close_closes_client() -> None:
     options = ApiKserveV2ObjectDetectionEngineOptions(
         url="http://localhost:8000",

@@ -6,7 +6,6 @@ import logging
 import time  # --- PROFILING (remove when done) ---
 from dataclasses import dataclass
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
-from urllib.parse import urlparse
 
 import numpy as np
 
@@ -35,29 +34,28 @@ def _resolve_grpc_endpoint(
     *,
     base_url: str,
 ) -> str:
-    if "://" not in base_url:
-        base_url = f"dns://{base_url}"
+    if "://" in base_url:
+        raise ValueError(f"KServe gRPC URL must be plain host:port. Got: {base_url}")
 
-    parsed = urlparse(base_url)
-    scheme = parsed.scheme.lower()
-    if scheme not in {"dns", "static"}:
-        raise ValueError(
-            "KServe gRPC url must use dns:// or static://, "
-            f"or be plain host:port. Got: {base_url}"
-        )
-    if parsed.hostname is None:
+    host, separator, port_text = base_url.rpartition(":")
+    if separator == "" or host == "" or port_text == "":
         raise ValueError(
             "Invalid KServe URL for gRPC transport. "
-            f"Expected URL with hostname, got: {base_url}"
+            f"Expected plain host:port, got: {base_url}"
         )
-    if parsed.port is None:
+    try:
+        port = int(port_text)
+    except ValueError as exc:
         raise ValueError(
-            "KServe gRPC URL must include an explicit port "
-            f"(for example: dns://host:9000). Got: {base_url}"
+            "Invalid KServe URL for gRPC transport. "
+            f"Expected plain host:port with numeric port, got: {base_url}"
+        ) from exc
+    if port < 1 or port > 65535:
+        raise ValueError(
+            "Invalid KServe URL for gRPC transport. "
+            f"Port must be in range 1..65535, got: {port}"
         )
-    port = parsed.port
-
-    return f"{scheme}:///{parsed.hostname}:{port}"
+    return f"{host}:{port}"
 
 
 def _to_grpc_metadata(metadata: Mapping[str, str]) -> Sequence[Tuple[str, str]]:
@@ -70,18 +68,33 @@ def _set_request_parameter(
     value: Any,
 ) -> None:
     parameter = parameter_map[key]
-    if isinstance(value, bool):
-        parameter.bool_param = value
+    if isinstance(value, bool | np.bool_):
+        parameter.bool_param = bool(value)
         return
-    if isinstance(value, int):
-        parameter.int64_param = value
+    if isinstance(value, int | np.integer):
+        int_value = int(value)
+        if int_value < 0:
+            parameter.int64_param = int_value
+            return
+        if int_value <= (2**63 - 1):
+            parameter.int64_param = int_value
+            return
+        if int_value <= (2**64 - 1):
+            parameter.uint64_param = int_value
+            return
+        raise ValueError(
+            "Unsupported KServe request parameter integer range for gRPC: "
+            f"key={key}, value={int_value}"
+        )
+    if isinstance(value, float | np.floating):
+        parameter.double_param = float(value)
         return
     if isinstance(value, str):
         parameter.string_param = value
         return
     raise ValueError(
         "Unsupported KServe request parameter type for gRPC: "
-        f"key={key}, type={type(value)}. Supported: bool, int, str."
+        f"key={key}, type={type(value)}. Supported: bool, int, float, str."
     )
 
 
@@ -105,7 +118,8 @@ def _encode_contents(tensor: np.ndarray, contents: Any) -> None:
     else:
         raise ValueError(
             f"Unsupported numpy dtype for gRPC inline (non-binary) encoding: {tensor.dtype!s}. "
-            f"Supported types: {list(NUMPY_KSERVE_V2_DATATYPES.keys())}"
+            "Supported non-binary dtypes: bool, uint8/uint16/uint32/uint64, "
+            "int8/int16/int32/int64, float32/float64."
         )
 
 
@@ -130,7 +144,8 @@ def _decode_contents(
     else:
         raise RuntimeError(
             f"Unsupported numpy dtype for gRPC inline (non-binary) decoding: {np_dtype!s}. "
-            f"Supported types: {list(KSERVE_V2_NUMPY_DATATYPES.keys())}"
+            "Supported non-binary dtypes: bool, uint8/uint16/uint32/uint64, "
+            "int8/int16/int32/int64, float32/float64."
         )
     return np.asarray(data, dtype=np_dtype).reshape(shape)
 

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, List, Optional, Union
 import numpy as np
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.kserve_transport_utils import resolve_kserve_transport_base_url
 from docling.datamodel.object_detection_engine_options import (
     ApiKserveV2ObjectDetectionEngineOptions,
 )
@@ -115,9 +116,13 @@ class ApiKserveV2ObjectDetectionEngine(HfObjectDetectionEngineBase):
         if self._kserve_client is not None:
             self._kserve_client.close()
 
+        base_url = resolve_kserve_transport_base_url(
+            url=self.options.url,
+            transport=self.options.transport,
+        )
         if self.options.transport == "http":
             self._kserve_client = KserveV2HttpClient(
-                base_url=str(self.options.url),
+                base_url=base_url,
                 model_name=self._resolve_model_name(),
                 model_version=self._resolve_model_version(),
                 timeout=self.options.timeout,
@@ -129,7 +134,7 @@ class ApiKserveV2ObjectDetectionEngine(HfObjectDetectionEngineBase):
             )
 
             self._kserve_client = KserveV2GrpcClient(
-                base_url=str(self.options.url),
+                base_url=base_url,
                 model_name=self._resolve_model_name(),
                 model_version=self._resolve_model_version(),
                 timeout=self.options.timeout,
