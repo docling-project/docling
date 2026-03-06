@@ -226,6 +226,29 @@ class DocumentConverter:
             allowed_formats: List of allowed input formats. By default, any
                 format supported by Docling is allowed.
             format_options: Dictionary of format-specific options.
+
+        Examples:
+            Create a converter with default settings (all formats allowed):
+
+            >>> converter = DocumentConverter()
+
+            Allow only PDF and DOCX formats:
+
+            >>> from docling.datamodel.base_models import InputFormat
+            >>> converter = DocumentConverter(
+            ...     allowed_formats=[InputFormat.PDF, InputFormat.DOCX]
+            ... )
+
+            Customize pipeline options for PDF:
+
+            >>> from docling.datamodel.pipeline_options import PdfPipelineOptions
+            >>> converter = DocumentConverter(
+            ...     format_options={
+            ...         InputFormat.PDF: PdfFormatOption(
+            ...             pipeline_options=PdfPipelineOptions()
+            ...         ),
+            ...     }
+            ... )
         """
         self.allowed_formats: list[InputFormat] = (
             allowed_formats if allowed_formats is not None else list(InputFormat)
@@ -333,6 +356,26 @@ class DocumentConverter:
 
         Raises:
             ConversionError: An error occurred during conversion.
+
+        Examples:
+            Convert a local PDF file:
+
+            >>> from pathlib import Path
+            >>> converter = DocumentConverter()
+            >>> result = converter.convert("path/to/document.pdf")
+            >>> print(result.document.export_to_markdown())
+
+            Convert a document from a URL:
+
+            >>> result = converter.convert("https://example.com/paper.pdf")
+
+            Convert from an in-memory stream:
+
+            >>> from io import BytesIO
+            >>> from docling.datamodel.base_models import DocumentStream
+            >>> buf = BytesIO(b"<html><body>Hello</body></html>")
+            >>> stream = DocumentStream(name="page.html", stream=buf)
+            >>> result = converter.convert(stream)
         """
         all_res = self.convert_all(
             source=[source],
@@ -362,9 +405,10 @@ class DocumentConverter:
             headers: Optional headers given as a (single) dictionary of string
                 key-value pairs, in case of URL input source.
             raises_on_error: Whether to raise an error on the first conversion failure.
-            max_num_pages: Maximum number of pages to convert.
-            max_file_size: Maximum number of pages accepted per document. Documents
-                exceeding this number will be skipped.
+            max_num_pages: Maximum number of pages accepted per document.
+                Documents exceeding this number will not be converted.
+            max_file_size: Maximum file size in bytes. Documents exceeding this
+                limit will be skipped.
             page_range: Range of pages to convert in each document.
 
         Yields:
@@ -373,6 +417,21 @@ class DocumentConverter:
 
         Raises:
             ConversionError: An error occurred during conversion.
+
+        Examples:
+            Convert a batch of local files:
+
+            >>> from pathlib import Path
+            >>> converter = DocumentConverter()
+            >>> paths = list(Path("docs/").glob("*.pdf"))
+            >>> for result in converter.convert_all(paths):
+            ...     print(result.document.export_to_markdown()[:100])
+
+            Convert with a file size limit of 20 MB:
+
+            >>> results = converter.convert_all(
+            ...     paths, max_file_size=20 * 1024 * 1024
+            ... )
         """
         limits = DocumentLimits(
             max_num_pages=max_num_pages,
@@ -435,6 +494,24 @@ class DocumentConverter:
         Raises:
             ValueError: If format is neither `InputFormat.MD` nor `InputFormat.HTML`.
             ConversionError: An error occurred during conversion.
+
+        Examples:
+            Convert a Markdown string:
+
+            >>> from docling.datamodel.base_models import InputFormat
+            >>> converter = DocumentConverter()
+            >>> result = converter.convert_string(
+            ...     "# Title\nSome text.", format=InputFormat.MD
+            ... )
+            >>> print(result.document.export_to_markdown())
+
+            Convert an HTML string:
+
+            >>> result = converter.convert_string(
+            ...     "<h1>Title</h1><p>Some text.</p>",
+            ...     format=InputFormat.HTML,
+            ...     name="my_page",
+            ... )
         """
         name = name or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 

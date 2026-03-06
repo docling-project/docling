@@ -30,6 +30,17 @@ class OnnxRuntimeImageClassificationEngineOptions(BaseImageClassificationEngineO
         description="Ordered list of ONNX Runtime execution providers to try",
     )
 
+    graph_optimization_level: int = Field(
+        default=99,
+        description=(
+            "ONNX Runtime graph optimization level. "
+            "Accepts onnxruntime.GraphOptimizationLevel int values: "
+            "0 (ORT_DISABLE_ALL), 1 (ORT_ENABLE_BASIC), "
+            "2 (ORT_ENABLE_EXTENDED), 99 (ORT_ENABLE_ALL). "
+            "Default enables all optimizations including layout optimizations."
+        ),
+    )
+
 
 class TransformersImageClassificationEngineOptions(
     BaseImageClassificationEngineOptions
