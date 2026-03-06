@@ -61,7 +61,9 @@ def test_object_detection_preset_supports_api_kserve_v2_engine_default() -> None
     _DummyObjectDetectionStageOptions.register_preset(preset)
 
     # API_KSERVE_V2 presets require explicit engine_options with URL
-    engine_opts = ApiKserveV2ObjectDetectionEngineOptions(url="http://localhost:8000")
+    engine_opts = ApiKserveV2ObjectDetectionEngineOptions(
+        url="http://localhost:8000", transport="http"
+    )
     options = _DummyObjectDetectionStageOptions.from_preset(
         "od_api_kserve_v2_test", engine_options=engine_opts
     )
@@ -80,7 +82,7 @@ def test_image_classification_preset_supports_api_kserve_v2_engine_default() -> 
 
     # API_KSERVE_V2 presets require explicit engine_options with URL
     engine_opts = ApiKserveV2ImageClassificationEngineOptions(
-        url="http://localhost:8000"
+        url="http://localhost:8000", transport="http"
     )
     options = _DummyImageClassificationStageOptions.from_preset(
         "ic_api_kserve_v2_test", engine_options=engine_opts
@@ -94,6 +96,7 @@ def test_object_detection_factory_requires_remote_enablement() -> None:
     options = ApiKserveV2ObjectDetectionEngineOptions(
         url="http://localhost:8000",
         model_name="od_model",
+        transport="http",
     )
     spec = ObjectDetectionModelSpec(name="od", repo_id="org/od")
 
@@ -118,6 +121,7 @@ def test_image_classification_factory_requires_remote_enablement() -> None:
     options = ApiKserveV2ImageClassificationEngineOptions(
         url="http://localhost:8000",
         model_name="ic_model",
+        transport="http",
     )
     spec = ImageClassificationModelSpec(name="ic", repo_id="org/ic")
 
@@ -161,3 +165,106 @@ def test_kserve_v2_client_infer_url_without_version() -> None:
         headers={},
     )
     assert client.infer_url == "http://localhost:8000/v2/models/layout_model/infer"
+
+
+def test_object_detection_api_kserve_v2_transport_defaults_to_grpc() -> None:
+    options = ApiKserveV2ObjectDetectionEngineOptions(url="dns://localhost:9000")
+    assert options.transport == "grpc"
+
+
+def test_image_classification_api_kserve_v2_transport_defaults_to_grpc() -> None:
+    options = ApiKserveV2ImageClassificationEngineOptions(url="dns://localhost:9000")
+    assert options.transport == "grpc"
+
+
+def test_api_kserve_v2_transport_http_can_be_selected_explicitly() -> None:
+    od_options = ApiKserveV2ObjectDetectionEngineOptions(
+        url="http://localhost:8000", transport="http"
+    )
+    ic_options = ApiKserveV2ImageClassificationEngineOptions(
+        url="http://localhost:8000", transport="http"
+    )
+    assert od_options.transport == "http"
+    assert ic_options.transport == "http"
+
+
+def test_api_kserve_v2_transport_accepts_requested_url_formats() -> None:
+    # HTTP transport accepts plain host:port and http(s) URLs.
+    assert (
+        ApiKserveV2ObjectDetectionEngineOptions(
+            url="localhost:8000", transport="http"
+        ).url.scheme
+        == "http"
+    )
+    assert (
+        ApiKserveV2ImageClassificationEngineOptions(
+            url="https://localhost:8443", transport="http"
+        ).url.scheme
+        == "https"
+    )
+
+    # gRPC transport accepts plain host:port and dns/static URLs.
+    assert (
+        ApiKserveV2ObjectDetectionEngineOptions(url="localhost:9000").url.scheme
+        == "dns"
+    )
+    assert (
+        ApiKserveV2ImageClassificationEngineOptions(
+            url="static://localhost:9000"
+        ).url.scheme
+        == "static"
+    )
+
+
+def test_object_detection_engine_close_closes_client() -> None:
+    options = ApiKserveV2ObjectDetectionEngineOptions(
+        url="http://localhost:8000",
+        model_name="od_model",
+        transport="http",
+    )
+    spec = ObjectDetectionModelSpec(name="od", repo_id="org/od")
+    engine = create_object_detection_engine(
+        options=options,
+        model_spec=spec,
+        enable_remote_services=True,
+        accelerator_options=AcceleratorOptions(),
+    )
+
+    class _DummyClient:
+        def __init__(self) -> None:
+            self.closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    dummy = _DummyClient()
+    engine._kserve_client = dummy  # type: ignore[attr-defined]
+    engine.close()  # type: ignore[attr-defined]
+    assert dummy.closed
+
+
+def test_image_classification_engine_close_closes_client() -> None:
+    options = ApiKserveV2ImageClassificationEngineOptions(
+        url="http://localhost:8000",
+        model_name="ic_model",
+        transport="http",
+    )
+    spec = ImageClassificationModelSpec(name="ic", repo_id="org/ic")
+    engine = create_image_classification_engine(
+        options=options,
+        model_spec=spec,
+        enable_remote_services=True,
+        accelerator_options=AcceleratorOptions(),
+    )
+
+    class _DummyClient:
+        def __init__(self) -> None:
+            self.closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    dummy = _DummyClient()
+    engine._kserve_client = dummy  # type: ignore[attr-defined]
+    engine.close()  # type: ignore[attr-defined]
+    assert dummy.closed

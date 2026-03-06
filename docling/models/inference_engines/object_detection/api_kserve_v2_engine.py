@@ -14,7 +14,7 @@ from docling.datamodel.object_detection_engine_options import (
     ApiKserveV2ObjectDetectionEngineOptions,
 )
 from docling.exceptions import OperationNotAllowed
-from docling.models.inference_engines.common import KserveV2HttpClient
+from docling.models.inference_engines.common import KserveV2Client, KserveV2HttpClient
 from docling.models.inference_engines.object_detection.base import (
     ObjectDetectionEngineInput,
     ObjectDetectionEngineOutput,
@@ -48,7 +48,7 @@ class ApiKserveV2ObjectDetectionEngine(HfObjectDetectionEngineBase):
             artifacts_path=artifacts_path,
         )
         self.options: ApiKserveV2ObjectDetectionEngineOptions = options
-        self._kserve_client: Optional[KserveV2HttpClient] = None
+        self._kserve_client: Optional[KserveV2Client] = None
         self._input_images_name: Optional[str] = None
         self._input_orig_target_sizes_name: Optional[str] = None
         self._output_labels_name: Optional[str] = None
@@ -112,13 +112,32 @@ class ApiKserveV2ObjectDetectionEngine(HfObjectDetectionEngineBase):
         self._processor = self._load_preprocessor(model_folder)
         self._id_to_label = self._load_label_mapping(model_folder)
 
-        self._kserve_client = KserveV2HttpClient(
-            base_url=str(self.options.url),
-            model_name=self._resolve_model_name(),
-            model_version=self._resolve_model_version(),
-            timeout=self.options.timeout,
-            headers=self.options.headers,
-        )
+        if self._kserve_client is not None:
+            self._kserve_client.close()
+
+        if self.options.transport == "http":
+            self._kserve_client = KserveV2HttpClient(
+                base_url=str(self.options.url),
+                model_name=self._resolve_model_name(),
+                model_version=self._resolve_model_version(),
+                timeout=self.options.timeout,
+                headers=self.options.headers,
+            )
+        else:
+            from docling.models.inference_engines.common.kserve_v2_grpc import (
+                KserveV2GrpcClient,
+            )
+
+            self._kserve_client = KserveV2GrpcClient(
+                base_url=str(self.options.url),
+                model_name=self._resolve_model_name(),
+                model_version=self._resolve_model_version(),
+                timeout=self.options.timeout,
+                metadata=self.options.grpc_metadata,
+                use_tls=self.options.grpc_use_tls,
+                max_message_bytes=self.options.grpc_max_message_bytes,
+                use_binary_data=self.options.grpc_use_binary_data,
+            )
         (
             self._input_images_name,
             self._input_orig_target_sizes_name,
@@ -222,3 +241,14 @@ class ApiKserveV2ObjectDetectionEngine(HfObjectDetectionEngineBase):
             )
 
         return batch_outputs
+
+    def close(self) -> None:
+        if self._kserve_client is None:
+            return
+        self._kserve_client.close()
+
+    def __del__(self) -> None:
+        try:
+            self.close()
+        except Exception:
+            pass
