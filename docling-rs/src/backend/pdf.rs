@@ -14,6 +14,9 @@ use crate::models::table::TableCell;
 
 use super::Backend;
 
+// Pdfium for page rendering
+use pdfium_render::prelude::*;
+
 // ---------------------------------------------------------------------------
 // Shared constants
 // ---------------------------------------------------------------------------
@@ -766,6 +769,9 @@ fn split_single_newline_paragraphs(block: &str) -> Vec<&str> {
         let total: usize = lines.iter().map(|l| l.trim().len()).sum();
         (total as f64 / lines.len() as f64).max(1.0)
     };
+    
+    // For presentation-style content (many short lines), split more aggressively
+    let is_presentation_style = avg_len < 60.0 && lines.len() > 3;
 
     let mut result = Vec::new();
     let mut start = 0;
@@ -779,8 +785,23 @@ fn split_single_newline_paragraphs(block: &str) -> Vec<&str> {
             byte_offset += 1;
         }
         if i < lines.len() - 1 {
-            let trimmed_len = line.trim().len();
-            if trimmed_len > 0 && (trimmed_len as f64) < avg_len * 0.4 {
+            let trimmed = line.trim();
+            let trimmed_len = trimmed.len();
+            
+            // Split condition: either short relative to average, or presentation-style
+            // where we split on lines that look like headers/standalone text
+            let should_split = if is_presentation_style {
+                // In presentation style, split after short lines that don't end with
+                // continuation markers (comma, hyphen at end of word)
+                trimmed_len > 0 && trimmed_len < 80 
+                    && !trimmed.ends_with(',')
+                    && !trimmed.ends_with('-')
+                    && !trimmed.ends_with(':')
+            } else {
+                trimmed_len > 0 && (trimmed_len as f64) < avg_len * 0.4
+            };
+            
+            if should_split {
                 let end = line_start + line.len();
                 let segment = &block[start..end];
                 if !segment.trim().is_empty() {
@@ -907,18 +928,21 @@ fn classify_paragraph(
         }
     }
 
-    // Short single-line text: only promote to heading with moderate font-size evidence
+    // Short single-line text: only promote to heading with strong font-size evidence
+    // Be conservative - require larger font difference to avoid promoting diagram labels
     let line_count = trimmed.lines().count();
     let char_count = trimmed.len();
-    if line_count == 1 && char_count < 80 && char_count > 1 {
+    if line_count == 1 && char_count < 80 && char_count > 3 {
         if !trimmed.contains(". ")
             && !trimmed.ends_with('.')
             && !trimmed.ends_with(',')
             && !trimmed.ends_with(';')
+            && !trimmed.ends_with(')')
         {
             if let Some(fs) = local_font_size {
                 let ratio = fs / body_font_size;
-                if ratio >= 1.15 {
+                // Require stronger signal (1.25) for short lines without clear header patterns
+                if ratio >= 1.25 {
                     return DocItemLabel::SectionHeader;
                 }
             }
@@ -1450,9 +1474,16 @@ impl Backend for PdfBackend {
             let text = sanitize_text(&page_data.raw_text);
             let text = text.trim();
             if text.is_empty() {
-                // Still check for images
+                // Still check for images - use pdfium for better figure extraction
                 if let Some(ref layout) = page_data.layout {
-                    emit_images(&mut doc, layout, page_data.page_num, page_data.height);
+                    extract_page_figures_pdfium(
+                        path,
+                        layout,
+                        page_data.page_num,
+                        page_data.width,
+                        page_data.height,
+                        &mut doc,
+                    );
                 }
                 continue;
             }
@@ -1496,11 +1527,27 @@ impl Backend for PdfBackend {
                     continue;
                 }
 
-                // Skip page headers/footers
-                let is_header = header_texts.iter().any(|h| trimmed.contains(h.as_str()));
-                let is_footer = footer_texts.iter().any(|f| trimmed.contains(f.as_str()));
+                // Skip page headers/footers - only filter if the paragraph is MOSTLY furniture
+                // (i.e., the furniture text is a large portion of the paragraph)
+                let is_header = header_texts.iter().any(|h| {
+                    let h_trimmed = h.trim();
+                    h_trimmed.len() > 5 && trimmed.contains(h_trimmed)
+                });
+                let is_footer = footer_texts.iter().any(|f| {
+                    let f_trimmed = f.trim();
+                    f_trimmed.len() > 5 && trimmed.contains(f_trimmed)
+                });
                 if is_header || is_footer {
-                    if trimmed.len() < 100 {
+                    // Only filter if the furniture text comprises most of the paragraph
+                    let furniture_len = header_texts.iter()
+                        .chain(footer_texts.iter())
+                        .filter(|t| trimmed.contains(t.as_str()))
+                        .map(|t| t.len())
+                        .max()
+                        .unwrap_or(0);
+                    
+                    // Filter only if furniture is >80% of paragraph length
+                    if furniture_len as f64 > trimmed.len() as f64 * 0.8 && trimmed.len() < 150 {
                         let label = if is_footer && !is_header {
                             DocItemLabel::PageFooter
                         } else {
@@ -1655,8 +1702,15 @@ impl Backend for PdfBackend {
                     }
                 }
 
-                // Emit images
-                emit_images(&mut doc, layout, page_data.page_num, page_data.height);
+                // Emit images - use pdfium for better figure extraction
+                extract_page_figures_pdfium(
+                    path,
+                    layout,
+                    page_data.page_num,
+                    page_data.width,
+                    page_data.height,
+                    &mut doc,
+                );
             }
         }
 
@@ -1757,6 +1811,306 @@ fn encode_raw_as_png(raw: &[u8], width: u32, height: u32, channels: u32) -> Opti
     let mut png_buf = Cursor::new(Vec::new());
     img.write_to(&mut png_buf, image::ImageFormat::Png).ok()?;
     Some(png_buf.into_inner())
+}
+
+/// Render PDF pages using pdfium and extract image objects as figure regions.
+/// This provides much better figure extraction than extracting raw embedded images.
+fn render_page_figures(
+    pdf_path: &Path,
+    page_num: u32,
+    page_width: f64,
+    page_height: f64,
+    image_bboxes: &[(f64, f64, f64, f64)], // (x, y, width, height) in PDF coords
+) -> Vec<(Vec<u8>, f64, f64, f64, f64)> {
+    // Return: Vec of (jpeg_bytes, x, y, width, height)
+    let mut results = Vec::new();
+    
+    // Try to bind to pdfium in multiple locations:
+    // 1. Relative to executable (for bundled distribution)
+    // 2. ./lib directory (development)
+    // 3. Current directory
+    // 4. System library
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|p| p.to_path_buf()));
+    
+    let mut binding_attempts: Vec<Result<Box<dyn PdfiumLibraryBindings>, PdfiumError>> = Vec::new();
+    
+    // Try relative to executable first
+    if let Some(ref exe_path) = exe_dir {
+        let lib_path = exe_path.join("lib");
+        binding_attempts.push(
+            Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path(lib_path.to_str().unwrap_or("./lib")))
+        );
+        binding_attempts.push(
+            Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path(exe_path.to_str().unwrap_or("./")))
+        );
+    }
+    
+    // Try common development paths
+    binding_attempts.push(Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path("./lib")));
+    binding_attempts.push(Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path("./")));
+    binding_attempts.push(Pdfium::bind_to_system_library());
+    
+    let bindings = binding_attempts
+        .into_iter()
+        .find_map(|r| r.ok());
+    
+    let bindings = match bindings {
+        Some(b) => b,
+        None => {
+            log::warn!("Failed to bind to pdfium: library not found in any location");
+            return results;
+        }
+    };
+    
+    let pdfium = Pdfium::new(bindings);
+    
+    let document = match pdfium.load_pdf_from_file(pdf_path, None) {
+        Ok(d) => d,
+        Err(e) => {
+            log::warn!("Failed to load PDF with pdfium: {:?}", e);
+            return results;
+        }
+    };
+    
+    // Get the page (0-indexed in pdfium)
+    let page_index = page_num.saturating_sub(1) as u16;
+    let page = match document.pages().get(page_index) {
+        Ok(p) => p,
+        Err(_) => return results,
+    };
+    
+    // Render the full page at 2x scale for better quality
+    let scale = 2.0;
+    let render_config = PdfRenderConfig::new()
+        .set_target_width((page_width * scale) as i32)
+        .set_maximum_height((page_height * scale) as i32);
+    
+    let page_bitmap = match page.render_with_config(&render_config) {
+        Ok(b) => b,
+        Err(_) => return results,
+    };
+    
+    let page_image = page_bitmap.as_image();
+    let rendered_width = page_image.width() as f64;
+    let rendered_height = page_image.height() as f64;
+    
+    // Scale factors from PDF coordinates to rendered pixels
+    let scale_x = rendered_width / page_width;
+    let scale_y = rendered_height / page_height;
+    
+    // Crop each figure region
+    for &(x, y, w, h) in image_bboxes {
+        // Convert PDF coordinates to pixel coordinates
+        // PDF origin is bottom-left, image origin is top-left
+        let px_x = (x * scale_x) as u32;
+        let px_y = ((page_height - y - h) * scale_y) as u32; // Flip Y
+        let px_w = (w * scale_x) as u32;
+        let px_h = (h * scale_y) as u32;
+        
+        // Bounds check
+        if px_x + px_w > page_image.width() || px_y + px_h > page_image.height() {
+            continue;
+        }
+        if px_w < 50 || px_h < 50 {
+            continue; // Skip very small regions
+        }
+        
+        // Crop the region
+        let cropped = page_image.crop_imm(px_x, px_y, px_w, px_h);
+        
+        // Resize if exceeds max dimension (1536px)
+        const MAX_DIM: u32 = 1536;
+        let (final_w, final_h) = if px_w > MAX_DIM || px_h > MAX_DIM {
+            let ratio = (MAX_DIM as f32 / px_w as f32).min(MAX_DIM as f32 / px_h as f32);
+            ((px_w as f32 * ratio) as u32, (px_h as f32 * ratio) as u32)
+        } else {
+            (px_w, px_h)
+        };
+        
+        let resized = if final_w != px_w || final_h != px_h {
+            cropped.resize(final_w, final_h, image::imageops::FilterType::Lanczos3)
+        } else {
+            cropped
+        };
+        
+        let rgb_img = resized.to_rgb8();
+        
+        // Compress with decreasing quality until size target (500KB) is met
+        const MAX_SIZE_KB: usize = 500;
+        const QUALITY_START: u8 = 95;
+        const QUALITY_MIN: u8 = 30;
+        const QUALITY_STEP: u8 = 10;
+        
+        let max_size_bytes = MAX_SIZE_KB * 1024;
+        let mut quality = QUALITY_START;
+        let mut jpeg_bytes: Vec<u8>;
+        
+        loop {
+            jpeg_bytes = Vec::new();
+            let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(
+                std::io::Cursor::new(&mut jpeg_bytes),
+                quality,
+            );
+            if encoder.encode_image(&rgb_img).is_err() {
+                break;
+            }
+            
+            if jpeg_bytes.len() <= max_size_bytes || quality <= QUALITY_MIN {
+                break;
+            }
+            quality = quality.saturating_sub(QUALITY_STEP);
+        }
+        
+        if !jpeg_bytes.is_empty() {
+            log::info!("  PDF figure: {}x{} -> {}x{}, {}KB, q={}", 
+                       px_w, px_h, final_w, final_h, jpeg_bytes.len() / 1024, quality);
+            results.push((jpeg_bytes, x, y, w, h));
+        }
+    }
+    
+    results
+}
+
+/// Check if bbox `a` contains or significantly overlaps with bbox `b`
+fn bbox_contains_or_overlaps(a: &(f64, f64, f64, f64), b: &(f64, f64, f64, f64)) -> bool {
+    let (ax, ay, aw, ah) = *a;
+    let (bx, by, bw, bh) = *b;
+    
+    // Check if `a` contains `b` (with some tolerance)
+    let tolerance = 20.0;
+    let a_contains_b = bx >= ax - tolerance && 
+                       by >= ay - tolerance &&
+                       bx + bw <= ax + aw + tolerance &&
+                       by + bh <= ay + ah + tolerance;
+    
+    if a_contains_b && (aw * ah) > (bw * bh) {
+        return true;
+    }
+    
+    // Check for significant overlap (>70% of smaller bbox)
+    let overlap_x = (ax + aw).min(bx + bw) - ax.max(bx);
+    let overlap_y = (ay + ah).min(by + bh) - ay.max(by);
+    
+    if overlap_x > 0.0 && overlap_y > 0.0 {
+        let overlap_area = overlap_x * overlap_y;
+        let smaller_area = (aw * ah).min(bw * bh);
+        if overlap_area > smaller_area * 0.7 && (aw * ah) > (bw * bh) {
+            return true;
+        }
+    }
+    
+    false
+}
+
+/// Filter out nested/overlapping bounding boxes, keeping only the larger ones
+fn filter_overlapping_bboxes(bboxes: Vec<(f64, f64, f64, f64)>) -> Vec<(f64, f64, f64, f64)> {
+    if bboxes.len() <= 1 {
+        return bboxes;
+    }
+    
+    let mut result = Vec::new();
+    let mut skip_indices: std::collections::HashSet<usize> = std::collections::HashSet::new();
+    
+    // Sort by area (largest first)
+    let mut sorted: Vec<(usize, (f64, f64, f64, f64))> = bboxes.iter().copied().enumerate().collect();
+    sorted.sort_by(|a, b| {
+        let area_a = a.1.2 * a.1.3;
+        let area_b = b.1.2 * b.1.3;
+        area_b.partial_cmp(&area_a).unwrap_or(std::cmp::Ordering::Equal)
+    });
+    
+    for i in 0..sorted.len() {
+        if skip_indices.contains(&sorted[i].0) {
+            continue;
+        }
+        
+        let bbox_i = &sorted[i].1;
+        result.push(*bbox_i);
+        
+        // Mark smaller overlapping boxes to skip
+        for j in (i + 1)..sorted.len() {
+            if !skip_indices.contains(&sorted[j].0) {
+                let bbox_j = &sorted[j].1;
+                if bbox_contains_or_overlaps(bbox_i, bbox_j) {
+                    skip_indices.insert(sorted[j].0);
+                }
+            }
+        }
+    }
+    
+    result
+}
+
+/// Extract figure regions from a PDF page by rendering and cropping image bounding boxes.
+/// Falls back to embedded image extraction if pdfium is not available.
+fn extract_page_figures_pdfium(
+    pdf_path: &Path,
+    layout: &LayoutInfo,
+    page_num: u32,
+    page_width: f64,
+    page_height: f64,
+    doc: &mut DoclingDocument,
+) {
+    // Collect image bounding boxes from layout, filtering small images
+    let image_bboxes: Vec<(f64, f64, f64, f64)> = layout
+        .images
+        .iter()
+        .filter(|img| img.width > 100.0 && img.height > 100.0) // Filter small images
+        .map(|img| (img.x, img.y, img.width, img.height))
+        .collect();
+    
+    // Filter out nested/overlapping bounding boxes
+    let image_bboxes = filter_overlapping_bboxes(image_bboxes);
+    
+    if image_bboxes.is_empty() {
+        return;
+    }
+    
+    let rendered_figures = render_page_figures(
+        pdf_path,
+        page_num,
+        page_width,
+        page_height,
+        &image_bboxes,
+    );
+    
+    for (jpeg_bytes, x, y, w, h) in rendered_figures {
+        let img_y_top = page_height - y - h;
+        let idx = doc.add_picture(None, None);
+        doc.pictures[idx].prov.push(ProvenanceItem {
+            page_no: page_num,
+            bbox: BoundingBox {
+                l: x,
+                t: img_y_top,
+                r: x + w,
+                b: img_y_top + h,
+                coord_origin: Some("TOPLEFT".to_string()),
+            },
+            charspan: None,
+        });
+        
+        // Load image to get actual pixel dimensions
+        let (px_w, px_h) = image::load_from_memory(&jpeg_bytes)
+            .map(|i| (i.width() as f64, i.height() as f64))
+            .unwrap_or((w, h));
+        
+        let b64 = base64::engine::general_purpose::STANDARD.encode(&jpeg_bytes);
+        let uri = format!("data:image/jpeg;base64,{}", b64);
+        doc.set_picture_image(
+            idx,
+            ImageRef {
+                mimetype: "image/jpeg".to_string(),
+                dpi: 144, // 2x scale
+                size: ImageSize {
+                    width: px_w,
+                    height: px_h,
+                },
+                uri,
+            },
+        );
+    }
 }
 
 fn emit_images(doc: &mut DoclingDocument, layout: &LayoutInfo, page_num: u32, page_height: f64) {

@@ -209,15 +209,39 @@ fn export_node(
                 if !output.is_empty() {
                     output.push('\n');
                 }
-                let alt = pic
+                let caption = pic
                     .meta
                     .as_ref()
                     .and_then(|m| m.description.as_deref())
-                    .unwrap_or("image");
+                    .unwrap_or("");
                 match image_mode {
                     ImageRefMode::Embedded | ImageRefMode::Referenced => {
                         if let Some(ref img) = pic.image {
-                            output.push_str(&format!("![{}]({})\n", alt, img.uri));
+                            // Check if image was omitted (filtered out)
+                            if img.uri.starts_with("[IMAGE OMITTED") {
+                                output.push_str(&img.uri);
+                                output.push('\n');
+                            } else {
+                                // Extract image number from URI (e.g., "doc_images/image_0.jpg" -> 0)
+                                let img_num = img.uri
+                                    .rsplit('/')
+                                    .next()
+                                    .and_then(|f| f.strip_prefix("image_"))
+                                    .and_then(|f| f.strip_suffix(".jpg"))
+                                    .and_then(|n| n.parse::<usize>().ok())
+                                    .map(|n| n + 1)  // 1-indexed for display
+                                    .unwrap_or(idx + 1);
+                                
+                                let caption_part = if !caption.is_empty() {
+                                    format!(": {}", caption)
+                                } else {
+                                    String::new()
+                                };
+                                output.push_str(&format!(
+                                    "[IMAGE {}{} - see attached image {}]\n",
+                                    img_num, caption_part, img_num
+                                ));
+                            }
                         } else {
                             output.push_str("<!-- image -->\n");
                         }

@@ -34,6 +34,7 @@ roxmltree = "0.21.1"
 lopdf = "0.39.0"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "bmp", "tiff", "webp"] }
 base64 = "0.22"
+pdfium-render = "0.8"
 
 [dev-dependencies]
 assert_cmd = "2"
