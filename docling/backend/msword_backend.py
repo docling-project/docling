@@ -1411,7 +1411,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             cell_element = table.rows[0].cells[0]
             # In case we have a table of only 1 cell, we consider it furniture
             # And proceed processing the content of the cell as though it's in the document body
+            # Save parent state before processing cell content
+            original_parents = self.parents.copy()
             self._walk_linear(cell_element._element, doc)
+            # Restore parent state after processing cell content
+            self.parents = original_parents
             return elem_ref
 
         data = TableData(num_rows=num_rows, num_cols=num_cols)
@@ -1464,7 +1468,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 rich_table_cell: bool = self._is_rich_table_cell(cell)
 
                 if rich_table_cell:
+                    # Save parent state before processing cell content
+                    original_parents = self.parents.copy()
                     _, provs_in_cell = self._walk_linear(cell._element, doc)
+                    # Restore parent state after processing cell content
+                    self.parents = original_parents
                 _log.debug(f"Table cell {row_idx},{col_idx} rich? {rich_table_cell}")
 
                 if len(provs_in_cell) > 0:
