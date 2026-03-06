@@ -411,6 +411,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if key not in self.list_counters:
             self.list_counters[key] = 0
         self.list_counters[key] += 1
+        # Reset sub-level counters since parent level advanced
+        for k in [k for k in self.list_counters if k[0] == numid and k[1] > ilvl]:
+            self.list_counters[k] = 0
         return self.list_counters[key]
 
     def _reset_list_counters_for_new_sequence(self, numid: int):
@@ -419,6 +422,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         keys_to_reset = [key for key in self.list_counters.keys() if key[0] == numid]
         for key in keys_to_reset:
             self.list_counters[key] = 0
+
+    def _build_enum_marker(self, numid: int, ilvl: int) -> str:
+        """Build full hierarchical marker like '1.2.3.'"""
+        parts = [
+            str(self.list_counters.get((numid, lvl), 1)) for lvl in range(ilvl + 1)
+        ]
+        return ".".join(parts) + "."
 
     def _is_numbered_list(self, numId: int, ilvl: int) -> bool:
         """Check if a list is numbered based on its numFmt value."""
@@ -1272,8 +1282,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     ) -> None:
         """Resolve enumeration marker and add a formatted list item."""
         if is_numbered:
-            counter = self._get_list_counter(numid, ilevel)
-            enum_marker = str(counter) + "."
+            self._get_list_counter(numid, ilevel)
+            enum_marker = self._build_enum_marker(numid, ilevel)
         else:
             enum_marker = ""
         self._add_formatted_list_item(doc, elements, enum_marker, is_numbered, level)
@@ -1296,7 +1306,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         prev_indent = self._prev_indent()
         if (
             self._prev_numid() is None
-            or self._prev_numid() != numid
             or (self._prev_numid() == numid and self.level_at_new_list is None)
         ):  # Open new list
             self.level_at_new_list = level
@@ -1360,12 +1369,44 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 self.level_at_new_list + ilevel,
             )
 
-        elif self._prev_numid() == numid or prev_indent == ilevel:
+        elif self._prev_numid() == numid and isinstance(
+            self.parents.get(level - 1), ListGroup
+        ):
+            # Continue existing list - only if parent is actually a ListGroup
             self._add_list_item_with_marker(
                 doc, elements, numid, ilevel, is_numbered, level - 1
             )
-        else:
-            _log.warning("List item not matching any insert condition.")
+        elif self._prev_numid() != numid or not isinstance(
+            self.parents.get(level - 1), ListGroup
+        ):
+            # New list sequence: Different numid OR parent is not a ListGroup
+            # Use anchor-based level to place new list at the correct document position
+            if self.level_at_new_list is not None:
+                use_level = self.level_at_new_list + ilevel
+                for k in list(self.parents.keys()):
+                    if k > use_level:
+                        self.parents[k] = None
+            else:
+                use_level = level
+                self.level_at_new_list = use_level
+
+            list_gr = doc.add_list_group(
+                name="list",
+                parent=self.parents[use_level - 1],
+                content_layer=self.content_layer,
+            )
+            self.parents[use_level] = list_gr
+            elem_ref.append(list_gr.get_ref())
+
+            # Set marker and enumerated arguments if this is an enumeration element.
+            if is_numbered:
+                self._get_list_counter(numid, ilevel)
+                enum_marker = self._build_enum_marker(numid, ilevel)
+            else:
+                enum_marker = ""
+            self._add_formatted_list_item(
+                doc, elements, enum_marker, is_numbered, use_level
+            )
         return elem_ref
 
     @staticmethod
