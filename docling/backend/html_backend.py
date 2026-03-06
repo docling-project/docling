@@ -149,6 +149,32 @@ _CHECKBOX_CONTAINER_CLASSES: Final = {
     "checkbox-option",
     "option",
 }
+_INLINE_HTML_TAGS: Final = {
+    "a",
+    "abbr",
+    "b",
+    "bdi",
+    "bdo",
+    "cite",
+    "code",
+    "data",
+    "dfn",
+    "em",
+    "i",
+    "kbd",
+    "label",
+    "mark",
+    "q",
+    "s",
+    "samp",
+    "small",
+    "span",
+    "strong",
+    "sub",
+    "sup",
+    "u",
+    "var",
+}
 
 
 @dataclass(frozen=True)
@@ -191,7 +217,7 @@ class _ExtractedFormText:
 
 @dataclass
 class _ExtractedFormField:
-    key_tag: Tag
+    key_tag: Optional[Tag]
     key_order: int
     key_orig: str
     key_text: str
@@ -372,6 +398,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self._suppressed_tag_ids_stack: list[set[str]] = []
         self._suppressed_tag_obj_ids_stack: list[set[int]] = []
         self._form_fields_by_key_id_stack: list[dict[str, _ExtractedFormField]] = []
+        self._tag_name_by_docling_id_cache: dict[str, str] = {}
 
         try:
             raw = (
@@ -1425,21 +1452,17 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         and self._is_custom_checkbox_tag(item)
                     )
                 )
-                is_atomic_node = name in _BLOCK_TAGS or not has_block_descendants
-                if is_atomic_node:
-                    for field in self._consume_form_fields_in_subtree(node):
-                        _flush_buffer()
-                        added_refs.extend(
-                            self._add_field_item_from_extracted(
-                                field=field,
-                                doc=doc,
-                                parent=self.parents[self.level],
-                            )
-                        )
+                has_pending_form_fields = self._has_pending_form_field_in_subtree(node)
                 if self._is_form_container(node):
                     _flush_buffer()
                     form_refs = self._handle_form_container(node, doc)
                     added_refs.extend(form_refs)
+                    continue
+                if self._should_flatten_info_text(node):
+                    _flush_buffer()
+                    flattened_ref = self._emit_flattened_text_tag(node, doc)
+                    if flattened_ref is not None:
+                        added_refs.append(flattened_ref)
                     continue
                 if self._is_custom_checkbox_tag(node):
                     _flush_buffer()
@@ -1467,6 +1490,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         wk2 = self._walk(node, doc)
                         added_refs.extend(wk2)
                 elif name in _BLOCK_TAGS:
+                    for field in self._consume_form_fields_in_subtree(node):
+                        _flush_buffer()
+                        added_refs.extend(
+                            self._add_field_item_from_extracted(
+                                field=field,
+                                doc=doc,
+                                parent=self.parents[self.level],
+                            )
+                        )
                     _flush_buffer()
                     blk = self._handle_block(node, doc)
                     added_refs.extend(blk)
@@ -1474,6 +1506,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     _flush_buffer()
                     wk3 = self._walk(node, doc)
                     added_refs.extend(wk3)
+                elif has_pending_form_fields:
+                    # Preserve DOM reading order: recurse into inline containers
+                    # with pending form fields instead of bulk-emitting them.
+                    _flush_buffer()
+                    wk4 = self._walk(node, doc)
+                    added_refs.extend(wk4)
                 else:
                     buffer.extend(
                         self._extract_text_and_hyperlink_recursively(
@@ -1646,6 +1684,31 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             finally:
                 self.format_tags = self.format_tags[: -len(tags)]
 
+    def _get_tag_name_for_docling_id(self, source_tag_id: str) -> Optional[str]:
+        if source_tag_id in self._tag_name_by_docling_id_cache:
+            tag_name = self._tag_name_by_docling_id_cache[source_tag_id]
+            return tag_name or None
+        if self.soup is None:
+            return None
+        tag = self.soup.find(attrs={_DATA_DOCLING_ID_ATTR: source_tag_id})
+        tag_name = tag.name if isinstance(tag, Tag) else ""
+        self._tag_name_by_docling_id_cache[source_tag_id] = tag_name
+        return tag_name or None
+
+    def _should_create_inline_group(
+        self, annotated_text_list: AnnotatedTextList
+    ) -> bool:
+        if len(annotated_text_list) <= 1:
+            return False
+        for annotated_text in annotated_text_list:
+            source_tag_id = annotated_text.source_tag_id
+            if source_tag_id is None:
+                return False
+            tag_name = self._get_tag_name_for_docling_id(source_tag_id)
+            if tag_name is None or tag_name not in _INLINE_HTML_TAGS:
+                return False
+        return True
+
     @contextmanager
     def _use_inline_group(
         self, annotated_text_list: AnnotatedTextList, doc: DoclingDocument
@@ -1660,24 +1723,23 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             annotated_text_list (AnnotatedTextList): Annotated text
             doc (DoclingDocument): Currently used document
         """
-        if self._disable_inline_group_depth > 0 or len(annotated_text_list) <= 1:
+        if self._disable_inline_group_depth > 0 or not self._should_create_inline_group(
+            annotated_text_list
+        ):
             yield None
             return
-        if len(annotated_text_list) > 1:
-            inline_fmt = doc.add_group(
-                label=GroupLabel.INLINE,
-                parent=self.parents[self.level],
-                content_layer=self.content_layer,
-            )
-            self.parents[self.level + 1] = inline_fmt
-            self.level += 1
-            try:
-                yield None
-            finally:
-                self.parents[self.level] = None
-                self.level -= 1
-        else:
+        inline_fmt = doc.add_group(
+            label=GroupLabel.INLINE,
+            parent=self.parents[self.level],
+            content_layer=self.content_layer,
+        )
+        self.parents[self.level + 1] = inline_fmt
+        self.level += 1
+        try:
             yield None
+        finally:
+            self.parents[self.level] = None
+            self.level -= 1
 
     @contextmanager
     def _use_details(self, tag: Tag, doc: DoclingDocument):
@@ -2204,6 +2266,44 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return _FORM_CONTAINER_CLASS in class_values
 
     @staticmethod
+    def _is_form_semantic_id(tag_id: Optional[str]) -> bool:
+        if not tag_id:
+            return False
+        return bool(
+            _FORM_KEY_ID_RE.match(tag_id)
+            or _FORM_MARKER_ID_RE.match(tag_id)
+            or _FORM_VALUE_ID_RE.match(tag_id)
+        )
+
+    def _should_flatten_info_text(self, tag: Tag) -> bool:
+        if "info-text" not in self._get_tag_classes(tag):
+            return False
+        return not self._is_form_semantic_id(self._get_html_id(tag))
+
+    def _emit_flattened_text_tag(
+        self, tag: Tag, doc: DoclingDocument
+    ) -> Optional[RefItem]:
+        # Keep full textual payload of info-text blocks even when descendants
+        # share ids with key/value tags consumed elsewhere in the same form.
+        text_raw = self.get_text(tag)
+        _, text_clean = self._normalize_form_text(text_raw)
+        if not text_clean:
+            return None
+        prov = self._make_text_prov(
+            text=text_clean,
+            tag=tag,
+        )
+        text_item = doc.add_text(
+            parent=self.parents[self.level],
+            label=DocItemLabel.TEXT,
+            text=text_clean,
+            orig=text_raw,
+            content_layer=self.content_layer,
+            prov=prov,
+        )
+        return text_item.get_ref()
+
+    @staticmethod
     def _is_value_in_key_scope(key_tag: Tag, value_tag: Tag) -> bool:
         if key_tag is value_tag:
             return True
@@ -2214,6 +2314,100 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if key_parent is not None and key_parent is value_parent:
             return True
         return False
+
+    @staticmethod
+    def _dom_distance_between_tags(left_tag: Tag, right_tag: Tag) -> int:
+        if left_tag is right_tag:
+            return 0
+
+        left_chain: list[Tag] = [left_tag]
+        left_chain.extend(
+            parent for parent in left_tag.parents if isinstance(parent, Tag)
+        )
+        right_chain: list[Tag] = [right_tag]
+        right_chain.extend(
+            parent for parent in right_tag.parents if isinstance(parent, Tag)
+        )
+
+        left_positions = {id(tag): idx for idx, tag in enumerate(left_chain)}
+        best_distance: Optional[int] = None
+        for right_idx, right_ancestor in enumerate(right_chain):
+            left_idx = left_positions.get(id(right_ancestor))
+            if left_idx is None:
+                continue
+            distance = left_idx + right_idx
+            if best_distance is None or distance < best_distance:
+                best_distance = distance
+
+        return best_distance if best_distance is not None else 10_000
+
+    def _select_form_value_entries(
+        self,
+        key_tag: Optional[Tag],
+        marker_entries: list[tuple[int, Tag]],
+        value_entries: list[tuple[Optional[int], int, Tag]],
+    ) -> list[tuple[Optional[int], int, Tag]]:
+        if not value_entries:
+            return []
+
+        anchor_tag: Optional[Tag] = None
+        if key_tag is not None:
+            anchor_tag = key_tag
+        elif marker_entries:
+            anchor_tag = marker_entries[0][1]
+
+        grouped_entries: dict[tuple[str, int], list[tuple[Optional[int], int, Tag]]] = {}
+        for value_index, dom_order, value_tag in value_entries:
+            group_key = (
+                ("idx", value_index)
+                if value_index is not None
+                else ("dom", dom_order)
+            )
+            grouped_entries.setdefault(group_key, []).append(
+                (value_index, dom_order, value_tag)
+            )
+
+        selected_entries: list[tuple[Optional[int], int, Tag]] = []
+        for entries in grouped_entries.values():
+            ranked_entries = sorted(
+                entries,
+                key=lambda entry: (
+                    (
+                        0
+                        if (
+                            key_tag is not None
+                            and self._is_value_in_key_scope(key_tag, entry[2])
+                        )
+                        else 1
+                    )
+                    if key_tag is not None
+                    else 0,
+                    (
+                        self._dom_distance_between_tags(anchor_tag, entry[2])
+                        if anchor_tag is not None
+                        else 0
+                    ),
+                    (
+                        0
+                        if (
+                            entry[2].name in {"input", "select", "textarea"}
+                            or self._is_checkbox_like_tag(entry[2])
+                        )
+                        else 1
+                    ),
+                    entry[1],
+                ),
+            )
+            selected_entries.append(ranked_entries[0])
+
+        selected_entries.sort(
+            key=lambda entry: (
+                entry[0] is None,
+                entry[0] if entry[0] is not None else entry[1],
+                entry[1],
+            )
+        )
+        return selected_entries
 
     @staticmethod
     def _get_table_cell(tag: Tag) -> Optional[Tag]:
@@ -2277,6 +2471,35 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def _infer_form_value_kind(value_tag: Tag) -> Literal["read_only", "fillable"]:
+        if HTMLDocumentBackend._is_checkbox_like_tag(value_tag):
+            return "fillable"
+        if value_tag.find(
+            lambda item: isinstance(item, Tag)
+            and HTMLDocumentBackend._is_checkbox_like_tag(item)
+        ) is not None:
+            return "fillable"
+
+        classes = HTMLDocumentBackend._get_tag_classes(value_tag)
+        fillable_class_hints = {
+            "input",
+            "input-box",
+            "input-field",
+            "input_field",
+            "text-input",
+            "text-box",
+            "textbox",
+            "form-control",
+        }
+        if classes & fillable_class_hints:
+            return "fillable"
+        if any(
+            class_name.endswith("-input")
+            or class_name.endswith("_input")
+            or class_name.endswith("-input-box")
+            for class_name in classes
+        ):
+            return "fillable"
+
         if value_tag.name in {"input", "select", "textarea"}:
             return "fillable"
         if value_tag.find(["input", "select", "textarea"]) is not None:
@@ -2567,6 +2790,23 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         finally:
             self._form_fields_by_key_id_stack.pop()
 
+    def _has_pending_form_field_in_subtree(self, tag: Tag) -> bool:
+        if not self._form_fields_by_key_id_stack:
+            return False
+        field_map = self._form_fields_by_key_id_stack[-1]
+        if not field_map:
+            return False
+
+        tag_id = self._get_html_id(tag)
+        if tag_id is not None and tag_id in field_map:
+            return True
+
+        for descendant in tag.find_all(True):
+            descendant_id = descendant.get("id")
+            if isinstance(descendant_id, str) and descendant_id in field_map:
+                return True
+        return False
+
     def _consume_form_field_for_tag(self, tag: Tag) -> Optional[_ExtractedFormField]:
         tag_id = self._get_html_id(tag)
         if tag_id is None:
@@ -2590,10 +2830,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             field_obj_id = id(field)
             if field_obj_id in consumed_field_ids:
                 continue
-            field_tags = [field.key_tag]
+            field_tags: list[Tag] = []
+            if field.key_tag is not None:
+                field_tags.append(field.key_tag)
             if field.marker is not None:
                 field_tags.append(field.marker.tag)
             field_tags.extend(value.tag for value in field.values)
+            if not field_tags:
+                continue
             if any(
                 field_tag is tag or any(parent is tag for parent in field_tag.parents)
                 for field_tag in field_tags
@@ -2648,9 +2892,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
         refs.append(field_item.get_ref())
 
-        parts: list[tuple[int, Literal["key", "marker", "value", "text"], Any]] = [
-            (field.key_order, "key", field)
-        ]
+        parts: list[tuple[int, Literal["key", "marker", "value", "text"], Any]] = []
+        if field.key_tag is not None and field.key_text:
+            parts.append((field.key_order, "key", field))
         if field.marker is not None:
             parts.append((field.marker.order, "marker", field.marker))
         for value in field.values:
@@ -2718,7 +2962,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def _extract_form_region(self, form_tag: Tag) -> Optional[_ExtractedFormRegion]:  # noqa: C901
         key_tags: dict[str, Tag] = {}
         key_orders: dict[str, int] = {}
-        key_order: list[str] = []
+        first_order_by_key: dict[str, int] = {}
         markers_by_key: dict[str, list[tuple[int, Tag]]] = {}
         values_by_key: dict[str, list[tuple[Optional[int], int, Tag]]] = {}
         all_tags = cast(list[Tag], form_tag.find_all(True))
@@ -2740,12 +2984,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 values_by_key.setdefault(key_id, []).append(
                     (value_index, dom_order, tag)
                 )
+                first_order_by_key.setdefault(key_id, dom_order)
                 continue
 
             marker_match = _FORM_MARKER_ID_RE.match(tag_id)
             if marker_match:
                 key_id = marker_match.group("key_id")
                 markers_by_key.setdefault(key_id, []).append((dom_order, tag))
+                first_order_by_key.setdefault(key_id, dom_order)
                 continue
 
             key_match = _FORM_KEY_ID_RE.match(tag_id)
@@ -2754,7 +3000,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if key_id not in key_tags:
                     key_tags[key_id] = tag
                     key_orders[key_id] = dom_order
-                    key_order.append(key_id)
+                first_order_by_key.setdefault(key_id, dom_order)
 
         fields: list[_ExtractedFormField] = []
         consumed_tag_ids: set[str] = set()
@@ -2767,41 +3013,40 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if rendered is not None:
                         table_bboxes.append(rendered.bbox)
 
-        for key_id in key_order:
-            key_tag = key_tags[key_id]
-            value_entries = values_by_key.get(key_id, [])
-            value_entries = [
-                entry
-                for entry in value_entries
-                if not self._should_ignore_table_kv_link(
-                    key_tag, entry[2], table_bboxes
-                )
-            ]
-            in_scope_entries = [
-                entry
-                for entry in value_entries
-                if self._is_value_in_key_scope(key_tag, entry[2])
-            ]
-            if in_scope_entries:
-                value_entries = in_scope_entries
-            value_entries.sort(
-                key=lambda entry: (
-                    entry[0] is None,
-                    entry[0] if entry[0] is not None else entry[1],
-                    entry[1],
-                )
+        key_ids_in_order = sorted(
+            first_order_by_key.keys(), key=lambda key_id: first_order_by_key[key_id]
+        )
+
+        for key_id in key_ids_in_order:
+            key_tag = key_tags.get(key_id)
+
+            marker_entries = list(markers_by_key.get(key_id, []))
+            if key_tag is not None:
+                in_scope_markers = [
+                    entry
+                    for entry in marker_entries
+                    if self._is_value_in_key_scope(key_tag, entry[1])
+                ]
+                if in_scope_markers:
+                    marker_entries = in_scope_markers
+            marker_entries.sort(key=lambda entry: entry[0])
+
+            value_entries = list(values_by_key.get(key_id, []))
+            if key_tag is not None:
+                value_entries = [
+                    entry
+                    for entry in value_entries
+                    if not self._should_ignore_table_kv_link(
+                        key_tag, entry[2], table_bboxes
+                    )
+                ]
+            value_entries = self._select_form_value_entries(
+                key_tag=key_tag,
+                marker_entries=marker_entries,
+                value_entries=value_entries,
             )
 
             marker: Optional[_ExtractedFormMarker] = None
-            marker_entries = markers_by_key.get(key_id, [])
-            in_scope_markers = [
-                entry
-                for entry in marker_entries
-                if self._is_value_in_key_scope(key_tag, entry[1])
-            ]
-            if in_scope_markers:
-                marker_entries = in_scope_markers
-            marker_entries.sort(key=lambda entry: entry[0])
             if marker_entries:
                 marker_tag = marker_entries[0][1]
                 marker_text_raw = self._extract_form_marker_text(marker_tag)
@@ -2827,9 +3072,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 marker_id = self._get_html_id(marker.tag)
                 if marker_id is not None:
                     excluded_ids.add(marker_id)
-            key_text_raw = self._extract_text_excluding_ids(key_tag, excluded_ids)
-            key_orig, key_text = self._normalize_form_text(key_text_raw)
-            if not key_text and not value_tags:
+
+            key_orig = ""
+            key_text = ""
+            key_prov: Optional[ProvenanceItem] = None
+            if key_tag is not None:
+                if key_tag.name in {"input", "select", "textarea"}:
+                    key_text_raw = self._extract_form_value_text(key_tag)
+                else:
+                    key_text_raw = self._extract_text_excluding_ids(key_tag, excluded_ids)
+                key_orig, key_text = self._normalize_form_text(key_text_raw)
+                key_prov = self._make_text_prov(text=key_text, tag=key_tag)
+
+            if key_tag is None and marker is None and not value_tags:
+                continue
+            if key_tag is not None and marker is None and not key_text and not value_tags:
                 continue
 
             values: list[_ExtractedFormValue] = []
@@ -2874,29 +3131,49 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if value_tag_id is not None:
                     consumed_tag_ids.add(value_tag_id)
 
-            component_tag_obj_ids: set[int] = {
-                id(key_tag),
-                *(id(value.tag) for value in values),
-            }
+            component_tag_obj_ids: set[int] = {id(value.tag) for value in values}
+            if key_tag is not None:
+                component_tag_obj_ids.add(id(key_tag))
             if marker is not None:
                 component_tag_obj_ids.add(id(marker.tag))
+            consumed_label_obj_ids: set[int] = set()
+            for value in values:
+                consumed_label_obj_ids.update(value.consumed_label_tag_obj_ids)
             seen_extra_tag_obj_ids: set[int] = set()
             extra_texts: list[_ExtractedFormText] = []
+            parent_tags_to_scan: list[Tag] = []
             for value in values:
-                value_parent = value.tag.parent
-                if not isinstance(value_parent, Tag):
+                if isinstance(value.tag.parent, Tag):
+                    parent_tags_to_scan.append(value.tag.parent)
+            if not parent_tags_to_scan:
+                if key_tag is not None and isinstance(key_tag.parent, Tag):
+                    parent_tags_to_scan.append(key_tag.parent)
+                if marker is not None and isinstance(marker.tag.parent, Tag):
+                    parent_tags_to_scan.append(marker.tag.parent)
+
+            seen_parent_tag_obj_ids: set[int] = set()
+            unique_parent_tags_to_scan: list[Tag] = []
+            for parent_tag in parent_tags_to_scan:
+                parent_tag_obj_id = id(parent_tag)
+                if parent_tag_obj_id in seen_parent_tag_obj_ids:
                     continue
-                for sibling_tag in value_parent.find_all(recursive=False):
+                seen_parent_tag_obj_ids.add(parent_tag_obj_id)
+                unique_parent_tags_to_scan.append(parent_tag)
+
+            for parent_tag in unique_parent_tags_to_scan:
+                for sibling_tag in parent_tag.find_all(recursive=False):
                     sibling_obj_id = id(sibling_tag)
                     if sibling_obj_id in component_tag_obj_ids:
                         continue
                     if sibling_obj_id in seen_extra_tag_obj_ids:
                         continue
-                    if sibling_obj_id in value.consumed_label_tag_obj_ids:
+                    if sibling_obj_id in consumed_label_obj_ids:
                         continue
                     if self._get_html_id(sibling_tag) is not None:
                         continue
-                    sibling_text_raw = self.get_text(sibling_tag)
+                    sibling_text_raw = self._extract_text_excluding_tag_obj_ids(
+                        sibling_tag, component_tag_obj_ids | consumed_label_obj_ids
+                    )
                     sibling_orig, sibling_text = self._normalize_form_text(
                         sibling_text_raw
                     )
@@ -2931,10 +3208,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             fields.append(
                 _ExtractedFormField(
                     key_tag=key_tag,
-                    key_order=key_orders.get(key_id, 0),
+                    key_order=key_orders.get(key_id, first_order_by_key.get(key_id, 0)),
                     key_orig=key_orig,
                     key_text=key_text,
-                    key_prov=self._make_text_prov(text=key_text, tag=key_tag),
+                    key_prov=key_prov,
                     marker=marker,
                     values=values,
                     extra_texts=extra_texts,
@@ -3010,24 +3287,29 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if form_region is not None:
                 for field in form_region.fields:
                     key_tag_id = self._get_html_id(field.key_tag)
-                    if key_tag_id is None:
-                        continue
                     if not field.values:
-                        if self._is_lonely_key_covered_by_table(field.key_tag):
+                        if (
+                            field.key_tag is not None
+                            and key_tag_id is not None
+                            and self._is_lonely_key_covered_by_table(field.key_tag)
+                        ):
                             consumed_tag_ids.add(key_tag_id)
                         continue
-                    consumed_tag_ids.add(key_tag_id)
-                    fields_by_key_id[key_tag_id] = field
+
+                    anchor_tag_ids: set[str] = set()
+                    if key_tag_id is not None:
+                        anchor_tag_ids.add(key_tag_id)
                     if field.marker is not None:
                         marker_tag_id = self._get_html_id(field.marker.tag)
                         if marker_tag_id is not None:
-                            consumed_tag_ids.add(marker_tag_id)
-                            fields_by_key_id[marker_tag_id] = field
+                            anchor_tag_ids.add(marker_tag_id)
                     for value in field.values:
                         value_tag_id = self._get_html_id(value.tag)
                         if value_tag_id is not None:
-                            consumed_tag_ids.add(value_tag_id)
-                            fields_by_key_id[value_tag_id] = field
+                            anchor_tag_ids.add(value_tag_id)
+                    for anchor_tag_id in anchor_tag_ids:
+                        consumed_tag_ids.add(anchor_tag_id)
+                        fields_by_key_id[anchor_tag_id] = field
                     for extra_text in field.extra_texts:
                         consumed_tag_obj_ids.add(id(extra_text.tag))
 
