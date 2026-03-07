@@ -226,17 +226,54 @@ fn ctm_transform(ctm: &[f64; 6], x: f64, y: f64) -> (f64, f64) {
     )
 }
 
-fn extract_paths_from_page(doc: &lopdf::Document, page_id: lopdf::ObjectId) -> Vec<PathSegment> {
+/// Bounding box for an Image XObject found in the content stream (PDF coords: x, y, w, h).
+#[derive(Debug, Clone)]
+struct XObjectImageBbox {
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+}
+
+/// Result of analyzing a page's content stream: path segments (for tables),
+/// Image XObject bboxes, and vector complexity metrics.
+struct PageContentAnalysis {
+    paths: Vec<PathSegment>,
+    image_bboxes: Vec<XObjectImageBbox>,
+    fill_count: usize,
+    curve_count: usize,
+}
+
+fn analyze_page_content(doc: &lopdf::Document, page_id: lopdf::ObjectId) -> PageContentAnalysis {
     let content_data = match doc.get_page_content(page_id) {
         Ok(c) => c,
-        Err(_) => return Vec::new(),
+        Err(_) => {
+            return PageContentAnalysis {
+                paths: Vec::new(),
+                image_bboxes: Vec::new(),
+                fill_count: 0,
+                curve_count: 0,
+            }
+        }
     };
     let ops = match lopdf::content::Content::decode(&content_data) {
         Ok(c) => c.operations,
-        Err(_) => return Vec::new(),
+        Err(_) => {
+            return PageContentAnalysis {
+                paths: Vec::new(),
+                image_bboxes: Vec::new(),
+                fill_count: 0,
+                curve_count: 0,
+            }
+        }
     };
 
+    let xobjects = get_page_xobjects(doc, page_id);
+
     let mut paths = Vec::new();
+    let mut image_bboxes: Vec<XObjectImageBbox> = Vec::new();
+    let mut fill_count: usize = 0;
+    let mut curve_count: usize = 0;
     let mut gstate_stack: Vec<GState> = vec![GState::default()];
     let mut current_gstate = GState::default();
     let mut path_start: Option<(f64, f64)> = None;
@@ -344,16 +381,94 @@ fn extract_paths_from_page(doc: &lopdf::Document, page_id: lopdf::ObjectId) -> V
                     current_point = path_start;
                 }
             }
+            "c" | "v" | "y" => {
+                curve_count += 1;
+            }
             "S" | "s" | "f" | "F" | "f*" | "B" | "B*" | "b" | "b*" | "n" => {
+                match opname {
+                    "f" | "F" | "f*" | "B" | "B*" | "b" | "b*" => fill_count += 1,
+                    _ => {}
+                }
                 paths.append(&mut subpath_segments);
                 path_start = None;
                 current_point = None;
+            }
+            "Do" => {
+                if let Some(name) = operands.first().and_then(|o| o.as_name().ok()) {
+                    if let Some(xobj_id) = xobjects.get(name) {
+                        if let Ok(obj) = doc.get_object(*xobj_id) {
+                            if let Ok(stream) = obj.as_stream() {
+                                let subtype = stream
+                                    .dict
+                                    .get(b"Subtype")
+                                    .ok()
+                                    .and_then(|o| o.as_name().ok())
+                                    .unwrap_or(b"");
+                                if subtype == b"Image" {
+                                    let ctm = &current_gstate.ctm;
+                                    let (gx, gy) = ctm_transform(ctm, 0.0, 0.0);
+                                    let w = (ctm[0].powi(2) + ctm[1].powi(2)).sqrt();
+                                    let h = (ctm[2].powi(2) + ctm[3].powi(2)).sqrt();
+                                    image_bboxes.push(XObjectImageBbox {
+                                        x: gx,
+                                        y: gy,
+                                        width: w,
+                                        height: h,
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
             }
             _ => {}
         }
     }
 
-    paths
+    PageContentAnalysis {
+        paths,
+        image_bboxes,
+        fill_count,
+        curve_count,
+    }
+}
+
+fn get_page_xobjects(
+    doc: &lopdf::Document,
+    page_id: lopdf::ObjectId,
+) -> HashMap<Vec<u8>, lopdf::ObjectId> {
+    let page_dict = match doc.get_object(page_id).ok().and_then(|o| o.as_dict().ok()) {
+        Some(d) => d,
+        None => return HashMap::new(),
+    };
+
+    let resources = match page_dict.get(b"Resources") {
+        Ok(lopdf::Object::Dictionary(d)) => d.clone(),
+        Ok(lopdf::Object::Reference(r)) => match doc.get_object(*r).ok().and_then(|o| o.as_dict().ok()) {
+            Some(d) => d.clone(),
+            None => return HashMap::new(),
+        },
+        _ => return HashMap::new(),
+    };
+
+    let xobj_dict = match resources.get(b"XObject") {
+        Ok(lopdf::Object::Dictionary(d)) => d.clone(),
+        Ok(lopdf::Object::Reference(r)) => match doc.get_object(*r).ok().and_then(|o| o.as_dict().ok()) {
+            Some(d) => d.clone(),
+            None => return HashMap::new(),
+        },
+        _ => return HashMap::new(),
+    };
+
+    xobj_dict
+        .iter()
+        .filter_map(|(k, v)| v.as_reference().ok().map(|r| (k.clone(), r)))
+        .collect()
+}
+
+#[allow(dead_code)]
+fn extract_paths_from_page(doc: &lopdf::Document, page_id: lopdf::ObjectId) -> Vec<PathSegment> {
+    analyze_page_content(doc, page_id).paths
 }
 
 // ---------------------------------------------------------------------------
@@ -1266,6 +1381,273 @@ fn emit_rendered_diagrams(
 }
 
 // ---------------------------------------------------------------------------
+// XObject image region rendering via pdfium
+// ---------------------------------------------------------------------------
+
+#[cfg(feature = "pdfium-render")]
+fn emit_xobject_figures_pdfium(
+    doc: &mut DoclingDocument,
+    pdfium: &pdfium_render::prelude::Pdfium,
+    pdf_bytes: &[u8],
+    page_index: usize,
+    page_num: u32,
+    page_width: f64,
+    page_height: f64,
+    xobject_bboxes: &[XObjectImageBbox],
+    existing_bboxes: &[(f64, f64, f64, f64)],
+    seen_image_hashes: &mut HashSet<u64>,
+) -> Vec<(f64, f64, f64, f64)> {
+    use pdfium_render::prelude::*;
+
+    let mut emitted: Vec<(f64, f64, f64, f64)> = Vec::new();
+
+    // Filter: skip small images, skip page-sized backgrounds, deduplicate overlapping regions
+    let page_area = page_width * page_height;
+    let mut candidates: Vec<(f64, f64, f64, f64)> = xobject_bboxes
+        .iter()
+        .filter_map(|img| {
+            if img.width < 50.0 || img.height < 50.0 {
+                return None;
+            }
+            if page_area > 0.0 && (img.width * img.height) > page_area * 0.85 {
+                return None;
+            }
+            // (x, y, w, h) in PDF bottom-left coords → (l, t, r, b) in TOPLEFT coords
+            let l = img.x;
+            let t = page_height - img.y - img.height;
+            let r = img.x + img.width;
+            let b = page_height - img.y;
+            Some((l, t, r, b))
+        })
+        .collect();
+
+    // Remove candidates that substantially overlap with already-extracted images
+    candidates.retain(|cand| {
+        !existing_bboxes
+            .iter()
+            .any(|eb| bbox_overlap_ratio(*cand, *eb) > 0.50)
+    });
+
+    // Filter out nested/overlapping XObject bboxes (keep larger)
+    candidates.sort_by(|a, b| {
+        let area_a = (a.2 - a.0).abs() * (a.3 - a.1).abs();
+        let area_b = (b.2 - b.0).abs() * (b.3 - b.1).abs();
+        area_b.partial_cmp(&area_a).unwrap_or(std::cmp::Ordering::Equal)
+    });
+    let mut filtered: Vec<(f64, f64, f64, f64)> = Vec::new();
+    for cand in &candidates {
+        let dominated = filtered
+            .iter()
+            .any(|existing| bbox_overlap_ratio(*cand, *existing) > 0.70);
+        if !dominated {
+            filtered.push(*cand);
+        }
+    }
+
+    if filtered.is_empty() {
+        return emitted;
+    }
+
+    let pdfium_doc = match pdfium.load_pdf_from_byte_slice(pdf_bytes, None) {
+        Ok(d) => d,
+        Err(_) => return emitted,
+    };
+    let page = match pdfium_doc.pages().get(page_index as u16) {
+        Ok(p) => p,
+        Err(_) => return emitted,
+    };
+
+    let render_dpi: f64 = 200.0;
+    let scale = render_dpi / 72.0;
+    let full_w = (page_width * scale).round() as i32;
+    let config = PdfRenderConfig::new()
+        .set_target_width(full_w)
+        .set_maximum_height(full_w * 4);
+
+    let full_img: image::DynamicImage = match page.render_with_config(&config) {
+        Ok(b) => b.as_image(),
+        Err(_) => return emitted,
+    };
+
+    for (reg_l, reg_t, reg_r, reg_b) in &filtered {
+        let px_l = (reg_l * scale).round() as u32;
+        let px_t = (reg_t * scale).round() as u32;
+        let px_w = ((reg_r - reg_l) * scale).round() as u32;
+        let px_h = ((reg_b - reg_t) * scale).round() as u32;
+
+        if px_w < 20 || px_h < 20 {
+            continue;
+        }
+        if px_l + px_w > full_img.width() || px_t + px_h > full_img.height() {
+            continue;
+        }
+
+        let cropped = full_img.crop_imm(px_l, px_t, px_w, px_h);
+
+        let max_dim = cropped.width().max(cropped.height());
+        let final_img = if max_dim > 2048 {
+            cropped.resize(2048, 2048, image::imageops::FilterType::Lanczos3)
+        } else {
+            cropped
+        };
+
+        let mut png_buf = std::io::Cursor::new(Vec::new());
+        if final_img
+            .write_to(&mut png_buf, image::ImageFormat::Png)
+            .is_err()
+        {
+            continue;
+        }
+        let png_bytes = png_buf.into_inner();
+
+        let content_hash = {
+            use std::hash::{Hash, Hasher};
+            let mut hasher = std::collections::hash_map::DefaultHasher::new();
+            final_img.width().hash(&mut hasher);
+            final_img.height().hash(&mut hasher);
+            let sample_len = png_bytes.len().min(4096);
+            png_bytes[..sample_len].hash(&mut hasher);
+            png_bytes.len().hash(&mut hasher);
+            hasher.finish()
+        };
+        if !seen_image_hashes.insert(content_hash) {
+            continue;
+        }
+
+        let idx = doc.add_picture(None, None);
+        doc.pictures[idx].prov.push(ProvenanceItem {
+            page_no: page_num,
+            bbox: BoundingBox {
+                l: *reg_l,
+                t: *reg_t,
+                r: *reg_r,
+                b: *reg_b,
+                coord_origin: Some("TOPLEFT".to_string()),
+            },
+            charspan: None,
+        });
+
+        let b64 = base64::engine::general_purpose::STANDARD.encode(&png_bytes);
+        let uri = format!("data:image/png;base64,{}", b64);
+        doc.set_picture_image(
+            idx,
+            ImageRef {
+                mimetype: "image/png".to_string(),
+                dpi: render_dpi as u32,
+                size: ImageSize {
+                    width: final_img.width() as f64,
+                    height: final_img.height() as f64,
+                },
+                uri,
+            },
+        );
+
+        emitted.push((*reg_l, *reg_t, *reg_r, *reg_b));
+    }
+
+    emitted
+}
+
+// ---------------------------------------------------------------------------
+// Full-page rendering for vector-heavy pages
+// ---------------------------------------------------------------------------
+
+const VECTOR_COMPLEXITY_THRESHOLD: usize = 20;
+
+#[cfg(feature = "pdfium-render")]
+fn emit_full_page_render(
+    doc: &mut DoclingDocument,
+    pdfium: &pdfium_render::prelude::Pdfium,
+    pdf_bytes: &[u8],
+    page_index: usize,
+    page_num: u32,
+    page_width: f64,
+    page_height: f64,
+    seen_image_hashes: &mut HashSet<u64>,
+) {
+    use pdfium_render::prelude::*;
+
+    let pdfium_doc = match pdfium.load_pdf_from_byte_slice(pdf_bytes, None) {
+        Ok(d) => d,
+        Err(_) => return,
+    };
+    let page = match pdfium_doc.pages().get(page_index as u16) {
+        Ok(p) => p,
+        Err(_) => return,
+    };
+
+    let render_dpi: f64 = 200.0;
+    let scale = render_dpi / 72.0;
+    let full_w = (page_width * scale).round() as i32;
+    let config = PdfRenderConfig::new()
+        .set_target_width(full_w)
+        .set_maximum_height(full_w * 4);
+
+    let full_img: image::DynamicImage = match page.render_with_config(&config) {
+        Ok(b) => b.as_image(),
+        Err(_) => return,
+    };
+
+    let max_dim = full_img.width().max(full_img.height());
+    let final_img = if max_dim > 2048 {
+        full_img.resize(2048, 2048, image::imageops::FilterType::Lanczos3)
+    } else {
+        full_img
+    };
+
+    let mut png_buf = std::io::Cursor::new(Vec::new());
+    if final_img
+        .write_to(&mut png_buf, image::ImageFormat::Png)
+        .is_err()
+    {
+        return;
+    }
+    let png_bytes = png_buf.into_inner();
+
+    let content_hash = {
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        final_img.width().hash(&mut hasher);
+        final_img.height().hash(&mut hasher);
+        let sample_len = png_bytes.len().min(4096);
+        png_bytes[..sample_len].hash(&mut hasher);
+        png_bytes.len().hash(&mut hasher);
+        hasher.finish()
+    };
+    if !seen_image_hashes.insert(content_hash) {
+        return;
+    }
+
+    let idx = doc.add_picture(None, None);
+    doc.pictures[idx].prov.push(ProvenanceItem {
+        page_no: page_num,
+        bbox: BoundingBox {
+            l: 0.0,
+            t: 0.0,
+            r: page_width,
+            b: page_height,
+            coord_origin: Some("TOPLEFT".to_string()),
+        },
+        charspan: None,
+    });
+
+    let b64 = base64::engine::general_purpose::STANDARD.encode(&png_bytes);
+    let uri = format!("data:image/png;base64,{}", b64);
+    doc.set_picture_image(
+        idx,
+        ImageRef {
+            mimetype: "image/png".to_string(),
+            dpi: render_dpi as u32,
+            size: ImageSize {
+                width: final_img.width() as f64,
+                height: final_img.height() as f64,
+            },
+            uri,
+        },
+    );
+}
+
+// ---------------------------------------------------------------------------
 // Image utilities
 // ---------------------------------------------------------------------------
 
@@ -1670,12 +2052,17 @@ impl Backend for PdfBackend {
                 i += 1;
             }
 
-            // Emit tables from lopdf path segments
+            // Analyze lopdf content stream: paths (for tables) + XObject image bboxes + vector complexity
+            let mut xobject_image_bboxes: Vec<XObjectImageBbox> = Vec::new();
+            let mut vector_complexity: usize = 0;
             if let Some(ref lopdf_doc) = lopdf_doc {
                 let lopdf_page_num = page_data.page_num;
                 if let Some(&page_id) = lopdf_pages.get(&lopdf_page_num) {
-                    let paths = extract_paths_from_page(lopdf_doc, page_id);
-                    let table_regions = detect_table_regions(&paths, page_data.height);
+                    let analysis = analyze_page_content(lopdf_doc, page_id);
+                    xobject_image_bboxes = analysis.image_bboxes;
+                    vector_complexity = analysis.fill_count + analysis.curve_count;
+
+                    let table_regions = detect_table_regions(&analysis.paths, page_data.height);
                     for region in &table_regions {
                         if let Some((grid, num_rows, num_cols)) =
                             build_table_from_blocks(&page_data.blocks, region)
@@ -1734,32 +2121,75 @@ impl Backend for PdfBackend {
                 }
             }
 
-            // Emit raster images from pdf_oxide
-            let raster_bboxes = emit_images_oxide(
-                &mut doc,
-                &mut oxide_doc,
-                page_data.page_index,
-                page_data.page_num,
-                page_data.width,
-                page_data.height,
-                &mut seen_image_hashes,
-            );
-
-            // Render vector diagram regions via pdfium
+            // Image extraction: full-page render for vector-heavy pages,
+            // otherwise use the raster + XObject + gap-analysis pipeline
             #[cfg(feature = "pdfium-render")]
-            if let Some(ref pdfium) = pdfium_instance {
-                emit_rendered_diagrams(
+            let is_vector_heavy = vector_complexity >= VECTOR_COMPLEXITY_THRESHOLD;
+            #[cfg(not(feature = "pdfium-render"))]
+            let is_vector_heavy = false;
+
+            if is_vector_heavy {
+                #[cfg(feature = "pdfium-render")]
+                if let Some(ref pdfium) = pdfium_instance {
+                    emit_full_page_render(
+                        &mut doc,
+                        pdfium,
+                        &data,
+                        page_data.page_index,
+                        page_data.page_num,
+                        page_data.width,
+                        page_data.height,
+                        &mut seen_image_hashes,
+                    );
+                }
+            } else {
+                // Emit raster images from pdf_oxide
+                let mut all_image_bboxes = emit_images_oxide(
                     &mut doc,
-                    pdfium,
-                    &data,
+                    &mut oxide_doc,
                     page_data.page_index,
                     page_data.page_num,
                     page_data.width,
                     page_data.height,
-                    &page_data.blocks,
-                    &raster_bboxes,
                     &mut seen_image_hashes,
                 );
+
+                // Render XObject image regions via pdfium
+                #[cfg(feature = "pdfium-render")]
+                if let Some(ref pdfium) = pdfium_instance {
+                    if !xobject_image_bboxes.is_empty() {
+                        let xobj_emitted = emit_xobject_figures_pdfium(
+                            &mut doc,
+                            pdfium,
+                            &data,
+                            page_data.page_index,
+                            page_data.page_num,
+                            page_data.width,
+                            page_data.height,
+                            &xobject_image_bboxes,
+                            &all_image_bboxes,
+                            &mut seen_image_hashes,
+                        );
+                        all_image_bboxes.extend(xobj_emitted);
+                    }
+                }
+
+                // Render vector diagram regions via pdfium (gap analysis)
+                #[cfg(feature = "pdfium-render")]
+                if let Some(ref pdfium) = pdfium_instance {
+                    emit_rendered_diagrams(
+                        &mut doc,
+                        pdfium,
+                        &data,
+                        page_data.page_index,
+                        page_data.page_num,
+                        page_data.width,
+                        page_data.height,
+                        &page_data.blocks,
+                        &all_image_bboxes,
+                        &mut seen_image_hashes,
+                    );
+                }
             }
         }
 
