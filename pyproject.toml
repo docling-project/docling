@@ -114,6 +114,9 @@ asr = [
 xbrl = [
     "arelle-release (>=2.38.17,<3.0.0)",
 ]
+remote-serving = [
+    'tritonclient[grpc] (>=2.65.0,<3.0.0)',
+]
 
 [dependency-groups]
 dev = [
