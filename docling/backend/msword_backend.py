@@ -418,14 +418,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for key in keys_to_reset:
             self.list_counters[key] = 0
 
-    def _is_numbered_list(self, numId: int, ilvl: int) -> bool:
-        """Check if a list is numbered based on its numFmt value."""
+    def _get_level_element(self, numId: int, ilvl: int):
+        """Get the level element from numbering XML for a given numId and ilvl."""
         try:
             # Access the numbering part of the document
             if not hasattr(self.docx_obj, "part") or not hasattr(
                 self.docx_obj.part, "package"
             ):
-                return False
+                return None
 
             numbering_part = None
             # Find the numbering part
@@ -435,7 +435,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     break
 
             if numbering_part is None:
-                return False
+                return None
 
             # Parse the numbering XML
             numbering_root = numbering_part.element
@@ -446,18 +446,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             num_element = numbering_root.find(num_xpath, namespaces=namespaces)
 
             if num_element is None:
-                return False
+                return None
 
             # Get the abstractNumId from the num element
             abstract_num_id_elem = num_element.find(
                 ".//w:abstractNumId", namespaces=namespaces
             )
             if abstract_num_id_elem is None:
-                return False
+                return None
 
             abstract_num_id = abstract_num_id_elem.get(f"{self._W_NS_CLARK}val")
             if abstract_num_id is None:
-                return False
+                return None
 
             # Find the abstract numbering definition
             abstract_num_xpath = (
@@ -468,17 +468,29 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
 
             if abstract_num_element is None:
-                return False
+                return None
 
             # Find the level definition for the given ilvl
             lvl_xpath = f".//w:lvl[@w:ilvl='{ilvl}']"
             lvl_element = abstract_num_element.find(lvl_xpath, namespaces=namespaces)
 
+            return lvl_element
+
+        except Exception as e:
+            _log.debug(f"Error getting level element: {e}")
+            return None
+
+    def _is_numbered_list(self, numId: int, ilvl: int) -> bool:
+        """Check if a list is numbered based on its numFmt value."""
+        try:
+            lvl_element = self._get_level_element(numId, ilvl)
             if lvl_element is None:
                 return False
 
             # Get the numFmt element
-            num_fmt_element = lvl_element.find(".//w:numFmt", namespaces=namespaces)
+            num_fmt_element = lvl_element.find(
+                ".//w:numFmt", namespaces={"w": self._W_NS}
+            )
             if num_fmt_element is None:
                 return False
 
@@ -500,6 +512,52 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         except Exception as e:
             _log.debug(f"Error determining if list is numbered: {e}")
             return False
+
+    def _get_level_text(self, numId: int, ilvl: int) -> str | None:
+        """Get the level text format (e.g., '%1.%2') for multi-level numbering."""
+        try:
+            lvl_element = self._get_level_element(numId, ilvl)
+            if lvl_element is None:
+                return None
+
+            # Get the lvlText element
+            lvl_text_element = lvl_element.find(
+                ".//w:lvlText", namespaces={"w": self._W_NS}
+            )
+            if lvl_text_element is None:
+                return None
+
+            lvl_text = lvl_text_element.get(f"{self._W_NS_CLARK}val")
+            return lvl_text
+
+        except Exception as e:
+            _log.debug(f"Error getting level text: {e}")
+            return None
+
+    def _build_multi_level_marker(
+        self, numid: int, ilevel: int, lvl_text: str | None
+    ) -> str:
+        """Build a multi-level marker from lvlText format like '%1.%2'."""
+        if lvl_text is None:
+            # Fallback to simple counter if lvlText not found
+            counter = self._get_list_counter(numid, ilevel)
+            return str(counter) + "."
+
+        # Replace placeholders like %1, %2, %3 with actual counter values
+        # %1 = level 0 counter, %2 = level 1 counter, etc.
+        marker = lvl_text
+        for level in range(ilevel + 1):
+            placeholder = f"%{level + 1}"
+            if placeholder in marker:
+                counter = self.list_counters.get((numid, level), 0)
+                marker = marker.replace(placeholder, str(counter))
+
+        # Add a trailing period if the lvlText doesn't already end with one
+        # and the marker doesn't already have punctuation
+        if marker and not marker.endswith((".", ")", ":", "-")):
+            marker += "."
+
+        return marker
 
     def _get_outline_level_from_style(self, paragraph: Paragraph) -> Optional[int]:
         """Extract outlineLvl from paragraph's style definition.
@@ -1296,8 +1354,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             # Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
-                counter = self._get_list_counter(numid, ilevel)
-                enum_marker = str(counter) + "."
+                lvl_text = self._get_level_text(numid, ilevel)
+                enum_marker = self._build_multi_level_marker(numid, ilevel, lvl_text)
             else:
                 enum_marker = ""
             self._add_formatted_list_item(
@@ -1323,8 +1381,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             # TODO: Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
-                counter = self._get_list_counter(numid, ilevel)
-                enum_marker = str(counter) + "."
+                lvl_text = self._get_level_text(numid, ilevel)
+                enum_marker = self._build_multi_level_marker(numid, ilevel, lvl_text)
             else:
                 enum_marker = ""
             self._add_formatted_list_item(
@@ -1346,8 +1404,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             # TODO: Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
-                counter = self._get_list_counter(numid, ilevel)
-                enum_marker = str(counter) + "."
+                lvl_text = self._get_level_text(numid, ilevel)
+                enum_marker = self._build_multi_level_marker(numid, ilevel, lvl_text)
             else:
                 enum_marker = ""
             self._add_formatted_list_item(
@@ -1361,8 +1419,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         elif self._prev_numid() == numid or prev_indent == ilevel:
             # Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
-                counter = self._get_list_counter(numid, ilevel)
-                enum_marker = str(counter) + "."
+                lvl_text = self._get_level_text(numid, ilevel)
+                enum_marker = self._build_multi_level_marker(numid, ilevel, lvl_text)
             else:
                 enum_marker = ""
             self._add_formatted_list_item(
