@@ -1,3 +1,23 @@
+## [v2.77.0](https://github.com/docling-project/docling/releases/tag/v2.77.0) - 2026-03-06
+
+### Feature
+
+* Track vlm_inference time for mlx_model pipeline ([#3060](https://github.com/docling-project/docling/issues/3060)) ([`38c4bb2`](https://github.com/docling-project/docling/commit/38c4bb26e8e3a7797d1caec3f690a7c8d5d9a735))
+* Add configurable graph_optimization_level for ONNX Runtime engines ([#3071](https://github.com/docling-project/docling/issues/3071)) ([`cfc6636`](https://github.com/docling-project/docling/commit/cfc6636a2a0e6b149dd51714d20e9b93f3f6463b))
+
+### Fix
+
+* **docx:** Preserve URL fragments and query params in hyperlinks ([#3050](https://github.com/docling-project/docling/issues/3050)) ([`cd9dd10`](https://github.com/docling-project/docling/commit/cd9dd10ccfe2a112af10ad135f8293d3bf845e1a))
+* Detect Office Open XML formats from ZIP contents when filename has no extension ([#3073](https://github.com/docling-project/docling/issues/3073)) ([`56f06fe`](https://github.com/docling-project/docling/commit/56f06fe372e3bfda29c14d66de0a066afb4c79c0))
+* **readingorder:** Assign FURNITURE content_layer to footer/header in container groups ([#3044](https://github.com/docling-project/docling/issues/3044)) ([`f7cb304`](https://github.com/docling-project/docling/commit/f7cb304daa7b7bfe49ba23b81d53fb16da4024af))
+* **docx:** Handle list items immediately after numbered headings ([#3070](https://github.com/docling-project/docling/issues/3070)) ([`56eb127`](https://github.com/docling-project/docling/commit/56eb12782c804b7ec36145bf52c1e005839c816b))
+* **rapidocr:** ORT thread configuration for RapidOCR backend ([#3062](https://github.com/docling-project/docling/issues/3062)) ([`68336c2`](https://github.com/docling-project/docling/commit/68336c2bda2b79f10759ad1587626c47500f4fb4))
+
+### Documentation
+
+* Add examples and fix docstring bug in DocumentConverter ([#3064](https://github.com/docling-project/docling/issues/3064)) ([`653940e`](https://github.com/docling-project/docling/commit/653940e0251e1bc5f311aded31690c64f42d9819))
+* Add docstrings to PipelineOptions classes ([#3065](https://github.com/docling-project/docling/issues/3065)) ([`8b99085`](https://github.com/docling-project/docling/commit/8b990856cd48fec12c68d940e665d8187d349753))
+
 ## [v2.76.0](https://github.com/docling-project/docling/releases/tag/v2.76.0) - 2026-03-02
 
 ### Feature
