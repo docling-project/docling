@@ -1811,7 +1811,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if targets:
                 group_ref = FineRef(cref=comment_group.self_ref)
                 for target in targets:
-                    target.comments.append(group_ref)
+                    # Only DocItem has a 'comments' field; GroupItem does not,
+                    # so skip targets that lack it (fixes #2955).
+                    if hasattr(target, "comments"):
+                        target.comments.append(group_ref)
 
             _log.debug(
                 f"Added comment {comment_id} in group with {len(targets)} linked item(s)"
