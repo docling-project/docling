@@ -161,7 +161,12 @@ fn build_occupancy_grid(
             if col_idx >= width {
                 break;
             }
-            if !matches!(cell, Data::Empty) {
+            let is_occupied = match cell {
+                Data::Empty => false,
+                Data::String(s) if s.trim().is_empty() => false,
+                _ => true,
+            };
+            if is_occupied {
                 grid[row_idx][col_idx] = true;
             }
         }
@@ -551,11 +556,17 @@ fn cell_to_string(cell: &Data) -> String {
             if *f == f.floor() && f.abs() < 1e15 {
                 format!("{}", *f as i64)
             } else {
-                f.to_string()
+                normalize_float(*f)
             }
         }
         Data::String(s) => s.clone(),
-        Data::Bool(b) => b.to_string(),
+        Data::Bool(b) => {
+            if *b {
+                "True".to_string()
+            } else {
+                "False".to_string()
+            }
+        }
         Data::DateTime(dt) => match dt.as_datetime() {
             Some(naive) => format!("{}", naive.format("%Y-%m-%d %H:%M:%S")),
             None => format!("{}", dt),
@@ -574,4 +585,19 @@ fn cell_to_string(cell: &Data) -> String {
         },
         Data::Empty => String::new(),
     }
+}
+
+fn normalize_float(f: f64) -> String {
+    for precision in 0..=15 {
+        let rounded = format!("{:.prec$}", f, prec = precision);
+        if let Ok(parsed) = rounded.parse::<f64>() {
+            if (parsed - f).abs() < f64::EPSILON * f.abs().max(1.0) * 10.0 {
+                if rounded.contains('.') {
+                    return rounded.trim_end_matches('0').trim_end_matches('.').to_string();
+                }
+                return rounded;
+            }
+        }
+    }
+    f.to_string()
 }

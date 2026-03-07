@@ -12,6 +12,7 @@ use crate::models::common::{DocItemLabel, GroupLabel, InputFormat};
 use crate::models::document::{create_doc_from_file, DoclingDocument};
 use crate::models::picture::{ImageRef, ImageSize};
 use crate::models::table::TableCell;
+use crate::models::text::TextFormatting;
 
 pub struct PptxBackend;
 
@@ -216,6 +217,7 @@ struct ParaInfo {
     is_auto_num: bool,
     is_bu_none: bool,
     is_bu_blip: bool,
+    formatting: Option<TextFormatting>,
 }
 
 #[derive(Default)]
@@ -226,7 +228,21 @@ struct RunFmt {
     strikethrough: bool,
 }
 
-impl RunFmt {}
+impl RunFmt {
+    fn has_any(&self) -> bool {
+        self.bold || self.italic || self.underline || self.strikethrough
+    }
+
+    fn to_text_formatting(&self) -> TextFormatting {
+        TextFormatting {
+            bold: self.bold,
+            italic: self.italic,
+            underline: self.underline,
+            strikethrough: self.strikethrough,
+            script: None,
+        }
+    }
+}
 
 #[allow(clippy::too_many_arguments)]
 fn parse_slide_xml(
@@ -543,12 +559,18 @@ fn parse_slide_xml(
                             }
                             cell_text.push_str(&current_para);
                         } else if !shape_skip {
+                            let fmt = if !_para_has_mixed_fmt && para_fmt.has_any() {
+                                Some(para_fmt.to_text_formatting())
+                            } else {
+                                None
+                            };
                             texts.push(ParaInfo {
                                 text: current_para.clone(),
                                 is_bullet: para_bullet || para_bu_blip,
                                 is_auto_num: para_auto_num,
                                 is_bu_none: para_bu_none,
                                 is_bu_blip: para_bu_blip,
+                                formatting: fmt,
                             });
                         }
                     }
@@ -622,7 +644,7 @@ fn parse_slide_xml(
                                         DocItemLabel::Text,
                                         pi.text.trim(),
                                         Some(slide_parent),
-                                        None,
+                                        pi.formatting.clone(),
                                         None,
                                     );
                                 }
@@ -673,7 +695,13 @@ fn emit_txbody_texts(
     if shape_is_subtitle {
         for pi in texts {
             if !pi.text.trim().is_empty() {
-                doc.add_section_header(pi.text.trim(), 1, Some(slide_parent));
+                doc.add_text_ext(
+                    DocItemLabel::Paragraph,
+                    pi.text.trim(),
+                    Some(slide_parent),
+                    pi.formatting.clone(),
+                    None,
+                );
             }
         }
         return;
@@ -716,12 +744,15 @@ fn emit_txbody_texts(
                 "-".to_string()
             };
 
-            doc.add_list_item(
+            let li_idx = doc.add_list_item(
                 &pi.text,
                 is_numbered,
                 Some(&marker),
                 list_group_ref.as_deref().unwrap(),
             );
+            if let Some(ref fmt) = pi.formatting {
+                doc.texts[li_idx].formatting = Some(fmt.clone());
+            }
         } else {
             list_group_ref = None;
             enum_counter = 0;
@@ -731,7 +762,7 @@ fn emit_txbody_texts(
                     DocItemLabel::Paragraph,
                     pi.text.trim(),
                     Some(slide_parent),
-                    None,
+                    pi.formatting.clone(),
                     None,
                 );
             }

@@ -206,32 +206,17 @@ fn export_node(
                     .and_then(|m| m.description.as_deref())
                     .unwrap_or("");
                 match image_mode {
-                    ImageRefMode::Embedded | ImageRefMode::Referenced => {
+                    ImageRefMode::Referenced | ImageRefMode::Embedded => {
                         if let Some(ref img) = pic.image {
-                            // Check if image was omitted (filtered out)
                             if img.uri.starts_with("[IMAGE OMITTED") {
-                                output.push_str(&img.uri);
-                                output.push('\n');
+                                // silently skip filtered images
                             } else {
-                                // Extract image number from URI (e.g., "doc_images/image_0.jpg" -> 0)
-                                let img_num = img.uri
-                                    .rsplit('/')
-                                    .next()
-                                    .and_then(|f| f.strip_prefix("image_"))
-                                    .and_then(|f| f.strip_suffix(".jpg"))
-                                    .and_then(|n| n.parse::<usize>().ok())
-                                    .map(|n| n + 1)  // 1-indexed for display
-                                    .unwrap_or(idx + 1);
-                                
-                                let caption_part = if !caption.is_empty() {
-                                    format!(": {}", caption)
+                                let alt = if caption.is_empty() {
+                                    "Image".to_string()
                                 } else {
-                                    String::new()
+                                    caption.replace('\n', " ").trim().to_string()
                                 };
-                                output.push_str(&format!(
-                                    "[IMAGE {}{} - see attached image {}]\n",
-                                    img_num, caption_part, img_num
-                                ));
+                                output.push_str(&format!("![{}]({})\n", alt, img.uri));
                             }
                         } else {
                             output.push_str("<!-- image -->\n");
@@ -300,6 +285,17 @@ fn apply_formatting(
     text: &str,
     formatting: Option<&crate::models::text::TextFormatting>,
 ) {
+    let has_fmt = formatting.is_some_and(|f| f.bold || f.italic || f.strikethrough);
+    if !has_fmt {
+        output.push_str(text);
+        return;
+    }
+
+    let trimmed_start = text.trim_start();
+    let leading = &text[..text.len() - trimmed_start.len()];
+    let trimmed = trimmed_start.trim_end();
+    let trailing = &text[leading.len() + trimmed.len()..];
+
     let mut prefix = String::new();
     let mut suffix = String::new();
     if let Some(fmt) = formatting {
@@ -316,9 +312,11 @@ fn apply_formatting(
             suffix.insert_str(0, "~~");
         }
     }
+    output.push_str(leading);
     output.push_str(&prefix);
-    output.push_str(text);
+    output.push_str(trimmed);
     output.push_str(&suffix);
+    output.push_str(trailing);
 }
 
 pub fn table_to_markdown(data: &TableData) -> String {
@@ -353,10 +351,35 @@ pub fn table_to_markdown(data: &TableData) -> String {
 
     let is_numeric_col = detect_numeric_columns(&flat_grid);
 
+    let mut max_decimal_places = vec![0usize; ncols];
+    for (c, is_num) in is_numeric_col.iter().enumerate() {
+        if !is_num {
+            continue;
+        }
+        for row in flat_grid.iter().skip(1) {
+            let t = row[c].trim();
+            if let Some(dot_pos) = t.find('.') {
+                let decimals = t.len() - dot_pos - 1;
+                max_decimal_places[c] = max_decimal_places[c].max(decimals);
+            }
+        }
+    }
+
     let mut col_widths = vec![0usize; ncols];
     for (row_idx, row) in flat_grid.iter().enumerate() {
         for (c, text) in row.iter().enumerate() {
-            let len = text.chars().count();
+            let len = if is_numeric_col[c] && row_idx > 0 && max_decimal_places[c] > 0 {
+                let t = text.trim();
+                let cell_dec = t.find('.').map_or(0, |p| t.len() - p - 1);
+                let trail = if cell_dec < max_decimal_places[c] {
+                    max_decimal_places[c] - cell_dec + if cell_dec == 0 { 1 } else { 0 }
+                } else {
+                    0
+                };
+                text.chars().count() + trail
+            } else {
+                text.chars().count()
+            };
             if row_idx == 0 {
                 col_widths[c] = col_widths[c].max(len + 2);
             } else {
@@ -370,16 +393,33 @@ pub fn table_to_markdown(data: &TableData) -> String {
         result.push('|');
         for (col_idx, width) in col_widths.iter().enumerate() {
             let cell_text = &row[col_idx];
-            let char_count = cell_text.chars().count();
-            let pad = width.saturating_sub(char_count);
             if is_numeric_col[col_idx] {
+                let trail = if row_idx > 0 && max_decimal_places[col_idx] > 0 {
+                    let t = cell_text.trim();
+                    let cell_dec = t.find('.').map_or(0, |p| t.len() - p - 1);
+                    if cell_dec < max_decimal_places[col_idx] {
+                        max_decimal_places[col_idx] - cell_dec
+                            + if cell_dec == 0 { 1 } else { 0 }
+                    } else {
+                        0
+                    }
+                } else {
+                    0
+                };
+                let effective_len = cell_text.chars().count() + trail;
+                let pad = width.saturating_sub(effective_len);
                 result.push(' ');
                 for _ in 0..pad {
                     result.push(' ');
                 }
                 result.push_str(cell_text);
+                for _ in 0..trail {
+                    result.push(' ');
+                }
                 result.push_str(" |");
             } else {
+                let char_count = cell_text.chars().count();
+                let pad = width.saturating_sub(char_count);
                 result.push(' ');
                 result.push_str(cell_text);
                 for _ in 0..pad {

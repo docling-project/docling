@@ -1883,19 +1883,84 @@ impl Backend for PdfBackend {
 
         let body_font_size = median_f64(&all_font_sizes);
 
+        // Initialize pdfium for vector diagram rendering and text fallback
+        #[cfg(feature = "pdfium-render")]
+        let pdfium_instance: Option<pdfium_render::prelude::Pdfium> =
+            pdfium_auto::bind_pdfium_silent()
+                .or_else(|_| pdfium_auto::bind_pdfium(None))
+                .ok();
+
+        // Fallback: if pdf_oxide returned zero text blocks for all pages, use pdfium text extraction
+        let total_content_blocks: usize = all_pages
+            .iter()
+            .map(|p| p.blocks.iter().filter(|b| !b.is_artifact).count())
+            .sum();
+
+        #[cfg(feature = "pdfium-render")]
+        if total_content_blocks == 0 {
+            if let Some(ref pdfium) = pdfium_instance {
+                log::info!("pdf_oxide extracted 0 text blocks; falling back to pdfium text extraction");
+                if let Ok(pdfium_doc) = pdfium.load_pdf_from_byte_slice(&data, None) {
+                    let pdfium_page_count = pdfium_doc.pages().len();
+                    log::info!("pdfium loaded {} pages", pdfium_page_count);
+                    let mut any_text = false;
+                    for page_idx in 0..pdfium_page_count {
+                        match pdfium_doc.pages().get(page_idx as u16) {
+                            Ok(page) => {
+                                match page.text() {
+                                    Ok(text_page) => {
+                                        let text = text_page.all();
+                                        let text = text.replace("\r\n", "\n");
+                                        let text = text.trim().to_string();
+                                        if text.is_empty() {
+                                            continue;
+                                        }
+                                        any_text = true;
+                                        for paragraph in text.split("\n\n") {
+                                            let para = paragraph.trim();
+                                            if para.is_empty() {
+                                                continue;
+                                            }
+                                            let label = classify_paragraph(para, 12.0, None);
+                                            match label {
+                                                DocItemLabel::Title => {
+                                                    doc.add_title(para, None);
+                                                }
+                                                DocItemLabel::SectionHeader => {
+                                                    doc.add_section_header(para, 1, None);
+                                                }
+                                                _ => {
+                                                    doc.add_text(label, para, None);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Err(e) => {
+                                        log::warn!("pdfium text extraction failed for page {}: {}", page_idx, e);
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                log::warn!("pdfium failed to get page {}: {}", page_idx, e);
+                            }
+                        }
+                    }
+                    if any_text {
+                        return Ok(doc);
+                    }
+                    log::warn!("pdfium also returned no text; continuing with empty document");
+                } else {
+                    log::warn!("pdfium failed to load PDF document");
+                }
+            }
+        }
+
         // Phase 2: Detect page furniture
         let page_block_refs: Vec<(u32, Vec<AssembledBlock>)> = all_pages
             .iter()
             .map(|p| (p.page_num, p.blocks.clone()))
             .collect();
         let (header_texts, footer_texts) = detect_page_furniture_from_blocks(&page_block_refs);
-
-        // Initialize pdfium for vector diagram rendering (auto-downloads binary if needed)
-        #[cfg(feature = "pdfium-render")]
-        let pdfium_instance: Option<pdfium_render::prelude::Pdfium> =
-            pdfium_auto::bind_pdfium_silent()
-                .or_else(|_| pdfium_auto::bind_pdfium(None))
-                .ok();
 
         // Phase 3: Classify and emit
         let mut seen_image_hashes: HashSet<u64> = HashSet::new();

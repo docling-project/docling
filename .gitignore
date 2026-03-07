@@ -465,5 +465,8 @@ tests/data/groundtruth/docling_v2/redp5110_sampled.json
 PDF_EXTRACTION_IMPROVEMENT_PLAN.md
 PDF_OXIDE_INTEGRATION_PLAN.md
 
+# Real e2e test documents and run outputs (large binary files)
+real_e2e/
+
 # Cursor IDE
 .cursor/

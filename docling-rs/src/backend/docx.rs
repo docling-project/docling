@@ -472,20 +472,32 @@ impl RichCellContent {
                 if t.is_empty() {
                     continue;
                 }
+                let has_fmt = run.fmt.bold || run.fmt.italic;
+                let (leading, core, trailing) = if has_fmt {
+                    let ts = t.trim_start();
+                    let lead = &t[..t.len() - ts.len()];
+                    let te = ts.trim_end();
+                    let trail = &t[lead.len() + te.len()..];
+                    (lead, te, trail)
+                } else {
+                    ("", t, "")
+                };
                 let mut frag = String::new();
+                frag.push_str(leading);
                 if run.fmt.bold {
                     frag.push_str("**");
                 }
                 if run.fmt.italic {
                     frag.push('*');
                 }
-                frag.push_str(t);
+                frag.push_str(core);
                 if run.fmt.italic {
                     frag.push('*');
                 }
                 if run.fmt.bold {
                     frag.push_str("**");
                 }
+                frag.push_str(trailing);
                 if let Some(ref url) = run.hyperlink {
                     frag = format!("[{}]({})", frag, url);
                 }
@@ -494,6 +506,9 @@ impl RichCellContent {
             if !para_md.is_empty() {
                 parts.push(para_md);
             }
+        }
+        if !self.images.is_empty() {
+            parts.push("<!-- image -->".to_string());
         }
         parts.join("\n")
     }
@@ -597,7 +612,7 @@ impl ListNesting {
         &mut self,
         num_id: &str,
         ilvl: u32,
-        _is_ordered: bool,
+        is_ordered: bool,
         doc: &mut DoclingDocument,
         current_parent: Option<&str>,
     ) -> String {
@@ -621,7 +636,12 @@ impl ListNesting {
             current_parent
         };
 
-        let gidx = doc.add_group("list", GroupLabel::List, parent_ref);
+        let label = if is_ordered {
+            GroupLabel::OrderedList
+        } else {
+            GroupLabel::List
+        };
+        let gidx = doc.add_group("list", label, parent_ref);
         let gref = format!("#/groups/{}", gidx);
         self.stack.push((num_id.to_string(), ilvl, gref.clone(), 0));
         gref
@@ -1096,6 +1116,9 @@ fn parse_document_xml(
                     }
                     "br" if in_run && !in_math => {
                         current_run_text.push('\n');
+                    }
+                    "tab" if in_run && !in_math => {
+                        current_run_text.push('\t');
                     }
                     "blip" if in_drawing => {
                         drawing_blip_rid = get_attr(e, "embed").or_else(|| get_attr(e, "link"));
