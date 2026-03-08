@@ -1,9 +1,10 @@
 import logging
 import re
+from collections.abc import Callable
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, Final, Union
+from typing import Any, Final
 from urllib.parse import urlparse
 
 from docling_core.types.doc import (
@@ -65,9 +66,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     }
 
     @override
-    def __init__(
-        self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
-    ) -> None:
+    def __init__(self, in_doc: "InputDocument", path_or_stream: BytesIO | Path) -> None:
         super().__init__(in_doc, path_or_stream)
         self.XML_KEY = f"{self._W_NS_CLARK}val"
         self.xml_namespaces = {
@@ -78,7 +77,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         )
         # self.initialise(path_or_stream)
         # Word file:
-        self.path_or_stream: Union[BytesIO, Path] = path_or_stream
+        self.path_or_stream: BytesIO | Path = path_or_stream
         self.valid: bool = False
         # Initialise the parents for the hierarchy
         self.max_levels: int = 10
@@ -178,7 +177,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def load_msword_file(
-        path_or_stream: Union[BytesIO, Path], document_hash: str
+        path_or_stream: BytesIO | Path, document_hash: str
     ) -> DocxDocument:
         try:
             if isinstance(path_or_stream, BytesIO):
@@ -681,7 +680,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return [("", None, None)]
 
         paragraph_elements: list[
-            tuple[str, Formatting | None, Union[AnyUrl, Path] | None]
+            tuple[str, Formatting | None, AnyUrl | Path | None]
         ] = []
         group_text = ""
         previous_format = None
