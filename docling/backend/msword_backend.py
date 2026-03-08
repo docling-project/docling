@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 from docling_core.types.doc import (
     ContentLayer,
+    DocItem,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -1812,8 +1813,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 group_ref = FineRef(cref=comment_group.self_ref)
                 for target in targets:
                     # Only DocItem has a 'comments' field; GroupItem does not,
-                    # so skip targets that lack it (fixes #2955).
-                    if hasattr(target, "comments"):
+                    # so skip non-DocItem targets (fixes #2955).
+                    if isinstance(target, DocItem):
                         target.comments.append(group_ref)
 
             _log.debug(
