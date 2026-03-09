@@ -3,12 +3,11 @@ import logging
 import os
 import re
 import warnings
-from collections.abc import Generator
 from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-from typing import Final, Optional, Union, cast
+from typing import Final, Iterator, Optional, Union, cast
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -871,7 +870,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @contextmanager
     def _use_inline_group(
         self, annotated_text_list: AnnotatedTextList, doc: DoclingDocument
-    ) -> Generator[RefItem | None, None, None]:
+    ) -> Iterator[RefItem | None]:
         """Create an inline group for annotated texts.
 
         Checks if annotated_text_list has more than one item and if so creates an inline
@@ -883,8 +882,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             doc (DoclingDocument): Currently used document
 
         Yields:
-            RefItem | None: The RefItem of the created InlineGroup, or None when the
-                list has only one element and no group is created.
+            The RefItem of the created InlineGroup, or None when the list has only
+            one element and no group is created.
         """
         if len(annotated_text_list) > 1:
             inline_fmt = doc.add_group(

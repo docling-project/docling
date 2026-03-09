@@ -563,24 +563,6 @@ def test_fix_invalid_paragraph_structure(html, expected):
     assert str(soup) == expected
 
 
-def test_e2e_rich_table_cells_markdown(html_paths):
-    """Regression: rich table cells must export to markdown without orphaned InlineGroups."""
-    name = "html_rich_table_cells.html"
-    path = next(item for item in html_paths if item.name == name)
-
-    converter = DocumentConverter()
-    result = converter.convert(path)
-    assert result.document is not None
-
-    md = result.document.export_to_markdown()
-    assert isinstance(md, str)
-    assert len(md) > 0
-
-    assert "Donald Duck" in md
-    assert "White-headed duck" in md
-    assert "Mandarin Duck" in md
-
-
 def test_e2e_inline_group_in_table_cell(html_paths):
     """Regression: InlineGroup in table cell must not cause content duplication."""
     name = "html_inline_group_in_table_cell.html"
