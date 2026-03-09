@@ -76,16 +76,19 @@ the following engines.
 The Docling `DocumentConverter` allows to choose the OCR engine with the `ocr_options` settings. For example
 
 ```python
-from docling.datamodel.base_models import ConversionStatus, PipelineOptions
-from docling.datamodel.pipeline_options import PipelineOptions, EasyOcrOptions, TesseractOcrOptions
-from docling.document_converter import DocumentConverter
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import (
+    TesseractOcrOptions,
+    PdfPipelineOptions,
+)
+from docling.document_converter import DocumentConverter, PdfFormatOption
 
-pipeline_options = PipelineOptions()
+pipeline_options = PdfPipelineOptions()
 pipeline_options.do_ocr = True
 pipeline_options.ocr_options = TesseractOcrOptions()  # Use Tesseract
 
 doc_converter = DocumentConverter(
-    pipeline_options=pipeline_options,
+    format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)}
 )
 ```
 
