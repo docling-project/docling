@@ -2,7 +2,7 @@ import logging
 from collections.abc import Iterable, Sequence
 from itertools import groupby
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 import numpy
 import torch
@@ -44,6 +44,7 @@ class TableStructureModelV2(BaseTableStructureModel):
         artifacts_path: Optional[Path],
         options: TableStructureV2Options,
         accelerator_options: AcceleratorOptions,
+        enable_remote_services: Literal[False] = False,
     ):
         self.options = options
         self.do_cell_matching = self.options.do_cell_matching
