@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "name": "webvtt_example_02",
   "origin": {
     "mimetype": "text/vtt",
@@ -94,10 +94,7 @@
           "kind": "track",
           "start_time": 0.0,
           "end_time": 2.0,
-          "voice": "Esme",
-          "classes": [
-            "v.first.loud"
-          ]
+          "voice": "Esme"
         }
       ],
       "orig": "It’s a blue apple tree!",
@@ -202,10 +199,7 @@
           "kind": "track",
           "start_time": 6.0,
           "end_time": 8.0,
-          "voice": "Mary",
-          "classes": [
-            "v.loud"
-          ]
+          "voice": "Mary"
         }
       ],
       "orig": "That’s awesome!",
@@ -243,13 +237,7 @@
         {
           "kind": "track",
           "start_time": 8.0,
-          "end_time": 10.0,
-          "languages": [
-            "en"
-          ],
-          "classes": [
-            "i.foreignphrase"
-          ]
+          "end_time": 10.0
         }
       ],
       "orig": "playground",

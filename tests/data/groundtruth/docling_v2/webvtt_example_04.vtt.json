@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "name": "webvtt_example_04",
   "origin": {
     "mimetype": "text/vtt",
@@ -167,10 +167,7 @@
           "kind": "track",
           "start_time": 14760.0,
           "end_time": 14818.239,
-          "identifier": "agcvs-08234",
-          "languages": [
-            "es-ES"
-          ]
+          "identifier": "agcvs-08234"
         }
       ],
       "orig": "paella",
@@ -237,10 +234,7 @@
           "kind": "track",
           "start_time": 14760.0,
           "end_time": 14818.239,
-          "identifier": "agcvs-08234",
-          "classes": [
-            "b.loud"
-          ]
+          "identifier": "agcvs-08234"
         }
       ],
       "orig": "unexpected",
@@ -294,10 +288,7 @@
           "kind": "track",
           "start_time": 14760.0,
           "end_time": 14818.239,
-          "identifier": "agcvs-08234",
-          "languages": [
-            "it"
-          ]
+          "identifier": "agcvs-08234"
         }
       ],
       "orig": "arcobaleno",
