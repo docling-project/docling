@@ -9,9 +9,7 @@ import torch
 import torchvision.transforms as T
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
 from docling_core.types.doc.page import (
-    BoundingRectangle,
     TextCell,
-    TextCellUnit,
 )
 from PIL import Image, ImageDraw
 from transformers import AutoTokenizer

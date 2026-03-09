@@ -275,6 +275,8 @@ module = [
   "vllm.*",
   "qwen_vl_utils.*",
   "arelle.*",
+  "torchvision.*",
+  "torchvision.transforms.*",
 ]
 ignore_missing_imports = true
 
