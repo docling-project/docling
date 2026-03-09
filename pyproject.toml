@@ -1,6 +1,6 @@
 [project]
 name = "docling"
-version = "2.73.0"  # DO NOT EDIT, updated automatically
+version = "2.77.0"  # DO NOT EDIT, updated automatically
 description = "SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -44,8 +44,8 @@ authors = [
 requires-python = '>=3.10,<4.0'
 dependencies = [
   'pydantic (>=2.0.0,<3.0.0)',
-  'docling-core[chunking] (>=2.62.0,<3.0.0)',
-  'docling-parse (>=4.7.0,<5.0.0)',
+  'docling-core[chunking] (>=2.66.0,<3.0.0)',
+  'docling-parse (>=5.3.2,<6.0.0)',
   "docling-ibm-models>=3.9.1,<4",
   'filetype (>=1.2.0,<2.0.0)',
   'pypdfium2 (>=4.30.0,!=4.30.1,<6.0.0)',
@@ -71,6 +71,7 @@ dependencies = [
   'scipy (>=1.6.0,<2.0.0)',
   "accelerate>=1.0.0,<2",
   "polyfactory>=2.22.2",
+  "defusedxml (>=0.7.1, <0.8.0)",
 ]
 
 [project.urls]
@@ -110,6 +111,12 @@ asr = [
     'openai-whisper>=20250625',
     'numba>=0.63.0',  # Ensure Python 3.11+ compatibility (llvmlite constraint)
 ]
+xbrl = [
+    "arelle-release (>=2.38.17,<3.0.0)",
+]
+remote-serving = [
+    'tritonclient[grpc] (>=2.65.0,<3.0.0)',
+]
 
 [dependency-groups]
 dev = [
@@ -132,6 +139,7 @@ dev = [
     "ipywidgets~=8.1",
     "nbqa~=1.9",
     "python-semantic-release~=7.32",
+    "types-defusedxml (>=0.7.0.20250822, <0.8.0)",
 ]
 docs = [
   "mkdocs-material~=9.5",
@@ -266,6 +274,7 @@ module = [
   "pylatexenc.*",
   "vllm.*",
   "qwen_vl_utils.*",
+  "arelle.*",
 ]
 ignore_missing_imports = true
 

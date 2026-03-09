@@ -35,6 +35,7 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
         artifacts_path: Optional[Path],
         accelerator_options: AcceleratorOptions,
         options: LayoutObjectDetectionOptions,
+        enable_remote_services: bool = False,
     ) -> None:
         self.options = options
 
@@ -42,6 +43,7 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
             options=options.engine_options,
             model_spec=self.options.model_spec,
             artifacts_path=artifacts_path,
+            enable_remote_services=enable_remote_services,
             accelerator_options=accelerator_options,
         )
         self.engine.initialize()

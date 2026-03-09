@@ -16,11 +16,11 @@ jobs:
     outputs:
       TARGET_TAG_V: ${{ steps.version_check.outputs.TRGT_VERSION }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # for fetching tags, required for semantic-release
       - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
       - name: Install dependencies
@@ -40,17 +40,17 @@ jobs:
     runs-on: ubuntu-latest
     concurrency: release
     steps:
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v2
         id: app-token
         with:
           app-id: ${{ vars.CI_APP_ID }}
           private-key: ${{ secrets.CI_PRIVATE_KEY }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0  # for fetching tags, required for semantic-release
       - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
       - name: Install dependencies

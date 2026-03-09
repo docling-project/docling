@@ -66,6 +66,7 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
             options=pipeline_options.layout_options,
             artifacts_path=self.artifacts_path,
             accelerator_options=pipeline_options.accelerator_options,
+            enable_remote_services=pipeline_options.enable_remote_services,
         )
         table_factory = get_table_structure_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
@@ -75,6 +76,7 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
             enabled=pipeline_options.do_table_structure,
             artifacts_path=self.artifacts_path,
             accelerator_options=pipeline_options.accelerator_options,
+            enable_remote_services=pipeline_options.enable_remote_services,
         )
 
         self.build_pipe = [

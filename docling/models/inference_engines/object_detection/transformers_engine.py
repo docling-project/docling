@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import logging
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Union
+
+from packaging import version
 
 if TYPE_CHECKING:
     import torch
@@ -146,6 +149,22 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
             )
             self._model.to(self._device)  # type: ignore[union-attr]
             self._model.eval()  # type: ignore[union-attr]
+
+            # Optionally compile model for better performance (model must be in eval mode first)
+            # Works for Python < 3.14 with any torch 2.x
+            # Works for Python >= 3.14 with torch >= 2.10
+            if self.options.compile_model:
+                if sys.version_info < (3, 14):
+                    self._model = torch.compile(self._model)  # type: ignore[arg-type,assignment]
+                    _log.debug("Model compiled with torch.compile()")
+                elif version.parse(torch.__version__) >= version.parse("2.10"):
+                    self._model = torch.compile(self._model)  # type: ignore[arg-type,assignment]
+                    _log.debug("Model compiled with torch.compile()")
+                else:
+                    _log.warning(
+                        "Model compilation requested but not available "
+                        "(requires Python < 3.14 or torch >= 2.10 for Python 3.14+)"
+                    )
         except Exception as e:
             raise RuntimeError(f"Failed to load model from {model_folder}: {e}")
 

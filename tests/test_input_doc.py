@@ -134,6 +134,37 @@ def test_guess_format(tmp_path):
     doc_path = Path("./tests/data/docx/lorem_ipsum.docx")
     assert dci._guess_format(doc_path) == InputFormat.DOCX
 
+    # MS Office without file extension (ZIP introspection fallback)
+    buf = BytesIO(Path("./tests/data/docx/lorem_ipsum.docx").open("rb").read())
+    stream = DocumentStream(name="abc123-def456", stream=buf)
+    assert dci._guess_format(stream) == InputFormat.DOCX
+
+    buf = BytesIO(Path("./tests/data/pptx/powerpoint_sample.pptx").open("rb").read())
+    stream = DocumentStream(name="upload_no_ext", stream=buf)
+    assert dci._guess_format(stream) == InputFormat.PPTX
+
+    docx_no_ext = temp_dir / "docx_no_ext"
+    docx_no_ext.write_bytes(Path("./tests/data/docx/lorem_ipsum.docx").read_bytes())
+    assert dci._guess_format(docx_no_ext) == InputFormat.DOCX
+
+    pptx_no_ext = temp_dir / "pptx_no_ext"
+    pptx_no_ext.write_bytes(
+        Path("./tests/data/pptx/powerpoint_sample.pptx").read_bytes()
+    )
+    assert dci._guess_format(pptx_no_ext) == InputFormat.PPTX
+
+    # Plain ZIP (not Office) should not be detected as an Office format
+    import zipfile as _zipfile
+
+    plain_zip_path = temp_dir / "archive_no_ext"
+    with _zipfile.ZipFile(plain_zip_path, "w") as zf:
+        zf.writestr("data.txt", "hello world")
+    assert dci._guess_format(plain_zip_path) is None
+
+    buf = BytesIO(plain_zip_path.read_bytes())
+    stream = DocumentStream(name="archive_no_ext", stream=buf)
+    assert dci._guess_format(stream) is None
+
     # Valid HTML
     buf = BytesIO(Path("./tests/data/html/wiki_duck.html").open("rb").read())
     stream = DocumentStream(name="wiki_duck.html", stream=buf)
@@ -195,6 +226,12 @@ def test_guess_format(tmp_path):
     assert dci._guess_format(stream) == InputFormat.XML_JATS
     doc_path = Path("./tests/data/jats/elife-56337.txt")
     assert dci._guess_format(doc_path) == InputFormat.XML_JATS
+
+    buf = BytesIO(Path("./tests/data/xbrl/mlac-20251231.xml").open("rb").read())
+    stream = DocumentStream(name="mlac-20251231.xml", stream=buf)
+    assert dci._guess_format(stream) == InputFormat.XML_XBRL
+    doc_path = Path("./tests/data/xbrl/mlac-20251231.xml")
+    assert dci._guess_format(doc_path) == InputFormat.XML_XBRL
 
     # Valid XML, non-supported flavor
     xml_content = (

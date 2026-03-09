@@ -4,6 +4,7 @@ from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, Final, Optional, Union
+from urllib.parse import urlparse
 
 from docling_core.types.doc import (
     ContentLayer,
@@ -48,10 +49,13 @@ _log = logging.getLogger(__name__)
 
 
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
+    _W_NS: Final[str] = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    _W_NS_CLARK: Final[str] = f"{{{_W_NS}}}"
+
     _BLIP_NAMESPACES: Final = {
         "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
         "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-        "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+        "w": _W_NS,
         "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
         "mc": "http://schemas.openxmlformats.org/markup-compatibility/2006",
         "v": "urn:schemas-microsoft-com:vml",
@@ -65,9 +69,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
     ) -> None:
         super().__init__(in_doc, path_or_stream)
-        self.XML_KEY = (
-            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
-        )
+        self.XML_KEY = f"{self._W_NS_CLARK}val"
         self.xml_namespaces = {
             "w": "http://schemas.microsoft.com/office/word/2003/wordml"
         }
@@ -437,9 +439,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             # Parse the numbering XML
             numbering_root = numbering_part.element
-            namespaces = {
-                "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-            }
+            namespaces = {"w": self._W_NS}
 
             # Find the numbering definition with the given numId
             num_xpath = f".//w:num[@w:numId='{numId}']"
@@ -455,9 +455,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if abstract_num_id_elem is None:
                 return False
 
-            abstract_num_id = abstract_num_id_elem.get(
-                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
-            )
+            abstract_num_id = abstract_num_id_elem.get(f"{self._W_NS_CLARK}val")
             if abstract_num_id is None:
                 return False
 
@@ -484,9 +482,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if num_fmt_element is None:
                 return False
 
-            num_fmt = num_fmt_element.get(
-                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
-            )
+            num_fmt = num_fmt_element.get(f"{self._W_NS_CLARK}val")
 
             # Numbered formats include: decimal, lowerRoman, upperRoman, lowerLetter, upperLetter
             # Bullet formats include: bullet
@@ -505,6 +501,31 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             _log.debug(f"Error determining if list is numbered: {e}")
             return False
 
+    def _get_outline_level_from_style(self, paragraph: Paragraph) -> Optional[int]:
+        """Extract outlineLvl from paragraph's style definition.
+
+        In OOXML, outlineLvl is 0-indexed (0-8 for heading levels 1-9).
+        This method returns the 1-indexed heading level (outlineLvl + 1).
+        """
+        if paragraph.style is None:
+            return None
+
+        style_elem = getattr(paragraph.style, "element", None)
+        if style_elem is None:
+            return None
+
+        # Look for outlineLvl in the style's paragraph properties
+        outline_elem = style_elem.find(f".//{self._W_NS_CLARK}outlineLvl")
+        if outline_elem is not None:
+            val = outline_elem.get(f"{self._W_NS_CLARK}val")
+            if val is not None:
+                try:
+                    # Convert 0-indexed outlineLvl to 1-indexed heading level
+                    return int(val) + 1
+                except ValueError:
+                    pass
+        return None
+
     def _get_heading_and_level(self, style_label: str) -> tuple[str, Optional[int]]:
         parts = self._split_text_and_number(style_label)
 
@@ -518,6 +539,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if parts[1].strip().lower() == "heading":
                 label_str = "Heading"
                 label_level = self._str_to_int(parts[0], None)
+            # Ensure heading level is at least 1 (e.g., custom "Heading 0" styles)
+            if isinstance(label_level, int) and label_level < 1:
+                label_level = 1
             return label_str, label_level
 
         return style_label, None
@@ -544,14 +568,29 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if len(parts) == 2:
                 return parts[0], self._str_to_int(parts[1], None)
 
-        if "heading" in label.lower():
-            return self._get_heading_and_level(label)
-        if "heading" in name.lower():
-            return self._get_heading_and_level(name)
-        if base_style_label and "heading" in base_style_label.lower():
-            return self._get_heading_and_level(base_style_label)
-        if base_style_name and "heading" in base_style_name.lower():
-            return self._get_heading_and_level(base_style_name)
+        # Check if this is a heading style
+        is_heading = (
+            "heading" in label.lower()
+            or "heading" in name.lower()
+            or (base_style_label and "heading" in base_style_label.lower())
+            or (base_style_name and "heading" in base_style_name.lower())
+        )
+
+        if is_heading:
+            # First try to get the level from outlineLvl (authoritative source)
+            outline_level = self._get_outline_level_from_style(paragraph)
+            if outline_level is not None:
+                return "Heading", outline_level
+
+            # Fall back to parsing level from style name
+            if "heading" in label.lower():
+                return self._get_heading_and_level(label)
+            if "heading" in name.lower():
+                return self._get_heading_and_level(name)
+            if base_style_label and "heading" in base_style_label.lower():
+                return self._get_heading_and_level(base_style_label)
+            if base_style_name and "heading" in base_style_name.lower():
+                return self._get_heading_and_level(base_style_name)
 
         return label, None
 
@@ -595,7 +634,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for c in paragraph.iter_inner_content():
             if isinstance(c, Hyperlink):
                 text = c.text
-                hyperlink = Path(c.address)
+                if c.address:
+                    hyperlink = (
+                        AnyUrl(c.address)
+                        if urlparse(c.address).scheme
+                        else Path(c.address)
+                    )
+                else:
+                    hyperlink = None
                 format = (
                     self._get_format_from_run(c.runs[0])
                     if c.runs and len(c.runs) > 0
@@ -1120,6 +1166,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if key >= curr_level:
                         self.parents[key] = None
 
+            # Defense in depth: ensure level is at least 1
+            curr_level = max(1, curr_level)
             current_level = curr_level
             parent_level = curr_level - 1
             add_level = curr_level
@@ -1228,8 +1276,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         level = self._get_level()
         prev_indent = self._prev_indent()
-        if self._prev_numid() is None or (
-            self._prev_numid() == numid and self.level_at_new_list is None
+        if (
+            self._prev_numid() is None
+            or self._prev_numid() != numid
+            or (self._prev_numid() == numid and self.level_at_new_list is None)
         ):  # Open new list
             self.level_at_new_list = level
 
@@ -1503,11 +1553,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         tc = cell._tc
 
         # must contain only one paragraph
-        paragraphs = list(
-            tc.iterchildren(
-                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p"
-            )
-        )
+        paragraphs = list(tc.iterchildren(f"{self._W_NS_CLARK}p"))
         if len(paragraphs) > 1:
             return True
 
@@ -1522,11 +1568,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # paragraph must contain runs with no run-properties
         for para in paragraphs:
-            runs = list(
-                para.iterchildren(
-                    "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r"
-                )
-            )
+            runs = list(para.iterchildren(f"{self._W_NS_CLARK}r"))
             for rn in runs:
                 item: Run = Run(rn, self.docx_obj)
                 if item is not None:

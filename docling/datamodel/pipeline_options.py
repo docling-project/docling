@@ -10,6 +10,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    field_validator,
 )
 from typing_extensions import deprecated
 
@@ -33,6 +34,9 @@ from docling.datamodel.layout_model_specs import (
 from docling.datamodel.object_detection_engine_options import (
     BaseObjectDetectionEngineOptions,
 )
+from docling.datamodel.picture_classification_options import (
+    DocumentPictureClassifierOptions,
+)
 from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
@@ -55,12 +59,26 @@ from docling.datamodel.vlm_model_specs import (
     SMOLDOCLING_TRANSFORMERS as smoldocling_vlm_conversion_options,
     VlmModelType,
 )
+from docling.models.inference_engines.object_detection.base import (
+    ObjectDetectionEngineOptionsMixin,
+)
+from docling.models.inference_engines.vlm.base import VlmEngineOptionsMixin
 
 _log = logging.getLogger(__name__)
 
 
 class BaseOptions(BaseModel):
-    """Base class for options."""
+    """Base class for all pipeline option models.
+
+    Every option class in the pipeline configuration hierarchy inherits from
+    `BaseOptions`. Subclasses must declare a `kind` ClassVar that serves as
+    a discriminator for polymorphic deserialization in Pydantic unions.
+
+    Attributes:
+        kind: String discriminator identifying the concrete option type.
+            Must be declared as a ``ClassVar[str]`` or
+            ``ClassVar[Literal[...]]`` in each subclass.
+    """
 
     kind: ClassVar[str]
 
@@ -83,7 +101,15 @@ class TableFormerMode(str, Enum):
 
 
 class BaseTableStructureOptions(BaseOptions):
-    """Base options for table structure models."""
+    """Base options for table structure extraction models.
+
+    Serves as the abstract base for all table structure backends. Concrete
+    implementations (e.g., `TableStructureOptions` for TableFormer) inherit
+    from this class and register their own `kind` discriminator.
+
+    See Also:
+        `TableStructureOptions`: Default TableFormer-based implementation.
+    """
 
 
 class TableStructureOptions(BaseTableStructureOptions):
@@ -111,7 +137,17 @@ class TableStructureOptions(BaseTableStructureOptions):
 
 
 class OcrOptions(BaseOptions):
-    """OCR options."""
+    """Base configuration for Optical Character Recognition engines.
+
+    Defines the common interface shared by all OCR engine implementations.
+    Subclasses provide engine-specific parameters while inheriting the shared
+    language selection, full-page OCR toggle, and bitmap area threshold.
+
+    See Also:
+        `OcrAutoOptions`: Automatic engine selection based on availability.
+        `EasyOcrOptions`, `TesseractCliOcrOptions`, `TesseractOcrOptions`,
+        `RapidOcrOptions`, `OcrMacOptions`: Engine-specific configurations.
+    """
 
     lang: Annotated[
         list[str],
@@ -137,7 +173,18 @@ class OcrOptions(BaseOptions):
 
 
 class OcrAutoOptions(OcrOptions):
-    """Automatic OCR engine selection based on system availability."""
+    """Automatic OCR engine selection based on system availability.
+
+    When this option is used, Docling probes the runtime environment at
+    pipeline initialization and selects the best available OCR engine
+    (e.g., EasyOCR if GPU is present, Tesseract otherwise). Language
+    settings are deferred to the chosen engine's defaults.
+
+    Notes:
+        The `lang` field is intentionally defaulted to an empty list.
+        To control language selection, specify an explicit OCR engine
+        option class instead.
+    """
 
     kind: ClassVar[Literal["auto"]] = "auto"
     lang: Annotated[
@@ -454,7 +501,25 @@ class OcrMacOptions(OcrOptions):
 
 
 class PictureDescriptionBaseOptions(BaseOptions):
-    """Base configuration for picture description models."""
+    """Base configuration for picture description models.
+
+    Provides shared parameters for all picture description backends,
+    including batch processing, image scaling, area thresholds, and
+    classification-based filtering (allow/deny lists). Concrete
+    implementations supply the actual model integration.
+
+    See Also:
+        `PictureDescriptionApiOptions`: OpenAI-compatible API backend.
+        `PictureDescriptionVlmOptions`: Legacy HuggingFace Transformers
+            backend.
+        `PictureDescriptionVlmEngineOptions`: New runtime-based backend
+            with preset support (recommended).
+    """
+
+    # TODO: default should become False in a future release, and this field
+    # may be removed entirely once docling-core drops the deprecated
+    # `annotations` attribute from DoclingDocument items.
+    _keep_deprecated_annotations: bool = True
 
     batch_size: Annotated[
         int,
@@ -516,7 +581,16 @@ class PictureDescriptionBaseOptions(BaseOptions):
 
 
 class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):
-    """Configuration for API-based picture description services."""
+    """Configuration for API-based picture description services.
+
+    Sends images to an OpenAI-compatible chat completions endpoint for
+    description generation. Supports custom headers for authentication,
+    configurable timeouts, and concurrent request control.
+
+    Notes:
+        Requires ``enable_remote_services=True`` on the parent pipeline
+        options to permit external API calls.
+    """
 
     kind: ClassVar[Literal["api"]] = "api"
     url: Annotated[
@@ -632,11 +706,16 @@ class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):
 
     @property
     def repo_cache_folder(self) -> str:
+        """Return the local cache folder name derived from the HuggingFace repo ID.
+
+        Converts the ``repo_id`` (e.g., ``"org/model"``) to a filesystem-safe
+        folder name by replacing ``/`` with ``--``.
+        """
         return self.repo_id.replace("/", "--")
 
 
 class PictureDescriptionVlmEngineOptions(
-    StagePresetMixin, PictureDescriptionBaseOptions
+    StagePresetMixin, VlmEngineOptionsMixin, PictureDescriptionBaseOptions
 ):
     """Configuration for VLM runtime-based picture description.
 
@@ -663,9 +742,6 @@ class PictureDescriptionVlmEngineOptions(
 
     model_spec: VlmModelSpec = Field(
         description="Model specification with runtime-specific overrides"
-    )
-    engine_options: BaseVlmEngineOptions = Field(
-        description="Runtime configuration (transformers, mlx, api, etc.)"
     )
     prompt: Annotated[
         str,
@@ -712,7 +788,7 @@ detailed descriptions of image content.
 """
 
 
-class VlmConvertOptions(StagePresetMixin, BaseModel):
+class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
     """Configuration for VLM-based document conversion.
 
     This stage uses vision-language models to convert document pages to
@@ -735,10 +811,6 @@ class VlmConvertOptions(StagePresetMixin, BaseModel):
         description="Model specification with runtime-specific overrides"
     )
 
-    engine_options: BaseVlmEngineOptions = Field(
-        description="Runtime configuration (transformers, mlx, api, etc.)"
-    )
-
     scale: float = Field(
         default=2.0, description="Image scaling factor for preprocessing"
     )
@@ -756,7 +828,7 @@ class VlmConvertOptions(StagePresetMixin, BaseModel):
     )
 
 
-class CodeFormulaVlmOptions(StagePresetMixin, BaseModel):
+class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
     """Configuration for VLM-based code and formula extraction.
 
     This stage uses vision-language models to extract code blocks and
@@ -773,10 +845,6 @@ class CodeFormulaVlmOptions(StagePresetMixin, BaseModel):
 
     model_spec: VlmModelSpec = Field(
         description="Model specification with runtime-specific overrides"
-    )
-
-    engine_options: BaseVlmEngineOptions = Field(
-        description="Runtime configuration (transformers, mlx, api, etc.)"
     )
 
     scale: float = Field(
@@ -843,6 +911,12 @@ _default_picture_description_options = PictureDescriptionVlmEngineOptions.from_p
 )
 """Default picture description options using smolvlm preset with AUTO_INLINE runtime."""
 
+# Default picture classification options using document figure classifier preset
+_default_picture_classification_options = DocumentPictureClassifierOptions.from_preset(
+    "document_figure_classifier_v2"
+)
+"""Default picture classification options using document_figure_classifier_v2 preset."""
+
 # Default CodeFormulaVlmOptions using codeformulav2 preset
 _default_code_formula_options = CodeFormulaVlmOptions.from_preset("codeformulav2")
 """Default code/formula options using codeformulav2 preset with AUTO_INLINE runtime."""
@@ -852,20 +926,59 @@ _default_code_formula_options = CodeFormulaVlmOptions.from_preset("codeformulav2
 class PdfBackend(str, Enum):
     """Available PDF parsing backends for document processing.
 
-    Different backends offer varying levels of text extraction quality, layout preservation,
-    and processing speed. Choose based on your document complexity and quality requirements.
+    Different backends offer varying levels of text extraction quality, layout
+    preservation, and processing speed. Choose based on your document complexity
+    and quality requirements.
 
     Attributes:
-        PYPDFIUM2: Standard PDF parser using PyPDFium2 library. Fast and reliable for basic text extraction.
-        DLPARSE_V1: Docling Parse v1 backend with enhanced layout analysis and structure preservation.
-        DLPARSE_V2: Docling Parse v2 backend with improved table detection and complex layout handling.
-        DLPARSE_V4: Docling Parse v4 backend (latest) with advanced features and best accuracy for complex documents.
+        PYPDFIUM2: Standard PDF parser using PyPDFium2 library. Fast and
+            reliable for basic text extraction.
+        DOCLING_PARSE: Docling Parse backend providing enhanced layout
+            analysis, structure preservation, and advanced table detection.
+            This is the recommended backend for most use cases.
+        DLPARSE_V1: Deprecated. Maps to `DOCLING_PARSE`.
+        DLPARSE_V2: Deprecated. Maps to `DOCLING_PARSE`.
+        DLPARSE_V4: Deprecated. Maps to `DOCLING_PARSE`.
     """
 
     PYPDFIUM2 = "pypdfium2"
-    DLPARSE_V1 = "dlparse_v1"
-    DLPARSE_V2 = "dlparse_v2"
-    DLPARSE_V4 = "dlparse_v4"
+    DOCLING_PARSE = "docling_parse"
+
+    # Deprecated - these map to DOCLING_PARSE
+    DLPARSE_V1 = "dlparse_v1"  # deprecated
+    DLPARSE_V2 = "dlparse_v2"  # deprecated
+    DLPARSE_V4 = "dlparse_v4"  # deprecated
+
+
+def normalize_pdf_backend(backend: PdfBackend) -> PdfBackend:
+    """Normalize deprecated backend enum values to current ones.
+
+    Args:
+        backend: The PDF backend enum value to normalize.
+
+    Returns:
+        The normalized backend enum value.
+
+    Raises:
+        DeprecationWarning: If a deprecated backend value is used.
+    """
+    import warnings
+
+    deprecated_mapping = {
+        PdfBackend.DLPARSE_V1: PdfBackend.DOCLING_PARSE,
+        PdfBackend.DLPARSE_V2: PdfBackend.DOCLING_PARSE,
+        PdfBackend.DLPARSE_V4: PdfBackend.DOCLING_PARSE,
+    }
+
+    if backend in deprecated_mapping:
+        warnings.warn(
+            f"PdfBackend.{backend.name} was previously deprecated and removed in this docling version. Using PdfBackend.DOCLING_PARSE instead. ",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        return deprecated_mapping[backend]
+
+    return backend
 
 
 # Define an enum for the ocr engines
@@ -896,7 +1009,18 @@ class OcrEngine(str, Enum):
 
 
 class PipelineOptions(BaseOptions):
-    """Base configuration for document processing pipelines."""
+    """Base configuration for document processing pipelines.
+
+    Provides the foundational settings shared by every pipeline type:
+    document-level timeout, hardware accelerator selection, remote service
+    permissions, external plugin control, and model artifact paths. All
+    specialized pipeline option classes inherit from this base.
+
+    See Also:
+        `ConvertPipelineOptions`: Adds picture classification and description.
+        `AsrPipelineOptions`: Audio/speech recognition pipeline.
+        `VlmExtractionPipelineOptions`: VLM-based structured extraction.
+    """
 
     document_timeout: Annotated[
         Optional[float],
@@ -952,7 +1076,17 @@ class PipelineOptions(BaseOptions):
 
 
 class ConvertPipelineOptions(PipelineOptions):
-    """Base configuration for document conversion pipelines."""
+    """Base configuration for document conversion pipelines.
+
+    Extends `PipelineOptions` with picture-related features: classification
+    (categorizing images by type) and description (generating textual
+    captions via vision-language models). Also supports chart data extraction
+    from bar, pie, and line charts.
+
+    See Also:
+        `PaginatedPipelineOptions`: Adds page image generation for paginated
+            formats.
+    """
 
     do_picture_classification: Annotated[
         bool,
@@ -963,6 +1097,15 @@ class ConvertPipelineOptions(PipelineOptions):
             )
         ),
     ] = False
+    picture_classification_options: Annotated[
+        DocumentPictureClassifierOptions,
+        Field(
+            description=(
+                "Configuration for picture classification model/runtime. "
+                "Supports selecting transformers, onnxruntime, or remote api_kserve_v2 inference engines."
+            )
+        ),
+    ] = _default_picture_classification_options
     do_picture_description: Annotated[
         bool,
         Field(
@@ -989,7 +1132,17 @@ class ConvertPipelineOptions(PipelineOptions):
 
 
 class PaginatedPipelineOptions(ConvertPipelineOptions):
-    """Configuration for pipelines processing paginated documents."""
+    """Configuration for pipelines processing paginated documents.
+
+    Extends `ConvertPipelineOptions` with page-level image generation
+    controls for formats that have a concept of discrete pages (PDF, PPTX,
+    images). Controls the resolution scaling and whether page/picture images
+    are generated during conversion.
+
+    See Also:
+        `PdfPipelineOptions`: Full PDF pipeline with OCR, layout, and tables.
+        `VlmPipelineOptions`: VLM-based document understanding pipeline.
+    """
 
     images_scale: Annotated[
         float,
@@ -1022,7 +1175,18 @@ class PaginatedPipelineOptions(ConvertPipelineOptions):
 
 
 class VlmPipelineOptions(PaginatedPipelineOptions):
-    """Pipeline configuration for vision-language model based document processing."""
+    """Pipeline configuration for vision-language model based document processing.
+
+    Uses a VLM to understand document pages holistically from rendered page
+    images rather than composing results from separate layout, OCR, and
+    table-structure models. Page image generation is enabled by default
+    since the VLM requires visual input.
+
+    Notes:
+        Unlike `PdfPipelineOptions`, this pipeline does not run separate
+        layout analysis or OCR stages. Set ``force_backend_text=True`` to
+        use the PDF backend's native text instead of VLM-predicted text.
+    """
 
     generate_page_images: Annotated[
         bool,
@@ -1055,7 +1219,18 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
 
 
 class BaseLayoutOptions(BaseOptions):
-    """Base options for layout models."""
+    """Base options for document layout analysis models.
+
+    Layout analysis detects the structural regions of a document page
+    (text blocks, tables, figures, headers, etc.) and assigns content
+    cells to those regions. This base class provides the shared controls
+    for empty-cluster retention and cell-assignment skipping.
+
+    See Also:
+        `LayoutOptions`: Default layout model configuration (Heron).
+        `LayoutObjectDetectionOptions`: Object-detection runtime layout
+            with preset support.
+    """
 
     keep_empty_clusters: Annotated[
         bool,
@@ -1078,7 +1253,17 @@ class BaseLayoutOptions(BaseOptions):
 
 
 class LayoutOptions(BaseLayoutOptions):
-    """Options for layout processing."""
+    """Options for layout processing using Docling's built-in layout model.
+
+    Provides configuration for the default layout analysis path, including
+    model selection (e.g., Heron, Egret variants) and orphan cluster
+    creation for elements not assigned to any detected structure.
+
+    Notes:
+        The default model is ``DOCLING_LAYOUT_HERON``. For higher accuracy
+        on complex documents, consider ``DOCLING_LAYOUT_EGRET_LARGE`` or
+        ``DOCLING_LAYOUT_EGRET_XLARGE``.
+    """
 
     kind: ClassVar[str] = "docling_layout_default"
     create_orphan_clusters: Annotated[
@@ -1101,8 +1286,22 @@ class LayoutOptions(BaseLayoutOptions):
     ] = DOCLING_LAYOUT_HERON
 
 
-class LayoutObjectDetectionOptions(ObjectDetectionStagePresetMixin, BaseLayoutOptions):
-    """Options for layout detection using object-detection runtimes."""
+class LayoutObjectDetectionOptions(
+    ObjectDetectionStagePresetMixin,
+    ObjectDetectionEngineOptionsMixin,
+    BaseLayoutOptions,
+):
+    """Options for layout detection using object-detection runtimes.
+
+    Alternative to `LayoutOptions` that uses the pluggable object-detection
+    engine system with preset support via `ObjectDetectionStagePresetMixin`.
+    Use ``from_preset()`` to create instances from registered model presets.
+
+    Notes:
+        Orphan cluster creation is disabled by default (unlike
+        `LayoutOptions`). Enable ``create_orphan_clusters`` if unassigned
+        elements must be preserved.
+    """
 
     kind: ClassVar[str] = "layout_object_detection"
 
@@ -1117,14 +1316,12 @@ class LayoutObjectDetectionOptions(ObjectDetectionStagePresetMixin, BaseLayoutOp
     ] = False
 
     model_spec: ObjectDetectionModelSpec = Field(
-        default_factory=lambda: stage_model_specs.OBJECT_DETECTION_LAYOUT_HERON.model_spec.model_copy(
-            deep=True
+        default_factory=lambda: (
+            stage_model_specs.OBJECT_DETECTION_LAYOUT_HERON.model_spec.model_copy(
+                deep=True
+            )
         ),
         description="Object-detection model specification for layout analysis",
-    )
-
-    engine_options: BaseObjectDetectionEngineOptions = Field(
-        description="Runtime configuration for the object-detection engine",
     )
 
 
@@ -1152,7 +1349,13 @@ class AsrPipelineOptions(PipelineOptions):
 
 
 class VlmExtractionPipelineOptions(PipelineOptions):
-    """Options for extraction pipeline."""
+    """Options for VLM-based structured information extraction pipeline.
+
+    Configures a pipeline that uses a vision-language model (default:
+    NuExtract-2B) to extract structured data fields from document images.
+    Unlike `VlmPipelineOptions` which converts pages to document format,
+    this pipeline targets extraction of specific entities or key-value pairs.
+    """
 
     vlm_options: Annotated[
         InlineVlmOptions,
@@ -1393,4 +1596,14 @@ class ProcessingPipeline(str, Enum):
 
 
 class ThreadedPdfPipelineOptions(PdfPipelineOptions):
-    """Pipeline options for the threaded PDF pipeline with batching and backpressure control"""
+    """Pipeline options for the threaded PDF pipeline with batching and backpressure control.
+
+    Inherits all settings from `PdfPipelineOptions`. The threaded pipeline
+    processes pages through concurrent stages (OCR, layout analysis, table
+    structure extraction) connected by bounded queues, enabling pipelined
+    parallelism within a single document. Batch sizes, polling intervals,
+    and queue limits are inherited from the parent class.
+
+    See Also:
+        `PdfPipelineOptions`: Base class with all batch and queue settings.
+    """

@@ -16,6 +16,8 @@ Below you can find a listing of all supported input and output formats.
 | HTML, XHTML | |
 | CSV | |
 | PNG, JPEG, TIFF, BMP, WEBP | Image formats |
+| WAV, MP3, M4A, AAC, OGG, FLAC | Audio formats (requires `asr` extra — see [Processing audio and video](processing_audio_media.md)) |
+| MP4, AVI, MOV | Video formats — audio track is extracted and transcribed (requires `asr` extra and `ffmpeg`) |
 | WebVTT | Web Video Text Tracks format for displaying timed text |
 
 Schema-specific support:
@@ -24,6 +26,7 @@ Schema-specific support:
 |--------|-------------|
 | USPTO XML | XML format followed by [USPTO](https://www.uspto.gov/patents) patents |
 | JATS XML | XML format followed by [JATS](https://jats.nlm.nih.gov/) articles |
+| XBRL XML | XML format for business and financial reporting following [XBRL](https://www.xbrl.org/) standard |
 | Docling JSON | JSON-serialized [Docling Document](../concepts/docling_document.md) |
 
 ## Supported output formats
@@ -35,3 +38,4 @@ Schema-specific support:
 | JSON | Lossless serialization of Docling Document |
 | Text | Plain text, i.e. without Markdown markers |
 | [Doctags](https://arxiv.org/pdf/2503.11576) | Markup format for efficiently representing the full content and layout characteristics of a document |
+| WebVTT | Web Video Text Tracks format for displaying timed text |

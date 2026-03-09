@@ -56,14 +56,22 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
 
         # Detect CSV dialect
         head = self.content.readline()
-        dialect = csv.Sniffer().sniff(head, ",;\t|:")
-        _log.info(f'Parsing CSV with delimiter: "{dialect.delimiter}"')
-        if dialect.delimiter not in {",", ";", "\t", "|", ":"}:
-            raise RuntimeError(
-                f"Cannot convert csv with unknown delimiter {dialect.delimiter}."
+        try:
+            dialect: type[csv.Dialect] = csv.Sniffer().sniff(head, ",;\t|:")
+            if dialect.delimiter not in {",", ";", "\t", "|", ":"}:
+                raise RuntimeError(
+                    f"Cannot convert csv with unknown delimiter {dialect.delimiter}."
+                )
+            else:
+                _log.info(f'Parsing CSV with delimiter: "{dialect.delimiter}"')
+        except csv.Error as e:
+            # Fall back to default commad delimiter (e.g. single-column, insufficient data to detect)
+            _log.info(
+                f"Could not detect delimiter ({e}), using default comma delimiter"
             )
+            dialect = csv.excel
 
-        # Parce CSV
+        # Parse CSV
         self.content.seek(0)
         result = csv.reader(self.content, dialect=dialect, strict=True)
         self.csv_data = list(result)
