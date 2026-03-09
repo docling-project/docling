@@ -1,7 +1,6 @@
-import math
 from collections import defaultdict
 from enum import Enum
-from typing import TYPE_CHECKING, Annotated, Dict, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, Optional, Type, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -14,9 +13,7 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.base import PydanticSerCtxKey, round_pydantic_float
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
-from docling_core.types.io import (
-    DocumentStream,
-)
+from docling_core.types.io import DocumentStream
 
 # DO NOT REMOVE; explicitly exposed from this location
 from PIL.Image import Image
@@ -27,10 +24,23 @@ from pydantic import (
     FieldSerializationInfo,
     computed_field,
     field_serializer,
+    field_validator,
 )
 
 if TYPE_CHECKING:
     from docling.backend.pdf_backend import PdfPageBackend
+
+from docling.backend.abstract_backend import AbstractDocumentBackend
+from docling.datamodel.pipeline_options import PipelineOptions
+
+
+class BaseFormatOption(BaseModel):
+    """Base class for format options used by _DocumentConversionInput."""
+
+    pipeline_options: Optional[PipelineOptions] = None
+    backend: Type[AbstractDocumentBackend]
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class ConversionStatus(str, Enum):
@@ -56,11 +66,10 @@ class InputFormat(str, Enum):
     XLSX = "xlsx"
     XML_USPTO = "xml_uspto"
     XML_JATS = "xml_jats"
+    METS_GBS = "mets_gbs"
     JSON_DOCLING = "json_docling"
     AUDIO = "audio"
-    # 한글 파일 추가
-    HWP = "hwp"
-    XML_HWPX  = "xml_hwpx"
+    VTT = "vtt"
 
 
 class OutputFormat(str, Enum):
@@ -72,7 +81,7 @@ class OutputFormat(str, Enum):
     DOCTAGS = "doctags"
 
 
-FormatToExtensions: Dict[InputFormat, List[str]] = {
+FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.DOCX: ["docx", "dotx", "docm", "dotm"],
     InputFormat.PPTX: ["pptx", "potx", "ppsx", "pptm", "potm", "ppsm"],
     InputFormat.PDF: ["pdf"],
@@ -84,14 +93,13 @@ FormatToExtensions: Dict[InputFormat, List[str]] = {
     InputFormat.CSV: ["csv"],
     InputFormat.XLSX: ["xlsx", "xlsm"],
     InputFormat.XML_USPTO: ["xml", "txt"],
+    InputFormat.METS_GBS: ["tar.gz"],
     InputFormat.JSON_DOCLING: ["json"],
-    InputFormat.AUDIO: ["wav", "mp3"],
-    # 한글 파일 추가
-    InputFormat.HWP: ["hwp"],
-    InputFormat.XML_HWPX: ["hwpx"]
+    InputFormat.AUDIO: ["wav", "mp3", "m4a", "aac", "ogg", "flac", "mp4", "avi", "mov"],
+    InputFormat.VTT: ["vtt"],
 }
 
-FormatToMimeType: Dict[InputFormat, List[str]] = {
+FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.DOCX: [
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.template",
@@ -119,21 +127,25 @@ FormatToMimeType: Dict[InputFormat, List[str]] = {
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     ],
     InputFormat.XML_USPTO: ["application/xml", "text/plain"],
+    InputFormat.METS_GBS: ["application/mets+xml"],
     InputFormat.JSON_DOCLING: ["application/json"],
-    InputFormat.AUDIO: ["audio/x-wav", "audio/mpeg", "audio/wav", "audio/mp3"],
-    # 한글 파일 추가
-    InputFormat.HWP: [
-        "application/vnd.hancom.hwp",  # 공식 HWP MIME 타입
-        "application/hwp",
-        'application/haansofthwp',
-        'application/x-hwp'
+    InputFormat.AUDIO: [
+        "audio/x-wav",
+        "audio/mpeg",
+        "audio/wav",
+        "audio/mp3",
+        "audio/mp4",
+        "audio/m4a",
+        "audio/aac",
+        "audio/ogg",
+        "audio/flac",
+        "audio/x-flac",
+        "video/mp4",
+        "video/avi",
+        "video/x-msvideo",
+        "video/quicktime",
     ],
-    InputFormat.XML_HWPX: [
-        "application/vnd.hancom.hwpml",  # 공식 MIME 타입
-        "application/zip",  # HWPX가 ZIP 기반이므로 추가
-        "application/vnd.hancom.hwpx",
-        'application/hwp+zip' # https://forum.developer.hancom.com/t/hwp-hwpx-mime-type-whitelist/1641/2
-    ],
+    InputFormat.VTT: ["text/vtt"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
@@ -153,6 +165,14 @@ class DoclingComponentType(str, Enum):
     MODEL = "model"
     DOC_ASSEMBLER = "doc_assembler"
     USER_INPUT = "user_input"
+    PIPELINE = "pipeline"
+
+
+class VlmStopReason(str, Enum):
+    LENGTH = "length"  # max tokens reached
+    STOP_SEQUENCE = "stop_sequence"  # Custom stopping criteria met
+    END_OF_SEQUENCE = "end_of_sequence"  # Model generated end-of-text token
+    UNSPECIFIED = "unspecified"  # Defaul none value
 
 
 class ErrorItem(BaseModel):
@@ -166,8 +186,8 @@ class Cluster(BaseModel):
     label: DocItemLabel
     bbox: BoundingBox
     confidence: float = 1.0
-    cells: List[TextCell] = []
-    children: List["Cluster"] = []  # Add child cluster support
+    cells: list[TextCell] = []
+    children: list["Cluster"] = []  # Add child cluster support
 
     @field_serializer("confidence")
     def _serialize(self, value: float, info: FieldSerializationInfo) -> float:
@@ -183,7 +203,7 @@ class BasePageElement(BaseModel):
 
 
 class LayoutPrediction(BaseModel):
-    clusters: List[Cluster] = []
+    clusters: list[Cluster] = []
 
 
 class VlmPredictionToken(BaseModel):
@@ -196,6 +216,9 @@ class VlmPrediction(BaseModel):
     text: str = ""
     generated_tokens: list[VlmPredictionToken] = []
     generation_time: float = -1
+    num_tokens: Optional[int] = None
+    stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
+    input_prompt: Optional[str] = None
 
 
 class ContainerElement(
@@ -205,14 +228,14 @@ class ContainerElement(
 
 
 class Table(BasePageElement):
-    otsl_seq: List[str]
+    otsl_seq: list[str]
     num_rows: int = 0
     num_cols: int = 0
-    table_cells: List[TableCell]
+    table_cells: list[TableCell]
 
 
 class TableStructurePrediction(BaseModel):
-    table_map: Dict[int, Table] = {}
+    table_map: dict[int, Table] = {}
 
 
 class TextElement(BasePageElement):
@@ -220,7 +243,7 @@ class TextElement(BasePageElement):
 
 
 class FigureElement(BasePageElement):
-    annotations: List[PictureDataType] = []
+    annotations: list[PictureDataType] = []
     provenance: Optional[str] = None
     predicted_class: Optional[str] = None
     confidence: Optional[float] = None
@@ -238,12 +261,12 @@ class FigureElement(BasePageElement):
 
 class FigureClassificationPrediction(BaseModel):
     figure_count: int = 0
-    figure_map: Dict[int, FigureElement] = {}
+    figure_map: dict[int, FigureElement] = {}
 
 
 class EquationPrediction(BaseModel):
     equation_count: int = 0
-    equation_map: Dict[int, TextElement] = {}
+    equation_map: dict[int, TextElement] = {}
 
 
 class PagePredictions(BaseModel):
@@ -258,9 +281,9 @@ PageElement = Union[TextElement, Table, FigureElement, ContainerElement]
 
 
 class AssembledUnit(BaseModel):
-    elements: List[PageElement] = []
-    body: List[PageElement] = []
-    headers: List[PageElement] = []
+    elements: list[PageElement] = []
+    body: list[PageElement] = []
+    headers: list[PageElement] = []
 
 
 class ItemAndImageEnrichmentElement(BaseModel):
@@ -284,12 +307,12 @@ class Page(BaseModel):
         None  # Internal PDF backend. By default it is cleared during assembling.
     )
     _default_image_scale: float = 1.0  # Default image scale for external usage.
-    _image_cache: Dict[
+    _image_cache: dict[
         float, Image
     ] = {}  # Cache of images in different scales. By default it is cleared during assembling.
 
     @property
-    def cells(self) -> List[TextCell]:
+    def cells(self) -> list[TextCell]:
         """Return text cells as a read-only view of parsed_page.textline_cells."""
         if self.parsed_page is not None:
             return self.parsed_page.textline_cells
@@ -358,7 +381,7 @@ class OpenAiApiResponse(BaseModel):
 
     id: str
     model: Optional[str] = None  # returned by openai
-    choices: List[OpenAiResponseChoice]
+    choices: list[OpenAiResponseChoice]
     created: int
     usage: OpenAiResponseUsage
 
@@ -380,6 +403,18 @@ class PageConfidenceScores(BaseModel):
     layout_score: ScoreValue = np.nan
     table_score: ScoreValue = np.nan
     ocr_score: ScoreValue = np.nan
+
+    # Accept null/None or string "NaN" values on input and coerce to np.nan
+    @field_validator(
+        "parse_score", "layout_score", "table_score", "ocr_score", mode="before"
+    )
+    @classmethod
+    def _coerce_none_or_nan_str(cls, v):
+        if v is None:
+            return np.nan
+        if isinstance(v, str) and v.strip().lower() in {"nan", "null", "none", ""}:
+            return np.nan
+        return v
 
     def _score_to_grade(self, score: ScoreValue) -> QualityGrade:
         if score < 0.5:
@@ -434,7 +469,7 @@ class PageConfidenceScores(BaseModel):
 
 
 class ConfidenceReport(PageConfidenceScores):
-    pages: Dict[int, PageConfidenceScores] = Field(
+    pages: dict[int, PageConfidenceScores] = Field(
         default_factory=lambda: defaultdict(PageConfidenceScores)
     )
 

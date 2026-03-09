@@ -1,0 +1,39 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: Code snippets
+    item-2 at level 2: inline: group group
+      item-3 at level 3: text: The Pythagorean theorem can be w ... tion relating the lengths of the sides
+      item-4 at level 3: text: a
+      item-5 at level 3: text: ,
+      item-6 at level 3: text: b
+      item-7 at level 3: text: and the hypotenuse
+      item-8 at level 3: text: c
+      item-9 at level 3: text: .
+    item-10 at level 2: inline: group group
+      item-11 at level 3: text: To use Docling, simply install
+      item-12 at level 3: code: docling
+      item-13 at level 3: text: from your package manager, e.g. pip:
+      item-14 at level 3: code: pip install docling
+    item-15 at level 2: inline: group group
+      item-16 at level 3: text: To convert individual documents with python, use
+      item-17 at level 3: code: convert()
+      item-18 at level 3: text: , for example:
+    item-19 at level 2: code: from docling.document_converter  ... (result.document.export_to_markdown())
+    item-20 at level 2: inline: group group
+      item-21 at level 3: text: The program will output:
+      item-22 at level 3: code: ## Docling Technical Report[...]
+    item-23 at level 2: text: Prefetch the models:
+    item-24 at level 2: list: group list
+      item-25 at level 3: list_item: 
+        item-26 at level 4: inline: group group
+          item-27 at level 5: text: Use the
+          item-28 at level 5: code: docling-tools models download
+          item-29 at level 5: text: utility:
+      item-30 at level 3: list_item: 
+        item-31 at level 4: inline: group group
+          item-32 at level 5: text: Alternatively, models can be programmatically downloaded using
+          item-33 at level 5: code: docling.utils.model_downloader.download_models()
+          item-34 at level 5: text: .
+      item-35 at level 3: list_item: 
+        item-36 at level 4: inline: group group
+          item-37 at level 5: text: Also, you can use download-hf-re ... rom HuggingFace by specifying repo id:
+          item-38 at level 5: code: $ docling-tools models download- ... 256M-preview model from HuggingFace...

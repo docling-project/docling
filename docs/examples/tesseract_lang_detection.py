@@ -1,3 +1,22 @@
+# %% [markdown]
+# Detect language automatically with Tesseract OCR and force full-page OCR.
+#
+# What this example does
+# - Configures Tesseract (CLI in this snippet) with `lang=["auto"]`.
+# - Forces full-page OCR and prints the recognized text as Markdown.
+#
+# How to run
+# - From the repo root: `python docs/examples/tesseract_lang_detection.py`.
+# - Ensure Tesseract CLI (or library) is installed and on PATH.
+#
+# Notes
+# - You can switch to `TesseractOcrOptions` instead of `TesseractCliOcrOptions`.
+# - Language packs must be installed; set `TESSDATA_PREFIX` if Tesseract
+#   cannot find language data. Using `lang=["auto"]` requires traineddata
+#   that supports script/language detection on your system.
+
+# %%
+
 from pathlib import Path
 
 from docling.datamodel.base_models import InputFormat

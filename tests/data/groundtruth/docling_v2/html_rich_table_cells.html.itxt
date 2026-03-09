@@ -1,0 +1,53 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: Rich Table Cells in HTML
+    item-2 at level 2: table with [5x3]
+      item-3 at level 3: unspecified: group rich_cell_group_1_1_3
+        item-4 at level 4: text: Large
+        item-5 at level 4: text: ,
+        item-6 at level 4: text: loud
+        item-7 at level 4: text: ,
+        item-8 at level 4: text: noisy
+        item-9 at level 4: text: ,
+        item-10 at level 4: text: small
+      item-11 at level 3: unspecified: group rich_cell_group_1_0_4
+        item-12 at level 4: list: group list
+          item-13 at level 5: list_item: Pond
+          item-14 at level 5: list_item: Marsh
+          item-15 at level 5: list_item: Riverbank
+      item-16 at level 3: unspecified: group rich_cell_group_1_1_4
+        item-17 at level 4: list: group ordered list
+          item-18 at level 5: list_item: Fly south in winter
+          item-19 at level 5: list_item: Build nest on ground
+    item-20 at level 2: table with [4x2]
+      item-21 at level 3: unspecified: group rich_cell_group_2_0_1
+        item-22 at level 4: text: Aythya
+        item-23 at level 4: text: (Diving ducks)
+      item-24 at level 3: unspecified: group rich_cell_group_2_0_2
+        item-25 at level 4: text: Lophonetta
+        item-26 at level 4: text: (Pintail group)
+      item-27 at level 3: unspecified: group rich_cell_group_2_0_3
+        item-28 at level 4: text: Oxyura
+        item-29 at level 4: text: (Benthic ducks)
+    item-30 at level 2: table with [4x2]
+      item-31 at level 3: unspecified: group rich_cell_group_3_0_1
+        item-32 at level 4: text: Swim
+      item-33 at level 3: unspecified: group rich_cell_group_3_0_1
+        item-34 at level 4: text: Gracefully glide on H
+        item-35 at level 4: text: 2
+        item-36 at level 4: text: O surfaces.
+      item-37 at level 3: unspecified: group rich_cell_group_3_0_2
+        item-38 at level 4: text: Fly
+      item-39 at level 3: unspecified: group rich_cell_group_3_0_3
+        item-40 at level 4: text: Quack
+      item-41 at level 3: unspecified: group rich_cell_group_4_0_3
+        item-42 at level 4: table with [3x2]
+    item-43 at level 2: table with [5x3]
+      item-44 at level 3: unspecified: group rich_cell_group_5_1_1
+        item-45 at level 4: text: View PNG
+      item-46 at level 3: unspecified: group rich_cell_group_5_1_2
+        item-47 at level 4: picture
+          item-47 at level 5: caption: White-headed duck thumbnail
+      item-48 at level 3: unspecified: group rich_cell_group_5_1_3
+        item-49 at level 4: text: View Full-Size Image
+    item-50 at level 2: picture
+  item-51 at level 1: caption: White-headed duck thumbnail

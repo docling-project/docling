@@ -31,42 +31,42 @@ class LayoutModelConfig(BaseModel):
 # Default Docling Layout Model
 DOCLING_LAYOUT_V2 = LayoutModelConfig(
     name="docling_layout_v2",
-    repo_id="ds4sd/docling-layout-old",
+    repo_id="docling-project/docling-layout-old",
     revision="main",
     model_path="",
 )
 
 DOCLING_LAYOUT_HERON = LayoutModelConfig(
     name="docling_layout_heron",
-    repo_id="ds4sd/docling-layout-heron",
+    repo_id="docling-project/docling-layout-heron",
     revision="main",
     model_path="",
 )
 
 DOCLING_LAYOUT_HERON_101 = LayoutModelConfig(
     name="docling_layout_heron_101",
-    repo_id="ds4sd/docling-layout-heron-101",
+    repo_id="docling-project/docling-layout-heron-101",
     revision="main",
     model_path="",
 )
 
 DOCLING_LAYOUT_EGRET_MEDIUM = LayoutModelConfig(
     name="docling_layout_egret_medium",
-    repo_id="ds4sd/docling-layout-egret-medium",
+    repo_id="docling-project/docling-layout-egret-medium",
     revision="main",
     model_path="",
 )
 
 DOCLING_LAYOUT_EGRET_LARGE = LayoutModelConfig(
     name="docling_layout_egret_large",
-    repo_id="ds4sd/docling-layout-egret-large",
+    repo_id="docling-project/docling-layout-egret-large",
     revision="main",
     model_path="",
 )
 
 DOCLING_LAYOUT_EGRET_XLARGE = LayoutModelConfig(
     name="docling_layout_egret_xlarge",
-    repo_id="ds4sd/docling-layout-egret-xlarge",
+    repo_id="docling-project/docling-layout-egret-xlarge",
     revision="main",
     model_path="",
 )

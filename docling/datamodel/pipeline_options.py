@@ -12,7 +12,7 @@ from pydantic import (
 )
 from typing_extensions import deprecated
 
-from docling.datamodel import asr_model_specs
+from docling.datamodel import asr_model_specs, vlm_model_specs
 
 # Import the following for backwards compatibility
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
@@ -37,6 +37,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
 from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
     GRANITE_VISION_TRANSFORMERS as granite_vision_vlm_conversion_options,
+    NU_EXTRACT_2B_TRANSFORMERS,
     SMOLDOCLING_MLX as smoldocling_vlm_mlx_conversion_options,
     SMOLDOCLING_TRANSFORMERS as smoldocling_vlm_conversion_options,
     VlmModelType,
@@ -58,9 +59,14 @@ class TableFormerMode(str, Enum):
     ACCURATE = "accurate"
 
 
-class TableStructureOptions(BaseModel):
+class BaseTableStructureOptions(BaseOptions):
+    """Base options for table structure models."""
+
+
+class TableStructureOptions(BaseTableStructureOptions):
     """Options for the table structure."""
 
+    kind: ClassVar[str] = "docling_tableformer"
     do_cell_matching: bool = (
         True
         # True:  Matches predictions back to PDF cells. Can break table output if PDF cells
@@ -78,6 +84,13 @@ class OcrOptions(BaseOptions):
     bitmap_area_threshold: float = (
         0.05  # percentage of the area for a bitmap to processed with OCR
     )
+
+
+class OcrAutoOptions(OcrOptions):
+    """Options for pick OCR engine automatically."""
+
+    kind: ClassVar[Literal["auto"]] = "auto"
+    lang: List[str] = []
 
 
 class RapidOcrOptions(OcrOptions):
@@ -99,6 +112,8 @@ class RapidOcrOptions(OcrOptions):
     # For more details on the following options visit
     # https://rapidai.github.io/RapidOCRDocs/install_usage/api/RapidOCR/
 
+    # https://rapidai.github.io/RapidOCRDocs/main/install_usage/rapidocr/usage/#__tabbed_3_4
+    backend: Literal["onnxruntime", "openvino", "paddle", "torch"] = "onnxruntime"
     text_score: float = 0.5  # same default as rapidocr
 
     use_det: Optional[bool] = None  # same default as rapidocr
@@ -111,6 +126,11 @@ class RapidOcrOptions(OcrOptions):
     cls_model_path: Optional[str] = None  # same default as rapidocr
     rec_model_path: Optional[str] = None  # same default as rapidocr
     rec_keys_path: Optional[str] = None  # same default as rapidocr
+    rec_font_path: Optional[str] = None  # Deprecated, please use font_path instead
+    font_path: Optional[str] = None  # same default as rapidocr
+
+    # Dictionary to overwrite or pass-through additional parameters
+    rapidocr_params: Dict[str, Any] = Field(default_factory=dict)
 
     model_config = ConfigDict(
         extra="forbid",
@@ -159,6 +179,8 @@ class EasyOcrOptions(OcrOptions):
     recog_network: Optional[str] = "standard"
     download_enabled: bool = True
 
+    suppress_mps_warnings: bool = True
+
     model_config = ConfigDict(
         extra="forbid",
         protected_namespaces=(),
@@ -172,6 +194,9 @@ class TesseractCliOcrOptions(OcrOptions):
     lang: List[str] = ["fra", "deu", "spa", "eng"]
     tesseract_cmd: str = "tesseract"
     path: Optional[str] = None
+    psm: Optional[int] = (
+        None  # Page Segmentation Mode (0-13), defaults to tesseract's default
+    )
 
     model_config = ConfigDict(
         extra="forbid",
@@ -184,6 +209,9 @@ class TesseractOcrOptions(OcrOptions):
     kind: ClassVar[Literal["tesserocr"]] = "tesserocr"
     lang: List[str] = ["fra", "deu", "spa", "eng"]
     path: Optional[str] = None
+    psm: Optional[int] = (
+        None  # Page Segmentation Mode (0-13), defaults to tesseract's default
+    )
 
     model_config = ConfigDict(
         extra="forbid",
@@ -245,7 +273,7 @@ smolvlm_picture_description = PictureDescriptionVlmOptions(
 
 # GraniteVision
 granite_picture_description = PictureDescriptionVlmOptions(
-    repo_id="ibm-granite/granite-vision-3.2-2b-preview",
+    repo_id="ibm-granite/granite-vision-3.3-2b",
     prompt="What is shown in this image?",
 )
 
@@ -261,10 +289,13 @@ class PdfBackend(str, Enum):
 
 
 # Define an enum for the ocr engines
-@deprecated("Use ocr_factory.registered_enum")
+@deprecated(
+    "Use get_ocr_factory().registered_kind to get a list of registered OCR engines."
+)
 class OcrEngine(str, Enum):
     """Enum of valid OCR engines."""
 
+    AUTO = "auto"
     EASYOCR = "easyocr"
     TESSERACT_CLI = "tesseract_cli"
     TESSERACT = "tesseract"
@@ -272,23 +303,28 @@ class OcrEngine(str, Enum):
     RAPIDOCR = "rapidocr"
 
 
-class PipelineOptions(BaseModel):
+class PipelineOptions(BaseOptions):
     """Base pipeline options."""
 
-    create_legacy_output: bool = (
-        True  # This default will be set to False on a future version of docling
-    )
     document_timeout: Optional[float] = None
     accelerator_options: AcceleratorOptions = AcceleratorOptions()
     enable_remote_services: bool = False
     allow_external_plugins: bool = False
-    save_images: bool = True
-    include_wmf: bool = False
-
-
-class PaginatedPipelineOptions(PipelineOptions):
     artifacts_path: Optional[Union[Path, str]] = None
 
+
+class ConvertPipelineOptions(PipelineOptions):
+    """Base convert pipeline options."""
+
+    do_picture_classification: bool = False  # True: classify pictures in documents
+
+    do_picture_description: bool = False  # True: run describe pictures in documents
+    picture_description_options: PictureDescriptionBaseOptions = (
+        smolvlm_picture_description
+    )
+
+
+class PaginatedPipelineOptions(ConvertPipelineOptions):
     images_scale: float = 1.0
     generate_page_images: bool = False
     generate_picture_images: bool = False
@@ -301,7 +337,7 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
     )
     # If True, text from backend will be used instead of generated text
     vlm_options: Union[InlineVlmOptions, ApiVlmOptions] = (
-        smoldocling_vlm_conversion_options
+        vlm_model_specs.GRANITEDOCLING_TRANSFORMERS
     )
 
 
@@ -318,13 +354,19 @@ class BaseLayoutOptions(BaseOptions):
 class LayoutOptions(BaseLayoutOptions):
     """Options for layout processing."""
 
+    kind: ClassVar[str] = "docling_layout_default"
     create_orphan_clusters: bool = True  # Whether to create clusters for orphaned cells
-    model_spec: LayoutModelConfig = DOCLING_LAYOUT_V2
+    model_spec: LayoutModelConfig = DOCLING_LAYOUT_HERON
 
 
 class AsrPipelineOptions(PipelineOptions):
     asr_options: Union[InlineAsrOptions] = asr_model_specs.WHISPER_TINY
-    artifacts_path: Optional[Union[Path, str]] = None
+
+
+class VlmExtractionPipelineOptions(PipelineOptions):
+    """Options for extraction pipeline."""
+
+    vlm_options: Union[InlineVlmOptions] = NU_EXTRACT_2B_TRANSFORMERS
 
 
 class PdfPipelineOptions(PaginatedPipelineOptions):
@@ -334,21 +376,14 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
     do_ocr: bool = True  # True: perform OCR, replace programmatic PDF text
     do_code_enrichment: bool = False  # True: perform code OCR
     do_formula_enrichment: bool = False  # True: perform formula OCR, return Latex code
-    do_picture_classification: bool = False  # True: classify pictures in documents
-    do_picture_description: bool = False  # True: run describe pictures in documents
-    do_vlm_layout_and_readingorder: bool = False
-    # TODO str로 바꿔야 할듯. dots_ocr, paddleVL etc...
     force_backend_text: bool = (
         False  # (To be used with vlms, or other generative models)
     )
     # If True, text from backend will be used instead of generated text
 
-    table_structure_options: TableStructureOptions = TableStructureOptions()
-    ocr_options: OcrOptions = EasyOcrOptions()
-    picture_description_options: PictureDescriptionBaseOptions = (
-        smolvlm_picture_description
-    )
-    layout_options: LayoutOptions = LayoutOptions()
+    table_structure_options: BaseTableStructureOptions = TableStructureOptions()
+    ocr_options: OcrOptions = OcrAutoOptions()
+    layout_options: BaseLayoutOptions = LayoutOptions()
 
     images_scale: float = 1.0
     generate_page_images: bool = False
@@ -362,50 +397,28 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
         ),
     )
 
-    generate_parsed_pages: Literal[True] = (
-        True  # Always True since parsed_page is now mandatory
-    )
+    generate_parsed_pages: bool = False
+
+    ### Arguments for threaded PDF pipeline with batching and backpressure control
+
+    # Batch sizes for different stages
+    ocr_batch_size: int = 4
+    layout_batch_size: int = 4
+    table_batch_size: int = 4
+
+    # Timing control
+    batch_polling_interval_seconds: float = 0.5
+
+    # Backpressure and queue control
+    queue_max_size: int = 100
 
 
 class ProcessingPipeline(str, Enum):
+    LEGACY = "legacy"
     STANDARD = "standard"
     VLM = "vlm"
     ASR = "asr"
 
 
-# ADD CUSTOM PIPELINE OPTION
-
-
-class DataEnrichmentOptions(BaseModel):
-    """Data enrichment options for metadata extraction and other enrichment features."""
-
-    # TOC enrichment options
-    do_toc_enrichment: bool = False
-    toc_doc_type: Optional[str] = None  # e.g., "normal"(default), "law"
-    toc_system_prompt: Optional[str] = None
-    toc_user_prompt: Optional[str] = None
-    # TOC API configuration options
-    toc_api_provider: Optional[str] = None  # e.g., "openrouter", "openai", "custom"
-    toc_api_key: Optional[str] = None
-    toc_api_base_url: Optional[str] = None
-    toc_model: Optional[str] = None
-    toc_temperature: Optional[float] = None
-    toc_top_p: Optional[float] = None
-    toc_seed: Optional[int] = None
-    toc_max_tokens: Optional[int] = None
-
-    # Metadata extraction options
-    extract_metadata: bool = False
-    metadata_system_prompt: Optional[str] = None
-    metadata_user_prompt: Optional[str] = None
-    # Metadata API configuration options
-    metadata_api_provider: Optional[str] = (
-        None  # e.g., "openrouter", "openai", "custom"
-    )
-    metadata_api_key: Optional[str] = None
-    metadata_api_base_url: Optional[str] = None
-    metadata_model: Optional[str] = None
-    metadata_temperature: Optional[float] = None
-    metadata_top_p: Optional[float] = None
-    metadata_seed: Optional[int] = None
-    metadata_max_tokens: Optional[int] = None
+class ThreadedPdfPipelineOptions(PdfPipelineOptions):
+    """Pipeline options for the threaded PDF pipeline with batching and backpressure control"""

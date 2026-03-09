@@ -1,0 +1,6 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: Something
+    item-2 at level 2: inline: group group
+      item-3 at level 3: text: Please follow the link to:
+      item-4 at level 3: text: This page
+      item-5 at level 3: text: .

@@ -1,0 +1,22 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section: group WebVTT cue block
+    item-2 at level 2: text: 00:00.000 --> 00:02.000
+    item-3 at level 2: inline: group WebVTT cue voice span
+      item-4 at level 3: text: Esme (first, loud): 
+      item-5 at level 3: text: It’s a blue apple tree!
+  item-6 at level 1: section: group WebVTT cue block
+    item-7 at level 2: text: 00:02.000 --> 00:04.000
+    item-8 at level 2: inline: group WebVTT cue voice span
+      item-9 at level 3: text: Mary: 
+      item-10 at level 3: text: No way!
+  item-11 at level 1: section: group WebVTT cue block
+    item-12 at level 2: text: 00:04.000 --> 00:06.000
+    item-13 at level 2: inline: group WebVTT cue voice span
+      item-14 at level 3: text: Esme: 
+      item-15 at level 3: text: Hee!
+    item-16 at level 2: text: laughter
+  item-17 at level 1: section: group WebVTT cue block
+    item-18 at level 2: text: 00:06.000 --> 00:08.000
+    item-19 at level 2: inline: group WebVTT cue voice span
+      item-20 at level 3: text: Mary (loud): 
+      item-21 at level 3: text: That’s awesome!

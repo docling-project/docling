@@ -1,20 +1,27 @@
 from io import BytesIO
 from pathlib import Path
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
-from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
-from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
+import pytest
+from pydantic import ValidationError
+
+from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.datamodel.backend_options import (
+    BaseBackendOptions,
+    DeclarativeBackendOptions,
+    HTMLBackendOptions,
+)
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument, _DocumentConversionInput
 from docling.datamodel.settings import DocumentLimits
-from docling.document_converter import PdfFormatOption
+from docling.document_converter import ImageFormatOption, PdfFormatOption
 
 
 def test_in_doc_from_valid_path():
     test_doc_path = Path("./tests/data/pdf/2206.01062.pdf")
     doc = _make_input_doc(test_doc_path)
     assert doc.valid is True
+    assert doc.backend_options is None
 
 
 def test_in_doc_from_invalid_path():
@@ -39,36 +46,6 @@ def test_in_doc_from_invalid_buf():
 
     doc = _make_input_doc_from_stream(stream)
     assert doc.valid is False
-
-
-def test_image_in_pdf_backend():
-    in_doc = InputDocument(
-        path_or_stream=Path("tests/data/2305.03393v1-pg9-img.png"),
-        format=InputFormat.IMAGE,
-        backend=PyPdfiumDocumentBackend,
-    )
-
-    assert in_doc.valid
-    in_doc = InputDocument(
-        path_or_stream=Path("tests/data/2305.03393v1-pg9-img.png"),
-        format=InputFormat.IMAGE,
-        backend=DoclingParseDocumentBackend,
-    )
-    assert in_doc.valid
-
-    in_doc = InputDocument(
-        path_or_stream=Path("tests/data/2305.03393v1-pg9-img.png"),
-        format=InputFormat.IMAGE,
-        backend=DoclingParseV2DocumentBackend,
-    )
-    assert in_doc.valid
-
-    in_doc = InputDocument(
-        path_or_stream=Path("tests/data/2305.03393v1-pg9-img.png"),
-        format=InputFormat.IMAGE,
-        backend=DoclingParseV4DocumentBackend,
-    )
-    assert in_doc.valid
 
 
 def test_in_doc_with_page_range():
@@ -103,6 +80,38 @@ def test_in_doc_with_page_range():
         limits=limits,
     )
     assert doc.valid is False
+
+
+def test_in_doc_with_backend_options():
+    test_doc_path = Path("./tests/data/html/example_01.html")
+    doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        backend_options=HTMLBackendOptions(),
+    )
+    assert doc.valid
+    assert doc.backend_options
+    assert isinstance(doc.backend_options, HTMLBackendOptions)
+    assert not doc.backend_options.fetch_images
+    assert not doc.backend_options.enable_local_fetch
+    assert not doc.backend_options.enable_remote_fetch
+
+    with pytest.raises(AttributeError, match="no attribute 'source_uri'"):
+        doc = InputDocument(
+            path_or_stream=test_doc_path,
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            backend_options=DeclarativeBackendOptions(),
+        )
+
+    with pytest.raises(ValidationError):
+        doc = InputDocument(
+            path_or_stream=test_doc_path,
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            backend_options=BaseBackendOptions(),
+        )
 
 
 def test_guess_format(tmp_path):
@@ -206,6 +215,11 @@ def test_guess_format(tmp_path):
     doc_path.write_text("xyz", encoding="utf-8")
     assert dci._guess_format(doc_path) is None
 
+    # Valid WebVTT
+    buf = BytesIO(Path("./tests/data/webvtt/webvtt_example_01.vtt").open("rb").read())
+    stream = DocumentStream(name="webvtt_example_01.vtt", stream=buf)
+    assert dci._guess_format(stream) == InputFormat.VTT
+
     # Valid Docling JSON
     test_str = '{"name": ""}'
     stream = DocumentStream(name="test.json", stream=BytesIO(f"{test_str}".encode()))
@@ -243,3 +257,26 @@ def _make_input_doc_from_stream(doc_stream):
         backend=PdfFormatOption().backend,  # use default
     )
     return in_doc
+
+
+def test_tiff_two_pages():
+    tiff_path = Path("./tests/data/tiff/2206.01062.tif")
+    doc = InputDocument(
+        path_or_stream=tiff_path,
+        format=InputFormat.IMAGE,
+        backend=ImageFormatOption().backend,  # use default backend
+    )
+    assert doc.valid is True
+    assert doc.page_count == 2
+
+    # Expect two full-page rectangles
+    rects_page1 = doc._backend.load_page(0).get_bitmap_rects()
+    rects_page2 = doc._backend.load_page(1).get_bitmap_rects()
+
+    page1_rect = next(rects_page1)
+    page2_rect = next(rects_page2)
+
+    assert page1_rect.t == page2_rect.t == 0
+    assert page1_rect.l == page2_rect.l == 0
+    assert page1_rect.r == page2_rect.r == 612.0
+    assert page1_rect.b == page2_rect.b == 792.0

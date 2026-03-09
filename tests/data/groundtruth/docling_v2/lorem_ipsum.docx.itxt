@@ -1,10 +1,10 @@
 item-0 at level 0: unspecified: group _root_
-  item-1 at level 1: paragraph: Lorem ipsum dolor sit amet, cons ... quam non, sodales sem. Nulla facilisi.
-  item-2 at level 1: paragraph: 
-  item-3 at level 1: paragraph: Duis condimentum dui eget ullamc ... cus tempor, et tristique ante aliquet.
-  item-4 at level 1: paragraph: 
-  item-5 at level 1: paragraph: Maecenas id neque pharetra, elei ... ulla faucibus eu. Donec ut nisl metus.
-  item-6 at level 1: paragraph: 
-  item-7 at level 1: paragraph: Duis ac tellus sed turpis feugia ... pellentesque rhoncus, blandit eu nisl.
-  item-8 at level 1: paragraph: 
-  item-9 at level 1: paragraph: Nunc vehicula mattis erat ac con ... udin, vehicula turpis eu, tempus nibh.
+  item-1 at level 1: text: Lorem ipsum dolor sit amet, cons ... quam non, sodales sem. Nulla facilisi.
+  item-2 at level 1: text: 
+  item-3 at level 1: text: Duis condimentum dui eget ullamc ... cus tempor, et tristique ante aliquet.
+  item-4 at level 1: text: 
+  item-5 at level 1: text: Maecenas id neque pharetra, elei ... ulla faucibus eu. Donec ut nisl metus.
+  item-6 at level 1: text: 
+  item-7 at level 1: text: Duis ac tellus sed turpis feugia ... pellentesque rhoncus, blandit eu nisl.
+  item-8 at level 1: text: 
+  item-9 at level 1: text: Nunc vehicula mattis erat ac con ... udin, vehicula turpis eu, tempus nibh.

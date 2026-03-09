@@ -1,30 +1,61 @@
 from enum import Enum
-from typing import Any, Callable, Dict, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
 
 from docling_core.types.doc.page import SegmentedPage
-from pydantic import AnyUrl, BaseModel
+from pydantic import AnyUrl, BaseModel, ConfigDict
+from transformers import StoppingCriteria
 from typing_extensions import deprecated
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.models.utils.generation_utils import GenerationStopper
+
+if TYPE_CHECKING:
+    from docling_core.types.doc.page import SegmentedPage
+
+    from docling.datamodel.base_models import Page
 
 
 class BaseVlmOptions(BaseModel):
     kind: str
-    prompt: Union[str, Callable[[Optional[SegmentedPage]], str]]
+    prompt: str
     scale: float = 2.0
     max_size: Optional[int] = None
     temperature: float = 0.0
+
+    def build_prompt(
+        self,
+        page: Optional["SegmentedPage"],
+        *,
+        _internal_page: Optional["Page"] = None,
+    ) -> str:
+        """Build the prompt for VLM inference.
+
+        Args:
+            page: The parsed/segmented page to process.
+            _internal_page: Internal parameter for experimental layout-aware pipelines.
+                Do not rely on this in user code - subject to change.
+
+        Returns:
+            The formatted prompt string.
+        """
+        return self.prompt
+
+    def decode_response(self, text: str) -> str:
+        return text
 
 
 class ResponseFormat(str, Enum):
     DOCTAGS = "doctags"
     MARKDOWN = "markdown"
     HTML = "html"
+    OTSL = "otsl"
+    PLAINTEXT = "plaintext"
 
 
 class InferenceFramework(str, Enum):
     MLX = "mlx"
     TRANSFORMERS = "transformers"
+    VLLM = "vllm"
 
 
 class TransformersModelType(str, Enum):
@@ -37,12 +68,16 @@ class TransformersModelType(str, Enum):
 class TransformersPromptStyle(str, Enum):
     CHAT = "chat"
     RAW = "raw"
+    NONE = "none"
 
 
 class InlineVlmOptions(BaseVlmOptions):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     kind: Literal["inline_model_options"] = "inline_model_options"
 
     repo_id: str
+    revision: str = "main"
     trust_remote_code: bool = False
     load_in_8bit: bool = True
     llm_int8_threshold: float = 6.0
@@ -61,10 +96,14 @@ class InlineVlmOptions(BaseVlmOptions):
     ]
 
     stop_strings: List[str] = []
+    custom_stopping_criteria: List[Union[StoppingCriteria, GenerationStopper]] = []
     extra_generation_config: Dict[str, Any] = {}
+    extra_processor_kwargs: Dict[str, Any] = {}
 
     use_kv_cache: bool = True
     max_new_tokens: int = 4096
+    track_generated_tokens: bool = False
+    track_input_prompt: bool = False
 
     @property
     def repo_cache_folder(self) -> str:
@@ -77,6 +116,8 @@ class HuggingFaceVlmOptions(InlineVlmOptions):
 
 
 class ApiVlmOptions(BaseVlmOptions):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     kind: Literal["api_model_options"] = "api_model_options"
 
     url: AnyUrl = AnyUrl(
@@ -87,3 +128,7 @@ class ApiVlmOptions(BaseVlmOptions):
     timeout: float = 60
     concurrency: int = 1
     response_format: ResponseFormat
+
+    stop_strings: List[str] = []
+    custom_stopping_criteria: List[Union[GenerationStopper]] = []
+    track_input_prompt: bool = False

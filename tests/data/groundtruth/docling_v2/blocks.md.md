@@ -16,6 +16,14 @@ Heading:
 
 Empty heading:
 
+Setext heading level 1:
+
+# my setext heading level 1
+
+Setext heading level 2:
+
+## my setext heading level 2
+
 Indented code block:
 
 ```

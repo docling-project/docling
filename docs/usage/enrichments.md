@@ -16,7 +16,7 @@ The following table provides an overview of the default enrichment models availa
 
 ### Code understanding
 
-The code understanding step allows to use advance parsing for code blocks found in the document.
+The code understanding step allows to use advanced parsing for code blocks found in the document.
 This enrichment model also set the `code_language` property of the `CodeItem`.
 
 Model specs: see the [`CodeFormula` model card](https://huggingface.co/ds4sd/CodeFormula).
@@ -47,7 +47,7 @@ doc = result.document
 
 ### Formula understanding
 
-The formula understanding step will analize the equation formulas in documents and extract their LaTeX representation.
+The formula understanding step will analyze the equation formulas in documents and extract their LaTeX representation.
 The HTML export functions in the DoclingDocument will leverage the formula and visualize the result using the mathml html syntax.
 
 Model specs: see the [`CodeFormula` model card](https://huggingface.co/ds4sd/CodeFormula).
@@ -168,7 +168,7 @@ from docling.datamodel.pipeline_options import PictureDescriptionVlmOptions
 
 pipeline_options.picture_description_options = PictureDescriptionVlmOptions(
     repo_id="",  # <-- add here the Hugging Face repo_id of your favorite VLM
-    prompt="Describe the image in three sentences. Be consise and accurate.",
+    prompt="Describe the image in three sentences. Be concise and accurate.",
 )
 ```
 
@@ -197,7 +197,7 @@ pipeline_options.picture_description_options = PictureDescriptionApiOptions(
         seed=42,
         max_completion_tokens=200,
     ),
-    prompt="Describe the image in three sentences. Be consise and accurate.",
+    prompt="Describe the image in three sentences. Be concise and accurate.",
     timeout=90,
 )
 ```
@@ -209,7 +209,7 @@ End-to-end code snippets for cloud providers are available in the examples secti
 
 ## Develop new enrichment models
 
-Beside looking at the implementation of all the models listed above, the Docling documentation has a few examples
+Besides looking at the implementation of all the models listed above, the Docling documentation has a few examples
 dedicated to the implementation of enrichment models.
 
 - [Develop picture enrichment](../examples/develop_picture_enrichment.py)

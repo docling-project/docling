@@ -26,18 +26,13 @@ class DocumentLimits(BaseModel):
 
 
 class BatchConcurrencySettings(BaseModel):
-    doc_batch_size: int = 2
-    doc_batch_concurrency: int = 2
-    page_batch_size: int = 4
-    page_batch_concurrency: int = 2
-    elements_batch_size: int = 16
-
-    # doc_batch_size: int = 1
-    # doc_batch_concurrency: int = 1
-    # page_batch_size: int = 1
-    # page_batch_concurrency: int = 1
-
-    # model_concurrency: int = 2
+    doc_batch_size: int = 1  # Number of documents processed in one batch. Should be >= doc_batch_concurrency
+    doc_batch_concurrency: int = 1  # Number of parallel threads processing documents. Warning: Experimental! No benefit expected without free-threaded python.
+    page_batch_size: int = 4  # Number of pages processed in one batch.
+    page_batch_concurrency: int = 1  # Currently unused.
+    elements_batch_size: int = (
+        16  # Number of elements processed in one batch, in enrichment models.
+    )
 
     # To force models into single core: export OMP_NUM_THREADS=1
 

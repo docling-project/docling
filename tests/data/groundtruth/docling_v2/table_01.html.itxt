@@ -1,0 +1,5 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: Header
+    item-2 at level 2: text: This is the first paragraph.
+    item-3 at level 2: table with [2x2]
+    item-4 at level 2: text: After table

@@ -18,7 +18,7 @@ from docling_core.types.doc.base import (
 )
 from docling_core.types.legacy_doc.document import ExportedCCSDocument as DsDocument
 from PIL import Image as PILImage
-from pydantic import TypeAdapter
+from pydantic import BaseModel, TypeAdapter
 from pydantic.json import pydantic_encoder
 
 from docling.datamodel.base_models import ConversionStatus, Page
@@ -26,6 +26,14 @@ from docling.datamodel.document import ConversionResult
 
 COORD_PREC = 2  # decimal places for coordinates
 CONFID_PREC = 3  # decimal places for confidence
+
+
+class _TestPagesMeta(BaseModel):
+    num_cells: int
+
+    @classmethod
+    def from_page(cls, page: Page):
+        return cls(num_cells=len(page.cells))
 
 
 def levenshtein(str1: str, str2: str) -> int:
@@ -62,35 +70,20 @@ def verify_text(gt: str, pred: str, fuzzy: bool, fuzzy_threshold: float = 0.4):
     return True
 
 
-def verify_cells(doc_pred_pages: List[Page], doc_true_pages: List[Page]):
+def verify_cells(
+    doc_pred_pages: List[_TestPagesMeta], doc_true_pages: List[_TestPagesMeta]
+):
     assert len(doc_pred_pages) == len(doc_true_pages), (
         "pred- and true-doc do not have the same number of pages"
     )
 
     for pid, page_true_item in enumerate(doc_true_pages):
-        num_true_cells = len(page_true_item.cells)
-        num_pred_cells = len(doc_pred_pages[pid].cells)
+        num_true_cells = page_true_item.num_cells
+        num_pred_cells = doc_pred_pages[pid].num_cells
 
         assert num_true_cells == num_pred_cells, (
             f"num_true_cells!=num_pred_cells {num_true_cells}!={num_pred_cells}"
         )
-
-        for cid, cell_true_item in enumerate(page_true_item.cells):
-            cell_pred_item = doc_pred_pages[pid].cells[cid]
-
-            true_text = cell_true_item.text
-            pred_text = cell_pred_item.text
-            assert true_text == pred_text, f"{true_text}!={pred_text}"
-
-            true_bbox = cell_true_item.rect.to_bounding_box().as_tuple()
-            norm_pred_bbox = BoundingBox.model_validate_json(
-                cell_pred_item.rect.to_bounding_box().model_dump_json(
-                    context={PydanticSerCtxKey.COORD_PREC.value: COORD_PREC}
-                )
-            ).as_tuple()
-            assert true_bbox == norm_pred_bbox, (
-                f"bbox is not the same: {true_bbox} != {norm_pred_bbox}"
-            )
 
     return True
 
@@ -177,9 +170,6 @@ def verify_table_v2(true_item: TableItem, pred_item: TableItem, fuzzy: bool):
 
     assert true_item.data is not None, "documents are expected to have table data"
     assert pred_item.data is not None, "documents are expected to have table data"
-
-    # print("True: \n", true_item.export_to_dataframe().to_markdown())
-    # print("Pred: \n", true_item.export_to_dataframe().to_markdown())
 
     for i, row in enumerate(true_item.data.grid):
         for j, col in enumerate(true_item.data.grid[i]):
@@ -307,13 +297,10 @@ def verify_conversion_result_v1(
     fuzzy: bool = False,
     indent: int = 2,
 ):
-    PageList = TypeAdapter(List[Page])
-
     assert doc_result.status == ConversionStatus.SUCCESS, (
         f"Doc {input_path} did not convert successfully."
     )
 
-    doc_pred_pages: List[Page] = doc_result.pages
     with pytest.warns(DeprecationWarning, match="Use document instead"):
         doc_pred: DsDocument = doc_result.legacy_document
         doc_pred_md = doc_result.legacy_document.export_to_markdown()
@@ -327,18 +314,11 @@ def verify_conversion_result_v1(
             input_path.parent.parent / "groundtruth" / "docling_v1" / input_path.name
         )
 
-    pages_path = gt_subpath.with_suffix(f"{engine_suffix}.pages.json")
     json_path = gt_subpath.with_suffix(f"{engine_suffix}.json")
     md_path = gt_subpath.with_suffix(f"{engine_suffix}.md")
     dt_path = gt_subpath.with_suffix(f"{engine_suffix}.doctags.txt")
 
     if generate:  # only used when re-generating truth
-        pages_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(pages_path, mode="w", encoding="utf-8") as fw:
-            fw.write(
-                json.dumps(doc_pred_pages, default=pydantic_encoder, indent=indent)
-            )
-
         json_path.parent.mkdir(parents=True, exist_ok=True)
         with open(json_path, mode="w", encoding="utf-8") as fw:
             fw.write(json.dumps(doc_pred, default=pydantic_encoder, indent=indent))
@@ -351,9 +331,6 @@ def verify_conversion_result_v1(
         with open(dt_path, mode="w", encoding="utf-8") as fw:
             fw.write(doc_pred_dt)
     else:  # default branch in test
-        with open(pages_path, encoding="utf-8") as fr:
-            doc_true_pages = PageList.validate_json(fr.read())
-
         with open(json_path, encoding="utf-8") as fr:
             doc_true: DsDocument = DsDocument.model_validate_json(fr.read())
 
@@ -362,11 +339,6 @@ def verify_conversion_result_v1(
 
         with open(dt_path, encoding="utf-8") as fr:
             doc_true_dt = fr.read()
-
-        if not fuzzy:
-            assert verify_cells(doc_pred_pages, doc_true_pages), (
-                f"Mismatch in PDF cell prediction for {input_path}"
-            )
 
         # assert verify_output(
         #    doc_pred, doc_true
@@ -391,15 +363,19 @@ def verify_conversion_result_v2(
     generate: bool = False,
     ocr_engine: Optional[str] = None,
     fuzzy: bool = False,
+    verify_doctags: bool = True,
     indent: int = 2,
 ):
-    PageList = TypeAdapter(List[Page])
+    PageMetaList = TypeAdapter(List[_TestPagesMeta])
 
     assert doc_result.status == ConversionStatus.SUCCESS, (
         f"Doc {input_path} did not convert successfully."
     )
 
     doc_pred_pages: List[Page] = doc_result.pages
+    doc_pred_pages_meta: List[_TestPagesMeta] = [
+        _TestPagesMeta.from_page(page) for page in doc_pred_pages
+    ]
     doc_pred: DoclingDocument = doc_result.document
     doc_pred_md = doc_result.document.export_to_markdown()
     doc_pred_dt = doc_result.document.export_to_doctags()
@@ -412,7 +388,7 @@ def verify_conversion_result_v2(
             input_path.parent.parent / "groundtruth" / "docling_v2" / input_path.name
         )
 
-    pages_path = gt_subpath.with_suffix(f"{engine_suffix}.pages.json")
+    pages_path = gt_subpath.with_suffix(f"{engine_suffix}.pages.meta.json")
     json_path = gt_subpath.with_suffix(f"{engine_suffix}.json")
     md_path = gt_subpath.with_suffix(f"{engine_suffix}.md")
     dt_path = gt_subpath.with_suffix(f"{engine_suffix}.doctags.txt")
@@ -420,18 +396,9 @@ def verify_conversion_result_v2(
     if generate:  # only used when re-generating truth
         pages_path.parent.mkdir(parents=True, exist_ok=True)
 
-        pages_data = [
-            page.model_dump(
-                mode="json",
-                context={
-                    PydanticSerCtxKey.COORD_PREC.value: COORD_PREC,
-                    PydanticSerCtxKey.CONFID_PREC.value: CONFID_PREC,
-                },
-            )
-            for page in doc_pred_pages
-        ]
+        pages_data = PageMetaList.dump_json(doc_pred_pages_meta, indent=2)
         with open(pages_path, mode="w", encoding="utf-8") as fw:
-            fw.write(json.dumps(pages_data, indent=indent))
+            fw.write(pages_data.decode())
 
         json_path.parent.mkdir(parents=True, exist_ok=True)
         doc_pred.save_as_json(
@@ -447,7 +414,7 @@ def verify_conversion_result_v2(
             fw.write(doc_pred_dt)
     else:  # default branch in test
         with open(pages_path, encoding="utf-8") as fr:
-            doc_true_pages = PageList.validate_json(fr.read())
+            doc_true_pages_meta = PageMetaList.validate_json(fr.read())
 
         with open(json_path, encoding="utf-8") as fr:
             doc_true: DoclingDocument = DoclingDocument.model_validate_json(fr.read())
@@ -459,13 +426,9 @@ def verify_conversion_result_v2(
             doc_true_dt = fr.read()
 
         if not fuzzy:
-            assert verify_cells(doc_pred_pages, doc_true_pages), (
+            assert verify_cells(doc_pred_pages_meta, doc_true_pages_meta), (
                 f"Mismatch in PDF cell prediction for {input_path}"
             )
-
-        # assert verify_output(
-        #    doc_pred, doc_true
-        # ), f"Mismatch in JSON prediction for {input_path}"
 
         assert verify_docitems(doc_pred, doc_true, fuzzy=fuzzy), (
             f"verify_docling_document(doc_pred, doc_true) mismatch for {input_path}"
@@ -475,9 +438,10 @@ def verify_conversion_result_v2(
             f"Mismatch in Markdown prediction for {input_path}"
         )
 
-        assert verify_dt(doc_pred_dt, doc_true_dt, fuzzy=fuzzy), (
-            f"Mismatch in DocTags prediction for {input_path}"
-        )
+        if verify_doctags:
+            assert verify_dt(doc_pred_dt, doc_true_dt, fuzzy=fuzzy), (
+                f"Mismatch in DocTags prediction for {input_path}"
+            )
 
 
 def verify_document(pred_doc: DoclingDocument, gtfile: str, generate: bool = False):

@@ -260,7 +260,15 @@ class oMath2Latex(Tag2Method):
         the fraction object
         """
         c_dict = self.process_children_dict(elm)
-        pr = c_dict["fPr"]
+        pr = c_dict.get("fPr")
+        if pr is None:
+            # Handle missing fPr element gracefully
+            _log.debug("Missing fPr element in fraction, using default formatting")
+            latex_s = F_DEFAULT
+            return latex_s.format(
+                num=c_dict.get("num"),
+                den=c_dict.get("den"),
+            )
         latex_s = get_val(pr.type, default=F_DEFAULT, store=F)
         return pr.text + latex_s.format(num=c_dict.get("num"), den=c_dict.get("den"))
 

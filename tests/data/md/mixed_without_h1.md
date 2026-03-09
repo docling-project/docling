@@ -7,6 +7,6 @@ Content before first heading
 - A. first
     - subitem
 - B. second
-- 2. strange
+- 2\. strange
 
 The end!

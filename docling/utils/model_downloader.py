@@ -4,11 +4,14 @@ from typing import Optional
 
 from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_V2
 from docling.datamodel.pipeline_options import (
+    LayoutOptions,
     granite_picture_description,
     smolvlm_picture_description,
 )
 from docling.datamodel.settings import settings
 from docling.datamodel.vlm_model_specs import (
+    GRANITEDOCLING_MLX,
+    GRANITEDOCLING_TRANSFORMERS,
     SMOLDOCLING_MLX,
     SMOLDOCLING_TRANSFORMERS,
 )
@@ -17,6 +20,7 @@ from docling.models.document_picture_classifier import DocumentPictureClassifier
 from docling.models.easyocr_model import EasyOcrModel
 from docling.models.layout_model import LayoutModel
 from docling.models.picture_description_vlm_model import PictureDescriptionVlmModel
+from docling.models.rapid_ocr_model import RapidOcrModel
 from docling.models.table_structure_model import TableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 
@@ -33,10 +37,13 @@ def download_models(
     with_code_formula: bool = True,
     with_picture_classifier: bool = True,
     with_smolvlm: bool = False,
+    with_granitedocling: bool = False,
+    with_granitedocling_mlx: bool = False,
     with_smoldocling: bool = False,
     with_smoldocling_mlx: bool = False,
     with_granite_vision: bool = False,
-    with_easyocr: bool = True,
+    with_rapidocr: bool = True,
+    with_easyocr: bool = False,
 ):
     if output_dir is None:
         output_dir = settings.cache_dir / "models"
@@ -47,7 +54,7 @@ def download_models(
     if with_layout:
         _log.info("Downloading layout model...")
         LayoutModel.download_models(
-            local_dir=output_dir / DOCLING_LAYOUT_V2.model_repo_folder,
+            local_dir=output_dir / LayoutOptions().model_spec.model_repo_folder,
             force=force,
             progress=progress,
         )
@@ -85,6 +92,24 @@ def download_models(
             progress=progress,
         )
 
+    if with_granitedocling:
+        _log.info("Downloading GraniteDocling model...")
+        download_hf_model(
+            repo_id=GRANITEDOCLING_TRANSFORMERS.repo_id,
+            local_dir=output_dir / GRANITEDOCLING_TRANSFORMERS.repo_cache_folder,
+            force=force,
+            progress=progress,
+        )
+
+    if with_granitedocling_mlx:
+        _log.info("Downloading GraniteDocling MLX model...")
+        download_hf_model(
+            repo_id=GRANITEDOCLING_MLX.repo_id,
+            local_dir=output_dir / GRANITEDOCLING_MLX.repo_cache_folder,
+            force=force,
+            progress=progress,
+        )
+
     if with_smoldocling:
         _log.info("Downloading SmolDocling model...")
         download_hf_model(
@@ -111,6 +136,16 @@ def download_models(
             force=force,
             progress=progress,
         )
+
+    if with_rapidocr:
+        for backend in ("torch", "onnxruntime"):
+            _log.info(f"Downloading rapidocr {backend} models...")
+            RapidOcrModel.download_models(
+                backend=backend,
+                local_dir=output_dir / RapidOcrModel._model_repo_folder,
+                force=force,
+                progress=progress,
+            )
 
     if with_easyocr:
         _log.info("Downloading easyocr models...")

@@ -21,6 +21,8 @@
 [![License MIT](https://img.shields.io/github/license/docling-project/docling)](https://opensource.org/licenses/MIT)
 [![PyPI Downloads](https://static.pepy.tech/badge/docling/month)](https://pepy.tech/projects/docling)
 [![Docling Actor](https://apify.com/actor-badge?actor=vancura/docling?fpr=docling)](https://apify.com/vancura/docling)
+[![Chat with Dosu](https://dosu.dev/dosu-chat-badge.svg)](https://app.dosu.dev/097760a8-135e-4789-8234-90c8837d7f1c/ask?utm_source=github)
+[![Discord](https://img.shields.io/discord/1399788921306746971?color=6A7EC2&logo=discord&logoColor=ffffff)](https://docling.ai/discord)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10101/badge)](https://www.bestpractices.dev/projects/10101)
 [![LF AI & Data](https://img.shields.io/badge/LF%20AI%20%26%20Data-003778?logo=linuxfoundation&logoColor=fff&color=0094ff&labelColor=003778)](https://lfaidata.foundation/projects/)
 
@@ -28,16 +30,23 @@ Docling simplifies document processing, parsing diverse formats — including ad
 
 ## Features
 
-* 🗂️  Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, PPTX, XLSX, HTML, WAV, MP3, images (PNG, TIFF, JPEG, ...), and more
+* 🗂️ Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, PPTX, XLSX, HTML, WAV, MP3, VTT, images (PNG, TIFF, JPEG, ...), and more
 * 📑 Advanced PDF understanding incl. page layout, reading order, table structure, code, formulas, image classification, and more
 * 🧬 Unified, expressive [DoclingDocument][docling_document] representation format
-* ↪️  Various [export formats][supported_formats] and options, including Markdown, HTML, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
+* ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
 * 🔒 Local execution capabilities for sensitive data and air-gapped environments
 * 🤖 Plug-and-play [integrations][integrations] incl. LangChain, LlamaIndex, Crew AI & Haystack for agentic AI
 * 🔍 Extensive OCR support for scanned PDFs and images
-* 👓 Support of several Visual Language Models ([SmolDocling](https://huggingface.co/ds4sd/SmolDocling-256M-preview))
-* 🎙️  Support for Audio with Automatic Speech Recognition (ASR) models
+* 👓 Support of several Visual Language Models ([GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M))
+* 🎙️ Audio support with Automatic Speech Recognition (ASR) models
+* 🔌 Connect to any agent using the [MCP server](https://docling-project.github.io/docling/usage/mcp/)
 * 💻 Simple and convenient CLI
+
+### What's new
+* 📤 Structured [information extraction][extraction] \[🧪 beta\]
+* 📑 New layout model (**Heron**) by default, for faster PDF parsing
+* 🔌 [MCP server](https://docling-project.github.io/docling/usage/mcp/) for agentic applications
+* 💬 Parsing of Web Video Text Tracks (WebVTT) files
 
 ### Coming soon
 
@@ -69,7 +78,7 @@ result = converter.convert(source)
 print(result.document.export_to_markdown())  # output: "## Docling Technical Report[...]"
 ```
 
-More [advanced usage options](https://docling-project.github.io/docling/usage/) are available in
+More [advanced usage options](https://docling-project.github.io/docling/usage/advanced_options/) are available in
 the docs.
 
 ## CLI
@@ -80,9 +89,9 @@ Docling has a built-in CLI to run conversions.
 docling https://arxiv.org/pdf/2206.01062
 ```
 
-You can also use 🥚[SmolDocling](https://huggingface.co/ds4sd/SmolDocling-256M-preview) and other VLMs via Docling CLI:
+You can also use 🥚[GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M) and other VLMs via Docling CLI:
 ```bash
-docling --pipeline vlm --vlm-model smoldocling https://arxiv.org/pdf/2206.01062
+docling --pipeline vlm --vlm-model granite_docling https://arxiv.org/pdf/2206.01062
 ```
 This will use MLX acceleration on supported Apple Silicon hardware.
 
@@ -149,3 +158,4 @@ The project was started by the AI for knowledge team at IBM Research Zurich.
 [supported_formats]: https://docling-project.github.io/docling/usage/supported_formats/
 [docling_document]: https://docling-project.github.io/docling/concepts/docling_document/
 [integrations]: https://docling-project.github.io/docling/integrations/
+[extraction]: https://docling-project.github.io/docling/examples/extraction/

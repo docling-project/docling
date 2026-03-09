@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Code snippets in HTML</title>
+</head>
+<body>
+
+<h1>Code snippets</h1>
+
+<p>The Pythagorean theorem can be written as an equation relating the lengths of the sides <var>a</var>, <var>b</var> and the hypotenuse <var>c</var>.</p>
+<p>To use Docling, simply install <code>docling</code>from your package manager, e.g. pip:
+    <kbd>pip install docling</kbd>
+</p>
+<p>To convert individual documents with python, use <code>convert()</code>, for example:</p>
+<pre><code>
+from docling.document_converter import DocumentConverter
+
+source = "https://arxiv.org/pdf/2408.09869"
+converter = DocumentConverter()
+result = converter.convert(source)
+print(result.document.export_to_markdown())
+</code></pre>
+<p>The program will output:
+    <samp>## Docling Technical Report[...]</samp>
+</p>
+
+<p>Prefetch the models:</p>
+<ul>
+    <li>Use the <code>docling-tools models download</code> utility:</li>
+    <li>Alternatively, models can be programmatically downloaded using <samp>docling.utils.model_downloader.download_models()</samp>.</li>
+    <li>Also, you can use download-hf-repo parameter to download arbitrary models from HuggingFace by specifying repo id:
+        <pre><code>
+            $ docling-tools models download-hf-repo ds4sd/SmolDocling-256M-preview
+            Downloading ds4sd/SmolDocling-256M-preview model from HuggingFace...
+        </code></pre>
+        <pre hidden><code>$ docling-tools</code></pre>
+    </li>
+</ul>
+</body>
+</html>

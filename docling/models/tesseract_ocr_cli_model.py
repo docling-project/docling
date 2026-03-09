@@ -117,6 +117,10 @@ class TesseractOcrCliModel(BaseOcrModel):
             cmd.append("--tessdata-dir")
             cmd.append(self.options.path)
 
+        # Add PSM option if specified in the configuration
+        if self.options.psm is not None:
+            cmd.extend(["--psm", str(self.options.psm)])
+
         cmd += [ifilename, "stdout", "tsv"]
         _log.info("command: {}".format(" ".join(cmd)))
 
@@ -320,6 +324,8 @@ class TesseractOcrCliModel(BaseOcrModel):
 
 
 def _parse_orientation(df_osd: pd.DataFrame) -> int:
-    orientations = df_osd.loc[df_osd["key"] == "Orientation in degrees"].value.tolist()
-    orientation = parse_tesseract_orientation(orientations[0].strip())
+    # For strictly optimal performance with invariant dataframe format:
+    mask = df_osd["key"].to_numpy() == "Orientation in degrees"
+    orientation_val = df_osd["value"].to_numpy()[mask][0]
+    orientation = parse_tesseract_orientation(orientation_val.strip())
     return orientation

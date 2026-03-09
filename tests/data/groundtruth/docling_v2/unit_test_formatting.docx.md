@@ -15,3 +15,7 @@ Normal *italic* **bold** underline and [hyperlink](https:/github.com/DS4SD/docli
 - Underline bullet 3
 - Some *italic* **bold** underline
     - Nested *italic* **bold**
+
+The second page of the document with same header and footer
+
+The third page of the document with different header and footer

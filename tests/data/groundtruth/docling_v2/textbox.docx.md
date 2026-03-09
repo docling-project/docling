@@ -26,8 +26,8 @@ Yes
 
 Upon receiving a report from the kindergarten, conduct a preliminary assessment of the case, and depending on the situation and type of illness, carry out an epidemiological investigation and report to the Centers for Disease Control.
 
-- If necessary, provide health education and important reminders at the kindergarten, or notify the individual to undergo specimen collection.
-- Implement appropriate epidemic prevention measures in accordance with the Communicable Disease Control Act.
+1. If necessary, provide health education and important reminders at the kindergarten, or notify the individual to undergo specimen collection.
+2. Implement appropriate epidemic prevention measures in accordance with the Communicable Disease Control Act.
 
 Department of Education:
 Collaborate with the Health Bureau in conducting epidemiological investigations and assist Health Bureau personnel in implementing necessary epidemic prevention measures at all school levels.

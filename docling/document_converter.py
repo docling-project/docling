@@ -1,28 +1,46 @@
 import hashlib
 import logging
 import sys
+import threading
 import time
+import warnings
 from collections.abc import Iterable, Iterator
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from functools import partial
+from io import BytesIO
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import Optional, Type, Union
 
-from pydantic import BaseModel, ConfigDict, model_validator, validate_call
+from pydantic import ConfigDict, model_validator, validate_call
+from typing_extensions import Self
 
-from docling.backend.abstract_backend import AbstractDocumentBackend
+from docling.backend.abstract_backend import (
+    AbstractDocumentBackend,
+)
 from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
+from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.msexcel_backend import MsExcelDocumentBackend
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.backend.noop_backend import NoOpBackend
+from docling.backend.webvtt_backend import WebVTTDocumentBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
+from docling.datamodel.backend_options import (
+    BackendOptions,
+    HTMLBackendOptions,
+    MarkdownBackendOptions,
+    PdfBackendOptions,
+)
 from docling.datamodel.base_models import (
+    BaseFormatOption,
     ConversionStatus,
     DoclingComponentType,
     DocumentStream,
@@ -49,6 +67,7 @@ from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
+_PIPELINE_CACHE_LOCK = threading.Lock()
 
 # CUSTOM IMPORT
 from docling.backend.hwp_backend import HwpDocumentBackend
@@ -59,17 +78,15 @@ from docling.backend.genos_msword_backend import GenosMsWordDocumentBackend
 from docling.exceptions import HwpConversionError
 
 
-class FormatOption(BaseModel):
+class FormatOption(BaseFormatOption):
     pipeline_cls: Type[BasePipeline]
-    pipeline_options: Optional[PipelineOptions] = None
-    backend: Type[AbstractDocumentBackend]
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    backend_options: Optional[BackendOptions] = None
 
     @model_validator(mode="after")
-    def set_optional_field_default(self) -> "FormatOption":
+    def set_optional_field_default(self) -> Self:
         if self.pipeline_options is None:
             self.pipeline_options = self.pipeline_cls.get_default_options()
+
         return self
 
 
@@ -98,6 +115,7 @@ class PowerpointFormatOption(FormatOption):
 class MarkdownFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = MarkdownDocumentBackend
+    backend_options: Optional[MarkdownBackendOptions] = None
 
 
 class AsciiDocFormatOption(FormatOption):
@@ -108,6 +126,7 @@ class AsciiDocFormatOption(FormatOption):
 class HTMLFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = HTMLDocumentBackend
+    backend_options: Optional[HTMLBackendOptions] = None
 
 
 class PatentUsptoFormatOption(FormatOption):
@@ -122,12 +141,13 @@ class XMLJatsFormatOption(FormatOption):
 
 class ImageFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
-    backend: Type[AbstractDocumentBackend] = DoclingParseV4DocumentBackend
+    backend: Type[AbstractDocumentBackend] = ImageDocumentBackend
 
 
 class PdfFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
     backend: Type[AbstractDocumentBackend] = DoclingParseV4DocumentBackend
+    backend_options: Optional[PdfBackendOptions] = None
 
 
 class AudioFormatOption(FormatOption):
@@ -161,55 +181,26 @@ class BOKJsonFormatOption(FormatOption):
 
 def _get_default_option(format: InputFormat) -> FormatOption:
     format_to_default_options = {
-        InputFormat.CSV: FormatOption(
-            pipeline_cls=SimplePipeline, backend=CsvDocumentBackend
+        InputFormat.CSV: CsvFormatOption(),
+        InputFormat.XLSX: ExcelFormatOption(),
+        InputFormat.DOCX: WordFormatOption(),
+        InputFormat.PPTX: PowerpointFormatOption(),
+        InputFormat.MD: MarkdownFormatOption(),
+        InputFormat.ASCIIDOC: AsciiDocFormatOption(),
+        InputFormat.HTML: HTMLFormatOption(),
+        InputFormat.XML_USPTO: PatentUsptoFormatOption(),
+        InputFormat.XML_JATS: XMLJatsFormatOption(),
+        InputFormat.METS_GBS: FormatOption(
+            pipeline_cls=StandardPdfPipeline, backend=MetsGbsDocumentBackend
         ),
-        InputFormat.XLSX: FormatOption(
-            pipeline_cls=SimplePipeline, backend=MsExcelDocumentBackend
-        ),
-        InputFormat.DOCX: FormatOption(
-            # pipeline_cls=SimplePipeline, backend=MsWordDocumentBackend
-            # GenosMsWordDocumentBackend 사용
-            pipeline_cls=SimplePipeline, backend=GenosMsWordDocumentBackend
-        ),
-        InputFormat.PPTX: FormatOption(
-            pipeline_cls=SimplePipeline, backend=MsPowerpointDocumentBackend
-        ),
-        InputFormat.MD: FormatOption(
-            pipeline_cls=SimplePipeline, backend=MarkdownDocumentBackend
-        ),
-        InputFormat.ASCIIDOC: FormatOption(
-            pipeline_cls=SimplePipeline, backend=AsciiDocBackend
-        ),
-        InputFormat.HTML: FormatOption(
-            pipeline_cls=SimplePipeline, backend=HTMLDocumentBackend
-        ),
-        InputFormat.XML_USPTO: FormatOption(
-            pipeline_cls=SimplePipeline, backend=PatentUsptoDocumentBackend
-        ),
-        InputFormat.XML_JATS: FormatOption(
-            pipeline_cls=SimplePipeline, backend=JatsDocumentBackend
-        ),
-        InputFormat.IMAGE: FormatOption(
-            pipeline_cls=StandardPdfPipeline, backend=DoclingParseV4DocumentBackend
-        ),
-        InputFormat.PDF: FormatOption(
-            pipeline_cls=StandardPdfPipeline, backend=DoclingParseV4DocumentBackend
-        ),
+        InputFormat.IMAGE: ImageFormatOption(),
+        InputFormat.PDF: PdfFormatOption(),
         InputFormat.JSON_DOCLING: FormatOption(
             pipeline_cls=SimplePipeline, backend=DoclingJSONBackend
         ),
-        InputFormat.AUDIO: FormatOption(pipeline_cls=AsrPipeline, backend=NoOpBackend),
-        # 한글 파일 추가
-        InputFormat.HWP: FormatOption(
-            pipeline_cls=SimplePipeline, backend=HwpDocumentBackend
-        ),
-        InputFormat.XML_HWPX: FormatOption(
-            pipeline_cls=SimplePipeline, backend=HwpxDocumentBackend
-        ),
-        # 한국은행
-        InputFormat.JSON_DOCLING: FormatOption(
-            pipeline_cls=SimplePipeline, backend=BOKJsonDocumentBackend
+        InputFormat.AUDIO: AudioFormatOption(),
+        InputFormat.VTT: FormatOption(
+            pipeline_cls=SimplePipeline, backend=WebVTTDocumentBackend
         ),
     }
     if (options := format_to_default_options.get(format)) is not None:
@@ -223,22 +214,47 @@ class DocumentConverter:
 
     def __init__(
         self,
-        allowed_formats: Optional[List[InputFormat]] = None,
-        format_options: Optional[Dict[InputFormat, FormatOption]] = None,
+        allowed_formats: Optional[list[InputFormat]] = None,
+        format_options: Optional[dict[InputFormat, FormatOption]] = None,
     ):
         self.allowed_formats = (
             allowed_formats if allowed_formats is not None else list(InputFormat)
         )
-        self.format_to_options = {
+
+        # Normalize format options: ensure IMAGE format uses ImageDocumentBackend
+        # for backward compatibility (old code might use PdfFormatOption or other backends for images)
+        normalized_format_options: dict[InputFormat, FormatOption] = {}
+        if format_options:
+            for format, option in format_options.items():
+                if (
+                    format == InputFormat.IMAGE
+                    and option.backend is not ImageDocumentBackend
+                ):
+                    warnings.warn(
+                        f"Using {option.backend.__name__} for InputFormat.IMAGE is deprecated. "
+                        "Images should use ImageDocumentBackend via ImageFormatOption. "
+                        "Automatically correcting the backend, please update your code to avoid this warning.",
+                        DeprecationWarning,
+                        stacklevel=2,
+                    )
+                    # Convert to ImageFormatOption while preserving pipeline and backend options
+                    normalized_format_options[format] = ImageFormatOption(
+                        pipeline_options=option.pipeline_options,
+                        backend_options=option.backend_options,
+                    )
+                else:
+                    normalized_format_options[format] = option
+
+        self.format_to_options: dict[InputFormat, FormatOption] = {
             format: (
                 _get_default_option(format=format)
-                if (custom_option := (format_options or {}).get(format)) is None
+                if (custom_option := normalized_format_options.get(format)) is None
                 else custom_option
             )
             for format in self.allowed_formats
         }
-        self.initialized_pipelines: Dict[
-            Tuple[Type[BasePipeline], str], BasePipeline
+        self.initialized_pipelines: dict[
+            tuple[Type[BasePipeline], str], BasePipeline
         ] = {}
 
     def _get_initialized_pipelines(
@@ -265,7 +281,7 @@ class DocumentConverter:
     def convert(
         self,
         source: Union[Path, str, DocumentStream],  # TODO review naming
-        headers: Optional[Dict[str, str]] = None,
+        headers: Optional[dict[str, str]] = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
@@ -285,7 +301,7 @@ class DocumentConverter:
     def convert_all(
         self,
         source: Iterable[Union[Path, str, DocumentStream]],  # TODO review naming
-        headers: Optional[Dict[str, str]] = None,
+        headers: Optional[dict[str, str]] = None,
         raises_on_error: bool = True,  # True: raises on first conversion error; False: does not raise on conv error
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
@@ -308,8 +324,12 @@ class DocumentConverter:
                 ConversionStatus.SUCCESS,
                 ConversionStatus.PARTIAL_SUCCESS,
             }:
+                error_details = ""
+                if conv_res.errors:
+                    error_messages = [err.error_message for err in conv_res.errors]
+                    error_details = f" Errors: {'; '.join(error_messages)}"
                 raise ConversionError(
-                    f"Conversion failed for: {conv_res.input.file} with status: {conv_res.status}"
+                    f"Conversion failed for: {conv_res.input.file} with status: {conv_res.status}.{error_details}"
                 )
             else:
                 yield conv_res
@@ -318,6 +338,34 @@ class DocumentConverter:
             raise ConversionError(
                 "Conversion failed because the provided file has no recognizable format or it wasn't in the list of allowed formats."
             )
+
+    @validate_call(config=ConfigDict(strict=True))
+    def convert_string(
+        self,
+        content: str,
+        format: InputFormat,
+        name: Optional[str] = None,
+    ) -> ConversionResult:
+        name = name or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        if format == InputFormat.MD:
+            if not name.endswith(".md"):
+                name += ".md"
+
+            buff = BytesIO(content.encode("utf-8"))
+            doc_stream = DocumentStream(name=name, stream=buff)
+
+            return self.convert(doc_stream)
+        elif format == InputFormat.HTML:
+            if not name.endswith(".html"):
+                name += ".html"
+
+            buff = BytesIO(content.encode("utf-8"))
+            doc_stream = DocumentStream(name=name, stream=buff)
+
+            return self.convert(doc_stream)
+        else:
+            raise ValueError(f"format {format} is not supported in `convert_string`")
 
     def _convert(
         self, conv_input: _DocumentConversionInput, raises_on_error: bool
@@ -329,24 +377,33 @@ class DocumentConverter:
             settings.perf.doc_batch_size,  # pass format_options
         ):
             _log.info("Going to convert document batch...")
+            process_func = partial(
+                self._process_document, raises_on_error=raises_on_error
+            )
 
-            # parallel processing only within input_batch
-            # with ThreadPoolExecutor(
-            #    max_workers=settings.perf.doc_batch_concurrency
-            # ) as pool:
-            #   yield from pool.map(self.process_document, input_batch)
-            # Note: PDF backends are not thread-safe, thread pool usage was disabled.
-
-            for item in map(
-                partial(self._process_document, raises_on_error=raises_on_error),
-                input_batch,
+            if (
+                settings.perf.doc_batch_concurrency > 1
+                and settings.perf.doc_batch_size > 1
             ):
-                elapsed = time.monotonic() - start_time
-                start_time = time.monotonic()
-                _log.info(
-                    f"Finished converting document {item.input.file.name} in {elapsed:.2f} sec."
-                )
-                yield item
+                with ThreadPoolExecutor(
+                    max_workers=settings.perf.doc_batch_concurrency
+                ) as pool:
+                    for item in pool.map(
+                        process_func,
+                        input_batch,
+                    ):
+                        yield item
+            else:
+                for item in map(
+                    process_func,
+                    input_batch,
+                ):
+                    elapsed = time.monotonic() - start_time
+                    start_time = time.monotonic()
+                    _log.info(
+                        f"Finished converting document {item.input.file.name} in {elapsed:.2f} sec."
+                    )
+                    yield item
 
     def _get_pipeline(self, doc_format: InputFormat) -> Optional[BasePipeline]:
         """Retrieve or initialize a pipeline, reusing instances based on class and options."""
@@ -362,19 +419,20 @@ class DocumentConverter:
         # Use a composite key to cache pipelines
         cache_key = (pipeline_class, options_hash)
 
-        if cache_key not in self.initialized_pipelines:
-            _log.info(
-                f"Initializing pipeline for {pipeline_class.__name__} with options hash {options_hash}"
-            )
-            self.initialized_pipelines[cache_key] = pipeline_class(
-                pipeline_options=pipeline_options
-            )
-        else:
-            _log.debug(
-                f"Reusing cached pipeline for {pipeline_class.__name__} with options hash {options_hash}"
-            )
+        with _PIPELINE_CACHE_LOCK:
+            if cache_key not in self.initialized_pipelines:
+                _log.info(
+                    f"Initializing pipeline for {pipeline_class.__name__} with options hash {options_hash}"
+                )
+                self.initialized_pipelines[cache_key] = pipeline_class(
+                    pipeline_options=pipeline_options
+                )
+            else:
+                _log.debug(
+                    f"Reusing cached pipeline for {pipeline_class.__name__} with options hash {options_hash}"
+                )
 
-        return self.initialized_pipelines[cache_key]
+            return self.initialized_pipelines[cache_key]
 
     def _process_document(
         self, in_doc: InputDocument, raises_on_error: bool

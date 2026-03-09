@@ -17,7 +17,7 @@ And here is more HTML:
 
 Some paragraph.
 
-Now a div — almost there...
+Now a div - almost there...
 
 - foo
 - bar

@@ -1,9 +1,9 @@
 import copy
 import logging
 import warnings
-from collections.abc import Iterable
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional, Union
 
 import numpy as np
 from docling_core.types.doc import DocItemLabel
@@ -15,7 +15,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_V2, LayoutModelConfig
 from docling.datamodel.pipeline_options import LayoutOptions
 from docling.datamodel.settings import settings
-from docling.models.base_model import BasePageModel
+from docling.models.base_layout_model import BaseLayoutModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.layout_postprocessor import LayoutPostprocessor
@@ -25,7 +25,7 @@ from docling.utils.visualization import draw_clusters
 _log = logging.getLogger(__name__)
 
 
-class LayoutModel(BasePageModel):
+class LayoutModel(BaseLayoutModel):
     TEXT_ELEM_LABELS = [
         DocItemLabel.TEXT,
         DocItemLabel.FOOTNOTE,
@@ -86,12 +86,16 @@ class LayoutModel(BasePageModel):
             num_threads=accelerator_options.num_threads,
         )
 
+    @classmethod
+    def get_options_type(cls) -> type[LayoutOptions]:
+        return LayoutOptions
+
     @staticmethod
     def download_models(
         local_dir: Optional[Path] = None,
         force: bool = False,
         progress: bool = False,
-        layout_model_config: LayoutModelConfig = DOCLING_LAYOUT_V2,
+        layout_model_config: LayoutModelConfig = LayoutOptions().model_spec,  # use default
     ) -> Path:
         return download_hf_model(
             repo_id=layout_model_config.repo_id,
@@ -122,8 +126,8 @@ class LayoutModel(BasePageModel):
         left_clusters = [c for c in clusters if c.label not in exclude_labels]
         right_clusters = [c for c in clusters if c.label in exclude_labels]
         # Create a deep copy of the original image for both sides
-        left_image = copy.deepcopy(page.image)
-        right_image = copy.deepcopy(page.image)
+        left_image = page.image.copy()
+        right_image = page.image.copy()
 
         # Draw clusters on both images
         draw_clusters(left_image, left_clusters, scale_x, scale_y)
@@ -145,75 +149,101 @@ class LayoutModel(BasePageModel):
             out_file = out_path / f"{mode_prefix}_layout_page_{page.page_no:05}.png"
             combined_image.save(str(out_file), format="png")
 
-    def __call__(
-        self, conv_res: ConversionResult, page_batch: Iterable[Page]
-    ) -> Iterable[Page]:
-        for page in page_batch:
+    def predict_layout(
+        self,
+        conv_res: ConversionResult,
+        pages: Sequence[Page],
+    ) -> Sequence[LayoutPrediction]:
+        # Convert to list to ensure predictable iteration
+        pages = list(pages)
+
+        # Separate valid and invalid pages
+        valid_pages = []
+        valid_page_images: List[Union[Image.Image, np.ndarray]] = []
+
+        for page in pages:
             assert page._backend is not None
             if not page._backend.is_valid():
-                yield page
-            else:
-                with TimeRecorder(conv_res, "layout"):
-                    assert page.size is not None
-                    page_image = page.get_image(scale=1.0)
-                    assert page_image is not None
+                continue
 
-                    clusters = []
-                    for ix, pred_item in enumerate(
-                        self.layout_predictor.predict(page_image)
-                    ):
-                        label = DocItemLabel(
-                            pred_item["label"]
-                            .lower()
-                            .replace(" ", "_")
-                            .replace("-", "_")
-                        )  # Temporary, until docling-ibm-model uses docling-core types
-                        cluster = Cluster(
-                            id=ix,
-                            label=label,
-                            confidence=pred_item["confidence"],
-                            bbox=BoundingBox.model_validate(pred_item),
-                            cells=[],
-                        )
-                        clusters.append(cluster)
+            assert page.size is not None
+            page_image = page.get_image(scale=1.0)
+            assert page_image is not None
 
-                    if settings.debug.visualize_raw_layout:
-                        self.draw_clusters_and_cells_side_by_side(
-                            conv_res, page, clusters, mode_prefix="raw"
-                        )
+            valid_pages.append(page)
+            valid_page_images.append(page_image)
 
-                    # Apply postprocessing
+        # Process all valid pages with batch prediction
+        batch_predictions = []
+        if valid_page_images:
+            with TimeRecorder(conv_res, "layout"):
+                batch_predictions = self.layout_predictor.predict_batch(  # type: ignore[attr-defined]
+                    valid_page_images
+                )
 
-                    processed_clusters, processed_cells = LayoutPostprocessor(
-                        page, clusters, self.options
-                    ).postprocess()
-                    # Note: LayoutPostprocessor updates page.cells and page.parsed_page internally
+        # Process each page with its predictions
+        layout_predictions: list[LayoutPrediction] = []
+        valid_page_idx = 0
+        for page in pages:
+            assert page._backend is not None
+            if not page._backend.is_valid():
+                existing_prediction = page.predictions.layout or LayoutPrediction()
+                page.predictions.layout = existing_prediction
+                layout_predictions.append(existing_prediction)
+                continue
 
-                    with warnings.catch_warnings():
-                        warnings.filterwarnings(
-                            "ignore",
-                            "Mean of empty slice|invalid value encountered in scalar divide",
-                            RuntimeWarning,
-                            "numpy",
-                        )
+            page_predictions = batch_predictions[valid_page_idx]
+            valid_page_idx += 1
 
-                        conv_res.confidence.pages[page.page_no].layout_score = float(
-                            np.mean([c.confidence for c in processed_clusters])
-                        )
+            clusters = []
+            for ix, pred_item in enumerate(page_predictions):
+                label = DocItemLabel(
+                    pred_item["label"].lower().replace(" ", "_").replace("-", "_")
+                )  # Temporary, until docling-ibm-model uses docling-core types
+                cluster = Cluster(
+                    id=ix,
+                    label=label,
+                    confidence=pred_item["confidence"],
+                    bbox=BoundingBox.model_validate(pred_item),
+                    cells=[],
+                )
+                clusters.append(cluster)
 
-                        conv_res.confidence.pages[page.page_no].ocr_score = float(
-                            np.mean(
-                                [c.confidence for c in processed_cells if c.from_ocr]
-                            )
-                        )
+            if settings.debug.visualize_raw_layout:
+                self.draw_clusters_and_cells_side_by_side(
+                    conv_res, page, clusters, mode_prefix="raw"
+                )
 
-                    page.predictions.layout = LayoutPrediction(
-                        clusters=processed_clusters
-                    )
+            # Apply postprocessing
+            processed_clusters, processed_cells = LayoutPostprocessor(
+                page, clusters, self.options
+            ).postprocess()
+            # Note: LayoutPostprocessor updates page.cells and page.parsed_page internally
 
-                if settings.debug.visualize_layout:
-                    self.draw_clusters_and_cells_side_by_side(
-                        conv_res, page, processed_clusters, mode_prefix="postprocessed"
-                    )
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    "Mean of empty slice|invalid value encountered in scalar divide",
+                    RuntimeWarning,
+                    "numpy",
+                )
 
-                yield page
+                conv_res.confidence.pages[page.page_no].layout_score = float(
+                    np.mean([c.confidence for c in processed_clusters])
+                )
+
+                conv_res.confidence.pages[page.page_no].ocr_score = float(
+                    np.mean([c.confidence for c in processed_cells if c.from_ocr])
+                )
+
+            prediction = LayoutPrediction(clusters=processed_clusters)
+            page.predictions.layout = prediction
+
+            if settings.debug.visualize_layout:
+                self.draw_clusters_and_cells_side_by_side(
+                    conv_res, page, processed_clusters, mode_prefix="postprocessed"
+                )
+
+            layout_predictions.append(prediction)
+
+        return layout_predictions

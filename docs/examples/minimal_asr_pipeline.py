@@ -1,3 +1,29 @@
+# %% [markdown]
+# Minimal ASR pipeline example: transcribe an audio file to Markdown text.
+#
+# What this example does
+# - Configures the ASR pipeline with a default model spec and converts one audio file.
+# - Prints the recognized speech segments in Markdown with timestamps.
+#
+# Prerequisites
+# - Install Docling with ASR extras and any audio dependencies (ffmpeg, etc.).
+# - Ensure your environment can download or access the configured ASR model.
+# - Some formats require ffmpeg codecs; install ffmpeg and ensure it's on PATH.
+#
+# How to run
+# - From the repository root, run: `python docs/examples/minimal_asr_pipeline.py`.
+# - The script prints the transcription to stdout.
+#
+# Customizing the model
+# - The script automatically selects the best model for your hardware (MLX Whisper for Apple Silicon, native Whisper otherwise).
+# - Edit `get_asr_converter()` to manually override `pipeline_options.asr_options` with any model from `asr_model_specs`.
+# - Keep `InputFormat.AUDIO` and `AsrPipeline` unchanged for a minimal setup.
+#
+# Input audio
+# - Defaults to `tests/data/audio/sample_10s.mp3`. Update `audio_path` to your own file if needed.
+
+# %%
+
 from pathlib import Path
 
 from docling_core.types.doc import DoclingDocument
@@ -11,7 +37,16 @@ from docling.pipeline.asr_pipeline import AsrPipeline
 
 
 def get_asr_converter():
-    """Create a DocumentConverter configured for ASR with whisper_turbo model."""
+    """Create a DocumentConverter configured for ASR with automatic model selection.
+
+    Uses `asr_model_specs.WHISPER_TURBO` which automatically selects the best
+    implementation for your hardware:
+    - MLX Whisper Turbo for Apple Silicon (M1/M2/M3) with mlx-whisper installed
+    - Native Whisper Turbo as fallback
+
+    You can swap in another model spec from `docling.datamodel.asr_model_specs`
+    to experiment with different model sizes.
+    """
     pipeline_options = AsrPipelineOptions()
     pipeline_options.asr_options = asr_model_specs.WHISPER_TURBO
 
@@ -27,7 +62,7 @@ def get_asr_converter():
 
 
 def asr_pipeline_conversion(audio_path: Path) -> DoclingDocument:
-    """ASR pipeline conversion using whisper_turbo"""
+    """Run the ASR pipeline and return a `DoclingDocument` transcript."""
     # Check if the test audio file exists
     assert audio_path.exists(), f"Test audio file not found: {audio_path}"
 

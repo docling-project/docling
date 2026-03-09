@@ -1,3 +1,27 @@
+# %% [markdown]
+# Describe pictures using a remote VLM API (vLLM, LM Studio, or watsonx.ai).
+#
+# What this example does
+# - Configures `PictureDescriptionApiOptions` for local or cloud providers.
+# - Converts a PDF, then prints each picture's caption and annotations.
+#
+# Prerequisites
+# - Install Docling and `python-dotenv` if loading env vars from a `.env` file.
+# - For local providers: ensure vLLM or LM Studio is running.
+# - For watsonx.ai: set `WX_API_KEY` and `WX_PROJECT_ID` in the environment.
+#
+# How to run
+# - From the repo root: `python docs/examples/pictures_description_api.py`.
+# - Uncomment exactly one provider config and set `enable_remote_services=True` (already set).
+#
+# Notes
+# - vLLM default endpoint: `http://localhost:8000/v1/chat/completions`.
+# - LM Studio default endpoint: `http://localhost:1234/v1/chat/completions`.
+# - Calling remote APIs sends page images/text to the provider; review privacy and
+#   costs. For local testing, LM Studio runs everything on your machine.
+
+# %%
+
 import logging
 import os
 from pathlib import Path
@@ -72,10 +96,14 @@ def watsonx_vlm_options():
         print(f"{api_out=}")
         return api_out["access_token"]
 
+    # Background information in case the model_id is updated:
+    # [1] Official list of models: https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models.html?context=wx
+    # [2] Info on granite vision 3.3: https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models-ibm.html?context=wx#granite-vision-3-3-2b
+
     options = PictureDescriptionApiOptions(
         url="https://us-south.ml.cloud.ibm.com/ml/v1/text/chat?version=2023-05-29",
         params=dict(
-            model_id="ibm/granite-vision-3-2-2b",
+            model_id="ibm/granite-vision-3-3-2b",
             project_id=project_id,
             parameters=dict(
                 max_new_tokens=400,
@@ -114,7 +142,7 @@ def main():
     # Example for the Granite Vision model:
     # (uncomment the following lines)
     # pipeline_options.picture_description_options = vllm_local_options(
-    #     model="ibm-granite/granite-vision-3.1-2b-preview"
+    #     model="ibm-granite/granite-vision-3.3-2b"
     # )
 
     # Example for the SmolVLM model:
