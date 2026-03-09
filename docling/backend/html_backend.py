@@ -882,8 +882,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             doc (DoclingDocument): Currently used document
 
         Yields:
-            The RefItem of the created InlineGroup, or None when the list has only
-            one element and no group is created.
+            The RefItem of the created InlineGroup, or None when the list has only one
+                element and no group is created.
         """
         if len(annotated_text_list) > 1:
             inline_fmt = doc.add_group(
