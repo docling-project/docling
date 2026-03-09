@@ -254,7 +254,7 @@ class GenosBucketChunker(BaseChunker):
 **주요 설정값**:
 
 ```python
-tokenizer: str = "sentence-transformers/all-MiniLM-L6-v2"  # 토큰 카운팅용
+tokenizer: str = "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"  # 토큰 카운팅용
 max_tokens: int = 1024           # 기본값 (실제 사용 시 2000으로 오버라이드)
 merge_peers: bool = True         # 동일 섹션 내 소규모 청크 병합
 merge_list_items: bool = True    # 연속 리스트 아이템 병합
