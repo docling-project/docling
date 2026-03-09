@@ -1185,7 +1185,7 @@ requires-dist = [
     { name = "certifi", specifier = ">=2024.7.4" },
     { name = "defusedxml", specifier = ">=0.7.1,<0.8.0" },
     { name = "docling-core", extras = ["chunking"], specifier = ">=2.66.0,<3.0.0" },
-    { name = "docling-ibm-models", specifier = ">=3.9.1,<4" },
+    { name = "docling-ibm-models", specifier = ">=3.12.0,<4" },
     { name = "docling-parse", specifier = ">=5.3.2,<6.0.0" },
     { name = "easyocr", marker = "extra == 'easyocr'", specifier = ">=1.7,<2.0" },
     { name = "filetype", specifier = ">=1.2.0,<2.0.0" },
@@ -1306,7 +1306,7 @@ chunking = [
 
 [[package]]
 name = "docling-ibm-models"
-version = "3.11.0"
+version = "3.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "accelerate" },
@@ -1324,9 +1324,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "transformers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b6/91/f883e0a2b3466e1126dfd4463f386c70f5b90d271c27b6f5a97d2f8312e6/docling_ibm_models-3.11.0.tar.gz", hash = "sha256:454401563a8e79cb33b718bc559d9bacca8a0183583e48f8e616c9184c1f5eb1", size = 87721, upload-time = "2026-01-23T12:29:35.384Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/95/57/b4cee1ea5a7d34a8a96787aa2dc371e4dd17a1a3bd6131cf3ced9024f1be/docling_ibm_models-3.12.0.tar.gz", hash = "sha256:85c2b6c9dbb7fbb8eaf0f2a462b5984626457a6dc33148643491270c27767b46", size = 98458, upload-time = "2026-03-09T12:27:35.744Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ef/5d/97e9c2e10fbd3ee1723ac82c335f8211a9633c0397cc11ed057c3ba4006e/docling_ibm_models-3.11.0-py3-none-any.whl", hash = "sha256:68f7961069d643bfdab21b1c9ef24a979db293496f4c2283d95b1025a9ac5347", size = 87352, upload-time = "2026-01-23T12:29:34.045Z" },
+    { url = "https://files.pythonhosted.org/packages/98/ed/820fdcea9aa329119855a658366fb13098b375a2b024358b1d7836f47419/docling_ibm_models-3.12.0-py3-none-any.whl", hash = "sha256:008fe1f5571db413782efe510c1d6327ea9df20b5255d416d0f4b56cfd090238", size = 93800, upload-time = "2026-03-09T12:27:34.477Z" },
 ]
 
 [[package]]
