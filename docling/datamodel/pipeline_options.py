@@ -113,7 +113,7 @@ class BaseTableStructureOptions(BaseOptions):
 
 
 class TableStructureOptions(BaseTableStructureOptions):
-    """Configuration for table structure extraction using the TableFormer model."""
+    """Options for the table structure (TableFormer V1)."""
 
     kind: ClassVar[str] = "docling_tableformer"
     do_cell_matching: Annotated[
@@ -134,6 +134,18 @@ class TableStructureOptions(BaseTableStructureOptions):
             )
         ),
     ] = TableFormerMode.ACCURATE
+
+
+class TableStructureV2Options(BaseTableStructureOptions):
+    """Options for the table structure (TableFormer V2)."""
+
+    kind: ClassVar[str] = "docling_tableformer_v2"
+    do_cell_matching: bool = (
+        True
+        # True:  Matches predictions back to PDF cells. Can break table output if PDF cells
+        #        are merged across table columns.
+        # False: Let table structure model define the text cells, ignore PDF cells.
+    )
 
 
 class OcrOptions(BaseOptions):

@@ -28,6 +28,10 @@ from docling.models.stages.picture_classifier.document_picture_classifier import
 from docling.models.stages.table_structure.table_structure_model import (
     TableStructureModel,
 )
+from docling.models.stages.table_structure.table_structure_model_v2 import (
+    TableStructureModelV2,
+)
+
 from docling.models.utils.hf_model_download import download_hf_model
 
 _log = logging.getLogger(__name__)
@@ -40,6 +44,7 @@ def download_models(
     progress: bool = False,
     with_layout: bool = True,
     with_tableformer: bool = True,
+    with_tableformer_v2: bool = False,
     with_code_formula: bool = True,
     with_picture_classifier: bool = True,
     with_smolvlm: bool = False,
@@ -70,6 +75,14 @@ def download_models(
         _log.info("Downloading tableformer model...")
         TableStructureModel.download_models(
             local_dir=output_dir / TableStructureModel._model_repo_folder,
+            force=force,
+            progress=progress,
+        )
+
+    if with_tableformer_v2:
+        _log.info("Downloading TableFormerV2 model...")
+        TableStructureModelV2.download_models(
+            local_dir=output_dir / TableStructureModelV2._model_repo_folder,
             force=force,
             progress=progress,
         )
