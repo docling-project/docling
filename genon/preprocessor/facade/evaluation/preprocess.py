@@ -261,9 +261,12 @@ class HybridChunker(BaseChunker):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    tokenizer: Union[PreTrainedTokenizerBase, str, Path] = Path(
-        "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
-    )
+    tokenizer: Union[PreTrainedTokenizerBase, str, Path] = (
+            Path("/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2")
+            if Path("/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2").exists()
+            else "sentence-transformers/all-MiniLM-L6-v2"
+        )
+
     max_tokens: int = None  # type: ignore[assignment]
     merge_peers: bool = True
 
