@@ -105,6 +105,9 @@ class TableStructureModelV2(BaseTableStructureModel):
             progress=progress,
         )
 
+    # FIXME: this method is here to test the quality and performance of the
+    # bare TableFormer model on crops of tables in the ground-truth. In the near
+    # future, we expect this method to be used in `predict_tables`!
     def _do_prediction_on_image_to_table(
         self,
         *,
