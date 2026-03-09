@@ -261,9 +261,8 @@ class HybridChunker(BaseChunker):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    tokenizer: Union[PreTrainedTokenizerBase, str] = os.path.join(
-        os.getenv("DOCLING_ARTIFACTS_PATH", "/models"), 
-        "doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
+    tokenizer: Union[PreTrainedTokenizerBase, str] = ( 
+        "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
     )
     max_tokens: int = None  # type: ignore[assignment]
     merge_peers: bool = True
