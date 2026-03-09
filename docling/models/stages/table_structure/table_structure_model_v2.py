@@ -2,11 +2,12 @@ import logging
 from collections.abc import Iterable, Sequence
 from itertools import groupby
 from pathlib import Path
-from typing import Literal, Optional
+from typing import TYPE_CHECKING, Literal, Optional
 
 import numpy
-import torch
-import torchvision.transforms as T
+
+if TYPE_CHECKING:
+    import torch
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
 from docling_core.types.doc.page import (
     TextCell,
@@ -49,6 +50,9 @@ class TableStructureModelV2(BaseTableStructureModel):
         self.enabled = enabled
 
         if self.enabled:
+            import torch
+            import torchvision.transforms as T
+
             # Determine model path
             if artifacts_path is None:
                 model_path = self.download_models()
@@ -115,6 +119,8 @@ class TableStructureModelV2(BaseTableStructureModel):
         page_no: int,
         textcell_overlap: float = 0.3,
     ) -> Table:
+        import torch
+
         # Convert to PIL and preprocess
         pil_image = table_image.convert("RGB")
         image_tensor = self.transform(pil_image).unsqueeze(0).to(self.device)
@@ -181,7 +187,7 @@ class TableStructureModelV2(BaseTableStructureModel):
                     overlapping.append(tc.text.strip())
         return " ".join(overlapping)
 
-    def _decode_otsl_sequence(self, token_ids: torch.Tensor) -> list[str]:
+    def _decode_otsl_sequence(self, token_ids: "torch.Tensor") -> list[str]:
         """
         Decode token IDs to OTSL tag sequence.
 
@@ -204,7 +210,7 @@ class TableStructureModelV2(BaseTableStructureModel):
     def _build_table_cells(
         self,
         otsl_seq: list[str],
-        bboxes: torch.Tensor,
+        bboxes: "torch.Tensor",
         table_bbox: list[float],
     ) -> tuple[list[dict], int, int]:
         """
@@ -351,6 +357,8 @@ class TableStructureModelV2(BaseTableStructureModel):
         conv_res: ConversionResult,
         pages: Sequence[Page],
     ) -> Sequence[TableStructurePrediction]:
+        import torch
+
         pages = list(pages)
         predictions: list[TableStructurePrediction] = []
 
