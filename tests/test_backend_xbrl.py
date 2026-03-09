@@ -72,12 +72,14 @@ def test_e2e_xbrl_conversions(xbrl_paths, use_stream=False):
         doc: DoclingDocument = conv_result.document
 
         pred_md: str = doc.export_to_markdown()
-        assert verify_export(pred_md, str(gt_path) + ".md"), "export to md"
+        assert verify_export(pred_md, str(gt_path) + ".md", generate=GENERATE), (
+            "export to md"
+        )
 
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
         )
-        assert verify_export(pred_itxt, str(gt_path) + ".itxt"), (
+        assert verify_export(pred_itxt, str(gt_path) + ".itxt", generate=GENERATE), (
             "export to indented-text"
         )
 

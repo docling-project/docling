@@ -85,15 +85,15 @@ With combined experiences and direct access to development groups, we're the exp
 
 Global CoE engagements cover topics including:
 
-- rGLYPH&lt;c=1,font=/NKDKKL+JansonTextLTStd-Roman&gt; Database performance and scalability
-- rGLYPH&lt;c=1,font=/NKDKKL+JansonTextLTStd-Roman&gt; Advanced SQL knowledge and skills transfer
-- rGLYPH&lt;c=1,font=/NKDKKL+JansonTextLTStd-Roman&gt; Business intelligence and analytics
-- rGLYPH&lt;c=1,font=/NKDKKL+JansonTextLTStd-Roman&gt; DB2 Web Query
-- rGLYPH&lt;c=1,font=/NKDKKL+JansonTextLTStd-Roman&gt; Query/400 modernization for better reporting and analysis capabilities
-- rGLYPH&lt;c=1,font=/NKDKKL+JansonTextLTStd-Roman&gt; Database modernization and re-engineering
-- rGLYPH&lt;c=1,font=/NKDKKL+JansonTextLTStd-Roman&gt; Data-centric architecture and design
-- rGLYPH&lt;c=1,font=/NKDKKL+JansonTextLTStd-Roman&gt; Extremely large database and overcoming limits to growth
-- rGLYPH&lt;c=1,font=/NKDKKL+JansonTextLTStd-Roman&gt; ISV education and enablement
+- r Database performance and scalability
+- r Advanced SQL knowledge and skills transfer
+- r Business intelligence and analytics
+- r DB2 Web Query
+- r Query/400 modernization for better reporting and analysis capabilities
+- r Database modernization and re-engineering
+- r Data-centric architecture and design
+- r Extremely large database and overcoming limits to growth
+- r ISV education and enablement
 
 ## Preface
 

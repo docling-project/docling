@@ -55,14 +55,17 @@ Collabo ... vention measures at all school levels.
     item-49 at level 2: text: Whether the epidemic has eased.
     item-50 at level 2: text: 
   item-51 at level 1: section: group textbox
-    item-52 at level 2: text: Yes
-  item-53 at level 1: section: group textbox
-    item-54 at level 2: text: Yes
-  item-55 at level 1: text: 
+    item-52 at level 2: text: Whether the test results are pos ... legally designated infectious disease.
+    item-53 at level 2: text: No
+  item-54 at level 1: section: group textbox
+    item-55 at level 2: text: Yes
   item-56 at level 1: section: group textbox
-    item-57 at level 2: text: Case closed.
-    item-58 at level 2: text: 
-    item-59 at level 2: text: The Health Bureau will carry out ... ters for Disease Control if necessary.
-  item-60 at level 1: section: group textbox
-    item-61 at level 2: text: No
-  item-62 at level 1: text: 
+    item-57 at level 2: text: Yes
+  item-58 at level 1: text: 
+  item-59 at level 1: section: group textbox
+    item-60 at level 2: text: Case closed.
+    item-61 at level 2: text: 
+    item-62 at level 2: text: The Health Bureau will carry out ... ters for Disease Control if necessary.
+  item-63 at level 1: section: group textbox
+    item-64 at level 2: text: No
+  item-65 at level 1: text: 

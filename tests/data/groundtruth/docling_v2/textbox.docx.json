@@ -105,16 +105,19 @@
         "$ref": "#/groups/12"
       },
       {
-        "$ref": "#/texts/41"
+        "$ref": "#/groups/13"
       },
       {
-        "$ref": "#/groups/13"
+        "$ref": "#/texts/43"
       },
       {
         "$ref": "#/groups/14"
       },
       {
-        "$ref": "#/texts/46"
+        "$ref": "#/groups/15"
+      },
+      {
+        "$ref": "#/texts/48"
       }
     ],
     "content_layer": "body",
@@ -320,6 +323,9 @@
       "children": [
         {
           "$ref": "#/texts/39"
+        },
+        {
+          "$ref": "#/texts/40"
         }
       ],
       "content_layer": "body",
@@ -333,7 +339,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/40"
+          "$ref": "#/texts/41"
         }
       ],
       "content_layer": "body",
@@ -348,12 +354,6 @@
       "children": [
         {
           "$ref": "#/texts/42"
-        },
-        {
-          "$ref": "#/texts/43"
-        },
-        {
-          "$ref": "#/texts/44"
         }
       ],
       "content_layer": "body",
@@ -367,7 +367,27 @@
       },
       "children": [
         {
+          "$ref": "#/texts/44"
+        },
+        {
           "$ref": "#/texts/45"
+        },
+        {
+          "$ref": "#/texts/46"
+        }
+      ],
+      "content_layer": "body",
+      "name": "textbox",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/15",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/47"
         }
       ],
       "content_layer": "body",
@@ -975,8 +995,27 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Yes",
-      "text": "Yes",
+      "orig": "Whether the test results are positive for a legally designated infectious disease.",
+      "text": "Whether the test results are positive for a legally designated infectious disease.",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/40",
+      "parent": {
+        "$ref": "#/groups/11"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "No",
+      "text": "No",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -986,7 +1025,7 @@
       }
     },
     {
-      "self_ref": "#/texts/40",
+      "self_ref": "#/texts/41",
       "parent": {
         "$ref": "#/groups/12"
       },
@@ -1005,7 +1044,26 @@
       }
     },
     {
-      "self_ref": "#/texts/41",
+      "self_ref": "#/texts/42",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Yes",
+      "text": "Yes",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/43",
       "parent": {
         "$ref": "#/body"
       },
@@ -1017,9 +1075,9 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/42",
+      "self_ref": "#/texts/44",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -1036,9 +1094,9 @@
       }
     },
     {
-      "self_ref": "#/texts/43",
+      "self_ref": "#/texts/45",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -1048,9 +1106,9 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/44",
+      "self_ref": "#/texts/46",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -1067,9 +1125,9 @@
       }
     },
     {
-      "self_ref": "#/texts/45",
+      "self_ref": "#/texts/47",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -1086,7 +1144,7 @@
       }
     },
     {
-      "self_ref": "#/texts/46",
+      "self_ref": "#/texts/48",
       "parent": {
         "$ref": "#/body"
       },
