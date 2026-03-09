@@ -108,7 +108,7 @@ class GenosBucketChunker(BaseChunker):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    tokenizer: Union[PreTrainedTokenizerBase, str] = (
+    tokenizer: Union[PreTrainedTokenizerBase, str, Path] = Path(
         "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
     )
     max_tokens: int = 1024
