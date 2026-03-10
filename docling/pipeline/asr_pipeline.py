@@ -388,7 +388,7 @@ class _WhisperS2TModel:
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
         asr_options: InlineAsrWhisperS2TOptions,
     ):
@@ -469,7 +469,7 @@ class _WhisperS2TModel:
     def run(self, conv_res: ConversionResult) -> ConversionResult:
         path_or_stream = conv_res.input._backend.path_or_stream
 
-        temp_file_path: Optional[Path] = None
+        temp_file_path: Path | None = None
 
         if isinstance(path_or_stream, BytesIO):
             suffix = Path(conv_res.input.file.name).suffix or ".wav"
@@ -577,7 +577,7 @@ class AsrPipeline(BasePipeline):
         self.keep_backend = True
 
         self.pipeline_options: AsrPipelineOptions = pipeline_options
-        self._model: Union[_NativeWhisperModel, _MlxWhisperModel, _WhisperS2TModel]
+        self._model: _NativeWhisperModel | _MlxWhisperModel | _WhisperS2TModel
 
         if isinstance(self.pipeline_options.asr_options, InlineAsrNativeWhisperOptions):
             native_asr_options: InlineAsrNativeWhisperOptions = (
