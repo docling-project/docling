@@ -185,7 +185,7 @@ class ApiKserveV2ObjectDetectionEngine(HfObjectDetectionEngineBase):
         images = [item.image.convert("RGB") for item in input_batch]
         processed_inputs = self._processor(images=images, return_tensors="np")
 
-        pixel_values = np.asarray(processed_inputs["pixel_values"], dtype=np.float32)
+        pixel_values = np.asarray(processed_inputs["pixel_values"])
         orig_sizes = np.asarray(
             [[image.width, image.height] for image in images],
             dtype=np.int64,
