@@ -399,6 +399,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self._suppressed_tag_obj_ids_stack: list[set[int]] = []
         self._form_fields_by_key_id_stack: list[dict[str, _ExtractedFormField]] = []
         self._tag_name_by_docling_id_cache: dict[str, str] = {}
+        self._generated_html_id_counter: int = 0
+        self._render_visibility_cache: dict[int, bool] = {}
 
         try:
             raw = (
@@ -504,6 +506,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
         # reset context
         self.ctx = _Context()
+        self._render_visibility_cache.clear()
         self._walk(content, doc)
         return doc
 
@@ -850,6 +853,65 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         ) or self._get_rendered_bbox_for_tag(tag)
         return self._has_negative_bbox_coordinates(rendered)
 
+    @staticmethod
+    def _has_inline_hidden_style(tag: Tag) -> bool:
+        style = tag.get("style")
+        if not isinstance(style, str) or not style.strip():
+            return False
+        normalized = re.sub(r"\s+", "", style.lower())
+        if "display:none" in normalized:
+            return True
+        if "visibility:hidden" in normalized or "visibility:collapse" in normalized:
+            return True
+        if re.search(r"opacity:0(?:[;]|$)", normalized):
+            return True
+        return False
+
+    def _has_rendered_presence(self, tag: Tag) -> bool:
+        if not self._rendered_bbox_by_id and not self._rendered_text_bbox_by_id:
+            return True
+
+        cache_key = id(tag)
+        if cache_key in self._render_visibility_cache:
+            return self._render_visibility_cache[cache_key]
+
+        if (
+            self._get_rendered_text_bbox_for_tag(tag) is not None
+            or self._get_rendered_bbox_for_tag(tag) is not None
+        ):
+            self._render_visibility_cache[cache_key] = True
+            return True
+
+        has_visible_descendant = False
+        for descendant in tag.find_all(True):
+            if not isinstance(descendant, Tag):
+                continue
+            if (
+                self._get_rendered_text_bbox_for_tag(descendant) is not None
+                or self._get_rendered_bbox_for_tag(descendant) is not None
+            ):
+                has_visible_descendant = True
+                break
+
+        self._render_visibility_cache[cache_key] = has_visible_descendant
+        return has_visible_descendant
+
+    def _is_invisible_tag(self, tag: Tag) -> bool:
+        if tag.has_attr("hidden"):
+            return True
+        aria_hidden = tag.get("aria-hidden")
+        if isinstance(aria_hidden, str) and aria_hidden.strip().lower() in {
+            "true",
+            "1",
+            "yes",
+        }:
+            return True
+        if self._has_inline_hidden_style(tag):
+            return True
+        if not self._has_rendered_presence(tag):
+            return True
+        return False
+
     def _make_prov(
         self,
         text: str,
@@ -887,6 +949,30 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             render_box = self._rendered_text_bbox_by_id.get(source_tag_id)
         if render_box is None:
             render_box = self._get_rendered_text_bbox_for_tag(tag)
+        if render_box is None and isinstance(tag, Tag):
+            descendant_boxes: list[_RenderedBBox] = []
+            for descendant in [tag, *tag.find_all(True)]:
+                if not isinstance(descendant, Tag):
+                    continue
+                descendant_box = self._get_rendered_text_bbox_for_tag(descendant)
+                if descendant_box is not None:
+                    descendant_boxes.append(descendant_box)
+            if descendant_boxes:
+                page_no = descendant_boxes[0].page_no
+                same_page_boxes = [
+                    rendered.bbox
+                    for rendered in descendant_boxes
+                    if rendered.page_no == page_no
+                ]
+                if same_page_boxes:
+                    render_box = _RenderedBBox(
+                        page_no=page_no,
+                        bbox=(
+                            same_page_boxes[0]
+                            if len(same_page_boxes) == 1
+                            else BoundingBox.enclosing_bbox(same_page_boxes)
+                        ),
+                    )
         if render_box is None:
             return self._make_prov(text=text, tag=tag, source_tag_id=source_tag_id)
 
@@ -1215,6 +1301,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         has_custom_checkbox = any(
             self._is_custom_checkbox_tag(child) for child in children
         )
+        has_nested_form_semantic_id = any(
+            self._is_form_semantic_tag(child)
+            for child in children
+            if isinstance(child, Tag)
+        )
+        if has_nested_form_semantic_id:
+            return True
         if not children:
             content = [
                 item
@@ -1494,15 +1587,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         wk2 = self._walk(node, doc)
                         added_refs.extend(wk2)
                 elif name in _BLOCK_TAGS:
-                    for field in self._consume_form_fields_in_subtree(node):
-                        _flush_buffer()
-                        added_refs.extend(
-                            self._add_field_item_from_extracted(
-                                field=field,
-                                doc=doc,
-                                parent=self.parents[self.level],
+                    if name != "table":
+                        for field in self._consume_form_fields_in_subtree(node):
+                            _flush_buffer()
+                            added_refs.extend(
+                                self._add_field_item_from_extracted(
+                                    field=field,
+                                    doc=doc,
+                                    parent=self.parents[self.level],
+                                )
                             )
-                        )
                     _flush_buffer()
                     blk = self._handle_block(node, doc)
                     added_refs.extend(blk)
@@ -2279,6 +2373,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         class_values = [classes] if isinstance(classes, str) else classes
         return _FORM_CONTAINER_CLASS in class_values
 
+    def _nearest_form_container_ancestor(self, tag: Tag) -> Optional[Tag]:
+        for parent in tag.parents:
+            if isinstance(parent, Tag) and self._is_form_container(parent):
+                return parent
+        return None
+
+    def _is_tag_in_current_form_scope(self, tag: Tag, form_tag: Tag) -> bool:
+        return self._nearest_form_container_ancestor(tag) is form_tag
+
     @staticmethod
     def _is_form_semantic_id(tag_id: Optional[str]) -> bool:
         if not tag_id:
@@ -2316,6 +2419,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             prov=prov,
         )
         return text_item.get_ref()
+
+    def _ensure_tag_html_id(self, tag: Tag) -> str:
+        existing = self._get_html_id(tag)
+        if existing is not None:
+            return existing
+        self._generated_html_id_counter += 1
+        generated = f"docling_auto_input_{self._generated_html_id_counter}"
+        tag["id"] = generated
+        return generated
 
     @staticmethod
     def _is_value_in_key_scope(key_tag: Tag, value_tag: Tag) -> bool:
@@ -2370,12 +2482,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         elif marker_entries:
             anchor_tag = marker_entries[0][1]
 
-        grouped_entries: dict[tuple[str, int], list[tuple[Optional[int], int, Tag]]] = {}
+        grouped_entries: dict[
+            tuple[str, int], list[tuple[Optional[int], int, Tag]]
+        ] = {}
         for value_index, dom_order, value_tag in value_entries:
             group_key = (
-                ("idx", value_index)
-                if value_index is not None
-                else ("dom", dom_order)
+                ("idx", value_index) if value_index is not None else ("dom", dom_order)
             )
             grouped_entries.setdefault(group_key, []).append(
                 (value_index, dom_order, value_tag)
@@ -2445,8 +2557,23 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         key_cell = self._get_table_cell(key_tag)
         value_cell = self._get_table_cell(value_tag)
         if key_table is not None or value_table is not None:
+            if key_table is not value_table:
+                return True
             if key_cell is None or value_cell is None:
                 return True
+            if key_cell is value_cell:
+                return False
+            key_row = key_cell.find_parent("tr")
+            value_row = value_cell.find_parent("tr")
+            if key_row is not None and key_row is value_row:
+                return False
+            if key_cell.parent is not None and key_cell.parent is value_cell.parent:
+                return False
+            if (
+                self._dom_distance_between_tags(key_cell, value_cell) <= 4
+                and key_table is value_table
+            ):
+                return False
             if key_cell is not value_cell:
                 return True
 
@@ -2479,6 +2606,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return "".join(_extract(tag))
 
     @staticmethod
+    def _extract_direct_text(tag: Tag) -> str:
+        parts: list[str] = []
+        for child in tag.contents:
+            if isinstance(child, NavigableString):
+                parts.append(str(child))
+        return "".join(parts)
+
+    @staticmethod
     def _normalize_form_text(text: str) -> tuple[str, str]:
         raw = re.sub(r"\s+", " ", text).strip()
         return raw, HTMLDocumentBackend._clean_unicode(raw)
@@ -2487,10 +2622,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def _infer_form_value_kind(value_tag: Tag) -> Literal["read_only", "fillable"]:
         if HTMLDocumentBackend._is_checkbox_like_tag(value_tag):
             return "fillable"
-        if value_tag.find(
-            lambda item: isinstance(item, Tag)
-            and HTMLDocumentBackend._is_checkbox_like_tag(item)
-        ) is not None:
+        if (
+            value_tag.find(
+                lambda item: isinstance(item, Tag)
+                and HTMLDocumentBackend._is_checkbox_like_tag(item)
+            )
+            is not None
+        ):
             return "fillable"
 
         classes = HTMLDocumentBackend._get_tag_classes(value_tag)
@@ -2507,9 +2645,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if classes & fillable_class_hints:
             return "fillable"
         if any(
-            class_name.endswith("-input")
-            or class_name.endswith("_input")
-            or class_name.endswith("-input-box")
+            class_name.endswith(("-input", "_input", "-input-box"))
             for class_name in classes
         ):
             return "fillable"
@@ -2535,6 +2671,31 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return False
         input_type = str(tag.get("type", "")).strip().lower()
         return input_type in {"checkbox", "radio"}
+
+    @staticmethod
+    def _is_generic_text_input_candidate(tag: Tag) -> bool:
+        if tag.name != "input":
+            return False
+        input_type = str(tag.get("type", "")).strip().lower()
+        if input_type in {
+            "hidden",
+            "checkbox",
+            "radio",
+            "submit",
+            "button",
+            "reset",
+            "file",
+            "image",
+            "color",
+            "range",
+            "date",
+            "datetime-local",
+            "month",
+            "time",
+            "week",
+        }:
+            return False
+        return True
 
     @staticmethod
     def _is_custom_checkbox_tag(tag: Tag) -> bool:
@@ -2635,26 +2796,68 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             else DocItemLabel.CHECKBOX_UNSELECTED
         )
 
-    def _extract_checkbox_text_and_consumed_label_obj_ids(
+    def _extract_checkbox_text_and_consumed_label_obj_ids(  # noqa: C901
         self, checkbox_tag: Tag
     ) -> tuple[str, set[int], list[Tag]]:
         consumed_tag_obj_ids: set[int] = set()
         consumed_label_tags: list[Tag] = []
         parent = checkbox_tag.parent if isinstance(checkbox_tag.parent, Tag) else None
+        seen_label_obj_ids: set[int] = set()
+
+        def _add_label_tag(label_tag: Tag) -> None:
+            label_obj_id = id(label_tag)
+            if label_obj_id in seen_label_obj_ids:
+                return
+            seen_label_obj_ids.add(label_obj_id)
+            consumed_tag_obj_ids.add(label_obj_id)
+            consumed_label_tags.append(label_tag)
+
+        def _label_texts(tags: list[Tag]) -> list[str]:
+            texts: list[str] = []
+            for label_tag in tags:
+                raw = self.get_text(label_tag)
+                normalized = self._normalize_checkbox_text(raw)
+                if normalized:
+                    texts.append(normalized)
+            return texts
 
         # Native checkbox/radio with explicit <label for="..."> in the same option container.
-        if checkbox_tag.name == "input" and parent is not None:
+        if checkbox_tag.name == "input":
             input_id = self._get_html_id(checkbox_tag)
             if input_id:
-                for sibling in parent.find_all("label", recursive=False):
-                    if sibling.get("for") != input_id:
-                        continue
-                    raw = self.get_text(sibling)
-                    text = self._normalize_checkbox_text(raw)
-                    consumed_tag_obj_ids.add(id(sibling))
-                    consumed_label_tags.append(sibling)
-                    if text:
-                        return text, consumed_tag_obj_ids, consumed_label_tags
+                # Collect labels explicitly pointing to this checkbox/radio.
+                if self.soup is not None:
+                    for label_tag in self.soup.find_all(
+                        "label", attrs={"for": input_id}
+                    ):
+                        if isinstance(label_tag, Tag):
+                            _add_label_tag(label_tag)
+                # Backward-compatible local search (same parent container).
+                if parent is not None:
+                    for sibling in parent.find_all("label", recursive=False):
+                        if sibling.get("for") == input_id:
+                            _add_label_tag(sibling)
+
+            # Input wrapped by a <label> ... <input ...> ... </label>
+            wrapping_label = checkbox_tag.find_parent("label")
+            if isinstance(wrapping_label, Tag):
+                _add_label_tag(wrapping_label)
+
+            # ARIA linkage to label element(s), if present.
+            aria_labelledby = checkbox_tag.get("aria-labelledby")
+            if isinstance(aria_labelledby, str) and self.soup is not None:
+                for labelledby_id in aria_labelledby.split():
+                    labelledby_tag = self.soup.find(id=labelledby_id)
+                    if isinstance(labelledby_tag, Tag):
+                        _add_label_tag(labelledby_tag)
+
+            explicit_texts = _label_texts(consumed_label_tags)
+            if explicit_texts:
+                return (
+                    " ".join(explicit_texts),
+                    consumed_tag_obj_ids,
+                    consumed_label_tags,
+                )
 
         if parent is not None:
             parent_classes = self._get_tag_classes(parent)
@@ -2667,10 +2870,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         continue
                     if "checkbox-label" not in self._get_tag_classes(sibling):
                         continue
-                    raw = self.get_text(sibling)
-                    text = self._normalize_checkbox_text(raw)
-                    consumed_tag_obj_ids.add(id(sibling))
-                    consumed_label_tags.append(sibling)
+                    text = self._normalize_checkbox_text(self.get_text(sibling))
+                    _add_label_tag(sibling)
                     if text:
                         label_texts.append(text)
                 if label_texts:
@@ -2692,15 +2893,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         continue
                     if self._is_checkbox_like_tag(sibling):
                         continue
-                    consumed_tag_obj_ids.add(id(sibling))
-                    consumed_label_tags.append(sibling)
+                    _add_label_tag(sibling)
                 raw = self._extract_text_excluding_tag_obj_ids(
                     parent, {id(checkbox_tag)}
                 )
                 text = self._normalize_checkbox_text(raw)
                 if text:
                     if has_direct_label_text:
-                        consumed_label_tags.append(parent)
+                        _add_label_tag(parent)
                     return text, consumed_tag_obj_ids, consumed_label_tags
 
         # Last fallback: custom checkbox text inside the element itself.
@@ -2713,20 +2913,150 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return "", consumed_tag_obj_ids, consumed_label_tags
 
     @staticmethod
-    def _extract_form_value_text(value_tag: Tag) -> str:
-        # Input elements carry their user-visible content in attributes, not inner text.
-        if value_tag.name == "input":
+    def _extract_input_like_text(tag: Tag) -> str:
+        if tag.name == "input":
             for attr in ("value", "placeholder", "name"):
-                val = value_tag.get(attr)
+                val = tag.get(attr)
                 if isinstance(val, str) and val.strip():
                     return val.strip()
             return ""
 
-        return HTMLDocumentBackend.get_text(value_tag)
+        if tag.name == "textarea":
+            return HTMLDocumentBackend.get_text(tag).strip()
+
+        if tag.name == "select":
+            selected_option: Optional[Tag] = None
+            for option in tag.find_all("option"):
+                if option.has_attr("selected"):
+                    selected_option = option
+                    break
+            if selected_option is None:
+                first_option = tag.find("option")
+                if isinstance(first_option, Tag):
+                    selected_option = first_option
+            if selected_option is not None:
+                selected_text = HTMLDocumentBackend.get_text(selected_option).strip()
+                if selected_text:
+                    return selected_text
+                selected_value = selected_option.get("value")
+                if isinstance(selected_value, str) and selected_value.strip():
+                    return selected_value.strip()
+            select_value = tag.get("value")
+            if isinstance(select_value, str) and select_value.strip():
+                return select_value.strip()
+            return ""
+
+        return ""
+
+    def _extract_form_value_text(self, value_tag: Tag) -> str:
+        # Input elements carry their user-visible content in attributes, not inner text.
+        if value_tag.name in {"input", "textarea", "select"}:
+            return self._extract_input_like_text(value_tag)
+
+        if value_tag.find(["input", "textarea", "select"]) is None:
+            return HTMLDocumentBackend.get_text(value_tag)
+
+        parts: list[str] = []
+
+        def _collect(node: PageElement) -> None:
+            if isinstance(node, NavigableString):
+                parts.append(str(node))
+                return
+            if not isinstance(node, Tag):
+                return
+            if self._is_invisible_tag(node):
+                return
+            if node.name in {"input", "textarea", "select"}:
+                input_text = self._extract_input_like_text(node)
+                if input_text:
+                    parts.append(input_text)
+                parts.append(" ")
+                return
+            for child in node.contents:
+                _collect(child)
+            if node.name in {"p", "li", "div", "label", "span", "td", "th", "tr", "br"}:
+                parts.append(" ")
+
+        _collect(value_tag)
+        return "".join(parts)
 
     @staticmethod
     def _extract_form_marker_text(marker_tag: Tag) -> str:
         return HTMLDocumentBackend.get_text(marker_tag)
+
+    @staticmethod
+    def _is_form_semantic_tag(tag: Tag) -> bool:
+        return HTMLDocumentBackend._is_form_semantic_id(
+            HTMLDocumentBackend._get_html_id(tag)
+        )
+
+    def _merge_adjacent_form_values(
+        self, values: list[_ExtractedFormValue]
+    ) -> list[_ExtractedFormValue]:
+        if len(values) <= 1:
+            return values
+
+        merged_values: list[_ExtractedFormValue] = []
+        current = values[0]
+        current_is_char_run = len(current.text.strip()) == 1
+        current_source_tag_ids: list[str] = [
+            tag_id for tag_id in [self._get_tag_id(current.tag)] if tag_id is not None
+        ]
+
+        def _flush_current() -> None:
+            nonlocal current, current_source_tag_ids
+            if len(current_source_tag_ids) > 1 or (
+                current.prov is None and current_source_tag_ids
+            ):
+                current.prov = self._make_text_prov_for_source_tag_ids(
+                    text=current.text,
+                    tag=current.tag,
+                    source_tag_ids=current_source_tag_ids,
+                )
+            merged_values.append(current)
+
+        for next_value in values[1:]:
+            next_text = next_value.text.strip()
+            next_is_char = len(next_text) == 1
+            can_merge_text = (
+                current_is_char_run
+                and next_is_char
+                and current.checkbox_label is None
+                and next_value.checkbox_label is None
+                and current.kind == next_value.kind
+            )
+            left_source = self._get_tag_id(current.tag)
+            right_source = self._get_tag_id(next_value.tag)
+            can_merge_bbox = (
+                left_source is not None
+                and right_source is not None
+                and self._are_source_tag_ids_inline_neighbors(left_source, right_source)
+            )
+            can_merge_dom = (
+                current.tag.parent is next_value.tag.parent
+                and current_is_char_run
+                and next_is_char
+            )
+
+            if can_merge_text and (can_merge_bbox or can_merge_dom):
+                current.text = f"{current.text}{next_value.text}"
+                current.orig = f"{current.orig}{next_value.orig}"
+                current.order = min(current.order, next_value.order)
+                if right_source is not None:
+                    current_source_tag_ids.append(right_source)
+                current_is_char_run = True
+            else:
+                _flush_current()
+                current = next_value
+                current_is_char_run = len(current.text.strip()) == 1
+                current_source_tag_ids = [
+                    tag_id
+                    for tag_id in [self._get_tag_id(current.tag)]
+                    if tag_id is not None
+                ]
+
+        _flush_current()
+        return merged_values
 
     def _emit_custom_checkbox(
         self, checkbox_tag: Tag, doc: DoclingDocument
@@ -2780,6 +3110,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self._suppressed_tag_obj_ids_stack.pop()
 
     def _is_suppressed_tag(self, tag: Tag) -> bool:
+        if self._is_invisible_tag(tag):
+            return True
         if self._is_tag_outside_capture_area(tag):
             return True
         tag_obj_id = id(tag)
@@ -2892,6 +3224,70 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         return True
 
+    def _iter_form_scan_parents(self, tag: Tag, max_depth: int = 3) -> list[Tag]:
+        parents: list[Tag] = []
+        current: Optional[Tag] = tag.parent if isinstance(tag.parent, Tag) else None
+        depth = 0
+        while current is not None and depth < max_depth:
+            parents.append(current)
+            if self._is_form_container(current) or current.name in {
+                "table",
+                "tbody",
+                "thead",
+                "tfoot",
+                "tr",
+            }:
+                break
+            current = current.parent if isinstance(current.parent, Tag) else None
+            depth += 1
+        return parents
+
+    def _is_simple_extra_text_candidate(self, tag: Tag) -> bool:
+        if self._is_invisible_tag(tag):
+            return False
+        if self._is_form_semantic_id(self._get_html_id(tag)):
+            return False
+        classes = self._get_tag_classes(tag)
+        if any(
+            class_name in {"section-title", "grid-header", "line-items-header"}
+            or class_name.endswith(("-header", "_header"))
+            or class_name in {"title", "summary-title"}
+            or class_name.endswith(("-title", "_title"))
+            for class_name in classes
+        ):
+            return False
+        if tag.name in {"h1", "h2", "h3", "h4", "h5", "h6"}:
+            return False
+        if self._is_checkbox_like_tag(tag):
+            return True
+        if (
+            tag.find(
+                lambda item: isinstance(item, Tag)
+                and item is not tag
+                and self._is_form_semantic_id(self._get_html_id(item))
+            )
+            is not None
+        ):
+            return False
+
+        direct_tag_children = [
+            child for child in tag.find_all(recursive=False) if isinstance(child, Tag)
+        ]
+        has_direct_text = any(
+            isinstance(child, NavigableString) and bool(str(child).strip())
+            for child in tag.contents
+        )
+        if len(direct_tag_children) > 3 and not has_direct_text:
+            return False
+
+        raw = self._extract_text_excluding_tag_obj_ids(tag, set())
+        _, clean = self._normalize_form_text(raw)
+        if not clean:
+            return False
+        if len(clean) > 140 and len(direct_tag_children) > 1:
+            return False
+        return True
+
     def _add_field_item_from_extracted(
         self,
         field: _ExtractedFormField,
@@ -2979,7 +3375,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         first_order_by_key: dict[str, int] = {}
         markers_by_key: dict[str, list[tuple[int, Tag]]] = {}
         values_by_key: dict[str, list[tuple[Optional[int], int, Tag]]] = {}
-        all_tags = cast(list[Tag], form_tag.find_all(True))
+        all_tags = [
+            tag
+            for tag in cast(list[Tag], form_tag.find_all(True))
+            if self._is_tag_in_current_form_scope(tag, form_tag)
+            and not self._is_invisible_tag(tag)
+        ]
         tag_order_by_obj_id: dict[int, int] = {
             id(tag): idx for idx, tag in enumerate(all_tags, start=1)
         }
@@ -3030,6 +3431,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         key_ids_in_order = sorted(
             first_order_by_key.keys(), key=lambda key_id: first_order_by_key[key_id]
         )
+        assigned_extra_tag_obj_ids: set[int] = set()
 
         for key_id in key_ids_in_order:
             key_tag = key_tags.get(key_id)
@@ -3059,22 +3461,43 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 marker_entries=marker_entries,
                 value_entries=value_entries,
             )
+            if (
+                key_tag is not None
+                and self._is_checkbox_like_tag(key_tag)
+                and not any(entry[2] is key_tag for entry in value_entries)
+            ):
+                key_as_value_order = key_orders.get(
+                    key_id, first_order_by_key.get(key_id, 0)
+                )
+                value_entries.append((0, key_as_value_order, key_tag))
+                value_entries.sort(
+                    key=lambda entry: (
+                        entry[0] is None,
+                        entry[0] if entry[0] is not None else entry[1],
+                        entry[1],
+                    )
+                )
 
             marker: Optional[_ExtractedFormMarker] = None
             if marker_entries:
                 marker_tag = marker_entries[0][1]
                 marker_text_raw = self._extract_form_marker_text(marker_tag)
                 marker_orig, marker_text = self._normalize_form_text(marker_text_raw)
-                marker = _ExtractedFormMarker(
-                    tag=marker_tag,
-                    order=marker_entries[0][0],
-                    orig=marker_orig,
-                    text=marker_text,
-                    prov=self._make_text_prov(text=marker_text, tag=marker_tag),
-                )
-                marker_tag_id = self._get_html_id(marker_tag)
-                if marker_tag_id is not None:
-                    consumed_tag_ids.add(marker_tag_id)
+                if marker_text:
+                    marker = _ExtractedFormMarker(
+                        tag=marker_tag,
+                        order=marker_entries[0][0],
+                        orig=marker_orig,
+                        text=marker_text,
+                        prov=self._make_text_prov(text=marker_text, tag=marker_tag),
+                    )
+                    marker_tag_id = self._get_html_id(marker_tag)
+                    if marker_tag_id is not None:
+                        consumed_tag_ids.add(marker_tag_id)
+                else:
+                    marker_tag_id = self._get_html_id(marker_tag)
+                    if marker_tag_id is not None:
+                        consumed_tag_ids.add(marker_tag_id)
 
             value_tags = [entry[2] for entry in value_entries]
             excluded_ids = {
@@ -3094,13 +3517,37 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if key_tag.name in {"input", "select", "textarea"}:
                     key_text_raw = self._extract_form_value_text(key_tag)
                 else:
-                    key_text_raw = self._extract_text_excluding_ids(key_tag, excluded_ids)
+                    descendant_value_count = len(
+                        [
+                            descendant
+                            for descendant in key_tag.find_all(True)
+                            if self._is_form_semantic_id(self._get_html_id(descendant))
+                            and _FORM_VALUE_ID_RE.match(
+                                self._get_html_id(descendant) or ""
+                            )
+                        ]
+                    )
+                    if descendant_value_count > 3:
+                        key_text_raw = self._extract_direct_text(key_tag)
+                    else:
+                        key_text_raw = self._extract_text_excluding_ids(
+                            key_tag, excluded_ids
+                        )
                 key_orig, key_text = self._normalize_form_text(key_text_raw)
                 key_prov = self._make_text_prov(text=key_text, tag=key_tag)
+                if len(value_tags) > 8 and len(key_text) > 120:
+                    key_orig = ""
+                    key_text = ""
+                    key_prov = None
 
             if key_tag is None and marker is None and not value_tags:
                 continue
-            if key_tag is not None and marker is None and not key_text and not value_tags:
+            if (
+                key_tag is not None
+                and marker is None
+                and not key_text
+                and not value_tags
+            ):
                 continue
 
             values: list[_ExtractedFormValue] = []
@@ -3108,6 +3555,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 checkbox_label = self._get_checkbox_label_for_tag(value_tag)
                 consumed_label_tag_obj_ids: set[int] = set()
                 checkbox_label_tags: list[Tag] = []
+                value_kind = self._infer_form_value_kind(value_tag)
                 if checkbox_label is not None:
                     (
                         value_text,
@@ -3135,7 +3583,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             if checkbox_label is not None
                             else self._make_text_prov(text=value_text, tag=value_tag)
                         ),
-                        kind=self._infer_form_value_kind(value_tag),
+                        kind=value_kind,
                         checkbox_label=checkbox_label,
                         consumed_label_tag_obj_ids=consumed_label_tag_obj_ids,
                         checkbox_label_tags=checkbox_label_tags,
@@ -3144,6 +3592,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 value_tag_id = self._get_html_id(value_tag)
                 if value_tag_id is not None:
                     consumed_tag_ids.add(value_tag_id)
+            values = self._merge_adjacent_form_values(values)
+
+            if key_text and key_prov is None:
+                if marker is not None and marker.prov is not None:
+                    key_prov = marker.prov
+                elif values and values[0].prov is not None:
+                    key_prov = values[0].prov
 
             component_tag_obj_ids: set[int] = {id(value.tag) for value in values}
             if key_tag is not None:
@@ -3156,14 +3611,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             seen_extra_tag_obj_ids: set[int] = set()
             extra_texts: list[_ExtractedFormText] = []
             parent_tags_to_scan: list[Tag] = []
+            if key_tag is not None:
+                parent_tags_to_scan.extend(self._iter_form_scan_parents(key_tag))
+            if marker is not None:
+                parent_tags_to_scan.extend(self._iter_form_scan_parents(marker.tag))
             for value in values:
-                if isinstance(value.tag.parent, Tag):
-                    parent_tags_to_scan.append(value.tag.parent)
-            if not parent_tags_to_scan:
-                if key_tag is not None and isinstance(key_tag.parent, Tag):
-                    parent_tags_to_scan.append(key_tag.parent)
-                if marker is not None and isinstance(marker.tag.parent, Tag):
-                    parent_tags_to_scan.append(marker.tag.parent)
+                parent_tags_to_scan.extend(self._iter_form_scan_parents(value.tag))
 
             seen_parent_tag_obj_ids: set[int] = set()
             unique_parent_tags_to_scan: list[Tag] = []
@@ -3175,15 +3628,57 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 unique_parent_tags_to_scan.append(parent_tag)
 
             for parent_tag in unique_parent_tags_to_scan:
-                for sibling_tag in parent_tag.find_all(recursive=False):
+                component_direct_child_indices: list[int] = []
+                direct_children = [
+                    child
+                    for child in parent_tag.find_all(recursive=False)
+                    if isinstance(child, Tag)
+                ]
+                for idx, child in enumerate(direct_children):
+                    child_obj_id = id(child)
+                    if child_obj_id in component_tag_obj_ids:
+                        component_direct_child_indices.append(idx)
+                        continue
+                    if any(
+                        descendant_obj_id in component_tag_obj_ids
+                        for descendant_obj_id in [
+                            id(descendant) for descendant in child.find_all(True)
+                        ]
+                    ):
+                        component_direct_child_indices.append(idx)
+
+                if component_direct_child_indices:
+                    min_idx = min(component_direct_child_indices)
+                    max_idx = max(component_direct_child_indices)
+                else:
+                    min_idx = 0
+                    max_idx = len(direct_children) - 1
+
+                for idx, sibling_tag in enumerate(direct_children):
+                    if idx < (min_idx - 1) or idx > (max_idx + 1):
+                        continue
                     sibling_obj_id = id(sibling_tag)
                     if sibling_obj_id in component_tag_obj_ids:
                         continue
+                    if self._is_invisible_tag(sibling_tag):
+                        continue
+                    if any(
+                        id(descendant) in component_tag_obj_ids
+                        for descendant in sibling_tag.find_all(True)
+                    ):
+                        continue
                     if sibling_obj_id in seen_extra_tag_obj_ids:
+                        continue
+                    if sibling_obj_id in assigned_extra_tag_obj_ids:
                         continue
                     if sibling_obj_id in consumed_label_obj_ids:
                         continue
-                    if self._get_html_id(sibling_tag) is not None:
+                    sibling_html_id = self._get_html_id(sibling_tag)
+                    if sibling_html_id is not None and self._is_form_semantic_id(
+                        sibling_html_id
+                    ):
+                        continue
+                    if not self._is_simple_extra_text_candidate(sibling_tag):
                         continue
                     sibling_text_raw = self._extract_text_excluding_tag_obj_ids(
                         sibling_tag, component_tag_obj_ids | consumed_label_obj_ids
@@ -3218,6 +3713,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         )
                     )
                     seen_extra_tag_obj_ids.add(sibling_obj_id)
+                    assigned_extra_tag_obj_ids.add(sibling_obj_id)
 
             fields.append(
                 _ExtractedFormField(
@@ -3235,6 +3731,72 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if key_tag_id is not None:
                 consumed_tag_ids.add(key_tag_id)
 
+        extracted_value_tag_obj_ids = {
+            id(value.tag) for field in fields for value in field.values
+        }
+        generic_clusters: list[list[tuple[int, Tag]]] = []
+        current_cluster: list[tuple[int, Tag]] = []
+        current_parent_obj_id: Optional[int] = None
+        previous_order: Optional[int] = None
+        for tag in all_tags:
+            if id(tag) in extracted_value_tag_obj_ids:
+                continue
+            if not self._is_generic_text_input_candidate(tag):
+                continue
+            if self._get_html_id(tag) is not None:
+                continue
+            tag_order = tag_order_by_obj_id.get(id(tag))
+            if tag_order is None:
+                continue
+            parent_obj_id = id(tag.parent) if isinstance(tag.parent, Tag) else None
+            if (
+                current_cluster
+                and parent_obj_id == current_parent_obj_id
+                and previous_order is not None
+                and tag_order - previous_order <= 3
+            ):
+                current_cluster.append((tag_order, tag))
+            else:
+                if current_cluster:
+                    generic_clusters.append(current_cluster)
+                current_cluster = [(tag_order, tag)]
+                current_parent_obj_id = parent_obj_id
+            previous_order = tag_order
+        if current_cluster:
+            generic_clusters.append(current_cluster)
+
+        for cluster in generic_clusters:
+            generic_values: list[_ExtractedFormValue] = []
+            for order, value_tag in cluster:
+                value_text_raw = self._extract_form_value_text(value_tag)
+                value_orig, value_text = self._normalize_form_text(value_text_raw)
+                generic_values.append(
+                    _ExtractedFormValue(
+                        tag=value_tag,
+                        order=order,
+                        orig=value_orig,
+                        text=value_text,
+                        prov=self._make_text_prov(text=value_text, tag=value_tag),
+                        kind="fillable",
+                    )
+                )
+                consumed_tag_ids.add(self._ensure_tag_html_id(value_tag))
+            generic_values = self._merge_adjacent_form_values(generic_values)
+            if not generic_values:
+                continue
+            fields.append(
+                _ExtractedFormField(
+                    key_tag=None,
+                    key_order=generic_values[0].order,
+                    key_orig="",
+                    key_text="",
+                    key_prov=None,
+                    marker=None,
+                    values=generic_values,
+                    extra_texts=[],
+                )
+            )
+
         if not fields:
             return None
         return _ExtractedFormRegion(fields=fields, consumed_tag_ids=consumed_tag_ids)
@@ -3248,6 +3810,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         links: list[GraphLink] = []
         cell_id_seq = 0
         for field in extracted.fields:
+            if not field.key_text:
+                continue
             key_cell = GraphCell(
                 cell_id=cell_id_seq,
                 label=GraphCellLabel.KEY,
@@ -3326,6 +3890,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         fields_by_key_id[anchor_tag_id] = field
                     for extra_text in field.extra_texts:
                         consumed_tag_obj_ids.add(id(extra_text.tag))
+                    for value in field.values:
+                        consumed_tag_obj_ids.update(value.consumed_label_tag_obj_ids)
 
             if not fields_by_key_id:
                 if tag.name.lower() == "table":
