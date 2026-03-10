@@ -235,7 +235,7 @@ class _NativeWhisperModel:
             return conv_res
 
         except Exception as exc:
-            _log.error(f"Audio tranciption has an error: {exc}")
+            _log.error(f"Audio transcription has an error: {exc}")
             conv_res.status = ConversionStatus.FAILURE
             return conv_res
 
