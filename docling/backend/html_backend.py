@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-from typing import Final, Optional, Union, cast
+from typing import Final, Iterator, Optional, Union, cast
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -656,7 +656,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 return
 
             for annotated_text_list in parts:
-                with self._use_inline_group(annotated_text_list, doc):
+                with self._use_inline_group(annotated_text_list, doc) as inline_ref:
                     for annotated_text in annotated_text_list:
                         if annotated_text.text.strip():
                             seg_clean = HTMLDocumentBackend._clean_unicode(
@@ -670,7 +670,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
                                 )
-                                added_refs.append(docling_code2.get_ref())
+                                if inline_ref is None:
+                                    added_refs.append(docling_code2.get_ref())
                             else:
                                 docling_text2 = doc.add_text(
                                     parent=self.parents[self.level],
@@ -680,7 +681,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
                                 )
-                                added_refs.append(docling_text2.get_ref())
+                                if inline_ref is None:
+                                    added_refs.append(docling_text2.get_ref())
+                    if inline_ref is not None:
+                        added_refs.append(inline_ref)
 
         for node in element.contents:
             if isinstance(node, Tag):
@@ -866,7 +870,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @contextmanager
     def _use_inline_group(
         self, annotated_text_list: AnnotatedTextList, doc: DoclingDocument
-    ):
+    ) -> Iterator[RefItem | None]:
         """Create an inline group for annotated texts.
 
         Checks if annotated_text_list has more than one item and if so creates an inline
@@ -876,6 +880,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         Args:
             annotated_text_list (AnnotatedTextList): Annotated text
             doc (DoclingDocument): Currently used document
+
+        Yields:
+            The RefItem of the created InlineGroup, or None when the list has only one
+                element and no group is created.
         """
         if len(annotated_text_list) > 1:
             inline_fmt = doc.add_group(
@@ -886,7 +894,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.parents[self.level + 1] = inline_fmt
             self.level += 1
             try:
-                yield None
+                yield inline_fmt.get_ref()
             finally:
                 self.parents[self.level] = None
                 self.level -= 1
@@ -1205,7 +1213,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
             annotated_texts: AnnotatedTextList = text_list.simplify_text_elements()
             for part in annotated_texts.split_by_newline():
-                with self._use_inline_group(part, doc):
+                with self._use_inline_group(part, doc) as inline_ref:
                     for annotated_text in part:
                         if seg := annotated_text.text.strip():
                             seg_clean = HTMLDocumentBackend._clean_unicode(seg)
@@ -1217,7 +1225,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
                                 )
-                                added_refs.append(docling_code.get_ref())
+                                if inline_ref is None:
+                                    added_refs.append(docling_code.get_ref())
                             else:
                                 docling_text = doc.add_text(
                                     parent=self.parents[self.level],
@@ -1227,7 +1236,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
                                 )
-                                added_refs.append(docling_text.get_ref())
+                                if inline_ref is None:
+                                    added_refs.append(docling_text.get_ref())
+                    if inline_ref is not None:
+                        added_refs.append(inline_ref)
 
             for img_tag in tag("img"):
                 if isinstance(img_tag, Tag):
@@ -1244,19 +1256,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             added_refs.append(docling_table.get_ref())
             self.parse_table_data(tag, doc, docling_table, num_rows, num_cols)
 
-            for img_tag in tag("img"):
-                if isinstance(img_tag, Tag):
-                    im_ref2 = self._emit_image(tag, doc)
-                    if im_ref2 is not None:
-                        added_refs.append(im_ref2)
-
         elif tag_name in {"pre"}:
             # handle monospace code snippets (pre).
             text_list = self._extract_text_and_hyperlink_recursively(
                 tag, find_parent_annotation=True, keep_newlines=True
             )
             annotated_texts = text_list.simplify_text_elements()
-            with self._use_inline_group(annotated_texts, doc):
+            with self._use_inline_group(annotated_texts, doc) as inline_ref:
                 for annotated_text in annotated_texts:
                     text_clean = HTMLDocumentBackend._clean_unicode(
                         annotated_text.text.strip()
@@ -1268,7 +1274,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         formatting=annotated_text.formatting,
                         hyperlink=annotated_text.hyperlink,
                     )
-                    added_refs.append(docling_code2.get_ref())
+                    if inline_ref is None:
+                        added_refs.append(docling_code2.get_ref())
+            if inline_ref is not None:
+                added_refs.append(inline_ref)
 
         elif tag_name == "footer":
             with self._use_footer(tag, doc):
@@ -1416,7 +1425,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 for child in tag:
                     parts.extend(_extract_text_recursively(child))
                 result.append(
-                    "".join(parts) + " " if tag.name in {"p", "li"} else "".join(parts)
+                    "".join(parts) + " "
+                    if tag.name in {"p", "li", "th", "td"}
+                    else "".join(parts)
                 )
 
             return result

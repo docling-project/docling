@@ -251,10 +251,6 @@ This article is about the bird. For duck as a food, see [Duck as food](/wiki/Duc
 | Subfamilies                                                                                     | Subfamilies                        |
 | See text                                                                                        | See text                           |
 
-<!-- image -->
-
-<!-- image -->
-
 **Duck** is the common name for numerous species of [waterfowl](/wiki/Waterfowl) in the [family](/wiki/Family_(biology)) [Anatidae](/wiki/Anatidae) . Ducks are generally smaller and shorter-necked than [swans](/wiki/Swan) and [geese](/wiki/Goose) , which are members of the same family. Divided among several subfamilies, they are a [form taxon](/wiki/Form_taxon) ; they do not represent a [monophyletic group](/wiki/Monophyletic_group) (the group of all descendants of a single common ancestral species), since swans and geese are not considered ducks. Ducks are mostly [aquatic birds](/wiki/Aquatic_bird) , and may be found in both fresh water and sea water.
 
 Ducks are sometimes confused with several types of unrelated water birds with similar forms, such as [loons](/wiki/Loon) or divers, [grebes](/wiki/Grebe) , [gallinules](/wiki/Gallinule) and [coots](/wiki/Coot) .
@@ -517,8 +513,6 @@ The 1992 Disney film [*The Mighty Ducks*](/wiki/The_Mighty_Ducks_(film)) , starr
 |------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | National                                                                                             | - [United States](https://id.loc.gov/authorities/sh85039879) - [France](https://catalogue.bnf.fr/ark:/12148/cb119761481) - [BnF data](https://data.bnf.fr/ark:/12148/cb119761481) - [Japan](https://id.ndl.go.jp/auth/ndlna/00564819) - [Latvia](https://kopkatalogs.lv/F?func=direct&local_base=lnc10&doc_number=000090751&P_CON_LNG=ENG) - [Israel](http://olduli.nli.org.il/F/?func=find-b&local_base=NLX10&find_code=UID&request=987007565486205171) |
 | Other                                                                                                | - [IdRef](https://www.idref.fr/027796124)                                                                                                                                                                                                                                                                                                                                                                                                                |
-
-<!-- image -->
 
 Retrieved from " [https://en.wikipedia.org/w/index.php?title=Duck&amp;oldid=1246843351](https://en.wikipedia.org/w/index.php?title=Duck&oldid=1246843351) "
 

@@ -285,9 +285,9 @@ item-0 at level 0: unspecified: group _root_
       item-284 at level 3: text: December 16, 2024
       item-285 at level 3: text: (Initial Public Offering)
     item-286 at level 2: unspecified: group rich_cell_group_3_0_3
-      item-287 at level 3: text: Market adjustment
-      item-288 at level 3: text: (1)
-  item-289 at level 1: inline: group group
+      item-287 at level 3: inline: group group
+        item-288 at level 4: text: Market adjustment
+        item-289 at level 4: text: (1)
   item-290 at level 1: table with [1x2]
   item-291 at level 1: text: During the year ended December 3 ... nterest income from the Trust Account.
   item-292 at level 1: table with [4x16]
@@ -299,9 +299,9 @@ item-0 at level 0: unspecified: group _root_
       item-298 at level 3: text: December 16, 2024
       item-299 at level 3: text: (Initial Public Offering)
     item-300 at level 2: unspecified: group rich_cell_group_1_0_3
-      item-301 at level 3: text: Market adjustment
-      item-302 at level 3: text: (1)
-  item-303 at level 1: inline: group group
+      item-301 at level 3: inline: group group
+        item-302 at level 4: text: Market adjustment
+        item-303 at level 4: text: (1)
   item-304 at level 1: table with [1x2]
   item-305 at level 1: text: NOTE 9 - SEGMENT INFORMATION
   item-306 at level 1: text: ASC Topic 280, "Segment Reportin ... cate resources and assess performance.
