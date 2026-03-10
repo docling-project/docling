@@ -87,7 +87,7 @@ def test_crop_page_image(test_doc_path):
 
 def test_num_pages(test_doc_path):
     doc_backend = _get_backend(test_doc_path)
-    doc_backend.page_count() == 9
+    assert doc_backend.page_count() == 9
 
     # Explicitly clean up resources to prevent race conditions in CI
     doc_backend.unload()
