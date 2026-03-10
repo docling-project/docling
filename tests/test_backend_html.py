@@ -46,24 +46,8 @@ def test_html_backend_options():
         HTMLBackendOptions(source_uri=12345)
 
 
-def test_html_backend_default_content_layer():
-    # Default is None (infer_furniture logic applies)
-    options = HTMLBackendOptions()
-    assert options.default_content_layer is None
-
-    # Explicit override to BODY
-    options = HTMLBackendOptions(default_content_layer=ContentLayer.BODY)
-    assert options.default_content_layer == ContentLayer.BODY
-
-    # Verify override takes effect: HTML with a heading should normally infer
-    # FURNITURE for content before the heading, but with default_content_layer=BODY
-    # all content should land in BODY.
-    html = b"""<html><body>
-    <p>Before heading</p>
-    <h1>Title</h1>
-    <p>After heading</p>
-    </body></html>"""
-
+def _make_html_doc(html: bytes, options: HTMLBackendOptions) -> DoclingDocument:
+    """Helper to convert raw HTML bytes with the given backend options."""
     in_doc = InputDocument(
         path_or_stream=BytesIO(html),
         format=InputFormat.HTML,
@@ -73,14 +57,55 @@ def test_html_backend_default_content_layer():
     backend = HTMLDocumentBackend(
         in_doc=in_doc,
         path_or_stream=BytesIO(html),
-        options=HTMLBackendOptions(default_content_layer=ContentLayer.BODY),
+        options=options,
     )
-    doc = backend.convert()
+    return backend.convert()
 
-    # All text items should be in BODY layer
+
+_HTML_WITH_HEADING = b"""<html><body>
+<p>Before heading</p>
+<h1>Title</h1>
+<p>After heading</p>
+</body></html>"""
+
+
+def test_html_backend_default_content_layer():
+    # Default is None (infer_furniture logic applies)
+    options = HTMLBackendOptions()
+    assert options.default_content_layer is None
+
+    # Explicit override to BODY
+    options = HTMLBackendOptions(default_content_layer=ContentLayer.BODY)
+    assert options.default_content_layer == ContentLayer.BODY
+
+    # With default_content_layer=BODY, all content should land in BODY
+    # even though a heading exists and infer_furniture is True by default.
+    doc = _make_html_doc(
+        _HTML_WITH_HEADING,
+        HTMLBackendOptions(default_content_layer=ContentLayer.BODY),
+    )
     for item, _level in doc.iterate_items():
         if hasattr(item, "content_layer"):
             assert item.content_layer == ContentLayer.BODY
+
+
+def test_html_backend_default_content_layer_none_preserves_inference():
+    # Without override (None), content before the first heading should be
+    # inferred as FURNITURE when infer_furniture=True.
+    doc = _make_html_doc(_HTML_WITH_HEADING, HTMLBackendOptions())
+
+    all_layers = {ContentLayer.FURNITURE, ContentLayer.BODY}
+    furniture_found = False
+    body_found = False
+    for item, _level in doc.iterate_items(included_content_layers=all_layers):
+        if hasattr(item, "content_layer"):
+            if item.content_layer == ContentLayer.FURNITURE:
+                furniture_found = True
+            elif item.content_layer == ContentLayer.BODY:
+                body_found = True
+
+    assert furniture_found, "Expected pre-heading content to be FURNITURE"
+    assert body_found, "Expected post-heading content to be BODY"
 
 
 def test_resolve_relative_path():
