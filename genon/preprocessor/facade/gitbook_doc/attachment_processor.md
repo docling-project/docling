@@ -723,7 +723,7 @@ def _patch_tokenizer_and_max_tokens(self) -> Self:
         self.tokenizer
         if isinstance(self.tokenizer, PreTrainedTokenizerBase)
         else AutoTokenizer.from_pretrained(self.tokenizer)
-        # 기본값: "sentence-transformers/all-MiniLM-L6-v2"
+        # 기본값: "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
     )
 ```
 

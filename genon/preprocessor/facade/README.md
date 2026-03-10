@@ -143,7 +143,7 @@ processor.enable_ocr(['pdf'])
 processor.set_chunking_options('pdf',
     max_tokens=2000,                   # 기본값: 2000
     merge_peers=True,                  # 기본값: True
-    tokenizer="sentence-transformers/all-MiniLM-L6-v2"  # 기본값
+    tokenizer="/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"  # 기본값
 )
 
 # LangChain 기반 청킹 (기타 문서) - 기본형 모드
@@ -220,7 +220,7 @@ processor.set_processor_option('pdf', 'chunking.max_tokens', 1536)
       "chunking": {
         "max_tokens": 2000,
         "merge_peers": true,
-        "tokenizer": "sentence-transformers/all-MiniLM-L6-v2"
+        "tokenizer": "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
       }
     }
   },
