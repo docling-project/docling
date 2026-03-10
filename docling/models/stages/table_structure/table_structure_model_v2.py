@@ -5,10 +5,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Optional
 
 import numpy
-
 import torch
 import torchvision.transforms as T  # type: ignore[import-untyped]
-
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
 from docling_core.types.doc.page import (
     TextCell,
@@ -51,7 +49,6 @@ class TableStructureModelV2(BaseTableStructureModel):
         self.enabled = enabled
 
         if self.enabled:
-
             # Determine model path
             if artifacts_path is None:
                 model_path = self.download_models()
