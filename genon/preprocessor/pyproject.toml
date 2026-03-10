@@ -49,7 +49,6 @@ dependencies = [
     "pdf2image==1.17.0",
     "unstructured-pytesseract==0.3.15",
     "pytesseract==0.3.13",
-    "unstructured==0.18.32",
     "opencv-python==4.11.0.86",
     "numpy==2.3.4",
     "minio==7.2.20",
