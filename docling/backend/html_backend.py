@@ -3250,9 +3250,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         classes = self._get_tag_classes(tag)
         if any(
             class_name in {"section-title", "grid-header", "line-items-header"}
-            or class_name.endswith(("-header", "_header"))
             or class_name in {"title", "summary-title"}
-            or class_name.endswith(("-title", "_title"))
+            or class_name.endswith(("-header", "_header", "-title", "_title"))
             for class_name in classes
         ):
             return False
