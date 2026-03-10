@@ -463,7 +463,7 @@ class TestWhisperS2TAutoSelection:
             (specs._get_whisper_base_model, "base"),
             (specs._get_whisper_medium_model, "medium"),
             (specs._get_whisper_large_model, "large-v3"),
-            (specs._get_whisper_turbo_model, "distil-large-v3"),
+            (specs._get_whisper_turbo_model, "large-v3-turbo"),
         ]:
             model = getter()
             assert model.inference_framework == InferenceAsrFramework.WHISPER_S2T, (
@@ -899,12 +899,12 @@ class TestWhisperS2TModel:
             assert out.document is not None
 
     def test_whisper_s2t_large_v3_sets_n_mels(self):
-        """Test that large-v3 and distil-large-v3 pass n_mels=128."""
+        """Test that large-v3, distil-large-v3, and large-v3-turbo pass n_mels=128."""
         mock_whisper_s2t = Mock()
         mock_whisper_s2t.load_model.return_value = Mock()
 
         with patch.dict("sys.modules", {"whisper_s2t": mock_whisper_s2t}):
-            for repo_id in ["large-v3", "distil-large-v3"]:
+            for repo_id in ["large-v3", "distil-large-v3", "large-v3-turbo"]:
                 asr_options = InlineAsrWhisperS2TOptions(
                     repo_id=repo_id,
                     inference_framework=InferenceAsrFramework.WHISPER_S2T,
