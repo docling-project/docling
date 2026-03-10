@@ -1478,12 +1478,12 @@
           },
           "charspan": [
             0,
-            83
+            38
           ]
         }
       ],
-      "orig": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Database performance and scalability",
-      "text": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Database performance and scalability",
+      "orig": "r Database performance and scalability",
+      "text": "r Database performance and scalability",
       "enumerated": false,
       "marker": ""
     },
@@ -1507,12 +1507,12 @@
           },
           "charspan": [
             0,
-            89
+            44
           ]
         }
       ],
-      "orig": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Advanced SQL knowledge and skills transfer",
-      "text": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Advanced SQL knowledge and skills transfer",
+      "orig": "r Advanced SQL knowledge and skills transfer",
+      "text": "r Advanced SQL knowledge and skills transfer",
       "enumerated": false,
       "marker": ""
     },
@@ -1536,12 +1536,12 @@
           },
           "charspan": [
             0,
-            82
+            37
           ]
         }
       ],
-      "orig": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Business intelligence and analytics",
-      "text": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Business intelligence and analytics",
+      "orig": "r Business intelligence and analytics",
+      "text": "r Business intelligence and analytics",
       "enumerated": false,
       "marker": ""
     },
@@ -1565,12 +1565,12 @@
           },
           "charspan": [
             0,
-            60
+            15
           ]
         }
       ],
-      "orig": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> DB2 Web Query",
-      "text": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> DB2 Web Query",
+      "orig": "r DB2 Web Query",
+      "text": "r DB2 Web Query",
       "enumerated": false,
       "marker": ""
     },
@@ -1594,12 +1594,12 @@
           },
           "charspan": [
             0,
-            117
+            72
           ]
         }
       ],
-      "orig": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Query/400 modernization for better reporting and analysis capabilities",
-      "text": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Query/400 modernization for better reporting and analysis capabilities",
+      "orig": "r Query/400 modernization for better reporting and analysis capabilities",
+      "text": "r Query/400 modernization for better reporting and analysis capabilities",
       "enumerated": false,
       "marker": ""
     },
@@ -1623,12 +1623,12 @@
           },
           "charspan": [
             0,
-            88
+            43
           ]
         }
       ],
-      "orig": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Database modernization and re-engineering",
-      "text": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Database modernization and re-engineering",
+      "orig": "r Database modernization and re-engineering",
+      "text": "r Database modernization and re-engineering",
       "enumerated": false,
       "marker": ""
     },
@@ -1652,12 +1652,12 @@
           },
           "charspan": [
             0,
-            83
+            38
           ]
         }
       ],
-      "orig": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Data-centric architecture and design",
-      "text": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Data-centric architecture and design",
+      "orig": "r Data-centric architecture and design",
+      "text": "r Data-centric architecture and design",
       "enumerated": false,
       "marker": ""
     },
@@ -1681,12 +1681,12 @@
           },
           "charspan": [
             0,
-            103
+            58
           ]
         }
       ],
-      "orig": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Extremely large database and overcoming limits to growth",
-      "text": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Extremely large database and overcoming limits to growth",
+      "orig": "r Extremely large database and overcoming limits to growth",
+      "text": "r Extremely large database and overcoming limits to growth",
       "enumerated": false,
       "marker": ""
     },
@@ -1710,12 +1710,12 @@
           },
           "charspan": [
             0,
-            75
+            30
           ]
         }
       ],
-      "orig": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> ISV education and enablement",
-      "text": "rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> ISV education and enablement",
+      "orig": "r ISV education and enablement",
+      "text": "r ISV education and enablement",
       "enumerated": false,
       "marker": ""
     },
@@ -7323,9 +7323,9 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 16.77,
-            "t": 506.05,
-            "r": 582.49,
+            "l": 16.79,
+            "t": 506.04,
+            "r": 582.5,
             "b": 14.09,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -7352,7 +7352,7 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 143.32,
+            "l": 143.31,
             "t": 521.79,
             "r": 179.59,
             "b": 506.41,
@@ -7383,8 +7383,8 @@
           "bbox": {
             "l": 63.71,
             "t": 188.12,
-            "r": 259.26,
-            "b": 103.54,
+            "r": 259.27,
+            "b": 103.55,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7682,7 +7682,7 @@
             "l": 135.7,
             "t": 684.75,
             "r": 546.7,
-            "b": 380.87,
+            "b": 380.86,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7755,7 +7755,7 @@
             "l": 135.56,
             "t": 408.92,
             "r": 302.1,
-            "b": 198.95,
+            "b": 198.94,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7842,9 +7842,9 @@
           "page_no": 14,
           "bbox": {
             "l": 135.49,
-            "t": 490.26,
-            "r": 550.17,
-            "b": 421.93,
+            "t": 490.27,
+            "r": 550.18,
+            "b": 421.92,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7918,7 +7918,7 @@
             "l": 135.51,
             "t": 673.15,
             "r": 546.15,
-            "b": 313.52,
+            "b": 313.53,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7954,7 +7954,7 @@
           "bbox": {
             "l": 63.61,
             "t": 238.53,
-            "r": 506.97,
+            "r": 506.98,
             "b": 127.55,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -7989,10 +7989,10 @@
         {
           "page_no": 18,
           "bbox": {
-            "l": 485.02,
+            "l": 485.03,
             "t": 766.92,
             "r": 566.19,
-            "b": 737.56,
+            "b": 737.55,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -8057,7 +8057,7 @@
           "page_no": 2,
           "bbox": {
             "l": 135.68,
-            "t": 660.62,
+            "t": 660.63,
             "r": 547.89,
             "b": 76.82,
             "coord_origin": "BOTTOMLEFT"
@@ -8098,7 +8098,7 @@
               "l": 534.03,
               "t": 132.82,
               "r": 547.01,
-              "b": 143.67,
+              "b": 143.66,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8155,7 +8155,7 @@
           },
           {
             "bbox": {
-              "l": 135.91,
+              "l": 135.9,
               "t": 165.74,
               "r": 502.94,
               "b": 176.84,
@@ -8175,7 +8175,7 @@
           },
           {
             "bbox": {
-              "l": 535.4,
+              "l": 535.38,
               "t": 166.18,
               "r": 546.75,
               "b": 177.54,
@@ -8196,7 +8196,7 @@
           {
             "bbox": {
               "l": 136.03,
-              "t": 188.86,
+              "t": 188.87,
               "r": 502.91,
               "b": 200.09,
               "coord_origin": "TOPLEFT"
@@ -8215,9 +8215,9 @@
           },
           {
             "bbox": {
-              "l": 536.2,
-              "t": 188.65,
-              "r": 546.48,
+              "l": 536.19,
+              "t": 188.66,
+              "r": 546.49,
               "b": 199.24,
               "coord_origin": "TOPLEFT"
             },
@@ -8335,7 +8335,7 @@
           },
           {
             "bbox": {
-              "l": 534.71,
+              "l": 534.7,
               "t": 225.96,
               "r": 546.71,
               "b": 236.43,
@@ -8396,7 +8396,7 @@
           {
             "bbox": {
               "l": 133.12,
-              "t": 261.11,
+              "t": 261.1,
               "r": 502.92,
               "b": 271.82,
               "coord_origin": "TOPLEFT"
@@ -8537,7 +8537,7 @@
             "bbox": {
               "l": 533.41,
               "t": 297.93,
-              "r": 547.38,
+              "r": 547.39,
               "b": 308.84,
               "coord_origin": "TOPLEFT"
             },
@@ -8558,7 +8558,7 @@
               "l": 149.48,
               "t": 311.28,
               "r": 502.86,
-              "b": 321.75,
+              "b": 321.76,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8576,7 +8576,7 @@
           {
             "bbox": {
               "l": 533.4,
-              "t": 309.96,
+              "t": 309.97,
               "r": 547.46,
               "b": 321.32,
               "coord_origin": "TOPLEFT"
@@ -8595,7 +8595,7 @@
           },
           {
             "bbox": {
-              "l": 145.35,
+              "l": 145.36,
               "t": 324.42,
               "r": 502.89,
               "b": 334.99,
@@ -8635,7 +8635,7 @@
           },
           {
             "bbox": {
-              "l": 136.2,
+              "l": 136.14,
               "t": 345.91,
               "r": 502.92,
               "b": 356.53,
@@ -8695,7 +8695,7 @@
           },
           {
             "bbox": {
-              "l": 535.68,
+              "l": 535.67,
               "t": 356.5,
               "r": 547.64,
               "b": 367.16,
@@ -8715,7 +8715,7 @@
           },
           {
             "bbox": {
-              "l": 150.83,
+              "l": 150.81,
               "t": 369.71,
               "r": 502.86,
               "b": 380.84,
@@ -8758,7 +8758,7 @@
               "l": 147.06,
               "t": 383.04,
               "r": 502.85,
-              "b": 393.69,
+              "b": 393.68,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8776,7 +8776,7 @@
           {
             "bbox": {
               "l": 533.4,
-              "t": 383.13,
+              "t": 383.14,
               "r": 547.67,
               "b": 393.83,
               "coord_origin": "TOPLEFT"
@@ -8795,10 +8795,10 @@
           },
           {
             "bbox": {
-              "l": 142.99,
+              "l": 142.96,
               "t": 396.04,
               "r": 502.9,
-              "b": 406.84,
+              "b": 406.83,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8815,7 +8815,7 @@
           },
           {
             "bbox": {
-              "l": 536.08,
+              "l": 536.07,
               "t": 395.03,
               "r": 547.54,
               "b": 405.81,
@@ -8835,8 +8835,8 @@
           },
           {
             "bbox": {
-              "l": 149.73,
-              "t": 407.48,
+              "l": 149.69,
+              "t": 407.49,
               "r": 502.89,
               "b": 418.34,
               "coord_origin": "TOPLEFT"
@@ -8856,9 +8856,9 @@
           {
             "bbox": {
               "l": 535.32,
-              "t": 408.31,
+              "t": 408.33,
               "r": 547.77,
-              "b": 419.0,
+              "b": 419.01,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -8875,7 +8875,7 @@
           },
           {
             "bbox": {
-              "l": 145.28,
+              "l": 145.25,
               "t": 419.54,
               "r": 502.86,
               "b": 430.82,
@@ -8895,7 +8895,7 @@
           },
           {
             "bbox": {
-              "l": 534.92,
+              "l": 534.93,
               "t": 420.33,
               "r": 547.85,
               "b": 430.98,
@@ -8915,7 +8915,7 @@
           },
           {
             "bbox": {
-              "l": 146.8,
+              "l": 146.81,
               "t": 432.22,
               "r": 502.89,
               "b": 443.36,
@@ -8955,9 +8955,9 @@
           },
           {
             "bbox": {
-              "l": 138.96,
+              "l": 138.95,
               "t": 444.15,
-              "r": 501.89,
+              "r": 501.85,
               "b": 454.93,
               "coord_origin": "TOPLEFT"
             },
@@ -8975,8 +8975,8 @@
           },
           {
             "bbox": {
-              "l": 534.52,
-              "t": 445.72,
+              "l": 534.53,
+              "t": 445.73,
               "r": 547.93,
               "b": 456.46,
               "coord_origin": "TOPLEFT"
@@ -9015,9 +9015,9 @@
           },
           {
             "bbox": {
-              "l": 535.9,
-              "t": 457.36,
-              "r": 547.91,
+              "l": 535.91,
+              "t": 457.35,
+              "r": 547.9,
               "b": 468.03,
               "coord_origin": "TOPLEFT"
             },
@@ -9035,7 +9035,7 @@
           },
           {
             "bbox": {
-              "l": 135.32,
+              "l": 135.33,
               "t": 480.34,
               "r": 502.92,
               "b": 490.92,
@@ -9056,9 +9056,9 @@
           {
             "bbox": {
               "l": 535.0,
-              "t": 480.16,
-              "r": 547.91,
-              "b": 490.95,
+              "t": 480.17,
+              "r": 547.9,
+              "b": 490.96,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9075,10 +9075,10 @@
           },
           {
             "bbox": {
-              "l": 135.67,
-              "t": 492.65,
+              "l": 135.66,
+              "t": 492.66,
               "r": 502.88,
-              "b": 503.19,
+              "b": 503.2,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9095,8 +9095,8 @@
           },
           {
             "bbox": {
-              "l": 535.58,
-              "t": 492.58,
+              "l": 535.57,
+              "t": 492.59,
               "r": 547.96,
               "b": 503.31,
               "coord_origin": "TOPLEFT"
@@ -9115,7 +9115,7 @@
           },
           {
             "bbox": {
-              "l": 143.73,
+              "l": 143.8,
               "t": 506.14,
               "r": 502.87,
               "b": 527.84,
@@ -9135,10 +9135,10 @@
           },
           {
             "bbox": {
-              "l": 535.65,
+              "l": 535.66,
               "t": 506.14,
               "r": 547.95,
-              "b": 527.7,
+              "b": 527.72,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9155,8 +9155,8 @@
           },
           {
             "bbox": {
-              "l": 535.36,
-              "t": 518.42,
+              "l": 535.35,
+              "t": 518.58,
               "r": 548.0,
               "b": 540.38,
               "coord_origin": "TOPLEFT"
@@ -9175,8 +9175,8 @@
           },
           {
             "bbox": {
-              "l": 136.95,
-              "t": 528.87,
+              "l": 136.88,
+              "t": 528.9,
               "r": 502.87,
               "b": 540.38,
               "coord_origin": "TOPLEFT"
@@ -9195,7 +9195,7 @@
           },
           {
             "bbox": {
-              "l": 143.31,
+              "l": 143.32,
               "t": 543.09,
               "r": 502.88,
               "b": 553.76,
@@ -9235,7 +9235,7 @@
           },
           {
             "bbox": {
-              "l": 149.22,
+              "l": 149.23,
               "t": 554.28,
               "r": 502.89,
               "b": 565.33,
@@ -9255,8 +9255,8 @@
           },
           {
             "bbox": {
-              "l": 535.49,
-              "t": 554.28,
+              "l": 535.48,
+              "t": 554.29,
               "r": 547.67,
               "b": 565.0,
               "coord_origin": "TOPLEFT"
@@ -9275,10 +9275,10 @@
           },
           {
             "bbox": {
-              "l": 138.62,
-              "t": 567.14,
+              "l": 138.61,
+              "t": 567.16,
               "r": 502.82,
-              "b": 578.02,
+              "b": 578.03,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9295,10 +9295,10 @@
           },
           {
             "bbox": {
-              "l": 534.23,
-              "t": 567.37,
+              "l": 534.22,
+              "t": 567.38,
               "r": 547.69,
-              "b": 578.16,
+              "b": 578.17,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9316,7 +9316,7 @@
           {
             "bbox": {
               "l": 136.14,
-              "t": 579.35,
+              "t": 579.34,
               "r": 502.92,
               "b": 590.35,
               "coord_origin": "TOPLEFT"
@@ -9335,8 +9335,8 @@
           },
           {
             "bbox": {
-              "l": 534.17,
-              "t": 579.4,
+              "l": 534.16,
+              "t": 579.39,
               "r": 547.57,
               "b": 590.23,
               "coord_origin": "TOPLEFT"
@@ -9355,8 +9355,8 @@
           },
           {
             "bbox": {
-              "l": 138.11,
-              "t": 589.75,
+              "l": 138.18,
+              "t": 589.84,
               "r": 502.79,
               "b": 602.83,
               "coord_origin": "TOPLEFT"
@@ -9376,9 +9376,9 @@
           {
             "bbox": {
               "l": 534.64,
-              "t": 591.33,
+              "t": 591.36,
               "r": 547.33,
-              "b": 602.19,
+              "b": 602.22,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9395,8 +9395,8 @@
           },
           {
             "bbox": {
-              "l": 136.09,
-              "t": 604.93,
+              "l": 135.85,
+              "t": 605.14,
               "r": 502.86,
               "b": 627.85,
               "coord_origin": "TOPLEFT"
@@ -9415,10 +9415,10 @@
           },
           {
             "bbox": {
-              "l": 137.04,
+              "l": 137.02,
               "t": 604.8,
               "r": 502.93,
-              "b": 615.6,
+              "b": 615.59,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9436,9 +9436,9 @@
           {
             "bbox": {
               "l": 534.28,
-              "t": 603.84,
+              "t": 603.85,
               "r": 547.13,
-              "b": 614.7,
+              "b": 614.71,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9455,10 +9455,10 @@
           },
           {
             "bbox": {
-              "l": 534.39,
-              "t": 608.16,
+              "l": 534.38,
+              "t": 608.87,
               "r": 547.1,
-              "b": 619.0,
+              "b": 619.7,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9475,8 +9475,8 @@
           },
           {
             "bbox": {
-              "l": 150.54,
-              "t": 627.94,
+              "l": 150.59,
+              "t": 628.0,
               "r": 502.88,
               "b": 640.33,
               "coord_origin": "TOPLEFT"
@@ -9495,10 +9495,10 @@
           },
           {
             "bbox": {
-              "l": 533.92,
-              "t": 629.1,
+              "l": 533.91,
+              "t": 629.15,
               "r": 547.44,
-              "b": 639.73,
+              "b": 639.78,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9515,8 +9515,8 @@
           },
           {
             "bbox": {
-              "l": 147.33,
-              "t": 640.61,
+              "l": 147.49,
+              "t": 640.81,
               "r": 502.86,
               "b": 652.87,
               "coord_origin": "TOPLEFT"
@@ -9535,10 +9535,10 @@
           },
           {
             "bbox": {
-              "l": 533.54,
-              "t": 642.17,
-              "r": 547.17,
-              "b": 652.88,
+              "l": 533.52,
+              "t": 642.21,
+              "r": 547.16,
+              "b": 652.92,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9555,8 +9555,8 @@
           },
           {
             "bbox": {
-              "l": 152.05,
-              "t": 653.12,
+              "l": 152.09,
+              "t": 653.31,
               "r": 502.87,
               "b": 665.35,
               "coord_origin": "TOPLEFT"
@@ -9575,10 +9575,10 @@
           },
           {
             "bbox": {
-              "l": 533.92,
-              "t": 649.77,
-              "r": 547.13,
-              "b": 660.55,
+              "l": 533.91,
+              "t": 650.39,
+              "r": 547.12,
+              "b": 661.17,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9595,10 +9595,10 @@
           },
           {
             "bbox": {
-              "l": 152.71,
-              "t": 668.04,
+              "l": 152.65,
+              "t": 668.17,
               "r": 336.42,
-              "b": 678.64,
+              "b": 678.78,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9615,8 +9615,8 @@
           },
           {
             "bbox": {
-              "l": 152.47,
-              "t": 666.77,
+              "l": 152.45,
+              "t": 666.76,
               "r": 502.88,
               "b": 677.83,
               "coord_origin": "TOPLEFT"
@@ -9636,9 +9636,9 @@
           {
             "bbox": {
               "l": 534.15,
-              "t": 665.4,
+              "t": 665.39,
               "r": 547.01,
-              "b": 676.29,
+              "b": 676.28,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9656,7 +9656,7 @@
           {
             "bbox": {
               "l": 151.2,
-              "t": 680.53,
+              "t": 680.61,
               "r": 502.9,
               "b": 702.85,
               "coord_origin": "TOPLEFT"
@@ -9675,10 +9675,10 @@
           },
           {
             "bbox": {
-              "l": 534.07,
-              "t": 674.75,
-              "r": 547.03,
-              "b": 685.59,
+              "l": 534.03,
+              "t": 675.59,
+              "r": 546.99,
+              "b": 686.41,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9695,10 +9695,10 @@
           },
           {
             "bbox": {
-              "l": 533.35,
-              "t": 686.95,
-              "r": 547.08,
-              "b": 697.6,
+              "l": 533.34,
+              "t": 687.24,
+              "r": 547.09,
+              "b": 697.91,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9715,7 +9715,7 @@
           },
           {
             "bbox": {
-              "l": 154.91,
+              "l": 154.89,
               "t": 704.12,
               "r": 502.83,
               "b": 715.33,
@@ -9783,7 +9783,7 @@
                 "l": 534.03,
                 "t": 132.82,
                 "r": 547.01,
-                "b": 143.67,
+                "b": 143.66,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -9844,7 +9844,7 @@
           [
             {
               "bbox": {
-                "l": 135.91,
+                "l": 135.9,
                 "t": 165.74,
                 "r": 502.94,
                 "b": 176.84,
@@ -9864,7 +9864,7 @@
             },
             {
               "bbox": {
-                "l": 535.4,
+                "l": 535.38,
                 "t": 166.18,
                 "r": 546.75,
                 "b": 177.54,
@@ -9887,7 +9887,7 @@
             {
               "bbox": {
                 "l": 136.03,
-                "t": 188.86,
+                "t": 188.87,
                 "r": 502.91,
                 "b": 200.09,
                 "coord_origin": "TOPLEFT"
@@ -9906,9 +9906,9 @@
             },
             {
               "bbox": {
-                "l": 536.2,
-                "t": 188.65,
-                "r": 546.48,
+                "l": 536.19,
+                "t": 188.66,
+                "r": 546.49,
                 "b": 199.24,
                 "coord_origin": "TOPLEFT"
               },
@@ -10032,7 +10032,7 @@
             },
             {
               "bbox": {
-                "l": 534.71,
+                "l": 534.7,
                 "t": 225.96,
                 "r": 546.71,
                 "b": 236.43,
@@ -10097,7 +10097,7 @@
             {
               "bbox": {
                 "l": 133.12,
-                "t": 261.11,
+                "t": 261.1,
                 "r": 502.92,
                 "b": 271.82,
                 "coord_origin": "TOPLEFT"
@@ -10244,7 +10244,7 @@
               "bbox": {
                 "l": 533.41,
                 "t": 297.93,
-                "r": 547.38,
+                "r": 547.39,
                 "b": 308.84,
                 "coord_origin": "TOPLEFT"
               },
@@ -10267,7 +10267,7 @@
                 "l": 149.48,
                 "t": 311.28,
                 "r": 502.86,
-                "b": 321.75,
+                "b": 321.76,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10285,7 +10285,7 @@
             {
               "bbox": {
                 "l": 533.4,
-                "t": 309.96,
+                "t": 309.97,
                 "r": 547.46,
                 "b": 321.32,
                 "coord_origin": "TOPLEFT"
@@ -10306,7 +10306,7 @@
           [
             {
               "bbox": {
-                "l": 145.35,
+                "l": 145.36,
                 "t": 324.42,
                 "r": 502.89,
                 "b": 334.99,
@@ -10348,7 +10348,7 @@
           [
             {
               "bbox": {
-                "l": 136.2,
+                "l": 136.14,
                 "t": 345.91,
                 "r": 502.92,
                 "b": 356.53,
@@ -10410,7 +10410,7 @@
             },
             {
               "bbox": {
-                "l": 535.68,
+                "l": 535.67,
                 "t": 356.5,
                 "r": 547.64,
                 "b": 367.16,
@@ -10432,7 +10432,7 @@
           [
             {
               "bbox": {
-                "l": 150.83,
+                "l": 150.81,
                 "t": 369.71,
                 "r": 502.86,
                 "b": 380.84,
@@ -10477,7 +10477,7 @@
                 "l": 147.06,
                 "t": 383.04,
                 "r": 502.85,
-                "b": 393.69,
+                "b": 393.68,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10495,7 +10495,7 @@
             {
               "bbox": {
                 "l": 533.4,
-                "t": 383.13,
+                "t": 383.14,
                 "r": 547.67,
                 "b": 393.83,
                 "coord_origin": "TOPLEFT"
@@ -10516,10 +10516,10 @@
           [
             {
               "bbox": {
-                "l": 142.99,
+                "l": 142.96,
                 "t": 396.04,
                 "r": 502.9,
-                "b": 406.84,
+                "b": 406.83,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10536,7 +10536,7 @@
             },
             {
               "bbox": {
-                "l": 536.08,
+                "l": 536.07,
                 "t": 395.03,
                 "r": 547.54,
                 "b": 405.81,
@@ -10558,8 +10558,8 @@
           [
             {
               "bbox": {
-                "l": 149.73,
-                "t": 407.48,
+                "l": 149.69,
+                "t": 407.49,
                 "r": 502.89,
                 "b": 418.34,
                 "coord_origin": "TOPLEFT"
@@ -10579,9 +10579,9 @@
             {
               "bbox": {
                 "l": 535.32,
-                "t": 408.31,
+                "t": 408.33,
                 "r": 547.77,
-                "b": 419.0,
+                "b": 419.01,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10600,7 +10600,7 @@
           [
             {
               "bbox": {
-                "l": 145.28,
+                "l": 145.25,
                 "t": 419.54,
                 "r": 502.86,
                 "b": 430.82,
@@ -10620,7 +10620,7 @@
             },
             {
               "bbox": {
-                "l": 534.92,
+                "l": 534.93,
                 "t": 420.33,
                 "r": 547.85,
                 "b": 430.98,
@@ -10642,7 +10642,7 @@
           [
             {
               "bbox": {
-                "l": 146.8,
+                "l": 146.81,
                 "t": 432.22,
                 "r": 502.89,
                 "b": 443.36,
@@ -10684,9 +10684,9 @@
           [
             {
               "bbox": {
-                "l": 138.96,
+                "l": 138.95,
                 "t": 444.15,
-                "r": 501.89,
+                "r": 501.85,
                 "b": 454.93,
                 "coord_origin": "TOPLEFT"
               },
@@ -10704,8 +10704,8 @@
             },
             {
               "bbox": {
-                "l": 534.52,
-                "t": 445.72,
+                "l": 534.53,
+                "t": 445.73,
                 "r": 547.93,
                 "b": 456.46,
                 "coord_origin": "TOPLEFT"
@@ -10746,9 +10746,9 @@
             },
             {
               "bbox": {
-                "l": 535.9,
-                "t": 457.36,
-                "r": 547.91,
+                "l": 535.91,
+                "t": 457.35,
+                "r": 547.9,
                 "b": 468.03,
                 "coord_origin": "TOPLEFT"
               },
@@ -10768,7 +10768,7 @@
           [
             {
               "bbox": {
-                "l": 135.32,
+                "l": 135.33,
                 "t": 480.34,
                 "r": 502.92,
                 "b": 490.92,
@@ -10789,9 +10789,9 @@
             {
               "bbox": {
                 "l": 535.0,
-                "t": 480.16,
-                "r": 547.91,
-                "b": 490.95,
+                "t": 480.17,
+                "r": 547.9,
+                "b": 490.96,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10810,10 +10810,10 @@
           [
             {
               "bbox": {
-                "l": 135.67,
-                "t": 492.65,
+                "l": 135.66,
+                "t": 492.66,
                 "r": 502.88,
-                "b": 503.19,
+                "b": 503.2,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10830,8 +10830,8 @@
             },
             {
               "bbox": {
-                "l": 535.58,
-                "t": 492.58,
+                "l": 535.57,
+                "t": 492.59,
                 "r": 547.96,
                 "b": 503.31,
                 "coord_origin": "TOPLEFT"
@@ -10852,7 +10852,7 @@
           [
             {
               "bbox": {
-                "l": 143.73,
+                "l": 143.8,
                 "t": 506.14,
                 "r": 502.87,
                 "b": 527.84,
@@ -10872,10 +10872,10 @@
             },
             {
               "bbox": {
-                "l": 535.65,
+                "l": 535.66,
                 "t": 506.14,
                 "r": 547.95,
-                "b": 527.7,
+                "b": 527.72,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -10894,8 +10894,8 @@
           [
             {
               "bbox": {
-                "l": 136.95,
-                "t": 528.87,
+                "l": 136.88,
+                "t": 528.9,
                 "r": 502.87,
                 "b": 540.38,
                 "coord_origin": "TOPLEFT"
@@ -10914,8 +10914,8 @@
             },
             {
               "bbox": {
-                "l": 535.36,
-                "t": 518.42,
+                "l": 535.35,
+                "t": 518.58,
                 "r": 548.0,
                 "b": 540.38,
                 "coord_origin": "TOPLEFT"
@@ -10936,7 +10936,7 @@
           [
             {
               "bbox": {
-                "l": 143.31,
+                "l": 143.32,
                 "t": 543.09,
                 "r": 502.88,
                 "b": 553.76,
@@ -10978,7 +10978,7 @@
           [
             {
               "bbox": {
-                "l": 149.22,
+                "l": 149.23,
                 "t": 554.28,
                 "r": 502.89,
                 "b": 565.33,
@@ -10998,8 +10998,8 @@
             },
             {
               "bbox": {
-                "l": 535.49,
-                "t": 554.28,
+                "l": 535.48,
+                "t": 554.29,
                 "r": 547.67,
                 "b": 565.0,
                 "coord_origin": "TOPLEFT"
@@ -11020,10 +11020,10 @@
           [
             {
               "bbox": {
-                "l": 138.62,
-                "t": 567.14,
+                "l": 138.61,
+                "t": 567.16,
                 "r": 502.82,
-                "b": 578.02,
+                "b": 578.03,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11040,10 +11040,10 @@
             },
             {
               "bbox": {
-                "l": 534.23,
-                "t": 567.37,
+                "l": 534.22,
+                "t": 567.38,
                 "r": 547.69,
-                "b": 578.16,
+                "b": 578.17,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11063,7 +11063,7 @@
             {
               "bbox": {
                 "l": 136.14,
-                "t": 579.35,
+                "t": 579.34,
                 "r": 502.92,
                 "b": 590.35,
                 "coord_origin": "TOPLEFT"
@@ -11082,8 +11082,8 @@
             },
             {
               "bbox": {
-                "l": 534.17,
-                "t": 579.4,
+                "l": 534.16,
+                "t": 579.39,
                 "r": 547.57,
                 "b": 590.23,
                 "coord_origin": "TOPLEFT"
@@ -11104,8 +11104,8 @@
           [
             {
               "bbox": {
-                "l": 138.11,
-                "t": 589.75,
+                "l": 138.18,
+                "t": 589.84,
                 "r": 502.79,
                 "b": 602.83,
                 "coord_origin": "TOPLEFT"
@@ -11125,9 +11125,9 @@
             {
               "bbox": {
                 "l": 534.64,
-                "t": 591.33,
+                "t": 591.36,
                 "r": 547.33,
-                "b": 602.19,
+                "b": 602.22,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11146,10 +11146,10 @@
           [
             {
               "bbox": {
-                "l": 137.04,
+                "l": 137.02,
                 "t": 604.8,
                 "r": 502.93,
-                "b": 615.6,
+                "b": 615.59,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11167,9 +11167,9 @@
             {
               "bbox": {
                 "l": 534.28,
-                "t": 603.84,
+                "t": 603.85,
                 "r": 547.13,
-                "b": 614.7,
+                "b": 614.71,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11188,8 +11188,8 @@
           [
             {
               "bbox": {
-                "l": 136.09,
-                "t": 604.93,
+                "l": 135.85,
+                "t": 605.14,
                 "r": 502.86,
                 "b": 627.85,
                 "coord_origin": "TOPLEFT"
@@ -11208,10 +11208,10 @@
             },
             {
               "bbox": {
-                "l": 534.39,
-                "t": 608.16,
+                "l": 534.38,
+                "t": 608.87,
                 "r": 547.1,
-                "b": 619.0,
+                "b": 619.7,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11230,8 +11230,8 @@
           [
             {
               "bbox": {
-                "l": 150.54,
-                "t": 627.94,
+                "l": 150.59,
+                "t": 628.0,
                 "r": 502.88,
                 "b": 640.33,
                 "coord_origin": "TOPLEFT"
@@ -11250,10 +11250,10 @@
             },
             {
               "bbox": {
-                "l": 533.92,
-                "t": 629.1,
+                "l": 533.91,
+                "t": 629.15,
                 "r": 547.44,
-                "b": 639.73,
+                "b": 639.78,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11272,8 +11272,8 @@
           [
             {
               "bbox": {
-                "l": 147.33,
-                "t": 640.61,
+                "l": 147.49,
+                "t": 640.81,
                 "r": 502.86,
                 "b": 652.87,
                 "coord_origin": "TOPLEFT"
@@ -11292,10 +11292,10 @@
             },
             {
               "bbox": {
-                "l": 533.54,
-                "t": 642.17,
-                "r": 547.17,
-                "b": 652.88,
+                "l": 533.52,
+                "t": 642.21,
+                "r": 547.16,
+                "b": 652.92,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11314,8 +11314,8 @@
           [
             {
               "bbox": {
-                "l": 152.05,
-                "t": 653.12,
+                "l": 152.09,
+                "t": 653.31,
                 "r": 502.87,
                 "b": 665.35,
                 "coord_origin": "TOPLEFT"
@@ -11334,10 +11334,10 @@
             },
             {
               "bbox": {
-                "l": 533.92,
-                "t": 649.77,
-                "r": 547.13,
-                "b": 660.55,
+                "l": 533.91,
+                "t": 650.39,
+                "r": 547.12,
+                "b": 661.17,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11356,8 +11356,8 @@
           [
             {
               "bbox": {
-                "l": 152.47,
-                "t": 666.77,
+                "l": 152.45,
+                "t": 666.76,
                 "r": 502.88,
                 "b": 677.83,
                 "coord_origin": "TOPLEFT"
@@ -11377,9 +11377,9 @@
             {
               "bbox": {
                 "l": 534.15,
-                "t": 665.4,
+                "t": 665.39,
                 "r": 547.01,
-                "b": 676.29,
+                "b": 676.28,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11398,10 +11398,10 @@
           [
             {
               "bbox": {
-                "l": 152.71,
-                "t": 668.04,
+                "l": 152.65,
+                "t": 668.17,
                 "r": 336.42,
-                "b": 678.64,
+                "b": 678.78,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11418,10 +11418,10 @@
             },
             {
               "bbox": {
-                "l": 534.07,
-                "t": 674.75,
-                "r": 547.03,
-                "b": 685.59,
+                "l": 534.03,
+                "t": 675.59,
+                "r": 546.99,
+                "b": 686.41,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11441,7 +11441,7 @@
             {
               "bbox": {
                 "l": 151.2,
-                "t": 680.53,
+                "t": 680.61,
                 "r": 502.9,
                 "b": 702.85,
                 "coord_origin": "TOPLEFT"
@@ -11460,10 +11460,10 @@
             },
             {
               "bbox": {
-                "l": 533.35,
-                "t": 686.95,
-                "r": 547.08,
-                "b": 697.6,
+                "l": 533.34,
+                "t": 687.24,
+                "r": 547.09,
+                "b": 697.91,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11482,7 +11482,7 @@
           [
             {
               "bbox": {
-                "l": 154.91,
+                "l": 154.89,
                 "t": 704.12,
                 "r": 502.83,
                 "b": 715.33,
@@ -11544,7 +11544,7 @@
             "l": 135.24,
             "t": 502.84,
             "r": 546.71,
-            "b": 349.3,
+            "b": 349.29,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -12197,7 +12197,7 @@
           "page_no": 8,
           "bbox": {
             "l": 135.76,
-            "t": 294.21,
+            "t": 294.2,
             "r": 549.47,
             "b": 201.84,
             "coord_origin": "BOTTOMLEFT"
@@ -12461,7 +12461,7 @@
           "page_no": 9,
           "bbox": {
             "l": 63.19,
-            "t": 398.71,
+            "t": 398.72,
             "r": 548.14,
             "b": 69.63,
             "coord_origin": "BOTTOMLEFT"
@@ -14815,7 +14815,7 @@
           "page_no": 11,
           "bbox": {
             "l": 135.28,
-            "t": 688.34,
+            "t": 688.33,
             "r": 543.36,
             "b": 587.49,
             "coord_origin": "BOTTOMLEFT"

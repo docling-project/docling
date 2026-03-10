@@ -10,10 +10,10 @@
 
 Before table
 
-|  Column A                                                                                                | Column B                                                                                                                                       |
-|----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
-| Simple cell upper left                                                                                   | Simple cell with  **bold**  and  *italic*  text                                                                                                |
-| | A        | B      | C          | |----------|--------|------------| | *Cell 1* | Cell 2 | **Cell 3** | | Rich cell A nested table  | A          | B            | C      | |------------|--------------|--------| | ~~Cell 1~~ | ***Cell 2*** | Cell 3 | |
+|  Column A                  | Column B                                             |
+|----------------------------|------------------------------------------------------|
+| Simple cell upper left     | Simple cell with  **bold**  and  *italic*  text      |
+| A B C Cell 1 Cell 2 Cell 3 | Rich cell A nested table  A B C Cell 1 Cell 2 Cell 3 |
 
 After table with **bold** , underline , ~~strikethrough~~ , and *italic* formatting
 
