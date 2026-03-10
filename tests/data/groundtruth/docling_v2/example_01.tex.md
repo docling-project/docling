@@ -1,3 +1,7 @@
+# Sample Document
+
+Test Author
+
 ## Introduction
 
 This is the first paragraph of the introduction.

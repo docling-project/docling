@@ -8,6 +8,8 @@ S.Sharma et al.
 
 mode = title]Thermodynamics of charmed hadrons across chiral crossover from lattice QCD
 
+[
+
 1]Sipaz Sharma[orcid=0000-0001-6916-2233]
 sipaz.sharma@tum.de
 [1]organization=Physik Department, Technische Universitat Munchen,
@@ -16,12 +18,16 @@ sipaz.sharma@tum.de
  postcode=D-85748, 
  country=Germany
 
+[
+
 2]Frithjof Karsch
         [2]organization=Fakultat fur Physik, Universitat Bielefeld,
  	addressline=Universitätsstraße 25, 
  	city=Bielefeld,
  	postcode=D-33615, 
  	country=Germany
+
+[
 
 3]Peter Petreczky
         [3]organization=Physics Department, Brookhaven National Laboratory,

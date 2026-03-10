@@ -1,0 +1,750 @@
+% ACMCONF DOCUMENT STYLE
+%       Slight modification of Theobald version by Peter Shor, AT&T Labs.
+%       on February 27, 1997.  Vertical space between references in
+%       thebibliography has been eliminated, and footnotesize
+%       has been reset to 8pt.
+%
+% Updated 17 August 1995.
+%
+% This is a patched version of the 5 April 1993 release.  No stylistic changes
+% have been made; it should produce output identical to the 1993 release if
+% that release worked properly on your system.  A LaTeX2e patch has been added
+% for systems having problems with the section header font.  There is also a
+% macro for producing an ACM copyright notice and a box with reprint info.
+%
+% If you get an error message similar to
+%
+% ! Undefined control sequence.
+% l.165 \font\ninsfb = cmssbx10\@ptscale
+%
+% then see the comments beginning on line 173 (look for "DIAGNOSTICS").
+%-----------------------------------------------------------------------
+%	Modification of Traub/Shivers version by Kevin Theobald, McGill
+%	University.  New version has automatic copyright space, option
+%	for box around "to appear" entry, and style option to indent
+%	first paragraph after subheadings.  Released 5 April 1993.
+%
+%	To use: install in reachable directory (one contained in TEXINPUTS
+%	environment variable); use \documentstyle[<options>]{ACMconf}
+%
+%	To get Times-Roman fonts: if this option is available on your
+%	system, use \documentstyle[times,<options>]{ACMconf}
+%-----------------------------------------------------------------------
+%    adapted from ARTICLE document style by Ken Traub
+%    Hacked for [preprint] option by Olin Shivers 4/91
+% ARTICLE DOCUMENT STYLE -- Released 16 March 1988
+%    for LaTeX version 2.09
+% Copyright (C) 1988 by Leslie Lamport
+
+%%% ACMCONF is a document style for producing two-column camera-ready pages for
+%%% ACM conferences, according to ACM specifications.  The main features of
+%%% this style are:
+%%%
+%%% 1)  Two columns.
+%%% 2)  Side and top margins of 4.5pc, bottom margin of 6pc, column gutter of
+%%%     2pc, hence columns are 20pc wide and 55.5pc tall.  (6pc = 1in, approx)
+%%% 3)  First page has title information, and an extra 6pc of space at the
+%%%     bottom of the first column for the ACM copyright notice.
+%%% 4)  Text is 9pt on 10pt baselines; titles (except main) are 9pt bold.
+%%%
+%%% This document style supports a [preprint] style option that allows
+%%% you to run off a copy for a preprint -- with page numbers, "to
+%%% appear" information, and so forth. This is documented below.
+%%%
+%%% This document style also supports a [secindent] style option which
+%%% causes paragraphs following (sub)section heads to be indented like
+%%% the others.	 (Added by KBT)
+%%%
+%%% Finally, the macro \acmcopy{y} (y is year, e.g., 1995) prints the text of
+%%% an ACM copyright notice.  This is useful for making a copy of the paper on
+%%% the author's FTP site (ACM requires a copyright notice).  (Added by KBT)
+%%%
+%%% There are a few restrictions you must observe:
+%%%
+%%% 1)  You cannot change the font size; ACM wants you to use 9pt.
+%%% 3)  You must start your paper with the \maketitle command.  Prior to the
+%%%     \maketitle you must have \title and \author commands.  If you have a
+%%%     \date command it will be ignored; no date appears on the paper, since
+%%%     the proceedings will have a date on the front cover.
+%%% 4)  Marginal paragraphs, tables of contents, lists of figures and tables,
+%%%     and page headings are all forbidden.
+%%% 5)  The `figure' environment will produce a figure one column wide; if you
+%%%     want one that is two columns wide, use `figure*'.
+%%%
+%%% Page Headings:
+%%% Normally, \pagestyle commands are ignored --- pages have no headings or
+%%% numbers. ACM will number the pages for you when they are inserted into the
+%%% proceedings (you should put page numbers on the BACK of each page, in
+%%% light pencil, in case someone drops your paper on the floor).
+%%%
+%%% If the [preprint] option is present, then \pagestyle commands are obeyed,
+%%% and the default is \pagestyle{plain}.  All pages (including the first)
+%%% are numbered.  (This is useful if you want to make a reprint version
+%%% of your paper, with page numbering identical to the conference
+%%% proceedings.  In such a case, you may need to insert the command
+%%% \setcounter{page}{...} before \maketitle.) The [twoside] option is
+%%% also useful when using headers.
+%%%
+%%% Copyright Space:
+%%% This style automatically leaves 1" blank space at the bottom of page 1/
+%%% column 1.  This space can optionally be filled with some text using the
+%%% \toappear{...} command.  If used, this command must be BEFORE the 
+%%%% \maketitle
+%%% command.  If this command is defined AND [preprint] is on, then the
+%%% space is filled with the {...} text (at the bottom); otherwise, it is
+%%% blank.  If you use \toappearbox{...} instead of \toappear{...} then a
+%%% box will be drawn around the text (if [preprint] is on).
+%%%
+%%% A typical usage looks like this:
+%%%     \toappear{To appear in the Ninth AES Conference on Medievil Lithuanian
+%%%               Embalming Technique, June 1991, Alfaretta, Georgia.}
+%%% This will be included in the preprint, and left out of the conference
+%%% version.
+%%%
+%%% Acmconf defines two useful conditionals.
+%%% - \ifacmconf{true-stuff}{false-stuff}
+%%%   expands to true-stuff.
+%%% - \ifpreprint true-stuff \else else-stuff \fi
+%%%   expands to true-stuff if the [preprint] option is being used,
+%%%   otherwise it expands to else-stuff.
+%%% \ifacmconf is a latex command; \ifpreprint is a real latex conditional.
+%%%
+%%% WARNING:
+%%% Some dvi-ps converters heuristically allow chars to drift from their
+%%% true positions a few pixels. This loses noticeably with the 9pt sans-serif
+%%% bold font used for section headers. You turn this hackery off in our
+%%% dvi-ps converters with the -e option:
+%%%     dvips -e 0 foo.dvi >foo.ps
+
+\typeout{Document Style `acmconf' <22 May 89>. Hacked 4/91 by}
+\typeout{ shivers@cs.cmu.edu, 4/93 by theobald@cs.mcgill.ca}
+\typeout{Bugs to theobald@cs.mcgill.ca}
+
+\def\acmcopy#1{Copyright \copyright {#1} by the Association for Computing
+Machinery, Inc. Permission to make digital or hard copies of part or all of
+this work for personal or classroom use is granted without fee provided that
+copies are not made or distributed for profit or commercial advantage
+and that copies bear this notice and the full citation on the first page.
+Copyrights for components of this work owned by others than ACM must be
+honored. Abstracting with credit is permitted. To copy otherwise, to
+republish, to post on servers, or to redistribute to lists, requires prior
+specific permission and/or a fee.}
+
+\newif\if@acmconf\@acmconftrue
+\long\def\ifacmconf#1#2{\if@acmconf#1\else#2\fi}
+
+\newif\ifpreprint
+\def\ds@preprint{\preprinttrue}
+\def\ds@twoside{\@twosidetrue \@mparswitchtrue}
+\def\ds@secindent{\def\@afterindentfalse{\@afterindenttrue}}
+
+%
+% The following macro added 8/17/95 by KBT.  Use to make box above title with
+% name of proceedings and/or copyright notice.  This box is created only if
+% [preprint] is on.  Use: \coverbox{vert. pos.}{horiz. pos.}{box width}{text}
+% Creates box with officially zero dimension, so does not affect layout.
+%
+\def\coverbox#1#2#3#4{\ifpreprint{\makebox[0pt][l]{\raisebox{#1}[0pt][0pt]{\hsp
+ace*{#2}\fbox{\parbox{#3}{#4}}}}}\else{}\fi}
+
+\@namedef{ds@10pt}{\@latexerr{The `10pt' option is not allowed in the `acmconf'
+  document style.}\@eha}
+\@namedef{ds@11pt}{\@latexerr{The `11pt' option is not allowed in the `acmconf'
+  document style.}\@eha}
+\@namedef{ds@12pt}{\@latexerr{The `12pt' option is not allowed in the `acmconf'
+  document style.}\@eha}
+
+\@options
+
+\lineskip 1pt		% \lineskip is 1pt for all font sizes.
+\normallineskip 1pt
+\def\baselinestretch{1}
+
+\def\@normalsize{\@setsize\normalsize{10pt}\ixpt\@ixpt
+\abovedisplayskip 9pt plus2pt minus4.5pt%
+\belowdisplayskip \abovedisplayskip
+\abovedisplayshortskip  \z@ plus3pt%
+\belowdisplayshortskip  5.4pt plus3pt minus3pt%
+\let\@listi\@listI}	% Setting of \@listi added 9 Jun 87
+
+\def\small{\@setsize\small{9pt}\viiipt\@viiipt
+\abovedisplayskip 7.6pt plus 3pt minus 4pt%
+\belowdisplayskip \abovedisplayskip
+\abovedisplayshortskip \z@ plus2pt%
+\belowdisplayshortskip 3.6pt plus2pt minus 2pt
+\def\@listi{\leftmargin\leftmargini %% Added 22 Dec 87
+\topsep 4pt plus 2pt minus 2pt\parsep 2pt plus 1pt minus 1pt
+\itemsep \parsep}}
+
+\def\footnotesize{\@setsize\footnotesize{9pt}\viiipt\@viiipt
+\abovedisplayskip 7.6pt plus 3pt minus 4pt%
+\belowdisplayskip \abovedisplayskip
+\abovedisplayshortskip \z@ plus2pt%
+\belowdisplayshortskip 3.6pt plus2pt minus 2pt
+\def\@listi{\leftmargin\leftmargini %% Added 22 Dec 87
+\topsep 4pt plus 2pt minus 2pt\parsep 2pt plus 1pt minus 1pt
+\itemsep \parsep}}
+
+\def\scriptsize{\@setsize\scriptsize{8pt}\viipt\@viipt}
+\def\tiny{\@setsize\tiny{6pt}\vpt\@vpt}
+\def\large{\@setsize\large{13.6pt}\xipt\@xipt}
+\def\Large{\@setsize\Large{16pt}\xiipt\@xiipt}
+\def\LARGE{\@setsize\LARGE{18pt}\xivpt\@xivpt}
+\def\huge{\@setsize\huge{22pt}\xviipt\@xviipt}
+\def\Huge{\@setsize\Huge{25pt}\xxpt\@xxpt}
+
+%%% Patch for LaTeX-2e (LaTeX 2.09 compatibility mode)
+%%% The line \font\ninsfb = cmssbx10\@ptscale9 is replaced by
+\expandafter\ifx\csname fontseries\endcsname\relax
+  \font\ninsfb = cmssbx10\@ptscale9
+ \else
+  \def\ninsfb{\fontfamily{cmss}\fontseries{bx}\fontshape{n}
+  \fontsize{9}{\f@baselineskip}\selectfont}
+\fi
+%%% End patch for LaTeX-2e
+\def\@acmtitlestyle{\normalsize\ninsfb}
+%%%
+%%% DIAGNOSTICS:
+%%% The ten lines above (the patch and the \def\@acmtitlestyle command) will
+%%% cause problems if your printer doesn't have the 9pt. bold sans-serif font.
+%%% If this is a problem, try commenting out those lines and uncommenting one
+%%% of the following alternatives.  (It is best to try them in order until
+%%% finding one that works; the earlier alternatives cause less change.)
+%%%
+%%% ALTERNATIVE 1: (works if your system has the same font in 10pt.)
+%%% \font\tensfb = cmssbx10
+%%% \def\@acmtitlestyle{\normalsize\tensfb}
+%%% ALTERNATIVE 2:
+%%% \def\@acmtitlestyle{\normalsize\ninbf}
+%%% ALTERNATIVE 3:
+%%% \def\@acmtitlestyle{\normalsize\tenbf}
+
+\normalsize  % Choose the normalsize font.
+
+\oddsidemargin 4.5pc
+\evensidemargin 4.5pc
+\advance\oddsidemargin by -1in	% Correct for LaTeX gratuitousness
+\advance\evensidemargin by -1in % Correct for LaTeX gratuitousness
+\marginparwidth 0pt		% Margin pars are not allowed.
+\marginparsep 11pt		% Horizontal space between outer margin and
+				% marginal note
+
+				% Top of page:
+\topmargin 4.5pc		% Nominal distance from top of page to top of
+				% box containing running head.
+\advance\topmargin by -1in	% Correct for LaTeX gratuitousness
+\headheight 0pt			% Height of box containing running head.
+\headsep 0pt			% Space between running head and text.
+				% Bottom of page:
+\footskip 30pt			% Distance from baseline of box containing foot
+				% to baseline of last line of text.
+\footheight 12pt		% Height of box containing running foot.
+
+%% Must redefine the top margin so there's room for headers and
+%% page numbers if you are using the preprint option. Footers
+%% are OK as is. Olin.
+\advance\topmargin by -37pt	% Leave 37pt above text for headers
+\headheight 12pt		% Height of box containing running head.
+\headsep 25pt			% Space between running head and text.
+
+\textheight 666pt	% 9 1/4 column height
+\textwidth 42pc		% Width of text line.
+			% For two-column mode:
+\columnsep 2pc		%    Space between columns
+\columnseprule 0pt	%    Width of rule between columns.
+\hfuzz 1pt		% Allow some variation in column width, otherwise it's
+			% too hard to typeset in narrow columns.
+
+\footnotesep 5.6pt 	% Height of strut placed at the beginning of every
+			% footnote = height of normal \footnotesize strut,
+			% so no extra space between footnotes.
+
+\skip\footins 8.1pt plus 4pt minus 2pt	% Space between last line of text and
+    					% top of first footnote.
+\floatsep 11pt plus 2pt minus 2pt	% Space between adjacent floats moved
+					% to top or bottom of text page.
+\textfloatsep 18pt plus 2pt minus 4pt	% Space between main text and floats
+					% at top or bottom of page.
+\intextsep 11pt plus 2pt minus 2pt	% Space between in-text figures and
+					% text.
+\@maxsep 18pt				% The maximum of \floatsep,
+					% \textfloatsep and \intextsep (minus
+					% the stretch and shrink).
+\dblfloatsep 11pt plus 2pt minus 2pt	% Same as \floatsep for double-column
+					% figures in two-column mode.
+\dbltextfloatsep 18pt plus 2pt minus 4pt% \textfloatsep for double-column
+					% floats.
+\@dblmaxsep 18pt			% The maximum of \dblfloatsep and
+					% \dbltexfloatsep.
+\@fptop 0pt plus 1fil	 % Stretch at top of float page/column. (Must be
+			 % 0pt plus ...)
+\@fpsep 8pt plus 2fil	 % Space between floats on float page/column.
+\@fpbot 0pt plus 1fil	 % Stretch at bottom of float page/column. (Must be
+			 % 0pt plus ... )
+\@dblfptop 0pt plus 1fil % Stretch at top of float page. (Must be 0pt plus ...)
+\@dblfpsep 8pt plus 2fil % Space between floats on float page.
+\@dblfpbot 0pt plus 1fil % Stretch at bottom of float page. (Must be
+			 % 0pt plus ... )
+\marginparpush 5pt	 % Minimum vertical separation between two marginal
+			 % notes.
+
+\parskip 0pt plus 1pt		 % Extra vertical space between paragraphs.
+\parindent 13.5pt		 % Width of paragraph indentation.
+%\topsep 8pt plus 2pt minus 4pt	 % Extra vertical space, in addition to
+				 % \parskip, added above and below list and
+				 % paragraphing environments.
+\partopsep 2pt plus 1pt minus 1pt% Extra vertical space, in addition to
+				 % \parskip and \topsep, added when user
+				 % leaves blank line before environment.
+%\itemsep 4pt plus 2pt minus 1pt % Extra vertical space, in addition to
+				 % \parskip, added between list items.
+% See \@listI for values of \topsep and \itemsep
+
+\@lowpenalty   51	% Produced by \nopagebreak[1] or \nolinebreak[1]
+\@medpenalty  151	% Produced by \nopagebreak[2] or \nolinebreak[2]
+\@highpenalty 301	% Produced by \nopagebreak[3] or \nolinebreak[3]
+
+\@beginparpenalty -\@lowpenalty	% Before a list or paragraph environment.
+\@endparpenalty   -\@lowpenalty	% After a list or paragraph environment.
+\@itempenalty     -\@lowpenalty	% Between list items.
+
+% \clubpenalty		% 'Club line'  at bottom of page.
+% \widowpenalty		% 'Widow line' at top of page.
+% \displaywidowpenalty	% Math display widow line.
+% \predisplaypenalty	% Breaking before a math display.
+% \postdisplaypenalty	% Breaking after a math display.
+% \interlinepenalty	% Breaking at a line within a paragraph.
+% \brokenpenalty	% Breaking after a hyphenated line.
+
+\def\part{\par		% New paragraph
+   \addvspace{4ex}	% Adds vertical space above title.
+   \@afterindentfalse	% Suppresses indent in first paragraph.  Change
+   \secdef\@part\@spart}% to \@afterindenttrue to have indent.
+
+\def\@part[#1]#2{\ifnum \c@secnumdepth >\m@ne	% IF secnumdepth > -1
+        \refstepcounter{part}			%  THEN step part counter
+        \addcontentsline{toc}{part}{\thepart	%       add toc line
+        \hspace{1em}#1}\else			%  ELSE add unnumbered line
+      \addcontentsline{toc}{part}{#1}\fi	% FI
+   { \parindent 0pt \raggedright
+    \ifnum \c@secnumdepth >\m@ne% IF secnumdepth > -1
+      \Large \bf Part \thepart	%   THEN Print 'Part' and
+      \par \nobreak		%          number in \Large boldface.
+    \fi				% FI
+    \huge \bf			% Select \huge boldface.
+    #2\markboth{}{}\par }	% Print title and set heading marks null.
+    \nobreak			% TeX penalty to prevent page break.
+    \vskip 3ex			% Space between title and text.
+   \@afterheading		% Routine called after part and
+    }				%     section heading.
+
+\def\@spart#1{{\parindent 0pt \raggedright
+    \huge \bf
+    #1\par}			% Title.
+    \nobreak			% TeX penalty to prevent page break.
+    \vskip 3ex			% Space between title and text.
+    \@afterheading		% Routine called after part and
+  }				%     section heading.
+
+\def\section{\@startsection {section}{1}{\z@}{-3.5ex plus -1ex minus
+    -.2ex}{2.3ex plus .2ex}{\@acmtitlestyle}}
+\def\subsection{\@startsection{subsection}{2}{\z@}{-3.25ex plus -1ex minus
+   -.2ex}{1.5ex plus .2ex}{\@acmtitlestyle}}
+\def\subsubsection{\@startsection{subsubsection}{3}{\z@}{-3.25ex plus
+-1ex minus -.2ex}{1.5ex plus .2ex}{\@acmtitlestyle}}
+\def\paragraph{\@startsection
+     {paragraph}{4}{\z@}{3.25ex plus 1ex minus .2ex}{-1em}{\@acmtitlestyle}}
+\def\subparagraph{\@startsection
+     {subparagraph}{4}{\parindent}{3.25ex plus 1ex minus
+     .2ex}{-1em}{\@acmtitlestyle}}
+
+\setcounter{secnumdepth}{3}
+
+\def\appendix{\par
+  \setcounter{section}{0}
+  \setcounter{subsection}{0}
+  \def\thesection{\Alph{section}}}
+
+\leftmargini 22.5pt
+\leftmarginii 19.8pt	% > \labelsep + width of '(m)'
+\leftmarginiii 16.8pt	% > \labelsep + width of 'vii.'
+\leftmarginiv 15.3pt	% > \labelsep + width of 'M.'
+\leftmarginv 9pt
+\leftmarginvi 9pt
+
+\leftmargin\leftmargini
+\labelsep 4.5pt
+\labelwidth\leftmargini\advance\labelwidth-\labelsep
+% \parsep 4pt plus 2pt minus 1pt (Removed 9 Jun 87)
+
+% \@listI defines top level and \@listi values of
+% \leftmargin, \topsep, \parsep, and \itemsep
+% (Added 9 Jun 87)
+\def\@listI{\leftmargin\leftmargini \parsep 3.6pt plus 2pt minus 1pt%
+\topsep 7.2pt plus 2pt minus 4pt%
+\itemsep 3.6pt plus 2pt minus 1pt}
+
+\let\@listi\@listI
+\@listi
+
+\def\@listii{\leftmargin\leftmarginii
+   \labelwidth\leftmarginii\advance\labelwidth-\labelsep
+   \topsep 3.6pt plus 2pt minus 1pt
+   \parsep 1.8pt plus 0.9pt minus 0.9pt
+   \itemsep \parsep}
+
+\def\@listiii{\leftmargin\leftmarginiii
+    \labelwidth\leftmarginiii\advance\labelwidth-\labelsep
+    \topsep 1.8pt plus 0.9pt minus 0.9pt
+    \parsep \z@ \partopsep 1pt plus 0pt minus 1pt
+    \itemsep \topsep}
+
+\def\@listiv{\leftmargin\leftmarginiv
+     \labelwidth\leftmarginiv\advance\labelwidth-\labelsep}
+
+\def\@listv{\leftmargin\leftmarginv
+     \labelwidth\leftmarginv\advance\labelwidth-\labelsep}
+
+\def\@listvi{\leftmargin\leftmarginvi
+     \labelwidth\leftmarginvi\advance\labelwidth-\labelsep}
+
+\def\labelenumi{\theenumi.}
+\def\theenumi{\arabic{enumi}}
+
+\def\labelenumii{(\theenumii)}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+
+\def\labelenumiii{\theenumiii.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+
+\def\labelenumiv{\theenumiv.}
+\def\theenumiv{\Alph{enumiv}}
+\def\p@enumiv{\p@enumiii\theenumiii}
+
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+
+\def\verse{\let\\=\@centercr
+  \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent
+          \rightmargin\leftmargin\advance\leftmargin 1.5em}\item[]}
+\let\endverse\endlist
+
+\def\quotation{\list{}{\listparindent 1.5em
+    \itemindent\listparindent
+    \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+
+\def\quote{\list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{\list{}{\labelwidth\z@ \itemindent-\leftmargin
+       \let\makelabel\descriptionlabel}}
+
+\let\enddescription\endlist
+
+%\newdimen\descriptionmargin
+%\descriptionmargin=3em
+
+\def\theequation{\arabic{equation}}
+
+% \jot = 3pt	% Extra space added between lines of an eqnarray environment
+
+% The macro \@eqnnum defines how equation numbers are to appear in equations.
+%
+% \def\@eqnnum{(\theequation)}
+%
+
+% Changed pagenum to 1, so margins work right in twoside option.
+% It's not clear to me that this environment is useful for acmconf.sty
+% anyway. -Olin
+\def\titlepage{\@restonecolfalse\if@twocolumn\@restonecoltrue\onecolumn
+     \else \newpage \fi \thispagestyle{empty}\c@page\@ne}
+
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi \c@page\@ne}
+
+\arraycolsep 4.5pt	% Half the space between columns in an array environment.
+\tabcolsep 5.4pt	% Half the space between columns in a tabular environment.
+\arrayrulewidth .4pt	% Width of rules in array and tabular environment.
+\doublerulesep 1.8pt	% Space between adjacent rules in array or tabular env.
+
+\tabbingsep \labelsep	% Space used by the \' command.  (See LaTeX manual.)
+
+\skip\@mpfootins = \skip\footins
+
+\fboxsep = 2.7pt	% Space left between box and text by \fbox and \framebox.
+\fboxrule = .4pt	% Width of rules in box made by \fbox and \framebox.
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+
+\def\thepart{\Roman{part}} % Roman numeral part numbers.
+\def\thesection       {\arabic{section}}
+\def\thesubsection    {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph     {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph  {\theparagraph.\arabic{subparagraph}}
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+
+\def\tableofcontents{\@latexerr{\tableofcontents: Tables of contents are not
+  allowed in the `acmconf' document style.}\@eha}
+
+\def\l@part#1#2{\addpenalty{\@secpenalty}
+   \addvspace{2.25em plus 1pt}  % space above part line
+   \begingroup
+   \@tempdima 3em	% width of box holding part number, used by
+     \parindent \z@ \rightskip \@pnumwidth	%% \numberline
+     \parfillskip -\@pnumwidth
+     {\large \bf	% set line in \large boldface
+     \leavevmode	% TeX command to enter horizontal mode.
+     #1\hfil \hbox to\@pnumwidth{\hss #2}}\par
+     \nobreak		% Never break after part entry
+   \endgroup}
+
+\def\l@section#1#2{\addpenalty{\@secpenalty} % good place for page break
+   \addvspace{1.0em plus 1pt}	% space above toc entry
+   \@tempdima 1.5em		% width of box holding section number
+   \begingroup
+     \parindent \z@ \rightskip \@pnumwidth
+     \parfillskip -\@pnumwidth
+     \bf			% Boldface.
+     \leavevmode		% TeX command to enter horizontal mode.
+      \advance\leftskip\@tempdima %% added 5 Feb 88 to conform to
+      \hskip -\leftskip		  %% 25 Jan 88 change to \numberline
+     #1\nobreak\hfil \nobreak\hbox to\@pnumwidth{\hss #2}\par
+   \endgroup}
+
+
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+
+\def\listoffigures{\@latexerr{\listoffigures: Lists of figures are not
+  allowed in the `acmconf' document style.}\@eha}
+
+\def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+
+\def\listoftables{\@latexerr{\listoftables: Lists of tables are not
+  allowed in the `acmconf' document style.}\@eha}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{\section*{References\@mkboth
+  {REFERENCES}{REFERENCES}}\list
+  {[\arabic{enumi}]}{\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+    \advance\leftmargin\labelsep
+    \itemsep \z@ plus 2pt       % Eliminates vertical space in references.
+    \parsep \z@                 % Lines added by Peter Shor
+    \usecounter{enumi}}
+    \def\newblock{\hskip .11em plus .33em minus .07em}
+    \sloppy\clubpenalty4000\widowpenalty4000
+    \sfcode`\.=1000\relax}
+
+\let\endthebibliography=\endlist
+
+% \def\@biblabel#1{[#1]\hfill}	% Produces the label for a \bibitem[...]
+				% command.
+% \def\@cite#1{[#1]}		% Produces the output of the \cite command.
+
+\newif\if@restonecol
+
+\def\theindex{\@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+\columnseprule \z@
+\columnsep 35pt\twocolumn[\section*{Index}]
+    \@mkboth{INDEX}{INDEX}\thispagestyle{empty}\parindent\z@
+    \parskip\z@ plus .3pt\relax\let\item\@idxitem}
+
+\def\@idxitem{\par\hangindent 40pt}
+
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+\def\footnoterule{\kern-3\p@
+  \hrule width .4\columnwidth
+  \kern 2.6\p@}			% The \hrule has default height of .4pt .
+
+\long\def\@makefntext#1{\parindent 1em\noindent
+            \hbox to 1.8em{\hss$^{\@thefnmark}$}#1}
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+
+\long\def\@makecaption#1#2{
+   \vskip 10pt
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize	% IF longer than one line:
+       #1: #2\par		%   THEN set as ordinary paragraph.
+     \else			%   ELSE  center.
+       \hbox to\hsize{\hfil\box\@tempboxa\hfil}
+   \fi}
+
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+\def\maketitle{\par
+ \begingroup
+   \def\thefootnote{\fnsymbol{footnote}}
+   \def\@makefnmark{\hbox
+       to 0pt{$^{\@thefnmark}$\hss}}
+   \if@twocolumn
+     \twocolumn[\@maketitle]
+     \else \newpage
+     \global\@topnum\z@		% Prevents figures from going at top of page.
+%     \@maketitle \fi\thispagestyle{empty}\@thanks
+     \@maketitle \fi\@thanks
+ \endgroup
+ \setcounter{footnote}{0}
+ \let\maketitle\relax
+ \let\@maketitle\relax
+ \gdef\@thanks{}\gdef\@author{}\gdef\@title{}\let\thanks\relax
+ \@copyrightspace}
+
+\newbox\@acmtitlebox
+\def\@maketitle{\newpage
+ \null
+ \setbox\@acmtitlebox\vbox{%
+   \vskip 2em			% Vertical space above title.
+   \begin{center}
+    {\LARGE \@title \par}	% Title set in \LARGE size.
+    \vskip 1.5em		% Vertical space after title.
+    {\large			% each author set in \large, in a
+     \lineskip .5em		% tabular environment
+     \begin{tabular}[t]{c}\@author
+     \end{tabular}\par}
+    \vskip 1.5em		% Vertical space after author.
+   \end{center}}
+ \dimen0=\ht\@acmtitlebox
+ \advance\dimen0 by -14.5pc\relax % Increased space for title box -- KBT
+ \unvbox\@acmtitlebox
+ \ifdim\dimen0<0.0pt\relax\vskip-\dimen0\fi}
+
+\def\abstract{\if@twocolumn
+\section*{Abstract}
+\else \small
+\begin{center}
+{\bf Abstract\vspace{-.5em}\vspace{0pt}}
+\end{center}
+\quotation
+\fi}
+
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+%%% This section (written by KBT) handles the 1" box in the lower left
+%%% corner of the left column of the first page by creating a picture,
+%%% and inserting the predefined string at the bottom (with a negative
+%%% displacement to offset the space allocated for a non-existent
+%%% caption).
+%%%
+\def\ftype@copyrightbox{8}
+\def\@copyrightspace{
+\@float{copyrightbox}[b]
+\begin{center}
+\setlength{\unitlength}{1pc}
+\begin{picture}(20,2.8)
+\ifpreprint \put(0,-0.95){\@toappear} \else \fi
+\end{picture}
+\end{center}
+\end@float}
+
+\def\@toappear{} % Default setting blank - commands below change this.
+\def\toappear#1{\def\@toappear{\parbox[b]{20pc}{#1}}}
+\def\toappearbox#1{\def\@toappear{\raisebox{5pt}{\framebox[20pc]{\parbox[b]{19p
+c}{#1}}}}}
+
+\def\marginpar{\@latexerr{The \marginpar command is not allowed in the
+  `acmconf' document style.}\@eha}
+
+\mark{{}{}}	% Initializes TeX's marks
+
+%% Headings are ignored unless the [preprint] option is in force.
+\ifpreprint
+  \if@twoside
+      \def\ps@headings{
+	  \def\@oddfoot{}
+	  \def\@evenfoot{}
+	  \def\@evenhead{\rm\thepage\hfil \sl \leftmark}
+	  \def\@oddhead{\hbox{}\sl \rightmark \hfil\rm\thepage}
+	  \def\sectionmark##1{\markboth {\uppercase{\ifnum\c@secnumdepth>\z@
+			      \thesection \hskip 1em\relax \fi ##1}}{}}
+	  \def\subsectionmark##1
+	      {\markright {\ifnum \c@secnumdepth >\@ne \thesubsection
+	       	    \hskip 1em\relax \fi ##1}}}
+
+  \else
+      \def\ps@headings{
+	  \def\@oddfoot{}
+	  \def\@evenfoot{}
+	  \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+	  \def\sectionmark##1{\markright{\uppercase{\ifnum \c@secnumdepth >\z@
+					 \thesection\hskip 1em\relax \fi ##1}}}}
+  \fi
+
+  \def\ps@myheadings{\def\@oddhead{\hbox{}\sl\rightmark \hfil\rm\thepage}%
+		     \def \@evenhead{\rm \thepage\hfil\sl\leftmark\hbox{}}%
+		     \def\@oddfoot{}%
+		     \def\@evenfoot{}%
+		     \def\sectionmark##1{}%
+		     \def\subsectionmark##1{}}
+
+\else % preprint off -- all \pagestyle commands ==> \pagestyle{empty}.
+  \let\ps@plain\ps@empty
+  \let\ps@headings\ps@empty
+  \let\ps@myheadings\ps@empty
+\fi
+
+\def\today{\ifcase\month\or
+  January\or February\or March\or April\or May\or June\or
+  July\or August\or September\or October\or November\or December\fi
+  \space\number\day, \number\year}
+
+\ps@plain
+\pagenumbering{arabic}	% Arabic page numbers
+\twocolumn		% Double column.
+\raggedbottom		% Ragged bottom

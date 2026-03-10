@@ -27,15 +27,15 @@
 <text><loc_229><loc_238><loc_409><loc_268>With combined experiences and direct access to development groups, we're the experts in IBM DB2® for i. The DB2 for i Center of Excellence (CoE) can help you achieve-perhaps reexamine and exceed-your business requirements and gain more confidence and satisfaction in IBM product data management products and solutions.</text>
 <section_header_level_1><loc_229><loc_276><loc_355><loc_281>Who we are, some of what we do</section_header_level_1>
 <text><loc_229><loc_284><loc_355><loc_288>Global CoE engagements cover topics including:</text>
-<unordered_list><list_item><loc_229><loc_296><loc_328><loc_301>rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Database performance and scalability</list_item>
-<list_item><loc_229><loc_303><loc_347><loc_307>rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Advanced SQL knowledge and skills transfer</list_item>
-<list_item><loc_229><loc_309><loc_320><loc_314>rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Business intelligence and analytics</list_item>
-<list_item><loc_229><loc_315><loc_278><loc_320>rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> DB2 Web Query</list_item>
-<list_item><loc_229><loc_322><loc_412><loc_327>rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Query/400 modernization for better reporting and analysis capabilities</list_item>
-<list_item><loc_229><loc_328><loc_346><loc_333>rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Database modernization and re-engineering</list_item>
-<list_item><loc_229><loc_335><loc_327><loc_339>rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Data-centric architecture and design</list_item>
-<list_item><loc_229><loc_341><loc_381><loc_346>rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Extremely large database and overcoming limits to growth</list_item>
-<list_item><loc_229><loc_348><loc_312><loc_352>rGLYPH<c=1,font=/NKDKKL+JansonTextLTStd-Roman> ISV education and enablement</list_item>
+<unordered_list><list_item><loc_229><loc_296><loc_328><loc_301>r Database performance and scalability</list_item>
+<list_item><loc_229><loc_303><loc_347><loc_307>r Advanced SQL knowledge and skills transfer</list_item>
+<list_item><loc_229><loc_309><loc_320><loc_314>r Business intelligence and analytics</list_item>
+<list_item><loc_229><loc_315><loc_278><loc_320>r DB2 Web Query</list_item>
+<list_item><loc_229><loc_322><loc_412><loc_327>r Query/400 modernization for better reporting and analysis capabilities</list_item>
+<list_item><loc_229><loc_328><loc_346><loc_333>r Database modernization and re-engineering</list_item>
+<list_item><loc_229><loc_335><loc_327><loc_339>r Data-centric architecture and design</list_item>
+<list_item><loc_229><loc_341><loc_381><loc_346>r Extremely large database and overcoming limits to growth</list_item>
+<list_item><loc_229><loc_348><loc_312><loc_352>r ISV education and enablement</list_item>
 </unordered_list>
 <page_break>
 <section_header_level_1><loc_53><loc_47><loc_124><loc_61>Preface</section_header_level_1>

@@ -154,7 +154,8 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
 
                 # Use process_images for the actual inference
                 if images:  # Only if we have valid images
-                    predictions = list(self.process_images(images, user_prompts))
+                    with TimeRecorder(conv_res, "vlm_inference"):
+                        predictions = list(self.process_images(images, user_prompts))
 
                     # Attach results to pages
                     for page, prediction in zip(pages_with_images, predictions):

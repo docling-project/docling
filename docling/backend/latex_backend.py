@@ -1,6 +1,6 @@
 import logging
 import re
-from copy import deepcopy
+import threading
 from io import BytesIO
 from pathlib import Path
 from typing import Callable, List, Optional, Union
@@ -47,6 +47,8 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         self.latex_text = ""
         self.labels: dict[str, bool] = {}
         self._custom_macros: dict[str, str] = {}
+        # Track included files to detect cycles
+        self._input_stack: set[str] = set()
 
         if isinstance(self.path_or_stream, BytesIO):
             raw_bytes = self.path_or_stream.getvalue()
@@ -77,7 +79,13 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                     break
 
     def is_valid(self) -> bool:
-        return bool(self.latex_text.strip())
+        """Check if this looks like valid LaTeX content.
+        Permits standalone snippets and partial documents.
+        """
+        text = self.latex_text.strip()
+        if not text:
+            return False
+        return True
 
     @classmethod
     def supports_pagination(cls) -> bool:
@@ -89,7 +97,6 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
     def _preprocess_custom_macros(self, latex_text: str) -> str:
         """Pre-process LaTeX to expand common problematic macros before parsing"""
-        # Common equation shortcuts that cause parsing issues
         latex_text = re.sub(r"\\be\b", r"\\begin{equation}", latex_text)
         latex_text = re.sub(r"\\ee\b", r"\\end{equation}", latex_text)
         latex_text = re.sub(r"\\bea\b", r"\\begin{eqnarray}", latex_text)
@@ -99,8 +106,10 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
         return latex_text
 
-    def convert(self) -> DoclingDocument:
-        doc = DoclingDocument(name=self.file.stem)
+    def _do_parse_and_process(self, doc: DoclingDocument) -> DoclingDocument:
+        """Parse and process LaTeX nodes into *doc*. May block for a long time on
+        pathological legacy documents; call via :meth:`convert` to enforce a
+        wall-clock timeout."""
 
         # Pre-process: expand common custom equation macros
         preprocessed_text = self._preprocess_custom_macros(self.latex_text)
@@ -119,6 +128,10 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             # This must happen before finding the document environment
             self._extract_custom_macros(nodes)
 
+            # Second pass: Extract preamble metadata (\title, \author, \date)
+            # These appear before \begin{document}, so must be gathered separately
+            self._extract_preamble_metadata(nodes, doc)
+
             doc_node = self._find_document_env(nodes)
 
             if doc_node:
@@ -131,13 +144,57 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
         return doc
 
+    def convert(self) -> DoclingDocument:
+        doc = DoclingDocument(name=self.file.stem)
+        timeout: Optional[float] = getattr(self.options, "parse_timeout", None)
+
+        if timeout is None:
+            return self._do_parse_and_process(doc)
+
+        result_container: list[DoclingDocument] = []
+        error_container: list[Exception] = []
+
+        def _worker_fn():
+            try:
+                res = self._do_parse_and_process(doc)
+                result_container.append(res)
+            except Exception as e:
+                error_container.append(e)
+
+        thread = threading.Thread(target=_worker_fn, daemon=True)
+        thread.start()
+        thread.join(timeout=timeout)
+
+        if thread.is_alive():
+            _log.warning(
+                f"LaTeX parsing timed out after {timeout}s for "
+                f"'{self.file.name}'. "
+                "Returning partial document with raw text fallback."
+            )
+            fallback = DoclingDocument(name=self.file.stem)
+            fallback.add_text(label=DocItemLabel.TEXT, text=self.latex_text)
+            return fallback
+
+        if error_container:
+            _log.error(f"Error during LaTeX parsing: {error_container[0]}")
+            return doc
+
+        if result_container:
+            return result_container[0]
+
+        return doc
+
     def _extract_custom_macros(self, nodes, depth: int = 0):
         """Extract custom macro definitions from the document"""
-        if nodes is None or depth > 5:
+        if nodes is None or depth > 10:
             return
 
         for node in nodes:
-            if isinstance(node, LatexMacroNode) and node.macroname == "newcommand":
+            if isinstance(node, LatexMacroNode) and node.macroname in [
+                "newcommand",
+                "renewcommand",
+                "providecommand",
+            ]:
                 if node.nodeargd and node.nodeargd.argnlist:
                     argnlist = node.nodeargd.argnlist
 
@@ -165,12 +222,16 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                             macro_name = macro_name[1:]
 
                         # Extract definition as raw LaTeX (for use in math expansion)
+                        macro_def = ""
                         if hasattr(def_arg, "nodelist"):
                             # Get raw LaTeX content for proper math expansion
                             macro_def = def_arg.latex_verbatim()
                             # Only strip outermost braces if they wrap the entire content
                             if macro_def.startswith("{") and macro_def.endswith("}"):
                                 macro_def = macro_def[1:-1]
+                        else:
+                            # Fallback: use verbatim representation
+                            macro_def = def_arg.latex_verbatim().strip("{} ")
 
                         if macro_name:  # Only register if we got a valid name
                             self._custom_macros[macro_name] = macro_def
@@ -188,9 +249,48 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                         if hasattr(arg, "nodelist") and arg.nodelist:
                             self._extract_custom_macros(arg.nodelist, depth + 1)
 
+    def _extract_preamble_metadata(self, nodes, doc: DoclingDocument, depth: int = 0):
+        """Extract \\title, \\author, \\date from the preamble (before \\begin{document}).
+
+        These macros typically appear outside the document environment,
+        so _process_macro (which runs inside \\begin{document}) would never see them.
+        Follows pandoc's approach: walk the top-level AST and stop at the document env.
+        """
+        if nodes is None or depth > 10:
+            return
+
+        for node in nodes:
+            # Stop when we reach \begin{document} — everything after is body
+            if isinstance(node, LatexEnvironmentNode) and node.envname == "document":
+                return
+
+            if isinstance(node, LatexMacroNode) and node.macroname in [
+                "title",
+                "author",
+                "date",
+            ]:
+                text = self._extract_macro_arg(node)
+                if text:
+                    if node.macroname == "title":
+                        doc.add_text(label=DocItemLabel.TITLE, text=text)
+                    else:
+                        doc.add_text(label=DocItemLabel.TEXT, text=text)
+
+            # Recurse into nested structures (e.g. groups in preamble)
+            if hasattr(node, "nodelist") and node.nodelist:
+                self._extract_preamble_metadata(node.nodelist, doc, depth + 1)
+            if hasattr(node, "nodeargd") and node.nodeargd:
+                argnlist = getattr(node.nodeargd, "argnlist", None)
+                if argnlist:
+                    for arg in argnlist:
+                        if hasattr(arg, "nodelist") and arg.nodelist:
+                            self._extract_preamble_metadata(
+                                arg.nodelist, doc, depth + 1
+                            )
+
     def _find_document_env(self, nodes, depth: int = 0):
         """Recursively search for document environment"""
-        if nodes is None or depth > 5:
+        if nodes is None or depth > 10:
             return None
         for node in nodes:
             if isinstance(node, LatexEnvironmentNode) and node.envname == "document":
@@ -222,18 +322,14 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         text = node.chars
 
         if "\n\n" in text:
-            # Split by paragraph breaks, keeping any content before first break
             parts = text.split("\n\n")
 
-            # First part goes into current buffer (e.g., "." before a paragraph break)
             first_part = parts[0].strip()
             if first_part:
                 text_buffer.append(first_part)
 
-            # Flush buffer (now includes content before the break)
             flush_fn()
 
-            # Remaining parts are separate paragraphs
             for part in parts[1:]:
                 part_stripped = part.strip()
                 if part_stripped:
@@ -258,12 +354,11 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
     ):
         if node.macroname in ["%", "$", "&", "#", "_", "{", "}", "~"]:
             if node.macroname == "~":
-                text_buffer.append(" ")  # Non-breaking space
+                text_buffer.append(" ")
             else:
                 text_buffer.append(node.macroname)
         elif node.macroname == " ":
             text_buffer.append(" ")
-        # Handle inline formatting macros - keep in buffer
         elif node.macroname in [
             "textbf",
             "textit",
@@ -485,6 +580,8 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             "section",
             "subsection",
             "subsubsection",
+            "paragraph",
+            "subparagraph",
         ]:
             title = self._extract_macro_arg(node)
             if title:
@@ -496,10 +593,14 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             if title:
                 doc.add_text(parent=parent, label=DocItemLabel.TITLE, text=title)
 
-        elif node.macroname == "author":
-            pass
+        elif node.macroname in ["author", "date"]:
+            # Metadata already extracted in _extract_preamble_metadata.
+            # If encountered inside \begin{document}, extract inline.
+            meta_text = self._extract_macro_arg(node)
+            if meta_text:
+                doc.add_text(parent=parent, label=DocItemLabel.TEXT, text=meta_text)
 
-        elif node.macroname in ["date", "thanks", "maketitle"]:
+        elif node.macroname in ["thanks", "maketitle"]:
             pass
 
         elif node.macroname in ["textsc", "textsf", "textrm", "textnormal", "mbox"]:
@@ -625,6 +726,28 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             "NeedsTeXFormat",
             "ProvidesClass",
             "DeclareRobustCommand",
+            "newtheorem",
+            "theoremstyle",
+            "newtheoremstyle",
+            "documentstyle",  # for LaTeX 2.09
+            "pagestyle",
+            "thispagestyle",
+            "pagenumbering",
+            "tableofcontents",
+            "listoffigures",
+            "listoftables",
+            "appendix",
+            "cleardoublepage",
+            "clearpage",
+            "newpage",
+            "markboth",
+            "markright",
+            "lhead",
+            "rhead",
+            "cfoot",
+            "hyphenation",
+            "overfullrule",
+            "protect",
         ]:
             pass
 
@@ -634,7 +757,15 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 input_path = self.path_or_stream.parent / filepath
                 if not input_path.suffix:
                     input_path = input_path.with_suffix(".tex")
-                if input_path.exists():
+                resolved = str(input_path.resolve())
+                if resolved in self._input_stack:
+                    _log.warning(f"Circular \\input detected: {filepath}")
+                elif len(self._input_stack) >= 10:
+                    _log.warning(
+                        f"\\input depth limit (10) reached, skipping: {filepath}"
+                    )
+                elif input_path.exists():
+                    self._input_stack.add(resolved)
                     try:
                         content = input_path.read_text(encoding="utf-8")
                         sub_walker = LatexWalker(content, tolerant_parsing=True)
@@ -645,6 +776,8 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                         _log.debug(f"Loaded input file: {input_path}")
                     except Exception as e:
                         _log.debug(f"Failed to load input file {filepath}: {e}")
+                    finally:
+                        self._input_stack.discard(resolved)
 
         elif node.macroname in ["&", "%", "$", "#", "_", "{", "}"]:
             # Escaped symbols: \& -> &
@@ -686,17 +819,56 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 pass
 
         elif node.macroname == "href":
-            # \href{url}{text}
+            # preserving the url and the display text
             if node.nodeargd and len(node.nodeargd.argnlist) >= 2:
-                # url_arg = node.nodeargd.argnlist[0]
+                url_arg = node.nodeargd.argnlist[0]
                 text_arg = node.nodeargd.argnlist[1]
 
-                if hasattr(text_arg, "nodelist"):
-                    self._process_nodes(
-                        text_arg.nodelist, doc, parent, formatting, text_label
+                url_text = ""
+                if url_arg is not None:
+                    if hasattr(url_arg, "nodelist"):
+                        url_text = self._nodes_to_text(url_arg.nodelist)
+                    else:
+                        url_text = url_arg.latex_verbatim().strip("{} ")
+
+                display_text = ""
+                if text_arg is not None:
+                    if hasattr(text_arg, "nodelist"):
+                        display_text = self._nodes_to_text(text_arg.nodelist)
+                    else:
+                        display_text = text_arg.latex_verbatim().strip("{} ")
+
+                if url_text and display_text:
+                    link_text = f"[{display_text}]({url_text})"
+                elif url_text:
+                    link_text = url_text
+                elif display_text:
+                    link_text = display_text
+                else:
+                    link_text = ""
+
+                if link_text:
+                    doc.add_text(
+                        parent=parent,
+                        label=DocItemLabel.REFERENCE,
+                        text=link_text,
+                        formatting=formatting,
                     )
 
-        elif node.macroname in ["newline", "hfill", "break", "centering"]:
+        elif node.macroname in [
+            "newline",
+            "hfill",
+            "break",
+            "centering",
+            "noindent",
+            "par",
+            "smallskip",
+            "medskip",
+            "bigskip",
+            "vfill",
+            "vskip",
+            "hskip",
+        ]:
             if node.macroname == "newline":
                 doc.add_text(
                     parent=parent,
@@ -787,6 +959,9 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             "alignat",
             "displaymath",
             "eqnarray",
+            "dmath",
+            "dgroup",
+            "darray",
         ]:
             math_text = self._clean_math(node.latex_verbatim(), node.envname)
             doc.add_text(parent=parent, label=DocItemLabel.FORMULA, text=math_text)
@@ -794,6 +969,50 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         elif node.envname == "math":
             math_text = self._clean_math(node.latex_verbatim(), node.envname)
             doc.add_text(parent=parent, label=DocItemLabel.FORMULA, text=math_text)
+
+        elif node.envname == "subequations":
+            # Wrapper environment — process children (which contain the real equations)
+            self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
+
+        elif node.envname.replace("*", "") in [
+            "theorem",
+            "lemma",
+            "corollary",
+            "proposition",
+            "definition",
+            "remark",
+            "example",
+            "conjecture",
+        ]:
+            # Theorem-like environments (pandoc pattern): bold label + body
+            env_title = node.envname.replace("*", "").capitalize()
+            doc.add_text(
+                parent=parent,
+                label=DocItemLabel.TEXT,
+                text=f"**{env_title}.**",
+            )
+            self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
+
+        elif node.envname == "proof":
+            # Proof environment: italic label + body + QED symbol
+            doc.add_text(
+                parent=parent,
+                label=DocItemLabel.TEXT,
+                text="*Proof.*",
+            )
+            self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
+            # Only add QED if the proof body doesn't already contain one
+            body_latex = node.latex_verbatim() if node else ""
+            if "\\qed" not in body_latex and "\\qedsymbol" not in body_latex:
+                doc.add_text(
+                    parent=parent,
+                    label=DocItemLabel.TEXT,
+                    text="\u25fb",  # QED symbol ◻
+                )
+
+        elif node.envname in ["quote", "quotation", "verse"]:
+            # Block quote environments
+            self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
 
         elif node.envname in ["itemize", "enumerate", "description"]:
             self._process_list(node, doc, parent, formatting, text_label)
@@ -961,7 +1180,6 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             "vphantom",
             "noalign",
         ]:
-            # Ignore formatting commands - don't add to cell content
             pass
 
         elif n.macroname == "&":  # Cell break (if parsed as macro)
@@ -1120,7 +1338,9 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
     def _extract_verbatim_content(self, latex_str: str, env_name: str) -> str:
         """Extract content from verbatim environments"""
 
-        pattern = rf"\\begin\{{{env_name}\}}.*?(.*?)\\end\{{{env_name}\}}"
+        # Match optional args (e.g. \begin{lstlisting}[language=Python])
+        # then capture everything until \end{env}
+        pattern = rf"\\begin\{{{re.escape(env_name)}\}}(?:\[.*?\])?(.*?)\\end\{{{re.escape(env_name)}\}}"
         match = re.search(pattern, latex_str, re.DOTALL)
         if match:
             return match.group(1).strip()
@@ -1354,6 +1574,8 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             "math",
             "eqnarray",
             "eqnarray*",
+            "dmath",
+            "dmath*",
         ]
 
         if env_name in envs_to_strip:
@@ -1389,5 +1611,6 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             "subsection": 2,
             "subsubsection": 3,
             "paragraph": 4,
+            "subparagraph": 5,
         }
         return levels.get(macroname, 1)

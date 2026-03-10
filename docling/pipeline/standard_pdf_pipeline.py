@@ -316,7 +316,20 @@ class ThreadedPipelineStage:
                     continue
 
                 pages: List[Page] = [payload for _, payload in pages_with_payloads]
+                if _log.isEnabledFor(logging.DEBUG):
+                    _t_start = time.time()
+                    _t_mono = time.monotonic()
                 processed_pages = list(self.model(good[0].conv_res, pages))  # type: ignore[arg-type]
+                if _log.isEnabledFor(logging.DEBUG):
+                    _log.debug(
+                        "PIPELINE_PROFILING Stage %s: run_id=%d pages=%s start=%.3f end=%.3f duration=%.3fs",
+                        self.name,
+                        rid,
+                        [it.page_no for it in good],
+                        _t_start,
+                        time.time(),
+                        time.monotonic() - _t_mono,
+                    )
                 if len(processed_pages) != len(pages):  # strict mismatch guard
                     raise RuntimeError(
                         f"Model {self.name} returned wrong number of pages"
@@ -392,6 +405,9 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
                 result.extend(items)
                 continue
             try:
+                if _log.isEnabledFor(logging.DEBUG):
+                    _t_start = time.time()
+                    _t_mono = time.monotonic()
                 pages_with_payloads: list[tuple[ThreadedItem, Page]] = []
                 for it in good:
                     page = it.payload
@@ -412,6 +428,15 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
                 processed_pages = list(
                     self.model(good[0].conv_res, pages)  # type: ignore[arg-type]
                 )
+                if _log.isEnabledFor(logging.DEBUG):
+                    _log.debug(
+                        "PIPELINE_PROFILING Stage preprocess: run_id=%d pages=%s start=%.3f end=%.3f duration=%.3fs",
+                        rid,
+                        [it.page_no for it in good],
+                        _t_start,
+                        time.time(),
+                        time.monotonic() - _t_mono,
+                    )
                 if len(processed_pages) != len(pages):
                     raise RuntimeError(
                         "PagePreprocessingModel returned unexpected number of pages"

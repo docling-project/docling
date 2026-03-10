@@ -1,15 +1,12 @@
 import datetime
-import importlib
 import logging
-import platform
 import re
-import sys
 import tempfile
 import time
 import warnings
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Annotated, Dict, List, Optional, Type
+from typing import Annotated, Type
 
 import rich.table
 import typer
@@ -26,11 +23,9 @@ from rich.console import Console
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
-from docling.backend.latex_backend import LatexDocumentBackend
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
-from docling.datamodel import vlm_model_specs
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
     WHISPER_BASE,
@@ -66,7 +61,6 @@ from docling.datamodel.pipeline_options import (
     ConvertPipelineOptions,
     OcrAutoOptions,
     OcrOptions,
-    PaginatedPipelineOptions,
     PdfBackend,
     PdfPipelineOptions,
     PipelineOptions,
@@ -86,7 +80,6 @@ from docling.datamodel.progress_event import (
     ProgressEventType,
 )
 from docling.datamodel.settings import settings
-from docling.datamodel.vlm_model_specs import VlmModelType
 from docling.document_converter import (
     AudioFormatOption,
     DocumentConverter,
@@ -225,6 +218,7 @@ def export_documents(
     export_md: bool,
     export_txt: bool,
     export_doctags: bool,
+    export_vtt: bool,
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
@@ -311,6 +305,12 @@ def export_documents(
                 _log.info(f"writing Doc Tags output to {fname}")
                 conv_res.document.save_as_doctags(filename=fname)
 
+            # Export WebVTT format:
+            if export_vtt:
+                fname = output_dir / f"{doc_filename}.vtt"
+                _log.info(f"writing WebVTT output to {fname}")
+                conv_res.document.save_as_vtt(filename=fname)
+
             # Print profiling timings
             if print_timings:
                 table = rich.table.Table(title=f"Profiling Summary, {doc_filename}")
@@ -370,7 +370,7 @@ def export_documents(
     )
 
 
-def _split_list(raw: Optional[str]) -> Optional[List[str]]:
+def _split_list(raw: str | None) -> list[str] | None:
     if raw is None:
         return None
     return re.split(r"[;,]", raw)
@@ -379,19 +379,19 @@ def _split_list(raw: Optional[str]) -> Optional[List[str]]:
 @app.command(no_args_is_help=True)
 def convert(  # noqa: C901
     input_sources: Annotated[
-        List[str],
+        list[str],
         typer.Argument(
             ...,
             metavar="source",
             help="PDF files to convert. Can be local file / directory paths or URL.",
         ),
     ],
-    from_formats: List[InputFormat] = typer.Option(
+    from_formats: list[InputFormat] = typer.Option(
         None,
         "--from",
         help="Specify input formats to convert from. Defaults to all formats.",
     ),
-    to_formats: List[OutputFormat] = typer.Option(
+    to_formats: list[OutputFormat] = typer.Option(
         None, "--to", help="Specify output formats. Defaults to Markdown."
     ),
     show_layout: Annotated[
@@ -460,14 +460,14 @@ def convert(  # noqa: C901
         ),
     ] = OcrAutoOptions.kind,
     ocr_lang: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             ...,
             help="Provide a comma-separated list of languages used by the OCR engine. Note that each OCR engine has different values for the language names.",
         ),
     ] = None,
     psm: Annotated[
-        Optional[int],
+        int | None,
         typer.Option(
             ...,
             help="Page Segmentation Mode for the OCR engine (0-13).",
@@ -477,7 +477,7 @@ def convert(  # noqa: C901
         PdfBackend, typer.Option(..., help="The PDF backend to use.")
     ] = PdfBackend.DOCLING_PARSE,
     pdf_password: Annotated[
-        Optional[str], typer.Option(..., help="Password for protected PDF documents")
+        str | None, typer.Option(..., help="Password for protected PDF documents")
     ] = None,
     table_mode: Annotated[
         TableFormerMode,
@@ -510,7 +510,7 @@ def convert(  # noqa: C901
         ),
     ] = False,
     artifacts_path: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option(..., help="If provided, the location of the model artifacts."),
     ] = None,
     enable_remote_services: Annotated[
@@ -573,7 +573,7 @@ def convert(  # noqa: C901
         typer.Option(..., help="Enable debug output which visualizes the table cells"),
     ] = False,
     version: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--version",
             callback=version_callback,
@@ -582,7 +582,7 @@ def convert(  # noqa: C901
         ),
     ] = None,
     document_timeout: Annotated[
-        Optional[float],
+        float | None,
         typer.Option(
             ...,
             help="The timeout for processing each document, in seconds.",
@@ -593,7 +593,7 @@ def convert(  # noqa: C901
         AcceleratorDevice, typer.Option(..., help="Accelerator device")
     ] = AcceleratorDevice.AUTO,
     docling_logo: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--logo", callback=logo_callback, is_eager=True, help="Docling logo"
         ),
@@ -645,16 +645,16 @@ def convert(  # noqa: C901
     if from_formats is None:
         from_formats = list(InputFormat)
 
-    parsed_headers: Optional[Dict[str, str]] = None
+    parsed_headers: dict[str, str] | None = None
     if headers is not None:
-        headers_t = TypeAdapter(Dict[str, str])
+        headers_t = TypeAdapter(dict[str, str])
         parsed_headers = headers_t.validate_json(headers)
 
     if profiling or save_profiling:
         settings.debug.profile_pipeline_timings = True
 
     with tempfile.TemporaryDirectory() as tempdir:
-        input_doc_paths: List[Path] = []
+        input_doc_paths: list[Path] = []
         for src in input_sources:
             try:
                 # check if we can fetch some remote url
@@ -714,6 +714,7 @@ def convert(  # noqa: C901
         export_md = OutputFormat.MARKDOWN in to_formats
         export_txt = OutputFormat.TEXT in to_formats
         export_doctags = OutputFormat.DOCTAGS in to_formats
+        export_vtt = OutputFormat.VTT in to_formats
 
         ocr_factory = get_ocr_factory(allow_external_plugins=allow_external_plugins)
         ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
@@ -734,8 +735,8 @@ def convert(  # noqa: C901
         # pipeline_options: PaginatedPipelineOptions
         pipeline_options: PipelineOptions
 
-        format_options: Dict[InputFormat, FormatOption] = {}
-        pdf_backend_options: Optional[PdfBackendOptions] = PdfBackendOptions(
+        format_options: dict[InputFormat, FormatOption] = {}
+        pdf_backend_options: PdfBackendOptions | None = PdfBackendOptions(
             password=pdf_password
         )
 
@@ -981,6 +982,7 @@ def convert(  # noqa: C901
             export_md=export_md,
             export_txt=export_txt,
             export_doctags=export_doctags,
+            export_vtt=export_vtt,
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,

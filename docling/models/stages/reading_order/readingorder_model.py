@@ -101,7 +101,19 @@ class ReadingOrderModel:
             elif c_label == DocItemLabel.SECTION_HEADER:
                 doc.add_heading(parent=doc_item, text=c_text, prov=c_prov)
             else:
-                doc.add_text(parent=doc_item, label=c_label, text=c_text, prov=c_prov)
+                content_layer = ContentLayer.BODY
+                if c_label in (
+                    DocItemLabel.PAGE_HEADER,
+                    DocItemLabel.PAGE_FOOTER,
+                ):
+                    content_layer = ContentLayer.FURNITURE
+                doc.add_text(
+                    parent=doc_item,
+                    label=c_label,
+                    text=c_text,
+                    prov=c_prov,
+                    content_layer=content_layer,
+                )
 
     def _create_rich_cell_group(
         self, element: BasePageElement, doc: DoclingDocument, table_item: NodeItem

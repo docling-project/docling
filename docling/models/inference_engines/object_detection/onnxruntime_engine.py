@@ -117,6 +117,9 @@ class OnnxRuntimeObjectDetectionEngine(HfObjectDetectionEngineBase):
         # Create ONNX session
         sess_options = ort.SessionOptions()
         sess_options.intra_op_num_threads = self._accelerator_options.num_threads
+        sess_options.graph_optimization_level = ort.GraphOptimizationLevel(
+            self.options.graph_optimization_level
+        )
         providers = self._resolve_providers()
 
         self._session = ort.InferenceSession(

@@ -4,9 +4,11 @@ from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, Final, Optional, Union
+from urllib.parse import urlparse
 
 from docling_core.types.doc import (
     ContentLayer,
+    DocItem,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -633,7 +635,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for c in paragraph.iter_inner_content():
             if isinstance(c, Hyperlink):
                 text = c.text
-                hyperlink = Path(c.address) if c.address else None
+                if c.address:
+                    hyperlink = (
+                        AnyUrl(c.address)
+                        if urlparse(c.address).scheme
+                        else Path(c.address)
+                    )
+                else:
+                    hyperlink = None
                 format = (
                     self._get_format_from_run(c.runs[0])
                     if c.runs and len(c.runs) > 0
@@ -1268,8 +1277,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         level = self._get_level()
         prev_indent = self._prev_indent()
-        if self._prev_numid() is None or (
-            self._prev_numid() == numid and self.level_at_new_list is None
+        if (
+            self._prev_numid() is None
+            or self._prev_numid() != numid
+            or (self._prev_numid() == numid and self.level_at_new_list is None)
         ):  # Open new list
             self.level_at_new_list = level
 
@@ -1801,7 +1812,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if targets:
                 group_ref = FineRef(cref=comment_group.self_ref)
                 for target in targets:
-                    target.comments.append(group_ref)
+                    # Only DocItem has a 'comments' field; GroupItem does not,
+                    # so skip non-DocItem targets (fixes #2955).
+                    if isinstance(target, DocItem):
+                        target.comments.append(group_ref)
 
             _log.debug(
                 f"Added comment {comment_id} in group with {len(targets)} linked item(s)"

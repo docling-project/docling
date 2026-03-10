@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>InlineGroup in table cell</title></head>
+<body>
+<p>Intro paragraph.</p>
+<table>
+  <thead>
+    <tr><th>Name</th><th>Links</th></tr>
+  </thead>
+  <tbody>
+    <!-- Cell with a paragraph containing multiple hyperlinks → forces _use_inline_group -->
+    <tr>
+      <td>Multi-link cell</td>
+      <td><p>See <a href="https://example.com/a">Page A</a> and <a href="https://example.com/b">Page B</a> for details.</p></td>
+    </tr>
+    <!-- Plain text cell -->
+    <tr>
+      <td>Plain cell</td>
+      <td>Just text</td>
+    </tr>
+    <!-- Cell with bold+italic text -->
+    <tr>
+      <td>Formatted cell</td>
+      <td><strong>Bold</strong> and <em>italic</em> text</td>
+    </tr>
+    <!-- Inline <code> element → exercises annotated_text.code in _flush_buffer (lines 673-674) -->
+    <tr>
+      <td>Inline code cell</td>
+      <td><code>inline_fn()</code></td>
+    </tr>
+    <!-- <p> with only a <code> element → single item, so inline_ref=None
+         → exercises annotated_text.code in _handle_block p-handler (lines 1227-1228) -->
+    <tr>
+      <td>Block code cell</td>
+      <td><p><code>do_thing()</code></p></td>
+    </tr>
+    <!-- <pre> with hyperlink → makes inline_ref non-None in _handle_block pre-handler (line 1279) -->
+    <tr>
+      <td>Pre with link</td>
+      <td><pre>See <a href="https://example.com/docs">the docs</a> first</pre></td>
+    </tr>
+  </tbody>
+</table>
+<p>Outro paragraph.</p>
+</body>
+</html>
