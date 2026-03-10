@@ -25,7 +25,11 @@ from docling.datamodel.pipeline_options_asr_model import (
     InlineAsrMlxWhisperOptions,
     InlineAsrWhisperS2TOptions,
 )
-from docling.pipeline.asr_pipeline import AsrPipeline, _MlxWhisperModel, _WhisperS2TModel
+from docling.pipeline.asr_pipeline import (
+    AsrPipeline,
+    _MlxWhisperModel,
+    _WhisperS2TModel,
+)
 
 
 class TestMlxWhisperIntegration:
@@ -951,4 +955,3 @@ class TestWhisperS2TPipelineIntegration:
             pipeline = AsrPipeline(pipeline_options)
             assert isinstance(pipeline._model, _WhisperS2TModel)
             assert pipeline._model.model_identifier == "tiny"
-
