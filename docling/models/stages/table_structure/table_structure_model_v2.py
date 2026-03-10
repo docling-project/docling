@@ -6,7 +6,7 @@ from typing import Optional
 
 import numpy
 import torch
-import torchvision.transforms as T
+import torchvision.transforms as T  # type: ignore[import-untyped]
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
 from docling_core.types.doc.page import (
     BoundingRectangle,

@@ -31,7 +31,6 @@ from docling.models.stages.table_structure.table_structure_model import (
 from docling.models.stages.table_structure.table_structure_model_v2 import (
     TableStructureModelV2,
 )
-
 from docling.models.utils.hf_model_download import download_hf_model
 
 _log = logging.getLogger(__name__)

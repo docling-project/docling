@@ -30,6 +30,7 @@ app = typer.Typer(
 class _AvailableModels(str, Enum):
     LAYOUT = "layout"
     TABLEFORMER = "tableformer"
+    TABLEFORMERV2 = "tableformerv2"
     CODE_FORMULA = "code_formula"
     PICTURE_CLASSIFIER = "picture_classifier"
     SMOLVLM = "smolvlm"
@@ -109,6 +110,7 @@ def download(
         progress=(not quiet),
         with_layout=_AvailableModels.LAYOUT in to_download,
         with_tableformer=_AvailableModels.TABLEFORMER in to_download,
+        with_tableformer_v2=_AvailableModels.TABLEFORMERV2 in to_download,
         with_code_formula=_AvailableModels.CODE_FORMULA in to_download,
         with_picture_classifier=_AvailableModels.PICTURE_CLASSIFIER in to_download,
         with_smolvlm=_AvailableModels.SMOLVLM in to_download,
