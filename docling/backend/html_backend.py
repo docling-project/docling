@@ -333,11 +333,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if len(clean_headers):
             header = clean_headers[0]
         # Set starting content layer
-        self.content_layer = (
-            ContentLayer.BODY
-            if (not self.options.infer_furniture) or (header is None)
-            else ContentLayer.FURNITURE
-        )
+        if self.options.default_content_layer is not None:
+            self.content_layer = self.options.default_content_layer
+        elif (not self.options.infer_furniture) or (header is None):
+            self.content_layer = ContentLayer.BODY
+        else:
+            self.content_layer = ContentLayer.FURNITURE
         # reset context
         self.ctx = _Context()
         self._walk(content, doc)
