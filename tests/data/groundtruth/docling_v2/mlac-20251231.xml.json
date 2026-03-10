@@ -490,9 +490,6 @@
         "$ref": "#/tables/13"
       },
       {
-        "$ref": "#/groups/41"
-      },
-      {
         "$ref": "#/tables/14"
       },
       {
@@ -512,9 +509,6 @@
       },
       {
         "$ref": "#/tables/17"
-      },
-      {
-        "$ref": "#/groups/44"
       },
       {
         "$ref": "#/tables/18"
@@ -1284,10 +1278,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/231"
-        },
-        {
-          "$ref": "#/texts/232"
+          "$ref": "#/groups/41"
         }
       ],
       "content_layer": "body",
@@ -1297,9 +1288,16 @@
     {
       "self_ref": "#/groups/41",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/40"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/231"
+        },
+        {
+          "$ref": "#/texts/232"
+        }
+      ],
       "content_layer": "body",
       "name": "group",
       "label": "inline"
@@ -1328,10 +1326,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/238"
-        },
-        {
-          "$ref": "#/texts/239"
+          "$ref": "#/groups/44"
         }
       ],
       "content_layer": "body",
@@ -1341,9 +1336,16 @@
     {
       "self_ref": "#/groups/44",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/43"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/238"
+        },
+        {
+          "$ref": "#/texts/239"
+        }
+      ],
       "content_layer": "body",
       "name": "group",
       "label": "inline"
@@ -4447,7 +4449,7 @@
     {
       "self_ref": "#/texts/231",
       "parent": {
-        "$ref": "#/groups/40"
+        "$ref": "#/groups/41"
       },
       "children": [],
       "content_layer": "body",
@@ -4459,7 +4461,7 @@
     {
       "self_ref": "#/texts/232",
       "parent": {
-        "$ref": "#/groups/40"
+        "$ref": "#/groups/41"
       },
       "children": [],
       "content_layer": "body",
@@ -4552,7 +4554,7 @@
     {
       "self_ref": "#/texts/238",
       "parent": {
-        "$ref": "#/groups/43"
+        "$ref": "#/groups/44"
       },
       "children": [],
       "content_layer": "body",
@@ -4564,7 +4566,7 @@
     {
       "self_ref": "#/texts/239",
       "parent": {
-        "$ref": "#/groups/43"
+        "$ref": "#/groups/44"
       },
       "children": [],
       "content_layer": "body",

@@ -12,10 +12,10 @@ $$\nabla \times \mathbf{E} = -\frac{\partial \mathbf{B}}{\partial t}$$
 
 ## Table Example
 
-| Name   | Age   | City    |
+| Name   |   Age | City    |
 |--------|-------|---------|
-| Alice  | 25    | Boston  |
-| Bob    | 30    | Seattle |
+| Alice  |    25 | Boston  |
+| Bob    |    30 | Seattle |
 |        |       |         |
 
 Sample table

@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "name": "webvtt_example_01",
   "origin": {
     "mimetype": "text/vtt",
@@ -171,6 +171,7 @@
       "children": [],
       "content_layer": "body",
       "label": "text",
+      "prov": [],
       "source": [
         {
           "kind": "track",
