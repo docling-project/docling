@@ -231,7 +231,7 @@ fn materialize_images(
             index_map.insert(i, existing_idx);
             log::info!("  Skipping duplicate image {} (same as image {})", i, existing_idx);
             // Clear the URI to mark as duplicate
-            img.uri = format!("{}_images/image_{}.jpg", doc.name, existing_idx);
+            img.uri = format!("{}_images/image_{:02}.jpg", doc.name, existing_idx);
             continue;
         }
 
@@ -245,7 +245,7 @@ fn materialize_images(
                     fs::create_dir_all(&images_dir)?;
                     created_dir = true;
                 }
-                let filename = format!("image_{}.jpg", kept_count);
+                let filename = format!("image_{:02}.jpg", kept_count);
                 let file_path = images_dir.join(&filename);
                 fs::write(&file_path, &bytes)?;
                 img.uri = format!("{}_images/{}", doc.name, filename);
@@ -313,7 +313,7 @@ fn materialize_images(
             quality = quality.saturating_sub(JPEG_QUALITY_STEP);
         }
 
-        let filename = format!("image_{}.jpg", kept_count);
+        let filename = format!("image_{:02}.jpg", kept_count);
         let file_path = images_dir.join(&filename);
         
         fs::write(&file_path, &jpeg_bytes)?;
