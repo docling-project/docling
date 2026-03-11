@@ -1322,7 +1322,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 self.parents[i] = list_gr1
                 elem_ref.append(list_gr1.get_ref())
 
-            # TODO: Set marker and enumerated arguments if this is an enumeration element.
+            # Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
                 counter = self._get_list_counter(numid, ilevel)
                 enum_marker = str(counter) + "."
@@ -1345,7 +1345,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 if k > self.level_at_new_list + ilevel:
                     self.parents[k] = None
 
-            # TODO: Set marker and enumerated arguments if this is an enumeration element.
+            # Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
                 counter = self._get_list_counter(numid, ilevel)
                 enum_marker = str(counter) + "."

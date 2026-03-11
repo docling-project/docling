@@ -263,7 +263,27 @@ def verify_docitems(
                 f"[{pdf_filename}] Page provenance mistmatch"
             )
 
-            # TODO: add bbox check with tolerance
+            if true_prov.bbox is not None and pred_prov.bbox is not None:
+                tol = 10**-COORD_PREC  # 0.01, matches serialization precision
+                assert true_prov.bbox.coord_origin == pred_prov.bbox.coord_origin, (
+                    f"[{pdf_filename}] BBox coord_origin mismatch"
+                )
+                assert abs(true_prov.bbox.l - pred_prov.bbox.l) <= tol, (
+                    f"[{pdf_filename}] BBox left mismatch:"
+                    f" {true_prov.bbox.l} vs {pred_prov.bbox.l}"
+                )
+                assert abs(true_prov.bbox.t - pred_prov.bbox.t) <= tol, (
+                    f"[{pdf_filename}] BBox top mismatch:"
+                    f" {true_prov.bbox.t} vs {pred_prov.bbox.t}"
+                )
+                assert abs(true_prov.bbox.r - pred_prov.bbox.r) <= tol, (
+                    f"[{pdf_filename}] BBox right mismatch:"
+                    f" {true_prov.bbox.r} vs {pred_prov.bbox.r}"
+                )
+                assert abs(true_prov.bbox.b - pred_prov.bbox.b) <= tol, (
+                    f"[{pdf_filename}] BBox bottom mismatch:"
+                    f" {true_prov.bbox.b} vs {pred_prov.bbox.b}"
+                )
 
         # Validate source
         assert bool(true_item.source) == bool(pred_item.source), (
