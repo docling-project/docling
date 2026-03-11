@@ -263,7 +263,7 @@ class TableStructureModel(BaseTableStructureModel):
                                 element["bbox"]
                             ).scaled(1 / self.scale)
                             text_piece = page._backend.get_text_in_rect(the_bbox)
-                            element["bbox"]["token"] = text_piece
+                            element["text"] = text_piece
 
                         tc = TableCell.model_validate(element)
                         if tc.bbox is not None:
