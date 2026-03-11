@@ -11,7 +11,6 @@ import numpy as np
 
 try:
     import grpc  # type: ignore[import-untyped]
-
     from tritonclient.grpc import (  # type: ignore[import-untyped, import-not-found]
         service_pb2,
         service_pb2_grpc,
