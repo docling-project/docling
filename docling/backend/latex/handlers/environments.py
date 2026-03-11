@@ -55,9 +55,9 @@ class EnvironmentHandlerMixin:
         self,
         node: LatexEnvironmentNode,
         doc: DoclingDocument,
-        parent: Optional[NodeItem] = None,
-        formatting: Optional[Formatting] = None,
-        text_label: Optional[DocItemLabel] = None,
+        parent: NodeItem | None = None,
+        formatting: Formatting | None = None,
+        text_label: DocItemLabel | None = None,
     ):
         if node.envname == "document":
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
@@ -138,9 +138,9 @@ class EnvironmentHandlerMixin:
         self,
         node: LatexEnvironmentNode,
         doc: DoclingDocument,
-        parent: Optional[NodeItem] = None,
-        formatting: Optional[Formatting] = None,
-        text_label: Optional[DocItemLabel] = None,
+        parent: NodeItem | None = None,
+        formatting: Formatting | None = None,
+        text_label: DocItemLabel | None = None,
     ):
         figure_group = doc.add_group(
             parent=parent, name="figure", label=GroupLabel.SECTION
@@ -151,9 +151,9 @@ class EnvironmentHandlerMixin:
         self,
         node: LatexEnvironmentNode,
         doc: DoclingDocument,
-        parent: Optional[NodeItem] = None,
-        formatting: Optional[Formatting] = None,
-        text_label: Optional[DocItemLabel] = None,
+        parent: NodeItem | None = None,
+        formatting: Formatting | None = None,
+        text_label: DocItemLabel | None = None,
     ):
         list_group = doc.add_group(parent=parent, name="list", label=GroupLabel.LIST)
 
@@ -188,8 +188,8 @@ class EnvironmentHandlerMixin:
         self,
         node: LatexEnvironmentNode,
         doc: DoclingDocument,
-        parent: Optional[NodeItem] = None,
-        formatting: Optional[Formatting] = None,
+        parent: NodeItem | None = None,
+        formatting: Formatting | None = None,
     ):
         bib_group = doc.add_group(
             parent=parent, name="bibliography", label=GroupLabel.LIST

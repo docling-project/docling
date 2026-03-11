@@ -12,6 +12,6 @@ from docling_core.types.doc.document import (
 @dataclass
 class ParseContext:
     doc: DoclingDocument
-    parent: Optional[NodeItem] = None
-    formatting: Optional[Formatting] = None
-    text_label: Optional[DocItemLabel] = None
+    parent: NodeItem | None = None
+    formatting: Formatting | None = None
+    text_label: DocItemLabel | None = None

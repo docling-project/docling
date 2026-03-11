@@ -19,7 +19,7 @@ class MathHandlerMixin:
         self,
         node: LatexMathNode,
         doc: DoclingDocument,
-        parent: Optional[NodeItem],
+        parent: NodeItem | None,
         text_buffer: List[str],
         flush_fn: Callable[[], None],
     ):

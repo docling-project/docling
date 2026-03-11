@@ -77,7 +77,7 @@ class TableHelperMixin:
         else:
             current_cell_nodes.append(n)
 
-    def _parse_table(self, node: LatexEnvironmentNode) -> Optional[TableData]:
+    def _parse_table(self, node: LatexEnvironmentNode) -> TableData | None:
         rows = []
         current_row = []
         current_cell_nodes: list = []

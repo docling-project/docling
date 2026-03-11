@@ -2,7 +2,7 @@ import logging
 import threading
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Union
+from typing import Union
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem
 from docling_core.types.doc.document import Formatting
@@ -69,7 +69,7 @@ class LatexDocumentBackend(
         walker = LatexWalker(preprocessed_text, tolerant_parsing=True)
 
         try:
-            nodes, pos, len_ = walker.get_latex_nodes()
+            nodes, _pos, _len = walker.get_latex_nodes()
         except Exception as e:
             _log.warning(f"LaTeX parsing failed: {e}. Using fallback text extraction.")
             doc.add_text(label=DocItemLabel.TEXT, text=self.latex_text)
@@ -93,7 +93,7 @@ class LatexDocumentBackend(
 
     def convert(self) -> DoclingDocument:
         doc = DoclingDocument(name=self.file.stem)
-        timeout: Optional[float] = getattr(self.options, "parse_timeout", None)
+        timeout: float | None = getattr(self.options, "parse_timeout", None)
 
         if timeout is None:
             return self._do_parse_and_process(doc)
@@ -135,9 +135,9 @@ class LatexDocumentBackend(
         self,
         nodes,
         doc: DoclingDocument,
-        parent: Optional[NodeItem] = None,
-        formatting: Optional[Formatting] = None,
-        text_label: Optional[DocItemLabel] = None,
+        parent: NodeItem | None = None,
+        formatting: Formatting | None = None,
+        text_label: DocItemLabel | None = None,
     ):
         if nodes is None:
             return

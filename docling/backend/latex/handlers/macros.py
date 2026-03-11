@@ -146,9 +146,9 @@ class MacroHandlerMixin:
         self,
         node: LatexMacroNode,
         doc: DoclingDocument,
-        parent: Optional[NodeItem],
-        formatting: Optional[Formatting],
-        text_label: Optional[DocItemLabel],
+        parent: NodeItem | None,
+        formatting: Formatting | None,
+        text_label: DocItemLabel | None,
         text_buffer: List[str],
         flush_fn: Callable[[], None],
     ):
@@ -198,9 +198,9 @@ class MacroHandlerMixin:
         self,
         node: LatexMacroNode,
         doc: DoclingDocument,
-        parent: Optional[NodeItem] = None,
-        formatting: Optional[Formatting] = None,
-        text_label: Optional[DocItemLabel] = None,
+        parent: NodeItem | None = None,
+        formatting: Formatting | None = None,
+        text_label: DocItemLabel | None = None,
     ):
         if node.macroname in MACROS_HEADING:
             title = self._extract_macro_arg(node)
