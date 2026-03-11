@@ -93,7 +93,7 @@ def test_crop_page_image(test_doc_path):
 
 def test_num_pages(test_doc_path):
     doc_backend = _get_backend(test_doc_path)
-    doc_backend.page_count() == 9
+    assert doc_backend.page_count() == 9
 
 
 def test_merge_row():

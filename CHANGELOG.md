@@ -1,3 +1,23 @@
+## [v2.78.0](https://github.com/docling-project/docling/releases/tag/v2.78.0) - 2026-03-10
+
+### Feature
+
+* Add support for TableFormer v2 ([#3013](https://github.com/docling-project/docling/issues/3013)) ([`4ccd1d4`](https://github.com/docling-project/docling/commit/4ccd1d465deb8d521c09e2da61b537a9236d6560))
+* Add gRPC transport for KServe v2 API engine ([#3074](https://github.com/docling-project/docling/issues/3074)) ([`3d90778`](https://github.com/docling-project/docling/commit/3d90778e3e5762b16758e1c121f42890e32f0560))
+
+### Fix
+
+* **html:** Fix broken document tree and quadratic complexity in rich table cells ([#3025](https://github.com/docling-project/docling/issues/3025)) ([`80f75b8`](https://github.com/docling-project/docling/commit/80f75b8896a6b15c5422c56e9a423e4d2e6673cd))
+* Loosen dependency for pandas3 ([#3095](https://github.com/docling-project/docling/issues/3095)) ([`5188180`](https://github.com/docling-project/docling/commit/5188180ea31dd90567140affc564ce2729b6e4a1))
+* Add parse timeout to legacy LaTeX documents ([#3019](https://github.com/docling-project/docling/issues/3019)) ([`1192714`](https://github.com/docling-project/docling/commit/1192714b536ebb8117785b06ed85e7d203e0996d))
+* **msword:** Skip GroupItem targets without comments attribute ([#3080](https://github.com/docling-project/docling/issues/3080)) ([`ee16285`](https://github.com/docling-project/docling/commit/ee16285651e5c2f963e051b1ee32b50a043191e2))
+
+### Documentation
+
+* Fix code in rag langchain chunker tokenizer ([#2993](https://github.com/docling-project/docling/issues/2993)) ([`d113e61`](https://github.com/docling-project/docling/commit/d113e611c445db6793fd94b3fee9c4109513d04a))
+* Update code snippet to use modern pipeline options syntax ([#3087](https://github.com/docling-project/docling/issues/3087)) ([`95b759e`](https://github.com/docling-project/docling/commit/95b759e5199f1142fb66dc2088c0c36177c5c284))
+* Set HuggingFaceEndpoint task for Mixtral examples ([#2945](https://github.com/docling-project/docling/issues/2945)) ([`5d3ac38`](https://github.com/docling-project/docling/commit/5d3ac38a65000cd39766f87557c685668224ad7f))
+
 ## [v2.77.0](https://github.com/docling-project/docling/releases/tag/v2.77.0) - 2026-03-06
 
 ### Feature
