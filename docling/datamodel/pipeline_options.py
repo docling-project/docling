@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Any, ClassVar, Literal, Optional, Union
+from typing import Annotated, Any, ClassVar, Literal, Optional, Type, Union
 
 from docling_core.types.doc import PictureClassificationLabel
 from pydantic import (
@@ -110,6 +110,19 @@ class BaseTableStructureOptions(BaseOptions):
     See Also:
         `TableStructureOptions`: Default TableFormer-based implementation.
     """
+
+    _registry: ClassVar[dict[str, Type["BaseTableStructureOptions"]]] = {}
+
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs):
+        super().__pydantic_init_subclass__(**kwargs)
+
+        if cls is BaseTableStructureOptions:
+            return
+
+        kind = getattr(cls, "kind", None)
+        if isinstance(kind, str):
+            BaseTableStructureOptions._registry[kind] = cls
 
 
 class TableStructureOptions(BaseTableStructureOptions):
@@ -1519,6 +1532,20 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = False
+
+    @field_validator("table_structure_options", mode="before")
+    @classmethod
+    def resolve_table_structure_options(cls, value):
+        if isinstance(value, BaseTableStructureOptions):
+            return value
+
+        if isinstance(value, dict):
+            kind = value.get("kind")
+            model_cls = BaseTableStructureOptions._registry.get(kind)
+            if model_cls is not None:
+                return model_cls.model_validate(value)
+
+        return value
     generate_parsed_pages: Annotated[
         bool,
         Field(

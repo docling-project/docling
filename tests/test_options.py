@@ -11,8 +11,13 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     TableFormerMode,
+    TableStructureV2Options,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.models.factories import get_table_structure_factory
+from docling.models.stages.table_structure.table_structure_model_v2 import (
+    TableStructureModelV2,
+)
 from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipeline
 
 
@@ -95,6 +100,47 @@ def test_accelerator_options():
     ao7 = AcceleratorOptions()
     assert ao7.num_threads == 4
     assert ao7.device == AcceleratorDevice.AUTO
+
+
+def test_table_structure_v2_options_are_preserved_during_validation():
+    pipeline_options = PdfPipelineOptions.model_validate(
+        {
+            "table_structure_options": {
+                "kind": "docling_tableformer_v2",
+                "do_cell_matching": False,
+            }
+        }
+    )
+
+    assert isinstance(
+        pipeline_options.table_structure_options, TableStructureV2Options
+    )
+    assert pipeline_options.table_structure_options.do_cell_matching is False
+
+    copied_options = pipeline_options.model_copy()
+    assert isinstance(copied_options.table_structure_options, TableStructureV2Options)
+
+
+def test_table_structure_factory_selects_v2_model_from_validated_options():
+    pipeline_options = PdfPipelineOptions.model_validate(
+        {
+            "table_structure_options": {
+                "kind": "docling_tableformer_v2",
+                "do_cell_matching": False,
+            }
+        }
+    )
+
+    table_factory = get_table_structure_factory()
+    table_model = table_factory.create_instance(
+        options=pipeline_options.table_structure_options,
+        enabled=False,
+        artifacts_path=None,
+        accelerator_options=AcceleratorOptions(),
+        enable_remote_services=False,
+    )
+
+    assert isinstance(table_model, TableStructureModelV2)
 
 
 def test_e2e_conversions(test_doc_path):
