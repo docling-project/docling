@@ -115,8 +115,6 @@ class TableStructureModelV2(BaseTableStructureModel):
         page_no: int,
         textcell_overlap: float = 0.3,
     ) -> Table:
-        import torch
-
         # Convert to PIL and preprocess
         pil_image = table_image.convert("RGB")
         image_tensor = self.transform(pil_image).unsqueeze(0).to(self.device)
