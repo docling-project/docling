@@ -1018,15 +1018,43 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[0] = te
             elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
-            style_element = getattr(paragraph.style, "element", None)
-            if style_element is not None:
-                is_numbered_style = (
-                    "<w:numPr>" in style_element.xml or "<w:numPr>" in element.xml
+            # Detect mislabeled headings: paragraphs styled as "Heading" but containing
+            # substantial content and not part of a numbered list are likely body text
+            # that was incorrectly styled (common in legal documents)
+            is_likely_mislabeled_heading = (
+                numid is None  # Not part of numbered list
+                and len(text) > 50  # Has substantial content
+            )
+
+            if is_likely_mislabeled_heading:
+                # Treat as regular paragraph text, not a heading
+                level = self._get_level()
+                parent = self._create_or_reuse_parent(
+                    doc=doc,
+                    prev_parent=self.parents.get(level - 1),
+                    paragraph_elements=paragraph_elements,
                 )
+                for text_elem, format, hyperlink in paragraph_elements:
+                    t = doc.add_text(
+                        label=DocItemLabel.TEXT,
+                        parent=parent,
+                        text=text_elem,
+                        formatting=format,
+                        hyperlink=hyperlink,
+                        content_layer=self.content_layer,
+                    )
+                    elem_ref.append(t.get_ref())
             else:
-                is_numbered_style = False
-            h1 = self._add_heading(doc, p_level, text, is_numbered_style)
-            elem_ref.extend(h1)
+                # Genuine heading
+                style_element = getattr(paragraph.style, "element", None)
+                if style_element is not None:
+                    is_numbered_style = (
+                        "<w:numPr>" in style_element.xml or "<w:numPr>" in element.xml
+                    )
+                else:
+                    is_numbered_style = False
+                h1 = self._add_heading(doc, p_level, text, is_numbered_style)
+                elem_ref.extend(h1)
 
         elif len(equations) > 0:
             if (paragraph.text is None or len(paragraph.text.strip()) == 0) and len(

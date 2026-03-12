@@ -392,3 +392,32 @@ def test_get_heading_and_level_non_heading(
     label, level = backend._get_heading_and_level(style_label)
     assert label == expected_label
     assert level == expected_level
+
+
+def test_mislabeled_headings(documents):
+    """Test that paragraphs styled as headings but containing substantial body text
+    are detected as mislabeled and treated as regular text items."""
+
+    name = "mislabeled_headings.docx"
+    doc = next(item[1] for item in documents if item[0].name == name)
+
+    found_real_heading = False
+    found_mislabeled_as_text = False
+    mislabeled_text = (
+        "This paragraph has been incorrectly styled as a heading but is actually "
+        "body text. It contains substantial content that would not normally appear "
+        "as a section header in a well-structured document."
+    )
+
+    for item, _ in doc.iterate_items():
+        if isinstance(item, SectionHeaderItem) and item.text == "Introduction":
+            found_real_heading = True
+        if isinstance(item, TextItem) and item.text == mislabeled_text:
+            found_mislabeled_as_text = True
+
+    assert found_real_heading, (
+        "Real heading 'Introduction' should be a SectionHeaderItem"
+    )
+    assert found_mislabeled_as_text, (
+        "Long paragraph styled as heading should be relabeled as TextItem"
+    )
