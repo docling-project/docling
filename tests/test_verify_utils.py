@@ -64,3 +64,17 @@ def test_verify_docitems_rejects_gross_bbox_variance_for_fuzzy_docs():
             fuzzy=True,
             pdf_filename="fixture.json",
         )
+
+
+def test_verify_docitems_rejects_bbox_presence_mismatch():
+    doc_true = _make_doc_with_bbox(left=10.0)
+    doc_pred = _make_doc_with_bbox(left=10.0)
+    doc_pred.texts[0].prov[0].bbox = None
+
+    with pytest.raises(AssertionError, match="BBox presence mismatch"):
+        verify_docitems(
+            doc_pred=doc_pred,
+            doc_true=doc_true,
+            fuzzy=False,
+            pdf_filename="fixture.json",
+        )

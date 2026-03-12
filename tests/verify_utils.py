@@ -304,6 +304,9 @@ def verify_docitems(
             assert true_prov.page_no == pred_prov.page_no, (
                 f"[{pdf_filename}] Page provenance mistmatch"
             )
+            assert (true_prov.bbox is None) == (pred_prov.bbox is None), (
+                f"[{pdf_filename}] BBox presence mismatch"
+            )
 
             if true_prov.bbox is not None and pred_prov.bbox is not None:
                 _assert_bbox_close(
