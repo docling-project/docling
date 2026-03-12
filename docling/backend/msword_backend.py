@@ -1275,9 +1275,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             enum_marker = str(counter) + "."
         else:
             enum_marker = ""
-        self._add_formatted_list_item(
-            doc, elements, enum_marker, is_numbered, level
-        )
+        self._add_formatted_list_item(doc, elements, enum_marker, is_numbered, level)
 
     def _add_list_item(
         self,
