@@ -32,7 +32,7 @@ def api_image_request(
         image.save(img_io, "PNG")
     except Exception as e:
         good_image = False
-        _log.error(f"Error, corrupter PNG of size: {image.size}: {e}")
+        _log.error(f"Error, corrupted PNG of size: {image.size}: {e}")
 
     if good_image:
         try:

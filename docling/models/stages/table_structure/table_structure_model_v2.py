@@ -115,8 +115,6 @@ class TableStructureModelV2(BaseTableStructureModel):
         page_no: int,
         textcell_overlap: float = 0.3,
     ) -> Table:
-        import torch
-
         # Convert to PIL and preprocess
         pil_image = table_image.convert("RGB")
         image_tensor = self.transform(pil_image).unsqueeze(0).to(self.device)
@@ -175,6 +173,7 @@ class TableStructureModelV2(BaseTableStructureModel):
         self, bbox: BoundingBox, text_cells: list[TextCell], textcell_overlap: float
     ) -> str:
         """Return text from text_cells whose bboxes overlap sufficiently with bbox."""
+        # TODO: This matching must be improved, such that text cells are only assigned to the table cell with the highest overlap, and at most once.
         overlapping = []
         for tc in text_cells:
             tc_bbox = tc.rect.to_bounding_box()
@@ -437,9 +436,16 @@ class TableStructureModelV2(BaseTableStructureModel):
                     for element in cell_data:
                         if element["bbox"] is not None:
                             bbox = BoundingBox.model_validate(element["bbox"])
-                            # Always extract text from the PDF backend for V2
-                            # (V2 doesn't have a separate cell matching pipeline like V1)
-                            text_piece = page._backend.get_text_in_rect(bbox)
+                            if self.do_cell_matching:
+                                # Prefer text from cluster cells (includes OCR-assigned cells),
+                                # then fall back to backend text extraction.
+                                text_piece = self._match_text(
+                                    bbox, table_cluster.cells, textcell_overlap=0.3
+                                )
+                                if not text_piece.strip():
+                                    text_piece = page._backend.get_text_in_rect(bbox)
+                            else:
+                                text_piece = page._backend.get_text_in_rect(bbox)
                             element["bbox"]["token"] = text_piece
                         tc = TableCell.model_validate(element)
                         table_cells.append(tc)
