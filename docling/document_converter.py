@@ -651,6 +651,8 @@ class DocumentConverter:
                     input=in_doc,
                     status=ConversionStatus.FAILURE,
                 )
-                # TODO add error log why it failed.
+                _log.warning(
+                    f"Input document {in_doc.file} is not valid, skipping conversion."
+                )
 
         return conv_res

@@ -155,7 +155,7 @@ class ApiKserveV2ImageClassificationEngine(HfImageClassificationEngineBase):
 
         images = [item.image.convert("RGB") for item in input_batch]
         processed_inputs = self._processor(images=images, return_tensors="np")
-        pixel_values = np.asarray(processed_inputs["pixel_values"], dtype=np.float32)
+        pixel_values = np.asarray(processed_inputs["pixel_values"])
 
         outputs = self._kserve_client.infer(
             inputs={self._input_name: pixel_values},
