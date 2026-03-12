@@ -23,8 +23,10 @@ from docling.datamodel.document import ConversionResult
 
 COORD_PREC = 2  # decimal places for coordinates
 CONFID_PREC = 3  # decimal places for confidence
-STRICT_BBOX_TOL = 0.1  # allow minor cross-platform layout variance
-FUZZY_BBOX_TOL = 10.0  # OCR/image output varies more, but gross shifts should fail
+STRICT_BBOX_TOL_RATIO = 0.0025  # allow minor cross-platform layout variance
+FUZZY_BBOX_TOL_RATIO = (
+    0.005  # OCR/image output varies more, but gross shifts should fail
+)
 
 
 class _TestPagesMeta(BaseModel):
@@ -40,11 +42,13 @@ def _assert_bbox_close(
     true_bbox: BoundingBox,
     pred_bbox: BoundingBox,
     fuzzy: bool,
+    page_extent: Optional[float],
     pdf_filename: str,
 ):
     """Compare bbox coordinates at the same precision used in serialized fixtures."""
 
-    tol = FUZZY_BBOX_TOL if fuzzy else STRICT_BBOX_TOL
+    tol_ratio = FUZZY_BBOX_TOL_RATIO if fuzzy else STRICT_BBOX_TOL_RATIO
+    tol = max(10 ** (-COORD_PREC), (page_extent or 0.0) * tol_ratio)
 
     assert true_bbox.coord_origin == pred_bbox.coord_origin, (
         f"[{pdf_filename}] BBox coord_origin mismatch"
@@ -294,6 +298,8 @@ def verify_docitems(
         if len(true_item.prov) > 0:
             true_prov = true_item.prov[0]
             pred_prov = pred_item.prov[0]
+            true_page = doc_true.pages.get(true_prov.page_no)
+            pred_page = doc_pred.pages.get(pred_prov.page_no)
 
             assert true_prov.page_no == pred_prov.page_no, (
                 f"[{pdf_filename}] Page provenance mistmatch"
@@ -304,6 +310,11 @@ def verify_docitems(
                     true_bbox=true_prov.bbox,
                     pred_bbox=pred_prov.bbox,
                     fuzzy=fuzzy,
+                    page_extent=(
+                        max(page.size.width, page.size.height)
+                        if (page := true_page or pred_page) is not None
+                        else None
+                    ),
                     pdf_filename=pdf_filename,
                 )
 
