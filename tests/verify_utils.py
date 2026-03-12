@@ -1,4 +1,5 @@
 import json
+import math
 import os
 from pathlib import Path
 from typing import Optional
@@ -12,6 +13,7 @@ from docling_core.types.doc import (
     TableItem,
     TextItem,
 )
+from docling_core.types.doc.base import BoundingBox
 from docling_core.types.legacy_doc.document import ExportedCCSDocument as DsDocument
 from PIL import Image as PILImage
 from pydantic import BaseModel, TypeAdapter
@@ -21,6 +23,8 @@ from docling.datamodel.document import ConversionResult
 
 COORD_PREC = 2  # decimal places for coordinates
 CONFID_PREC = 3  # decimal places for confidence
+STRICT_BBOX_TOL = 0.1  # allow minor cross-platform layout variance
+FUZZY_BBOX_TOL = 10.0  # OCR/image output varies more, but gross shifts should fail
 
 
 class _TestPagesMeta(BaseModel):
@@ -29,6 +33,38 @@ class _TestPagesMeta(BaseModel):
     @classmethod
     def from_page(cls, page: Page):
         return cls(num_cells=len(page.cells))
+
+
+def _assert_bbox_close(
+    *,
+    true_bbox: BoundingBox,
+    pred_bbox: BoundingBox,
+    fuzzy: bool,
+    pdf_filename: str,
+):
+    """Compare bbox coordinates at the same precision used in serialized fixtures."""
+
+    tol = FUZZY_BBOX_TOL if fuzzy else STRICT_BBOX_TOL
+
+    assert true_bbox.coord_origin == pred_bbox.coord_origin, (
+        f"[{pdf_filename}] BBox coord_origin mismatch"
+    )
+
+    for label, true_value, pred_value in (
+        ("left", true_bbox.l, pred_bbox.l),
+        ("top", true_bbox.t, pred_bbox.t),
+        ("right", true_bbox.r, pred_bbox.r),
+        ("bottom", true_bbox.b, pred_bbox.b),
+    ):
+        true_rounded = round(true_value, COORD_PREC)
+        pred_rounded = round(pred_value, COORD_PREC)
+        diff = abs(true_rounded - pred_rounded)
+
+        assert math.isclose(true_rounded, pred_rounded, rel_tol=0.0, abs_tol=tol), (
+            f"[{pdf_filename}] BBox {label} mismatch:"
+            f" {true_rounded} vs {pred_rounded}"
+            f" (raw pred: {pred_value}, diff: {diff:.2f}, tol: {tol:.2f})"
+        )
 
 
 def levenshtein(str1: str, str2: str) -> int:
@@ -263,26 +299,12 @@ def verify_docitems(
                 f"[{pdf_filename}] Page provenance mistmatch"
             )
 
-            if not fuzzy and true_prov.bbox is not None and pred_prov.bbox is not None:
-                tol = 0.5  # allow for cross-platform numeric variance
-                assert true_prov.bbox.coord_origin == pred_prov.bbox.coord_origin, (
-                    f"[{pdf_filename}] BBox coord_origin mismatch"
-                )
-                assert abs(true_prov.bbox.l - pred_prov.bbox.l) <= tol, (
-                    f"[{pdf_filename}] BBox left mismatch:"
-                    f" {true_prov.bbox.l} vs {pred_prov.bbox.l}"
-                )
-                assert abs(true_prov.bbox.t - pred_prov.bbox.t) <= tol, (
-                    f"[{pdf_filename}] BBox top mismatch:"
-                    f" {true_prov.bbox.t} vs {pred_prov.bbox.t}"
-                )
-                assert abs(true_prov.bbox.r - pred_prov.bbox.r) <= tol, (
-                    f"[{pdf_filename}] BBox right mismatch:"
-                    f" {true_prov.bbox.r} vs {pred_prov.bbox.r}"
-                )
-                assert abs(true_prov.bbox.b - pred_prov.bbox.b) <= tol, (
-                    f"[{pdf_filename}] BBox bottom mismatch:"
-                    f" {true_prov.bbox.b} vs {pred_prov.bbox.b}"
+            if true_prov.bbox is not None and pred_prov.bbox is not None:
+                _assert_bbox_close(
+                    true_bbox=true_prov.bbox,
+                    pred_bbox=pred_prov.bbox,
+                    fuzzy=fuzzy,
+                    pdf_filename=pdf_filename,
                 )
 
         # Validate source
