@@ -49,10 +49,13 @@ class HTMLBackendOptions(BaseBackendOptions):
     infer_furniture: bool = Field(
         True, description="Infer all the content before the first header as furniture."
     )
-    default_content_layer: Optional[ContentLayer] = Field(
+    default_content_layer: Optional[
+        Literal[ContentLayer.BODY, ContentLayer.FURNITURE]
+    ] = Field(
         None,
         description=(
-            "If set, overrides the inferred starting content layer. "
+            "If set, overrides the inferred starting content layer with BODY or "
+            "FURNITURE. "
             "When None, the starting layer is determined by `infer_furniture`."
         ),
     )
