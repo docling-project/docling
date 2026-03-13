@@ -74,6 +74,24 @@ def test_should_generate_export_images(image_export_mode, to_formats, expected):
     assert _should_generate_export_images(image_export_mode, to_formats) is expected
 
 
+def test_image_export_policy_covers_all_output_formats():
+    image_export_formats = {
+        OutputFormat.JSON,
+        OutputFormat.YAML,
+        OutputFormat.HTML,
+        OutputFormat.HTML_SPLIT_PAGE,
+        OutputFormat.MARKDOWN,
+    }
+    non_image_export_formats = {
+        OutputFormat.TEXT,
+        OutputFormat.DOCTAGS,
+        OutputFormat.VTT,
+    }
+
+    assert image_export_formats.isdisjoint(non_image_export_formats)
+    assert image_export_formats | non_image_export_formats == set(OutputFormat)
+
+
 @pytest.mark.parametrize(
     ("to_format", "expect_generated_images"),
     [
