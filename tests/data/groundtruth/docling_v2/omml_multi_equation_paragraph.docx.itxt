@@ -1,1 +1,5 @@
-$a+b=c$  and  $x^{2}+y^{2}=z^{2}$
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: inline: group group
+    item-2 at level 2: formula: a+b=c
+    item-3 at level 2: text:  and 
+    item-4 at level 2: formula: x^{2}+y^{2}=z^{2}
