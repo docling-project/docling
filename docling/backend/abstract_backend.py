@@ -50,6 +50,10 @@ class AbstractDocumentBackend(ABC):
     def supported_formats(cls) -> set["InputFormat"]:
         pass
 
+    @abstractmethod
+    def extract_metadata(self) -> Dict[str, Any]:
+        return {}
+
 
 class PaginatedDocumentBackend(AbstractDocumentBackend):
     """DeclarativeDocumentBackend.
