@@ -178,7 +178,7 @@ class oMath2Latex(Tag2Method):
 
     _t_dict = T
 
-    __direct_tags = ("box", "sSub", "sSup", "sSubSup", "num", "den", "deg", "e")
+    __direct_tags = ("box", "num", "den", "deg", "e")
     u = UnicodeToLatexEncoder(
         replacement_latex_protection="braces-all",
         unknown_char_policy="keep",
@@ -246,6 +246,39 @@ class oMath2Latex(Tag2Method):
         """
         the Pre-Sub-Superscript object -- Not support yet
         """
+
+    @staticmethod
+    def _needs_grouping(latex_str):
+        """Check if a LaTeX string needs wrapping in braces for sub/superscript."""
+        return "\\frac" in latex_str or "\\sqrt" in latex_str
+
+    def do_ssub(self, elm):
+        """the Subscript object"""
+        c_dict = self.process_children_dict(elm, include=("e", "sub", "sSubPr"))
+        base = c_dict.get("e", "")
+        sub = c_dict.get("sub", "")
+        if self._needs_grouping(base):
+            base = "{" + base + "}"
+        return base + SUB.format(sub)
+
+    def do_ssup(self, elm):
+        """the Superscript object"""
+        c_dict = self.process_children_dict(elm, include=("e", "sup", "sSupPr"))
+        base = c_dict.get("e", "")
+        sup = c_dict.get("sup", "")
+        if self._needs_grouping(base):
+            base = "{" + base + "}"
+        return base + SUP.format(sup)
+
+    def do_ssubsup(self, elm):
+        """the Sub-Superscript object"""
+        c_dict = self.process_children_dict(elm, include=("e", "sub", "sup", "sSubSupPr"))
+        base = c_dict.get("e", "")
+        sub = c_dict.get("sub", "")
+        sup = c_dict.get("sup", "")
+        if self._needs_grouping(base):
+            base = "{" + base + "}"
+        return base + SUB.format(sub) + SUP.format(sup)
 
     def do_sub(self, elm):
         text = self.process_children(elm)
@@ -387,10 +420,19 @@ class oMath2Latex(Tag2Method):
                 res.append(t)
         return bo + BLANK.join(res)
 
+    # Characters that should be treated as math operators, not text-mode macros.
+    _MATH_CHAR_MAP = {
+        "\u2013": "-",  # EN DASH → minus
+        "\u2014": "-",  # EM DASH → minus
+        "\u2212": "-",  # MINUS SIGN → minus
+        "\u005e": "^",  # CIRCUMFLEX → superscript operator
+    }
+
     def process_unicode(self, s):
-        # s = s if isinstance(s,unicode) else unicode(s,'utf-8')
-        # print(s, self._t_dict.get(s, s), unicode_to_latex(s))
-        # _str.append( self._t_dict.get(s, s) )
+        # Map characters that are math operators before the text encoder
+        # converts them to text-mode macros like \textendash.
+        if s in self._MATH_CHAR_MAP:
+            return self._MATH_CHAR_MAP[s]
 
         out_latex_str = self.u.unicode_to_latex(s)
 
@@ -441,6 +483,9 @@ class oMath2Latex(Tag2Method):
         "acc": do_acc,
         "r": do_r,
         "bar": do_bar,
+        "sSub": do_ssub,
+        "sSup": do_ssup,
+        "sSubSup": do_ssubsup,
         "sub": do_sub,
         "sup": do_sup,
         "f": do_f,
