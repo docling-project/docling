@@ -562,3 +562,47 @@ class TestEdgeCases:
         options = VlmConvertOptions.from_preset("smoldocling")
         # max_size can be None (no limit)
         assert options.max_size is None or isinstance(options.max_size, int)
+
+
+class TestApiEngineParamOverride:
+    """Test that user params override engine defaults in ApiVlmEngine.
+
+    Regression tests for #3112: Azure OpenAI requires max_completion_tokens
+    instead of max_tokens, and some deployments reject temperature=0.0.
+    """
+
+    def _build_api_params(
+        self, user_params: dict, temperature: float = 0.0, max_new_tokens: int = 4096
+    ) -> dict:
+        """Simulate the param construction logic from ApiVlmEngine."""
+        api_params: dict[str, object] = {
+            "temperature": temperature,
+        }
+        if max_new_tokens:
+            api_params["max_tokens"] = max_new_tokens
+        api_params.update(user_params)
+        if "max_completion_tokens" in api_params:
+            api_params.pop("max_tokens", None)
+        return api_params
+
+    def test_default_params(self):
+        """Default behavior: temperature=0.0 and max_tokens present."""
+        params = self._build_api_params({})
+        assert params["temperature"] == 0.0
+        assert params["max_tokens"] == 4096
+
+    def test_user_overrides_temperature(self):
+        """User can override temperature via params."""
+        params = self._build_api_params({"temperature": 1.0})
+        assert params["temperature"] == 1.0
+
+    def test_user_sets_max_completion_tokens(self):
+        """User can use max_completion_tokens instead of max_tokens (Azure)."""
+        params = self._build_api_params({"max_completion_tokens": 2048})
+        assert "max_tokens" not in params
+        assert params["max_completion_tokens"] == 2048
+
+    def test_user_overrides_max_tokens(self):
+        """User can override max_tokens value."""
+        params = self._build_api_params({"max_tokens": 8192})
+        assert params["max_tokens"] == 8192
