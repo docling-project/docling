@@ -61,8 +61,9 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
         label_map = {}
 
         for label_id, label_name in id_to_label_str.items():
-            # Convert label name to uppercase to match DocItemLabel enum convention
-            label_enum_name = label_name.upper()
+            # Convert label name to uppercase and normalize separators
+            # to match DocItemLabel enum convention (e.g. "List-item" -> "LIST_ITEM")
+            label_enum_name = label_name.upper().replace("-", "_").replace(" ", "_")
             try:
                 label_map[label_id] = DocItemLabel[label_enum_name]
             except KeyError:
