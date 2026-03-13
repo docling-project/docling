@@ -160,11 +160,11 @@ class TestVlmModelSpec:
         assert spec.get_repo_id(VlmEngineType.TRANSFORMERS) == "test/model"
         assert spec.get_revision(VlmEngineType.TRANSFORMERS) == "v2.0"
 
-    def test_get_engine_config_preserves_torch_dtype(self):
-        """Test that get_engine_config() preserves torch_dtype from engine overrides.
+    def test_get_engine_config_preserves_torch_dtype_in_extra_config(self):
+        """Test that get_engine_config() preserves torch_dtype in extra_config.
 
-        Regression test for #3026: torch_dtype was silently dropped by
-        get_engine_config(), causing Flash Attention 2 failures.
+        Regression test for #3026: torch_dtype needs to be passed via
+        extra_config so it flows through to the engine.
         """
         spec = VlmModelSpec(
             name="Test Model",
@@ -173,19 +173,21 @@ class TestVlmModelSpec:
             response_format=ResponseFormat.DOCTAGS,
             engine_overrides={
                 VlmEngineType.TRANSFORMERS: EngineModelConfig(
-                    torch_dtype="bfloat16",
-                    extra_config={"some_key": "some_value"},
+                    extra_config={
+                        "some_key": "some_value",
+                        "torch_dtype": "bfloat16",
+                    },
                 ),
             },
         )
 
         config = spec.get_engine_config(VlmEngineType.TRANSFORMERS)
-        assert config.torch_dtype == "bfloat16"
-        assert config.extra_config == {"some_key": "some_value"}
+        assert config.extra_config["torch_dtype"] == "bfloat16"
+        assert config.extra_config["some_key"] == "some_value"
 
-        # Engine without override should have torch_dtype=None
+        # Engine without override should not have torch_dtype in extra_config
         config_other = spec.get_engine_config(VlmEngineType.MLX)
-        assert config_other.torch_dtype is None
+        assert "torch_dtype" not in config_other.extra_config
 
     def test_model_spec_with_api_overrides(self):
         """Test model spec with API-specific overrides."""

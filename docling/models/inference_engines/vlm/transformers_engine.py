@@ -195,11 +195,16 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
         self.processor.tokenizer.padding_side = "left"  # type: ignore[union-attr]
 
+        # Resolve torch_dtype: options override > extra_config > None
+        torch_dtype = self.options.torch_dtype
+        if torch_dtype is None and self.model_config is not None:
+            torch_dtype = self.model_config.extra_config.get("torch_dtype")
+
         # Load model
         self.vlm_model = model_cls.from_pretrained(
             artifacts_path,
             device_map=self.device,
-            dtype=self.options.torch_dtype,
+            dtype=torch_dtype,
             _attn_implementation=(
                 "flash_attention_2"
                 if self.device.startswith("cuda")  # type: ignore[union-attr]

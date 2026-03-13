@@ -235,17 +235,14 @@ class VlmModelSpec(BaseModel):
         repo_id = self.get_repo_id(engine_type)
         revision = self.get_revision(engine_type)
 
-        # Get engine-specific extra_config and torch_dtype
+        # Get engine-specific extra_config
         extra_config = {}
-        torch_dtype = None
         if engine_type in self.engine_overrides:
             extra_config = self.engine_overrides[engine_type].extra_config.copy()
-            torch_dtype = self.engine_overrides[engine_type].torch_dtype
 
         return EngineModelConfig(
             repo_id=repo_id,
             revision=revision,
-            torch_dtype=torch_dtype,
             extra_config=extra_config,
         )
 
@@ -1309,10 +1306,10 @@ CODE_FORMULA_CODEFORMULAV2 = StageModelPreset(
         stop_strings=["</doctag>", "<end_of_utterance>"],
         engine_overrides={
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
-                torch_dtype="bfloat16",
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                     "extra_generation_config": {"skip_special_tokens": False},
+                    "torch_dtype": "bfloat16",
                 },
             ),
         },
