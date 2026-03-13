@@ -12,7 +12,10 @@ from pathlib import Path
 
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
-from docling.datamodel.vlm_model_specs import GRANITEDOCLING_TRANSFORMERS
+from docling.datamodel.vlm_model_specs import (
+    DOCLING_BASE_PAGE_PROMPT,
+    GRANITEDOCLING_TRANSFORMERS,
+)
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.experimental.datamodel.threaded_layout_vlm_pipeline_options import (
     ThreadedLayoutVlmPipelineOptions,
@@ -95,7 +98,7 @@ def demo_threaded_layout_vlm_pipeline(
         vlm_options = openai_compatible_vlm_options(
             model="granite-docling-258m-mlx",  # For VLLM use "ibm-granite/granite-docling-258M"
             hostname_and_port="localhost:1234",  # LM studio defaults to port 1234, VLLM to 8000
-            prompt="Convert this page to docling.",
+            prompt=DOCLING_BASE_PAGE_PROMPT,
             format=ResponseFormat.DOCTAGS,
             api_key="",
         )

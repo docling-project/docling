@@ -18,10 +18,14 @@ from docling.datamodel.pipeline_options_vlm_model import (
 _log = logging.getLogger(__name__)
 
 
+# Docling page prompt
+DOCLING_BASE_PAGE_PROMPT = "Convert this page to docling."
+
+
 # Granite-Docling
 GRANITEDOCLING_TRANSFORMERS = InlineVlmOptions(
     repo_id="ibm-granite/granite-docling-258M",
-    prompt="Convert this page to docling.",
+    prompt=DOCLING_BASE_PAGE_PROMPT,
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.TRANSFORMERS,
     transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
@@ -42,7 +46,7 @@ GRANITEDOCLING_VLLM.inference_framework = InferenceFramework.VLLM
 
 GRANITEDOCLING_MLX = InlineVlmOptions(
     repo_id="ibm-granite/granite-docling-258M-mlx",
-    prompt="Convert this page to docling.",
+    prompt=DOCLING_BASE_PAGE_PROMPT,
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.MLX,
     supported_devices=[AcceleratorDevice.MPS],
@@ -75,7 +79,7 @@ GRANITEDOCLING_OLLAMA.params["model"] = "ibm/granite-docling:258m"
 # SmolDocling
 SMOLDOCLING_MLX = InlineVlmOptions(
     repo_id="docling-project/SmolDocling-256M-preview-mlx-bf16",
-    prompt="Convert this page to docling.",
+    prompt=DOCLING_BASE_PAGE_PROMPT,
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.MLX,
     supported_devices=[AcceleratorDevice.MPS],
@@ -86,7 +90,7 @@ SMOLDOCLING_MLX = InlineVlmOptions(
 
 SMOLDOCLING_TRANSFORMERS = InlineVlmOptions(
     repo_id="docling-project/SmolDocling-256M-preview",
-    prompt="Convert this page to docling.",
+    prompt=DOCLING_BASE_PAGE_PROMPT,
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.TRANSFORMERS,
     transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
@@ -103,7 +107,7 @@ SMOLDOCLING_TRANSFORMERS = InlineVlmOptions(
 
 SMOLDOCLING_VLLM = InlineVlmOptions(
     repo_id="docling-project/SmolDocling-256M-preview",
-    prompt="Convert this page to docling.",
+    prompt=DOCLING_BASE_PAGE_PROMPT,
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.VLLM,
     supported_devices=[
