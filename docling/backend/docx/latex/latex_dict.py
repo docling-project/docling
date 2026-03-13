@@ -218,6 +218,20 @@ FUNC = {
     "mod": "\\mod {fe}",
     "max": "\\max({fe})",
     "min": "\\min({fe})",
+    "log": "\\log({fe})",
+    "ln": "\\ln({fe})",
+    "exp": "\\exp({fe})",
+    "det": "\\det({fe})",
+    "gcd": "\\gcd({fe})",
+    "deg": "\\deg({fe})",
+    "hom": "\\hom({fe})",
+    "ker": "\\ker({fe})",
+    "dim": "\\dim({fe})",
+    "arg": "\\arg({fe})",
+    "inf": "\\inf({fe})",
+    "sup": "\\sup({fe})",
+    "lim": "\\lim({fe})",
+    "Pr": "\\Pr({fe})",
 }
 
 FUNC_PLACE = "{fe}"
