@@ -160,6 +160,33 @@ class TestVlmModelSpec:
         assert spec.get_repo_id(VlmEngineType.TRANSFORMERS) == "test/model"
         assert spec.get_revision(VlmEngineType.TRANSFORMERS) == "v2.0"
 
+    def test_get_engine_config_preserves_torch_dtype(self):
+        """Test that get_engine_config() preserves torch_dtype from engine overrides.
+
+        Regression test for #3026: torch_dtype was silently dropped by
+        get_engine_config(), causing Flash Attention 2 failures.
+        """
+        spec = VlmModelSpec(
+            name="Test Model",
+            default_repo_id="test/model",
+            prompt="Test prompt",
+            response_format=ResponseFormat.DOCTAGS,
+            engine_overrides={
+                VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                    torch_dtype="bfloat16",
+                    extra_config={"some_key": "some_value"},
+                ),
+            },
+        )
+
+        config = spec.get_engine_config(VlmEngineType.TRANSFORMERS)
+        assert config.torch_dtype == "bfloat16"
+        assert config.extra_config == {"some_key": "some_value"}
+
+        # Engine without override should have torch_dtype=None
+        config_other = spec.get_engine_config(VlmEngineType.MLX)
+        assert config_other.torch_dtype is None
+
     def test_model_spec_with_api_overrides(self):
         """Test model spec with API-specific overrides."""
         spec = VlmModelSpec(
