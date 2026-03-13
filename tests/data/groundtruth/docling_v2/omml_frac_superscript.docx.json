@@ -1,0 +1,56 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.9.0",
+  "name": "omml_frac_superscript",
+  "origin": {
+    "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "binary_hash": 7253832782765427693,
+    "filename": "omml_frac_superscript.docx",
+    "uri": null
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "parent": null,
+    "children": [],
+    "content_layer": "furniture",
+    "meta": null,
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "parent": null,
+    "children": [
+      {
+        "cref": "#/texts/0"
+      }
+    ],
+    "content_layer": "body",
+    "meta": null,
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "meta": null,
+      "label": "formula",
+      "prov": [],
+      "orig": "{\\frac{(x-c)}{v}}^{^{2}}",
+      "text": "{\\frac{(x-c)}{v}}^{^{2}}",
+      "formatting": null,
+      "hyperlink": null
+    }
+  ],
+  "pictures": [],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {}
+}

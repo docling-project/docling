@@ -1,0 +1,56 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.9.0",
+  "name": "omml_func_log",
+  "origin": {
+    "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "binary_hash": 6279207614151575178,
+    "filename": "omml_func_log.docx",
+    "uri": null
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "parent": null,
+    "children": [],
+    "content_layer": "furniture",
+    "meta": null,
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "parent": null,
+    "children": [
+      {
+        "cref": "#/texts/0"
+      }
+    ],
+    "content_layer": "body",
+    "meta": null,
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "meta": null,
+      "label": "formula",
+      "prov": [],
+      "orig": "\\log(x)",
+      "text": "\\log(x)",
+      "formatting": null,
+      "hyperlink": null
+    }
+  ],
+  "pictures": [],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {}
+}
