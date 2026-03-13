@@ -1,8 +1,11 @@
 from pathlib import Path
 
+import pytest
+from docling_core.types.doc import ImageRefMode
 from typer.testing import CliRunner
 
-from docling.cli.main import app
+from docling.cli.main import _should_generate_export_images, app
+from docling.datamodel.base_models import InputFormat, OutputFormat
 
 runner = CliRunner()
 
@@ -25,6 +28,69 @@ def test_cli_convert(tmp_path):
     assert result.exit_code == 0
     converted = output / f"{Path(source).stem}.md"
     assert converted.exists()
+
+
+def _invoke_convert_and_get_pdf_options(monkeypatch, tmp_path, to_format: str):
+    class StubDocumentConverter:
+        format_options = None
+
+        def __init__(self, *, format_options=None, **_kwargs):
+            type(self).format_options = format_options
+
+        def convert_all(self, *_args, **_kwargs):
+            return []
+
+    monkeypatch.setattr("docling.cli.main.DocumentConverter", StubDocumentConverter)
+
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--to",
+            to_format,
+            "--image-export-mode",
+            ImageRefMode.EMBEDDED.value,
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+
+    pdf_options = StubDocumentConverter.format_options[InputFormat.PDF].pipeline_options
+    assert pdf_options is not None
+    return pdf_options
+
+
+@pytest.mark.parametrize(
+    ("image_export_mode", "to_formats", "expected"),
+    [
+        (ImageRefMode.PLACEHOLDER, [OutputFormat.JSON], False),
+        (ImageRefMode.EMBEDDED, [OutputFormat.TEXT, OutputFormat.DOCTAGS], False),
+        (ImageRefMode.EMBEDDED, [OutputFormat.MARKDOWN], True),
+    ],
+)
+def test_should_generate_export_images(image_export_mode, to_formats, expected):
+    assert _should_generate_export_images(image_export_mode, to_formats) is expected
+
+
+@pytest.mark.parametrize(
+    ("to_format", "expect_generated_images"),
+    [
+        (OutputFormat.TEXT.value, False),
+        (OutputFormat.DOCTAGS.value, False),
+        (OutputFormat.MARKDOWN.value, True),
+        (OutputFormat.HTML.value, True),
+    ],
+)
+def test_cli_only_generates_images_for_image_capable_exports(
+    tmp_path, monkeypatch, to_format, expect_generated_images
+):
+    pdf_options = _invoke_convert_and_get_pdf_options(monkeypatch, tmp_path, to_format)
+
+    assert pdf_options.generate_page_images is expect_generated_images
+    assert pdf_options.generate_picture_images is expect_generated_images
+    assert pdf_options.images_scale == (2 if expect_generated_images else 1.0)
 
 
 def test_cli_audio_auto_detection(tmp_path):
