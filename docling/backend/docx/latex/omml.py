@@ -252,11 +252,18 @@ class oMath2Latex(Tag2Method):
         """Check if a LaTeX string needs wrapping in braces for sub/superscript."""
         return "\\frac" in latex_str or "\\sqrt" in latex_str
 
+    @staticmethod
+    def _unwrap_script(script: str, marker: str) -> str:
+        prefix = f"{marker}{{"
+        if script.startswith(prefix) and script.endswith("}"):
+            return script[len(prefix) : -1]
+        return script
+
     def do_ssub(self, elm):
         """the Subscript object"""
         c_dict = self.process_children_dict(elm, include=("e", "sub", "sSubPr"))
         base = c_dict.get("e", "")
-        sub = c_dict.get("sub", "")
+        sub = self._unwrap_script(c_dict.get("sub", ""), "_")
         if self._needs_grouping(base):
             base = "{" + base + "}"
         return base + SUB.format(sub)
@@ -265,17 +272,19 @@ class oMath2Latex(Tag2Method):
         """the Superscript object"""
         c_dict = self.process_children_dict(elm, include=("e", "sup", "sSupPr"))
         base = c_dict.get("e", "")
-        sup = c_dict.get("sup", "")
+        sup = self._unwrap_script(c_dict.get("sup", ""), "^")
         if self._needs_grouping(base):
             base = "{" + base + "}"
         return base + SUP.format(sup)
 
     def do_ssubsup(self, elm):
         """the Sub-Superscript object"""
-        c_dict = self.process_children_dict(elm, include=("e", "sub", "sup", "sSubSupPr"))
+        c_dict = self.process_children_dict(
+            elm, include=("e", "sub", "sup", "sSubSupPr")
+        )
         base = c_dict.get("e", "")
-        sub = c_dict.get("sub", "")
-        sup = c_dict.get("sup", "")
+        sub = self._unwrap_script(c_dict.get("sub", ""), "_")
+        sup = self._unwrap_script(c_dict.get("sup", ""), "^")
         if self._needs_grouping(base):
             base = "{" + base + "}"
         return base + SUB.format(sub) + SUP.format(sup)
