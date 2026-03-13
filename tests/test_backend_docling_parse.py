@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -90,4 +91,17 @@ def test_num_pages(test_doc_path):
     assert doc_backend.page_count() == 9
 
     # Explicitly clean up resources to prevent race conditions in CI
+    doc_backend.unload()
+
+
+def test_page_count_fallback_on_parse_failure(test_doc_path):
+    """page_count() should fall back to pypdfium2 when docling-parse returns -1."""
+    doc_backend = _get_backend(test_doc_path)
+
+    # Simulate docling-parse failure: number_of_pages() returns -1
+    with patch.object(type(doc_backend.dp_doc), "number_of_pages", return_value=-1):
+        count = doc_backend.page_count()
+        assert count == 9, f"Expected pypdfium2 fallback count (9), got {count}"
+        assert doc_backend.is_valid()
+
     doc_backend.unload()

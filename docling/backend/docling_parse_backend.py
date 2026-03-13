@@ -234,6 +234,14 @@ class DoclingParseDocumentBackend(PdfDocumentBackend):
         if len_1 != len_2:
             _log.error(f"Inconsistent number of pages: {len_1}!={len_2}")
 
+        # Fall back to pypdfium2 count when docling-parse fails (returns -1)
+        if len_2 < 0:
+            _log.warning(
+                f"docling-parse returned invalid page count ({len_2}), "
+                f"falling back to pypdfium2 count ({len_1})."
+            )
+            return len_1
+
         return len_2
 
     def load_page(
