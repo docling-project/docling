@@ -1,7 +1,18 @@
-"""Unit tests for PageAssembleModel.sanitize_text(), focusing on ligature normalization."""
+"""Unit tests for PageAssembleModel."""
+
+from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
+from docling_core.types.doc import BoundingBox, Size
+from docling_core.types.doc.page import (
+    BoundingRectangle,
+    PdfHyperlink,
+    SegmentedPdfPage,
+)
+from pydantic import AnyUrl
 
+from docling.datamodel.base_models import Page
 from docling.models.stages.page_assemble.page_assemble_model import (
     PageAssembleModel,
     PageAssembleOptions,
@@ -72,3 +83,124 @@ class TestSanitizeTextLigatures:
     def test_ligature_with_spurious_space_in_multiline(self, model):
         """Ligature with spurious space works correctly across multi-line input."""
         assert model.sanitize_text(["\ufb01 eld", "of view"]) == "field of view"
+
+
+def _make_page(hyperlinks: list[PdfHyperlink], page_height: float = 100.0) -> Page:
+    """Create a Page with mocked parsed_page carrying the given hyperlinks."""
+    page = Page(page_no=0, size=Size(width=200, height=page_height))
+    pp = MagicMock(spec=SegmentedPdfPage)
+    pp.hyperlinks = hyperlinks
+    page.parsed_page = pp
+    return page
+
+
+def _make_hyperlink(
+    left: float,
+    bottom: float,
+    right: float,
+    top: float,
+    uri: str | None = "https://example.com",
+) -> PdfHyperlink:
+    """Create a PdfHyperlink with a BOTTOMLEFT-origin rect."""
+    return PdfHyperlink(
+        index=0,
+        rect=BoundingRectangle(
+            r_x0=left,
+            r_y0=bottom,
+            r_x1=right,
+            r_y1=bottom,
+            r_x2=right,
+            r_y2=top,
+            r_x3=left,
+            r_y3=top,
+        ),
+        uri=uri,
+    )
+
+
+class TestMatchHyperlink:
+    """Tests for _match_hyperlink() spatial matching."""
+
+    def test_no_hyperlinks(self):
+        page = _make_page([])
+        bbox = BoundingBox(l=10, t=10, r=90, b=20)
+        assert PageAssembleModel._match_hyperlink(bbox, page) is None
+
+    def test_no_parsed_page(self):
+        page = Page(page_no=0, size=Size(width=200, height=100))
+        bbox = BoundingBox(l=10, t=10, r=90, b=20)
+        assert PageAssembleModel._match_hyperlink(bbox, page) is None
+
+    def test_single_hyperlink_full_overlap(self):
+        """Hyperlink rect fully covers the cluster → match."""
+        # Cluster at TOPLEFT (10, 10)-(90, 20) = BOTTOMLEFT (10, 80)-(90, 90)
+        hl = _make_hyperlink(left=10, bottom=80, right=90, top=90)
+        page = _make_page([hl])
+        bbox = BoundingBox(l=10, t=10, r=90, b=20)
+        result = PageAssembleModel._match_hyperlink(bbox, page)
+        assert result is not None
+        assert str(result) == "https://example.com/"
+
+    def test_below_threshold_returns_none(self):
+        """Hyperlink covers <50% of cluster → no match."""
+        # Cluster is 80 wide, hyperlink only covers 30 of it
+        hl = _make_hyperlink(left=10, bottom=80, right=40, top=90)
+        page = _make_page([hl])
+        bbox = BoundingBox(l=10, t=10, r=90, b=20)
+        result = PageAssembleModel._match_hyperlink(bbox, page)
+        assert result is None
+
+    def test_internal_link_skipped(self):
+        """Hyperlink with uri=None (internal PDF link) is skipped."""
+        hl = _make_hyperlink(left=10, bottom=80, right=90, top=90, uri=None)
+        page = _make_page([hl])
+        bbox = BoundingBox(l=10, t=10, r=90, b=20)
+        assert PageAssembleModel._match_hyperlink(bbox, page) is None
+
+    def test_best_uri_wins(self):
+        """When two URIs overlap the cluster, the one with higher coverage wins."""
+        hl_small = _make_hyperlink(
+            left=10, bottom=80, right=50, top=90, uri="https://small.com"
+        )
+        hl_large = _make_hyperlink(
+            left=10, bottom=80, right=90, top=90, uri="https://large.com"
+        )
+        page = _make_page([hl_small, hl_large])
+        bbox = BoundingBox(l=10, t=10, r=90, b=20)
+        result = PageAssembleModel._match_hyperlink(bbox, page)
+        assert result is not None
+        assert str(result) == "https://large.com/"
+
+    def test_multi_rect_same_uri_aggregated(self):
+        """Multiple rects for the same URI aggregate coverage above threshold."""
+        # Each rect covers ~35% of the cluster, but together they cover ~70%
+        hl1 = _make_hyperlink(
+            left=10, bottom=80, right=38, top=90, uri="https://wrapped.com"
+        )
+        hl2 = _make_hyperlink(
+            left=38, bottom=80, right=66, top=90, uri="https://wrapped.com"
+        )
+        page = _make_page([hl1, hl2])
+        bbox = BoundingBox(l=10, t=10, r=90, b=20)
+        result = PageAssembleModel._match_hyperlink(bbox, page)
+        assert result is not None
+        assert str(result) == "https://wrapped.com/"
+
+    def test_invalid_url_falls_back_to_path(self):
+        """URI that fails AnyUrl validation falls back to Path."""
+        hl = _make_hyperlink(
+            left=10, bottom=80, right=90, top=90, uri="not a valid url"
+        )
+        page = _make_page([hl])
+        bbox = BoundingBox(l=10, t=10, r=90, b=20)
+        result = PageAssembleModel._match_hyperlink(bbox, page)
+        assert result is not None
+        assert isinstance(result, Path)
+
+    def test_no_page_size_returns_none(self):
+        page = Page(page_no=0, size=None)
+        pp = MagicMock(spec=SegmentedPdfPage)
+        pp.hyperlinks = [_make_hyperlink(left=10, bottom=80, right=90, top=90)]
+        page.parsed_page = pp
+        bbox = BoundingBox(l=10, t=10, r=90, b=20)
+        assert PageAssembleModel._match_hyperlink(bbox, page) is None
