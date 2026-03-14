@@ -1,5 +1,6 @@
 from collections import defaultdict
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Type, Union
 
 import numpy as np
@@ -18,6 +19,7 @@ from docling_core.types.io import DocumentStream
 # DO NOT REMOVE; explicitly exposed from this location
 from PIL.Image import Image
 from pydantic import (
+    AnyUrl,
     BaseModel,
     ConfigDict,
     Field,
@@ -248,6 +250,7 @@ class TableStructurePrediction(BaseModel):
 
 class TextElement(BasePageElement):
     text: str
+    hyperlink: Optional[Union[AnyUrl, Path]] = None
 
 
 class FigureElement(BasePageElement):
