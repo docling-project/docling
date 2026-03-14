@@ -1589,8 +1589,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
             )
             if rId in self.docx_obj.part.rels:
+                rel = self.docx_obj.part.rels[rId]
+                if rel.is_external:
+                    _log.warning(
+                        "Skipping external image reference: %s", rel.target_ref
+                    )
+                    return None
                 # Access the image part using the relationship ID
-                image_part = self.docx_obj.part.rels[rId].target_part
+                image_part = rel.target_part
                 image_data = image_part.blob  # Get the binary image data
             return image_data
 
