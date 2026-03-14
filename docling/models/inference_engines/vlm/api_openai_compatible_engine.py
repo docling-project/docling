@@ -122,15 +122,24 @@ class ApiVlmEngine(BaseVlmEngine):
             images = preprocess_image_batch([input_data.image])
             image = images[0]
 
-            # Prepare API parameters (use merged params which include model spec params)
-            api_params = {
-                **self.merged_params,
+            # Prepare API parameters: engine defaults first, then user/model
+            # params override. This allows users to set Azure-specific params
+            # like max_completion_tokens or override temperature (#3112).
+            api_params: dict[str, object] = {
                 "temperature": input_data.temperature,
             }
 
             # Add max_tokens if specified
             if input_data.max_new_tokens:
                 api_params["max_tokens"] = input_data.max_new_tokens
+
+            # User/model spec params take precedence over engine defaults
+            api_params.update(self.merged_params)
+
+            # If user specified max_completion_tokens, remove conflicting
+            # max_tokens (required for Azure OpenAI compatibility)
+            if "max_completion_tokens" in api_params:
+                api_params.pop("max_tokens", None)
 
             # Add stop strings if specified
             if input_data.stop_strings:
