@@ -536,19 +536,21 @@ class PictureDescriptionBaseOptions(BaseOptions):
     batch_size: Annotated[
         int,
         Field(
+            ge=1,
             description=(
                 "Number of images to process in a single batch during picture description. Higher values improve "
                 "throughput but increase memory usage. Adjust based on available GPU/CPU memory."
-            )
+            ),
         ),
     ] = 8
     scale: Annotated[
         float,
         Field(
+            gt=0,
             description=(
                 "Scaling factor for image resolution before processing. Higher values (e.g., 2.0) provide more detail "
                 "for the vision model but increase processing time and memory. Range: 0.5-4.0 typical."
-            )
+            ),
         ),
     ] = 2.0
     picture_area_threshold: Annotated[
