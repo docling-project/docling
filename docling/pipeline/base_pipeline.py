@@ -25,6 +25,13 @@ from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     PipelineOptions,
 )
+from docling.datamodel.progress_event import (
+    ConversionPhase,
+    PageProgressEvent,
+    PhaseProgressEvent,
+    ProgressEvent,
+    ProgressEventType,
+)
 from docling.datamodel.settings import settings
 from docling.models.base_model import GenericEnrichmentModel
 from docling.models.factories import get_picture_description_factory
@@ -61,20 +68,60 @@ class BasePipeline(ABC):
                 "When defined, it must point to a folder containing all models required by the pipeline."
             )
 
-    def execute(self, in_doc: InputDocument, raises_on_error: bool) -> ConversionResult:
-        conv_res = ConversionResult(input=in_doc)
+    @staticmethod
+    def _emit_progress(
+        callback: Callable[[ProgressEvent], None] | None,
+        event: ProgressEvent,
+    ) -> None:
+        """Invoke the callback with the given event, swallowing exceptions."""
+        if callback is None:
+            return
+        try:
+            callback(event)
+        except Exception:
+            _log.debug("Progress callback raised an exception", exc_info=True)
 
-        _log.info(f"Processing document {in_doc.file.name}")
+    def execute(
+        self,
+        in_doc: InputDocument,
+        raises_on_error: bool,
+        progress_callback: Callable[[ProgressEvent], None] | None = None,
+    ) -> ConversionResult:
+        conv_res = ConversionResult(input=in_doc)
+        doc_name = in_doc.file.name
+
+        def _phase_event(phase: ConversionPhase, event_type: ProgressEventType) -> None:
+            self._emit_progress(
+                progress_callback,
+                PhaseProgressEvent(
+                    event_type=event_type,
+                    document_name=doc_name,
+                    phase=phase,
+                ),
+            )
+
+        _log.info(f"Processing document {doc_name}")
         try:
             with TimeRecorder(
                 conv_res, "pipeline_total", scope=ProfilingScope.DOCUMENT
             ):
                 # These steps are building and assembling the structure of the
                 # output DoclingDocument.
-                conv_res = self._build_document(conv_res)
+                _phase_event(ConversionPhase.BUILD, ProgressEventType.PHASE_START)
+                conv_res = self._build_document(
+                    conv_res, progress_callback=progress_callback
+                )
+                _phase_event(ConversionPhase.BUILD, ProgressEventType.PHASE_COMPLETE)
+
+                _phase_event(ConversionPhase.ASSEMBLE, ProgressEventType.PHASE_START)
                 conv_res = self._assemble_document(conv_res)
+                _phase_event(ConversionPhase.ASSEMBLE, ProgressEventType.PHASE_COMPLETE)
+
                 # From this stage, all operations should rely only on conv_res.output
+                _phase_event(ConversionPhase.ENRICH, ProgressEventType.PHASE_START)
                 conv_res = self._enrich_document(conv_res)
+                _phase_event(ConversionPhase.ENRICH, ProgressEventType.PHASE_COMPLETE)
+
                 conv_res.status = self._determine_status(conv_res)
         except Exception as e:
             conv_res.status = ConversionStatus.FAILURE
@@ -93,7 +140,11 @@ class BasePipeline(ABC):
         return conv_res
 
     @abstractmethod
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+    def _build_document(
+        self,
+        conv_res: ConversionResult,
+        progress_callback: Callable[[ProgressEvent], None] | None = None,
+    ) -> ConversionResult:
         pass
 
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
@@ -215,7 +266,11 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
 
         yield from page_batch
 
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+    def _build_document(
+        self,
+        conv_res: ConversionResult,
+        progress_callback: Callable[[ProgressEvent], None] | None = None,
+    ) -> ConversionResult:
         if not isinstance(conv_res.input._backend, PaginatedDocumentBackend):
             raise RuntimeError(
                 f"The selected backend {type(conv_res.input._backend).__name__} for {conv_res.input.file} is not a paginated backend. "
@@ -262,6 +317,16 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                         ):
                             del p.parsed_page
                             p.parsed_page = None
+
+                        self._emit_progress(
+                            progress_callback,
+                            PageProgressEvent(
+                                event_type=ProgressEventType.PAGE_COMPLETE,
+                                document_name=conv_res.input.file.name,
+                                page_no=p.page_no,
+                                total_pages=len(conv_res.pages),
+                            ),
+                        )
 
                     end_batch_time = time.monotonic()
                     total_elapsed_time += end_batch_time - start_batch_time

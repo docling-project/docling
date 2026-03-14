@@ -1,4 +1,5 @@
 import logging
+from typing import Callable
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
@@ -7,6 +8,7 @@ from docling.backend.abstract_backend import (
 from docling.datamodel.base_models import ConversionStatus
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import ConvertPipelineOptions
+from docling.datamodel.progress_event import ProgressEvent
 from docling.pipeline.base_pipeline import ConvertPipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
@@ -23,7 +25,11 @@ class SimplePipeline(ConvertPipeline):
     def __init__(self, pipeline_options: ConvertPipelineOptions):
         super().__init__(pipeline_options)
 
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+    def _build_document(
+        self,
+        conv_res: ConversionResult,
+        progress_callback: Callable[[ProgressEvent], None] | None = None,
+    ) -> ConversionResult:
         if not isinstance(conv_res.input._backend, DeclarativeDocumentBackend):
             raise RuntimeError(
                 f"The selected backend {type(conv_res.input._backend).__name__} for {conv_res.input.file} is not a declarative backend. "
