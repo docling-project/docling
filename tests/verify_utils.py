@@ -276,6 +276,9 @@ def verify_docitems(
     assert len(doc_true.tables) == len(doc_pred.tables), (
         f"[{pdf_filename}] document has different count of tables than expected."
     )
+    assert len(doc_true.pictures) == len(doc_pred.pictures), (
+        f"[{pdf_filename}] Picture lengths do not match: {len(doc_true.pictures)} != {len(doc_pred.pictures)}"
+    )
 
     for (true_item, _true_level), (pred_item, _pred_level) in zip(
         doc_true.iterate_items(), doc_pred.iterate_items()
@@ -359,7 +362,7 @@ def verify_docitems(
             )
 
             true_image = true_item.get_image(doc=doc_true)
-            pred_image = true_item.get_image(doc=doc_pred)
+            pred_image = pred_item.get_image(doc=doc_pred)
             if true_image is not None:
                 assert verify_picture_image_v2(true_image, pred_image), (
                     f"[{pdf_filename}] Picture image mismatch"

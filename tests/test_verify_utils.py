@@ -1,7 +1,8 @@
 import pytest
-from docling_core.types.doc import DoclingDocument, ProvenanceItem
+from docling_core.types.doc import DoclingDocument, ImageRef, ProvenanceItem
 from docling_core.types.doc.base import BoundingBox, Size
 from docling_core.types.doc.labels import DocItemLabel
+from PIL import Image
 
 from tests.verify_utils import verify_docitems
 
@@ -20,6 +21,14 @@ def _make_doc_with_bbox(
             bbox=BoundingBox(l=left, t=20.0, r=30.0, b=40.0),
             charspan=(0, 10),
         ),
+    )
+    return doc
+
+
+def _make_doc_with_picture(*, image_size: tuple[int, int]) -> DoclingDocument:
+    doc = DoclingDocument(name="test")
+    doc.add_picture(
+        image=ImageRef.from_pil(Image.new("RGB", image_size, "red"), dpi=72)
     )
     return doc
 
@@ -72,6 +81,32 @@ def test_verify_docitems_rejects_bbox_presence_mismatch():
     doc_pred.texts[0].prov[0].bbox = None
 
     with pytest.raises(AssertionError, match="BBox presence mismatch"):
+        verify_docitems(
+            doc_pred=doc_pred,
+            doc_true=doc_true,
+            fuzzy=False,
+            pdf_filename="fixture.json",
+        )
+
+
+def test_verify_docitems_rejects_picture_count_mismatch():
+    doc_true = _make_doc_with_picture(image_size=(2, 2))
+    doc_pred = DoclingDocument(name="test")
+
+    with pytest.raises(AssertionError, match="Picture lengths do not match"):
+        verify_docitems(
+            doc_pred=doc_pred,
+            doc_true=doc_true,
+            fuzzy=False,
+            pdf_filename="fixture.json",
+        )
+
+
+def test_verify_docitems_uses_predicted_picture_image():
+    doc_true = _make_doc_with_picture(image_size=(2, 2))
+    doc_pred = _make_doc_with_picture(image_size=(3, 2))
+
+    with pytest.raises(AssertionError):
         verify_docitems(
             doc_pred=doc_pred,
             doc_true=doc_true,
