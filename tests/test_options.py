@@ -191,6 +191,34 @@ def test_parser_backends(test_doc_path):
         assert doc_result.status == ConversionStatus.SUCCESS
 
 
+def test_pipeline_cache_after_initialize(test_doc_path):
+    """Test that initialize_pipeline caches correctly and convert reuses the cache.
+
+    Regression test for #3109: code_formula_options were mutated in-place during
+    pipeline initialization, changing the options hash and causing a cache miss
+    when convert() was called afterwards.
+    """
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.do_ocr = False
+    pipeline_options.do_table_structure = False
+
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=pipeline_options,
+            )
+        }
+    )
+
+    converter.initialize_pipeline(InputFormat.PDF)
+    assert len(converter._get_initialized_pipelines()) == 1
+
+    converter.convert(test_doc_path)
+    assert len(converter._get_initialized_pipelines()) == 1, (
+        "Pipeline should be reused from cache, not re-initialized"
+    )
+
+
 def test_confidence(test_doc_path):
     converter = DocumentConverter()
     doc_result: ConversionResult = converter.convert(test_doc_path, page_range=(6, 9))

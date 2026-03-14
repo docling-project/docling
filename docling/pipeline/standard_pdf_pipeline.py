@@ -506,10 +506,14 @@ class StandardPdfPipeline(ConvertPipeline):
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
 
         # --- optional enrichment ------------------------------------------------
-        # Update code_formula_options to match the boolean flags
-        code_formula_opts = self.pipeline_options.code_formula_options
-        code_formula_opts.extract_code = self.pipeline_options.do_code_enrichment
-        code_formula_opts.extract_formulas = self.pipeline_options.do_formula_enrichment
+        # Create a copy to avoid mutating pipeline_options in-place,
+        # which would change its hash and break pipeline caching (#3109).
+        code_formula_opts = self.pipeline_options.code_formula_options.model_copy(
+            update={
+                "extract_code": self.pipeline_options.do_code_enrichment,
+                "extract_formulas": self.pipeline_options.do_formula_enrichment,
+            }
+        )
 
         self.enrichment_pipe = [
             # Code Formula Enrichment Model (using new VLM runtime system)
