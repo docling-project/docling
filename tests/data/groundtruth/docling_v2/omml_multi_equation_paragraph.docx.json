@@ -1,32 +1,27 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "name": "omml_multi_equation_paragraph",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "binary_hash": 10885696715396400626,
-    "filename": "omml_multi_equation_paragraph.docx",
-    "uri": null
+    "binary_hash": 17520448227351822398,
+    "filename": "omml_multi_equation_paragraph.docx"
   },
   "furniture": {
     "self_ref": "#/furniture",
-    "parent": null,
     "children": [],
     "content_layer": "furniture",
-    "meta": null,
     "name": "_root_",
     "label": "unspecified"
   },
   "body": {
     "self_ref": "#/body",
-    "parent": null,
     "children": [
       {
-        "cref": "#/groups/0"
+        "$ref": "#/groups/0"
       }
     ],
     "content_layer": "body",
-    "meta": null,
     "name": "_root_",
     "label": "unspecified"
   },
@@ -34,70 +29,99 @@
     {
       "self_ref": "#/groups/0",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "cref": "#/texts/0"
-        },
-        {
-          "cref": "#/texts/1"
-        },
-        {
-          "cref": "#/texts/2"
+          "$ref": "#/texts/0"
         }
       ],
       "content_layer": "body",
-      "meta": null,
-      "name": "group",
-      "label": "inline"
+      "name": "header-0",
+      "label": "section"
     }
   ],
   "texts": [
     {
       "self_ref": "#/texts/0",
       "parent": {
-        "cref": "#/groups/0"
+        "$ref": "#/groups/0"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/1"
+        },
+        {
+          "$ref": "#/texts/2"
+        },
+        {
+          "$ref": "#/texts/3"
+        },
+        {
+          "$ref": "#/texts/4"
+        }
+      ],
       "content_layer": "body",
-      "meta": null,
-      "label": "formula",
+      "label": "section_header",
       "prov": [],
-      "orig": "a+b=c",
-      "text": "a+b=c",
-      "formatting": null,
-      "hyperlink": null
+      "orig": "Issue 3: Concatenated equation blocks",
+      "text": "Issue 3: Concatenated equation blocks",
+      "level": 1
     },
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "cref": "#/groups/0"
+        "$ref": "#/texts/0"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
-      "orig": " and ",
-      "text": " and ",
-      "formatting": null,
-      "hyperlink": null
+      "orig": "The paragraph below contains three separate <m:oMath> elements.\nExpected: three separate $$ blocks ($$a = b$$, $$c = d$$, $$e = f$$)\nDocling produces: one $$ block with all equations concatenated.\n\nAll three <m:oMath> elements are siblings inside a single <w:p>.",
+      "text": "The paragraph below contains three separate <m:oMath> elements.\nExpected: three separate $$ blocks ($$a = b$$, $$c = d$$, $$e = f$$)\nDocling produces: one $$ block with all equations concatenated.\n\nAll three <m:oMath> elements are siblings inside a single <w:p>.",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/2",
       "parent": {
-        "cref": "#/groups/0"
+        "$ref": "#/texts/0"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "formula",
       "prov": [],
-      "orig": "x^{2}+y^{2}=z^{2}",
-      "text": "x^{2}+y^{2}=z^{2}",
-      "formatting": null,
-      "hyperlink": null
+      "orig": "a=b",
+      "text": "a=b"
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "formula",
+      "prov": [],
+      "orig": "c=d",
+      "text": "c=d"
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "formula",
+      "prov": [],
+      "orig": "e=f",
+      "text": "e=f"
     }
   ],
   "pictures": [],
