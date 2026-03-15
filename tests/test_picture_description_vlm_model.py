@@ -1,13 +1,12 @@
 import sys
 from pathlib import Path
-from types import ModuleType
 
+import pytest
 import torch
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import PictureDescriptionVlmOptions
-from docling.models.stages.picture_description import picture_description_vlm_model
 from docling.models.stages.picture_description.picture_description_vlm_model import (
     PictureDescriptionVlmModel,
 )
@@ -79,7 +78,12 @@ class _InitDummyProcessor:
 
 
 class _InitDummyModel:
-    pass
+    def __init__(self) -> None:
+        self.eval_called = False
+
+    def eval(self):
+        self.eval_called = True
+        return self
 
 
 def test_legacy_picture_description_vlm_batches_generation() -> None:
@@ -133,24 +137,20 @@ def test_legacy_picture_description_vlm_skips_empty_batch() -> None:
 def test_legacy_picture_description_vlm_init_uses_configured_padding_side(
     monkeypatch,
 ) -> None:
+    transformers = pytest.importorskip("transformers")
     processor = _InitDummyProcessor()
     model = _InitDummyModel()
 
-    class _AutoProcessor:
-        @staticmethod
-        def from_pretrained(*args, **kwargs):
-            return processor
-
-    class _AutoModelForImageTextToText:
-        @staticmethod
-        def from_pretrained(*args, **kwargs):
-            return model
-
-    transformers_stub = ModuleType("transformers")
-    transformers_stub.AutoProcessor = _AutoProcessor
-    transformers_stub.AutoModelForImageTextToText = _AutoModelForImageTextToText
-    monkeypatch.setitem(sys.modules, "transformers", transformers_stub)
-    monkeypatch.setattr(picture_description_vlm_model, "decide_device", lambda _: "cpu")
+    monkeypatch.setattr(
+        transformers.AutoProcessor,
+        "from_pretrained",
+        lambda *args, **kwargs: processor,
+    )
+    monkeypatch.setattr(
+        transformers.AutoModelForImageTextToText,
+        "from_pretrained",
+        lambda *args, **kwargs: model,
+    )
     monkeypatch.setattr(torch, "compile", lambda compiled_model: compiled_model)
 
     picture_description_model = PictureDescriptionVlmModel(
@@ -161,9 +161,10 @@ def test_legacy_picture_description_vlm_init_uses_configured_padding_side(
             repo_id="org/model",
             padding_side="right",
         ),
-        accelerator_options=AcceleratorOptions(),
+        accelerator_options=AcceleratorOptions(device="cpu"),
     )
 
     assert processor.tokenizer.padding_side == "right"
     assert picture_description_model.processor is processor
     assert picture_description_model.model is model
+    assert model.eval_called is (sys.version_info >= (3, 14))
