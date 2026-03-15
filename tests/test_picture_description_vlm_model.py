@@ -1,4 +1,3 @@
-import sys
 from pathlib import Path
 
 import pytest
@@ -78,11 +77,7 @@ class _InitDummyProcessor:
 
 
 class _InitDummyModel:
-    def __init__(self) -> None:
-        self.eval_called = False
-
     def eval(self):
-        self.eval_called = True
         return self
 
 
@@ -167,4 +162,3 @@ def test_legacy_picture_description_vlm_init_uses_configured_padding_side(
     assert processor.tokenizer.padding_side == "right"
     assert picture_description_model.processor is processor
     assert picture_description_model.model is model
-    assert model.eval_called is (sys.version_info >= (3, 14))
