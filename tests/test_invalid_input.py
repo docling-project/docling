@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from docling.datamodel.base_models import ConversionStatus, DocumentStream
+from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.document_converter import ConversionError, DocumentConverter
 
 
@@ -42,3 +42,25 @@ def test_convert_too_small_filesize_limit_wout_exception(converter: DocumentConv
 def test_convert_too_small_filesize_limit_with_exception(converter: DocumentConverter):
     with pytest.raises(ConversionError):
         converter.convert(get_pdf_path(), max_file_size=1, raises_on_error=True)
+
+
+def test_convert_no_pipeline_wout_exception():
+    converter = DocumentConverter()
+    # Bypass the model validator by setting pipeline_options to None after construction.
+    # This triggers the defensive "no pipeline" code path in _execute_pipeline.
+    converter.format_to_options[InputFormat.MD].pipeline_options = None
+    result = converter.convert(
+        DocumentStream(name="test.md", stream=BytesIO(b"# Hello")),
+        raises_on_error=False,
+    )
+    assert result.status == ConversionStatus.FAILURE
+
+
+def test_convert_no_pipeline_with_exception():
+    converter = DocumentConverter()
+    converter.format_to_options[InputFormat.MD].pipeline_options = None
+    with pytest.raises(ConversionError):
+        converter.convert(
+            DocumentStream(name="test.md", stream=BytesIO(b"# Hello")),
+            raises_on_error=True,
+        )

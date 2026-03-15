@@ -1,3 +1,9 @@
+## [v2.80.0](https://github.com/docling-project/docling/releases/tag/v2.80.0) - 2026-03-14
+
+### Feature
+
+* Add the VllmCudaGraphMode ([#3125](https://github.com/docling-project/docling/issues/3125)) ([`f950679`](https://github.com/docling-project/docling/commit/f950679f60ab6b1a9b057e7131fc8c8334e6e62e))
+
 ## [v2.79.0](https://github.com/docling-project/docling/releases/tag/v2.79.0) - 2026-03-12
 
 ### Feature

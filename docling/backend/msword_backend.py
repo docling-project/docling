@@ -1260,6 +1260,23 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     )
         return elem_ref
 
+    def _add_list_item_with_marker(
+        self,
+        doc: DoclingDocument,
+        elements: list,
+        numid: int,
+        ilevel: int,
+        is_numbered: bool,
+        level: int,
+    ) -> None:
+        """Resolve enumeration marker and add a formatted list item."""
+        if is_numbered:
+            counter = self._get_list_counter(numid, ilevel)
+            enum_marker = str(counter) + "."
+        else:
+            enum_marker = ""
+        self._add_formatted_list_item(doc, elements, enum_marker, is_numbered, level)
+
     def _add_list_item(
         self,
         *,
@@ -1273,7 +1290,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # this method is always called with is_numbered. Numbered lists should be properly addressed.
         if not elements:
             return elem_ref
-        enum_marker = ""
 
         level = self._get_level()
         prev_indent = self._prev_indent()
@@ -1295,14 +1311,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[level] = list_gr
             elem_ref.append(list_gr.get_ref())
 
-            # Set marker and enumerated arguments if this is an enumeration element.
-            if is_numbered:
-                counter = self._get_list_counter(numid, ilevel)
-                enum_marker = str(counter) + "."
-            else:
-                enum_marker = ""
-            self._add_formatted_list_item(
-                doc, elements, enum_marker, is_numbered, level
+            self._add_list_item_with_marker(
+                doc, elements, numid, ilevel, is_numbered, level
             )
         elif (
             self._prev_numid() == numid
@@ -1322,16 +1332,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 self.parents[i] = list_gr1
                 elem_ref.append(list_gr1.get_ref())
 
-            # TODO: Set marker and enumerated arguments if this is an enumeration element.
-            if is_numbered:
-                counter = self._get_list_counter(numid, ilevel)
-                enum_marker = str(counter) + "."
-            else:
-                enum_marker = ""
-            self._add_formatted_list_item(
+            self._add_list_item_with_marker(
                 doc,
                 elements,
-                enum_marker,
+                numid,
+                ilevel,
                 is_numbered,
                 self.level_at_new_list + ilevel,
             )
@@ -1345,29 +1350,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 if k > self.level_at_new_list + ilevel:
                     self.parents[k] = None
 
-            # TODO: Set marker and enumerated arguments if this is an enumeration element.
-            if is_numbered:
-                counter = self._get_list_counter(numid, ilevel)
-                enum_marker = str(counter) + "."
-            else:
-                enum_marker = ""
-            self._add_formatted_list_item(
+            self._add_list_item_with_marker(
                 doc,
                 elements,
-                enum_marker,
+                numid,
+                ilevel,
                 is_numbered,
                 self.level_at_new_list + ilevel,
             )
 
         elif self._prev_numid() == numid or prev_indent == ilevel:
-            # Set marker and enumerated arguments if this is an enumeration element.
-            if is_numbered:
-                counter = self._get_list_counter(numid, ilevel)
-                enum_marker = str(counter) + "."
-            else:
-                enum_marker = ""
-            self._add_formatted_list_item(
-                doc, elements, enum_marker, is_numbered, level - 1
+            self._add_list_item_with_marker(
+                doc, elements, numid, ilevel, is_numbered, level - 1
             )
         else:
             _log.warning("List item not matching any insert condition.")

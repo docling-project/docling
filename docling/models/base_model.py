@@ -201,16 +201,8 @@ class BaseItemAndImageEnrichmentModel(
         # Crop the image form the page
         element_prov = element.prov[0]
         bbox = element_prov.bbox
-        width = bbox.r - bbox.l
-        height = bbox.t - bbox.b
-
-        # TODO: move to a utility in the BoundingBox class
-        expanded_bbox = BoundingBox(
-            l=bbox.l - width * self.expansion_factor,
-            t=bbox.t + height * self.expansion_factor,
-            r=bbox.r + width * self.expansion_factor,
-            b=bbox.b - height * self.expansion_factor,
-            coord_origin=bbox.coord_origin,
+        expanded_bbox = bbox.expand_by_scale(
+            self.expansion_factor, self.expansion_factor
         )
 
         page_ix = element_prov.page_no - conv_res.pages[0].page_no
