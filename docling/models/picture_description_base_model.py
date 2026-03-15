@@ -39,9 +39,16 @@ class PictureDescriptionBaseModel(
         options: PictureDescriptionBaseOptions,
         accelerator_options: AcceleratorOptions,
     ):
+        if options.batch_size < 1:
+            raise ValueError("Picture description batch_size must be >= 1")
+        if options.scale <= 0:
+            raise ValueError("Picture description scale must be > 0")
+
         self.enabled = enabled
         self.options = options
         self.provenance = "not-implemented"
+        self.elements_batch_size = options.batch_size
+        self.images_scale = options.scale
 
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
         return self.enabled and isinstance(element, PictureItem)
