@@ -1,51 +1,97 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "name": "omml_frac_superscript",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "binary_hash": 7253832782765427693,
-    "filename": "omml_frac_superscript.docx",
-    "uri": null
+    "binary_hash": 13478372427485355507,
+    "filename": "omml_frac_superscript.docx"
   },
   "furniture": {
     "self_ref": "#/furniture",
-    "parent": null,
     "children": [],
     "content_layer": "furniture",
-    "meta": null,
     "name": "_root_",
     "label": "unspecified"
   },
   "body": {
     "self_ref": "#/body",
-    "parent": null,
     "children": [
       {
-        "cref": "#/texts/0"
+        "$ref": "#/groups/0"
       }
     ],
     "content_layer": "body",
-    "meta": null,
     "name": "_root_",
     "label": "unspecified"
   },
-  "groups": [],
+  "groups": [
+    {
+      "self_ref": "#/groups/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/0"
+        }
+      ],
+      "content_layer": "body",
+      "name": "header-0",
+      "label": "section"
+    }
+  ],
   "texts": [
     {
       "self_ref": "#/texts/0",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/groups/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/1"
+        },
+        {
+          "$ref": "#/texts/2"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Issue 1: Fraction as superscript base not grouped",
+      "text": "Issue 1: Fraction as superscript base not grouped",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/texts/0"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
+      "label": "text",
+      "prov": [],
+      "orig": "The equation below raises a fraction to the power 2.\nExpected LaTeX: {\\frac{(x-c)}{v}}^2\nDocling produces: \\frac{(x-c)}{v}^2\n\nWhen <m:sSup> has an <m:f> (fraction) as its base <m:e>, docling emits\n\\frac{num}{den}^2 without grouping braces. In LaTeX this is ambiguous:\nsome renderers apply ^2 only to the last token, not the whole fraction.\nThe output should be {\\frac{(x-c)}{v}}^2 or \\left(\\frac{(x-c)}{v}\\right)^2.",
+      "text": "The equation below raises a fraction to the power 2.\nExpected LaTeX: {\\frac{(x-c)}{v}}^2\nDocling produces: \\frac{(x-c)}{v}^2\n\nWhen <m:sSup> has an <m:f> (fraction) as its base <m:e>, docling emits\n\\frac{num}{den}^2 without grouping braces. In LaTeX this is ambiguous:\nsome renderers apply ^2 only to the last token, not the whole fraction.\nThe output should be {\\frac{(x-c)}{v}}^2 or \\left(\\frac{(x-c)}{v}\\right)^2.",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "body",
       "label": "formula",
       "prov": [],
-      "orig": "{\\frac{(x-c)}{v}}^{^{2}}",
-      "text": "{\\frac{(x-c)}{v}}^{^{2}}",
-      "formatting": null,
-      "hyperlink": null
+      "orig": "{\\frac{(x-c)}{v}}^{2}",
+      "text": "{\\frac{(x-c)}{v}}^{2}"
     }
   ],
   "pictures": [],
