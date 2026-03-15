@@ -1,9 +1,5 @@
-Issue 2: Text-mode escapes in math context
-
-The equation below uses U+2013 EN DASH as minus and U+005E as caret.
-Expected LaTeX: x - y^2
-Docling produces: x \text{ \textendash } y\text{ \textasciicircum }2
-
-Both characters appear inside <m:r><m:t> math runs but are escaped as text-mode LaTeX macros instead of kept as math operators.
-
-$$x - y^2$$
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section: group header-0
+    item-2 at level 2: section_header: Issue 2: Text-mode escapes in math context
+      item-3 at level 3: text: The equation below uses U+2013 E ... ros instead of kept as math operators.
+      item-4 at level 3: formula: x - y^2
