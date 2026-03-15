@@ -486,6 +486,13 @@ class oMath2Latex(Tag2Method):
         if "}" not in base_proc_str and "\\}" in proc_str:
             proc_str = proc_str.replace("\\}", "}")
 
+        # Undo escaping of characters that process_unicode intentionally
+        # mapped to math operators (e.g. U+005E caret → ^).  escape_latex
+        # treats them as text-mode specials, but inside <m:r> they are math.
+        for orig, mapped in self._MATH_CHAR_MAP.items():
+            if mapped in CHARS and orig in (found_text or "") and f"\\{mapped}" in proc_str:
+                proc_str = proc_str.replace(f"\\{mapped}", mapped)
+
         return proc_str
 
     tag2meth = {
