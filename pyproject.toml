@@ -112,6 +112,7 @@ asr = [
     'mlx-whisper>=0.4.3 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
     'openai-whisper>=20250625',
     'numba>=0.63.0',  # Ensure Python 3.11+ compatibility (llvmlite constraint)
+    'whisper-s2t-reborn[pyav]>=1.5.2',
 ]
 xbrl = [
     "arelle-release (>=2.38.17,<3.0.0)",
