@@ -143,7 +143,7 @@ def test_picture_description_scale_is_used_for_cropping() -> None:
     assert page.calls[0]["scale"] == 1.5
 
 
-def test_picture_description_scale_is_used_for_embedded_images() -> None:
+def test_picture_description_embedded_images_keep_original_size() -> None:
     model = _ConfiguredPictureDescriptionModel(_TestOptions(scale=1.5))
     doc = _make_picture_doc(count=1, embed_images=True)
 
@@ -152,7 +152,7 @@ def test_picture_description_scale_is_used_for_embedded_images() -> None:
     )
 
     assert prepared is not None
-    assert prepared.image.size == (30, 30)
+    assert prepared.image.size == (20, 20)
 
 
 def test_picture_description_batch_size_must_be_positive() -> None:

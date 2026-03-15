@@ -717,6 +717,15 @@ class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):
             )
         ),
     ] = {"max_new_tokens": 200, "do_sample": False}
+    padding_side: Annotated[
+        Literal["left", "right"],
+        Field(
+            description=(
+                "Tokenizer padding side used for batched generation. Defaults to left to preserve the legacy "
+                "behavior, but can be overridden for models that require right padding."
+            )
+        ),
+    ] = "left"
 
     @property
     def repo_cache_folder(self) -> str:

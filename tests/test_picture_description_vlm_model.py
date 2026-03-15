@@ -1,7 +1,13 @@
+import sys
+from pathlib import Path
+from types import ModuleType
+
 import torch
 from PIL import Image
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import PictureDescriptionVlmOptions
+from docling.models.stages.picture_description import picture_description_vlm_model
 from docling.models.stages.picture_description.picture_description_vlm_model import (
     PictureDescriptionVlmModel,
 )
@@ -62,6 +68,20 @@ class _DummyModel:
         )
 
 
+class _DummyTokenizer:
+    def __init__(self) -> None:
+        self.padding_side = "left"
+
+
+class _InitDummyProcessor:
+    def __init__(self) -> None:
+        self.tokenizer = _DummyTokenizer()
+
+
+class _InitDummyModel:
+    pass
+
+
 def test_legacy_picture_description_vlm_batches_generation() -> None:
     model = PictureDescriptionVlmModel.__new__(PictureDescriptionVlmModel)
     model.processor = _DummyProcessor()
@@ -94,3 +114,56 @@ def test_legacy_picture_description_vlm_batches_generation() -> None:
     assert model.processor.skip_special_tokens is True
     assert len(model.model.generate_calls) == 1
     assert model.model.generate_calls[0]["generation_config"].max_new_tokens == 17
+
+
+def test_legacy_picture_description_vlm_skips_empty_batch() -> None:
+    model = PictureDescriptionVlmModel.__new__(PictureDescriptionVlmModel)
+    model.processor = _DummyProcessor()
+    model.model = _DummyModel()
+    model.device = "cpu"
+    model.options = PictureDescriptionVlmOptions(repo_id="org/model")
+
+    assert list(model._annotate_images([])) == []
+    assert model.processor.template_calls == 0
+    assert model.processor.process_calls == []
+    assert model.processor.decode_calls == 0
+    assert model.model.generate_calls == []
+
+
+def test_legacy_picture_description_vlm_init_uses_configured_padding_side(
+    monkeypatch,
+) -> None:
+    processor = _InitDummyProcessor()
+    model = _InitDummyModel()
+
+    class _AutoProcessor:
+        @staticmethod
+        def from_pretrained(*args, **kwargs):
+            return processor
+
+    class _AutoModelForImageTextToText:
+        @staticmethod
+        def from_pretrained(*args, **kwargs):
+            return model
+
+    transformers_stub = ModuleType("transformers")
+    transformers_stub.AutoProcessor = _AutoProcessor
+    transformers_stub.AutoModelForImageTextToText = _AutoModelForImageTextToText
+    monkeypatch.setitem(sys.modules, "transformers", transformers_stub)
+    monkeypatch.setattr(picture_description_vlm_model, "decide_device", lambda _: "cpu")
+    monkeypatch.setattr(torch, "compile", lambda compiled_model: compiled_model)
+
+    picture_description_model = PictureDescriptionVlmModel(
+        enabled=True,
+        enable_remote_services=False,
+        artifacts_path=Path("/tmp"),
+        options=PictureDescriptionVlmOptions(
+            repo_id="org/model",
+            padding_side="right",
+        ),
+        accelerator_options=AcceleratorOptions(),
+    )
+
+    assert processor.tokenizer.padding_side == "right"
+    assert picture_description_model.processor is processor
+    assert picture_description_model.model is model

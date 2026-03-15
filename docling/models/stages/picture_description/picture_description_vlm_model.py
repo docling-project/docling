@@ -57,7 +57,6 @@ class PictureDescriptionVlmModel(
                 import torch
                 from transformers import (
                     AutoModelForImageTextToText,
-                    AutoModelForVision2Seq,
                     AutoProcessor,
                 )
             except ImportError:
@@ -68,7 +67,9 @@ class PictureDescriptionVlmModel(
             # Initialize processor and model
             with _model_init_lock:
                 self.processor = AutoProcessor.from_pretrained(artifacts_path)
-                self.processor.tokenizer.padding_side = "left"  # type: ignore[union-attr]
+                tokenizer = getattr(self.processor, "tokenizer", None)
+                if tokenizer is not None:
+                    tokenizer.padding_side = self.options.padding_side
                 self.model = AutoModelForImageTextToText.from_pretrained(
                     artifacts_path,
                     device_map=self.device,

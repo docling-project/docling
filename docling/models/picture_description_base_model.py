@@ -15,7 +15,6 @@ from docling_core.types.doc.document import PictureDescriptionData
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     PictureDescriptionBaseOptions,
 )
@@ -53,31 +52,6 @@ class PictureDescriptionBaseModel(
 
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
         return self.enabled and isinstance(element, PictureItem)
-
-    def prepare_element(
-        self, conv_res: ConversionResult, element: NodeItem
-    ) -> Optional[ItemAndImageEnrichmentElement]:
-        if not self.is_processable(doc=conv_res.document, element=element):
-            return None
-
-        assert isinstance(element, PictureItem)
-
-        # Embedded images bypass the page-crop path, so scale them here.
-        if element.image is not None:
-            embedded_image = element.image.pil_image
-            if embedded_image is None:
-                return None
-            if self.images_scale != 1.0:
-                embedded_image = embedded_image.resize(
-                    (
-                        max(1, round(embedded_image.width * self.images_scale)),
-                        max(1, round(embedded_image.height * self.images_scale)),
-                    ),
-                    Image.Resampling.LANCZOS,
-                )
-            return ItemAndImageEnrichmentElement(item=element, image=embedded_image)
-
-        return super().prepare_element(conv_res=conv_res, element=element)
 
     def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
         raise NotImplementedError
