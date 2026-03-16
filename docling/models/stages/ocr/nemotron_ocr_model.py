@@ -1,6 +1,7 @@
 import logging
 import platform
 import sys
+import threading
 from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import Optional, Type, TypedDict, cast
@@ -25,7 +26,7 @@ _log = logging.getLogger(__name__)
 
 
 class NemotronOcrPrediction(TypedDict):
-    """Exact prediction schema returned by `nemotron_ocr` 1.0.1."""
+    """Exact prediction schema returned by `nemotron_ocr`."""
 
     text: str
     confidence: float
@@ -70,6 +71,9 @@ class NemotronOcrModel(BaseOcrModel):
                 else None
             )
             self.reader = NemotronOCR(model_dir=model_dir)
+            self._reader_debug_lock = threading.Lock()
+            self._active_reader_calls = 0
+            self._reader_call_seq = 0
 
     @staticmethod
     def _fail_runtime(message: str) -> None:
@@ -119,7 +123,7 @@ class NemotronOcrModel(BaseOcrModel):
         image_height: int,
         scale: int,
     ) -> TextCell:
-        # `nemotron_ocr` 1.0.1 returns normalized `left/right` and an inverted
+        # `nemotron_ocr` returns normalized `left/right` and an inverted
         # pair `lower/upper`, where `lower` is the top Y and `upper` is the
         # bottom Y in image coordinates.
         left = (prediction["left"] * image_width) / scale + ocr_rect.l
@@ -160,8 +164,14 @@ class NemotronOcrModel(BaseOcrModel):
                 with TimeRecorder(conv_res, "ocr"):
                     ocr_rects = self.get_ocr_rects(page)
 
+                    print(
+                        "[nemotron-debug] "
+                        f"page={page.page_no} rect_count={len(ocr_rects)} "
+                        f"rects={[rect.as_tuple() for rect in ocr_rects]}"
+                    )
+
                     all_ocr_cells = []
-                    for ocr_rect in ocr_rects:
+                    for crop_index, ocr_rect in enumerate(ocr_rects):
                         if ocr_rect.area() == 0:
                             continue
 
@@ -171,14 +181,68 @@ class NemotronOcrModel(BaseOcrModel):
                         image_width, image_height = high_res_image.size
                         image_array = numpy.array(high_res_image)
 
-                        raw_predictions = cast(
-                            Sequence[NemotronOcrPrediction],
-                            self.reader(
-                                image_array,
-                                merge_level=self.options.merge_level,
-                                visualize=False,
-                            ),
+                        print(
+                            "[nemotron-debug] "
+                            f"page={page.page_no} crop={crop_index} "
+                            f"rect={ocr_rect.as_tuple()} "
+                            f"size={image_width}x{image_height} "
+                            f"shape={image_array.shape} "
+                            f"dtype={image_array.dtype} "
+                            f"contiguous={image_array.flags.c_contiguous} "
+                            f"thread={threading.current_thread().name}:{threading.get_ident()} "
+                            f"model_id={id(self)} reader_id={id(self.reader)}"
                         )
+
+                        with self._reader_debug_lock:
+                            self._reader_call_seq += 1
+                            reader_call_id = self._reader_call_seq
+                            self._active_reader_calls += 1
+                            active_reader_calls = self._active_reader_calls
+
+                        print(
+                            "[nemotron-debug] "
+                            f"reader-enter call={reader_call_id} "
+                            f"active={active_reader_calls} "
+                            f"page={page.page_no} crop={crop_index} "
+                            f"thread={threading.current_thread().name}:{threading.get_ident()} "
+                            f"model_id={id(self)} reader_id={id(self.reader)}"
+                        )
+
+                        try:
+                            raw_predictions = cast(
+                                Sequence[NemotronOcrPrediction],
+                                self.reader(
+                                    image_array,
+                                    merge_level=self.options.merge_level,
+                                    visualize=False,
+                                ),
+                            )
+                        except Exception:
+                            print(
+                                "[nemotron-debug] "
+                                f"FAILED page={page.page_no} crop={crop_index} "
+                                f"rect={ocr_rect.as_tuple()} "
+                                f"size={image_width}x{image_height} "
+                                f"shape={image_array.shape} "
+                                f"dtype={image_array.dtype} "
+                                f"contiguous={image_array.flags.c_contiguous} "
+                                f"reader_call={reader_call_id} "
+                                f"thread={threading.current_thread().name}:{threading.get_ident()} "
+                                f"model_id={id(self)} reader_id={id(self.reader)}"
+                            )
+                            raise
+                        finally:
+                            with self._reader_debug_lock:
+                                self._active_reader_calls -= 1
+                                active_reader_calls = self._active_reader_calls
+                            print(
+                                "[nemotron-debug] "
+                                f"reader-exit call={reader_call_id} "
+                                f"active={active_reader_calls} "
+                                f"page={page.page_no} crop={crop_index} "
+                                f"thread={threading.current_thread().name}:{threading.get_ident()} "
+                                f"model_id={id(self)} reader_id={id(self.reader)}"
+                            )
 
                         del high_res_image
                         del image_array
