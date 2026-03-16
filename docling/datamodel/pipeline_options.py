@@ -158,7 +158,8 @@ class OcrOptions(BaseOptions):
     See Also:
         `OcrAutoOptions`: Automatic engine selection based on availability.
         `EasyOcrOptions`, `TesseractCliOcrOptions`, `TesseractOcrOptions`,
-        `RapidOcrOptions`, `OcrMacOptions`: Engine-specific configurations.
+        `RapidOcrOptions`, `OcrMacOptions`, `NemotronOcrOptions`: Engine-specific
+        configurations.
     """
 
     lang: Annotated[
@@ -317,6 +318,49 @@ class RapidOcrOptions(OcrOptions):
             )
         ),
     ] = {}
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+
+class NemotronOcrOptions(OcrOptions):
+    """Configuration for NVIDIA Nemotron OCR.
+
+    Notes:
+        Nemotron OCR does not expose runtime language selection through its public
+        API. The `lang` field is kept only for compatibility with the shared OCR
+        options interface.
+    """
+
+    kind: ClassVar[Literal["nemotron-ocr"]] = "nemotron-ocr"
+    lang: Annotated[
+        list[str],
+        Field(
+            description=(
+                "Reserved for interface compatibility. Nemotron OCR does not expose "
+                "runtime language selection through its public API."
+            )
+        ),
+    ] = []
+    model_dir: Annotated[
+        Optional[Path],
+        Field(
+            description=(
+                "Optional directory containing the Nemotron OCR checkpoint files "
+                "(`detector.pth`, `recognizer.pth`, `relational.pth`, `charset.txt`). "
+                "If omitted, the upstream package downloads them from Hugging Face."
+            )
+        ),
+    ] = None
+    merge_level: Annotated[
+        Literal["word", "sentence", "paragraph"],
+        Field(
+            description=(
+                "Granularity requested from Nemotron OCR. `word` is the default "
+                "because it maps most directly to Docling OCR cells."
+            )
+        ),
+    ] = "word"
     model_config = ConfigDict(
         extra="forbid",
     )
