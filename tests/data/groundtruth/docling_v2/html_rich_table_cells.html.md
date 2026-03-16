@@ -7,11 +7,11 @@
 | Goose (not a duck!) | Water & wetlands           | **Large**  ,  *loud*  ,  noisy  ,  ~~small~~   |
 | Teal                | - Pond - Marsh - Riverbank | 1. Fly south in winter 2. Build nest on ground |
 
-| Genus                       | Species                   |
-|-----------------------------|---------------------------|
-| Aythya  (Diving ducks)      | Hawser, Common Pochard    |
-| Lophonetta  (Pintail group) | Fulvous Whistling Duck    |
-| Oxyura  (Benthic ducks)     | Wigee, Banded Water-screw |
+| Genus                      | Species                   |
+|----------------------------|---------------------------|
+| Aythya (Diving ducks)      | Hawser, Common Pochard    |
+| Lophonetta (Pintail group) | Fulvous Whistling Duck    |
+| Oxyura (Benthic ducks)     | Wigee, Banded Water-screw |
 
 | Action   | Action                                    |
 |----------|-------------------------------------------|

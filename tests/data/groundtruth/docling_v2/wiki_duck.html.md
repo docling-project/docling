@@ -1,8 +1,6 @@
 ## Contents
 
-move to sidebar
-
-hide
+move to sidebar hide
 
 - [(Top)](#)
 - [1 Etymology](#Etymology)
@@ -25,11 +23,11 @@ hide
     - [8.2 Sources](#Sources)
 - [9 External links](#External_links)
 
-Toggle the table of contents
+- [ ] Toggle the table of contents
 
 # Duck
 
-136 languages
+- [ ] 136 languages
 
 - [Acèh](https://ace.wikipedia.org/wiki/It%C3%A9k)
 - [Afrikaans](https://af.wikipedia.org/wiki/Eend)
@@ -173,19 +171,15 @@ Toggle the table of contents
 - [Article](/wiki/Duck)
 - [Talk](/wiki/Talk:Duck)
 
-English
+- [ ] English
 
 - [Read](/wiki/Duck)
 - [View source](/w/index.php?title=Duck&action=edit)
 - [View history](/w/index.php?title=Duck&action=history)
 
-Tools
+- [ ] Tools
 
-Tools
-
-move to sidebar
-
-hide
+Tools move to sidebar hide
 
 Actions
 
@@ -216,11 +210,7 @@ In other projects
 - [Wikimedia Commons](https://commons.wikimedia.org/wiki/Category:Ducks)
 - [Wikiquote](https://en.wikiquote.org/wiki/Duck)
 
-Appearance
-
-move to sidebar
-
-hide
+Appearance move to sidebar hide
 
 Page semi-protected
 
@@ -230,11 +220,7 @@ From Wikipedia, the free encyclopedia
 
 (Redirected from [Duckling](/w/index.php?title=Duckling&redirect=no) )
 
-Common name for many species of bird
-
-This article is about the bird. For duck as a food, see [Duck as food](/wiki/Duck_as_food) . For other uses, see [Duck (disambiguation)](/wiki/Duck_(disambiguation)) .
-
-"Duckling" redirects here. For other uses, see [Duckling (disambiguation)](/wiki/Duckling_(disambiguation)) .
+This article is about the bird. For duck as a food, see [Duck as food](/wiki/Duck_as_food) . For other uses, see [Duck (disambiguation)](/wiki/Duck_(disambiguation)) . "Duckling" redirects here. For other uses, see [Duckling (disambiguation)](/wiki/Duckling_(disambiguation)) .
 
 | Duck                                                                                            | Duck                               |
 |-------------------------------------------------------------------------------------------------|------------------------------------|

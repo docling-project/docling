@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "name": "html_rich_table_cells",
   "origin": {
     "mimetype": "text/html",
@@ -24,7 +24,7 @@
         "$ref": "#/texts/1"
       },
       {
-        "$ref": "#/texts/27"
+        "$ref": "#/texts/24"
       }
     ],
     "content_layer": "body",
@@ -137,9 +137,6 @@
       "children": [
         {
           "$ref": "#/texts/14"
-        },
-        {
-          "$ref": "#/texts/15"
         }
       ],
       "content_layer": "body",
@@ -153,10 +150,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/16"
-        },
-        {
-          "$ref": "#/texts/17"
+          "$ref": "#/texts/15"
         }
       ],
       "content_layer": "body",
@@ -170,10 +164,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/18"
-        },
-        {
-          "$ref": "#/texts/19"
+          "$ref": "#/texts/16"
         }
       ],
       "content_layer": "body",
@@ -187,7 +178,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/20"
+          "$ref": "#/texts/17"
         }
       ],
       "content_layer": "body",
@@ -201,13 +192,13 @@
       },
       "children": [
         {
-          "$ref": "#/texts/21"
+          "$ref": "#/texts/18"
         },
         {
-          "$ref": "#/texts/22"
+          "$ref": "#/texts/19"
         },
         {
-          "$ref": "#/texts/23"
+          "$ref": "#/texts/20"
         }
       ],
       "content_layer": "body",
@@ -221,7 +212,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/24"
+          "$ref": "#/texts/21"
         }
       ],
       "content_layer": "body",
@@ -235,7 +226,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/25"
+          "$ref": "#/texts/22"
         }
       ],
       "content_layer": "body",
@@ -263,7 +254,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/26"
+          "$ref": "#/texts/23"
         }
       ],
       "content_layer": "body",
@@ -291,7 +282,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/28"
+          "$ref": "#/texts/25"
         }
       ],
       "content_layer": "body",
@@ -528,71 +519,35 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Aythya",
-      "text": "Aythya"
+      "orig": "Aythya (Diving ducks)",
+      "text": "Aythya (Diving ducks)"
     },
     {
       "self_ref": "#/texts/15",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "(Diving ducks)",
-      "text": "(Diving ducks)"
+      "orig": "Lophonetta (Pintail group)",
+      "text": "Lophonetta (Pintail group)"
     },
     {
       "self_ref": "#/texts/16",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Lophonetta",
-      "text": "Lophonetta"
+      "orig": "Oxyura (Benthic ducks)",
+      "text": "Oxyura (Benthic ducks)"
     },
     {
       "self_ref": "#/texts/17",
-      "parent": {
-        "$ref": "#/groups/6"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "(Pintail group)",
-      "text": "(Pintail group)"
-    },
-    {
-      "self_ref": "#/texts/18",
-      "parent": {
-        "$ref": "#/groups/7"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Oxyura",
-      "text": "Oxyura"
-    },
-    {
-      "self_ref": "#/texts/19",
-      "parent": {
-        "$ref": "#/groups/7"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "(Benthic ducks)",
-      "text": "(Benthic ducks)"
-    },
-    {
-      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -611,7 +566,7 @@
       }
     },
     {
-      "self_ref": "#/texts/21",
+      "self_ref": "#/texts/18",
       "parent": {
         "$ref": "#/groups/9"
       },
@@ -623,7 +578,7 @@
       "text": "Gracefully glide on H"
     },
     {
-      "self_ref": "#/texts/22",
+      "self_ref": "#/texts/19",
       "parent": {
         "$ref": "#/groups/9"
       },
@@ -642,7 +597,7 @@
       }
     },
     {
-      "self_ref": "#/texts/23",
+      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/groups/9"
       },
@@ -654,7 +609,7 @@
       "text": "O surfaces."
     },
     {
-      "self_ref": "#/texts/24",
+      "self_ref": "#/texts/21",
       "parent": {
         "$ref": "#/groups/10"
       },
@@ -673,7 +628,7 @@
       }
     },
     {
-      "self_ref": "#/texts/25",
+      "self_ref": "#/texts/22",
       "parent": {
         "$ref": "#/groups/11"
       },
@@ -692,7 +647,7 @@
       }
     },
     {
-      "self_ref": "#/texts/26",
+      "self_ref": "#/texts/23",
       "parent": {
         "$ref": "#/groups/13"
       },
@@ -705,7 +660,7 @@
       "hyperlink": "https://en.wikipedia.org/wiki/Donald_Duck#/media/File:Donald_Duck_angry_transparent_background.png"
     },
     {
-      "self_ref": "#/texts/27",
+      "self_ref": "#/texts/24",
       "parent": {
         "$ref": "#/body"
       },
@@ -718,7 +673,7 @@
       "hyperlink": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Witkopeend_-_white-headed_duck_-_Oxyura_leucocephala_3.tif/lossy-page1-1920px-Witkopeend_-_white-headed_duck_-_Oxyura_leucocephala_3.tif.jpg"
     },
     {
-      "self_ref": "#/texts/28",
+      "self_ref": "#/texts/25",
       "parent": {
         "$ref": "#/groups/15"
       },
@@ -743,7 +698,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/27"
+          "$ref": "#/texts/24"
         }
       ],
       "references": [],
