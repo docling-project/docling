@@ -1457,7 +1457,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     doc.add_table_cell(table_item=docling_table, cell=simple_cell)
         return data
 
-    def _walk(self, element: Tag, doc: DoclingDocument) -> list[RefItem]:
+    def _walk(self, element: Tag, doc: DoclingDocument) -> list[RefItem]:  # noqa: C901
         """Parse an XML tag by recursively walking its content.
 
         While walking, the method buffers inline text across tags like <b> or <span>,
