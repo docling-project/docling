@@ -68,7 +68,7 @@ the following engines.
 | Engine | Installation | Usage |
 | ------ | ------------ | ----- |
 | [EasyOCR](https://github.com/JaidedAI/EasyOCR) | `easyocr` extra or via `pip install easyocr`. | `EasyOcrOptions` |
-| [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v1) | `nemotron-ocr` extra. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. | `NemotronOcrOptions` |
+| [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v1) | `nemotron-ocr` extra. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. See installation note below. | `NemotronOcrOptions` |
 | Tesseract | System dependency. See description for Tesseract and Tesserocr below.  | `TesseractOcrOptions` |
 | Tesseract CLI | System dependency. See description below. | `TesseractCliOcrOptions` |
 | OcrMac | System dependency. See description below. | `OcrMacOptions` |
@@ -137,6 +137,20 @@ doc_converter = DocumentConverter(
     pip uninstall tesserocr
     pip install --no-binary :all: tesserocr
     ```
+
+??? "Nemotron OCR installation"
+
+    [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v1) requires the CUDA 13 PyTorch wheels.
+    Install it with the `nemotron-ocr` extra, the CUDA 13 PyTorch index, and the `unsafe-best-match`
+    index strategy so `pip` resolves the CUDA-enabled `torch` packages correctly.
+
+    ```console
+    pip install "docling[nemotron-ocr]" \
+      --extra-index-url https://download.pytorch.org/whl/cu130 \
+      --index-strategy unsafe-best-match
+    ```
+
+    Nemotron OCR is currently supported only on Linux x86_64 with Python 3.12 and CUDA 13.x.
 
 ## Development setup
 
