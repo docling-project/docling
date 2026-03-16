@@ -157,15 +157,7 @@ doc_converter = DocumentConverter(
 To develop Docling features, bugfixes etc., install as follows from your local clone's root dir:
 
 ```bash
-uv sync \
-  --extra asr \
-  --extra easyocr \
-  --extra ocrmac \
-  --extra rapidocr \
-  --extra remote-serving \
-  --extra tesserocr \
-  --extra vlm \
-  --extra xbrl
+uv sync --all-extras --no-extra nemotron-ocr
 ```
 
 The `nemotron-ocr` extra is intentionally excluded from the default development

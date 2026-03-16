@@ -50,7 +50,7 @@ jobs:
             pre-commit|${{ env.PY }}|
 
       - name: Install Python Dependencies
-        run: uv sync --frozen --extra easyocr --extra tesserocr --extra ocrmac --extra rapidocr --extra vlm --extra asr --extra xbrl --extra remote-serving
+        run: uv sync --frozen --all-extras --no-extra nemotron-ocr
 
       - name: Check style
         run: |
@@ -92,7 +92,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Python Dependencies
-        run: uv sync --frozen --extra easyocr --extra tesserocr --extra ocrmac --extra rapidocr --extra vlm --extra asr --extra xbrl --extra remote-serving
+        run: uv sync --frozen --all-extras --no-extra nemotron-ocr
 
       - name: Cache Models
         uses: actions/cache@v5
@@ -159,7 +159,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Python Dependencies
-        run: uv sync --frozen --extra easyocr --extra tesserocr --extra ocrmac --extra rapidocr --extra vlm --extra asr --extra xbrl --extra remote-serving
+        run: uv sync --frozen --all-extras --no-extra nemotron-ocr
 
       - name: Cache Models
         uses: actions/cache@v5
@@ -231,7 +231,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Python Dependencies
-        run: uv sync --frozen --extra easyocr --extra tesserocr --extra ocrmac --extra rapidocr --extra vlm --extra asr --extra xbrl --extra remote-serving
+        run: uv sync --frozen --all-extras --no-extra nemotron-ocr
 
       - name: Cache Models
         uses: actions/cache@v5
@@ -410,7 +410,7 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --extra easyocr --extra tesserocr --extra ocrmac --extra rapidocr --extra vlm --extra asr --extra xbrl --extra remote-serving
+        run: uv sync --all-extras --no-extra nemotron-ocr
 
       - name: Build package
         run: uv build

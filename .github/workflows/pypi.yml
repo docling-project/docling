@@ -29,7 +29,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
       - name: Install dependencies
-        run: uv sync --extra easyocr --extra tesserocr --extra ocrmac --extra rapidocr --extra vlm --extra asr --extra xbrl --extra remote-serving
+        run: uv sync --all-extras --no-extra nemotron-ocr
       - name: Build package
         run: uv build
       - name: Publish distribution 📦 to PyPI
