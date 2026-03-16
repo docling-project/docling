@@ -4,7 +4,7 @@ import sys
 import threading
 from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Optional, Type, TypedDict, cast
+from typing import Any, Optional, Type, TypedDict, cast
 
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin
@@ -23,6 +23,118 @@ from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
+
+
+class _GridSamplerDebugWrapper:
+    def __init__(self, original_sampler: Any):
+        self._original_sampler = original_sampler
+        self._call_seq = 0
+        self._lock = threading.Lock()
+
+    @staticmethod
+    def _branch_name(grid: Any) -> str:
+        shape = getattr(grid, "shape", None)
+        if shape is None or len(shape) < 2:
+            return "unknown"
+        tail = tuple(int(dim) for dim in shape[-2:])
+        if tail == (8, 32):
+            return "recognizer"
+        if tail == (2, 3):
+            return "relational"
+        return "unknown"
+
+    @staticmethod
+    def _describe_tensor(name: str, tensor: Any) -> str:
+        shape = getattr(tensor, "shape", None)
+        dtype = getattr(tensor, "dtype", None)
+        device = getattr(tensor, "device", None)
+
+        is_contiguous: Any
+        try:
+            is_contiguous = tensor.is_contiguous()
+        except Exception as exc:  # pragma: no cover - debug path
+            is_contiguous = f"err:{exc}"
+
+        is_meta = getattr(tensor, "is_meta", "n/a")
+
+        stride: Any
+        try:
+            stride = tuple(int(v) for v in tensor.stride())
+        except Exception as exc:  # pragma: no cover - debug path
+            stride = f"err:{exc}"
+
+        storage_offset: Any
+        try:
+            storage_offset = tensor.storage_offset()
+        except Exception as exc:  # pragma: no cover - debug path
+            storage_offset = f"err:{exc}"
+
+        data_ptr: Any
+        try:
+            data_ptr = tensor.data_ptr()
+        except Exception as exc:  # pragma: no cover - debug path
+            data_ptr = f"err:{exc}"
+
+        return (
+            f"{name}: type={type(tensor)} shape={shape} dtype={dtype} device={device} "
+            f"contiguous={is_contiguous} is_meta={is_meta} stride={stride} "
+            f"storage_offset={storage_offset} data_ptr={data_ptr}"
+        )
+
+    def __call__(self, input_tensor: Any, grid: Any, input_indices: Any) -> Any:
+        with self._lock:
+            self._call_seq += 1
+            call_id = self._call_seq
+
+        branch_name = self._branch_name(grid)
+        print(
+            f"[nemotron-debug] grid-sampler-enter call={call_id} branch={branch_name}"
+        )
+        print(f"[nemotron-debug] {self._describe_tensor('input', input_tensor)}")
+        print(f"[nemotron-debug] {self._describe_tensor('grid', grid)}")
+        print(
+            f"[nemotron-debug] {self._describe_tensor('input_indices', input_indices)}"
+        )
+
+        try:
+            result = self._original_sampler(input_tensor, grid, input_indices)
+            print(
+                f"[nemotron-debug] grid-sampler-ok call={call_id} branch={branch_name}"
+            )
+            return result
+        except RuntimeError as exc:
+            print(
+                f"[nemotron-debug] grid-sampler-failed call={call_id} "
+                f"branch={branch_name} error={exc}"
+            )
+
+            cloned_input = input_tensor.contiguous().clone()
+            cloned_grid = grid.contiguous().clone()
+            cloned_input_indices = input_indices.contiguous().clone()
+
+            print(
+                f"[nemotron-debug] grid-sampler-retry call={call_id} "
+                f"branch={branch_name} mode=contiguous_clone"
+            )
+            print(
+                f"[nemotron-debug] {self._describe_tensor('cloned_input', cloned_input)}"
+            )
+            print(
+                f"[nemotron-debug] {self._describe_tensor('cloned_grid', cloned_grid)}"
+            )
+            print(
+                f"[nemotron-debug] "
+                f"{self._describe_tensor('cloned_input_indices', cloned_input_indices)}"
+            )
+
+            result = self._original_sampler(
+                cloned_input, cloned_grid, cloned_input_indices
+            )
+            print(
+                f"[nemotron-debug] grid-sampler-retry-ok call={call_id} "
+                f"branch={branch_name}"
+            )
+            return result
 
 
 class NemotronOcrPrediction(TypedDict):
@@ -71,6 +183,9 @@ class NemotronOcrModel(BaseOcrModel):
                 else None
             )
             self.reader = NemotronOCR(model_dir=model_dir)
+            self.reader.grid_sampler = _GridSamplerDebugWrapper(
+                self.reader.grid_sampler
+            )
             self._reader_debug_lock = threading.Lock()
             self._active_reader_calls = 0
             self._reader_call_seq = 0
