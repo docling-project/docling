@@ -25,28 +25,6 @@ from docling.utils.profiling import TimeRecorder
 _log = logging.getLogger(__name__)
 
 
-class _GridSamplerStorageWorkaround:
-    # Temporary upstream workaround:
-    # `nemotron_ocr_cpp.indirect_grid_sample_forward(...)` intermittently
-    # raises "Tensor doesn't have storage" for tensors that appear valid from
-    # Python. Retry the failed call once with fresh owned contiguous tensors.
-    def __init__(self, original_sampler: Any):
-        self._original_sampler = original_sampler
-
-    def __call__(self, input_tensor: Any, grid: Any, input_indices: Any) -> Any:
-        # Workaround call site for the upstream custom-op storage bug.
-        try:
-            return self._original_sampler(input_tensor, grid, input_indices)
-        except RuntimeError as exc:
-            if "doesn't have storage" not in str(exc):
-                raise
-            return self._original_sampler(
-                input_tensor.contiguous().clone(),
-                grid.contiguous().clone(),
-                input_indices.contiguous().clone(),
-            )
-
-
 class NemotronOcrPrediction(TypedDict):
     """Exact prediction schema returned by `nemotron_ocr`."""
 
@@ -92,11 +70,6 @@ class NemotronOcrModel(BaseOcrModel):
             model_dir = self._resolve_model_dir(artifacts_path=artifacts_path)
             self.reader = NemotronOCR(
                 model_dir=None if model_dir is None else str(model_dir)
-            )
-            # Install the storage workaround only at the upstream grid-sampler
-            # boundary, keeping the rest of the Nemotron integration unchanged.
-            self.reader.grid_sampler = _GridSamplerStorageWorkaround(
-                self.reader.grid_sampler
             )
 
     @staticmethod
