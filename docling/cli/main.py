@@ -370,13 +370,11 @@ def _split_list(raw: str | None) -> list[str] | None:
     return re.split(r"[;,]", raw)
 
 
-_OUTPUT_FORMATS_SUPPORTING_IMAGE_EXPORT_MODE = frozenset(
+_OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING = frozenset(
     {
-        OutputFormat.JSON,
-        OutputFormat.YAML,
-        OutputFormat.HTML,
-        OutputFormat.HTML_SPLIT_PAGE,
-        OutputFormat.MARKDOWN,
+        OutputFormat.TEXT,
+        OutputFormat.DOCTAGS,
+        OutputFormat.VTT,
     }
 )
 
@@ -386,7 +384,7 @@ def _should_generate_export_images(
     to_formats: list[OutputFormat],
 ) -> bool:
     return image_export_mode != ImageRefMode.PLACEHOLDER and any(
-        to_format in _OUTPUT_FORMATS_SUPPORTING_IMAGE_EXPORT_MODE
+        to_format not in _OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING
         for to_format in to_formats
     )
 
