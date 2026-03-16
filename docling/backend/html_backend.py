@@ -1798,17 +1798,27 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     ) -> bool:
         if len(annotated_text_list) <= 1:
             return False
-        # In non-rendered mode source_tag_id may be absent for all fragments.
-        # Keep inline grouping in that case to preserve expected inline markdown
-        # output for mixed formatting (e.g., plain text + <strong>).
-        if all(annotated_text.source_tag_id is None for annotated_text in annotated_text_list):
+        # In non-render mode there are no source tag ids. Still keep mixed
+        # inline formatting (e.g. <p>...<strong>...</strong>) as one flow.
+        if all(
+            annotated_text.source_tag_id is None
+            for annotated_text in annotated_text_list
+        ):
             return True
+        # Allow paragraph-like block containers to contribute inline segments
+        # when mixed with formatting tags (e.g., <p>text <strong>bold</strong>).
+        inline_group_container_tags = {"p", "address", "summary"}
         for annotated_text in annotated_text_list:
             source_tag_id = annotated_text.source_tag_id
             if source_tag_id is None:
                 return False
             tag_name = self._get_tag_name_for_docling_id(source_tag_id)
-            if tag_name is None or tag_name not in _INLINE_HTML_TAGS:
+            if tag_name is None:
+                return False
+            if (
+                tag_name not in _INLINE_HTML_TAGS
+                and tag_name not in inline_group_container_tags
+            ):
                 return False
         return True
 
