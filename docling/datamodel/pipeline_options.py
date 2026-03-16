@@ -329,7 +329,8 @@ class NemotronOcrOptions(OcrOptions):
     Notes:
         Nemotron OCR does not expose runtime language selection through its public
         API. The `lang` field is kept only for compatibility with the shared OCR
-        options interface.
+        options interface. Use the pipeline-level `artifacts_path` to point to
+        pre-downloaded checkpoint artifacts.
     """
 
     kind: ClassVar[Literal["nemotron-ocr"]] = "nemotron-ocr"
@@ -342,16 +343,6 @@ class NemotronOcrOptions(OcrOptions):
             )
         ),
     ] = []
-    model_dir: Annotated[
-        Optional[Path],
-        Field(
-            description=(
-                "Optional directory containing the Nemotron OCR checkpoint files "
-                "(`detector.pth`, `recognizer.pth`, `relational.pth`, `charset.txt`). "
-                "If omitted, the upstream package downloads them from Hugging Face."
-            )
-        ),
-    ] = None
     merge_level: Annotated[
         Literal["word", "sentence", "paragraph"],
         Field(

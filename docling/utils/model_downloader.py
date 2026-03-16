@@ -20,6 +20,7 @@ from docling.models.stages.chart_extraction.granite_vision import (
 from docling.models.stages.code_formula.code_formula_model import CodeFormulaModel
 from docling.models.stages.layout.layout_model import LayoutModel
 from docling.models.stages.ocr.easyocr_model import EasyOcrModel
+from docling.models.stages.ocr.nemotron_ocr_model import NemotronOcrModel
 from docling.models.stages.ocr.rapid_ocr_model import RapidOcrModel
 from docling.models.stages.picture_classifier.document_picture_classifier import (
     DocumentPictureClassifier,
@@ -55,6 +56,7 @@ def download_models(
     with_granite_chart_extraction: bool = False,
     with_rapidocr: bool = True,
     with_easyocr: bool = False,
+    with_nemotron_ocr: bool = False,
 ):
     if output_dir is None:
         output_dir = settings.cache_dir / "models"
@@ -185,6 +187,14 @@ def download_models(
         _log.info("Downloading easyocr models...")
         EasyOcrModel.download_models(
             local_dir=output_dir / EasyOcrModel._model_repo_folder,
+            force=force,
+            progress=progress,
+        )
+
+    if with_nemotron_ocr:
+        _log.info("Downloading nemotron OCR model...")
+        NemotronOcrModel.download_models(
+            local_dir=output_dir / NemotronOcrModel._repo_id.replace("/", "--"),
             force=force,
             progress=progress,
         )

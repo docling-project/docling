@@ -18,6 +18,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.settings import settings
 from docling.models.base_ocr_model import BaseOcrModel
+from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
 
@@ -53,6 +54,8 @@ class NemotronOcrPrediction(TypedDict):
 
 
 class NemotronOcrModel(BaseOcrModel):
+    _repo_id = "nvidia/nemotron-ocr-v1"
+
     def __init__(
         self,
         enabled: bool,
@@ -81,12 +84,10 @@ class NemotronOcrModel(BaseOcrModel):
                     "Python 3.12 and CUDA 13.x."
                 ) from exc
 
-            model_dir = (
-                str(self.options.model_dir)
-                if self.options.model_dir is not None
-                else None
+            model_dir = self._resolve_model_dir(artifacts_path=artifacts_path)
+            self.reader = NemotronOCR(
+                model_dir=None if model_dir is None else str(model_dir)
             )
-            self.reader = NemotronOCR(model_dir=model_dir)
             # Install the storage workaround only at the upstream grid-sampler
             # boundary, keeping the rest of the Nemotron integration unchanged.
             self.reader.grid_sampler = _GridSamplerStorageWorkaround(
@@ -131,6 +132,51 @@ class NemotronOcrModel(BaseOcrModel):
                 "Nemotron OCR requires CUDA 13.x, but the current PyTorch runtime "
                 f"reports CUDA {cuda_version!r}."
             )
+
+    @classmethod
+    def _resolve_model_dir(cls, artifacts_path: Optional[Path]) -> Optional[Path]:
+        if artifacts_path is None:
+            return None
+
+        repo_cache_folder = cls._repo_id.replace("/", "--")
+        if (artifacts_path / repo_cache_folder).exists():
+            return artifacts_path / repo_cache_folder / "checkpoints"
+
+        available_dirs = []
+        if artifacts_path.exists():
+            available_dirs = sorted(
+                path.name for path in artifacts_path.iterdir() if path.is_dir()
+            )
+
+        raise FileNotFoundError(
+            "Nemotron OCR artifacts not found in artifacts_path.\n"
+            f"Expected location: {artifacts_path / repo_cache_folder / 'checkpoints'}\n"
+            f"Available directories in {artifacts_path}: {available_dirs}\n"
+            "Use `docling-tools models download nemotron_ocr` to pre-download "
+            "the checkpoints or unset artifacts_path to allow the upstream "
+            "package to download them."
+        )
+
+    @staticmethod
+    def download_models(
+        local_dir: Optional[Path] = None,
+        force: bool = False,
+        progress: bool = False,
+    ) -> Path:
+        if local_dir is None:
+            local_dir = (
+                settings.cache_dir
+                / "models"
+                / NemotronOcrModel._repo_id.replace("/", "--")
+            )
+
+        local_dir.mkdir(parents=True, exist_ok=True)
+        return download_hf_model(
+            repo_id=NemotronOcrModel._repo_id,
+            local_dir=local_dir,
+            force=force,
+            progress=progress,
+        )
 
     @staticmethod
     def _prediction_to_cell(
