@@ -405,11 +405,74 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return None, None  # If the paragraph is not part of a list
 
+    def _get_level_element(self, numid: int, ilvl: int):
+        """Find the level element from the numbering XML for a given numId and ilvl."""
+        try:
+            if not hasattr(self.docx_obj, "part") or not hasattr(
+                self.docx_obj.part, "package"
+            ):
+                return None
+
+            numbering_part = None
+            for part in self.docx_obj.part.package.parts:
+                if "numbering" in part.partname:
+                    numbering_part = part
+                    break
+
+            if numbering_part is None:
+                return None
+
+            numbering_root = numbering_part.element
+            namespaces = {"w": self._W_NS}
+
+            num_element = numbering_root.find(
+                f".//w:num[@w:numId='{numid}']", namespaces=namespaces
+            )
+            if num_element is None:
+                return None
+
+            abstract_num_id_elem = num_element.find(
+                ".//w:abstractNumId", namespaces=namespaces
+            )
+            if abstract_num_id_elem is None:
+                return None
+
+            abstract_num_id = abstract_num_id_elem.get(self.XML_KEY)
+            if abstract_num_id is None:
+                return None
+
+            abstract_num_element = numbering_root.find(
+                f".//w:abstractNum[@w:abstractNumId='{abstract_num_id}']",
+                namespaces=namespaces,
+            )
+            if abstract_num_element is None:
+                return None
+
+            return abstract_num_element.find(
+                f".//w:lvl[@w:ilvl='{ilvl}']", namespaces=namespaces
+            )
+        except Exception as e:
+            _log.debug(f"Error finding level element: {e}")
+            return None
+
+    def _get_start_value(self, numid: int, ilvl: int) -> int:
+        """Read the start value from the abstractNum definition."""
+        lvl_element = self._get_level_element(numid, ilvl)
+        if lvl_element is not None:
+            namespaces = {"w": self._W_NS}
+            start_element = lvl_element.find(".//w:start", namespaces=namespaces)
+            if start_element is not None:
+                val = start_element.get(self.XML_KEY)
+                if val is not None:
+                    return int(val)
+        return 1
+
     def _get_list_counter(self, numid: int, ilvl: int) -> int:
         """Get and increment the counter for a specific numId and ilvl combination."""
         key = (numid, ilvl)
         if key not in self.list_counters:
-            self.list_counters[key] = 0
+            start = self._get_start_value(numid, ilvl)
+            self.list_counters[key] = start - 1
         self.list_counters[key] += 1
         # Reset sub-level counters since parent level advanced
         for k in [k for k in self.list_counters if k[0] == numid and k[1] > ilvl]:
@@ -425,79 +488,28 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _build_enum_marker(self, numid: int, ilvl: int) -> str:
         """Build full hierarchical marker like '1.2.3.'"""
-        parts = [
-            str(self.list_counters.get((numid, lvl), 1)) for lvl in range(ilvl + 1)
-        ]
+        parts = []
+        for lvl in range(ilvl + 1):
+            counter = self.list_counters.get((numid, lvl))
+            if counter is None:
+                counter = self._get_start_value(numid, lvl)
+            parts.append(str(counter))
         return ".".join(parts) + "."
 
     def _is_numbered_list(self, numId: int, ilvl: int) -> bool:
         """Check if a list is numbered based on its numFmt value."""
         try:
-            # Access the numbering part of the document
-            if not hasattr(self.docx_obj, "part") or not hasattr(
-                self.docx_obj.part, "package"
-            ):
-                return False
-
-            numbering_part = None
-            # Find the numbering part
-            for part in self.docx_obj.part.package.parts:
-                if "numbering" in part.partname:
-                    numbering_part = part
-                    break
-
-            if numbering_part is None:
-                return False
-
-            # Parse the numbering XML
-            numbering_root = numbering_part.element
-            namespaces = {"w": self._W_NS}
-
-            # Find the numbering definition with the given numId
-            num_xpath = f".//w:num[@w:numId='{numId}']"
-            num_element = numbering_root.find(num_xpath, namespaces=namespaces)
-
-            if num_element is None:
-                return False
-
-            # Get the abstractNumId from the num element
-            abstract_num_id_elem = num_element.find(
-                ".//w:abstractNumId", namespaces=namespaces
-            )
-            if abstract_num_id_elem is None:
-                return False
-
-            abstract_num_id = abstract_num_id_elem.get(f"{self._W_NS_CLARK}val")
-            if abstract_num_id is None:
-                return False
-
-            # Find the abstract numbering definition
-            abstract_num_xpath = (
-                f".//w:abstractNum[@w:abstractNumId='{abstract_num_id}']"
-            )
-            abstract_num_element = numbering_root.find(
-                abstract_num_xpath, namespaces=namespaces
-            )
-
-            if abstract_num_element is None:
-                return False
-
-            # Find the level definition for the given ilvl
-            lvl_xpath = f".//w:lvl[@w:ilvl='{ilvl}']"
-            lvl_element = abstract_num_element.find(lvl_xpath, namespaces=namespaces)
-
+            lvl_element = self._get_level_element(numId, ilvl)
             if lvl_element is None:
                 return False
 
-            # Get the numFmt element
+            namespaces = {"w": self._W_NS}
             num_fmt_element = lvl_element.find(".//w:numFmt", namespaces=namespaces)
             if num_fmt_element is None:
                 return False
 
-            num_fmt = num_fmt_element.get(f"{self._W_NS_CLARK}val")
+            num_fmt = num_fmt_element.get(self.XML_KEY)
 
-            # Numbered formats include: decimal, lowerRoman, upperRoman, lowerLetter, upperLetter
-            # Bullet formats include: bullet
             numbered_formats = {
                 "decimal",
                 "lowerRoman",
