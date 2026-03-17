@@ -1032,15 +1032,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if (paragraph.text is None or len(paragraph.text.strip()) == 0) and len(
                 text
             ) > 0:
-                # Standalone equation
+                # Standalone equation(s) - create separate formula items for each equation
                 level = self._get_level()
-                t1 = doc.add_text(
-                    label=DocItemLabel.FORMULA,
-                    parent=self.parents[level - 1],
-                    text=text.replace("<eq>", "").replace("</eq>", ""),
-                    content_layer=self.content_layer,
-                )
-                elem_ref.append(t1.get_ref())
+                for eq in equations:
+                    eq_text = eq.replace("<eq>", "").replace("</eq>", "").strip()
+                    if eq_text:
+                        t1 = doc.add_text(
+                            label=DocItemLabel.FORMULA,
+                            parent=self.parents[level - 1],
+                            text=eq_text,
+                            content_layer=self.content_layer,
+                        )
+                        elem_ref.append(t1.get_ref())
             else:
                 # Inline equation
                 level = self._get_level()
