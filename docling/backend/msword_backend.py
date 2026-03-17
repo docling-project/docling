@@ -1401,7 +1401,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             cell_element = table.rows[0].cells[0]
             # In case we have a table of only 1 cell, we consider it furniture
             # And proceed processing the content of the cell as though it's in the document body
+            saved_parents = dict(self.parents)
+            saved_level = self.level
+            saved_level_at_new_list = self.level_at_new_list
             self._walk_linear(cell_element._element, doc)
+            self.parents = saved_parents
+            self.level = saved_level
+            self.level_at_new_list = saved_level_at_new_list
             return elem_ref
 
         data = TableData(num_rows=num_rows, num_cols=num_cols)
