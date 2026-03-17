@@ -591,10 +591,14 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     )
                 )
 
-        # The 'visited_cells' returned to the caller MUST strictly be the ones
-        # that contain data/merges, so the main loop doesn't re-scan them.
-        # However, to avoid overlapping tables, we should mark the whole bbox?
-        # Standard behavior: Mark the specific connected cells we found.
+        # Mark the entire bounding box as visited to prevent detecting the same table twice.
+        # This ensures that empty cells within the table bounds don't start new tables.
+        visited_bbox = {
+            (r, c)
+            for r in range(min_r, max_r + 1)
+            for c in range(min_c, max_c + 1)
+        }
+
         return (
             ExcelTable(
                 anchor=(min_c, min_r),
@@ -602,7 +606,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 num_cols=max_c + 1 - min_c,
                 data=data,
             ),
-            table_cells,
+            visited_bbox,
         )
 
     def _find_images_in_sheet(
