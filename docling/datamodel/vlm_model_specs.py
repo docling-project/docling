@@ -317,6 +317,42 @@ DOLPHIN_TRANSFORMERS = InlineVlmOptions(
     temperature=0.0,
 )
 
+# GLM-OCR
+GLMOCR_TRANSFORMERS = InlineVlmOptions(
+    repo_id="zai-org/GLM-OCR",
+    prompt="Text Recognition:",
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+    transformers_prompt_style=TransformersPromptStyle.CHAT,
+    supported_devices=[
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.MPS,
+        AcceleratorDevice.XPU,
+    ],
+    torch_dtype="bfloat16",
+    scale=2.0,
+    temperature=0.0,
+)
+
+GLMOCR_VLLM = GLMOCR_TRANSFORMERS.model_copy(deep=True)
+GLMOCR_VLLM.inference_framework = InferenceFramework.VLLM
+
+GLMOCR_VLLM_API = ApiVlmOptions(
+    url="http://localhost:8000/v1/chat/completions",
+    params=dict(
+        model="zai-org/GLM-OCR",
+        max_tokens=4096,
+    ),
+    prompt="Text Recognition:",
+    timeout=90,
+    scale=2.0,
+    temperature=0.0,
+    concurrency=4,
+    response_format=ResponseFormat.MARKDOWN,
+)
+
 # DeepSeek-OCR
 DEEPSEEKOCR_OLLAMA = ApiVlmOptions(
     url="http://localhost:11434/v1/chat/completions",
@@ -362,4 +398,6 @@ class VlmModelType(str, Enum):
     GOT_OCR_2 = "got_ocr_2"
     GRANITEDOCLING = "granite_docling"
     GRANITEDOCLING_VLLM = "granite_docling_vllm"
+    GLMOCR = "glmocr"
+    GLMOCR_VLLM = "glmocr_vllm"
     DEEPSEEKOCR_OLLAMA = "deepseekocr_ollama"

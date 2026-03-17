@@ -257,6 +257,7 @@ class TestPresetSystem:
         assert "granite_vision" in preset_ids
         assert "pixtral" in preset_ids
         assert "got_ocr" in preset_ids
+        assert "glmocr" in preset_ids
 
         # Verify we can retrieve them
         smoldocling = VlmConvertOptions.get_preset("smoldocling")

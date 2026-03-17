@@ -1194,6 +1194,40 @@ VLM_CONVERT_DOLPHIN = StageModelPreset(
     default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
+VLM_CONVERT_GLMOCR = StageModelPreset(
+    preset_id="glmocr",
+    name="GLM-OCR",
+    description="Zhipu GLM-OCR model for text recognition and markdown conversion (0.9B parameters)",
+    model_spec=VlmModelSpec(
+        name="GLM-OCR-0.9B",
+        default_repo_id="zai-org/GLM-OCR",
+        prompt="Text Recognition:",
+        response_format=ResponseFormat.MARKDOWN,
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    "torch_dtype": "bfloat16",
+                },
+            ),
+            # No MLX export available yet; when one appears on mlx-community,
+            # add: VlmEngineType.MLX: EngineModelConfig(repo_id="mlx-community/GLM-OCR-...")
+        },
+        api_overrides={
+            VlmEngineType.API: ApiModelConfig(
+                params={"model": "zai-org/GLM-OCR", "max_tokens": 4096}
+            ),
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "glm-ocr", "max_tokens": 4096}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
 # -----------------------------------------------------------------------------
 # PICTURE_DESCRIPTION PRESETS (for image captioning/description)
 # -----------------------------------------------------------------------------
