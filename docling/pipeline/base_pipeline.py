@@ -185,6 +185,10 @@ class ConvertPipeline(BasePipeline):
     def _get_picture_description_model(
         self, artifacts_path: Optional[Path] = None
     ) -> Optional[PictureDescriptionBaseModel]:
+        # Skip model creation if picture description is disabled
+        if not self.pipeline_options.do_picture_description:
+            return None
+
         factory = get_picture_description_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )
