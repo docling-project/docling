@@ -1461,8 +1461,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 provs_in_cell: list[RefItem] = []
                 rich_table_cell: bool = self._is_rich_table_cell(cell)
 
+                # Save parent state before processing rich cell content
+                # to prevent table cell content from affecting the document hierarchy
+                original_parents = self.parents.copy()
                 if rich_table_cell:
                     _, provs_in_cell = self._walk_linear(cell._element, doc)
+                # Restore parent state after processing rich cell content
+                self.parents = original_parents
                 _log.debug(f"Table cell {row_idx},{col_idx} rich? {rich_table_cell}")
 
                 if len(provs_in_cell) > 0:
