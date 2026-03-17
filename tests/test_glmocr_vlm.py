@@ -11,51 +11,98 @@ from docling.datamodel.pipeline_options import VlmConvertOptions, VlmPipelineOpt
 from docling.datamodel.pipeline_options_vlm_model import (
     InferenceFramework,
     ResponseFormat,
+    TransformersModelType,
+    TransformersPromptStyle,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
 
 def test_glmocr_preset_exists():
-    """Verify preset is registered and retrievable."""
+    """Verify preset is registered with correct metadata and model spec."""
     preset_ids = VlmConvertOptions.list_preset_ids()
     assert "glmocr" in preset_ids
 
     preset = VlmConvertOptions.get_preset("glmocr")
     assert preset.preset_id == "glmocr"
     assert preset.name == "GLM-OCR"
-    assert preset.model_spec.default_repo_id == "zai-org/GLM-OCR"
-    assert preset.model_spec.response_format == ResponseFormat.MARKDOWN
-    assert preset.model_spec.prompt == "Text Recognition:"
+    assert preset.scale == 2.0
+    assert preset.default_engine_type == VlmEngineType.AUTO_INLINE
+
+    spec = preset.model_spec
+    assert spec.default_repo_id == "zai-org/GLM-OCR"
+    assert spec.response_format == ResponseFormat.MARKDOWN
+    assert spec.prompt == "Text Recognition:"
+    assert spec.trust_remote_code is False
+
+
+def test_glmocr_preset_engine_config():
+    """Verify engine overrides propagate correctly through get_engine_config."""
+    preset = VlmConvertOptions.get_preset("glmocr")
+    spec = preset.model_spec
+
+    # Transformers engine config should carry torch_dtype and model type
+    tf_config = spec.get_engine_config(VlmEngineType.TRANSFORMERS)
+    assert tf_config.repo_id == "zai-org/GLM-OCR"
+    assert tf_config.extra_config["torch_dtype"] == "bfloat16"
+    assert (
+        tf_config.extra_config["transformers_model_type"]
+        == TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT
+    )
+    assert (
+        tf_config.extra_config["transformers_prompt_style"]
+        == TransformersPromptStyle.CHAT
+    )
+
+    # API overrides should have correct model params
+    api_overrides = spec.api_overrides
+    assert VlmEngineType.API in api_overrides
+    assert api_overrides[VlmEngineType.API].params["model"] == "zai-org/GLM-OCR"
+    assert api_overrides[VlmEngineType.API].params["max_tokens"] == 4096
+    assert VlmEngineType.API_OPENAI in api_overrides
+    assert api_overrides[VlmEngineType.API_OPENAI].params["model"] == "glm-ocr"
+
+    # No MLX override yet — engine config should fall back to default repo_id
+    mlx_config = spec.get_engine_config(VlmEngineType.MLX)
+    assert mlx_config.repo_id == "zai-org/GLM-OCR"
+    assert mlx_config.extra_config == {}
 
 
 def test_glmocr_preset_instantiation():
-    """Verify VlmConvertOptions.from_preset('glmocr') works."""
+    """Verify from_preset produces a usable VlmConvertOptions with engine options."""
     options = VlmConvertOptions.from_preset("glmocr")
-    assert options is not None
     assert options.model_spec.default_repo_id == "zai-org/GLM-OCR"
-    assert options.model_spec.prompt == "Text Recognition:"
     assert options.model_spec.response_format == ResponseFormat.MARKDOWN
+    assert options.engine_options is not None
 
 
 def test_glmocr_legacy_specs():
-    """Verify legacy InlineVlmOptions/ApiVlmOptions specs are accessible."""
+    """Verify legacy InlineVlmOptions/ApiVlmOptions specs are consistent."""
     # Transformers spec
     t = vlm_model_specs.GLMOCR_TRANSFORMERS
     assert t.repo_id == "zai-org/GLM-OCR"
     assert t.inference_framework == InferenceFramework.TRANSFORMERS
     assert t.response_format == ResponseFormat.MARKDOWN
     assert t.torch_dtype == "bfloat16"
+    assert t.transformers_prompt_style == TransformersPromptStyle.CHAT
+    assert t.transformers_model_type == TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT
+    assert t.scale == 2.0
+    assert t.temperature == 0.0
 
-    # VLLM spec
+    # VLLM spec should share repo_id but differ in framework
     v = vlm_model_specs.GLMOCR_VLLM
-    assert v.repo_id == "zai-org/GLM-OCR"
+    assert v.repo_id == t.repo_id
     assert v.inference_framework == InferenceFramework.VLLM
+    assert v.response_format == t.response_format
 
     # API spec
     a = vlm_model_specs.GLMOCR_VLLM_API
     assert a.params["model"] == "zai-org/GLM-OCR"
+    assert a.params["max_tokens"] == 4096
     assert a.response_format == ResponseFormat.MARKDOWN
+    assert a.concurrency == 4
+    assert a.timeout == 90
 
 
 def test_e2e_glmocr_conversion():
@@ -98,6 +145,7 @@ def test_e2e_glmocr_conversion():
 
 if __name__ == "__main__":
     test_glmocr_preset_exists()
+    test_glmocr_preset_engine_config()
     test_glmocr_preset_instantiation()
     test_glmocr_legacy_specs()
     test_e2e_glmocr_conversion()
