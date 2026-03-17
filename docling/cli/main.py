@@ -654,7 +654,7 @@ def convert(  # noqa: C901
                     f"[red]Error: The input file {src} does not exist.[/red]"
                 )
                 raise typer.Abort()
-            except IsADirectoryError:
+            except (IsADirectoryError, PermissionError):
                 # if the input matches to a file or a folder
                 try:
                     local_path = TypeAdapter(Path).validate_python(src)
