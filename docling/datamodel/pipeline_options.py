@@ -351,7 +351,7 @@ class NemotronOcrOptions(OcrOptions):
                 "because it maps most directly to Docling OCR cells."
             )
         ),
-    ] = "word"
+    ] = "sentence"
     model_config = ConfigDict(
         extra="forbid",
     )
