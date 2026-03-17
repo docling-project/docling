@@ -654,7 +654,10 @@ def convert(  # noqa: C901
                     f"[red]Error: The input file {src} does not exist.[/red]"
                 )
                 raise typer.Abort()
-            except IsADirectoryError:
+            except (IsADirectoryError, PermissionError):
+                # On Windows, Path.read_bytes() on a directory raises PermissionError
+                # instead of IsADirectoryError (Python issue: https://bugs.python.org/issue43095).
+                # Both exceptions are handled identically here.
                 # if the input matches to a file or a folder
                 try:
                     local_path = TypeAdapter(Path).validate_python(src)

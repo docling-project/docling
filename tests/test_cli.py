@@ -90,3 +90,44 @@ def test_cli_audio_extensions_coverage():
         assert ext in audio_extensions, (
             f"Audio extension {ext} not found in FormatToExtensions[InputFormat.AUDIO]"
         )
+
+
+def test_cli_directory_input_permission_error(tmp_path, monkeypatch):
+    """Regression test for GitHub issue #3138.
+
+    On Windows, Path.read_bytes() raises PermissionError on a directory path
+    instead of IsADirectoryError (Linux/macOS).  The CLI handler must catch
+    both so that directory inputs work correctly on Windows.
+    """
+    import docling.cli.main as cli_main
+    from docling_core.utils.file import resolve_source_to_path
+
+    # Create a temporary input dir with a dummy PDF placeholder
+    input_dir = tmp_path / "input"
+    input_dir.mkdir()
+    dummy_pdf = input_dir / "test.pdf"
+    dummy_pdf.write_bytes(b"%PDF-1.4 dummy")
+
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+
+    # Simulate the Windows behaviour: resolve_source_to_path raises PermissionError
+    # when called on a directory (instead of IsADirectoryError on Linux/macOS).
+    original_resolve = resolve_source_to_path
+
+    def raise_permission_error(source, **kwargs):
+        from pathlib import Path as _Path
+        p = _Path(str(source))
+        if p.is_dir():
+            raise PermissionError(f"[Errno 13] Permission denied: '{source}'")
+        return original_resolve(source, **kwargs)
+
+    monkeypatch.setattr(cli_main, "resolve_source_to_path", raise_permission_error)
+
+    # The CLI should handle PermissionError the same as IsADirectoryError:
+    # it should NOT propagate as an unhandled exception (exit_code != 2).
+    result = runner.invoke(app, [str(input_dir), "--output", str(output_dir)])
+    assert result.exit_code != 2, (
+        f"CLI crashed with unhandled PermissionError on directory input. "
+        f"Output: {result.output}"
+    )
