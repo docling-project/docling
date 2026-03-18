@@ -405,7 +405,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return None, None  # If the paragraph is not part of a list
 
-    def _get_level_element(self, numid: int, ilvl: int):
+    def _get_level_element(self, numid: int, ilvl: int) -> Optional[BaseOxmlElement]:
         """Find the level element from the numbering XML for a given numId and ilvl."""
         try:
             if not hasattr(self.docx_obj, "part") or not hasattr(
