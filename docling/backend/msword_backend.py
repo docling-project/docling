@@ -1095,9 +1095,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 parent = self.parents[level - 1]
                 if len(equations) > 1:
                     for eq in equations:
-                        eq_text = (
-                            eq.replace("<eq>", "").replace("</eq>", "").strip()
-                        )
+                        eq_text = eq.replace("<eq>", "").replace("</eq>", "").strip()
                         if len(eq_text) > 0:
                             t1 = doc.add_text(
                                 label=DocItemLabel.FORMULA,
