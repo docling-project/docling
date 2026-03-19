@@ -1,5 +1,6 @@
 import logging
 import os
+import warnings
 from pathlib import Path
 
 import pytest
@@ -392,3 +393,33 @@ def test_get_heading_and_level_non_heading(
     label, level = backend._get_heading_and_level(style_label)
     assert label == expected_label
     assert level == expected_level
+
+
+def test_external_image_references():
+    """Test that .docx files with external image references convert without crashing.
+
+    Docx files saved from web browsers often have images as external references
+    (TargetMode="External") pointing to URLs or file:// paths rather than embedded
+    in word/media/. Previously this caused a ValueError from python-docx:
+    "target_part property on _Relationship is undefined when target mode is External"
+
+    See: https://github.com/docling-project/docling/issues/3113
+    """
+    docx_path = Path("./tests/data/docx/docx_external_image.docx")
+    assert docx_path.exists(), f"Test file not found: {docx_path}"
+
+    converter = get_converter()
+
+    with pytest.warns(UserWarning, match="Skipping external image reference"):
+        conv_result = converter.convert(docx_path)
+
+    doc = conv_result.document
+
+    # Document should convert successfully (not crash)
+    assert doc is not None
+
+    # Text content should still be extracted even though the external image is skipped
+    md = doc.export_to_markdown()
+    assert "Test Document with External Image" in md
+    assert "text before the image" in md
+    assert "after the external image" in md

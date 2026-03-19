@@ -1,5 +1,6 @@
 import logging
 import re
+import warnings
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
@@ -1583,8 +1584,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
             )
             if rId in self.docx_obj.part.rels:
+                rel = self.docx_obj.part.rels[rId]
+                if rel.is_external:
+                    warnings.warn(
+                        f"Skipping external image reference: {rel.target_ref}",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                    return None
                 # Access the image part using the relationship ID
-                image_part = self.docx_obj.part.rels[rId].target_part
+                image_part = rel.target_part
                 image_data = image_part.blob  # Get the binary image data
             return image_data
 
