@@ -1,6 +1,7 @@
 def ocr_engines():
     from docling.models.stages.ocr.auto_ocr_model import OcrAutoModel
     from docling.models.stages.ocr.easyocr_model import EasyOcrModel
+    from docling.models.stages.ocr.nemotron_ocr_model import NemotronOcrModel
     from docling.models.stages.ocr.ocr_mac_model import OcrMacModel
     from docling.models.stages.ocr.rapid_ocr_model import RapidOcrModel
     from docling.models.stages.ocr.tesseract_ocr_cli_model import TesseractOcrCliModel
@@ -10,6 +11,7 @@ def ocr_engines():
         "ocr_engines": [
             OcrAutoModel,
             EasyOcrModel,
+            NemotronOcrModel,
             OcrMacModel,
             RapidOcrModel,
             TesseractOcrModel,

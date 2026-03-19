@@ -42,6 +42,7 @@ class _AvailableModels(str, Enum):
     GRANITE_CHART_EXTRACTION = "granite_chart_extraction"
     RAPIDOCR = "rapidocr"
     EASYOCR = "easyocr"
+    NEMOTRON_OCR = "nemotron_ocr"
 
 
 _default_models = [
@@ -123,6 +124,7 @@ def download(
         in to_download,
         with_rapidocr=_AvailableModels.RAPIDOCR in to_download,
         with_easyocr=_AvailableModels.EASYOCR in to_download,
+        with_nemotron_ocr=_AvailableModels.NEMOTRON_OCR in to_download,
     )
 
     if quiet:

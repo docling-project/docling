@@ -47,8 +47,8 @@ dependencies = [
   'docling-core[chunking] (>=2.66.0,<3.0.0)',
   'docling-parse (>=5.3.2,<6.0.0)',
   "docling-ibm-models>=3.12.0,<4",
-  'torch (>=2.2.2,<3.0.0)',
-  'torchvision (>=0,<1)',
+  'torch (>=2.2.2,<3.0.0) ; extra != "nemotron-ocr"',
+  'torchvision (>=0,<1) ; extra != "nemotron-ocr"',
   'filetype (>=1.2.0,<2.0.0)',
   'pypdfium2 (>=4.30.0,!=4.30.1,<6.0.0)',
   'pydantic-settings (>=2.3.0,<3.0.0)',
@@ -91,6 +91,11 @@ docling-tools = "docling.cli.tools:app"
 
 [project.optional-dependencies]
 easyocr = ['easyocr (>=1.7,<2.0)']
+nemotron-ocr = [
+  'nemotron-ocr (>=1.0.1,<2.0.0) ; python_version == "3.12" and sys_platform == "linux" and platform_machine == "x86_64"',
+  'torch (==2.9.1+cu130) ; python_version == "3.12" and sys_platform == "linux" and platform_machine == "x86_64"',
+  'torchvision (==0.24.1+cu130) ; python_version == "3.12" and sys_platform == "linux" and platform_machine == "x86_64"',
+]
 tesserocr = ['tesserocr (>=2.7.1,<3.0.0)']
 ocrmac = ['ocrmac (>=1.0.0,<2.0.0) ; sys_platform == "darwin"']
 vlm = [
@@ -171,6 +176,19 @@ constraints = [
 [tool.uv]
 package = true
 default-groups = "all"
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cu130", extra = "nemotron-ocr", marker = "python_version == '3.12' and sys_platform == 'linux' and platform_machine == 'x86_64'" },
+]
+torchvision = [
+  { index = "pytorch-cu130", extra = "nemotron-ocr", marker = "python_version == '3.12' and sys_platform == 'linux' and platform_machine == 'x86_64'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
 
 [tool.setuptools.packages.find]
 include = ["docling*"]
@@ -270,6 +288,8 @@ module = [
   "docling_ibm_models.*",
   "easyocr.*",
   "ocrmac.*",
+  "nemotron_ocr.*",
+  "nemotron_ocr_cpp.*",
   "onnxruntime.*",
   "mlx_vlm.*",
   "lxml.*",

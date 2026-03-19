@@ -53,6 +53,7 @@ The following table summarizes the extras available in the `docling` package. Th
 | `asr` | Installs dependencies for running the ASR pipeline. |
 | `vlm` | Installs dependencies for running the VLM pipeline. |
 | `easyocr` | Installs the [EasyOCR](https://github.com/JaidedAI/EasyOCR) OCR engine. |
+| `nemotron-ocr` | Installs NVIDIA Nemotron OCR. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. |
 | `tesserocr` | Installs the Tesseract binding for using it as OCR engine. |
 | `ocrmac` | Installs the OcrMac OCR engine. |
 | `rapidocr` | Installs the [RapidOCR](https://github.com/RapidAI/RapidOCR) OCR engine with [onnxruntime](https://github.com/microsoft/onnxruntime/) backend. |
@@ -67,6 +68,7 @@ the following engines.
 | Engine | Installation | Usage |
 | ------ | ------------ | ----- |
 | [EasyOCR](https://github.com/JaidedAI/EasyOCR) | `easyocr` extra or via `pip install easyocr`. | `EasyOcrOptions` |
+| [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v1) | `nemotron-ocr` extra. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. See installation note below. | `NemotronOcrOptions` |
 | Tesseract | System dependency. See description for Tesseract and Tesserocr below.  | `TesseractOcrOptions` |
 | Tesseract CLI | System dependency. See description below. | `TesseractCliOcrOptions` |
 | OcrMac | System dependency. See description below. | `OcrMacOptions` |
@@ -136,10 +138,27 @@ doc_converter = DocumentConverter(
     pip install --no-binary :all: tesserocr
     ```
 
+??? "Nemotron OCR installation"
+
+    [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v1) requires the CUDA 13 PyTorch wheels.
+    Install it with the `nemotron-ocr` extra, the CUDA 13 PyTorch index, and the `unsafe-best-match`
+    index strategy so `pip` resolves the CUDA-enabled `torch` packages correctly.
+
+    ```console
+    pip install "docling[nemotron-ocr]" \
+      --extra-index-url https://download.pytorch.org/whl/cu130 \
+      --index-strategy unsafe-best-match
+    ```
+
+    Nemotron OCR is currently supported only on Linux x86_64 with Python 3.12 and CUDA 13.x.
+
 ## Development setup
 
 To develop Docling features, bugfixes etc., install as follows from your local clone's root dir:
 
 ```bash
-uv sync --all-extras
+uv sync --all-extras --no-extra nemotron-ocr
 ```
+
+The `nemotron-ocr` extra is intentionally excluded from the default development
+setup because it is only usable on Linux x86_64 with Python 3.12 and CUDA 13.x.
