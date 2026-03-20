@@ -1085,6 +1085,18 @@ class PipelineOptions(BaseOptions):
             examples=["./artifacts", "/tmp/docling_outputs"],
         ),
     ] = None
+    page_chunk_size: Annotated[
+        Optional[int],
+        Field(
+            description=(
+                "Number of pages to process as a single chunk. When processing very large PDFs, this limits "
+                "memory usage and allows streaming chunked results instead of waiting for the entire document. "
+                "Chunks are treated as independent documents, so `doc_batch_concurrency` will parallelize across them. "
+                "If None, the entire document is processed at once."
+            ),
+            examples=[10, 50],
+        ),
+    ] = None
 
 
 class ConvertPipelineOptions(PipelineOptions):

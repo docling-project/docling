@@ -27,11 +27,18 @@ class DocumentLimits(BaseModel):
 
 class BatchConcurrencySettings(BaseModel):
     doc_batch_size: int = 1  # Number of documents processed in one batch. Should be >= doc_batch_concurrency
-    doc_batch_concurrency: int = 1  # Number of parallel threads processing documents. Warning: Experimental! No benefit expected without free-threaded python.
+    doc_batch_concurrency: int = (
+        1  # Number of parallel threads processing documents. If `page_chunk_size` is enabled, 
+           # this controls the total number of parallel chunks across all documents (e.g., 2 docs * 5 chunks/doc = 10 concurrency).
+           # Warning: Experimental! No benefit expected without free-threaded python.
+    )
     page_batch_size: int = 4  # Number of pages processed in one batch.
     page_batch_concurrency: int = 1  # Currently unused.
     elements_batch_size: int = (
         16  # Number of elements processed in one batch, in enrichment models.
+    )
+    page_chunk_size: Optional[int] = (
+        None  # Number of pages per chunk for large document streaming. If None, chunks are disabled. Chunks are treated as independent documents for parallelization.
     )
 
     # To force models into single core: export OMP_NUM_THREADS=1

@@ -151,6 +151,7 @@ class InputDocument(BaseModel):
         )  # initialize with dummy values
         self.limits = limits or DocumentLimits()
         self.format = format
+        self._path_or_stream = path_or_stream
 
         try:
             if isinstance(path_or_stream, Path):

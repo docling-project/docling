@@ -1,9 +1,13 @@
 import hashlib
 import logging
+import os
+import shutil
 import sys
+import tempfile
 import threading
 import time
 import warnings
+import gc
 from collections.abc import Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -72,6 +76,46 @@ from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
 _PIPELINE_CACHE_LOCK = threading.Lock()
+
+
+class ReferenceCountedBackend:
+    """Wrapper for managing shared backend lifecycle across chunks.
+    
+    This class ensures that a shared backend (used by memory stream chunks)
+    is not unloaded until all chunks have completed processing. It addresses
+    the C++ garbage collection warning that occurs when pypdfium2's Document
+    is destroyed before its child Pages.
+    
+    The mechanism:
+    1. Each chunk calls backend.unload() when done processing
+    2. Instead of immediately unloading, we decrement a counter
+    3. Only actually unload when counter reaches zero (last chunk)
+    This prevents premature underload while pages from other chunks are still in use.
+    """
+    
+    def __init__(self, backend: AbstractDocumentBackend, num_chunks: int):
+        self._backend = backend
+        self._orig_unload = backend.unload
+        self._ref_count = num_chunks  # Starts at number of chunks
+        self._lock = threading.Lock()
+    
+    def unload_deferred(self) -> None:
+        """Called each time a chunk finishes and tries to unload the backend.
+        
+        Decrements the reference count and only calls the original unload()
+        when all chunks are done (count reaches 0).
+        """
+        with self._lock:
+            self._ref_count -= 1
+            if self._ref_count <= 0:
+                try:
+                    self._orig_unload()
+                except Exception as e:
+                    _log.warning(f"Error during backend unload: {e}")
+    
+    def __getattr__(self, name: str):
+        """Delegate all other attributes to the wrapped backend."""
+        return getattr(self._backend, name)
 
 
 class FormatOption(BaseFormatOption):
@@ -206,6 +250,10 @@ class DocumentConverter:
     which wraps a `DoclingDocument` object if the conversion was successful, along
     with metadata about the conversion process.
 
+    For processing exceptionally large documents without exceeding memory limits, 
+    configure `page_chunk_size` in the pipeline options to stream partial 
+    `ConversionResult` chunks iteratively via `convert_all()`.
+
     Attributes:
         allowed_formats: Allowed input formats.
         format_to_options: Mapping of formats to their options.
@@ -251,7 +299,7 @@ class DocumentConverter:
             ... )
         """
         self.allowed_formats: list[InputFormat] = (
-            allowed_formats if allowed_formats is not None else list(InputFormat)
+            allowed_formats if allowed_formats  is not None else list(InputFormat)
         )
 
         # Normalize format options: ensure IMAGE format uses ImageDocumentBackend
@@ -338,6 +386,10 @@ class DocumentConverter:
         Note: If the document content is given as a string (Markdown or HTML
         content), use the `convert_string` method.
 
+        Note: If `page_chunk_size` is enabled in the pipeline options, this method will
+        only return the first chunk. To stream all chunks of a large document,
+        use the `convert_all` method instead.
+
         Args:
             source: Source of input document given as file path, URL, or
                 DocumentStream.
@@ -412,8 +464,12 @@ class DocumentConverter:
             page_range: Range of pages to convert in each document.
 
         Yields:
-            The conversion results, each containing a `DoclingDocument` in the
-                `document` attribute and metadata about the conversion process.
+            The conversion results. If `page_chunk_size` is configured in the pipeline options,
+            this will yield multiple `ConversionResult` objects per document, representing
+            sequential page chunks. Because these chunks are treated as independent documents 
+            internally, they are processed in parallel. You should increase `doc_batch_concurrency` 
+            to run multiple chunks at once (e.g., 500 total pages / 50 page chunks = 10 concurrency (10 chunks))
+            Otherwise, it yields one `ConversionResult` per document, containing the full `DoclingDocument`.
 
         Raises:
             ConversionError: An error occurred during conversion.
@@ -480,6 +536,9 @@ class DocumentConverter:
         are supported. The content is wrapped in a `DocumentStream` and passed
         to the main conversion pipeline.
 
+        Note: Page chunking (`page_chunk_size`) is not applicable to this method
+        as it operates on plain strings (Markdown/HTML), which do not have pages.
+
         Args:
             content: The document content as a string.
             format: The format of the input content.
@@ -538,39 +597,175 @@ class DocumentConverter:
         self, conv_input: _DocumentConversionInput, raises_on_error: bool
     ) -> Iterator[ConversionResult]:
         start_time = time.monotonic()
+        # Track reference-counted backends for memory streams (shared backends)
+        ref_counted_backends: dict[int, ReferenceCountedBackend] = {}
+        # Track backends that need explicit cleanup (independent backends for local file chunks)
+        independent_backends: list[AbstractDocumentBackend] = []
+        # Track temporary files created for memory stream chunking (cleaned up in finally)
+        temp_files_to_clean: list[str] = []
 
-        for input_batch in chunkify(
-            conv_input.docs(self.format_to_options),
-            settings.perf.doc_batch_size,  # pass format_options
-        ):
-            _log.info("Going to convert document batch...")
-            process_func = partial(
-                self._process_document, raises_on_error=raises_on_error
-            )
+        def _expand_into_chunks(docs_iter: Iterable[InputDocument]) -> Iterator[InputDocument]:
+            for in_doc in docs_iter:
+                if not in_doc.valid:
+                    yield in_doc
+                    continue
 
-            if (
-                settings.perf.doc_batch_concurrency > 1
-                and settings.perf.doc_batch_size > 1
+                fopt = self.format_to_options.get(in_doc.format)
+                chunk_size = (getattr(fopt.pipeline_options, "page_chunk_size", None) if fopt and getattr(fopt, "pipeline_options", None) else None) or settings.perf.page_chunk_size
+
+                start_page = in_doc.limits.page_range[0]
+                end_page = min(in_doc.page_count, in_doc.limits.page_range[1]) if in_doc.page_count > 0 else in_doc.limits.page_range[1]
+
+                if chunk_size and in_doc.page_count > 0 and (end_page - start_page + 1) > chunk_size:
+                    page_groups = list(chunkify(iter(range(start_page, end_page + 1)), chunk_size))
+
+                    is_local_file = False
+                    file_path = None
+                    if in_doc.file is not None:
+                        try:
+                            file_path = Path(in_doc.file)
+                            if file_path.exists() and file_path.is_file():
+                                is_local_file = True
+                        except Exception:
+                            pass
+
+                    # If we have a memory stream, prefer materializing (converting) it to a temp file so each
+                    # chunk can create an independent backend (thread-safe and avoids GC warnings).
+                    # If materialization fails, fall back to the reference-counted shared backend.
+                    if not is_local_file:
+                        original_stream = getattr(in_doc, "_path_or_stream", None)
+                        if original_stream is None and hasattr(in_doc._backend, "path_or_stream"):
+                            original_stream = in_doc._backend.path_or_stream
+
+                        if original_stream is not None:
+                            try:
+                                # Ensure we read from the start
+                                if hasattr(original_stream, "seek"):
+                                    original_stream.seek(0)
+
+                                fd, temp_path = tempfile.mkstemp(suffix=".pdf")
+                                with os.fdopen(fd, "wb") as f:
+                                    if hasattr(original_stream, "read"):
+                                        shutil.copyfileobj(original_stream, f)
+                                    else:
+                                        f.write(bytes(original_stream))
+
+                                file_path = Path(temp_path)
+                                temp_files_to_clean.append(str(file_path))
+                                is_local_file = True
+                            except Exception as e:
+                                _log.debug(
+                                    "Unable to materialize stream to temp file for chunking; "
+                                    "falling back to shared backend. Error: %s", e
+                                )
+
+                    if not is_local_file:
+                        # For memory streams that could not be materialized into a temp file,
+                        # share the backend but ensure it is unloaded only once all chunks finish.
+                        backend_id = id(in_doc._backend)
+                        if backend_id not in ref_counted_backends:
+                            ref_counter = ReferenceCountedBackend(
+                                in_doc._backend,
+                                num_chunks=len(page_groups),
+                            )
+                            ref_counted_backends[backend_id] = ref_counter
+                            # Replace the backend's unload with our wrapper
+                            in_doc._backend.unload = ref_counter.unload_deferred
+
+                    for page_group in page_groups:
+                        chunk_limits = DocumentLimits(
+                            max_num_pages=in_doc.limits.max_num_pages,
+                            max_file_size=in_doc.limits.max_file_size,
+                            page_range=(page_group[0], page_group[-1])
+                        )
+
+                        if is_local_file:
+                            # Create a fresh, thread-safe InputDocument for local (or temp) files
+                            chunk_doc = InputDocument(
+                                path_or_stream=file_path,
+                                format=in_doc.format,
+                                backend=fopt.backend,
+                                backend_options=in_doc.backend_options,
+                                limits=chunk_limits,
+                            )
+                            # Track this backend for explicit cleanup
+                            independent_backends.append(chunk_doc._backend)
+                        else:  # memory stream (shares same parser)
+                            chunk_doc = in_doc.model_copy()
+                            chunk_doc._backend = in_doc._backend
+                            chunk_doc.limits = chunk_limits
+                        yield chunk_doc
+                else:
+                    # No chunking active (or document fits in one chunk)
+                    # → keep original document (default behavior)
+                    in_doc.limits = DocumentLimits(
+                        max_num_pages=in_doc.limits.max_num_pages,
+                        max_file_size=in_doc.limits.max_file_size,
+                        page_range=(start_page, end_page)
+                    )
+                    yield in_doc
+
+        try:
+            for input_batch in chunkify(
+                _expand_into_chunks(conv_input.docs(self.format_to_options)),
+                settings.perf.doc_batch_size, # pass format_options
             ):
-                with ThreadPoolExecutor(
-                    max_workers=settings.perf.doc_batch_concurrency
-                ) as pool:
-                    for item in pool.map(
+                _log.info("Going to convert document batch...")
+                process_func = partial(
+                    self._process_document, raises_on_error=raises_on_error
+                )
+
+                if (
+                    settings.perf.doc_batch_concurrency > 1
+                    and settings.perf.doc_batch_size > 1
+                ):
+                    with ThreadPoolExecutor(
+                        max_workers=settings.perf.doc_batch_concurrency
+                    ) as pool:
+                        for item in pool.map(
+                            process_func,
+                            input_batch,
+                        ):
+                            yield item
+                else:
+                    for item in map(
                         process_func,
                         input_batch,
                     ):
+                        elapsed = time.monotonic() - start_time
+                        start_time = time.monotonic()
+                        _log.info(
+                            f"Finished converting document chunk {item.input.file.name} in {elapsed:.2f} sec."
+                        )
                         yield item
-            else:
-                for item in map(
-                    process_func,
-                    input_batch,
-                ):
-                    elapsed = time.monotonic() - start_time
-                    start_time = time.monotonic()
-                    _log.info(
-                        f"Finished converting document {item.input.file.name} in {elapsed:.2f} sec."
-                    )
-                    yield item
+        finally:
+            # Explicit cleanup to prevent C++ GC warnings at library shutdown
+
+            # 1. Deferred unloads for reference-counted backends are automatically
+            #    triggered by each chunk's _unload call in the pipeline
+            #    (no need to manually trigger here, they're already counted down)
+
+            # 2. Explicitly unload independent backends (per-chunk backends for local files)
+            #    to ensure C++ objects are destroyed before library teardown
+            for backend in independent_backends:
+                try:
+                    if hasattr(backend, 'unload') and callable(backend.unload):
+                        backend.unload()
+                except Exception as e:
+                    _log.debug(f"Error during independent backend cleanup: {e}")
+
+            # 3. Remove any temporary files created for memory streams
+            for temp_path in temp_files_to_clean:
+                try:
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+                except Exception as e:
+                    _log.debug(f"Error cleaning up temp file {temp_path}: {e}")
+
+            # 4. Force garbage collection to ensure all C++ objects are properly
+            #    destroyed while the pypdfium2 library is still active.
+            #    This helps avoid "library is destroyed" warnings at Python shutdown.
+            gc.collect()
 
     def _get_pipeline(self, doc_format: InputFormat) -> Optional[BasePipeline]:
         """Retrieve or initialize a pipeline, reusing instances based on class and options."""
