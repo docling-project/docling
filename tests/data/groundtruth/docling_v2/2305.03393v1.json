@@ -297,19 +297,124 @@
         "$ref": "#/groups/3"
       },
       {
-        "$ref": "#/texts/381"
+        "$ref": "#/texts/378"
       },
       {
-        "$ref": "#/texts/382"
+        "$ref": "#/texts/379"
+      },
+      {
+        "$ref": "#/texts/380"
       },
       {
         "$ref": "#/groups/4"
       },
       {
-        "$ref": "#/texts/396"
+        "$ref": "#/texts/384"
+      },
+      {
+        "$ref": "#/texts/385"
       },
       {
         "$ref": "#/groups/5"
+      },
+      {
+        "$ref": "#/texts/389"
+      },
+      {
+        "$ref": "#/groups/6"
+      },
+      {
+        "$ref": "#/texts/391"
+      },
+      {
+        "$ref": "#/groups/7"
+      },
+      {
+        "$ref": "#/texts/393"
+      },
+      {
+        "$ref": "#/texts/394"
+      },
+      {
+        "$ref": "#/texts/395"
+      },
+      {
+        "$ref": "#/groups/8"
+      },
+      {
+        "$ref": "#/texts/397"
+      },
+      {
+        "$ref": "#/groups/9"
+      },
+      {
+        "$ref": "#/texts/400"
+      },
+      {
+        "$ref": "#/groups/10"
+      },
+      {
+        "$ref": "#/texts/402"
+      },
+      {
+        "$ref": "#/groups/11"
+      },
+      {
+        "$ref": "#/texts/404"
+      },
+      {
+        "$ref": "#/texts/405"
+      },
+      {
+        "$ref": "#/texts/406"
+      },
+      {
+        "$ref": "#/texts/407"
+      },
+      {
+        "$ref": "#/texts/408"
+      },
+      {
+        "$ref": "#/groups/12"
+      },
+      {
+        "$ref": "#/texts/412"
+      },
+      {
+        "$ref": "#/texts/413"
+      },
+      {
+        "$ref": "#/groups/13"
+      },
+      {
+        "$ref": "#/texts/415"
+      },
+      {
+        "$ref": "#/texts/416"
+      },
+      {
+        "$ref": "#/texts/417"
+      },
+      {
+        "$ref": "#/groups/14"
+      },
+      {
+        "$ref": "#/texts/420"
+      },
+      {
+        "$ref": "#/texts/421"
+      },
+      {
+        "$ref": "#/groups/15"
+      },
+      {
+        "$ref": "#/texts/423"
+      },
+      {
+        "$ref": "#/texts/424"
+      },
+      {
+        "$ref": "#/groups/16"
       }
     ],
     "content_layer": "body",
@@ -391,15 +496,6 @@
       "children": [
         {
           "$ref": "#/texts/377"
-        },
-        {
-          "$ref": "#/texts/378"
-        },
-        {
-          "$ref": "#/texts/379"
-        },
-        {
-          "$ref": "#/texts/380"
         }
       ],
       "content_layer": "body",
@@ -413,43 +509,13 @@
       },
       "children": [
         {
+          "$ref": "#/texts/381"
+        },
+        {
+          "$ref": "#/texts/382"
+        },
+        {
           "$ref": "#/texts/383"
-        },
-        {
-          "$ref": "#/texts/384"
-        },
-        {
-          "$ref": "#/texts/385"
-        },
-        {
-          "$ref": "#/texts/386"
-        },
-        {
-          "$ref": "#/texts/387"
-        },
-        {
-          "$ref": "#/texts/388"
-        },
-        {
-          "$ref": "#/texts/389"
-        },
-        {
-          "$ref": "#/texts/390"
-        },
-        {
-          "$ref": "#/texts/391"
-        },
-        {
-          "$ref": "#/texts/392"
-        },
-        {
-          "$ref": "#/texts/393"
-        },
-        {
-          "$ref": "#/texts/394"
-        },
-        {
-          "$ref": "#/texts/395"
         }
       ],
       "content_layer": "body",
@@ -463,22 +529,182 @@
       },
       "children": [
         {
-          "$ref": "#/texts/397"
+          "$ref": "#/texts/386"
         },
+        {
+          "$ref": "#/texts/387"
+        },
+        {
+          "$ref": "#/texts/388"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/6",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/390"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/7",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/392"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/8",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/396"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/9",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
         {
           "$ref": "#/texts/398"
         },
         {
           "$ref": "#/texts/399"
-        },
-        {
-          "$ref": "#/texts/400"
-        },
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/10",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
         {
           "$ref": "#/texts/401"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/11",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/403"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/12",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/409"
         },
         {
-          "$ref": "#/texts/402"
+          "$ref": "#/texts/410"
+        },
+        {
+          "$ref": "#/texts/411"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/13",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/414"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/14",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/418"
+        },
+        {
+          "$ref": "#/texts/419"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/15",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/422"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/16",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/425"
+        },
+        {
+          "$ref": "#/texts/426"
         }
       ],
       "content_layer": "body",
@@ -10734,7 +10960,91 @@
     {
       "self_ref": "#/texts/378",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 12,
+          "bbox": {
+            "l": 284.08,
+            "t": 248.8,
+            "r": 479.03,
+            "b": 237.84,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            41
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.48550/arXiv.2206.00785",
+      "text": "https://doi.org/10.48550/arXiv.2206.00785",
+      "hyperlink": "https://doi.org/10.48550/arXiv.2206.00785"
+    },
+    {
+      "self_ref": "#/texts/379",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 12,
+          "bbox": {
+            "l": 284.08,
+            "t": 248.8,
+            "r": 479.03,
+            "b": 237.84,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            41
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.48550/arXiv.2206.00785",
+      "text": "https://doi.org/10.48550/arXiv.2206.00785",
+      "hyperlink": "https://doi.org/10.48550/arXiv.2206.00785"
+    },
+    {
+      "self_ref": "#/texts/380",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 12,
+          "bbox": {
+            "l": 150.52,
+            "t": 237.34,
+            "r": 345.47,
+            "b": 227.13,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            41
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.48550/arXiv.2206.00785",
+      "text": "https://doi.org/10.48550/arXiv.2206.00785",
+      "hyperlink": "https://doi.org/10.48550/arXiv.2206.00785"
+    },
+    {
+      "self_ref": "#/texts/381",
+      "parent": {
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -10761,9 +11071,9 @@
       "marker": "2."
     },
     {
-      "self_ref": "#/texts/379",
+      "self_ref": "#/texts/382",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -10790,9 +11100,9 @@
       "marker": "3."
     },
     {
-      "self_ref": "#/texts/380",
+      "self_ref": "#/texts/383",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -10819,7 +11129,7 @@
       "marker": "4."
     },
     {
-      "self_ref": "#/texts/381",
+      "self_ref": "#/texts/384",
       "parent": {
         "$ref": "#/body"
       },
@@ -10846,7 +11156,7 @@
       "text": "Optimized Table Tokenization for Table Structure Recognition"
     },
     {
-      "self_ref": "#/texts/382",
+      "self_ref": "#/texts/385",
       "parent": {
         "$ref": "#/body"
       },
@@ -10873,9 +11183,9 @@
       "text": "13"
     },
     {
-      "self_ref": "#/texts/383",
+      "self_ref": "#/texts/386",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -10902,9 +11212,9 @@
       "marker": "5."
     },
     {
-      "self_ref": "#/texts/384",
+      "self_ref": "#/texts/387",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -10931,9 +11241,9 @@
       "marker": "7."
     },
     {
-      "self_ref": "#/texts/385",
+      "self_ref": "#/texts/388",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -10960,9 +11270,37 @@
       "marker": "6."
     },
     {
-      "self_ref": "#/texts/386",
+      "self_ref": "#/texts/389",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 13,
+          "bbox": {
+            "l": 333.7,
+            "t": 542.38,
+            "r": 481.59,
+            "b": 531.42,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            54
+          ]
+        }
+      ],
+      "orig": "https://ojs.aaai.org/index.php/AAAI/article/view/17777",
+      "text": "https://ojs.aaai.org/index.php/AAAI/article/view/17777",
+      "hyperlink": "https://ojs.aaai.org/index.php/AAAI/article/view/17777"
+    },
+    {
+      "self_ref": "#/texts/390",
+      "parent": {
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -10989,9 +11327,37 @@
       "marker": "8."
     },
     {
-      "self_ref": "#/texts/387",
+      "self_ref": "#/texts/391",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 13,
+          "bbox": {
+            "l": 150.52,
+            "t": 530.92,
+            "r": 260.76,
+            "b": 521.96,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            54
+          ]
+        }
+      ],
+      "orig": "https://ojs.aaai.org/index.php/AAAI/article/view/17777",
+      "text": "https://ojs.aaai.org/index.php/AAAI/article/view/17777",
+      "hyperlink": "https://ojs.aaai.org/index.php/AAAI/article/view/17777"
+    },
+    {
+      "self_ref": "#/texts/392",
+      "parent": {
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -11018,9 +11384,93 @@
       "marker": "9."
     },
     {
-      "self_ref": "#/texts/388",
+      "self_ref": "#/texts/393",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 13,
+          "bbox": {
+            "l": 252.99,
+            "t": 443.73,
+            "r": 438.53,
+            "b": 432.77,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            39
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.1145/3534678.3539043",
+      "text": "https://doi.org/10.1145/3534678.3539043",
+      "hyperlink": "https://doi.org/10.1145/3534678.3539043"
+    },
+    {
+      "self_ref": "#/texts/394",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 13,
+          "bbox": {
+            "l": 252.99,
+            "t": 443.73,
+            "r": 438.53,
+            "b": 432.77,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            39
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.1145/3534678.3539043",
+      "text": "https://doi.org/10.1145/3534678.3539043",
+      "hyperlink": "https://doi.org/10.1145/3534678.3539043"
+    },
+    {
+      "self_ref": "#/texts/395",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 13,
+          "bbox": {
+            "l": 150.52,
+            "t": 432.27,
+            "r": 298.41,
+            "b": 422.06,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            39
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.1145/3534678.3539043",
+      "text": "https://doi.org/10.1145/3534678.3539043",
+      "hyperlink": "https://doi.org/10.1145/3534678.3539043"
+    },
+    {
+      "self_ref": "#/texts/396",
+      "parent": {
+        "$ref": "#/groups/8"
       },
       "children": [],
       "content_layer": "body",
@@ -11047,9 +11497,37 @@
       "marker": "10."
     },
     {
-      "self_ref": "#/texts/389",
+      "self_ref": "#/texts/397",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 13,
+          "bbox": {
+            "l": 441.94,
+            "t": 443.73,
+            "r": 481.59,
+            "b": 432.77,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            39
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.1145/3534678.3539043",
+      "text": "https://doi.org/10.1145/3534678.3539043",
+      "hyperlink": "https://doi.org/10.1145/3534678.3539043"
+    },
+    {
+      "self_ref": "#/texts/398",
+      "parent": {
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
@@ -11076,38 +11554,9 @@
       "marker": "11."
     },
     {
-      "self_ref": "#/texts/390",
+      "self_ref": "#/texts/399",
       "parent": {
-        "$ref": "#/groups/4"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 13,
-          "bbox": {
-            "l": 134.76,
-            "t": 334.79,
-            "r": 480.59,
-            "b": 291.52,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            275
-          ]
-        }
-      ],
-      "orig": "13. Siddiqui, S.A., Fateh, I.A., Rizvi, S.T.R., Dengel, A., Ahmed, S.: Deeptabstr: Deep learning based table structure recognition. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 1403-1409 (2019). https:// doi.org/10.1109/ICDAR.2019.00226",
-      "text": "Siddiqui, S.A., Fateh, I.A., Rizvi, S.T.R., Dengel, A., Ahmed, S.: Deeptabstr: Deep learning based table structure recognition. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 1403-1409 (2019). https:// doi.org/10.1109/ICDAR.2019.00226",
-      "enumerated": true,
-      "marker": "13."
-    },
-    {
-      "self_ref": "#/texts/391",
-      "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
@@ -11134,9 +11583,94 @@
       "marker": "12."
     },
     {
-      "self_ref": "#/texts/392",
+      "self_ref": "#/texts/400",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 13,
+          "bbox": {
+            "l": 441.94,
+            "t": 312.19,
+            "r": 481.59,
+            "b": 301.23,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            40
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.1109/ICDAR.2019.00226",
+      "text": "https://doi.org/10.1109/ICDAR.2019.00226",
+      "hyperlink": "https://doi.org/10.1109/ICDAR.2019.00226"
+    },
+    {
+      "self_ref": "#/texts/401",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 13,
+          "bbox": {
+            "l": 134.76,
+            "t": 334.79,
+            "r": 480.59,
+            "b": 291.52,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            275
+          ]
+        }
+      ],
+      "orig": "13. Siddiqui, S.A., Fateh, I.A., Rizvi, S.T.R., Dengel, A., Ahmed, S.: Deeptabstr: Deep learning based table structure recognition. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 1403-1409 (2019). https:// doi.org/10.1109/ICDAR.2019.00226",
+      "text": "Siddiqui, S.A., Fateh, I.A., Rizvi, S.T.R., Dengel, A., Ahmed, S.: Deeptabstr: Deep learning based table structure recognition. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 1403-1409 (2019). https:// doi.org/10.1109/ICDAR.2019.00226",
+      "enumerated": true,
+      "marker": "13."
+    },
+    {
+      "self_ref": "#/texts/402",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 13,
+          "bbox": {
+            "l": 441.94,
+            "t": 312.19,
+            "r": 481.59,
+            "b": 301.23,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            40
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.1109/ICDAR.2019.00226",
+      "text": "https://doi.org/10.1109/ICDAR.2019.00226",
+      "hyperlink": "https://doi.org/10.1109/ICDAR.2019.00226"
+    },
+    {
+      "self_ref": "#/texts/403",
+      "parent": {
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -11163,9 +11697,149 @@
       "marker": "14."
     },
     {
-      "self_ref": "#/texts/393",
+      "self_ref": "#/texts/404",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 13,
+          "bbox": {
+            "l": 150.52,
+            "t": 300.73,
+            "r": 303.11,
+            "b": 290.52,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            40
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.1109/ICDAR.2019.00226",
+      "text": "https://doi.org/10.1109/ICDAR.2019.00226",
+      "hyperlink": "https://doi.org/10.1109/ICDAR.2019.00226"
+    },
+    {
+      "self_ref": "#/texts/405",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 13,
+          "bbox": {
+            "l": 150.52,
+            "t": 300.73,
+            "r": 303.11,
+            "b": 290.52,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            40
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.1109/ICDAR.2019.00226",
+      "text": "https://doi.org/10.1109/ICDAR.2019.00226",
+      "hyperlink": "https://doi.org/10.1109/ICDAR.2019.00226"
+    },
+    {
+      "self_ref": "#/texts/406",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 13,
+          "bbox": {
+            "l": 201.92,
+            "t": 202.57,
+            "r": 387.45,
+            "b": 191.62,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            39
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.1145/3219819.3219834",
+      "text": "https://doi.org/10.1145/3219819.3219834",
+      "hyperlink": "https://doi.org/10.1145/3219819.3219834"
+    },
+    {
+      "self_ref": "#/texts/407",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 13,
+          "bbox": {
+            "l": 201.92,
+            "t": 202.57,
+            "r": 387.45,
+            "b": 191.62,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            39
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.1145/3219819.3219834",
+      "text": "https://doi.org/10.1145/3219819.3219834",
+      "hyperlink": "https://doi.org/10.1145/3219819.3219834"
+    },
+    {
+      "self_ref": "#/texts/408",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 13,
+          "bbox": {
+            "l": 150.52,
+            "t": 191.12,
+            "r": 246.64,
+            "b": 182.15,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            39
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.1145/3219819.3219834",
+      "text": "https://doi.org/10.1145/3219819.3219834",
+      "hyperlink": "https://doi.org/10.1145/3219819.3219834"
+    },
+    {
+      "self_ref": "#/texts/409",
+      "parent": {
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -11192,9 +11866,9 @@
       "marker": "15."
     },
     {
-      "self_ref": "#/texts/394",
+      "self_ref": "#/texts/410",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -11221,9 +11895,9 @@
       "marker": "16."
     },
     {
-      "self_ref": "#/texts/395",
+      "self_ref": "#/texts/411",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -11250,7 +11924,35 @@
       "marker": "17."
     },
     {
-      "self_ref": "#/texts/396",
+      "self_ref": "#/texts/412",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 13,
+          "bbox": {
+            "l": 390.18,
+            "t": 202.57,
+            "r": 481.59,
+            "b": 191.62,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            39
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.1145/3219819.3219834",
+      "text": "https://doi.org/10.1145/3219819.3219834",
+      "hyperlink": "https://doi.org/10.1145/3219819.3219834"
+    },
+    {
+      "self_ref": "#/texts/413",
       "parent": {
         "$ref": "#/body"
       },
@@ -11277,9 +11979,9 @@
       "text": "14 M. Lysak, et al."
     },
     {
-      "self_ref": "#/texts/397",
+      "self_ref": "#/texts/414",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -11306,9 +12008,93 @@
       "marker": "18."
     },
     {
-      "self_ref": "#/texts/398",
+      "self_ref": "#/texts/415",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 14,
+          "bbox": {
+            "l": 284.08,
+            "t": 619.13,
+            "r": 479.03,
+            "b": 608.17,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            41
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.48550/ARXIV.2105.01848",
+      "text": "https://doi.org/10.48550/ARXIV.2105.01848",
+      "hyperlink": "https://doi.org/10.48550/ARXIV.2105.01848"
+    },
+    {
+      "self_ref": "#/texts/416",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 14,
+          "bbox": {
+            "l": 284.08,
+            "t": 619.13,
+            "r": 479.03,
+            "b": 608.17,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            41
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.48550/ARXIV.2105.01848",
+      "text": "https://doi.org/10.48550/ARXIV.2105.01848",
+      "hyperlink": "https://doi.org/10.48550/ARXIV.2105.01848"
+    },
+    {
+      "self_ref": "#/texts/417",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 14,
+          "bbox": {
+            "l": 150.52,
+            "t": 607.67,
+            "r": 303.11,
+            "b": 597.46,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            32
+          ]
+        }
+      ],
+      "orig": "https://arxiv.org/abs/2105.01848",
+      "text": "https://arxiv.org/abs/2105.01848",
+      "hyperlink": "https://arxiv.org/abs/2105.01848"
+    },
+    {
+      "self_ref": "#/texts/418",
+      "parent": {
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -11335,9 +12121,9 @@
       "marker": "19."
     },
     {
-      "self_ref": "#/texts/399",
+      "self_ref": "#/texts/419",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -11364,9 +12150,65 @@
       "marker": "20."
     },
     {
-      "self_ref": "#/texts/400",
+      "self_ref": "#/texts/420",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 14,
+          "bbox": {
+            "l": 296.05,
+            "t": 542.41,
+            "r": 481.59,
+            "b": 531.46,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            44
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.1109/WACV48630.2021.00074",
+      "text": "https://doi.org/10.1109/WACV48630.2021.00074",
+      "hyperlink": "https://doi.org/10.1109/WACV48630.2021.00074"
+    },
+    {
+      "self_ref": "#/texts/421",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 14,
+          "bbox": {
+            "l": 296.05,
+            "t": 542.41,
+            "r": 481.59,
+            "b": 531.46,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            44
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.1109/WACV48630.2021.00074",
+      "text": "https://doi.org/10.1109/WACV48630.2021.00074",
+      "hyperlink": "https://doi.org/10.1109/WACV48630.2021.00074"
+    },
+    {
+      "self_ref": "#/texts/422",
+      "parent": {
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -11393,9 +12235,65 @@
       "marker": "21."
     },
     {
-      "self_ref": "#/texts/401",
+      "self_ref": "#/texts/423",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 14,
+          "bbox": {
+            "l": 150.52,
+            "t": 530.21,
+            "r": 176.05,
+            "b": 522.74,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            44
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.1109/WACV48630.2021.00074",
+      "text": "https://doi.org/10.1109/WACV48630.2021.00074",
+      "hyperlink": "https://doi.org/10.1109/WACV48630.2021.00074"
+    },
+    {
+      "self_ref": "#/texts/424",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [
+        {
+          "page_no": 14,
+          "bbox": {
+            "l": 150.52,
+            "t": 530.21,
+            "r": 176.05,
+            "b": 522.74,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            44
+          ]
+        }
+      ],
+      "orig": "https://doi.org/10.1109/WACV48630.2021.00074",
+      "text": "https://doi.org/10.1109/WACV48630.2021.00074",
+      "hyperlink": "https://doi.org/10.1109/WACV48630.2021.00074"
+    },
+    {
+      "self_ref": "#/texts/425",
+      "parent": {
+        "$ref": "#/groups/16"
       },
       "children": [],
       "content_layer": "body",
@@ -11422,9 +12320,9 @@
       "marker": "22."
     },
     {
-      "self_ref": "#/texts/402",
+      "self_ref": "#/texts/426",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/16"
       },
       "children": [],
       "content_layer": "body",
