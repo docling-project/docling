@@ -639,7 +639,10 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.ASCIIDOC][0]
         elif ext in FormatToExtensions[InputFormat.HTML]:
             mime = FormatToMimeType[InputFormat.HTML][0]
-        elif ext in FormatToExtensions[InputFormat.XML_USPTO] and ext in FormatToExtensions[InputFormat.MD]:
+        elif (
+            ext in FormatToExtensions[InputFormat.XML_USPTO]
+            and ext in FormatToExtensions[InputFormat.MD]
+        ):
             # "txt" appears in both XML_USPTO and MD extension lists.  Leave mime=None
             # so the content-probing chain (_detect_html_xhtml, _detect_csv, then the
             # "text/plain" fallback + _guess_from_content) can pick the right format.
