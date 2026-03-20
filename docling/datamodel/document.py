@@ -624,9 +624,11 @@ class _DocumentConversionInput(BaseModel):
                     input_format = InputFormat.XML_JATS
 
         elif mime == "text/plain":
-            content_str = content.decode("utf-8")
+            content_str = content.decode("utf-8", errors="replace")
             if InputFormat.XML_USPTO in formats and content_str.startswith("PATN\r\n"):
                 input_format = InputFormat.XML_USPTO
+            elif InputFormat.MD in formats:
+                input_format = InputFormat.MD
 
         return input_format
 

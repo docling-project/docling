@@ -89,7 +89,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.DOCX: ["docx", "dotx", "docm", "dotm"],
     InputFormat.PPTX: ["pptx", "potx", "ppsx", "pptm", "potm", "ppsm"],
     InputFormat.PDF: ["pdf"],
-    InputFormat.MD: ["md"],
+    InputFormat.MD: ["md", "txt", "text", "qmd", "rmd", "Rmd"],
     InputFormat.HTML: ["html", "htm", "xhtml"],
     InputFormat.XML_JATS: ["xml", "nxml"],
     InputFormat.XML_XBRL: ["xml", "xbrl"],
@@ -128,7 +128,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     ],
     InputFormat.PDF: ["application/pdf"],
     InputFormat.ASCIIDOC: ["text/asciidoc"],
-    InputFormat.MD: ["text/markdown", "text/x-markdown"],
+    InputFormat.MD: ["text/markdown", "text/x-markdown", "text/plain"],
     InputFormat.CSV: ["text/csv"],
     InputFormat.XLSX: [
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
