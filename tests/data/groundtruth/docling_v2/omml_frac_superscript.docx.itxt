@@ -1,12 +1,5 @@
-Issue 1: Fraction as superscript base not grouped
-
-The equation below raises a fraction to the power 2.
-Expected LaTeX: {\frac{(x-c)}{v}}^2
-Docling produces: \frac{(x-c)}{v}^2
-
-When <m:sSup> has an <m:f> (fraction) as its base <m:e>, docling emits
-\frac{num}{den}^2 without grouping braces. In LaTeX this is ambiguous:
-some renderers apply ^2 only to the last token, not the whole fraction.
-The output should be {\frac{(x-c)}{v}}^2 or \left(\frac{(x-c)}{v}\right)^2.
-
-$${\frac{(x-c)}{v}}^{2}$$
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section: group header-0
+    item-2 at level 2: section_header: Issue 1: Fraction as superscript base not grouped
+      item-3 at level 3: text: The equation below raises a frac ... }^2 or \left(\frac{(x-c)}{v}\right)^2.
+      item-4 at level 3: formula: {\frac{(x-c)}{v}}^{2}
