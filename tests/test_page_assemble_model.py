@@ -10,7 +10,7 @@ from docling.models.stages.page_assemble.page_assemble_model import (
 
 @pytest.fixture
 def model() -> PageAssembleModel:
-    return PageAssembleModel(options=PageAssembleOptions())
+    return PageAssembleModel(options=PageAssembleOptions(), enabled=True)
 
 
 class TestSanitizeTextLigatures:

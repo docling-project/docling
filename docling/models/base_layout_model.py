@@ -13,6 +13,8 @@ from docling.models.base_model import BaseModelWithOptions, BasePageModel
 class BaseLayoutModel(BasePageModel, BaseModelWithOptions, ABC):
     """Shared interface for layout models."""
 
+    enabled: bool
+
     @classmethod
     @abstractmethod
     def get_options_type(cls) -> Type[BaseLayoutOptions]:
@@ -31,6 +33,10 @@ class BaseLayoutModel(BasePageModel, BaseModelWithOptions, ABC):
         conv_res: ConversionResult,
         page_batch: Iterable[Page],
     ) -> Iterable[Page]:
+        if not self.enabled:
+            yield from page_batch
+            return
+
         pages = list(page_batch)
         predictions = self.predict_layout(conv_res, pages)
 

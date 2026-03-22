@@ -488,6 +488,7 @@ class StandardPdfPipeline(ConvertPipeline):
         )
         self.layout_model = layout_factory.create_instance(
             options=self.pipeline_options.layout_options,
+            enabled=self.pipeline_options.do_layout,
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
             enable_remote_services=self.pipeline_options.enable_remote_services,
@@ -502,7 +503,9 @@ class StandardPdfPipeline(ConvertPipeline):
             accelerator_options=self.pipeline_options.accelerator_options,
             enable_remote_services=self.pipeline_options.enable_remote_services,
         )
-        self.assemble_model = PageAssembleModel(options=PageAssembleOptions())
+        self.assemble_model = PageAssembleModel(
+            options=PageAssembleOptions(), enabled=self.pipeline_options.do_layout
+        )
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
 
         # --- optional enrichment ------------------------------------------------

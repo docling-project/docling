@@ -43,8 +43,9 @@ class PageAssembleOptions(BaseModel):
 
 
 class PageAssembleModel(BasePageModel):
-    def __init__(self, options: PageAssembleOptions):
+    def __init__(self, options: PageAssembleOptions, enabled: bool):
         self.options = options
+        self.enabled = enabled
 
     def sanitize_text(self, lines):
         if len(lines) == 0:
@@ -88,6 +89,10 @@ class PageAssembleModel(BasePageModel):
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
+        if not self.enabled:
+            yield from page_batch
+            return
+
         for page in page_batch:
             assert page._backend is not None
             if not page._backend.is_valid():

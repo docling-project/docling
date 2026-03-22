@@ -23,6 +23,7 @@ class ThreadedLayoutVlmPipelineOptions(PaginatedPipelineOptions):
     vlm_options: Union[InlineVlmOptions, ApiVlmOptions] = GRANITEDOCLING_TRANSFORMERS
 
     # Layout model configuration
+    do_layout: bool = True
     layout_options: LayoutOptions = LayoutOptions(
         model_spec=DOCLING_LAYOUT_HERON, skip_cell_assignment=True
     )

@@ -75,6 +75,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
             options=self.pipeline_options.layout_options,
+            enabled=self.pipeline_options.do_layout,
         )
 
         # VLM model based on options type

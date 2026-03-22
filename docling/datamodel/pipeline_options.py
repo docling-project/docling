@@ -1416,6 +1416,15 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = True
+    do_layout: Annotated[
+        bool,
+        Field(
+            description=(
+                "Enable document layout analysis to detect and classify page regions such as text blocks, headings, figures, "
+                "tables, and other structural elements. Required for accurate content segmentation and reading-order reconstruction."
+            )
+        ),
+    ] = True
     do_code_enrichment: Annotated[
         bool,
         Field(

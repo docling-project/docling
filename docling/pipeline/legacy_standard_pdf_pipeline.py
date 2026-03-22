@@ -64,6 +64,7 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
         )
         layout_model = layout_factory.create_instance(
             options=pipeline_options.layout_options,
+            enabled=pipeline_options.do_layout,
             artifacts_path=self.artifacts_path,
             accelerator_options=pipeline_options.accelerator_options,
             enable_remote_services=pipeline_options.enable_remote_services,
@@ -93,7 +94,9 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
             # Table structure model
             table_model,
             # Page assemble
-            PageAssembleModel(options=PageAssembleOptions()),
+            PageAssembleModel(
+                options=PageAssembleOptions(), enabled=pipeline_options.do_layout
+            ),
         ]
 
         self.enrichment_pipe = [
