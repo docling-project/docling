@@ -76,6 +76,22 @@ def main():
     #     }
     # )
 
+    # PyPdfium without EasyOCR and Layout Processing
+    # --------------------
+    # pipeline_options = PdfPipelineOptions()
+    # pipeline_options.do_ocr = False
+    # pipeline_options.do_layout = False
+    # pipeline_options.do_table_structure = True
+    # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=False)
+
+    # doc_converter = DocumentConverter(
+    #     format_options={
+    #         InputFormat.PDF: PdfFormatOption(
+    #             pipeline_options=pipeline_options, backend=PyPdfiumDocumentBackend
+    #         )
+    #     }
+    # )
+
     # PyPdfium with EasyOCR
     # -----------------
     # pipeline_options = PdfPipelineOptions()
@@ -95,6 +111,20 @@ def main():
     # -------------------------
     # pipeline_options = PdfPipelineOptions()
     # pipeline_options.do_ocr = False
+    # pipeline_options.do_table_structure = True
+    # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=True)
+
+    # doc_converter = DocumentConverter(
+    #     format_options={
+    #         InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    #     }
+    # )
+
+    # Docling Parse without EasyOCR and Layout Processing
+    # -------------------------
+    # pipeline_options = PdfPipelineOptions()
+    # pipeline_options.do_ocr = False
+    # pipeline_options.do_layout = False
     # pipeline_options.do_table_structure = True
     # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=True)
 
