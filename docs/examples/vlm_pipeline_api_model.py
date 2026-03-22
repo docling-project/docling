@@ -318,8 +318,9 @@ def run_vllm_example(input_doc_path: Path) -> bool:
             url="http://localhost:8000/v1/chat/completions",
             params={
                 "model": "ibm-granite/granite-docling-258M",
-                "max_tokens": 4096,
-                "skip_special_tokens": True,
+                "temperature": 0.0,
+                "max_tokens": 8192,
+                "skip_special_tokens": False,
             },
             timeout=90,
         ),
