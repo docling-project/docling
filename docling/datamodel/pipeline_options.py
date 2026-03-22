@@ -1090,7 +1090,7 @@ class PipelineOptions(BaseOptions):
         Field(
             description=(
                 "Number of pages to process as a single chunk. When processing very large PDFs, this limits "
-                "memory usage and allows streaming chunked results instead of waiting for the entire document. "
+                "memory usage and allows streaming chunked results instead of waiting for the entire document to finish processing. "
                 "Chunks are treated as independent documents, so `doc_batch_concurrency` will parallelize across them. "
                 "If None, the entire document is processed at once."
             ),
