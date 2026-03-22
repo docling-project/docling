@@ -428,6 +428,12 @@ def convert(  # noqa: C901
             ..., help="If enabled, the bitmap content will be processed using OCR."
         ),
     ] = True,
+    layout: Annotated[
+        bool,
+        typer.Option(
+            ..., help=("If enabled document layout analysis processing will be done.")
+        ),
+    ] = True,
     force_ocr: Annotated[
         bool,
         typer.Option(
@@ -733,6 +739,7 @@ def convert(  # noqa: C901
                 enable_remote_services=enable_remote_services,
                 accelerator_options=accelerator_options,
                 do_ocr=ocr,
+                do_layout=layout,
                 ocr_options=ocr_options,
                 do_table_structure=tables,
                 do_code_enrichment=enrich_code,
