@@ -2,10 +2,13 @@ import logging
 import os
 import warnings
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from docling_core.types.doc import GroupItem
+from lxml import etree
 
+import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -42,6 +45,16 @@ def get_converter():
     converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
 
     return converter
+
+
+def _make_backend(docx_paths) -> MsWordDocumentBackend:
+    docx_path = docx_paths[0]
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    return in_doc._backend
 
 
 @pytest.fixture(scope="module")
@@ -464,3 +477,124 @@ def test_list_counter_and_enum_marker(docx_paths):
     assert backend.list_counters[(1, 0)] == 0
     assert backend.list_counters[(1, 1)] == 0
     assert backend.list_counters[(2, 0)] == 1  # unaffected
+
+
+def test_handle_equations_in_text_returns_original_text_on_mismatch(
+    docx_paths, monkeypatch
+):
+    backend = _make_backend(docx_paths)
+    element = etree.Element("p")
+    run = etree.SubElement(element, "r")
+    text_elem = etree.SubElement(run, "t")
+    text_elem.text = "alpha"
+    etree.SubElement(element, "oMath")
+
+    monkeypatch.setattr(msword_backend_module, "oMath2Latex", lambda _: "x")
+
+    text, equations = backend._handle_equations_in_text(element=element, text="beta")
+
+    assert text == "beta"
+    assert equations == []
+
+
+def test_handle_equations_in_text_skips_empty_substrings(docx_paths, monkeypatch):
+    backend = _make_backend(docx_paths)
+    equation = backend.equation_bookends.format(EQ="x")
+
+    element = etree.Element("p")
+    empty_run = etree.SubElement(element, "r")
+    empty_text = etree.SubElement(empty_run, "t")
+    empty_text.text = ""
+    etree.SubElement(element, "oMath")
+    tail_run = etree.SubElement(element, "r")
+    tail_text = etree.SubElement(tail_run, "t")
+    tail_text.text = "tail"
+
+    monkeypatch.setattr(msword_backend_module, "oMath2Latex", lambda _: "x")
+
+    text, equations = backend._handle_equations_in_text(element=element, text="tail")
+
+    assert equations == [equation]
+    assert text == f"{equation}tail"
+
+
+def test_handle_text_elements_returns_empty_refs_when_text_is_none(
+    docx_paths, monkeypatch
+):
+    backend = _make_backend(docx_paths)
+    element = backend.docx_obj.paragraphs[0]._element
+
+    monkeypatch.setattr(
+        backend, "_handle_equations_in_text", lambda element, text: (None, [])
+    )
+
+    refs = backend._handle_text_elements(element, DoclingDocument(name="test"))
+
+    assert refs == []
+
+
+def test_handle_text_elements_heading_defaults_to_non_numbered_when_style_missing(
+    docx_paths, monkeypatch
+):
+    backend = _make_backend(docx_paths)
+    captured: dict[str, tuple[int, str, bool]] = {}
+
+    class FakeParagraph:
+        def __init__(self, element, docx_obj):
+            self.text = "Heading text"
+            self.style = SimpleNamespace()
+
+    monkeypatch.setattr(msword_backend_module, "Paragraph", FakeParagraph)
+    monkeypatch.setattr(backend, "_get_paragraph_elements", lambda paragraph: [])
+    monkeypatch.setattr(
+        backend, "_handle_equations_in_text", lambda element, text: (text, [])
+    )
+    monkeypatch.setattr(backend, "_get_comment_ids_for_element", lambda element: [])
+    monkeypatch.setattr(
+        backend, "_get_label_and_level", lambda paragraph: ("Heading", 1)
+    )
+    monkeypatch.setattr(backend, "_get_numId_and_ilvl", lambda paragraph: (None, None))
+
+    def fake_add_heading(doc, level, text, is_numbered_style):
+        captured["heading"] = (level, text, is_numbered_style)
+        return []
+
+    monkeypatch.setattr(backend, "_add_heading", fake_add_heading)
+
+    refs = backend._handle_text_elements(object(), DoclingDocument(name="test"))
+
+    assert refs == []
+    assert captured["heading"] == (1, "Heading text", False)
+
+
+def test_handle_text_elements_inline_equations_stop_when_text_is_consumed(
+    docx_paths, monkeypatch
+):
+    backend = _make_backend(docx_paths)
+    equation_one = backend.equation_bookends.format(EQ="a")
+    equation_two = backend.equation_bookends.format(EQ="b")
+
+    class FakeParagraph:
+        def __init__(self, element, docx_obj):
+            self.text = "inline eq"
+            self.style = SimpleNamespace()
+
+    monkeypatch.setattr(msword_backend_module, "Paragraph", FakeParagraph)
+    monkeypatch.setattr(backend, "_get_paragraph_elements", lambda paragraph: [])
+    monkeypatch.setattr(
+        backend,
+        "_handle_equations_in_text",
+        lambda element, text: (equation_one, [equation_one, equation_two]),
+    )
+    monkeypatch.setattr(backend, "_get_comment_ids_for_element", lambda element: [])
+    monkeypatch.setattr(
+        backend, "_get_label_and_level", lambda paragraph: ("Normal", None)
+    )
+    monkeypatch.setattr(backend, "_get_numId_and_ilvl", lambda paragraph: (None, None))
+    monkeypatch.setattr(backend, "_prev_numid", lambda: None)
+    monkeypatch.setattr(backend, "_get_level", lambda: 1)
+    backend.parents[0] = None
+
+    refs = backend._handle_text_elements(object(), DoclingDocument(name="test"))
+
+    assert len(refs) == 2
