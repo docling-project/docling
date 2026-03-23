@@ -494,7 +494,7 @@ class _DocumentConversionInput(BaseModel):
             if mime is None:
                 ext = obj.suffix[1:]
                 mime = _DocumentConversionInput._mime_from_extension(ext)
-            if mime is None:  # must guess from
+            if mime is None:  # must guess from content
                 with obj.open("rb") as f:
                     content = f.read(1024)  # Read first 1KB
             if mime is not None and mime.lower() == "application/zip":
@@ -624,9 +624,11 @@ class _DocumentConversionInput(BaseModel):
                     input_format = InputFormat.XML_JATS
 
         elif mime == "text/plain":
-            content_str = content.decode("utf-8")
+            content_str = content.decode("utf-8", errors="replace")
             if InputFormat.XML_USPTO in formats and content_str.startswith("PATN\r\n"):
                 input_format = InputFormat.XML_USPTO
+            # No MD fallback: unrecognised text/plain content returns None.
+            # MD is detected via text/markdown mime (from .md/.text/.qmd/… extensions).
 
         return input_format
 
@@ -637,6 +639,14 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.ASCIIDOC][0]
         elif ext in FormatToExtensions[InputFormat.HTML]:
             mime = FormatToMimeType[InputFormat.HTML][0]
+        elif (
+            ext in FormatToExtensions[InputFormat.XML_USPTO]
+            and ext in FormatToExtensions[InputFormat.MD]
+        ):
+            # "txt" appears in both XML_USPTO and MD extension lists.  Leave mime=None
+            # so the content-probing chain (_detect_html_xhtml, _detect_csv, then the
+            # "text/plain" fallback + _guess_from_content) can pick the right format.
+            pass
         elif ext in FormatToExtensions[InputFormat.MD]:
             mime = FormatToMimeType[InputFormat.MD][0]
         elif ext in FormatToExtensions[InputFormat.CSV]:

@@ -1,3 +1,19 @@
+## [v2.81.0](https://github.com/docling-project/docling/releases/tag/v2.81.0) - 2026-03-20
+
+### Feature
+
+* Route plain-text and Quarto/R Markdown files to the Markdown backend ([#3161](https://github.com/docling-project/docling/issues/3161)) ([`96d7c7e`](https://github.com/docling-project/docling/commit/96d7c7ec79992d8dddedfafaaedb7f9bf6e14f40))
+
+### Fix
+
+* **docx:** Missing list items after numbered header (#2665) ([#2678](https://github.com/docling-project/docling/issues/2678)) ([`2f7c09e`](https://github.com/docling-project/docling/commit/2f7c09e0d8f07a5fa0aaf4f33bdfb1f71d3f3063))
+* Avoid thread-unsafe close of pypdfium backend ([#3160](https://github.com/docling-project/docling/issues/3160)) ([`afb4bb6`](https://github.com/docling-project/docling/commit/afb4bb68023c5d8fb8dc5e39413a27678e642293))
+* Handle external image relationships in MsWordDocumentBackend ([#3114](https://github.com/docling-project/docling/issues/3114)) ([`8ae0974`](https://github.com/docling-project/docling/commit/8ae0974a9d86a447f78e4950bc0a45d5eba31e98))
+* Handle PermissionError for directory input on Windows CLI ([#3149](https://github.com/docling-project/docling/issues/3149)) ([`a39317a`](https://github.com/docling-project/docling/commit/a39317a147859c68bf8aef635276a23585725529))
+* Avoid in-place mutation of pipeline options breaking cache key ([#3115](https://github.com/docling-project/docling/issues/3115)) ([`412af62`](https://github.com/docling-project/docling/commit/412af62135869978b7d22e1dd4ee2725623fad44))
+* Preserve torch_dtype in get_engine_config and add it to CodeFormulaV2 ([#3117](https://github.com/docling-project/docling/issues/3117)) ([`53a5f80`](https://github.com/docling-project/docling/commit/53a5f80a43849d853d4e0598d3875e6aac2f88e0))
+* Release image backend resources after frame extraction ([#3134](https://github.com/docling-project/docling/issues/3134)) ([`1e841eb`](https://github.com/docling-project/docling/commit/1e841ebcbd048fbfc11d63b4086539b7cd88bb77))
+
 ## [v2.80.0](https://github.com/docling-project/docling/releases/tag/v2.80.0) - 2026-03-14
 
 ### Feature

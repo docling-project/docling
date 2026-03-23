@@ -370,6 +370,25 @@ def _split_list(raw: str | None) -> list[str] | None:
     return re.split(r"[;,]", raw)
 
 
+_OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING = frozenset(
+    {
+        OutputFormat.TEXT,
+        OutputFormat.DOCTAGS,
+        OutputFormat.VTT,
+    }
+)
+
+
+def _should_generate_export_images(
+    image_export_mode: ImageRefMode,
+    to_formats: list[OutputFormat],
+) -> bool:
+    return image_export_mode != ImageRefMode.PLACEHOLDER and any(
+        to_format not in _OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING
+        for to_format in to_formats
+    )
+
+
 @app.command(no_args_is_help=True)
 def convert(  # noqa: C901
     input_sources: Annotated[
@@ -404,7 +423,7 @@ def convert(  # noqa: C901
         ImageRefMode,
         typer.Option(
             ...,
-            help="Image export mode for the document (only in case of JSON, Markdown or HTML). With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document.",
+            help="Image export mode for image-capable document outputs (JSON, YAML, HTML, HTML split-page, and Markdown). Text, DocTags, and WebVTT outputs do not export images. With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document.",
         ),
     ] = ImageRefMode.EMBEDDED,
     pipeline: Annotated[
@@ -750,7 +769,10 @@ def convert(  # noqa: C901
                 )
                 pipeline_options.table_structure_options.mode = table_mode
 
-            if image_export_mode != ImageRefMode.PLACEHOLDER:
+            if _should_generate_export_images(
+                image_export_mode,
+                to_formats,
+            ):
                 pipeline_options.generate_page_images = True
                 pipeline_options.generate_picture_images = (
                     True  # FIXME: to be deprecated in version 3
