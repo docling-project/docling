@@ -212,6 +212,16 @@ class VllmVlmEngine(BaseVlmEngine):
                     "gpu_memory_utilization", self.options.gpu_memory_utilization
                 )
 
+                # Apply CUDA graph capture mode
+                from vllm.config.compilation import (
+                    CompilationConfig,
+                    CUDAGraphMode,
+                )
+
+                llm_kwargs["compilation_config"] = CompilationConfig(
+                    cudagraph_mode=CUDAGraphMode[self.options.cudagraph_mode.value]
+                )
+
             # Quantization support (if specified in extra_config)
             if "quantization" in extra_cfg:
                 llm_kwargs.setdefault("quantization", extra_cfg["quantization"])

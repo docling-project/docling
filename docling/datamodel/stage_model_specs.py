@@ -1309,7 +1309,8 @@ CODE_FORMULA_CODEFORMULAV2 = StageModelPreset(
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                     "extra_generation_config": {"skip_special_tokens": False},
-                }
+                    "torch_dtype": "bfloat16",
+                },
             ),
         },
     ),

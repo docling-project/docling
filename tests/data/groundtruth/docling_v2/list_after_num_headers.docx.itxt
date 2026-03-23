@@ -7,3 +7,27 @@ item-0 at level 0: unspecified: group _root_
           item-6 at level 5: list: group list
             item-7 at level 6: list_item: Chính sách bảo hành và các điều k
             item-8 at level 6: list_item: Pin điện áp cao (sau đây gọi tắt là “
+          item-9 at level 5: text: 
+      item-10 at level 3: section_header: 1 Glosario
+        item-11 at level 4: list: group list
+          item-12 at level 5: list_item: 
+            item-13 at level 6: inline: group group
+              item-14 at level 7: text: Term 1
+              item-15 at level 7: text: : Definition 1
+          item-16 at level 5: list_item: 
+            item-17 at level 6: inline: group group
+              item-18 at level 7: text: Term 2
+              item-19 at level 7: text: : Definition 2
+          item-20 at level 5: list_item: 
+            item-21 at level 6: inline: group group
+              item-22 at level 7: text: Term 3
+              item-23 at level 7: text: : Definition 3
+          item-24 at level 5: list_item: 
+            item-25 at level 6: inline: group group
+              item-26 at level 7: text: Term 4
+              item-27 at level 7: text: : Definition 4
+          item-28 at level 5: list_item: 
+            item-29 at level 6: inline: group group
+              item-30 at level 7: text: Term 5
+              item-31 at level 7: text: : Definition 5
+        item-32 at level 4: text: 

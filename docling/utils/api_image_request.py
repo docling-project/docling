@@ -19,9 +19,9 @@ def api_image_request(
     prompt: str,
     url: AnyUrl,
     timeout: float = 20,
-    headers: Optional[dict[str, str]] = None,
+    headers: dict[str, str] | None = None,
     **params,
-) -> Tuple[str, Optional[int], VlmStopReason]:
+) -> Tuple[str, int | None, VlmStopReason]:
     img_io = BytesIO()
     image = (
         image.copy()
@@ -32,7 +32,7 @@ def api_image_request(
         image.save(img_io, "PNG")
     except Exception as e:
         good_image = False
-        _log.error(f"Error, corrupter PNG of size: {image.size}: {e}")
+        _log.error(f"Error, corrupted PNG of size: {image.size}: {e}")
 
     if good_image:
         try:
@@ -77,11 +77,14 @@ def api_image_request(
             api_resp = OpenAiApiResponse.model_validate_json(r.text)
             generated_text = api_resp.choices[0].message.content.strip()
             num_tokens = api_resp.usage.total_tokens
-            stop_reason = (
-                VlmStopReason.LENGTH
-                if api_resp.choices[0].finish_reason == "length"
-                else VlmStopReason.END_OF_SEQUENCE
-            )
+            finish_reason = api_resp.choices[0].finish_reason
+            if finish_reason == "content_filter":
+                _log.warning("API response was filtered due to content safety policy.")
+                stop_reason = VlmStopReason.CONTENT_FILTERED
+            elif finish_reason == "length":
+                stop_reason = VlmStopReason.LENGTH
+            else:
+                stop_reason = VlmStopReason.END_OF_SEQUENCE
 
             return generated_text, num_tokens, stop_reason
         except Exception as e:
@@ -97,10 +100,10 @@ def api_image_request_streaming(
     url: AnyUrl,
     *,
     timeout: float = 20,
-    headers: Optional[dict[str, str]] = None,
+    headers: dict[str, str] | None = None,
     generation_stoppers: list[GenerationStopper] = [],
     **params,
-) -> Tuple[str, Optional[int]]:
+) -> Tuple[str, int | None]:
     """
     Stream a chat completion from an OpenAI-compatible server (e.g., vLLM).
     Parses SSE lines: 'data: {json}\\n\\n', terminated by 'data: [DONE]'.

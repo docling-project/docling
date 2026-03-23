@@ -290,7 +290,20 @@ class ThreadedPipelineStage:
                     continue
 
                 pages: List[Page] = [payload for _, payload in pages_with_payloads]
+                if _log.isEnabledFor(logging.DEBUG):
+                    _t_start = time.time()
+                    _t_mono = time.monotonic()
                 processed_pages = list(self.model(good[0].conv_res, pages))  # type: ignore[arg-type]
+                if _log.isEnabledFor(logging.DEBUG):
+                    _log.debug(
+                        "PIPELINE_PROFILING Stage %s: run_id=%d pages=%s start=%.3f end=%.3f duration=%.3fs",
+                        self.name,
+                        rid,
+                        [it.page_no for it in good],
+                        _t_start,
+                        time.time(),
+                        time.monotonic() - _t_mono,
+                    )
                 if len(processed_pages) != len(pages):  # strict mismatch guard
                     raise RuntimeError(
                         f"Model {self.name} returned wrong number of pages"
@@ -366,6 +379,9 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
                 result.extend(items)
                 continue
             try:
+                if _log.isEnabledFor(logging.DEBUG):
+                    _t_start = time.time()
+                    _t_mono = time.monotonic()
                 pages_with_payloads: list[tuple[ThreadedItem, Page]] = []
                 for it in good:
                     page = it.payload
@@ -386,6 +402,15 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
                 processed_pages = list(
                     self.model(good[0].conv_res, pages)  # type: ignore[arg-type]
                 )
+                if _log.isEnabledFor(logging.DEBUG):
+                    _log.debug(
+                        "PIPELINE_PROFILING Stage preprocess: run_id=%d pages=%s start=%.3f end=%.3f duration=%.3fs",
+                        rid,
+                        [it.page_no for it in good],
+                        _t_start,
+                        time.time(),
+                        time.monotonic() - _t_mono,
+                    )
                 if len(processed_pages) != len(pages):
                     raise RuntimeError(
                         "PagePreprocessingModel returned unexpected number of pages"
@@ -481,10 +506,14 @@ class StandardPdfPipeline(ConvertPipeline):
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
 
         # --- optional enrichment ------------------------------------------------
-        # Update code_formula_options to match the boolean flags
-        code_formula_opts = self.pipeline_options.code_formula_options
-        code_formula_opts.extract_code = self.pipeline_options.do_code_enrichment
-        code_formula_opts.extract_formulas = self.pipeline_options.do_formula_enrichment
+        # Create a copy to avoid mutating pipeline_options in-place,
+        # which would change its hash and break pipeline caching (#3109).
+        code_formula_opts = self.pipeline_options.code_formula_options.model_copy(
+            update={
+                "extract_code": self.pipeline_options.do_code_enrichment,
+                "extract_formulas": self.pipeline_options.do_formula_enrichment,
+            }
+        )
 
         self.enrichment_pipe = [
             # Code Formula Enrichment Model (using new VLM runtime system)

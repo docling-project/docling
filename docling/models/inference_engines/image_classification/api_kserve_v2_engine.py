@@ -12,8 +12,9 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.image_classification_engine_options import (
     ApiKserveV2ImageClassificationEngineOptions,
 )
+from docling.datamodel.kserve_transport_utils import resolve_kserve_transport_base_url
 from docling.exceptions import OperationNotAllowed
-from docling.models.inference_engines.common import KserveV2HttpClient
+from docling.models.inference_engines.common import KserveV2Client, KserveV2HttpClient
 from docling.models.inference_engines.image_classification.base import (
     ImageClassificationEngineInput,
     ImageClassificationEngineOutput,
@@ -47,7 +48,7 @@ class ApiKserveV2ImageClassificationEngine(HfImageClassificationEngineBase):
             artifacts_path=artifacts_path,
         )
         self.options: ApiKserveV2ImageClassificationEngineOptions = options
-        self._kserve_client: Optional[KserveV2HttpClient] = None
+        self._kserve_client: Optional[KserveV2Client] = None
         self._input_name: Optional[str] = None
         self._output_name: Optional[str] = None
 
@@ -98,13 +99,36 @@ class ApiKserveV2ImageClassificationEngine(HfImageClassificationEngineBase):
         self._processor = self._load_preprocessor(model_folder)
         self._id_to_label = self._load_label_mapping(model_folder)
 
-        self._kserve_client = KserveV2HttpClient(
-            base_url=str(self.options.url),
-            model_name=self._resolve_model_name(),
-            model_version=self._resolve_model_version(),
-            timeout=self.options.timeout,
-            headers=self.options.headers,
+        if self._kserve_client is not None:
+            self._kserve_client.close()
+
+        base_url = resolve_kserve_transport_base_url(
+            url=self.options.url,
+            transport=self.options.transport,
         )
+        if self.options.transport == "http":
+            self._kserve_client = KserveV2HttpClient(
+                base_url=base_url,
+                model_name=self._resolve_model_name(),
+                model_version=self._resolve_model_version(),
+                timeout=self.options.timeout,
+                headers=self.options.headers,
+            )
+        else:
+            from docling.models.inference_engines.common.kserve_v2_grpc import (
+                KserveV2GrpcClient,
+            )
+
+            self._kserve_client = KserveV2GrpcClient(
+                base_url=base_url,
+                model_name=self._resolve_model_name(),
+                model_version=self._resolve_model_version(),
+                timeout=self.options.timeout,
+                metadata=self.options.grpc_metadata,
+                use_tls=self.options.grpc_use_tls,
+                max_message_bytes=self.options.grpc_max_message_bytes,
+                use_binary_data=self.options.grpc_use_binary_data,
+            )
         self._input_name, self._output_name = self._resolve_tensor_names()
 
         self._initialized = True
@@ -131,7 +155,7 @@ class ApiKserveV2ImageClassificationEngine(HfImageClassificationEngineBase):
 
         images = [item.image.convert("RGB") for item in input_batch]
         processed_inputs = self._processor(images=images, return_tensors="np")
-        pixel_values = np.asarray(processed_inputs["pixel_values"], dtype=np.float32)
+        pixel_values = np.asarray(processed_inputs["pixel_values"])
 
         outputs = self._kserve_client.infer(
             inputs={self._input_name: pixel_values},
@@ -157,3 +181,14 @@ class ApiKserveV2ImageClassificationEngine(HfImageClassificationEngineBase):
             input_batch=input_batch,
             probs_batch=probs_batch,
         )
+
+    def close(self) -> None:
+        if self._kserve_client is None:
+            return
+        self._kserve_client.close()
+
+    def __del__(self) -> None:
+        try:
+            self.close()
+        except Exception:
+            pass

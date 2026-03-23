@@ -14,9 +14,6 @@
 ＊ Headache
 ＊ Sore throat
 
-If a caregiver suspects that within one week, a fifth of the class (for classes with more than 15 students) or more than three students (for classes with 15 or fewer students)
-show the same suggested reportable symptoms
-
 Yes
 
 - A report must be submitted within 24 hours via the Ministry of Education’s Campus Safety and Disaster Prevention Information Network.

@@ -1,7 +1,7 @@
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Iterable, List, Optional, Union
+from typing import Iterable, List, Union
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import (
@@ -24,7 +24,7 @@ _log = logging.getLogger(__name__)
 
 class _ImagePageBackend(PdfPageBackend):
     def __init__(self, image: Image.Image):
-        self._image: Optional[Image.Image] = image
+        self._image: Image.Image | None = image
         self.valid: bool = self._image is not None
 
     def is_valid(self) -> bool:
@@ -85,7 +85,7 @@ class _ImagePageBackend(PdfPageBackend):
         yield full_page_bbox
 
     def get_page_image(
-        self, scale: float = 1, cropbox: Optional[BoundingBox] = None
+        self, scale: float = 1, cropbox: BoundingBox | None = None
     ) -> Image.Image:
         assert self._image is not None
         img = self._image
@@ -147,20 +147,22 @@ class ImageDocumentBackend(PdfDocumentBackend):
         # Load frames eagerly for thread-safety across pages
         self._frames: List[Image.Image] = []
         try:
-            img = Image.open(self.path_or_stream)  # type: ignore[arg-type]
+            with Image.open(self.path_or_stream) as img:  # type: ignore[arg-type]
+                # Handle multi-frame and single-frame images
+                # - multiframe formats: TIFF, GIF, ICO
+                # - singleframe formats: JPEG (.jpg, .jpeg), PNG (.png), BMP, WEBP (unless animated), HEIC
+                frame_count = getattr(img, "n_frames", 1)
 
-            # Handle multi-frame and single-frame images
-            # - multiframe formats: TIFF, GIF, ICO
-            # - singleframe formats: JPEG (.jpg, .jpeg), PNG (.png), BMP, WEBP (unless animated), HEIC
-            frame_count = getattr(img, "n_frames", 1)
-
-            if frame_count > 1:
-                for i in range(frame_count):
-                    img.seek(i)
-                    self._frames.append(img.copy().convert("RGB"))
-            else:
-                self._frames.append(img.convert("RGB"))
+                if frame_count > 1:
+                    for i in range(frame_count):
+                        img.seek(i)
+                        self._frames.append(img.copy().convert("RGB"))
+                else:
+                    self._frames.append(img.convert("RGB"))
         except Exception as e:
+            for frame in self._frames:
+                frame.close()
+            self._frames = []
             raise RuntimeError(f"Could not load image for document {self.file}") from e
 
     def is_valid(self) -> bool:
@@ -184,5 +186,7 @@ class ImageDocumentBackend(PdfDocumentBackend):
         return True
 
     def unload(self):
-        super().unload()
+        for frame in self._frames:
+            frame.close()
         self._frames = []
+        super().unload()

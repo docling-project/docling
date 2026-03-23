@@ -1,5 +1,6 @@
 import logging
 import os
+import warnings
 from pathlib import Path
 
 import pytest
@@ -392,3 +393,74 @@ def test_get_heading_and_level_non_heading(
     label, level = backend._get_heading_and_level(style_label)
     assert label == expected_label
     assert level == expected_level
+
+
+def test_external_image_references():
+    """Test that .docx files with external image references convert without crashing.
+
+    Docx files saved from web browsers often have images as external references
+    (TargetMode="External") pointing to URLs or file:// paths rather than embedded
+    in word/media/. Previously this caused a ValueError from python-docx:
+    "target_part property on _Relationship is undefined when target mode is External"
+
+    See: https://github.com/docling-project/docling/issues/3113
+    """
+    docx_path = Path("./tests/data/docx/docx_external_image.docx")
+    assert docx_path.exists(), f"Test file not found: {docx_path}"
+
+    converter = get_converter()
+
+    with pytest.warns(UserWarning, match="Skipping external image reference"):
+        conv_result = converter.convert(docx_path)
+
+    doc = conv_result.document
+
+    # Document should convert successfully (not crash)
+    assert doc is not None
+
+    # Text content should still be extracted even though the external image is skipped
+    md = doc.export_to_markdown()
+    assert "Test Document with External Image" in md
+    assert "text before the image" in md
+    assert "after the external image" in md
+
+
+def test_list_counter_and_enum_marker(docx_paths):
+    """Test list counter increment, sub-level reset, marker building, and sequence reset."""
+    docx_path = docx_paths[0]
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = in_doc._backend
+
+    # Basic increment
+    assert backend._get_list_counter(1, 0) == 1
+    assert backend._get_list_counter(1, 0) == 2
+    assert backend._get_list_counter(1, 1) == 1
+    assert backend._get_list_counter(1, 1) == 2
+    assert backend._get_list_counter(1, 1) == 3
+
+    # Advancing parent level resets sub-levels
+    backend._get_list_counter(1, 2)  # (1,2) = 1
+    backend._get_list_counter(1, 0)  # (1,0) = 3, resets lvl 1 and 2
+    assert backend.list_counters[(1, 1)] == 0
+    assert backend.list_counters[(1, 2)] == 0
+    assert backend._get_list_counter(1, 1) == 1  # restarts from 1
+
+    # Hierarchical enum markers
+    backend.list_counters[(1, 0)] = 2
+    backend.list_counters[(1, 1)] = 3
+    backend.list_counters[(1, 2)] = 1
+    assert backend._build_enum_marker(1, 0) == "2."
+    assert backend._build_enum_marker(1, 1) == "2.3."
+    assert backend._build_enum_marker(1, 2) == "2.3.1."
+    assert backend._build_enum_marker(99, 0) == "1."  # missing counter defaults to 1
+
+    # Reset sequence for a specific numid
+    backend._get_list_counter(2, 0)  # (2,0) = 1
+    backend._reset_list_counters_for_new_sequence(1)
+    assert backend.list_counters[(1, 0)] == 0
+    assert backend.list_counters[(1, 1)] == 0
+    assert backend.list_counters[(2, 0)] == 1  # unaffected

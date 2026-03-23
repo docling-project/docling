@@ -1,12 +1,15 @@
 import logging
 import re
+import warnings
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, Final, Optional, Union
+from urllib.parse import urlparse
 
 from docling_core.types.doc import (
     ContentLayer,
+    DocItem,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -402,12 +405,78 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return None, None  # If the paragraph is not part of a list
 
+    def _get_level_element(self, numid: int, ilvl: int) -> Optional[BaseOxmlElement]:
+        """Find the level element from the numbering XML for a given numId and ilvl."""
+        try:
+            if not hasattr(self.docx_obj, "part") or not hasattr(
+                self.docx_obj.part, "package"
+            ):
+                return None
+
+            numbering_part = None
+            for part in self.docx_obj.part.package.parts:
+                if "numbering" in part.partname:
+                    numbering_part = part
+                    break
+
+            if numbering_part is None:
+                return None
+
+            numbering_root = numbering_part.element
+            namespaces = {"w": self._W_NS}
+
+            num_element = numbering_root.find(
+                f".//w:num[@w:numId='{numid}']", namespaces=namespaces
+            )
+            if num_element is None:
+                return None
+
+            abstract_num_id_elem = num_element.find(
+                ".//w:abstractNumId", namespaces=namespaces
+            )
+            if abstract_num_id_elem is None:
+                return None
+
+            abstract_num_id = abstract_num_id_elem.get(self.XML_KEY)
+            if abstract_num_id is None:
+                return None
+
+            abstract_num_element = numbering_root.find(
+                f".//w:abstractNum[@w:abstractNumId='{abstract_num_id}']",
+                namespaces=namespaces,
+            )
+            if abstract_num_element is None:
+                return None
+
+            return abstract_num_element.find(
+                f".//w:lvl[@w:ilvl='{ilvl}']", namespaces=namespaces
+            )
+        except Exception as e:
+            _log.debug(f"Error finding level element: {e}")
+            return None
+
+    def _get_start_value(self, numid: int, ilvl: int) -> int:
+        """Read the start value from the abstractNum definition."""
+        lvl_element = self._get_level_element(numid, ilvl)
+        if lvl_element is not None:
+            namespaces = {"w": self._W_NS}
+            start_element = lvl_element.find(".//w:start", namespaces=namespaces)
+            if start_element is not None:
+                val = start_element.get(self.XML_KEY)
+                if val is not None:
+                    return int(val)
+        return 1
+
     def _get_list_counter(self, numid: int, ilvl: int) -> int:
         """Get and increment the counter for a specific numId and ilvl combination."""
         key = (numid, ilvl)
         if key not in self.list_counters:
-            self.list_counters[key] = 0
+            start = self._get_start_value(numid, ilvl)
+            self.list_counters[key] = start - 1
         self.list_counters[key] += 1
+        # Reset sub-level counters since parent level advanced
+        for k in [k for k in self.list_counters if k[0] == numid and k[1] > ilvl]:
+            self.list_counters[k] = 0
         return self.list_counters[key]
 
     def _reset_list_counters_for_new_sequence(self, numid: int):
@@ -417,74 +486,30 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for key in keys_to_reset:
             self.list_counters[key] = 0
 
+    def _build_enum_marker(self, numid: int, ilvl: int) -> str:
+        """Build full hierarchical marker like '1.2.3.'"""
+        parts = []
+        for lvl in range(ilvl + 1):
+            counter = self.list_counters.get((numid, lvl))
+            if counter is None:
+                counter = self._get_start_value(numid, lvl)
+            parts.append(str(counter))
+        return ".".join(parts) + "."
+
     def _is_numbered_list(self, numId: int, ilvl: int) -> bool:
         """Check if a list is numbered based on its numFmt value."""
         try:
-            # Access the numbering part of the document
-            if not hasattr(self.docx_obj, "part") or not hasattr(
-                self.docx_obj.part, "package"
-            ):
-                return False
-
-            numbering_part = None
-            # Find the numbering part
-            for part in self.docx_obj.part.package.parts:
-                if "numbering" in part.partname:
-                    numbering_part = part
-                    break
-
-            if numbering_part is None:
-                return False
-
-            # Parse the numbering XML
-            numbering_root = numbering_part.element
-            namespaces = {"w": self._W_NS}
-
-            # Find the numbering definition with the given numId
-            num_xpath = f".//w:num[@w:numId='{numId}']"
-            num_element = numbering_root.find(num_xpath, namespaces=namespaces)
-
-            if num_element is None:
-                return False
-
-            # Get the abstractNumId from the num element
-            abstract_num_id_elem = num_element.find(
-                ".//w:abstractNumId", namespaces=namespaces
-            )
-            if abstract_num_id_elem is None:
-                return False
-
-            abstract_num_id = abstract_num_id_elem.get(f"{self._W_NS_CLARK}val")
-            if abstract_num_id is None:
-                return False
-
-            # Find the abstract numbering definition
-            abstract_num_xpath = (
-                f".//w:abstractNum[@w:abstractNumId='{abstract_num_id}']"
-            )
-            abstract_num_element = numbering_root.find(
-                abstract_num_xpath, namespaces=namespaces
-            )
-
-            if abstract_num_element is None:
-                return False
-
-            # Find the level definition for the given ilvl
-            lvl_xpath = f".//w:lvl[@w:ilvl='{ilvl}']"
-            lvl_element = abstract_num_element.find(lvl_xpath, namespaces=namespaces)
-
+            lvl_element = self._get_level_element(numId, ilvl)
             if lvl_element is None:
                 return False
 
-            # Get the numFmt element
+            namespaces = {"w": self._W_NS}
             num_fmt_element = lvl_element.find(".//w:numFmt", namespaces=namespaces)
             if num_fmt_element is None:
                 return False
 
-            num_fmt = num_fmt_element.get(f"{self._W_NS_CLARK}val")
+            num_fmt = num_fmt_element.get(self.XML_KEY)
 
-            # Numbered formats include: decimal, lowerRoman, upperRoman, lowerLetter, upperLetter
-            # Bullet formats include: bullet
             numbered_formats = {
                 "decimal",
                 "lowerRoman",
@@ -633,7 +658,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for c in paragraph.iter_inner_content():
             if isinstance(c, Hyperlink):
                 text = c.text
-                hyperlink = Path(c.address) if c.address else None
+                if c.address:
+                    hyperlink = (
+                        AnyUrl(c.address)
+                        if urlparse(c.address).scheme
+                        else Path(c.address)
+                    )
+                else:
+                    hyperlink = None
                 format = (
                     self._get_format_from_run(c.runs[0])
                     if c.runs and len(c.runs) > 0
@@ -1251,6 +1283,23 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     )
         return elem_ref
 
+    def _add_list_item_with_marker(
+        self,
+        doc: DoclingDocument,
+        elements: list,
+        numid: int,
+        ilevel: int,
+        is_numbered: bool,
+        level: int,
+    ) -> None:
+        """Resolve enumeration marker and add a formatted list item."""
+        if is_numbered:
+            self._get_list_counter(numid, ilevel)
+            enum_marker = self._build_enum_marker(numid, ilevel)
+        else:
+            enum_marker = ""
+        self._add_formatted_list_item(doc, elements, enum_marker, is_numbered, level)
+
     def _add_list_item(
         self,
         *,
@@ -1264,7 +1313,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # this method is always called with is_numbered. Numbered lists should be properly addressed.
         if not elements:
             return elem_ref
-        enum_marker = ""
 
         level = self._get_level()
         prev_indent = self._prev_indent()
@@ -1284,14 +1332,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[level] = list_gr
             elem_ref.append(list_gr.get_ref())
 
-            # Set marker and enumerated arguments if this is an enumeration element.
-            if is_numbered:
-                counter = self._get_list_counter(numid, ilevel)
-                enum_marker = str(counter) + "."
-            else:
-                enum_marker = ""
-            self._add_formatted_list_item(
-                doc, elements, enum_marker, is_numbered, level
+            self._add_list_item_with_marker(
+                doc, elements, numid, ilevel, is_numbered, level
             )
         elif (
             self._prev_numid() == numid
@@ -1311,16 +1353,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 self.parents[i] = list_gr1
                 elem_ref.append(list_gr1.get_ref())
 
-            # TODO: Set marker and enumerated arguments if this is an enumeration element.
-            if is_numbered:
-                counter = self._get_list_counter(numid, ilevel)
-                enum_marker = str(counter) + "."
-            else:
-                enum_marker = ""
-            self._add_formatted_list_item(
+            self._add_list_item_with_marker(
                 doc,
                 elements,
-                enum_marker,
+                numid,
+                ilevel,
                 is_numbered,
                 self.level_at_new_list + ilevel,
             )
@@ -1334,32 +1371,53 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 if k > self.level_at_new_list + ilevel:
                     self.parents[k] = None
 
-            # TODO: Set marker and enumerated arguments if this is an enumeration element.
-            if is_numbered:
-                counter = self._get_list_counter(numid, ilevel)
-                enum_marker = str(counter) + "."
-            else:
-                enum_marker = ""
-            self._add_formatted_list_item(
+            self._add_list_item_with_marker(
                 doc,
                 elements,
-                enum_marker,
+                numid,
+                ilevel,
                 is_numbered,
                 self.level_at_new_list + ilevel,
             )
 
-        elif self._prev_numid() == numid or prev_indent == ilevel:
+        elif self._prev_numid() == numid and isinstance(
+            self.parents.get(level - 1), ListGroup
+        ):
+            # Continue existing list - only if parent is actually a ListGroup
+            self._add_list_item_with_marker(
+                doc, elements, numid, ilevel, is_numbered, level - 1
+            )
+        elif self._prev_numid() != numid or not isinstance(
+            self.parents.get(level - 1), ListGroup
+        ):
+            # New list sequence: Different numid OR parent is not a ListGroup
+            # Use anchor-based level to place new list at the correct document position
+            if self.level_at_new_list is not None:
+                use_level = self.level_at_new_list + ilevel
+                for k in list(self.parents.keys()):
+                    if k > use_level:
+                        self.parents[k] = None
+            else:
+                use_level = level
+                self.level_at_new_list = use_level
+
+            list_gr = doc.add_list_group(
+                name="list",
+                parent=self.parents[use_level - 1],
+                content_layer=self.content_layer,
+            )
+            self.parents[use_level] = list_gr
+            elem_ref.append(list_gr.get_ref())
+
             # Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
-                counter = self._get_list_counter(numid, ilevel)
-                enum_marker = str(counter) + "."
+                self._get_list_counter(numid, ilevel)
+                enum_marker = self._build_enum_marker(numid, ilevel)
             else:
                 enum_marker = ""
             self._add_formatted_list_item(
-                doc, elements, enum_marker, is_numbered, level - 1
+                doc, elements, enum_marker, is_numbered, use_level
             )
-        else:
-            _log.warning("List item not matching any insert condition.")
         return elem_ref
 
     @staticmethod
@@ -1578,8 +1636,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
             )
             if rId in self.docx_obj.part.rels:
+                rel = self.docx_obj.part.rels[rId]
+                if rel.is_external:
+                    warnings.warn(
+                        f"Skipping external image reference: {rel.target_ref}",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+                    return None
                 # Access the image part using the relationship ID
-                image_part = self.docx_obj.part.rels[rId].target_part
+                image_part = rel.target_part
                 image_data = image_part.blob  # Get the binary image data
             return image_data
 
@@ -1801,7 +1867,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if targets:
                 group_ref = FineRef(cref=comment_group.self_ref)
                 for target in targets:
-                    target.comments.append(group_ref)
+                    # Only DocItem has a 'comments' field; GroupItem does not,
+                    # so skip non-DocItem targets (fixes #2955).
+                    if isinstance(target, DocItem):
+                        target.comments.append(group_ref)
 
             _log.debug(
                 f"Added comment {comment_id} in group with {len(targets)} linked item(s)"

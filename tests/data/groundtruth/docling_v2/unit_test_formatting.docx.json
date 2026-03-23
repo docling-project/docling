@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "name": "unit_test_formatting",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -351,7 +351,7 @@
         "strikethrough": false,
         "script": "baseline"
       },
-      "hyperlink": "https:/github.com/DS4SD/docling"
+      "hyperlink": "https://github.com/DS4SD/docling"
     },
     {
       "self_ref": "#/texts/4",
@@ -371,7 +371,7 @@
         "strikethrough": false,
         "script": "baseline"
       },
-      "hyperlink": "https:/github.com/DS4SD/docling"
+      "hyperlink": "https://github.com/DS4SD/docling"
     },
     {
       "self_ref": "#/texts/5",
@@ -486,7 +486,7 @@
         "strikethrough": false,
         "script": "baseline"
       },
-      "hyperlink": "https:/github.com/DS4SD/docling"
+      "hyperlink": "https://github.com/DS4SD/docling"
     },
     {
       "self_ref": "#/texts/11",

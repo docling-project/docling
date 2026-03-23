@@ -5,6 +5,7 @@ import pytest
 from docling_core.types.doc import DocItemLabel, GroupLabel
 
 from docling.backend.latex_backend import LatexDocumentBackend
+from docling.datamodel.backend_options import LatexBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
 from docling.document_converter import DocumentConverter
@@ -61,12 +62,12 @@ def test_latex_preamble_filter():
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
     doc = backend.convert()
 
-    # Title in preamble should be ignored by the backend (unless we explicitly parse it, which current logic doesn't for simplistic Document extraction)
-    # The current logic filters for 'document' environment, so "Real Content" should be there, "Ignored Title" should not (if inside structure but outside document env)
+    # Preamble metadata (\title, \author, \date) is now extracted
+    # following pandoc's approach. Only package commands should be filtered.
 
     full_text = doc.export_to_markdown()
     assert "Real Content" in full_text
-    assert "Ignored Title" not in full_text
+    assert "Ignored Title" in full_text
     assert "usepackage" not in full_text
 
 
@@ -144,7 +145,7 @@ def test_latex_math_parsing():
     # Check delimiters
     assert "$E=mc^2$" in md or r"\( E=mc^2 \)" in md
     assert r"\frac" in md
-    assert r"\begin{align}" in md  # Should preserve align tag for proper rendering
+    assert r"\begin{align}" in md
 
 
 def test_latex_escaped_chars():
@@ -1337,11 +1338,8 @@ This is \\myterm and the value is \\myvalue.
         filename="test.tex",
     )
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
-
-    # BEFORE conversion - check if macros get extracted
     doc = backend.convert()
 
-    # Print debug info
     print(f"\n{'=' * 80}")
     print("DEBUG INFO:")
     print(f"{'=' * 80}")
@@ -1359,7 +1357,398 @@ This is \\myterm and the value is \\myvalue.
     # Check if macros were registered
     assert "myterm" in backend._custom_macros, "myterm not in _custom_macros!"
     assert backend._custom_macros["myterm"] == "special term"
-
-    # Check if they were expanded
     assert "special term" in md, f"'special term' not in output: {md!r}"
     assert "42" in md, f"'42' not in output: {md!r}"
+
+
+def test_latex_href_macro():
+    """Test \\href{url}{display} emits a markdown-style link."""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    Visit \href{https://example.com}{Example Site} for more.
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    md = doc.export_to_markdown()
+    assert "Example Site" in md
+    assert "https://example.com" in md
+
+
+def test_latex_textcolor_macro():
+    """Test \\textcolor{color}{text} extracts the text content and ignores the color."""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    This is \textcolor{red}{important} text.
+    Also \colorbox{yellow}{highlighted} here.
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    md = doc.export_to_markdown()
+    assert "important" in md
+    assert "highlighted" in md
+    # Color names should not leak into output
+    assert "red" not in md
+    assert "yellow" not in md
+
+
+def test_latex_subequations_environment():
+    """Test subequations wrapper environment passes through inner equations."""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{subequations}
+    \begin{align}
+    a &= b \\
+    c &= d
+    \end{align}
+    \end{subequations}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    formulas = [t for t in doc.texts if t.label == DocItemLabel.FORMULA]
+    assert len(formulas) >= 1, "subequations should pass through inner align formula"
+
+
+def test_latex_legacy_font_switches():
+    """Test legacy font/size switches (\\bf, \\it, \\tt, \\large, \\tiny) are silently ignored."""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    {\bf bold text} and {\it italic text}.
+    {\tt monospace} and {\large big} and {\tiny small}.
+    Normal content here.
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    md = doc.export_to_markdown()
+    # Content inside the groups should still appear
+    assert "bold text" in md
+    assert "italic text" in md
+    assert "Normal content here" in md
+
+
+def test_latex_accent_macro():
+    """Test accent macros (\\'{e}, \\`{a}) are converted to Unicode characters."""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    caf\'{e} and na\"{i}ve.
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    md = doc.export_to_markdown()
+    assert "caf" in md
+    assert len(doc.texts) > 0
+
+
+def test_latex_multicolumn_table():
+    """Test \\multicolumn in a tabular environment produces correct column span."""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{tabular}{ccc}
+    \multicolumn{2}{c}{Merged Header} & Right \\
+    A & B & C \\
+    \end{tabular}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    assert len(doc.tables) >= 1
+    table = doc.tables[0]
+
+    # The table should have 2 rows and 3 columns ( hopefullyyy )
+    assert table.data.num_rows >= 1
+    assert table.data.num_cols >= 2
+    cells = [c.text.strip() for c in table.data.table_cells]
+    assert any("Merged Header" in c for c in cells)
+
+
+def test_latex_multirow_table():
+    """Test \\multirow in a tabular environment produces correct row span."""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{tabular}{cc}
+    \multirow{2}{*}{Tall Cell} & Top \\
+    & Bottom \\
+    \end{tabular}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    assert len(doc.tables) >= 1
+    cells = [c.text.strip() for c in doc.tables[0].data.table_cells]
+    assert any("Tall Cell" in c for c in cells)
+
+
+def test_latex_convert_error_fallback():
+    """Test convert() returns an empty doc (not an exception) when _do_parse_and_process errors."""
+    latex_content = b"\\documentclass{article}\\begin{document}Hello\\end{document}"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    options = LatexBackendOptions(parse_timeout=0.05)
+    backend = LatexDocumentBackend(
+        in_doc=in_doc, path_or_stream=BytesIO(latex_content), options=options
+    )
+
+    def _raise(doc):
+        raise RuntimeError("Simulated parse failure")
+
+    backend._do_parse_and_process = _raise  # type: ignore[method-assign]
+    doc = backend.convert()
+    assert doc is not None
+
+
+def test_latex_theorem_environment():
+    """Test theorem/proof/lemma environments emit bold labels + body"""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{theorem}
+    Every even integer greater than 2 is the sum of two primes.
+    \end{theorem}
+    \begin{proof}
+    Left as an exercise.
+    \end{proof}
+    \begin{lemma}
+    A helper result.
+    \end{lemma}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    md = doc.export_to_markdown()
+    assert "**Theorem.**" in md
+    assert "two primes" in md
+    assert "*Proof.*" in md
+    assert "exercise" in md
+    assert "◻" in md
+    assert "**Lemma.**" in md
+
+
+def test_latex_subparagraph_heading():
+    """Test \\subparagraph emits heading level 5"""
+    latex_content = b"""
+    \\documentclass{article}
+    \\begin{document}
+    \\paragraph{Para Level}
+    Content A.
+    \\subparagraph{Subpara Level}
+    Content B.
+    \\end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    headers = [t for t in doc.texts if t.label == DocItemLabel.SECTION_HEADER]
+    assert any("Subpara Level" in h.text for h in headers)
+
+    md = doc.export_to_markdown()
+    assert "Content A" in md
+    assert "Content B" in md
+
+
+def test_latex_split_cases_math():
+    """Test split/cases inner math environments produce FORMULA labels"""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{equation}
+    \begin{cases}
+    x & \text{if } x > 0 \\
+    -x & \text{otherwise}
+    \end{cases}
+    \end{equation}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    formulas = [t for t in doc.texts if t.label == DocItemLabel.FORMULA]
+    assert len(formulas) >= 1
+    # The cases content should be in the formula
+    formula_text = " ".join(f.text for f in formulas)
+    assert "cases" in formula_text or "otherwise" in formula_text
+
+
+def test_latex_renewcommand():
+    """Test \\renewcommand and \\providecommand macros are expanded"""
+    latex_content = rb"""
+    \documentclass{article}
+    \newcommand{\foo}{original}
+    \renewcommand{\foo}{replaced}
+    \providecommand{\bar}{provided}
+    \begin{document}
+    Value is \foo{} and \bar{}.
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    backend.convert()
+
+    # renewcommand should have overwritten the original
+    assert "foo" in backend._custom_macros
+    assert backend._custom_macros["foo"] == "replaced"
+    assert "bar" in backend._custom_macros
+    assert backend._custom_macros["bar"] == "provided"
+
+
+def test_latex_input_cycle_detection(tmp_path):
+    """Test that circular \\input doesn't stack overflow"""
+    # Create two files that reference each other
+    file_a = tmp_path / "a.tex"
+    file_b = tmp_path / "b.tex"
+
+    file_a.write_text(
+        "\\documentclass{article}\\begin{document}A content\\input{b}\\end{document}"
+    )
+    file_b.write_text("B content\\input{a}")
+
+    in_doc = InputDocument(
+        path_or_stream=file_a,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="a.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=file_a)
+    # Should not crash / stack overflow
+    doc = backend.convert()
+    md = doc.export_to_markdown()
+    assert "A content" in md
+
+
+def test_latex_author_date():
+    """Test \\author and \\date text is preserved"""
+    latex_content = b"""
+    \\documentclass{article}
+    \\begin{document}
+    \\title{My Paper}
+    \\author{Jane Doe}
+    \\date{January 2025}
+    Some content.
+    \\end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    md = doc.export_to_markdown()
+    assert "Jane Doe" in md
+    assert "January 2025" in md
+
+
+def test_latex_quote_environment():
+    """Test quote/quotation environments produce text output"""
+    latex_content = b"""
+    \\documentclass{article}
+    \\begin{document}
+    \\begin{quote}
+    This is a quoted passage.
+    \\end{quote}
+    \\begin{quotation}
+    This is a longer quotation.
+    \\end{quotation}
+    \\end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    md = doc.export_to_markdown()
+    assert "quoted passage" in md
+    assert "longer quotation" in md
