@@ -442,3 +442,12 @@ pip-selfcheck.json
 # docs/**/*.svg
 
 doc_preprocessors/result.json
+
+# Python environment
+.python-version
+
+# SDKs (용량이 크거나 외부 라이브러리인 경우)
+hwp_sdk/
+
+# Test outputs
+test_results/
