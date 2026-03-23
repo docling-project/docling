@@ -1,15 +1,21 @@
 # Using the Docling agent skill
 
-[Agent Skills](https://agentskills.io/specification) are folders of instructions that AI coding agents (Cursor, Claude Code, GitHub Copilot, etc.) can load when relevant. This bundle lives in the Docling repo at:
+[Agent Skills](https://agentskills.io/specification) are folders of instructions that AI coding agents (Cursor, Claude Code, GitHub Copilot, etc.) can load when relevant.
 
-`docs/examples/agent_skill/docling-document-intelligence/`
+## Where this bundle lives
+
+- **Cursor (local):** `~/.cursor/skills/docling-document-intelligence/` (or copy this folder there).
+- **Docling repository (docs + PRs):** `docs/examples/agent_skill/docling-document-intelligence/` in [github.com/docling-project/docling](https://github.com/docling-project/docling).
+
+The two trees are kept in sync; use either source.
 
 ## Install (copy into your agent’s skills directory)
 
 ```bash
-# From a checkout of github.com/docling-project/docling
+# From a checkout of the Docling repo
 cp -r docs/examples/agent_skill/docling-document-intelligence ~/.cursor/skills/
-# or e.g. ~/.claude/skills/ depending on your tool
+
+# Or copy from another machine / archive into e.g. ~/.claude/skills/
 ```
 
 No extra config is required beyond installing Python dependencies (below).
