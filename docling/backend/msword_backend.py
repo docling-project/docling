@@ -920,7 +920,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Iterate direct children to preserve sibling order and avoid
             # processing nested oMath descendants of an already-converted node.
             for child in element:
-                tag_name = etree.QName(child).localname
                 if "oMath" in child.tag and "oMathPara" not in child.tag:
                     latex_equation = str(oMath2Latex(child)).strip()
                     if len(latex_equation) > 0:
