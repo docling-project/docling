@@ -103,7 +103,7 @@ The following table shows all processing stages in Docling, their model families
       <td rowspan="3">Image Classifier<br/>(Vision Transformer)</td>
       <td>
         <ul>
-          <li><code>DocumentFigureClassifier-v2.0</code> ⭐</li>
+          <li><code>DocumentFigureClassifier-v2.5</code> ⭐</li>
         </ul>
       </td>
     </tr>
@@ -200,7 +200,7 @@ The following table shows all processing stages in Docling, their model families
 
 | Model | Inference Engine | Supported Devices |
 |-------|------------------|-------------------|
-| DocumentFigureClassifier-v2.0 | Transformers (ViT) | CPU, CUDA, MPS, XPU |
+| DocumentFigureClassifier-v2.5 | Transformers (ViT) | CPU, CUDA, MPS, XPU |
 
 ### OCR Engines
 

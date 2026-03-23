@@ -957,7 +957,7 @@ IMAGE_CLASSIFICATION_DOCUMENT_FIGURE = ImageClassificationStagePreset(
     description="EfficientNet model for classifying document pictures",
     model_spec=ImageClassificationModelSpec(
         name="document_figure_classifier_v2",
-        repo_id="docling-project/DocumentFigureClassifier-v2.0",
+        repo_id="docling-project/DocumentFigureClassifier-v2.5",
         revision="main",
     ),
     default_engine_type=ImageClassificationEngineType.TRANSFORMERS,
