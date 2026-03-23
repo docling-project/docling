@@ -47,7 +47,8 @@ def get_converter():
     return converter
 
 
-def _make_backend(docx_paths) -> MsWordDocumentBackend:
+@pytest.fixture(scope="module")
+def backend(docx_paths) -> MsWordDocumentBackend:
     docx_path = docx_paths[0]
     in_doc = InputDocument(
         path_or_stream=docx_path,
@@ -480,9 +481,8 @@ def test_list_counter_and_enum_marker(docx_paths):
 
 
 def test_handle_equations_in_text_returns_original_text_on_mismatch(
-    docx_paths, monkeypatch
+    backend, monkeypatch
 ):
-    backend = _make_backend(docx_paths)
     element = etree.Element("p")
     run = etree.SubElement(element, "r")
     text_elem = etree.SubElement(run, "t")
@@ -497,8 +497,7 @@ def test_handle_equations_in_text_returns_original_text_on_mismatch(
     assert equations == []
 
 
-def test_handle_equations_in_text_skips_empty_substrings(docx_paths, monkeypatch):
-    backend = _make_backend(docx_paths)
+def test_handle_equations_in_text_skips_empty_substrings(backend, monkeypatch):
     equation = backend.equation_bookends.format(EQ="x")
 
     element = etree.Element("p")
@@ -519,9 +518,8 @@ def test_handle_equations_in_text_skips_empty_substrings(docx_paths, monkeypatch
 
 
 def test_handle_text_elements_returns_empty_refs_when_text_is_none(
-    docx_paths, monkeypatch
+    backend, monkeypatch
 ):
-    backend = _make_backend(docx_paths)
     element = backend.docx_obj.paragraphs[0]._element
 
     monkeypatch.setattr(
@@ -534,9 +532,8 @@ def test_handle_text_elements_returns_empty_refs_when_text_is_none(
 
 
 def test_handle_text_elements_heading_defaults_to_non_numbered_when_style_missing(
-    docx_paths, monkeypatch
+    backend, monkeypatch
 ):
-    backend = _make_backend(docx_paths)
     captured: dict[str, tuple[int, str, bool]] = {}
 
     class FakeParagraph:
@@ -568,9 +565,8 @@ def test_handle_text_elements_heading_defaults_to_non_numbered_when_style_missin
 
 
 def test_handle_text_elements_inline_equations_stop_when_text_is_consumed(
-    docx_paths, monkeypatch
+    backend, monkeypatch
 ):
-    backend = _make_backend(docx_paths)
     equation_one = backend.equation_bookends.format(EQ="a")
     equation_two = backend.equation_bookends.format(EQ="b")
 
