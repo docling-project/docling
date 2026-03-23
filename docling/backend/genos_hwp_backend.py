@@ -9,6 +9,13 @@ from typing import Any, Dict, List, Optional, Union
 from typing_extensions import override  # 상단 임포트에 추가
 from io import BytesIO
 
+try:
+    from wand.image import Image as WandImage
+    from wand.exceptions import WandException # 👈 예외 클래스 추가
+    WAND_AVAILABLE = True
+except ImportError:
+    WAND_AVAILABLE = False
+
 from bs4 import BeautifulSoup
 from docling_core.types.doc import (
     DocItemLabel, DoclingDocument, DocumentOrigin, GroupLabel,
@@ -55,6 +62,8 @@ else:
 class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
     def __init__(self, in_doc: InputDocument, path_or_stream: Union[Path, BytesIO]) -> None:
         super().__init__(in_doc, path_or_stream)
+
+        self._processed_hashes = set()  # 중복 텍스트(머리말/꼬리말) 필터링용
         
         # 1. 환경 설정      
         self.valid = False
@@ -248,6 +257,21 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         # 🚀 [수정] 각 아이템의 성격에 맞게 ProvenanceItem을 생성해야 합니다.
         if text_item:
             text_val = text_item.get("value", "").strip()
+            if not text_val: return
+            '''
+            # --- [덧붙임 1: 중복 텍스트(머리말/꼬리말) 제거] ---
+            import hashlib
+            # 공백을 없애고 해시를 생성해 "이미 본 내용"인지 확인합니다.
+            norm_text = re.sub(r'\s+', '', text_val).lower()
+            t_hash = hashlib.md5(norm_text.encode('utf-8')).hexdigest()
+            
+            if not hasattr(self, "_processed_hashes"): self._processed_hashes = set()
+            if t_hash in self._processed_hashes: 
+                return # 중복이면 여기서 함수 종료 (문서에 추가 안 함)
+            self._processed_hashes.add(t_hash)
+            # ----------------------------------------------
+            '''
+
             # 텍스트 길이에 맞는 charspan 생성
             prov = ProvenanceItem(
                 page_no=page_no, 
@@ -257,14 +281,31 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             self._handle_text(text_item, doc, prov)
 
         elif table_item:
+            html_str = table_item.get("value", "")
             # 표는 텍스트 길이가 없으므로 0으로 처리
             prov = ProvenanceItem(
                 page_no=page_no, 
                 bbox=BoundingBox(l=0, t=0, r=1, b=1),
                 charspan=(0, 0) # 👈 필수 추가
             )
-            table_data = self._parse_html_table(table_item["value"])
-            doc.add_table(data=table_data, parent=self.parents[0], prov=prov)
+
+            # --- [보강] 목차 표(TOC) 감지 로직 ---
+            # 표 안에 "목차"라는 단어가 있고 텍스트가 너무 길지 않으면 목차로 취급
+            soup = BeautifulSoup(html_str, "html.parser")
+            raw_text = soup.get_text().replace(" ", "")
+            
+            if "목차" in raw_text and len(raw_text) < 500:
+                # 표 구조를 무시하고 텍스트만 뽑아서 TOC 라벨로 저장
+                doc.add_text(
+                    label=DocItemLabel.PARAGRAPH, 
+                    text=soup.get_text(separator=" ").strip(), 
+                    parent=self.parents[0], 
+                    prov=prov
+                )
+            else:
+                # 목차가 아니면 기존에 짜둔 파싱 로직 실행하기
+                table_data = self._parse_html_table(table_item["value"])
+                doc.add_table(data=table_data, parent=self.parents[0], prov=prov)
 
         elif image_item:
             prov = ProvenanceItem(
@@ -278,29 +319,39 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         text_val = item.get("value", "").strip()
         if not text_val: return
 
+        # --- [보강 1: 중복 제거 로직] --- --> handle_paragraph말고, 여기에서만 딱 한번 수행.
+        import hashlib
+        # 공백 제거/소문자화 후 해시 비교 (머리말/꼬리말 방어)
+        norm_text = re.sub(r'\s+', '', text_val).lower()
+        text_hash = hashlib.md5(norm_text.encode('utf-8')).hexdigest()
+        
+        if not hasattr(self, "_processed_hashes"): self._processed_hashes = set()
+        if text_hash in self._processed_hashes: return 
+        self._processed_hashes.add(text_hash)
+
+        # --- [보강 2: TOC 패턴 감지] ---
+        # 점(...)이 3개 이상 반복되고 숫자로 끝나면 목차로 라벨링
+        is_toc = bool(re.search(r'(\.{3,}|…|\t)\s*\d+$', text_val))
+
         font_info = item.get("font", {})
         fmt = self._map_font_to_formatting(font_info)
 
+        if is_toc:
+            doc.add_text(label=DocItemLabel.DOCUMENT_INDEX, text=text_val, parent=self.parents[0], prov=prov)
+        
         # A. 헤더 판별 (Word Backend 로직 이식)
-        if font_info.get("size", 0) >= 20 or font_info.get("bold"):
+        elif font_info.get("size", 0) >= 20 or font_info.get("bold"):
             level = self._estimate_header_level(font_info)
             self._add_header(doc, level, text_val, prov.page_no)
         
         # B. 리스트 아이템 판별
         elif self._is_list_item(text_val):
             # 실제 제품에서는 여기서 ListGroup을 관리해야 함 (생략 가능하나 권장)
-            doc.add_text(label=DocItemLabel.LIST_ITEM, text=text_val, parent=self.parents[0], prov=prov)
+            doc.add_text(label=DocItemLabel.PARAGRAPH, text=text_val, parent=self.parents[0], prov=prov)
             
-        # C. 일반 본문
         else:
-            doc.add_text(
-                label=DocItemLabel.PARAGRAPH,
-                text=text_val,
-                formatting=fmt,
-                parent=self.parents[0],
-                prov=prov
-            )
-
+            # C. 일반 본문
+            doc.add_text(label=DocItemLabel.PARAGRAPH, text=text_val, formatting=fmt, parent=self.parents[0], prov=prov)
     # --- 기존 msword_backend의 핵심 로직들 재구현 ---
 
     def _add_header(self, doc: DoclingDocument, level: int, text: str, page_no: int):
@@ -325,30 +376,60 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         )
         self._update_history(text, level, page_no)
 
+    def _convert_wmf_to_png(self, wmf_bytes: bytes) -> Optional[bytes]:
+        """기존 로직을 유지하되 WandException으로 안전하게 처리"""
+        if not WAND_AVAILABLE:
+            return None
+        try:
+            with WandImage(blob=wmf_bytes) as wand_img:
+                wand_img.format = 'png'
+                return wand_img.make_blob()
+        except (WandException, Exception) as e:
+            _log.warning(f"WMF 변환 실패: {e}")
+            return None
+
     def _handle_image(self, item: Dict, doc: DoclingDocument, prov: ProvenanceItem):
-        """SDK가 생성한 이미지 파일을 읽어 DoclingDocument에 추가"""
-        img_filename = item.get("value", "") # 예: "picture1.png"
+        """기존 _process_picture를 SDK(JSON) 환경에 맞게 전면 수정"""
+        if not self.save_images:
+            return
+
+        # 1. 파일명 추출 (기존의 bin_id 추출 로직 대신 JSON 'value' 사용)
+        img_filename = item.get("value", "")
         if not img_filename or not self.current_img_dir:
             return
 
-        # 🚀 이미지의 전체 경로 계산
         img_path = self.current_img_dir / img_filename
-        
-        if img_path.exists():
-            from PIL import Image
-            try:
-                pil_img = Image.open(img_path)
-                # Docling 표준 방식에 따라 사진 추가
-                doc.add_picture(
-                    image=ImageRef.from_pil(pil_img, dpi=72),
-                    parent=self.parents[0],
-                    prov=prov
-                )
-                print(f"✅ 이미지 삽입 성공: {img_filename}")
-            except Exception as e:
-                print(f"⚠️ 이미지 로드 에러 ({img_filename}): {e}")
-        else:
-            print(f"⚠️ 이미지를 찾을 수 없음: {img_path}")
+        if not img_path.exists():
+            return
+
+        # 2. 파일 읽기 (ZIP 대신 로컬 파일 시스템에서 직접 읽기)
+        try:
+            image_bytes = img_path.read_bytes()
+            
+            # WMF인 경우 변환기 실행
+            if img_path.suffix.lower() == ".wmf":
+                image_bytes = self._convert_wmf_to_png(image_bytes)
+                if not image_bytes:
+                    return
+
+            # 3. PIL 오픈 및 ImageRef 생성
+            pil_image = Image.open(BytesIO(image_bytes))
+            
+            # 💡 [중요] 특정 모드(P, 1 등)의 이미지를 표준 RGB로 변환
+            if pil_image.mode not in ("RGB", "RGBA"):
+                pil_image = pil_image.convert("RGB")
+                
+            img_ref_obj = ImageRef.from_pil(image=pil_image, dpi=72)
+
+            # 4. 문서에 추가
+            doc.add_picture(
+                parent=self.parents[0],
+                image=img_ref_obj,
+                caption=None, # SDK에서 캡션 정보가 오면 여기에 넣기
+                prov=prov
+            )
+        except Exception as e:
+            _log.debug(f"이미지 처리 중 예외 발생: {e}")
 
     def _parse_html_table(self, html_str: str) -> TableData:
         """HTML 표를 파싱하여 Docling의 TableData 객체로 변환"""

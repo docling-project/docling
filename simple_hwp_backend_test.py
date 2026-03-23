@@ -12,8 +12,8 @@ def test_hwp_backend():
     # --- [설정 구간] ---
     # 테스트할 HWP 파일 경로 설정
     current_dir = Path(__file__).parent 
-    #hwp_path = current_dir.parent / "samples" / "01_[핵심이슈]가계별 금리익스포저를 감안한 금리상승의 소비 영향 점검_24.2.19_공개용.hwp"
-    hwp_path = current_dir.parent / "samples" / "03_2023.05.04_BOK조사연구_(국제국) 외환국제금융동향(2302).hwpx"
+    hwp_path = current_dir.parent / "samples" / "01_[핵심이슈]가계별 금리익스포저를 감안한 금리상승의 소비 영향 점검_24.2.19_공개용.hwp"
+    #hwp_path = current_dir.parent / "samples" / "03_2023.05.04_BOK조사연구_(국제국) 외환국제금융동향(2302).hwpx"
     #hwp_path = current_dir.parent / "samples" / "04_I.+4.+부록3_국내외+주요+경제지표_공개용_물가동향팀.hwp"  
 
     # (선택 사항) 경로가 잘 잡혔는지 출력해서 확인
