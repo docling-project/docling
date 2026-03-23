@@ -23,7 +23,17 @@ import warnings
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Optional, Sequence, Tuple, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    cast,
+)
 
 import numpy as np
 from docling_core.types.doc import (
@@ -72,6 +82,10 @@ from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
+_LEAKED_PDFIUM_BACKENDS: list[PdfDocumentBackend] = []
+
+if TYPE_CHECKING:
+    from docling.datamodel.document import InputDocument
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Helper data structures
@@ -113,6 +127,14 @@ class ProcessingResult:
     @property
     def is_complete_failure(self) -> bool:
         return self.success_count == 0 and self.failure_count > 0
+
+
+@dataclass
+class RunOutcome:
+    """Per-execution build outcome, including backend cleanup safety."""
+
+    conv_res: ConversionResult
+    allow_backend_unload: bool
 
 
 class ThreadedQueue:
@@ -185,6 +207,8 @@ class ThreadedQueue:
 class ThreadedPipelineStage:
     """A single pipeline stage backed by one worker thread."""
 
+    STOP_JOIN_TIMEOUT_SECONDS = 15.0
+
     def __init__(
         self,
         *,
@@ -223,20 +247,21 @@ class ThreadedPipelineStage:
         )
         self._thread.start()
 
-    def stop(self) -> None:
+    def stop(self) -> bool:
         if not self._running:
-            return
+            return True
         self._running = False
         self.input_queue.close()
         if self._thread is not None:
-            # Give thread 2s to finish naturally before abandoning
-            self._thread.join(timeout=15.0)
+            self._thread.join(timeout=self.STOP_JOIN_TIMEOUT_SECONDS)
             if self._thread.is_alive():
                 _log.warning(
                     "Stage %s thread did not terminate within 15s. "
                     "Thread is likely stuck in a blocking call and will be abandoned (resources may leak).",
                     self.name,
                 )
+                return False
+        return True
 
     # ------------------------------------------------------------------ _run
     def _run(self) -> None:
@@ -466,6 +491,39 @@ class StandardPdfPipeline(ConvertPipeline):
         # initialise heavy models once
         self._init_models()
 
+    def execute(self, in_doc: InputDocument, raises_on_error: bool) -> ConversionResult:
+        conv_res = ConversionResult(input=in_doc)
+        allow_backend_unload = True
+
+        _log.info(f"Processing document {in_doc.file.name}")
+        try:
+            with TimeRecorder(
+                conv_res, "pipeline_total", scope=ProfilingScope.DOCUMENT
+            ):
+                outcome = self._build_document_run(conv_res)
+                conv_res = outcome.conv_res
+                allow_backend_unload = outcome.allow_backend_unload
+                conv_res = self._assemble_document_run(
+                    conv_res, allow_backend_loads=allow_backend_unload
+                )
+                conv_res = self._enrich_document(conv_res)
+                conv_res.status = self._determine_status(conv_res)
+        except Exception as e:
+            conv_res.status = ConversionStatus.FAILURE
+            if not raises_on_error:
+                error_item = ErrorItem(
+                    component_type=DoclingComponentType.PIPELINE,
+                    module_name=self.__class__.__name__,
+                    error_message=str(e),
+                )
+                conv_res.errors.append(error_item)
+            else:
+                raise RuntimeError(f"Pipeline {self.__class__.__name__} failed") from e
+        finally:
+            self._cleanup_backends(conv_res, allow_backend_unload)
+
+        return conv_res
+
     # ────────────────────────────────────────────────────────────────────────
     # Heavy-model initialisation & helpers
     # ────────────────────────────────────────────────────────────────────────
@@ -624,8 +682,10 @@ class StandardPdfPipeline(ConvertPipeline):
             timed_out_run_ids=timed_out_run_ids,
         )
 
-    # --------------------------------------------------------------------- build
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+        return self._build_document_run(conv_res).conv_res
+
+    def _build_document_run(self, conv_res: ConversionResult) -> RunOutcome:
         """Stream-build the document while interleaving producer and consumer work.
 
         Note: If a worker thread gets stuck in a blocking call (model inference or PDF backend
@@ -647,7 +707,7 @@ class StandardPdfPipeline(ConvertPipeline):
 
         if not pages:
             conv_res.status = ConversionStatus.FAILURE
-            return conv_res
+            return RunOutcome(conv_res=conv_res, allow_backend_unload=True)
 
         total_pages: int = len(pages)
         ctx: RunContext = self._create_run_ctx()
@@ -660,6 +720,8 @@ class StandardPdfPipeline(ConvertPipeline):
         start_time = time.monotonic()
         timeout_exceeded = False
         input_queue_closed = False
+        drain_idle_deadline: float | None = None
+        allow_backend_unload = True
         try:
             while proc.success_count + proc.failure_count < total_pages:
                 # Check timeout
@@ -675,14 +737,16 @@ class StandardPdfPipeline(ConvertPipeline):
                         )
                         timeout_exceeded = True
                         ctx.timed_out_run_ids.add(run_id)
+                        drain_idle_deadline = (
+                            time.monotonic()
+                            + ThreadedPipelineStage.STOP_JOIN_TIMEOUT_SECONDS
+                        )
                         if not input_queue_closed:
                             ctx.first_stage.input_queue.close()
                             input_queue_closed = True
-                        # Break immediately - don't wait for in-flight work
-                        break
 
                 # 1) feed - try to enqueue until the first queue is full
-                if not input_queue_closed:
+                if not timeout_exceeded and not input_queue_closed:
                     while fed_idx < total_pages:
                         ok = ctx.first_stage.input_queue.put(
                             ThreadedItem(
@@ -714,6 +778,21 @@ class StandardPdfPipeline(ConvertPipeline):
                         assert itm.payload is not None
                         proc.pages.append(itm.payload)
 
+                if timeout_exceeded:
+                    if out_batch:
+                        drain_idle_deadline = (
+                            time.monotonic()
+                            + ThreadedPipelineStage.STOP_JOIN_TIMEOUT_SECONDS
+                        )
+                    elif (
+                        drain_idle_deadline is not None
+                        and time.monotonic() >= drain_idle_deadline
+                    ):
+                        _log.warning(
+                            "Timed out document drain grace period elapsed before all stages completed."
+                        )
+                        break
+
                 # 3) failure safety - downstream closed early
                 if not out_batch and ctx.output_queue.closed:
                     missing = total_pages - (proc.success_count + proc.failure_count)
@@ -728,18 +807,38 @@ class StandardPdfPipeline(ConvertPipeline):
                 completed_page_nos = {p.page_no for p in proc.pages} | {
                     fp for fp, _ in proc.failed_pages
                 }
-                for page in pages[fed_idx:]:
+                for page in pages:
                     if page.page_no not in completed_page_nos:
                         proc.failed_pages.append(
                             (page.page_no, RuntimeError("document timeout exceeded"))
                         )
         finally:
             for st in ctx.stages:
-                st.stop()
+                if not st.stop():
+                    allow_backend_unload = False
             ctx.output_queue.close()
 
         self._integrate_results(conv_res, proc, timeout_exceeded=timeout_exceeded)
-        return conv_res
+        if not allow_backend_unload:
+            cleanup_error = ErrorItem(
+                component_type=DoclingComponentType.PIPELINE,
+                module_name=self.__class__.__name__,
+                error_message=(
+                    "Skipped backend unload because one or more stage threads were still alive "
+                    "after shutdown grace period; leaving PDFium resources allocated to avoid "
+                    "unsafe native teardown."
+                ),
+            )
+            conv_res.errors.append(cleanup_error)
+            if proc.success_count > 0:
+                conv_res.status = ConversionStatus.PARTIAL_SUCCESS
+            else:
+                conv_res.status = ConversionStatus.FAILURE
+
+        return RunOutcome(
+            conv_res=conv_res,
+            allow_backend_unload=allow_backend_unload,
+        )
 
     # ---------------------------------------------------- integrate_results()
     def _integrate_results(
@@ -784,6 +883,11 @@ class StandardPdfPipeline(ConvertPipeline):
 
     # ---------------------------------------------------------------- assemble
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
+        return self._assemble_document_run(conv_res, allow_backend_loads=True)
+
+    def _assemble_document_run(
+        self, conv_res: ConversionResult, allow_backend_loads: bool
+    ) -> ConversionResult:
         elements, headers, body = [], [], []
         with TimeRecorder(conv_res, "doc_assemble", scope=ProfilingScope.DOCUMENT):
             for p in conv_res.pages:
@@ -877,7 +981,8 @@ class StandardPdfPipeline(ConvertPipeline):
 
             # Add failed pages to DoclingDocument.pages to preserve page numbering
             # This ensures page break markers are generated for skipped/failed pages
-            self._add_failed_pages_to_document(conv_res)
+            if allow_backend_loads:
+                self._add_failed_pages_to_document(conv_res)
 
         return conv_res
 
@@ -955,6 +1060,17 @@ class StandardPdfPipeline(ConvertPipeline):
 
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
         return conv_res.status
+
+    def _cleanup_backends(
+        self, conv_res: ConversionResult, allow_backend_unload: bool
+    ) -> None:
+        if not allow_backend_unload:
+            backend = conv_res.input._backend
+            if isinstance(backend, PdfDocumentBackend):
+                _LEAKED_PDFIUM_BACKENDS.append(backend)
+            return
+
+        self._unload(conv_res)
 
     def _unload(self, conv_res: ConversionResult) -> None:
         for p in conv_res.pages:

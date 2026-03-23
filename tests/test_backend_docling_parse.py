@@ -91,3 +91,66 @@ def test_num_pages(test_doc_path):
 
     # Explicitly clean up resources to prevent race conditions in CI
     doc_backend.unload()
+
+
+def test_page_unload_closes_docling_parse_resources_before_page(
+    monkeypatch, test_doc_path
+):
+    doc_backend = _get_backend(test_doc_path)
+    page_backend = doc_backend.load_page(0)
+
+    try:
+        calls: list[str] = []
+
+        monkeypatch.setattr(
+            doc_backend.dp_doc,
+            "unload_pages",
+            lambda page_range: calls.append("unload_pages"),
+        )
+        assert page_backend._ppage is not None
+        monkeypatch.setattr(
+            page_backend._ppage,
+            "close",
+            lambda *_args, **_kwargs: calls.append("page"),
+        )
+
+        page_backend.unload()
+        page_backend.unload()
+
+        assert calls == ["unload_pages", "page"]
+        assert len(doc_backend._live_pages) == 0
+    finally:
+        monkeypatch.undo()
+        doc_backend.unload()
+
+
+def test_document_unload_closes_live_pages_before_document(monkeypatch, test_doc_path):
+    doc_backend = _get_backend(test_doc_path)
+    page_backend = doc_backend.load_page(0)
+
+    try:
+        calls: list[str] = []
+
+        monkeypatch.setattr(
+            doc_backend.dp_doc,
+            "unload_pages",
+            lambda page_range: calls.append("unload_pages"),
+        )
+        assert page_backend._ppage is not None
+        monkeypatch.setattr(
+            page_backend._ppage,
+            "close",
+            lambda *_args, **_kwargs: calls.append("page"),
+        )
+        monkeypatch.setattr(
+            doc_backend,
+            "_close_native_document",
+            lambda: calls.append("document"),
+        )
+
+        doc_backend.unload()
+
+        assert calls == ["unload_pages", "page", "document"]
+        assert len(doc_backend._live_pages) == 0
+    finally:
+        doc_backend.unload()

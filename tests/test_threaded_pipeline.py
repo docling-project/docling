@@ -1,19 +1,27 @@
 import logging
 import time
+from collections import deque
 from pathlib import Path
 from typing import List
 
 import pytest
 
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
-from docling.datamodel.base_models import ConversionStatus, InputFormat
-from docling.datamodel.document import ConversionResult
+from docling.datamodel.base_models import ConversionStatus, InputFormat, Page
+from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     ThreadedPdfPipelineOptions,
 )
+from docling.datamodel.settings import DocumentLimits
 from docling.document_converter import DocumentConverter, PdfFormatOption
-from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
+from docling.pipeline.standard_pdf_pipeline import (
+    _LEAKED_PDFIUM_BACKENDS,
+    RunContext,
+    RunOutcome,
+    StandardPdfPipeline,
+    ThreadedItem,
+)
 from docling.pipeline.threaded_standard_pdf_pipeline import ThreadedStandardPdfPipeline
 
 
@@ -191,6 +199,161 @@ def test_pypdfium_threaded_pipeline():
         assert conv_result.status == ConversionStatus.SUCCESS
         print(f"[{i=}] Success")
     print("All done!")
+
+
+def test_execute_skips_backend_unload_on_unsafe_shutdown(monkeypatch):
+    pipeline = StandardPdfPipeline(ThreadedPdfPipelineOptions())
+    input_doc = InputDocument(
+        path_or_stream=Path("tests/data/pdf/2206.01062.pdf"),
+        format=InputFormat.PDF,
+        backend=PyPdfiumDocumentBackend,
+    )
+
+    original_unload = input_doc._backend.unload
+    unload_calls: list[str] = []
+
+    def fake_build_document_run(conv_res: ConversionResult) -> RunOutcome:
+        conv_res.status = ConversionStatus.PARTIAL_SUCCESS
+        return RunOutcome(conv_res=conv_res, allow_backend_unload=False)
+
+    try:
+        monkeypatch.setattr(
+            input_doc._backend, "unload", lambda: unload_calls.append("backend")
+        )
+        monkeypatch.setattr(pipeline, "_build_document_run", fake_build_document_run)
+        monkeypatch.setattr(
+            pipeline,
+            "_assemble_document_run",
+            lambda conv_res, allow_backend_loads: conv_res,
+        )
+        monkeypatch.setattr(pipeline, "_enrich_document", lambda conv_res: conv_res)
+
+        leaked_before = len(_LEAKED_PDFIUM_BACKENDS)
+        result = pipeline.execute(input_doc, raises_on_error=True)
+
+        assert result.status == ConversionStatus.PARTIAL_SUCCESS
+        assert unload_calls == []
+        assert _LEAKED_PDFIUM_BACKENDS[leaked_before] is input_doc._backend
+    finally:
+        while input_doc._backend in _LEAKED_PDFIUM_BACKENDS:
+            _LEAKED_PDFIUM_BACKENDS.remove(input_doc._backend)
+        original_unload()
+
+
+def test_build_document_drains_emitted_pages_after_timeout(monkeypatch):
+    class DummyPageBackend:
+        def __init__(self) -> None:
+            self.unload_calls = 0
+
+        def unload(self) -> None:
+            self.unload_calls += 1
+
+    class FakeInputQueue:
+        def __init__(self) -> None:
+            self.closed = False
+            self.items: list[ThreadedItem] = []
+
+        def put(self, item: ThreadedItem, timeout: float | None = None) -> bool:
+            self.items.append(item)
+            return not self.closed
+
+        def close(self) -> None:
+            self.closed = True
+
+    class FakeStage:
+        def __init__(self, input_queue: FakeInputQueue) -> None:
+            self.input_queue = input_queue
+
+        def start(self) -> None:
+            return
+
+        def stop(self) -> bool:
+            return True
+
+    class FakeOutputQueue:
+        def __init__(self, batches: list[list[ThreadedItem]]) -> None:
+            self._batches = deque(batches)
+            self.closed = False
+
+        def get_batch(
+            self, size: int, timeout: float | None = None
+        ) -> list[ThreadedItem]:
+            if self._batches:
+                batch = self._batches.popleft()
+                if not self._batches:
+                    self.closed = True
+                return batch
+            self.closed = True
+            return []
+
+        def close(self) -> None:
+            self.closed = True
+
+    class MonotonicClock:
+        def __init__(self, values: list[float]) -> None:
+            self._values = deque(values)
+            self._last = values[-1]
+
+        def __call__(self) -> float:
+            if self._values:
+                self._last = self._values.popleft()
+            return self._last
+
+    pipeline = StandardPdfPipeline(ThreadedPdfPipelineOptions(document_timeout=1))
+    input_doc = InputDocument(
+        path_or_stream=Path("tests/data/pdf/2206.01062.pdf"),
+        format=InputFormat.PDF,
+        backend=PyPdfiumDocumentBackend,
+        limits=DocumentLimits(page_range=(1, 2)),
+    )
+    conv_res = ConversionResult(input=input_doc)
+
+    successful_page = Page(page_no=1)
+    successful_page._backend = DummyPageBackend()
+
+    fake_input_queue = FakeInputQueue()
+    fake_stage = FakeStage(fake_input_queue)
+    fake_output_queue = FakeOutputQueue(
+        [
+            [],
+            [
+                ThreadedItem(
+                    payload=successful_page,
+                    run_id=1,
+                    page_no=1,
+                    conv_res=conv_res,
+                )
+            ],
+            [],
+        ]
+    )
+
+    monkeypatch.setattr(
+        pipeline,
+        "_create_run_ctx",
+        lambda: RunContext(
+            stages=[fake_stage],
+            first_stage=fake_stage,
+            output_queue=fake_output_queue,
+            timed_out_run_ids=set(),
+        ),
+    )
+    monkeypatch.setattr(
+        time,
+        "monotonic",
+        MonotonicClock([0.0, 0.0, 1.1, 1.1, 1.2]),
+    )
+
+    try:
+        outcome = pipeline._build_document_run(conv_res)
+
+        assert outcome.allow_backend_unload is True
+        assert outcome.conv_res.status == ConversionStatus.PARTIAL_SUCCESS
+        assert len(outcome.conv_res.pages) == 1
+        assert outcome.conv_res.pages[0].page_no == 1
+        assert successful_page._backend.unload_calls == 1
+    finally:
+        input_doc._backend.unload()
 
 
 if __name__ == "__main__":

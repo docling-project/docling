@@ -12,7 +12,10 @@ from docling_parse.pdf_parsers import DecodePageConfig
 from PIL import Image
 from pypdfium2 import PdfPage
 
-from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
+from docling.backend.managed_pdfium_backend import (
+    ManagedPdfiumDocumentBackend,
+    ManagedPdfiumPageBackend,
+)
 from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import Size
 from docling.utils.locks import pypdfium2_lock
@@ -23,10 +26,11 @@ if TYPE_CHECKING:
 _log = logging.getLogger(__name__)
 
 
-class DoclingParsePageBackend(PdfPageBackend):
+class DoclingParsePageBackend(ManagedPdfiumPageBackend):
     def __init__(
         self,
         *,
+        owner: "DoclingParseDocumentBackend",
         dp_doc: PdfDocument,
         page_obj: PdfPage,
         page_no: int,
@@ -36,8 +40,9 @@ class DoclingParsePageBackend(PdfPageBackend):
         keep_lines: bool = False,
         keep_images: bool = True,
     ):
+        super().__init__(owner)
         self._ppage = page_obj
-        self._dp_doc = dp_doc
+        self._dp_doc: Optional[PdfDocument] = dp_doc
         self._page_no = page_no
 
         self._create_words = create_words
@@ -50,6 +55,10 @@ class DoclingParsePageBackend(PdfPageBackend):
         self._dpage: Optional[SegmentedPdfPage] = None
         self._unloaded = False
         self.valid = (self._ppage is not None) and (self._dp_doc is not None)
+
+    def _require_page(self) -> PdfPage:
+        assert self._ppage is not None, "Page backend was unloaded."
+        return self._ppage
 
     def _ensure_parsed(self) -> None:
         if self._dpage is not None:
@@ -72,6 +81,7 @@ class DoclingParsePageBackend(PdfPageBackend):
         config.create_line_cells = self._create_textlines
         config.enforce_same_font = True
 
+        assert self._dp_doc is not None
         seg_page = self._dp_doc.get_page(self._page_no + 1, config=config)
 
         # In Docling, all TextCell instances are expected with top-left origin.
@@ -166,7 +176,8 @@ class DoclingParsePageBackend(PdfPageBackend):
 
         with pypdfium2_lock:
             image = (
-                self._ppage.render(
+                self._require_page()
+                .render(
                     scale=scale * 1.5,
                     rotation=0,  # no additional rotation
                     crop=padbox.as_tuple(),
@@ -181,7 +192,8 @@ class DoclingParsePageBackend(PdfPageBackend):
 
     def get_size(self) -> Size:
         with pypdfium2_lock:
-            return Size(width=self._ppage.get_width(), height=self._ppage.get_height())
+            page = self._require_page()
+            return Size(width=page.get_width(), height=page.get_height())
 
         # TODO: Take width and height from docling-parse.
         # return Size(
@@ -189,17 +201,21 @@ class DoclingParsePageBackend(PdfPageBackend):
         #    height=self._dpage.dimension.height,
         # )
 
-    def unload(self):
+    def _close_native_page(self) -> None:
         if not self._unloaded and self._dp_doc is not None:
             self._dp_doc.unload_pages((self._page_no + 1, self._page_no + 2))
             self._unloaded = True
+
+        with pypdfium2_lock:
+            if self._ppage is not None:
+                self._ppage.close()
 
         self._ppage = None
         self._dpage = None
         self._dp_doc = None
 
 
-class DoclingParseDocumentBackend(PdfDocumentBackend):
+class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
     def __init__(
         self,
         in_doc: "InputDocument",
@@ -215,7 +231,7 @@ class DoclingParseDocumentBackend(PdfDocumentBackend):
             self._pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
         self.parser = DoclingPdfParser(loglevel="fatal")
 
-        self.dp_doc: PdfDocument = self.parser.load(
+        self.dp_doc: Optional[PdfDocument] = self.parser.load(
             path_or_stream=self.path_or_stream, password=password
         )
         success = self.dp_doc is not None
@@ -229,6 +245,7 @@ class DoclingParseDocumentBackend(PdfDocumentBackend):
         # return len(self._pdoc)  # To be replaced with docling-parse API
 
         len_1 = len(self._pdoc)
+        assert self.dp_doc is not None
         len_2 = self.dp_doc.number_of_pages()
 
         if len_1 != len_2:
@@ -239,10 +256,12 @@ class DoclingParseDocumentBackend(PdfDocumentBackend):
     def load_page(
         self, page_no: int, create_words: bool = True, create_textlines: bool = True
     ) -> DoclingParsePageBackend:
+        assert self.dp_doc is not None
         with pypdfium2_lock:
             ppage = self._pdoc[page_no]
 
         return DoclingParsePageBackend(
+            owner=self,
             dp_doc=self.dp_doc,
             page_obj=ppage,
             page_no=page_no,
@@ -253,14 +272,11 @@ class DoclingParseDocumentBackend(PdfDocumentBackend):
     def is_valid(self) -> bool:
         return self.page_count() > 0
 
-    def unload(self):
-        super().unload()
-        # Unload docling-parse document first
+    def _close_native_document(self) -> None:
         if self.dp_doc is not None:
             self.dp_doc.unload()
             self.dp_doc = None
 
-        # Then close pypdfium2 document with proper locking
         if self._pdoc is not None:
             with pypdfium2_lock:
                 try:

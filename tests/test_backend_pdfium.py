@@ -50,50 +50,64 @@ def test_text_cell_counts():
     pdf_doc = Path("./tests/data/pdf/redp5110_sampled.pdf")
 
     doc_backend = _get_backend(pdf_doc)
+    try:
+        for page_index in range(doc_backend.page_count()):
+            last_cell_count = None
+            for i in range(10):
+                page_backend: PyPdfiumPageBackend = doc_backend.load_page(0)
+                cells = list(page_backend.get_text_cells())
 
-    for page_index in range(doc_backend.page_count()):
-        last_cell_count = None
-        for i in range(10):
-            page_backend: PyPdfiumPageBackend = doc_backend.load_page(0)
-            cells = list(page_backend.get_text_cells())
+                if last_cell_count is None:
+                    last_cell_count = len(cells)
 
-            if last_cell_count is None:
+                if len(cells) != last_cell_count:
+                    assert False, (
+                        "Loading page multiple times yielded non-identical text cell counts"
+                    )
                 last_cell_count = len(cells)
-
-            if len(cells) != last_cell_count:
-                assert False, (
-                    "Loading page multiple times yielded non-identical text cell counts"
-                )
-            last_cell_count = len(cells)
+                page_backend.unload()
+    finally:
+        doc_backend.unload()
 
 
 def test_get_text_from_rect(test_doc_path):
     doc_backend = _get_backend(test_doc_path)
     page_backend: PyPdfiumPageBackend = doc_backend.load_page(0)
+    try:
+        # Get the title text of the DocLayNet paper
+        textpiece = page_backend.get_text_in_rect(
+            bbox=BoundingBox(l=102, t=77, r=511, b=124)
+        )
+        ref = (
+            "DocLayNet: A Large Human-Annotated Dataset for\r\nDocument-Layout Analysis"
+        )
 
-    # Get the title text of the DocLayNet paper
-    textpiece = page_backend.get_text_in_rect(
-        bbox=BoundingBox(l=102, t=77, r=511, b=124)
-    )
-    ref = "DocLayNet: A Large Human-Annotated Dataset for\r\nDocument-Layout Analysis"
-
-    assert textpiece.strip() == ref
+        assert textpiece.strip() == ref
+    finally:
+        page_backend.unload()
+        doc_backend.unload()
 
 
 def test_crop_page_image(test_doc_path):
     doc_backend = _get_backend(test_doc_path)
     page_backend: PyPdfiumPageBackend = doc_backend.load_page(0)
-
-    # Crop out "Figure 1" from the DocLayNet paper
-    page_backend.get_page_image(
-        scale=2, cropbox=BoundingBox(l=317, t=246, r=574, b=527)
-    )
-    # im.show()
+    try:
+        # Crop out "Figure 1" from the DocLayNet paper
+        page_backend.get_page_image(
+            scale=2, cropbox=BoundingBox(l=317, t=246, r=574, b=527)
+        )
+        # im.show()
+    finally:
+        page_backend.unload()
+        doc_backend.unload()
 
 
 def test_num_pages(test_doc_path):
     doc_backend = _get_backend(test_doc_path)
-    assert doc_backend.page_count() == 9
+    try:
+        assert doc_backend.page_count() == 9
+    finally:
+        doc_backend.unload()
 
 
 def test_merge_row():
@@ -101,9 +115,80 @@ def test_merge_row():
 
     doc_backend = _get_backend(pdf_doc)
     page_backend: PyPdfiumPageBackend = doc_backend.load_page(4)
-    cell = page_backend.get_text_cells()[0]
+    try:
+        cell = page_backend.get_text_cells()[0]
 
-    assert (
-        cell.text
-        == "The journey of the word processor—from clunky typewriters to AI-powered platforms—"
-    )
+        assert (
+            cell.text
+            == "The journey of the word processor—from clunky typewriters to AI-powered platforms—"
+        )
+    finally:
+        page_backend.unload()
+        doc_backend.unload()
+
+
+def test_page_unload_closes_text_page_before_page(monkeypatch, test_doc_path):
+    doc_backend = _get_backend(test_doc_path)
+    page_backend = doc_backend.load_page(0)
+    try:
+        page_backend.get_text_in_rect(bbox=BoundingBox(l=102, t=77, r=511, b=124))
+
+        assert page_backend.text_page is not None
+        assert page_backend._ppage is not None
+
+        calls: list[str] = []
+
+        monkeypatch.setattr(
+            page_backend.text_page,
+            "close",
+            lambda *_args, **_kwargs: calls.append("text_page"),
+        )
+        monkeypatch.setattr(
+            page_backend._ppage,
+            "close",
+            lambda *_args, **_kwargs: calls.append("page"),
+        )
+
+        page_backend.unload()
+        page_backend.unload()
+
+        assert calls == ["text_page", "page"]
+        assert len(doc_backend._live_pages) == 0
+    finally:
+        monkeypatch.undo()
+        doc_backend.unload()
+
+
+def test_document_unload_closes_live_pages_before_document(monkeypatch, test_doc_path):
+    doc_backend = _get_backend(test_doc_path)
+    page_backend = doc_backend.load_page(0)
+    try:
+        page_backend.get_text_in_rect(bbox=BoundingBox(l=102, t=77, r=511, b=124))
+
+        assert page_backend.text_page is not None
+        assert page_backend._ppage is not None
+
+        calls: list[str] = []
+
+        monkeypatch.setattr(
+            page_backend.text_page,
+            "close",
+            lambda *_args, **_kwargs: calls.append("text_page"),
+        )
+        monkeypatch.setattr(
+            page_backend._ppage,
+            "close",
+            lambda *_args, **_kwargs: calls.append("page"),
+        )
+        monkeypatch.setattr(
+            doc_backend,
+            "_close_native_document",
+            lambda: calls.append("document"),
+        )
+
+        doc_backend.unload()
+
+        assert calls == ["text_page", "page", "document"]
+        assert len(doc_backend._live_pages) == 0
+    finally:
+        doc_backend.unload()
