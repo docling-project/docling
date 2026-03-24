@@ -104,122 +104,124 @@ class RapidOcrModel(BaseOcrModel):
 
         self.scale = 3  # multiplier for 72 dpi == 216 dpi.
 
-        if self.enabled:
-            try:
-                from rapidocr import EngineType, RapidOCR  # type: ignore
-            except ImportError:
-                raise ImportError(
-                    "RapidOCR is not installed. Please install it via `pip install rapidocr onnxruntime` to use this OCR engine. "
-                    "Alternatively, Docling has support for other OCR engines. See the documentation."
-                )
+        if not self.enabled:
+            return
 
-            # Decide the accelerator devices
-            device = decide_device(accelerator_options.device)
-            use_cuda = str(AcceleratorDevice.CUDA.value).lower() in device
-            use_dml = accelerator_options.device == AcceleratorDevice.AUTO
-            intra_op_num_threads = accelerator_options.num_threads
-            gpu_id = 0
-            if use_cuda and ":" in device:
-                gpu_id = int(device.split(":")[1])
-            _ALIASES = {
-                "onnxruntime": EngineType.ONNXRUNTIME,
-                "openvino": EngineType.OPENVINO,
-                "paddle": EngineType.PADDLE,
-                "torch": EngineType.TORCH,
-            }
-            backend_enum = _ALIASES.get(self.options.backend, EngineType.ONNXRUNTIME)
-
-            det_model_path = self.options.det_model_path
-            cls_model_path = self.options.cls_model_path
-            rec_model_path = self.options.rec_model_path
-            rec_keys_path = self.options.rec_keys_path
-            font_path = self.options.font_path
-            if artifacts_path is not None:
-                det_model_path = (
-                    det_model_path
-                    or artifacts_path
-                    / self._model_repo_folder
-                    / self._default_models[backend_enum.value]["det_model_path"]["path"]
-                )
-                cls_model_path = (
-                    cls_model_path
-                    or artifacts_path
-                    / self._model_repo_folder
-                    / self._default_models[backend_enum.value]["cls_model_path"]["path"]
-                )
-                rec_model_path = (
-                    rec_model_path
-                    or artifacts_path
-                    / self._model_repo_folder
-                    / self._default_models[backend_enum.value]["rec_model_path"]["path"]
-                )
-                rec_keys_path = (
-                    rec_keys_path
-                    or artifacts_path
-                    / self._model_repo_folder
-                    / self._default_models[backend_enum.value]["rec_keys_path"]["path"]
-                )
-                font_path = (
-                    font_path
-                    or artifacts_path
-                    / self._model_repo_folder
-                    / self._default_models[backend_enum.value]["font_path"]["path"]
-                )
-
-            for model_path in (
-                rec_keys_path,
-                cls_model_path,
-                rec_model_path,
-                rec_keys_path,
-                font_path,
-            ):
-                if model_path is None:
-                    continue
-                if not Path(model_path).exists():
-                    _log.warning(f"The provided model path {model_path} is not found.")
-
-            params = {
-                # Global settings (these are still correct)
-                "Global.text_score": self.options.text_score,
-                "Global.font_path": font_path,
-                # Engine-level ONNXRuntime settings
-                "EngineConfig.onnxruntime.intra_op_num_threads": intra_op_num_threads,
-                # "Global.verbose": self.options.print_verbose,
-                # Detection model settings
-                "Det.model_path": det_model_path,
-                "Det.use_cuda": use_cuda,
-                "Det.use_dml": use_dml,
-                # Classification model settings
-                "Cls.model_path": cls_model_path,
-                "Cls.use_cuda": use_cuda,
-                "Cls.use_dml": use_dml,
-                # Recognition model settings
-                "Rec.model_path": rec_model_path,
-                "Rec.font_path": font_path,
-                "Rec.rec_keys_path": rec_keys_path,
-                "Rec.use_cuda": use_cuda,
-                "Rec.use_dml": use_dml,
-                "Det.engine_type": backend_enum,
-                "Cls.engine_type": backend_enum,
-                "Rec.engine_type": backend_enum,
-                "EngineConfig.paddle.use_cuda": use_cuda,
-                "EngineConfig.paddle.gpu_id": gpu_id,
-                "EngineConfig.torch.use_cuda": use_cuda,
-                "EngineConfig.torch.cuda_ep_cfg.device_id": gpu_id,
-            }
-
-            if self.options.rec_font_path is not None:
-                _log.warning(
-                    "The 'rec_font_path' option for RapidOCR is deprecated. Please use 'font_path' instead."
-                )
-            user_params = self.options.rapidocr_params
-            if user_params:
-                _log.debug("Overwriting RapidOCR params with user-provided values.")
-                params.update(user_params)
-
-            self.reader = RapidOCR(
-                params=params,
+        try:
+            from rapidocr import EngineType, RapidOCR  # type: ignore
+        except ImportError:
+            raise ImportError(
+                "RapidOCR is not installed. Please install it via `pip install rapidocr onnxruntime` to use this OCR engine. "
+                "Alternatively, Docling has support for other OCR engines. See the documentation."
             )
+
+        # Decide the accelerator devices
+        device = decide_device(accelerator_options.device)
+        use_cuda = str(AcceleratorDevice.CUDA.value).lower() in device
+        use_dml = accelerator_options.device == AcceleratorDevice.AUTO
+        intra_op_num_threads = accelerator_options.num_threads
+        gpu_id = 0
+        if use_cuda and ":" in device:
+            gpu_id = int(device.split(":")[1])
+        _ALIASES = {
+            "onnxruntime": EngineType.ONNXRUNTIME,
+            "openvino": EngineType.OPENVINO,
+            "paddle": EngineType.PADDLE,
+            "torch": EngineType.TORCH,
+        }
+        backend_enum = _ALIASES.get(self.options.backend, EngineType.ONNXRUNTIME)
+
+        det_model_path = self.options.det_model_path
+        cls_model_path = self.options.cls_model_path
+        rec_model_path = self.options.rec_model_path
+        rec_keys_path = self.options.rec_keys_path
+        font_path = self.options.font_path
+        if artifacts_path is not None:
+            det_model_path = (
+                det_model_path
+                or artifacts_path
+                / self._model_repo_folder
+                / self._default_models[backend_enum.value]["det_model_path"]["path"]
+            )
+            cls_model_path = (
+                cls_model_path
+                or artifacts_path
+                / self._model_repo_folder
+                / self._default_models[backend_enum.value]["cls_model_path"]["path"]
+            )
+            rec_model_path = (
+                rec_model_path
+                or artifacts_path
+                / self._model_repo_folder
+                / self._default_models[backend_enum.value]["rec_model_path"]["path"]
+            )
+            rec_keys_path = (
+                rec_keys_path
+                or artifacts_path
+                / self._model_repo_folder
+                / self._default_models[backend_enum.value]["rec_keys_path"]["path"]
+            )
+            font_path = (
+                font_path
+                or artifacts_path
+                / self._model_repo_folder
+                / self._default_models[backend_enum.value]["font_path"]["path"]
+            )
+
+        for model_path in (
+            rec_keys_path,
+            cls_model_path,
+            rec_model_path,
+            rec_keys_path,
+            font_path,
+        ):
+            if model_path is None:
+                continue
+            if not Path(model_path).exists():
+                _log.warning(f"The provided model path {model_path} is not found.")
+
+        params = {
+            # Global settings (these are still correct)
+            "Global.text_score": self.options.text_score,
+            "Global.font_path": font_path,
+            # Engine-level ONNXRuntime settings
+            "EngineConfig.onnxruntime.intra_op_num_threads": intra_op_num_threads,
+            # "Global.verbose": self.options.print_verbose,
+            # Detection model settings
+            "Det.model_path": det_model_path,
+            "Det.use_cuda": use_cuda,
+            "Det.use_dml": use_dml,
+            # Classification model settings
+            "Cls.model_path": cls_model_path,
+            "Cls.use_cuda": use_cuda,
+            "Cls.use_dml": use_dml,
+            # Recognition model settings
+            "Rec.model_path": rec_model_path,
+            "Rec.font_path": font_path,
+            "Rec.rec_keys_path": rec_keys_path,
+            "Rec.use_cuda": use_cuda,
+            "Rec.use_dml": use_dml,
+            "Det.engine_type": backend_enum,
+            "Cls.engine_type": backend_enum,
+            "Rec.engine_type": backend_enum,
+            "EngineConfig.paddle.use_cuda": use_cuda,
+            "EngineConfig.paddle.gpu_id": gpu_id,
+            "EngineConfig.torch.use_cuda": use_cuda,
+            "EngineConfig.torch.cuda_ep_cfg.device_id": gpu_id,
+        }
+
+        if self.options.rec_font_path is not None:
+            _log.warning(
+                "The 'rec_font_path' option for RapidOCR is deprecated. Please use 'font_path' instead."
+            )
+        user_params = self.options.rapidocr_params
+        if user_params:
+            _log.debug("Overwriting RapidOCR params with user-provided values.")
+            params.update(user_params)
+
+        self.reader = RapidOCR(
+            params=params,
+        )
 
     @staticmethod
     def download_models(

@@ -39,85 +39,87 @@ class OcrAutoModel(BaseOcrModel):
         self.options: OcrAutoOptions
 
         self._engine: Optional[BaseOcrModel] = None
-        if self.enabled:
-            if "darwin" == sys.platform:
-                try:
-                    from ocrmac import ocrmac
+        if not self.enabled:
+            return
 
-                    self._engine = OcrMacModel(
-                        enabled=self.enabled,
-                        artifacts_path=artifacts_path,
-                        options=OcrMacOptions(
-                            bitmap_area_threshold=self.options.bitmap_area_threshold,
-                            force_full_page_ocr=self.options.force_full_page_ocr,
-                        ),
-                        accelerator_options=accelerator_options,
-                    )
-                    _log.info("Auto OCR model selected ocrmac.")
-                except ImportError:
-                    _log.info("ocrmac cannot be used because ocrmac is not installed.")
+        if "darwin" == sys.platform:
+            try:
+                from ocrmac import ocrmac
 
-            if self._engine is None:
-                try:
-                    import onnxruntime
-                    from rapidocr import EngineType, RapidOCR  # type: ignore
+                self._engine = OcrMacModel(
+                    enabled=self.enabled,
+                    artifacts_path=artifacts_path,
+                    options=OcrMacOptions(
+                        bitmap_area_threshold=self.options.bitmap_area_threshold,
+                        force_full_page_ocr=self.options.force_full_page_ocr,
+                    ),
+                    accelerator_options=accelerator_options,
+                )
+                _log.info("Auto OCR model selected ocrmac.")
+            except ImportError:
+                _log.info("ocrmac cannot be used because ocrmac is not installed.")
 
-                    self._engine = RapidOcrModel(
-                        enabled=self.enabled,
-                        artifacts_path=artifacts_path,
-                        options=RapidOcrOptions(
-                            backend="onnxruntime",
-                            bitmap_area_threshold=self.options.bitmap_area_threshold,
-                            force_full_page_ocr=self.options.force_full_page_ocr,
-                        ),
-                        accelerator_options=accelerator_options,
-                    )
-                    _log.info("Auto OCR model selected rapidocr with onnxruntime.")
-                except ImportError:
-                    _log.info(
-                        "rapidocr cannot be used because onnxruntime is not installed."
-                    )
+        if self._engine is None:
+            try:
+                import onnxruntime
+                from rapidocr import EngineType, RapidOCR  # type: ignore
 
-            if self._engine is None:
-                try:
-                    import easyocr
+                self._engine = RapidOcrModel(
+                    enabled=self.enabled,
+                    artifacts_path=artifacts_path,
+                    options=RapidOcrOptions(
+                        backend="onnxruntime",
+                        bitmap_area_threshold=self.options.bitmap_area_threshold,
+                        force_full_page_ocr=self.options.force_full_page_ocr,
+                    ),
+                    accelerator_options=accelerator_options,
+                )
+                _log.info("Auto OCR model selected rapidocr with onnxruntime.")
+            except ImportError:
+                _log.info(
+                    "rapidocr cannot be used because onnxruntime is not installed."
+                )
 
-                    self._engine = EasyOcrModel(
-                        enabled=self.enabled,
-                        artifacts_path=artifacts_path,
-                        options=EasyOcrOptions(
-                            bitmap_area_threshold=self.options.bitmap_area_threshold,
-                            force_full_page_ocr=self.options.force_full_page_ocr,
-                        ),
-                        accelerator_options=accelerator_options,
-                    )
-                    _log.info("Auto OCR model selected easyocr.")
-                except ImportError:
-                    _log.info("easyocr cannot be used because it is not installed.")
+        if self._engine is None:
+            try:
+                import easyocr
 
-            if self._engine is None:
-                try:
-                    import torch
-                    from rapidocr import EngineType, RapidOCR  # type: ignore
+                self._engine = EasyOcrModel(
+                    enabled=self.enabled,
+                    artifacts_path=artifacts_path,
+                    options=EasyOcrOptions(
+                        bitmap_area_threshold=self.options.bitmap_area_threshold,
+                        force_full_page_ocr=self.options.force_full_page_ocr,
+                    ),
+                    accelerator_options=accelerator_options,
+                )
+                _log.info("Auto OCR model selected easyocr.")
+            except ImportError:
+                _log.info("easyocr cannot be used because it is not installed.")
 
-                    self._engine = RapidOcrModel(
-                        enabled=self.enabled,
-                        artifacts_path=artifacts_path,
-                        options=RapidOcrOptions(
-                            backend="torch",
-                            bitmap_area_threshold=self.options.bitmap_area_threshold,
-                            force_full_page_ocr=self.options.force_full_page_ocr,
-                        ),
-                        accelerator_options=accelerator_options,
-                    )
-                    _log.info("Auto OCR model selected rapidocr with torch.")
-                except ImportError:
-                    _log.info(
-                        "rapidocr cannot be used because rapidocr or torch is not installed."
-                    )
+        if self._engine is None:
+            try:
+                import torch
+                from rapidocr import EngineType, RapidOCR  # type: ignore
 
-            if self._engine is None:
-                _log.warning("No OCR engine found. Please review the install details.")
+                self._engine = RapidOcrModel(
+                    enabled=self.enabled,
+                    artifacts_path=artifacts_path,
+                    options=RapidOcrOptions(
+                        backend="torch",
+                        bitmap_area_threshold=self.options.bitmap_area_threshold,
+                        force_full_page_ocr=self.options.force_full_page_ocr,
+                    ),
+                    accelerator_options=accelerator_options,
+                )
+                _log.info("Auto OCR model selected rapidocr with torch.")
+            except ImportError:
+                _log.info(
+                    "rapidocr cannot be used because rapidocr or torch is not installed."
+                )
+
+        if self._engine is None:
+            _log.warning("No OCR engine found. Please review the install details.")
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
