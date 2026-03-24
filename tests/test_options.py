@@ -219,6 +219,34 @@ def test_pipeline_cache_after_initialize(test_doc_path):
     )
 
 
+def test_do_ocr_false_no_rapidocr_init():
+    """Test that do_ocr=False does not trigger RapidOCR engine initialization.
+
+    Regression test for #2932: RapidOCR() constructor auto-downloads models
+    from modelscope.cn even when OCR is disabled.
+    """
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.do_ocr = False
+
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=pipeline_options,
+            )
+        }
+    )
+
+    converter.initialize_pipeline(InputFormat.PDF)
+
+    pipelines = converter._get_initialized_pipelines()
+    assert len(pipelines) == 1
+
+    pipeline = next(iter(pipelines.values()))
+    ocr_model = pipeline.ocr_model
+    assert ocr_model.enabled is False
+    assert ocr_model._engine is None
+
+
 def test_confidence(test_doc_path):
     converter = DocumentConverter()
     doc_result: ConversionResult = converter.convert(test_doc_path, page_range=(6, 9))
