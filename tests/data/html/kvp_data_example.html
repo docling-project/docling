@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Receipt Form</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            line-height: 1.4;
+            color: #000;
+            background: #fff;
+            margin: 20px;
+            padding: 0;
+        }
+        
+        .form-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            font-size: 20px;
+            font-weight: bold;
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+            margin-top: 0;
+        }
+        
+        h2 {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 20px 0 15px 0;
+        }
+        
+        .subtitle {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .description-text {
+            font-size: 13px;
+            margin-bottom: 20px;
+            text-align: justify;
+        }
+        
+        .form_region {
+            margin-bottom: 25px;
+        }
+        
+        .field-row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            gap: 40px;
+        }
+        
+        .field {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            align-items: baseline;
+        }
+
+        .field-marker {
+            font-weight: italic;
+            margin-right: 10px;
+            white-space: nowrap;
+            min-width: 20px;
+        }
+
+        .field-label {
+            font-weight: bold;
+            margin-right: 10px;
+            white-space: nowrap;
+            min-width: 140px;
+        }
+        
+        .field-value {
+            border-bottom: 1px solid #000;
+            flex: 1;
+            padding-left: 5px;
+            min-width: 150px;
+        }
+        
+        .hint-section {
+            margin: 25px 0 15px 0;
+            font-size: 13px;
+        }
+        
+        .hint-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .hint-text {
+            margin-bottom: 5px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        
+        th, td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        
+        th {
+            background-color: #cccccc;
+            font-weight: normal;
+        }
+        
+        .marker {
+            text-align: center;
+            font-weight: bold;
+            width: 50px;
+        }
+        
+        .footer-note {
+            margin-top: 40px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                margin: 10px;
+                font-size: 13px;
+            }
+            
+            .form-container {
+                padding: 10px;
+            }
+            
+            .field-row {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .field {
+                min-width: 100%;
+            }
+
+            .field-marker {
+                min-width: 20px;
+            }
+
+            .field-label {
+                min-width: 120px;
+            }
+            
+            table {
+                font-size: 12px;
+            }
+            
+            th, td {
+                padding: 6px 4px;
+            }
+            
+            .marker {
+                width: 30px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .field {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .field-value {
+                width: 100%;
+                margin-top: 2px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>HEADER</h1>
+        
+        <div class="subtitle">Order Receipt Details</div>
+        
+        <div class="description-text">
+            Receipt documentation for table service:
+        </div>
+        
+        <div class="form_region">
+            <div class="field-row">
+                <div class="field">
+                    <div id="key1_marker" class="field-marker">1</div>
+                    <span class="field-label" id="key1">Restaurant</span>
+                    <span class="field-value" id="key1_value1">Docling</span>
+                </div>
+                <div class="field">
+                    <div id="key2_marker" class="field-marker">2</div>
+                    <span class="field-label" id="key2">Telephone</span>
+                    <span class="field-value" id="key2_value1">(123) 456-7890</span>
+                </div>
+            </div>
+            
+            <div class="field-row">
+                <div class="field">
+                    <div id="key3_marker" class="field-marker">3</div>
+                    <span class="field-label" id="key3">Server</span>
+                    <span class="field-value" id="key3_value1">Quack Quackling</span>
+                </div>
+                <div class="field">
+                    <div id="key4_marker" class="field-marker">4</div>
+                    <span class="field-label" id="key4">Order Number</span>
+                    <span class="field-value" id="key4_value1">12345</span>
+                </div>
+            </div>
+            
+            <div class="field-row">
+                <div class="field">
+                    <div id="key5_marker" class="field-marker">5</div>
+                    <span class="field-label" id="key5">Seating</span>
+                    <span class="field-value" id="key5_value1">13</span>
+                </div>
+                <div class="field">
+                    <div id="key6_marker" class="field-marker">6</div>
+                    <span class="field-label" id="key6">Dining Type</span>
+                    <span class="field-value" id="key6_value1">Celebration</span>
+                </div>
+            </div>
+            
+            <div class="field-row">
+                <div class="field">
+                    <div id="key7_marker" class="field-marker">7</div>
+                    <span class="field-label" id="key7">Number of guests</span>
+                    <span class="field-value" id="key7_value1">5</span>
+                </div>
+                <div class="field">
+                    <div id="key8_marker" class="field-marker">8</div>
+                    <span class="field-label" id="key8">Receipt date</span>
+                    <span class="field-value" id="key8_value1">16/03/2026</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="hint-section">
+            <div class="hint-title">Order items:</div>
+            <div class="hint-text">Itemized list of products ordered with quantities.</div>
+        </div>
+        
+        <table class="form_region">
+            <thead>
+                <tr>
+                    <th style="width: 60px;">Nr.</th>
+                    <th>Item Description</th>
+                    <th style="width: 100px;">Quantity</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>I</td>
+                    <td>Coffee</td>
+                    <td>1</td>
+                </tr>
+                <tr>
+                    <td>II</td>
+                    <td>Lunch</td>
+                    <td>2</td>
+                </tr>
+                <tr>
+                    <td>III</td>
+                    <td>Cake</td>
+                    <td>1</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="footer-note">
+            Docling Restaurant 2026
+        </div>
+    </div>
+</body>
+</html>

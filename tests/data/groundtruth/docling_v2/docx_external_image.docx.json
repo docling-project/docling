@@ -5,28 +5,23 @@
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "binary_hash": 13263023013110495988,
-    "filename": "docx_external_image.docx",
-    "uri": null
+    "filename": "docx_external_image.docx"
   },
   "furniture": {
     "self_ref": "#/furniture",
-    "parent": null,
     "children": [],
     "content_layer": "furniture",
-    "meta": null,
     "name": "_root_",
     "label": "unspecified"
   },
   "body": {
     "self_ref": "#/body",
-    "parent": null,
     "children": [
       {
         "$ref": "#/groups/0"
       }
     ],
     "content_layer": "body",
-    "meta": null,
     "name": "_root_",
     "label": "unspecified"
   },
@@ -42,7 +37,6 @@
         }
       ],
       "content_layer": "body",
-      "meta": null,
       "name": "header-0",
       "label": "section"
     }
@@ -65,13 +59,10 @@
         }
       ],
       "content_layer": "body",
-      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Test Document with External Image",
       "text": "Test Document with External Image",
-      "formatting": null,
-      "hyperlink": null,
       "level": 1
     },
     {
@@ -81,7 +72,6 @@
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "This paragraph has text before the image.",
@@ -92,8 +82,7 @@
         "underline": false,
         "strikethrough": false,
         "script": "baseline"
-      },
-      "hyperlink": null
+      }
     },
     {
       "self_ref": "#/texts/2",
@@ -102,7 +91,6 @@
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "This paragraph comes after the external image.",
@@ -113,8 +101,7 @@
         "underline": false,
         "strikethrough": false,
         "script": "baseline"
-      },
-      "hyperlink": null
+      }
     }
   ],
   "pictures": [
@@ -125,13 +112,11 @@
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "picture",
       "prov": [],
       "captions": [],
       "references": [],
       "footnotes": [],
-      "image": null,
       "annotations": []
     }
   ],

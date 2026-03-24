@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "name": "html_rich_table_cells",
   "origin": {
     "mimetype": "text/html",
@@ -35,7 +35,7 @@
     {
       "self_ref": "#/groups/0",
       "parent": {
-        "$ref": "#/tables/0"
+        "$ref": "#/groups/1"
       },
       "children": [
         {
@@ -61,13 +61,27 @@
         }
       ],
       "content_layer": "body",
-      "name": "rich_cell_group_1_1_3",
-      "label": "unspecified"
+      "name": "group",
+      "label": "inline"
     },
     {
       "self_ref": "#/groups/1",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/tables/0"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/0"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_1_1_3",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/2",
+      "parent": {
+        "$ref": "#/groups/3"
       },
       "children": [
         {
@@ -85,13 +99,13 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/2",
+      "self_ref": "#/groups/3",
       "parent": {
         "$ref": "#/tables/0"
       },
       "children": [
         {
-          "$ref": "#/groups/1"
+          "$ref": "#/groups/2"
         }
       ],
       "content_layer": "body",
@@ -99,9 +113,9 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/3",
+      "self_ref": "#/groups/4",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/5"
       },
       "children": [
         {
@@ -116,13 +130,13 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/4",
+      "self_ref": "#/groups/5",
       "parent": {
         "$ref": "#/tables/0"
       },
       "children": [
         {
-          "$ref": "#/groups/3"
+          "$ref": "#/groups/4"
         }
       ],
       "content_layer": "body",
@@ -130,7 +144,7 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/5",
+      "self_ref": "#/groups/6",
       "parent": {
         "$ref": "#/tables/1"
       },
@@ -147,7 +161,7 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/6",
+      "self_ref": "#/groups/7",
       "parent": {
         "$ref": "#/tables/1"
       },
@@ -164,7 +178,7 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/7",
+      "self_ref": "#/groups/8",
       "parent": {
         "$ref": "#/tables/1"
       },
@@ -181,7 +195,7 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/8",
+      "self_ref": "#/groups/9",
       "parent": {
         "$ref": "#/tables/2"
       },
@@ -195,9 +209,9 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/9",
+      "self_ref": "#/groups/10",
       "parent": {
-        "$ref": "#/tables/2"
+        "$ref": "#/groups/11"
       },
       "children": [
         {
@@ -211,11 +225,25 @@
         }
       ],
       "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/11",
+      "parent": {
+        "$ref": "#/tables/2"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/10"
+        }
+      ],
+      "content_layer": "body",
       "name": "rich_cell_group_3_0_1",
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/10",
+      "self_ref": "#/groups/12",
       "parent": {
         "$ref": "#/tables/2"
       },
@@ -229,7 +257,7 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/11",
+      "self_ref": "#/groups/13",
       "parent": {
         "$ref": "#/tables/2"
       },
@@ -243,7 +271,7 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/12",
+      "self_ref": "#/groups/14",
       "parent": {
         "$ref": "#/tables/2"
       },
@@ -257,7 +285,7 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/13",
+      "self_ref": "#/groups/15",
       "parent": {
         "$ref": "#/tables/4"
       },
@@ -271,7 +299,7 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/14",
+      "self_ref": "#/groups/16",
       "parent": {
         "$ref": "#/tables/4"
       },
@@ -285,7 +313,7 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/15",
+      "self_ref": "#/groups/17",
       "parent": {
         "$ref": "#/tables/4"
       },
@@ -452,7 +480,7 @@
     {
       "self_ref": "#/texts/9",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -466,7 +494,7 @@
     {
       "self_ref": "#/texts/10",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -480,7 +508,7 @@
     {
       "self_ref": "#/texts/11",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -494,7 +522,7 @@
     {
       "self_ref": "#/texts/12",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -508,7 +536,7 @@
     {
       "self_ref": "#/texts/13",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -522,7 +550,7 @@
     {
       "self_ref": "#/texts/14",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -534,7 +562,7 @@
     {
       "self_ref": "#/texts/15",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -546,7 +574,7 @@
     {
       "self_ref": "#/texts/16",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -558,7 +586,7 @@
     {
       "self_ref": "#/texts/17",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -570,7 +598,7 @@
     {
       "self_ref": "#/texts/18",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/8"
       },
       "children": [],
       "content_layer": "body",
@@ -582,7 +610,7 @@
     {
       "self_ref": "#/texts/19",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/8"
       },
       "children": [],
       "content_layer": "body",
@@ -594,7 +622,7 @@
     {
       "self_ref": "#/texts/20",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
@@ -613,7 +641,7 @@
     {
       "self_ref": "#/texts/21",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -625,7 +653,7 @@
     {
       "self_ref": "#/texts/22",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -644,7 +672,7 @@
     {
       "self_ref": "#/texts/23",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -656,7 +684,7 @@
     {
       "self_ref": "#/texts/24",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -675,7 +703,7 @@
     {
       "self_ref": "#/texts/25",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -694,7 +722,7 @@
     {
       "self_ref": "#/texts/26",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -720,7 +748,7 @@
     {
       "self_ref": "#/texts/28",
       "parent": {
-        "$ref": "#/groups/15"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -735,7 +763,7 @@
     {
       "self_ref": "#/pictures/0",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/groups/16"
       },
       "children": [],
       "content_layer": "body",
@@ -759,13 +787,13 @@
       },
       "children": [
         {
-          "$ref": "#/groups/0"
+          "$ref": "#/groups/1"
         },
         {
-          "$ref": "#/groups/2"
+          "$ref": "#/groups/3"
         },
         {
-          "$ref": "#/groups/4"
+          "$ref": "#/groups/5"
         }
       ],
       "content_layer": "body",
@@ -932,7 +960,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/0"
+              "$ref": "#/groups/1"
             }
           },
           {
@@ -961,7 +989,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/2"
+              "$ref": "#/groups/3"
             }
           },
           {
@@ -977,7 +1005,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/4"
+              "$ref": "#/groups/5"
             }
           }
         ],
@@ -1200,13 +1228,13 @@
       },
       "children": [
         {
-          "$ref": "#/groups/5"
-        },
-        {
           "$ref": "#/groups/6"
         },
         {
           "$ref": "#/groups/7"
+        },
+        {
+          "$ref": "#/groups/8"
         }
       ],
       "content_layer": "body",
@@ -1256,7 +1284,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/5"
+              "$ref": "#/groups/6"
             }
           },
           {
@@ -1285,7 +1313,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/6"
+              "$ref": "#/groups/7"
             }
           },
           {
@@ -1314,7 +1342,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/7"
+              "$ref": "#/groups/8"
             }
           },
           {
@@ -1457,19 +1485,19 @@
       },
       "children": [
         {
-          "$ref": "#/groups/8"
-        },
-        {
           "$ref": "#/groups/9"
-        },
-        {
-          "$ref": "#/groups/10"
         },
         {
           "$ref": "#/groups/11"
         },
         {
           "$ref": "#/groups/12"
+        },
+        {
+          "$ref": "#/groups/13"
+        },
+        {
+          "$ref": "#/groups/14"
         }
       ],
       "content_layer": "body",
@@ -1506,7 +1534,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/8"
+              "$ref": "#/groups/9"
             }
           },
           {
@@ -1522,7 +1550,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/9"
+              "$ref": "#/groups/11"
             }
           },
           {
@@ -1538,7 +1566,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/10"
+              "$ref": "#/groups/12"
             }
           },
           {
@@ -1567,7 +1595,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/11"
+              "$ref": "#/groups/13"
             }
           },
           {
@@ -1583,7 +1611,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/12"
+              "$ref": "#/groups/14"
             }
           }
         ],
@@ -1709,7 +1737,7 @@
     {
       "self_ref": "#/tables/3",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -1897,13 +1925,13 @@
       },
       "children": [
         {
-          "$ref": "#/groups/13"
-        },
-        {
-          "$ref": "#/groups/14"
-        },
-        {
           "$ref": "#/groups/15"
+        },
+        {
+          "$ref": "#/groups/16"
+        },
+        {
+          "$ref": "#/groups/17"
         }
       ],
       "content_layer": "body",
@@ -1992,7 +2020,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/13"
+              "$ref": "#/groups/15"
             }
           },
           {
@@ -2034,7 +2062,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/14"
+              "$ref": "#/groups/16"
             }
           },
           {
@@ -2076,7 +2104,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/15"
+              "$ref": "#/groups/17"
             }
           },
           {
