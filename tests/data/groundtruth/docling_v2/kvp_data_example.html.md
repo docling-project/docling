@@ -1,6 +1,8 @@
 # HEADER
 
-Order Receipt Details Receipt documentation for table service:
+Order Receipt Details
+
+Receipt documentation for table service:
 
 <!-- missing-text -->
 
@@ -68,7 +70,9 @@ Receipt date
 
 16/03/2026
 
-Order items: Itemized list of products ordered with quantities.
+Order items:
+
+Itemized list of products ordered with quantities.
 
 | Nr.   | Item Description   |   Quantity |
 |-------|--------------------|------------|

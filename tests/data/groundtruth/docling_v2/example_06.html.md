@@ -1,4 +1,6 @@
-This is a div with text. This is another div with text.
+This is a div with text.
+
+This is another div with text.
 
 This is a regular paragraph.
 

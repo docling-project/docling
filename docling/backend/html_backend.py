@@ -1301,12 +1301,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         has_custom_checkbox = any(
             self._is_custom_checkbox_tag(child) for child in children
         )
+        has_line_break = any(child.name == "br" for child in children)
+        direct_block_text_children = [
+            child
+            for child in table_cell.find_all(recursive=False)
+            if isinstance(child, Tag) and child.name in {"p", "div", "li"}
+        ]
         has_nested_form_semantic_id = any(
             self._is_form_semantic_tag(child)
             for child in children
             if isinstance(child, Tag)
         )
         if has_nested_form_semantic_id:
+            return True
+        if has_line_break or len(direct_block_text_children) > 1:
             return True
         if not children:
             content = [
@@ -1528,6 +1536,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         for node in element.contents:
             if isinstance(node, Tag):
+                name = node.name.lower()
                 if form_field := self._consume_form_field_for_tag(node):
                     _flush_buffer()
                     added_refs.extend(
@@ -1539,8 +1548,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     )
                     continue
                 if self._is_suppressed_tag(node):
+                    if name == "br":
+                        # Keep explicit line breaks as text boundaries even when
+                        # the <br> tag itself has no rendered bbox.
+                        _flush_buffer()
                     continue
-                name = node.name.lower()
                 has_block_descendants = bool(
                     node.find(_BLOCK_TAGS)
                     or node.find("input")
@@ -1610,16 +1622,28 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     _flush_buffer()
                     wk4 = self._walk(node, doc)
                     added_refs.extend(wk4)
-                else:
+                elif self._should_buffer_tag_text_inline(node):
                     buffer.extend(
                         self._extract_text_and_hyperlink_recursively(
                             node, find_parent_annotation=True, keep_newlines=False
                         )
                     )
+                else:
+                    _flush_buffer()
+                    wk5 = self._walk(node, doc)
+                    added_refs.extend(wk5)
             elif isinstance(node, NavigableString) and not isinstance(
                 node, PreformattedString
             ):
-                if str(node).strip("\n\r") == "":
+                node_text = str(node)
+                if node_text.strip("\n\r") == "":
+                    parent_tag = node.parent if isinstance(node.parent, Tag) else None
+                    if (
+                        parent_tag is not None
+                        and parent_tag.name in {"td", "th"}
+                        and "\n" in node_text
+                    ):
+                        _flush_buffer()
                     continue
                 else:
                     buffer.extend(
@@ -2676,6 +2700,26 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return {str(value) for value in classes if isinstance(value, str)}
 
     @staticmethod
+    def _has_inline_display_style(tag: Tag) -> bool:
+        style_attr = tag.get("style")
+        if not isinstance(style_attr, str):
+            return False
+        display_match = re.search(r"display\s*:\s*([^;]+)", style_attr, flags=re.I)
+        if display_match is None:
+            return False
+        display_value = display_match.group(1).strip().lower()
+        return display_value.startswith("inline") or display_value == "contents"
+
+    def _should_buffer_tag_text_inline(self, tag: Tag) -> bool:
+        tag_name = tag.name.lower()
+        if tag_name in _INLINE_HTML_TAGS:
+            return True
+        # Treat explicit inline-styled divs like inline wrappers.
+        if tag_name == "div" and self._has_inline_display_style(tag):
+            return True
+        return False
+
+    @staticmethod
     def _is_input_checkbox_or_radio_tag(tag: Tag) -> bool:
         if tag.name != "input":
             return False
@@ -3610,6 +3654,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     key_prov = values[0].prov
 
             component_tag_obj_ids: set[int] = {id(value.tag) for value in values}
+            component_tag_obj_ids.update(id(tag) for tag in value_tags)
             if key_tag is not None:
                 component_tag_obj_ids.add(id(key_tag))
             if marker is not None:
@@ -3872,6 +3917,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             consumed_tag_obj_ids: set[int] = set()
             fields_by_key_id: dict[str, _ExtractedFormField] = {}
             if form_region is not None:
+                consumed_tag_ids.update(form_region.consumed_tag_ids)
                 for field in form_region.fields:
                     key_tag_id = self._get_html_id(field.key_tag)
                     if not field.values:

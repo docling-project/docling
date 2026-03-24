@@ -34,6 +34,12 @@
       "children": [
         {
           "$ref": "#/texts/2"
+        },
+        {
+          "$ref": "#/texts/3"
+        },
+        {
+          "$ref": "#/texts/4"
         }
       ],
       "content_layer": "body",
@@ -55,7 +61,7 @@
           "$ref": "#/tables/0"
         },
         {
-          "$ref": "#/texts/3"
+          "$ref": "#/texts/5"
         }
       ],
       "content_layer": "body",
@@ -85,11 +91,35 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "First Paragraph Second Paragraph Third Paragraph",
-      "text": "First Paragraph Second Paragraph Third Paragraph"
+      "orig": "First Paragraph",
+      "text": "First Paragraph"
     },
     {
       "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Second Paragraph",
+      "text": "Second Paragraph"
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Third Paragraph",
+      "text": "Third Paragraph"
+    },
+    {
+      "self_ref": "#/texts/5",
       "parent": {
         "$ref": "#/texts/0"
       },
