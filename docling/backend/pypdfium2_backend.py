@@ -111,12 +111,11 @@ _PYPDFIUM2_MAJOR_VERSION = int(version("pypdfium2").split(".")[0])
 class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
     def __init__(
         self,
-        owner: "PyPdfiumDocumentBackend",
         pdfium_doc: pdfium.PdfDocument,
         document_hash: str,
         page_no: int,
     ):
-        super().__init__(owner)
+        super().__init__()
         # Note: lock applied by the caller
         self.valid = True  # No better way to tell from pypdfium.
         self._ppage: pdfium.PdfPage | None = None
@@ -426,7 +425,7 @@ class PyPdfiumDocumentBackend(ManagedPdfiumDocumentBackend):
 
     def load_page(self, page_no: int) -> PyPdfiumPageBackend:
         with pypdfium2_lock:
-            return PyPdfiumPageBackend(self, self._pdoc, self.document_hash, page_no)
+            return PyPdfiumPageBackend(self._pdoc, self.document_hash, page_no)
 
     def is_valid(self) -> bool:
         return self.page_count() > 0

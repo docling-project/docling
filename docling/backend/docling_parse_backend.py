@@ -30,7 +30,6 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
     def __init__(
         self,
         *,
-        owner: "DoclingParseDocumentBackend",
         dp_doc: PdfDocument,
         page_obj: PdfPage,
         page_no: int,
@@ -40,7 +39,7 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         keep_lines: bool = False,
         keep_images: bool = True,
     ):
-        super().__init__(owner)
+        super().__init__()
         self._ppage = page_obj
         self._dp_doc: Optional[PdfDocument] = dp_doc
         self._page_no = page_no
@@ -260,7 +259,6 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
             ppage = self._pdoc[page_no]
 
         return DoclingParsePageBackend(
-            owner=self,
             dp_doc=self.dp_doc,
             page_obj=ppage,
             page_no=page_no,
