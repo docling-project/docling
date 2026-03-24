@@ -146,7 +146,7 @@ dev = [
 ]
 docs = [
   "mkdocs-material~=9.5",
-  "mkdocs-jupyter~=0.25",
+  "mkdocs-jupyter>=0.25,<0.26",
   "mkdocs-click~=0.8",
   "mkdocs-redirects~=1.2",
   "mkdocstrings[python]~=0.27",
