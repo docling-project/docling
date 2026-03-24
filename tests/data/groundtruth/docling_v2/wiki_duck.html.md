@@ -230,20 +230,14 @@ From Wikipedia, the free encyclopedia
 
 (Redirected from [Duckling](/w/index.php?title=Duckling&redirect=no) )
 
-[Duck as food](/wiki/Duck_as_food)
+This article is about the bird. For duck as a food, see [Duck as food](/wiki/Duck_as_food) . For other uses, see [Duck (disambiguation)](/wiki/Duck_(disambiguation)) .
 
-[Duck (disambiguation)](/wiki/Duck_(disambiguation))
-
-This article is about the bird. For duck as a food, see . For other uses, see .
-
-[Duckling (disambiguation)](/wiki/Duckling_(disambiguation))
-
-"Duckling" redirects here. For other uses, see .
+"Duckling" redirects here. For other uses, see [Duckling (disambiguation)](/wiki/Duckling_(disambiguation)) .
 
 | Duck                                                                                            | Duck                               |
 |-------------------------------------------------------------------------------------------------|------------------------------------|
 | <!-- image -->                                                                                  |                                    |
-| [Bufflehead](/wiki/Bufflehead)  (  *Bucephala albeola*  )                                       |                                    |
+| [Bufflehead](/wiki/Bufflehead)  ( *Bucephala albeola* )                                         |                                    |
 | [Scientific classification](/wiki/Taxonomy_(biology))  Edit this classification  <!-- image --> |                                    |
 | Domain:                                                                                         | [Eukaryota](/wiki/Eukaryote)       |
 | Kingdom:                                                                                        | [Animalia](/wiki/Animal)           |
@@ -305,9 +299,7 @@ The drakes of northern species often have extravagant [plumage](/wiki/Plumage) ,
 
 ## Distribution and habitat
 
-[List of Anseriformes by population](/wiki/List_of_Anseriformes_by_population)
-
-See also:
+See also: [List of Anseriformes by population](/wiki/List_of_Anseriformes_by_population)
 
 Flying steamer ducks in Ushuaia , Argentina
 
@@ -369,9 +361,7 @@ Adult ducks are fast fliers, but may be caught on the water by large aquatic pre
 
 ### Hunting
 
-[Waterfowl hunting](/wiki/Waterfowl_hunting)
-
-Main article:
+Main article: [Waterfowl hunting](/wiki/Waterfowl_hunting)
 
 Humans have hunted ducks since prehistoric times. Excavations of [middens](/wiki/Midden) in California dating to 7800 - 6400 [BP](/wiki/Before_present) have turned up bones of ducks, including at least one now-extinct flightless species. [[ 33 ]](#cite_note-FOOTNOTEErlandson1994171-33) Ducks were captured in "significant numbers" by [Holocene](/wiki/Holocene) inhabitants of the lower [Ohio River](/wiki/Ohio_River) valley, suggesting they took advantage of the seasonal bounty provided by migrating waterfowl. [[ 34 ]](#cite_note-FOOTNOTEJeffries2008168,_243-34) Neolithic hunters in locations as far apart as the Caribbean, [[ 35 ]](#cite_note-FOOTNOTESued-Badillo200365-35) Scandinavia, [[ 36 ]](#cite_note-FOOTNOTEThorpe199668-36) Egypt, [[ 37 ]](#cite_note-FOOTNOTEMaisels199942-37) Switzerland, [[ 38 ]](#cite_note-FOOTNOTERau1876133-38) and China relied on ducks as a source of protein for some or all of the year. [[ 39 ]](#cite_note-FOOTNOTEHigman201223-39) Archeological evidence shows that [Māori people](/wiki/M%C4%81ori_people) in New Zealand hunted the flightless [Finsch's duck](/wiki/Finsch%27s_duck) , possibly to extinction, though rat predation may also have contributed to its fate. [[ 40 ]](#cite_note-FOOTNOTEHume201253-40) A similar end awaited the [Chatham duck](/wiki/Chatham_duck) , a species with reduced flying capabilities which went extinct shortly after its island was colonised by Polynesian settlers. [[ 41 ]](#cite_note-FOOTNOTEHume201252-41) It is probable that duck eggs were gathered by Neolithic hunter-gathers as well, though hard evidence of this is uncommon. [[ 35 ]](#cite_note-FOOTNOTESued-Badillo200365-35) [[ 42 ]](#cite_note-FOOTNOTEFieldhouse2002167-42)
 
@@ -379,9 +369,7 @@ In many areas, wild ducks (including ducks farmed and released into the wild) ar
 
 ### Domestication
 
-[Domestic duck](/wiki/Domestic_duck)
-
-Main article:
+Main article: [Domestic duck](/wiki/Domestic_duck)
 
 Indian Runner ducks , a common breed of domestic ducks
 
@@ -500,11 +488,7 @@ The 1992 Disney film [*The Mighty Ducks*](/wiki/The_Mighty_Ducks_(film)) , starr
 
 ## External links
 
-**Duck**
-
-[sister projects](/wiki/Wikipedia:Wikimedia_sister_projects)
-
-at Wikipedia's
+**Duck** at Wikipedia's [sister projects](/wiki/Wikipedia:Wikimedia_sister_projects)
 
 - [Definitions](https://en.wiktionary.org/wiki/duck) from Wiktionary
 <!-- image -->
@@ -528,13 +512,9 @@ at Wikipedia's
 | National                                                                                             | - [United States](https://id.loc.gov/authorities/sh85039879) - [France](https://catalogue.bnf.fr/ark:/12148/cb119761481) - [BnF data](https://data.bnf.fr/ark:/12148/cb119761481) - [Japan](https://id.ndl.go.jp/auth/ndlna/00564819) - [Latvia](https://kopkatalogs.lv/F?func=direct&local_base=lnc10&doc_number=000090751&P_CON_LNG=ENG) - [Israel](http://olduli.nli.org.il/F/?func=find-b&local_base=NLX10&find_code=UID&request=987007565486205171) |
 | Other                                                                                                | - [IdRef](https://www.idref.fr/027796124)                                                                                                                                                                                                                                                                                                                                                                                                                |
 
-[https://en.wikipedia.org/w/index.php?title=Duck&amp;oldid=1246843351](https://en.wikipedia.org/w/index.php?title=Duck&oldid=1246843351)
+Retrieved from " [https://en.wikipedia.org/w/index.php?title=Duck&amp;oldid=1246843351](https://en.wikipedia.org/w/index.php?title=Duck&oldid=1246843351) "
 
-Retrieved from " "
-
-[Categories](/wiki/Help:Category)
-
-:
+[Categories](/wiki/Help:Category) :
 
 - [Ducks](/wiki/Category:Ducks)
 - [Game birds](/wiki/Category:Game_birds)

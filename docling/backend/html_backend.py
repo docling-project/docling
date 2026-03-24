@@ -1492,7 +1492,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 compacted_parts = self._compact_adjacent_single_char_parts(
                     annotated_text_list
                 )
-                with self._use_inline_group(annotated_text_list, doc) as inline_ref:
+                force_inline_group = (
+                    len(annotated_text_list) == 1
+                    and bool(annotated_text_list[0].code)
+                    and element.name not in {"p", "pre"}
+                )
+                with self._use_inline_group(
+                    annotated_text_list, doc, force=force_inline_group
+                ) as inline_ref:
                     for annotated_text, source_tag_ids in compacted_parts:
                         if annotated_text.text.strip():
                             seg_clean = HTMLDocumentBackend._clean_unicode(
@@ -1590,14 +1597,35 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if input_ref:
                         added_refs.append(input_ref)
                 elif name in _FORMAT_TAG_MAP:
-                    _flush_buffer()
-                    with self._use_format([name]):
-                        wk = self._walk(node, doc)
-                        added_refs.extend(wk)
+                    if has_block_descendants or has_pending_form_fields:
+                        _flush_buffer()
+                        with self._use_format([name]):
+                            wk = self._walk(node, doc)
+                            added_refs.extend(wk)
+                    else:
+                        with self._use_format([name]):
+                            buffer.extend(
+                                self._extract_text_and_hyperlink_recursively(
+                                    node,
+                                    find_parent_annotation=True,
+                                    keep_newlines=False,
+                                )
+                            )
                 elif name == "a":
-                    with self._use_hyperlink(node):
-                        wk2 = self._walk(node, doc)
-                        added_refs.extend(wk2)
+                    if has_block_descendants or has_pending_form_fields:
+                        _flush_buffer()
+                        with self._use_hyperlink(node):
+                            wk2 = self._walk(node, doc)
+                            added_refs.extend(wk2)
+                    else:
+                        with self._use_hyperlink(node):
+                            buffer.extend(
+                                self._extract_text_and_hyperlink_recursively(
+                                    node,
+                                    find_parent_annotation=True,
+                                    keep_newlines=False,
+                                )
+                            )
                 elif name in _BLOCK_TAGS:
                     if name != "table":
                         for field in self._consume_form_fields_in_subtree(node):
@@ -1831,7 +1859,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return True
         # Allow paragraph-like block containers to contribute inline segments
         # when mixed with formatting tags (e.g., <p>text <strong>bold</strong>).
-        inline_group_container_tags = {"p", "address", "summary"}
+        inline_group_container_tags = {"p", "address", "summary", "td", "th"}
         for annotated_text in annotated_text_list:
             source_tag_id = annotated_text.source_tag_id
             if source_tag_id is None:
@@ -1848,7 +1876,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @contextmanager
     def _use_inline_group(
-        self, annotated_text_list: AnnotatedTextList, doc: DoclingDocument
+        self,
+        annotated_text_list: AnnotatedTextList,
+        doc: DoclingDocument,
+        force: bool = False,
     ) -> Iterator[RefItem | None]:
         """Create an inline group for annotated texts.
 
@@ -1864,9 +1895,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             The RefItem of the created InlineGroup, or None when the list has only one
                 element and no group is created.
         """
-        if self._disable_inline_group_depth > 0 or not self._should_create_inline_group(
-            annotated_text_list
-        ):
+        if self._disable_inline_group_depth > 0:
+            yield None
+            return
+        if not force and not self._should_create_inline_group(annotated_text_list):
             yield None
             return
         inline_fmt = doc.add_group(
@@ -1953,12 +1985,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         """
         original_level = self.level
         original_parents = self.parents.copy()
-        original_disable_inline_group_depth = self._disable_inline_group_depth
-        self._disable_inline_group_depth += 1
         try:
             yield
         finally:
-            self._disable_inline_group_depth = original_disable_inline_group_depth
             self.level = original_level
             self.parents = original_parents
 
