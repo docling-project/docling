@@ -73,6 +73,7 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import LevelNumber, ListItem, CodeItem
 from docling.backend.genos_msword_backend import GenosMsWordDocumentBackend
+from docling.backend.genos_hwp_backend import GenosHwpDocumentBackend
 # from utils import assert_cancelled
 # from genos_utils import upload_files, merge_overlapping_bboxes
 
@@ -312,29 +313,6 @@ class GenOSVectorMetaBuilder:
             chunk_bboxes=self.chunk_bboxes,
             media_files=self.media_files,
         )
-
-
-class HwpLoader:
-    def __init__(self, file_path: str):
-        self.file_path = file_path
-        self.output_dir = os.path.join('/tmp', str(uuid.uuid4()))
-        os.makedirs(self.output_dir, exist_ok=True)
-
-    def load(self):
-        try:
-            subprocess.run(['hwp5html', self.file_path, '--output', self.output_dir], check=True, timeout=600)
-            converted_file_path = os.path.join(self.output_dir, 'index.xhtml')
-            pdf_save_path = _get_pdf_path(self.file_path)
-            HTML(converted_file_path).write_pdf(pdf_save_path)
-            loader = PyMuPDFLoader(pdf_save_path)
-            return loader.load()
-        except Exception as e:
-            print(f"Failed to convert {self.file_path} to XHTML")
-            raise e
-        finally:
-            if os.path.exists(self.output_dir):
-                shutil.rmtree(self.output_dir)
-
 
 class TextLoader:
     def __init__(self, file_path: str):
@@ -1082,63 +1060,68 @@ class DocxProcessor:
             raise GenosServiceException(1, f"chunk length is 0")
         return vectors
 
-
-class HwpxProcessor:
+class HwpProcessor:
     def __init__(self):
         self.page_chunk_counts = defaultdict(int)
+        
+        # 1. 한글 처리에 불필요한 PDF용 옵션이 없는 기본 파이프라인 옵션 사용
         self.pipeline_options = PipelineOptions()
-        self.pipeline_options.save_images = False
+        self.pipeline_options.save_images = True 
+        
+        # 2. HwpxFormatOption을 사용하여 백엔드 주입
         self.converter = DocumentConverter(
             format_options={
+                # .hwp(바이너리)도 HwpxFormatOption의 틀을 빌려 우리 SDK 백엔드로 연결
+                InputFormat.HWP: HwpxFormatOption(
+                    pipeline_options=self.pipeline_options,
+                    backend=GenosHwpDocumentBackend
+                ),
+                # .hwpx(XML)도 당연히 HwpxFormatOption 사용
                 InputFormat.XML_HWPX: HwpxFormatOption(
-                    pipeline_options=self.pipeline_options
+                    pipeline_options=self.pipeline_options,
+                    backend=GenosHwpDocumentBackend
                 )
             }
         )
 
     def get_paths(self, file_path: str):
+        """이미지 등 리소스가 저장될 경로 계산 (기존 로직 유지)"""
         output_path, output_file = os.path.split(file_path)
         filename, _ = os.path.splitext(output_file)
         artifacts_dir = Path(f"{output_path}/{filename}")
-        if artifacts_dir.is_absolute():
-            reference_path = None
-        else:
-            reference_path = artifacts_dir.parent
+        reference_path = None if artifacts_dir.is_absolute() else artifacts_dir.parent
         return artifacts_dir, reference_path
 
-    def get_media_files(self, doc_items: list):
-        temp_list = []
-        for item in doc_items:
-            if isinstance(item, PictureItem):
-                path = str(item.image.uri)
-                name = path.rsplit("/", 1)[-1]
-                temp_list.append({'path': path, 'name': name})
-        return temp_list
-
     def safe_join(self, iterable):
+        """청크 내 헤딩들을 텍스트로 합침"""
         if not isinstance(iterable, (list, tuple, set)):
             return ''
-        return ''.join(map(str, iterable)) + '\n'
+        return ' '.join(map(str, iterable)) + '\n'
 
     def load_documents(self, file_path: str, **kwargs: dict) -> DoclingDocument:
-        save_images = kwargs.get('save_images', False)
-
-        if self.pipeline_options.save_images != save_images:
-            self.pipeline_options.save_images = save_images
-            # self._create_converters()
-
+        """SDK 백엔드를 통해 문서를 로드"""
+        save_images = kwargs.get('save_images', True)
+        self.pipeline_options.save_images = save_images
+        
+        # 확장자가 .hwp든 .hwpx든 등록된 백엔드가 알아서 처리함
         conv_result: ConversionResult = self.converter.convert(file_path, raises_on_error=True)
         return conv_result.document
 
     def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
+        """HybridChunker를 사용하여 문서 분할 및 페이지별 청크 수 집계"""
+        # HybridChunker는 상단에 임포트되어 있어야 함
         chunker = HybridChunker(max_tokens=int(1e30), merge_peers=True)
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
+        
+        self.page_chunk_counts.clear()
         for chunk in chunks:
-            self.page_chunk_counts[chunk.meta.doc_items[0].prov[0].page_no] += 1
+            # 첫 번째 아이템의 출처(prov)를 기준으로 페이지 번호 획득
+            p_no = chunk.meta.doc_items[0].prov[0].page_no
+            self.page_chunk_counts[p_no] += 1
         return chunks
 
-    async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request,
-                              **kwargs: dict) -> list[dict]:
+    async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], request: Any, **kwargs: dict) -> list[dict]:
+        """빌더를 사용하여 최종 GenOSVectorMeta 리스트 생성"""
         global_metadata = dict(
             n_chunk_of_doc=len(chunks),
             n_page=document.num_pages(),
@@ -1149,6 +1132,7 @@ class HwpxProcessor:
         chunk_index_on_page = 0
         vectors = []
         upload_tasks = []
+
         for chunk_idx, chunk in enumerate(chunks):
             chunk_page = chunk.meta.doc_items[0].prov[0].page_no
             content = self.safe_join(chunk.meta.headings) + chunk.text
@@ -1157,7 +1141,9 @@ class HwpxProcessor:
                 current_page = chunk_page
                 chunk_index_on_page = 0
 
-            vector = (GenOSVectorMetaBuilder()
+            # 🚀 [빌더 적용] GenOSVectorMetaBuilder를 통한 데이터 조립
+            builder = GenOSVectorMetaBuilder()
+            vector_obj = (builder
                       .set_text(content)
                       .set_page_info(chunk_page, chunk_index_on_page, self.page_chunk_counts[chunk_page])
                       .set_chunk_index(chunk_idx)
@@ -1165,33 +1151,45 @@ class HwpxProcessor:
                       .set_chunk_bboxes(chunk.meta.doc_items, document)
                       .set_media_files(chunk.meta.doc_items)
                       ).build()
-            vectors.append(vector)
+            
+            # Pydantic 모델을 리스트에 추가
+            vectors.append(vector_obj)
 
             chunk_index_on_page += 1
-            if upload_files:
-                file_list = self.get_media_files(chunk.meta.doc_items)
-                upload_tasks.append(asyncio.create_task(
-                    upload_files(file_list, request=request)
-                ))
+            
+            # 이미지 파일 업로드 태그 (기존 upload_files 함수가 정의되어 있어야 함)
+            # if 'upload_files' in globals():
+            #     file_list = self.get_media_files(chunk.meta.doc_items)
+            #     upload_tasks.append(asyncio.create_task(upload_files(file_list, request=request)))
 
         if upload_tasks:
             await asyncio.gather(*upload_tasks)
+            
         return vectors
 
-    async def __call__(self, request: Request, file_path: str, **kwargs: dict):
+    async def __call__(self, request: Any, file_path: str, **kwargs: dict):
+        """외부에서 호출되는 통합 프로세서 입구"""
+        # 1. SDK 백엔드로 문서 변환
         document: DoclingDocument = self.load_documents(file_path, **kwargs)
+        
+        # 2. 이미지 참조 경로 설정
         artifacts_dir, reference_path = self.get_paths(file_path)
-        document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
+        document = document._with_pictures_refs(
+            image_dir=artifacts_dir, 
+            page_no=None, 
+            reference_path=reference_path
+        )
 
+        # 3. 청킹
         chunks: list[DocChunk] = self.split_documents(document, **kwargs)
 
-        vectors = []
+        # 4. 벡터화 (빌더 활용)
         if len(chunks) >= 1:
-            vectors: list[dict] = await self.compose_vectors(document, chunks, file_path, request, **kwargs)
+            vectors = await self.compose_vectors(document, chunks, request, **kwargs)
+            return vectors
         else:
-            raise GenosServiceException(1, f"chunk length is 0")
-        return vectors
-
+            # GenosServiceException 예외 처리
+            raise Exception("chunk length is 0")
 
 class GenosServiceException(Exception):
     """GenOS 와의 의존성 부분 제거를 위해 추가"""
@@ -1216,7 +1214,8 @@ class GenosServiceException(Exception):
 class DocumentProcessor:
     def __init__(self):
         self.page_chunk_counts = defaultdict(int)
-        self.hwpx_processor = HwpxProcessor()
+        #self.hwpx_processor = HwpxProcessor()
+        self.hwp_processor = HwpProcessor()
         self.docx_processor = DocxProcessor()
 
     def get_loader(self, file_path: str):
@@ -1246,8 +1245,6 @@ class DocumentProcessor:
             )
         elif ext in ['.txt', '.json', '.md']:
             return TextLoader(file_path)
-        elif ext == '.hwp':
-            return HwpLoader(file_path)
         elif ext == '.md':
             return UnstructuredMarkdownLoader(file_path)
         else:
@@ -1481,16 +1478,10 @@ class DocumentProcessor:
             # await assert_cancelled(request)
             return vectors
 
-        elif ext == '.hwp':
-            documents: list[Document] = self.load_documents(file_path, **kwargs)
-            # await assert_cancelled(request)
-            chunks: list[Document] = self.split_documents(documents, **kwargs)
-            # await assert_cancelled(request)
-            vectors: list[dict] = self.compose_vectors(file_path, chunks, **kwargs)
-            return vectors
-
-        elif ext == '.hwpx':
-            return await self.hwpx_processor(request, file_path, **kwargs)
+        # 🚀 [핵심 수정] HWP와 HWPX를 하나의 프로세서로 통합 실행
+        elif ext in ('.hwp', '.hwpx'):
+            _log.info(f"Processing Korean Document ({ext}) with Unified HwpProcessor")
+            return await self.hwp_processor(request, file_path, **kwargs)
 
         elif ext == '.docx':
             return await self.docx_processor(request, file_path, **kwargs)

@@ -60,8 +60,15 @@ else:
 # ------------------------------
 
 class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
-    def __init__(self, in_doc: InputDocument, path_or_stream: Union[Path, BytesIO]) -> None:
+    def __init__(self, in_doc: InputDocument, path_or_stream: Union[Path, BytesIO], **kwargs) -> None:
         super().__init__(in_doc, path_or_stream)
+
+        # 1. PipelineOptions 등에서 넘어오는 이미 저장 여부 설정 받기
+        # kwargs에 없으면 기본적으로 True로 설정합니다.
+        self.save_images = kwargs.get("save_images", True)
+        
+        # 만약 WMF 변환 포함 여부도 기존처럼 쓰고 싶다면 추가
+        self.include_wmf = kwargs.get("include_wmf", True)
 
         self._processed_hashes = set()  # 중복 텍스트(머리말/꼬리말) 필터링용
         

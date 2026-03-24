@@ -9,12 +9,14 @@ import sys
 sys.path.insert(0, "../../../") # 현재 doc_parser의 docling 폴더 참조
 
 # 테스트할 전처리기 임포트
-# from attachment_processor import DocumentProcessor # 첨부용
+from attachment_processor import DocumentProcessor # 첨부용
 # from convert_processor import DocumentProcessor # 변환형
-from intelligent_processor import DocumentProcessor # 지능형
+#from intelligent_processor import DocumentProcessor # 지능형
 
 # 파일 경로
-file_path = "../sample_files/pdf_sample.pdf"
+#file_path = "../sample_files/pdf_sample.pdf"
+#file_path = "../sample_files/docx_sample.docx"
+file_path = "../sample_files/hwpx_sample.hwpx"
 
 # 파일 존재 여부 확인
 if not os.path.exists(file_path):
