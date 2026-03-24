@@ -77,6 +77,7 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
                 _log.warning(
                     f"Model artifacts not found at {artifacts_path / self._model_repo_folder}, they will be downloaded."
                 )
+                artifacts_path = self.download_models()
 
             self._processor = AutoProcessor.from_pretrained(
                 artifacts_path,
