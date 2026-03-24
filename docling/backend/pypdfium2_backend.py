@@ -375,8 +375,9 @@ class PyPdfiumPageBackend(PdfPageBackend):
             return Size(width=self._ppage.get_width(), height=self._ppage.get_height())
 
     def unload(self):
-        self._ppage = None
-        self.text_page = None
+        with pypdfium2_lock:
+            self._ppage = None
+            self.text_page = None
 
 
 class PyPdfiumDocumentBackend(PdfDocumentBackend):
