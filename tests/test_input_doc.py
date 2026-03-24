@@ -11,10 +11,16 @@ from docling.datamodel.backend_options import (
     DeclarativeBackendOptions,
     HTMLBackendOptions,
 )
+from docling.datamodel import base_models
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument, _DocumentConversionInput
 from docling.datamodel.settings import DocumentLimits
 from docling.document_converter import ImageFormatOption, PdfFormatOption
+
+
+def test_base_models_explicitly_exports_document_stream():
+    assert "DocumentStream" in base_models.__all__
+    assert base_models.DocumentStream is DocumentStream
 
 
 def test_in_doc_from_valid_path():

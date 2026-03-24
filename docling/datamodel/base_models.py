@@ -13,10 +13,10 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.base import PydanticSerCtxKey, round_pydantic_float
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
-from docling_core.types.io import DocumentStream
+from docling_core.types.io import DocumentStream as DocumentStream
 
 # DO NOT REMOVE; explicitly exposed from this location
-from PIL.Image import Image
+from PIL.Image import Image as Image
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -32,6 +32,47 @@ if TYPE_CHECKING:
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.datamodel.pipeline_options import PipelineOptions
+
+__all__ = [
+    "DocumentStream",
+    "Image",
+    "BaseFormatOption",
+    "ConversionStatus",
+    "InputFormat",
+    "OutputFormat",
+    "FormatToExtensions",
+    "FormatToMimeType",
+    "MimeTypeToFormat",
+    "DocInputType",
+    "DoclingComponentType",
+    "VlmStopReason",
+    "ErrorItem",
+    "Cluster",
+    "BasePageElement",
+    "LayoutPrediction",
+    "VlmPredictionToken",
+    "VlmPrediction",
+    "ContainerElement",
+    "Table",
+    "TableStructurePrediction",
+    "TextElement",
+    "FigureElement",
+    "FigureClassificationPrediction",
+    "EquationPrediction",
+    "PagePredictions",
+    "PageElement",
+    "AssembledUnit",
+    "ItemAndImageEnrichmentElement",
+    "Page",
+    "OpenAiChatMessage",
+    "OpenAiResponseChoice",
+    "OpenAiResponseUsage",
+    "OpenAiApiResponse",
+    "ScoreValue",
+    "QualityGrade",
+    "PageConfidenceScores",
+    "ConfidenceReport",
+]
 
 
 class BaseFormatOption(BaseModel):
