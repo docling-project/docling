@@ -175,18 +175,17 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
             padbox.t = page_size.height - padbox.t
 
         with pypdfium2_lock:
-            image = (
-                self._require_page()
-                .render(
-                    scale=scale * 1.5,
-                    rotation=0,  # no additional rotation
-                    crop=padbox.as_tuple(),
-                )
-                .to_pil()
-                .resize(
-                    size=(round(cropbox.width * scale), round(cropbox.height * scale))
-                )
-            )  # We resize the image from 1.5x the given scale to make it sharper.
+            bitmap = self._require_page().render(
+                scale=scale * 1.5,
+                rotation=0,  # no additional rotation
+                crop=padbox.as_tuple(),
+            )
+            image = bitmap.to_pil().copy()
+            bitmap.close()
+        # We resize the image from 1.5x the given scale to make it sharper.
+        image = image.resize(
+            size=(round(cropbox.width * scale), round(cropbox.height * scale))
+        )
 
         return image
 
