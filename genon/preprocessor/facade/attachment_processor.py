@@ -1073,12 +1073,12 @@ class HwpProcessor:
             format_options={
                 # .hwp(바이너리)도 HwpxFormatOption의 틀을 빌려 우리 SDK 백엔드로 연결
                 InputFormat.HWP: HwpxFormatOption(
-                    pipeline_options=self.pipeline_options,
+                    pipeline_options=self.pipeline_options, # SimplePipeline으로 설정됨.
                     backend=GenosHwpDocumentBackend
                 ),
                 # .hwpx(XML)도 당연히 HwpxFormatOption 사용
                 InputFormat.XML_HWPX: HwpxFormatOption(
-                    pipeline_options=self.pipeline_options,
+                    pipeline_options=self.pipeline_options, # SimplePipeline으로 설정됨.
                     backend=GenosHwpDocumentBackend
                 )
             }
@@ -1166,7 +1166,7 @@ class HwpProcessor:
             await asyncio.gather(*upload_tasks)
             
         return vectors
-
+    
     async def __call__(self, request: Any, file_path: str, **kwargs: dict):
         """외부에서 호출되는 통합 프로세서 입구"""
         # 1. SDK 백엔드로 문서 변환

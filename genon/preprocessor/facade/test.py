@@ -16,7 +16,8 @@ from attachment_processor import DocumentProcessor # 첨부용
 # 파일 경로
 #file_path = "../sample_files/pdf_sample.pdf"
 #file_path = "../sample_files/docx_sample.docx"
-file_path = "../sample_files/hwpx_sample.hwpx"
+#file_path = "../sample_files/hwpx_sample.hwpx"
+file_path = "../sample_files/hwpx_sample/01_[핵심이슈]가계별 금리익스포저를 감안한 금리상승의 소비 영향 점검_24.2.19_공개용.hwp"
 
 # 파일 존재 여부 확인
 if not os.path.exists(file_path):
