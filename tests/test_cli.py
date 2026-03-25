@@ -30,6 +30,26 @@ def test_cli_convert(tmp_path):
     assert converted.exists()
 
 
+def test_cli_page_break_placeholder(tmp_path):
+    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
+    output = tmp_path / "out"
+    output.mkdir()
+    placeholder = "<!-- page-break -->"
+    result = runner.invoke(
+        app,
+        [
+            source,
+            "--output",
+            str(output),
+            "--page-break-placeholder",
+            placeholder,
+        ],
+    )
+    assert result.exit_code == 0
+    converted = output / f"{Path(source).stem}.md"
+    assert converted.exists()
+
+
 @pytest.mark.parametrize(
     ("image_export_mode", "to_formats", "expected"),
     [

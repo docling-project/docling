@@ -216,6 +216,7 @@ def export_documents(
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
+    page_break_placeholder: str | None = None,
 ):
     success_count = 0
     failure_count = 0
@@ -283,6 +284,7 @@ def export_documents(
                     filename=fname,
                     strict_text=True,
                     image_mode=ImageRefMode.PLACEHOLDER,
+                    page_break_placeholder=page_break_placeholder,
                 )
 
             # Export Markdown format:
@@ -290,7 +292,9 @@ def export_documents(
                 fname = output_dir / f"{doc_filename}.md"
                 _log.info(f"writing Markdown output to {fname}")
                 conv_res.document.save_as_markdown(
-                    filename=fname, image_mode=image_export_mode
+                    filename=fname,
+                    image_mode=image_export_mode,
+                    page_break_placeholder=page_break_placeholder,
                 )
 
             # Export Document Tags format:
@@ -426,6 +430,13 @@ def convert(  # noqa: C901
             help="Image export mode for image-capable document outputs (JSON, YAML, HTML, HTML split-page, and Markdown). Text, DocTags, and WebVTT outputs do not export images. With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document.",
         ),
     ] = ImageRefMode.EMBEDDED,
+    page_break_placeholder: Annotated[
+        str | None,
+        typer.Option(
+            ...,
+            help="Specify a custom page break placeholder string for Markdown and Text exports. When set, this string is inserted between pages in the output. Examples: '---', '<!-- page-break -->'.",
+        ),
+    ] = None,
     pipeline: Annotated[
         ProcessingPipeline,
         typer.Option(..., help="Choose the pipeline to process PDF or image files."),
@@ -968,6 +979,7 @@ def convert(  # noqa: C901
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,
+            page_break_placeholder=page_break_placeholder,
         )
 
         end_time = time.time() - start_time
