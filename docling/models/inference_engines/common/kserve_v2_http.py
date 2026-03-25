@@ -244,12 +244,33 @@ class KserveV2HttpClient:
             _t_deser_start = time.time()
             _t_deser_mono = time.monotonic()
 
+        _log.info(
+            "KServe HTTP response received: status=%d, content_length=%s",
+            response.status_code,
+            response.headers.get("content-length", "unknown"),
+        )
+        _log.debug("KServe HTTP raw response body: %s", response.text[:1000])
+
         try:
             body = KserveV2InferResponse.model_validate(response.json())
         except Exception as exc:
             raise RuntimeError(
                 f"Invalid inference response from {self.infer_url}: {exc}"
             ) from exc
+
+        _log.info(
+            "KServe HTTP response parsed: outputs=%s",
+            [out.name for out in body.outputs],
+        )
+        for idx, output in enumerate(body.outputs):
+            _log.debug(
+                "KServe HTTP output[%d]: name=%s, datatype=%s, shape=%s, data_length=%s",
+                idx,
+                output.name,
+                output.datatype,
+                output.shape,
+                len(output.data) if output.data else 0,
+            )
 
         decoded_outputs: Dict[str, np.ndarray] = {}
         for output in body.outputs:

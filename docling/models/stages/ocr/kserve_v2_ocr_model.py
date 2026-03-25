@@ -115,11 +115,19 @@ class KserveV2OcrModel(BaseOcrModel):
         Returns:
             Preprocessed numpy array with shape (1, H, W, C) and dtype UINT8.
         """
+        _log.debug("Preprocessing image: size=%s, mode=%s", image.size, image.mode)
+
         # Convert to RGB and then to numpy array (H, W, C) with UINT8
         image_array = np.array(image.convert("RGB"), dtype=np.uint8)
 
         # Add batch dimension (1, H, W, C) as required by model with max_batch_size > 0
         batch_input = np.expand_dims(image_array, axis=0)
+
+        _log.debug(
+            "Preprocessed image shape: %s, dtype: %s",
+            batch_input.shape,
+            batch_input.dtype,
+        )
 
         return batch_input
 
@@ -200,12 +208,34 @@ class KserveV2OcrModel(BaseOcrModel):
             with TimeRecorder(conv_res, "ocr"):
                 # Get OCR rectangles (inherited from BaseOcrModel)
                 ocr_rects = self.get_ocr_rects(page)
+                _log.info(
+                    "Page %d: Processing %d OCR rectangles",
+                    page.page_no,
+                    len(ocr_rects),
+                )
 
                 all_ocr_cells: List[TextCell] = []
-                for ocr_rect in ocr_rects:
+                for rect_idx, ocr_rect in enumerate(ocr_rects):
                     # Skip zero area boxes
                     if ocr_rect.area() == 0:
+                        _log.debug(
+                            "Page %d: Skipping zero-area rectangle %d",
+                            page.page_no,
+                            rect_idx,
+                        )
                         continue
+
+                    _log.debug(
+                        "Page %d: Processing OCR rect %d/%d: area=%.2f, bounds=(%.2f,%.2f,%.2f,%.2f)",
+                        page.page_no,
+                        rect_idx + 1,
+                        len(ocr_rects),
+                        ocr_rect.area(),
+                        ocr_rect.l,
+                        ocr_rect.t,
+                        ocr_rect.r,
+                        ocr_rect.b,
+                    )
 
                     # Get high-res image
                     high_res_image = page._backend.get_page_image(
@@ -217,10 +247,24 @@ class KserveV2OcrModel(BaseOcrModel):
 
                     # Call KServe v2 endpoint
                     try:
+                        _log.debug(
+                            "Page %d rect %d: Calling KServe v2 inference with image shape %s",
+                            page.page_no,
+                            rect_idx,
+                            image_array.shape,
+                        )
+
                         outputs = self._kserve_client.infer(
                             inputs={"image": image_array},
                             output_names=["boxes", "txts", "scores"],
                             request_parameters=self.options.request_parameters,
+                        )
+
+                        _log.info(
+                            "Page %d rect %d: Received KServe v2 response with outputs: %s",
+                            page.page_no,
+                            rect_idx,
+                            list(outputs.keys()),
                         )
 
                         # Extract results
@@ -228,23 +272,71 @@ class KserveV2OcrModel(BaseOcrModel):
                         txts = outputs["txts"]
                         scores = outputs["scores"]
 
+                        _log.info(
+                            "Page %d rect %d: Raw response - boxes shape: %s, txts shape: %s, scores shape: %s",
+                            page.page_no,
+                            rect_idx,
+                            boxes.shape if hasattr(boxes, "shape") else type(boxes),
+                            txts.shape if hasattr(txts, "shape") else type(txts),
+                            scores.shape if hasattr(scores, "shape") else type(scores),
+                        )
+
+                        _log.debug(
+                            "Page %d rect %d: Raw boxes: %s",
+                            page.page_no,
+                            rect_idx,
+                            boxes,
+                        )
+                        _log.debug(
+                            "Page %d rect %d: Raw txts: %s",
+                            page.page_no,
+                            rect_idx,
+                            txts,
+                        )
+                        _log.debug(
+                            "Page %d rect %d: Raw scores: %s",
+                            page.page_no,
+                            rect_idx,
+                            scores,
+                        )
+
                         # Convert to TextCells
                         cells = self._create_text_cells(boxes, txts, scores, ocr_rect)
+                        _log.info(
+                            "Page %d rect %d: Created %d text cells from OCR results",
+                            page.page_no,
+                            rect_idx,
+                            len(cells),
+                        )
                         all_ocr_cells.extend(cells)
 
                     except Exception as e:
                         _log.error(
-                            "KServe v2 OCR inference failed for page %d: %s",
+                            "KServe v2 OCR inference failed for page %d rect %d: %s",
                             page.page_no,
+                            rect_idx,
                             str(e),
+                            exc_info=True,
                         )
                         # Continue processing other rectangles
 
                     finally:
                         del high_res_image
 
+                _log.info(
+                    "Page %d: Total OCR cells before post-processing: %d",
+                    page.page_no,
+                    len(all_ocr_cells),
+                )
+
                 # Post-process the cells (inherited from BaseOcrModel)
                 self.post_process_cells(all_ocr_cells, page)
+
+                _log.info(
+                    "Page %d: Total OCR cells after post-processing: %d",
+                    page.page_no,
+                    len(all_ocr_cells),
+                )
 
             # DEBUG code:
             if settings.debug.visualize_ocr:
