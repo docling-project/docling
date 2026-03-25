@@ -3,11 +3,12 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
+import openpyxl
 from openpyxl import load_workbook
 
 from docling.backend.msexcel_backend import MsExcelDocumentBackend
 from docling.datamodel.backend_options import MsExcelBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
 from docling.document_converter import DocumentConverter, ExcelFormatOption
 
@@ -411,6 +412,22 @@ def test_gap_tolerance_comparison() -> None:
         f"Tolerance 1 should merge the table. "
         f"Expected start at Col A (0), got {start_col_merged}"
     )
+
+
+def test_last_row_cell():
+    """Regression test: a filled cell in the last valid Excel row (A1048576)
+    should not raise a ValueError from openpyxl's row bounds check."""
+    buf = BytesIO()
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.cell(row=1048576, column=1, value="last row")
+    wb.save(buf)
+    buf.seek(0)
+
+    conv_result = get_converter().convert(
+        DocumentStream(name="last_row.xlsx", stream=buf)
+    )
+    assert conv_result.document is not None
 
 
 def test_one_cell_anchor_image():

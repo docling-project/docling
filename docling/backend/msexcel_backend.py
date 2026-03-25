@@ -494,7 +494,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         # Helper: Check if a cell has content
         def has_content(r, c):
-            if r < 0 or c < 0 or r > max_row or c > max_col:
+            if r < 0 or c < 0 or r >= max_row or c >= max_col:
                 return False
 
             # 1. Check direct value
