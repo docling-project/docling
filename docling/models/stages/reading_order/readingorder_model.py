@@ -388,11 +388,7 @@ class ReadingOrderModel:
             current_list = None
 
             new_item = out_doc.add_text(
-                label=DocItemLabel.FORMULA,
-                text="",
-                orig=cap_text,
-                prov=prov,
-                hyperlink=element.hyperlink,
+                label=DocItemLabel.FORMULA, text="", orig=cap_text, prov=prov
             )
         else:
             current_list = None
@@ -429,11 +425,6 @@ class ReadingOrderModel:
         new_item.orig += f" {merged_elem.text}"  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
         new_item.prov.append(prov)
 
-        # Reconcile hyperlinks on merge:
-        #  - Both None → stays None
-        #  - Same non-None → kept
-        #  - Any mismatch in coverage or target → clear to avoid
-        #    misattributing a link to text that was only partially linked.
         if new_item.hyperlink != merged_elem.hyperlink:
             new_item.hyperlink = None
 

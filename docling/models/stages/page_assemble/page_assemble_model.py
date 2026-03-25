@@ -5,12 +5,11 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import numpy as np
-from docling_core.types.doc import BoundingBox, DocItemLabel
+from docling_core.types.doc import BoundingBox
 from pydantic import AnyUrl, BaseModel, ValidationError
 
 from docling.datamodel.base_models import (
     AssembledUnit,
-    Cluster,
     ContainerElement,
     FigureElement,
     Page,
@@ -57,15 +56,10 @@ class PageAssembleModel(BasePageModel):
     def _match_hyperlink(
         cluster_bbox: BoundingBox,
         page: Page,
-        matched_indices: Optional[set[int]] = None,
     ) -> Optional[Union[AnyUrl, Path]]:
         """Pick the hyperlink annotation with the highest spatial overlap on cluster_bbox.
 
         Hyperlink rects are BOTTOMLEFT-origin; cluster bboxes are TOPLEFT-origin.
-
-        If *matched_indices* is provided, the indices of every hyperlink that
-        contributed to the winning URI are added to the set so callers can track
-        which hyperlinks have been consumed.
         """
         if page.parsed_page is None or not page.parsed_page.hyperlinks:
             return None
@@ -96,110 +90,10 @@ class PageAssembleModel(BasePageModel):
         if coverage_by_uri[best_uri] < PageAssembleModel._HYPERLINK_COVERAGE_THRESHOLD:
             return None
 
-        # Only mark hyperlinks as consumed when the cluster actually matched
-        # (coverage >= threshold).  Below-threshold overlaps must remain
-        # unconsumed so they become fallback REFERENCE items rather than
-        # being silently dropped.
-        if matched_indices is not None:
-            overlapping_matches: List[tuple[int, float]] = []
-            for idx, hl in enumerate(page.parsed_page.hyperlinks):
-                if hl.uri is None:
-                    continue
-                if str(hl.uri) != best_uri:
-                    continue
-                hl_bbox = hl.rect.to_bounding_box().to_top_left_origin(page_height)
-                overlap = cluster_bbox.intersection_over_self(hl_bbox)
-                if overlap > 0:
-                    overlapping_matches.append((idx, overlap))
-
-            overlapping_matches.sort(key=lambda item: item[1], reverse=True)
-
-            consumed_overlap = 0.0
-            cutoff_overlap = None
-            for idx, overlap in overlapping_matches:
-                matched_indices.add(idx)
-                consumed_overlap += overlap
-                cutoff_overlap = overlap
-                if consumed_overlap >= PageAssembleModel._HYPERLINK_COVERAGE_THRESHOLD:
-                    break
-
-            if cutoff_overlap is not None:
-                for idx, overlap in overlapping_matches:
-                    if idx in matched_indices:
-                        continue
-                    if overlap == cutoff_overlap:
-                        matched_indices.add(idx)
-
         try:
             return AnyUrl(best_uri)
         except ValidationError:
             return Path(best_uri)
-
-    @staticmethod
-    def _collect_unmatched_hyperlinks(
-        page: Page,
-        matched_indices: set[int],
-        next_cluster_id: int,
-        text_cluster_bboxes: List[BoundingBox],
-    ) -> List[TextElement]:
-        """Create synthetic REFERENCE TextElements for hyperlinks not matched to any cluster.
-
-        Only hyperlinks that still overlap a text cluster are materialized. This
-        preserves recovery for missed text links without inventing visible URL
-        text for non-text annotations such as linked figures.
-
-        Each unmatched hyperlink annotation becomes its own element (no
-        deduplication) so that repeated URLs at different page positions are
-        preserved with correct bounding boxes for reading-order placement.
-        """
-        if page.parsed_page is None or not page.parsed_page.hyperlinks:
-            return []
-
-        if page.size is None or not text_cluster_bboxes:
-            return []
-
-        page_height = page.size.height
-
-        elements: List[TextElement] = []
-        cid = next_cluster_id
-
-        for idx, hl in enumerate(page.parsed_page.hyperlinks):
-            if idx in matched_indices:
-                continue
-            if hl.uri is None:
-                continue
-
-            uri_str = str(hl.uri)
-            bbox = hl.rect.to_bounding_box().to_top_left_origin(page_height)
-            if not any(
-                text_bbox.intersection_over_self(bbox) > 0
-                for text_bbox in text_cluster_bboxes
-            ):
-                continue
-
-            try:
-                hyperlink: Union[AnyUrl, Path] = AnyUrl(uri_str)
-            except ValidationError:
-                hyperlink = Path(uri_str)
-
-            cluster = Cluster(
-                id=cid,
-                label=DocItemLabel.REFERENCE,
-                bbox=bbox,
-            )
-            elements.append(
-                TextElement(
-                    label=DocItemLabel.REFERENCE,
-                    id=cid,
-                    text=uri_str,
-                    hyperlink=hyperlink,
-                    page_no=page.page_no,
-                    cluster=cluster,
-                )
-            )
-            cid += 1
-
-        return elements
 
     def sanitize_text(self, lines):
         if len(lines) == 0:
@@ -256,22 +150,17 @@ class PageAssembleModel(BasePageModel):
                     elements: List[PageElement] = []
                     headers: List[PageElement] = []
                     body: List[PageElement] = []
-                    matched_indices: set[int] = set()
-                    text_cluster_bboxes: List[BoundingBox] = []
 
                     for cluster in page.predictions.layout.clusters:
                         # _log.info("Cluster label seen:", cluster.label)
                         if cluster.label in LayoutModel.TEXT_ELEM_LABELS:
-                            text_cluster_bboxes.append(cluster.bbox)
                             textlines = [
                                 cell.text.replace("\x02", "-").strip()
                                 for cell in cluster.cells
                                 if len(cell.text.strip()) > 0
                             ]
                             text = self.sanitize_text(textlines)
-                            hyperlink = self._match_hyperlink(
-                                cluster.bbox, page, matched_indices
-                            )
+                            hyperlink = self._match_hyperlink(cluster.bbox, page)
                             text_el = TextElement(
                                 label=cluster.label,
                                 id=cluster.id,
@@ -331,21 +220,6 @@ class PageAssembleModel(BasePageModel):
                             )
                             elements.append(container_el)
                             body.append(container_el)
-
-                    # Propagate unmatched hyperlinks as REFERENCE items
-                    # so they are not silently lost.
-                    max_cluster_id = max(
-                        (c.id for c in page.predictions.layout.clusters),
-                        default=-1,
-                    )
-                    unmatched = self._collect_unmatched_hyperlinks(
-                        page,
-                        matched_indices,
-                        max_cluster_id + 1,
-                        text_cluster_bboxes,
-                    )
-                    elements.extend(unmatched)
-                    body.extend(unmatched)
 
                     page.assembled = AssembledUnit(
                         elements=elements, headers=headers, body=body
