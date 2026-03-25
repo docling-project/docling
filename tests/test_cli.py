@@ -11,8 +11,9 @@ runner = CliRunner()
 
 
 def test_cli_help():
-    result = runner.invoke(app, ["--help"])
+    result = runner.invoke(app, ["--help"], env={"COLUMNS": "200"})
     assert result.exit_code == 0
+    assert "--page-break-placeholder" in result.stdout
 
 
 def test_cli_version():
@@ -28,6 +29,40 @@ def test_cli_convert(tmp_path):
     assert result.exit_code == 0
     converted = output / f"{Path(source).stem}.md"
     assert converted.exists()
+
+
+@pytest.mark.parametrize(
+    ("output_format", "extension"),
+    [
+        ("md", ".md"),
+        ("text", ".txt"),
+    ],
+)
+def test_cli_page_break_placeholder(tmp_path, output_format, extension):
+    source = "./tests/data/pdf/normal_4pages.pdf"
+    output = tmp_path / "out"
+    output.mkdir()
+
+    result = runner.invoke(
+        app,
+        [
+            source,
+            "--output",
+            str(output),
+            "--to",
+            output_format,
+            "--page-break-placeholder",
+            "<PAGE_BREAK>",
+            "--no-ocr",
+            "--no-tables",
+        ],
+    )
+
+    assert result.exit_code == 0
+
+    converted = output / f"{Path(source).stem}{extension}"
+    assert converted.exists()
+    assert converted.read_text().count("<PAGE_BREAK>") == 3
 
 
 @pytest.mark.parametrize(
