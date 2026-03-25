@@ -106,28 +106,22 @@ class KserveV2OcrModel(BaseOcrModel):
     def _preprocess_image(self, image: Image.Image) -> np.ndarray:
         """Preprocess image for KServe v2 OCR inference.
 
-        Converts PIL image to numpy array with shape (1, C, H, W) in UINT8 format,
+        Converts PIL image to numpy array with shape (1, H, W, C) in UINT8 format,
         matching the expected input format for RapidOCR models on Triton with batching.
 
         Args:
             image: PIL Image to preprocess.
 
         Returns:
-            Preprocessed numpy array with shape (1, C, H, W) and dtype UINT8.
+            Preprocessed numpy array with shape (1, H, W, C) and dtype UINT8.
         """
-        # Convert to RGB
-        img = image.convert("RGB")
+        # Convert to RGB and then to numpy array (H, W, C) with UINT8
+        image_array = np.array(image.convert("RGB"), dtype=np.uint8)
 
-        # Convert to numpy array (H, W, C) with UINT8
-        image_array = np.array(img, dtype=np.uint8)
+        # Add batch dimension (1, H, W, C) as required by model with max_batch_size > 0
+        batch_input = np.expand_dims(image_array, axis=0)
 
-        # Transpose to (C, H, W) as expected by RapidOCR model
-        image_array = image_array.transpose(2, 0, 1)
-
-        # Add batch dimension (1, C, H, W) as required by model with max_batch_size > 0
-        image_array = np.expand_dims(image_array, axis=0)
-
-        return image_array
+        return batch_input
 
     def _create_text_cells(
         self,
