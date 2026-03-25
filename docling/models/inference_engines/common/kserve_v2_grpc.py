@@ -335,26 +335,6 @@ class KserveV2GrpcClient:
             _t_deser_start = time.time()
             _t_deser_mono = time.monotonic()
 
-        _log.info(
-            "KServe gRPC response received: model=%s, outputs=%s, use_binary=%s",
-            response.model_name,
-            [out.name for out in response.outputs],
-            self.use_binary_data,
-        )
-        _log.debug(
-            "KServe gRPC response details: output_count=%d, raw_output_count=%d",
-            len(response.outputs),
-            len(response.raw_output_contents),
-        )
-        for idx, output_tensor in enumerate(response.outputs):
-            _log.debug(
-                "KServe gRPC output[%d]: name=%s, datatype=%s, shape=%s",
-                idx,
-                output_tensor.name,
-                output_tensor.datatype,
-                list(output_tensor.shape),
-            )
-
         decoded_outputs: Dict[str, np.ndarray] = {}
 
         if self.use_binary_data:

@@ -116,12 +116,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     def _filter_ocr_cells(
         self, ocr_cells: List[TextCell], programmatic_cells: List[TextCell]
     ) -> List[TextCell]:
-        _log.debug(
-            "Filtering OCR cells: input_ocr_cells=%d, programmatic_cells=%d",
-            len(ocr_cells),
-            len(programmatic_cells),
-        )
-
         # Create R-tree index for programmatic cells
         p = index.Property()
         p.dimension = 2
@@ -142,13 +136,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         filtered_ocr_cells = [
             rect for rect in ocr_cells if not is_overlapping_with_existing_cells(rect)
         ]
-
-        filtered_count = len(ocr_cells) - len(filtered_ocr_cells)
-        _log.info(
-            "OCR cell filtering: kept=%d, filtered_out=%d (overlapping with programmatic cells)",
-            len(filtered_ocr_cells),
-            filtered_count,
-        )
 
         return filtered_ocr_cells
 
@@ -187,29 +174,11 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         self, existing_cells: List[TextCell], ocr_cells: List[TextCell]
     ) -> List[TextCell]:
         """Combine existing and OCR cells with filtering and re-indexing."""
-        _log.debug(
-            "Combining cells: existing_cells=%d, ocr_cells=%d, force_full_page_ocr=%s",
-            len(existing_cells),
-            len(ocr_cells),
-            self.options.force_full_page_ocr,
-        )
-
         if self.options.force_full_page_ocr:
             combined = ocr_cells
-            _log.info(
-                "Using force_full_page_ocr: keeping only %d OCR cells, discarding %d existing cells",
-                len(ocr_cells),
-                len(existing_cells),
-            )
         else:
             filtered_ocr_cells = self._filter_ocr_cells(ocr_cells, existing_cells)
             combined = list(existing_cells) + filtered_ocr_cells
-            _log.info(
-                "Combined cells: existing=%d + filtered_ocr=%d = total=%d",
-                len(existing_cells),
-                len(filtered_ocr_cells),
-                len(combined),
-            )
 
         # Re-index in-place
         for i, cell in enumerate(combined):
