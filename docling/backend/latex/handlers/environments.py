@@ -122,7 +122,7 @@ class EnvironmentHandlerMixin:
             self._process_figure(node, doc, parent, formatting, text_label)
 
         elif node.envname == "tikzpicture":
-            self._process_tikzpicture(node, doc, parent, formatting)
+            self._process_tikzpicture(node, doc, parent, formatting, text_label)
 
         elif node.envname in ["verbatim", "lstlisting", "minted"]:
             code_text = self._extract_verbatim_content(
@@ -146,15 +146,14 @@ class EnvironmentHandlerMixin:
         doc: DoclingDocument,
         parent: NodeItem | None = None,
         formatting: Formatting | None = None,
+        text_label: DocItemLabel | None = None,
     ):
         tikz_raw = self._extract_tikzpicture_atomic(node)
         if tikz_raw is None:
             _log.warning(
                 "tikzpicture extraction failed, using recursive environment fallback"
             )
-            self._process_nodes(
-                node.nodelist, doc, parent, formatting, DocItemLabel.TEXT
-            )
+            self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
             return
 
         figure_group = doc.add_group(
@@ -171,13 +170,15 @@ class EnvironmentHandlerMixin:
         raw = node.latex_verbatim()
         if "\\end{tikzpicture}" not in raw:
             return None
-        if not self._validate_tikz_nodelist(node.nodelist):
+        if not self._validate_tikz_nodelist(node.nodelist, 0):
             return None
         return raw
 
-    def _validate_tikz_nodelist(self, nodes) -> bool:
+    def _validate_tikz_nodelist(self, nodes, depth: int = 0) -> bool:
         if nodes is None:
             return True
+        if depth > 50:
+            return False
 
         for node in nodes:
             if isinstance(node, LatexEnvironmentNode) and node.envname == "tikzpicture":
@@ -186,7 +187,7 @@ class EnvironmentHandlerMixin:
                     return False
 
             if hasattr(node, "nodelist") and node.nodelist is not None:
-                if not self._validate_tikz_nodelist(node.nodelist):
+                if not self._validate_tikz_nodelist(node.nodelist, depth + 1):
                     return False
 
             if hasattr(node, "nodeargd") and node.nodeargd:
@@ -194,7 +195,7 @@ class EnvironmentHandlerMixin:
                 if argnlist:
                     for arg in argnlist:
                         if hasattr(arg, "nodelist") and arg.nodelist is not None:
-                            if not self._validate_tikz_nodelist(arg.nodelist):
+                            if not self._validate_tikz_nodelist(arg.nodelist, depth + 1):
                                 return False
 
         return True
