@@ -86,7 +86,7 @@ class PageAssembleModel(BasePageModel):
         if not coverage_by_uri:
             return None
 
-        best_uri = max(coverage_by_uri, key=coverage_by_uri.get)  # type: ignore[arg-type]
+        best_uri = max(coverage_by_uri.items(), key=lambda x: x[1])[0]
         if coverage_by_uri[best_uri] < PageAssembleModel._HYPERLINK_COVERAGE_THRESHOLD:
             return None
 
