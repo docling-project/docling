@@ -151,11 +151,13 @@ def _decode_contents(
         data = list(contents.uint64_contents)
     elif canonical_dtype == np.dtype(np.bool_):
         data = list(contents.bool_contents)
+    elif canonical_dtype == np.dtype(object):
+        data = list(contents.bytes_contents)
     else:
         raise RuntimeError(
             f"Unsupported numpy dtype for gRPC inline (non-binary) decoding: {canonical_dtype!s}. "
             "Supported non-binary dtypes: bool, uint8/uint16/uint32/uint64, "
-            "int8/int16/int32/int64, float32/float64."
+            "int8/int16/int32/int64, float32/float64, BYTES."
         )
     return np.asarray(data, dtype=canonical_dtype).reshape(shape)
 
@@ -351,8 +353,33 @@ class KserveV2GrpcClient:
                         f"Supported types: {list(KSERVE_V2_NUMPY_DATATYPES.keys())}"
                     )
                 shape = tuple(int(dim) for dim in output_tensor.shape)
-                array = np.frombuffer(raw_output, dtype=np_dtype)
-                decoded_outputs[output_tensor.name] = array.reshape(shape)
+
+                # Special handling for BYTES datatype (variable-length strings)
+                if output_tensor.datatype == "BYTES":
+                    # BYTES data is serialized as length-prefixed strings
+                    # Each string is: 4-byte length (uint32) + string bytes
+                    strings, offset = [], 0
+                    for _ in range(int(np.prod(shape))):
+                        if offset + 4 > len(raw_output):
+                            raise RuntimeError(
+                                f"Invalid BYTES data: insufficient bytes for length prefix at offset {offset}"
+                            )
+                        str_len = int.from_bytes(
+                            raw_output[offset : offset + 4], byteorder="little"
+                        )
+                        offset += 4
+                        if offset + str_len > len(raw_output):
+                            raise RuntimeError(
+                                f"Invalid BYTES data: insufficient bytes for string of length {str_len} at offset {offset}"
+                            )
+                        strings.append(raw_output[offset : offset + str_len])
+                        offset += str_len
+                    decoded_outputs[output_tensor.name] = np.array(
+                        strings, dtype=object
+                    ).reshape(shape)
+                else:
+                    array = np.frombuffer(raw_output, dtype=np_dtype)
+                    decoded_outputs[output_tensor.name] = array.reshape(shape)
         else:
             for output_tensor in response.outputs:
                 np_dtype = KSERVE_V2_NUMPY_DATATYPES.get(output_tensor.datatype)
