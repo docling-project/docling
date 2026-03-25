@@ -110,7 +110,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
     @override
     def supports_pagination(cls) -> bool:
         """추상 메서드 구현: 페이지 단위 처리를 지원하는지 여부 (HWP는 대개 False)"""
-        return False
+        return True
 
     # --- 기존에 생략되었던 유틸리티 함수들 ---
     def _update_history(self, name: str, level: Optional[int], page_no: int):
@@ -234,93 +234,76 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         return doc
 
     def _walk_hwp_data(self, data: List[List[Dict]], doc: DoclingDocument):
-        """전체 데이터를 순회하며 페이지 및 아이템 추가"""
-        root_group = doc.add_group(label=GroupLabel.SECTION, name="root")
-        self.parents[0] = root_group
+        """데이터를 순회하며 페이지별 그룹을 생성하여 거대 청킹을 방지합니다."""
+        current_page_group = None
+        last_page_no = -1
         
-        max_page = 1
-        for paragraph_items in data:
-            # 1. 문단 처리
-            self._handle_paragraph(paragraph_items, doc)
-            
-            # 2. 최대 페이지 계산 (마지막에 Page 객체 생성을 위함)
-            for item in paragraph_items:
-                p_no = item.get("page", 1)
-                max_page = max(max_page, p_no)
+        # root 그룹 생성 (GroupLabel.SECTION 사용)
+        self.parents[0] = doc.add_group(label=GroupLabel.SECTION, name="root")
 
-        # 3. 문서에 실제 페이지 규격 추가 (A4 기준)
+        for paragraph_items in data:
+            if not paragraph_items: continue
+            
+            page_no = paragraph_items[0].get("page", 1)
+            
+            # 페이지가 바뀌면 새로운 섹션 그룹을 생성하여 청킹 경계를 만듭니다.
+            if page_no != last_page_no:
+                current_page_group = doc.add_group(
+                    label=GroupLabel.SECTION,  # 👈 PAGE 대신 SECTION으로 수정
+                    name=f"page_{page_no}", 
+                    parent=self.parents[0]
+                )
+                last_page_no = page_no
+                # 현재 문단의 부모를 이 페이지 섹션으로 지정
+                self.parents[1] = current_page_group 
+
+            self._handle_paragraph(paragraph_items, doc)
+
+        # 실제 페이지 객체 규격 추가 (기존 로직 유지)
+        max_page = max((items[0].get("page", 1) for items in data if items), default=1)
         for p in range(1, max_page + 1):
             doc.add_page(page_no=p, size=Size(width=595, height=842))
 
     def _handle_paragraph(self, items: List[Dict], doc: DoclingDocument):
-        """한 문단 내의 텍스트, 표, 이미지를 처리"""
-        # 1. 아이템 추출
-        text_item = next((i for i in items if i["item"] == "text"), None)
-        table_item = next((i for i in items if i["item"] == "table"), None)
-        image_item = next((i for i in items if i["item"] == "image"), None)
-        
+        """한 문단 내의 모든 아이템(텍스트, 표, 이미지)을 루프로 처리합니다."""
         page_no = items[0].get("page", 1)
-
-        # 🚀 [수정] 각 아이템의 성격에 맞게 ProvenanceItem을 생성해야 합니다.
-        if text_item:
-            text_val = text_item.get("value", "").strip()
-            if not text_val: return
-            '''
-            # --- [덧붙임 1: 중복 텍스트(머리말/꼬리말) 제거] ---
-            import hashlib
-            # 공백을 없애고 해시를 생성해 "이미 본 내용"인지 확인합니다.
-            norm_text = re.sub(r'\s+', '', text_val).lower()
-            t_hash = hashlib.md5(norm_text.encode('utf-8')).hexdigest()
+        
+        for item in items:
+            itype = item.get("item")
+            val = item.get("value", "")
             
-            if not hasattr(self, "_processed_hashes"): self._processed_hashes = set()
-            if t_hash in self._processed_hashes: 
-                return # 중복이면 여기서 함수 종료 (문서에 추가 안 함)
-            self._processed_hashes.add(t_hash)
-            # ----------------------------------------------
-            '''
-
-            # 텍스트 길이에 맞는 charspan 생성
+            # 공통 Provenance 생성
             prov = ProvenanceItem(
-                page_no=page_no, 
+                page_no=page_no,
                 bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                charspan=(0, len(text_val))# 👈 필수 추가
-            )
-            self._handle_text(text_item, doc, prov)
-
-        elif table_item:
-            html_str = table_item.get("value", "")
-            # 표는 텍스트 길이가 없으므로 0으로 처리
-            prov = ProvenanceItem(
-                page_no=page_no, 
-                bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                charspan=(0, 0) # 👈 필수 추가
+                charspan=(0, len(str(val)))
             )
 
-            # --- [보강] 목차 표(TOC) 감지 로직 ---
-            # 표 안에 "목차"라는 단어가 있고 텍스트가 너무 길지 않으면 목차로 취급
-            soup = BeautifulSoup(html_str, "html.parser")
-            raw_text = soup.get_text().replace(" ", "")
-            
-            if "목차" in raw_text and len(raw_text) < 500:
-                # 표 구조를 무시하고 텍스트만 뽑아서 TOC 라벨로 저장
-                doc.add_text(
-                    label=DocItemLabel.PARAGRAPH, 
-                    text=soup.get_text(separator=" ").strip(), 
-                    parent=self.parents[0], 
-                    prov=prov
-                )
-            else:
-                # 목차가 아니면 기존에 짜둔 파싱 로직 실행하기
-                table_data = self._parse_html_table(table_item["value"])
+            # 1. 일반 텍스트 처리
+            if itype == "text":
+                self._handle_text(item, doc, prov)
+
+            # 2. 테이블 처리 (안에 숨은 이미지까지 추출)
+            elif itype == "table":
+                # (1) 먼저 표 자체를 추가
+                table_data = self._parse_html_table(val)
                 doc.add_table(data=table_data, parent=self.parents[0], prov=prov)
+                
+                # (2) 🚀 핵심: 표 HTML 안에 <img> 태그가 있는지 확인
+                if "<img" in val:
+                    import re
+                    # src='...' 또는 src="..." 안의 파일명 추출
+                    img_srcs = re.findall(r'<img[^>]*src=[\'"]([^\'">]+)[\'"]', val)
+                    for src in img_srcs:
+                        # 파일명만 추출 (경로가 포함되어 있을 수 있으므로)
+                        img_filename = os.path.basename(src)
+                        # _handle_image가 기대하는 dict 구조를 가짜로 만들어 전달
+                        fake_img_item = {"item": "image", "value": img_filename}
+                        self._handle_image(fake_img_item, doc, prov)
 
-        elif image_item:
-            prov = ProvenanceItem(
-                page_no=page_no, 
-                bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                charspan=(0, 0) # 👈 필수 추가
-            )
-            self._handle_image(image_item, doc, prov)
+            # 3. 독립적인 이미지/사진 아이템 처리
+            elif itype in ["image", "picture"]:
+                self._handle_image(item, doc, prov)
 
     def _handle_text(self, item: Dict, doc: DoclingDocument, prov: ProvenanceItem):
         text_val = item.get("value", "").strip()
