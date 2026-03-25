@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.11.0",
+  "version": "1.10.0",
   "name": "picture_classification",
   "origin": {
     "mimetype": "application/pdf",
