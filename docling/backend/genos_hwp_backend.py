@@ -109,7 +109,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
     @classmethod
     @override
     def supports_pagination(cls) -> bool:
-        """추상 메서드 구현: 페이지 단위 처리를 지원하는지 여부 (HWP는 대개 False)"""
+        """추상 메서드 구현: 페이지 단위 처리를 지원하는지 여부 (HWP는 대개 False이나, 자유소프트 SDK는 true)"""
         return True
 
     # --- 기존에 생략되었던 유틸리티 함수들 ---
@@ -143,19 +143,34 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         if not self.is_valid():
             raise RuntimeError("Invalid HWP/HWPX document")
 
-        # 🚀 [여기가 누락되었던 부분!] 
-        # 문서의 '기원(Origin)' 정보를 생성합니다.
+        # 2. 문서의 '기원(Origin)' 정보 생성
+        # a) 확장자에 따른 MIME 타입 동적 할당
+        file_ext = self.source_path.suffix.lower()
+        if file_ext == ".hwpx":
+            mimetype = "application/vnd.hancom.hwpx"
+        elif file_ext == ".hwp":
+            mimetype = "application/x-hwp"
+        else:
+            mimetype = "application/octet-stream" # 알 수 없는 경우 기본값
+        
+        # b) binary_hash는 보통 정수형(int)을 기대하므로, 
+        # 만약 문자열 해시라면 정수로 변환하거나 적절히 처리해야 합니다.
+        try:
+            bin_hash = int(self.document_hash, 16) & ((1 << 64) - 1) if hasattr(self, "document_hash") else 0
+        except (ValueError, TypeError):
+            bin_hash = 0
+
+        # c) origin 정보 생성 부분
         origin = DocumentOrigin(
             filename=self.source_path.name or "file",
-            mimetype="application/x-hwp",  # 패치한 MIME 타입 사용
-            binary_hash=getattr(self, "document_hash", "unknown"), # 해시값이 없다면 unknown
+            mimetype=mimetype,
+            binary_hash=bin_hash,
         )
-        
-        # 실제 데이터를 담을 DoclingDocument 객체를 초기화합니다.
-        # 이 객체가 바로 우리가 찾던 'doc'입니다.
+
+        # 3. 실제 데이터를 담을 DoclingDocument 객체를 초기화합니다.
         doc = DoclingDocument(name=self.source_path.stem or "file", origin=origin)
 
-        # 2. 임시 디렉토리에서 SDK 작업 시작
+        # 4. 임시 디렉토리에서 SDK 작업 시작
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             json_out = temp_path / "output.json"
@@ -168,7 +183,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             if not img_path_str.endswith("/"):
                 img_path_str += "/"
 
-            # 3. SDK 실행 명령어 구성
+            # 4-a) SDK 실행 명령어 구성
             cmd = [
                 "convtext", 
                 str(self.source_path.resolve()), 
@@ -179,7 +194,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             
             print(f"DEBUG: Running SDK command: {' '.join(cmd)}")
 
-            # 4. 실제 SDK 실행 (cwd 설정으로 11번 에러 방지)
+            # 4-b) 실제 SDK 실행 (cwd 설정으로 11번 에러 방지)
             subprocess.run(
                 cmd, 
                 capture_output=True, 
@@ -188,19 +203,22 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                 cwd=str(SDK_DIR)
             )
 
-            # 5. 결과 JSON 파일 읽기
-            '''
-            if not json_out.exists():
-                raise RuntimeError("SDK failed to produce output JSON")
+            # 5. 자유소프트의 결과중, '.info'를 활용해서 페이지 길이 & 크기 정보 DoclingDocument에 설정 
+            self._setup_pages(doc, info_out)
 
-            with open(json_out, "r", encoding="utf-8") as f:
-                try:
-                    hwp_data = json.load(f)
-                except json.JSONDecodeError:
-                    f.seek(0)
-                    hwp_data = [json.loads(line) for line in f if line.strip()]
-            '''
+            # [페이지 설정 후 값 확인]
+            print(f"\n--- 📄 페이지 설정 결과 확인 (총 {len(doc.pages)}개) ---")
+            if not doc.pages:
+                print("❌ [ERROR] 등록된 페이지 정보가 없습니다!")
+            else:
+                for page_no, page_item in sorted(doc.pages.items()):
+                    # page_item.size에서 width와 height를 가져옵니다.
+                    w = page_item.size.width
+                    h = page_item.size.height
+                    print(f"📍 [Page {page_no:02}] Size: {w} x {h} pt")
+            print("------------------------------------------\n")
 
+            # 6. 자유소프트 SDK의 결과를 hwp_data에 저장
             hwp_data = []
             with open(json_out, "r", encoding="utf-8") as f:
                 for line_no, line in enumerate(f, 1):
@@ -224,13 +242,13 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                         print(f"⚠️ {line_no}행 파싱 실패 (스킵): {e}")
                         continue
             
-            # 6. JSON 데이터를 Docling 구조로 변환
-            # 위에서 만든 'doc' 객체에 내용을 채워 넣습니다.
+            # 7. hwp_data를 Docling 구조로 변환
+            # 3번에서 만든 DoclingDocument 객체에 내용을 채워 넣기.
             self.current_img_dir = img_dir
             self._walk_hwp_data(hwp_data, doc)
             self.current_img_dir = None
 
-        # 7. 완성된 문서 반환
+        # 8. 완성된 DoclingDocument 형태 문서 반환
         return doc
 
     def _walk_hwp_data(self, data: List[List[Dict]], doc: DoclingDocument):
@@ -267,6 +285,8 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
     def _handle_paragraph(self, items: List[Dict], doc: DoclingDocument):
         """한 문단 내의 모든 아이템(텍스트, 표, 이미지)을 루프로 처리합니다."""
         page_no = items[0].get("page", 1)
+        # 텍스트/표 추가 시 사용할 부모 노드를 결정 (페이지 그룹이 있으면 1번, 없으면 0번)
+        #current_parent = self.parents[1] if self.parents[1] else self.parents[0]
         
         for item in items:
             itype = item.get("item")
@@ -342,8 +362,8 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         else:
             # C. 일반 본문
             doc.add_text(label=DocItemLabel.PARAGRAPH, text=text_val, formatting=fmt, parent=self.parents[0], prov=prov)
+    
     # --- 기존 msword_backend의 핵심 로직들 재구현 ---
-
     def _add_header(self, doc: DoclingDocument, level: int, text: str, page_no: int):
         # 하위 레벨 초기화
         for i in range(level, self.max_levels):
@@ -459,6 +479,42 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         if size >= 28: return 1
         if size >= 20: return 2
         return 3
+    
+    def _setup_pages(self, doc: DoclingDocument, info_path: Path):
+        """ .info 파일을 읽어 DoclingDocument에 페이지 정보를 설정합니다. """
+        
+        # 단위 변환 상수: 1cm = 28.3465pt (72 DPI 기준)
+        CM_TO_PT = 28.3465
+        
+        try:
+            with open(info_path, "r", encoding="utf-8") as f:
+                info_data = json.load(f)
+            
+            page_info_list = info_data.get("page_info", [])
+            
+            if page_info_list:
+                # 1. 실제 페이지 정보가 있는 경우
+                for p in page_info_list:
+                    p_no = p.get("page")
+                    # cm를 pt로 변환 (정수형으로 변환하는 것이 일반적입니다)
+                    w_pt = round(float(p.get("width", 21.00)) * CM_TO_PT)
+                    h_pt = round(float(p.get("height", 29.70)) * CM_TO_PT)
+                    
+                    doc.pages[p_no] = doc.add_page(
+                        page_no=p_no, 
+                        size=Size(width=w_pt, height=h_pt)
+                    )
+                print(f"✅ 총 {len(page_info_list)}페이지 정보 로드 완료.")
+            else:
+                raise ValueError("page_info is empty")
+
+        except Exception as e:
+            # 2. 오류가 나거나 정보가 없는 경우 (Fallback)
+            print(f"⚠️ 페이지 정보 로드 실패({e}). 기본 1페이지로 설정합니다.")
+            doc.pages[1] = doc.add_page(
+                page_no=1, 
+                size=Size(width=595, height=842) # 표준 A4 pt
+            )
 
     @override
     def unload(self):

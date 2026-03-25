@@ -100,6 +100,40 @@ for n in ("fontTools", "fontTools.ttLib", "fontTools.ttLib.ttFont"):
 # pdf 변환 대상 확장자
 CONVERTIBLE_EXTENSIONS = ['.hwp', '.txt', '.json', '.md', '.ppt', '.pptx', '.docx']
 
+def save_document_visualizations(
+    document: DoclingDocument, 
+    output_dir: str | Path, 
+    prefix: str = "viz",
+    show_label: bool = True
+):
+    """
+    DoclingDocument의 시각화 데이터를 이미지 파일로 저장합니다.
+    """
+    # 1. 저장 디렉토리 생성
+    out_path = Path(output_dir)
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    # 2. 시각화 데이터 생성
+    # viz_mode: "reading_order" (순서 확인용) 또는 "key_value"
+    viz_images = document.get_visualization(show_label=show_label)
+
+    if not viz_images:
+        print("⚠️ [Warning] 시각화할 이미지가 없습니다. document.pages가 비어있는지 확인하세요.")
+        return
+
+    saved_files = []
+    
+    # 3. 페이지별 저장 루프
+    for page_no, img in viz_images.items():
+        p_num = page_no if page_no is not None else 0
+        file_name = f"{prefix}_page_{p_num}.png"
+        save_path = out_path / file_name
+        
+        img.save(save_path)
+        saved_files.append(str(save_path))
+        print(f"📸 시각화 이미지 저장 완료: {save_path}")
+
+    return saved_files
 
 def convert_to_pdf(file_path: str) -> str | None:
     """
@@ -1174,6 +1208,13 @@ class HwpProcessor:
         
         # 2. 이미지 참조 경로 설정
         artifacts_dir, reference_path = self.get_paths(file_path)
+        print(f"👈 artifacts_dir:{artifacts_dir}")
+        print(f"👈 reference_path:{reference_path}")
+
+        # 2.5 디버깅: 시각화 이미지 저장
+        # 필요할 때만 켜고 끌 수 있게 환경 변수나 kwargs로 제어하면 더 좋습니다.
+        #save_document_visualizations(document, artifacts_dir)
+
         document = document._with_pictures_refs(
             image_dir=artifacts_dir, 
             page_no=None, 
