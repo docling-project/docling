@@ -551,11 +551,11 @@ class KserveV2OcrOptions(OcrOptions, KserveV2OptionsMixin):
         Field(
             description=(
                 "Image scale multiplier for OCR processing. Higher values increase resolution "
-                "for better text recognition. Default 3.0 converts 72 DPI to 216 DPI."
+                "for better text recognition. Default 2.0 converts 72 DPI to 144 DPI."
             ),
             gt=0.0,
         ),
-    ] = 3.0
+    ] = 2.0
 
     model_config = ConfigDict(
         extra="forbid",
