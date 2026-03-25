@@ -1,3 +1,4 @@
+import logging
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
@@ -13,6 +14,8 @@ from docling_core.types.doc.document import (
 from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
 
 from docling.backend.latex.constants import ENV_LIST, ENV_MATH, ENV_QUOTE, ENV_THEOREM
+
+_log = logging.getLogger(__name__)
 
 
 class EnvironmentHandlerMixin:
@@ -118,6 +121,9 @@ class EnvironmentHandlerMixin:
         elif node.envname in ["figure", "figure*"]:
             self._process_figure(node, doc, parent, formatting, text_label)
 
+        elif node.envname == "tikzpicture":
+            self._process_tikzpicture(node, doc, parent, formatting)
+
         elif node.envname in ["verbatim", "lstlisting", "minted"]:
             code_text = self._extract_verbatim_content(
                 node.latex_verbatim(), node.envname
@@ -133,6 +139,65 @@ class EnvironmentHandlerMixin:
 
         else:
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
+
+    def _process_tikzpicture(
+        self,
+        node: LatexEnvironmentNode,
+        doc: DoclingDocument,
+        parent: NodeItem | None = None,
+        formatting: Formatting | None = None,
+    ):
+        tikz_raw = self._extract_tikzpicture_atomic(node)
+        if tikz_raw is None:
+            _log.warning(
+                "tikzpicture extraction failed, using recursive environment fallback"
+            )
+            self._process_nodes(
+                node.nodelist, doc, parent, formatting, DocItemLabel.TEXT
+            )
+            return
+
+        figure_group = doc.add_group(
+            parent=parent, name="figure", label=GroupLabel.SECTION
+        )
+        doc.add_text(
+            parent=figure_group,
+            label=DocItemLabel.CODE,
+            text=tikz_raw,
+            formatting=formatting,
+        )
+
+    def _extract_tikzpicture_atomic(self, node: LatexEnvironmentNode) -> Optional[str]:
+        raw = node.latex_verbatim()
+        if "\\end{tikzpicture}" not in raw:
+            return None
+        if not self._validate_tikz_nodelist(node.nodelist):
+            return None
+        return raw
+
+    def _validate_tikz_nodelist(self, nodes) -> bool:
+        if nodes is None:
+            return True
+
+        for node in nodes:
+            if isinstance(node, LatexEnvironmentNode) and node.envname == "tikzpicture":
+                nested_raw = node.latex_verbatim()
+                if "\\end{tikzpicture}" not in nested_raw:
+                    return False
+
+            if hasattr(node, "nodelist") and node.nodelist is not None:
+                if not self._validate_tikz_nodelist(node.nodelist):
+                    return False
+
+            if hasattr(node, "nodeargd") and node.nodeargd:
+                argnlist = getattr(node.nodeargd, "argnlist", None)
+                if argnlist:
+                    for arg in argnlist:
+                        if hasattr(arg, "nodelist") and arg.nodelist is not None:
+                            if not self._validate_tikz_nodelist(arg.nodelist):
+                                return False
+
+        return True
 
     def _process_figure(
         self,
