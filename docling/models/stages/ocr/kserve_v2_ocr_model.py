@@ -107,7 +107,7 @@ class KserveV2OcrModel(BaseOcrModel):
         """Preprocess image for KServe v2 OCR inference.
 
         Converts PIL image to numpy array with shape (1, C, H, W) in UINT8 format,
-        matching the expected input format for typical OCR models on Triton.
+        matching the expected input format for RapidOCR models on Triton with batching.
 
         Args:
             image: PIL Image to preprocess.
@@ -121,10 +121,10 @@ class KserveV2OcrModel(BaseOcrModel):
         # Convert to numpy array (H, W, C) with UINT8
         image_array = np.array(img, dtype=np.uint8)
 
-        # Transpose to (C, H, W) as expected by model
+        # Transpose to (C, H, W) as expected by RapidOCR model
         image_array = image_array.transpose(2, 0, 1)
 
-        # Add batch dimension: (1, C, H, W)
+        # Add batch dimension (1, C, H, W) as required by model with max_batch_size > 0
         image_array = np.expand_dims(image_array, axis=0)
 
         return image_array
