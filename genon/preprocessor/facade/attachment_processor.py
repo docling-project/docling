@@ -1144,7 +1144,7 @@ class HwpProcessor:
     def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
         """HybridChunker를 사용하여 문서 분할 및 페이지별 청크 수 집계"""
         # HybridChunker는 상단에 임포트되어 있어야 함
-        chunker = HybridChunker(max_tokens=int(1e30), merge_peers=True)
+        chunker = HybridChunker(max_tokens=int(1e30), merge_peers=True, include_headings=False)
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
         
         self.page_chunk_counts.clear()
@@ -1212,9 +1212,7 @@ class HwpProcessor:
         print(f"👈 reference_path:{reference_path}")
 
         # 2.5 디버깅: 시각화 이미지 저장
-        # 필요할 때만 켜고 끌 수 있게 환경 변수나 kwargs로 제어하면 더 좋습니다.
         #save_document_visualizations(document, artifacts_dir)
-
         document = document._with_pictures_refs(
             image_dir=artifacts_dir, 
             page_no=None, 

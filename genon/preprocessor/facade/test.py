@@ -16,6 +16,7 @@ from attachment_processor import DocumentProcessor # 첨부용
 # 파일 경로
 #file_path = "../sample_files/pdf_sample.pdf"
 #file_path = "../sample_files/docx_sample.docx"
+#file_path = "../sample_files/docx_sample/롯데손해보험 데이터경영팀 MLOps 운영자 매뉴얼.docx"
 #file_path = "../sample_files/hwpx_sample.hwpx"
 file_path = "../sample_files/hwpx_sample/01_[핵심이슈]가계별 금리익스포저를 감안한 금리상승의 소비 영향 점검_24.2.19_공개용.hwp"
 
@@ -36,6 +37,7 @@ async def process_document():
     # print(file_path)
     kwargs = {}
     kwargs['org_filename'] = os.path.basename(file_path)
+    kwargs['max_tokens'] = 512
     vectors = await doc_processor(mock_request, file_path, **kwargs)
     return vectors
 

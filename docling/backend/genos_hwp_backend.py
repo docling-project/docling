@@ -3,6 +3,7 @@ import logging
 import os
 import subprocess
 import tempfile
+import hashlib
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -20,7 +21,7 @@ from bs4 import BeautifulSoup
 from docling_core.types.doc import (
     DocItemLabel, DoclingDocument, DocumentOrigin, GroupLabel,
     ImageRef, NodeItem, ProvenanceItem, TableCell, TableData,
-    BoundingBox, Size, Formatting
+    BoundingBox, CoordOrigin, Size, Formatting
 )
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -111,6 +112,25 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
     def supports_pagination(cls) -> bool:
         """추상 메서드 구현: 페이지 단위 처리를 지원하는지 여부 (HWP는 대개 False이나, 자유소프트 SDK는 true)"""
         return True
+    
+    def _get_active_parent(self):
+        """현재 트리에서 가장 하위에 있는(None이 아닌) 부모 노드를 반환합니다."""
+        for level in sorted(self.parents.keys(), reverse=True):
+            if self.parents[level] is not None:
+                return self.parents[level]
+        return None # 정 없으면 Root
+
+    def _get_label_and_level_hwp(self, text, size, is_bold):
+        """폰트와 텍스트 패턴으로 p_style_id와 p_level을 결정합니다."""
+        # 명시적 헤더 패턴 (1. , 가. , Ⅰ. 등)
+        is_explicit_pattern = bool(re.match(r'^(?:\d+\.|\*|[-•]|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\.)\s+', text))
+        
+        if is_explicit_pattern or size >= 18 or is_bold:
+            # 폰트 크기에 따라 계층(Level) 세분화
+            level = 1 if size >= 20 else 2
+            return "Heading", level
+            
+        return "Normal", 0
 
     # --- 기존에 생략되었던 유틸리티 함수들 ---
     def _update_history(self, name: str, level: Optional[int], page_no: int):
@@ -169,6 +189,8 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
 
         # 3. 실제 데이터를 담을 DoclingDocument 객체를 초기화합니다.
         doc = DoclingDocument(name=self.source_path.stem or "file", origin=origin)
+
+        #print(f"self.source_path:{self.source_path}")
 
         # 4. 임시 디렉토리에서 SDK 작업 시작
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -242,240 +264,280 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                         print(f"⚠️ {line_no}행 파싱 실패 (스킵): {e}")
                         continue
             
+            # [hwp_data 임시로 저장]
+            # 스크립트를 실행한 현재 디렉토리(CWD)에 저장
+            debug_json_name = f"{self.source_path.stem}_debug_raw.json"
+            debug_json_path = Path.cwd() / debug_json_name
+            
+            try:
+                with open(debug_json_path, "w", encoding="utf-8") as df:
+                    json.dump(hwp_data, df, ensure_ascii=False, indent=2)
+                
+                # 절대 경로로 출력해줘야 나중에 터미널에서 찾기 편합니다.
+                print(f"🔍 [DEBUG] SDK 생데이터가 현재 경로에 저장됨: {debug_json_path.resolve()}")
+            except Exception as e:
+                print(f"⚠️ [DEBUG] 실행 경로 파일 저장 실패: {e}")
+
             # 7. hwp_data를 Docling 구조로 변환
             # 3번에서 만든 DoclingDocument 객체에 내용을 채워 넣기.
             self.current_img_dir = img_dir
             self._walk_hwp_data(hwp_data, doc)
             self.current_img_dir = None
 
+            # 7.5 [DEBUG] 최종 변환된 DoclingDocument 객체를 JSON으로 저장
+            # _walk_hwp_data 처리가 완료된 최종 결과물을 확인합니다.
+            debug_doc_name = f"{self.source_path.stem}_debug_docling.json"
+            debug_doc_path = Path.cwd() / debug_doc_name
+            
+            try:
+                # Pydantic의 model_dump를 이용해 딕셔너리로 변환 후 저장 (한글 깨짐 방지)
+                with open(debug_doc_path, "w", encoding="utf-8") as f:
+                    #import json
+                    json.dump(doc.model_dump(), f, ensure_ascii=False, indent=2)
+                
+                print(f"✅ [DEBUG] 최종 DoclingDocument 저장 완료: {debug_doc_path.resolve()}")
+            except Exception as e:
+                print(f"⚠️ [DEBUG] 최종 문서 저장 실패: {e}")
+
         # 8. 완성된 DoclingDocument 형태 문서 반환
         return doc
 
+    # --- [Step 1] 텍스트 처리에 집중한 구현 ---
     def _walk_hwp_data(self, data: List[List[Dict]], doc: DoclingDocument):
-        """데이터를 순회하며 페이지별 그룹을 생성하여 거대 청킹을 방지합니다."""
-        current_page_group = None
-        last_page_no = -1
-        
-        # root 그룹 생성 (GroupLabel.SECTION 사용)
-        self.parents[0] = doc.add_group(label=GroupLabel.SECTION, name="root")
-
-        for paragraph_items in data:
-            if not paragraph_items: continue
+            """기존 페이지 그룹화 로직을 유지하며 표(Table)와 본문을 분리 처리합니다."""
+            self._processed_hashes = set()
+            last_page_no = -1
             
-            page_no = paragraph_items[0].get("page", 1)
-            
-            # 페이지가 바뀌면 새로운 섹션 그룹을 생성하여 청킹 경계를 만듭니다.
-            if page_no != last_page_no:
-                current_page_group = doc.add_group(
-                    label=GroupLabel.SECTION,  # 👈 PAGE 대신 SECTION으로 수정
-                    name=f"page_{page_no}", 
-                    parent=self.parents[0]
-                )
-                last_page_no = page_no
-                # 현재 문단의 부모를 이 페이지 섹션으로 지정
-                self.parents[1] = current_page_group 
+            # 1. Root 그룹 생성
+            self.parents = {0: doc.add_group(label=GroupLabel.SECTION, name="root")}
 
-            self._handle_paragraph(paragraph_items, doc)
-
-        # 실제 페이지 객체 규격 추가 (기존 로직 유지)
-        max_page = max((items[0].get("page", 1) for items in data if items), default=1)
-        for p in range(1, max_page + 1):
-            doc.add_page(page_no=p, size=Size(width=595, height=842))
-
-    def _handle_paragraph(self, items: List[Dict], doc: DoclingDocument):
-        """한 문단 내의 모든 아이템(텍스트, 표, 이미지)을 루프로 처리합니다."""
-        page_no = items[0].get("page", 1)
-        # 텍스트/표 추가 시 사용할 부모 노드를 결정 (페이지 그룹이 있으면 1번, 없으면 0번)
-        #current_parent = self.parents[1] if self.parents[1] else self.parents[0]
-        
-        for item in items:
-            itype = item.get("item")
-            val = item.get("value", "")
-            
-            # 공통 Provenance 생성
-            prov = ProvenanceItem(
-                page_no=page_no,
-                bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                charspan=(0, len(str(val)))
-            )
-
-            # 1. 일반 텍스트 처리
-            if itype == "text":
-                self._handle_text(item, doc, prov)
-
-            # 2. 테이블 처리 (안에 숨은 이미지까지 추출)
-            elif itype == "table":
-                # (1) 먼저 표 자체를 추가
-                table_data = self._parse_html_table(val)
-                doc.add_table(data=table_data, parent=self.parents[0], prov=prov)
+            for paragraph_items in data:
+                if not paragraph_items:
+                    continue
                 
-                # (2) 🚀 핵심: 표 HTML 안에 <img> 태그가 있는지 확인
-                if "<img" in val:
-                    import re
-                    # src='...' 또는 src="..." 안의 파일명 추출
-                    img_srcs = re.findall(r'<img[^>]*src=[\'"]([^\'">]+)[\'"]', val)
-                    for src in img_srcs:
-                        # 파일명만 추출 (경로가 포함되어 있을 수 있으므로)
-                        img_filename = os.path.basename(src)
-                        # _handle_image가 기대하는 dict 구조를 가짜로 만들어 전달
-                        fake_img_item = {"item": "image", "value": img_filename}
-                        self._handle_image(fake_img_item, doc, prov)
-
-            # 3. 독립적인 이미지/사진 아이템 처리
-            elif itype in ["image", "picture"]:
-                self._handle_image(item, doc, prov)
-
-    def _handle_text(self, item: Dict, doc: DoclingDocument, prov: ProvenanceItem):
-        text_val = item.get("value", "").strip()
-        if not text_val: return
-
-        # --- [보강 1: 중복 제거 로직] --- --> handle_paragraph말고, 여기에서만 딱 한번 수행.
-        import hashlib
-        # 공백 제거/소문자화 후 해시 비교 (머리말/꼬리말 방어)
-        norm_text = re.sub(r'\s+', '', text_val).lower()
-        text_hash = hashlib.md5(norm_text.encode('utf-8')).hexdigest()
-        
-        if not hasattr(self, "_processed_hashes"): self._processed_hashes = set()
-        if text_hash in self._processed_hashes: return 
-        self._processed_hashes.add(text_hash)
-
-        # --- [보강 2: TOC 패턴 감지] ---
-        # 점(...)이 3개 이상 반복되고 숫자로 끝나면 목차로 라벨링
-        is_toc = bool(re.search(r'(\.{3,}|…|\t)\s*\d+$', text_val))
-
-        font_info = item.get("font", {})
-        fmt = self._map_font_to_formatting(font_info)
-
-        if is_toc:
-            doc.add_text(label=DocItemLabel.DOCUMENT_INDEX, text=text_val, parent=self.parents[0], prov=prov)
-        
-        # A. 헤더 판별 (Word Backend 로직 이식)
-        elif font_info.get("size", 0) >= 20 or font_info.get("bold"):
-            level = self._estimate_header_level(font_info)
-            self._add_header(doc, level, text_val, prov.page_no)
-        
-        # B. 리스트 아이템 판별
-        elif self._is_list_item(text_val):
-            # 실제 제품에서는 여기서 ListGroup을 관리해야 함 (생략 가능하나 권장)
-            doc.add_text(label=DocItemLabel.PARAGRAPH, text=text_val, parent=self.parents[0], prov=prov)
-            
-        else:
-            # C. 일반 본문
-            doc.add_text(label=DocItemLabel.PARAGRAPH, text=text_val, formatting=fmt, parent=self.parents[0], prov=prov)
-    
-    # --- 기존 msword_backend의 핵심 로직들 재구현 ---
-    def _add_header(self, doc: DoclingDocument, level: int, text: str, page_no: int):
-        # 하위 레벨 초기화
-        for i in range(level, self.max_levels):
-            self.parents[i] = None
-        
-        # 상위 그룹이 없으면 생성
-        if level > 0 and self.parents[level-1] is None:
-            self.parents[level-1] = doc.add_group(label=GroupLabel.SECTION, name=f"section-L{level-1}")
-
-        # 🚀 [수정] 헤더 추가 시에도 ProvenanceItem에 charspan 추가
-        self.parents[level] = doc.add_heading(
-            text=text, 
-            level=level, 
-            parent=self.parents[level-1],
-            prov=ProvenanceItem(
-                page_no=page_no, 
-                bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                charspan=(0, len(text))# 👈 필수 추가
-            )
-        )
-        self._update_history(text, level, page_no)
-
-    def _convert_wmf_to_png(self, wmf_bytes: bytes) -> Optional[bytes]:
-        """기존 로직을 유지하되 WandException으로 안전하게 처리"""
-        if not WAND_AVAILABLE:
-            return None
-        try:
-            with WandImage(blob=wmf_bytes) as wand_img:
-                wand_img.format = 'png'
-                return wand_img.make_blob()
-        except (WandException, Exception) as e:
-            _log.warning(f"WMF 변환 실패: {e}")
-            return None
-
-    def _handle_image(self, item: Dict, doc: DoclingDocument, prov: ProvenanceItem):
-        """기존 _process_picture를 SDK(JSON) 환경에 맞게 전면 수정"""
-        if not self.save_images:
-            return
-
-        # 1. 파일명 추출 (기존의 bin_id 추출 로직 대신 JSON 'value' 사용)
-        img_filename = item.get("value", "")
-        if not img_filename or not self.current_img_dir:
-            return
-
-        img_path = self.current_img_dir / img_filename
-        if not img_path.exists():
-            return
-
-        # 2. 파일 읽기 (ZIP 대신 로컬 파일 시스템에서 직접 읽기)
-        try:
-            image_bytes = img_path.read_bytes()
-            
-            # WMF인 경우 변환기 실행
-            if img_path.suffix.lower() == ".wmf":
-                image_bytes = self._convert_wmf_to_png(image_bytes)
-                if not image_bytes:
-                    return
-
-            # 3. PIL 오픈 및 ImageRef 생성
-            pil_image = Image.open(BytesIO(image_bytes))
-            
-            # 💡 [중요] 특정 모드(P, 1 등)의 이미지를 표준 RGB로 변환
-            if pil_image.mode not in ("RGB", "RGBA"):
-                pil_image = pil_image.convert("RGB")
+                # 페이지 번호 추출 및 페이지 그룹 생성 로직
+                page_no = 1
+                for item in paragraph_items:
+                    if "page" in item:
+                        page_no = item.get("page", 1)
+                        break
                 
-            img_ref_obj = ImageRef.from_pil(image=pil_image, dpi=72)
+                # 페이지 번호 변경시 감지
+                if page_no != last_page_no:
+                    page_group = doc.add_group(
+                        label=GroupLabel.SECTION, 
+                        name=f"page_{page_no}", 
+                        parent=self.parents[0]
+                    )
+                    self.parents[1] = page_group 
+                    last_page_no = page_no
 
-            # 4. 문서에 추가
-            doc.add_picture(
-                parent=self.parents[0],
-                image=img_ref_obj,
-                caption=None, # SDK에서 캡션 정보가 오면 여기에 넣기
-                prov=prov
-            )
-        except Exception as e:
-            _log.debug(f"이미지 처리 중 예외 발생: {e}")
+                # --- [여기서부터 수정 포인트: Table vs Paragraph 분기] ---
+                
+                texts_in_batch = []
+                
+                for item in paragraph_items:
+                    i_type = str(item.get("item", "")).lower()
+                    i_value = item.get("value", "")
+                    
+                    # 1. 표라면 즉시 처리
+                    if i_type == "table" or "<table>" in i_value.lower():
+                        # 그동안 쌓인 텍스트가 있다면 먼저 처리 (순서 유지)
+                        if texts_in_batch:
+                            self._handle_paragraph(texts_in_batch, doc, page_no)
+                            texts_in_batch = []
+                        
+                        self._handle_table(i_value, doc, page_no)
+                    
+                    # 2. 텍스트라면 리스트에 수집 (나중에 한꺼번에 병합 처리)
+                    elif i_type == "text":
+                        texts_in_batch.append(item)
+                
+                # 3. 남은 텍스트들 처리
+                if texts_in_batch:
+                    self._handle_paragraph(texts_in_batch, doc, page_no)
 
-    def _parse_html_table(self, html_str: str) -> TableData:
-        """HTML 표를 파싱하여 Docling의 TableData 객체로 변환"""
-        soup = BeautifulSoup(html_str, "html.parser")
+    def _handle_table(self, html_content: str, doc: DoclingDocument, page_no: int):
+        """HTML 테이블을 분석하여 구조화된 Table 객체로 doc에 추가합니다."""
+        soup = BeautifulSoup(html_content, "html.parser")
         table_tag = soup.find("table")
-        if not table_tag: 
-            return TableData(num_rows=0, num_cols=0)
+        if not table_tag:
+            return
 
+        cells = []
+        occupied = set() # (row, col) 점유 맵
         rows = table_tag.find_all("tr")
-        # 컬럼 수 계산
-        num_cols = 0
-        if rows:
-            num_cols = sum(int(td.get("colspan", 1)) for td in rows[0].find_all(["td", "th"]))
-        
-        # TableData 초기화
-        table_data = TableData(num_rows=len(rows), num_cols=num_cols)
 
         for r_idx, tr in enumerate(rows):
-            c_idx_offset = 0
+            c_idx = 0
             for td in tr.find_all(["td", "th"]):
-                rs, cs = int(td.get("rowspan", 1)), int(td.get("colspan", 1))
+                # 점유된 칸 건너뛰기
+                while (r_idx, c_idx) in occupied:
+                    c_idx += 1
                 
-                # Docling TableCell 규격에 맞게 데이터 삽입
-                table_data.table_cells.append(TableCell(
-                    text=td.get_text(strip=True),
-                    start_row_offset_idx=r_idx, 
-                    end_row_offset_idx=r_idx + rs,
-                    start_col_offset_idx=c_idx_offset, 
-                    end_col_offset_idx=c_idx_offset + cs,
-                    column_header=(tr.name == "th" or r_idx == 0)
-                ))
-                c_idx_offset += cs
-        return table_data
+                row_span = int(td.get("rowspan", 1))
+                col_span = int(td.get("colspan", 1))
+                text = td.get_text(strip=True)
+                
+                # TableCell 생성
+                cell = TableCell(
+                    text=text,                             # content 대신 text 사용 권장
+                    start_row_offset_idx=r_idx,            # 시작 행
+                    end_row_offset_idx=r_idx + row_span,   # 끝 행 (시작 행 + span)
+                    start_col_offset_idx=c_idx,            # 시작 열
+                    end_col_offset_idx=c_idx + col_span,   # 끝 열 (시작 열 + span)
+                    row_span=row_span,    # 추가!
+                    col_span=col_span,    # 추가!
+                    column_header=True if td.name == "th" else False  # label 대신 이거 사용 가능
+                )
+                cells.append(cell)
+                
+                # 점유 표시
+                for r in range(r_idx, r_idx + row_span):
+                    for c in range(c_idx, c_idx + col_span):
+                        occupied.add((r, c))
+                
+                c_idx += col_span
+                
+        if cells:
+            # 전체 크기 계산
+            max_row = max(c.end_row_offset_idx for c in cells)
+            max_col = max(c.end_col_offset_idx for c in cells)
+            
+            # 임시 위치 정보 (추후 Step 3에서 정교화)
+            prov = ProvenanceItem(
+                page_no=page_no,
+                bbox=BoundingBox(l=0, t=0, r=1, b=1, coord_origin=CoordOrigin.BOTTOMLEFT),
+                charspan=(0, len(html_content))
+            )
+
+            # Docling Document에 표 추가
+            doc.add_table(
+                data=TableData(num_rows=max_row, num_cols=max_col, table_cells=cells),
+                parent=self.parents[1], # 기본 페이지 그룹에 추가
+                prov=prov
+            )
+
+    def _handle_paragraph(self, paragraph_items: List[Dict], doc: DoclingDocument, page_no: int):
+        full_text = "".join([item.get("value", "") for item in paragraph_items]).strip()
+        if not full_text: return
+
+        # 폰트 정보 추출
+        max_font_size = max([i.get("font", {}).get("size", 10.0) for i in paragraph_items])
+        is_bold = any([i.get("font", {}).get("bold", False) for i in paragraph_items])
+
+        # 1. 가상 스타일 판정
+        p_style_id, p_level = self._get_label_and_level_hwp(full_text, max_font_size, is_bold)
+
+        prov = ProvenanceItem(
+            page_no=page_no,
+            bbox=BoundingBox(l=0, t=0, r=1, b=1, coord_origin=CoordOrigin.BOTTOMLEFT),
+            charspan=(0, len(full_text))
+        )
+
+        # 2. [강등 로직 수정]: 너무 빡빡한 '60자' 제한을 풀고, 
+        # 대신 제목 패턴이 명확하면(1. 가. 등) 본문이 좀 길어도 헤더로 인정해 줍니다.
+        is_explicit_pattern = bool(re.match(r'^(?:\d+\.|\*|[-•]|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\.)\s+', full_text))
+        
+        if p_style_id == "Heading":
+            # 패턴이 있으면 150자까지는 헤더로 인정 (마디를 만들기 위함)
+            if not is_explicit_pattern and len(full_text) > 80:
+                p_style_id = "Normal"
+                p_level = 0
+
+        # 3. 추가 실행
+        if p_style_id == "Heading":
+            self._add_header(doc, p_level, full_text, prov)
+        else:
+            # 본문 추가 시, 부모를 최상단 부모(parents[1])가 아닌 
+            # 현재 활성화된 가장 깊은 레벨의 헤더로 지정해야 합니다.
+            doc.add_text(
+                label=DocItemLabel.PARAGRAPH,
+                text=full_text,
+                parent=self._get_active_parent(), # <- 이 함수가 중요!
+                prov=prov
+            )
+
+    def _handle_text(self, item: Dict, doc: DoclingDocument, prov: ProvenanceItem):
+        """텍스트의 성격(중복, TOC, 헤더, 본문)을 판별하여 추가합니다."""
+        text_val = item.get("value", "").strip()
+        if not text_val: 
+            return
+        
+        # 1. 중복 제거 (머리말/꼬리말 등 방어)
+        '''To DO: 현재는 자유 소프트 SDK에서 머리말/꼬리말 자체를 생략하는 상황. 추후 추가 시 처리 로직 구현해야.'''
+
+        # 2. 분석용 변수 추출
+        font_info = item.get("font", {})
+        font_size = font_info.get("size", 10.0)
+        is_bold = font_info.get("bold", False)
+
+        # 3. 패턴 감지 (이전 hwpx 로직 + 현재 정규식 최적화)
+        # TOC: 점(2개 이상), 탭, 또는 긴 공백 뒤에 숫자로 끝나는 패턴
+        is_toc = bool(re.search(r'(\.{2,}|…|\t|\s{4,})\s*\d+$', text_val))
+        
+        # Explicit Header: 숫자+점(1. ) 또는 로마자+점(Ⅱ. )으로 시작하는 패턴
+        is_explicit_header = bool(re.match(r'^(?:\d+\.\s+|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\.\s*)', text_val))
+
+        # 4. 분류 및 추가 로직
+        if is_toc:
+            # --- [DEBUG LOG START] ---
+            print(f"\n📑 [TOC DETECTED]")
+            print(f"   - Text: {text_val[:30]}...")
+            print(f"   - Label: {DocItemLabel.DOCUMENT_INDEX}")
+            
+            parent_info = self.parents[1]
+            p_ref = getattr(parent_info, "self_ref", "N/A")
+            p_label = getattr(parent_info, "label", "N/A")
+            print(f"   - Parent: {p_label} (Ref: {p_ref})")
+            print(f"   - Prov: Page {prov.page_no}, BBox {prov.bbox}")
+            print(f"------------------------------------------")
+            # --- [DEBUG LOG END] ---
+            
+            doc.add_text(
+                label=DocItemLabel.DOCUMENT_INDEX, 
+                text=text_val, 
+                parent=self.parents[1], 
+                prov=prov
+            )
+
+        # 5. 헤더 판별: 명시적 패턴이 있거나, 폰트가 크거나, 볼드체인 경우
+        elif is_explicit_header or font_size >= 20 or is_bold:
+            level = self._estimate_header_level(font_info)
+            # 만약 명시적 패턴(1. 등)이 있는데 폰트가 작다면 레벨을 낮추는 등 미세조정 가능
+            self._add_header(doc, level, text_val, prov)
+
+        else:
+            # 6. 일반 본문
+            doc.add_text(
+                label=DocItemLabel.PARAGRAPH, 
+                text=text_val, 
+                parent=self.parents[1], 
+                prov=prov
+            )
+
+    def _add_header(self, doc: DoclingDocument, level: int, text: str, prov: ProvenanceItem):
+        """헤더 계층을 관리하며 Heading 아이템을 추가합니다."""
+        # 하위 레벨 부모들 초기화
+        for i in range(level, 10): # max_levels 가정
+            if i in self.parents and i > 1: # root와 page_group은 유지
+                self.parents[i] = None
+
+        # 상위 계층이 비어있으면 현재 페이지 그룹 아래에 배치
+        parent_node = self.parents.get(level - 1) or self.parents[1]
+
+        # Heading 추가 및 부모 등록
+        header_item = doc.add_heading(
+            text=text, 
+            level=level, 
+            parent=parent_node,
+            prov=prov
+        )
+        self.parents[level] = header_item
 
     def _estimate_header_level(self, font_info: Dict) -> int:
-        size = font_info.get("size", 10)
+        """폰트 크기에 따른 헤더 레벨 추정"""
+        size = font_info.get("size", 10.0)
         if size >= 28: return 1
         if size >= 20: return 2
         return 3
