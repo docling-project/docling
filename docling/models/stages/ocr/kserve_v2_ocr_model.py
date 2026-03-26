@@ -30,7 +30,7 @@ class KserveV2OcrModel(BaseOcrModel):
     to perform OCR via gRPC or HTTP. It handles custom preprocessing to match
     the expected input format of typical OCR models deployed on such servers.
 
-    The preprocessing converts PIL images to numpy arrays with shape (1, C, H, W)
+    The preprocessing converts PIL images to numpy arrays with shape (1, H, W, C)
     in UINT8 format, matching the requirements of typical OCR models on Triton.
 
     Attributes:
