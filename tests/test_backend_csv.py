@@ -94,4 +94,8 @@ def test_empty_csv():
         DocumentStream(name="empty.csv", stream=BytesIO(b"")),
         raises_on_error=True,
     )
-    assert conv_result.document is not None
+    doc = conv_result.document
+    assert doc is not None
+    # The empty CSV should result in an empty document (no tables and no texts).
+    assert len(getattr(doc, "tables", [])) == 0
+    assert len(getattr(doc, "texts", [])) == 0
