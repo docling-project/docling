@@ -20,7 +20,10 @@ from PIL import Image, ImageDraw
 from pypdfium2 import PdfTextPage
 from pypdfium2._helpers.misc import PdfiumError
 
-from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
+from docling.backend.managed_pdfium_backend import (
+    ManagedPdfiumDocumentBackend,
+    ManagedPdfiumPageBackend,
+)
 from docling.datamodel.backend_options import PdfBackendOptions
 from docling.utils.locks import pypdfium2_lock
 
@@ -105,14 +108,19 @@ _log = logging.getLogger(__name__)
 _PYPDFIUM2_MAJOR_VERSION = int(version("pypdfium2").split(".")[0])
 
 
-class PyPdfiumPageBackend(PdfPageBackend):
+class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
     def __init__(
-        self, pdfium_doc: pdfium.PdfDocument, document_hash: str, page_no: int
+        self,
+        pdfium_doc: pdfium.PdfDocument,
+        document_hash: str,
+        page_no: int,
     ):
+        super().__init__()
         # Note: lock applied by the caller
         self.valid = True  # No better way to tell from pypdfium.
+        self._ppage: pdfium.PdfPage | None = None
         try:
-            self._ppage: pdfium.PdfPage = pdfium_doc[page_no]
+            self._ppage = pdfium_doc[page_no]
         except PdfiumError:
             _log.info(
                 f"An exception occurred when loading page {page_no} of document {document_hash}.",
@@ -124,11 +132,15 @@ class PyPdfiumPageBackend(PdfPageBackend):
     def is_valid(self) -> bool:
         return self.valid
 
+    def _require_page(self) -> pdfium.PdfPage:
+        assert self._ppage is not None, "Page backend was unloaded."
+        return self._ppage
+
     def _compute_text_cells(self) -> List[TextCell]:
         """Compute text cells from pypdfium."""
         with pypdfium2_lock:
             if not self.text_page:
-                self.text_page = self._ppage.get_textpage()
+                self.text_page = self._require_page().get_textpage()
 
         cells = []
         cell_counter = 0
@@ -263,8 +275,9 @@ class PyPdfiumPageBackend(PdfPageBackend):
         page_size = self.get_size()
 
         with pypdfium2_lock:
-            rotation = self._ppage.get_rotation()
-            for obj in self._ppage.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]):
+            page = self._require_page()
+            rotation = page.get_rotation()
+            for obj in page.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]):
                 if _PYPDFIUM2_MAJOR_VERSION >= 5:
                     pos = obj.get_bounds()  # pypdfium2 >= 5.x
                 else:
@@ -301,7 +314,7 @@ class PyPdfiumPageBackend(PdfPageBackend):
     def get_text_in_rect(self, bbox: BoundingBox) -> str:
         with pypdfium2_lock:
             if not self.text_page:
-                self.text_page = self._ppage.get_textpage()
+                self.text_page = self._require_page().get_textpage()
 
         if bbox.coord_origin != CoordOrigin.BOTTOMLEFT:
             bbox = bbox.to_bottom_left_origin(self.get_size().height)
@@ -318,7 +331,7 @@ class PyPdfiumPageBackend(PdfPageBackend):
         text_cells = self._compute_text_cells()
 
         # Get the PDF page geometry from pypdfium2
-        dimension = get_pdf_page_geometry(self._ppage)
+        dimension = get_pdf_page_geometry(self._require_page())
 
         # Create SegmentedPdfPage
         return SegmentedPdfPage(
@@ -356,31 +369,37 @@ class PyPdfiumPageBackend(PdfPageBackend):
             padbox.t = page_size.height - padbox.t
 
         with pypdfium2_lock:
-            image = (
-                self._ppage.render(
-                    scale=scale * 1.5,
-                    rotation=0,  # no additional rotation
-                    crop=padbox.as_tuple(),
-                )
-                .to_pil()
-                .resize(
-                    size=(round(cropbox.width * scale), round(cropbox.height * scale))
-                )
-            )  # We resize the image from 1.5x the given scale to make it sharper.
+            bitmap = self._require_page().render(
+                scale=scale * 1.5,
+                rotation=0,  # no additional rotation
+                crop=padbox.as_tuple(),
+            )
+            image = bitmap.to_pil().copy()
+            bitmap.close()
+        # We resize the image from 1.5x the given scale to make it sharper.
+        image = image.resize(
+            size=(round(cropbox.width * scale), round(cropbox.height * scale))
+        )
 
         return image
 
     def get_size(self) -> Size:
         with pypdfium2_lock:
-            return Size(width=self._ppage.get_width(), height=self._ppage.get_height())
+            page = self._require_page()
+            return Size(width=page.get_width(), height=page.get_height())
 
-    def unload(self):
+    def _close_native_page(self) -> None:
         with pypdfium2_lock:
-            self._ppage = None
-            self.text_page = None
+            if self.text_page is not None:
+                self.text_page.close()
+            if self._ppage is not None:
+                self._ppage.close()
+
+        self.text_page = None
+        self._ppage = None
 
 
-class PyPdfiumDocumentBackend(PdfDocumentBackend):
+class PyPdfiumDocumentBackend(ManagedPdfiumDocumentBackend):
     def __init__(
         self,
         in_doc: "InputDocument",
@@ -411,8 +430,8 @@ class PyPdfiumDocumentBackend(PdfDocumentBackend):
     def is_valid(self) -> bool:
         return self.page_count() > 0
 
-    def unload(self):
-        super().unload()
+    def _close_native_document(self) -> None:
         with pypdfium2_lock:
-            self._pdoc.close()
-            self._pdoc = None
+            if self._pdoc is not None:
+                self._pdoc.close()
+                self._pdoc = None

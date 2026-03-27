@@ -906,21 +906,55 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         only_texts = []
         only_equations = []
         texts_and_equations = []
-        for subt in element.iter():
-            tag_name = etree.QName(subt).localname
-            if tag_name == "t" and "math" not in subt.tag:
-                if isinstance(subt.text, str):
-                    only_texts.append(subt.text)
-                    texts_and_equations.append(subt.text)
-            elif "oMath" in subt.tag and "oMathPara" not in subt.tag:
-                latex_equation = str(oMath2Latex(subt)).strip()
-                if len(latex_equation) > 0:
-                    only_equations.append(
-                        self.equation_bookends.format(EQ=latex_equation)
-                    )
-                    texts_and_equations.append(
-                        self.equation_bookends.format(EQ=latex_equation)
-                    )
+
+        # Collect oMath elements and text runs from the paragraph.
+        # Use direct children iteration first; fall back to deep iteration
+        # only if no oMath elements are found at the direct level.
+        direct_omaths = [
+            child
+            for child in element
+            if "oMath" in child.tag and "oMathPara" not in child.tag
+        ]
+
+        if direct_omaths:
+            # Iterate direct children to preserve sibling order and avoid
+            # processing nested oMath descendants of an already-converted node.
+            for child in element:
+                if "oMath" in child.tag and "oMathPara" not in child.tag:
+                    latex_equation = str(oMath2Latex(child)).strip()
+                    if len(latex_equation) > 0:
+                        only_equations.append(
+                            self.equation_bookends.format(EQ=latex_equation)
+                        )
+                        texts_and_equations.append(
+                            self.equation_bookends.format(EQ=latex_equation)
+                        )
+                else:
+                    # Collect text from non-math children (e.g. <w:r> runs)
+                    for t_elem in child.iter():
+                        t_tag = etree.QName(t_elem).localname
+                        if t_tag == "t" and "math" not in t_elem.tag:
+                            if isinstance(t_elem.text, str):
+                                only_texts.append(t_elem.text)
+                                texts_and_equations.append(t_elem.text)
+        else:
+            # Original deep-iteration fallback for nested oMath (e.g.
+            # inside oMathPara or other wrapper elements).
+            for subt in element.iter():
+                tag_name = etree.QName(subt).localname
+                if tag_name == "t" and "math" not in subt.tag:
+                    if isinstance(subt.text, str):
+                        only_texts.append(subt.text)
+                        texts_and_equations.append(subt.text)
+                elif "oMath" in subt.tag and "oMathPara" not in subt.tag:
+                    latex_equation = str(oMath2Latex(subt)).strip()
+                    if len(latex_equation) > 0:
+                        only_equations.append(
+                            self.equation_bookends.format(EQ=latex_equation)
+                        )
+                        texts_and_equations.append(
+                            self.equation_bookends.format(EQ=latex_equation)
+                        )
 
         if len(only_equations) < 1:
             return text, []
@@ -1055,15 +1089,28 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if (paragraph.text is None or len(paragraph.text.strip()) == 0) and len(
                 text
             ) > 0:
-                # Standalone equation
+                # Standalone equation(s) — emit each as a separate formula
                 level = self._get_level()
-                t1 = doc.add_text(
-                    label=DocItemLabel.FORMULA,
-                    parent=self.parents[level - 1],
-                    text=text.replace("<eq>", "").replace("</eq>", ""),
-                    content_layer=self.content_layer,
-                )
-                elem_ref.append(t1.get_ref())
+                parent = self.parents[level - 1]
+                if len(equations) > 1:
+                    for eq in equations:
+                        eq_text = eq.replace("<eq>", "").replace("</eq>", "").strip()
+                        if len(eq_text) > 0:
+                            t1 = doc.add_text(
+                                label=DocItemLabel.FORMULA,
+                                parent=parent,
+                                text=eq_text,
+                                content_layer=self.content_layer,
+                            )
+                            elem_ref.append(t1.get_ref())
+                else:
+                    t1 = doc.add_text(
+                        label=DocItemLabel.FORMULA,
+                        parent=parent,
+                        text=text.replace("<eq>", "").replace("</eq>", ""),
+                        content_layer=self.content_layer,
+                    )
+                    elem_ref.append(t1.get_ref())
             else:
                 # Inline equation
                 level = self._get_level()

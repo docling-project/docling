@@ -13,7 +13,9 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.base import PydanticSerCtxKey, round_pydantic_float
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
-from docling_core.types.io import DocumentStream
+from docling_core.types.io import (
+    DocumentStream as DocumentStream,
+)
 
 # DO NOT REMOVE; explicitly exposed from this location
 from PIL.Image import Image

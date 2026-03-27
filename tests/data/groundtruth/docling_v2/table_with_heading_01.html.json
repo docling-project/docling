@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "name": "table_with_heading_01",
   "origin": {
     "mimetype": "text/html",

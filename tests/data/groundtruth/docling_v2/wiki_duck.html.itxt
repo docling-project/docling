@@ -52,9 +52,9 @@ item-0 at level 0: unspecified: group _root_
               item-51 at level 7: list: group list
         item-52 at level 4: list_item: 9 External links
           item-53 at level 5: list: group list
-      item-54 at level 3: text: Toggle the table of contents
+      item-54 at level 3: checkbox_unselected: Toggle the table of contents
   item-55 at level 1: title: Duck
-    item-56 at level 2: text: 136 languages
+    item-56 at level 2: checkbox_unselected: 136 languages
     item-57 at level 2: list: group list
       item-58 at level 3: list_item: Acèh
       item-59 at level 3: list_item: Afrikaans
@@ -196,13 +196,13 @@ item-0 at level 0: unspecified: group _root_
     item-195 at level 2: list: group list
       item-196 at level 3: list_item: Article
       item-197 at level 3: list_item: Talk
-    item-198 at level 2: text: English
+    item-198 at level 2: checkbox_unselected: English
     item-199 at level 2: list: group list
     item-200 at level 2: list: group list
       item-201 at level 3: list_item: Read
       item-202 at level 3: list_item: View source
       item-203 at level 3: list_item: View history
-    item-204 at level 2: text: Tools
+    item-204 at level 2: checkbox_unselected: Tools
     item-205 at level 2: text: Tools
     item-206 at level 2: text: move to sidebar
     item-207 at level 2: text: hide
@@ -241,25 +241,25 @@ item-0 at level 0: unspecified: group _root_
       item-239 at level 3: text: (Redirected from
       item-240 at level 3: text: Duckling
       item-241 at level 3: text: )
-    item-242 at level 2: text: Common name for many species of bird
-    item-243 at level 2: inline: group group
-      item-244 at level 3: text: This article is about the bird. For duck as a food, see
-      item-245 at level 3: text: Duck as food
-      item-246 at level 3: text: . For other uses, see
-      item-247 at level 3: text: Duck (disambiguation)
-      item-248 at level 3: text: .
-    item-249 at level 2: inline: group group
-      item-250 at level 3: text: "Duckling" redirects here. For other uses, see
-      item-251 at level 3: text: Duckling (disambiguation)
-      item-252 at level 3: text: .
-    item-253 at level 2: table with [13x2]
-      item-254 at level 3: unspecified: group rich_cell_group_1_0_1
-        item-255 at level 4: picture
-      item-256 at level 3: unspecified: group rich_cell_group_1_0_2
-        item-257 at level 4: text: Bufflehead
-        item-258 at level 4: text: (
-        item-259 at level 4: text: Bucephala albeola
-        item-260 at level 4: text: )
+    item-242 at level 2: inline: group group
+      item-243 at level 3: text: This article is about the bird. For duck as a food, see
+      item-244 at level 3: text: Duck as food
+      item-245 at level 3: text: . For other uses, see
+      item-246 at level 3: text: Duck (disambiguation)
+      item-247 at level 3: text: .
+    item-248 at level 2: inline: group group
+      item-249 at level 3: text: "Duckling" redirects here. For other uses, see
+      item-250 at level 3: text: Duckling (disambiguation)
+      item-251 at level 3: text: .
+    item-252 at level 2: table with [13x2]
+      item-253 at level 3: unspecified: group rich_cell_group_1_0_1
+        item-254 at level 4: picture
+      item-255 at level 3: unspecified: group rich_cell_group_1_0_2
+        item-256 at level 4: text: Bufflehead
+        item-257 at level 4: inline: group group
+          item-258 at level 5: text: (
+          item-259 at level 5: text: Bucephala albeola
+          item-260 at level 5: text: )
       item-261 at level 3: unspecified: group rich_cell_group_1_0_3
         item-262 at level 4: text: Scientific classification
         item-263 at level 4: picture
@@ -1487,53 +1487,54 @@ item-0 at level 0: unspecified: group _root_
         item-1471 at level 4: text: Retrieved from "
         item-1472 at level 4: text: https://en.wikipedia.org/w/index.php?title=Duck&oldid=1246843351
         item-1473 at level 4: text: "
-      item-1474 at level 3: text: Categories
-      item-1475 at level 3: text: :
-      item-1476 at level 3: list: group list
-        item-1477 at level 4: list_item: Ducks
-        item-1478 at level 4: list_item: Game birds
-        item-1479 at level 4: list_item: Bird common names
-      item-1480 at level 3: text: Hidden categories:
-      item-1481 at level 3: list: group list
-        item-1482 at level 4: list_item: All accuracy disputes
-        item-1483 at level 4: list_item: Accuracy disputes from February 2020
-        item-1484 at level 4: list_item: CS1 Finnish-language sources (fi)
-        item-1485 at level 4: list_item: CS1 Latvian-language sources (lv)
-        item-1486 at level 4: list_item: CS1 Swedish-language sources (sv)
-        item-1487 at level 4: list_item: Articles with short description
-        item-1488 at level 4: list_item: Short description is different from Wikidata
-        item-1489 at level 4: list_item: Wikipedia indefinitely move-protected pages
-        item-1490 at level 4: list_item: Wikipedia indefinitely semi-protected pages
-        item-1491 at level 4: list_item: Articles with 'species' microformats
-        item-1492 at level 4: list_item: Articles containing Old English (ca. 450-1100)-language text
-        item-1493 at level 4: list_item: Articles containing Dutch-language text
-        item-1494 at level 4: list_item: Articles containing German-language text
-        item-1495 at level 4: list_item: Articles containing Norwegian-language text
-        item-1496 at level 4: list_item: Articles containing Lithuanian-language text
-        item-1497 at level 4: list_item: Articles containing Ancient Greek (to 1453)-language text
-        item-1498 at level 4: list_item: All articles with self-published sources
-        item-1499 at level 4: list_item: Articles with self-published sources from February 2020
-        item-1500 at level 4: list_item: All articles with unsourced statements
-        item-1501 at level 4: list_item: Articles with unsourced statements from January 2022
-        item-1502 at level 4: list_item: CS1: long volume value
-        item-1503 at level 4: list_item: Pages using Sister project links with wikidata mismatch
-        item-1504 at level 4: list_item: Pages using Sister project links with hidden wikidata
-        item-1505 at level 4: list_item: Webarchive template wayback links
-        item-1506 at level 4: list_item: Articles with Project Gutenberg links
-        item-1507 at level 4: list_item: Articles containing video clips
-      item-1508 at level 3: list: group list
-  item-1509 at level 1: caption: Page semi-protected
-  item-1510 at level 1: caption: Edit this classification
-  item-1511 at level 1: caption: Pacific black duck displaying the characteristic upending "duck"
-  item-1512 at level 1: caption: Male mallard .
-  item-1513 at level 1: caption: Wood ducks .
-  item-1514 at level 1: caption: Mallard landing in approach
-  item-1515 at level 1: caption: Male Mandarin duck
-  item-1516 at level 1: caption: Flying steamer ducks in Ushuaia , Argentina
-  item-1517 at level 1: caption: Female mallard in Cornwall , England
-  item-1518 at level 1: caption: Pecten along the bill
-  item-1519 at level 1: caption: A Muscovy duckling
-  item-1520 at level 1: caption: Ringed teal
-  item-1521 at level 1: caption: Indian Runner ducks , a common breed of domestic ducks
-  item-1522 at level 1: caption: Three black-colored ducks in the coat of arms of Maaninka [ 49 ]
-  item-1523 at level 1: caption: Edit this at Wikidata
+      item-1474 at level 3: inline: group group
+        item-1475 at level 4: text: Categories
+        item-1476 at level 4: text: :
+      item-1477 at level 3: list: group list
+        item-1478 at level 4: list_item: Ducks
+        item-1479 at level 4: list_item: Game birds
+        item-1480 at level 4: list_item: Bird common names
+      item-1481 at level 3: text: Hidden categories:
+      item-1482 at level 3: list: group list
+        item-1483 at level 4: list_item: All accuracy disputes
+        item-1484 at level 4: list_item: Accuracy disputes from February 2020
+        item-1485 at level 4: list_item: CS1 Finnish-language sources (fi)
+        item-1486 at level 4: list_item: CS1 Latvian-language sources (lv)
+        item-1487 at level 4: list_item: CS1 Swedish-language sources (sv)
+        item-1488 at level 4: list_item: Articles with short description
+        item-1489 at level 4: list_item: Short description is different from Wikidata
+        item-1490 at level 4: list_item: Wikipedia indefinitely move-protected pages
+        item-1491 at level 4: list_item: Wikipedia indefinitely semi-protected pages
+        item-1492 at level 4: list_item: Articles with 'species' microformats
+        item-1493 at level 4: list_item: Articles containing Old English (ca. 450-1100)-language text
+        item-1494 at level 4: list_item: Articles containing Dutch-language text
+        item-1495 at level 4: list_item: Articles containing German-language text
+        item-1496 at level 4: list_item: Articles containing Norwegian-language text
+        item-1497 at level 4: list_item: Articles containing Lithuanian-language text
+        item-1498 at level 4: list_item: Articles containing Ancient Greek (to 1453)-language text
+        item-1499 at level 4: list_item: All articles with self-published sources
+        item-1500 at level 4: list_item: Articles with self-published sources from February 2020
+        item-1501 at level 4: list_item: All articles with unsourced statements
+        item-1502 at level 4: list_item: Articles with unsourced statements from January 2022
+        item-1503 at level 4: list_item: CS1: long volume value
+        item-1504 at level 4: list_item: Pages using Sister project links with wikidata mismatch
+        item-1505 at level 4: list_item: Pages using Sister project links with hidden wikidata
+        item-1506 at level 4: list_item: Webarchive template wayback links
+        item-1507 at level 4: list_item: Articles with Project Gutenberg links
+        item-1508 at level 4: list_item: Articles containing video clips
+      item-1509 at level 3: list: group list
+  item-1510 at level 1: caption: Page semi-protected
+  item-1511 at level 1: caption: Edit this classification
+  item-1512 at level 1: caption: Pacific black duck displaying the characteristic upending "duck"
+  item-1513 at level 1: caption: Male mallard .
+  item-1514 at level 1: caption: Wood ducks .
+  item-1515 at level 1: caption: Mallard landing in approach
+  item-1516 at level 1: caption: Male Mandarin duck
+  item-1517 at level 1: caption: Flying steamer ducks in Ushuaia , Argentina
+  item-1518 at level 1: caption: Female mallard in Cornwall , England
+  item-1519 at level 1: caption: Pecten along the bill
+  item-1520 at level 1: caption: A Muscovy duckling
+  item-1521 at level 1: caption: Ringed teal
+  item-1522 at level 1: caption: Indian Runner ducks , a common breed of domestic ducks
+  item-1523 at level 1: caption: Three black-colored ducks in the coat of arms of Maaninka [ 49 ]
+  item-1524 at level 1: caption: Edit this at Wikidata
