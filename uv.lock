@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.10, <4.0"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -1246,11 +1246,11 @@ requires-dist = [
     { name = "certifi", specifier = ">=2024.7.4" },
     { name = "defusedxml", specifier = ">=0.7.1,<0.8.0" },
     { name = "docling-core", extras = ["chunking"], specifier = ">=2.70.0,<3.0.0" },
-    { name = "docling-ibm-models", specifier = ">=3.12.0,<4" },
+    { name = "docling-ibm-models", specifier = ">=3.13.0,<4" },
     { name = "docling-parse", specifier = ">=5.3.2,<6.0.0" },
     { name = "easyocr", marker = "extra == 'easyocr'", specifier = ">=1.7,<2.0" },
     { name = "filetype", specifier = ">=1.2.0,<2.0.0" },
-    { name = "huggingface-hub", specifier = ">=0.23,<1" },
+    { name = "huggingface-hub", specifier = ">=1.5.0,<2" },
     { name = "lxml", specifier = ">=4.0.0,<7.0.0" },
     { name = "marko", specifier = ">=2.1.2,<3.0.0" },
     { name = "mlx-vlm", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'vlm'", specifier = ">=0.3.0,<1.0.0" },
@@ -1284,7 +1284,7 @@ requires-dist = [
     { name = "torch", specifier = ">=2.2.2,<3.0.0" },
     { name = "torchvision", specifier = ">=0,<1" },
     { name = "tqdm", specifier = ">=4.65.0,<5.0.0" },
-    { name = "transformers", marker = "extra == 'vlm'", specifier = ">=4.46.0,<5.0.0" },
+    { name = "transformers", marker = "extra == 'vlm'", specifier = ">=5.4.0,<6.0.0" },
     { name = "tritonclient", extras = ["grpc"], marker = "extra == 'remote-serving'", specifier = ">=2.65.0,<3.0.0" },
     { name = "typer", specifier = ">=0.12.5,<0.22.0" },
 ]
@@ -1373,7 +1373,7 @@ chunking = [
 
 [[package]]
 name = "docling-ibm-models"
-version = "3.12.0"
+version = "3.13.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "accelerate" },
@@ -1391,9 +1391,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "transformers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/95/57/b4cee1ea5a7d34a8a96787aa2dc371e4dd17a1a3bd6131cf3ced9024f1be/docling_ibm_models-3.12.0.tar.gz", hash = "sha256:85c2b6c9dbb7fbb8eaf0f2a462b5984626457a6dc33148643491270c27767b46", size = 98458, upload-time = "2026-03-09T12:27:35.744Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/61/87/01bf0c710af37328aa3517b34e64c2a2f3a6283a1cfc8859ae05881dd769/docling_ibm_models-3.13.0.tar.gz", hash = "sha256:f402effae8a63b0e5c3b5ce13120601baa2cd8098beef1d53ab5a056443758d3", size = 98538, upload-time = "2026-03-27T15:49:57.569Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/98/ed/820fdcea9aa329119855a658366fb13098b375a2b024358b1d7836f47419/docling_ibm_models-3.12.0-py3-none-any.whl", hash = "sha256:008fe1f5571db413782efe510c1d6327ea9df20b5255d416d0f4b56cfd090238", size = 93800, upload-time = "2026-03-09T12:27:34.477Z" },
+    { url = "https://files.pythonhosted.org/packages/25/52/11a8c8fff80e1fa581173edcc91cc92ed24184519e746fe39456f617653d/docling_ibm_models-3.13.0-py3-none-any.whl", hash = "sha256:a11acc6034b06e0bed8dc0ca1fa700615b8246eacce411619168e1f6562b0d0d", size = 93855, upload-time = "2026-03-27T15:49:56.353Z" },
 ]
 
 [[package]]
@@ -1749,7 +1749,7 @@ wheels = [
 
 [[package]]
 name = "gliner"
-version = "0.2.26"
+version = "0.2.24"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "huggingface-hub", marker = "python_full_version < '3.14'" },
@@ -1759,9 +1759,9 @@ dependencies = [
     { name = "tqdm", marker = "python_full_version < '3.14'" },
     { name = "transformers", marker = "python_full_version < '3.14'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/49/18/e199cb97147c4a9260c75e4caf51e17be6ff969b0604a029c9c62810cbe0/gliner-0.2.26.tar.gz", hash = "sha256:6783be92b4b81caa878dcc4269ba37800207c37118d8ff9be028b93bddd6813d", size = 181224, upload-time = "2026-03-19T15:07:22.707Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2b/6d/677d50855311e4a1286204c5ef2ef5672d01688246a303bde5326311bdad/gliner-0.2.24.tar.gz", hash = "sha256:191a37d1b3d297927c37ae890ce904e9d4e9d3f4c8e19715e77a9876e5f8a575", size = 160568, upload-time = "2025-11-26T18:20:32.867Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7c/6e/d54d3d2867e29b68a22b144f570c8204209647fccc7879cec5218d6ed5fb/gliner-0.2.26-py3-none-any.whl", hash = "sha256:b9baa47641efb90b9d069add0528ed2464d137991ff097f42b0cab37a91ba991", size = 170429, upload-time = "2026-03-19T15:07:19.914Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/50/6aae23929bd019300ef13fb79d60609215c53d4541963eaffc438e62f77e/gliner-0.2.24-py3-none-any.whl", hash = "sha256:efe614e05b31d06d848373aef8270f567e34fe1b4e96f816a8c70cef24908a6c", size = 151880, upload-time = "2025-11-26T18:20:28.801Z" },
 ]
 
 [[package]]
@@ -1960,21 +1960,22 @@ wheels = [
 
 [[package]]
 name = "huggingface-hub"
-version = "0.36.2"
+version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "filelock" },
     { name = "fsspec" },
-    { name = "hf-xet", marker = "platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'arm64' or platform_machine == 'x86_64'" },
+    { name = "hf-xet", marker = "platform_machine == 'AMD64' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'arm64' or platform_machine == 'x86_64'" },
+    { name = "httpx" },
     { name = "packaging" },
     { name = "pyyaml" },
-    { name = "requests" },
     { name = "tqdm" },
+    { name = "typer" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7c/b7/8cb61d2eece5fb05a83271da168186721c450eb74e3c31f7ef3169fa475b/huggingface_hub-0.36.2.tar.gz", hash = "sha256:1934304d2fb224f8afa3b87007d58501acfda9215b334eed53072dd5e815ff7a", size = 649782, upload-time = "2026-02-06T09:24:13.098Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8e/2a/a847fd02261cd051da218baf99f90ee7c7040c109a01833db4f838f25256/huggingface_hub-1.8.0.tar.gz", hash = "sha256:c5627b2fd521e00caf8eff4ac965ba988ea75167fad7ee72e17f9b7183ec63f3", size = 735839, upload-time = "2026-03-25T16:01:28.152Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a8/af/48ac8483240de756d2438c380746e7130d1c6f75802ef22f3c6d49982787/huggingface_hub-0.36.2-py3-none-any.whl", hash = "sha256:48f0c8eac16145dfce371e9d2d7772854a4f591bcb56c9cf548accf531d54270", size = 566395, upload-time = "2026-02-06T09:24:11.133Z" },
+    { url = "https://files.pythonhosted.org/packages/a9/ae/8a3a16ea4d202cb641b51d2681bdd3d482c1c592d7570b3fa264730829ce/huggingface_hub-1.8.0-py3-none-any.whl", hash = "sha256:d3eb5047bd4e33c987429de6020d4810d38a5bef95b3b40df9b17346b7f353f2", size = 625208, upload-time = "2026-03-25T16:01:26.603Z" },
 ]
 
 [[package]]
@@ -7087,24 +7088,23 @@ wheels = [
 
 [[package]]
 name = "transformers"
-version = "4.57.6"
+version = "5.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "filelock" },
     { name = "huggingface-hub" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "packaging" },
     { name = "pyyaml" },
     { name = "regex" },
-    { name = "requests" },
     { name = "safetensors" },
     { name = "tokenizers" },
     { name = "tqdm" },
+    { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c4/35/67252acc1b929dc88b6602e8c4a982e64f31e733b804c14bc24b47da35e6/transformers-4.57.6.tar.gz", hash = "sha256:55e44126ece9dc0a291521b7e5492b572e6ef2766338a610b9ab5afbb70689d3", size = 10134912, upload-time = "2026-01-16T10:38:39.284Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0b/4c/42a8e1c7bbe668d8e073941ec3205263afb1cd02683fa5a8a75e615fdfbe/transformers-5.4.0.tar.gz", hash = "sha256:cb34ca89dce345ae3224b290346b9c0fa9694b951d54f3ed16334a4b1bfe3d04", size = 8152836, upload-time = "2026-03-27T00:24:24.692Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/03/b8/e484ef633af3887baeeb4b6ad12743363af7cce68ae51e938e00aaa0529d/transformers-4.57.6-py3-none-any.whl", hash = "sha256:4c9e9de11333ddfe5114bc872c9f370509198acf0b87a832a0ab9458e2bd0550", size = 11993498, upload-time = "2026-01-16T10:38:31.289Z" },
+    { url = "https://files.pythonhosted.org/packages/0b/a0/0a87883e564e364baab32adcacb4bec2e200b28a568423c8cf7fde316461/transformers-5.4.0-py3-none-any.whl", hash = "sha256:9fbe50602d2a4e6d0aa8a35a605433dfac72d595ee2192eae192590a6cc2df86", size = 10105556, upload-time = "2026-03-27T00:24:21.735Z" },
 ]
 
 [[package]]
