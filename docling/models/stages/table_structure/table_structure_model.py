@@ -77,11 +77,16 @@ class TableStructureModel(BaseTableStructureModel):
                 TFPredictor,
             )
 
-            device = decide_device(accelerator_options.device)
-
-            # Disable MPS here, until we know why it makes things slower.
-            if device == AcceleratorDevice.MPS.value:
-                device = AcceleratorDevice.CPU.value
+            device = decide_device(
+                accelerator_options.device,
+                supported_devices=[
+                    AcceleratorDevice.CPU,
+                    AcceleratorDevice.CUDA,
+                    AcceleratorDevice.MPS,
+                    AcceleratorDevice.XPU,
+                ],
+            )
+            _log.debug(f"TableStructureModel using device: {device}")
 
             self.tm_config = c.read_config(f"{artifacts_path}/tm_config.json")
             self.tm_config["model"]["save_dir"] = artifacts_path
