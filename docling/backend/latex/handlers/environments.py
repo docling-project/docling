@@ -195,7 +195,9 @@ class EnvironmentHandlerMixin:
                 if argnlist:
                     for arg in argnlist:
                         if hasattr(arg, "nodelist") and arg.nodelist is not None:
-                            if not self._validate_tikz_nodelist(arg.nodelist, depth + 1):
+                            if not self._validate_tikz_nodelist(
+                                arg.nodelist, depth + 1
+                            ):
                                 return False
 
         return True
