@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
@@ -16,6 +17,7 @@ from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
 from docling.backend.latex.constants import ENV_LIST, ENV_MATH, ENV_QUOTE, ENV_THEOREM
 
 _log = logging.getLogger(__name__)
+_TIKZ_END_PATTERN = re.compile(r"\\end\s*\{\s*tikzpicture\s*\}")
 
 
 class EnvironmentHandlerMixin:
@@ -156,9 +158,12 @@ class EnvironmentHandlerMixin:
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
             return
 
-        figure_group = doc.add_group(
-            parent=parent, name="figure", label=GroupLabel.SECTION
-        )
+        if getattr(parent, "name", None) == "figure":
+            figure_group = parent
+        else:
+            figure_group = doc.add_group(
+                parent=parent, name="figure", label=GroupLabel.SECTION
+            )
         doc.add_text(
             parent=figure_group,
             label=DocItemLabel.CODE,
@@ -168,7 +173,7 @@ class EnvironmentHandlerMixin:
 
     def _extract_tikzpicture_atomic(self, node: LatexEnvironmentNode) -> Optional[str]:
         raw = node.latex_verbatim()
-        if "\\end{tikzpicture}" not in raw:
+        if _TIKZ_END_PATTERN.search(raw) is None:
             return None
         if not self._validate_tikz_nodelist(node.nodelist, 0):
             return None
@@ -183,7 +188,7 @@ class EnvironmentHandlerMixin:
         for node in nodes:
             if isinstance(node, LatexEnvironmentNode) and node.envname == "tikzpicture":
                 nested_raw = node.latex_verbatim()
-                if "\\end{tikzpicture}" not in nested_raw:
+                if _TIKZ_END_PATTERN.search(nested_raw) is None:
                     return False
 
             if hasattr(node, "nodelist") and node.nodelist is not None:
