@@ -1,8 +1,9 @@
+from io import BytesIO
 from pathlib import Path
 
 from pytest import warns
 
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument
 from docling.document_converter import DocumentConverter
 
@@ -85,3 +86,16 @@ def test_e2e_invalid_csv_conversions():
     print(f"converting {csv_inconsistent_header}")
     with warns(UserWarning, match="Inconsistent column lengths"):
         converter.convert(csv_inconsistent_header)
+
+
+def test_empty_csv():
+    """Regression test: converting an empty CSV file should not raise an IndexError."""
+    conv_result = get_converter().convert(
+        DocumentStream(name="empty.csv", stream=BytesIO(b"")),
+        raises_on_error=True,
+    )
+    doc = conv_result.document
+    assert doc is not None
+    # The empty CSV should result in an empty document (no tables and no texts).
+    assert len(getattr(doc, "tables", [])) == 0
+    assert len(getattr(doc, "texts", [])) == 0
