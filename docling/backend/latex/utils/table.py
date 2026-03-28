@@ -9,6 +9,7 @@ from pylatexenc.latexwalker import (
     LatexEnvironmentNode,
     LatexMacroNode,
     LatexWalker,
+    LatexWalkerParseError,
 )
 
 from docling.backend.latex.constants import (
@@ -50,7 +51,7 @@ class TableHelperMixin:
                             w = LatexWalker(content_text, tolerant_parsing=True)
                             parsed, _, _ = w.get_latex_nodes()
                             current_cell_nodes.extend(parsed)
-                        except Exception:
+                        except LatexWalkerParseError:
                             current_cell_nodes.append(
                                 LatexCharsNode(chars=content_text)
                             )
@@ -75,7 +76,7 @@ class TableHelperMixin:
                             w = LatexWalker(content_text, tolerant_parsing=True)
                             parsed, _, _ = w.get_latex_nodes()
                             current_cell_nodes.extend(parsed)
-                        except Exception:
+                        except LatexWalkerParseError:
                             current_cell_nodes.append(
                                 LatexCharsNode(chars=content_text)
                             )
