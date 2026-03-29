@@ -129,7 +129,7 @@ def test_document_timeout(test_doc_path):
         }
     )
     result = converter.convert(test_doc_path)
-    assert result.status == ConversionStatus.PARTIAL_SUCCESS, (
+    assert result.status == ConversionStatus.TIMEOUT, (
         "Expected document timeout to be used"
     )
 
@@ -142,7 +142,7 @@ def test_document_timeout(test_doc_path):
         }
     )
     result = converter.convert(test_doc_path)
-    assert result.status == ConversionStatus.PARTIAL_SUCCESS, (
+    assert result.status == ConversionStatus.TIMEOUT, (
         "Expected document timeout to be used"
     )
 
