@@ -1,8 +1,8 @@
 # Docling Pipelines Reference
 
 Docling has two pipeline families for PDFs: **standard** (parse + OCR + layout/tables)
-and **VLM** (page images through a vision-language model). The helper
-`scripts/docling-convert.py` exposes **three modes**: `standard`, `vlm-local`, `vlm-api`.
+and **VLM** (page images through a vision-language model). The `docling` CLI
+exposes both via `--pipeline standard` (default) and `--pipeline vlm`.
 The right choice depends on document type, hardware, and latency budget.
 
 ---
@@ -13,11 +13,11 @@ The right choice depends on document type, hardware, and latency budget.
 |---|---|---|
 | Born-digital PDF (text selectable) | Standard | Fast, accurate, no GPU needed |
 | Scanned PDF / image-only | Standard + OCR or VLM | Depends on quality |
-| Complex layout (multi-column, dense tables) | VLM local | Better structural understanding |
+| Complex layout (multi-column, dense tables) | VLM | Better structural understanding |
 | Handwriting, formulas, figures with embedded text | VLM | Only viable option |
 | Air-gapped / no GPU | Standard | Runs on CPU |
-| Production scale, GPU server available | VLM API (vLLM) | Best throughput |
-| Apple Silicon / local dev | VLM local (MLX) | MPS acceleration |
+| Production scale, GPU server available | VLM (vLLM) | Best throughput |
+| Apple Silicon / local dev | VLM (MLX) | MPS acceleration |
 | Speed-critical, accuracy secondary | Standard, no tables | Fastest path |
 
 ---
@@ -26,6 +26,22 @@ The right choice depends on document type, hardware, and latency budget.
 
 Uses deterministic PDF parsing (docling-parse) + optional neural OCR + neural
 table structure detection.
+
+### CLI usage
+
+```bash
+# Default (standard pipeline, OCR + tables enabled)
+docling report.pdf --output /tmp/
+
+# Custom OCR engine
+docling report.pdf --ocr-engine tesserocr --output /tmp/
+
+# Disable OCR or tables
+docling report.pdf --no-ocr --output /tmp/
+docling report.pdf --no-tables --output /tmp/
+```
+
+### Python API
 
 ```python
 from docling.document_converter import DocumentConverter, PdfFormatOption
@@ -50,7 +66,20 @@ converter = DocumentConverter(
 
 ### OCR engine options
 
-All engines are plug-and-play via `ocr_options`. Default is EasyOCR.
+All engines are plug-and-play via the CLI `--ocr-engine` flag or the Python
+`ocr_options` parameter. Default is EasyOCR.
+
+#### CLI flags
+
+| Engine | CLI flag | Notes |
+|--------|----------|-------|
+| EasyOCR | `--ocr-engine easyocr` (default) | No extra pip beyond docling defaults |
+| RapidOCR | `--ocr-engine rapidocr` | Lightweight; see Docling notes on read-only FS |
+| Tesseract (Python) | `--ocr-engine tesserocr` | Needs `pip install tesserocr` and system Tesseract |
+| Tesseract (CLI) | `--ocr-engine tesseract` | Shells out to `tesseract` binary |
+| macOS Vision | `--ocr-engine ocrmac` | macOS only |
+
+#### Python API
 
 ```python
 # EasyOCR (default — no extra install needed)
@@ -70,27 +99,24 @@ from docling.datamodel.pipeline_options import OcrMacOptions
 opts = PdfPipelineOptions(do_ocr=True, ocr_options=OcrMacOptions())
 ```
 
-### Standard pipeline + OCR: CLI vs Python
-
-`scripts/docling-convert.py` (`--pipeline standard`) maps engines like this:
-
-| Engine | CLI | Notes |
-|--------|-----|--------|
-| EasyOCR | `--ocr-engine easyocr` (default) | No extra pip beyond docling defaults |
-| RapidOCR | `--ocr-engine rapidocr` | Lightweight; see Docling notes on read-only FS |
-| Tesseract | `--ocr-engine tesseract` | Uses `TesseractOcrOptions` → needs **`pip install tesserocr`** and system Tesseract |
-| macOS Vision | `--ocr-engine mac` | `OcrMacOptions` |
-
-**Tesseract without `tesserocr`:** Docling also provides `TesseractCliOcrOptions` (shell out to the `tesseract` binary). This helper CLI does not expose it yet; set `ocr_options=TesseractCliOcrOptions()` in Python if you only have the CLI installed.
-
-**NVIDIA Nemotron OCR:** Not exposed in `docling-convert.py` and not present in docling **2.81.x** `pipeline_options` on PyPI. If a future Docling release adds a Nemotron options class, configure `PdfPipelineOptions(ocr_options=...)` in Python (see [pipeline options](https://docling-project.github.io/docling/reference/pipeline_options/) for your installed version) or extend the CLI.
-
 ---
 
 ## Pipeline 2: VLM Pipeline — local inference
 
 Processes each page as an image through a vision-language model. Replaces the
 standard layout detection + OCR stack entirely.
+
+### CLI usage
+
+```bash
+# Default VLM model (granite_docling)
+docling report.pdf --pipeline vlm --output /tmp/
+
+# Specific model
+docling report.pdf --pipeline vlm --vlm-model smoldocling --output /tmp/
+```
+
+### Python API
 
 ```python
 from docling.document_converter import DocumentConverter, PdfFormatOption
@@ -114,20 +140,20 @@ converter = DocumentConverter(
 )
 ```
 
-### Available model presets (`vlm_model_specs`)
+### Available model presets
 
-| Preset | Model | Backend | Device | Notes |
+| CLI `--vlm-model` | Python preset (`vlm_model_specs`) | Backend | Device | Notes |
 |---|---|---|---|---|
-| `GRANITEDOCLING_TRANSFORMERS` | granite-docling-258M | HF Transformers | CPU/GPU | Default |
-| `SMOLDOCLING_TRANSFORMERS` | smoldocling-256M | HF Transformers | CPU/GPU | Lighter |
-| `GRANITEDOCLING_VLLM` | granite-docling-258M | vLLM | GPU | Fast batch |
-| `GRANITEDOCLING_MLX` | granite-docling-258M-mlx | MLX | Apple MPS | M-series Macs |
+| `granite_docling` | `GRANITEDOCLING_TRANSFORMERS` | HF Transformers | CPU/GPU | Default |
+| `smoldocling` | `SMOLDOCLING_TRANSFORMERS` | HF Transformers | CPU/GPU | Lighter |
+| (Python API only) | `GRANITEDOCLING_VLLM` | vLLM | GPU | Fast batch |
+| (Python API only) | `GRANITEDOCLING_MLX` | MLX | Apple MPS | M-series Macs |
 
 ### Hybrid mode: PDF text + VLM for images/tables
 
-Set `force_backend_text=True` to use deterministic text extraction for normal
-text regions while routing images and tables through the VLM. Reduces
-hallucination risk on text-heavy pages.
+Set `force_backend_text=True` (Python API only) to use deterministic text
+extraction for normal text regions while routing images and tables through the
+VLM. Reduces hallucination risk on text-heavy pages.
 
 ```python
 pipeline_options = VlmPipelineOptions(
@@ -143,6 +169,17 @@ pipeline_options = VlmPipelineOptions(
 
 Sends page images to any OpenAI-compatible endpoint. Works with vLLM,
 LM Studio, Ollama, or a hosted model API.
+
+This is available via the CLI with `--pipeline vlm --enable-remote-services`,
+but endpoint URL, model name, and API key configuration require the Python API.
+
+### CLI usage (basic)
+
+```bash
+docling report.pdf --pipeline vlm --enable-remote-services --output /tmp/
+```
+
+### Python API (full configuration)
 
 ```python
 from docling.document_converter import DocumentConverter, PdfFormatOption

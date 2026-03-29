@@ -3,10 +3,11 @@
 """
 Evaluate a Docling JSON export and suggest pipeline / option changes.
 
-Typical flow (agent or human), from bundle root:
+Typical flow (agent or human):
 
-  python3 scripts/docling-convert.py input.pdf --format json --out doc.json
-  python3 scripts/docling-evaluate.py doc.json [--markdown out.md]
+  docling input.pdf --to json --output /tmp/
+  docling input.pdf --to md --output /tmp/
+  python3 scripts/docling-evaluate.py /tmp/input.json --markdown /tmp/input.md
 
 Exit codes: 0 = pass; 1 = fail or --fail-on-warn with status warn
 """
@@ -142,7 +143,7 @@ def evaluate(
     if m.get("heuristic_only"):
         issues.append("Could not load full DoclingDocument; metrics are partial.")
         actions.append(
-            "Ensure docling-core matches export; re-export with scripts/docling-convert.py --format json"
+            "Ensure docling-core matches export; re-export with: docling <source> --to json --output <dir>"
         )
 
     cpp = m.get("chars_per_page") or 0
@@ -151,42 +152,42 @@ def evaluate(
             f"Low text density ({cpp} chars/page); likely scan, image-heavy PDF, or extraction gap."
         )
         actions.append(
-            "Retry: standard pipeline with --ocr-engine tesseract, rapidocr, or mac"
+            "Retry: docling <source> --ocr-engine tesserocr (or rapidocr, ocrmac)"
         )
-        actions.append("Retry: --pipeline vlm-local (or vlm-api if GPU/API available)")
+        actions.append("Retry: docling <source> --pipeline vlm")
 
     if m.get("replacement_chars", 0) > 5:
         issues.append(
             "Unicode replacement characters detected; OCR may be garbling text."
         )
-        actions.append("Retry: --ocr-engine tesseract or rapidocr")
+        actions.append("Retry: docling <source> --ocr-engine tesserocr (or rapidocr)")
         actions.append(
-            "Retry: --pipeline vlm-local --force-backend-text for hybrid text+VLM"
+            "Retry: docling <source> --pipeline vlm (use force_backend_text=True via Python API for hybrid)"
         )
 
     if m.get("duplicate_heavy") or (m.get("most_repeated_text_count", 0) > 8):
         issues.append(
             "Repeated text blocks; possible layout/OCR loop or bad reading order."
         )
-        actions.append("Retry: --pipeline vlm-local for complex layout")
-        actions.append("If using VLM: try --force-backend-text for text-heavy pages")
+        actions.append("Retry: docling <source> --pipeline vlm")
+        actions.append("If using VLM: try force_backend_text=True via Python API for text-heavy pages")
 
     if expect_tables and m.get("tables", 0) == 0:
         issues.append("No tables detected but tables were expected.")
-        actions.append("Retry: standard pipeline without --no-tables")
-        actions.append("Retry: --pipeline vlm-local for merged-cell or visual tables")
+        actions.append("Retry: docling <source> (tables are enabled by default; remove --no-tables if set)")
+        actions.append("Retry: docling <source> --pipeline vlm (better for merged-cell or visual tables)")
 
     mc = m.get("markdown_chars", 0)
     if mc > 0 and mc < min_markdown_chars and m.get("page_count", 0) >= 1:
         issues.append(f"Markdown export is very short ({mc} chars) for the page count.")
-        actions.append("Retry: OCR/VLM pipelines as above")
+        actions.append("Retry: docling <source> --pipeline vlm (or try different --ocr-engine)")
 
     if m.get("text_items", 0) == 0 and m.get("page_count", 0) == 0:
         issues.append(
             "No text items and no page provenance; export may be empty or invalid."
         )
         actions.append(
-            "Verify source file opens correctly; retry with explicit --pipeline standard"
+            "Verify source file opens correctly; retry with: docling <source> --pipeline standard"
         )
 
     seen = set()
@@ -258,7 +259,7 @@ def main() -> None:
         "issues": issues,
         "recommended_actions": actions,
         "next_steps_for_agent": [
-            "Re-run scripts/docling-convert.py with flags from recommended_actions.",
+            "Re-run docling with flags from recommended_actions.",
             "Re-export JSON and run this script again until status is pass.",
             "Append a row to improvement-log.md (see SKILL.md).",
         ],

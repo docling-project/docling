@@ -14,9 +14,9 @@ license: MIT
 compatibility: Requires Python 3.10+, docling>=2.81.0, docling-core>=2.67.1
 metadata:
   author: docling-project
-  version: "1.4"
+  version: "2.0"
   upstream: https://github.com/docling-project/docling
-allowed-tools: Bash(python3:*) Bash(pip:*)
+allowed-tools: Bash(docling:*) Bash(python3:*) Bash(pip:*)
 ---
 
 # Docling Document Intelligence Skill
@@ -25,6 +25,10 @@ Use this skill to parse, convert, chunk, and analyze documents with Docling.
 It handles both local file paths and URLs, and outputs either Markdown or
 structured JSON (`DoclingDocument`).
 
+Conversion uses the **`docling` CLI** (installed with `pip install docling`).
+The Python API is used only for features the CLI does not expose (chunking,
+VLM remote-API endpoint configuration, hybrid `force_backend_text` mode).
+
 ## Scope
 
 | Task | Covered |
@@ -32,8 +36,8 @@ structured JSON (`DoclingDocument`).
 | Parse PDF / DOCX / PPTX / HTML / image | ✅ |
 | Convert to Markdown | ✅ |
 | Export as DoclingDocument JSON | ✅ |
-| Chunk for RAG (hybrid: heading + token) | ✅ |
-| Analyze structure (headings, tables, figures) | ✅ |
+| Chunk for RAG (hybrid: heading + token) | ✅ (Python API) |
+| Analyze structure (headings, tables, figures) | ✅ (Python API) |
 | OCR for scanned PDFs | ✅ (auto-enabled) |
 | Multi-source batch conversion | ✅ |
 
@@ -42,32 +46,63 @@ structured JSON (`DoclingDocument`).
 ### 1. Resolve the input
 
 Determine whether the user supplied a **local path** or a **URL**.
+The `docling` CLI accepts both directly.
 
-- Local path → pass as `str` or `Path` directly to `DocumentConverter`
-- URL → pass as `str`; Docling fetches it automatically
-- Multiple inputs → pass a list
-
-```python
-sources = ["path/to/file.pdf"]          # local
-sources = ["https://example.com/a.pdf"] # URL
-sources = ["file1.pdf", "file2.docx"]   # batch
+```bash
+docling path/to/file.pdf
+docling https://example.com/a.pdf
 ```
 
 ### 2. Choose a pipeline
 
-Docling has three pipelines. Pick based on document type and hardware.
+Docling has two pipeline families. Pick based on document type and hardware.
 
-| Pipeline | Best for | Key tradeoff |
-|---|---|---|
-| **Standard** (default) | Born-digital PDFs, speed | No GPU needed; OCR for scanned pages |
-| **VLM local** | Complex layouts, handwriting, formulas | Needs GPU; slower |
-| **VLM API** | Production scale, remote inference | Requires inference server |
+| Pipeline | CLI flag | Best for | Key tradeoff |
+|---|---|---|---|
+| **Standard** (default) | `--pipeline standard` | Born-digital PDFs, speed | No GPU needed; OCR for scanned pages |
+| **VLM** | `--pipeline vlm` | Complex layouts, handwriting, formulas | Needs GPU; slower |
 
 See [pipelines.md](pipelines.md) for the full decision matrix, OCR engine table
-(EasyOCR, RapidOCR, Tesseract, macOS; Tesseract CLI and future engines such as
-Nemotron in Python only when supported by your Docling version), and VLM presets.
+(EasyOCR, RapidOCR, Tesseract, macOS), and VLM model presets.
 
 ### 3. Convert the document
+
+#### CLI (preferred for straightforward conversions)
+
+```bash
+# Markdown (default output)
+docling report.pdf --output /tmp/
+
+# JSON (structured, lossless)
+docling report.pdf --to json --output /tmp/
+
+# VLM pipeline
+docling report.pdf --pipeline vlm --output /tmp/
+
+# VLM with specific model
+docling report.pdf --pipeline vlm --vlm-model granite_docling --output /tmp/
+
+# Custom OCR engine
+docling report.pdf --ocr-engine tesserocr --output /tmp/
+
+# Disable OCR or tables for speed
+docling report.pdf --no-ocr --output /tmp/
+docling report.pdf --no-tables --output /tmp/
+
+# Remote VLM services
+docling report.pdf --pipeline vlm --enable-remote-services --output /tmp/
+```
+
+The CLI writes output files to the `--output` directory, named after the
+input file (e.g. `report.pdf` → `report.md` or `report.json`).
+
+**CLI reference:** <https://docling-project.github.io/docling/reference/cli/>
+
+#### Python API (for advanced features)
+
+Use the Python API when you need features the CLI does not expose:
+chunking, VLM remote-API endpoint configuration, or hybrid
+`force_backend_text` mode.
 
 **Docling 2.81+ API note:** `DocumentConverter(format_options=...)` expects
 `dict[InputFormat, FormatOption]` (e.g. `InputFormat.PDF` → `PdfFormatOption`).
@@ -80,11 +115,9 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 
-# Defaults: standard PDF pipeline, OCR + tables
 converter = DocumentConverter()
-result = converter.convert(sources[0])
+result = converter.convert("report.pdf")
 
-# Custom PdfPipelineOptions (same API as scripts/docling-convert.py --pipeline standard)
 converter = DocumentConverter(
     format_options={
         InputFormat.PDF: PdfFormatOption(
@@ -92,7 +125,7 @@ converter = DocumentConverter(
         ),
     }
 )
-result = converter.convert(sources[0])
+result = converter.convert("report.pdf")
 ```
 
 **VLM pipeline — local (GraniteDocling via HF Transformers):**
@@ -115,10 +148,14 @@ converter = DocumentConverter(
         )
     }
 )
-result = converter.convert(sources[0])
+result = converter.convert("report.pdf")
 ```
 
 **VLM pipeline — remote API (vLLM / LM Studio / Ollama):**
+
+This is only available via the Python API; the CLI does not expose endpoint
+URL, model name, or API key configuration.
+
 ```python
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.base_models import InputFormat
@@ -146,29 +183,44 @@ converter = DocumentConverter(
         )
     }
 )
-result = converter.convert(sources[0])
+result = converter.convert("report.pdf")
 ```
 
-`result.document` is a `DoclingDocument` object in all three cases.
+**Hybrid mode (force_backend_text) — Python API only:**
 
-### 3. Choose output format
+Uses deterministic PDF text extraction for text regions while routing
+images and tables through the VLM. Reduces hallucination on text-heavy pages.
+
+```python
+pipeline_options = VlmPipelineOptions(
+    vlm_options=vlm_model_specs.GRANITEDOCLING_TRANSFORMERS,
+    force_backend_text=True,
+    generate_page_images=True,
+)
+```
+
+`result.document` is a `DoclingDocument` object in all cases.
+
+### 4. Choose output format
 
 **Markdown** (default, human-readable):
-```python
-md = result.document.export_to_markdown()
+```bash
+docling report.pdf --to md --output /tmp/
 ```
+Or via Python: `result.document.export_to_markdown()`
 
 **JSON / DoclingDocument** (structured, lossless):
-```python
-import json
-doc_json = result.document.model_dump()  # dict
-doc_json_str = result.document.export_to_dict()  # serialisable dict
+```bash
+docling report.pdf --to json --output /tmp/
 ```
+Or via Python: `result.document.export_to_dict()`
 
 > If the user does not specify a format, ask: "Should I output Markdown or
 > structured JSON (DoclingDocument)?"
 
-### 4. Chunk for RAG (hybrid strategy)
+### 5. Chunk for RAG (hybrid strategy)
+
+Chunking is only available via the Python API.
 
 Default: **hybrid chunker** — splits first by heading hierarchy, then
 subdivides oversized sections by token count. This preserves semantic
@@ -190,8 +242,6 @@ chunker = HybridChunker(tokenizer=tokenizer, merge_peers=True)
 chunks = list(chunker.chunk(result.document))
 
 for chunk in chunks:
-    # contextualize() is the correct method for embedding-ready text —
-    # it enriches chunk.text with heading breadcrumb metadata
     embed_text = chunker.contextualize(chunk)
     print(chunk.meta.headings)        # heading breadcrumb list
     print(chunk.meta.origin.page_no)  # source page number
@@ -212,31 +262,28 @@ tokenizer = OpenAITokenizer(
 For chunking strategies and tokenizer details, see the Docling documentation
 on chunking and `HybridChunker`.
 
-### 5. Analyze document structure
+### 6. Analyze document structure
 
 Use the `DoclingDocument` object directly to inspect structure:
 
 ```python
 doc = result.document
 
-# Iterate headings
 for item, level in doc.iterate_items():
     if hasattr(item, 'label') and item.label.name == 'SECTION_HEADER':
         print(f"{'#' * level} {item.text}")
 
-# Extract tables
 for table in doc.tables:
     print(table.export_to_dataframe())   # pandas DataFrame
     print(table.export_to_markdown())
 
-# Extract figures / images
 for picture in doc.pictures:
     print(picture.caption_text(doc))     # caption if present
 ```
 
-For the full API surface, see Docling’s structure and table export docs.
+For the full API surface, see Docling's structure and table export docs.
 
-### 6. Evaluate output and iterate (required for “best effort” conversions)
+### 7. Evaluate output and iterate (required for "best effort" conversions)
 
 After **every** conversion where the user cares about fidelity (not quick
 previews), run the bundled evaluator on the JSON export, then refine the
@@ -246,30 +293,29 @@ the run** without guessing.
 **Step A — Produce JSON and optional Markdown**
 
 ```bash
-# From the bundle root (directory containing scripts/ and SKILL.md):
-python3 scripts/docling-convert.py "<source>" --format json --out /tmp/docling-out.json
-python3 scripts/docling-convert.py "<source>" --format markdown --out /tmp/docling-out.md
+docling "<source>" --to json --output /tmp/
+docling "<source>" --to md --output /tmp/
 ```
 
 **Step B — Evaluate**
 
 ```bash
-python3 scripts/docling-evaluate.py /tmp/docling-out.json --markdown /tmp/docling-out.md
+python3 scripts/docling-evaluate.py /tmp/<filename>.json --markdown /tmp/<filename>.md
 ```
 
 If the user expects tables (invoices, spreadsheets in PDF), add
 `--expect-tables`. Tighten gates with `--fail-on-warn` in CI-style checks.
 
 The script prints a JSON report to stdout: `status` (`pass` | `warn` | `fail`),
-`metrics`, `issues`, and `recommended_actions` (concrete `scripts/docling-convert.py`
+`metrics`, `issues`, and `recommended_actions` (concrete `docling` CLI
 flags to try next).
 
 **Step C — Refinement loop (max 3 attempts unless the user says otherwise)**
 
 1. If `status` is `warn` or `fail`, apply **one** primary change from
-   `recommended_actions` (e.g. switch standard → VLM, change OCR engine,
-   ensure tables are enabled, hybrid `--force-backend-text`).
-2. Re-convert, re-export JSON, re-run `scripts/docling-evaluate.py`.
+   `recommended_actions` (e.g. switch `--pipeline vlm`, change
+   `--ocr-engine`, ensure tables are enabled).
+2. Re-convert with `docling`, re-run `scripts/docling-evaluate.py`.
 3. Stop when `status` is `pass`, or after 3 iterations — then summarize what
    worked and any remaining issues for the user.
 
@@ -286,33 +332,33 @@ After a successful pass **or** after the final iteration, append one entry to
 This log is optional for the user to git-ignore; it is for **local** learning
 so future runs on similar documents start closer to the right pipeline.
 
-### 7. Agent quality checklist (manual, if script unavailable)
+### 8. Agent quality checklist (manual, if script unavailable)
 
 If `scripts/docling-evaluate.py` cannot run, still verify:
 
 | Check | Action if bad |
 |---|---|
-| Page count matches source (roughly) | Re-run; try VLM if layout is complex |
+| Page count matches source (roughly) | Re-run; try `--pipeline vlm` if layout is complex |
 | Markdown is not near-empty | Enable OCR / VLM |
-| Tables missing when visually obvious | Enable table structure; try VLM |
-| `\ufffd` replacement characters | Different OCR or VLM |
-| Same line repeated many times | VLM or hybrid `--force-backend-text` |
+| Tables missing when visually obvious | Remove `--no-tables`; try `--pipeline vlm` |
+| `\ufffd` replacement characters | Different `--ocr-engine` or `--pipeline vlm` |
+| Same line repeated many times | `--pipeline vlm` or hybrid `force_backend_text` (Python API) |
 
 ## Common Edge Cases
 
 | Situation | Handling |
 |---|---|
-| Scanned / image-only PDF | Standard pipeline with OCR, or VLM pipeline for best quality |
-| Password-protected PDF | Will raise `ConversionError`; surface to user |
-| Very large document (500+ pages) | Standard pipeline with `do_table_structure=False` for speed |
-| Complex layout / multi-column | Prefer VLM pipeline; standard may misorder reading flow |
-| Handwriting or formulas | VLM pipeline only — standard OCR will not handle these |
+| Scanned / image-only PDF | Standard pipeline with OCR, or `--pipeline vlm` for best quality |
+| Password-protected PDF | `--pdf-password PASSWORD`; will raise `ConversionError` if wrong |
+| Very large document (500+ pages) | Standard pipeline with `--no-tables` for speed |
+| Complex layout / multi-column | `--pipeline vlm`; standard may misorder reading flow |
+| Handwriting or formulas | `--pipeline vlm` only — standard OCR will not handle these |
 | URL behind auth | Pre-download to temp file; pass local path |
-| Tables with merged cells | `table.export_to_markdown()` handles spans; VLM pipeline often more accurate |
+| Tables with merged cells | `table.export_to_markdown()` handles spans; VLM often more accurate |
 | Non-UTF-8 encoding | Docling normalises internally; no special handling needed |
-| VLM hallucinating text | Set `force_backend_text=True` for hybrid mode (PDF text + VLM layout) |
-| VLM API call blocked | `enable_remote_services=True` is mandatory on `VlmPipelineOptions` |
-| Apple Silicon | Use `GRANITEDOCLING_MLX` preset for MPS acceleration |
+| VLM hallucinating text | `force_backend_text=True` via Python API for hybrid mode |
+| VLM API call blocked | `--enable-remote-services` (CLI) or `enable_remote_services=True` (Python) |
+| Apple Silicon | `--vlm-model granite_docling` with MLX backend, or `GRANITEDOCLING_MLX` preset (Python API) |
 
 ## Pipeline reference
 
@@ -331,19 +377,13 @@ server configuration: [pipelines.md](pipelines.md)
 
 ## Dependencies
 
-Install from the bundled requirements file (always pulls latest compatible):
-
-```bash
-pip install -r scripts/requirements.txt
-```
-
-Or manually:
-
 ```bash
 pip install docling docling-core
 # For OpenAI tokenizer support:
 pip install 'docling-core[chunking-openai]'
 ```
+
+The `docling` CLI is included with the `docling` package — no separate install needed.
 
 Check installed versions (prefer distribution metadata — `docling` may not set `__version__`):
 

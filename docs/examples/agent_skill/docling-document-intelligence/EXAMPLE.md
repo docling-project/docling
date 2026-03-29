@@ -9,7 +9,7 @@
 
 The two trees are kept in sync; use either source.
 
-## Install (copy into your agent’s skills directory)
+## Install (copy into your agent's skills directory)
 
 ```bash
 # From a checkout of the Docling repo
@@ -40,39 +40,44 @@ Chunk invoice.pdf for RAG ingestion with 512 token chunks
 Process scanned.pdf using the VLM pipeline
 ```
 
-The agent should read `SKILL.md`, match the task, and run the appropriate pipeline.
+The agent should read `SKILL.md`, match the task, and run the appropriate
+`docling` CLI command or Python API call.
 
-## Running the helper scripts directly
-
-From the **bundle root** (the `docling-document-intelligence` directory):
+## Running the docling CLI directly
 
 ```bash
-pip install -r scripts/requirements.txt
+pip install docling docling-core
 
-python3 scripts/docling-convert.py report.pdf
+# Basic conversion to Markdown
+docling report.pdf --output /tmp/
 
-python3 scripts/docling-convert.py report.pdf --ocr-engine rapidocr
+# JSON output
+docling report.pdf --to json --output /tmp/
 
-python3 scripts/docling-convert.py report.pdf --format chunks --max-tokens 512
+# Custom OCR engine
+docling report.pdf --ocr-engine rapidocr --output /tmp/
 
-python3 scripts/docling-convert.py scanned.pdf --pipeline vlm-local
+# VLM pipeline
+docling scanned.pdf --pipeline vlm --output /tmp/
 
-python3 scripts/docling-convert.py doc.pdf \
-    --pipeline vlm-api \
-    --vlm-api-url http://localhost:8000/v1/chat/completions \
-    --vlm-api-model ibm-granite/granite-docling-258M
+# VLM with specific model
+docling scanned.pdf --pipeline vlm --vlm-model granite_docling --output /tmp/
+
+# Remote VLM services
+docling doc.pdf --pipeline vlm --enable-remote-services --output /tmp/
 ```
 
 ## Evaluate and refine
 
 ```bash
-python3 scripts/docling-convert.py report.pdf --format json --out /tmp/doc.json
-python3 scripts/docling-convert.py report.pdf --format markdown --out /tmp/doc.md
-python3 scripts/docling-evaluate.py /tmp/doc.json --markdown /tmp/doc.md
+docling report.pdf --to json --output /tmp/
+docling report.pdf --to md --output /tmp/
+python3 scripts/docling-evaluate.py /tmp/report.json --markdown /tmp/report.md
 ```
 
-If the report shows `warn` or `fail`, follow `recommended_actions`, re-convert,
-and optionally append a note to `improvement-log.md` (see `SKILL.md` section 6).
+If the report shows `warn` or `fail`, follow `recommended_actions`, re-convert
+with `docling` using the suggested flags, and optionally append a note to
+`improvement-log.md` (see `SKILL.md` section 7).
 
 ## What the skill covers
 
@@ -90,4 +95,5 @@ and optionally append a note to `improvement-log.md` (see `SKILL.md` section 6).
 
 - [Agent Skills specification](https://agentskills.io/specification)
 - [Docling documentation](https://docling-project.github.io/docling/)
+- [Docling CLI reference](https://docling-project.github.io/docling/reference/cli/)
 - [Docling GitHub](https://github.com/docling-project/docling)
