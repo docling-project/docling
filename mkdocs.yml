@@ -105,6 +105,7 @@ nav:
     - ✂️ Serialization & chunking:
       - examples/serialization.ipynb
       - examples/hybrid_chunking.ipynb
+      - examples/line_based_chunking.ipynb
       - examples/advanced_chunking_and_serialization.ipynb
     - 📤 Information extraction:
       - examples/extraction.ipynb
