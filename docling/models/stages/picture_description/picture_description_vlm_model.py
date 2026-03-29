@@ -117,7 +117,7 @@ class PictureDescriptionVlmModel(
         )
         inputs = inputs.to(self.device)
 
-        generated_ids = self.model.generate(
+        generated_ids = self.model.generate(  # type: ignore[misc]
             **inputs,
             generation_config=GenerationConfig(**self.options.generation_config),
         )

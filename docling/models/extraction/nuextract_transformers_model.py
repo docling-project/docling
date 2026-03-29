@@ -270,7 +270,7 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
 
         start_time = time.time()
         with torch.inference_mode():
-            generated_ids = self.vlm_model.generate(**gen_kwargs)
+            generated_ids = self.vlm_model.generate(**gen_kwargs)  # type: ignore[misc]
         generation_time = time.time() - start_time
 
         # Trim generated sequences

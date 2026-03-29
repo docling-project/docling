@@ -106,7 +106,6 @@ class InferenceFramework(str, Enum):
 
 class TransformersModelType(str, Enum):
     AUTOMODEL = "automodel"
-    AUTOMODEL_VISION2SEQ = "automodel-vision2seq"
     AUTOMODEL_CAUSALLM = "automodel-causallm"
     AUTOMODEL_IMAGETEXTTOTEXT = "automodel-imagetexttotext"
 

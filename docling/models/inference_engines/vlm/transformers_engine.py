@@ -14,7 +14,6 @@ from transformers import (
     AutoModel,
     AutoModelForCausalLM,
     AutoModelForImageTextToText,
-    AutoModelForVision2Seq,
     AutoProcessor,
     BitsAndBytesConfig,
     GenerationConfig,
@@ -176,14 +175,11 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             Union[
                 AutoModel,
                 AutoModelForCausalLM,
-                AutoModelForVision2Seq,
                 AutoModelForImageTextToText,
             ]
         ] = AutoModel
         if model_type == TransformersModelType.AUTOMODEL_CAUSALLM:
             model_cls = AutoModelForCausalLM  # type: ignore[assignment]
-        elif model_type == TransformersModelType.AUTOMODEL_VISION2SEQ:
-            model_cls = AutoModelForVision2Seq  # type: ignore[assignment]
         elif model_type == TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT:
             model_cls = AutoModelForImageTextToText  # type: ignore[assignment]
 
@@ -291,7 +287,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                     }
                 ]
                 formatted_prompt = self.processor.apply_chat_template(  # type: ignore[union-attr]
-                    messages,
+                    messages,  # type: ignore[arg-type]
                     tokenize=False,
                     add_generation_prompt=True,
                 )
@@ -312,7 +308,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             )
         else:
             inputs = self.processor(  # type: ignore[misc]
-                text=prompts,
+                text=prompts,  # type: ignore[arg-type]
                 images=images,
                 return_tensors="pt",
                 padding=True,
