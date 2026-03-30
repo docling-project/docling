@@ -398,6 +398,6 @@ class VlmModelType(str, Enum):
     GOT_OCR_2 = "got_ocr_2"
     GRANITEDOCLING = "granite_docling"
     GRANITEDOCLING_VLLM = "granite_docling_vllm"
-    GLMOCR = "glmocr"
-    GLMOCR_VLLM = "glmocr_vllm"
+    GLMOCR = "glm_ocr"
+    GLMOCR_VLLM = "glm_ocr_vllm"
     DEEPSEEKOCR_OLLAMA = "deepseekocr_ollama"

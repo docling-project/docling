@@ -22,10 +22,10 @@ from docling.pipeline.vlm_pipeline import VlmPipeline
 def test_glmocr_preset_exists():
     """Verify preset is registered with correct metadata and model spec."""
     preset_ids = VlmConvertOptions.list_preset_ids()
-    assert "glmocr" in preset_ids
+    assert "glm_ocr" in preset_ids
 
-    preset = VlmConvertOptions.get_preset("glmocr")
-    assert preset.preset_id == "glmocr"
+    preset = VlmConvertOptions.get_preset("glm_ocr")
+    assert preset.preset_id == "glm_ocr"
     assert preset.name == "GLM-OCR"
     assert preset.scale == 2.0
     assert preset.default_engine_type == VlmEngineType.AUTO_INLINE
@@ -39,7 +39,7 @@ def test_glmocr_preset_exists():
 
 def test_glmocr_preset_engine_config():
     """Verify engine overrides propagate correctly through get_engine_config."""
-    preset = VlmConvertOptions.get_preset("glmocr")
+    preset = VlmConvertOptions.get_preset("glm_ocr")
     spec = preset.model_spec
 
     # Transformers engine config should carry torch_dtype and model type
@@ -71,7 +71,7 @@ def test_glmocr_preset_engine_config():
 
 def test_glmocr_preset_instantiation():
     """Verify from_preset produces a usable VlmConvertOptions with engine options."""
-    options = VlmConvertOptions.from_preset("glmocr")
+    options = VlmConvertOptions.from_preset("glm_ocr")
     assert options.model_spec.default_repo_id == "zai-org/GLM-OCR"
     assert options.model_spec.response_format == ResponseFormat.MARKDOWN
     assert options.engine_options is not None
@@ -113,9 +113,7 @@ def test_e2e_glmocr_conversion():
     try:
         import requests
 
-        response = requests.get(
-            "http://localhost:8000/v1/models", timeout=2
-        )
+        response = requests.get("http://localhost:8000/v1/models", timeout=2)
         if response.status_code != 200:
             pytest.skip("vLLM server is not available")
     except Exception:

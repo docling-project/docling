@@ -1195,7 +1195,7 @@ VLM_CONVERT_DOLPHIN = StageModelPreset(
 )
 
 VLM_CONVERT_GLMOCR = StageModelPreset(
-    preset_id="glmocr",
+    preset_id="glm_ocr",
     name="GLM-OCR",
     description="Zhipu GLM-OCR model for text recognition and markdown conversion (0.9B parameters)",
     model_spec=VlmModelSpec(
