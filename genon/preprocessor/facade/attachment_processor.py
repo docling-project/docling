@@ -1082,6 +1082,24 @@ class DocxProcessor:
 
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
         document: DoclingDocument = self.load_documents(file_path, **kwargs)
+
+        # 🚀 [추가]: DOCX 변환 결과 DoclingDocument 객체 저장 로직
+        # 파일명을 포함해서 저장하면 나중에 여러 파일을 테스트할 때 섞이지 않아 좋습니다.
+        debug_doc_name = f"result_docx_docling.json"
+        debug_doc_path = Path.cwd() / debug_doc_name
+        
+        try:
+            # [수정]: mode="json"을 추가하면 PosixPath가 문자열로 자동 변환됩니다.
+            dict_data = document.model_dump(mode="json") 
+            
+            with open(debug_doc_path, "w", encoding="utf-8") as f:
+                json.dump(dict_data, f, ensure_ascii=False, indent=2)
+            
+            print(f"✅ [DEBUG] DOCX DoclingDocument 저장 완료: {debug_doc_path.resolve()}")
+        except Exception as e:
+            print(f"⚠️ [DEBUG] DOCX 문서 저장 실패: {e}")
+        # --------------------------------------------------
+
         artifacts_dir, reference_path = self.get_paths(file_path)
         document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
 

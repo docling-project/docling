@@ -17,8 +17,10 @@ from attachment_processor import DocumentProcessor # 첨부용
 #file_path = "../sample_files/pdf_sample.pdf"
 #file_path = "../sample_files/docx_sample.docx"
 #file_path = "../sample_files/docx_sample/롯데손해보험 데이터경영팀 MLOps 운영자 매뉴얼.docx"
-#file_path = "../sample_files/hwpx_sample.hwpx"
-file_path = "../sample_files/hwpx_sample/01_[핵심이슈]가계별 금리익스포저를 감안한 금리상승의 소비 영향 점검_24.2.19_공개용.hwp"
+file_path = "../sample_files/hwpx_sample.hwpx"
+#file_path = "../sample_files/hwpx_sample/01_[핵심이슈]가계별 금리익스포저를 감안한 금리상승의 소비 영향 점검_24.2.19_공개용.hwp"
+#file_path = "../sample_files/hwpx_sample/16_(통화정책국)의결문(안) 및 참고자료(1804)_송부용.hwpx"
+#file_path = "../sample_files/hwpx_sample/14_′24년도 DDoS 공격 방어훈련 시행 계획(안)(정보보안실-2409).hwpx"
 
 # 파일 존재 여부 확인
 if not os.path.exists(file_path):
