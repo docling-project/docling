@@ -5,8 +5,6 @@ from io import BytesIO
 from pathlib import Path
 from typing import List, Union, cast
 
-from typing_extensions import override
-
 from docling_core.types.doc import (
     BoundingBox,
     ContentLayer,
@@ -23,6 +21,7 @@ from docling_core.types.doc.base import (
 )
 from docling_core.types.doc.document import DocTagsDocument
 from PIL import Image as PILImage
+from typing_extensions import override
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
