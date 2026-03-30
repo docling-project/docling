@@ -22,6 +22,7 @@ from docling.datamodel import (
 
 # Import the following for backwards compatibility
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.kserve_v2_options import KserveV2OptionsMixin
 from docling.datamodel.layout_model_specs import (
     DOCLING_LAYOUT_EGRET_LARGE,
     DOCLING_LAYOUT_EGRET_MEDIUM,
@@ -507,6 +508,55 @@ class OcrMacOptions(OcrOptions):
             )
         ),
     ] = "vision"
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+
+class KserveV2OcrOptions(OcrOptions, KserveV2OptionsMixin):
+    """Configuration for KServe v2-based OCR (e.g., Triton Inference Server).
+
+    This OCR engine connects to a remote KServe v2-compatible inference server
+    (such as Triton) to perform OCR via gRPC or HTTP. It combines standard OCR
+    options with KServe v2 connection settings inherited from KserveV2OptionsMixin.
+
+    The engine handles custom preprocessing (RGB conversion, transpose, batching)
+    to match the expected input format of typical OCR models deployed on KServe v2
+    endpoints.
+
+    See Also:
+        `KserveV2OptionsMixin`: Provides all KServe v2 connection configuration.
+        `RapidOcrOptions`: Local OCR engine for comparison.
+    """
+
+    kind: ClassVar[Literal["kserve_v2_ocr"]] = "kserve_v2_ocr"
+
+    model_name: str = Field(
+        default="ocr",
+        description="Remote model name registered in the KServe v2 endpoint.",
+    )
+
+    lang: Annotated[
+        list[str],
+        Field(
+            description=(
+                "List of OCR languages. Note: Language selection depends on the deployed model. "
+                "This parameter is passed to the server but may not be used by all models."
+            )
+        ),
+    ] = ["english", "chinese"]
+
+    scale: Annotated[
+        float,
+        Field(
+            description=(
+                "Image scale multiplier for OCR processing. Higher values increase resolution "
+                "for better text recognition. Default 2.0 converts 72 DPI to 144 DPI."
+            ),
+            gt=0.0,
+        ),
+    ] = 2.0
+
     model_config = ConfigDict(
         extra="forbid",
     )

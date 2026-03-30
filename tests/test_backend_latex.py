@@ -1538,6 +1538,46 @@ def test_latex_multirow_table():
     assert any("Tall Cell" in c for c in cells)
 
 
+def test_latex_table_formatting_in_cells():
+    """Test that LaTeX formatting commands in multicolumn/multirow cells
+    produce clean text, not raw LaTeX syntax (issue #3199)."""
+    latex_content = rb"""
+    \documentclass{article}
+    \usepackage{multirow}
+    \begin{document}
+    \begin{tabular}{ccc}
+    \multicolumn{2}{c}{\textbf{Bold Header}} & Plain \\
+    \multicolumn{2}{c}{\textit{Italic Header}} & Other \\
+    \multicolumn{2}{c}{\tiny Small Text} & More \\
+    \multicolumn{2}{c}{\textbf{\textit{Both}}} & End \\
+    \multirow{2}{*}{\textbf{Bold Cell}} & A & B \\
+    & C & D \\
+    \end{tabular}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    assert len(doc.tables) >= 1
+    cells = [c.text.strip() for c in doc.tables[0].data.table_cells]
+
+    # Formatting macros should be stripped, leaving only text content
+    assert any("Bold Header" in c for c in cells), f"cells: {cells}"
+    assert not any("\\textbf" in c for c in cells), f"raw LaTeX in cells: {cells}"
+    assert any("Italic Header" in c for c in cells), f"cells: {cells}"
+    assert not any("\\textit" in c for c in cells), f"raw LaTeX in cells: {cells}"
+    assert any("Small Text" in c for c in cells), f"cells: {cells}"
+    assert not any("\\tiny" in c for c in cells), f"raw LaTeX in cells: {cells}"
+    assert any("Both" in c for c in cells), f"cells: {cells}"
+    assert any("Bold Cell" in c for c in cells), f"cells: {cells}"
+
+
 def test_latex_convert_error_fallback():
     """Test convert() returns an empty doc (not an exception) when _do_parse_and_process errors."""
     latex_content = b"\\documentclass{article}\\begin{document}Hello\\end{document}"

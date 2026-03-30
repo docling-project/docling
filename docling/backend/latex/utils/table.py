@@ -4,7 +4,13 @@ if TYPE_CHECKING:
     from typing import Any
 
 from docling_core.types.doc.document import TableCell, TableData
-from pylatexenc.latexwalker import LatexCharsNode, LatexEnvironmentNode, LatexMacroNode
+from pylatexenc.latexwalker import (
+    LatexCharsNode,
+    LatexEnvironmentNode,
+    LatexMacroNode,
+    LatexWalker,
+    LatexWalkerParseError,
+)
 
 from docling.backend.latex.constants import (
     MACROS_ESCAPED,
@@ -41,7 +47,14 @@ class TableHelperMixin:
                         num_cols = 1
                     content_text = args[2]
                     if content_text:
-                        current_cell_nodes.append(LatexCharsNode(chars=content_text))
+                        try:
+                            w = LatexWalker(content_text, tolerant_parsing=True)
+                            parsed, _, _ = w.get_latex_nodes()
+                            current_cell_nodes.extend(parsed)
+                        except LatexWalkerParseError:
+                            current_cell_nodes.append(
+                                LatexCharsNode(chars=content_text)
+                            )
                     finish_cell_fn(col_span=num_cols)
                 else:
                     current_cell_nodes.append(n)
@@ -59,7 +72,14 @@ class TableHelperMixin:
                         num_rows = 1
                     content_text = args[2]
                     if content_text:
-                        current_cell_nodes.append(LatexCharsNode(chars=content_text))
+                        try:
+                            w = LatexWalker(content_text, tolerant_parsing=True)
+                            parsed, _, _ = w.get_latex_nodes()
+                            current_cell_nodes.extend(parsed)
+                        except LatexWalkerParseError:
+                            current_cell_nodes.append(
+                                LatexCharsNode(chars=content_text)
+                            )
                     finish_cell_fn(row_span=num_rows)
                 else:
                     current_cell_nodes.append(n)

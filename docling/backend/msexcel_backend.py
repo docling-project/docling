@@ -464,8 +464,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             sheet: The Excel worksheet to analyze.
             start_row: The starting row index (0-based) for the flood fill.
             start_col: The starting column index (0-based) for the flood fill.
-            max_row: The maximum row index (0-based) to consider in the worksheet.
-            max_col: The maximum column index (0-based) to consider in the worksheet.
+            max_row: The exclusive row bound to consider in the worksheet.
+            max_col: The exclusive column bound to consider in the worksheet.
 
         Returns:
             A tuple containing:
@@ -494,7 +494,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         # Helper: Check if a cell has content
         def has_content(r, c):
-            if r < 0 or c < 0 or r > max_row or c > max_col:
+            if r < 0 or c < 0 or r >= max_row or c >= max_col:
                 return False
 
             # 1. Check direct value

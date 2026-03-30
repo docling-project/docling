@@ -136,6 +136,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         filtered_ocr_cells = [
             rect for rect in ocr_cells if not is_overlapping_with_existing_cells(rect)
         ]
+
         return filtered_ocr_cells
 
     def post_process_cells(self, ocr_cells: List[TextCell], page: Page) -> None:
