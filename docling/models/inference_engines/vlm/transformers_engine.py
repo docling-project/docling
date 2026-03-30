@@ -286,8 +286,10 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                         ],
                     }
                 ]
+                from typing import cast
+
                 formatted_prompt = self.processor.apply_chat_template(  # type: ignore[union-attr]
-                    messages,  # type: ignore[arg-type]
+                    cast(Any, messages),
                     tokenize=False,
                     add_generation_prompt=True,
                 )
@@ -308,7 +310,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             )
         else:
             inputs = self.processor(  # type: ignore[misc]
-                text=prompts,  # type: ignore[arg-type]
+                text=[prompt for prompt in prompts if prompt is not None],
                 images=images,
                 return_tensors="pt",
                 padding=True,
