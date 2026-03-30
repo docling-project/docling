@@ -35,11 +35,15 @@ class ThreadedLayoutVlmPipelineOptions(PaginatedPipelineOptions):
 
     @model_validator(mode="after")
     def validate_response_format(self):
-        """Validate that VLM response format is DOCTAGS (required for this pipeline)."""
-        if self.vlm_options.response_format != ResponseFormat.DOCTAGS:
+        """Validate that VLM response format is DOCTAGS or DOCLANG."""
+        if self.vlm_options.response_format not in {
+            ResponseFormat.DOCTAGS,
+            ResponseFormat.DOCLANG,
+        }:
             raise ValueError(
-                f"ThreadedLayoutVlmPipeline only supports DOCTAGS response format, "
+                f"ThreadedLayoutVlmPipeline only supports DOCTAGS and DOCLANG response formats, "
                 f"but got {self.vlm_options.response_format}. "
-                f"Please set vlm_options.response_format=ResponseFormat.DOCTAGS"
+                "Please set vlm_options.response_format to ResponseFormat.DOCTAGS "
+                "or ResponseFormat.DOCLANG"
             )
         return self

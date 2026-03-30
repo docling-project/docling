@@ -37,8 +37,30 @@ GRANITEDOCLING_TRANSFORMERS = InlineVlmOptions(
     stop_strings=["</doctag>", "<|end_of_text|>"],
 )
 
+GRANITEDOCLING_TRANSFORMERS_V2 = InlineVlmOptions(
+    repo_id="ibm-granite/granite-docling-v2",
+    prompt="<doclang>",
+    response_format=ResponseFormat.DOCTAGS,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+    supported_devices=[
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.XPU,
+    ],
+    extra_generation_config=dict(skip_special_tokens=False),
+    scale=2.0,
+    temperature=0.0,
+    max_new_tokens=8192,
+    stop_strings=["</doclang>", "<|end_of_text|>"],
+)
+
+
 GRANITEDOCLING_VLLM = GRANITEDOCLING_TRANSFORMERS.model_copy(deep=True)
 GRANITEDOCLING_VLLM.inference_framework = InferenceFramework.VLLM
+
+GRANITEDOCLING_VLLM_V2 = GRANITEDOCLING_TRANSFORMERS_V2.model_copy(deep=True)
+GRANITEDOCLING_VLLM_V2.inference_framework = InferenceFramework.VLLM
 
 GRANITEDOCLING_MLX = InlineVlmOptions(
     repo_id="ibm-granite/granite-docling-258M-mlx",
@@ -257,12 +279,12 @@ QWEN25_VL_3B_MLX = InlineVlmOptions(
 )
 
 # GoT 2.0
-GOT2_TRANSFORMERS = InlineVlmOptions(
-    repo_id="stepfun-ai/GOT-OCR-2.0-hf",
-    prompt="",
+GRANIET_DOCLING_V2 = InlineVlmOptions(
+    repo_id="...",
+    prompt="<doclang>",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.TRANSFORMERS,
-    transformers_prompt_style=TransformersPromptStyle.NONE,
+    # transformers_prompt_style=TransformersPromptStyle.RAW,
     transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
     supported_devices=[
         AcceleratorDevice.CPU,
@@ -272,8 +294,28 @@ GOT2_TRANSFORMERS = InlineVlmOptions(
     ],
     scale=2.0,
     temperature=0.0,
-    stop_strings=["<|im_end|>"],
-    extra_processor_kwargs={"format": True},
+    max_new_tokens=4096,
+    # extra_processor_kwargs={"format": True},
+    extra_generation_config=dict(skip_special_tokens=False),
+    stop_strings=["</doclang>", "<|end_of_text|>"],
+)
+
+GRANITEDOCLING_TRANSFORMERS = InlineVlmOptions(
+    repo_id="...",
+    prompt="<doclang>",
+    response_format=ResponseFormat.DOCTAGS,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+    supported_devices=[
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.XPU,
+    ],
+    extra_generation_config=dict(skip_special_tokens=False),
+    scale=2.0,
+    temperature=0.0,
+    max_new_tokens=8192,
+    stop_strings=["</doctag>", "<|end_of_text|>"],
 )
 
 

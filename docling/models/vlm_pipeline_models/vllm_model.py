@@ -192,12 +192,40 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         # Initialize vLLM LLM
         self.llm = LLM(**llm_kwargs)
 
-        # Initialize processor for prompt templating (needed for CHAT style)
-        self.processor = AutoProcessor.from_pretrained(
-            artifacts_path,
-            trust_remote_code=self.vlm_options.trust_remote_code,
-            revision=self.vlm_options.revision,
-        )
+        if "v2" in llm_kwargs["model"].lower():
+            from transformers import AutoTokenizer, Idefics3Processor
+
+            try:
+                from transformers import GotOcr2ImageProcessor
+            except ImportError:
+                from transformers.models.got_ocr2.image_processing_got_ocr2 import (
+                    GotOcr2ImageProcessor,
+                )
+
+            tokenizer = AutoTokenizer.from_pretrained(
+                artifacts_path,
+                trust_remote_code=vlm_options.trust_remote_code,
+                revision=vlm_options.revision,
+            )
+            image_processor = GotOcr2ImageProcessor.from_pretrained(
+                artifacts_path,
+                trust_remote_code=vlm_options.trust_remote_code,
+                revision=vlm_options.revision,
+            )
+
+            self.processor = Idefics3Processor(
+                image_processor=image_processor,
+                tokenizer=tokenizer,
+                image_seq_len=64,
+                chat_template=getattr(tokenizer, "chat_template", None),
+            )
+        else:
+            # Initialize processor for prompt templating (needed for CHAT style)
+            self.processor = AutoProcessor.from_pretrained(
+                artifacts_path,
+                trust_remote_code=self.vlm_options.trust_remote_code,
+                revision=self.vlm_options.revision,
+            )
 
         # --------- SamplingParams (runtime) ---------
         self.sampling_params = SamplingParams(
