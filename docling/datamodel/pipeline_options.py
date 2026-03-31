@@ -84,6 +84,11 @@ class BaseOptions(BaseModel):
     kind: ClassVar[str]
 
 
+class ChartExtractionModelKind(str, Enum):
+    GRANITE_VISION = "granite-vision"
+    GRANITE_VISION_V4 = "granite-vision-v4"
+
+
 class TableFormerMode(str, Enum):
     """Operating modes for TableFormer table structure extraction model.
 
@@ -1199,8 +1204,8 @@ class ConvertPipelineOptions(PipelineOptions):
         ),
     ] = _default_picture_description_options
 
-    do_chart_extraction: bool = (
-        False  # True: extract data in tabular format from bar-, pie and line-charts
+    chart_extraction_model: Optional[ChartExtractionModelKind] = (
+        None  # Set to a ChartExtractionModelKind value to enable chart data extraction
     )
 
 

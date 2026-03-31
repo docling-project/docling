@@ -16,6 +16,7 @@ from docling.datamodel.vlm_model_specs import (
 )
 from docling.models.stages.chart_extraction.granite_vision import (
     ChartExtractionModelGraniteVision,
+    ChartExtractionModelGraniteVisionV4,
 )
 from docling.models.stages.code_formula.code_formula_model import CodeFormulaModel
 from docling.models.stages.layout.layout_model import LayoutModel
@@ -53,6 +54,7 @@ def download_models(
     with_smoldocling_mlx: bool = False,
     with_granite_vision: bool = False,
     with_granite_chart_extraction: bool = False,
+    with_granite_chart_extraction_v4: bool = False,
     with_rapidocr: bool = True,
     with_easyocr: bool = False,
 ):
@@ -167,6 +169,14 @@ def download_models(
         _log.info("Downloading Granite Vision Charts Extraction model...")
         ChartExtractionModelGraniteVision.download_models(
             local_dir=output_dir / ChartExtractionModelGraniteVision._model_repo_folder,
+            force=force,
+            progress=progress,
+        )
+
+    if with_granite_chart_extraction_v4:
+        _log.info("Downloading Granite Vision 4.0 Charts Extraction model...")
+        ChartExtractionModelGraniteVisionV4.download_models(
+            local_dir=output_dir / ChartExtractionModelGraniteVisionV4._model_repo_folder,
             force=force,
             progress=progress,
         )
