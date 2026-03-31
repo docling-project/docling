@@ -1,11 +1,13 @@
 import logging
 import re
+import warnings
 from collections.abc import Iterable
 from io import StringIO
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import Any, List, Literal, Optional, cast
 
 import pandas as pd
+import torch
 from docling_core.types.doc import (
     DoclingDocument,
     NodeItem,
@@ -32,9 +34,11 @@ _log = logging.getLogger(__name__)
 class ChartExtractionModelOptions(BaseModel):
     kind: Literal["chart_extraction"] = "chart_extraction"
 
-    chart2csv: bool = True # prompt <chart2csv>	Chart to CSV with table with headers and numeric values
-    chart2code: bool = False # prompt <chart2code> Chart to Python code that recreates the chart
-    chart2summary: bool = False # <chart2summary> Chart to summary with natural-language description of the chart
+    chart2csv: bool = True  # prompt <chart2csv>	Chart to CSV with table with headers and numeric values
+    chart2code: bool = (
+        False  # prompt <chart2code> Chart to Python code that recreates the chart
+    )
+    chart2summary: bool = False  # <chart2summary> Chart to summary with natural-language description of the chart
 
 
 class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
@@ -84,10 +88,14 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
 
             self._processor = AutoProcessor.from_pretrained(
                 artifacts_path,
+                trust_remote_code=True,
             )
             self._model_max_length = self._processor.tokenizer.model_max_length
             self._model = AutoModelForImageTextToText.from_pretrained(
-                artifacts_path, device_map=self.device
+                artifacts_path,
+                device_map=self.device,
+                dtype="auto",
+                trust_remote_code=True,
             )
             self._model.eval()
 
@@ -205,8 +213,6 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
         ]
 
         # autoregressively complete prompt for batch
-        from typing import Any, cast
-
         output_ids = cast(Any, self._model).generate(
             **inputs,
             max_new_tokens=self._model_max_length,
@@ -428,13 +434,29 @@ class ChartExtractionModelGraniteVisionV4(BaseItemAndImageEnrichmentModel):
                     f"Model artifacts not found at {artifacts_path / self._model_repo_folder}, they will be downloaded."
                 )
 
-            self._processor = AutoProcessor.from_pretrained(
-                artifacts_path,
-            )
-            self._model_max_length = self._processor.tokenizer.model_max_length
-            self._model = AutoModelForImageTextToText.from_pretrained(
-                artifacts_path, device_map=self.device
-            )
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message=".*torch_dtype.*deprecated.*",
+                    category=UserWarning,
+                )
+                warnings.filterwarnings(
+                    "ignore",
+                    message=".*incorrect regex pattern.*",
+                    category=UserWarning,
+                )
+                self._processor = AutoProcessor.from_pretrained(
+                    artifacts_path,
+                    trust_remote_code=True,
+                )
+                self._model_max_length = self._processor.tokenizer.model_max_length
+                self._model = AutoModelForImageTextToText.from_pretrained(
+                    artifacts_path,
+                    device_map=self.device,
+                    dtype=torch.bfloat16,
+                    trust_remote_code=True,
+                )
+            cast(Any, self._model).merge_lora_adapters()
             self._model.eval()
 
     @staticmethod
@@ -486,54 +508,42 @@ class ChartExtractionModelGraniteVisionV4(BaseItemAndImageEnrichmentModel):
             elements.append(el.item)  # type: ignore[arg-type]
             images.append(el.image)
 
-        prompts: list[str] = []
-        if self.options.chart2csv:
-            prompts.append("<chart2csv>")
-        if self.options.chart2code:
-            prompts.append("<chart2code>")
-        if self.options.chart2summary:
-            prompts.append("<chart2summary>")
-
-        conversations = []
-        for image in images:
-            for prompt in prompts:
-                conversations.append(
-                    [
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "image", "image": image},
-                                {"type": "text", "text": prompt},
-                            ],
-                        },
-                    ]
-                )
-
-        inputs = self._processor.apply_chat_template(
-            conversations,
-            add_generation_prompt=True,
-            tokenize=True,
-            return_dict=True,
-            return_tensors="pt",
-            padding=True,
-            padding_side="left",
+        conversations = [
+            [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image"},
+                        {"type": "text", "text": "<chart2csv>"},
+                    ],
+                }
+            ]
+            for _ in images
+        ]
+        texts = [
+            self._processor.apply_chat_template(
+                conv, tokenize=False, add_generation_prompt=True
+            )
+            for conv in conversations
+        ]
+        inputs = self._processor(
+            text=texts, images=images, return_tensors="pt", padding=True, do_pad=True
         ).to(self.device)
 
-        eos_ids = [
-            self._processor.tokenizer.eos_token_id,
-            self._processor.tokenizer.convert_tokens_to_ids("<|end_of_text|>"),
-        ]
-
-        output_ids = self._model.generate(
+        output_ids = cast(Any, self._model).generate(
             **inputs,
             max_new_tokens=self._model_max_length,
-            eos_token_id=eos_ids,
             use_cache=True,
         )
 
-        output_texts = self._processor.batch_decode(
-            output_ids, skip_special_tokens=True
-        )
+        # Decode only the generated tokens, not the input prompt
+        output_texts = [
+            self._processor.decode(
+                output_ids[i, inputs["input_ids"].shape[1] :],
+                skip_special_tokens=True,
+            )
+            for i in range(len(images))
+        ]
 
         chart_data: list[Optional[TabularChartMetaField]] = self._post_process(
             outputs=output_texts
@@ -572,41 +582,17 @@ class ChartExtractionModelGraniteVisionV4(BaseItemAndImageEnrichmentModel):
         return chart_data
 
     def _extract_csv_to_dataframe(self, decoded_text: str) -> pd.DataFrame:
-        """
-        Extract CSV content from decoded text and convert to DataFrame.
-
-        Handles:
-        - Chat format with <|assistant|> tags
-        - Nested code blocks (```csv ``` inside ```)
-        - Various CSV formatting issues
-
-        Args:
-            decoded_text: The decoded output from the model
-
-        Returns:
-            pandas DataFrame containing the CSV data
-        """
-        # Extract the assistant's response
-        assistant_match = re.search(r"<\|assistant\|>\s*(.*)", decoded_text, re.DOTALL)
-        if not assistant_match:
-            raise ValueError("Could not find assistant response in decoded text")
-
-        assistant_response = assistant_match.group(1).strip()
-
-        # Extract the first CSV code block (```csv ... ```)
-        # This handles <|end_of_text|> tokens and multiple blocks in the output
-        csv_match = re.search(r"```csv\s*\n(.*?)\n```", assistant_response, re.DOTALL)
+        # decoded_text is already the raw generated output (no conversation wrapper)
+        csv_match = re.search(r"```csv\s*\n(.*?)\n```", decoded_text, re.DOTALL)
         if csv_match:
             csv_content = csv_match.group(1).strip()
         else:
-            # Fallback: take content up to first <|end_of_text|> and strip
-            # code block markers
-            csv_content = assistant_response.split("<|end_of_text|>")[0].strip()
+            # Fallback: strip any code block markers
+            csv_content = decoded_text.strip()
             csv_content = re.sub(r"^```+(?:csv)?\s*", "", csv_content)
             csv_content = re.sub(r"```+\s*$", "", csv_content)
             csv_content = csv_content.strip()
 
-        # Convert to DataFrame
         try:
             dataframe = pd.read_csv(StringIO(csv_content), header=None)
             return dataframe
@@ -616,7 +602,6 @@ class ChartExtractionModelGraniteVisionV4(BaseItemAndImageEnrichmentModel):
             raise
 
     def _is_numeric(self, value) -> bool:
-        """Check if a value is numeric (int or float)."""
         if pd.isna(value):
             return False
         try:
@@ -626,27 +611,13 @@ class ChartExtractionModelGraniteVisionV4(BaseItemAndImageEnrichmentModel):
             return False
 
     def _dataframe_to_tabledata(self, df: pd.DataFrame) -> TableData:
-        """
-        Transform a pandas DataFrame into a TableData object.
-
-        Automatically infers if the first row is a header by checking if all
-        values in the first row are non-numeric.
-
-        Args:
-            df: The pandas DataFrame to convert
-
-        Returns:
-            TableData object containing the table structure
-        """
         table_cells = []
 
-        # Infer if first row is header: check if all values in first row are non-numeric
         first_row_is_header = False
         if len(df) > 0:
             first_row = df.iloc[0]
             first_row_is_header = all(not self._is_numeric(val) for val in first_row)
 
-        # Add header row cells if inferred
         if first_row_is_header:
             for col_idx, value in enumerate(df.iloc[0]):
                 cell = TableCell(
@@ -664,18 +635,15 @@ class ChartExtractionModelGraniteVisionV4(BaseItemAndImageEnrichmentModel):
                 )
                 table_cells.append(cell)
 
-        # Add data cells (skip the first row if it was used as header)
         data_df = df.iloc[1:] if first_row_is_header else df
         row_offset = 1 if first_row_is_header else 0
         for row_idx, (_idx, row) in enumerate(data_df.iterrows()):
             for col_idx, value in enumerate(row):
-                # Convert value to string, handling NaN and None
                 if pd.isna(value):
                     text = ""
                 else:
                     text = str(value)
 
-                # Check if the value is numeric - non-numeric cells are row headers
                 is_row_header = not self._is_numeric(value)
 
                 cell = TableCell(
@@ -693,11 +661,7 @@ class ChartExtractionModelGraniteVisionV4(BaseItemAndImageEnrichmentModel):
                 )
                 table_cells.append(cell)
 
-        # Total rows equals DataFrame length in both cases:
-        # with header: 1 header + (len(df) - 1) data rows = len(df)
-        # without header: len(df) data rows
         num_rows = len(df)
         num_cols = len(df.columns)
 
         return TableData(table_cells=table_cells, num_rows=num_rows, num_cols=num_cols)
-    
