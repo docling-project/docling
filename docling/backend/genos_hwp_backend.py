@@ -68,7 +68,6 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         # 1. PipelineOptions 등에서 넘어오는 이미 저장 여부 설정 받기
         # kwargs에 없으면 기본적으로 True로 설정합니다.
         self.save_images = kwargs.get("save_images", True)
-        
         # 만약 WMF 변환 포함 여부도 기존처럼 쓰고 싶다면 추가
         self.include_wmf = kwargs.get("include_wmf", True)
 
@@ -175,7 +174,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             mimetype = "application/octet-stream" # 알 수 없는 경우 기본값
         
         # b) binary_hash는 보통 정수형(int)을 기대하므로, 
-        # 만약 문자열 해시라면 정수로 변환하거나 적절히 처리해야 합니다.
+        # 만약 문자열 해시라면 정수로 변환하거나 적절히 처리해야.
         try:
             bin_hash = int(self.document_hash, 16) & ((1 << 64) - 1) if hasattr(self, "document_hash") else 0
         except (ValueError, TypeError):
@@ -190,8 +189,6 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
 
         # 3. 실제 데이터를 담을 DoclingDocument 객체를 초기화합니다.
         doc = DoclingDocument(name=self.source_path.stem or "file", origin=origin)
-
-        #print(f"self.source_path:{self.source_path}")
 
         # 4. 임시 디렉토리에서 SDK 작업 시작
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -226,59 +223,10 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                 cwd=str(SDK_DIR)
             )
 
-            # --- 4-c) 결과 복제 임시 코드 ---
-            #original_file_path = Path(str(self.input.path)) 
-            
-            # 2. 저장 폴더 구조 생성
-            # 원본 파일명 (예: hwpx_sample.hwpx -> hwpx_sample)
-            import shutil
-            # 1. 보관할 타겟 경로 설정 
-            # (주의: self.source_path가 /tmp라면 원본 위치를 알기 어려우므로, 
-            #  현재 프로젝트의 'debug_results' 폴더 안에 모으도록 구성했습니다.)
-            
-            # 파일명에서 확장자 제거 (예: hwpx_sample)
-            stem_name = self.source_path.stem 
-            
-            # 결과가 저장될 경로: ./debug_results/hwpx_sample/jayu_sdk_result/
-            # 원하시는 특정 절대 경로가 있다면 Path("...") 안에 직접 넣으셔도 됩니다.
-            storage_dir = Path.cwd() / "debug_results" / stem_name / "jayu_sdk_result"
-            storage_dir.mkdir(parents=True, exist_ok=True)
-
-            try:
-                # 2. 파일 복사 (output.json, output.info)
-                if json_out.exists():
-                    shutil.copy2(json_out, storage_dir / "output.json")
-                if info_out.exists():
-                    shutil.copy2(info_out, storage_dir / "output.info")
-
-                # 3. 이미지 폴더 복사
-                if img_dir.exists():
-                    dest_img_dir = storage_dir / "images"
-                    # 기존에 이미 폴더가 있다면 삭제 후 복사 (덮어쓰기)
-                    if dest_img_dir.exists():
-                        shutil.rmtree(dest_img_dir)
-                    shutil.copytree(img_dir, dest_img_dir)
-                
-                print(f"DEBUG: SDK 결과물이 성공적으로 보관되었습니다 -> {storage_dir}")
-            except Exception as e:
-                print(f"DEBUG: 결과물 보관 중 오류 발생(무시하고 진행): {e}")
-
             # --- 5. 기존의 후속 로직 시작 ---
 
             # 5. 자유소프트의 결과중, '.info'를 활용해서 페이지 길이 & 크기 정보 DoclingDocument에 설정 
             self._setup_pages(doc, info_out)
-
-            # [페이지 설정 후 값 확인]
-            print(f"\n--- 📄 페이지 설정 결과 확인 (총 {len(doc.pages)}개) ---")
-            if not doc.pages:
-                print("❌ [ERROR] 등록된 페이지 정보가 없습니다!")
-            else:
-                for page_no, page_item in sorted(doc.pages.items()):
-                    # page_item.size에서 width와 height를 가져옵니다.
-                    w = page_item.size.width
-                    h = page_item.size.height
-                    print(f"📍 [Page {page_no:02}] Size: {w} x {h} pt")
-            print("------------------------------------------\n")
 
             # 6. 자유소프트 SDK의 결과를 hwp_data에 저장
             hwp_data = []
@@ -303,21 +251,6 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                     except json.JSONDecodeError as e:
                         print(f"⚠️ {line_no}행 파싱 실패 (스킵): {e}")
                         continue
-            
-            # [hwp_data 임시로 저장]
-            # 스크립트를 실행한 현재 디렉토리(CWD)에 저장
-            #debug_json_name = f"{self.source_path.stem}_debug_raw.json"
-            debug_json_name = f"result_jayu_sdk.json"
-            debug_json_path = Path.cwd() / debug_json_name
-            
-            try:
-                with open(debug_json_path, "w", encoding="utf-8") as df:
-                    json.dump(hwp_data, df, ensure_ascii=False, indent=2)
-                
-                # 절대 경로로 출력해줘야 나중에 터미널에서 찾기 편합니다.
-                print(f"🔍 [DEBUG] SDK 생데이터가 현재 경로에 저장됨: {debug_json_path.resolve()}")
-            except Exception as e:
-                print(f"⚠️ [DEBUG] 실행 경로 파일 저장 실패: {e}")
 
             # 7. hwp_data를 Docling 구조로 변환
             # 3번에서 만든 DoclingDocument 객체에 내용을 채워 넣기.
@@ -325,28 +258,10 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             self._walk_hwp_data(hwp_data, doc)
             self.current_img_dir = None
 
-            # 7.5 [DEBUG] 최종 변환된 DoclingDocument 객체를 JSON으로 저장
-            # _walk_hwp_data 처리가 완료된 최종 결과물을 확인합니다.
-            #debug_doc_name = f"{self.source_path.stem}_debug_docling.json"
-            debug_doc_name = f"result_docling.json"
-            debug_doc_path = Path.cwd() / debug_doc_name
-            
-            try:
-                # 🚀 [수정]: mode="json"을 추가해야 AnyUrl, Path 객체 등이 문자열로 변환됩니다.
-                dict_data = doc.model_dump(mode="json") 
-                
-                with open(debug_doc_path, "w", encoding="utf-8") as f:
-                    # 이제 dict_data는 순수 JSON 타입들로만 이루어져 있어 에러가 나지 않습니다.
-                    json.dump(dict_data, f, ensure_ascii=False, indent=2)
-                
-                print(f"✅ [DEBUG] 최종 DoclingDocument 저장 완료: {debug_doc_path.resolve()}")
-            except Exception as e:
-                print(f"⚠️ [DEBUG] 최종 문서 저장 실패: {e}")
-
         # 8. 완성된 DoclingDocument 형태 문서 반환
         return doc
 
-    # --- [Step 1] 텍스트 처리에 집중한 구현 ---
+    # --- DoclingDocument 객체에 자유소프트 SDK의 결과를 채워주는 함수 ---
     def _walk_hwp_data(self, data: List[List[Dict]], doc: DoclingDocument):
         """페이지 그룹화를 제거하고 모든 아이템을 body에 직접 나열하여 DOCX 스타일로 구성합니다."""
         self._processed_hashes = set()
@@ -461,15 +376,11 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             )
 
     def _handle_image(self, item: Dict, doc: DoclingDocument, page_no: int, parent: Any):
-        # 1. JSON에 적힌 값을 가져옴 (예: "/tmp/old_path/images/image6.bmp")
-        #raw_path = item.get("value", "")
-        #if not raw_path:
-        #    return
+        # 1. JSON에 적힌 값(이미지 경로)을 가져옴 (예: "/tmp/old_path/images/image6.bmp")
         img_path = item.get("value", "")
+
         if not img_path or not os.path.exists(img_path):
-            print(f"❌img_path:{img_path}")
             return
-        print(f"🚀img_path:{img_path}")
 
         # 🚀 [Salvaged 1] 매직 넘버 기반의 강력한 유효성 검사 (XML/가짜파일 방어)
         def is_really_image(file_path):
@@ -533,7 +444,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                     charspan=(0, 0)
                 )
             )
-            print(f"✅ 이미지 임베딩 완료: {os.path.basename(img_path)}")
+            #print(f"✅ 이미지 임베딩 완료: {os.path.basename(img_path)}")
 
     def _handle_paragraph(self, paragraph_items: List[Dict], doc: DoclingDocument, page_no: int, parent: Any):
         """TOC(목차) 감지 로직이 추가된 버전입니다. 넘겨받은 parent에 텍스트를 추가합니다."""
@@ -615,16 +526,16 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         # 4. 분류 및 추가 로직
         if is_toc:
             # --- [DEBUG LOG START] ---
-            print(f"\n📑 [TOC DETECTED]")
-            print(f"   - Text: {text_val[:30]}...")
-            print(f"   - Label: {DocItemLabel.DOCUMENT_INDEX}")
+            #print(f"\n📑 [TOC DETECTED]")
+            #print(f"   - Text: {text_val[:30]}...")
+            #print(f"   - Label: {DocItemLabel.DOCUMENT_INDEX}")
             
             parent_info = self.parents[1]
             p_ref = getattr(parent_info, "self_ref", "N/A")
             p_label = getattr(parent_info, "label", "N/A")
-            print(f"   - Parent: {p_label} (Ref: {p_ref})")
-            print(f"   - Prov: Page {prov.page_no}, BBox {prov.bbox}")
-            print(f"------------------------------------------")
+            #print(f"   - Parent: {p_label} (Ref: {p_ref})")
+            #print(f"   - Prov: Page {prov.page_no}, BBox {prov.bbox}")
+            #print(f"------------------------------------------")
             # --- [DEBUG LOG END] ---
             
             doc.add_text(

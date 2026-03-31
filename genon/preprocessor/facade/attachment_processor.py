@@ -1226,8 +1226,8 @@ class HwpProcessor:
         
         # 2. 이미지 참조 경로 설정
         artifacts_dir, reference_path = self.get_paths(file_path)
-        print(f"👈 artifacts_dir:{artifacts_dir}")
-        print(f"👈 reference_path:{reference_path}")
+        #print(f"👈 artifacts_dir:{artifacts_dir}")
+        #print(f"👈 reference_path:{reference_path}")
 
         # 2.5 디버깅: 시각화 이미지 저장
         #save_document_visualizations(document, artifacts_dir)
