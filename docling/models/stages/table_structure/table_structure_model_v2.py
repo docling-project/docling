@@ -71,7 +71,9 @@ class TableStructureModelV2(BaseTableStructureModel):
             from docling_ibm_models.tableformer_v2 import TableFormerV2
 
             self.model = TableFormerV2.from_pretrained(model_path)
-            self.model.to(self.device)
+            from typing import Any, cast
+
+            cast(Any, self.model).to(self.device)
             self.model.eval()
 
             self.tokenizer = AutoTokenizer.from_pretrained(model_path)
@@ -193,7 +195,9 @@ class TableStructureModelV2(BaseTableStructureModel):
         skip_tokens = {"<pad>", "[UNK]", "<start>", "<end>"}
 
         for tid in token_ids.tolist():
-            token = self.tokenizer.decode([tid]).strip()
+            decoded_token = self.tokenizer.decode([tid])
+            assert isinstance(decoded_token, str)
+            token = decoded_token.strip()
             if token in skip_tokens:
                 continue
             # Strip angle brackets: <fcel> -> fcel

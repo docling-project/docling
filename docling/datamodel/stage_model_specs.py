@@ -894,7 +894,7 @@ PIXTRAL_MODEL_SPEC_BASE = {
         VlmEngineType.MLX: EngineModelConfig(repo_id="mlx-community/pixtral-12b-bf16"),
         VlmEngineType.TRANSFORMERS: EngineModelConfig(
             extra_config={
-                "transformers_model_type": TransformersModelType.AUTOMODEL_VISION2SEQ,
+                "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
             }
         ),
     },

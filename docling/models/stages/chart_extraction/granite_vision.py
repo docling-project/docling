@@ -205,7 +205,9 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
         ]
 
         # autoregressively complete prompt for batch
-        output_ids = self._model.generate(
+        from typing import Any, cast
+
+        output_ids = cast(Any, self._model).generate(
             **inputs,
             max_new_tokens=self._model_max_length,
             eos_token_id=eos_ids,  # self._processor.tokenizer.eos_token_id,

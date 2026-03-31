@@ -1,10 +1,12 @@
 import logging
 import re
 from collections.abc import Iterable
-from typing import Dict, List
+from pathlib import Path
+from typing import Dict, List, Optional, Union
 
 import numpy as np
-from pydantic import BaseModel
+from docling_core.types.doc import BoundingBox
+from pydantic import AnyUrl, BaseModel, ValidationError
 
 from docling.datamodel.base_models import (
     AssembledUnit,
@@ -43,8 +45,55 @@ class PageAssembleOptions(BaseModel):
 
 
 class PageAssembleModel(BasePageModel):
+    # Minimum fraction of a cluster's area that a hyperlink rect must cover
+    # to be considered a match (avoids false positives from adjacent links).
+    _HYPERLINK_COVERAGE_THRESHOLD = 0.5
+
     def __init__(self, options: PageAssembleOptions):
         self.options = options
+
+    @staticmethod
+    def _match_hyperlink(
+        cluster_bbox: BoundingBox,
+        page: Page,
+    ) -> Optional[Union[AnyUrl, Path]]:
+        """Pick the hyperlink annotation with the highest spatial overlap on cluster_bbox.
+
+        Hyperlink rects are BOTTOMLEFT-origin; cluster bboxes are TOPLEFT-origin.
+        """
+        if page.parsed_page is None or not page.parsed_page.hyperlinks:
+            return None
+
+        if page.size is None:
+            return None
+
+        page_height = page.size.height
+
+        # Accumulate coverage per URI — a single hyperlink may span multiple
+        # annotation rectangles (e.g. a URL that wraps across lines).
+        coverage_by_uri: Dict[str, float] = {}
+
+        for hl in page.parsed_page.hyperlinks:
+            if hl.uri is None:
+                continue
+
+            uri_str = str(hl.uri)
+            hl_bbox = hl.rect.to_bounding_box().to_top_left_origin(page_height)
+            coverage_by_uri[uri_str] = coverage_by_uri.get(
+                uri_str, 0.0
+            ) + cluster_bbox.intersection_over_self(hl_bbox)
+
+        if not coverage_by_uri:
+            return None
+
+        best_uri = max(coverage_by_uri.items(), key=lambda x: x[1])[0]
+        if coverage_by_uri[best_uri] < PageAssembleModel._HYPERLINK_COVERAGE_THRESHOLD:
+            return None
+
+        try:
+            return AnyUrl(best_uri)
+        except ValidationError:
+            return Path(best_uri)
 
     def sanitize_text(self, lines):
         if len(lines) == 0:
@@ -111,10 +160,12 @@ class PageAssembleModel(BasePageModel):
                                 if len(cell.text.strip()) > 0
                             ]
                             text = self.sanitize_text(textlines)
+                            hyperlink = self._match_hyperlink(cluster.bbox, page)
                             text_el = TextElement(
                                 label=cluster.label,
                                 id=cluster.id,
                                 text=text,
+                                hyperlink=hyperlink,
                                 page_no=page.page_no,
                                 cluster=cluster,
                             )
