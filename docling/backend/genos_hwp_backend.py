@@ -226,6 +226,45 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                 cwd=str(SDK_DIR)
             )
 
+            # --- 4-c) 결과 복제 임시 코드 ---
+            #original_file_path = Path(str(self.input.path)) 
+            
+            # 2. 저장 폴더 구조 생성
+            # 원본 파일명 (예: hwpx_sample.hwpx -> hwpx_sample)
+            import shutil
+            # 1. 보관할 타겟 경로 설정 
+            # (주의: self.source_path가 /tmp라면 원본 위치를 알기 어려우므로, 
+            #  현재 프로젝트의 'debug_results' 폴더 안에 모으도록 구성했습니다.)
+            
+            # 파일명에서 확장자 제거 (예: hwpx_sample)
+            stem_name = self.source_path.stem 
+            
+            # 결과가 저장될 경로: ./debug_results/hwpx_sample/jayu_sdk_result/
+            # 원하시는 특정 절대 경로가 있다면 Path("...") 안에 직접 넣으셔도 됩니다.
+            storage_dir = Path.cwd() / "debug_results" / stem_name / "jayu_sdk_result"
+            storage_dir.mkdir(parents=True, exist_ok=True)
+
+            try:
+                # 2. 파일 복사 (output.json, output.info)
+                if json_out.exists():
+                    shutil.copy2(json_out, storage_dir / "output.json")
+                if info_out.exists():
+                    shutil.copy2(info_out, storage_dir / "output.info")
+
+                # 3. 이미지 폴더 복사
+                if img_dir.exists():
+                    dest_img_dir = storage_dir / "images"
+                    # 기존에 이미 폴더가 있다면 삭제 후 복사 (덮어쓰기)
+                    if dest_img_dir.exists():
+                        shutil.rmtree(dest_img_dir)
+                    shutil.copytree(img_dir, dest_img_dir)
+                
+                print(f"DEBUG: SDK 결과물이 성공적으로 보관되었습니다 -> {storage_dir}")
+            except Exception as e:
+                print(f"DEBUG: 결과물 보관 중 오류 발생(무시하고 진행): {e}")
+
+            # --- 5. 기존의 후속 로직 시작 ---
+
             # 5. 자유소프트의 결과중, '.info'를 활용해서 페이지 길이 & 크기 정보 DoclingDocument에 설정 
             self._setup_pages(doc, info_out)
 
@@ -422,9 +461,15 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             )
 
     def _handle_image(self, item: Dict, doc: DoclingDocument, page_no: int, parent: Any):
+        # 1. JSON에 적힌 값을 가져옴 (예: "/tmp/old_path/images/image6.bmp")
+        #raw_path = item.get("value", "")
+        #if not raw_path:
+        #    return
         img_path = item.get("value", "")
         if not img_path or not os.path.exists(img_path):
+            print(f"❌img_path:{img_path}")
             return
+        print(f"🚀img_path:{img_path}")
 
         # 🚀 [Salvaged 1] 매직 넘버 기반의 강력한 유효성 검사 (XML/가짜파일 방어)
         def is_really_image(file_path):
