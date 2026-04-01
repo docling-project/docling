@@ -5,12 +5,15 @@ from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from typing import Any
 
+from docling_core.types.doc import CodeLanguageLabel
 from docling_core.types.doc.document import (
+    CodeMetaField,
     DocItemLabel,
     DoclingDocument,
     Formatting,
     GroupLabel,
     NodeItem,
+    PictureMeta,
 )
 from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
 
@@ -158,20 +161,29 @@ class EnvironmentHandlerMixin:
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
             return
 
-        if getattr(parent, "name", None) == "figure":
-            figure_group = parent
-        else:
-            figure_group = doc.add_group(
-                parent=parent, name="figure", label=GroupLabel.SECTION
-            )
-        doc.add_text(
-            parent=figure_group,
-            label=DocItemLabel.CODE,
-            text=tikz_raw,
-            formatting=formatting,
+        latex_language = next(
+            (
+                language
+                for language in CodeLanguageLabel
+                if str(language.value).strip().lower() == "latex"
+            ),
+            CodeLanguageLabel.UNKNOWN,
         )
 
-    def _extract_tikzpicture_atomic(self, node: LatexEnvironmentNode) -> Optional[str]:
+        if getattr(parent, "name", None) == "figure":
+            picture_parent = parent
+        else:
+            picture_parent = parent
+
+        pic = doc.add_picture(parent=picture_parent)
+        pic.meta = PictureMeta(
+            code=CodeMetaField(
+                text=tikz_raw,
+                language=latex_language,
+            )
+        )
+
+    def _extract_tikzpicture_atomic(self, node: LatexEnvironmentNode) -> str | None:
         raw = node.latex_verbatim()
         if _TIKZ_END_PATTERN.search(raw) is None:
             return None
