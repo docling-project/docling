@@ -7,7 +7,6 @@ if TYPE_CHECKING:
 
 from docling_core.types.doc import CodeLanguageLabel
 from docling_core.types.doc.document import (
-    CodeMetaField,
     DocItemLabel,
     DoclingDocument,
     Formatting,
@@ -161,6 +160,21 @@ class EnvironmentHandlerMixin:
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
             return
 
+        if "code" not in PictureMeta.model_fields:
+            if getattr(parent, "name", None) == "figure":
+                figure_group = parent
+            else:
+                figure_group = doc.add_group(
+                    parent=parent, name="figure", label=GroupLabel.SECTION
+                )
+            doc.add_text(
+                parent=figure_group,
+                label=DocItemLabel.CODE,
+                text=tikz_raw,
+                formatting=formatting,
+            )
+            return
+
         latex_language = next(
             (
                 language
@@ -177,10 +191,10 @@ class EnvironmentHandlerMixin:
 
         pic = doc.add_picture(parent=picture_parent)
         pic.meta = PictureMeta(
-            code=CodeMetaField(
-                text=tikz_raw,
-                language=latex_language,
-            )
+            code={
+                "text": tikz_raw,
+                "language": latex_language,
+            }
         )
 
     def _extract_tikzpicture_atomic(self, node: LatexEnvironmentNode) -> str | None:
