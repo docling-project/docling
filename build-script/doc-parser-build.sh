@@ -37,6 +37,7 @@ echo "[INFO] NLTK_PACKAGES  = ${APP_NLTK_PACKAGES}"
 
 # BuildKit plain 로그로 보기 + 루트(.)를 컨텍스트로 빌드
 DOCKER_BUILDKIT=1 docker build \
+  --platform linux/amd64 \
   -f "${ROOT_DIR}/${DOCKERFILE_PATH}" \
   -t "${IMAGE_TAG}" \
   --build-arg UID="${APP_UID}" \
