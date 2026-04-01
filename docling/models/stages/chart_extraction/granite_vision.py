@@ -9,6 +9,8 @@ from typing import Any, List, Literal, Optional, cast
 import pandas as pd
 import torch
 from docling_core.types.doc import (
+    CodeLanguageLabel,
+    DescriptionMetaField,
     DoclingDocument,
     NodeItem,
     PictureClassificationMetaField,
@@ -18,6 +20,7 @@ from docling_core.types.doc import (
     TableData,
     TabularChartMetaField,
 )
+from docling_core.types.doc.document import CodeMetaField
 from PIL import Image
 from pydantic import BaseModel
 from transformers import AutoModelForImageTextToText, AutoProcessor
@@ -34,11 +37,11 @@ _log = logging.getLogger(__name__)
 class ChartExtractionModelOptions(BaseModel):
     kind: Literal["chart_extraction"] = "chart_extraction"
 
-    chart2csv: bool = True  # prompt <chart2csv>	Chart to CSV with table with headers and numeric values
+    chart2csv: bool = True  # prompt <chart2csv>      Chart to CSV with table with headers and numeric values
     chart2code: bool = (
-        False  # prompt <chart2code> Chart to Python code that recreates the chart
+        False  # prompt <chart2code>  Chart to Python code that recreates the chart
     )
-    chart2summary: bool = False  # <chart2summary> Chart to summary with natural-language description of the chart
+    chart2summary: bool = False  # prompt <chart2summary>  Chart to summary with natural-language description of the chart
 
 
 class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
@@ -508,17 +511,34 @@ class ChartExtractionModelGraniteVisionV4(BaseItemAndImageEnrichmentModel):
             elements.append(el.item)  # type: ignore[arg-type]
             images.append(el.image)
 
+        active_prompts: list[str] = []
+        if self.options.chart2csv:
+            active_prompts.append("<chart2csv>")
+        if self.options.chart2summary:
+            active_prompts.append("<chart2summary>")
+        if self.options.chart2code:
+            active_prompts.append("<chart2code>")
+
+        if not active_prompts:
+            for item in elements:
+                yield item
+            return
+
+        # Flat batch: each image paired with each active prompt
+        batch_images = [img for img in images for _ in active_prompts]
+        batch_prompts = [prompt for _ in images for prompt in active_prompts]
+
         conversations = [
             [
                 {
                     "role": "user",
                     "content": [
                         {"type": "image"},
-                        {"type": "text", "text": "<chart2csv>"},
+                        {"type": "text", "text": prompt},
                     ],
                 }
             ]
-            for _ in images
+            for prompt in batch_prompts
         ]
         texts = [
             self._processor.apply_chat_template(
@@ -527,7 +547,11 @@ class ChartExtractionModelGraniteVisionV4(BaseItemAndImageEnrichmentModel):
             for conv in conversations
         ]
         inputs = self._processor(
-            text=texts, images=images, return_tensors="pt", padding=True, do_pad=True
+            text=texts,
+            images=batch_images,
+            return_tensors="pt",
+            padding=True,
+            do_pad=True,
         ).to(self.device)
 
         output_ids = cast(Any, self._model).generate(
@@ -542,64 +566,59 @@ class ChartExtractionModelGraniteVisionV4(BaseItemAndImageEnrichmentModel):
                 output_ids[i, inputs["input_ids"].shape[1] :],
                 skip_special_tokens=True,
             )
-            for i in range(len(images))
+            for i in range(len(batch_prompts))
         ]
 
-        chart_data: list[Optional[TabularChartMetaField]] = self._post_process(
-            outputs=output_texts
-        )
+        # Apply results to each element's PictureMeta
+        n_prompts = len(active_prompts)
+        for img_idx, item in enumerate(elements):
+            if not isinstance(item, PictureItem):
+                yield item
+                continue
 
-        for item, tabular_chart in zip(elements, chart_data):
-            if (tabular_chart is not None) and isinstance(item, PictureItem):
-                if (item.meta is not None) and isinstance(item.meta, PictureMeta):
-                    item.meta.tabular_chart = tabular_chart
-                else:
-                    meta = PictureMeta(tabular_chart=tabular_chart)
-                    item.meta = meta
+            if item.meta is None or not isinstance(item.meta, PictureMeta):
+                item.meta = PictureMeta()
+
+            for prompt_idx, prompt in enumerate(active_prompts):
+                result = output_texts[img_idx * n_prompts + prompt_idx]
+                _log.debug(f"chart extraction [{prompt}] image {img_idx}: {result}")
+                try:
+                    if prompt == "<chart2csv>":
+                        chart_df = self._extract_csv_to_dataframe(result)
+                        item.meta.tabular_chart = TabularChartMetaField(
+                            chart_data=self._dataframe_to_tabledata(chart_df)
+                        )
+                    elif prompt == "<chart2summary>":
+                        item.meta.description = DescriptionMetaField(text=result)
+                    elif prompt == "<chart2code>":
+                        code = self._extract_python_code(result)
+                        if code is not None:
+                            item.meta.code = CodeMetaField(
+                                text=code, language=CodeLanguageLabel.PYTHON
+                            )
+                except Exception as e:
+                    _log.error(f"Failed to process [{prompt}] for image {img_idx}: {e}")
 
             yield item
-
-    def _post_process(
-        self, outputs: list[str]
-    ) -> list[Optional[TabularChartMetaField]]:
-        chart_data: list[Optional[TabularChartMetaField]] = []
-
-        for i, text in enumerate(outputs):
-            _log.debug(f"chart extraction output {i}: {text}")
-            # Post-process to extract DataFrame
-            try:
-                dataframe = self._extract_csv_to_dataframe(text)
-
-                # In convert_batch_images, after extracting DataFrame:
-                table_data = self._dataframe_to_tabledata(dataframe)
-
-                chart_data.append(TabularChartMetaField(chart_data=table_data))
-
-            except Exception as e:
-                _log.error(f"Failed to extract DataFrame for image {i}: {e}")
-                chart_data.append(None)
-
-        return chart_data
 
     def _extract_csv_to_dataframe(self, decoded_text: str) -> pd.DataFrame:
         # decoded_text is already the raw generated output (no conversation wrapper)
         csv_match = re.search(r"```csv\s*\n(.*?)\n```", decoded_text, re.DOTALL)
-        if csv_match:
-            csv_content = csv_match.group(1).strip()
-        else:
-            # Fallback: strip any code block markers
-            csv_content = decoded_text.strip()
-            csv_content = re.sub(r"^```+(?:csv)?\s*", "", csv_content)
-            csv_content = re.sub(r"```+\s*$", "", csv_content)
-            csv_content = csv_content.strip()
-
+        if not csv_match:
+            raise ValueError("No ```csv``` block found in model output")
+        csv_content = csv_match.group(1).strip()
         try:
-            dataframe = pd.read_csv(StringIO(csv_content), header=None)
-            return dataframe
+            return pd.read_csv(StringIO(csv_content), header=None)
         except Exception as e:
             _log.error(f"Error parsing CSV: {e}")
             _log.error(f"CSV content:\n{csv_content}")
             raise
+
+    def _extract_python_code(self, decoded_text: str) -> Optional[str]:
+        python_match = re.search(r"```python\s*\n(.*?)\n```", decoded_text, re.DOTALL)
+        if not python_match:
+            return None
+        return python_match.group(1).strip()
 
     def _is_numeric(self, value) -> bool:
         if pd.isna(value):

@@ -19,7 +19,7 @@
 #   as needed.
 #
 # Notes
-# - Enabling `do_chart_extraction` automatically enables picture classification.
+# - Setting `chart_extraction_model` automatically enables picture classification.
 # - Supported chart types: bar chart, pie chart, line chart.
 
 # %%
@@ -38,7 +38,10 @@ from docling_core.transforms.visualizer.layout_visualizer import LayoutVisualize
 from docling_core.types.doc import ImageRefMode, PictureItem
 
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.datamodel.pipeline_options import (
+    ChartExtractionModelKind,
+    PdfPipelineOptions,
+)
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
 _log = logging.getLogger(__name__)
@@ -54,7 +57,7 @@ def main():
     # Configure the PDF pipeline with chart extraction enabled.
     # This automatically enables picture classification as well.
     pipeline_options = PdfPipelineOptions()
-    pipeline_options.do_chart_extraction = True
+    pipeline_options.chart_extraction_model = ChartExtractionModelKind.GRANITE_VISION_V4
     pipeline_options.generate_page_images = True
     pipeline_options.generate_picture_images = True
 
