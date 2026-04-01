@@ -201,6 +201,35 @@ def show_external_plugins_callback(value: bool):
         raise typer.Exit()
 
 
+_PAGE_BREAK_SENTINEL = "\x00_DOCLING_PAGE_BREAK_\x00"
+
+
+def _has_dynamic_page_vars(placeholder: str) -> bool:
+    """Check if the placeholder string contains {prev_page} or {next_page} variables."""
+    return "{prev_page}" in placeholder or "{next_page}" in placeholder
+
+
+def _apply_dynamic_page_breaks(file_path: Path, placeholder: str) -> None:
+    """Post-process a file to replace page break sentinels with formatted placeholders.
+
+    When the placeholder contains {prev_page} and/or {next_page} format variables,
+    each page break sentinel is replaced with the placeholder formatted with
+    sequential page numbers.
+    """
+    text = file_path.read_text(encoding="utf-8")
+    parts = text.split(_PAGE_BREAK_SENTINEL)
+    if len(parts) <= 1:
+        return
+    result = [parts[0]]
+    for i, part in enumerate(parts[1:], start=1):
+        formatted = placeholder.replace("{prev_page}", str(i)).replace(
+            "{next_page}", str(i + 1)
+        )
+        result.append(formatted)
+        result.append(part)
+    file_path.write_text("".join(result), encoding="utf-8")
+
+
 def export_documents(
     conv_results: Iterable[ConversionResult],
     output_dir: Path,
@@ -280,22 +309,38 @@ def export_documents(
             if export_txt:
                 fname = output_dir / f"{doc_filename}.txt"
                 _log.info(f"writing TXT output to {fname}")
+                use_dynamic = (
+                    page_break_placeholder is not None
+                    and _has_dynamic_page_vars(page_break_placeholder)
+                )
                 conv_res.document.save_as_markdown(
                     filename=fname,
                     strict_text=True,
                     image_mode=ImageRefMode.PLACEHOLDER,
-                    page_break_placeholder=page_break_placeholder,
+                    page_break_placeholder=(
+                        _PAGE_BREAK_SENTINEL if use_dynamic else page_break_placeholder
+                    ),
                 )
+                if use_dynamic:
+                    _apply_dynamic_page_breaks(fname, page_break_placeholder)
 
             # Export Markdown format:
             if export_md:
                 fname = output_dir / f"{doc_filename}.md"
                 _log.info(f"writing Markdown output to {fname}")
+                use_dynamic = (
+                    page_break_placeholder is not None
+                    and _has_dynamic_page_vars(page_break_placeholder)
+                )
                 conv_res.document.save_as_markdown(
                     filename=fname,
                     image_mode=image_export_mode,
-                    page_break_placeholder=page_break_placeholder,
+                    page_break_placeholder=(
+                        _PAGE_BREAK_SENTINEL if use_dynamic else page_break_placeholder
+                    ),
                 )
+                if use_dynamic:
+                    _apply_dynamic_page_breaks(fname, page_break_placeholder)
 
             # Export Document Tags format:
             if export_doctags:
@@ -434,7 +479,7 @@ def convert(  # noqa: C901
         str | None,
         typer.Option(
             ...,
-            help="Specify a custom page break placeholder string for Markdown and Text exports. When set, this string is inserted between pages in the output. Examples: '---', '<!-- page-break -->'.",
+            help="Specify a custom page break placeholder string for Markdown and Text exports. When set, this string is inserted between pages in the output. Supports {prev_page} and {next_page} format variables for dynamic page numbers. Examples: '---', '<!-- page-break -->', '---\\n*[Page {next_page}]*\\n---'.",
         ),
     ] = None,
     pipeline: Annotated[

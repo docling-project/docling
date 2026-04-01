@@ -4,7 +4,13 @@ import pytest
 from docling_core.types.doc import ImageRefMode
 from typer.testing import CliRunner
 
-from docling.cli.main import _should_generate_export_images, app
+from docling.cli.main import (
+    _PAGE_BREAK_SENTINEL,
+    _apply_dynamic_page_breaks,
+    _has_dynamic_page_vars,
+    _should_generate_export_images,
+    app,
+)
 from docling.datamodel.base_models import OutputFormat
 
 runner = CliRunner()
@@ -142,3 +148,97 @@ def test_cli_audio_extensions_coverage():
         assert ext in audio_extensions, (
             f"Audio extension {ext} not found in FormatToExtensions[InputFormat.AUDIO]"
         )
+
+
+@pytest.mark.parametrize(
+    ("placeholder", "expected"),
+    [
+        ("---", False),
+        ("<!-- page-break -->", False),
+        ("Page {next_page}", True),
+        ("End of page {prev_page}", True),
+        ("---\n*[Page {next_page}]*\n---", True),
+        ("{prev_page} -> {next_page}", True),
+    ],
+)
+def test_has_dynamic_page_vars(placeholder, expected):
+    assert _has_dynamic_page_vars(placeholder) is expected
+
+
+def test_apply_dynamic_page_breaks(tmp_path):
+    content = (
+        "Content from page 1\n\n"
+        f"{_PAGE_BREAK_SENTINEL}\n\n"
+        "Content from page 2\n\n"
+        f"{_PAGE_BREAK_SENTINEL}\n\n"
+        "Content from page 3"
+    )
+    file_path = tmp_path / "test.md"
+    file_path.write_text(content, encoding="utf-8")
+
+    _apply_dynamic_page_breaks(file_path, "---\n*[Page {next_page}]*\n---")
+
+    result = file_path.read_text(encoding="utf-8")
+    assert _PAGE_BREAK_SENTINEL not in result
+    assert "---\n*[Page 2]*\n---" in result
+    assert "---\n*[Page 3]*\n---" in result
+
+
+def test_apply_dynamic_page_breaks_prev_page(tmp_path):
+    content = f"Content from page 1\n\n{_PAGE_BREAK_SENTINEL}\n\nContent from page 2"
+    file_path = tmp_path / "test.md"
+    file_path.write_text(content, encoding="utf-8")
+
+    _apply_dynamic_page_breaks(file_path, "[End of page {prev_page}]")
+
+    result = file_path.read_text(encoding="utf-8")
+    assert _PAGE_BREAK_SENTINEL not in result
+    assert "[End of page 1]" in result
+
+
+def test_apply_dynamic_page_breaks_both_vars(tmp_path):
+    content = f"Page 1\n{_PAGE_BREAK_SENTINEL}\nPage 2"
+    file_path = tmp_path / "test.md"
+    file_path.write_text(content, encoding="utf-8")
+
+    _apply_dynamic_page_breaks(file_path, "({prev_page} -> {next_page})")
+
+    result = file_path.read_text(encoding="utf-8")
+    assert "(1 -> 2)" in result
+
+
+def test_apply_dynamic_page_breaks_no_sentinel(tmp_path):
+    content = "Content with no page breaks"
+    file_path = tmp_path / "test.md"
+    file_path.write_text(content, encoding="utf-8")
+
+    _apply_dynamic_page_breaks(file_path, "---\n*[Page {next_page}]*\n---")
+
+    result = file_path.read_text(encoding="utf-8")
+    assert result == content
+
+
+def test_cli_dynamic_page_break_placeholder(tmp_path):
+    source = "./tests/data/pdf/normal_4pages.pdf"
+    output = tmp_path / "out"
+    output.mkdir()
+    placeholder = "--- Page {next_page} ---"
+    result = runner.invoke(
+        app,
+        [
+            source,
+            "--output",
+            str(output),
+            "--page-break-placeholder",
+            placeholder,
+        ],
+    )
+    assert result.exit_code == 0
+    converted = output / f"{Path(source).stem}.md"
+    assert converted.exists()
+    content = converted.read_text(encoding="utf-8")
+    # Should not contain raw page break markers or sentinels
+    assert "#_#_DOCLING_DOC_PAGE_BREAK" not in content
+    assert _PAGE_BREAK_SENTINEL not in content
+    # Multi-page PDF should have page break placeholders with actual page numbers
+    assert "--- Page 2 ---" in content
