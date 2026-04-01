@@ -258,6 +258,7 @@ class TestPresetSystem:
         assert "pixtral" in preset_ids
         assert "got_ocr" in preset_ids
         assert "glm_ocr" in preset_ids
+        assert "lightonocr" in preset_ids
 
         # Verify we can retrieve them
         smoldocling = VlmConvertOptions.get_preset("smoldocling")

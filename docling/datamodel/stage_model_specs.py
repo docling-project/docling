@@ -1228,6 +1228,40 @@ VLM_CONVERT_GLMOCR = StageModelPreset(
     default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
+VLM_CONVERT_LIGHTONOCR = StageModelPreset(
+    preset_id="lightonocr",
+    name="LightOnOCR-2-1B",
+    description="LightOn LightOnOCR-2 model for OCR and markdown conversion (1B parameters)",
+    model_spec=VlmModelSpec(
+        name="LightOnOCR-2-1B",
+        default_repo_id="lightonai/LightOnOCR-2-1B",
+        prompt="",
+        response_format=ResponseFormat.MARKDOWN,
+        max_new_tokens=4096,
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    "torch_dtype": "bfloat16",
+                },
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API: ApiModelConfig(
+                params={"model": "lightonai/LightOnOCR-2-1B", "max_tokens": 4096}
+            ),
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "lightonocr-2-1b", "max_tokens": 4096}
+            ),
+        },
+    ),
+    scale=2.0,
+    max_size=1540,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
 # -----------------------------------------------------------------------------
 # PICTURE_DESCRIPTION PRESETS (for image captioning/description)
 # -----------------------------------------------------------------------------

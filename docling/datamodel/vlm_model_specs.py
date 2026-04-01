@@ -353,6 +353,43 @@ GLMOCR_VLLM_API = ApiVlmOptions(
     response_format=ResponseFormat.MARKDOWN,
 )
 
+# LightOnOCR
+LIGHTONOCR_TRANSFORMERS = InlineVlmOptions(
+    repo_id="lightonai/LightOnOCR-2-1B",
+    prompt="",
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+    transformers_prompt_style=TransformersPromptStyle.CHAT,
+    supported_devices=[
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.MPS,
+        AcceleratorDevice.XPU,
+    ],
+    torch_dtype="bfloat16",
+    scale=2.0,
+    temperature=0.0,
+    max_new_tokens=4096,
+)
+
+LIGHTONOCR_VLLM = LIGHTONOCR_TRANSFORMERS.model_copy(deep=True)
+LIGHTONOCR_VLLM.inference_framework = InferenceFramework.VLLM
+
+LIGHTONOCR_VLLM_API = ApiVlmOptions(
+    url="http://localhost:8000/v1/chat/completions",
+    params=dict(
+        model="lightonai/LightOnOCR-2-1B",
+        max_tokens=4096,
+    ),
+    prompt="",
+    timeout=90,
+    scale=2.0,
+    temperature=0.0,
+    concurrency=4,
+    response_format=ResponseFormat.MARKDOWN,
+)
+
 # DeepSeek-OCR
 DEEPSEEKOCR_OLLAMA = ApiVlmOptions(
     url="http://localhost:11434/v1/chat/completions",
@@ -400,4 +437,6 @@ class VlmModelType(str, Enum):
     GRANITEDOCLING_VLLM = "granite_docling_vllm"
     GLMOCR = "glm_ocr"
     GLMOCR_VLLM = "glm_ocr_vllm"
+    LIGHTONOCR = "lightonocr"
+    LIGHTONOCR_VLLM = "lightonocr_vllm"
     DEEPSEEKOCR_OLLAMA = "deepseekocr_ollama"

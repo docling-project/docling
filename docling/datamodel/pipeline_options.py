@@ -952,6 +952,7 @@ VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_12B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_27B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOLPHIN)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GLMOCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_LIGHTONOCR)
 
 # Register PictureDescription presets (for new runtime-based implementation)
 PictureDescriptionVlmEngineOptions.register_preset(
