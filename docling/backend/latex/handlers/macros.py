@@ -17,7 +17,14 @@ from docling_core.types.doc.document import (
     NodeItem,
 )
 from PIL import Image
-from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
+from pylatexenc.latexwalker import (
+    LatexCharsNode,
+    LatexEnvironmentNode,
+    LatexGroupNode,
+    LatexMacroNode,
+    LatexWalker,
+    LatexWalkerParseError,
+)
 
 from docling.backend.latex.constants import (
     MACROS_ACCENTS,
@@ -44,6 +51,7 @@ class MacroHandlerMixin:
         path_or_stream: "BytesIO | Path"
         _input_stack: set[str]
         _custom_macros: dict[str, str]
+        _custom_macro_num_args: dict[str, int]
         labels: dict[str, bool]
 
         def _process_nodes(
@@ -76,6 +84,7 @@ class MacroHandlerMixin:
                     argnlist = node.nodeargd.argnlist
 
                     name_arg = argnlist[1] if len(argnlist) > 1 else None
+                    num_args_arg = argnlist[2] if len(argnlist) > 2 else None
 
                     def_arg = None
                     for arg in reversed(argnlist):
@@ -99,6 +108,9 @@ class MacroHandlerMixin:
 
                         if macro_name:
                             self._custom_macros[macro_name] = macro_def
+                            self._custom_macro_num_args[macro_name] = (
+                                self._parse_custom_macro_num_args(num_args_arg)
+                            )
                             _log.debug(
                                 f"Registered custom macro: \\{macro_name} -> '{macro_def}'"
                             )
@@ -151,7 +163,8 @@ class MacroHandlerMixin:
         text_label: DocItemLabel | None,
         text_buffer: List[str],
         flush_fn: Callable[[], None],
-    ):
+        following_nodes=None,
+    ) -> int:
         if node.macroname in MACROS_INLINE_VERBATIM:
             if node.macroname == "~":
                 text_buffer.append(" ")
@@ -164,9 +177,18 @@ class MacroHandlerMixin:
             if formatted_text:
                 text_buffer.append(formatted_text)
         elif node.macroname in self._custom_macros:
-            expansion = self._custom_macros[node.macroname]
-            _log.debug(f"Expanding custom macro \\{node.macroname} -> '{expansion}'")
-            text_buffer.append(expansion)
+            expansion, consumed = self._expand_custom_macro_invocation(
+                node, following_nodes or []
+            )
+            if expansion:
+                _log.debug(
+                    f"Expanding custom macro \\{node.macroname} -> '{expansion}'"
+                )
+                if self._custom_macro_num_args.get(node.macroname, 0) > 0:
+                    text_buffer.append(self._parse_latex_fragment_to_text(expansion))
+                else:
+                    text_buffer.append(expansion)
+            return consumed
         elif node.macroname in MACROS_CITATION:
             ref_arg = self._extract_macro_arg(node)
             if ref_arg:
@@ -193,6 +215,7 @@ class MacroHandlerMixin:
                 _log.debug(
                     f"Skipping unknown macro without arguments: {node.macroname}"
                 )
+        return 0
 
     def _process_macro(  # noqa: C901
         self,
@@ -482,12 +505,82 @@ class MacroHandlerMixin:
 
     def _expand_macros(self, latex_str: str) -> str:
         for macro_name, macro_def in self._custom_macros.items():
+            if self._custom_macro_num_args.get(macro_name, 0) > 0:
+                continue
             latex_str = re.sub(
                 rf"\\{re.escape(macro_name)}(?![a-zA-Z])",
                 lambda m: macro_def,
                 latex_str,
             )
         return latex_str
+
+    def _parse_custom_macro_num_args(self, num_args_arg) -> int:
+        if num_args_arg is None:
+            return 0
+
+        raw = num_args_arg.latex_verbatim().strip("{}[] \n\t")
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            return 0
+
+    def _extract_custom_macro_invocation_args(
+        self, following_nodes, expected_arg_count: int
+    ) -> tuple[list[str], int]:
+        if expected_arg_count <= 0:
+            return [], 0
+
+        arg_values: list[str] = []
+        consumed = 0
+
+        for next_node in following_nodes:
+            if len(arg_values) >= expected_arg_count:
+                break
+
+            if isinstance(next_node, LatexCharsNode) and not next_node.chars.strip():
+                consumed += 1
+                continue
+
+            if isinstance(next_node, LatexGroupNode):
+                arg_values.append(self._nodes_to_text(next_node.nodelist or []))
+                consumed += 1
+                continue
+
+            break
+
+        return arg_values, consumed
+
+    def _render_custom_macro_expansion(
+        self, macro_name: str, arg_values: list[str]
+    ) -> str:
+        expansion = self._custom_macros[macro_name]
+        for idx in range(len(arg_values), 0, -1):
+            expansion = expansion.replace(f"#{idx}", arg_values[idx - 1])
+        return expansion
+
+    def _parse_latex_fragment_to_text(self, latex_fragment: str) -> str:
+        try:
+            walker = LatexWalker(latex_fragment, tolerant_parsing=True)
+            parsed_nodes, _, _ = walker.get_latex_nodes()
+        except LatexWalkerParseError:
+            return latex_fragment
+
+        return self._nodes_to_text(parsed_nodes)
+
+    def _expand_custom_macro_invocation(
+        self, node: LatexMacroNode, following_nodes
+    ) -> tuple[str, int]:
+        expected_arg_count = self._custom_macro_num_args.get(node.macroname, 0)
+        if expected_arg_count <= 0:
+            return self._custom_macros[node.macroname], 0
+
+        arg_values, consumed = self._extract_custom_macro_invocation_args(
+            following_nodes, expected_arg_count
+        )
+        if len(arg_values) < expected_arg_count:
+            return self._custom_macros[node.macroname], 0
+
+        return self._render_custom_macro_expansion(node.macroname, arg_values), consumed
 
     def _get_heading_level(self, macroname: str) -> int:
         levels = {

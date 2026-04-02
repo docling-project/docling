@@ -1409,6 +1409,36 @@ def test_latex_textcolor_macro():
     assert "yellow" not in md
 
 
+def test_latex_custom_macro_parameters():
+    """Test custom macros with parameters expand arguments before formatting is unwrapped."""
+    latex_content = rb"""
+    \documentclass{article}
+    \newcommand{\highlight}[1]{\textcolor{white}{\textbf{#1}}}
+    \newcommand{\metric}[2]{#1{\scriptsize$\_{#2}$}}
+    \begin{document}
+    \highlight{Result}
+    \metric{Accuracy}{test}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    md = doc.export_to_markdown()
+    assert "Result" in md
+    assert "Accuracy" in md
+    assert "test" in md
+    assert "#1" not in md
+    assert "#2" not in md
+    assert "\\textcolor" not in md
+    assert "\\scriptsize" not in md
+
+
 def test_latex_subequations_environment():
     """Test subequations wrapper environment passes through inner equations."""
     latex_content = rb"""

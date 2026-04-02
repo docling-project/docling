@@ -46,6 +46,7 @@ class LatexDocumentBackend(
         super().__init__(in_doc, path_or_stream, options)
         self.labels: dict[str, bool] = {}
         self._custom_macros: dict[str, str] = {}
+        self._custom_macro_num_args: dict[str, int] = {}
         self._input_stack: set[str] = set()
         self.latex_text = decode_latex_content(self.path_or_stream)
 
@@ -156,7 +157,10 @@ class LatexDocumentBackend(
                     )
                 text_buffer.clear()
 
-        for node in nodes:
+        idx = 0
+        while idx < len(nodes):
+            node = nodes[idx]
+            consumed_following = 0
             try:
                 if isinstance(node, LatexCharsNode):
                     self._process_chars_node(
@@ -170,7 +174,7 @@ class LatexDocumentBackend(
                     )
 
                 elif isinstance(node, LatexMacroNode):
-                    self._process_macro_node_inline(
+                    consumed_following = self._process_macro_node_inline(
                         node,
                         doc,
                         parent,
@@ -178,6 +182,7 @@ class LatexDocumentBackend(
                         text_label,
                         text_buffer,
                         flush_text_buffer,
+                        nodes[idx + 1 :],
                     )
 
                 elif isinstance(node, LatexEnvironmentNode):
@@ -202,6 +207,6 @@ class LatexDocumentBackend(
 
             except Exception as e:
                 _log.warning(f"Failed to process node {type(node).__name__}: {e}")
-                continue
+            idx += 1 + consumed_following
 
         flush_text_buffer()
