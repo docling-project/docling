@@ -7,6 +7,7 @@ from typer.testing import CliRunner
 from docling.cli.main import (
     _PAGE_BREAK_SENTINEL,
     _apply_dynamic_page_breaks,
+    _get_content_page_numbers,
     _has_dynamic_page_vars,
     _should_generate_export_images,
     app,
@@ -242,3 +243,55 @@ def test_cli_dynamic_page_break_placeholder(tmp_path):
     assert _PAGE_BREAK_SENTINEL not in content
     # Multi-page PDF should have page break placeholders with actual page numbers
     assert "--- Page 2 ---" in content
+
+
+def test_apply_dynamic_page_breaks_with_blank_pages(tmp_path):
+    """Test that page numbering uses actual page numbers when blank pages exist."""
+    content = (
+        "Content from page 1\n\n"
+        f"{_PAGE_BREAK_SENTINEL}\n\n"
+        "Content from page 2\n\n"
+        f"{_PAGE_BREAK_SENTINEL}\n\n"
+        "Content from page 3\n\n"
+        f"{_PAGE_BREAK_SENTINEL}\n\n"
+        "Content from page 5"
+    )
+    file_path = tmp_path / "test.md"
+    file_path.write_text(content, encoding="utf-8")
+
+    # Page 4 is blank, so content pages are [1, 2, 3, 5]
+    _apply_dynamic_page_breaks(
+        file_path,
+        "---\n*[Page {next_page}]*\n---",
+        content_page_numbers=[1, 2, 3, 5],
+    )
+
+    result = file_path.read_text(encoding="utf-8")
+    assert _PAGE_BREAK_SENTINEL not in result
+    assert "---\n*[Page 2]*\n---" in result
+    assert "---\n*[Page 3]*\n---" in result
+    assert "---\n*[Page 5]*\n---" in result
+    assert "---\n*[Page 4]*\n---" not in result
+
+
+def test_apply_dynamic_page_breaks_prev_page_with_blank_pages(tmp_path):
+    """Test {prev_page} with blank pages uses actual page numbers."""
+    content = (
+        f"Page 1\n{_PAGE_BREAK_SENTINEL}\n"
+        f"Page 3\n{_PAGE_BREAK_SENTINEL}\n"
+        "Page 5"
+    )
+    file_path = tmp_path / "test.md"
+    file_path.write_text(content, encoding="utf-8")
+
+    _apply_dynamic_page_breaks(
+        file_path,
+        "({prev_page} -> {next_page})",
+        content_page_numbers=[1, 3, 5],
+    )
+
+    result = file_path.read_text(encoding="utf-8")
+    assert "(1 -> 3)" in result
+    assert "(3 -> 5)" in result
+    assert "(1 -> 2)" not in result
+    assert "(2 -> 3)" not in result

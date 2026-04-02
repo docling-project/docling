@@ -209,21 +209,51 @@ def _has_dynamic_page_vars(placeholder: str) -> bool:
     return "{prev_page}" in placeholder or "{next_page}" in placeholder
 
 
-def _apply_dynamic_page_breaks(file_path: Path, placeholder: str) -> None:
+def _get_content_page_numbers(doc) -> list[int]:
+    """Extract sorted unique page numbers from document items with provenance.
+
+    This returns the actual page numbers (from doc item provenance) rather than
+    sequential indices, so that blank pages are correctly skipped in numbering.
+    """
+    seen: set[int] = set()
+    for item, _ in doc.iterate_items():
+        if hasattr(item, "prov") and item.prov:
+            seen.add(item.prov[0].page_no)
+    return sorted(seen)
+
+
+def _apply_dynamic_page_breaks(
+    file_path: Path,
+    placeholder: str,
+    content_page_numbers: list[int] | None = None,
+) -> None:
     """Post-process a file to replace page break sentinels with formatted placeholders.
 
     When the placeholder contains {prev_page} and/or {next_page} format variables,
     each page break sentinel is replaced with the placeholder formatted with
-    sequential page numbers.
+    the actual page numbers from the document.
+
+    Args:
+        file_path: Path to the file to process.
+        placeholder: The placeholder string with optional {prev_page}/{next_page} vars.
+        content_page_numbers: Sorted list of actual page numbers that have content.
+            When provided, uses these instead of sequential counting to handle
+            documents with blank pages correctly.
     """
     text = file_path.read_text(encoding="utf-8")
     parts = text.split(_PAGE_BREAK_SENTINEL)
     if len(parts) <= 1:
         return
     result = [parts[0]]
-    for i, part in enumerate(parts[1:], start=1):
-        formatted = placeholder.replace("{prev_page}", str(i)).replace(
-            "{next_page}", str(i + 1)
+    for i, part in enumerate(parts[1:]):
+        if content_page_numbers is not None and i + 1 < len(content_page_numbers):
+            prev_page = content_page_numbers[i]
+            next_page = content_page_numbers[i + 1]
+        else:
+            prev_page = i + 1
+            next_page = i + 2
+        formatted = placeholder.replace("{prev_page}", str(prev_page)).replace(
+            "{next_page}", str(next_page)
         )
         result.append(formatted)
         result.append(part)
@@ -254,6 +284,13 @@ def export_documents(
         if conv_res.status == ConversionStatus.SUCCESS:
             success_count += 1
             doc_filename = conv_res.input.file.stem
+
+            # Pre-compute content page numbers for dynamic page breaks
+            content_page_numbers = None
+            if page_break_placeholder is not None and _has_dynamic_page_vars(
+                page_break_placeholder
+            ):
+                content_page_numbers = _get_content_page_numbers(conv_res.document)
 
             # Export JSON format:
             if export_json:
@@ -322,7 +359,9 @@ def export_documents(
                     ),
                 )
                 if use_dynamic:
-                    _apply_dynamic_page_breaks(fname, page_break_placeholder)
+                    _apply_dynamic_page_breaks(
+                        fname, page_break_placeholder, content_page_numbers
+                    )
 
             # Export Markdown format:
             if export_md:
@@ -340,7 +379,9 @@ def export_documents(
                     ),
                 )
                 if use_dynamic:
-                    _apply_dynamic_page_breaks(fname, page_break_placeholder)
+                    _apply_dynamic_page_breaks(
+                        fname, page_break_placeholder, content_page_numbers
+                    )
 
             # Export Document Tags format:
             if export_doctags:
