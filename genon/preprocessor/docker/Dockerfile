@@ -225,8 +225,15 @@ COPY ./genon/preprocessor/configs /app/configs
 COPY ./genon/preprocessor/env /app/env
 COPY ./genon/preprocessor/src /app/src
 
+# 🔴 자유소프트 sdk 복사
+COPY hwp_sdk /app/hwp_sdk
+
 # ✅ 공통 venv 위치만 복사
 COPY --from=builder ${APP_VENV} ${APP_VENV}
+
+# 🔴 [매우 중요] 경로 문제 해결을 위한 링크 (USER 설정 이전에 수행)
+RUN ln -s /app/hwp_sdk /app/.venv/lib/python3.12/site-packages/hwp_sdk && \
+    chmod +x /app/hwp_sdk/convtext
 
 # ✅ 모델/자료
 COPY --from=models_artifacts /app/nltk_data /app/nltk_data
