@@ -170,17 +170,25 @@ def evaluate(
             "Repeated text blocks; possible layout/OCR loop or bad reading order."
         )
         actions.append("Retry: docling <source> --pipeline vlm")
-        actions.append("If using VLM: try force_backend_text=True via Python API for text-heavy pages")
+        actions.append(
+            "If using VLM: try force_backend_text=True via Python API for text-heavy pages"
+        )
 
     if expect_tables and m.get("tables", 0) == 0:
         issues.append("No tables detected but tables were expected.")
-        actions.append("Retry: docling <source> (tables are enabled by default; remove --no-tables if set)")
-        actions.append("Retry: docling <source> --pipeline vlm (better for merged-cell or visual tables)")
+        actions.append(
+            "Retry: docling <source> (tables are enabled by default; remove --no-tables if set)"
+        )
+        actions.append(
+            "Retry: docling <source> --pipeline vlm (better for merged-cell or visual tables)"
+        )
 
     mc = m.get("markdown_chars", 0)
     if mc > 0 and mc < min_markdown_chars and m.get("page_count", 0) >= 1:
         issues.append(f"Markdown export is very short ({mc} chars) for the page count.")
-        actions.append("Retry: docling <source> --pipeline vlm (or try different --ocr-engine)")
+        actions.append(
+            "Retry: docling <source> --pipeline vlm (or try different --ocr-engine)"
+        )
 
     if m.get("text_items", 0) == 0 and m.get("page_count", 0) == 0:
         issues.append(
