@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Callable, List, Optional
 if TYPE_CHECKING:
     from io import BytesIO
     from pathlib import Path
-    from typing import Any
+    from typing import Any, TypedDict
 
 import pypdfium2
 from docling_core.types.doc.document import (
@@ -22,9 +22,10 @@ from pylatexenc.latexwalker import (
     LatexEnvironmentNode,
     LatexGroupNode,
     LatexMacroNode,
+    LatexMathNode,
     LatexWalker,
-    LatexWalkerParseError,
 )
+from pylatexenc.macrospec import LatexContextDb
 
 from docling.backend.latex.constants import (
     MACROS_ACCENTS,
@@ -50,9 +51,9 @@ class MacroHandlerMixin:
     if TYPE_CHECKING:
         path_or_stream: "BytesIO | Path"
         _input_stack: set[str]
-        _custom_macros: dict[str, str]
-        _custom_macro_num_args: dict[str, int]
+        _custom_macros: dict[str, Any]
         labels: dict[str, bool]
+        context_db: LatexContextDb
 
         def _process_nodes(
             self,
@@ -61,6 +62,7 @@ class MacroHandlerMixin:
             parent: "Any" = ...,
             formatting: "Any" = ...,
             text_label: "Any" = ...,
+            text_buffer: "Any" = ...,
         ) -> None: ...
         def _nodes_to_text(self, nodes: "Any") -> str: ...
 
@@ -84,19 +86,24 @@ class MacroHandlerMixin:
                     argnlist = node.nodeargd.argnlist
 
                     name_arg = argnlist[1] if len(argnlist) > 1 else None
-                    num_args_arg = argnlist[2] if len(argnlist) > 2 else None
+                    num_arg = argnlist[2] if len(argnlist) > 2 else None
+                    def_arg = argnlist[4] if len(argnlist) > 4 else None
 
-                    def_arg = None
-                    for arg in reversed(argnlist):
-                        if arg is not None:
-                            def_arg = arg
-                            break
+                    if name_arg and def_arg and def_arg is not None:
+                        macro_name = None
+                        if isinstance(name_arg, LatexGroupNode):
+                            first_node = name_arg.nodelist[0]
+                            if isinstance(first_node, LatexMacroNode):
+                                macro_name = first_node.macroname
+                        elif isinstance(name_arg, LatexMacroNode):
+                            macro_name = name_arg.macroname
 
-                    if name_arg and def_arg and name_arg is not def_arg:
-                        macro_name_raw = name_arg.latex_verbatim()
-                        macro_name = macro_name_raw.strip("{} \n\t")
-                        if macro_name.startswith("\\"):
-                            macro_name = macro_name[1:]
+                        macro_num_args = 0
+                        if num_arg and num_arg.nodelist:
+                            try:
+                                macro_num_args = int(num_arg.nodelist[0].chars)
+                            except ValueError:
+                                pass
 
                         macro_def = ""
                         if hasattr(def_arg, "nodelist"):
@@ -106,14 +113,20 @@ class MacroHandlerMixin:
                         else:
                             macro_def = def_arg.latex_verbatim().strip("{} ")
 
-                        if macro_name:
-                            self._custom_macros[macro_name] = macro_def
-                            self._custom_macro_num_args[macro_name] = (
-                                self._parse_custom_macro_num_args(num_args_arg)
-                            )
-                            _log.debug(
-                                f"Registered custom macro: \\{macro_name} -> '{macro_def}'"
-                            )
+                        if macro_name is not None:
+                            if (
+                                node.macroname == "providecommand"
+                                and self._custom_macros.get(macro_name)
+                            ):
+                                pass
+                            else:
+                                self._custom_macros[macro_name] = {
+                                    "num_args": macro_num_args,
+                                    "macro_def": macro_def,
+                                }
+                                _log.debug(
+                                    f"Registered custom macro: \\{macro_name}[{macro_num_args}] -> '{macro_def}'"
+                                )
 
             if hasattr(node, "nodelist") and node.nodelist:
                 self._extract_custom_macros(node.nodelist, depth + 1)
@@ -154,6 +167,78 @@ class MacroHandlerMixin:
                                 arg.nodelist, doc, depth + 1
                             )
 
+    def _expand_custom_macros(self, node: LatexMacroNode, depth: int = 0) -> str:
+        if depth > 1000:
+            _log.warning(
+                "Maximum recursion depth exceeded; possible circular macro definition."
+            )
+            return ""
+
+        if isinstance(node, LatexMacroNode) and node.macroname in self._custom_macros:
+            actual_args = []
+            if node.nodeargd and node.nodeargd.argnlist:
+                for arg_node in node.nodeargd.argnlist:
+                    if arg_node:
+                        if isinstance(arg_node, LatexGroupNode):
+                            raw = "".join(n.latex_verbatim() for n in arg_node.nodelist)
+                            actual_args.append(raw)
+                        else:
+                            actual_args.append(arg_node.latex_verbatim())
+
+            macro_body = self._custom_macros[node.macroname]["macro_def"]
+            for i, arg_val in enumerate(actual_args):
+                macro_body = macro_body.replace(f"#{i + 1}", arg_val)
+
+            temp_walker = LatexWalker(macro_body, latex_context=self.context_db)
+            temp_nodes, _, _ = temp_walker.get_latex_nodes()
+
+            return "".join(self._expand_custom_macros(n, depth + 1) for n in temp_nodes)
+
+        if isinstance(node, LatexCharsNode):
+            return node.chars
+
+        elif isinstance(node, LatexGroupNode):
+            inner = "".join(
+                self._expand_custom_macros(n, depth + 1) for n in node.nodelist
+            )
+            return f"{node.delimiters[0]}{inner}{node.delimiters[1]}"
+
+        elif isinstance(node, LatexMacroNode):
+            res = f"\\{node.macroname}"
+            if node.macro_post_space:
+                res += node.macro_post_space
+
+            if node.nodeargd and node.nodeargd.argnlist:
+                for arg in node.nodeargd.argnlist:
+                    if arg:
+                        res += self._expand_custom_macros(arg, depth + 1)
+
+            return res
+
+        elif isinstance(node, LatexEnvironmentNode):
+            res = f"\\begin{{{node.environmentname}}}"
+
+            if node.nodeargd and node.nodeargd.argnlist:
+                for arg in node.nodeargd.argnlist:
+                    if arg:
+                        res += self._expand_custom_macros(arg, depth + 1)
+            inner = "".join(
+                self._expand_custom_macros(n, depth + 1) for n in node.nodelist
+            )
+
+            res += inner
+            res += f"\\end{{{node.environmentname}}}"
+            return res
+
+        elif isinstance(node, LatexMathNode):
+            inner = "".join(
+                self._expand_custom_macros(n, depth + 1) for n in node.nodelist
+            )
+            return f"{node.delimiters[0]}{inner}{node.delimiters[1]}"
+
+        else:
+            return node.latex_verbatim()
+
     def _process_macro_node_inline(
         self,
         node: LatexMacroNode,
@@ -163,8 +248,7 @@ class MacroHandlerMixin:
         text_label: DocItemLabel | None,
         text_buffer: List[str],
         flush_fn: Callable[[], None],
-        following_nodes=None,
-    ) -> int:
+    ):
         if node.macroname in MACROS_INLINE_VERBATIM:
             if node.macroname == "~":
                 text_buffer.append(" ")
@@ -177,18 +261,23 @@ class MacroHandlerMixin:
             if formatted_text:
                 text_buffer.append(formatted_text)
         elif node.macroname in self._custom_macros:
-            expansion, consumed = self._expand_custom_macro_invocation(
-                node, following_nodes or []
-            )
-            if expansion:
-                _log.debug(
-                    f"Expanding custom macro \\{node.macroname} -> '{expansion}'"
+            res_str = self._expand_custom_macros(node)
+            res_walker = LatexWalker(res_str, latex_context=self.context_db)
+            res_nodes, _, _ = res_walker.get_latex_nodes()
+
+            if hasattr(res_nodes, "nodelist") and res_nodes.nodelist:
+                self._process_nodes(
+                    res_nodes.nodelist, doc, parent, formatting, text_label, text_buffer
                 )
-                if self._custom_macro_num_args.get(node.macroname, 0) > 0:
-                    text_buffer.append(self._parse_latex_fragment_to_text(expansion))
-                else:
-                    text_buffer.append(expansion)
-            return consumed
+            else:
+                self.in_macro = True
+                if isinstance(res_nodes[0], LatexMacroNode):
+                    if res_nodes[0].macroname in MACROS_STRUCTURAL:
+                        self.in_macro = False
+                self._process_nodes(
+                    res_nodes, doc, parent, formatting, text_label, text_buffer
+                )
+                self.in_macro = False
         elif node.macroname in MACROS_CITATION:
             ref_arg = self._extract_macro_arg(node)
             if ref_arg:
@@ -199,10 +288,14 @@ class MacroHandlerMixin:
                 text_buffer.append(url_text)
         elif node.macroname in MACROS_COLOR:
             pass
+        elif node.macroname in MACROS_NEWCOMMAND:
+            pass
         else:
             if node.macroname in MACROS_STRUCTURAL:
                 flush_fn()
-                self._process_macro(node, doc, parent, formatting, text_label)
+                self._process_macro(
+                    node, doc, parent, formatting, text_label, text_buffer
+                )
             elif node.macroname in MACROS_SPACING or node.macroname in MACROS_IGNORED:
                 # Spacing and ignored commands are silently discarded along with
                 # their arguments (e.g. \vspace{-1mm} should not emit "-1mm")
@@ -221,7 +314,6 @@ class MacroHandlerMixin:
                 _log.debug(
                     f"Skipping unknown macro without arguments: {node.macroname}"
                 )
-        return 0
 
     def _process_macro(  # noqa: C901
         self,
@@ -230,6 +322,7 @@ class MacroHandlerMixin:
         parent: NodeItem | None = None,
         formatting: Formatting | None = None,
         text_label: DocItemLabel | None = None,
+        text_buffer: list[str] | None = None,
     ):
         if node.macroname in MACROS_HEADING:
             title = self._extract_macro_arg(node)
@@ -255,7 +348,7 @@ class MacroHandlerMixin:
                 arg = node.nodeargd.argnlist[-1]
                 if hasattr(arg, "nodelist"):
                     self._process_nodes(
-                        arg.nodelist, doc, parent, formatting, text_label
+                        arg.nodelist, doc, parent, formatting, text_label, text_buffer
                     )
 
         elif node.macroname in MACROS_CITATION:
@@ -354,10 +447,12 @@ class MacroHandlerMixin:
                     self._input_stack.add(resolved)
                     try:
                         content = input_path.read_text(encoding="utf-8")
-                        sub_walker = LatexWalker(content, tolerant_parsing=True)
+                        sub_walker = LatexWalker(
+                            content, self.context_db, tolerant_parsing=True
+                        )
                         sub_nodes, _, _ = sub_walker.get_latex_nodes()
                         self._process_nodes(
-                            sub_nodes, doc, parent, formatting, text_label
+                            sub_nodes, doc, parent, formatting, text_label, text_buffer
                         )
                         _log.debug(f"Loaded input file: {input_path}")
                     except Exception as e:
@@ -440,7 +535,12 @@ class MacroHandlerMixin:
                 for arg in reversed(node.nodeargd.argnlist):
                     if arg is not None and hasattr(arg, "nodelist"):
                         self._process_nodes(
-                            arg.nodelist, doc, parent, formatting, text_label
+                            arg.nodelist,
+                            doc,
+                            parent,
+                            formatting,
+                            text_label,
+                            text_buffer,
                         )
                         break
 
@@ -453,7 +553,12 @@ class MacroHandlerMixin:
                 for arg in node.nodeargd.argnlist:
                     if hasattr(arg, "nodelist"):
                         self._process_nodes(
-                            arg.nodelist, doc, parent, formatting, text_label
+                            arg.nodelist,
+                            doc,
+                            parent,
+                            formatting,
+                            text_label,
+                            text_buffer,
                         )
                         processed_any = True
 
@@ -508,85 +613,6 @@ class MacroHandlerMixin:
                         parts.append(text)
 
         return " ".join(parts)
-
-    def _expand_macros(self, latex_str: str) -> str:
-        for macro_name, macro_def in self._custom_macros.items():
-            if self._custom_macro_num_args.get(macro_name, 0) > 0:
-                continue
-            latex_str = re.sub(
-                rf"\\{re.escape(macro_name)}(?![a-zA-Z])",
-                lambda m: macro_def,
-                latex_str,
-            )
-        return latex_str
-
-    def _parse_custom_macro_num_args(self, num_args_arg) -> int:
-        if num_args_arg is None:
-            return 0
-
-        raw = num_args_arg.latex_verbatim().strip("{}[] \n\t")
-        try:
-            return int(raw)
-        except (TypeError, ValueError):
-            return 0
-
-    def _extract_custom_macro_invocation_args(
-        self, following_nodes, expected_arg_count: int
-    ) -> tuple[list[str], int]:
-        if expected_arg_count <= 0:
-            return [], 0
-
-        arg_values: list[str] = []
-        consumed = 0
-
-        for next_node in following_nodes:
-            if len(arg_values) >= expected_arg_count:
-                break
-
-            if isinstance(next_node, LatexCharsNode) and not next_node.chars.strip():
-                consumed += 1
-                continue
-
-            if isinstance(next_node, LatexGroupNode):
-                arg_values.append(self._nodes_to_text(next_node.nodelist or []))
-                consumed += 1
-                continue
-
-            break
-
-        return arg_values, consumed
-
-    def _render_custom_macro_expansion(
-        self, macro_name: str, arg_values: list[str]
-    ) -> str:
-        expansion = self._custom_macros[macro_name]
-        for idx in range(len(arg_values), 0, -1):
-            expansion = expansion.replace(f"#{idx}", arg_values[idx - 1])
-        return expansion
-
-    def _parse_latex_fragment_to_text(self, latex_fragment: str) -> str:
-        try:
-            walker = LatexWalker(latex_fragment, tolerant_parsing=True)
-            parsed_nodes, _, _ = walker.get_latex_nodes()
-        except LatexWalkerParseError:
-            return latex_fragment
-
-        return self._nodes_to_text(parsed_nodes)
-
-    def _expand_custom_macro_invocation(
-        self, node: LatexMacroNode, following_nodes
-    ) -> tuple[str, int]:
-        expected_arg_count = self._custom_macro_num_args.get(node.macroname, 0)
-        if expected_arg_count <= 0:
-            return self._custom_macros[node.macroname], 0
-
-        arg_values, consumed = self._extract_custom_macro_invocation_args(
-            following_nodes, expected_arg_count
-        )
-        if len(arg_values) < expected_arg_count:
-            return self._custom_macros[node.macroname], 0
-
-        return self._render_custom_macro_expansion(node.macroname, arg_values), consumed
 
     def _get_heading_level(self, macroname: str) -> int:
         levels = {

@@ -13,7 +13,7 @@ from docling.backend.latex.constants import ENV_MATH_CLEAN, ENV_MATH_DISPLAY_PRE
 class MathHandlerMixin:
     if TYPE_CHECKING:
 
-        def _expand_macros(self, latex_str: str) -> str: ...
+        def _expand_custom_macros(self, node: Any, depth: int = 0) -> str: ...
 
     def _process_math_node(
         self,
@@ -31,10 +31,11 @@ class MathHandlerMixin:
 
         if is_display:
             flush_fn()
-            math_text = self._clean_math(node.latex_verbatim(), "display")
+            latex_str = self._expand_custom_macros(node)
+            math_text = self._clean_math(latex_str, "display")
             doc.add_text(parent=parent, label=DocItemLabel.FORMULA, text=math_text)
         else:
-            text_buffer.append(self._expand_macros(node.latex_verbatim()))
+            text_buffer.append(self._expand_custom_macros(node))
 
     def _clean_math(self, latex_str: str, env_name: str) -> str:
         if env_name in ENV_MATH_CLEAN:
@@ -55,6 +56,5 @@ class MathHandlerMixin:
             latex_str = latex_str[2:-2]
 
         latex_str = re.sub(r"\\label\{.*?\}", "", latex_str)
-        latex_str = self._expand_macros(latex_str)
 
         return latex_str.strip()

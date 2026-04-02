@@ -2,7 +2,7 @@ import logging
 import threading
 from io import BytesIO
 from pathlib import Path
-from typing import Union
+from typing import Any, Union
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem
 from docling_core.types.doc.document import Formatting
@@ -13,7 +13,9 @@ from pylatexenc.latexwalker import (
     LatexMacroNode,
     LatexMathNode,
     LatexWalker,
+    get_default_latex_context_db,
 )
+from pylatexenc.macrospec import LatexContextDb, MacroSpec
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.latex.handlers.environments import EnvironmentHandlerMixin
@@ -45,8 +47,7 @@ class LatexDocumentBackend(
     ):
         super().__init__(in_doc, path_or_stream, options)
         self.labels: dict[str, bool] = {}
-        self._custom_macros: dict[str, str] = {}
-        self._custom_macro_num_args: dict[str, int] = {}
+        self._custom_macros: dict[str, Any] = {}
         self._input_stack: set[str] = set()
         self.latex_text = decode_latex_content(self.path_or_stream)
 
@@ -78,14 +79,27 @@ class LatexDocumentBackend(
 
         try:
             self._extract_custom_macros(nodes)
-            self._extract_preamble_metadata(nodes, doc)
+            self.context_db = get_default_latex_context_db()
+            new_specs = [
+                MacroSpec(m_name, "{" * item["num_args"])
+                for m_name, item in self._custom_macros.items()
+            ]
+            self.context_db.add_context_category("custom_user_macros", macros=new_specs)
 
-            doc_node = self._find_document_env(nodes)
+            new_walker = LatexWalker(
+                preprocessed_text, latex_context=self.context_db, tolerant_parsing=True
+            )
+            new_nodes, _, _ = new_walker.get_latex_nodes()
+
+            self._extract_preamble_metadata(new_nodes, doc)
+
+            self.in_macro = False
+            doc_node = self._find_document_env(new_nodes)
 
             if doc_node:
                 self._process_nodes(doc_node.nodelist, doc)
             else:
-                self._process_nodes(nodes, doc)
+                self._process_nodes(new_nodes, doc)
 
         except Exception as e:
             _log.error(f"Error processing LaTeX nodes: {e}")
@@ -139,11 +153,13 @@ class LatexDocumentBackend(
         parent: NodeItem | None = None,
         formatting: Formatting | None = None,
         text_label: DocItemLabel | None = None,
+        text_buffer: list[str] | None = None,
     ):
         if nodes is None:
             return
 
-        text_buffer: list[str] = []
+        if text_buffer is None:
+            text_buffer = []
 
         def flush_text_buffer():
             if text_buffer:
@@ -157,10 +173,7 @@ class LatexDocumentBackend(
                     )
                 text_buffer.clear()
 
-        idx = 0
-        while idx < len(nodes):
-            node = nodes[idx]
-            consumed_following = 0
+        for node in nodes:
             try:
                 if isinstance(node, LatexCharsNode):
                     self._process_chars_node(
@@ -174,7 +187,7 @@ class LatexDocumentBackend(
                     )
 
                 elif isinstance(node, LatexMacroNode):
-                    consumed_following = self._process_macro_node_inline(
+                    self._process_macro_node_inline(
                         node,
                         doc,
                         parent,
@@ -182,16 +195,25 @@ class LatexDocumentBackend(
                         text_label,
                         text_buffer,
                         flush_text_buffer,
-                        nodes[idx + 1 :],
                     )
 
                 elif isinstance(node, LatexEnvironmentNode):
                     flush_text_buffer()
-                    self._process_environment(node, doc, parent, formatting, text_label)
+                    self._process_environment(
+                        node,
+                        doc,
+                        parent,
+                        formatting,
+                        text_label,
+                    )
 
                 elif isinstance(node, LatexMathNode):
                     self._process_math_node(
-                        node, doc, parent, text_buffer, flush_text_buffer
+                        node,
+                        doc,
+                        parent,
+                        text_buffer,
+                        flush_text_buffer,
                     )
 
                 elif isinstance(node, LatexGroupNode):
@@ -207,6 +229,7 @@ class LatexDocumentBackend(
 
             except Exception as e:
                 _log.warning(f"Failed to process node {type(node).__name__}: {e}")
-            idx += 1 + consumed_following
+                continue
 
-        flush_text_buffer()
+        if not self.in_macro:
+            flush_text_buffer()

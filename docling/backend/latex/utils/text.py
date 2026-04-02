@@ -17,6 +17,7 @@ from pylatexenc.latexwalker import (
     LatexMacroNode,
     LatexMathNode,
 )
+from pylatexenc.macrospec import LatexContextDb
 
 from docling.backend.latex.constants import (
     MACROS_CITATION,
@@ -30,8 +31,7 @@ from docling.backend.latex.constants import (
 
 class TextHelperMixin:
     if TYPE_CHECKING:
-        _custom_macros: dict[str, str]
-        _custom_macro_num_args: dict[str, int]
+        _custom_macros: dict[str, Any]
 
         def _process_nodes(
             self,
@@ -40,13 +40,10 @@ class TextHelperMixin:
             parent: "Any" = ...,
             formatting: "Any" = ...,
             text_label: "Any" = ...,
+            text_buffer: "Any" = ...,
         ) -> None: ...
         def _extract_macro_arg(self, node: "Any") -> str: ...
-        def _expand_macros(self, latex_str: str) -> str: ...
-        def _expand_custom_macro_invocation(
-            self, node: "Any", following_nodes: "Any"
-        ) -> tuple[str, int]: ...
-        def _parse_latex_fragment_to_text(self, latex_fragment: str) -> str: ...
+        def _expand_custom_macros(self, node: Any, depth: int = 0) -> str: ...
 
     def _process_chars_node(
         self,
@@ -69,7 +66,7 @@ class TextHelperMixin:
 
             flush_fn()
 
-            for part in parts[1:]:
+            for part in parts[1:-1]:
                 part_stripped = part.strip()
                 if part_stripped:
                     doc.add_text(
@@ -78,6 +75,12 @@ class TextHelperMixin:
                         text=part_stripped,
                         formatting=formatting,
                     )
+            last_part = parts[-1]
+            if last_part:
+                if last_part.endswith(" "):
+                    text_buffer.append(last_part.strip() + " ")
+                else:
+                    text_buffer.append(last_part.strip())
         else:
             text_buffer.append(text)
 
@@ -109,10 +112,7 @@ class TextHelperMixin:
     def _nodes_to_text(self, nodes) -> str:
         text_parts = []
 
-        idx = 0
-        while idx < len(nodes):
-            node = nodes[idx]
-            consumed_following = 0
+        for node in nodes:
             if isinstance(node, LatexCharsNode):
                 text_parts.append(node.chars)
 
@@ -139,13 +139,8 @@ class TextHelperMixin:
                 elif node.macroname in MACROS_ESCAPED:
                     text_parts.append(node.macroname)
                 elif node.macroname in self._custom_macros:
-                    expansion, consumed_following = (
-                        self._expand_custom_macro_invocation(node, nodes[idx + 1 :])
-                    )
-                    if self._custom_macro_num_args.get(node.macroname, 0) > 0:
-                        text_parts.append(self._parse_latex_fragment_to_text(expansion))
-                    else:
-                        text_parts.append(expansion)
+                    expansion = self._expand_custom_macros(node)
+                    text_parts.append(expansion)
                 elif (
                     node.macroname in MACROS_SPACING or node.macroname in MACROS_IGNORED
                 ):
@@ -170,14 +165,13 @@ class TextHelperMixin:
                         text_parts.append(" ".join(arg_parts))
 
             elif isinstance(node, LatexMathNode):
-                text_parts.append(self._expand_macros(node.latex_verbatim()))
+                text_parts.append(self._expand_custom_macros(node))
 
             elif isinstance(node, LatexEnvironmentNode):
                 if node.envname in ["equation", "align", "gather"]:
                     text_parts.append(node.latex_verbatim())
                 else:
                     text_parts.append(self._nodes_to_text(node.nodelist))
-            idx += 1 + consumed_following
 
         result = "".join(text_parts)
         result = re.sub(r" +", " ", result)

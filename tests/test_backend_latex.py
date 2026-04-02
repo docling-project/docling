@@ -1356,7 +1356,7 @@ This is \\myterm and the value is \\myvalue.
 
     # Check if macros were registered
     assert "myterm" in backend._custom_macros, "myterm not in _custom_macros!"
-    assert backend._custom_macros["myterm"] == "special term"
+    assert backend._custom_macros["myterm"]["macro_def"] == "special term"
     assert "special term" in md, f"'special term' not in output: {md!r}"
     assert "42" in md, f"'42' not in output: {md!r}"
 
@@ -1381,6 +1381,74 @@ def test_latex_href_macro():
     md = doc.export_to_markdown()
     assert "Example Site" in md
     assert "https://example.com" in md
+
+
+def test_custom_macro_expasion():
+    """Test that custom macros defined in the document are properly expanded."""
+    latex_content = rb"""
+    \documentclass{article}
+    \usepackage{amsmath}
+    \newcommand{\TermA}{terma}
+    \newcommand{\TermB}{termb}
+    \newcommand{\mybold}[1]{\textbf{#1}}
+    \newcommand{\myconcat}[2]{#1|#2}
+    \newcommand{\echo}[1]{#1.#1}
+    \newcommand{\LevelOne}{\TermA \ and \TermB}
+    \newcommand{\LevelTwo}{Topics: \LevelOne}
+    \newcommand{\wrap}[1]{\mybold{\textit{#1}}}
+    \newcommand{\titlemacro}[2]{\wrap{Chapter #1: #2}}
+    \newcommand{\superMacro}[2]{\titlemacro{#1}{#2}\LevelTwo}
+    \newcommand{\ignoreInput}[1]{[Ignored!]}
+    \newcommand{\poison}{\poison}
+    \newcommand{\nestedBraces}[1]{{{#1}}}
+    \newcommand \A[2]{(test:#1#2)}
+
+    \begin{document}
+    \section{Testing Output}
+
+    \begin{itemize}
+    \item \myconcat{Alpha}{Beta}
+    \item \echo{Hello}
+    \item \LevelTwo
+    \item \superMacro{5}{NW}
+    \item \ignoreInput{\poison}
+    \item \nestedBraces{Inside}
+    \end{itemize}
+
+    \newcommand{\myVector}[2]{\begin{pmatrix} #1 \\ #2 \end{pmatrix}}
+    \newcommand{\vectorEq}[2]{\myVector{#1}{#2}=0}
+
+    \begin{equation}
+    \vectorEq{x}{y}
+    \end{equation}
+
+    $$
+    \A o1 o2
+    $$
+
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    md = doc.export_to_markdown()
+    assert "- Alpha|Beta" in md
+    assert "- Hello.Hello" in md
+    assert "- Topics: terma and termb" in md
+    assert "- Chapter 5: NWTopics: terma and termb" in md
+    assert "- [Ignored!]" in md
+    assert "- Inside" in md
+    assert "$$\\begin{pmatrix} x \\\\ y \\end{pmatrix}=0$$" in md
+    assert "(test:o1)" in md
+    assert "o2" in md
+    assert "#1" not in md
+    assert "#2" not in md
 
 
 def test_latex_textcolor_macro():
@@ -1727,9 +1795,10 @@ def test_latex_renewcommand():
     \documentclass{article}
     \newcommand{\foo}{original}
     \renewcommand{\foo}{replaced}
-    \providecommand{\bar}{provided}
+    \providecommand{\car}{provided}
+    \providecommand{\car}{ignored}
     \begin{document}
-    Value is \foo{} and \bar{}.
+    Value is \foo{} and \car{}.
     \end{document}
     """
     in_doc = InputDocument(
@@ -1743,9 +1812,9 @@ def test_latex_renewcommand():
 
     # renewcommand should have overwritten the original
     assert "foo" in backend._custom_macros
-    assert backend._custom_macros["foo"] == "replaced"
-    assert "bar" in backend._custom_macros
-    assert backend._custom_macros["bar"] == "provided"
+    assert backend._custom_macros["foo"]["macro_def"] == "replaced"
+    assert "car" in backend._custom_macros
+    assert backend._custom_macros["car"]["macro_def"] == "provided"
 
 
 def test_latex_input_cycle_detection(tmp_path):

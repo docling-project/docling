@@ -9,6 +9,7 @@ item-0 at level 0: unspecified: group _root_
   item-7 at level 1: caption: Image: figures/dsv3_performance.pdf
   item-8 at level 1: text: 0.9
   item-9 at level 1: section_header: Introduction
+<<<<<<< HEAD
   item-10 at level 1: paragraph: In recent years, Large Language Models
   item-11 at level 1: text: (LLMs) have been undergoing rapi ... hich 37B are activated for each token.
   item-12 at level 1: paragraph: With a forward-looking perspecti ... .
@@ -477,3 +478,402 @@ During the development of
       item-394 at level 3: caption: Image: figures/relative_expert_load_multi_25-26.pdf
     item-395 at level 2: text: Expert load of auxiliary-loss-fr ... he theoretically balanced expert load.
   item-396 at level 1: caption: Image: figures/relative_expert_load_multi_25-26.pdf
+=======
+  item-10 at level 1: text: In recent years, Large Language  ... hich 37B are activated for each token.
+  item-11 at level 1: text: With a forward-looking perspecti ...  performance on evaluation benchmarks.
+  item-12 at level 1: text: In order to achieve efficient tr ... , we achieve high training efficiency.
+  item-13 at level 1: text: During pre-training, we train De ...  model accuracy and generation length.
+  item-14 at level 1: text: We evaluate DeepSeek-V3 on a com ... of standard and open-ended benchmarks.
+  item-15 at level 1: text: 6pt
+  item-16 at level 1: table with [4x5]
+  item-17 at level 1: text: Training costs of DeepSeek-V3, a ... ntal price of H800 is $2 per GPU hour.
+  item-18 at level 1: text: Lastly, we emphasize again the e ... on architectures, algorithms, or data.
+  item-19 at level 1: paragraph: Our main contribution includes:
+  item-20 at level 1: text: Architecture: Innovative Load Balancing Strategy and Training Objective
+  item-21 at level 1: list: group list
+    item-22 at level 2: list_item: On top of the efficient architec ... rises from encouraging load balancing.
+    item-23 at level 2: list_item: We investigate a Multi-Token Pre ... e decoding for inference acceleration.
+  item-24 at level 1: text: Pre-Training: Towards Ultimate Training Efficiency
+  item-25 at level 1: list: group list
+    item-26 at level 2: list_item: We design an FP8 mixed precision ... ing on an extremely large-scale model.
+    item-27 at level 2: list_item: Through the co-design of algorit ... odel size without additional overhead.
+    item-28 at level 2: list_item: At an economical cost of only 2. ... -training require only 0.1M GPU hours.
+  item-29 at level 1: text: Post-Training: Knowledge Distillation from DeepSeek-R1
+  item-30 at level 1: list: group list
+    item-31 at level 2: list_item: We introduce an innovative metho ... utput style and length of DeepSeek-V3.
+  item-32 at level 1: text: Summary of Core Evaluation Results
+  item-33 at level 1: list: group list
+    item-34 at level 2: list_item: Knowledge:
+    (1) 
+    On educa ... strength in Chinese factual knowledge.
+    item-35 at level 2: list_item: Code, Math, and Reasoning: 
+     ... s across diverse technical benchmarks.
+  item-36 at level 1: text: In the remainder of this paper,  ... re research (Section[sec:conclusion]).
+  item-37 at level 1: section_header: Architecture
+  item-38 at level 1: text: We first introduce the basic arc ... to the settings of DeepSeek-V2[dsvii].
+  item-39 at level 1: section: group figure
+    item-40 at level 2: picture
+      item-40 at level 3: caption: Image: figures/basic_arch.pdf
+    item-41 at level 2: text: Illustration of the basic archit ... ent inference and economical training.
+  item-42 at level 1: caption: Image: figures/basic_arch.pdf
+  item-43 at level 1: section_header: Basic Architecture
+  item-44 at level 1: text: The basic architecture of DeepSe ... f MLA and DeepSeekMoE in this section.
+  item-45 at level 1: section_header: Multi-Head Latent Attention
+  item-46 at level 1: text: For attention, DeepSeek-V3 adopt ... Key-Value (KV) cache during inference:
+  item-47 at level 1: formula: \begin{align}
+    \boxed{\color{ ... {UV} \mathbf{c}_{t}^{KV}, 
+\end{align}
+  item-48 at level 1: text: where $\mathbf{c}_{t}^{KV} \in \ ... lti-Head Attention (MHA)[transformer].
+  item-49 at level 1: text: For the attention queries, we al ... the activation memory during training:
+  item-50 at level 1: formula: \begin{align}
+    \mathbf{c}_{t} ... }; \mathbf{q}_{t, i}^{R}],
+\end{align}
+  item-51 at level 1: text: where $\mathbf{c}_{t}^{Q} \in \m ... the decoupled queries that carry RoPE.
+  item-52 at level 1: text: Ultimately, the attention querie ... nal attention output $\mathbf{u}_{t}$:
+  item-53 at level 1: formula: \begin{align}
+    \mathbf{o}_{t, ... ..;\mathbf{o}_{t, n_{h}}],
+\end{align}
+  item-54 at level 1: text: where $W^{O} \in \mathbb{R}^{d \ ... $denotes the output projection matrix.
+  item-55 at level 1: section_header: DeepSeekMoE with Auxiliary-Loss-Free Load Balancing
+  item-56 at level 1: text: Basic Architecture of DeepSeekMo ...  $\mathbf{h}_{t}^{\prime}$ as follows:
+  item-57 at level 1: formula: \begin{align}
+    \mathbf{h}_{t} ... T} \mathbf{e}_{i} \right),
+\end{align}
+  item-58 at level 1: text: where $N_{s}$ and $N_r$ denote t ... y scores to produce the gating values.
+  item-59 at level 1: text: Auxiliary-Loss-Free Load Balanci ... {i,t}$ to determine the top-K routing:
+  item-60 at level 1: formula: \begin{align}
+    g^{\prime}_{i, ... therwise}.
+    \end{cases}
+\end{align}
+  item-61 at level 1: text: Note that the bias term is only  ... balance through pure auxiliary losses.
+  item-62 at level 1: text: Complementary Sequence-Wise Auxi ... plementary sequence-wise balance loss:
+  item-63 at level 1: formula: \begin{align}
+    \mathcal{L}_{\ ... =1}^{T}{s^{\prime}_{i,t}},
+\end{align}
+  item-64 at level 1: text: where the balance factor $\alpha ...  load on each sequence to be balanced.
+  item-65 at level 1: text: Node-Limited Routing.
+Like the d ... ull computation-communication overlap.
+  item-66 at level 1: text: No Token-Dropping.
+Due to the ef ... does not drop tokens during inference.
+  item-67 at level 1: section: group figure
+    item-68 at level 2: picture
+      item-68 at level 3: caption: Image: figures/nextn.pdf
+    item-69 at level 2: text: Illustration of our Multi-Token  ... rediction of each token at each depth.
+  item-70 at level 1: caption: Image: figures/nextn.pdf
+  item-71 at level 1: section_header: Multi-Token Prediction
+  item-72 at level 1: text: Inspired by [meta_mtp], we inves ... ur MTP implementation in this section.
+  item-73 at level 1: text: MTP Modules.
+To be specific, our ... bb{R}^{d}$ with the linear projection:
+  item-74 at level 1: formula: \mathbf{h}_i^{\prime k} = M_k [\ ... MSNorm}(\operatorname{Emb}(t_{i+k}))],
+  item-75 at level 1: text: where $[\cdot ; \cdot]$ denotes  ... he current depth $\mathbf{h}_{i}^{k}$:
+  item-76 at level 1: formula: \mathbf{h}_{1:T-k}^{k} = \operat ... TRM}_k(\mathbf{h}_{1:T-k}^{\prime k}),
+  item-77 at level 1: text: where $T$ represents the input s ... V}$, where $V$ is the vocabulary size:
+  item-78 at level 1: formula: P_{i+k+1}^{k} = \operatorname{OutHead}(\mathbf{h}_{i}^{k}).
+  item-79 at level 1: text: The output head $\operatorname{O ... as we utilize MTP to improve training.
+  item-80 at level 1: text: MTP Training Objective.
+For each ... y loss $\mathcal{L}_{\text{MTP}}^{k}$:
+  item-81 at level 1: formula: \mathcal{L}_{\text{MTP}}^{k} = \ ... um_{i=2 + k}^{T + 1} \log P_i^k [t_i],
+  item-82 at level 1: text: where $T$ denotes the input sequ ... al training objective for DeepSeek-V3:
+  item-83 at level 1: formula: \mathcal{L}_{\text{MTP}} = \frac ... k=1}^{D} \mathcal{L}_{\text{MTP}}^{k}.
+  item-84 at level 1: text: MTP in Inference.Our MTP strateg ... urther improve the generation latency.
+  item-85 at level 1: section_header: Infrastructures
+  item-86 at level 1: section_header: Compute Clusters
+  item-87 at level 1: text: DeepSeek-V3 is trained on a clus ... utilized to facilitate communications.
+  item-88 at level 1: section_header: Training Framework
+  item-89 at level 1: text: The training of DeepSeek-V3 is s ... nd ZeRO-1 Data Parallelism (DP)[zero].
+  item-90 at level 1: text: In order to facilitate efficient ... t using costly Tensor Parallelism(TP).
+  item-91 at level 1: section_header: DualPipe and Computation-Communication Overlap
+  item-92 at level 1: section: group figure
+    item-93 at level 2: picture
+      item-93 at level 3: caption: Image: figures/overlap.pdf
+    item-94 at level 2: text: Overlapping strategy for a pair  ...  PP communication can be fully hidden.
+  item-95 at level 1: caption: Image: figures/overlap.pdf
+  item-96 at level 1: text: For DeepSeek-V3, the communicati ... but also reduces the pipeline bubbles.
+  item-97 at level 1: text: The key idea of DualPipe is to o ... ero all-to-all communication overhead.
+  item-98 at level 1: section: group figure
+    item-99 at level 2: picture
+      item-99 at level 3: caption: Image: figures/dualpipe.pdf
+    item-100 at level 2: text: Example DualPipe scheduling for  ... rlapped computation and communication.
+  item-101 at level 1: caption: Image: figures/dualpipe.pdf
+  item-102 at level 1: text: In addition, even in more genera ...  as the number of micro-batches grows.
+  item-103 at level 1: text: 15pt
+  item-104 at level 1: table with [5x4]
+  item-105 at level 1: text: Comparison of pipeline bubbles a ... verlapped forward and backward chunks.
+  item-106 at level 1: section_header: Efficient Implementation of Cross-Node All-to-All Communication
+  item-107 at level 1: text: In order to ensure sufficient co ... ilize the bandwidths of IB and NVLink.
+  item-108 at level 1: text: In detail, we employ the warp sp ... che and the interference to other SMs.
+  item-109 at level 1: section_header: Extremely Memory Saving with Minimal Overhead
+  item-110 at level 1: paragraph: In order to reduce the memory fo ... g, we employ the following techniques.
+  item-111 at level 1: text: Recomputation of RMSNorm and MLA Up-Projection.
+  item-112 at level 1: paragraph: We recompute all RMSNorm operati ...  requirements for storing activations.
+  item-113 at level 1: text: Exponential Moving Average in CP ... ng additional memory or time overhead.
+  item-114 at level 1: text: Shared Embedding and Output Head ... urther enhances our memory efficiency.
+  item-115 at level 1: section_header: FP8 Training
+  item-116 at level 1: section: group figure
+    item-117 at level 2: picture
+      item-117 at level 3: caption: Image: figures/fp8-frameworkv3.pdf
+    item-118 at level 2: text: The overall mixed precision fram ... ly the Linear operator is illustrated.
+  item-119 at level 1: caption: Image: figures/fp8-frameworkv3.pdf
+  item-120 at level 1: text: Inspired by recent advances in l ... ceptable range of training randomness.
+  item-121 at level 1: section_header: Mixed Precision Framework
+  item-122 at level 1: text: Building upon widely adopted tec ... ustrated in Figure[fig:fp8_framework].
+  item-123 at level 1: text: Firstly, in order to accelerate  ... nificantly reduces memory consumption.
+  item-124 at level 1: text: Despite the efficiency advantage ... ks in our distributed training system.
+  item-125 at level 1: section: group figure
+    item-126 at level 2: picture
+      item-126 at level 3: caption: Image: figures/fp8-128accumulatorv4.pdf
+    item-127 at level 2: text: (a) We propose a fine-grained qu ... A for the high-precision accumulation.
+  item-128 at level 1: caption: Image: figures/fp8-128accumulatorv4.pdf
+  item-129 at level 1: section_header: Improved Precision from Quantization and Multiplication
+  item-130 at level 1: text: Based on our mixed precision FP8 ... method and the multiplication process.
+  item-131 at level 1: text: Fine-Grained Quantization.
+In lo ...  the same way as weights quantization.
+  item-132 at level 1: text: One key modification in our meth ... gy, it can be efficiently implemented.
+  item-133 at level 1: text: Notably, our fine-grained quanti ... ace with the latest GPU architectures.
+  item-134 at level 1: text: Increasing Accumulation Precisio ... ly constraining the training accuracy.
+  item-135 at level 1: text: In order to address this issue,  ... minimal additional computational cost.
+  item-136 at level 1: text: It is worth noting that this mod ... hout introducing substantial overhead.
+  item-137 at level 1: text: Mantissa over Exponents. 
+In con ... e impact of the limited dynamic range.
+  item-138 at level 1: text: Online Quantization.
+Delayed qua ...  or weight online into the FP8 format.
+  item-139 at level 1: section_header: Low-Precision Storage and Communication
+  item-140 at level 1: text: In conjunction with our FP8 trai ... r states into lower-precision formats.
+  item-141 at level 1: text: Low-Precision Optimizer States.
+ ... merical stability throughout training.
+  item-142 at level 1: text: Low-Precision Activation.
+As ill ...  for low-cost high-precision training:
+  item-143 at level 1: text: (1) Inputs of the Linear after t ... und scaled, i.e., integral power of 2.
+  item-144 at level 1: text: (2) Inputs of the SwiGLU operato ... efficiency and computational accuracy.
+  item-145 at level 1: text: Low-Precision Communication.
+Com ... itical parts of the training pipeline.
+  item-146 at level 1: section_header: Inference and Deployment
+  item-147 at level 1: text: We deploy DeepSeek-V3 on the H80 ... tes the prefilling and decodingstages.
+  item-148 at level 1: section_header: Prefilling
+  item-149 at level 1: text: The minimum deployment unit of t ... allow layers to save TP communication.
+  item-150 at level 1: text: To achieve load balancing among  ...  host one additional redundant expert.
+  item-151 at level 1: text: Furthermore, in the prefilling s ... th the dispatch and combineof another.
+  item-152 at level 1: text: Finally, we are exploring a dyna ... s routing scheme is almost negligible.
+  item-153 at level 1: section_header: Decoding
+  item-154 at level 1: text: During decoding, we treat the sh ...  and enhance communication efficiency.
+  item-155 at level 1: text: Similar to prefilling, we period ... the dispatchkernel to reduce overhead.
+  item-156 at level 1: text: Additionally, to enhance through ... ortion of SMs to dispatch+MoE+combine.
+  item-157 at level 1: section_header: Suggestions on Hardware Design
+  item-158 at level 1: paragraph: Based on our implementation of t ... on chip design to AI hardware vendors.
+  item-159 at level 1: section_header: Communication Hardware
+  item-160 at level 1: text: In DeepSeek-V3, we implement the ...  cores remain entirely under-utilized.
+  item-161 at level 1: text: Currently, the SMs primarily per ... ng tasks for all-to-all communication:
+  item-162 at level 1: list: group list
+    item-163 at level 2: list_item: Forwarding data between the IB ( ... ithin the same node from a single GPU.
+    item-164 at level 2: list_item: Transporting data between RDMA b ... ory regions) and input/output buffers.
+    item-165 at level 2: list_item: Executing reduce operations for all-to-all combine.
+    item-166 at level 2: list_item: Managing fine-grained memory lay ... perts across the IB and NVLink domain.
+  item-167 at level 1: text: We aspire to see future vendors  ... n requests based on simple primitives.
+  item-168 at level 1: section_header: Compute Hardware
+  item-169 at level 1: text: Higher FP8 GEMM Accumulation Pre ...  chips need to adopt higher precision.
+  item-170 at level 1: text: Support for Tile- and Block-Wise ... ced, avoiding frequent data movements.
+  item-171 at level 1: text: Support for Online Quantization. ... off-chip memory access by roughly 50%.
+  item-172 at level 1: text: Support for Transposed GEMM Oper ...  streamline the quantization workflow.
+  item-173 at level 1: section_header: Pre-Training
+  item-174 at level 1: section_header: Data Construction
+  item-175 at level 1: text: Compared with DeepSeek-V2, we op ... y and diverse tokens in our tokenizer.
+  item-176 at level 1: text: In the training process of DeepS ... ramework to structure data as follows:
+  item-177 at level 1: formula: \begin{align}
+\texttt{<|fim\_beg ... |eos\_token|>} . \nonumber
+\end{align}
+  item-178 at level 1: text: This structure is applied at the ... .1, consistent with the PSM framework.
+  item-179 at level 1: text: The tokenizer for DeepSeek-V3 em ... special cases and mitigates this bias.
+  item-180 at level 1: section_header: Hyper-Parameters
+  item-181 at level 1: text: Model Hyper-Parameters.
+We set t ... hich 37B are activated for each token.
+  item-182 at level 1: text: Training Hyper-Parameters.
+We em ...  to 0.1 for the remaining 4.8T tokens.
+  item-183 at level 1: section: group figure
+    item-184 at level 2: picture
+      item-184 at level 3: caption: Image: figures/needle_in_a_haystack.pdf
+    item-185 at level 2: text: Evaluation results on the Needle ... all context window lengths up to 128K.
+  item-186 at level 1: caption: Image: figures/needle_in_a_haystack.pdf
+  item-187 at level 1: section_header: Long Context Extension
+  item-188 at level 1: text: We adopt a similar approach to D ... ning rate from the pre-training stage.
+  item-189 at level 1: text: Through this two-phase extension ... oss context window lengths up to 128K.
+  item-190 at level 1: section_header: Evaluations
+  item-191 at level 1: section_header: Evaluation Benchmarks
+  item-192 at level 1: text: The base model of DeepSeek-V3 is ... linedbenchmarks are multilingual ones:
+  item-193 at level 1: text: Multi-subject multiple-choice da ... u], C-Eval [ceval], and CMMLU [cmmlu].
+  item-194 at level 1: text: Language understanding and reaso ...  [arc], and BigBench Hard (BBH) [bbh].
+  item-195 at level 1: text: Closed-book question answering d ... d NaturalQuestions [naturalquestions].
+  item-196 at level 1: text: Reading comprehension datasets i ... ating], and CMRC [cui-etal-2019-span].
+  item-197 at level 1: text: Reference disambiguation dataset ...  WinoGrande [sakaguchi2019winogrande].
+  item-198 at level 1: text: Language modeling datasets include Pile [pile].
+  item-199 at level 1: text: Chinese understanding and culture datasets include CCPM [li2021ccpm].
+  item-200 at level 1: text: Math datasets include GSM8K[gsm8 ... MGSM [mgsm], and CMath [wei2023cmath].
+  item-201 at level 1: text: Code datasets include HumanEval[ ... P[mbpp], and CRUXEval[gu2024cruxeval].
+  item-202 at level 1: text: Standardized exams include AGIEv ... udes both English and Chinese subsets.
+  item-203 at level 1: text: Following our previous work[dsvi ... ong models using different tokenizers.
+  item-204 at level 1: text: 4.5pt
+  item-205 at level 1: table with [38x9]
+  item-206 at level 1: text: Comparison among DeepSeek-V3-Bas ... ks, especially on math and code tasks.
+  item-207 at level 1: section_header: Evaluation Results
+  item-208 at level 1: text: In Table[tab:main], we compare t ... oming the strongest open-source model.
+  item-209 at level 1: text: From a more detailed perspective ... series, DROP, C-Eval, CMMLU, and CCPM.
+  item-210 at level 1: text: Due to our efficient architectur ... han training 72B or 405B dense models.
+  item-211 at level 1: text: 8pt
+  item-212 at level 1: table with [16x6]
+  item-213 at level 1: text: Ablation results for the MTP str ...  on most of the evaluation benchmarks.
+  item-214 at level 1: section_header: Discussion
+  item-215 at level 1: section_header: Ablation Studies for Multi-Token Prediction
+  item-216 at level 1: text: In Table[tab:ablation_nextn], we ...  on most of the evaluation benchmarks.
+  item-217 at level 1: section_header: Ablation Studies for the Auxiliary-Loss-Free Balancing Strategy
+  item-218 at level 1: text: In Table[tab:ablation_noaux_tc], ...  on most of the evaluation benchmarks.
+  item-219 at level 1: text: 4pt
+  item-220 at level 1: table with [16x6]
+  item-221 at level 1: text: Ablation results for the auxilia ...  on most of the evaluation benchmarks.
+  item-222 at level 1: section_header: Batch-Wise Load Balance VS. Sequence-Wise Load Balance
+  item-223 at level 1: text: The key distinction between auxi ... t specialization patterns as expected.
+  item-224 at level 1: paragraph: To further investigate the corre ... eve the same validation loss of 2.080.
+  item-225 at level 1: text: In addition, although the batch- ... inference_deployment], to overcome it.
+  item-226 at level 1: section: group figure
+    item-227 at level 2: picture
+      item-227 at level 3: caption: Image: figures/relative_expert_load_multi.pdf
+    item-228 at level 2: text: Expert load of auxiliary-loss-fr ... ppendix\ref{app:detailed_expert_load}.
+  item-229 at level 1: caption: Image: figures/relative_expert_load_multi.pdf
+  item-230 at level 1: section_header: Post-Training
+  item-231 at level 1: section_header: Supervised Fine-Tuning
+  item-232 at level 1: paragraph: We curate our instruction-tuning ... tailored to its specific requirements.
+  item-233 at level 1: text: Reasoning Data.For reasoning-rel ... of regularly formatted reasoning data.
+  item-234 at level 1: paragraph: To establish our methodology, we ... <system prompt, problem, R1 response>.
+  item-235 at level 1: paragraph: The system prompt is meticulousl ... ing overall performance strategically.
+  item-236 at level 1: paragraph: Upon completing the RL training  ... ponses that are concise and effective.
+  item-237 at level 1: text: Non-Reasoning Data.For non-reaso ...  accuracy and correctness of the data.
+  item-238 at level 1: text: SFT Settings. 
+We fine-tune Deep ... emain isolated and mutually invisible.
+  item-239 at level 1: section_header: Reinforcement Learning
+  item-240 at level 1: section_header: Reward Model
+  item-241 at level 1: paragraph: We employ a rule-based Reward Mo ... nd a model-based RM in our RL process.
+  item-242 at level 1: text: Rule-Based RM.For questions that ... stant to manipulation or exploitation.
+  item-243 at level 1: text: Model-Based RM. 
+For questions w ... k of reward hacking in specific tasks.
+  item-244 at level 1: section_header: Group Relative Policy Optimization
+  item-245 at level 1: text: Similar to DeepSeek-V2[dsvii], w ... by maximizing the following objective:
+  item-246 at level 1: formula: \begin{split}
+    \mathcal{J}_{G ...  \pi_{ref}\right)\right) ,
+\end{split}
+  item-247 at level 1: formula: \mathbb{D}_{KL}\left(\pi_{\theta ... ref}(o_i|q)}{\pi_{\theta}(o_i|q)} - 1,
+  item-248 at level 1: text: where $\epsilon$ and $\beta$ are ... ding to the outputs within each group:
+  item-249 at level 1: formula: A_i = \frac{r_i - {\operatorname ... ame{std}(\{r_1, r_2, \cdots, r_G\})}}.
+  item-250 at level 1: paragraph: We incorporate prompts from dive ...  where available SFT data are limited.
+  item-251 at level 1: section_header: Evaluations
+  item-252 at level 1: section_header: Evaluation Settings
+  item-253 at level 1: text: Evaluation Benchmarks.
+Apart fro ... WE-Bench Verified[swe_verified], Aider
+  item-254 at level 1: footnote: https://aider.chat
+  item-255 at level 1: text: , LiveCodeBench[livecodebench] ( ... ust 2024 to November 2024), Codeforces
+  item-256 at level 1: footnote: https://codeforces.com
+  item-257 at level 1: text: , Chinese National High School Mathematics Olympiad (CNMO 2024)
+  item-258 at level 1: footnote: https://www.cms.org.cn/Home/comp/comp/cid/12.html
+  item-259 at level 1: text: , and American Invitational Math ... xamination 2024 (AIME 2024)[AIME2024].
+  item-260 at level 1: text: Compared Baselines.
+We conduct c ... rformed through their respective APIs.
+  item-261 at level 1: text: Detailed Evaluation Configuratio ... rompts from the simple-evals framework
+  item-262 at level 1: footnote: https://github.com/openai/simple-evals
+  item-263 at level 1: text: . 
+We utilize the Zero-Eval prom ... mum of 8192 tokens for each benchmark.
+  item-264 at level 1: text: 1.9pt
+  item-265 at level 1: table with [28x10]
+  item-266 at level 1: text: Comparison between DeepSeek-V3 a ... against frontier closed-source models.
+  item-267 at level 1: section_header: Standard Evaluation
+  item-268 at level 1: text: Table[tab:chat] presents the eva ... els like GPT-4o and Claude-3.5-Sonnet.
+  item-269 at level 1: text: English Benchmarks.
+MMLU is a wi ... r competitors by a substantial margin.
+  item-270 at level 1: text: In long-context understanding be ... re to user-defined format constraints.
+  item-271 at level 1: text: Code and Math Benchmarks.
+Coding ... pabilities in algorithm-focused tasks.
+  item-272 at level 1: text: On math benchmarks, DeepSeek-V3  ... hly beneficial for non-o1-like models.
+  item-273 at level 1: text: Chinese Benchmarks.
+Qwen and Dee ... ens that DeepSeek-V3is pre-trained on.
+  item-274 at level 1: text: On C-Eval, a representative benc ... guage reasoning and educational tasks.
+  item-275 at level 1: table with [8x3]
+  item-276 at level 1: text: English open-ended conversation  ... gth-controlled win rate as the metric.
+  item-277 at level 1: section_header: Open-Ended Evaluation
+  item-278 at level 1: text: In addition to standard benchmar ... can accomplish in challenging domains.
+  item-279 at level 1: text: Similarly, DeepSeek-V3 showcases ... the effectiveness of its advancements.
+  item-280 at level 1: section_header: DeepSeek-V3 as a Generative Reward Model
+  item-281 at level 1: text: We compare the judgment ability  ... d robustness of the alignment process.
+  item-282 at level 1: table with [9x6]
+  item-283 at level 1: text: Performances of GPT-4o, Claude-3.5-sonnet and DeepSeek-V3 on RewardBench.
+  item-284 at level 1: section_header: Discussion
+  item-285 at level 1: section_header: Distillation from DeepSeek-R1
+  item-286 at level 1: paragraph: We ablate the contribution of di ... he expert checkpoints described above.
+  item-287 at level 1: text: Table[tab:distill] demonstrates  ... ttings for DeepSeek-V3in distillation.
+  item-288 at level 1: paragraph: Our research suggests that knowl ... portant direction for future research.
+  item-289 at level 1: table with [5x5]
+  item-290 at level 1: text: The contribution of distillation ... re the same as in Table\ref{tab:chat}.
+  item-291 at level 1: section_header: Self-Rewarding
+  item-292 at level 1: text: Rewards play a pivotal role in R ... del capabilities in general scenarios.
+  item-293 at level 1: section_header: Multi-Token Prediction Evaluation
+  item-294 at level 1: text: Instead of predicting just the n ... ing 1.8 times TPS (Tokens Per Second).
+  item-295 at level 1: section_header: Conclusion, Limitations, and Future Directions
+  item-296 at level 1: text: In this paper, we introduce Deep ... t length extension, and post-training.
+  item-297 at level 1: text: While acknowledging its strong p ... development of more advanced hardware.
+  item-298 at level 1: text: DeepSeek consistently adheres to ... earch across the following directions.
+  item-299 at level 1: list: group list
+    item-300 at level 2: list_item: We will consistently study and r ... undaries of its modeling capabilities.
+    item-301 at level 2: list_item: We will continuously iterate on  ... ore comprehensive range of dimensions.
+    item-302 at level 2: list_item: We will consistently explore and ... ding their reasoning length and depth.
+    item-303 at level 2: list_item: We will explore more comprehensi ... nd affect our foundational assessment.
+  item-304 at level 1: text: main
+  item-305 at level 1: section_header: Appendix
+  item-306 at level 1: section_header: Contributions and Acknowledgments
+  item-307 at level 1: text: 2 damaiblue Research & Engineeri ... 
+ Ziyang Song 
+ Ziyi Gao 
+ Zizheng Pan
+  item-308 at level 1: text: damaigreen Data Annotation 
+ Bei ... hen Huang 
+ Zhipeng Xu 
+ Zhongyu Zhang
+  item-309 at level 1: text: damaired Business & Compliance 
+ ...  
+ Yukun Zha 
+ Yuting Yan 
+ Zhen Zhang
+  item-310 at level 1: paragraph: Within each role, authors are li ... duals who have departed from our team.
+  item-311 at level 1: section_header: Ablation Studies for Low-Precision Training
+  item-312 at level 1: section: group figure
+    item-313 at level 2: picture
+      item-313 at level 3: caption: Image: figures/fp8-v.s.-bf16.pdf
+    item-314 at level 2: text: Loss curves comparison between B ... erage (EMA) with a coefficient of 0.9.
+  item-315 at level 1: caption: Image: figures/fp8-v.s.-bf16.pdf
+  item-316 at level 1: section_header: FP8 v.s. BF16 Training
+  item-317 at level 1: text: We validate our FP8 mixed precis ...  fine-grained quantization strategies.
+  item-318 at level 1: section_header: Discussion About Block-Wise Quantization
+  item-319 at level 1: text: Although our tile-wise fine-grai ... by a block-wise quantization approach.
+  item-320 at level 1: section_header: Expert Specialization Patterns o ... ux-Loss-Based and Aux-Loss-Free Models
+  item-321 at level 1: text: We record the expert load of the ... d in Figure[fig:detailed_expert_load].
+  item-322 at level 1: section: group figure
+    item-323 at level 2: text: [Layers 1-7]
+    item-324 at level 2: picture
+      item-324 at level 3: caption: Image: figures/relative_expert_load_multi_1-6.pdf
+  item-325 at level 1: caption: Image: figures/relative_expert_load_multi_1-6.pdf
+  item-326 at level 1: section: group figure
+    item-327 at level 2: text: [Layers 7-13]
+    item-328 at level 2: picture
+      item-328 at level 3: caption: Image: figures/relative_expert_load_multi_7-12.pdf
+  item-329 at level 1: caption: Image: figures/relative_expert_load_multi_7-12.pdf
+  item-330 at level 1: section: group figure
+    item-331 at level 2: text: [Layers 13-19]
+    item-332 at level 2: picture
+      item-332 at level 3: caption: Image: figures/relative_expert_load_multi_13-18.pdf
+  item-333 at level 1: caption: Image: figures/relative_expert_load_multi_13-18.pdf
+  item-334 at level 1: section: group figure
+    item-335 at level 2: text: [Layers 19-25]
+    item-336 at level 2: picture
+      item-336 at level 3: caption: Image: figures/relative_expert_load_multi_19-24.pdf
+  item-337 at level 1: caption: Image: figures/relative_expert_load_multi_19-24.pdf
+  item-338 at level 1: section: group figure
+    item-339 at level 2: text: [Layers 25-27]
+    item-340 at level 2: picture
+      item-340 at level 3: caption: Image: figures/relative_expert_load_multi_25-26.pdf
+    item-341 at level 2: text: Expert load of auxiliary-loss-fr ... he theoretically balanced expert load.
+  item-342 at level 1: caption: Image: figures/relative_expert_load_multi_25-26.pdf
+>>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)

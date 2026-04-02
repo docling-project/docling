@@ -2,51 +2,53 @@
   "schema_name": "DoclingDocument",
   "version": "1.10.0",
   "name": "example_02",
+  "origin": null,
   "furniture": {
     "self_ref": "#/furniture",
+    "parent": null,
     "children": [],
     "content_layer": "furniture",
+    "meta": null,
     "name": "_root_",
     "label": "unspecified"
   },
   "body": {
     "self_ref": "#/body",
+    "parent": null,
     "children": [
       {
-        "$ref": "#/texts/0"
+        "cref": "#/texts/0"
       },
       {
-        "$ref": "#/texts/1"
+        "cref": "#/texts/1"
       },
       {
-        "$ref": "#/texts/2"
+        "cref": "#/texts/2"
       },
       {
-        "$ref": "#/texts/3"
+        "cref": "#/texts/3"
       },
       {
-        "$ref": "#/texts/4"
+        "cref": "#/texts/4"
       },
       {
-        "$ref": "#/texts/5"
+        "cref": "#/texts/5"
       },
       {
-        "$ref": "#/texts/6"
+        "cref": "#/tables/0"
       },
       {
-        "$ref": "#/tables/0"
+        "cref": "#/texts/6"
       },
       {
-        "$ref": "#/texts/7"
+        "cref": "#/texts/7"
       },
       {
-        "$ref": "#/texts/8"
-      },
-      {
-        "$ref": "#/texts/9"
+        "cref": "#/texts/8"
       }
     ],
     "content_layer": "body",
+    "meta": null,
     "name": "_root_",
     "label": "unspecified"
   },
@@ -55,125 +57,140 @@
     {
       "self_ref": "#/texts/0",
       "parent": {
-        "$ref": "#/body"
+        "cref": "#/body"
       },
       "children": [],
       "content_layer": "body",
+      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Math Examples",
       "text": "Math Examples",
+      "formatting": null,
+      "hyperlink": null,
       "level": 1
     },
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "$ref": "#/body"
+        "cref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "meta": null,
+      "label": "text",
       "prov": [],
-      "orig": "Inline math:",
-      "text": "Inline math:"
+      "orig": "Inline math: $E = mc^2$",
+      "text": "Inline math: $E = mc^2$",
+      "formatting": null,
+      "hyperlink": null
     },
     {
       "self_ref": "#/texts/2",
       "parent": {
-        "$ref": "#/body"
+        "cref": "#/body"
       },
       "children": [],
       "content_layer": "body",
+      "meta": null,
       "label": "text",
       "prov": [],
-      "orig": "$E = mc^2$",
-      "text": "$E = mc^2$"
+      "orig": "Display math:",
+      "text": "Display math:",
+      "formatting": null,
+      "hyperlink": null
     },
     {
       "self_ref": "#/texts/3",
       "parent": {
-        "$ref": "#/body"
+        "cref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "meta": null,
+      "label": "formula",
       "prov": [],
-      "orig": "Display math:",
-      "text": "Display math:"
+      "orig": "\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}",
+      "text": "\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}",
+      "formatting": null,
+      "hyperlink": null
     },
     {
       "self_ref": "#/texts/4",
       "parent": {
-        "$ref": "#/body"
+        "cref": "#/body"
       },
       "children": [],
       "content_layer": "body",
+      "meta": null,
       "label": "formula",
       "prov": [],
-      "orig": "\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}",
-      "text": "\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}"
+      "orig": "\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}",
+      "text": "\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}",
+      "formatting": null,
+      "hyperlink": null
     },
     {
       "self_ref": "#/texts/5",
       "parent": {
-        "$ref": "#/body"
+        "cref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}",
-      "text": "\\nabla \\times \\mathbf{E} = -\\frac{\\partial \\mathbf{B}}{\\partial t}"
-    },
-    {
-      "self_ref": "#/texts/6",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
+      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Table Example",
       "text": "Table Example",
+      "formatting": null,
+      "hyperlink": null,
       "level": 1
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "meta": null,
+      "label": "text",
+      "prov": [],
+      "orig": "Sample table",
+      "text": "Sample table",
+      "formatting": null,
+      "hyperlink": null
     },
     {
       "self_ref": "#/texts/7",
       "parent": {
-        "$ref": "#/body"
+        "cref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Sample table",
-      "text": "Sample table"
-    },
-    {
-      "self_ref": "#/texts/8",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
+      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "References",
       "text": "References",
+      "formatting": null,
+      "hyperlink": null,
       "level": 1
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/8",
       "parent": {
-        "$ref": "#/body"
+        "cref": "#/body"
       },
       "children": [],
       "content_layer": "body",
+      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "See [smith2020] for more details. Also refer to Section [sec:math].",
-      "text": "See [smith2020] for more details. Also refer to Section [sec:math]."
+      "text": "See [smith2020] for more details. Also refer to Section [sec:math].",
+      "formatting": null,
+      "hyperlink": null
     }
   ],
   "pictures": [],
@@ -181,18 +198,21 @@
     {
       "self_ref": "#/tables/0",
       "parent": {
-        "$ref": "#/body"
+        "cref": "#/body"
       },
       "children": [],
       "content_layer": "body",
+      "meta": null,
       "label": "table",
       "prov": [],
       "captions": [],
       "references": [],
       "footnotes": [],
+      "image": null,
       "data": {
         "table_cells": [
           {
+            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -206,6 +226,7 @@
             "fillable": false
           },
           {
+            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -219,6 +240,7 @@
             "fillable": false
           },
           {
+            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -232,6 +254,7 @@
             "fillable": false
           },
           {
+            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -245,6 +268,7 @@
             "fillable": false
           },
           {
+            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -258,6 +282,7 @@
             "fillable": false
           },
           {
+            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -271,6 +296,7 @@
             "fillable": false
           },
           {
+            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -284,6 +310,7 @@
             "fillable": false
           },
           {
+            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -297,6 +324,7 @@
             "fillable": false
           },
           {
+            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -310,6 +338,7 @@
             "fillable": false
           },
           {
+            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -323,6 +352,7 @@
             "fillable": false
           },
           {
+            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -336,6 +366,7 @@
             "fillable": false
           },
           {
+            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -354,6 +385,7 @@
         "grid": [
           [
             {
+              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -367,6 +399,7 @@
               "fillable": false
             },
             {
+              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -380,6 +413,7 @@
               "fillable": false
             },
             {
+              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -395,6 +429,7 @@
           ],
           [
             {
+              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -408,6 +443,7 @@
               "fillable": false
             },
             {
+              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -421,6 +457,7 @@
               "fillable": false
             },
             {
+              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -436,6 +473,7 @@
           ],
           [
             {
+              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -449,6 +487,7 @@
               "fillable": false
             },
             {
+              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -462,6 +501,7 @@
               "fillable": false
             },
             {
+              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -477,6 +517,7 @@
           ],
           [
             {
+              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -490,6 +531,7 @@
               "fillable": false
             },
             {
+              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -503,6 +545,7 @@
               "fillable": false
             },
             {
+              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,

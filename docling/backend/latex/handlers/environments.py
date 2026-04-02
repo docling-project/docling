@@ -11,6 +11,7 @@ from docling_core.types.doc.document import (
     NodeItem,
 )
 from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
+from pylatexenc.macrospec import LatexContextDb
 
 from docling.backend.latex.constants import ENV_LIST, ENV_MATH, ENV_QUOTE, ENV_THEOREM
 
@@ -25,7 +26,17 @@ class EnvironmentHandlerMixin:
             parent: "Any" = ...,
             formatting: "Any" = ...,
             text_label: "Any" = ...,
+            text_buffer: "Any" = ...,
         ) -> None: ...
+        def _process_math_node(
+            self,
+            node: "Any",
+            doc: "Any",
+            parent: "Any",
+            text_buffer: "Any",
+            flush_fn: "Any",
+        ) -> None: ...
+        def _expand_custom_macros(self, node: Any, depth: int = 0) -> str: ...
         def _clean_math(self, latex_str: str, env_name: str) -> str: ...
         def _parse_table(self, node: "Any") -> "Any": ...
         def _extract_verbatim_content(self, latex_str: str, env_name: str) -> str: ...
@@ -67,11 +78,12 @@ class EnvironmentHandlerMixin:
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
 
         elif node.envname.replace("*", "") in ENV_MATH:
-            math_text = self._clean_math(node.latex_verbatim(), node.envname)
+            math_text = self._expand_custom_macros(node)
+            math_text = self._clean_math(math_text, node.envname)
             doc.add_text(parent=parent, label=DocItemLabel.FORMULA, text=math_text)
 
         elif node.envname == "math":
-            math_text = self._clean_math(node.latex_verbatim(), node.envname)
+            math_text = self._expand_custom_macros(node)
             doc.add_text(parent=parent, label=DocItemLabel.FORMULA, text=math_text)
 
         elif node.envname == "subequations":
