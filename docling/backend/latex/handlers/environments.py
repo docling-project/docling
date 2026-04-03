@@ -183,13 +183,7 @@ class EnvironmentHandlerMixin:
             ),
             CodeLanguageLabel.UNKNOWN,
         )
-
-        if getattr(parent, "name", None) == "figure":
-            picture_parent = parent
-        else:
-            picture_parent = parent
-
-        pic = doc.add_picture(parent=picture_parent)
+        pic = doc.add_picture(parent=parent)
         pic.meta = PictureMeta(
             code={
                 "text": tikz_raw,
