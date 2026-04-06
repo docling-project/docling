@@ -222,8 +222,10 @@ class LayoutPostprocessor:
     def postprocess(self) -> Tuple[List[Cluster], List[TextCell]]:
 
         self.regular_clusters = self._process_regular_clusters()  # 여기 좀 수정했음
-        # Keep cluster order stable by source id (DotsOCR response order).
-        final_clusters = self._sort_clusters(self.regular_clusters + [], mode="id")
+        # Keep cluster order stable by source cluster id (DotsOCR response order).
+        final_clusters = self._sort_clusters(
+            self.regular_clusters + [], mode="cluster_id"
+        )
         for cluster in final_clusters:
             cluster.cells = self._sort_cells(cluster.cells)
             # Also sort cells in children if any
@@ -635,6 +637,8 @@ class LayoutPostprocessor:
         self, clusters: List[Cluster], mode: str = "id"
     ) -> List[Cluster]:
         """Sort clusters in reading order (top-to-bottom, left-to-right)."""
+        if mode == "cluster_id":  # Keep incoming model order via source cluster id.
+            return sorted(clusters, key=lambda cluster: cluster.id)
         if mode == "id":  # sort in the order the cells are printed in the PDF.
             return sorted(
                 clusters,

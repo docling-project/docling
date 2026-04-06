@@ -74,6 +74,7 @@ class DotsOCRLayoutModel(BasePageModel):
         mode_prefix: str,
         show: bool = False,
         draw_side_by_side: Optional[bool] = None,
+        cluster_order_map: Optional[dict[int, int]] = None,
     ):
         """
         Draws layout clusters for debug visualization.
@@ -85,8 +86,19 @@ class DotsOCRLayoutModel(BasePageModel):
         scale_x = page.image.width / page.size.width
         scale_y = page.image.height / page.size.height
 
-        # Global order map: preserve incoming cluster order in both panes.
-        order_map = {id(cluster): idx + 1 for idx, cluster in enumerate(clusters)}
+        # Global order map:
+        # - If provided, preserve source(DotsOCR raw) cluster order.
+        # - Otherwise preserve incoming cluster list order.
+        if cluster_order_map is None:
+            order_map = {cluster.id: idx + 1 for idx, cluster in enumerate(clusters)}
+        else:
+            order_map = dict(cluster_order_map)
+            next_order = max(order_map.values(), default=0) + 1
+            # Keep deterministic numbering for newly created clusters (e.g. orphans).
+            for cluster in sorted(clusters, key=lambda c: c.id):
+                if cluster.id not in order_map:
+                    order_map[cluster.id] = next_order
+                    next_order += 1
 
         side_by_side_from_options = getattr(
             self.options, "visualize_layout_side_by_side", False
@@ -236,7 +248,7 @@ class DotsOCRLayoutModel(BasePageModel):
         placed_badges: list[tuple[float, float, float, float]] = []
 
         for cluster in clusters:
-            order = order_map.get(id(cluster))
+            order = order_map.get(cluster.id)
             if order is None:
                 continue
 
@@ -451,9 +463,20 @@ class DotsOCRLayoutModel(BasePageModel):
                         )
                         clusters.append(cluster)
 
+                    # Preserve source(DotsOCR raw) order across debug views and
+                    # postprocessed cluster outputs.
+                    source_order_map = {
+                        cluster.id: order_idx + 1
+                        for order_idx, cluster in enumerate(clusters)
+                    }
+
                     if settings.debug.visualize_raw_layout:
                         self.draw_clusters_and_cells_side_by_side(
-                            conv_res, page, clusters, mode_prefix="1_raw_dotsocr"
+                            conv_res,
+                            page,
+                            clusters,
+                            mode_prefix="1_raw_dotsocr",
+                            cluster_order_map=source_order_map,
                         )
 
                     # processed_clusters
@@ -488,7 +511,11 @@ class DotsOCRLayoutModel(BasePageModel):
 
                 if settings.debug.visualize_layout:
                     self.draw_clusters_and_cells_side_by_side(
-                        conv_res, page, processed_clusters, mode_prefix="2_postprocessed_dotsocr"
+                        conv_res,
+                        page,
+                        processed_clusters,
+                        mode_prefix="2_postprocessed_dotsocr",
+                        cluster_order_map=source_order_map,
                     )
                 yield page
 
