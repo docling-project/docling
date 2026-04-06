@@ -167,14 +167,19 @@ class AutoInlineVlmEngine(BaseVlmEngine):
                 f"repo_id={model_config.repo_id}, extra_config={model_config.extra_config}"
             )
 
+        # Propagate trust_remote_code from model_spec to engine options
+        trust_remote = (
+            self.model_spec.trust_remote_code
+            if self.model_spec is not None
+            else False
+        )
+
         # Create the actual engine
         if self.selected_engine_type == VlmEngineType.MLX:
             from docling.models.inference_engines.vlm.mlx_engine import MlxVlmEngine
 
             mlx_options = MlxVlmEngineOptions(
-                trust_remote_code=self.options.trust_remote_code
-                if hasattr(self.options, "trust_remote_code")
-                else False,
+                trust_remote_code=trust_remote,
             )
             self.actual_engine = MlxVlmEngine(
                 options=mlx_options,
@@ -185,7 +190,9 @@ class AutoInlineVlmEngine(BaseVlmEngine):
         elif self.selected_engine_type == VlmEngineType.VLLM:
             from docling.models.inference_engines.vlm.vllm_engine import VllmVlmEngine
 
-            vllm_options = VllmVlmEngineOptions()
+            vllm_options = VllmVlmEngineOptions(
+                trust_remote_code=trust_remote,
+            )
             self.actual_engine = VllmVlmEngine(
                 options=vllm_options,
                 accelerator_options=self.accelerator_options,
@@ -198,7 +205,9 @@ class AutoInlineVlmEngine(BaseVlmEngine):
                 TransformersVlmEngine,
             )
 
-            transformers_options = TransformersVlmEngineOptions()
+            transformers_options = TransformersVlmEngineOptions(
+                trust_remote_code=trust_remote,
+            )
             self.actual_engine = TransformersVlmEngine(
                 options=transformers_options,
                 accelerator_options=self.accelerator_options,

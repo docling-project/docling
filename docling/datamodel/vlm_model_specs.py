@@ -390,6 +390,43 @@ LIGHTONOCR_VLLM_API = ApiVlmOptions(
     response_format=ResponseFormat.MARKDOWN,
 )
 
+# Falcon-OCR
+FALCON_OCR_TRANSFORMERS = InlineVlmOptions(
+    repo_id="tiiuae/Falcon-OCR",
+    prompt="",
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_CAUSALLM,
+    transformers_prompt_style=TransformersPromptStyle.CHAT,
+    supported_devices=[
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.MPS,
+        AcceleratorDevice.XPU,
+    ],
+    torch_dtype="bfloat16",
+    trust_remote_code=True,
+    scale=2.0,
+    temperature=0.0,
+)
+
+FALCON_OCR_VLLM = FALCON_OCR_TRANSFORMERS.model_copy(deep=True)
+FALCON_OCR_VLLM.inference_framework = InferenceFramework.VLLM
+
+FALCON_OCR_VLLM_API = ApiVlmOptions(
+    url="http://localhost:8000/v1/chat/completions",
+    params=dict(
+        model="tiiuae/Falcon-OCR",
+        max_tokens=4096,
+    ),
+    prompt="",
+    timeout=90,
+    scale=2.0,
+    temperature=0.0,
+    concurrency=4,
+    response_format=ResponseFormat.MARKDOWN,
+)
+
 # DeepSeek-OCR
 DEEPSEEKOCR_OLLAMA = ApiVlmOptions(
     url="http://localhost:11434/v1/chat/completions",
