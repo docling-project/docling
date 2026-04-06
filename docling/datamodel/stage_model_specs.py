@@ -1258,8 +1258,8 @@ VLM_CONVERT_FALCON_OCR = StageModelPreset(
             # add: VlmEngineType.MLX: EngineModelConfig(repo_id="mlx-community/Falcon-OCR-...")
         },
         api_overrides={
-            VlmEngineType.API: ApiModelConfig(
-                params={"model": "tiiuae/Falcon-OCR", "max_tokens": 4096}
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "falcon-ocr", "max_tokens": 4096}
             ),
             VlmEngineType.API_OPENAI: ApiModelConfig(
                 params={"model": "falcon-ocr", "max_tokens": 4096}
