@@ -169,9 +169,7 @@ class AutoInlineVlmEngine(BaseVlmEngine):
 
         # Propagate trust_remote_code from model_spec to engine options
         trust_remote = (
-            self.model_spec.trust_remote_code
-            if self.model_spec is not None
-            else False
+            self.model_spec.trust_remote_code if self.model_spec is not None else False
         )
 
         # Create the actual engine
