@@ -553,7 +553,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return
 
         try:
-            from playwright.sync_api import sync_playwright
+            from playwright.sync_api import (  # type: ignore[import-not-found]
+                sync_playwright,  # type: ignore[import-not-found]
+            )
         except ImportError as exc:
             raise RuntimeError(
                 "Playwright is required for HTML rendering. "
