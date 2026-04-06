@@ -51,6 +51,13 @@ class BaseOptions(BaseModel):
     kind: ClassVar[str]
 
 
+class TableStructureModelType(str, Enum):
+    """Enum of valid table structure model types."""
+
+    TABLEFORMER = "tableformer"
+    VLM = "vlm"
+
+
 class TableFormerMode(str, Enum):
     """Modes for the TableFormer model."""
 
@@ -68,6 +75,23 @@ class TableStructureOptions(BaseModel):
         # False: Let table structure model define the text cells, ignore PDF cells.
     )
     mode: TableFormerMode = TableFormerMode.ACCURATE
+
+
+class VlmTableStructureOptions(BaseModel):
+    """Options for VLM-based table structure recognition via external API."""
+
+    url: AnyUrl = AnyUrl("http://localhost:8000/v1/chat/completions")
+    api_key: Optional[str] = None
+    model: Optional[str] = None
+    headers: Dict[str, str] = {}
+    params: Dict[str, Any] = {}
+    timeout: float = 60
+    prompt: str = ""
+    scale: float = 2.0
+    temperature: float = 0.0
+    concurrency: int = 1
+    use_ocr_in_prompt: bool = True
+    prompt_bbox_scale: int = 1024
 
 
 class OcrOptions(BaseOptions):
@@ -319,6 +343,13 @@ class LayoutOptions(BaseLayoutOptions):
     """Options for layout processing."""
 
     create_orphan_clusters: bool = True  # Whether to create clusters for orphaned cells
+    visualize_layout_side_by_side: bool = (
+        False  # Debug only: render layout visualization in split left/right panes
+    )
+    dotocr_endpoint: str = None
+    dotocr_api_key: str = None
+    dotocr_max_completion_tokens: int = 6000
+    dotocr_timeout: int = 3600
     model_spec: LayoutModelConfig = DOCLING_LAYOUT_V2
 
 
@@ -343,7 +374,13 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
     )
     # If True, text from backend will be used instead of generated text
 
+    table_structure_model_type: TableStructureModelType = (
+        TableStructureModelType.TABLEFORMER
+    )
     table_structure_options: TableStructureOptions = TableStructureOptions()
+    vlm_table_structure_options: VlmTableStructureOptions = (
+        VlmTableStructureOptions()
+    )
     ocr_options: OcrOptions = EasyOcrOptions()
     picture_description_options: PictureDescriptionBaseOptions = (
         smolvlm_picture_description

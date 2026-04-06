@@ -11,7 +11,10 @@ from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import AssembledUnit, Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.layout_model_specs import LayoutModelConfig
-from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.datamodel.pipeline_options import (
+    PdfPipelineOptions,
+    TableStructureModelType,
+)
 from docling.datamodel.settings import settings
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.code_formula_model import CodeFormulaModel, CodeFormulaModelOptions
@@ -29,6 +32,7 @@ from docling.models.page_preprocessing_model import (
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.models.readingorder_model import ReadingOrderModel, ReadingOrderOptions
 from docling.models.table_structure_model import TableStructureModel
+from docling.models.genos_vlm_table_structure_model import GenosVlmTableStructureModel
 from docling.models.dots_ocr_layout_model import DotsOCRLayoutModel
 
 from docling.pipeline.base_pipeline import PaginatedPipeline
@@ -65,6 +69,23 @@ class StandardPdfPipeline(PaginatedPipeline):
 
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
 
+        # Select table structure model based on configuration
+        if (
+            pipeline_options.table_structure_model_type
+            == TableStructureModelType.VLM
+        ):
+            table_model = GenosVlmTableStructureModel(
+                enabled=pipeline_options.do_table_structure,
+                options=pipeline_options.vlm_table_structure_options,
+            )
+        else:
+            table_model = TableStructureModel(
+                enabled=pipeline_options.do_table_structure,
+                artifacts_path=artifacts_path,
+                options=pipeline_options.table_structure_options,
+                accelerator_options=pipeline_options.accelerator_options,
+            )
+
         if pipeline_options.do_vlm_layout_and_readingorder == True:
             self.build_pipe = [
                 # Pre-processing
@@ -76,12 +97,7 @@ class StandardPdfPipeline(PaginatedPipeline):
                 # layout and reading order
                 DotsOCRLayoutModel(pipeline_options=pipeline_options),
                 # Table structure model
-                TableStructureModel(
-                    enabled=pipeline_options.do_table_structure,
-                    artifacts_path=artifacts_path,
-                    options=pipeline_options.table_structure_options,
-                    accelerator_options=pipeline_options.accelerator_options,
-                ),
+                table_model,
                 # Page assemble
                 PageAssembleModel(options=PageAssembleOptions()),
             ]
@@ -103,12 +119,7 @@ class StandardPdfPipeline(PaginatedPipeline):
                     options=pipeline_options.layout_options,
                 ),
                 # Table structure model
-                TableStructureModel(
-                    enabled=pipeline_options.do_table_structure,
-                    artifacts_path=artifacts_path,
-                    options=pipeline_options.table_structure_options,
-                    accelerator_options=pipeline_options.accelerator_options,
-                ),
+                table_model,
                 # Page assemble
                 PageAssembleModel(options=PageAssembleOptions()),
             ]
@@ -210,8 +221,6 @@ class StandardPdfPipeline(PaginatedPipeline):
 
         with TimeRecorder(conv_res, "doc_assemble", scope=ProfilingScope.DOCUMENT):
 
-            # 페이지는 이미 어셈블이 된 상황
-            # conv_res.pages[0].assembled 이거 자체가 순서가 안맞아.
             for page in conv_res.pages:
                 if page.assembled is not None:
                     for el in page.assembled.body:
@@ -220,23 +229,22 @@ class StandardPdfPipeline(PaginatedPipeline):
                         all_headers.append(el)
                     for el in page.assembled.elements:
                         all_elements.append(el)
-                    # elements에는 게속 어펜드 하면 다를꺼같은데??
 
-            # 이걸 왜 따로 모으지???????????????????
             conv_res.assembled = AssembledUnit(
                 elements=all_elements, headers=all_headers, body=all_body
             )
 
-            # 여기서 이미 순서가 안맞아
-            # conv_res.assembled.elements[0]
+            if self.pipeline_options.do_vlm_layout_and_readingorder:
+                # DotsOCR path: preserve assembled order from VLM output
+                # without running reading-order predictor reordering.
+                conv_res.document = (
+                    self.reading_order_model.build_doc_preserving_assembled_order(
+                        conv_res
+                    )
+                )
+            else:
+                conv_res.document = self.reading_order_model(conv_res)
 
-            # conv_result.document -> document -> chunks -> vectors -> result_list_as_dict[0]['text']
-            conv_res.document = self.reading_order_model(conv_res)
-            # [t["text"] for t in conv_res.document.dict()["texts"]]
-
-            # bbox 별 차이 없어보임...
-
-            # 필요없음
             # Generate page images in the output
             if self.pipeline_options.generate_page_images:
                 for page in conv_res.pages:
@@ -246,7 +254,6 @@ class StandardPdfPipeline(PaginatedPipeline):
                         page.image, dpi=int(72 * self.pipeline_options.images_scale)
                     )
 
-            # 필요없음
             # Generate images of the requested element types
             with warnings.catch_warnings():  # deprecated generate_table_images
                 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -287,7 +294,6 @@ class StandardPdfPipeline(PaginatedPipeline):
                                 cropped_im, dpi=int(72 * scale)
                             )
 
-            # 필요없음
             # Aggregate confidence values for document:
             if len(conv_res.pages) > 0:
                 with warnings.catch_warnings():
@@ -318,7 +324,6 @@ class StandardPdfPipeline(PaginatedPipeline):
                         )
                     )
 
-        # [t["text"] for t in conv_res.document.dict()["texts"]] 이게 없넹
         return conv_res
 
     @classmethod
