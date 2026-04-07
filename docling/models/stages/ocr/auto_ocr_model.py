@@ -117,7 +117,11 @@ class OcrAutoModel(BaseOcrModel):
                     )
 
             if self._engine is None:
-                _log.warning("No OCR engine found. Please review the install details.")
+                _log.warning(
+                    "No OCR engine is available. Install one of the supported extras to "
+                    "enable OCR: `pip install docling[rapidocr]` (recommended) "
+                    "or `pip install docling[easyocr]`."
+                )
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
