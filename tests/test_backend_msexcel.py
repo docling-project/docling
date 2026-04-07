@@ -436,3 +436,112 @@ def test_one_cell_anchor_image():
     assert prov.bbox.t == 1.0, f"Image top should be 1.0 (row 2), got {prov.bbox.t}"
     assert prov.bbox.r == 4.0, f"Image right should be 4.0, got {prov.bbox.r}"
     assert prov.bbox.b == 2.0, f"Image bottom should be 2.0, got {prov.bbox.b}"
+
+
+def test_sheet_names_filter():
+    """Test that sheet_names filter produces dense (gap-free) page numbering.
+
+    xlsx_01.xlsx has 4 sheets: Sheet1, Sheet2, Sheet3, Sheet4.
+    When only Sheet1 and Sheet3 are requested the output must have exactly
+    2 pages numbered 1 and 2 -- not {1, 3} as the raw workbook indices would give.
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_01")
+
+    options = MsExcelBackendOptions(sheet_names=["Sheet1", "Sheet3"])
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+
+    conv_result: ConversionResult = converter.convert(path)
+    doc: DoclingDocument = conv_result.document
+
+    assert len(doc.pages) == 2, f"Should have 2 pages, got {len(doc.pages)}"
+    assert set(doc.pages.keys()) == {1, 2}, (
+        f"Pages should be densely numbered {{1, 2}}, got {set(doc.pages.keys())}"
+    )
+
+
+def test_sheet_names_filter_empty_list():
+    """Test that sheet_names=[] produces 0 pages (no sheets included).
+
+    The backend is exercised directly because the DocumentConverter framework
+    marks a document with page_count=0 as invalid before conversion runs.
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_01")
+
+    options = MsExcelBackendOptions(sheet_names=[])
+    in_doc = InputDocument(
+        path_or_stream=path,
+        format=InputFormat.XLSX,
+        filename=path.stem,
+        backend=MsExcelDocumentBackend,
+        backend_options=options,
+    )
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=path, options=options)
+    doc: DoclingDocument = backend.convert()
+
+    assert len(doc.pages) == 0, (
+        f"Empty sheet_names filter should produce 0 pages, got {len(doc.pages)}"
+    )
+
+
+def test_sheet_names_filter_case_sensitive():
+    """Test that sheet_names matching is case-sensitive.
+
+    xlsx_01.xlsx has 'Sheet1' (capital S). Requesting 'sheet1' (lowercase s)
+    should match nothing and produce 0 pages.
+
+    The backend is exercised directly because the DocumentConverter framework
+    marks a document with page_count=0 as invalid before conversion runs.
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_01")
+
+    options = MsExcelBackendOptions(sheet_names=["sheet1"])  # lowercase -- wrong case
+    in_doc = InputDocument(
+        path_or_stream=path,
+        format=InputFormat.XLSX,
+        filename=path.stem,
+        backend=MsExcelDocumentBackend,
+        backend_options=options,
+    )
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=path, options=options)
+    doc: DoclingDocument = backend.convert()
+
+    assert len(doc.pages) == 0, (
+        f"Case-mismatched sheet name should produce 0 pages, got {len(doc.pages)}"
+    )
+
+
+def test_sheet_names_filter_nonexistent(caplog):
+    """Test that a WARNING is logged when sheet_names contains unknown names.
+
+    When a sheet_names entry does not match any sheet in the workbook a WARNING
+    should be emitted that includes the unrecognised name.
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_01")
+
+    nonexistent_name = "DoesNotExist"
+    options = MsExcelBackendOptions(sheet_names=["Sheet1", nonexistent_name])
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+
+    with caplog.at_level(logging.WARNING, logger="docling.backend.msexcel_backend"):
+        conv_result: ConversionResult = converter.convert(path)
+        doc: DoclingDocument = conv_result.document
+
+    # The known sheet should still be processed
+    assert len(doc.pages) == 1, (
+        f"Only Sheet1 should be converted, expected 1 page, got {len(doc.pages)}"
+    )
+
+    # A WARNING must have been logged mentioning the unrecognised name
+    warning_messages = [
+        r.message for r in caplog.records if r.levelno == logging.WARNING
+    ]
+    assert any(nonexistent_name in str(msg) for msg in warning_messages), (
+        f"Expected a WARNING mentioning '{nonexistent_name}'. "
+        f"Logged warnings: {warning_messages}"
+    )
