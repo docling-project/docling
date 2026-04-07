@@ -249,16 +249,23 @@ def test_table_with_title():
     conv_result: ConversionResult = converter.convert(path)
     doc: DoclingDocument = conv_result.document
 
-    # With treat_singleton_as_text=True, the singleton title cell should be a TextItem
+    # With treat_singleton_as_text=True, the singleton title cell should be a TextItem.
+    # The sheet name is rendered as a heading, so we expect 2 text items:
+    # one heading for the sheet name and one for the title cell.
     texts = list(doc.texts)
     tables = list(doc.tables)
 
-    assert len(texts) == 1, f"Should have 1 text item (the title), got {len(texts)}"
+    assert len(texts) == 2, f"Should have 2 text items (sheet heading + title), got {len(texts)}"
     assert len(tables) == 1, f"Should have 1 table, got {len(tables)}"
 
-    # Verify the text item contains the title
-    assert texts[0].text == "Number of freshwater ducks per year", (
-        f"Text should be 'Number of freshwater ducks per year', got '{texts[0].text}'"
+    # First text is the sheet name heading
+    assert texts[0].text == "Duck Observations", (
+        f"First text should be sheet heading 'Duck Observations', got '{texts[0].text}'"
+    )
+
+    # Second text is the singleton title cell
+    assert texts[1].text == "Number of freshwater ducks per year", (
+        f"Second text should be 'Number of freshwater ducks per year', got '{texts[1].text}'"
     )
 
     # Verify table dimensions
@@ -269,6 +276,33 @@ def test_table_with_title():
     assert table.data.num_cols == 2, (
         f"Table should have 2 columns, got {table.data.num_cols}"
     )
+
+
+def test_sheet_names_as_headings(documents) -> None:
+    """Test that sheet names are rendered as headings in the output.
+
+    Each non-empty worksheet's name should appear as a heading before its
+    content in both the document model and markdown export.
+    Sheet4 in xlsx_01 is empty and intentionally has no heading.
+    """
+    doc = next(item for path, item in documents if path.stem == "xlsx_01")
+
+    headings = [t for t in doc.texts if t.label.value == "section_header"]
+    # Sheet4 is empty so it produces no heading
+    non_empty_sheet_names = ["Sheet1", "Sheet2", "Sheet3"]
+
+    heading_texts = [h.text for h in headings]
+    for name in non_empty_sheet_names:
+        assert name in heading_texts, (
+            f"Sheet name '{name}' not found as heading. Headings: {heading_texts}"
+        )
+
+    # docling renders level=1 headings as ## in markdown
+    md = doc.export_to_markdown()
+    for name in non_empty_sheet_names:
+        assert f"## {name}" in md, (
+            f"Expected '## {name}' in markdown output"
+        )
 
 
 def test_bytesio_stream():
@@ -411,6 +445,36 @@ def test_gap_tolerance_comparison() -> None:
         f"Tolerance 1 should merge the table. "
         f"Expected start at Col A (0), got {start_col_merged}"
     )
+
+
+def test_convert_workbook_heading_lines() -> None:
+    """Directly cover the two new lines added in _convert_workbook.
+
+    Verifies that:
+    - ``content_layer = self._get_sheet_content_layer(sheet)`` is executed
+    - ``doc.add_heading(text=name, level=1, ...)`` is executed for each sheet
+
+    Uses the backend directly (no fixture) so coverage is always captured.
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_01")
+    in_doc = InputDocument(
+        path_or_stream=path,
+        format=InputFormat.XLSX,
+        filename=path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=path)
+    doc = backend.convert()
+
+    headings = [t for t in doc.texts if t.label.value == "section_header"]
+    heading_texts = {h.text for h in headings}
+    # Sheet1/2/3 have content; assert headings were inserted by add_heading()
+    assert {"Sheet1", "Sheet2", "Sheet3"}.issubset(heading_texts), (
+        f"Expected sheet headings for Sheet1/2/3, got: {heading_texts}"
+    )
+    # Each heading must carry a content_layer (set via _get_sheet_content_layer)
+    for h in headings:
+        assert h.prov, f"Heading '{h.text}' has no provenance / content_layer"
 
 
 def test_one_cell_anchor_image():

@@ -33,6 +33,9 @@
       },
       "children": [
         {
+          "$ref": "#/texts/0"
+        },
+        {
           "$ref": "#/tables/0"
         },
         {
@@ -83,7 +86,21 @@
       "label": "section"
     }
   ],
-  "texts": [],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Page 1",
+      "text": "Page 1",
+      "level": 1
+    }
+  ],
   "pictures": [],
   "tables": [
     {
