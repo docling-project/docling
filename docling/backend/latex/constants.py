@@ -10,6 +10,8 @@ MACROS_CITATION = frozenset(["cite", "citep", "citet", "ref", "eqref"])
 
 MACROS_COLOR = frozenset(["color", "definecolor", "colorlet"])
 
+MACROS_COLOR_INLINE = frozenset(["textcolor", "colorbox"])
+
 MACROS_STRUCTURAL = frozenset(
     [
         "section",

@@ -20,6 +20,7 @@ from pylatexenc.latexwalker import (
 
 from docling.backend.latex.constants import (
     MACROS_CITATION,
+    MACROS_COLOR_INLINE,
     MACROS_ESCAPED,
     MACROS_IGNORED,
     MACROS_SPACING,
@@ -121,23 +122,18 @@ class TextHelperMixin:
                 text_parts.append(self._nodes_to_text(node.nodelist))
 
             elif isinstance(node, LatexMacroNode):
-                if node.macroname in MACROS_TEXT_FORMATTING:
+                if node.macroname in (MACROS_TEXT_FORMATTING | MACROS_TEXT_STYLE):
                     text = self._extract_macro_arg(node)
                     if text:
                         text_parts.append(text)
-                elif node.macroname in MACROS_TEXT_STYLE:
-                    text = self._extract_macro_arg(node)
-                    if text:
-                        text_parts.append(text)
-                elif node.macroname in ["textcolor", "colorbox"]:
-                    # Skip the color argument; extract only the text content
+                elif node.macroname in MACROS_COLOR_INLINE:
+                    # Skip the color argument; the text content is always the last arg
                     if node.nodeargd and node.nodeargd.argnlist:
-                        for arg in reversed(node.nodeargd.argnlist):
-                            if arg is not None and hasattr(arg, "nodelist"):
-                                text = self._nodes_to_text(arg.nodelist)
-                                if text:
-                                    text_parts.append(text)
-                                break
+                        text_arg = node.nodeargd.argnlist[-1]
+                        if text_arg is not None and hasattr(text_arg, "nodelist"):
+                            text = self._nodes_to_text(text_arg.nodelist)
+                            if text:
+                                text_parts.append(text)
                 elif node.macroname in MACROS_CITATION:
                     text_parts.append(node.latex_verbatim())
                 elif node.macroname == "\\":

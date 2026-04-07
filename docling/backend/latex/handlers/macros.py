@@ -30,6 +30,7 @@ from docling.backend.latex.constants import (
     MACROS_ACCENTS,
     MACROS_CITATION,
     MACROS_COLOR,
+    MACROS_COLOR_INLINE,
     MACROS_ESCAPED,
     MACROS_HEADING,
     MACROS_IGNORED,
@@ -203,15 +204,14 @@ class MacroHandlerMixin:
             formatted_text = self._extract_macro_arg(node)
             if formatted_text:
                 text_buffer.append(formatted_text)
-        elif node.macroname in ["textcolor", "colorbox"]:
-            # Skip the color argument; extract only the text content inline
+        elif node.macroname in MACROS_COLOR_INLINE:
+            # Skip the color argument; the text content is always the last arg
             if node.nodeargd and node.nodeargd.argnlist:
-                for arg in reversed(node.nodeargd.argnlist):
-                    if arg is not None and hasattr(arg, "nodelist"):
-                        text = self._nodes_to_text(arg.nodelist)
-                        if text:
-                            text_buffer.append(text)
-                        break
+                text_arg = node.nodeargd.argnlist[-1]
+                if text_arg is not None and hasattr(text_arg, "nodelist"):
+                    text = self._nodes_to_text(text_arg.nodelist)
+                    if text:
+                        text_buffer.append(text)
         else:
             if node.macroname in MACROS_STRUCTURAL:
                 flush_fn()
