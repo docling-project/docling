@@ -199,6 +199,19 @@ class MacroHandlerMixin:
                 text_buffer.append(url_text)
         elif node.macroname in MACROS_COLOR:
             pass
+        elif node.macroname in MACROS_TEXT_STYLE:
+            formatted_text = self._extract_macro_arg(node)
+            if formatted_text:
+                text_buffer.append(formatted_text)
+        elif node.macroname in ["textcolor", "colorbox"]:
+            # Skip the color argument; extract only the text content inline
+            if node.nodeargd and node.nodeargd.argnlist:
+                for arg in reversed(node.nodeargd.argnlist):
+                    if arg is not None and hasattr(arg, "nodelist"):
+                        text = self._nodes_to_text(arg.nodelist)
+                        if text:
+                            text_buffer.append(text)
+                        break
         else:
             if node.macroname in MACROS_STRUCTURAL:
                 flush_fn()

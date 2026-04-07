@@ -25,6 +25,7 @@ from docling.backend.latex.constants import (
     MACROS_SPACING,
     MACROS_STRUCTURAL,
     MACROS_TEXT_FORMATTING,
+    MACROS_TEXT_STYLE,
 )
 
 
@@ -124,6 +125,19 @@ class TextHelperMixin:
                     text = self._extract_macro_arg(node)
                     if text:
                         text_parts.append(text)
+                elif node.macroname in MACROS_TEXT_STYLE:
+                    text = self._extract_macro_arg(node)
+                    if text:
+                        text_parts.append(text)
+                elif node.macroname in ["textcolor", "colorbox"]:
+                    # Skip the color argument; extract only the text content
+                    if node.nodeargd and node.nodeargd.argnlist:
+                        for arg in reversed(node.nodeargd.argnlist):
+                            if arg is not None and hasattr(arg, "nodelist"):
+                                text = self._nodes_to_text(arg.nodelist)
+                                if text:
+                                    text_parts.append(text)
+                                break
                 elif node.macroname in MACROS_CITATION:
                     text_parts.append(node.latex_verbatim())
                 elif node.macroname == "\\":
