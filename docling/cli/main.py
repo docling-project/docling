@@ -639,7 +639,7 @@ def convert(  # noqa: C901
         str | None,
         typer.Option(
             "--page-break",
-            help="String to insert at page boundaries in Markdown output. If not set, no page break marker is added.",
+            help="String to insert at page boundaries in Markdown output (e.g. '---'). Only applies when Markdown output is enabled. If not set, page break positions are not marked.",
         ),
     ] = None,
 ):
@@ -731,6 +731,19 @@ def convert(  # noqa: C901
         export_txt = OutputFormat.TEXT in to_formats
         export_doctags = OutputFormat.DOCTAGS in to_formats
         export_vtt = OutputFormat.VTT in to_formats
+
+        if page_break is not None:
+            if page_break == "":
+                err_console.print(
+                    "[yellow]Warning: --page-break is set to an empty string. "
+                    "This will strip page-break tokens rather than insert them. "
+                    "Did you mean to omit the flag?[/yellow]"
+                )
+            elif not export_md:
+                err_console.print(
+                    "[yellow]Warning: --page-break has no effect unless Markdown "
+                    "output is enabled (add --to markdown).[/yellow]"
+                )
 
         ocr_factory = get_ocr_factory(allow_external_plugins=allow_external_plugins)
         ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore

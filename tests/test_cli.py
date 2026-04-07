@@ -122,3 +122,41 @@ def test_cli_audio_extensions_coverage():
         assert ext in audio_extensions, (
             f"Audio extension {ext} not found in FormatToExtensions[InputFormat.AUDIO]"
         )
+
+
+def test_cli_page_break_inserted(tmp_path):
+    """--page-break marker appears in Markdown output."""
+    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
+    result = runner.invoke(
+        app,
+        [source, "--output", str(tmp_path), "--page-break", "<!-- page-break -->"],
+    )
+    assert result.exit_code == 0
+    md_files = list(tmp_path.glob("*.md"))
+    assert len(md_files) == 1
+    content = md_files[0].read_text(encoding="utf-8")
+    assert "<!-- page-break -->" in content
+
+
+def test_cli_page_break_empty_string_warns(tmp_path):
+    """--page-break '' emits a warning about empty string behavior."""
+    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
+    result = runner.invoke(
+        app,
+        [source, "--output", str(tmp_path), "--page-break", ""],
+    )
+    assert result.exit_code == 0
+    combined = result.output
+    assert "Warning" in combined and "empty string" in combined.lower()
+
+
+def test_cli_page_break_non_markdown_warns(tmp_path):
+    """--page-break with --to json emits a warning that it has no effect."""
+    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
+    result = runner.invoke(
+        app,
+        [source, "--output", str(tmp_path), "--to", "json", "--page-break", "---"],
+    )
+    assert result.exit_code == 0
+    combined = result.output
+    assert "Warning" in combined and "no effect" in combined.lower()
