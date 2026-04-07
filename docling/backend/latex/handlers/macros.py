@@ -203,6 +203,12 @@ class MacroHandlerMixin:
             if node.macroname in MACROS_STRUCTURAL:
                 flush_fn()
                 self._process_macro(node, doc, parent, formatting, text_label)
+            elif node.macroname in MACROS_SPACING or node.macroname in MACROS_IGNORED:
+                # Spacing and ignored commands are silently discarded along with
+                # their arguments (e.g. \vspace{-1mm} should not emit "-1mm")
+                _log.debug(
+                    f"Discarding spacing/ignored macro and its arguments: {node.macroname}"
+                )
             elif node.nodeargd and node.nodeargd.argnlist:
                 inline_text = self._extract_all_macro_args_inline(node)
                 if inline_text:

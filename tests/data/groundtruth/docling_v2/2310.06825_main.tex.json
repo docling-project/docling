@@ -19,10 +19,10 @@
         "$ref": "#/texts/1"
       },
       {
-        "$ref": "#/texts/2"
+        "$ref": "#/pictures/0"
       },
       {
-        "$ref": "#/pictures/0"
+        "$ref": "#/texts/2"
       },
       {
         "$ref": "#/texts/3"
@@ -64,19 +64,19 @@
         "$ref": "#/texts/15"
       },
       {
-        "$ref": "#/texts/16"
-      },
-      {
         "$ref": "#/groups/0"
       },
       {
-        "$ref": "#/texts/17"
+        "$ref": "#/texts/16"
       },
       {
-        "$ref": "#/texts/19"
+        "$ref": "#/texts/18"
       },
       {
         "$ref": "#/tables/0"
+      },
+      {
+        "$ref": "#/texts/19"
       },
       {
         "$ref": "#/texts/20"
@@ -88,37 +88,40 @@
         "$ref": "#/texts/22"
       },
       {
-        "$ref": "#/texts/23"
+        "$ref": "#/groups/1"
       },
       {
         "$ref": "#/texts/24"
       },
       {
-        "$ref": "#/groups/1"
-      },
-      {
         "$ref": "#/texts/26"
-      },
-      {
-        "$ref": "#/texts/28"
       },
       {
         "$ref": "#/groups/2"
       },
       {
+        "$ref": "#/texts/27"
+      },
+      {
         "$ref": "#/texts/29"
       },
       {
-        "$ref": "#/texts/32"
+        "$ref": "#/texts/30"
       },
       {
-        "$ref": "#/texts/33"
-      },
-      {
-        "$ref": "#/texts/34"
+        "$ref": "#/texts/31"
       },
       {
         "$ref": "#/groups/3"
+      },
+      {
+        "$ref": "#/texts/38"
+      },
+      {
+        "$ref": "#/texts/39"
+      },
+      {
+        "$ref": "#/texts/40"
       },
       {
         "$ref": "#/texts/41"
@@ -130,16 +133,19 @@
         "$ref": "#/texts/43"
       },
       {
+        "$ref": "#/groups/4"
+      },
+      {
         "$ref": "#/texts/44"
       },
       {
-        "$ref": "#/texts/45"
+        "$ref": "#/tables/1"
       },
       {
         "$ref": "#/texts/46"
       },
       {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/5"
       },
       {
         "$ref": "#/texts/47"
@@ -148,7 +154,7 @@
         "$ref": "#/texts/49"
       },
       {
-        "$ref": "#/tables/1"
+        "$ref": "#/tables/2"
       },
       {
         "$ref": "#/texts/50"
@@ -157,19 +163,16 @@
         "$ref": "#/texts/51"
       },
       {
-        "$ref": "#/groups/5"
+        "$ref": "#/texts/52"
       },
       {
-        "$ref": "#/texts/52"
+        "$ref": "#/texts/53"
       },
       {
         "$ref": "#/texts/54"
       },
       {
         "$ref": "#/texts/55"
-      },
-      {
-        "$ref": "#/tables/2"
       },
       {
         "$ref": "#/texts/56"
@@ -190,6 +193,9 @@
         "$ref": "#/texts/61"
       },
       {
+        "$ref": "#/tables/3"
+      },
+      {
         "$ref": "#/texts/62"
       },
       {
@@ -197,6 +203,9 @@
       },
       {
         "$ref": "#/texts/64"
+      },
+      {
+        "$ref": "#/tables/4"
       },
       {
         "$ref": "#/texts/65"
@@ -217,9 +226,6 @@
         "$ref": "#/texts/70"
       },
       {
-        "$ref": "#/tables/3"
-      },
-      {
         "$ref": "#/texts/71"
       },
       {
@@ -232,55 +238,16 @@
         "$ref": "#/texts/74"
       },
       {
-        "$ref": "#/tables/4"
+        "$ref": "#/groups/6"
       },
       {
         "$ref": "#/texts/75"
-      },
-      {
-        "$ref": "#/texts/76"
       },
       {
         "$ref": "#/texts/77"
       },
       {
         "$ref": "#/texts/78"
-      },
-      {
-        "$ref": "#/texts/79"
-      },
-      {
-        "$ref": "#/texts/80"
-      },
-      {
-        "$ref": "#/texts/81"
-      },
-      {
-        "$ref": "#/texts/82"
-      },
-      {
-        "$ref": "#/texts/83"
-      },
-      {
-        "$ref": "#/texts/84"
-      },
-      {
-        "$ref": "#/texts/85"
-      },
-      {
-        "$ref": "#/texts/86"
-      },
-      {
-        "$ref": "#/groups/6"
-      },
-      {
-        "$ref": "#/texts/87"
-      },
-      {
-        "$ref": "#/texts/90"
-      },
-      {
-        "$ref": "#/texts/91"
       }
     ],
     "content_layer": "body",
@@ -298,7 +265,7 @@
           "$ref": "#/pictures/1"
         },
         {
-          "$ref": "#/texts/18"
+          "$ref": "#/texts/17"
         }
       ],
       "content_layer": "body",
@@ -312,13 +279,13 @@
       },
       "children": [
         {
-          "$ref": "#/texts/25"
+          "$ref": "#/texts/23"
         },
         {
           "$ref": "#/pictures/2"
         },
         {
-          "$ref": "#/texts/27"
+          "$ref": "#/texts/25"
         }
       ],
       "content_layer": "body",
@@ -335,10 +302,7 @@
           "$ref": "#/pictures/3"
         },
         {
-          "$ref": "#/texts/30"
-        },
-        {
-          "$ref": "#/texts/31"
+          "$ref": "#/texts/28"
         }
       ],
       "content_layer": "body",
@@ -352,6 +316,15 @@
       },
       "children": [
         {
+          "$ref": "#/texts/32"
+        },
+        {
+          "$ref": "#/texts/33"
+        },
+        {
+          "$ref": "#/texts/34"
+        },
+        {
           "$ref": "#/texts/35"
         },
         {
@@ -359,15 +332,6 @@
         },
         {
           "$ref": "#/texts/37"
-        },
-        {
-          "$ref": "#/texts/38"
-        },
-        {
-          "$ref": "#/texts/39"
-        },
-        {
-          "$ref": "#/texts/40"
         }
       ],
       "content_layer": "body",
@@ -384,7 +348,7 @@
           "$ref": "#/pictures/4"
         },
         {
-          "$ref": "#/texts/48"
+          "$ref": "#/texts/45"
         }
       ],
       "content_layer": "body",
@@ -401,7 +365,7 @@
           "$ref": "#/pictures/5"
         },
         {
-          "$ref": "#/texts/53"
+          "$ref": "#/texts/48"
         }
       ],
       "content_layer": "body",
@@ -418,10 +382,7 @@
           "$ref": "#/pictures/6"
         },
         {
-          "$ref": "#/texts/88"
-        },
-        {
-          "$ref": "#/texts/89"
+          "$ref": "#/texts/76"
         }
       ],
       "content_layer": "body",
@@ -449,25 +410,13 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "-30pt",
-      "text": "-30pt"
-    },
-    {
-      "self_ref": "#/texts/2",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
       "label": "caption",
       "prov": [],
       "orig": "Image: images/header.jpeg",
       "text": "Image: images/header.jpeg"
     },
     {
-      "self_ref": "#/texts/3",
+      "self_ref": "#/texts/2",
       "parent": {
         "$ref": "#/body"
       },
@@ -480,7 +429,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/4",
+      "self_ref": "#/texts/3",
       "parent": {
         "$ref": "#/body"
       },
@@ -492,7 +441,7 @@
       "text": "We introduce , a 7billion-parameter language model engineered for superior performance and efficiency.\noutperforms the best open 13B model (Llama 2) across all evaluated benchmarks, and the best released 34B model (Llama 1) in reasoning, mathematics, and code generation.\nOur model leverages grouped-query attention (GQA) for faster inference, coupled with sliding window attention (SWA) to effectively handle sequences of arbitrary length with a reduced inference cost.\nWe also provide a model fine-tuned to follow instructions, , that surpasses 213Bchat model both on human and automated benchmarks.\nOur models are released under the Apache 2.0 license.\nCode: https://github.com/mistralai/mistral-src \nWebpage: https://mistral.ai/news/announcing-mistral-7b/"
     },
     {
-      "self_ref": "#/texts/5",
+      "self_ref": "#/texts/4",
       "parent": {
         "$ref": "#/body"
       },
@@ -505,7 +454,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/6",
+      "self_ref": "#/texts/5",
       "parent": {
         "$ref": "#/body"
       },
@@ -517,7 +466,7 @@
       "text": "=-1 In the rapidly evolving domain of Natural Language Processing (NLP), the race towards higher model performance often necessitates an escalation in model size.\nHowever, this scaling tends to increase computational costs and inference latency, thereby raising barriers to deployment in practical, real-world scenarios.\nIn this context, the search for balanced models delivering both high-level performance and efficiency becomes critically essential.\nOur model, , demonstrates that a carefully designed language model can deliver high performance while maintaining an efficient inference.\noutperforms the previous best 13B model (Llama 2, [touvron2023llama2]) across all tested benchmarks, and surpasses the best 34B model (LLaMa 34B,[touvron2023llama]) in mathematics and code generation.\nFurthermore, approaches the coding performance of Code-7B[roziere2023code], without sacrificing performance on non-code related benchmarks."
     },
     {
-      "self_ref": "#/texts/7",
+      "self_ref": "#/texts/6",
       "parent": {
         "$ref": "#/body"
       },
@@ -529,7 +478,7 @@
       "text": "leverages grouped-query attention (GQA)[ainslie2023gqa], and sliding window attention (SWA)[child2019generating,beltagy2020longformer]. GQA significantly accelerates the inference speed, and also reduces the memory requirement during decoding, allowing for higher batch sizes hence higher throughput, a crucial factor for real-time applications.\nIn addition, SWA is designed to handle longer sequences more effectively at a reduced computational cost, thereby alleviating a common limitation in LLMs. These attention mechanisms collectively contribute to the enhanced performance and efficiency of ."
     },
     {
-      "self_ref": "#/texts/8",
+      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/body"
       },
@@ -541,7 +490,7 @@
       "text": "is released under the Apache 2.0 license.\nThis release is accompanied by a reference implementation"
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/8",
       "parent": {
         "$ref": "#/body"
       },
@@ -553,7 +502,7 @@
       "text": "https://github.com/mistralai/mistral-src"
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/9",
       "parent": {
         "$ref": "#/body"
       },
@@ -565,7 +514,7 @@
       "text": "facilitating easy deployment either locally or on cloud platforms such as AWS, GCP, or Azure using the vLLM[kwon2023efficient] inference server and SkyPilot"
     },
     {
-      "self_ref": "#/texts/11",
+      "self_ref": "#/texts/10",
       "parent": {
         "$ref": "#/body"
       },
@@ -577,7 +526,7 @@
       "text": "https://github.com/skypilot-org/skypilot"
     },
     {
-      "self_ref": "#/texts/12",
+      "self_ref": "#/texts/11",
       "parent": {
         "$ref": "#/body"
       },
@@ -589,7 +538,7 @@
       "text": ".\nIntegration with Hugging Face"
     },
     {
-      "self_ref": "#/texts/13",
+      "self_ref": "#/texts/12",
       "parent": {
         "$ref": "#/body"
       },
@@ -601,7 +550,7 @@
       "text": "https://huggingface.co/mistralai"
     },
     {
-      "self_ref": "#/texts/14",
+      "self_ref": "#/texts/13",
       "parent": {
         "$ref": "#/body"
       },
@@ -613,7 +562,7 @@
       "text": "is also streamlined for easier integration.\nMoreover, is crafted for ease of fine-tuning across a myriad of tasks.\nAs a demonstration of its adaptability and superior performance, we present a chat model fine-tuned from that significantly outperforms the 2 13B Chat model."
     },
     {
-      "self_ref": "#/texts/15",
+      "self_ref": "#/texts/14",
       "parent": {
         "$ref": "#/body"
       },
@@ -625,7 +574,7 @@
       "text": "=-1 takes a significant step in balancing the goals of getting high performance while keeping large language models efficient.\nThrough our work, our aim is to help the community create more affordable, efficient, and high-performing language models that can be used in a wide range of real-world applications."
     },
     {
-      "self_ref": "#/texts/16",
+      "self_ref": "#/texts/15",
       "parent": {
         "$ref": "#/body"
       },
@@ -638,7 +587,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/17",
+      "self_ref": "#/texts/16",
       "parent": {
         "$ref": "#/body"
       },
@@ -650,7 +599,7 @@
       "text": "Image: images/swa.pdf"
     },
     {
-      "self_ref": "#/texts/18",
+      "self_ref": "#/texts/17",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -662,7 +611,7 @@
       "text": "Sliding Window Attention. The number of operations in vanilla attention is quadratic in the sequence length, and the memory increases linearly with the number of tokens. At inference time, this incurs higher latency and smaller throughput due to reduced cache availability. To alleviate this issue, we use sliding window attention: each token can attend to at most $W$ tokens from the previous layer (here, $W=3$). Note that tokens outside the sliding window still influence next word prediction. At each attention layer, information can move forward by $W$ tokens. Hence, after $k$ attention layers, information can move forward by up to $k \\times W$ tokens."
     },
     {
-      "self_ref": "#/texts/19",
+      "self_ref": "#/texts/18",
       "parent": {
         "$ref": "#/body"
       },
@@ -670,11 +619,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "r0.275\n-15pt",
-      "text": "r0.275\n-15pt"
+      "orig": "r0.275",
+      "text": "r0.275"
     },
     {
-      "self_ref": "#/texts/20",
+      "self_ref": "#/texts/19",
       "parent": {
         "$ref": "#/body"
       },
@@ -686,19 +635,7 @@
       "text": "tableModel architecture."
     },
     {
-      "self_ref": "#/texts/21",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "-8pt",
-      "text": "-8pt"
-    },
-    {
-      "self_ref": "#/texts/22",
+      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/body"
       },
@@ -710,7 +647,7 @@
       "text": "is based on a transformer architecture[vaswani2017attention]. The main parameters of the architecture are summarized in Table[tab:param]. Compared to , it introduces a few changes that we summarize below."
     },
     {
-      "self_ref": "#/texts/23",
+      "self_ref": "#/texts/21",
       "parent": {
         "$ref": "#/body"
       },
@@ -722,7 +659,7 @@
       "text": "=-1 Sliding Window Attention. SWA exploits the stacked layers of a transformer to attend information beyond the window size $W$.\nThe hidden state in position $i$ of the layer $k$, $h_i$, attends to all hidden states from the previous layer with positions between $i-W$ and $i$.\nRecursively, $h_i$ can access tokens from the input layer at a distance of up to $W \\times k$ tokens, as illustrated in Figure[fig:swa].\nAt the last layer, using a window size of $W=4096$, we have a theoretical attention span of approximately $131K$ tokens.\nIn practice, for a sequence length of 16K and $W=4096$, changes made to FlashAttention[dao2022flashattention] and xFormers[xFormers2022]yield a 2x speed improvement over a vanilla attention baseline."
     },
     {
-      "self_ref": "#/texts/24",
+      "self_ref": "#/texts/22",
       "parent": {
         "$ref": "#/body"
       },
@@ -734,7 +671,7 @@
       "text": "=-1 Rolling Buffer Cache. A fixed attention span means that we can limit our cache size using a rolling buffer cache.\nThe cache has a fixed size of $W$, and the keys and values for the timestep $i$ are stored in position $i \\bmod W$ of the cache. As a result, when the position $i$ is larger than $W$, past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure[fig:cache] for $W=3$.\nOn a sequence length of 32k tokens, this reduces the cache memory usage by 8x, without impacting the model quality."
     },
     {
-      "self_ref": "#/texts/25",
+      "self_ref": "#/texts/23",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -746,7 +683,7 @@
       "text": "[][c]"
     },
     {
-      "self_ref": "#/texts/26",
+      "self_ref": "#/texts/24",
       "parent": {
         "$ref": "#/body"
       },
@@ -758,7 +695,7 @@
       "text": "Image: images/rolling_buffer.pdf"
     },
     {
-      "self_ref": "#/texts/27",
+      "self_ref": "#/texts/25",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -770,7 +707,7 @@
       "text": "Rolling buffer cache. The cache has a fixed size of $W=4$. Keys and values for position $i$ are stored in position $i \\bmod W$ of the cache. When the position $i$ is larger than $W$, past values in the cache are overwritten.\nThe hidden state corresponding to the latest generated tokens are colored in orange."
     },
     {
-      "self_ref": "#/texts/28",
+      "self_ref": "#/texts/26",
       "parent": {
         "$ref": "#/body"
       },
@@ -782,7 +719,7 @@
       "text": "=-1 Pre-fill and Chunking. When generating a sequence, we need to predict tokens one-by-one, as each token is conditioned on the previous ones. However, the prompt is known in advance, and we can pre-fill the ($k$, $v$) cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. \nFor each chunk, we thus need to compute the attention over the cache and over the chunk. \nFigure[fig:chunking]shows how the attention mask works over both the cache and the chunk."
     },
     {
-      "self_ref": "#/texts/29",
+      "self_ref": "#/texts/27",
       "parent": {
         "$ref": "#/body"
       },
@@ -794,7 +731,7 @@
       "text": "Image: images/chunking.pdf"
     },
     {
-      "self_ref": "#/texts/30",
+      "self_ref": "#/texts/28",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -806,19 +743,7 @@
       "text": "Pre-fill and chunking.\nDuring pre-fill of the cache, long sequences are chunked to limit memory usage.\nWe process a sequence in three chunks, The cat sat on, the mat and saw, the dog go to. \nThe figure shows what happens for the third chunk (the dog go to): it attends itself using a causal mask (rightmost block), attends the cache using a sliding window (center block), and does not attend to past tokens as they are outside of the sliding window (left block)."
     },
     {
-      "self_ref": "#/texts/31",
-      "parent": {
-        "$ref": "#/groups/2"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "0.1in",
-      "text": "0.1in"
-    },
-    {
-      "self_ref": "#/texts/32",
+      "self_ref": "#/texts/29",
       "parent": {
         "$ref": "#/body"
       },
@@ -831,7 +756,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/33",
+      "self_ref": "#/texts/30",
       "parent": {
         "$ref": "#/body"
       },
@@ -843,7 +768,7 @@
       "text": "We compare"
     },
     {
-      "self_ref": "#/texts/34",
+      "self_ref": "#/texts/31",
       "parent": {
         "$ref": "#/body"
       },
@@ -855,7 +780,7 @@
       "text": "to , and re-run all benchmarks with our own evaluation pipeline for fair comparison.\nWe measure performance on a wide variety of tasks categorized as follow:"
     },
     {
-      "self_ref": "#/texts/35",
+      "self_ref": "#/texts/32",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -869,7 +794,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/36",
+      "self_ref": "#/texts/33",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -883,7 +808,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/37",
+      "self_ref": "#/texts/34",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -897,7 +822,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/38",
+      "self_ref": "#/texts/35",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -911,7 +836,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/39",
+      "self_ref": "#/texts/36",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -925,7 +850,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/40",
+      "self_ref": "#/texts/37",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -939,7 +864,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/41",
+      "self_ref": "#/texts/38",
       "parent": {
         "$ref": "#/body"
       },
@@ -951,7 +876,7 @@
       "text": "Detailed results for"
     },
     {
-      "self_ref": "#/texts/42",
+      "self_ref": "#/texts/39",
       "parent": {
         "$ref": "#/body"
       },
@@ -963,7 +888,7 @@
       "text": ", 2 7B/13B, and Code-7B are reported in Table[tab:results].\nFigure[fig:bars] compares the performance of with 2 7B/13B, and 1 34B"
     },
     {
-      "self_ref": "#/texts/43",
+      "self_ref": "#/texts/40",
       "parent": {
         "$ref": "#/body"
       },
@@ -975,7 +900,7 @@
       "text": "Since 2 34B was not open-sourced, we report results for 1 34B."
     },
     {
-      "self_ref": "#/texts/44",
+      "self_ref": "#/texts/41",
       "parent": {
         "$ref": "#/body"
       },
@@ -987,7 +912,7 @@
       "text": "in different categories.\nsurpasses 2 13B across all metrics, and outperforms 134B on most benchmarks.\nIn particular, displays a superior performance in code, mathematics, and reasoning benchmarks."
     },
     {
-      "self_ref": "#/texts/45",
+      "self_ref": "#/texts/42",
       "parent": {
         "$ref": "#/body"
       },
@@ -999,7 +924,7 @@
       "text": "Size and Efficiency. We computed equivalent model sizes of the 2 family, aiming to understand models' efficiency in the cost-performance spectrum (see Figure[fig:size]). When evaluated on reasoning, comprehension, and STEM reasoning (specifically MMLU), mirrored performance that one might expect from a 2 model with more than 3x its size. On the Knowledge benchmarks, 's performance achieves a lower compression rate of 1.9x, which is likely due to its limited parameter count that restricts the amount of knowledge it can store."
     },
     {
-      "self_ref": "#/texts/46",
+      "self_ref": "#/texts/43",
       "parent": {
         "$ref": "#/body"
       },
@@ -1011,7 +936,7 @@
       "text": "Evaluation Differences. On some benchmarks, there are some differences between our evaluation protocol and the one reported in the 2 paper: 1) on MBPP, we use the hand-verified subset 2) on TriviaQA, we do not provide Wikipedia contexts."
     },
     {
-      "self_ref": "#/texts/47",
+      "self_ref": "#/texts/44",
       "parent": {
         "$ref": "#/body"
       },
@@ -1023,7 +948,7 @@
       "text": "Image: images/230927_bars.png"
     },
     {
-      "self_ref": "#/texts/48",
+      "self_ref": "#/texts/45",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -1035,31 +960,7 @@
       "text": "Performance of and different models on a wide range of benchmarks. All models were re-evaluated on all metrics with our evaluation pipeline for accurate comparison. significantly outperforms 2 7B and 2 13B on all benchmarks. It is also vastly superior to 1 34B in mathematics, code generation, and reasoning benchmarks."
     },
     {
-      "self_ref": "#/texts/49",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "1.8pt",
-      "text": "1.8pt"
-    },
-    {
-      "self_ref": "#/texts/50",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "4pt",
-      "text": "4pt"
-    },
-    {
-      "self_ref": "#/texts/51",
+      "self_ref": "#/texts/46",
       "parent": {
         "$ref": "#/body"
       },
@@ -1071,7 +972,7 @@
       "text": "Comparison of with . outperforms 2 13B on all metrics, and approaches the code performance of Code-7B without sacrificing performance on non-code benchmarks."
     },
     {
-      "self_ref": "#/texts/52",
+      "self_ref": "#/texts/47",
       "parent": {
         "$ref": "#/body"
       },
@@ -1083,7 +984,7 @@
       "text": "Image: images/230927_effective_sizes.png"
     },
     {
-      "self_ref": "#/texts/53",
+      "self_ref": "#/texts/48",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -1095,7 +996,7 @@
       "text": "Results on MMLU, commonsense reasoning, world knowledge and reading comprehension for and 2 (7B/13B/70B). largely outperforms 2 13B on all evaluations, except on knowledge benchmarks, where it is on par (this is likely due to its limited parameter count, which limits the amount of knowledge it can compress)."
     },
     {
-      "self_ref": "#/texts/54",
+      "self_ref": "#/texts/49",
       "parent": {
         "$ref": "#/body"
       },
@@ -1107,7 +1008,7 @@
       "text": "r0.48"
     },
     {
-      "self_ref": "#/texts/55",
+      "self_ref": "#/texts/50",
       "parent": {
         "$ref": "#/body"
       },
@@ -1115,35 +1016,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "-13pt\n2pt",
-      "text": "-13pt\n2pt"
+      "orig": "tableComparison of Chat models. outperforms all 7B models on MT-Bench, and is comparable to 13B Chat models.",
+      "text": "tableComparison of Chat models. outperforms all 7B models on MT-Bench, and is comparable to 13B Chat models."
     },
     {
-      "self_ref": "#/texts/56",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "-3pt\ntableComparison of Chat models. outperforms all 7B models on MT-Bench, and is comparable to 13B Chat models.",
-      "text": "-3pt\ntableComparison of Chat models. outperforms all 7B models on MT-Bench, and is comparable to 13B Chat models."
-    },
-    {
-      "self_ref": "#/texts/57",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "-10pt",
-      "text": "-10pt"
-    },
-    {
-      "self_ref": "#/texts/58",
+      "self_ref": "#/texts/51",
       "parent": {
         "$ref": "#/body"
       },
@@ -1156,7 +1033,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/59",
+      "self_ref": "#/texts/52",
       "parent": {
         "$ref": "#/body"
       },
@@ -1168,7 +1045,7 @@
       "text": "=-1 To evaluate the generalization capabilities of , we fine-tuned it on instruction datasets publicly available on the Hugging Face repository.\nNo proprietary data or training tricks were utilized: model is a simple and preliminary demonstration that the base model can easily be fine-tuned to achieve good performance.\nIn Table[tab:results_finetuning], we observe that the resulting model, , exhibits superior performance compared to all 7B models on MT-Bench, and is comparable to 13B  Chat models.\nAn independent human evaluation was conducted on https://llmboxing.com/leaderboard."
     },
     {
-      "self_ref": "#/texts/60",
+      "self_ref": "#/texts/53",
       "parent": {
         "$ref": "#/body"
       },
@@ -1180,7 +1057,7 @@
       "text": "In this evaluation, participants were provided with a set of questions along with anonymous responses from two models and were asked to select their preferred response, as illustrated in Figure"
     },
     {
-      "self_ref": "#/texts/61",
+      "self_ref": "#/texts/54",
       "parent": {
         "$ref": "#/body"
       },
@@ -1192,7 +1069,7 @@
       "text": "[fig:humanevalquestion].\nAs of October 6, 2023, the outputs generated by Mistral 7B were preferred 5020 times, compared to 4143 times for Llama 2 13B."
     },
     {
-      "self_ref": "#/texts/62",
+      "self_ref": "#/texts/55",
       "parent": {
         "$ref": "#/body"
       },
@@ -1205,7 +1082,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/63",
+      "self_ref": "#/texts/56",
       "parent": {
         "$ref": "#/body"
       },
@@ -1217,7 +1094,7 @@
       "text": "=-1 The ability to enforce guardrails when it comes to AI generation is important for front-facing applications.\nIn this section, we highlight how to leverage system prompting to optionally enforce output constraints on top of our models.\nAdditionally, we showcase the ability of to perform fine-grained content moderation, which can be useful to enforce quality content in applications."
     },
     {
-      "self_ref": "#/texts/64",
+      "self_ref": "#/texts/57",
       "parent": {
         "$ref": "#/body"
       },
@@ -1230,7 +1107,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/65",
+      "self_ref": "#/texts/58",
       "parent": {
         "$ref": "#/body"
       },
@@ -1242,7 +1119,7 @@
       "text": "We introduce a system prompt (see below) to guide the model to generate answers within specified guardrails, similar to the work done with"
     },
     {
-      "self_ref": "#/texts/66",
+      "self_ref": "#/texts/59",
       "parent": {
         "$ref": "#/body"
       },
@@ -1254,7 +1131,7 @@
       "text": "2. Using this prompt allows the user to move on the Pareto front of model utility / guardrails enforcement, as indicated in Table[tab:guardrails]."
     },
     {
-      "self_ref": "#/texts/67",
+      "self_ref": "#/texts/60",
       "parent": {
         "$ref": "#/body"
       },
@@ -1266,19 +1143,7 @@
       "text": "0.98Always assist with care, respect, and truth. Respond with utmost utility yet securely. Avoid harmful, unethical, prejudiced, or negative content. Ensure replies promote fairness and positivity."
     },
     {
-      "self_ref": "#/texts/68",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "6pt",
-      "text": "6pt"
-    },
-    {
-      "self_ref": "#/texts/69",
+      "self_ref": "#/texts/61",
       "parent": {
         "$ref": "#/body"
       },
@@ -1290,7 +1155,7 @@
       "text": "r0.38"
     },
     {
-      "self_ref": "#/texts/70",
+      "self_ref": "#/texts/62",
       "parent": {
         "$ref": "#/body"
       },
@@ -1298,23 +1163,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "-10pt",
-      "text": "-10pt"
+      "orig": "tableSystem prompts. Mean official MT Bench score over 10 iterations with standard deviation for . For reference, 2 13B Chat reports official results of 6.65.",
+      "text": "tableSystem prompts. Mean official MT Bench score over 10 iterations with standard deviation for . For reference, 2 13B Chat reports official results of 6.65."
     },
     {
-      "self_ref": "#/texts/71",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "-4pt\ntableSystem prompts. Mean official MT Bench score over 10 iterations with standard deviation for . For reference, 2 13B Chat reports official results of 6.65.",
-      "text": "-4pt\ntableSystem prompts. Mean official MT Bench score over 10 iterations with standard deviation for . For reference, 2 13B Chat reports official results of 6.65."
-    },
-    {
-      "self_ref": "#/texts/72",
+      "self_ref": "#/texts/63",
       "parent": {
         "$ref": "#/body"
       },
@@ -1326,7 +1179,7 @@
       "text": "=-1 We use a set of 175 unsafe prompts for evaluating safety.\nWith the recommended system prompt, the model properly declines to answer 100%of the harmful questions."
     },
     {
-      "self_ref": "#/texts/73",
+      "self_ref": "#/texts/64",
       "parent": {
         "$ref": "#/body"
       },
@@ -1338,31 +1191,7 @@
       "text": "=-1 As an illustration, we provide in Table[tab:guardrails_example] the answers of both and 2 Chat 13B to the question How to kill a linux process with system prompts activated.\nWe observe that provides a correct response while 2 declines to answer.\nNote that on this specific question, both models answer correctly when system prompts are deactivated."
     },
     {
-      "self_ref": "#/texts/74",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "27pt",
-      "text": "27pt"
-    },
-    {
-      "self_ref": "#/texts/75",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "6pt",
-      "text": "6pt"
-    },
-    {
-      "self_ref": "#/texts/76",
+      "self_ref": "#/texts/65",
       "parent": {
         "$ref": "#/body"
       },
@@ -1374,7 +1203,7 @@
       "text": "Comparison between Mistral and system prompts.\nMistral provides the right answer whereas 2 declines to answer to the question How to kill a linux process."
     },
     {
-      "self_ref": "#/texts/77",
+      "self_ref": "#/texts/66",
       "parent": {
         "$ref": "#/body"
       },
@@ -1387,7 +1216,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/78",
+      "self_ref": "#/texts/67",
       "parent": {
         "$ref": "#/body"
       },
@@ -1399,7 +1228,7 @@
       "text": "=-1 can be used as a content moderator: the model itself is able to accurately classify a user prompt or its generated answer as being either acceptable or falling into one of the following categories:\nIllegal activities such as terrorism, child abuse or fraud;\nHateful, harassing or violent content such as discrimination, self-harm or bullying;\nUnqualified advice for instance in legal, medical or financial domains."
     },
     {
-      "self_ref": "#/texts/79",
+      "self_ref": "#/texts/68",
       "parent": {
         "$ref": "#/body"
       },
@@ -1411,7 +1240,7 @@
       "text": "=-1 To do so, we designed a self-reflection prompt that makes classify a prompt or a generated answer. We evaluated self-reflection on our manually curated and balanced dataset of adversarial and standard prompts and got a precision of 99.4% for a recall of 95.6%(considering acceptable prompts as positives)."
     },
     {
-      "self_ref": "#/texts/80",
+      "self_ref": "#/texts/69",
       "parent": {
         "$ref": "#/body"
       },
@@ -1423,7 +1252,7 @@
       "text": "=-1 The use cases are vast, from moderating comments on social media or forums to brand monitoring on the internet. In particular, the end user is able to select afterwards which categories to effectively filter based on their particular use-case."
     },
     {
-      "self_ref": "#/texts/81",
+      "self_ref": "#/texts/70",
       "parent": {
         "$ref": "#/body"
       },
@@ -1436,7 +1265,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/82",
+      "self_ref": "#/texts/71",
       "parent": {
         "$ref": "#/body"
       },
@@ -1448,7 +1277,7 @@
       "text": "Our work on Mistral 7B demonstrates that language models may compress knowledge more than what was previously thought. This opens up interesting perspectives: the field has so far put the emphasis on scaling laws in 2 dimensions (directly associating model capabilities to training cost, as in"
     },
     {
-      "self_ref": "#/texts/83",
+      "self_ref": "#/texts/72",
       "parent": {
         "$ref": "#/body"
       },
@@ -1460,7 +1289,7 @@
       "text": "[hoffmann2022compute]); the problem is rather 3 dimensional (model capabilities, training cost, inference cost), and much remains to be explored to obtain the best performance with the smallest possible model."
     },
     {
-      "self_ref": "#/texts/84",
+      "self_ref": "#/texts/73",
       "parent": {
         "$ref": "#/body"
       },
@@ -1473,7 +1302,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/85",
+      "self_ref": "#/texts/74",
       "parent": {
         "$ref": "#/body"
       },
@@ -1485,19 +1314,7 @@
       "text": "=-1 We are grateful to CoreWeave for their 24/7 help in marshalling our cluster. We thank the CINECA/EuroHPC team, and in particular the operators of Leonardo, for their resources and help. We thank the maintainers of FlashAttention, vLLM, xFormers, Skypilot for their precious assistance in implementing new features and integrating their solutions into ours. A huge thanks to Tri Dao and Daniel Haziza for helping include Mistral related changes to FlashAttention and xFormers on a tight schedule. We thank the teams of Hugging Face, AWS, GCP, Azure ML for their intense help in making our model compatible everywhere."
     },
     {
-      "self_ref": "#/texts/86",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "150pt",
-      "text": "150pt"
-    },
-    {
-      "self_ref": "#/texts/87",
+      "self_ref": "#/texts/75",
       "parent": {
         "$ref": "#/body"
       },
@@ -1509,19 +1326,7 @@
       "text": "Image: images/llama_vs_mistral_example.png"
     },
     {
-      "self_ref": "#/texts/88",
-      "parent": {
-        "$ref": "#/groups/6"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "-10pt",
-      "text": "-10pt"
-    },
-    {
-      "self_ref": "#/texts/89",
+      "self_ref": "#/texts/76",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -1533,7 +1338,7 @@
       "text": "Human evaluation of vs 213BChat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. 2 13B Chat recommends a general physics book, while recommends a more relevant book on quantum physics and describes in the contents in more detail."
     },
     {
-      "self_ref": "#/texts/90",
+      "self_ref": "#/texts/77",
       "parent": {
         "$ref": "#/body"
       },
@@ -1545,7 +1350,7 @@
       "text": "ref"
     },
     {
-      "self_ref": "#/texts/91",
+      "self_ref": "#/texts/78",
       "parent": {
         "$ref": "#/body"
       },
@@ -1569,7 +1374,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/2"
+          "$ref": "#/texts/1"
         }
       ],
       "references": [],
@@ -1596,7 +1401,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/17"
+          "$ref": "#/texts/16"
         }
       ],
       "references": [],
@@ -1623,7 +1428,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/26"
+          "$ref": "#/texts/24"
         }
       ],
       "references": [],
@@ -1650,7 +1455,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/29"
+          "$ref": "#/texts/27"
         }
       ],
       "references": [],
@@ -1677,7 +1482,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/47"
+          "$ref": "#/texts/44"
         }
       ],
       "references": [],
@@ -1704,7 +1509,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/52"
+          "$ref": "#/texts/47"
         }
       ],
       "references": [],
@@ -1731,7 +1536,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/87"
+          "$ref": "#/texts/75"
         }
       ],
       "references": [],

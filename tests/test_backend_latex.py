@@ -1822,3 +1822,51 @@ def test_latex_quote_environment():
     md = doc.export_to_markdown()
     assert "quoted passage" in md
     assert "longer quotation" in md
+
+
+def test_vspace_argument_does_not_leak():
+    """Verify \\vspace{-1mm} does not produce '-1mm' as a text item."""
+    latex_content = b"""
+    \\documentclass{article}
+    \\begin{document}
+    Before text.
+    \\vspace{-1mm}
+    After text.
+    \\end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    all_text = " ".join(t.text for t in doc.texts)
+    assert "-1mm" not in all_text, f"vspace argument leaked into text: {all_text!r}"
+    assert "Before text" in all_text
+    assert "After text" in all_text
+
+
+def test_hspace_argument_does_not_leak():
+    """Verify \\hspace{0.2cm} does not produce '0.2cm' as a text item."""
+    latex_content = b"""
+    \\documentclass{article}
+    \\begin{document}
+    Left text.\\hspace{0.2cm}Right text.
+    \\end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    all_text = " ".join(t.text for t in doc.texts)
+    assert "0.2cm" not in all_text, f"hspace argument leaked into text: {all_text!r}"
+    assert "Left text" in all_text
+    assert "Right text" in all_text
