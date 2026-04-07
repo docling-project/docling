@@ -216,6 +216,7 @@ def export_documents(
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
+    page_break_placeholder: str | None = None,
 ):
     success_count = 0
     failure_count = 0
@@ -290,7 +291,9 @@ def export_documents(
                 fname = output_dir / f"{doc_filename}.md"
                 _log.info(f"writing Markdown output to {fname}")
                 conv_res.document.save_as_markdown(
-                    filename=fname, image_mode=image_export_mode
+                    filename=fname,
+                    image_mode=image_export_mode,
+                    page_break_placeholder=page_break_placeholder,
                 )
 
             # Export Document Tags format:
@@ -632,6 +635,13 @@ def convert(  # noqa: C901
             help="If enabled, it saves the profiling summaries to json.",
         ),
     ] = False,
+    page_break: Annotated[
+        str | None,
+        typer.Option(
+            "--page-break",
+            help="String to insert at page boundaries in Markdown output. If not set, no page break marker is added.",
+        ),
+    ] = None,
 ):
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
@@ -968,6 +978,7 @@ def convert(  # noqa: C901
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,
+            page_break_placeholder=page_break,
         )
 
         end_time = time.time() - start_time
