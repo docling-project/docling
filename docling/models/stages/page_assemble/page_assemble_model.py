@@ -38,16 +38,14 @@ _LIGATURE_MAP: Dict[str, str] = {
     "\ufb06": "st",  # ﬆ Latin small ligature st
     "\u0132": "IJ",  # Ĳ Latin capital ligature IJ (used in Dutch)
     "\u0133": "ij",  # ĳ Latin small ligature ij (used in Dutch)
-    "\uf0a0": "",   # Private-use glyph emitted by some PDF fonts; discard
+    "\uf0a0": "",  # Private-use glyph emitted by some PDF fonts; discard
 }
 # Matches any ligature character in the map, optionally followed by a spurious
 # space before a word character (to absorb spaces inserted by PDF parsers
 # between a ligature glyph and the rest of the word, e.g. "ﬁ eld" → "field").
 # Note: U+0132/U+0133 and U+F0A0 are listed as alternates (not a range) to
 # avoid an invalid descending range with U+FB06.
-_LIGATURE_RE = re.compile(
-    r"([\ufb00-\ufb06]|\u0132|\u0133|\uf0a0)( (?=\w))?"
-)
+_LIGATURE_RE = re.compile(r"([\ufb00-\ufb06]|\u0132|\u0133|\uf0a0)( (?=\w))?")
 
 
 class PageAssembleOptions(BaseModel):
@@ -143,9 +141,8 @@ class PageAssembleModel(BasePageModel):
         # captured trailing space is re-emitted so that real word boundaries are
         # preserved (e.g. "Ĳ is" → "IJ is", "hello\uf0a0 world" → "hello world").
         sanitized_text = _LIGATURE_RE.sub(
-            lambda m: _LIGATURE_MAP[m.group(1)] + (
-                "" if "\ufb00" <= m.group(1) <= "\ufb06" else (m.group(2) or "")
-            ),
+            lambda m: _LIGATURE_MAP[m.group(1)]
+            + ("" if "\ufb00" <= m.group(1) <= "\ufb06" else (m.group(2) or "")),
             sanitized_text,
         )
 

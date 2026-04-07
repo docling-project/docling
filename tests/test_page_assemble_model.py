@@ -133,7 +133,9 @@ class TestSanitizeTextLigatures:
     def test_regex_matches_new_codepoints(self, model):
         """Verify the regex actually matches U+0132, U+0133, U+F0A0."""
         import re
+
         from docling.models.stages.page_assemble.page_assemble_model import _LIGATURE_RE
+
         assert _LIGATURE_RE.search("\u0132") is not None, "U+0132 not matched by regex"
         assert _LIGATURE_RE.search("\u0133") is not None, "U+0133 not matched by regex"
         assert _LIGATURE_RE.search("\uf0a0") is not None, "U+F0A0 not matched by regex"
