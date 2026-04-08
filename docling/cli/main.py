@@ -359,6 +359,7 @@ def export_documents(
                     ),
                 )
                 if use_dynamic:
+                    assert page_break_placeholder is not None
                     _apply_dynamic_page_breaks(
                         fname, page_break_placeholder, content_page_numbers
                     )
@@ -379,6 +380,7 @@ def export_documents(
                     ),
                 )
                 if use_dynamic:
+                    assert page_break_placeholder is not None
                     _apply_dynamic_page_breaks(
                         fname, page_break_placeholder, content_page_numbers
                     )

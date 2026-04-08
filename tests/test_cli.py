@@ -276,11 +276,7 @@ def test_apply_dynamic_page_breaks_with_blank_pages(tmp_path):
 
 def test_apply_dynamic_page_breaks_prev_page_with_blank_pages(tmp_path):
     """Test {prev_page} with blank pages uses actual page numbers."""
-    content = (
-        f"Page 1\n{_PAGE_BREAK_SENTINEL}\n"
-        f"Page 3\n{_PAGE_BREAK_SENTINEL}\n"
-        "Page 5"
-    )
+    content = f"Page 1\n{_PAGE_BREAK_SENTINEL}\nPage 3\n{_PAGE_BREAK_SENTINEL}\nPage 5"
     file_path = tmp_path / "test.md"
     file_path.write_text(content, encoding="utf-8")
 
