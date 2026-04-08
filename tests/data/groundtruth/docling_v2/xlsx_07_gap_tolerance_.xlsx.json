@@ -33,9 +33,6 @@
       },
       "children": [
         {
-          "$ref": "#/texts/0"
-        },
-        {
           "$ref": "#/tables/0"
         },
         {
@@ -82,25 +79,11 @@
         }
       ],
       "content_layer": "body",
-      "name": "sheet: Page 1",
-      "label": "section"
+      "name": "Page 1",
+      "label": "sheet"
     }
   ],
-  "texts": [
-    {
-      "self_ref": "#/texts/0",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "section_header",
-      "prov": [],
-      "orig": "Page 1",
-      "text": "Page 1",
-      "level": 1
-    }
-  ],
+  "texts": [],
   "pictures": [],
   "tables": [
     {

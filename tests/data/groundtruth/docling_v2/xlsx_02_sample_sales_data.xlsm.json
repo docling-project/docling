@@ -33,32 +33,15 @@
       },
       "children": [
         {
-          "$ref": "#/texts/0"
-        },
-        {
           "$ref": "#/tables/0"
         }
       ],
       "content_layer": "body",
-      "name": "sheet: SalesData",
-      "label": "section"
+      "name": "SalesData",
+      "label": "sheet"
     }
   ],
-  "texts": [
-    {
-      "self_ref": "#/texts/0",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "section_header",
-      "prov": [],
-      "orig": "SalesData",
-      "text": "SalesData",
-      "level": 1
-    }
-  ],
+  "texts": [],
   "pictures": [],
   "tables": [
     {

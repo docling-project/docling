@@ -33,9 +33,6 @@
       },
       "children": [
         {
-          "$ref": "#/texts/0"
-        },
-        {
           "$ref": "#/tables/0"
         },
         {
@@ -43,25 +40,11 @@
         }
       ],
       "content_layer": "body",
-      "name": "sheet: Duck Observations",
-      "label": "section"
+      "name": "Duck Observations",
+      "label": "sheet"
     }
   ],
-  "texts": [
-    {
-      "self_ref": "#/texts/0",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "section_header",
-      "prov": [],
-      "orig": "Duck Observations",
-      "text": "Duck Observations",
-      "level": 1
-    }
-  ],
+  "texts": [],
   "pictures": [],
   "tables": [
     {
