@@ -220,11 +220,23 @@ class LayoutPostprocessor:
         )
 
     def postprocess(self) -> Tuple[List[Cluster], List[TextCell]]:
+        self.regular_clusters = self._process_regular_clusters()
+        self.special_clusters = self._process_special_clusters()
 
-        self.regular_clusters = self._process_regular_clusters()  # 여기 좀 수정했음
+        # Remove regular clusters that are included in wrappers/special containers.
+        contained_ids = {
+            child.id
+            for wrapper in self.special_clusters
+            if wrapper.label in self.SPECIAL_TYPES
+            for child in wrapper.children
+        }
+        self.regular_clusters = [
+            c for c in self.regular_clusters if c.id not in contained_ids
+        ]
+
         # Keep cluster order stable by source cluster id (DotsOCR response order).
         final_clusters = self._sort_clusters(
-            self.regular_clusters + [], mode="cluster_id"
+            self.regular_clusters + self.special_clusters, mode="cluster_id"
         )
         for cluster in final_clusters:
             cluster.cells = self._sort_cells(cluster.cells)

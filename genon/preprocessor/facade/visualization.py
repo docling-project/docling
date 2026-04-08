@@ -141,10 +141,12 @@ def visualize(
     bboxes = _load_bboxes(data)
     label_font = _get_font(BASE_LABEL_FONT_SIZE * TEXT_SCALE)
     index_font = _get_font(BASE_INDEX_FONT_SIZE * TEXT_SCALE)
+    page_index_counters: Dict[int, int] = {}
 
-    for b_idx, item in enumerate(bboxes):
+    for item in bboxes:
         bbox = item.get("bbox", {})
         page_no = int(item["page"])
+        page_index_counters[page_no] = page_index_counters.get(page_no, 0) + 1
         img_src = page_image_map.get(page_no - 1) or page_image_map.get(page_no)
         if img_src is None:
             raise IndexError(
@@ -190,7 +192,7 @@ def visualize(
         draw.text((x1 + pad, y1 - th - pad), label, fill=(0, 0, 0, 255), font=label_font)
 
         # 몇번째인지~
-        text = str(b_idx + 1)  # 1부터 시작
+        text = str(page_index_counters[page_no])  # 페이지별 1부터 시작
         index_bbox = draw.textbbox((0, 0), text, font=index_font)
         index_h = int(index_bbox[3] - index_bbox[1])
         index_pad = 2 * TEXT_SCALE

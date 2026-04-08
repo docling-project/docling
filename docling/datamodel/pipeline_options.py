@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -42,9 +41,6 @@ from docling.datamodel.vlm_model_specs import (
     VlmModelType,
 )
 
-_log = logging.getLogger(__name__)
-
-
 class BaseOptions(BaseModel):
     """Base class for options."""
 
@@ -56,6 +52,14 @@ class TableStructureModelType(str, Enum):
 
     TABLEFORMER = "tableformer"
     VLM = "vlm"
+    DOTSOCR = "dotsocr"
+
+
+class LayoutModelType(str, Enum):
+    """Enum of valid layout model types."""
+
+    DOCLING_LAYOUT = "docling_layout"
+    DOTSOCR = "dotsocr"
 
 
 class TableFormerMode(str, Enum):
@@ -63,18 +67,6 @@ class TableFormerMode(str, Enum):
 
     FAST = "fast"
     ACCURATE = "accurate"
-
-
-class TableStructureOptions(BaseModel):
-    """Options for the table structure."""
-
-    do_cell_matching: bool = (
-        True
-        # True:  Matches predictions back to PDF cells. Can break table output if PDF cells
-        #        are merged across table columns.
-        # False: Let table structure model define the text cells, ignore PDF cells.
-    )
-    mode: TableFormerMode = TableFormerMode.ACCURATE
 
 
 class VlmTableStructureOptions(BaseModel):
@@ -92,6 +84,24 @@ class VlmTableStructureOptions(BaseModel):
     concurrency: int = 1
     use_ocr_in_prompt: bool = True
     prompt_bbox_scale: int = 1024
+
+
+class TableStructureOptions(BaseModel):
+    """Options for table structure model selection and configuration."""
+
+    table_structure_model_type: TableStructureModelType = (
+        TableStructureModelType.DOTSOCR
+    )
+    do_cell_matching: bool = (
+        True
+        # True:  Matches predictions back to PDF cells. Can break table output if PDF cells
+        #        are merged across table columns.
+        # False: Let table structure model define the text cells, ignore PDF cells.
+    )
+    mode: TableFormerMode = TableFormerMode.ACCURATE
+    vlm_table_structure_options: VlmTableStructureOptions = (
+        VlmTableStructureOptions()
+    )
 
 
 class OcrOptions(BaseOptions):
@@ -339,17 +349,25 @@ class BaseLayoutOptions(BaseOptions):
         False  # Skip cell-to-cluster assignment for VLM-only processing
     )
 
+
+class DotsOCRLayoutOptions(BaseModel):
+    """Options specific to DotsOCR layout inference."""
+
+    endpoint: str = None
+    api_key: str = None
+    max_completion_tokens: int = 6000
+    timeout: int = 3600
+
+
 class LayoutOptions(BaseLayoutOptions):
     """Options for layout processing."""
 
+    layout_model_type: LayoutModelType = LayoutModelType.DOCLING_LAYOUT
     create_orphan_clusters: bool = True  # Whether to create clusters for orphaned cells
     visualize_layout_side_by_side: bool = (
         False  # Debug only: render layout visualization in split left/right panes
     )
-    dotocr_endpoint: str = None
-    dotocr_api_key: str = None
-    dotocr_max_completion_tokens: int = 6000
-    dotocr_timeout: int = 3600
+    dotsocr_options: DotsOCRLayoutOptions = DotsOCRLayoutOptions()
     model_spec: LayoutModelConfig = DOCLING_LAYOUT_V2
 
 
@@ -367,20 +385,12 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
     do_formula_enrichment: bool = False  # True: perform formula OCR, return Latex code
     do_picture_classification: bool = False  # True: classify pictures in documents
     do_picture_description: bool = False  # True: run describe pictures in documents
-    do_vlm_layout_and_readingorder: bool = False
-    # TODO str로 바꿔야 할듯. dots_ocr, paddleVL etc...
     force_backend_text: bool = (
         False  # (To be used with vlms, or other generative models)
     )
     # If True, text from backend will be used instead of generated text
 
-    table_structure_model_type: TableStructureModelType = (
-        TableStructureModelType.TABLEFORMER
-    )
     table_structure_options: TableStructureOptions = TableStructureOptions()
-    vlm_table_structure_options: VlmTableStructureOptions = (
-        VlmTableStructureOptions()
-    )
     ocr_options: OcrOptions = EasyOcrOptions()
     picture_description_options: PictureDescriptionBaseOptions = (
         smolvlm_picture_description

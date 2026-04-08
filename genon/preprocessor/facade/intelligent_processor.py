@@ -26,8 +26,10 @@ from docling.datamodel.pipeline_options import (
     AcceleratorOptions,
     # OcrEngine,
     # PdfBackend,
+    LayoutModelType,
     PdfPipelineOptions,
     TableFormerMode,
+    TableStructureModelType,
     PipelineOptions,
     PaddleOcrOptions,
 )
@@ -1006,6 +1008,8 @@ class DocumentProcessor:
         self.pipe_line_options.generate_picture_images = True
         self.pipe_line_options.do_ocr = False
         self.pipe_line_options.ocr_options = ocr_options
+        self.pipe_line_options.images_scale = 2
+
         # self.pipe_line_options.ocr_options.lang = ["ko", 'en']
         # self.pipe_line_options.ocr_options.model_storage_directory = "./.EasyOCR/model"
         # self.pipe_line_options.ocr_options.force_full_page_ocr = True
@@ -1014,8 +1018,19 @@ class DocumentProcessor:
         # ocr_options.path = './.tesseract/tessdata'
         # self.pipe_line_options.ocr_options = ocr_options
         # self.pipe_line_options.artifacts_path = Path("/models/")
+
+        # layout 모델로 DOTSOCR 사용
+        # self.pipe_line_options.layout_options.layout_model_type = LayoutModelType.DOTSOCR
+        # self.pipe_line_options.layout_options.dotsocr_options.endpoint = "https://genos.genon.ai:3443/api/gateway/rep/serving/733/v1/chat/completions"
+        # self.pipe_line_options.layout_options.dotsocr_options.api_key = "3d0aed2e6aff4d8289052d50a7aaffaa"
+
         self.pipe_line_options.do_table_structure = True
-        self.pipe_line_options.images_scale = 2
+        # VLM 기반 테이블 구조 모델 사용
+        # self.pipe_line_options.table_structure_options.table_structure_model_type = TableStructureModelType.VLM
+        # self.pipe_line_options.table_structure_options.vlm_table_structure_options.url = "http://localhost:8000/v1/chat/completions"
+        # self.pipe_line_options.table_structure_options.vlm_table_structure_options.api_key = ""
+        # self.pipe_line_options.table_structure_options.vlm_table_structure_options.model = ""
+
         self.pipe_line_options.table_structure_options.do_cell_matching = True
         self.pipe_line_options.table_structure_options.mode = TableFormerMode.ACCURATE
         self.pipe_line_options.accelerator_options = accelerator_options

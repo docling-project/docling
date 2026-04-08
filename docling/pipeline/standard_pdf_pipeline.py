@@ -12,6 +12,7 @@ from docling.datamodel.base_models import AssembledUnit, Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.layout_model_specs import LayoutModelConfig
 from docling.datamodel.pipeline_options import (
+    LayoutModelType,
     PdfPipelineOptions,
     TableStructureModelType,
 )
@@ -33,7 +34,7 @@ from docling.models.picture_description_base_model import PictureDescriptionBase
 from docling.models.readingorder_model import ReadingOrderModel, ReadingOrderOptions
 from docling.models.table_structure_model import TableStructureModel
 from docling.models.genos_vlm_table_structure_model import GenosVlmTableStructureModel
-from docling.models.dots_ocr_layout_model import DotsOCRLayoutModel
+from docling.models.genos_dots_ocr_layout_model import GenosDotsOCRLayoutModel
 
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.model_downloader import download_models
@@ -69,24 +70,38 @@ class StandardPdfPipeline(PaginatedPipeline):
 
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
 
-        # Select table structure model based on configuration
-        if (
-            pipeline_options.table_structure_model_type
-            == TableStructureModelType.VLM
-        ):
-            table_model = GenosVlmTableStructureModel(
-                enabled=pipeline_options.do_table_structure,
-                options=pipeline_options.vlm_table_structure_options,
-            )
-        else:
-            table_model = TableStructureModel(
-                enabled=pipeline_options.do_table_structure,
-                artifacts_path=artifacts_path,
-                options=pipeline_options.table_structure_options,
-                accelerator_options=pipeline_options.accelerator_options,
-            )
+        use_dotsocr_layout = (
+            pipeline_options.layout_options.layout_model_type
+            == LayoutModelType.DOTSOCR
+        )
+        table_structure_options = pipeline_options.table_structure_options
+        use_dotsocr_table_structure = (
+            use_dotsocr_layout
+            and table_structure_options.table_structure_model_type
+            == TableStructureModelType.DOTSOCR
+        )
 
-        if pipeline_options.do_vlm_layout_and_readingorder == True:
+        table_model = None
+        # Select table structure model based on configuration.
+        # DOTSOCR mode is handled inside GenosDotsOCRLayoutModel itself.
+        if not use_dotsocr_table_structure:
+            if (
+                table_structure_options.table_structure_model_type
+                == TableStructureModelType.VLM
+            ):
+                table_model = GenosVlmTableStructureModel(
+                    enabled=pipeline_options.do_table_structure,
+                    options=table_structure_options.vlm_table_structure_options,
+                )
+            else:
+                table_model = TableStructureModel(
+                    enabled=pipeline_options.do_table_structure,
+                    artifacts_path=artifacts_path,
+                    options=table_structure_options,
+                    accelerator_options=pipeline_options.accelerator_options,
+                )
+
+        if use_dotsocr_layout:
             self.build_pipe = [
                 # Pre-processing
                 PagePreprocessingModel(
@@ -95,14 +110,17 @@ class StandardPdfPipeline(PaginatedPipeline):
                     )
                 ),
                 # layout and reading order
-                DotsOCRLayoutModel(pipeline_options=pipeline_options),
-                # Table structure model
-                table_model,
-                # Page assemble
-                PageAssembleModel(options=PageAssembleOptions()),
+                GenosDotsOCRLayoutModel(pipeline_options=pipeline_options),
             ]
+
+            if table_model is not None:
+                self.build_pipe.append(table_model)
+
+            # Page assemble
+            self.build_pipe.append(PageAssembleModel(options=PageAssembleOptions()))
         else:
             ocr_model = self.get_ocr_model(artifacts_path=artifacts_path)
+            assert table_model is not None
             self.build_pipe = [
                 # Pre-processing
                 PagePreprocessingModel(
@@ -234,7 +252,10 @@ class StandardPdfPipeline(PaginatedPipeline):
                 elements=all_elements, headers=all_headers, body=all_body
             )
 
-            if self.pipeline_options.do_vlm_layout_and_readingorder:
+            if (
+                self.pipeline_options.layout_options.layout_model_type
+                == LayoutModelType.DOTSOCR
+            ):
                 # DotsOCR path: preserve assembled order from VLM output
                 # without running reading-order predictor reordering.
                 conv_res.document = (

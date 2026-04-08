@@ -12,23 +12,34 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
-from docling_core.types.doc import DocItemLabel
+from bs4 import BeautifulSoup, Tag
+from docling_core.types.doc import DocItemLabel, TableData
 from PIL import Image, ImageDraw, ImageFont
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import BoundingBox, Cluster, LayoutPrediction, Page
+from docling.datamodel.base_models import (
+    BoundingBox,
+    Cluster,
+    LayoutPrediction,
+    Page,
+    Table,
+    TableStructurePrediction,
+)
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_V2, LayoutModelConfig
-from docling.datamodel.pipeline_options import LayoutOptions
+from docling.datamodel.pipeline_options import (
+    LayoutOptions,
+    PdfPipelineOptions,
+    TableStructureModelType,
+)
 from docling.datamodel.settings import settings
 from docling.models.base_model import BasePageModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 
-from docling.utils.dotsocr_postprocessor import LayoutPostprocessor
+from docling.utils.genos_dotsocr_postprocessor import LayoutPostprocessor
 from docling.utils.profiling import TimeRecorder
 from docling.utils.visualization import draw_clusters
-from docling.datamodel.pipeline_options import PdfPipelineOptions
 
 _log = logging.getLogger(__name__)
 
@@ -37,7 +48,7 @@ DOTSOCR_MIN_PIXELS = 3136
 DOTSOCR_MAX_PIXELS = 11289600
 
 
-class DotsOCRLayoutModel(BasePageModel):
+class GenosDotsOCRLayoutModel(BasePageModel):
     TEXT_ELEM_LABELS = [
         DocItemLabel.TEXT,
         DocItemLabel.FOOTNOTE,
@@ -61,10 +72,61 @@ class DotsOCRLayoutModel(BasePageModel):
     def __init__(self, pipeline_options: PdfPipelineOptions) -> None:
         self.pipeline_options = pipeline_options
         self.options = pipeline_options.layout_options
-        self.dotocr_endpoint = self.options.dotocr_endpoint
-        self.api_key = self.options.dotocr_api_key
-        self.max_completion_tokens = self.options.dotocr_max_completion_tokens
-        self.timeout = self.options.dotocr_timeout
+        self.dotsocr_options = self.options.dotsocr_options
+        self.dotocr_endpoint = self.dotsocr_options.endpoint
+        self.api_key = self.dotsocr_options.api_key
+        self.max_completion_tokens = self.dotsocr_options.max_completion_tokens
+        self.timeout = self.dotsocr_options.timeout
+
+    def _use_dotsocr_table_structure(self) -> bool:
+        return (
+            self.pipeline_options.do_table_structure
+            and self.pipeline_options.table_structure_options.table_structure_model_type
+            == TableStructureModelType.DOTSOCR
+        )
+
+    def _build_tablestructure_from_dotsocr(
+        self,
+        page: Page,
+        clusters: list[Cluster],
+        table_html_by_cluster_id: dict[int, str],
+    ) -> TableStructurePrediction:
+        tablestructure = TableStructurePrediction()
+        for cluster in clusters:
+            if cluster.label not in self.TABLE_LABELS:
+                continue
+
+            table_html = table_html_by_cluster_id.get(cluster.id)
+            if not table_html:
+                _log.warning(
+                    "DotsOCR table cluster has no HTML text (page=%s, cluster_id=%s).",
+                    page.page_no,
+                    cluster.id,
+                )
+                continue
+
+            table_data = _parse_html_to_table_data(table_html)
+            if table_data is None:
+                _log.warning(
+                    "Failed to parse DotsOCR table HTML (page=%s, cluster_id=%s).",
+                    page.page_no,
+                    cluster.id,
+                )
+                continue
+
+            tablestructure.table_map[cluster.id] = Table(
+                otsl_seq=[],
+                table_cells=table_data.table_cells,
+                num_rows=table_data.num_rows,
+                num_cols=table_data.num_cols,
+                text=table_html,
+                id=cluster.id,
+                page_no=page.page_no,
+                cluster=cluster,
+                label=cluster.label,
+            )
+
+        return tablestructure
 
     def draw_clusters_and_cells_side_by_side(
         self,
@@ -339,7 +401,7 @@ class DotsOCRLayoutModel(BasePageModel):
         conv_res.pages[0].assembled -> conv_res.document
         """
 
-        _log.info(f"Running DotsOCRLayoutModel on {conv_res.input.file}")
+        _log.info(f"Running GenosDotsOCRLayoutModel on {conv_res.input.file}")
 
         for page in page_batch:
             assert page._backend is not None
@@ -371,6 +433,10 @@ class DotsOCRLayoutModel(BasePageModel):
                         max_completion_tokens=self.max_completion_tokens,
                         timeout=self.timeout,
                     )
+
+                    # 디버그용으로 response_text 화면에 출력
+                    # print("VLM Response Data:", json.dumps(json.loads(response_text), indent=2, ensure_ascii=False))
+
                     response = _parse_vlm_json_response(response_text)
                     if isinstance(response, dict):
                         result = response.get("result")
@@ -400,6 +466,7 @@ class DotsOCRLayoutModel(BasePageModel):
                         result = []
 
                     clusters = []
+                    raw_table_html_by_cluster_id: dict[int, str] = {}
                     for idx, pred_item in enumerate(result):
                         if not isinstance(pred_item, dict):
                             _log.warning(
@@ -432,6 +499,13 @@ class DotsOCRLayoutModel(BasePageModel):
                                 idx,
                             )
                             continue
+
+                        if label in self.TABLE_LABELS:
+                            table_item_text = _extract_layout_item_text(pred_item)
+                            if table_item_text:
+                                table_html = _extract_table_html(table_item_text)
+                                if table_html:
+                                    raw_table_html_by_cluster_id[idx] = table_html
 
                         bbox_values = _rescale_dotsocr_bbox_to_page(
                             bbox=pred_item["bbox"],
@@ -508,6 +582,14 @@ class DotsOCRLayoutModel(BasePageModel):
                     page.predictions.layout = LayoutPrediction(
                         clusters=processed_clusters
                     )
+                    if self._use_dotsocr_table_structure():
+                        page.predictions.tablestructure = (
+                            self._build_tablestructure_from_dotsocr(
+                                page=page,
+                                clusters=processed_clusters,
+                                table_html_by_cluster_id=raw_table_html_by_cluster_id,
+                            )
+                        )
 
                 if settings.debug.visualize_layout:
                     self.draw_clusters_and_cells_side_by_side(
@@ -732,7 +814,7 @@ def _recover_layout_items_from_text(text: str):
         for pattern in patterns:
             for match in re.finditer(pattern, text, flags=re.IGNORECASE | re.DOTALL):
                 item = _build_layout_item(
-                    category=match.group("category"), bbox_text=match.group("bbox")
+                    category=match.group("category"), bbox_value=match.group("bbox")
                 )
                 if item is not None:
                     items.append(item)
@@ -756,6 +838,17 @@ def _recover_layout_items_from_text(text: str):
 
 
 def _extract_layout_item_from_text_segment(segment: str):
+    parsed_segment = _try_parse_json(segment)
+    if isinstance(parsed_segment, dict):
+        category = parsed_segment.get("category")
+        bbox = parsed_segment.get("bbox")
+        if category is not None and bbox is not None:
+            return _build_layout_item(
+                category=category,
+                bbox_value=bbox,
+                text=_extract_layout_item_text(parsed_segment),
+            )
+
     category_match = re.search(
         r"(?:['\"]?category['\"]?)\s*:\s*['\"]?([^,'\"}\n]+)['\"]?",
         segment,
@@ -769,15 +862,26 @@ def _extract_layout_item_from_text_segment(segment: str):
     if category_match is None or bbox_match is None:
         return None
     return _build_layout_item(
-        category=category_match.group(1), bbox_text=bbox_match.group(1)
+        category=category_match.group(1), bbox_value=bbox_match.group(1)
     )
 
 
-def _build_layout_item(category: str, bbox_text: str):
-    bbox_values = [float(v) for v in re.findall(r"-?\d+(?:\.\d+)?", bbox_text)]
+def _build_layout_item(category: str, bbox_value, text: Optional[str] = None):
+    if isinstance(bbox_value, (list, tuple)):
+        try:
+            bbox_values = [float(v) for v in bbox_value[:4]]
+        except (TypeError, ValueError):
+            return None
+    else:
+        bbox_values = [float(v) for v in re.findall(r"-?\d+(?:\.\d+)?", str(bbox_value))]
+
     if len(bbox_values) < 4:
         return None
-    return {"category": category.strip(), "bbox": bbox_values[:4]}
+
+    item = {"category": str(category).strip(), "bbox": bbox_values[:4]}
+    if isinstance(text, str) and text.strip():
+        item["text"] = text
+    return item
 
 
 def _dedupe_keep_order(values):
@@ -801,6 +905,82 @@ def _coerce_confidence(value) -> float:
     if math.isnan(confidence) or math.isinf(confidence):
         return 1.0
     return max(0.0, min(confidence, 1.0))
+
+
+def _extract_layout_item_text(layout_item: dict) -> Optional[str]:
+    if not isinstance(layout_item, dict):
+        return None
+
+    for key in ("text", "html", "content"):
+        value = layout_item.get(key)
+        if isinstance(value, str):
+            text = value.strip()
+            if text:
+                return text
+    return None
+
+
+def _extract_table_html(raw_text: str) -> Optional[str]:
+    if not isinstance(raw_text, str):
+        return None
+
+    text = raw_text.strip()
+    if not text:
+        return None
+
+    soup = BeautifulSoup(text, "html.parser")
+    first_table = soup.find("table")
+    if isinstance(first_table, Tag):
+        return str(first_table)
+
+    # Fallback for malformed/non-HTML-like payloads:
+    # find the first balanced <table>...</table> block without truncating nested tables.
+    tag_pattern = re.compile(r"</?table\b[^>]*>", re.IGNORECASE)
+    start_idx = None
+    depth = 0
+
+    for match in tag_pattern.finditer(text):
+        token = match.group(0)
+        is_close = token.startswith("</")
+        if not is_close:
+            if start_idx is None:
+                start_idx = match.start()
+                depth = 1
+            else:
+                depth += 1
+            continue
+
+        if start_idx is None:
+            continue
+
+        depth -= 1
+        if depth == 0:
+            return text[start_idx:match.end()]
+
+    return None
+
+
+def _parse_html_to_table_data(html: str) -> Optional[TableData]:
+    from docling.backend.genos_vlm_html_backend import (
+        GenosVlmHTMLDocumentBackend,
+    )
+
+    soup = BeautifulSoup(html, "html.parser")
+    table_tag = soup.find("table")
+    if table_tag is None or not isinstance(table_tag, Tag):
+        return None
+
+    # Backend parser rejects nested tables. Flatten them into plain text.
+    nested_table = table_tag.find("table")
+    while isinstance(nested_table, Tag):
+        replacement_text = nested_table.get_text(" ", strip=True)
+        if replacement_text:
+            nested_table.replace_with(replacement_text)
+        else:
+            nested_table.decompose()
+        nested_table = table_tag.find("table")
+
+    return GenosVlmHTMLDocumentBackend.parse_table_data(table_tag)
 
 
 def _rescale_dotsocr_bbox_to_page(
