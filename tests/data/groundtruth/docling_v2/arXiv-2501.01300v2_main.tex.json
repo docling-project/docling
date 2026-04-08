@@ -2,212 +2,207 @@
   "schema_name": "DoclingDocument",
   "version": "1.10.0",
   "name": "main",
-  "origin": null,
   "furniture": {
     "self_ref": "#/furniture",
-    "parent": null,
     "children": [],
     "content_layer": "furniture",
-    "meta": null,
     "name": "_root_",
     "label": "unspecified"
   },
   "body": {
     "self_ref": "#/body",
-    "parent": null,
     "children": [
       {
-        "cref": "#/texts/0"
+        "$ref": "#/texts/0"
       },
       {
-        "cref": "#/texts/1"
+        "$ref": "#/texts/1"
       },
       {
-        "cref": "#/texts/2"
+        "$ref": "#/texts/2"
       },
       {
-        "cref": "#/texts/3"
+        "$ref": "#/texts/3"
       },
       {
-        "cref": "#/texts/4"
+        "$ref": "#/texts/4"
       },
       {
-        "cref": "#/texts/5"
+        "$ref": "#/texts/5"
       },
       {
-        "cref": "#/texts/6"
+        "$ref": "#/texts/6"
       },
       {
-        "cref": "#/texts/7"
+        "$ref": "#/texts/7"
       },
       {
-        "cref": "#/texts/8"
+        "$ref": "#/texts/8"
       },
       {
-        "cref": "#/texts/9"
+        "$ref": "#/texts/9"
       },
       {
-        "cref": "#/texts/10"
+        "$ref": "#/texts/10"
       },
       {
-        "cref": "#/texts/11"
+        "$ref": "#/texts/11"
       },
       {
-        "cref": "#/texts/12"
+        "$ref": "#/texts/12"
       },
       {
-        "cref": "#/texts/13"
+        "$ref": "#/texts/13"
       },
       {
-        "cref": "#/texts/14"
+        "$ref": "#/texts/14"
       },
       {
-        "cref": "#/texts/15"
+        "$ref": "#/texts/15"
       },
       {
-        "cref": "#/texts/16"
+        "$ref": "#/texts/16"
       },
       {
-        "cref": "#/texts/17"
+        "$ref": "#/texts/17"
       },
       {
-        "cref": "#/texts/18"
+        "$ref": "#/texts/18"
       },
       {
-        "cref": "#/texts/19"
+        "$ref": "#/texts/19"
       },
       {
-        "cref": "#/texts/20"
+        "$ref": "#/texts/20"
       },
       {
-        "cref": "#/texts/21"
+        "$ref": "#/texts/21"
       },
       {
-        "cref": "#/texts/22"
+        "$ref": "#/texts/22"
       },
       {
-        "cref": "#/texts/23"
+        "$ref": "#/texts/23"
       },
       {
-        "cref": "#/texts/24"
+        "$ref": "#/texts/24"
       },
       {
-        "cref": "#/texts/25"
+        "$ref": "#/texts/25"
       },
       {
-        "cref": "#/groups/0"
+        "$ref": "#/groups/0"
       },
       {
-        "cref": "#/texts/26"
+        "$ref": "#/texts/26"
       },
       {
-        "cref": "#/texts/27"
+        "$ref": "#/texts/27"
       },
       {
-        "cref": "#/texts/29"
+        "$ref": "#/texts/29"
       },
       {
-        "cref": "#/texts/30"
+        "$ref": "#/texts/30"
       },
       {
-        "cref": "#/texts/31"
+        "$ref": "#/texts/31"
       },
       {
-        "cref": "#/texts/32"
+        "$ref": "#/texts/32"
       },
       {
-        "cref": "#/texts/33"
+        "$ref": "#/texts/33"
       },
       {
-        "cref": "#/texts/34"
+        "$ref": "#/texts/34"
       },
       {
-        "cref": "#/texts/35"
+        "$ref": "#/texts/35"
       },
       {
-        "cref": "#/texts/36"
+        "$ref": "#/texts/36"
       },
       {
-        "cref": "#/texts/37"
+        "$ref": "#/texts/37"
       },
       {
-        "cref": "#/texts/38"
+        "$ref": "#/texts/38"
       },
       {
-        "cref": "#/groups/1"
+        "$ref": "#/groups/1"
       },
       {
-        "cref": "#/texts/39"
+        "$ref": "#/texts/39"
       },
       {
-        "cref": "#/texts/40"
+        "$ref": "#/texts/40"
       },
       {
-        "cref": "#/texts/42"
+        "$ref": "#/texts/42"
       },
       {
-        "cref": "#/texts/43"
+        "$ref": "#/texts/43"
       },
       {
-        "cref": "#/texts/44"
+        "$ref": "#/texts/44"
       },
       {
-        "cref": "#/texts/45"
+        "$ref": "#/texts/45"
       },
       {
-        "cref": "#/texts/46"
+        "$ref": "#/texts/46"
       },
       {
-        "cref": "#/texts/47"
+        "$ref": "#/texts/47"
       },
       {
-        "cref": "#/texts/48"
+        "$ref": "#/texts/48"
       },
       {
-        "cref": "#/groups/2"
+        "$ref": "#/groups/2"
       },
       {
-        "cref": "#/texts/49"
+        "$ref": "#/texts/49"
       },
       {
-        "cref": "#/texts/50"
+        "$ref": "#/texts/50"
       },
       {
-        "cref": "#/texts/52"
+        "$ref": "#/texts/52"
       },
       {
-        "cref": "#/texts/53"
+        "$ref": "#/texts/53"
       },
       {
-        "cref": "#/texts/54"
+        "$ref": "#/texts/54"
       },
       {
-        "cref": "#/texts/55"
+        "$ref": "#/texts/55"
       },
       {
-        "cref": "#/texts/56"
+        "$ref": "#/texts/56"
       },
       {
-        "cref": "#/texts/57"
+        "$ref": "#/texts/57"
       },
       {
-        "cref": "#/texts/58"
+        "$ref": "#/texts/58"
       },
       {
-        "cref": "#/texts/59"
+        "$ref": "#/texts/59"
       },
       {
-        "cref": "#/texts/60"
+        "$ref": "#/texts/60"
       },
       {
-        "cref": "#/texts/61"
+        "$ref": "#/texts/61"
       },
       {
-        "cref": "#/texts/62"
+        "$ref": "#/texts/62"
       }
     ],
     "content_layer": "body",
-    "meta": null,
     "name": "_root_",
     "label": "unspecified"
   },
@@ -215,63 +210,60 @@
     {
       "self_ref": "#/groups/0",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "cref": "#/pictures/0"
+          "$ref": "#/pictures/0"
         },
         {
-          "cref": "#/pictures/1"
+          "$ref": "#/pictures/1"
         },
         {
-          "cref": "#/texts/28"
+          "$ref": "#/texts/28"
         }
       ],
       "content_layer": "body",
-      "meta": null,
       "name": "figure",
       "label": "section"
     },
     {
       "self_ref": "#/groups/1",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "cref": "#/pictures/2"
+          "$ref": "#/pictures/2"
         },
         {
-          "cref": "#/pictures/3"
+          "$ref": "#/pictures/3"
         },
         {
-          "cref": "#/texts/41"
+          "$ref": "#/texts/41"
         }
       ],
       "content_layer": "body",
-      "meta": null,
       "name": "figure",
       "label": "section"
     },
     {
       "self_ref": "#/groups/2",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "cref": "#/pictures/4"
+          "$ref": "#/pictures/4"
         },
         {
-          "cref": "#/pictures/5"
+          "$ref": "#/pictures/5"
         },
         {
-          "cref": "#/texts/51"
+          "$ref": "#/texts/51"
         }
       ],
       "content_layer": "body",
-      "meta": null,
       "name": "figure",
       "label": "section"
     }
@@ -280,973 +272,783 @@
     {
       "self_ref": "#/texts/0",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "1\n.001",
-      "text": "1\n.001",
-      "formatting": null,
-      "hyperlink": null
+      "text": "1\n.001"
     },
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Thermodynamics of charmed hadrons across chiral crossover from lattice QCD    \nS.Sharma et al.",
-      "text": "Thermodynamics of charmed hadrons across chiral crossover from lattice QCD    \nS.Sharma et al.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Thermodynamics of charmed hadrons across chiral crossover from lattice QCD    \nS.Sharma et al."
     },
     {
       "self_ref": "#/texts/2",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "title",
       "prov": [],
       "orig": "[",
-      "text": "[",
-      "formatting": null,
-      "hyperlink": null
+      "text": "["
     },
     {
       "self_ref": "#/texts/3",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "mode = title]Thermodynamics of charmed hadrons across chiral crossover from lattice QCD",
-      "text": "mode = title]Thermodynamics of charmed hadrons across chiral crossover from lattice QCD",
-      "formatting": null,
-      "hyperlink": null
+      "text": "mode = title]Thermodynamics of charmed hadrons across chiral crossover from lattice QCD"
     },
     {
       "self_ref": "#/texts/4",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "[",
-      "text": "[",
-      "formatting": null,
-      "hyperlink": null
+      "text": "["
     },
     {
       "self_ref": "#/texts/5",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "1]Sipaz Sharma[orcid=0000-0001-6916-2233]\nsipaz.sharma@tum.de\n[1]organization=Physik Department, Technische Universitat Munchen,\n addressline=James-Franck-Strae 1, \n city=Garchingb.Munchen,\n postcode=D-85748, \n country=Germany",
-      "text": "1]Sipaz Sharma[orcid=0000-0001-6916-2233]\nsipaz.sharma@tum.de\n[1]organization=Physik Department, Technische Universitat Munchen,\n addressline=James-Franck-Strae 1, \n city=Garchingb.Munchen,\n postcode=D-85748, \n country=Germany",
-      "formatting": null,
-      "hyperlink": null
+      "text": "1]Sipaz Sharma[orcid=0000-0001-6916-2233]\nsipaz.sharma@tum.de\n[1]organization=Physik Department, Technische Universitat Munchen,\n addressline=James-Franck-Strae 1, \n city=Garchingb.Munchen,\n postcode=D-85748, \n country=Germany"
     },
     {
       "self_ref": "#/texts/6",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "[",
-      "text": "[",
-      "formatting": null,
-      "hyperlink": null
+      "text": "["
     },
     {
       "self_ref": "#/texts/7",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "2]Frithjof Karsch\n        [2]organization=Fakultat fur Physik, Universitat Bielefeld,\n \taddressline=Universitätsstraße 25, \n \tcity=Bielefeld,\n \tpostcode=D-33615, \n \tcountry=Germany",
-      "text": "2]Frithjof Karsch\n        [2]organization=Fakultat fur Physik, Universitat Bielefeld,\n \taddressline=Universitätsstraße 25, \n \tcity=Bielefeld,\n \tpostcode=D-33615, \n \tcountry=Germany",
-      "formatting": null,
-      "hyperlink": null
+      "text": "2]Frithjof Karsch\n        [2]organization=Fakultat fur Physik, Universitat Bielefeld,\n \taddressline=Universitätsstraße 25, \n \tcity=Bielefeld,\n \tpostcode=D-33615, \n \tcountry=Germany"
     },
     {
       "self_ref": "#/texts/8",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "[",
-      "text": "[",
-      "formatting": null,
-      "hyperlink": null
+      "text": "["
     },
     {
       "self_ref": "#/texts/9",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "3]Peter Petreczky\n        [3]organization=Physics Department, Brookhaven National Laboratory,\n \tcity=Upton, NY,\n \tpostcode=11973, \n \tcountry=USA",
-      "text": "3]Peter Petreczky\n        [3]organization=Physics Department, Brookhaven National Laboratory,\n \tcity=Upton, NY,\n \tpostcode=11973, \n \tcountry=USA",
-      "formatting": null,
-      "hyperlink": null
+      "text": "3]Peter Petreczky\n        [3]organization=Physics Department, Brookhaven National Laboratory,\n \tcity=Upton, NY,\n \tpostcode=11973, \n \tcountry=USA"
     },
     {
       "self_ref": "#/texts/10",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Abstract",
       "text": "Abstract",
-      "formatting": null,
-      "hyperlink": null,
       "level": 1
     },
     {
       "self_ref": "#/texts/11",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "We use up to fourth-order charm fluctuations and their correlations with net baryon number, electric charge, and strangeness fluctuations, calculated within the framework of lattice QCD, to study the continuum partial pressure contributions of charmed baryons and mesons. We show that, at and below the chiral crossover temperature, these partial pressures receive enhanced contributions from experimentally unobserved charmed hadrons predicted by the Quark Model. Additionally, we demonstrate that at the chiral crossover, the Hadron Resonance Gas description breaks down, signaling the modification of open charm hadrons and thereby implying the onset of charm deconfinement. We present evidence for the survival of low-lying non-radial $1S$ and $1P$ hadron-like excitations above the chiral crossover, which hints at the sequential melting of charmed hadrons. Finally, we investigate the continuum partial pressure contribution of charm quark-like excitation that emerges at the chiral crossover and calculate its temperature-dependent in-medium mass.",
-      "text": "We use up to fourth-order charm fluctuations and their correlations with net baryon number, electric charge, and strangeness fluctuations, calculated within the framework of lattice QCD, to study the continuum partial pressure contributions of charmed baryons and mesons. We show that, at and below the chiral crossover temperature, these partial pressures receive enhanced contributions from experimentally unobserved charmed hadrons predicted by the Quark Model. Additionally, we demonstrate that at the chiral crossover, the Hadron Resonance Gas description breaks down, signaling the modification of open charm hadrons and thereby implying the onset of charm deconfinement. We present evidence for the survival of low-lying non-radial $1S$ and $1P$ hadron-like excitations above the chiral crossover, which hints at the sequential melting of charmed hadrons. Finally, we investigate the continuum partial pressure contribution of charm quark-like excitation that emerges at the chiral crossover and calculate its temperature-dependent in-medium mass.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "We use up to fourth-order charm fluctuations and their correlations with net baryon number, electric charge, and strangeness fluctuations, calculated within the framework of lattice QCD, to study the continuum partial pressure contributions of charmed baryons and mesons. We show that, at and below the chiral crossover temperature, these partial pressures receive enhanced contributions from experimentally unobserved charmed hadrons predicted by the Quark Model. Additionally, we demonstrate that at the chiral crossover, the Hadron Resonance Gas description breaks down, signaling the modification of open charm hadrons and thereby implying the onset of charm deconfinement. We present evidence for the survival of low-lying non-radial $1S$ and $1P$ hadron-like excitations above the chiral crossover, which hints at the sequential melting of charmed hadrons. Finally, we investigate the continuum partial pressure contribution of charm quark-like excitation that emerges at the chiral crossover and calculate its temperature-dependent in-medium mass."
     },
     {
       "self_ref": "#/texts/12",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "_set:nn stm / mktitle nologo",
-      "text": "_set:nn stm / mktitle nologo",
-      "formatting": null,
-      "hyperlink": null
+      "text": "_set:nn stm / mktitle nologo"
     },
     {
       "self_ref": "#/texts/13",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Introduction",
       "text": "Introduction",
-      "formatting": null,
-      "hyperlink": null,
       "level": 1
     },
     {
       "self_ref": "#/texts/14",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Lattice studies in the recent years have predicted the existence of experimentally unobserved charmed resonances by calculating charm fluctuations and their correlations with other conserved quantum numbers a.k.a. generalized charm susceptibilities [BAZAVOV2014210, Sharma:2022ztl, Bazavov:2023xzm]. Recently, analysis of experimental  open charm hadron yields using the extended Statistical Hadronization Model for charm (SHMc) [ANDRONIC2019759], showed enhanced yields in the charmed baryon sector [Braun-Munzinger:2024ybd]. This enhancement is relative to the experimentally known charmed hadronic states tabulated in the Particle Data Group (PDG) records, and  therefore corroborates the existence of missing resonances in the open charm sector.",
-      "text": "Lattice studies in the recent years have predicted the existence of experimentally unobserved charmed resonances by calculating charm fluctuations and their correlations with other conserved quantum numbers a.k.a. generalized charm susceptibilities [BAZAVOV2014210, Sharma:2022ztl, Bazavov:2023xzm]. Recently, analysis of experimental  open charm hadron yields using the extended Statistical Hadronization Model for charm (SHMc) [ANDRONIC2019759], showed enhanced yields in the charmed baryon sector [Braun-Munzinger:2024ybd]. This enhancement is relative to the experimentally known charmed hadronic states tabulated in the Particle Data Group (PDG) records, and  therefore corroborates the existence of missing resonances in the open charm sector.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Lattice studies in the recent years have predicted the existence of experimentally unobserved charmed resonances by calculating charm fluctuations and their correlations with other conserved quantum numbers a.k.a. generalized charm susceptibilities [BAZAVOV2014210, Sharma:2022ztl, Bazavov:2023xzm]. Recently, analysis of experimental  open charm hadron yields using the extended Statistical Hadronization Model for charm (SHMc) [ANDRONIC2019759], showed enhanced yields in the charmed baryon sector [Braun-Munzinger:2024ybd]. This enhancement is relative to the experimentally known charmed hadronic states tabulated in the Particle Data Group (PDG) records, and  therefore corroborates the existence of missing resonances in the open charm sector."
     },
     {
       "self_ref": "#/texts/15",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Until now, lattice QCD predictions of missing resonances have been based solely on the ratios of generalized charm susceptibilities. This approach, however, could not provide a quantitative measure of enhancement in individual quantum number channels. The reason lattice QCD studies had to resort to ratios of generalized susceptibilities rather then the susceptibilities themselves is because\ncontrolling the cutoff effects in the latter is challenging due to the relatively large charm quark mass.  In this study, for the first time, we use our continuum extrapolated lattice QCD results to explicitly determine enhancement factors at the chiral crossover temperature, ${T_{pc}=(156.5\\pm1.5)}$ MeV [HotQCD:2018pds, Borsanyi:2020fev], for both the charmed baryonic and mesonic sectors.",
-      "text": "Until now, lattice QCD predictions of missing resonances have been based solely on the ratios of generalized charm susceptibilities. This approach, however, could not provide a quantitative measure of enhancement in individual quantum number channels. The reason lattice QCD studies had to resort to ratios of generalized susceptibilities rather then the susceptibilities themselves is because\ncontrolling the cutoff effects in the latter is challenging due to the relatively large charm quark mass.  In this study, for the first time, we use our continuum extrapolated lattice QCD results to explicitly determine enhancement factors at the chiral crossover temperature, ${T_{pc}=(156.5\\pm1.5)}$ MeV [HotQCD:2018pds, Borsanyi:2020fev], for both the charmed baryonic and mesonic sectors.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Until now, lattice QCD predictions of missing resonances have been based solely on the ratios of generalized charm susceptibilities. This approach, however, could not provide a quantitative measure of enhancement in individual quantum number channels. The reason lattice QCD studies had to resort to ratios of generalized susceptibilities rather then the susceptibilities themselves is because\ncontrolling the cutoff effects in the latter is challenging due to the relatively large charm quark mass.  In this study, for the first time, we use our continuum extrapolated lattice QCD results to explicitly determine enhancement factors at the chiral crossover temperature, ${T_{pc}=(156.5\\pm1.5)}$ MeV [HotQCD:2018pds, Borsanyi:2020fev], for both the charmed baryonic and mesonic sectors."
     },
     {
       "self_ref": "#/texts/16",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "The chiral crossover also exhibits deconfining feature in the charm quark sector, i.e. charm quarks as new degrees of freedom start appearing at or close to the pseudo-critical temperature of chiral symmetry restoration (Bazavov et al. (2024)). Clearly the appearance of charm quark degrees of freedom at $T_{pc}$, arising due to the disappearance of some hadronic states, will also liberate light quark degrees of freedom, although in the chiral limit this may not directly be related to the universal aspects of the chiral phase transition. The partial charm hadronic pressures start to deviate from the HRG model prediction, but not all charmed\nhadrons dissociate at $T_{pc}$. Furthermore, recent lattice QCD studies provide compelling evidence for the survival of charmed hadrons above the chiral crossover temperature [Bazavov:2023xzm, Sharma:2024ucs, Sharma:2024edf]. In this paper, we investigate the gradual deconfinement of charmed hadrons by analyzing continuum extrapolated proxies for partial pressures of charmed baryons and mesons across the chiral crossover.",
-      "text": "The chiral crossover also exhibits deconfining feature in the charm quark sector, i.e. charm quarks as new degrees of freedom start appearing at or close to the pseudo-critical temperature of chiral symmetry restoration (Bazavov et al. (2024)). Clearly the appearance of charm quark degrees of freedom at $T_{pc}$, arising due to the disappearance of some hadronic states, will also liberate light quark degrees of freedom, although in the chiral limit this may not directly be related to the universal aspects of the chiral phase transition. The partial charm hadronic pressures start to deviate from the HRG model prediction, but not all charmed\nhadrons dissociate at $T_{pc}$. Furthermore, recent lattice QCD studies provide compelling evidence for the survival of charmed hadrons above the chiral crossover temperature [Bazavov:2023xzm, Sharma:2024ucs, Sharma:2024edf]. In this paper, we investigate the gradual deconfinement of charmed hadrons by analyzing continuum extrapolated proxies for partial pressures of charmed baryons and mesons across the chiral crossover.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "The chiral crossover also exhibits deconfining feature in the charm quark sector, i.e. charm quarks as new degrees of freedom start appearing at or close to the pseudo-critical temperature of chiral symmetry restoration (Bazavov et al. (2024)). Clearly the appearance of charm quark degrees of freedom at $T_{pc}$, arising due to the disappearance of some hadronic states, will also liberate light quark degrees of freedom, although in the chiral limit this may not directly be related to the universal aspects of the chiral phase transition. The partial charm hadronic pressures start to deviate from the HRG model prediction, but not all charmed\nhadrons dissociate at $T_{pc}$. Furthermore, recent lattice QCD studies provide compelling evidence for the survival of charmed hadrons above the chiral crossover temperature [Bazavov:2023xzm, Sharma:2024ucs, Sharma:2024edf]. In this paper, we investigate the gradual deconfinement of charmed hadrons by analyzing continuum extrapolated proxies for partial pressures of charmed baryons and mesons across the chiral crossover."
     },
     {
       "self_ref": "#/texts/17",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Calculating generalized susceptibilities on the lattice",
       "text": "Calculating generalized susceptibilities on the lattice",
-      "formatting": null,
-      "hyperlink": null,
       "level": 1
     },
     {
       "self_ref": "#/texts/18",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "To project out the relevant degrees of freedom in the charm sector, one calculates the generalized susceptibilities, ${\\chi^{BQSC}_{klmn}}$, of the conserved charges: baryon number, $B$, electric charge, $Q$, strangeness, $S$, and charm, $C$. This involves taking appropriate derivatives of the total pressure,",
-      "text": "To project out the relevant degrees of freedom in the charm sector, one calculates the generalized susceptibilities, ${\\chi^{BQSC}_{klmn}}$, of the conserved charges: baryon number, $B$, electric charge, $Q$, strangeness, $S$, and charm, $C$. This involves taking appropriate derivatives of the total pressure,",
-      "formatting": null,
-      "hyperlink": null
+      "text": "To project out the relevant degrees of freedom in the charm sector, one calculates the generalized susceptibilities, ${\\chi^{BQSC}_{klmn}}$, of the conserved charges: baryon number, $B$, electric charge, $Q$, strangeness, $S$, and charm, $C$. This involves taking appropriate derivatives of the total pressure,"
     },
     {
       "self_ref": "#/texts/19",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "formula",
       "prov": [],
       "orig": "P=\\frac{T}{V}\\ln Z(T,V,\\hat{\\mu}_B,\\hat{\\mu}_Q,\\hat{\\mu}_S,\\hat{\\mu}_C)\n    \\; ,",
-      "text": "P=\\frac{T}{V}\\ln Z(T,V,\\hat{\\mu}_B,\\hat{\\mu}_Q,\\hat{\\mu}_S,\\hat{\\mu}_C)\n    \\; ,",
-      "formatting": null,
-      "hyperlink": null
+      "text": "P=\\frac{T}{V}\\ln Z(T,V,\\hat{\\mu}_B,\\hat{\\mu}_Q,\\hat{\\mu}_S,\\hat{\\mu}_C)\n    \\; ,"
     },
     {
       "self_ref": "#/texts/20",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "which contains contributions from the total charm pressure, $P_C$. These derivatives are taken with respect to the chemical potentials, ${\\hat{\\mu}_X = \\mu_X/T}$, ${\\forall X \\in \\{B, Q, S, C\\}}$, of the quantum number combinations one is interested in,",
-      "text": "which contains contributions from the total charm pressure, $P_C$. These derivatives are taken with respect to the chemical potentials, ${\\hat{\\mu}_X = \\mu_X/T}$, ${\\forall X \\in \\{B, Q, S, C\\}}$, of the quantum number combinations one is interested in,",
-      "formatting": null,
-      "hyperlink": null
+      "text": "which contains contributions from the total charm pressure, $P_C$. These derivatives are taken with respect to the chemical potentials, ${\\hat{\\mu}_X = \\mu_X/T}$, ${\\forall X \\in \\{B, Q, S, C\\}}$, of the quantum number combinations one is interested in,"
     },
     {
       "self_ref": "#/texts/21",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "formula",
       "prov": [],
       "orig": "{\\chi^{BQSC}_{klmn}=\\dfrac{\\partial^{(k+l+m+n)}\\;\\;[P\\;(\\hat{\\mu}_B,\\hat{\\mu}_Q,\\hat{\\mu}_S,\\hat{\\mu}_C)\\;/T^4]}{\\partial\\hat{\\mu}^{k}_B\\;\\;\\partial\\hat{\\mu}^{l}_Q\\;\\;\\partial\\hat{\\mu}^{m}_S\\;\\;\\partial\\hat{\\mu}^{n}_C}}\\bigg|_{\\overrightarrow{\\mu}=0}\\text{,}",
-      "text": "{\\chi^{BQSC}_{klmn}=\\dfrac{\\partial^{(k+l+m+n)}\\;\\;[P\\;(\\hat{\\mu}_B,\\hat{\\mu}_Q,\\hat{\\mu}_S,\\hat{\\mu}_C)\\;/T^4]}{\\partial\\hat{\\mu}^{k}_B\\;\\;\\partial\\hat{\\mu}^{l}_Q\\;\\;\\partial\\hat{\\mu}^{m}_S\\;\\;\\partial\\hat{\\mu}^{n}_C}}\\bigg|_{\\overrightarrow{\\mu}=0}\\text{,}",
-      "formatting": null,
-      "hyperlink": null
+      "text": "{\\chi^{BQSC}_{klmn}=\\dfrac{\\partial^{(k+l+m+n)}\\;\\;[P\\;(\\hat{\\mu}_B,\\hat{\\mu}_Q,\\hat{\\mu}_S,\\hat{\\mu}_C)\\;/T^4]}{\\partial\\hat{\\mu}^{k}_B\\;\\;\\partial\\hat{\\mu}^{l}_Q\\;\\;\\partial\\hat{\\mu}^{m}_S\\;\\;\\partial\\hat{\\mu}^{n}_C}}\\bigg|_{\\overrightarrow{\\mu}=0}\\text{,}"
     },
     {
       "self_ref": "#/texts/22",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "where $\\vec{\\mu}=(\\mu_B, \\mu_Q, \\mu_S, \\mu_C)$. \nNote that ${\\chi^{BQSC}_{klmn}}$ will be non-zero only for ${(k+l+m+n) \\in \\text{even}}$. In the following, if the subscript corresponding to a conserved charge is zero in the\nleft hand side of Eq. [eq:chi], then both the corresponding superscript as well the zero subscript will be suppressed.",
-      "text": "where $\\vec{\\mu}=(\\mu_B, \\mu_Q, \\mu_S, \\mu_C)$. \nNote that ${\\chi^{BQSC}_{klmn}}$ will be non-zero only for ${(k+l+m+n) \\in \\text{even}}$. In the following, if the subscript corresponding to a conserved charge is zero in the\nleft hand side of Eq. [eq:chi], then both the corresponding superscript as well the zero subscript will be suppressed.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "where $\\vec{\\mu}=(\\mu_B, \\mu_Q, \\mu_S, \\mu_C)$. \nNote that ${\\chi^{BQSC}_{klmn}}$ will be non-zero only for ${(k+l+m+n) \\in \\text{even}}$. In the following, if the subscript corresponding to a conserved charge is zero in the\nleft hand side of Eq. [eq:chi], then both the corresponding superscript as well the zero subscript will be suppressed."
     },
     {
       "self_ref": "#/texts/23",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Generalized susceptibilities up to fourth order have been calculated on the (2+1)-flavor HISQ (Highly Improved Staggered Quark) gauge configurations generated by the HotQCD collaboration [Bollweg:2021vqf] for the physical strange to light quark mass ratio, ${m_s/m_{l}}=27$. The temperature scale was set using the $f_K$ scale [Bollweg:2021vqf]. \nThe charm-quark sector has been treated in the quenched approximation. We use HISQ action with epsilon term for charm quark to remove $\\mathcal{O}((am_c)^4)$ tree-level lattice artifacts [Follana:2006rc]. This setup is known to have small discretization effects for charm quark related observables [Follana:2006rc,MILC:2010pul]. The calculation of $\\chi^{BQSC}_{klmn}$ involves derivatives of the pressure and on the lattice this is achieved by the unbiased stochastic estimation of various traces  consisting of inversions and derivatives  of the fermion matrices ($D$)  using the random noise method [Mitra:2022vtf].",
-      "text": "Generalized susceptibilities up to fourth order have been calculated on the (2+1)-flavor HISQ (Highly Improved Staggered Quark) gauge configurations generated by the HotQCD collaboration [Bollweg:2021vqf] for the physical strange to light quark mass ratio, ${m_s/m_{l}}=27$. The temperature scale was set using the $f_K$ scale [Bollweg:2021vqf]. \nThe charm-quark sector has been treated in the quenched approximation. We use HISQ action with epsilon term for charm quark to remove $\\mathcal{O}((am_c)^4)$ tree-level lattice artifacts [Follana:2006rc]. This setup is known to have small discretization effects for charm quark related observables [Follana:2006rc,MILC:2010pul]. The calculation of $\\chi^{BQSC}_{klmn}$ involves derivatives of the pressure and on the lattice this is achieved by the unbiased stochastic estimation of various traces  consisting of inversions and derivatives  of the fermion matrices ($D$)  using the random noise method [Mitra:2022vtf].",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Generalized susceptibilities up to fourth order have been calculated on the (2+1)-flavor HISQ (Highly Improved Staggered Quark) gauge configurations generated by the HotQCD collaboration [Bollweg:2021vqf] for the physical strange to light quark mass ratio, ${m_s/m_{l}}=27$. The temperature scale was set using the $f_K$ scale [Bollweg:2021vqf]. \nThe charm-quark sector has been treated in the quenched approximation. We use HISQ action with epsilon term for charm quark to remove $\\mathcal{O}((am_c)^4)$ tree-level lattice artifacts [Follana:2006rc]. This setup is known to have small discretization effects for charm quark related observables [Follana:2006rc,MILC:2010pul]. The calculation of $\\chi^{BQSC}_{klmn}$ involves derivatives of the pressure and on the lattice this is achieved by the unbiased stochastic estimation of various traces  consisting of inversions and derivatives  of the fermion matrices ($D$)  using the random noise method [Mitra:2022vtf]."
     },
     {
       "self_ref": "#/texts/24",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Lattice cutoff effects cancel to a large extent in the ratios of various generalized susceptibilities [Bazavov:2023xzm]. These ratios, even though calculated on lattices with a finite lattice spacing, $a$, are close to\nthe continuum limit results.  Therefore, in this work we use generalized susceptibilities normalized by $\\chi^C_4$ calculated on lattices with a fixed temporal extent, $N_\\tau=8$, where $N_\\tau=(aT)^{-1}$.   In order to understand the cut-off effects due to heavier charm quark, we used two different Lines of Constant Physics (LCPs) to tune the bare charm quark mass $am_c$.  The first LCP (LCP$_{[a]}$) corresponds to keeping the spin-averaged charmonium mass, ${(3m_{J/\\psi}+m_{\\eta_{c\\bar{c}}})/4}$, fixed to its physical value [Sharma:2022ztl]. The second LCP (LCP$_{[b]}$)  is defined by the physical (PDG) charm to strange quark mass ratio, $m_c/m_s=11.76$ [ParticleDataGroup:2022pth].  Further details of the charm-quark mass tuning and parametrization can be found in [Sharma:2024ucs]. Here we use ratios of generalized susceptibilities calculated on lattices with temporal extent $N_\\tau=8$ on LCP$_{[b]}$ because of their relatively smaller errors.  To convert generalized susceptibilities normalized by $\\chi^C_4$ into absolute numbers we use continuum extrapolated results for $\\chi^C_4$. Details of the continuum extrapolation will be given in a forthcoming  publication.",
-      "text": "Lattice cutoff effects cancel to a large extent in the ratios of various generalized susceptibilities [Bazavov:2023xzm]. These ratios, even though calculated on lattices with a finite lattice spacing, $a$, are close to\nthe continuum limit results.  Therefore, in this work we use generalized susceptibilities normalized by $\\chi^C_4$ calculated on lattices with a fixed temporal extent, $N_\\tau=8$, where $N_\\tau=(aT)^{-1}$.   In order to understand the cut-off effects due to heavier charm quark, we used two different Lines of Constant Physics (LCPs) to tune the bare charm quark mass $am_c$.  The first LCP (LCP$_{[a]}$) corresponds to keeping the spin-averaged charmonium mass, ${(3m_{J/\\psi}+m_{\\eta_{c\\bar{c}}})/4}$, fixed to its physical value [Sharma:2022ztl]. The second LCP (LCP$_{[b]}$)  is defined by the physical (PDG) charm to strange quark mass ratio, $m_c/m_s=11.76$ [ParticleDataGroup:2022pth].  Further details of the charm-quark mass tuning and parametrization can be found in [Sharma:2024ucs]. Here we use ratios of generalized susceptibilities calculated on lattices with temporal extent $N_\\tau=8$ on LCP$_{[b]}$ because of their relatively smaller errors.  To convert generalized susceptibilities normalized by $\\chi^C_4$ into absolute numbers we use continuum extrapolated results for $\\chi^C_4$. Details of the continuum extrapolation will be given in a forthcoming  publication.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Lattice cutoff effects cancel to a large extent in the ratios of various generalized susceptibilities [Bazavov:2023xzm]. These ratios, even though calculated on lattices with a finite lattice spacing, $a$, are close to\nthe continuum limit results.  Therefore, in this work we use generalized susceptibilities normalized by $\\chi^C_4$ calculated on lattices with a fixed temporal extent, $N_\\tau=8$, where $N_\\tau=(aT)^{-1}$.   In order to understand the cut-off effects due to heavier charm quark, we used two different Lines of Constant Physics (LCPs) to tune the bare charm quark mass $am_c$.  The first LCP (LCP$_{[a]}$) corresponds to keeping the spin-averaged charmonium mass, ${(3m_{J/\\psi}+m_{\\eta_{c\\bar{c}}})/4}$, fixed to its physical value [Sharma:2022ztl]. The second LCP (LCP$_{[b]}$)  is defined by the physical (PDG) charm to strange quark mass ratio, $m_c/m_s=11.76$ [ParticleDataGroup:2022pth].  Further details of the charm-quark mass tuning and parametrization can be found in [Sharma:2024ucs]. Here we use ratios of generalized susceptibilities calculated on lattices with temporal extent $N_\\tau=8$ on LCP$_{[b]}$ because of their relatively smaller errors.  To convert generalized susceptibilities normalized by $\\chi^C_4$ into absolute numbers we use continuum extrapolated results for $\\chi^C_4$. Details of the continuum extrapolation will be given in a forthcoming  publication."
     },
     {
       "self_ref": "#/texts/25",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Boltzmann Approximation",
       "text": "Boltzmann Approximation",
-      "formatting": null,
-      "hyperlink": null,
       "level": 1
     },
     {
       "self_ref": "#/texts/26",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "caption",
       "prov": [],
       "orig": "Image: BQSC-1003.pdf",
-      "text": "Image: BQSC-1003.pdf",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Image: BQSC-1003.pdf"
     },
     {
       "self_ref": "#/texts/27",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "caption",
       "prov": [],
       "orig": "Image: D-BQSC-0004-1003.pdf",
-      "text": "Image: D-BQSC-0004-1003.pdf",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Image: D-BQSC-0004-1003.pdf"
     },
     {
       "self_ref": "#/texts/28",
       "parent": {
-        "cref": "#/groups/0"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Comparison of QM-HRG and PDG-HRG predictions for charmed baryons [Left] and charmed mesons [Right]. $\\Delta=100 |1-\\text{QM-HRG}/\\text{PDG-HRG}|_{T_{pc}}$. The yellow bands represent $T_{pc}$ with its uncertainty.",
-      "text": "Comparison of QM-HRG and PDG-HRG predictions for charmed baryons [Left] and charmed mesons [Right]. $\\Delta=100 |1-\\text{QM-HRG}/\\text{PDG-HRG}|_{T_{pc}}$. The yellow bands represent $T_{pc}$ with its uncertainty.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Comparison of QM-HRG and PDG-HRG predictions for charmed baryons [Left] and charmed mesons [Right]. $\\Delta=100 |1-\\text{QM-HRG}/\\text{PDG-HRG}|_{T_{pc}}$. The yellow bands represent $T_{pc}$ with its uncertainty."
     },
     {
       "self_ref": "#/texts/29",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Charmed Hadrons",
       "text": "Charmed Hadrons",
-      "formatting": null,
-      "hyperlink": null,
       "level": 2
     },
     {
       "self_ref": "#/texts/30",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Hadron resonance gas model (HRG) has been successful in describing the particle abundance ratios measured in the heavy-ion experiments. It describes a non-interacting gas of hadron resonances, and therefore can be used to calculate the hadronic pressure below ${T_{pc}}$ [ANDRONIC2019759]. In the Boltzmann approximation, the dimensionless partial pressures from the charmed meson, ${P^C_{M}},$  and the charmed baryon, ${P^C_{B}}$, sectors take the following forms [Allton:2005gk]:",
-      "text": "Hadron resonance gas model (HRG) has been successful in describing the particle abundance ratios measured in the heavy-ion experiments. It describes a non-interacting gas of hadron resonances, and therefore can be used to calculate the hadronic pressure below ${T_{pc}}$ [ANDRONIC2019759]. In the Boltzmann approximation, the dimensionless partial pressures from the charmed meson, ${P^C_{M}},$  and the charmed baryon, ${P^C_{B}}$, sectors take the following forms [Allton:2005gk]:",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Hadron resonance gas model (HRG) has been successful in describing the particle abundance ratios measured in the heavy-ion experiments. It describes a non-interacting gas of hadron resonances, and therefore can be used to calculate the hadronic pressure below ${T_{pc}}$ [ANDRONIC2019759]. In the Boltzmann approximation, the dimensionless partial pressures from the charmed meson, ${P^C_{M}},$  and the charmed baryon, ${P^C_{B}}$, sectors take the following forms [Allton:2005gk]:"
     },
     {
       "self_ref": "#/texts/31",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "formula",
       "prov": [],
       "orig": "\\begin{gather}\n\t\\begin{aligned}\n\t\t{P^C_{M}(T,\\overrightarrow{\\mu})}&{=\\dfrac{1}{2\\pi^2}\\sum_{i\\in \\text{C-mesons}}g_i \\bigg(\\dfrac{m_i}{T}\\bigg)^2K_2(m_i/T)}\\\\\n\t\t\t&{\\text{cosh}(Q_i\\hat{\\mu}_Q+S_i\\hat{\\mu}_S+C_i\\hat{\\mu}_C)} \\text{ ,}\\\\\n\t\t{P^C_{B}(T,\\overrightarrow{\\mu})}&={\\dfrac{1}{2\\pi^2}\\sum_{i\\in \\text{C-baryons}}g_i \\bigg(\\dfrac{m_i}{T}\\bigg)^2K_2(m_i/T)}\\\\\n\t\t\t&{\\text{cosh}(B_i\\hat{\\mu}_B+Q_i\\hat{\\mu}_Q+S_i\\hat{\\mu}_S+C_i\\hat{\\mu}_C)} \\text{ .}\n\t\t\n\t\\end{aligned}\n\\end{gather}",
-      "text": "\\begin{gather}\n\t\\begin{aligned}\n\t\t{P^C_{M}(T,\\overrightarrow{\\mu})}&{=\\dfrac{1}{2\\pi^2}\\sum_{i\\in \\text{C-mesons}}g_i \\bigg(\\dfrac{m_i}{T}\\bigg)^2K_2(m_i/T)}\\\\\n\t\t\t&{\\text{cosh}(Q_i\\hat{\\mu}_Q+S_i\\hat{\\mu}_S+C_i\\hat{\\mu}_C)} \\text{ ,}\\\\\n\t\t{P^C_{B}(T,\\overrightarrow{\\mu})}&={\\dfrac{1}{2\\pi^2}\\sum_{i\\in \\text{C-baryons}}g_i \\bigg(\\dfrac{m_i}{T}\\bigg)^2K_2(m_i/T)}\\\\\n\t\t\t&{\\text{cosh}(B_i\\hat{\\mu}_B+Q_i\\hat{\\mu}_Q+S_i\\hat{\\mu}_S+C_i\\hat{\\mu}_C)} \\text{ .}\n\t\t\n\t\\end{aligned}\n\\end{gather}",
-      "formatting": null,
-      "hyperlink": null
+      "text": "\\begin{gather}\n\t\\begin{aligned}\n\t\t{P^C_{M}(T,\\overrightarrow{\\mu})}&{=\\dfrac{1}{2\\pi^2}\\sum_{i\\in \\text{C-mesons}}g_i \\bigg(\\dfrac{m_i}{T}\\bigg)^2K_2(m_i/T)}\\\\\n\t\t\t&{\\text{cosh}(Q_i\\hat{\\mu}_Q+S_i\\hat{\\mu}_S+C_i\\hat{\\mu}_C)} \\text{ ,}\\\\\n\t\t{P^C_{B}(T,\\overrightarrow{\\mu})}&={\\dfrac{1}{2\\pi^2}\\sum_{i\\in \\text{C-baryons}}g_i \\bigg(\\dfrac{m_i}{T}\\bigg)^2K_2(m_i/T)}\\\\\n\t\t\t&{\\text{cosh}(B_i\\hat{\\mu}_B+Q_i\\hat{\\mu}_Q+S_i\\hat{\\mu}_S+C_i\\hat{\\mu}_C)} \\text{ .}\n\t\t\n\t\\end{aligned}\n\\end{gather}"
     },
     {
       "self_ref": "#/texts/32",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "In above equations, at a given temperature, the summation is over all charmed mesons/baryons (C-mesons/baryons) with masses given by ${m_i}$; degeneracy factors of the states with equal mass and same quantum numbers are represented by ${g_i}$; ${K_2(x)}$ is a modified Bessel function, which for a large argument can be approximated by\n${K_2(x)}\\sim\\sqrt{\\pi/2x}\\;e^{-x}\\;[1+\\mathbb{O}(x^{-1})]$. Consequently, if a charmed state under consideration is much heavier than the relevant temperature scale, such that ${m_i\\gg T}$, then the contribution to ${P_C}$ from that particular state will be exponentially suppressed, e.g., the singly-charmed\n${\\Lambda}_c^{+}$ baryon has a PDG mass of about $2286$MeV, whereas the doubly-charmed ${\\Xi_{cc}^{++}}$ baryon's mass as tabulated in PDG records is about $3621$ MeV, hence at ${T_{pc}}$, the contribution to ${P^C_{B}}$ from ${\\Xi_{cc}^{++}}$ will be suppressed by a factor of $10^{-4}$ in relation to ${\\Lambda}_c^{+}$ contribution. Therefore, in the validity regime of Boltzmann approximation, substituting Eq. [eq:McBc] in Eq. [eq:chi] implies $P_C(T,\\vec{\\mu})\\approx\\chi_2^C\\approx\\chi_n^C$, for $n$even.",
-      "text": "In above equations, at a given temperature, the summation is over all charmed mesons/baryons (C-mesons/baryons) with masses given by ${m_i}$; degeneracy factors of the states with equal mass and same quantum numbers are represented by ${g_i}$; ${K_2(x)}$ is a modified Bessel function, which for a large argument can be approximated by\n${K_2(x)}\\sim\\sqrt{\\pi/2x}\\;e^{-x}\\;[1+\\mathbb{O}(x^{-1})]$. Consequently, if a charmed state under consideration is much heavier than the relevant temperature scale, such that ${m_i\\gg T}$, then the contribution to ${P_C}$ from that particular state will be exponentially suppressed, e.g., the singly-charmed\n${\\Lambda}_c^{+}$ baryon has a PDG mass of about $2286$MeV, whereas the doubly-charmed ${\\Xi_{cc}^{++}}$ baryon's mass as tabulated in PDG records is about $3621$ MeV, hence at ${T_{pc}}$, the contribution to ${P^C_{B}}$ from ${\\Xi_{cc}^{++}}$ will be suppressed by a factor of $10^{-4}$ in relation to ${\\Lambda}_c^{+}$ contribution. Therefore, in the validity regime of Boltzmann approximation, substituting Eq. [eq:McBc] in Eq. [eq:chi] implies $P_C(T,\\vec{\\mu})\\approx\\chi_2^C\\approx\\chi_n^C$, for $n$even.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "In above equations, at a given temperature, the summation is over all charmed mesons/baryons (C-mesons/baryons) with masses given by ${m_i}$; degeneracy factors of the states with equal mass and same quantum numbers are represented by ${g_i}$; ${K_2(x)}$ is a modified Bessel function, which for a large argument can be approximated by\n${K_2(x)}\\sim\\sqrt{\\pi/2x}\\;e^{-x}\\;[1+\\mathbb{O}(x^{-1})]$. Consequently, if a charmed state under consideration is much heavier than the relevant temperature scale, such that ${m_i\\gg T}$, then the contribution to ${P_C}$ from that particular state will be exponentially suppressed, e.g., the singly-charmed\n${\\Lambda}_c^{+}$ baryon has a PDG mass of about $2286$MeV, whereas the doubly-charmed ${\\Xi_{cc}^{++}}$ baryon's mass as tabulated in PDG records is about $3621$ MeV, hence at ${T_{pc}}$, the contribution to ${P^C_{B}}$ from ${\\Xi_{cc}^{++}}$ will be suppressed by a factor of $10^{-4}$ in relation to ${\\Lambda}_c^{+}$ contribution. Therefore, in the validity regime of Boltzmann approximation, substituting Eq. [eq:McBc] in Eq. [eq:chi] implies $P_C(T,\\vec{\\mu})\\approx\\chi_2^C\\approx\\chi_n^C$, for $n$even."
     },
     {
       "self_ref": "#/texts/33",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Charm fluctuations calculated in the framework of lattice QCD can receive enhanced contributions due the existence of not-yet-discovered open-charm states. It is possible to compare this enhancement to the HRG calculations performed with two data sets. The first scenario, denoted by PDG-HRG, is based on the experimentally established states tabulated in the PDG records. The second scenario, denoted by QM-HRG, in addition to PDG states, takes into account states predicted via Quark-Model calculations [Ebert:2009ua, Ebert:2011kk, Chen:2022asf]. In the validity regime of HRG, $\\chi^{nm}_{BC}\\approx P^C_{B}$, and $P^C_{M} = P_C-P^C_{B}$. Fig. [fig:barCmesC] [Left] shows that the QM-HRG predicts a $92\\%$ enhancement of the partial charmed baryon pressure at $T_{pc}$ compared to the PDG-HRG expectation, whereas the predicted enhancement in the partial charmed meson pressure is only $15\\%$. These results suggest that, based on the QM-HRG predictions, the charmed baryonic sector is significantly more incomplete than the charmed mesonic sector. In recent years, the \n experimental\n discovery of various $\\Lambda_C$ and $\\Omega_C$ resonances, in particular by LHCb and Belle collaborations [Belle:2016tai,LHCb:2017uwr,LHCb:2017jym,Chen:2017gnu] have confirmed this.",
-      "text": "Charm fluctuations calculated in the framework of lattice QCD can receive enhanced contributions due the existence of not-yet-discovered open-charm states. It is possible to compare this enhancement to the HRG calculations performed with two data sets. The first scenario, denoted by PDG-HRG, is based on the experimentally established states tabulated in the PDG records. The second scenario, denoted by QM-HRG, in addition to PDG states, takes into account states predicted via Quark-Model calculations [Ebert:2009ua, Ebert:2011kk, Chen:2022asf]. In the validity regime of HRG, $\\chi^{nm}_{BC}\\approx P^C_{B}$, and $P^C_{M} = P_C-P^C_{B}$. Fig. [fig:barCmesC] [Left] shows that the QM-HRG predicts a $92\\%$ enhancement of the partial charmed baryon pressure at $T_{pc}$ compared to the PDG-HRG expectation, whereas the predicted enhancement in the partial charmed meson pressure is only $15\\%$. These results suggest that, based on the QM-HRG predictions, the charmed baryonic sector is significantly more incomplete than the charmed mesonic sector. In recent years, the \n experimental\n discovery of various $\\Lambda_C$ and $\\Omega_C$ resonances, in particular by LHCb and Belle collaborations [Belle:2016tai,LHCb:2017uwr,LHCb:2017jym,Chen:2017gnu] have confirmed this.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Charm fluctuations calculated in the framework of lattice QCD can receive enhanced contributions due the existence of not-yet-discovered open-charm states. It is possible to compare this enhancement to the HRG calculations performed with two data sets. The first scenario, denoted by PDG-HRG, is based on the experimentally established states tabulated in the PDG records. The second scenario, denoted by QM-HRG, in addition to PDG states, takes into account states predicted via Quark-Model calculations [Ebert:2009ua, Ebert:2011kk, Chen:2022asf]. In the validity regime of HRG, $\\chi^{nm}_{BC}\\approx P^C_{B}$, and $P^C_{M} = P_C-P^C_{B}$. Fig. [fig:barCmesC] [Left] shows that the QM-HRG predicts a $92\\%$ enhancement of the partial charmed baryon pressure at $T_{pc}$ compared to the PDG-HRG expectation, whereas the predicted enhancement in the partial charmed meson pressure is only $15\\%$. These results suggest that, based on the QM-HRG predictions, the charmed baryonic sector is significantly more incomplete than the charmed mesonic sector. In recent years, the \n experimental\n discovery of various $\\Lambda_C$ and $\\Omega_C$ resonances, in particular by LHCb and Belle collaborations [Belle:2016tai,LHCb:2017uwr,LHCb:2017jym,Chen:2017gnu] have confirmed this."
     },
     {
       "self_ref": "#/texts/34",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Charm Quarks",
       "text": "Charm Quarks",
-      "formatting": null,
-      "hyperlink": null,
       "level": 2
     },
     {
       "self_ref": "#/texts/35",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Charm quarks offer an advantage over the light quarks because for temperatures a few times $T_{pc}$, the Boltzmann approximation works for an ideal massive quark-antiquark gas [Allton:2005gk,BAZAVOV2014210]. Therefore, in this approximation, the dimensionless partial charm quark pressure, $P^C_{q}$, is given by,",
-      "text": "Charm quarks offer an advantage over the light quarks because for temperatures a few times $T_{pc}$, the Boltzmann approximation works for an ideal massive quark-antiquark gas [Allton:2005gk,BAZAVOV2014210]. Therefore, in this approximation, the dimensionless partial charm quark pressure, $P^C_{q}$, is given by,",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Charm quarks offer an advantage over the light quarks because for temperatures a few times $T_{pc}$, the Boltzmann approximation works for an ideal massive quark-antiquark gas [Allton:2005gk,BAZAVOV2014210]. Therefore, in this approximation, the dimensionless partial charm quark pressure, $P^C_{q}$, is given by,"
     },
     {
       "self_ref": "#/texts/36",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "formula",
       "prov": [],
       "orig": "P^C_{q}(T,\\overrightarrow{\\mu})&=&\\dfrac{3}{\\pi^2}\\bigg(\\dfrac{m_q^C}{T}\\bigg)^2K_2(m_q^C/T)\\cdot \\nonumber \\\\\n\t&&\\text{cosh}\\bigg(\\dfrac{2}{3}\\hat{\\mu}_Q+\\dfrac{1}{3}\\hat{\\mu}_B+\\hat{\\mu}_C\\bigg) \\text { ,}",
-      "text": "P^C_{q}(T,\\overrightarrow{\\mu})&=&\\dfrac{3}{\\pi^2}\\bigg(\\dfrac{m_q^C}{T}\\bigg)^2K_2(m_q^C/T)\\cdot \\nonumber \\\\\n\t&&\\text{cosh}\\bigg(\\dfrac{2}{3}\\hat{\\mu}_Q+\\dfrac{1}{3}\\hat{\\mu}_B+\\hat{\\mu}_C\\bigg) \\text { ,}",
-      "formatting": null,
-      "hyperlink": null
+      "text": "P^C_{q}(T,\\overrightarrow{\\mu})&=&\\dfrac{3}{\\pi^2}\\bigg(\\dfrac{m_q^C}{T}\\bigg)^2K_2(m_q^C/T)\\cdot \\nonumber \\\\\n\t&&\\text{cosh}\\bigg(\\dfrac{2}{3}\\hat{\\mu}_Q+\\dfrac{1}{3}\\hat{\\mu}_B+\\hat{\\mu}_C\\bigg) \\text { ,}"
     },
     {
       "self_ref": "#/texts/37",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "where $m_q^C$is the pole mass of the charm quark, and the degeneracy factor is 6.",
-      "text": "where $m_q^C$is the pole mass of the charm quark, and the degeneracy factor is 6.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "where $m_q^C$is the pole mass of the charm quark, and the degeneracy factor is 6."
     },
     {
       "self_ref": "#/texts/38",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Enhancement of charmed hadrons",
       "text": "Enhancement of charmed hadrons",
-      "formatting": null,
-      "hyperlink": null,
       "level": 1
     },
     {
       "self_ref": "#/texts/39",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "caption",
       "prov": [],
       "orig": "Image: P_B.pdf",
-      "text": "Image: P_B.pdf",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Image: P_B.pdf"
     },
     {
       "self_ref": "#/texts/40",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "caption",
       "prov": [],
       "orig": "Image: P_M.pdf",
-      "text": "Image: P_M.pdf",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Image: P_M.pdf"
     },
     {
       "self_ref": "#/texts/41",
       "parent": {
-        "cref": "#/groups/1"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Shown are partial charmed baryon pressure [Left] and partial charmed meson pressure [Right] along with the respective QM-HRG, PDG-HRG and 1S1P-HRG (see text) predictions. The yellow bands represent $T_{pc}$ with its uncertainty.",
-      "text": "Shown are partial charmed baryon pressure [Left] and partial charmed meson pressure [Right] along with the respective QM-HRG, PDG-HRG and 1S1P-HRG (see text) predictions. The yellow bands represent $T_{pc}$ with its uncertainty.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Shown are partial charmed baryon pressure [Left] and partial charmed meson pressure [Right] along with the respective QM-HRG, PDG-HRG and 1S1P-HRG (see text) predictions. The yellow bands represent $T_{pc}$ with its uncertainty."
     },
     {
       "self_ref": "#/texts/42",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "To investigate the nature of charm degrees of freedom above  $T_{pc}$, we extend the simple hadron gas model allowing the presence of partial charm quark pressure based on Ref.[Mukherjee:2015mxc],",
-      "text": "To investigate the nature of charm degrees of freedom above  $T_{pc}$, we extend the simple hadron gas model allowing the presence of partial charm quark pressure based on Ref.[Mukherjee:2015mxc],",
-      "formatting": null,
-      "hyperlink": null
+      "text": "To investigate the nature of charm degrees of freedom above  $T_{pc}$, we extend the simple hadron gas model allowing the presence of partial charm quark pressure based on Ref.[Mukherjee:2015mxc],"
     },
     {
       "self_ref": "#/texts/43",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "formula",
       "prov": [],
       "orig": "\\begin{align}\n\tP_C(T,\\vec{\\mu})=P^C_{M}(T,\\vec{\\mu})+P^C_{B}(T,\\vec{\\mu})+P^C_{q}(T,\\vec{\\mu}) \\, .\n\t\n\\end{align}",
-      "text": "\\begin{align}\n\tP_C(T,\\vec{\\mu})=P^C_{M}(T,\\vec{\\mu})+P^C_{B}(T,\\vec{\\mu})+P^C_{q}(T,\\vec{\\mu}) \\, .\n\t\n\\end{align}",
-      "formatting": null,
-      "hyperlink": null
+      "text": "\\begin{align}\n\tP_C(T,\\vec{\\mu})=P^C_{M}(T,\\vec{\\mu})+P^C_{B}(T,\\vec{\\mu})+P^C_{q}(T,\\vec{\\mu}) \\, .\n\t\n\\end{align}"
     },
     {
       "self_ref": "#/texts/44",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "In our recent works [Bazavov:2023xzm, Sharma:2024ucs, Sharma:2024edf], we show that this model successfully passes numerous validity tests and satisfies various constraints [Bazavov:2023xzm]. In this quasi-particle model, the partial pressures of quark-, baryon- and meson-like excitations for $\\vec{\\mu}=0$can be expressed in terms of the generalized susceptibilities as follows,",
-      "text": "In our recent works [Bazavov:2023xzm, Sharma:2024ucs, Sharma:2024edf], we show that this model successfully passes numerous validity tests and satisfies various constraints [Bazavov:2023xzm]. In this quasi-particle model, the partial pressures of quark-, baryon- and meson-like excitations for $\\vec{\\mu}=0$can be expressed in terms of the generalized susceptibilities as follows,",
-      "formatting": null,
-      "hyperlink": null
+      "text": "In our recent works [Bazavov:2023xzm, Sharma:2024ucs, Sharma:2024edf], we show that this model successfully passes numerous validity tests and satisfies various constraints [Bazavov:2023xzm]. In this quasi-particle model, the partial pressures of quark-, baryon- and meson-like excitations for $\\vec{\\mu}=0$can be expressed in terms of the generalized susceptibilities as follows,"
     },
     {
       "self_ref": "#/texts/45",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "formula",
       "prov": [],
       "orig": "\\begin{align}\n\tP^C_{q}&=9(\\chi^{BC}_{13}-\\chi^{BC}_{22})/2\\; , \n\t \t\\\\\n\tP^C_{B}&=(3\\chi^{BC}_{22}-\\chi^{BC}_{13})/2\\; , \n\t\\\\\n\tP^C_{M}&=\\chi^{C}_{4}+3\\chi^{BC}_{22}-4\\chi^{BC}_{13} \\; .\n\t\n\\end{align}",
-      "text": "\\begin{align}\n\tP^C_{q}&=9(\\chi^{BC}_{13}-\\chi^{BC}_{22})/2\\; , \n\t \t\\\\\n\tP^C_{B}&=(3\\chi^{BC}_{22}-\\chi^{BC}_{13})/2\\; , \n\t\\\\\n\tP^C_{M}&=\\chi^{C}_{4}+3\\chi^{BC}_{22}-4\\chi^{BC}_{13} \\; .\n\t\n\\end{align}",
-      "formatting": null,
-      "hyperlink": null
+      "text": "\\begin{align}\n\tP^C_{q}&=9(\\chi^{BC}_{13}-\\chi^{BC}_{22})/2\\; , \n\t \t\\\\\n\tP^C_{B}&=(3\\chi^{BC}_{22}-\\chi^{BC}_{13})/2\\; , \n\t\\\\\n\tP^C_{M}&=\\chi^{C}_{4}+3\\chi^{BC}_{22}-4\\chi^{BC}_{13} \\; .\n\t\n\\end{align}"
     },
     {
       "self_ref": "#/texts/46",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Note that in the validity regime of HRG, $\\chi^{BC}_{22}\\approx\\chi^{BC}_{13}$. Hence, in this phase the partial pressure contribution from quark-like excitations, $P^C_q$ is, by construction, zero, and $P^C_B$ and $P^C_M$ reduce to $\\chi^{BC}_{13}$ and $\\chi^4_C-\\chi^{BC}_{13}$, respectively.",
-      "text": "Note that in the validity regime of HRG, $\\chi^{BC}_{22}\\approx\\chi^{BC}_{13}$. Hence, in this phase the partial pressure contribution from quark-like excitations, $P^C_q$ is, by construction, zero, and $P^C_B$ and $P^C_M$ reduce to $\\chi^{BC}_{13}$ and $\\chi^4_C-\\chi^{BC}_{13}$, respectively.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Note that in the validity regime of HRG, $\\chi^{BC}_{22}\\approx\\chi^{BC}_{13}$. Hence, in this phase the partial pressure contribution from quark-like excitations, $P^C_q$ is, by construction, zero, and $P^C_B$ and $P^C_M$ reduce to $\\chi^{BC}_{13}$ and $\\chi^4_C-\\chi^{BC}_{13}$, respectively."
     },
     {
       "self_ref": "#/texts/47",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Continuum estimates for charmed baryon and meson partial pressures shown in Fig. [fig:enhan] are obtained by multiplying continuum extrapolated $\\chi^C_4$ values to ratios $P^C_B/P_C$ and $P^C_M/P_C$  shown in our previous work [Bazavov:2023xzm]. As mentioned earlier, these ratios, despite being calculated on a finite temporal lattice extent, are largely cut-off independent. For $T<T_{pc}$, Fig. [fig:enhan] shows a clear agreement of the QM-HRG predictions with the  partial hadron pressures calculated on the lattice. This agreement, in addition to corroborating  the validity of HRG in the low temperature phase, confirms the existence of experimentally unobserved hadronic states. In particular, at the chiral crossover, in the charmed baryonic sector, $P^C_B$ calculated on the lattice is almost twice as large as the PDG-HRG expectation, whereas $P^C_M$ calculated on the lattice is around $20\\%$ larger than the  PDG-HRG prediction. The enhancement factors explicitly quoted in Fig. [fig:enhan] agree within errors with the enhancement predictions quoted in Fig. [fig:barCmesC].",
-      "text": "Continuum estimates for charmed baryon and meson partial pressures shown in Fig. [fig:enhan] are obtained by multiplying continuum extrapolated $\\chi^C_4$ values to ratios $P^C_B/P_C$ and $P^C_M/P_C$  shown in our previous work [Bazavov:2023xzm]. As mentioned earlier, these ratios, despite being calculated on a finite temporal lattice extent, are largely cut-off independent. For $T<T_{pc}$, Fig. [fig:enhan] shows a clear agreement of the QM-HRG predictions with the  partial hadron pressures calculated on the lattice. This agreement, in addition to corroborating  the validity of HRG in the low temperature phase, confirms the existence of experimentally unobserved hadronic states. In particular, at the chiral crossover, in the charmed baryonic sector, $P^C_B$ calculated on the lattice is almost twice as large as the PDG-HRG expectation, whereas $P^C_M$ calculated on the lattice is around $20\\%$ larger than the  PDG-HRG prediction. The enhancement factors explicitly quoted in Fig. [fig:enhan] agree within errors with the enhancement predictions quoted in Fig. [fig:barCmesC].",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Continuum estimates for charmed baryon and meson partial pressures shown in Fig. [fig:enhan] are obtained by multiplying continuum extrapolated $\\chi^C_4$ values to ratios $P^C_B/P_C$ and $P^C_M/P_C$  shown in our previous work [Bazavov:2023xzm]. As mentioned earlier, these ratios, despite being calculated on a finite temporal lattice extent, are largely cut-off independent. For $T<T_{pc}$, Fig. [fig:enhan] shows a clear agreement of the QM-HRG predictions with the  partial hadron pressures calculated on the lattice. This agreement, in addition to corroborating  the validity of HRG in the low temperature phase, confirms the existence of experimentally unobserved hadronic states. In particular, at the chiral crossover, in the charmed baryonic sector, $P^C_B$ calculated on the lattice is almost twice as large as the PDG-HRG expectation, whereas $P^C_M$ calculated on the lattice is around $20\\%$ larger than the  PDG-HRG prediction. The enhancement factors explicitly quoted in Fig. [fig:enhan] agree within errors with the enhancement predictions quoted in Fig. [fig:barCmesC]."
     },
     {
       "self_ref": "#/texts/48",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Charm degrees of freedom in QGP",
       "text": "Charm degrees of freedom in QGP",
-      "formatting": null,
-      "hyperlink": null,
       "level": 1
     },
     {
       "self_ref": "#/texts/49",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "caption",
       "prov": [],
       "orig": "Image: P_q.pdf",
-      "text": "Image: P_q.pdf",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Image: P_q.pdf"
     },
     {
       "self_ref": "#/texts/50",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "caption",
       "prov": [],
       "orig": "Image: m_q.pdf",
-      "text": "Image: m_q.pdf",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Image: m_q.pdf"
     },
     {
       "self_ref": "#/texts/51",
       "parent": {
-        "cref": "#/groups/2"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Shown is the partial pressure contribution of charm quark-like excitation above $T_{pc}$ [Left] and the temperature dependent in-medium mass of a charm quark-like excitation above $T_{pc}$ [Right]. The yellow bands represent $T_{pc}$ with its uncertainty.",
-      "text": "Shown is the partial pressure contribution of charm quark-like excitation above $T_{pc}$ [Left] and the temperature dependent in-medium mass of a charm quark-like excitation above $T_{pc}$ [Right]. The yellow bands represent $T_{pc}$ with its uncertainty.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Shown is the partial pressure contribution of charm quark-like excitation above $T_{pc}$ [Left] and the temperature dependent in-medium mass of a charm quark-like excitation above $T_{pc}$ [Right]. The yellow bands represent $T_{pc}$ with its uncertainty."
     },
     {
       "self_ref": "#/texts/52",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Fig. [fig:Pq] [Left] shows that the partial pressure contribution to $P_C$ from charm quark-like excitation becomes non-zero at $T_{pc}$, and starts increasing as a function of temperature. This increasing $P^C_q$ results in a decreasing relative partial pressure contribution to $P_C$ from hadron-like excitations. At the highest temperature shown in Figs. [fig:enhan] and [fig:Pq] [Left], i.e., $175$ MeV, the relative partial pressure contributions from hadron and quark-like excitations cross. Based on this trend, it is expected that above $T\\sim175$ MeV, $P^C_q$ will become the dominant contribution. Therefore, eventually $P^C_B$ and $P^C_M$ shown in Fig. [fig:enhan]will turn around and start decreasing. At sufficiently high  temperatures partial pressure contribution from charmed hadron-like excitations will go to zero.",
-      "text": "Fig. [fig:Pq] [Left] shows that the partial pressure contribution to $P_C$ from charm quark-like excitation becomes non-zero at $T_{pc}$, and starts increasing as a function of temperature. This increasing $P^C_q$ results in a decreasing relative partial pressure contribution to $P_C$ from hadron-like excitations. At the highest temperature shown in Figs. [fig:enhan] and [fig:Pq] [Left], i.e., $175$ MeV, the relative partial pressure contributions from hadron and quark-like excitations cross. Based on this trend, it is expected that above $T\\sim175$ MeV, $P^C_q$ will become the dominant contribution. Therefore, eventually $P^C_B$ and $P^C_M$ shown in Fig. [fig:enhan]will turn around and start decreasing. At sufficiently high  temperatures partial pressure contribution from charmed hadron-like excitations will go to zero.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Fig. [fig:Pq] [Left] shows that the partial pressure contribution to $P_C$ from charm quark-like excitation becomes non-zero at $T_{pc}$, and starts increasing as a function of temperature. This increasing $P^C_q$ results in a decreasing relative partial pressure contribution to $P_C$ from hadron-like excitations. At the highest temperature shown in Figs. [fig:enhan] and [fig:Pq] [Left], i.e., $175$ MeV, the relative partial pressure contributions from hadron and quark-like excitations cross. Based on this trend, it is expected that above $T\\sim175$ MeV, $P^C_q$ will become the dominant contribution. Therefore, eventually $P^C_B$ and $P^C_M$ shown in Fig. [fig:enhan]will turn around and start decreasing. At sufficiently high  temperatures partial pressure contribution from charmed hadron-like excitations will go to zero."
     },
     {
       "self_ref": "#/texts/53",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Departure of charmed hadronic pressures from their respective QM-HRG predictions hints at a sequential melting pattern. This means that the higher excited charmed hadrons start dissociating at $T_{pc}$, whereas the ground state charmed hadrons survive inside the QGP. To put this on more solid grounds, we performed another HRG model calculation based on the low-lying, $1S$ and $1P$, charmed hadrons tabulated in [Chen:2022asf]  we label this as 1S1P-HRG. For $T_{pc}<T\\leq 166.1$MeV, both $P^C_B$ and $P^C_M$ in Fig. [fig:enhan] are described by 1S1P-HRG. For $P^C_M$, both PDG-HRG and 1S1P-HRG almost overlap, and only at the highest temperatures shown in Fig. [fig:enhan] [Right] there are some visible differences. This is expected because all low-lying charmed meson states are experimentally known. In addition to low-lying 1S and 1P states, PDG-HRG contains one charmed-light meson: $D_3^*(2750)$ and two charmed-strange mesons: $D_{s1}^*(2700)$ and $D_{s3}^*(2860)$. We used PDG masses of $D$, $D^*$, $D^*_0$ and $D_1$ charmed-light mesons. If chiral partners were to get degenerate at $T_{pc}$, then the scalar and axial-vector mesons would get lighter, \nmaking 1S1P-HRG curve overshoot $P^C_M$ above $T_{pc}$. This indicates that the charm sector is not strongly influenced \nby the chiral symmetry restoration. This is also in line with studies of screening masses for charmed parity partners, which indicate that unlike in the light quark sector the charmed screening masses  become almost degenerate only at temperatures above $2T_{pc}$ [Bazavov:2014cta]. Similar observation holds for the charmed-strange mesonic sector. In the charmed baryonic sector, after departure from 1S1P-HRG, for the highest two temperatures, PDG-HRG prediction can very well describe $P^C_B$ in Fig. [fig:enhan] [Left]. The fact that 1S1P-HRG lies above PDG-HRG for $P^C_B$indicates that there are many low-lying and therefore thermodynamically dominant charmed baryons missing from the PDG record.",
-      "text": "Departure of charmed hadronic pressures from their respective QM-HRG predictions hints at a sequential melting pattern. This means that the higher excited charmed hadrons start dissociating at $T_{pc}$, whereas the ground state charmed hadrons survive inside the QGP. To put this on more solid grounds, we performed another HRG model calculation based on the low-lying, $1S$ and $1P$, charmed hadrons tabulated in [Chen:2022asf]  we label this as 1S1P-HRG. For $T_{pc}<T\\leq 166.1$MeV, both $P^C_B$ and $P^C_M$ in Fig. [fig:enhan] are described by 1S1P-HRG. For $P^C_M$, both PDG-HRG and 1S1P-HRG almost overlap, and only at the highest temperatures shown in Fig. [fig:enhan] [Right] there are some visible differences. This is expected because all low-lying charmed meson states are experimentally known. In addition to low-lying 1S and 1P states, PDG-HRG contains one charmed-light meson: $D_3^*(2750)$ and two charmed-strange mesons: $D_{s1}^*(2700)$ and $D_{s3}^*(2860)$. We used PDG masses of $D$, $D^*$, $D^*_0$ and $D_1$ charmed-light mesons. If chiral partners were to get degenerate at $T_{pc}$, then the scalar and axial-vector mesons would get lighter, \nmaking 1S1P-HRG curve overshoot $P^C_M$ above $T_{pc}$. This indicates that the charm sector is not strongly influenced \nby the chiral symmetry restoration. This is also in line with studies of screening masses for charmed parity partners, which indicate that unlike in the light quark sector the charmed screening masses  become almost degenerate only at temperatures above $2T_{pc}$ [Bazavov:2014cta]. Similar observation holds for the charmed-strange mesonic sector. In the charmed baryonic sector, after departure from 1S1P-HRG, for the highest two temperatures, PDG-HRG prediction can very well describe $P^C_B$ in Fig. [fig:enhan] [Left]. The fact that 1S1P-HRG lies above PDG-HRG for $P^C_B$indicates that there are many low-lying and therefore thermodynamically dominant charmed baryons missing from the PDG record.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Departure of charmed hadronic pressures from their respective QM-HRG predictions hints at a sequential melting pattern. This means that the higher excited charmed hadrons start dissociating at $T_{pc}$, whereas the ground state charmed hadrons survive inside the QGP. To put this on more solid grounds, we performed another HRG model calculation based on the low-lying, $1S$ and $1P$, charmed hadrons tabulated in [Chen:2022asf]  we label this as 1S1P-HRG. For $T_{pc}<T\\leq 166.1$MeV, both $P^C_B$ and $P^C_M$ in Fig. [fig:enhan] are described by 1S1P-HRG. For $P^C_M$, both PDG-HRG and 1S1P-HRG almost overlap, and only at the highest temperatures shown in Fig. [fig:enhan] [Right] there are some visible differences. This is expected because all low-lying charmed meson states are experimentally known. In addition to low-lying 1S and 1P states, PDG-HRG contains one charmed-light meson: $D_3^*(2750)$ and two charmed-strange mesons: $D_{s1}^*(2700)$ and $D_{s3}^*(2860)$. We used PDG masses of $D$, $D^*$, $D^*_0$ and $D_1$ charmed-light mesons. If chiral partners were to get degenerate at $T_{pc}$, then the scalar and axial-vector mesons would get lighter, \nmaking 1S1P-HRG curve overshoot $P^C_M$ above $T_{pc}$. This indicates that the charm sector is not strongly influenced \nby the chiral symmetry restoration. This is also in line with studies of screening masses for charmed parity partners, which indicate that unlike in the light quark sector the charmed screening masses  become almost degenerate only at temperatures above $2T_{pc}$ [Bazavov:2014cta]. Similar observation holds for the charmed-strange mesonic sector. In the charmed baryonic sector, after departure from 1S1P-HRG, for the highest two temperatures, PDG-HRG prediction can very well describe $P^C_B$ in Fig. [fig:enhan] [Left]. The fact that 1S1P-HRG lies above PDG-HRG for $P^C_B$indicates that there are many low-lying and therefore thermodynamically dominant charmed baryons missing from the PDG record."
     },
     {
       "self_ref": "#/texts/54",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "In the coexistence phase of charmed hadron and quark-like excitations, $m^C_q$ in Eq. [eq:Qc] becomes temperature dependent and can be interpreted as the mass of a quasi-particle with quantum numbers of charm quark. Given $P^C_q(T)$ as a function of temperature, one can solve Eq. [eq:Qc] at each temperature and obtain temperature dependence of $m^C_q$. In Fig. [fig:Pq] [Right], at each temperature, the error on $m^C_q$ is the standard deviation of $m^C_q$ values obtained after solving Eq.[eq:Qc] for $50$ fake Gaussian samples. Fig. [fig:Pq] [Right] shows that at $T=162.4$ MeV, $m^C_q$ is around the mass of D-meson, and starts decreasing with temperature. Quasi-particle model in Eq. [eq:Pmodel] considers a non-interacting gas of charmed hadron and quark-like excitations, but the temperature dependence of $m^C_q$ encodes the in-medium interactions. In the non-interacting quark gas limit, $m^C_q$will become the pole mass of charm quark.",
-      "text": "In the coexistence phase of charmed hadron and quark-like excitations, $m^C_q$ in Eq. [eq:Qc] becomes temperature dependent and can be interpreted as the mass of a quasi-particle with quantum numbers of charm quark. Given $P^C_q(T)$ as a function of temperature, one can solve Eq. [eq:Qc] at each temperature and obtain temperature dependence of $m^C_q$. In Fig. [fig:Pq] [Right], at each temperature, the error on $m^C_q$ is the standard deviation of $m^C_q$ values obtained after solving Eq.[eq:Qc] for $50$ fake Gaussian samples. Fig. [fig:Pq] [Right] shows that at $T=162.4$ MeV, $m^C_q$ is around the mass of D-meson, and starts decreasing with temperature. Quasi-particle model in Eq. [eq:Pmodel] considers a non-interacting gas of charmed hadron and quark-like excitations, but the temperature dependence of $m^C_q$ encodes the in-medium interactions. In the non-interacting quark gas limit, $m^C_q$will become the pole mass of charm quark.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "In the coexistence phase of charmed hadron and quark-like excitations, $m^C_q$ in Eq. [eq:Qc] becomes temperature dependent and can be interpreted as the mass of a quasi-particle with quantum numbers of charm quark. Given $P^C_q(T)$ as a function of temperature, one can solve Eq. [eq:Qc] at each temperature and obtain temperature dependence of $m^C_q$. In Fig. [fig:Pq] [Right], at each temperature, the error on $m^C_q$ is the standard deviation of $m^C_q$ values obtained after solving Eq.[eq:Qc] for $50$ fake Gaussian samples. Fig. [fig:Pq] [Right] shows that at $T=162.4$ MeV, $m^C_q$ is around the mass of D-meson, and starts decreasing with temperature. Quasi-particle model in Eq. [eq:Pmodel] considers a non-interacting gas of charmed hadron and quark-like excitations, but the temperature dependence of $m^C_q$ encodes the in-medium interactions. In the non-interacting quark gas limit, $m^C_q$will become the pole mass of charm quark."
     },
     {
       "self_ref": "#/texts/55",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Conclusions",
       "text": "Conclusions",
-      "formatting": null,
-      "hyperlink": null,
       "level": 1
     },
     {
       "self_ref": "#/texts/56",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "In this work, for the first time, we showed that in the low temperature phase HRG calculations agree with various continuum extrapolated generalized susceptibilities of charm calculated in the framework of lattice QCD when adding\nexperimentally unobserved charmed hadrons, predicted by the Quark Model calculations, to the HRG model spectrum. Our previous studies, predicting the existence of missing charmed resonances, utilised ratios of various generalized susceptibilities. We showed that continuum extrapolated partial pressures of charmed baryons and mesons calculated on the lattice receive enhanced contributions from these missing resonances. We concluded that the charmed baryon sector is significantly more incomplete than the charmed meson sector.",
-      "text": "In this work, for the first time, we showed that in the low temperature phase HRG calculations agree with various continuum extrapolated generalized susceptibilities of charm calculated in the framework of lattice QCD when adding\nexperimentally unobserved charmed hadrons, predicted by the Quark Model calculations, to the HRG model spectrum. Our previous studies, predicting the existence of missing charmed resonances, utilised ratios of various generalized susceptibilities. We showed that continuum extrapolated partial pressures of charmed baryons and mesons calculated on the lattice receive enhanced contributions from these missing resonances. We concluded that the charmed baryon sector is significantly more incomplete than the charmed meson sector.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "In this work, for the first time, we showed that in the low temperature phase HRG calculations agree with various continuum extrapolated generalized susceptibilities of charm calculated in the framework of lattice QCD when adding\nexperimentally unobserved charmed hadrons, predicted by the Quark Model calculations, to the HRG model spectrum. Our previous studies, predicting the existence of missing charmed resonances, utilised ratios of various generalized susceptibilities. We showed that continuum extrapolated partial pressures of charmed baryons and mesons calculated on the lattice receive enhanced contributions from these missing resonances. We concluded that the charmed baryon sector is significantly more incomplete than the charmed meson sector."
     },
     {
       "self_ref": "#/texts/57",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "We showed that above chiral crossover, the charm pressure can be decomposed into partial pressures of charm quark, charmed mesons, and charmed baryon-like excitations. At the highest temperature, $T \\sim 176$ MeV, studied by us, the charm pressure receives equal contributions from charmed hadrons and charm quark, indicating that charmed hadrons can exist in Quark Gluon Plasma (QGP).",
-      "text": "We showed that above chiral crossover, the charm pressure can be decomposed into partial pressures of charm quark, charmed mesons, and charmed baryon-like excitations. At the highest temperature, $T \\sim 176$ MeV, studied by us, the charm pressure receives equal contributions from charmed hadrons and charm quark, indicating that charmed hadrons can exist in Quark Gluon Plasma (QGP).",
-      "formatting": null,
-      "hyperlink": null
+      "text": "We showed that above chiral crossover, the charm pressure can be decomposed into partial pressures of charm quark, charmed mesons, and charmed baryon-like excitations. At the highest temperature, $T \\sim 176$ MeV, studied by us, the charm pressure receives equal contributions from charmed hadrons and charm quark, indicating that charmed hadrons can exist in Quark Gluon Plasma (QGP)."
     },
     {
       "self_ref": "#/texts/58",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Acknowledgments",
       "text": "Acknowledgments",
-      "formatting": null,
-      "hyperlink": null,
       "level": 1
     },
     {
       "self_ref": "#/texts/59",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "This work was supported by The Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) - Project number 315477589-TRR 211,\n”Strong interaction matter under extreme conditions”. This material is based upon work supported by The U.S. Department of Energy, Office of Science, Office of Nuclear Physics through Contract No.DE-SC0012704 and the Topical Collaboration in Nuclear Theory Heavy-Flavor Theory (HEFTY) for QCD Matter.\nThe authors gratefully acknowledge the\ncomputing time and support provided to them on the high-performance computer Noctua 2 at the NHR Center\nPC2 under the project name: hpc-prf-cfpd. These are funded by the Federal Ministry of Education\nand Research and the state governments participating on the basis of the resolutions of the GWK\nfor the national high-performance computing at universities (www.nhr-verein.de/unsere-partner).\nNumerical calculations have also been performed on the\nGPU-cluster at Bielefeld University, Germany. We thank the Bielefeld HPC.NRW team for their support.",
-      "text": "This work was supported by The Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) - Project number 315477589-TRR 211,\n”Strong interaction matter under extreme conditions”. This material is based upon work supported by The U.S. Department of Energy, Office of Science, Office of Nuclear Physics through Contract No.DE-SC0012704 and the Topical Collaboration in Nuclear Theory Heavy-Flavor Theory (HEFTY) for QCD Matter.\nThe authors gratefully acknowledge the\ncomputing time and support provided to them on the high-performance computer Noctua 2 at the NHR Center\nPC2 under the project name: hpc-prf-cfpd. These are funded by the Federal Ministry of Education\nand Research and the state governments participating on the basis of the resolutions of the GWK\nfor the national high-performance computing at universities (www.nhr-verein.de/unsere-partner).\nNumerical calculations have also been performed on the\nGPU-cluster at Bielefeld University, Germany. We thank the Bielefeld HPC.NRW team for their support.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "This work was supported by The Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) - Project number 315477589-TRR 211,\n”Strong interaction matter under extreme conditions”. This material is based upon work supported by The U.S. Department of Energy, Office of Science, Office of Nuclear Physics through Contract No.DE-SC0012704 and the Topical Collaboration in Nuclear Theory Heavy-Flavor Theory (HEFTY) for QCD Matter.\nThe authors gratefully acknowledge the\ncomputing time and support provided to them on the high-performance computer Noctua 2 at the NHR Center\nPC2 under the project name: hpc-prf-cfpd. These are funded by the Federal Ministry of Education\nand Research and the state governments participating on the basis of the resolutions of the GWK\nfor the national high-performance computing at universities (www.nhr-verein.de/unsere-partner).\nNumerical calculations have also been performed on the\nGPU-cluster at Bielefeld University, Germany. We thank the Bielefeld HPC.NRW team for their support."
     },
     {
       "self_ref": "#/texts/60",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "All computations in this work were performed using SIMULATeQCD code [HotQCD:2023ghu]. All the HRG calculations were performed using the AnalysisToolbox code developed by the HotQCD Collaboration [Clarke:2023sfy].",
-      "text": "All computations in this work were performed using SIMULATeQCD code [HotQCD:2023ghu]. All the HRG calculations were performed using the AnalysisToolbox code developed by the HotQCD Collaboration [Clarke:2023sfy].",
-      "formatting": null,
-      "hyperlink": null
+      "text": "All computations in this work were performed using SIMULATeQCD code [HotQCD:2023ghu]. All the HRG calculations were performed using the AnalysisToolbox code developed by the HotQCD Collaboration [Clarke:2023sfy]."
     },
     {
       "self_ref": "#/texts/61",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "cas-model2-names",
-      "text": "cas-model2-names",
-      "formatting": null,
-      "hyperlink": null
+      "text": "cas-model2-names"
     },
     {
       "self_ref": "#/texts/62",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "refs",
-      "text": "refs",
-      "formatting": null,
-      "hyperlink": null
+      "text": "refs"
     }
   ],
   "pictures": [
     {
       "self_ref": "#/pictures/0",
       "parent": {
-        "cref": "#/groups/0"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "picture",
       "prov": [],
       "captions": [
         {
-          "cref": "#/texts/26"
+          "$ref": "#/texts/26"
         }
       ],
       "references": [],
@@ -1265,16 +1067,15 @@
     {
       "self_ref": "#/pictures/1",
       "parent": {
-        "cref": "#/groups/0"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "picture",
       "prov": [],
       "captions": [
         {
-          "cref": "#/texts/27"
+          "$ref": "#/texts/27"
         }
       ],
       "references": [],
@@ -1293,16 +1094,15 @@
     {
       "self_ref": "#/pictures/2",
       "parent": {
-        "cref": "#/groups/1"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "picture",
       "prov": [],
       "captions": [
         {
-          "cref": "#/texts/39"
+          "$ref": "#/texts/39"
         }
       ],
       "references": [],
@@ -1321,16 +1121,15 @@
     {
       "self_ref": "#/pictures/3",
       "parent": {
-        "cref": "#/groups/1"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "picture",
       "prov": [],
       "captions": [
         {
-          "cref": "#/texts/40"
+          "$ref": "#/texts/40"
         }
       ],
       "references": [],
@@ -1349,16 +1148,15 @@
     {
       "self_ref": "#/pictures/4",
       "parent": {
-        "cref": "#/groups/2"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "picture",
       "prov": [],
       "captions": [
         {
-          "cref": "#/texts/49"
+          "$ref": "#/texts/49"
         }
       ],
       "references": [],
@@ -1377,16 +1175,15 @@
     {
       "self_ref": "#/pictures/5",
       "parent": {
-        "cref": "#/groups/2"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "picture",
       "prov": [],
       "captions": [
         {
-          "cref": "#/texts/50"
+          "$ref": "#/texts/50"
         }
       ],
       "references": [],

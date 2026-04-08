@@ -2,80 +2,68 @@
   "schema_name": "DoclingDocument",
   "version": "1.10.0",
   "name": "main",
-  "origin": null,
   "furniture": {
     "self_ref": "#/furniture",
-    "parent": null,
     "children": [],
     "content_layer": "furniture",
-    "meta": null,
     "name": "_root_",
     "label": "unspecified"
   },
   "body": {
     "self_ref": "#/body",
-    "parent": null,
     "children": [
       {
-        "cref": "#/texts/0"
+        "$ref": "#/texts/0"
       },
       {
-        "cref": "#/texts/1"
+        "$ref": "#/texts/1"
       },
       {
-<<<<<<< HEAD
         "$ref": "#/pictures/0"
       },
       {
         "$ref": "#/texts/2"
-=======
-        "cref": "#/texts/2"
       },
       {
-        "cref": "#/pictures/0"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+        "$ref": "#/texts/3"
       },
       {
-        "cref": "#/texts/3"
+        "$ref": "#/texts/4"
       },
       {
-        "cref": "#/texts/4"
+        "$ref": "#/texts/5"
       },
       {
-        "cref": "#/texts/5"
+        "$ref": "#/texts/6"
       },
       {
-        "cref": "#/texts/6"
+        "$ref": "#/texts/7"
       },
       {
-        "cref": "#/texts/7"
+        "$ref": "#/texts/8"
       },
       {
-        "cref": "#/texts/8"
+        "$ref": "#/texts/9"
       },
       {
-        "cref": "#/texts/9"
+        "$ref": "#/texts/10"
       },
       {
-        "cref": "#/texts/10"
+        "$ref": "#/texts/11"
       },
       {
-        "cref": "#/texts/11"
+        "$ref": "#/texts/12"
       },
       {
-        "cref": "#/texts/12"
+        "$ref": "#/texts/13"
       },
       {
-        "cref": "#/texts/13"
+        "$ref": "#/texts/14"
       },
       {
-        "cref": "#/texts/14"
+        "$ref": "#/texts/15"
       },
       {
-        "cref": "#/texts/15"
-      },
-      {
-<<<<<<< HEAD
         "$ref": "#/groups/0"
       },
       {
@@ -83,50 +71,29 @@
       },
       {
         "$ref": "#/texts/18"
-=======
-        "cref": "#/texts/16"
       },
       {
-        "cref": "#/groups/0"
+        "$ref": "#/tables/0"
       },
       {
-        "cref": "#/texts/17"
-      },
-      {
-        "cref": "#/texts/19"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
-      },
-      {
-        "cref": "#/tables/0"
-      },
-      {
-<<<<<<< HEAD
         "$ref": "#/texts/19"
       },
       {
         "$ref": "#/texts/20"
-=======
-        "cref": "#/texts/20"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
       },
       {
-        "cref": "#/texts/21"
+        "$ref": "#/texts/21"
       },
       {
-        "cref": "#/texts/22"
+        "$ref": "#/texts/22"
       },
       {
-<<<<<<< HEAD
         "$ref": "#/groups/1"
-=======
-        "cref": "#/texts/23"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
       },
       {
-        "cref": "#/texts/24"
+        "$ref": "#/texts/24"
       },
       {
-<<<<<<< HEAD
         "$ref": "#/texts/26"
       },
       {
@@ -142,37 +109,12 @@
         "$ref": "#/texts/30"
       },
       {
-        "$ref": "#/texts/31"
-=======
-        "cref": "#/groups/1"
+        "$ref": "#/groups/3"
       },
       {
-        "cref": "#/texts/26"
+        "$ref": "#/texts/37"
       },
       {
-        "cref": "#/texts/28"
-      },
-      {
-        "cref": "#/groups/2"
-      },
-      {
-        "cref": "#/texts/29"
-      },
-      {
-        "cref": "#/texts/32"
-      },
-      {
-        "cref": "#/texts/33"
-      },
-      {
-        "cref": "#/groups/3"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
-      },
-      {
-        "cref": "#/texts/40"
-      },
-      {
-<<<<<<< HEAD
         "$ref": "#/texts/38"
       },
       {
@@ -183,215 +125,117 @@
       },
       {
         "$ref": "#/texts/41"
-=======
-        "cref": "#/texts/41"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
       },
       {
-        "cref": "#/texts/42"
-      },
-      {
-        "cref": "#/texts/43"
-      },
-      {
-<<<<<<< HEAD
         "$ref": "#/groups/4"
+      },
+      {
+        "$ref": "#/texts/42"
+      },
+      {
+        "$ref": "#/tables/1"
       },
       {
         "$ref": "#/texts/44"
       },
       {
-        "$ref": "#/tables/1"
-=======
-        "cref": "#/texts/44"
-      },
-      {
-        "cref": "#/groups/4"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
-      },
-      {
-        "cref": "#/texts/45"
-      },
-      {
-<<<<<<< HEAD
         "$ref": "#/groups/5"
-=======
-        "cref": "#/texts/47"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
       },
       {
-        "cref": "#/tables/1"
+        "$ref": "#/texts/45"
       },
       {
-        "cref": "#/texts/48"
+        "$ref": "#/texts/47"
       },
       {
-<<<<<<< HEAD
         "$ref": "#/tables/2"
-=======
-        "cref": "#/texts/49"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
       },
       {
-        "cref": "#/groups/5"
+        "$ref": "#/texts/48"
       },
       {
-        "cref": "#/texts/50"
+        "$ref": "#/texts/49"
       },
       {
-<<<<<<< HEAD
+        "$ref": "#/texts/50"
+      },
+      {
+        "$ref": "#/texts/51"
+      },
+      {
         "$ref": "#/texts/52"
       },
       {
         "$ref": "#/texts/53"
-=======
-        "cref": "#/texts/52"
       },
       {
-        "cref": "#/texts/53"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+        "$ref": "#/texts/54"
       },
       {
-        "cref": "#/tables/2"
+        "$ref": "#/texts/55"
       },
       {
-        "cref": "#/texts/54"
-      },
-      {
-<<<<<<< HEAD
         "$ref": "#/texts/56"
-=======
-        "cref": "#/texts/55"
       },
       {
-        "cref": "#/texts/56"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+        "$ref": "#/texts/57"
       },
       {
-        "cref": "#/texts/57"
-      },
-      {
-        "cref": "#/texts/58"
-      },
-      {
-        "cref": "#/texts/59"
-      },
-      {
-        "cref": "#/texts/60"
-      },
-      {
-        "cref": "#/texts/61"
-      },
-      {
-<<<<<<< HEAD
         "$ref": "#/tables/3"
       },
       {
-        "$ref": "#/texts/62"
-=======
-        "cref": "#/texts/62"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+        "$ref": "#/texts/58"
       },
       {
-        "cref": "#/texts/63"
+        "$ref": "#/texts/59"
       },
       {
-        "cref": "#/texts/64"
+        "$ref": "#/texts/60"
       },
       {
-<<<<<<< HEAD
         "$ref": "#/tables/4"
       },
       {
+        "$ref": "#/texts/61"
+      },
+      {
+        "$ref": "#/texts/62"
+      },
+      {
+        "$ref": "#/texts/63"
+      },
+      {
+        "$ref": "#/texts/64"
+      },
+      {
         "$ref": "#/texts/65"
-=======
-        "cref": "#/texts/65"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
       },
       {
-        "cref": "#/texts/66"
+        "$ref": "#/texts/66"
       },
       {
-        "cref": "#/tables/3"
+        "$ref": "#/texts/67"
       },
       {
-        "cref": "#/texts/67"
+        "$ref": "#/texts/68"
       },
       {
-        "cref": "#/texts/68"
+        "$ref": "#/texts/69"
       },
       {
-        "cref": "#/texts/69"
-      },
-      {
-<<<<<<< HEAD
-        "$ref": "#/texts/71"
-=======
-        "cref": "#/texts/70"
-      },
-      {
-        "cref": "#/tables/4"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
-      },
-      {
-        "cref": "#/texts/71"
-      },
-      {
-        "cref": "#/texts/72"
-      },
-      {
-        "cref": "#/texts/73"
-      },
-      {
-<<<<<<< HEAD
         "$ref": "#/groups/6"
-=======
-        "cref": "#/texts/74"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
       },
       {
-        "cref": "#/texts/75"
+        "$ref": "#/texts/70"
       },
       {
-<<<<<<< HEAD
-        "$ref": "#/texts/77"
+        "$ref": "#/texts/72"
       },
       {
-        "$ref": "#/texts/78"
-=======
-        "cref": "#/texts/76"
-      },
-      {
-        "cref": "#/texts/77"
-      },
-      {
-        "cref": "#/texts/78"
-      },
-      {
-        "cref": "#/texts/79"
-      },
-      {
-        "cref": "#/texts/80"
-      },
-      {
-        "cref": "#/texts/81"
-      },
-      {
-        "cref": "#/groups/6"
-      },
-      {
-        "cref": "#/texts/82"
-      },
-      {
-        "cref": "#/texts/85"
-      },
-      {
-        "cref": "#/texts/86"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+        "$ref": "#/texts/73"
       }
     ],
     "content_layer": "body",
-    "meta": null,
     "name": "_root_",
     "label": "unspecified"
   },
@@ -399,87 +243,67 @@
     {
       "self_ref": "#/groups/0",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "cref": "#/pictures/1"
+          "$ref": "#/pictures/1"
         },
         {
-<<<<<<< HEAD
           "$ref": "#/texts/17"
-=======
-          "cref": "#/texts/18"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
         }
       ],
       "content_layer": "body",
-      "meta": null,
       "name": "figure",
       "label": "section"
     },
     {
       "self_ref": "#/groups/1",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [
         {
-<<<<<<< HEAD
           "$ref": "#/texts/23"
-=======
-          "cref": "#/texts/25"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
         },
         {
-          "cref": "#/pictures/2"
+          "$ref": "#/pictures/2"
         },
         {
-<<<<<<< HEAD
           "$ref": "#/texts/25"
-=======
-          "cref": "#/texts/27"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
         }
       ],
       "content_layer": "body",
-      "meta": null,
       "name": "figure",
       "label": "section"
     },
     {
       "self_ref": "#/groups/2",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "cref": "#/pictures/3"
+          "$ref": "#/pictures/3"
         },
         {
-<<<<<<< HEAD
           "$ref": "#/texts/28"
-=======
-          "cref": "#/texts/30"
-        },
-        {
-          "cref": "#/texts/31"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
         }
       ],
       "content_layer": "body",
-      "meta": null,
       "name": "figure",
       "label": "section"
     },
     {
       "self_ref": "#/groups/3",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [
         {
-<<<<<<< HEAD
+          "$ref": "#/texts/31"
+        },
+        {
           "$ref": "#/texts/32"
         },
         {
@@ -490,101 +314,63 @@
         },
         {
           "$ref": "#/texts/35"
-=======
-          "cref": "#/texts/34"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
         },
         {
-          "cref": "#/texts/35"
-        },
-        {
-<<<<<<< HEAD
-          "$ref": "#/texts/37"
-=======
-          "cref": "#/texts/36"
-        },
-        {
-          "cref": "#/texts/37"
-        },
-        {
-          "cref": "#/texts/38"
-        },
-        {
-          "cref": "#/texts/39"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+          "$ref": "#/texts/36"
         }
       ],
       "content_layer": "body",
-      "meta": null,
       "name": "list",
       "label": "list"
     },
     {
       "self_ref": "#/groups/4",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "cref": "#/pictures/4"
+          "$ref": "#/pictures/4"
         },
         {
-<<<<<<< HEAD
-          "$ref": "#/texts/45"
-=======
-          "cref": "#/texts/46"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+          "$ref": "#/texts/43"
         }
       ],
       "content_layer": "body",
-      "meta": null,
       "name": "figure",
       "label": "section"
     },
     {
       "self_ref": "#/groups/5",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "cref": "#/pictures/5"
+          "$ref": "#/pictures/5"
         },
         {
-<<<<<<< HEAD
-          "$ref": "#/texts/48"
-=======
-          "cref": "#/texts/51"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+          "$ref": "#/texts/46"
         }
       ],
       "content_layer": "body",
-      "meta": null,
       "name": "figure",
       "label": "section"
     },
     {
       "self_ref": "#/groups/6",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "cref": "#/pictures/6"
+          "$ref": "#/pictures/6"
         },
         {
-<<<<<<< HEAD
-          "$ref": "#/texts/76"
-=======
-          "cref": "#/texts/83"
-        },
-        {
-          "cref": "#/texts/84"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+          "$ref": "#/texts/71"
         }
       ],
       "content_layer": "body",
-      "meta": null,
       "name": "figure",
       "label": "section"
     }
@@ -593,924 +379,622 @@
     {
       "self_ref": "#/texts/0",
       "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "Albert Q. Jiang, Alexandre Sablayrolles, Arthur Mensch, Chris Bamford, \n\nDevendra Singh Chaplot, Diego de las Casas, Florian Bressand, Gianna Lengyel,\n\nGuillaume Lample, Lucile Saulnier, Lélio Renard Lavaud, Marie-Anne Lachaux, \n\nPierre Stock, Teven Le Scao, Thibaut Lavril, Thomas Wang, Timothée Lacroix,\n\nWilliam El Sayed",
-      "text": "Albert Q. Jiang, Alexandre Sablayrolles, Arthur Mensch, Chris Bamford, \n\nDevendra Singh Chaplot, Diego de las Casas, Florian Bressand, Gianna Lengyel,\n\nGuillaume Lample, Lucile Saulnier, Lélio Renard Lavaud, Marie-Anne Lachaux, \n\nPierre Stock, Teven Le Scao, Thibaut Lavril, Thomas Wang, Timothée Lacroix,\n\nWilliam El Sayed",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/1",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-<<<<<<< HEAD
-=======
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "-30pt",
-      "text": "-30pt",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/2",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
-      "label": "caption",
-      "prov": [],
-      "orig": "Image: images/header.jpeg",
-      "text": "Image: images/header.jpeg",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/2",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "section_header",
-      "prov": [],
-      "orig": "Abstract",
-      "text": "Abstract",
-      "formatting": null,
-      "hyperlink": null,
-      "level": 1
-    },
-    {
-      "self_ref": "#/texts/3",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "We introduce , a 7billion-parameter language model engineered for superior performance and efficiency.\noutperforms the best open 13B model (Llama 2) across all evaluated benchmarks, and the best released 34B model (Llama 1) in reasoning, mathematics, and code generation.\nOur model leverages grouped-query attention (GQA) for faster inference, coupled with sliding window attention (SWA) to effectively handle sequences of arbitrary length with a reduced inference cost.\nWe also provide a model fine-tuned to follow instructions, , that surpasses 213Bchat model both on human and automated benchmarks.\nOur models are released under the Apache 2.0 license.\nCode: https://github.com/mistralai/mistral-src \nWebpage: https://mistral.ai/news/announcing-mistral-7b/",
-      "text": "We introduce , a 7billion-parameter language model engineered for superior performance and efficiency.\noutperforms the best open 13B model (Llama 2) across all evaluated benchmarks, and the best released 34B model (Llama 1) in reasoning, mathematics, and code generation.\nOur model leverages grouped-query attention (GQA) for faster inference, coupled with sliding window attention (SWA) to effectively handle sequences of arbitrary length with a reduced inference cost.\nWe also provide a model fine-tuned to follow instructions, , that surpasses 213Bchat model both on human and automated benchmarks.\nOur models are released under the Apache 2.0 license.\nCode: https://github.com/mistralai/mistral-src \nWebpage: https://mistral.ai/news/announcing-mistral-7b/",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/4",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "section_header",
-      "prov": [],
-      "orig": "Introduction",
-      "text": "Introduction",
-      "formatting": null,
-      "hyperlink": null,
-      "level": 1
-    },
-    {
-      "self_ref": "#/texts/5",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "=-1 In the rapidly evolving domain of Natural Language Processing (NLP), the race towards higher model performance often necessitates an escalation in model size.\nHowever, this scaling tends to increase computational costs and inference latency, thereby raising barriers to deployment in practical, real-world scenarios.\nIn this context, the search for balanced models delivering both high-level performance and efficiency becomes critically essential.\nOur model, , demonstrates that a carefully designed language model can deliver high performance while maintaining an efficient inference.\noutperforms the previous best 13B model (Llama 2, [touvron2023llama2]) across all tested benchmarks, and surpasses the best 34B model (LLaMa 34B,[touvron2023llama]) in mathematics and code generation.\nFurthermore, approaches the coding performance of Code-7B[roziere2023code], without sacrificing performance on non-code related benchmarks.",
-      "text": "=-1 In the rapidly evolving domain of Natural Language Processing (NLP), the race towards higher model performance often necessitates an escalation in model size.\nHowever, this scaling tends to increase computational costs and inference latency, thereby raising barriers to deployment in practical, real-world scenarios.\nIn this context, the search for balanced models delivering both high-level performance and efficiency becomes critically essential.\nOur model, , demonstrates that a carefully designed language model can deliver high performance while maintaining an efficient inference.\noutperforms the previous best 13B model (Llama 2, [touvron2023llama2]) across all tested benchmarks, and surpasses the best 34B model (LLaMa 34B,[touvron2023llama]) in mathematics and code generation.\nFurthermore, approaches the coding performance of Code-7B[roziere2023code], without sacrificing performance on non-code related benchmarks.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/6",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "leverages grouped-query attention (GQA)[ainslie2023gqa], and sliding window attention (SWA)[child2019generating,beltagy2020longformer]. GQA significantly accelerates the inference speed, and also reduces the memory requirement during decoding, allowing for higher batch sizes hence higher throughput, a crucial factor for real-time applications.\nIn addition, SWA is designed to handle longer sequences more effectively at a reduced computational cost, thereby alleviating a common limitation in LLMs. These attention mechanisms collectively contribute to the enhanced performance and efficiency of .",
-      "text": "leverages grouped-query attention (GQA)[ainslie2023gqa], and sliding window attention (SWA)[child2019generating,beltagy2020longformer]. GQA significantly accelerates the inference speed, and also reduces the memory requirement during decoding, allowing for higher batch sizes hence higher throughput, a crucial factor for real-time applications.\nIn addition, SWA is designed to handle longer sequences more effectively at a reduced computational cost, thereby alleviating a common limitation in LLMs. These attention mechanisms collectively contribute to the enhanced performance and efficiency of .",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/7",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "is released under the Apache 2.0 license.\nThis release is accompanied by a reference implementation",
-      "text": "is released under the Apache 2.0 license.\nThis release is accompanied by a reference implementation",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/8",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "footnote",
-      "prov": [],
-      "orig": "https://github.com/mistralai/mistral-src",
-      "text": "https://github.com/mistralai/mistral-src",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/9",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "facilitating easy deployment either locally or on cloud platforms such as AWS, GCP, or Azure using the vLLM[kwon2023efficient] inference server and SkyPilot",
-      "text": "facilitating easy deployment either locally or on cloud platforms such as AWS, GCP, or Azure using the vLLM[kwon2023efficient] inference server and SkyPilot",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/10",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "footnote",
-      "prov": [],
-      "orig": "https://github.com/skypilot-org/skypilot",
-      "text": "https://github.com/skypilot-org/skypilot",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/11",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": ".\nIntegration with Hugging Face",
-      "text": ".\nIntegration with Hugging Face",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/12",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "footnote",
-      "prov": [],
-      "orig": "https://huggingface.co/mistralai",
-      "text": "https://huggingface.co/mistralai",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/13",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "is also streamlined for easier integration.\nMoreover, is crafted for ease of fine-tuning across a myriad of tasks.\nAs a demonstration of its adaptability and superior performance, we present a chat model fine-tuned from that significantly outperforms the 2 13B Chat model.",
-      "text": "is also streamlined for easier integration.\nMoreover, is crafted for ease of fine-tuning across a myriad of tasks.\nAs a demonstration of its adaptability and superior performance, we present a chat model fine-tuned from that significantly outperforms the 2 13B Chat model.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/14",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "=-1 takes a significant step in balancing the goals of getting high performance while keeping large language models efficient.\nThrough our work, our aim is to help the community create more affordable, efficient, and high-performing language models that can be used in a wide range of real-world applications.",
-      "text": "=-1 takes a significant step in balancing the goals of getting high performance while keeping large language models efficient.\nThrough our work, our aim is to help the community create more affordable, efficient, and high-performing language models that can be used in a wide range of real-world applications.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/15",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "section_header",
-      "prov": [],
-      "orig": "Architectural details",
-      "text": "Architectural details",
-      "formatting": null,
-      "hyperlink": null,
-      "level": 1
-    },
-    {
-      "self_ref": "#/texts/16",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "caption",
-      "prov": [],
-      "orig": "Image: images/swa.pdf",
-      "text": "Image: images/swa.pdf",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/17",
-      "parent": {
-        "cref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "Sliding Window Attention. The number of operations in vanilla attention is quadratic in the sequence length, and the memory increases linearly with the number of tokens. At inference time, this incurs higher latency and smaller throughput due to reduced cache availability. To alleviate this issue, we use sliding window attention: each token can attend to at most $W$ tokens from the previous layer (here, $W=3$). Note that tokens outside the sliding window still influence next word prediction. At each attention layer, information can move forward by $W$ tokens. Hence, after $k$ attention layers, information can move forward by up to $k \\times W$ tokens.",
-      "text": "Sliding Window Attention. The number of operations in vanilla attention is quadratic in the sequence length, and the memory increases linearly with the number of tokens. At inference time, this incurs higher latency and smaller throughput due to reduced cache availability. To alleviate this issue, we use sliding window attention: each token can attend to at most $W$ tokens from the previous layer (here, $W=3$). Note that tokens outside the sliding window still influence next word prediction. At each attention layer, information can move forward by $W$ tokens. Hence, after $k$ attention layers, information can move forward by up to $k \\times W$ tokens.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/18",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-<<<<<<< HEAD
-      "orig": "r0.275",
-      "text": "r0.275"
-=======
-      "orig": "r0.275\n-15pt",
-      "text": "r0.275\n-15pt",
-      "formatting": null,
-      "hyperlink": null
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
-    },
-    {
-      "self_ref": "#/texts/19",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "tableModel architecture.",
-      "text": "tableModel architecture.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-<<<<<<< HEAD
-      "self_ref": "#/texts/20",
-=======
-      "self_ref": "#/texts/21",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "-8pt",
-      "text": "-8pt",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/22",
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "is based on a transformer architecture[vaswani2017attention]. The main parameters of the architecture are summarized in Table[tab:param]. Compared to , it introduces a few changes that we summarize below.",
-      "text": "is based on a transformer architecture[vaswani2017attention]. The main parameters of the architecture are summarized in Table[tab:param]. Compared to , it introduces a few changes that we summarize below.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/21",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "=-1 Sliding Window Attention. SWA exploits the stacked layers of a transformer to attend information beyond the window size $W$.\nThe hidden state in position $i$ of the layer $k$, $h_i$, attends to all hidden states from the previous layer with positions between $i-W$ and $i$.\nRecursively, $h_i$ can access tokens from the input layer at a distance of up to $W \\times k$ tokens, as illustrated in Figure[fig:swa].\nAt the last layer, using a window size of $W=4096$, we have a theoretical attention span of approximately $131K$ tokens.\nIn practice, for a sequence length of 16K and $W=4096$, changes made to FlashAttention[dao2022flashattention] and xFormers[xFormers2022]yield a 2x speed improvement over a vanilla attention baseline.",
-      "text": "=-1 Sliding Window Attention. SWA exploits the stacked layers of a transformer to attend information beyond the window size $W$.\nThe hidden state in position $i$ of the layer $k$, $h_i$, attends to all hidden states from the previous layer with positions between $i-W$ and $i$.\nRecursively, $h_i$ can access tokens from the input layer at a distance of up to $W \\times k$ tokens, as illustrated in Figure[fig:swa].\nAt the last layer, using a window size of $W=4096$, we have a theoretical attention span of approximately $131K$ tokens.\nIn practice, for a sequence length of 16K and $W=4096$, changes made to FlashAttention[dao2022flashattention] and xFormers[xFormers2022]yield a 2x speed improvement over a vanilla attention baseline.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/22",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "=-1 Rolling Buffer Cache. A fixed attention span means that we can limit our cache size using a rolling buffer cache.\nThe cache has a fixed size of $W$, and the keys and values for the timestep $i$ are stored in position $i \\bmod W$ of the cache. As a result, when the position $i$ is larger than $W$, past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure[fig:cache] for $W=3$.\nOn a sequence length of 32k tokens, this reduces the cache memory usage by 8x, without impacting the model quality.",
-      "text": "=-1 Rolling Buffer Cache. A fixed attention span means that we can limit our cache size using a rolling buffer cache.\nThe cache has a fixed size of $W$, and the keys and values for the timestep $i$ are stored in position $i \\bmod W$ of the cache. As a result, when the position $i$ is larger than $W$, past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure[fig:cache] for $W=3$.\nOn a sequence length of 32k tokens, this reduces the cache memory usage by 8x, without impacting the model quality.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/23",
-      "parent": {
-        "cref": "#/groups/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "[][c]",
-      "text": "[][c]",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/24",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "caption",
-      "prov": [],
-      "orig": "Image: images/rolling_buffer.pdf",
-      "text": "Image: images/rolling_buffer.pdf",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/25",
-      "parent": {
-        "cref": "#/groups/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "Rolling buffer cache. The cache has a fixed size of $W=4$. Keys and values for position $i$ are stored in position $i \\bmod W$ of the cache. When the position $i$ is larger than $W$, past values in the cache are overwritten.\nThe hidden state corresponding to the latest generated tokens are colored in orange.",
-      "text": "Rolling buffer cache. The cache has a fixed size of $W=4$. Keys and values for position $i$ are stored in position $i \\bmod W$ of the cache. When the position $i$ is larger than $W$, past values in the cache are overwritten.\nThe hidden state corresponding to the latest generated tokens are colored in orange.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/26",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "=-1 Pre-fill and Chunking. When generating a sequence, we need to predict tokens one-by-one, as each token is conditioned on the previous ones. However, the prompt is known in advance, and we can pre-fill the ($k$, $v$) cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. \nFor each chunk, we thus need to compute the attention over the cache and over the chunk. \nFigure[fig:chunking]shows how the attention mask works over both the cache and the chunk.",
-      "text": "=-1 Pre-fill and Chunking. When generating a sequence, we need to predict tokens one-by-one, as each token is conditioned on the previous ones. However, the prompt is known in advance, and we can pre-fill the ($k$, $v$) cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. \nFor each chunk, we thus need to compute the attention over the cache and over the chunk. \nFigure[fig:chunking]shows how the attention mask works over both the cache and the chunk.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/27",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "caption",
-      "prov": [],
-      "orig": "Image: images/chunking.pdf",
-      "text": "Image: images/chunking.pdf",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/28",
-      "parent": {
-        "cref": "#/groups/2"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "Pre-fill and chunking.\nDuring pre-fill of the cache, long sequences are chunked to limit memory usage.\nWe process a sequence in three chunks, The cat sat on, the mat and saw, the dog go to. \nThe figure shows what happens for the third chunk (the dog go to): it attends itself using a causal mask (rightmost block), attends the cache using a sliding window (center block), and does not attend to past tokens as they are outside of the sliding window (left block).",
-      "text": "Pre-fill and chunking.\nDuring pre-fill of the cache, long sequences are chunked to limit memory usage.\nWe process a sequence in three chunks, The cat sat on, the mat and saw, the dog go to. \nThe figure shows what happens for the third chunk (the dog go to): it attends itself using a causal mask (rightmost block), attends the cache using a sliding window (center block), and does not attend to past tokens as they are outside of the sliding window (left block).",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-<<<<<<< HEAD
-      "self_ref": "#/texts/29",
-=======
-      "self_ref": "#/texts/31",
-      "parent": {
-        "cref": "#/groups/2"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "0.1in",
-      "text": "0.1in",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/32",
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "section_header",
-      "prov": [],
-      "orig": "Results",
-      "text": "Results",
-      "formatting": null,
-      "hyperlink": null,
-      "level": 1
-    },
-    {
-      "self_ref": "#/texts/30",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "We compare to , and re-run all benchmarks with our own evaluation pipeline for fair comparison.\nWe measure performance on a wide variety of tasks categorized as follow:",
-      "text": "We compare to , and re-run all benchmarks with our own evaluation pipeline for fair comparison.\nWe measure performance on a wide variety of tasks categorized as follow:",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/31",
-      "parent": {
-<<<<<<< HEAD
         "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "to , and re-run all benchmarks with our own evaluation pipeline for fair comparison.\nWe measure performance on a wide variety of tasks categorized as follow:",
-      "text": "to , and re-run all benchmarks with our own evaluation pipeline for fair comparison.\nWe measure performance on a wide variety of tasks categorized as follow:"
+      "orig": "Albert Q. Jiang, Alexandre Sablayrolles, Arthur Mensch, Chris Bamford, \n\nDevendra Singh Chaplot, Diego de las Casas, Florian Bressand, Gianna Lengyel,\n\nGuillaume Lample, Lucile Saulnier, Lélio Renard Lavaud, Marie-Anne Lachaux, \n\nPierre Stock, Teven Le Scao, Thibaut Lavril, Thomas Wang, Timothée Lacroix,\n\nWilliam El Sayed",
+      "text": "Albert Q. Jiang, Alexandre Sablayrolles, Arthur Mensch, Chris Bamford, \n\nDevendra Singh Chaplot, Diego de las Casas, Florian Bressand, Gianna Lengyel,\n\nGuillaume Lample, Lucile Saulnier, Lélio Renard Lavaud, Marie-Anne Lachaux, \n\nPierre Stock, Teven Le Scao, Thibaut Lavril, Thomas Wang, Timothée Lacroix,\n\nWilliam El Sayed"
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "caption",
+      "prov": [],
+      "orig": "Image: images/header.jpeg",
+      "text": "Image: images/header.jpeg"
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Abstract",
+      "text": "Abstract",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "We introduce , a 7billion-parameter language model engineered for superior performance and efficiency.\noutperforms the best open 13B model (Llama 2) across all evaluated benchmarks, and the best released 34B model (Llama 1) in reasoning, mathematics, and code generation.\nOur model leverages grouped-query attention (GQA) for faster inference, coupled with sliding window attention (SWA) to effectively handle sequences of arbitrary length with a reduced inference cost.\nWe also provide a model fine-tuned to follow instructions, , that surpasses 213Bchat model both on human and automated benchmarks.\nOur models are released under the Apache 2.0 license.\nCode: https://github.com/mistralai/mistral-src \nWebpage: https://mistral.ai/news/announcing-mistral-7b/",
+      "text": "We introduce , a 7billion-parameter language model engineered for superior performance and efficiency.\noutperforms the best open 13B model (Llama 2) across all evaluated benchmarks, and the best released 34B model (Llama 1) in reasoning, mathematics, and code generation.\nOur model leverages grouped-query attention (GQA) for faster inference, coupled with sliding window attention (SWA) to effectively handle sequences of arbitrary length with a reduced inference cost.\nWe also provide a model fine-tuned to follow instructions, , that surpasses 213Bchat model both on human and automated benchmarks.\nOur models are released under the Apache 2.0 license.\nCode: https://github.com/mistralai/mistral-src \nWebpage: https://mistral.ai/news/announcing-mistral-7b/"
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Introduction",
+      "text": "Introduction",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "=-1 In the rapidly evolving domain of Natural Language Processing (NLP), the race towards higher model performance often necessitates an escalation in model size.\nHowever, this scaling tends to increase computational costs and inference latency, thereby raising barriers to deployment in practical, real-world scenarios.\nIn this context, the search for balanced models delivering both high-level performance and efficiency becomes critically essential.\nOur model, , demonstrates that a carefully designed language model can deliver high performance while maintaining an efficient inference.\noutperforms the previous best 13B model (Llama 2, [touvron2023llama2]) across all tested benchmarks, and surpasses the best 34B model (LLaMa 34B,[touvron2023llama]) in mathematics and code generation.\nFurthermore, approaches the coding performance of Code-7B[roziere2023code], without sacrificing performance on non-code related benchmarks.",
+      "text": "=-1 In the rapidly evolving domain of Natural Language Processing (NLP), the race towards higher model performance often necessitates an escalation in model size.\nHowever, this scaling tends to increase computational costs and inference latency, thereby raising barriers to deployment in practical, real-world scenarios.\nIn this context, the search for balanced models delivering both high-level performance and efficiency becomes critically essential.\nOur model, , demonstrates that a carefully designed language model can deliver high performance while maintaining an efficient inference.\noutperforms the previous best 13B model (Llama 2, [touvron2023llama2]) across all tested benchmarks, and surpasses the best 34B model (LLaMa 34B,[touvron2023llama]) in mathematics and code generation.\nFurthermore, approaches the coding performance of Code-7B[roziere2023code], without sacrificing performance on non-code related benchmarks."
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "leverages grouped-query attention (GQA)[ainslie2023gqa], and sliding window attention (SWA)[child2019generating,beltagy2020longformer]. GQA significantly accelerates the inference speed, and also reduces the memory requirement during decoding, allowing for higher batch sizes hence higher throughput, a crucial factor for real-time applications.\nIn addition, SWA is designed to handle longer sequences more effectively at a reduced computational cost, thereby alleviating a common limitation in LLMs. These attention mechanisms collectively contribute to the enhanced performance and efficiency of .",
+      "text": "leverages grouped-query attention (GQA)[ainslie2023gqa], and sliding window attention (SWA)[child2019generating,beltagy2020longformer]. GQA significantly accelerates the inference speed, and also reduces the memory requirement during decoding, allowing for higher batch sizes hence higher throughput, a crucial factor for real-time applications.\nIn addition, SWA is designed to handle longer sequences more effectively at a reduced computational cost, thereby alleviating a common limitation in LLMs. These attention mechanisms collectively contribute to the enhanced performance and efficiency of ."
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "is released under the Apache 2.0 license.\nThis release is accompanied by a reference implementation",
+      "text": "is released under the Apache 2.0 license.\nThis release is accompanied by a reference implementation"
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [],
+      "orig": "https://github.com/mistralai/mistral-src",
+      "text": "https://github.com/mistralai/mistral-src"
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "facilitating easy deployment either locally or on cloud platforms such as AWS, GCP, or Azure using the vLLM[kwon2023efficient] inference server and SkyPilot",
+      "text": "facilitating easy deployment either locally or on cloud platforms such as AWS, GCP, or Azure using the vLLM[kwon2023efficient] inference server and SkyPilot"
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [],
+      "orig": "https://github.com/skypilot-org/skypilot",
+      "text": "https://github.com/skypilot-org/skypilot"
+    },
+    {
+      "self_ref": "#/texts/11",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ".\nIntegration with Hugging Face",
+      "text": ".\nIntegration with Hugging Face"
+    },
+    {
+      "self_ref": "#/texts/12",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [],
+      "orig": "https://huggingface.co/mistralai",
+      "text": "https://huggingface.co/mistralai"
+    },
+    {
+      "self_ref": "#/texts/13",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "is also streamlined for easier integration.\nMoreover, is crafted for ease of fine-tuning across a myriad of tasks.\nAs a demonstration of its adaptability and superior performance, we present a chat model fine-tuned from that significantly outperforms the 2 13B Chat model.",
+      "text": "is also streamlined for easier integration.\nMoreover, is crafted for ease of fine-tuning across a myriad of tasks.\nAs a demonstration of its adaptability and superior performance, we present a chat model fine-tuned from that significantly outperforms the 2 13B Chat model."
+    },
+    {
+      "self_ref": "#/texts/14",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "=-1 takes a significant step in balancing the goals of getting high performance while keeping large language models efficient.\nThrough our work, our aim is to help the community create more affordable, efficient, and high-performing language models that can be used in a wide range of real-world applications.",
+      "text": "=-1 takes a significant step in balancing the goals of getting high performance while keeping large language models efficient.\nThrough our work, our aim is to help the community create more affordable, efficient, and high-performing language models that can be used in a wide range of real-world applications."
+    },
+    {
+      "self_ref": "#/texts/15",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Architectural details",
+      "text": "Architectural details",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/16",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "caption",
+      "prov": [],
+      "orig": "Image: images/swa.pdf",
+      "text": "Image: images/swa.pdf"
+    },
+    {
+      "self_ref": "#/texts/17",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Sliding Window Attention. The number of operations in vanilla attention is quadratic in the sequence length, and the memory increases linearly with the number of tokens. At inference time, this incurs higher latency and smaller throughput due to reduced cache availability. To alleviate this issue, we use sliding window attention: each token can attend to at most $W$ tokens from the previous layer (here, $W=3$). Note that tokens outside the sliding window still influence next word prediction. At each attention layer, information can move forward by $W$ tokens. Hence, after $k$ attention layers, information can move forward by up to $k \\times W$ tokens.",
+      "text": "Sliding Window Attention. The number of operations in vanilla attention is quadratic in the sequence length, and the memory increases linearly with the number of tokens. At inference time, this incurs higher latency and smaller throughput due to reduced cache availability. To alleviate this issue, we use sliding window attention: each token can attend to at most $W$ tokens from the previous layer (here, $W=3$). Note that tokens outside the sliding window still influence next word prediction. At each attention layer, information can move forward by $W$ tokens. Hence, after $k$ attention layers, information can move forward by up to $k \\times W$ tokens."
+    },
+    {
+      "self_ref": "#/texts/18",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "r0.275",
+      "text": "r0.275"
+    },
+    {
+      "self_ref": "#/texts/19",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "tableModel architecture.",
+      "text": "tableModel architecture."
+    },
+    {
+      "self_ref": "#/texts/20",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "is based on a transformer architecture[vaswani2017attention]. The main parameters of the architecture are summarized in Table[tab:param]. Compared to , it introduces a few changes that we summarize below.",
+      "text": "is based on a transformer architecture[vaswani2017attention]. The main parameters of the architecture are summarized in Table[tab:param]. Compared to , it introduces a few changes that we summarize below."
+    },
+    {
+      "self_ref": "#/texts/21",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "=-1 Sliding Window Attention. SWA exploits the stacked layers of a transformer to attend information beyond the window size $W$.\nThe hidden state in position $i$ of the layer $k$, $h_i$, attends to all hidden states from the previous layer with positions between $i-W$ and $i$.\nRecursively, $h_i$ can access tokens from the input layer at a distance of up to $W \\times k$ tokens, as illustrated in Figure[fig:swa].\nAt the last layer, using a window size of $W=4096$, we have a theoretical attention span of approximately $131K$ tokens.\nIn practice, for a sequence length of 16K and $W=4096$, changes made to FlashAttention[dao2022flashattention] and xFormers[xFormers2022]yield a 2x speed improvement over a vanilla attention baseline.",
+      "text": "=-1 Sliding Window Attention. SWA exploits the stacked layers of a transformer to attend information beyond the window size $W$.\nThe hidden state in position $i$ of the layer $k$, $h_i$, attends to all hidden states from the previous layer with positions between $i-W$ and $i$.\nRecursively, $h_i$ can access tokens from the input layer at a distance of up to $W \\times k$ tokens, as illustrated in Figure[fig:swa].\nAt the last layer, using a window size of $W=4096$, we have a theoretical attention span of approximately $131K$ tokens.\nIn practice, for a sequence length of 16K and $W=4096$, changes made to FlashAttention[dao2022flashattention] and xFormers[xFormers2022]yield a 2x speed improvement over a vanilla attention baseline."
+    },
+    {
+      "self_ref": "#/texts/22",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "=-1 Rolling Buffer Cache. A fixed attention span means that we can limit our cache size using a rolling buffer cache.\nThe cache has a fixed size of $W$, and the keys and values for the timestep $i$ are stored in position $i \\bmod W$ of the cache. As a result, when the position $i$ is larger than $W$, past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure[fig:cache] for $W=3$.\nOn a sequence length of 32k tokens, this reduces the cache memory usage by 8x, without impacting the model quality.",
+      "text": "=-1 Rolling Buffer Cache. A fixed attention span means that we can limit our cache size using a rolling buffer cache.\nThe cache has a fixed size of $W$, and the keys and values for the timestep $i$ are stored in position $i \\bmod W$ of the cache. As a result, when the position $i$ is larger than $W$, past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure[fig:cache] for $W=3$.\nOn a sequence length of 32k tokens, this reduces the cache memory usage by 8x, without impacting the model quality."
+    },
+    {
+      "self_ref": "#/texts/23",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "[][c]",
+      "text": "[][c]"
+    },
+    {
+      "self_ref": "#/texts/24",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "caption",
+      "prov": [],
+      "orig": "Image: images/rolling_buffer.pdf",
+      "text": "Image: images/rolling_buffer.pdf"
+    },
+    {
+      "self_ref": "#/texts/25",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Rolling buffer cache. The cache has a fixed size of $W=4$. Keys and values for position $i$ are stored in position $i \\bmod W$ of the cache. When the position $i$ is larger than $W$, past values in the cache are overwritten.\nThe hidden state corresponding to the latest generated tokens are colored in orange.",
+      "text": "Rolling buffer cache. The cache has a fixed size of $W=4$. Keys and values for position $i$ are stored in position $i \\bmod W$ of the cache. When the position $i$ is larger than $W$, past values in the cache are overwritten.\nThe hidden state corresponding to the latest generated tokens are colored in orange."
+    },
+    {
+      "self_ref": "#/texts/26",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "=-1 Pre-fill and Chunking. When generating a sequence, we need to predict tokens one-by-one, as each token is conditioned on the previous ones. However, the prompt is known in advance, and we can pre-fill the ($k$, $v$) cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. \nFor each chunk, we thus need to compute the attention over the cache and over the chunk. \nFigure[fig:chunking]shows how the attention mask works over both the cache and the chunk.",
+      "text": "=-1 Pre-fill and Chunking. When generating a sequence, we need to predict tokens one-by-one, as each token is conditioned on the previous ones. However, the prompt is known in advance, and we can pre-fill the ($k$, $v$) cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. \nFor each chunk, we thus need to compute the attention over the cache and over the chunk. \nFigure[fig:chunking]shows how the attention mask works over both the cache and the chunk."
+    },
+    {
+      "self_ref": "#/texts/27",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "caption",
+      "prov": [],
+      "orig": "Image: images/chunking.pdf",
+      "text": "Image: images/chunking.pdf"
+    },
+    {
+      "self_ref": "#/texts/28",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Pre-fill and chunking.\nDuring pre-fill of the cache, long sequences are chunked to limit memory usage.\nWe process a sequence in three chunks, The cat sat on, the mat and saw, the dog go to. \nThe figure shows what happens for the third chunk (the dog go to): it attends itself using a causal mask (rightmost block), attends the cache using a sliding window (center block), and does not attend to past tokens as they are outside of the sliding window (left block).",
+      "text": "Pre-fill and chunking.\nDuring pre-fill of the cache, long sequences are chunked to limit memory usage.\nWe process a sequence in three chunks, The cat sat on, the mat and saw, the dog go to. \nThe figure shows what happens for the third chunk (the dog go to): it attends itself using a causal mask (rightmost block), attends the cache using a sliding window (center block), and does not attend to past tokens as they are outside of the sliding window (left block)."
+    },
+    {
+      "self_ref": "#/texts/29",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Results",
+      "text": "Results",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/30",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "We compare to , and re-run all benchmarks with our own evaluation pipeline for fair comparison.\nWe measure performance on a wide variety of tasks categorized as follow:",
+      "text": "We compare to , and re-run all benchmarks with our own evaluation pipeline for fair comparison.\nWe measure performance on a wide variety of tasks categorized as follow:"
+    },
+    {
+      "self_ref": "#/texts/31",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Commonsense Reasoning (0-shot): Hellaswag[zellers2019hellaswag], Winogrande[sakaguchi2021winogrande], PIQA[bisk2020piqa], SIQA[sap2019socialiqa], OpenbookQA[mihaylov2018can], ARC-Easy, ARC-Challenge[clark2018think], CommonsenseQA[talmor2018commonsenseqa]",
+      "text": "Commonsense Reasoning (0-shot): Hellaswag[zellers2019hellaswag], Winogrande[sakaguchi2021winogrande], PIQA[bisk2020piqa], SIQA[sap2019socialiqa], OpenbookQA[mihaylov2018can], ARC-Easy, ARC-Challenge[clark2018think], CommonsenseQA[talmor2018commonsenseqa]",
+      "enumerated": false,
+      "marker": ""
     },
     {
       "self_ref": "#/texts/32",
       "parent": {
         "$ref": "#/groups/3"
-=======
-        "cref": "#/groups/3"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
-      "label": "list_item",
-      "prov": [],
-      "orig": "Commonsense Reasoning (0-shot): Hellaswag[zellers2019hellaswag], Winogrande[sakaguchi2021winogrande], PIQA[bisk2020piqa], SIQA[sap2019socialiqa], OpenbookQA[mihaylov2018can], ARC-Easy, ARC-Challenge[clark2018think], CommonsenseQA[talmor2018commonsenseqa]",
-      "text": "Commonsense Reasoning (0-shot): Hellaswag[zellers2019hellaswag], Winogrande[sakaguchi2021winogrande], PIQA[bisk2020piqa], SIQA[sap2019socialiqa], OpenbookQA[mihaylov2018can], ARC-Easy, ARC-Challenge[clark2018think], CommonsenseQA[talmor2018commonsenseqa]",
-      "formatting": null,
-      "hyperlink": null,
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/35",
-      "parent": {
-        "cref": "#/groups/3"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
       "label": "list_item",
       "prov": [],
       "orig": "World Knowledge (5-shot): NaturalQuestions[kwiatkowski2019natural], TriviaQA[joshi2017triviaqa]",
       "text": "World Knowledge (5-shot): NaturalQuestions[kwiatkowski2019natural], TriviaQA[joshi2017triviaqa]",
-      "formatting": null,
-      "hyperlink": null,
       "enumerated": false,
       "marker": ""
     },
     {
       "self_ref": "#/texts/33",
       "parent": {
-        "cref": "#/groups/3"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "list_item",
       "prov": [],
       "orig": "Reading Comprehension (0-shot): BoolQ[clark2019boolq], QuAC[choi2018quac]",
       "text": "Reading Comprehension (0-shot): BoolQ[clark2019boolq], QuAC[choi2018quac]",
-      "formatting": null,
-      "hyperlink": null,
       "enumerated": false,
       "marker": ""
     },
     {
       "self_ref": "#/texts/34",
       "parent": {
-        "cref": "#/groups/3"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "list_item",
       "prov": [],
       "orig": "Math: GSM8K[cobbe2021training] (8-shot) with maj@8 and MATH[hendrycks2021measuring] (4-shot) with maj@4",
       "text": "Math: GSM8K[cobbe2021training] (8-shot) with maj@8 and MATH[hendrycks2021measuring] (4-shot) with maj@4",
-      "formatting": null,
-      "hyperlink": null,
       "enumerated": false,
       "marker": ""
     },
     {
       "self_ref": "#/texts/35",
       "parent": {
-        "cref": "#/groups/3"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "list_item",
       "prov": [],
       "orig": "Code: Humaneval[chen2021evaluating] (0-shot) and MBPP[austin2021program] (3-shot)",
       "text": "Code: Humaneval[chen2021evaluating] (0-shot) and MBPP[austin2021program] (3-shot)",
-      "formatting": null,
-      "hyperlink": null,
       "enumerated": false,
       "marker": ""
     },
     {
       "self_ref": "#/texts/36",
       "parent": {
-        "cref": "#/groups/3"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "list_item",
       "prov": [],
       "orig": "Popular aggregated results: MMLU[hendrycks2020measuring] (5-shot), BBH[suzgun2022challenging] (3-shot), and AGI Eval[zhong2023agieval] (3-5-shot, English multiple-choice questions only)",
       "text": "Popular aggregated results: MMLU[hendrycks2020measuring] (5-shot), BBH[suzgun2022challenging] (3-shot), and AGI Eval[zhong2023agieval] (3-5-shot, English multiple-choice questions only)",
-      "formatting": null,
-      "hyperlink": null,
       "enumerated": false,
       "marker": ""
     },
     {
       "self_ref": "#/texts/37",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Detailed results for , 2 7B/13B, and Code-7B are reported in Table[tab:results].\nFigure[fig:bars] compares the performance of with 2 7B/13B, and 1 34B",
-      "text": "Detailed results for , 2 7B/13B, and Code-7B are reported in Table[tab:results].\nFigure[fig:bars] compares the performance of with 2 7B/13B, and 1 34B",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Detailed results for , 2 7B/13B, and Code-7B are reported in Table[tab:results].\nFigure[fig:bars] compares the performance of with 2 7B/13B, and 1 34B"
     },
     {
       "self_ref": "#/texts/38",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "footnote",
       "prov": [],
       "orig": "Since 2 34B was not open-sourced, we report results for 1 34B.",
-      "text": "Since 2 34B was not open-sourced, we report results for 1 34B.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Since 2 34B was not open-sourced, we report results for 1 34B."
     },
     {
       "self_ref": "#/texts/39",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "in different categories.\nsurpasses 2 13B across all metrics, and outperforms 134B on most benchmarks.\nIn particular, displays a superior performance in code, mathematics, and reasoning benchmarks.",
-      "text": "in different categories.\nsurpasses 2 13B across all metrics, and outperforms 134B on most benchmarks.\nIn particular, displays a superior performance in code, mathematics, and reasoning benchmarks.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "in different categories.\nsurpasses 2 13B across all metrics, and outperforms 134B on most benchmarks.\nIn particular, displays a superior performance in code, mathematics, and reasoning benchmarks."
     },
     {
       "self_ref": "#/texts/40",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Size and Efficiency. We computed equivalent model sizes of the 2 family, aiming to understand models' efficiency in the cost-performance spectrum (see Figure[fig:size]). When evaluated on reasoning, comprehension, and STEM reasoning (specifically MMLU), mirrored performance that one might expect from a 2 model with more than 3x its size. On the Knowledge benchmarks, 's performance achieves a lower compression rate of 1.9x, which is likely due to its limited parameter count that restricts the amount of knowledge it can store.",
-      "text": "Size and Efficiency. We computed equivalent model sizes of the 2 family, aiming to understand models' efficiency in the cost-performance spectrum (see Figure[fig:size]). When evaluated on reasoning, comprehension, and STEM reasoning (specifically MMLU), mirrored performance that one might expect from a 2 model with more than 3x its size. On the Knowledge benchmarks, 's performance achieves a lower compression rate of 1.9x, which is likely due to its limited parameter count that restricts the amount of knowledge it can store.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Size and Efficiency. We computed equivalent model sizes of the 2 family, aiming to understand models' efficiency in the cost-performance spectrum (see Figure[fig:size]). When evaluated on reasoning, comprehension, and STEM reasoning (specifically MMLU), mirrored performance that one might expect from a 2 model with more than 3x its size. On the Knowledge benchmarks, 's performance achieves a lower compression rate of 1.9x, which is likely due to its limited parameter count that restricts the amount of knowledge it can store."
     },
     {
       "self_ref": "#/texts/41",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Evaluation Differences. On some benchmarks, there are some differences between our evaluation protocol and the one reported in the 2 paper: 1) on MBPP, we use the hand-verified subset 2) on TriviaQA, we do not provide Wikipedia contexts.",
-      "text": "Evaluation Differences. On some benchmarks, there are some differences between our evaluation protocol and the one reported in the 2 paper: 1) on MBPP, we use the hand-verified subset 2) on TriviaQA, we do not provide Wikipedia contexts.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Evaluation Differences. On some benchmarks, there are some differences between our evaluation protocol and the one reported in the 2 paper: 1) on MBPP, we use the hand-verified subset 2) on TriviaQA, we do not provide Wikipedia contexts."
     },
     {
       "self_ref": "#/texts/42",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "caption",
       "prov": [],
       "orig": "Image: images/230927_bars.png",
-      "text": "Image: images/230927_bars.png",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Image: images/230927_bars.png"
     },
     {
       "self_ref": "#/texts/43",
       "parent": {
-        "cref": "#/groups/4"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Performance of and different models on a wide range of benchmarks. All models were re-evaluated on all metrics with our evaluation pipeline for accurate comparison. significantly outperforms 2 7B and 2 13B on all benchmarks. It is also vastly superior to 1 34B in mathematics, code generation, and reasoning benchmarks.",
-      "text": "Performance of and different models on a wide range of benchmarks. All models were re-evaluated on all metrics with our evaluation pipeline for accurate comparison. significantly outperforms 2 7B and 2 13B on all benchmarks. It is also vastly superior to 1 34B in mathematics, code generation, and reasoning benchmarks.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Performance of and different models on a wide range of benchmarks. All models were re-evaluated on all metrics with our evaluation pipeline for accurate comparison. significantly outperforms 2 7B and 2 13B on all benchmarks. It is also vastly superior to 1 34B in mathematics, code generation, and reasoning benchmarks."
     },
     {
       "self_ref": "#/texts/44",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
-      "orig": "1.8pt",
-      "text": "1.8pt",
-      "formatting": null,
-      "hyperlink": null
+      "orig": "Comparison of with . outperforms 2 13B on all metrics, and approaches the code performance of Code-7B without sacrificing performance on non-code benchmarks.",
+      "text": "Comparison of with . outperforms 2 13B on all metrics, and approaches the code performance of Code-7B without sacrificing performance on non-code benchmarks."
     },
     {
       "self_ref": "#/texts/45",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "4pt",
-      "text": "4pt",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-<<<<<<< HEAD
-      "self_ref": "#/texts/46",
-=======
-      "self_ref": "#/texts/49",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "Comparison of with . outperforms 2 13B on all metrics, and approaches the code performance of Code-7B without sacrificing performance on non-code benchmarks.",
-      "text": "Comparison of with . outperforms 2 13B on all metrics, and approaches the code performance of Code-7B without sacrificing performance on non-code benchmarks.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/50",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
       "label": "caption",
       "prov": [],
       "orig": "Image: images/230927_effective_sizes.png",
-      "text": "Image: images/230927_effective_sizes.png",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Image: images/230927_effective_sizes.png"
     },
     {
-      "self_ref": "#/texts/51",
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+      "self_ref": "#/texts/46",
       "parent": {
-        "cref": "#/groups/5"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Results on MMLU, commonsense reasoning, world knowledge and reading comprehension for and 2 (7B/13B/70B). largely outperforms 2 13B on all evaluations, except on knowledge benchmarks, where it is on par (this is likely due to its limited parameter count, which limits the amount of knowledge it can compress).",
-      "text": "Results on MMLU, commonsense reasoning, world knowledge and reading comprehension for and 2 (7B/13B/70B). largely outperforms 2 13B on all evaluations, except on knowledge benchmarks, where it is on par (this is likely due to its limited parameter count, which limits the amount of knowledge it can compress).",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Results on MMLU, commonsense reasoning, world knowledge and reading comprehension for and 2 (7B/13B/70B). largely outperforms 2 13B on all evaluations, except on knowledge benchmarks, where it is on par (this is likely due to its limited parameter count, which limits the amount of knowledge it can compress)."
     },
     {
       "self_ref": "#/texts/47",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "r0.48",
-      "text": "r0.48",
-      "formatting": null,
-      "hyperlink": null
+      "text": "r0.48"
     },
     {
       "self_ref": "#/texts/48",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
-      "orig": "-13pt\n2pt",
-      "text": "-13pt\n2pt",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/49",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "-3pt\ntableComparison of Chat models. outperforms all 7B models on MT-Bench, and is comparable to 13B Chat models.",
-      "text": "-3pt\ntableComparison of Chat models. outperforms all 7B models on MT-Bench, and is comparable to 13B Chat models.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/50",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-<<<<<<< HEAD
       "orig": "tableComparison of Chat models. outperforms all 7B models on MT-Bench, and is comparable to 13B Chat models.",
       "text": "tableComparison of Chat models. outperforms all 7B models on MT-Bench, and is comparable to 13B Chat models."
     },
     {
-      "self_ref": "#/texts/51",
+      "self_ref": "#/texts/49",
       "parent": {
         "$ref": "#/body"
-=======
-      "orig": "-10pt",
-      "text": "-10pt",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/56",
-      "parent": {
-        "cref": "#/body"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Instruction Finetuning",
       "text": "Instruction Finetuning",
-      "formatting": null,
-      "hyperlink": null,
       "level": 1
     },
     {
-<<<<<<< HEAD
-      "self_ref": "#/texts/52",
+      "self_ref": "#/texts/50",
       "parent": {
         "$ref": "#/body"
       },
@@ -1522,16 +1006,41 @@
       "text": "=-1 To evaluate the generalization capabilities of , we fine-tuned it on instruction datasets publicly available on the Hugging Face repository.\nNo proprietary data or training tricks were utilized: model is a simple and preliminary demonstration that the base model can easily be fine-tuned to achieve good performance.\nIn Table[tab:results_finetuning], we observe that the resulting model, , exhibits superior performance compared to all 7B models on MT-Bench, and is comparable to 13B  Chat models.\nAn independent human evaluation was conducted on https://llmboxing.com/leaderboard."
     },
     {
+      "self_ref": "#/texts/51",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "In this evaluation, participants were provided with a set of questions along with anonymous responses from two models and were asked to select their preferred response, as illustrated in Figure[fig:humanevalquestion].\nAs of October 6, 2023, the outputs generated by Mistral 7B were preferred 5020 times, compared to 4143 times for Llama 2 13B.",
+      "text": "In this evaluation, participants were provided with a set of questions along with anonymous responses from two models and were asked to select their preferred response, as illustrated in Figure[fig:humanevalquestion].\nAs of October 6, 2023, the outputs generated by Mistral 7B were preferred 5020 times, compared to 4143 times for Llama 2 13B."
+    },
+    {
+      "self_ref": "#/texts/52",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Adding guardrails for front-facing applications",
+      "text": "Adding guardrails for front-facing applications",
+      "level": 1
+    },
+    {
       "self_ref": "#/texts/53",
       "parent": {
         "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
-      "orig": "In this evaluation, participants were provided with a set of questions along with anonymous responses from two models and were asked to select their preferred response, as illustrated in Figure",
-      "text": "In this evaluation, participants were provided with a set of questions along with anonymous responses from two models and were asked to select their preferred response, as illustrated in Figure"
+      "orig": "=-1 The ability to enforce guardrails when it comes to AI generation is important for front-facing applications.\nIn this section, we highlight how to leverage system prompting to optionally enforce output constraints on top of our models.\nAdditionally, we showcase the ability of to perform fine-grained content moderation, which can be useful to enforce quality content in applications.",
+      "text": "=-1 The ability to enforce guardrails when it comes to AI generation is important for front-facing applications.\nIn this section, we highlight how to leverage system prompting to optionally enforce output constraints on top of our models.\nAdditionally, we showcase the ability of to perform fine-grained content moderation, which can be useful to enforce quality content in applications."
     },
     {
       "self_ref": "#/texts/54",
@@ -1540,286 +1049,75 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
+      "label": "section_header",
       "prov": [],
-      "orig": "[fig:humanevalquestion].\nAs of October 6, 2023, the outputs generated by Mistral 7B were preferred 5020 times, compared to 4143 times for Llama 2 13B.",
-      "text": "[fig:humanevalquestion].\nAs of October 6, 2023, the outputs generated by Mistral 7B were preferred 5020 times, compared to 4143 times for Llama 2 13B."
+      "orig": "System prompt to enforce guardrails",
+      "text": "System prompt to enforce guardrails",
+      "level": 2
     },
     {
       "self_ref": "#/texts/55",
       "parent": {
         "$ref": "#/body"
-=======
-      "self_ref": "#/texts/57",
-      "parent": {
-        "cref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "=-1 To evaluate the generalization capabilities of , we fine-tuned it on instruction datasets publicly available on the Hugging Face repository.\nNo proprietary data or training tricks were utilized: model is a simple and preliminary demonstration that the base model can easily be fine-tuned to achieve good performance.\nIn Table[tab:results_finetuning], we observe that the resulting model, , exhibits superior performance compared to all 7B models on MT-Bench, and is comparable to 13B  Chat models.\nAn independent human evaluation was conducted on https://llmboxing.com/leaderboard.",
-      "text": "=-1 To evaluate the generalization capabilities of , we fine-tuned it on instruction datasets publicly available on the Hugging Face repository.\nNo proprietary data or training tricks were utilized: model is a simple and preliminary demonstration that the base model can easily be fine-tuned to achieve good performance.\nIn Table[tab:results_finetuning], we observe that the resulting model, , exhibits superior performance compared to all 7B models on MT-Bench, and is comparable to 13B  Chat models.\nAn independent human evaluation was conducted on https://llmboxing.com/leaderboard.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/58",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "In this evaluation, participants were provided with a set of questions along with anonymous responses from two models and were asked to select their preferred response, as illustrated in Figure[fig:humanevalquestion].\nAs of October 6, 2023, the outputs generated by Mistral 7B were preferred 5020 times, compared to 4143 times for Llama 2 13B.",
-      "text": "In this evaluation, participants were provided with a set of questions along with anonymous responses from two models and were asked to select their preferred response, as illustrated in Figure[fig:humanevalquestion].\nAs of October 6, 2023, the outputs generated by Mistral 7B were preferred 5020 times, compared to 4143 times for Llama 2 13B.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/59",
-      "parent": {
-        "cref": "#/body"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "section_header",
-      "prov": [],
-      "orig": "Adding guardrails for front-facing applications",
-      "text": "Adding guardrails for front-facing applications",
-      "formatting": null,
-      "hyperlink": null,
-      "level": 1
-    },
-    {
-<<<<<<< HEAD
-      "self_ref": "#/texts/56",
-=======
-      "self_ref": "#/texts/60",
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "=-1 The ability to enforce guardrails when it comes to AI generation is important for front-facing applications.\nIn this section, we highlight how to leverage system prompting to optionally enforce output constraints on top of our models.\nAdditionally, we showcase the ability of to perform fine-grained content moderation, which can be useful to enforce quality content in applications.",
-      "text": "=-1 The ability to enforce guardrails when it comes to AI generation is important for front-facing applications.\nIn this section, we highlight how to leverage system prompting to optionally enforce output constraints on top of our models.\nAdditionally, we showcase the ability of to perform fine-grained content moderation, which can be useful to enforce quality content in applications.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-<<<<<<< HEAD
-      "self_ref": "#/texts/57",
-=======
-      "self_ref": "#/texts/61",
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "section_header",
-      "prov": [],
-      "orig": "System prompt to enforce guardrails",
-      "text": "System prompt to enforce guardrails",
-      "formatting": null,
-      "hyperlink": null,
-      "level": 2
-    },
-    {
-<<<<<<< HEAD
-      "self_ref": "#/texts/58",
-=======
-      "self_ref": "#/texts/62",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "We introduce a system prompt (see below) to guide the model to generate answers within specified guardrails, similar to the work done with 2. Using this prompt allows the user to move on the Pareto front of model utility / guardrails enforcement, as indicated in Table[tab:guardrails].",
-      "text": "We introduce a system prompt (see below) to guide the model to generate answers within specified guardrails, similar to the work done with 2. Using this prompt allows the user to move on the Pareto front of model utility / guardrails enforcement, as indicated in Table[tab:guardrails].",
-      "formatting": null,
-      "hyperlink": null
+      "text": "We introduce a system prompt (see below) to guide the model to generate answers within specified guardrails, similar to the work done with 2. Using this prompt allows the user to move on the Pareto front of model utility / guardrails enforcement, as indicated in Table[tab:guardrails]."
     },
     {
-      "self_ref": "#/texts/63",
+      "self_ref": "#/texts/56",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "0.98Always assist with care, respect, and truth. Respond with utmost utility yet securely. Avoid harmful, unethical, prejudiced, or negative content. Ensure replies promote fairness and positivity.",
-      "text": "0.98Always assist with care, respect, and truth. Respond with utmost utility yet securely. Avoid harmful, unethical, prejudiced, or negative content. Ensure replies promote fairness and positivity.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "0.98Always assist with care, respect, and truth. Respond with utmost utility yet securely. Avoid harmful, unethical, prejudiced, or negative content. Ensure replies promote fairness and positivity."
     },
     {
-      "self_ref": "#/texts/64",
+      "self_ref": "#/texts/57",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "6pt",
-      "text": "6pt",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/65",
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "r0.38",
-      "text": "r0.38",
-      "formatting": null,
-      "hyperlink": null
+      "text": "r0.38"
     },
     {
-      "self_ref": "#/texts/59",
+      "self_ref": "#/texts/58",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
-      "orig": "-10pt",
-      "text": "-10pt",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/60",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "-4pt\ntableSystem prompts. Mean official MT Bench score over 10 iterations with standard deviation for . For reference, 2 13B Chat reports official results of 6.65.",
-      "text": "-4pt\ntableSystem prompts. Mean official MT Bench score over 10 iterations with standard deviation for . For reference, 2 13B Chat reports official results of 6.65.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-<<<<<<< HEAD
-      "self_ref": "#/texts/61",
-=======
-      "self_ref": "#/texts/68",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "=-1 We use a set of 175 unsafe prompts for evaluating safety.\nWith the recommended system prompt, the model properly declines to answer 100%of the harmful questions.",
-      "text": "=-1 We use a set of 175 unsafe prompts for evaluating safety.\nWith the recommended system prompt, the model properly declines to answer 100%of the harmful questions.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/69",
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "=-1 As an illustration, we provide in Table[tab:guardrails_example] the answers of both and 2 Chat 13B to the question How to kill a linux process with system prompts activated.\nWe observe that provides a correct response while 2 declines to answer.\nNote that on this specific question, both models answer correctly when system prompts are deactivated.",
-      "text": "=-1 As an illustration, we provide in Table[tab:guardrails_example] the answers of both and 2 Chat 13B to the question How to kill a linux process with system prompts activated.\nWe observe that provides a correct response while 2 declines to answer.\nNote that on this specific question, both models answer correctly when system prompts are deactivated.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/62",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-<<<<<<< HEAD
       "orig": "tableSystem prompts. Mean official MT Bench score over 10 iterations with standard deviation for . For reference, 2 13B Chat reports official results of 6.65.",
       "text": "tableSystem prompts. Mean official MT Bench score over 10 iterations with standard deviation for . For reference, 2 13B Chat reports official results of 6.65."
     },
     {
-      "self_ref": "#/texts/63",
-=======
-      "orig": "27pt",
-      "text": "27pt",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/71",
+      "self_ref": "#/texts/59",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
-      "orig": "6pt",
-      "text": "6pt",
-      "formatting": null,
-      "hyperlink": null
+      "orig": "=-1 We use a set of 175 unsafe prompts for evaluating safety.\nWith the recommended system prompt, the model properly declines to answer 100%of the harmful questions.",
+      "text": "=-1 We use a set of 175 unsafe prompts for evaluating safety.\nWith the recommended system prompt, the model properly declines to answer 100%of the harmful questions."
     },
     {
-      "self_ref": "#/texts/72",
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+      "self_ref": "#/texts/60",
       "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "Comparison between Mistral and system prompts.\nMistral provides the right answer whereas 2 declines to answer to the question How to kill a linux process.",
-      "text": "Comparison between Mistral and system prompts.\nMistral provides the right answer whereas 2 declines to answer to the question How to kill a linux process.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/64",
-      "parent": {
-<<<<<<< HEAD
         "$ref": "#/body"
       },
       "children": [],
@@ -1830,7 +1128,7 @@
       "text": "=-1 As an illustration, we provide in Table[tab:guardrails_example] the answers of both and 2 Chat 13B to the question How to kill a linux process with system prompts activated.\nWe observe that provides a correct response while 2 declines to answer.\nNote that on this specific question, both models answer correctly when system prompts are deactivated."
     },
     {
-      "self_ref": "#/texts/65",
+      "self_ref": "#/texts/61",
       "parent": {
         "$ref": "#/body"
       },
@@ -1842,251 +1140,106 @@
       "text": "Comparison between Mistral and system prompts.\nMistral provides the right answer whereas 2 declines to answer to the question How to kill a linux process."
     },
     {
-      "self_ref": "#/texts/66",
+      "self_ref": "#/texts/62",
       "parent": {
         "$ref": "#/body"
-=======
-        "cref": "#/body"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Content moderation with self-reflection",
       "text": "Content moderation with self-reflection",
-      "formatting": null,
-      "hyperlink": null,
       "level": 2
     },
     {
-<<<<<<< HEAD
-      "self_ref": "#/texts/67",
-=======
-      "self_ref": "#/texts/74",
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+      "self_ref": "#/texts/63",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "=-1 can be used as a content moderator: the model itself is able to accurately classify a user prompt or its generated answer as being either acceptable or falling into one of the following categories:\nIllegal activities such as terrorism, child abuse or fraud;\nHateful, harassing or violent content such as discrimination, self-harm or bullying;\nUnqualified advice for instance in legal, medical or financial domains.",
-      "text": "=-1 can be used as a content moderator: the model itself is able to accurately classify a user prompt or its generated answer as being either acceptable or falling into one of the following categories:\nIllegal activities such as terrorism, child abuse or fraud;\nHateful, harassing or violent content such as discrimination, self-harm or bullying;\nUnqualified advice for instance in legal, medical or financial domains.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "=-1 can be used as a content moderator: the model itself is able to accurately classify a user prompt or its generated answer as being either acceptable or falling into one of the following categories:\nIllegal activities such as terrorism, child abuse or fraud;\nHateful, harassing or violent content such as discrimination, self-harm or bullying;\nUnqualified advice for instance in legal, medical or financial domains."
     },
     {
-<<<<<<< HEAD
-      "self_ref": "#/texts/68",
-=======
-      "self_ref": "#/texts/75",
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+      "self_ref": "#/texts/64",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "=-1 To do so, we designed a self-reflection prompt that makes classify a prompt or a generated answer. We evaluated self-reflection on our manually curated and balanced dataset of adversarial and standard prompts and got a precision of 99.4% for a recall of 95.6%(considering acceptable prompts as positives).",
-      "text": "=-1 To do so, we designed a self-reflection prompt that makes classify a prompt or a generated answer. We evaluated self-reflection on our manually curated and balanced dataset of adversarial and standard prompts and got a precision of 99.4% for a recall of 95.6%(considering acceptable prompts as positives).",
-      "formatting": null,
-      "hyperlink": null
+      "text": "=-1 To do so, we designed a self-reflection prompt that makes classify a prompt or a generated answer. We evaluated self-reflection on our manually curated and balanced dataset of adversarial and standard prompts and got a precision of 99.4% for a recall of 95.6%(considering acceptable prompts as positives)."
     },
     {
-<<<<<<< HEAD
-      "self_ref": "#/texts/69",
-=======
-      "self_ref": "#/texts/76",
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+      "self_ref": "#/texts/65",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "=-1 The use cases are vast, from moderating comments on social media or forums to brand monitoring on the internet. In particular, the end user is able to select afterwards which categories to effectively filter based on their particular use-case.",
-      "text": "=-1 The use cases are vast, from moderating comments on social media or forums to brand monitoring on the internet. In particular, the end user is able to select afterwards which categories to effectively filter based on their particular use-case.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "=-1 The use cases are vast, from moderating comments on social media or forums to brand monitoring on the internet. In particular, the end user is able to select afterwards which categories to effectively filter based on their particular use-case."
     },
     {
-<<<<<<< HEAD
-      "self_ref": "#/texts/70",
-=======
-      "self_ref": "#/texts/77",
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+      "self_ref": "#/texts/66",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Conclusion",
       "text": "Conclusion",
-      "formatting": null,
-      "hyperlink": null,
       "level": 1
     },
     {
-<<<<<<< HEAD
-      "self_ref": "#/texts/71",
+      "self_ref": "#/texts/67",
       "parent": {
         "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "Our work on Mistral 7B demonstrates that language models may compress knowledge more than what was previously thought. This opens up interesting perspectives: the field has so far put the emphasis on scaling laws in 2 dimensions (directly associating model capabilities to training cost, as in",
-      "text": "Our work on Mistral 7B demonstrates that language models may compress knowledge more than what was previously thought. This opens up interesting perspectives: the field has so far put the emphasis on scaling laws in 2 dimensions (directly associating model capabilities to training cost, as in"
-    },
-    {
-      "self_ref": "#/texts/72",
-      "parent": {
-        "$ref": "#/body"
-=======
-      "self_ref": "#/texts/78",
-      "parent": {
-        "cref": "#/body"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "Our work on Mistral 7B demonstrates that language models may compress knowledge more than what was previously thought. This opens up interesting perspectives: the field has so far put the emphasis on scaling laws in 2 dimensions (directly associating model capabilities to training cost, as in [hoffmann2022compute]); the problem is rather 3 dimensional (model capabilities, training cost, inference cost), and much remains to be explored to obtain the best performance with the smallest possible model.",
-      "text": "Our work on Mistral 7B demonstrates that language models may compress knowledge more than what was previously thought. This opens up interesting perspectives: the field has so far put the emphasis on scaling laws in 2 dimensions (directly associating model capabilities to training cost, as in [hoffmann2022compute]); the problem is rather 3 dimensional (model capabilities, training cost, inference cost), and much remains to be explored to obtain the best performance with the smallest possible model.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Our work on Mistral 7B demonstrates that language models may compress knowledge more than what was previously thought. This opens up interesting perspectives: the field has so far put the emphasis on scaling laws in 2 dimensions (directly associating model capabilities to training cost, as in [hoffmann2022compute]); the problem is rather 3 dimensional (model capabilities, training cost, inference cost), and much remains to be explored to obtain the best performance with the smallest possible model."
     },
     {
-<<<<<<< HEAD
-      "self_ref": "#/texts/73",
-=======
-      "self_ref": "#/texts/79",
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+      "self_ref": "#/texts/68",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "section_header",
       "prov": [],
       "orig": "Acknowledgements",
       "text": "Acknowledgements",
-      "formatting": null,
-      "hyperlink": null,
       "level": 1
     },
     {
-<<<<<<< HEAD
-      "self_ref": "#/texts/74",
-=======
-      "self_ref": "#/texts/80",
+      "self_ref": "#/texts/69",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "=-1 We are grateful to CoreWeave for their 24/7 help in marshalling our cluster. We thank the CINECA/EuroHPC team, and in particular the operators of Leonardo, for their resources and help. We thank the maintainers of FlashAttention, vLLM, xFormers, Skypilot for their precious assistance in implementing new features and integrating their solutions into ours. A huge thanks to Tri Dao and Daniel Haziza for helping include Mistral related changes to FlashAttention and xFormers on a tight schedule. We thank the teams of Hugging Face, AWS, GCP, Azure ML for their intense help in making our model compatible everywhere.",
-      "text": "=-1 We are grateful to CoreWeave for their 24/7 help in marshalling our cluster. We thank the CINECA/EuroHPC team, and in particular the operators of Leonardo, for their resources and help. We thank the maintainers of FlashAttention, vLLM, xFormers, Skypilot for their precious assistance in implementing new features and integrating their solutions into ours. A huge thanks to Tri Dao and Daniel Haziza for helping include Mistral related changes to FlashAttention and xFormers on a tight schedule. We thank the teams of Hugging Face, AWS, GCP, Azure ML for their intense help in making our model compatible everywhere.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "=-1 We are grateful to CoreWeave for their 24/7 help in marshalling our cluster. We thank the CINECA/EuroHPC team, and in particular the operators of Leonardo, for their resources and help. We thank the maintainers of FlashAttention, vLLM, xFormers, Skypilot for their precious assistance in implementing new features and integrating their solutions into ours. A huge thanks to Tri Dao and Daniel Haziza for helping include Mistral related changes to FlashAttention and xFormers on a tight schedule. We thank the teams of Hugging Face, AWS, GCP, Azure ML for their intense help in making our model compatible everywhere."
     },
     {
-      "self_ref": "#/texts/81",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "150pt",
-      "text": "150pt",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/82",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "caption",
-      "prov": [],
-      "orig": "Image: images/llama_vs_mistral_example.png",
-      "text": "Image: images/llama_vs_mistral_example.png",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/83",
-      "parent": {
-        "cref": "#/groups/6"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "-10pt",
-      "text": "-10pt",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/84",
-      "parent": {
-        "cref": "#/groups/6"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "Human evaluation of vs 213BChat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. 2 13B Chat recommends a general physics book, while recommends a more relevant book on quantum physics and describes in the contents in more detail.",
-      "text": "Human evaluation of vs 213BChat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. 2 13B Chat recommends a general physics book, while recommends a more relevant book on quantum physics and describes in the contents in more detail.",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/85",
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "meta": null,
-      "label": "text",
-      "prov": [],
-      "orig": "ref",
-      "text": "ref",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-<<<<<<< HEAD
-      "self_ref": "#/texts/75",
+      "self_ref": "#/texts/70",
       "parent": {
         "$ref": "#/body"
       },
@@ -2098,7 +1251,7 @@
       "text": "Image: images/llama_vs_mistral_example.png"
     },
     {
-      "self_ref": "#/texts/76",
+      "self_ref": "#/texts/71",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -2110,7 +1263,7 @@
       "text": "Human evaluation of vs 213BChat Example. An example of human evaluation from llmboxing.com. The question asks for recommendations of books in quantum physics. 2 13B Chat recommends a general physics book, while recommends a more relevant book on quantum physics and describes in the contents in more detail."
     },
     {
-      "self_ref": "#/texts/77",
+      "self_ref": "#/texts/72",
       "parent": {
         "$ref": "#/body"
       },
@@ -2122,44 +1275,31 @@
       "text": "ref"
     },
     {
-      "self_ref": "#/texts/78",
+      "self_ref": "#/texts/73",
       "parent": {
         "$ref": "#/body"
-=======
-      "self_ref": "#/texts/86",
-      "parent": {
-        "cref": "#/body"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "text",
       "prov": [],
       "orig": "plain",
-      "text": "plain",
-      "formatting": null,
-      "hyperlink": null
+      "text": "plain"
     }
   ],
   "pictures": [
     {
       "self_ref": "#/pictures/0",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "picture",
       "prov": [],
       "captions": [
         {
-<<<<<<< HEAD
           "$ref": "#/texts/1"
-=======
-          "cref": "#/texts/2"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
         }
       ],
       "references": [],
@@ -2178,20 +1318,15 @@
     {
       "self_ref": "#/pictures/1",
       "parent": {
-        "cref": "#/groups/0"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "picture",
       "prov": [],
       "captions": [
         {
-<<<<<<< HEAD
           "$ref": "#/texts/16"
-=======
-          "cref": "#/texts/17"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
         }
       ],
       "references": [],
@@ -2210,20 +1345,15 @@
     {
       "self_ref": "#/pictures/2",
       "parent": {
-        "cref": "#/groups/1"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "picture",
       "prov": [],
       "captions": [
         {
-<<<<<<< HEAD
           "$ref": "#/texts/24"
-=======
-          "cref": "#/texts/26"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
         }
       ],
       "references": [],
@@ -2242,20 +1372,15 @@
     {
       "self_ref": "#/pictures/3",
       "parent": {
-        "cref": "#/groups/2"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "picture",
       "prov": [],
       "captions": [
         {
-<<<<<<< HEAD
           "$ref": "#/texts/27"
-=======
-          "cref": "#/texts/29"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
         }
       ],
       "references": [],
@@ -2274,20 +1399,15 @@
     {
       "self_ref": "#/pictures/4",
       "parent": {
-        "cref": "#/groups/4"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "picture",
       "prov": [],
       "captions": [
         {
-<<<<<<< HEAD
-          "$ref": "#/texts/44"
-=======
-          "cref": "#/texts/45"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+          "$ref": "#/texts/42"
         }
       ],
       "references": [],
@@ -2306,20 +1426,15 @@
     {
       "self_ref": "#/pictures/5",
       "parent": {
-        "cref": "#/groups/5"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "picture",
       "prov": [],
       "captions": [
         {
-<<<<<<< HEAD
-          "$ref": "#/texts/47"
-=======
-          "cref": "#/texts/50"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+          "$ref": "#/texts/45"
         }
       ],
       "references": [],
@@ -2338,20 +1453,15 @@
     {
       "self_ref": "#/pictures/6",
       "parent": {
-        "cref": "#/groups/6"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "picture",
       "prov": [],
       "captions": [
         {
-<<<<<<< HEAD
-          "$ref": "#/texts/75"
-=======
-          "cref": "#/texts/82"
->>>>>>> c2a9050 (fix: issue 3207 and 3208 macro parsing)
+          "$ref": "#/texts/70"
         }
       ],
       "references": [],
@@ -2372,21 +1482,18 @@
     {
       "self_ref": "#/tables/0",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "table",
       "prov": [],
       "captions": [],
       "references": [],
       "footnotes": [],
-      "image": null,
       "data": {
         "table_cells": [
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -2400,7 +1507,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -2414,7 +1520,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -2428,7 +1533,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -2442,7 +1546,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -2456,7 +1559,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -2470,7 +1572,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -2484,7 +1585,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -2498,7 +1598,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -2512,7 +1611,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -2526,7 +1624,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -2540,7 +1637,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -2554,7 +1650,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 6,
@@ -2568,7 +1663,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 6,
@@ -2582,7 +1676,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 7,
@@ -2596,7 +1689,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 7,
@@ -2610,7 +1702,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 8,
@@ -2624,7 +1715,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 8,
@@ -2638,7 +1728,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 9,
@@ -2652,7 +1741,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 9,
@@ -2666,7 +1754,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 10,
@@ -2680,7 +1767,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 10,
@@ -2699,7 +1785,6 @@
         "grid": [
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -2713,7 +1798,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -2729,7 +1813,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -2743,7 +1826,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -2759,7 +1841,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -2773,7 +1854,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -2789,7 +1869,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -2803,7 +1882,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -2819,7 +1897,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -2833,7 +1910,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -2849,7 +1925,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -2863,7 +1938,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -2879,7 +1953,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 6,
@@ -2893,7 +1966,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 6,
@@ -2909,7 +1981,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 7,
@@ -2923,7 +1994,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 7,
@@ -2939,7 +2009,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 8,
@@ -2953,7 +2022,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 8,
@@ -2969,7 +2037,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 9,
@@ -2983,7 +2050,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 9,
@@ -2999,7 +2065,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 10,
@@ -3013,7 +2078,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 10,
@@ -3034,21 +2098,18 @@
     {
       "self_ref": "#/tables/1",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "table",
       "prov": [],
       "captions": [],
       "references": [],
       "footnotes": [],
-      "image": null,
       "data": {
         "table_cells": [
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -3062,7 +2123,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -3076,7 +2136,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -3090,7 +2149,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -3104,7 +2162,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -3118,7 +2175,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -3132,7 +2188,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -3146,7 +2201,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -3160,7 +2214,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -3174,7 +2227,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -3188,7 +2240,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -3202,7 +2253,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -3216,7 +2266,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -3230,7 +2279,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -3244,7 +2292,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -3258,7 +2305,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -3272,7 +2318,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -3286,7 +2331,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -3300,7 +2344,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -3314,7 +2357,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -3328,7 +2370,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -3342,7 +2383,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -3356,7 +2396,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -3370,7 +2409,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -3384,7 +2422,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -3398,7 +2435,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -3412,7 +2448,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -3426,7 +2461,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -3440,7 +2474,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -3454,7 +2487,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -3468,7 +2500,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -3482,7 +2513,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -3496,7 +2526,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -3510,7 +2539,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -3524,7 +2552,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -3538,7 +2565,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -3552,7 +2578,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -3566,7 +2591,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -3580,7 +2604,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -3594,7 +2617,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -3608,7 +2630,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -3622,7 +2643,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -3636,7 +2656,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -3650,7 +2669,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -3664,7 +2682,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -3678,7 +2695,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -3692,7 +2708,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -3706,7 +2721,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -3720,7 +2734,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -3734,7 +2747,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -3748,7 +2760,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -3762,7 +2773,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -3776,7 +2786,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -3790,7 +2799,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -3804,7 +2812,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -3818,7 +2825,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -3832,7 +2838,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -3846,7 +2851,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -3860,7 +2864,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -3874,7 +2877,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -3888,7 +2890,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -3902,7 +2903,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -3916,7 +2916,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -3930,7 +2929,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -3944,7 +2942,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -3958,7 +2955,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -3972,7 +2968,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -3986,7 +2981,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -4000,7 +2994,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -4014,7 +3007,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -4028,7 +3020,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -4042,7 +3033,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -4056,7 +3046,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -4070,7 +3059,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -4084,7 +3072,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -4098,7 +3085,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -4112,7 +3098,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -4126,7 +3111,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -4140,7 +3124,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -4154,7 +3137,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -4168,7 +3150,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -4182,7 +3163,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -4196,7 +3176,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -4210,7 +3189,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -4229,7 +3207,6 @@
         "grid": [
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -4243,7 +3220,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -4257,7 +3233,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -4271,7 +3246,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -4285,7 +3259,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -4299,7 +3272,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -4313,7 +3285,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -4327,7 +3298,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -4341,7 +3311,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -4355,7 +3324,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -4369,7 +3337,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -4383,7 +3350,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -4397,7 +3363,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -4411,7 +3376,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -4427,7 +3391,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -4441,7 +3404,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -4455,7 +3417,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -4469,7 +3430,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -4483,7 +3443,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -4497,7 +3456,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -4511,7 +3469,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -4525,7 +3482,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -4539,7 +3495,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -4553,7 +3508,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -4567,7 +3521,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -4581,7 +3534,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -4595,7 +3547,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -4609,7 +3560,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -4625,7 +3575,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -4639,7 +3588,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -4653,7 +3601,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -4667,7 +3614,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -4681,7 +3627,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -4695,7 +3640,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -4709,7 +3653,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -4723,7 +3666,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -4737,7 +3679,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -4751,7 +3692,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -4765,7 +3705,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -4779,7 +3718,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -4793,7 +3731,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -4807,7 +3744,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -4823,7 +3759,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -4837,7 +3772,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -4851,7 +3785,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -4865,7 +3798,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -4879,7 +3811,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -4893,7 +3824,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -4907,7 +3837,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -4921,7 +3850,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -4935,7 +3863,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -4949,7 +3876,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -4963,7 +3889,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -4977,7 +3902,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -4991,7 +3915,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -5005,7 +3928,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -5021,7 +3943,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -5035,7 +3956,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -5049,7 +3969,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -5063,7 +3982,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -5077,7 +3995,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -5091,7 +4008,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -5105,7 +4021,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -5119,7 +4034,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -5133,7 +4047,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -5147,7 +4060,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -5161,7 +4073,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -5175,7 +4086,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -5189,7 +4099,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -5203,7 +4112,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -5219,7 +4127,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -5233,7 +4140,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -5247,7 +4153,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -5261,7 +4166,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -5275,7 +4179,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -5289,7 +4192,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -5303,7 +4205,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -5317,7 +4218,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -5331,7 +4231,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -5345,7 +4244,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -5359,7 +4257,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -5373,7 +4270,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -5387,7 +4283,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -5401,7 +4296,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -5422,21 +4316,18 @@
     {
       "self_ref": "#/tables/2",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "table",
       "prov": [],
       "captions": [],
       "references": [],
       "footnotes": [],
-      "image": null,
       "data": {
         "table_cells": [
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -5450,7 +4341,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -5464,7 +4354,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -5478,7 +4367,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -5492,7 +4380,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -5506,7 +4393,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -5520,7 +4406,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -5534,7 +4419,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -5548,7 +4432,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -5562,7 +4445,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -5576,7 +4458,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -5590,7 +4471,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -5604,7 +4484,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -5618,7 +4497,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -5632,7 +4510,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -5646,7 +4523,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -5660,7 +4536,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -5674,7 +4549,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -5688,7 +4562,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 6,
@@ -5702,7 +4575,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 6,
@@ -5716,7 +4588,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 6,
@@ -5730,7 +4601,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 7,
@@ -5744,7 +4614,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 7,
@@ -5758,7 +4627,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 7,
@@ -5772,7 +4640,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 8,
@@ -5786,7 +4653,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 8,
@@ -5800,7 +4666,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 8,
@@ -5819,7 +4684,6 @@
         "grid": [
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -5833,7 +4697,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -5847,7 +4710,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -5863,7 +4725,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -5877,7 +4738,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -5891,7 +4751,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -5907,7 +4766,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -5921,7 +4779,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -5935,7 +4792,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -5951,7 +4807,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -5965,7 +4820,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -5979,7 +4833,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -5995,7 +4848,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -6009,7 +4861,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -6023,7 +4874,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -6039,7 +4889,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -6053,7 +4902,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -6067,7 +4915,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -6083,7 +4930,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 6,
@@ -6097,7 +4943,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 6,
@@ -6111,7 +4956,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 6,
@@ -6127,7 +4971,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 7,
@@ -6141,7 +4984,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 7,
@@ -6155,7 +4997,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 7,
@@ -6171,7 +5012,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 8,
@@ -6185,7 +5025,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 8,
@@ -6199,7 +5038,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 8,
@@ -6220,21 +5058,18 @@
     {
       "self_ref": "#/tables/3",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "table",
       "prov": [],
       "captions": [],
       "references": [],
       "footnotes": [],
-      "image": null,
       "data": {
         "table_cells": [
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -6248,7 +5083,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -6262,7 +5096,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -6276,7 +5109,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -6290,7 +5122,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -6304,7 +5135,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -6318,7 +5148,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -6332,7 +5161,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -6346,7 +5174,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -6360,7 +5187,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -6379,7 +5205,6 @@
         "grid": [
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -6393,7 +5218,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -6409,7 +5233,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -6423,7 +5246,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -6439,7 +5261,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -6453,7 +5274,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -6469,7 +5289,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -6483,7 +5302,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -6499,7 +5317,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -6513,7 +5330,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -6534,21 +5350,18 @@
     {
       "self_ref": "#/tables/4",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "meta": null,
       "label": "table",
       "prov": [],
       "captions": [],
       "references": [],
       "footnotes": [],
-      "image": null,
       "data": {
         "table_cells": [
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -6562,7 +5375,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -6576,7 +5388,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -6590,7 +5401,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -6604,7 +5414,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -6618,7 +5427,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -6632,7 +5440,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -6646,7 +5453,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -6665,7 +5471,6 @@
         "grid": [
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -6679,7 +5484,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -6695,7 +5499,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -6709,7 +5512,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -6725,7 +5527,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -6739,7 +5540,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -6755,7 +5555,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -6769,7 +5568,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
