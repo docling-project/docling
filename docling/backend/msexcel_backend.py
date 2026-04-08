@@ -254,18 +254,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 # do not rely on sheet.max_column, sheet.max_row if there are images
                 page = doc.add_page(page_no=page_no, size=Size(width=0, height=0))
 
-                content_layer = self._get_sheet_content_layer(sheet)
                 self.parents[0] = doc.add_group(
                     parent=None,
-                    label=GroupLabel.SECTION,
-                    name=f"sheet: {name}",
-                    content_layer=content_layer,
-                )
-                doc.add_heading(
-                    text=name,
-                    level=1,
-                    parent=self.parents[0],
-                    content_layer=content_layer,
+                    label=GroupLabel.SHEET,
+                    name=name,
+                    content_layer=self._get_sheet_content_layer(sheet),
                 )
                 doc = self._convert_sheet(doc, sheet, page_no)
                 width, height = self._find_page_size(doc, page_no)

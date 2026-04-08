@@ -59,8 +59,10 @@ def documents() -> list[tuple[Path, DoclingDocument]]:
 
 
 def test_e2e_excel_conversions(documents) -> None:
+    from docling.utils.markdown import MsExcelMarkdownDocSerializer
+
     for gt_path, doc in documents:
-        pred_md: str = doc.export_to_markdown()
+        pred_md: str = MsExcelMarkdownDocSerializer(doc=doc).serialize().text
         assert verify_export(pred_md, str(gt_path) + ".md"), "export to md"
 
         pred_itxt: str = doc._export_to_indented_text(
@@ -113,7 +115,7 @@ def test_chartsheet(documents) -> None:
     assert len(doc.pages) == 2
 
     # Chartseet content is for now ignored
-    assert doc.groups[1].name == "sheet: Duck Chart"
+    assert doc.groups[1].name == "Duck Chart"
     assert doc.pages[2].size.height == 0
     assert doc.pages[2].size.width == 0
 
@@ -250,22 +252,15 @@ def test_table_with_title():
     doc: DoclingDocument = conv_result.document
 
     # With treat_singleton_as_text=True, the singleton title cell should be a TextItem.
-    # The sheet name is rendered as a heading, so we expect 2 text items:
-    # one heading for the sheet name and one for the title cell.
     texts = list(doc.texts)
     tables = list(doc.tables)
 
-    assert len(texts) == 2, f"Should have 2 text items (sheet heading + title), got {len(texts)}"
+    assert len(texts) == 1, f"Should have 1 text item (the title), got {len(texts)}"
     assert len(tables) == 1, f"Should have 1 table, got {len(tables)}"
 
-    # First text is the sheet name heading
-    assert texts[0].text == "Duck Observations", (
-        f"First text should be sheet heading 'Duck Observations', got '{texts[0].text}'"
-    )
-
-    # Second text is the singleton title cell
-    assert texts[1].text == "Number of freshwater ducks per year", (
-        f"Second text should be 'Number of freshwater ducks per year', got '{texts[1].text}'"
+    # Verify the text item contains the title
+    assert texts[0].text == "Number of freshwater ducks per year", (
+        f"Text should be 'Number of freshwater ducks per year', got '{texts[0].text}'"
     )
 
     # Verify table dimensions
@@ -279,30 +274,30 @@ def test_table_with_title():
 
 
 def test_sheet_names_as_headings(documents) -> None:
-    """Test that sheet names are rendered as headings in the output.
+    """Test that sheet names are rendered as headings in markdown export.
 
-    Each non-empty worksheet's name should appear as a heading before its
-    content in both the document model and markdown export.
+    Sheet groups (``GroupLabel.SHEET``) carry the sheet name.
+    The ``MsExcelMarkdownDocSerializer`` renders each such group's name as a
+    level-2 Markdown heading before the group's tables.  No heading nodes are
+    injected into the document model by the backend.
     Sheet4 in xlsx_01 is empty and intentionally has no heading.
     """
+    from docling.utils.markdown import MsExcelMarkdownDocSerializer
+
     doc = next(item for path, item in documents if path.stem == "xlsx_01")
 
+    # No SectionHeaderItem nodes injected by the backend
     headings = [t for t in doc.texts if t.label.value == "section_header"]
-    # Sheet4 is empty so it produces no heading
+    assert headings == [], (
+        f"Backend should not inject heading nodes; found: {[h.text for h in headings]}"
+    )
+
+    # Sheet names appear as ## headings via the custom serializer
     non_empty_sheet_names = ["Sheet1", "Sheet2", "Sheet3"]
-
-    heading_texts = [h.text for h in headings]
+    serializer = MsExcelMarkdownDocSerializer(doc=doc)
+    md = serializer.serialize().text
     for name in non_empty_sheet_names:
-        assert name in heading_texts, (
-            f"Sheet name '{name}' not found as heading. Headings: {heading_texts}"
-        )
-
-    # docling renders level=1 headings as ## in markdown
-    md = doc.export_to_markdown()
-    for name in non_empty_sheet_names:
-        assert f"## {name}" in md, (
-            f"Expected '## {name}' in markdown output"
-        )
+        assert f"## {name}" in md, f"Expected '## {name}' in markdown output"
 
 
 def test_bytesio_stream():
@@ -445,36 +440,6 @@ def test_gap_tolerance_comparison() -> None:
         f"Tolerance 1 should merge the table. "
         f"Expected start at Col A (0), got {start_col_merged}"
     )
-
-
-def test_convert_workbook_heading_lines() -> None:
-    """Directly cover the two new lines added in _convert_workbook.
-
-    Verifies that:
-    - ``content_layer = self._get_sheet_content_layer(sheet)`` is executed
-    - ``doc.add_heading(text=name, level=1, ...)`` is executed for each sheet
-
-    Uses the backend directly (no fixture) so coverage is always captured.
-    """
-    path = next(item for item in get_excel_paths() if item.stem == "xlsx_01")
-    in_doc = InputDocument(
-        path_or_stream=path,
-        format=InputFormat.XLSX,
-        filename=path.stem,
-        backend=MsExcelDocumentBackend,
-    )
-    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=path)
-    doc = backend.convert()
-
-    headings = [t for t in doc.texts if t.label.value == "section_header"]
-    heading_texts = {h.text for h in headings}
-    # Sheet1/2/3 have content; assert headings were inserted by add_heading()
-    assert {"Sheet1", "Sheet2", "Sheet3"}.issubset(heading_texts), (
-        f"Expected sheet headings for Sheet1/2/3, got: {heading_texts}"
-    )
-    # Each heading must carry a content_layer (set via _get_sheet_content_layer)
-    for h in headings:
-        assert h.prov, f"Heading '{h.text}' has no provenance / content_layer"
 
 
 def test_one_cell_anchor_image():

@@ -36,59 +36,25 @@
       },
       "children": [
         {
-          "$ref": "#/texts/0"
-        },
-        {
           "$ref": "#/tables/0"
         }
       ],
       "content_layer": "body",
-      "name": "sheet: Duck Observations",
-      "label": "section"
+      "name": "Duck Observations",
+      "label": "sheet"
     },
     {
       "self_ref": "#/groups/1",
       "parent": {
         "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/texts/1"
-        }
-      ],
-      "content_layer": "body",
-      "name": "sheet: Duck Chart",
-      "label": "section"
-    }
-  ],
-  "texts": [
-    {
-      "self_ref": "#/texts/0",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
-      "prov": [],
-      "orig": "Duck Observations",
-      "text": "Duck Observations",
-      "level": 1
-    },
-    {
-      "self_ref": "#/texts/1",
-      "parent": {
-        "$ref": "#/groups/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "section_header",
-      "prov": [],
-      "orig": "Duck Chart",
-      "text": "Duck Chart",
-      "level": 1
+      "name": "Duck Chart",
+      "label": "sheet"
     }
   ],
+  "texts": [],
   "pictures": [],
   "tables": [
     {
