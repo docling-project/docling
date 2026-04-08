@@ -455,7 +455,9 @@ def test_sheet_names_filter_empty_list():
         backend=MsExcelDocumentBackend,
         backend_options=options,
     )
-    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=path, options=options)
+    backend = MsExcelDocumentBackend(
+        in_doc=in_doc, path_or_stream=path, options=options
+    )
     doc: DoclingDocument = backend.convert()
 
     assert len(doc.pages) == 0, (
@@ -482,7 +484,9 @@ def test_sheet_names_filter_case_sensitive():
         backend=MsExcelDocumentBackend,
         backend_options=options,
     )
-    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=path, options=options)
+    backend = MsExcelDocumentBackend(
+        in_doc=in_doc, path_or_stream=path, options=options
+    )
     doc: DoclingDocument = backend.convert()
 
     assert len(doc.pages) == 0, (

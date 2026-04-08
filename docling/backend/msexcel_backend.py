@@ -243,7 +243,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             # Iterate over all sheets, applying optional name filter
             for idx, name in enumerate(self.workbook.sheetnames):
                 if sheet_names_filter is not None and name not in sheet_names_filter:
-                    _log.debug(f"Skipping sheet {idx}: {name} (not in sheet_names filter)")
+                    _log.debug(
+                        f"Skipping sheet {idx}: {name} (not in sheet_names filter)"
+                    )
                     continue
 
                 page_no += 1
