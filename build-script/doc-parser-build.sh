@@ -25,6 +25,7 @@ APP_GID="${APP_GID:-1000}"
 APP_UNAME="${APP_UNAME:-genos}"
 APP_GNAME="${APP_GNAME:-genos}"
 APP_NLTK_PACKAGES="${APP_NLTK_PACKAGES:-all}"
+HF_TOKEN="${HF_TOKEN:-}"
 
 # 최종 이미지 태그
 IMAGE_TAG="${DOCKER_REGISTRY}/mnc/${IMAGE_NAME}:${IMAGE_VERSION}"
@@ -35,11 +36,19 @@ echo "[INFO] IMAGE_TAG       = ${IMAGE_TAG}"
 echo "[INFO] UID:GID         = ${APP_UID}:${APP_GID} (${APP_UNAME}:${APP_GNAME})"
 echo "[INFO] NLTK_PACKAGES  = ${APP_NLTK_PACKAGES}"
 
+# HuggingFace 토큰 존재 여부 확인 (Private SDK 다운로드 시 필수)
+if [[ -z "${HF_TOKEN}" ]]; then
+  echo "[WARN] HF_TOKEN이 설정되지 않았습니다. Private 레포지토리 접근 시 빌드가 실패할 수 있습니다."
+else
+  echo "[INFO] HF_TOKEN이 감지되었습니다. Secret 마운트를 사용하여 빌드합니다."
+fi
+
 # BuildKit plain 로그로 보기 + 루트(.)를 컨텍스트로 빌드
 DOCKER_BUILDKIT=1 docker build \
   --platform linux/amd64 \
   -f "${ROOT_DIR}/${DOCKERFILE_PATH}" \
   -t "${IMAGE_TAG}" \
+  --secret id=HF_TOKEN,env=HF_TOKEN \
   --build-arg UID="${APP_UID}" \
   --build-arg GID="${APP_GID}" \
   --build-arg UNAME="${APP_UNAME}" \
