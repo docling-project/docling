@@ -1564,7 +1564,6 @@ class DocumentProcessor:
         # 🚀 [핵심 수정] HWP와 HWPX를 하나의 프로세서로 통합 실행
         elif ext in ('.hwp', '.hwpx'):
             _log.info(f"Processing Korean Document ({ext}) with Unified HwpProcessor")
-            print(f"⚠️⚠️kwargs: {kwargs}")
             return await self.hwp_processor(request, file_path, **kwargs)
 
         elif ext == '.docx':

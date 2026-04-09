@@ -74,8 +74,6 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         self.save_result = kwargs.get("save_result", False)
         self.save_path = kwargs.get("save_path", None)
 
-        print(f"(init)⚠️ self.save_result: {self.save_result}")
-
         self._processed_hashes = set()  # 중복 텍스트(머리말/꼬리말) 필터링용
         
         # 1. 환경 설정      
@@ -204,7 +202,6 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             work_dir = root / base.stem / "jayu_sdk_result"
             work_dir.mkdir(parents=True, exist_ok=True)
             temp_dir_context = None  # 삭제할 임시 컨텍스트 없음
-            print(f"(if) ⚠️ work_dir: {work_dir}")
         else:
             # 임시 저장: 기존처럼 tempfile 사용
             temp_dir_context = tempfile.TemporaryDirectory()
@@ -231,8 +228,6 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                 img_path_str
             ]
             
-            print(f"DEBUG: Running SDK command: {' '.join(cmd)}")
-
             # 4-b) 실제 SDK 실행
             subprocess.run(
                 cmd, 
@@ -241,10 +236,6 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                 text=True,
                 cwd=str(SDK_DIR)
             )
-
-            print(f"⚠️⚠️ json_out: {json_out}")
-            print(f"⚠️⚠️ info_out: {info_out}")
-            print(f"⚠️⚠️ img_dir: {img_dir}")
 
             # 5. '.info' 활용 설정
             self._setup_pages(doc, info_out)
@@ -272,9 +263,6 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             # 8. 사후 정리: 임시 디렉토리인 경우에만 삭제 실행
             if temp_dir_context is not None:
                 temp_dir_context.cleanup()
-                print("DEBUG: Temporary directory cleaned up.")
-            else:
-                print(f"DEBUG: SDK outputs saved at: {work_dir}")
 
         return doc
 
@@ -437,7 +425,6 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                     with WandImage(filename=img_path) as wand_img:
                         wand_img.format = 'png'
                         pil_image = Image.open(BytesIO(wand_img.make_blob()))
-                        print(f"🪄 Wand로 복구 성공: {os.path.basename(img_path)}")
                 except Exception as e:
                     print(f"❌ Wand 변환 실패: {e}")
             else:
@@ -644,7 +631,6 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                         page_no=p_no, 
                         size=Size(width=w_pt, height=h_pt)
                     )
-                print(f"✅ 총 {len(page_info_list)}페이지 정보 로드 완료.")
             else:
                 raise ValueError("page_info is empty")
 
