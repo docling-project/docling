@@ -21,7 +21,6 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import (
-    ChartExtractionModelKind,
     ConvertPipelineOptions,
     PdfPipelineOptions,
     PipelineOptions,
@@ -33,6 +32,7 @@ from docling.models.picture_description_base_model import PictureDescriptionBase
 from docling.models.stages.chart_extraction.granite_vision import (
     ChartExtractionModelGraniteVision,
     ChartExtractionModelGraniteVisionV4,
+    ChartExtractionModelKind,
     ChartExtractionModelOptions,
 )
 from docling.models.stages.picture_classifier.document_picture_classifier import (
@@ -149,7 +149,7 @@ class ConvertPipeline(BasePipeline):
         self.pipeline_options: ConvertPipelineOptions
 
         # We need picture classification to do chart_extraction
-        if pipeline_options.chart_extraction_model is not None:
+        if pipeline_options.do_chart_extraction:
             pipeline_options.do_picture_classification = True
 
         # ------ Common enrichment models working on all backends
@@ -178,22 +178,22 @@ class ConvertPipeline(BasePipeline):
             # Document Chart Extraction
             ChartExtractionModelGraniteVision(
                 enabled=(
-                    pipeline_options.chart_extraction_model
+                    pipeline_options.do_chart_extraction
+                    and pipeline_options.chart_extraction_options.model
                     == ChartExtractionModelKind.GRANITE_VISION
                 ),
                 artifacts_path=self.artifacts_path,
-                options=ChartExtractionModelOptions(),
+                options=pipeline_options.chart_extraction_options,
                 accelerator_options=pipeline_options.accelerator_options,
             ),
             ChartExtractionModelGraniteVisionV4(
                 enabled=(
-                    pipeline_options.chart_extraction_model
+                    pipeline_options.do_chart_extraction
+                    and pipeline_options.chart_extraction_options.model
                     == ChartExtractionModelKind.GRANITE_VISION_V4
                 ),
                 artifacts_path=self.artifacts_path,
-                options=ChartExtractionModelOptions(
-                    chart2csv=True, chart2code=True, chart2summary=True
-                ),
+                options=pipeline_options.chart_extraction_options,
                 accelerator_options=pipeline_options.accelerator_options,
             ),
         ]

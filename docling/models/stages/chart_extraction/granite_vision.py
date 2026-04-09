@@ -3,6 +3,7 @@ import re
 import warnings
 from abc import abstractmethod
 from collections.abc import Iterable
+from enum import Enum
 from io import StringIO
 from pathlib import Path
 from typing import Any, List, Literal, Optional, cast
@@ -35,8 +36,15 @@ from docling.utils.accelerator_utils import decide_device
 _log = logging.getLogger(__name__)
 
 
+class ChartExtractionModelKind(str, Enum):
+    GRANITE_VISION = "granite-vision"
+    GRANITE_VISION_V4 = "granite-vision-v4"
+
+
 class ChartExtractionModelOptions(BaseModel):
     kind: Literal["chart_extraction"] = "chart_extraction"
+
+    model: ChartExtractionModelKind = ChartExtractionModelKind.GRANITE_VISION_V4
 
     chart2csv: bool = True  # prompt <chart2csv>      Chart to CSV with table with headers and numeric values
     chart2code: bool = (

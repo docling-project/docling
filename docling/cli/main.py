@@ -58,7 +58,6 @@ from docling.datamodel.base_models import (
 from docling.datamodel.document import ConversionResult, DoclingVersion
 from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
-    ChartExtractionModelKind,
     ConvertPipelineOptions,
     OcrAutoOptions,
     OcrOptions,
@@ -517,12 +516,9 @@ def convert(  # noqa: C901
         typer.Option(..., help="Enable the picture description model in the pipeline."),
     ] = False,
     enrich_chart_extraction: Annotated[
-        ChartExtractionModelKind | None,
-        typer.Option(
-            ...,
-            help="Enable chart extraction using the specified model (granite-vision or granite-vision-v4).",
-        ),
-    ] = None,
+        bool,
+        typer.Option(..., help="Enable chart data extraction from bar, pie, and line charts."),
+    ] = False,
     artifacts_path: Annotated[
         Path | None,
         typer.Option(..., help="If provided, the location of the model artifacts."),
@@ -759,7 +755,7 @@ def convert(  # noqa: C901
                 do_formula_enrichment=enrich_formula,
                 do_picture_description=enrich_picture_description,
                 do_picture_classification=enrich_picture_classes,
-                chart_extraction_model=enrich_chart_extraction,
+                do_chart_extraction=enrich_chart_extraction,
                 document_timeout=document_timeout,
             )
             if isinstance(
@@ -809,7 +805,7 @@ def convert(  # noqa: C901
             simple_format_option = ConvertPipelineOptions(
                 do_picture_description=enrich_picture_description,
                 do_picture_classification=enrich_picture_classes,
-                chart_extraction_model=enrich_chart_extraction,
+                do_chart_extraction=enrich_chart_extraction,
             )
             if artifacts_path is not None:
                 simple_format_option.artifacts_path = artifacts_path

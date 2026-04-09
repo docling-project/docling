@@ -64,6 +64,10 @@ from docling.models.inference_engines.object_detection.base import (
     ObjectDetectionEngineOptionsMixin,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineOptionsMixin
+from docling.models.stages.chart_extraction.granite_vision import (
+    ChartExtractionModelKind,
+    ChartExtractionModelOptions,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -82,11 +86,6 @@ class BaseOptions(BaseModel):
     """
 
     kind: ClassVar[str]
-
-
-class ChartExtractionModelKind(str, Enum):
-    GRANITE_VISION = "granite-vision"
-    GRANITE_VISION_V4 = "granite-vision-v4"
 
 
 class TableFormerMode(str, Enum):
@@ -1204,9 +1203,25 @@ class ConvertPipelineOptions(PipelineOptions):
         ),
     ] = _default_picture_description_options
 
-    chart_extraction_model: Optional[ChartExtractionModelKind] = (
-        None  # Set to a ChartExtractionModelKind value to enable chart data extraction
-    )
+    do_chart_extraction: Annotated[
+        bool,
+        Field(
+            description=(
+                "Enable chart data extraction to convert bar, pie, and line charts into structured tabular data. "
+                "Automatically enables picture classification. "
+                "Only applicable when `do_chart_extraction=True`."
+            )
+        ),
+    ] = False
+    chart_extraction_options: Annotated[
+        ChartExtractionModelOptions,
+        Field(
+            description=(
+                "Configuration for the chart extraction model, including which model variant to use "
+                "and which output formats to generate (CSV, code, summary)."
+            )
+        ),
+    ] = ChartExtractionModelOptions()
 
 
 class PaginatedPipelineOptions(ConvertPipelineOptions):
