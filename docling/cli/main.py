@@ -517,7 +517,9 @@ def convert(  # noqa: C901
     ] = False,
     enrich_chart_extraction: Annotated[
         bool,
-        typer.Option(..., help="Enable chart data extraction from bar, pie, and line charts."),
+        typer.Option(
+            ..., help="Enable chart data extraction from bar, pie, and line charts."
+        ),
     ] = False,
     artifacts_path: Annotated[
         Path | None,
