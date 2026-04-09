@@ -1155,12 +1155,35 @@ class HwpProcessor:
         save_images = kwargs.get('save_images', True)
         self.pipeline_options.save_images = save_images
 
-        # kwargs에서 jayu_sdk_save를 꺼내어 pipeline_options에 반영
-        self.pipeline_options.jayu_sdk_save = kwargs.get('jayu_sdk_save', False)
+        # kwargs에서 save_result/save_path를 꺼내어 pipeline_options에 반영
+        self.pipeline_options.save_result = kwargs.get('save_result', False)
+        self.pipeline_options.save_path = kwargs.get('save_path', None)
         
         # 확장자가 .hwp든 .hwpx든 등록된 백엔드가 알아서 처리함
         conv_result: ConversionResult = self.converter.convert(Path(file_path).resolve(), raises_on_error=True)
         return conv_result.document
+
+    def _save_results(self, file_path: str, document: DoclingDocument, vectors: list, save_path: Optional[str] = None):
+        """docling/vectors 결과를 docparser_result 디렉토리에 저장"""
+        try:
+            base = Path(file_path).resolve()
+            root = Path(save_path) if save_path else base.parent / "docparser_result"
+            result_dir = root / base.stem
+
+            docling_dir = result_dir / "docling_result"
+            docling_dir.mkdir(parents=True, exist_ok=True)
+            with open(docling_dir / "docling.json", "w", encoding="utf-8") as f:
+                f.write(document.model_dump_json(indent=2))
+            print(f"✅ docling_result 저장 완료: {docling_dir}")
+
+            vectors_dir = result_dir / "vectors_result"
+            vectors_dir.mkdir(parents=True, exist_ok=True)
+            with open(vectors_dir / "vectors.json", "w", encoding="utf-8") as f:
+                json.dump([v.model_dump() for v in vectors], f, ensure_ascii=False, indent=2)
+            print(f"✅ vectors_result 저장 완료: {vectors_dir}")
+
+        except Exception as e:
+            print(f"🔥 _save_results 실패: {e}")
 
     def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
         """HybridChunker를 사용하여 문서 분할 및 페이지별 청크 수 집계"""
@@ -1246,6 +1269,10 @@ class HwpProcessor:
         # 4. 벡터화 (빌더 활용)
         if len(chunks) >= 1:
             vectors = await self.compose_vectors(document, chunks, request, **kwargs)
+
+            if kwargs.get('save_result', False):
+                self._save_results(file_path, document, vectors, save_path=kwargs.get('save_path', None))
+
             return vectors
         else:
             # GenosServiceException 예외 처리

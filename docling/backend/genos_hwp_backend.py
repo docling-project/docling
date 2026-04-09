@@ -70,10 +70,11 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         self.save_images = kwargs.get("save_images", True)
         # 만약 WMF 변환 포함 여부도 기존처럼 쓰고 싶다면 추가
         self.include_wmf = kwargs.get("include_wmf", True)
-        # 자유소프트 SDK 사용 직후의 결과 저장 여부
-        self.jayu_sdk_save = kwargs.get("jayu_sdk_save", False)
+        # 결과 저장 여부 및 저장 경로
+        self.save_result = kwargs.get("save_result", False)
+        self.save_path = kwargs.get("save_path", None)
 
-        print(f"(init)⚠️ self.jayu_sdk_save: {self.jayu_sdk_save}")
+        print(f"(init)⚠️ self.save_result: {self.save_result}")
 
         self._processed_hashes = set()  # 중복 텍스트(머리말/꼬리말) 필터링용
         
@@ -196,10 +197,11 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.source_path.stem or "file", origin=origin)
 
         # 4. 작업 디렉토리 결정 (임시 vs 영구)
-        if self.jayu_sdk_save:
-            # 영구 저장: 원본 파일의 부모 폴더 / jayu_sdk_result / {파일명} 구조로 생성
+        if self.save_result:
+            # 영구 저장: save_path가 있으면 거기에, 없으면 원본 파일 옆에
             base = self.original_path or self.source_path
-            work_dir = base.parent / "jayu_sdk_result" / base.stem
+            root = Path(self.save_path) if self.save_path else base.parent / "docparser_result"
+            work_dir = root / base.stem / "jayu_sdk_result"
             work_dir.mkdir(parents=True, exist_ok=True)
             temp_dir_context = None  # 삭제할 임시 컨텍스트 없음
             print(f"(if) ⚠️ work_dir: {work_dir}")
@@ -442,24 +444,26 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                 print(f"⚠️ Pillow 실패 및 Wand 미설치로 복구 불가: {img_path}")
 
         # 🚀 [Salvaged 3] Docling 임베딩 (DPI 고정 및 BBox 설정)
+        prov = ProvenanceItem(
+            page_no=page_no,
+            bbox=BoundingBox(l=0, t=0, r=1, b=1, coord_origin=CoordOrigin.TOPLEFT),
+            charspan=(0, 0)
+        )
         if pil_image:
-            image_ref = ImageRef.from_pil(image=pil_image, dpi=72)
-            
             doc.add_picture(
                 parent=parent,
-                image=image_ref,
-                caption=item.get("image", {}).get("title", "그림"),
-                prov=ProvenanceItem(
-                    page_no=page_no,
-                    # HWP 좌표계에 맞춰 TOPLEFT 명시
-                    bbox=BoundingBox(
-                        l=0.1, t=0.1, r=0.4, b=0.4, 
-                        coord_origin=CoordOrigin.TOPLEFT
-                    ),
-                    charspan=(0, 0)
-                )
+                image=ImageRef.from_pil(image=pil_image, dpi=72),
+                caption=None,
+                prov=prov,
             )
-            #print(f"✅ 이미지 임베딩 완료: {os.path.basename(img_path)}")
+        else:
+            # Pillow + Wand 모두 실패 시 빈 플레이스홀더라도 추가해 문서 구조 보존
+            print(f"⚠️ 이미지 로드 완전 실패, 플레이스홀더 추가: {os.path.basename(img_path)}")
+            doc.add_picture(
+                parent=parent,
+                caption=None,
+                prov=prov,
+            )
 
     def _handle_paragraph(self, paragraph_items: List[Dict], doc: DoclingDocument, page_no: int, parent: Any):
         """TOC(목차) 감지 로직이 추가된 버전입니다. 넘겨받은 parent에 텍스트를 추가합니다."""

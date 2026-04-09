@@ -122,7 +122,8 @@ class InputDocument(BaseModel):
         limits: Optional[DocumentLimits] = None,
         save_images: bool = False,
         include_wmf: bool = False,
-        jayu_sdk_save: bool = False,
+        save_result: bool = False,
+        save_path: Optional[str] = None,
     ):
         super().__init__(
             file="", document_hash="", format=InputFormat.PDF
@@ -139,7 +140,7 @@ class InputDocument(BaseModel):
                     self.valid = False
                 else:
                     self.document_hash = create_file_hash(path_or_stream)
-                    self._init_doc(backend, path_or_stream, save_images, include_wmf, jayu_sdk_save)
+                    self._init_doc(backend, path_or_stream, save_images, include_wmf, save_result, save_path)
 
             elif isinstance(path_or_stream, BytesIO):
                 assert filename is not None, (
@@ -152,7 +153,7 @@ class InputDocument(BaseModel):
                     self.valid = False
                 else:
                     self.document_hash = create_file_hash(path_or_stream)
-                    self._init_doc(backend, path_or_stream, save_images, include_wmf, jayu_sdk_save)
+                    self._init_doc(backend, path_or_stream, save_images, include_wmf, save_result, save_path)
             else:
                 raise RuntimeError(
                     f"Unexpected type path_or_stream: {type(path_or_stream)}"
@@ -193,14 +194,16 @@ class InputDocument(BaseModel):
         path_or_stream: Union[BytesIO, Path],
         save_images: bool = False,
         include_wmf: bool = False,
-        jayu_sdk_save: bool = False,
+        save_result: bool = False,
+        save_path: Optional[str] = None,
     ) -> None:
-        # GenosHwpDocumentBackend에 대해서만 save_images, jayu_sdk_save 파라미터를 전달
+        # GenosHwpDocumentBackend에 대해서만 save_images, save_result, save_path 파라미터를 전달
         if backend.__name__ == 'GenosHwpDocumentBackend':
             self._backend = backend(self, path_or_stream=path_or_stream,
                                    save_images=save_images,
                                    include_wmf=include_wmf,
-                                   jayu_sdk_save=jayu_sdk_save)
+                                   save_result=save_result,
+                                   save_path=save_path)
         else:
             self._backend = backend(self, path_or_stream=path_or_stream)
         if not self._backend.is_valid():
@@ -279,7 +282,8 @@ class _DocumentConversionInput(BaseModel):
                 format_opt = format_options.get(format)
                 save_images = getattr(format_opt.pipeline_options, 'save_images', False) if format_opt and format_opt.pipeline_options else False
                 include_wmf = getattr(format_opt.pipeline_options, 'include_wmf', False) if format_opt and format_opt.pipeline_options else False
-                jayu_sdk_save = getattr(format_opt.pipeline_options, 'jayu_sdk_save', False) if format_opt and format_opt.pipeline_options else False
+                save_result = getattr(format_opt.pipeline_options, 'save_result', False) if format_opt and format_opt.pipeline_options else False
+                save_path = getattr(format_opt.pipeline_options, 'save_path', None) if format_opt and format_opt.pipeline_options else None
                 yield InputDocument(
                     path_or_stream=obj,
                     format=format,  # type: ignore[arg-type]
@@ -288,13 +292,15 @@ class _DocumentConversionInput(BaseModel):
                     backend=backend,
                     save_images=save_images,
                     include_wmf=include_wmf,
-                    jayu_sdk_save=jayu_sdk_save,
+                    save_result=save_result,
+                    save_path=save_path,
                 )
             elif isinstance(obj, DocumentStream):
                 format_opt = format_options.get(format)
                 save_images = getattr(format_opt.pipeline_options, 'save_images', False) if format_opt and format_opt.pipeline_options else False
                 include_wmf = getattr(format_opt.pipeline_options, 'include_wmf', False) if format_opt and format_opt.pipeline_options else False
-                jayu_sdk_save = getattr(format_opt.pipeline_options, 'jayu_sdk_save', False) if format_opt and format_opt.pipeline_options else False
+                save_result = getattr(format_opt.pipeline_options, 'save_result', False) if format_opt and format_opt.pipeline_options else False
+                save_path = getattr(format_opt.pipeline_options, 'save_path', None) if format_opt and format_opt.pipeline_options else None
                 yield InputDocument(
                     path_or_stream=obj.stream,
                     format=format,  # type: ignore[arg-type]
@@ -303,7 +309,8 @@ class _DocumentConversionInput(BaseModel):
                     backend=backend,
                     save_images=save_images,
                     include_wmf=include_wmf,
-                    jayu_sdk_save=jayu_sdk_save,
+                    save_result=save_result,
+                    save_path=save_path,
                 )
             else:
                 raise RuntimeError(f"Unexpected obj type in iterator: {type(obj)}")

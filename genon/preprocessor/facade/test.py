@@ -40,8 +40,8 @@ async def process_document():
     kwargs = {}
     kwargs['org_filename'] = os.path.basename(file_path)
     kwargs['max_tokens'] = 512
-    # 🚀 SDK 결과를 저장하고 싶을 때 True로 설정
-    kwargs['jayu_sdk_save'] = True
+    # 🚀 True로 설정하면 jayu_sdk_result / docling_result / vectors_result 저장
+    kwargs['save_result'] = True
     
     vectors = await doc_processor(mock_request, file_path, **kwargs)
     return vectors
