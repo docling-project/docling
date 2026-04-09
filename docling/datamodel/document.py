@@ -627,8 +627,8 @@ class _DocumentConversionInput(BaseModel):
             content_str = content.decode("utf-8", errors="replace")
             if InputFormat.XML_USPTO in formats and content_str.startswith("PATN\r\n"):
                 input_format = InputFormat.XML_USPTO
-            # No MD fallback: unrecognised text/plain content returns None.
-            # MD is detected via text/markdown mime (from .md/.text/.qmd/… extensions).
+            elif InputFormat.MD in formats:
+                input_format = InputFormat.MD
 
         return input_format
 
