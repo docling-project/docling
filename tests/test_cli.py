@@ -126,7 +126,7 @@ def test_cli_audio_extensions_coverage():
 
 def test_cli_page_break_inserted(tmp_path):
     """--page-break marker appears in Markdown output."""
-    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
+    source = "./tests/data/pdf/2305.03393v1.pdf"
     result = runner.invoke(
         app,
         [source, "--output", str(tmp_path), "--page-break", "<!-- page-break -->"],
