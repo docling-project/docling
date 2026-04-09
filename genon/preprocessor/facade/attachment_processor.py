@@ -1154,9 +1154,12 @@ class HwpProcessor:
         """SDK 백엔드를 통해 문서를 로드"""
         save_images = kwargs.get('save_images', True)
         self.pipeline_options.save_images = save_images
+
+        # kwargs에서 jayu_sdk_save를 꺼내어 pipeline_options에 반영
+        self.pipeline_options.jayu_sdk_save = kwargs.get('jayu_sdk_save', False)
         
         # 확장자가 .hwp든 .hwpx든 등록된 백엔드가 알아서 처리함
-        conv_result: ConversionResult = self.converter.convert(file_path, raises_on_error=True)
+        conv_result: ConversionResult = self.converter.convert(Path(file_path).resolve(), raises_on_error=True)
         return conv_result.document
 
     def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
@@ -1538,6 +1541,7 @@ class DocumentProcessor:
         # 🚀 [핵심 수정] HWP와 HWPX를 하나의 프로세서로 통합 실행
         elif ext in ('.hwp', '.hwpx'):
             _log.info(f"Processing Korean Document ({ext}) with Unified HwpProcessor")
+            print(f"⚠️⚠️kwargs: {kwargs}")
             return await self.hwp_processor(request, file_path, **kwargs)
 
         elif ext == '.docx':

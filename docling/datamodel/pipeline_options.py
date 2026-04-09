@@ -284,6 +284,7 @@ class PipelineOptions(BaseModel):
     allow_external_plugins: bool = False
     save_images: bool = True
     include_wmf: bool = False
+    jayu_sdk_save: bool = False
 
 
 class PaginatedPipelineOptions(PipelineOptions):

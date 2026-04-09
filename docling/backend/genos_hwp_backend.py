@@ -70,6 +70,10 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         self.save_images = kwargs.get("save_images", True)
         # 만약 WMF 변환 포함 여부도 기존처럼 쓰고 싶다면 추가
         self.include_wmf = kwargs.get("include_wmf", True)
+        # 자유소프트 SDK 사용 직후의 결과 저장 여부
+        self.jayu_sdk_save = kwargs.get("jayu_sdk_save", False)
+
+        print(f"(init)⚠️ self.jayu_sdk_save: {self.jayu_sdk_save}")
 
         self._processed_hashes = set()  # 중복 텍스트(머리말/꼬리말) 필터링용
         
@@ -84,6 +88,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         }
         
         # 3. 소스 파일 준비
+        self.original_path = Path(in_doc.file) if in_doc.file else None  # 원본 입력 경로 보존
         self.temp_input_path = None
         if isinstance(path_or_stream, BytesIO):
             with tempfile.NamedTemporaryFile(delete=False, suffix=".hwp") as tmp:
@@ -190,13 +195,25 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         # 3. 실제 데이터를 담을 DoclingDocument 객체를 초기화합니다.
         doc = DoclingDocument(name=self.source_path.stem or "file", origin=origin)
 
-        # 4. 임시 디렉토리에서 SDK 작업 시작
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_path = Path(temp_dir)
-            json_out = temp_path / "output.json"
-            info_out = temp_path / "output.info"
-            img_dir = temp_path / "images"
-            img_dir.mkdir()
+        # 4. 작업 디렉토리 결정 (임시 vs 영구)
+        if self.jayu_sdk_save:
+            # 영구 저장: 원본 파일의 부모 폴더 / jayu_sdk_result / {파일명} 구조로 생성
+            base = self.original_path or self.source_path
+            work_dir = base.parent / "jayu_sdk_result" / base.stem
+            work_dir.mkdir(parents=True, exist_ok=True)
+            temp_dir_context = None  # 삭제할 임시 컨텍스트 없음
+            print(f"(if) ⚠️ work_dir: {work_dir}")
+        else:
+            # 임시 저장: 기존처럼 tempfile 사용
+            temp_dir_context = tempfile.TemporaryDirectory()
+            work_dir = Path(temp_dir_context.name)
+
+        try:
+            # 경로 설정 (work_dir 기준)
+            json_out = work_dir / "output.json"
+            info_out = work_dir / "output.info"
+            img_dir = work_dir / "images"
+            img_dir.mkdir(exist_ok=True)
 
             # 이미지 경로 끝에 '/' 보장
             img_path_str = str(img_dir)
@@ -214,7 +231,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             
             print(f"DEBUG: Running SDK command: {' '.join(cmd)}")
 
-            # 4-b) 실제 SDK 실행 (cwd 설정으로 11번 에러 방지)
+            # 4-b) 실제 SDK 실행
             subprocess.run(
                 cmd, 
                 capture_output=True, 
@@ -223,42 +240,40 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                 cwd=str(SDK_DIR)
             )
 
-            # --- 5. 기존의 후속 로직 시작 ---
+            print(f"⚠️⚠️ json_out: {json_out}")
+            print(f"⚠️⚠️ info_out: {info_out}")
+            print(f"⚠️⚠️ img_dir: {img_dir}")
 
-            # 5. 자유소프트의 결과중, '.info'를 활용해서 페이지 길이 & 크기 정보 DoclingDocument에 설정 
+            # 5. '.info' 활용 설정
             self._setup_pages(doc, info_out)
 
-            # 6. 자유소프트 SDK의 결과를 hwp_data에 저장
+            # 6. SDK 결과를 hwp_data에 저장 (읽기 로직 단순화)
             hwp_data = []
             with open(json_out, "r", encoding="utf-8") as f:
-                for line_no, line in enumerate(f, 1):
+                for line in f:
                     clean_line = line.strip()
                     if not clean_line:
                         continue
-                    
                     try:
-                        # 🚀 strict=False로 제어 문자 에러 방지
-                        # 각 라인은 그 자체로 완벽한 리스트(batch)입니다.
                         batch = json.loads(clean_line, strict=False)
-                        
-                        if isinstance(batch, list):
-                            # 리스트 안의 요소들을 하나씩 hwp_data에 통합
-                            hwp_data.append(batch) 
-                        else:
-                            # 혹시 리스트가 아닌 단일 객체라면 그대로 추가
-                            hwp_data.append([batch])
-                            
+                        hwp_data.append(batch) # SDK 결과는 항상 리스트이므로 바로 append
                     except json.JSONDecodeError as e:
-                        print(f"⚠️ {line_no}행 파싱 실패 (스킵): {e}")
+                        print(f"⚠️ 파싱 실패 (스킵): {e}")
                         continue
 
             # 7. hwp_data를 Docling 구조로 변환
-            # 3번에서 만든 DoclingDocument 객체에 내용을 채워 넣기.
             self.current_img_dir = img_dir
             self._walk_hwp_data(hwp_data, doc)
             self.current_img_dir = None
 
-        # 8. 완성된 DoclingDocument 형태 문서 반환
+        finally:
+            # 8. 사후 정리: 임시 디렉토리인 경우에만 삭제 실행
+            if temp_dir_context is not None:
+                temp_dir_context.cleanup()
+                print("DEBUG: Temporary directory cleaned up.")
+            else:
+                print(f"DEBUG: SDK outputs saved at: {work_dir}")
+
         return doc
 
     # --- DoclingDocument 객체에 자유소프트 SDK의 결과를 채워주는 함수 ---
