@@ -1103,7 +1103,7 @@ def _save_result_files(file_path: str, vectors: list, document=None, save_path: 
     """docling/vectors 결과를 저장하는 공통 헬퍼. 모든 프로세서에서 사용."""
     try:
         base = Path(file_path).resolve()
-        root = Path(save_path) if save_path else base.parent / "docparser_result"
+        root = Path(save_path).resolve() if save_path else base.parent / "docparser_result"
         result_dir = root / base.stem
 
         if document is not None:

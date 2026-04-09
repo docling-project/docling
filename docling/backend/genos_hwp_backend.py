@@ -200,7 +200,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         if self.save_result:
             # 영구 저장: save_path가 있으면 거기에, 없으면 원본 파일 옆에
             base = self.original_path or self.source_path
-            root = Path(self.save_path) if self.save_path else base.parent / "docparser_result"
+            root = Path(self.save_path).resolve() if self.save_path else base.parent / "docparser_result"
             work_dir = root / base.stem / "jayu_sdk_result"
             work_dir.mkdir(parents=True, exist_ok=True)
             temp_dir_context = None  # 삭제할 임시 컨텍스트 없음
