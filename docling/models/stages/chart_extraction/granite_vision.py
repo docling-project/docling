@@ -3,7 +3,6 @@ import re
 import warnings
 from abc import abstractmethod
 from collections.abc import Iterable
-from enum import Enum
 from io import StringIO
 from pathlib import Path
 from typing import Any, List, Literal, Optional, cast
@@ -29,28 +28,15 @@ from transformers import AutoModelForImageTextToText, AutoProcessor
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
+from docling.datamodel.chart_extraction_options import (
+    ChartExtractionModelKind,
+    ChartExtractionModelOptions,
+)
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 
 _log = logging.getLogger(__name__)
-
-
-class ChartExtractionModelKind(str, Enum):
-    GRANITE_VISION = "granite-vision"
-    GRANITE_VISION_V4 = "granite-vision-v4"
-
-
-class ChartExtractionModelOptions(BaseModel):
-    kind: Literal["chart_extraction"] = "chart_extraction"
-
-    model: ChartExtractionModelKind = ChartExtractionModelKind.GRANITE_VISION_V4
-
-    chart2csv: bool = True  # prompt <chart2csv>      Chart to CSV with table with headers and numeric values
-    chart2code: bool = (
-        False  # prompt <chart2code>  Chart to Python code that recreates the chart
-    )
-    chart2summary: bool = False  # prompt <chart2summary>  Chart to summary with natural-language description of the chart
 
 
 class _BaseChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):

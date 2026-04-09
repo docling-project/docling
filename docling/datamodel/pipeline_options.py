@@ -63,11 +63,11 @@ from docling.datamodel.vlm_model_specs import (
 from docling.models.inference_engines.object_detection.base import (
     ObjectDetectionEngineOptionsMixin,
 )
-from docling.models.inference_engines.vlm.base import VlmEngineOptionsMixin
-from docling.models.stages.chart_extraction.granite_vision import (
+from docling.datamodel.chart_extraction_options import (
     ChartExtractionModelKind,
     ChartExtractionModelOptions,
 )
+from docling.models.inference_engines.vlm.base import VlmEngineOptionsMixin
 
 _log = logging.getLogger(__name__)
 
