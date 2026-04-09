@@ -1083,23 +1083,6 @@ class DocxProcessor:
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
         document: DoclingDocument = self.load_documents(file_path, **kwargs)
 
-        # 🚀 [추가]: DOCX 변환 결과 DoclingDocument 객체 저장 로직
-        # 파일명을 포함해서 저장하면 나중에 여러 파일을 테스트할 때 섞이지 않아 좋습니다.
-        debug_doc_name = f"result_docx_docling.json"
-        debug_doc_path = Path.cwd() / debug_doc_name
-        
-        try:
-            # [수정]: mode="json"을 추가하면 PosixPath가 문자열로 자동 변환됩니다.
-            dict_data = document.model_dump(mode="json") 
-            
-            with open(debug_doc_path, "w", encoding="utf-8") as f:
-                json.dump(dict_data, f, ensure_ascii=False, indent=2)
-            
-            print(f"✅ [DEBUG] DOCX DoclingDocument 저장 완료: {debug_doc_path.resolve()}")
-        except Exception as e:
-            print(f"⚠️ [DEBUG] DOCX 문서 저장 실패: {e}")
-        # --------------------------------------------------
-
         artifacts_dir, reference_path = self.get_paths(file_path)
         document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
 
@@ -1110,7 +1093,38 @@ class DocxProcessor:
             vectors: list[dict] = await self.compose_vectors(document, chunks, file_path, request, **kwargs)
         else:
             raise GenosServiceException(1, f"chunk length is 0")
+
+        if kwargs.get('save_result', False):
+            _save_result_files(file_path, vectors, document, save_path=kwargs.get('save_path', None))
+
         return vectors
+
+def _save_result_files(file_path: str, vectors: list, document=None, save_path: Optional[str] = None):
+    """docling/vectors 결과를 저장하는 공통 헬퍼. 모든 프로세서에서 사용."""
+    try:
+        base = Path(file_path).resolve()
+        root = Path(save_path) if save_path else base.parent / "docparser_result"
+        result_dir = root / base.stem
+
+        if document is not None:
+            docling_dir = result_dir / "docling_result"
+            docling_dir.mkdir(parents=True, exist_ok=True)
+            with open(docling_dir / "docling.json", "w", encoding="utf-8") as f:
+                f.write(document.model_dump_json(indent=2))
+            print(f"✅ docling_result 저장 완료: {docling_dir}")
+
+        vectors_dir = result_dir / "vectors_result"
+        vectors_dir.mkdir(parents=True, exist_ok=True)
+        with open(vectors_dir / "vectors.json", "w", encoding="utf-8") as f:
+            if vectors and hasattr(vectors[0], 'model_dump'):
+                json.dump([v.model_dump() for v in vectors], f, ensure_ascii=False, indent=2)
+            else:
+                json.dump(vectors, f, ensure_ascii=False, indent=2)
+        print(f"✅ vectors_result 저장 완료: {vectors_dir}")
+
+    except Exception as e:
+        print(f"🔥 _save_result_files 실패: {e}")
+
 
 class HwpProcessor:
     def __init__(self):
@@ -1165,25 +1179,7 @@ class HwpProcessor:
 
     def _save_results(self, file_path: str, document: DoclingDocument, vectors: list, save_path: Optional[str] = None):
         """docling/vectors 결과를 docparser_result 디렉토리에 저장"""
-        try:
-            base = Path(file_path).resolve()
-            root = Path(save_path) if save_path else base.parent / "docparser_result"
-            result_dir = root / base.stem
-
-            docling_dir = result_dir / "docling_result"
-            docling_dir.mkdir(parents=True, exist_ok=True)
-            with open(docling_dir / "docling.json", "w", encoding="utf-8") as f:
-                f.write(document.model_dump_json(indent=2))
-            print(f"✅ docling_result 저장 완료: {docling_dir}")
-
-            vectors_dir = result_dir / "vectors_result"
-            vectors_dir.mkdir(parents=True, exist_ok=True)
-            with open(vectors_dir / "vectors.json", "w", encoding="utf-8") as f:
-                json.dump([v.model_dump() for v in vectors], f, ensure_ascii=False, indent=2)
-            print(f"✅ vectors_result 저장 완료: {vectors_dir}")
-
-        except Exception as e:
-            print(f"🔥 _save_results 실패: {e}")
+        _save_result_files(file_path, vectors, document, save_path)
 
     def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
         """HybridChunker를 사용하여 문서 분할 및 페이지별 청크 수 집계"""
@@ -1582,4 +1578,8 @@ class DocumentProcessor:
             # await assert_cancelled(request)
 
             vectors: list[dict] = self.compose_vectors(file_path, chunks, **kwargs)
+
+            if kwargs.get('save_result', False):
+                _save_result_files(file_path, vectors, save_path=kwargs.get('save_path', None))
+
             return vectors
