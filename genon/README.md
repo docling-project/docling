@@ -54,6 +54,7 @@
 
 1. build-script 디렉토리 이동
 2. [doc-parser-build.config](../build-script/doc-parser-build.config) 변경 사항 반영
+   - `HF_TOKEN`: 자유소프트 HWP SDK를 private 레포에서 다운로드하기 위한 토큰. [제논 내부 드라이브](https://drive.google.com/file/d/1m8aom4_zo3ZuQ-HdHHpkRsVOJakN-Lt5/view?usp=sharing)에 직접 접속하여 토큰 값을 확인한 뒤, 로컬 repo의 `doc-parser-build.config`에 직접 입력해야 빌드 가능 (토큰 값 입력된 상태로 push 금지)
 3. 실행 [doc-parser-build.sh](../build-script/doc-parser-build.sh)
 4. [register.config](preprocessor/scripts/register.config) 변경 사항 있을 시 변경 필요
 5. 실행 [register_image.sh](preprocessor/scripts/register_image.sh) : push와 디비에 등록해준다.

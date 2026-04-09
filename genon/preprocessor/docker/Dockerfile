@@ -148,8 +148,8 @@ RUN --mount=type=cache,target=${HF_HOME} \
     # /run/secrets/HF_TOKEN 경로에서 값을 읽어옴
     HF_TOKEN_VAL=$(cat /run/secrets/HF_TOKEN) && \
     mkdir -p /app/hwp_sdk && \
-    huggingface-cli download mncai/doc_parser_models \
-      --include "hwp_sdk/*" \
+    huggingface-cli download HeechanKim-Genon/hwp_sdk \
+      --repo-type dataset \
       --local-dir /app/hwp_sdk \
       --local-dir-use-symlinks False \
       --token "${HF_TOKEN_VAL}" && \
