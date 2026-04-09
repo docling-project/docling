@@ -396,3 +396,37 @@ def test_latex_author_date():
     )
     assert "Jane Doe" in md
     assert "January 2025" in md
+
+
+def test_vspace_argument_does_not_leak():
+    doc = make_backend(
+        b"""
+    \\documentclass{article}
+    \\begin{document}
+    Before text.
+    \\vspace{-1mm}
+    After text.
+    \\end{document}
+    """
+    ).convert()
+
+    all_text = " ".join(t.text for t in doc.texts)
+    assert "-1mm" not in all_text, f"vspace argument leaked into text: {all_text!r}"
+    assert "Before text" in all_text
+    assert "After text" in all_text
+
+
+def test_hspace_argument_does_not_leak():
+    doc = make_backend(
+        b"""
+    \\documentclass{article}
+    \\begin{document}
+    Left text.\\hspace{0.2cm}Right text.
+    \\end{document}
+    """
+    ).convert()
+
+    all_text = " ".join(t.text for t in doc.texts)
+    assert "0.2cm" not in all_text, f"hspace argument leaked into text: {all_text!r}"
+    assert "Left text" in all_text
+    assert "Right text" in all_text
