@@ -51,8 +51,6 @@ from docling.utils.utils import chunkify
 _log = logging.getLogger(__name__)
 
 # CUSTOM IMPORT
-from docling.backend.hwp_backend import HwpDocumentBackend
-from docling.backend.xml.hwpx_backend import HwpxDocumentBackend
 from docling.backend.json.bok_json_backend import BOKJsonDocumentBackend
 # genos_msword_backend 추가
 from docling.backend.genos_msword_backend import GenosMsWordDocumentBackend
