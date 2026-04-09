@@ -19,6 +19,10 @@ from docling.datamodel.base_models import (
     ErrorItem,
     Page,
 )
+from docling.datamodel.chart_extraction_options import (
+    ChartExtractionModelKind,
+    ChartExtractionModelOptions,
+)
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import (
     ConvertPipelineOptions,
@@ -29,10 +33,6 @@ from docling.datamodel.settings import settings
 from docling.models.base_model import GenericEnrichmentModel
 from docling.models.factories import get_picture_description_factory
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
-from docling.datamodel.chart_extraction_options import (
-    ChartExtractionModelKind,
-    ChartExtractionModelOptions,
-)
 from docling.models.stages.chart_extraction.granite_vision import (
     ChartExtractionModelGraniteVision,
     ChartExtractionModelGraniteVisionV4,

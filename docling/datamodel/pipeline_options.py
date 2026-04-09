@@ -22,6 +22,10 @@ from docling.datamodel import (
 
 # Import the following for backwards compatibility
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.chart_extraction_options import (
+    ChartExtractionModelKind,
+    ChartExtractionModelOptions,
+)
 from docling.datamodel.kserve_v2_options import KserveV2OptionsMixin
 from docling.datamodel.layout_model_specs import (
     DOCLING_LAYOUT_EGRET_LARGE,
@@ -62,10 +66,6 @@ from docling.datamodel.vlm_model_specs import (
 )
 from docling.models.inference_engines.object_detection.base import (
     ObjectDetectionEngineOptionsMixin,
-)
-from docling.datamodel.chart_extraction_options import (
-    ChartExtractionModelKind,
-    ChartExtractionModelOptions,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineOptionsMixin
 
