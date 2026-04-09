@@ -51,11 +51,11 @@ Docling simplifies document processing, parsing diverse formats — including ad
 * 💬 Parsing of WebVTT (Web Video Text Tracks) files and export to WebVTT format
 * 💬 Parsing of LaTeX files
 * 📝 Parsing of plain-text files (`.txt`, `.text`) and Markdown supersets (`.qmd`, `.Rmd`)
+* 📝 Chart understanding (Barchart, Piechart, LinePlot): converting them into tables, code or adding detailed descriptions
 
 ### Coming soon
 
 * 📝 Metadata extraction, including title, authors, references & language
-* 📝 Chart understanding (Barchart, Piechart, LinePlot, etc)
 * 📝 Complex chemistry understanding (Molecular structures)
 
 ## Installation
