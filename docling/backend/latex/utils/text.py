@@ -21,6 +21,8 @@ from pylatexenc.latexwalker import (
 from docling.backend.latex.constants import (
     MACROS_CITATION,
     MACROS_ESCAPED,
+    MACROS_IGNORED,
+    MACROS_SPACING,
     MACROS_STRUCTURAL,
     MACROS_TEXT_FORMATTING,
 )
@@ -144,6 +146,13 @@ class TextHelperMixin:
                         text_parts.append(self._parse_latex_fragment_to_text(expansion))
                     else:
                         text_parts.append(expansion)
+                elif (
+                    node.macroname in MACROS_SPACING or node.macroname in MACROS_IGNORED
+                ):
+                    # Spacing and ignored commands are silently discarded along
+                    # with their arguments to prevent values like "-1mm" leaking
+                    # as plain text (e.g. from \vspace{-1mm}, \hspace{0.2cm})
+                    pass
                 else:
                     arg_parts = []
                     if node.nodeargd and node.nodeargd.argnlist:

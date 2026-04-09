@@ -595,6 +595,7 @@ class StagePresetMixin:
         preset = cls.get_preset(preset_id)
 
         # Create engine options if not provided
+        trust_remote = preset.model_spec.trust_remote_code
         if engine_options is None:
             if preset.default_engine_type == VlmEngineType.AUTO_INLINE:
                 engine_options = AutoInlineVlmEngineOptions()
@@ -603,11 +604,17 @@ class StagePresetMixin:
                     engine_type=preset.default_engine_type
                 )
             elif preset.default_engine_type == VlmEngineType.TRANSFORMERS:
-                engine_options = TransformersVlmEngineOptions()
+                engine_options = TransformersVlmEngineOptions(
+                    trust_remote_code=trust_remote,
+                )
             elif preset.default_engine_type == VlmEngineType.MLX:
-                engine_options = MlxVlmEngineOptions()
+                engine_options = MlxVlmEngineOptions(
+                    trust_remote_code=trust_remote,
+                )
             elif preset.default_engine_type == VlmEngineType.VLLM:
-                engine_options = VllmVlmEngineOptions()
+                engine_options = VllmVlmEngineOptions(
+                    trust_remote_code=trust_remote,
+                )
             else:
                 engine_options = AutoInlineVlmEngineOptions()
 
@@ -1221,6 +1228,41 @@ VLM_CONVERT_GLMOCR = StageModelPreset(
             ),
             VlmEngineType.API_OPENAI: ApiModelConfig(
                 params={"model": "glm-ocr", "max_tokens": 4096}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+VLM_CONVERT_FALCON_OCR = StageModelPreset(
+    preset_id="falcon_ocr",
+    name="Falcon-OCR",
+    description="TII Falcon-OCR model for text recognition and markdown conversion (0.3B parameters)",
+    model_spec=VlmModelSpec(
+        name="Falcon-OCR",
+        default_repo_id="tiiuae/Falcon-OCR",
+        prompt="",
+        response_format=ResponseFormat.MARKDOWN,
+        trust_remote_code=True,
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_CAUSALLM,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    "torch_dtype": "bfloat16",
+                },
+            ),
+            # No MLX export available yet; when one appears on mlx-community,
+            # add: VlmEngineType.MLX: EngineModelConfig(repo_id="mlx-community/Falcon-OCR-...")
+        },
+        api_overrides={
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "falcon-ocr", "max_tokens": 4096}
+            ),
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "falcon-ocr", "max_tokens": 4096}
             ),
         },
     ),

@@ -21,6 +21,7 @@ from docling_core.types.doc.base import (
 )
 from docling_core.types.doc.document import DocTagsDocument
 from PIL import Image as PILImage
+from typing_extensions import override
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
@@ -29,7 +30,14 @@ from docling.backend.abstract_backend import (
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
-from docling.datamodel.base_models import InputFormat, Page
+from docling.datamodel.base_models import (
+    ConversionStatus,
+    DoclingComponentType,
+    ErrorItem,
+    InputFormat,
+    Page,
+    VlmStopReason,
+)
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import (
     VlmConvertOptions,
@@ -206,6 +214,43 @@ class VlmPipeline(PaginatedPipeline):
                 if page._backend:
                     text = page._backend.get_text_in_rect(bbox)
         return text
+
+    @override
+    def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
+        """Determine conversion status accounting for VLM stop reasons.
+
+        Extends the base implementation to detect partial failures from VLM
+        inference, such as truncated output (LENGTH) or filtered content
+        (CONTENT_FILTERED).
+        """
+        status = super()._determine_status(conv_res)
+
+        for page in conv_res.pages:
+            vlm_response = page.predictions.vlm_response
+            if vlm_response is None:
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.__class__.__name__,
+                        error_message=f"Page {page.page_no} has no VLM prediction.",
+                    )
+                )
+                status = ConversionStatus.PARTIAL_SUCCESS
+            elif vlm_response.stop_reason in (
+                VlmStopReason.LENGTH,
+                VlmStopReason.CONTENT_FILTERED,
+            ):
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.__class__.__name__,
+                        error_message=f"Page {page.page_no} VLM output incomplete "
+                        f"(stop_reason={vlm_response.stop_reason.value}).",
+                    )
+                )
+                status = ConversionStatus.PARTIAL_SUCCESS
+
+        return status
 
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
         with TimeRecorder(conv_res, "doc_assemble", scope=ProfilingScope.DOCUMENT):

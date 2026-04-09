@@ -29,7 +29,11 @@ from docling_core.types.doc import (
     GraphLinkLabel,
     GroupItem,
     GroupLabel,
+    PictureClassificationLabel,
+    PictureClassificationMetaField,
+    PictureClassificationPrediction,
     PictureItem,
+    PictureMeta,
     ProvenanceItem,
     RefItem,
     RichTableCell,
@@ -73,6 +77,8 @@ _BLOCK_TAGS: Final = {
     "ol",
     "p",
     "pre",
+    "signature",
+    "stamp",
     "summary",
     "table",
     "ul",
@@ -2296,7 +2302,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 num_rows += 1
         return num_rows, num_cols
 
-    def _handle_block(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:
+    def _handle_block(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:  # noqa: C901
         added_refs = []
         tag_name = tag.name.lower()
 
@@ -2391,6 +2397,26 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
             added_refs.append(docling_table.get_ref())
             self.parse_table_data(tag, doc, docling_table, num_rows, num_cols)
+
+        elif tag_name in {"stamp", "signature"}:
+            _class_name = PictureClassificationLabel.STAMP.value
+            if tag_name == "signature":
+                _class_name = PictureClassificationLabel.SIGNATURE.value
+            placeholder: PictureItem = doc.add_picture(
+                parent=self.parents[self.level],
+                content_layer=self.content_layer,
+            )
+            placeholder.meta = PictureMeta(
+                classification=PictureClassificationMetaField(
+                    predictions=[
+                        PictureClassificationPrediction(
+                            class_name=_class_name,
+                        )
+                    ],
+                ),
+            )
+            text = HTMLDocumentBackend._clean_unicode(self.get_text(tag).strip())
+            doc.add_text(label=DocItemLabel.TEXT, text=text, parent=placeholder)
 
         elif tag_name in {"pre"}:
             # handle monospace code snippets (pre).

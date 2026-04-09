@@ -1,3 +1,14 @@
+## [v2.85.0](https://github.com/docling-project/docling/releases/tag/v2.85.0) - 2026-04-07
+
+### Feature
+
+* Add support for Falcon-OCR ([#3237](https://github.com/docling-project/docling/issues/3237)) ([`d0e19be`](https://github.com/docling-project/docling/commit/d0e19be14ff3dbe8d44b5bf8bfe4cf53b58249f6))
+* Add support for LightOnOCR-2-1B ([#3213](https://github.com/docling-project/docling/issues/3213)) ([`f2affd7`](https://github.com/docling-project/docling/commit/f2affd76149aa7c1ed84df1e84ef537f3905559b))
+
+### Fix
+
+* **latex:** Expand custom macro parameters ([#3223](https://github.com/docling-project/docling/issues/3223)) ([`77a2505`](https://github.com/docling-project/docling/commit/77a2505bc2da4b8eede604071978cebf33addaa5))
+
 ## [v2.84.0](https://github.com/docling-project/docling/releases/tag/v2.84.0) - 2026-04-01
 
 ### Feature
