@@ -10,11 +10,10 @@ from docling.service_client import DoclingServiceClient
 
 SERVICE_URL_ENV = "DOCLING_SERVICE_URL"
 SERVICE_API_KEY_ENV = "DOCLING_SERVICE_API_KEY"
-SAMPLE_SOURCE_ENV = "DOCLING_SAMPLE_SOURCE"
-SECOND_SAMPLE_SOURCE_ENV = "DOCLING_SECOND_SAMPLE_SOURCE"
-
-DEFAULT_SAMPLE_SOURCE = "https://arxiv.org/pdf/2206.01062"
-DEFAULT_SECOND_SAMPLE_SOURCE = "https://arxiv.org/pdf/2305.03393"
+SAMPLE_SOURCES = [
+    "https://arxiv.org/pdf/2206.01062",
+    "https://arxiv.org/pdf/2305.03393",
+]
 
 
 def _service_url() -> str:
@@ -63,11 +62,6 @@ def run_convert_all(client: DoclingServiceClient, sources: list[str]) -> None:
 
 
 def main() -> None:
-    sources = [
-        os.environ.get(SAMPLE_SOURCE_ENV, DEFAULT_SAMPLE_SOURCE),
-        os.environ.get(SECOND_SAMPLE_SOURCE_ENV, DEFAULT_SECOND_SAMPLE_SOURCE),
-    ]
-
     with DoclingServiceClient(
         url=_service_url(),
         api_key=os.environ.get(SERVICE_API_KEY_ENV),
@@ -81,8 +75,8 @@ def main() -> None:
         except Exception as exc:
             print("version endpoint unavailable:", exc)
 
-        run_convert(client, sources[0])
-        run_convert_all(client, sources)
+        run_convert(client, SAMPLE_SOURCES[0])
+        run_convert_all(client, SAMPLE_SOURCES)
 
 
 if __name__ == "__main__":

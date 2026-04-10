@@ -18,10 +18,3 @@ python docs/examples/service_client/convert_compat.py
 python docs/examples/service_client/task_api.py
 python docs/examples/service_client/batch_and_chunk.py
 ```
-
-The examples default to public PDF URLs. Override them with:
-
-```bash
-export DOCLING_SAMPLE_SOURCE="https://example.org/document-a.pdf"
-export DOCLING_SECOND_SAMPLE_SOURCE="https://example.org/document-b.pdf"
-```

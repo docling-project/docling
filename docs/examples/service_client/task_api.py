@@ -12,9 +12,7 @@ from docling.service_client import ConversionJob, DoclingServiceClient, RawServi
 
 SERVICE_URL_ENV = "DOCLING_SERVICE_URL"
 SERVICE_API_KEY_ENV = "DOCLING_SERVICE_API_KEY"
-SAMPLE_SOURCE_ENV = "DOCLING_SAMPLE_SOURCE"
-
-DEFAULT_SAMPLE_SOURCE = "https://arxiv.org/pdf/2206.01062"
+SAMPLE_SOURCE = "https://arxiv.org/pdf/2206.01062"
 
 
 def _service_url() -> str:
@@ -22,10 +20,6 @@ def _service_url() -> str:
     if not service_url:
         raise SystemExit(f"Set {SERVICE_URL_ENV} to a running docling-serve URL.")
     return service_url
-
-
-def _sample_source() -> str:
-    return os.environ.get(SAMPLE_SOURCE_ENV, DEFAULT_SAMPLE_SOURCE)
 
 
 def create_conversion_options() -> ConvertDocumentsRequestOptions:
@@ -49,7 +43,7 @@ def run_json_task_flow_with_watch() -> None:
     print("\n=== JSON task flow: submit -> watch -> result ===")
     with _client() as client:
         job: ConversionJob[ConversionResult] = client.submit(
-            source=_sample_source(),
+            source=SAMPLE_SOURCE,
             options=create_conversion_options(),
             target_format=OutputFormat.JSON,
         )
@@ -94,7 +88,7 @@ def run_markdown_task_flow_without_watch() -> None:
             "or timeout."
         )
         job: ConversionJob[RawServiceResult] = client.submit(
-            source=_sample_source(),
+            source=SAMPLE_SOURCE,
             options=create_conversion_options(),
             target_format=OutputFormat.MARKDOWN,
         )

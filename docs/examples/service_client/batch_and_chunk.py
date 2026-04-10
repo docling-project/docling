@@ -10,11 +10,10 @@ from docling.service_client import DoclingServiceClient
 
 SERVICE_URL_ENV = "DOCLING_SERVICE_URL"
 SERVICE_API_KEY_ENV = "DOCLING_SERVICE_API_KEY"
-SAMPLE_SOURCE_ENV = "DOCLING_SAMPLE_SOURCE"
-SECOND_SAMPLE_SOURCE_ENV = "DOCLING_SECOND_SAMPLE_SOURCE"
-
-DEFAULT_SAMPLE_SOURCE = "https://arxiv.org/pdf/2206.01062"
-DEFAULT_SECOND_SAMPLE_SOURCE = "https://arxiv.org/pdf/2305.03393"
+SAMPLE_SOURCES = [
+    "https://arxiv.org/pdf/2206.01062",
+    "https://arxiv.org/pdf/2305.03393",
+]
 
 
 def _service_url() -> str:
@@ -35,23 +34,18 @@ def create_conversion_options() -> ConvertDocumentsRequestOptions:
 
 
 def main() -> None:
-    sources = [
-        os.environ.get(SAMPLE_SOURCE_ENV, DEFAULT_SAMPLE_SOURCE),
-        os.environ.get(SECOND_SAMPLE_SOURCE_ENV, DEFAULT_SECOND_SAMPLE_SOURCE),
-    ]
-
     with DoclingServiceClient(
         url=_service_url(),
         api_key=os.environ.get(SERVICE_API_KEY_ENV),
     ) as client:
         options = create_conversion_options()
-        print("batch results:", len(sources))
+        print("batch results:", len(SAMPLE_SOURCES))
         chunked_count = 0
         for idx, (source, result) in enumerate(
             zip(
-                sources,
+                SAMPLE_SOURCES,
                 client.convert_all(
-                    sources=sources,
+                    sources=SAMPLE_SOURCES,
                     options=options,
                     max_concurrency=2,
                     raises_on_error=False,
