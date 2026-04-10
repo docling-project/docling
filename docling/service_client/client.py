@@ -8,6 +8,7 @@ import mimetypes
 import re
 import sys
 import time
+import warnings
 from collections.abc import AsyncGenerator, Iterable, Iterator
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -75,6 +76,11 @@ SourceType = Path | str | DocumentStream
 VersionResponse = dict[str, Any]
 HealthResponse = HealthCheckResponse
 logger = logging.getLogger(__name__)
+
+
+class ExperimentalWarning(UserWarning):
+    """Warning emitted by experimental features."""
+
 
 SUCCESS_CONVERSION_STATUSES: set[ConversionStatus] = {
     ConversionStatus.SUCCESS,
@@ -168,6 +174,12 @@ class DoclingServiceClient:
         self._http_retries = http_retries
         self._http_connect_timeout = http_connect_timeout
         self._http_read_timeout = http_read_timeout
+
+        warnings.warn(
+            "DoclingServiceClient is experimental and may change in future releases.",
+            ExperimentalWarning,
+            stacklevel=2,
+        )
 
         timeout = httpx.Timeout(
             connect=http_connect_timeout,
