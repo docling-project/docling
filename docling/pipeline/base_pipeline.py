@@ -19,6 +19,10 @@ from docling.datamodel.base_models import (
     ErrorItem,
     Page,
 )
+from docling.datamodel.chart_extraction_options import (
+    ChartExtractionModelKind,
+    ChartExtractionModelOptions,
+)
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import (
     ConvertPipelineOptions,
@@ -31,7 +35,7 @@ from docling.models.factories import get_picture_description_factory
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.models.stages.chart_extraction.granite_vision import (
     ChartExtractionModelGraniteVision,
-    ChartExtractionModelOptions,
+    ChartExtractionModelGraniteVisionV4,
 )
 from docling.models.stages.picture_classifier.document_picture_classifier import (
     DocumentPictureClassifier,
@@ -175,9 +179,23 @@ class ConvertPipeline(BasePipeline):
             picture_description_model,
             # Document Chart Extraction
             ChartExtractionModelGraniteVision(
-                enabled=pipeline_options.do_chart_extraction,
+                enabled=(
+                    pipeline_options.do_chart_extraction
+                    and pipeline_options.chart_extraction_options.model
+                    == ChartExtractionModelKind.GRANITE_VISION
+                ),
                 artifacts_path=self.artifacts_path,
-                options=ChartExtractionModelOptions(),
+                options=pipeline_options.chart_extraction_options,
+                accelerator_options=pipeline_options.accelerator_options,
+            ),
+            ChartExtractionModelGraniteVisionV4(
+                enabled=(
+                    pipeline_options.do_chart_extraction
+                    and pipeline_options.chart_extraction_options.model
+                    == ChartExtractionModelKind.GRANITE_VISION_V4
+                ),
+                artifacts_path=self.artifacts_path,
+                options=pipeline_options.chart_extraction_options,
                 accelerator_options=pipeline_options.accelerator_options,
             ),
         ]

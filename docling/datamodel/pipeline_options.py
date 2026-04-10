@@ -22,6 +22,10 @@ from docling.datamodel import (
 
 # Import the following for backwards compatibility
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.chart_extraction_options import (
+    ChartExtractionModelKind,
+    ChartExtractionModelOptions,
+)
 from docling.datamodel.kserve_v2_options import KserveV2OptionsMixin
 from docling.datamodel.layout_model_specs import (
     DOCLING_LAYOUT_EGRET_LARGE,
@@ -1202,9 +1206,25 @@ class ConvertPipelineOptions(PipelineOptions):
         ),
     ] = _default_picture_description_options
 
-    do_chart_extraction: bool = (
-        False  # True: extract data in tabular format from bar-, pie and line-charts
-    )
+    do_chart_extraction: Annotated[
+        bool,
+        Field(
+            description=(
+                "Enable chart data extraction to convert bar, pie, and line charts into structured tabular data. "
+                "Automatically enables picture classification. "
+                "Only applicable when `do_chart_extraction=True`."
+            )
+        ),
+    ] = False
+    chart_extraction_options: Annotated[
+        ChartExtractionModelOptions,
+        Field(
+            description=(
+                "Configuration for the chart extraction model, including which model variant to use "
+                "and which output formats to generate (CSV, code, summary)."
+            )
+        ),
+    ] = ChartExtractionModelOptions()
 
 
 class PaginatedPipelineOptions(ConvertPipelineOptions):

@@ -1,3 +1,19 @@
+## [v2.86.0](https://github.com/docling-project/docling/releases/tag/v2.86.0) - 2026-04-10
+
+### Feature
+
+* Support for GraniteVision v4 ([#3217](https://github.com/docling-project/docling/issues/3217)) ([`fd83420`](https://github.com/docling-project/docling/commit/fd834204fadcb15190f3f2c289841143773b5f9d))
+* Add signature/stamp html block to DC document ([#3251](https://github.com/docling-project/docling/issues/3251)) ([`9b4b67b`](https://github.com/docling-project/docling/commit/9b4b67b23e77d6d9063ee141196707412bde1673))
+* **vlm:** Add PARTIAL_SUCCESS status for VLM pipeline pages ([#3215](https://github.com/docling-project/docling/issues/3215)) ([`6699642`](https://github.com/docling-project/docling/commit/6699642fa081a9cb50869c4d1206f9d7c89b782d))
+
+### Fix
+
+* **latex:** Discard arguments of filtered spacing commands ([#3245](https://github.com/docling-project/docling/issues/3245)) ([`6180925`](https://github.com/docling-project/docling/commit/61809252eccc09d6af05530fd8921a4cdb46edcc))
+
+### Documentation
+
+* Chart understanding in README ([#3253](https://github.com/docling-project/docling/issues/3253)) ([`d5af473`](https://github.com/docling-project/docling/commit/d5af473a70345e7f5ba405e8570ef350c65700ea))
+
 ## [v2.85.0](https://github.com/docling-project/docling/releases/tag/v2.85.0) - 2026-04-07
 
 ### Feature
