@@ -11,7 +11,9 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     ResponseFormat,
 )
-from docling.datamodel.vlm_model_specs import GRANITEDOCLING_TRANSFORMERS
+from docling.datamodel.vlm_model_specs import (
+    GRANITEDOCLING_2STAGE_TRANSFORMERS,
+)
 
 
 class ThreadedLayoutVlmPipelineOptions(PaginatedPipelineOptions):
@@ -20,7 +22,9 @@ class ThreadedLayoutVlmPipelineOptions(PaginatedPipelineOptions):
     images_scale: float = 2.0
 
     # VLM configuration (will be enhanced with layout awareness by the pipeline)
-    vlm_options: Union[InlineVlmOptions, ApiVlmOptions] = GRANITEDOCLING_TRANSFORMERS
+    vlm_options: Union[InlineVlmOptions, ApiVlmOptions] = (
+        GRANITEDOCLING_2STAGE_TRANSFORMERS
+    )
 
     # Layout model configuration
     layout_options: LayoutOptions = LayoutOptions(
