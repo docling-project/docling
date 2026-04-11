@@ -2,16 +2,72 @@ import base64
 import json
 import logging
 from io import BytesIO
-from typing import Dict, List, Optional, Tuple
+from typing import Any
 
 import requests
 from PIL import Image
 from pydantic import AnyUrl
 
-from docling.datamodel.base_models import OpenAiApiResponse, VlmStopReason
+from docling.datamodel.base_models import (
+    OpenAiApiResponse,
+    OpenAiChatMessage,
+    VlmStopReason,
+)
 from docling.models.utils.generation_utils import GenerationStopper
 
 _log = logging.getLogger(__name__)
+
+
+def _extract_text_from_tool_arguments(arguments: str | None) -> str:
+    if arguments is None:
+        return ""
+
+    try:
+        payload = json.loads(arguments)
+    except json.JSONDecodeError:
+        return arguments.strip()
+
+    fragments: list[str] = []
+
+    def _collect_text(obj: Any) -> None:
+        if isinstance(obj, list):
+            for item in obj:
+                _collect_text(item)
+        elif isinstance(obj, dict):
+            text = obj.get("text")
+            if isinstance(text, str) and text.strip():
+                fragments.append(text.strip())
+            for value in obj.values():
+                _collect_text(value)
+
+    _collect_text(payload)
+    return "\n".join(fragments)
+
+
+def _extract_generated_text(message: OpenAiChatMessage) -> str:
+    if message.content is not None:
+        return message.content.strip()
+
+    for tool_call in message.tool_calls or []:
+        function = tool_call.get("function")
+        if not isinstance(function, dict):
+            continue
+
+        generated_text = _extract_text_from_tool_arguments(function.get("arguments"))
+        if generated_text:
+            return generated_text
+
+    return ""
+
+
+def _map_stop_reason(finish_reason: str | None) -> VlmStopReason:
+    if finish_reason == "content_filter":
+        _log.warning("API response was filtered due to content safety policy.")
+        return VlmStopReason.CONTENT_FILTERED
+    elif finish_reason == "length":
+        return VlmStopReason.LENGTH
+    else:
+        return VlmStopReason.END_OF_SEQUENCE
 
 
 def api_image_request(
@@ -21,7 +77,7 @@ def api_image_request(
     timeout: float = 20,
     headers: dict[str, str] | None = None,
     **params,
-) -> Tuple[str, int | None, VlmStopReason]:
+) -> tuple[str, int | None, VlmStopReason]:
     img_io = BytesIO()
     image = (
         image.copy()
@@ -75,16 +131,9 @@ def api_image_request(
             # r.raise_for_status()
 
             api_resp = OpenAiApiResponse.model_validate_json(r.text)
-            generated_text = api_resp.choices[0].message.content.strip()
+            generated_text = _extract_generated_text(api_resp.choices[0].message)
             num_tokens = api_resp.usage.total_tokens
-            finish_reason = api_resp.choices[0].finish_reason
-            if finish_reason == "content_filter":
-                _log.warning("API response was filtered due to content safety policy.")
-                stop_reason = VlmStopReason.CONTENT_FILTERED
-            elif finish_reason == "length":
-                stop_reason = VlmStopReason.LENGTH
-            else:
-                stop_reason = VlmStopReason.END_OF_SEQUENCE
+            stop_reason = _map_stop_reason(api_resp.choices[0].finish_reason)
 
             return generated_text, num_tokens, stop_reason
         except Exception as e:
@@ -103,7 +152,7 @@ def api_image_request_streaming(
     headers: dict[str, str] | None = None,
     generation_stoppers: list[GenerationStopper] = [],
     **params,
-) -> Tuple[str, int | None]:
+) -> tuple[str, int | None]:
     """
     Stream a chat completion from an OpenAI-compatible server (e.g., vLLM).
     Parses SSE lines: 'data: {json}\\n\\n', terminated by 'data: [DONE]'.
