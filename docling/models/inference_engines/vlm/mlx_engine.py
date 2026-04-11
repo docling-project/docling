@@ -1,11 +1,15 @@
 """MLX-based VLM inference engine for Apple Silicon."""
 
+from __future__ import annotations
+
+import importlib.metadata
 import logging
 import threading
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, List, Union
 
+from packaging import version
 from PIL.Image import Image
 
 from docling.datamodel.vlm_engine_options import MlxVlmEngineOptions
@@ -26,6 +30,29 @@ if TYPE_CHECKING:
 
 _log = logging.getLogger(__name__)
 
+_MLX_VLM_MIN_VERSION_BY_REPO = {
+    "mlx-community/GLM-OCR-bf16": "0.3.11",
+    "tiiuae/Falcon-OCR": "0.4.3",
+}
+
+
+def _validate_mlx_vlm_version(repo_id: str) -> None:
+    """Raise a clear error when a model needs a newer mlx-vlm release."""
+    min_version = _MLX_VLM_MIN_VERSION_BY_REPO.get(repo_id)
+    if min_version is None:
+        return
+
+    installed_version = importlib.metadata.version("mlx-vlm")
+    if version.parse(installed_version) >= version.parse(min_version):
+        return
+
+    raise ImportError(
+        f"{repo_id} requires mlx-vlm>={min_version} for MLX inference, but "
+        f"{installed_version} is installed. Upgrade mlx-vlm or choose a "
+        "different VLM engine."
+    )
+
+
 # Global lock for MLX model calls - MLX models are not thread-safe
 # All MLX models share this lock to prevent concurrent MLX operations
 _MLX_GLOBAL_LOCK = threading.Lock()
@@ -43,8 +70,8 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
     def __init__(
         self,
         options: MlxVlmEngineOptions,
-        artifacts_path: Optional[Union[Path, str]],
-        model_config: Optional["EngineModelConfig"] = None,
+        artifacts_path: Union[Path, str] | None,
+        model_config: EngineModelConfig | None = None,
     ):
         """Initialize the MLX engine.
 
@@ -111,6 +138,8 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         """
         from mlx_vlm import load
         from mlx_vlm.utils import load_config
+
+        _validate_mlx_vlm_version(repo_id)
 
         # Download or locate model artifacts
         repo_cache_folder = repo_id.replace("/", "--")
