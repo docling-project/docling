@@ -229,8 +229,8 @@ class RapidOcrOptions(OcrOptions):
         list[str],
         Field(
             description=(
-                "List of OCR languages. Note: RapidOCR does not currently support language selection; "
-                "this parameter is reserved for future compatibility. See RapidOCR documentation for supported languages."
+                "List of OCR languages. Note: RapidOCR currently supports 'english' and 'chinese' (default). "
+                "See RapidOCR documentation for other supported languages."
             )
         ),
     ] = ["english", "chinese"]
