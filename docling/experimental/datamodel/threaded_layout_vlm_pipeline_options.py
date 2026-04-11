@@ -11,9 +11,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     ResponseFormat,
 )
-from docling.datamodel.vlm_model_specs import (
-    GRANITEDOCLING_2STAGE_TRANSFORMERS,
-)
+from docling.datamodel.vlm_model_specs import GRANITEDOCLING_2STAGE_TRANSFORMERS
 
 
 class ThreadedLayoutVlmPipelineOptions(PaginatedPipelineOptions):

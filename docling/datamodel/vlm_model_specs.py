@@ -77,7 +77,7 @@ GRANITEDOCLING_OLLAMA.params["model"] = "ibm/granite-docling:258m"
 # Granite-Docling 2 stage
 GRANITEDOCLING_2STAGE_TRANSFORMERS = InlineVlmOptions(
     repo_id="docling-project/granite-docling-2stage-258m",
-    prompt="Convert this page to docling.",  # gets augmented  with layout objects
+    prompt="Convert this page to docling.",  # gets augmented with layout objects
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.TRANSFORMERS,
     transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
