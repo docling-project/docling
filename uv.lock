@@ -1248,7 +1248,7 @@ requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.12.3,<5.0.0" },
     { name = "certifi", specifier = ">=2024.7.4" },
     { name = "defusedxml", specifier = ">=0.7.1,<0.8.0" },
-    { name = "docling-core", extras = ["chunking"], specifier = ">=2.71.0,<3.0.0" },
+    { name = "docling-core", extras = ["chunking"], specifier = ">=2.73.0,<3.0.0" },
     { name = "docling-ibm-models", specifier = ">=3.13.0,<4" },
     { name = "docling-parse", specifier = ">=5.3.2,<6.0.0" },
     { name = "easyocr", marker = "extra == 'easyocr'", specifier = ">=1.7,<2.0" },
@@ -1345,7 +1345,7 @@ examples = [
 
 [[package]]
 name = "docling-core"
-version = "2.71.0"
+version = "2.73.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "defusedxml" },
@@ -1361,9 +1361,9 @@ dependencies = [
     { name = "typer" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c4/5e/0e5463bcbb2de3ae8f35f76a1e98b201b373b71783120f57daa4d5bc4683/docling_core-2.71.0.tar.gz", hash = "sha256:4caa9f50c68b9dd332584ae16170b36db05d773532b14d7078b580d89d8bd2a4", size = 302901, upload-time = "2026-03-30T15:48:20.997Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4c/e3/b9c3b1a1ea62e5e03d9e844a5cff2f89b7a3e960725a862f009e8553ca3d/docling_core-2.73.0.tar.gz", hash = "sha256:33ffc2b2bf736ed0e079bba296081a26885f6cb08081c828d630ca85a51e22e0", size = 308895, upload-time = "2026-04-09T08:08:51.573Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/50/5d/604cd8d076cacea11018e20c461bad6df1b769e1aa901b70d06bca33b0f6/docling_core-2.71.0-py3-none-any.whl", hash = "sha256:4761857816853b2b35263b5b4518e1ea6214e0565db0bbf1d929fb976665d1a0", size = 268049, upload-time = "2026-03-30T15:48:18.998Z" },
+    { url = "https://files.pythonhosted.org/packages/7f/c3/08143b7e8fe1b9230ce15e54926859f8c40ec2622fb612f0b2ff13169696/docling_core-2.73.0-py3-none-any.whl", hash = "sha256:4366fab8f4422fbde090ed87d9b091bd25b3b37cdd284dc0b02c9a5e24caaa22", size = 271518, upload-time = "2026-04-09T08:08:49.838Z" },
 ]
 
 [package.optional-dependencies]
