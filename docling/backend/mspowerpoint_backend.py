@@ -46,6 +46,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         }
         # Powerpoint file:
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
+        self.page_range = in_doc.limits.page_range
 
         self.pptx_obj: Optional[presentation.Presentation] = None
         self.valid: bool = False
@@ -106,7 +107,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         if self.pptx_obj:
-            doc = self._walk_linear(self.pptx_obj, doc)
+            start_page, end_page = self.page_range
+            doc = self._walk_linear(
+                self.pptx_obj, doc, start_page=start_page, end_page=end_page
+            )
 
         return doc
 
@@ -659,7 +663,11 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         return
 
     def _walk_linear(
-        self, pptx_obj: presentation.Presentation, doc: DoclingDocument
+        self,
+        pptx_obj: presentation.Presentation,
+        doc: DoclingDocument,
+        start_page: int = 1,
+        end_page: Optional[int] = None,
     ) -> DoclingDocument:
         # Units of size in PPTX by default are EMU units (English Metric Units)
         slide_width = pptx_obj.slide_width
@@ -671,8 +679,8 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             parents[i] = None
 
         # Loop through each slide
-        for _, slide in enumerate(pptx_obj.slides):
-            slide_ind = pptx_obj.slides.index(slide)
+        selected_slides = list(enumerate(pptx_obj.slides))[start_page - 1 : end_page]
+        for slide_ind, slide in selected_slides:
             parent_slide = doc.add_group(
                 name=f"slide-{slide_ind}", label=GroupLabel.CHAPTER, parent=parents[0]
             )
