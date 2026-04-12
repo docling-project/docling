@@ -257,6 +257,7 @@ class TestPresetSystem:
         assert "granite_vision" in preset_ids
         assert "pixtral" in preset_ids
         assert "got_ocr" in preset_ids
+        assert "nanonets_ocr2" in preset_ids
         assert "glm_ocr" in preset_ids
         assert "lightonocr" in preset_ids
 
