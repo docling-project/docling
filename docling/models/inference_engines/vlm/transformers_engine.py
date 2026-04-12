@@ -203,7 +203,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             artifacts_path,
             device_map=self.device,
             dtype=torch_dtype,
-            _attn_implementation=self._get_attn_implementation(),
+            attn_implementation=self._get_attn_implementation(),
             trust_remote_code=self.options.trust_remote_code,
             revision=revision,
             quantization_config=quantization_config,
@@ -251,6 +251,10 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         """
         if self.model_config is not None:
             explicit_attn = self.model_config.extra_config.get("attn_implementation")
+            if explicit_attn is None:
+                explicit_attn = self.model_config.extra_config.get(
+                    "_attn_implementation"
+                )
             if explicit_attn is not None:
                 return explicit_attn
 
