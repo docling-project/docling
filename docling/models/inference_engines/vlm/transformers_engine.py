@@ -11,6 +11,7 @@ import torch
 from packaging import version
 from PIL.Image import Image
 from transformers import (
+    AutoConfig,
     AutoModel,
     AutoModelForCausalLM,
     AutoModelForImageTextToText,
@@ -118,6 +119,23 @@ def _falcon_ocr_category_from_prompt(prompt: str) -> str:
         if prompt_substring in normalized_prompt:
             return category
     return "plain"
+
+
+def _force_falcon_ocr_eager_attention_config(config_obj: Any) -> None:
+    if config_obj is None:
+        return
+    if getattr(config_obj, "_attn_implementation", None) in {
+        None,
+        "sdpa",
+        "paged|sdpa",
+    }:
+        config_obj._attn_implementation = "eager"
+    if getattr(config_obj, "_attn_implementation_internal", None) in {
+        None,
+        "sdpa",
+        "paged|sdpa",
+    }:
+        config_obj._attn_implementation_internal = "eager"
 
 
 class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
@@ -251,6 +269,17 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         elif model_type == TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT:
             model_cls = AutoModelForImageTextToText  # type: ignore[assignment]
 
+        attn_implementation = self._get_attn_implementation()
+        model_config = None
+        if _value_mentions_falcon_ocr(repo_id):
+            model_config = AutoConfig.from_pretrained(
+                artifacts_path,
+                trust_remote_code=self.options.trust_remote_code,
+                revision=revision,
+                attn_implementation=attn_implementation,
+            )
+            _force_falcon_ocr_eager_attention_config(model_config)
+
         # Load processor
         self.processor = AutoProcessor.from_pretrained(
             artifacts_path,
@@ -271,10 +300,11 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             artifacts_path,
             device_map=self.device,
             dtype=torch_dtype,
-            attn_implementation=self._get_attn_implementation(),
+            attn_implementation=attn_implementation,
             trust_remote_code=self.options.trust_remote_code,
             revision=revision,
             quantization_config=quantization_config,
+            config=model_config,
         )
 
         self.vlm_model.eval()
