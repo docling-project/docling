@@ -62,9 +62,9 @@ def test_falcon_ocr_preset_engine_config():
     assert VlmEngineType.API_OPENAI in api_overrides
     assert api_overrides[VlmEngineType.API_OPENAI].params["model"] == "falcon-ocr"
 
-    # Falcon-OCR now declares explicit same-repo MLX support.
+    # Falcon-OCR now uses the dedicated mlx-community export.
     mlx_config = spec.get_engine_config(VlmEngineType.MLX)
-    assert mlx_config.repo_id == "tiiuae/Falcon-OCR"
+    assert mlx_config.repo_id == "mlx-community/Falcon-OCR-bf16"
     assert mlx_config.extra_config == {}
     assert spec.has_explicit_engine_export(VlmEngineType.MLX) is True
 

@@ -1249,9 +1249,10 @@ VLM_CONVERT_FALCON_OCR = StageModelPreset(
         trust_remote_code=True,
         engine_overrides={
             # Native Falcon-OCR support was added to mlx-vlm in v0.4.3.
-            # MLX can load the original HF repo directly, so no separate
-            # mlx-community checkpoint is required here.
-            VlmEngineType.MLX: EngineModelConfig(repo_id="tiiuae/Falcon-OCR"),
+            # A dedicated mlx-community checkpoint is now available for MLX.
+            VlmEngineType.MLX: EngineModelConfig(
+                repo_id="mlx-community/Falcon-OCR-bf16"
+            ),
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 torch_dtype="bfloat16",
                 extra_config={
