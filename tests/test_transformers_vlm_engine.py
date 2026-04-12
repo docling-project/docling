@@ -175,3 +175,72 @@ def test_transformers_engine_defaults_falcon_ocr_to_eager(
     )
 
     assert captured["model_kwargs"]["attn_implementation"] == "eager"
+
+
+def test_transformers_engine_falls_back_without_generation_config_file(
+    monkeypatch,
+    tmp_path: Path,
+):
+    captured: dict[str, object] = {}
+
+    class FakeModel:
+        def __init__(self):
+            self.config = SimpleNamespace(model_name="falcon")
+
+        def eval(self):
+            return self
+
+    def fake_processor_from_pretrained(*args, **kwargs):
+        return SimpleNamespace(tokenizer=SimpleNamespace(padding_side="right"))
+
+    def fake_model_from_pretrained(*args, **kwargs):
+        model = FakeModel()
+        captured["model"] = model
+        return model
+
+    def fake_generation_config_from_pretrained(*args, **kwargs):
+        _ = (args, kwargs)
+        raise OSError("missing file named generation_config.json")
+
+    def fake_generation_config_from_model_config(model_config):
+        captured["fallback_model_config"] = model_config
+        return SimpleNamespace(source="fallback")
+
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.transformers_engine.resolve_model_artifacts_path",
+        lambda **kwargs: tmp_path,
+    )
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.transformers_engine.AutoProcessor.from_pretrained",
+        fake_processor_from_pretrained,
+    )
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.transformers_engine.AutoModelForCausalLM.from_pretrained",
+        fake_model_from_pretrained,
+    )
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.transformers_engine.GenerationConfig.from_pretrained",
+        fake_generation_config_from_pretrained,
+    )
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.transformers_engine.GenerationConfig.from_model_config",
+        fake_generation_config_from_model_config,
+    )
+
+    engine = TransformersVlmEngine(
+        options=TransformersVlmEngineOptions(
+            compile_model=False,
+            trust_remote_code=True,
+        ),
+        accelerator_options=AcceleratorOptions(device="cpu"),
+        artifacts_path=tmp_path,
+        model_config=EngineModelConfig(
+            repo_id="tiiuae/Falcon-OCR",
+            extra_config={
+                "transformers_model_type": TransformersModelType.AUTOMODEL_CAUSALLM,
+            },
+        ),
+    )
+
+    assert engine.generation_config.source == "fallback"
+    assert captured["fallback_model_config"] is captured["model"].config
