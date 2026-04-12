@@ -55,17 +55,17 @@ _RAPIDOCR_CHINESE_MODEL_PATHS: dict[_ModelPathEngines, dict[_ModelPathTypes, str
 }
 _RAPIDOCR_ENGLISH_MODEL_PATHS: dict[_ModelPathEngines, dict[_ModelPathTypes, str]] = {
     "onnxruntime": {
-        "det_model_path": "onnx/PP-OCRv4/det/en_PP-OCRv3_det_infer.onnx",
+        "det_model_path": "onnx/PP-OCRv4/det/en_PP-OCRv3_det_mobile.onnx",
         "cls_model_path": "onnx/PP-OCRv4/cls/ch_ppocr_mobile_v2.0_cls_mobile.onnx",
-        "rec_model_path": "onnx/PP-OCRv4/rec/en_PP-OCRv4_rec_infer.onnx",
-        "rec_keys_path": "paddle/PP-OCRv4/rec/en_PP-OCRv4_rec_infer/en_dict.txt",
+        "rec_model_path": "onnx/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile.onnx",
+        "rec_keys_path": "paddle/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile/en_dict.txt",
         "font_path": "resources/fonts/FZYTK.TTF",
     },
     "torch": {
-        "det_model_path": "torch/PP-OCRv4/det/en_PP-OCRv3_det_infer.pth",
+        "det_model_path": "torch/PP-OCRv4/det/en_PP-OCRv3_det_mobile.pth",
         "cls_model_path": "torch/PP-OCRv4/cls/ch_ptocr_mobile_v2.0_cls_mobile.pth",
-        "rec_model_path": "torch/PP-OCRv4/rec/en_PP-OCRv4_rec_infer.pth",
-        "rec_keys_path": "paddle/PP-OCRv4/rec/en_PP-OCRv4_rec_infer/en_dict.txt",
+        "rec_model_path": "torch/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile.pth",
+        "rec_keys_path": "paddle/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile/en_dict.txt",
         "font_path": "resources/fonts/FZYTK.TTF",
     },
 }

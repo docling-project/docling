@@ -1,6 +1,6 @@
-import logging
 from datetime import datetime
 from enum import Enum
+import logging
 from pathlib import Path
 from typing import Annotated, Any, ClassVar, Literal, Optional, Union
 
@@ -224,7 +224,7 @@ class RapidOcrOptions(OcrOptions):
     """
 
     kind: ClassVar[Literal["rapidocr"]] = "rapidocr"
-    # English and chinese are the most commly used models and have been tested with RapidOCR.
+    # English and chinese are the most commonly used models and have been tested with RapidOCR.
     lang: Annotated[
         list[str],
         Field(
@@ -233,7 +233,7 @@ class RapidOcrOptions(OcrOptions):
                 "See RapidOCR documentation for other supported languages."
             )
         ),
-    ] = ["english", "chinese"]
+    ] = ["chinese"]
     backend: Annotated[
         Literal["onnxruntime", "openvino", "paddle", "torch"],
         Field(
