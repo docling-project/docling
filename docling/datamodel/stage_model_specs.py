@@ -1308,6 +1308,7 @@ VLM_CONVERT_FALCON_OCR = StageModelPreset(
                     "transformers_model_type": TransformersModelType.AUTOMODEL_CAUSALLM,
                     "transformers_prompt_style": TransformersPromptStyle.CHAT,
                     "torch_dtype": "bfloat16",
+                    "attn_implementation": "eager",
                 },
             ),
         },
