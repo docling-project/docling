@@ -30,6 +30,15 @@ def test_transformers_engine_honors_explicit_attn_implementation(
         captured["model_kwargs"] = kwargs
         return FakeModel()
 
+    def fake_auto_config_from_pretrained(*args, **kwargs):
+        _ = args
+        captured["config_kwargs"] = kwargs
+        return SimpleNamespace(
+            model_type="falcon_ocr",
+            _attn_implementation=kwargs.get("attn_implementation"),
+            _attn_implementation_internal=kwargs.get("attn_implementation"),
+        )
+
     def fake_generation_config_from_pretrained(*args, **kwargs):
         return SimpleNamespace()
 
@@ -44,6 +53,10 @@ def test_transformers_engine_honors_explicit_attn_implementation(
     monkeypatch.setattr(
         "docling.models.inference_engines.vlm.transformers_engine.AutoModelForCausalLM.from_pretrained",
         fake_model_from_pretrained,
+    )
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.transformers_engine.AutoConfig.from_pretrained",
+        fake_auto_config_from_pretrained,
     )
     monkeypatch.setattr(
         "docling.models.inference_engines.vlm.transformers_engine.GenerationConfig.from_pretrained",
@@ -67,6 +80,8 @@ def test_transformers_engine_honors_explicit_attn_implementation(
     )
 
     assert captured["model_kwargs"]["attn_implementation"] == "eager"
+    assert captured["config_kwargs"]["attn_implementation"] == "eager"
+    assert captured["model_kwargs"]["config"]._attn_implementation == "eager"
 
 
 def test_transformers_engine_accepts_legacy_private_attn_implementation_key(
@@ -86,6 +101,15 @@ def test_transformers_engine_accepts_legacy_private_attn_implementation_key(
         captured["model_kwargs"] = kwargs
         return FakeModel()
 
+    def fake_auto_config_from_pretrained(*args, **kwargs):
+        _ = args
+        captured["config_kwargs"] = kwargs
+        return SimpleNamespace(
+            model_type="falcon_ocr",
+            _attn_implementation=kwargs.get("attn_implementation"),
+            _attn_implementation_internal=kwargs.get("attn_implementation"),
+        )
+
     def fake_generation_config_from_pretrained(*args, **kwargs):
         return SimpleNamespace()
 
@@ -100,6 +124,10 @@ def test_transformers_engine_accepts_legacy_private_attn_implementation_key(
     monkeypatch.setattr(
         "docling.models.inference_engines.vlm.transformers_engine.AutoModelForCausalLM.from_pretrained",
         fake_model_from_pretrained,
+    )
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.transformers_engine.AutoConfig.from_pretrained",
+        fake_auto_config_from_pretrained,
     )
     monkeypatch.setattr(
         "docling.models.inference_engines.vlm.transformers_engine.GenerationConfig.from_pretrained",
@@ -123,6 +151,8 @@ def test_transformers_engine_accepts_legacy_private_attn_implementation_key(
     )
 
     assert captured["model_kwargs"]["attn_implementation"] == "eager"
+    assert captured["config_kwargs"]["attn_implementation"] == "eager"
+    assert captured["model_kwargs"]["config"]._attn_implementation == "eager"
 
 
 def test_transformers_engine_defaults_falcon_ocr_to_eager(
@@ -142,6 +172,15 @@ def test_transformers_engine_defaults_falcon_ocr_to_eager(
         captured["model_kwargs"] = kwargs
         return FakeModel()
 
+    def fake_auto_config_from_pretrained(*args, **kwargs):
+        _ = args
+        captured["config_kwargs"] = kwargs
+        return SimpleNamespace(
+            model_type="falcon_ocr",
+            _attn_implementation=kwargs.get("attn_implementation"),
+            _attn_implementation_internal=kwargs.get("attn_implementation"),
+        )
+
     def fake_generation_config_from_pretrained(*args, **kwargs):
         return SimpleNamespace()
 
@@ -156,6 +195,10 @@ def test_transformers_engine_defaults_falcon_ocr_to_eager(
     monkeypatch.setattr(
         "docling.models.inference_engines.vlm.transformers_engine.AutoModelForCausalLM.from_pretrained",
         fake_model_from_pretrained,
+    )
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.transformers_engine.AutoConfig.from_pretrained",
+        fake_auto_config_from_pretrained,
     )
     monkeypatch.setattr(
         "docling.models.inference_engines.vlm.transformers_engine.GenerationConfig.from_pretrained",
@@ -178,6 +221,8 @@ def test_transformers_engine_defaults_falcon_ocr_to_eager(
     )
 
     assert captured["model_kwargs"]["attn_implementation"] == "eager"
+    assert captured["config_kwargs"]["attn_implementation"] == "eager"
+    assert captured["model_kwargs"]["config"]._attn_implementation == "eager"
 
 
 def test_transformers_engine_falls_back_without_generation_config_file(
@@ -199,7 +244,17 @@ def test_transformers_engine_falls_back_without_generation_config_file(
     def fake_model_from_pretrained(*args, **kwargs):
         model = FakeModel()
         captured["model"] = model
+        captured["model_kwargs"] = kwargs
         return model
+
+    def fake_auto_config_from_pretrained(*args, **kwargs):
+        _ = args
+        captured["config_kwargs"] = kwargs
+        return SimpleNamespace(
+            model_type="falcon_ocr",
+            _attn_implementation=kwargs.get("attn_implementation"),
+            _attn_implementation_internal=kwargs.get("attn_implementation"),
+        )
 
     def fake_generation_config_from_pretrained(*args, **kwargs):
         _ = (args, kwargs)
@@ -220,6 +275,10 @@ def test_transformers_engine_falls_back_without_generation_config_file(
     monkeypatch.setattr(
         "docling.models.inference_engines.vlm.transformers_engine.AutoModelForCausalLM.from_pretrained",
         fake_model_from_pretrained,
+    )
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.transformers_engine.AutoConfig.from_pretrained",
+        fake_auto_config_from_pretrained,
     )
     monkeypatch.setattr(
         "docling.models.inference_engines.vlm.transformers_engine.GenerationConfig.from_pretrained",
@@ -247,6 +306,8 @@ def test_transformers_engine_falls_back_without_generation_config_file(
 
     assert engine.generation_config.source == "fallback"
     assert captured["fallback_model_config"] is captured["model"].config
+    assert captured["config_kwargs"]["attn_implementation"] == "eager"
+    assert captured["model_kwargs"]["config"]._attn_implementation == "eager"
 
 
 def test_transformers_engine_uses_falcon_native_generate_batch() -> None:
