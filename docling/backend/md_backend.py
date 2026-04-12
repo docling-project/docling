@@ -109,6 +109,19 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         return shortened_text
 
+    def _shorten_leading_dash_sequences(
+        self, markdown_text: str, max_length: int = 10
+    ) -> str:
+        pattern = re.compile(
+            rf"^([ \t]*)(?:-\s+){{{max_length + 1},}}-?(?=\S)", re.MULTILINE
+        )
+        shortened_text, count = pattern.subn(r"\1- ", markdown_text)
+
+        if count > 0:
+            warnings.warn("Detected potentially incorrect Markdown, correcting...")
+
+        return shortened_text
+
     @override
     def __init__(
         self,
@@ -137,6 +150,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 # In any proper Markdown files, underscores have to be escaped,
                 # otherwise they represent emphasis (bold or italic)
                 self.markdown = self._shorten_underscore_sequences(text_stream)
+                self.markdown = self._shorten_leading_dash_sequences(self.markdown)
             if isinstance(self.path_or_stream, Path):
                 with open(self.path_or_stream, encoding="utf-8") as f:
                     md_content = f.read()
@@ -145,6 +159,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     # In any proper Markdown files, underscores have to be escaped,
                     # otherwise they represent emphasis (bold or italic)
                     self.markdown = self._shorten_underscore_sequences(md_content)
+                    self.markdown = self._shorten_leading_dash_sequences(self.markdown)
             self.valid = True
 
             _log.debug(self.markdown)
@@ -497,7 +512,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         else:
             if not isinstance(element, str):
                 self._close_table(doc)
-                _log.debug(f"Some other element: {element}")
+                _log.debug("Some other element: %s", type(element).__name__)
 
         if (
             isinstance(element, marko.block.Paragraph | marko.block.Heading)
