@@ -232,11 +232,33 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 )
 
         # Load generation config
-        self.generation_config = GenerationConfig.from_pretrained(
-            artifacts_path, revision=revision
+        self.generation_config = self._load_generation_config(
+            artifacts_path=artifacts_path,
+            revision=revision,
         )
 
         _log.info(f"Loaded model {repo_id} (revision: {revision})")
+
+    def _load_generation_config(
+        self,
+        *,
+        artifacts_path: Union[Path, str],
+        revision: str,
+    ) -> GenerationConfig:
+        try:
+            return GenerationConfig.from_pretrained(artifacts_path, revision=revision)
+        except OSError as exc:
+            if "generation_config.json" not in str(exc):
+                raise
+            if self.vlm_model is None:
+                raise
+            _log.warning(
+                "Model %s does not provide generation_config.json; deriving generation config from model config instead.",
+                self.model_config.repo_id
+                if self.model_config is not None
+                else artifacts_path,
+            )
+            return GenerationConfig.from_model_config(self.vlm_model.config)
 
     def _get_tokenizer(self) -> Any:
         """Resolve the tokenizer from the processor.
