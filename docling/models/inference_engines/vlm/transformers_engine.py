@@ -50,12 +50,74 @@ if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
 
 _log = logging.getLogger(__name__)
+_FALCON_OCR_DEFAULT_PROMPT = "Extract the text content from this image."
+_FALCON_OCR_CATEGORY_BY_PROMPT_SUBSTRING = (
+    ("formula", "formula"),
+    ("table", "table"),
+    ("caption", "caption"),
+    ("footnote", "footnote"),
+    ("list-item", "list-item"),
+    ("page-footer", "page-footer"),
+    ("page-header", "page-header"),
+    ("section-header", "section-header"),
+    ("title", "title"),
+)
 
 
 def _value_mentions_falcon_ocr(value: Any) -> bool:
     return isinstance(value, str) and (
         "falcon-ocr" in value.lower() or "falcon_ocr" in value.lower()
     )
+
+
+def _config_mentions_falcon_ocr(config_obj: Any) -> bool:
+    model_type = getattr(config_obj, "model_type", None)
+    if _value_mentions_falcon_ocr(model_type):
+        return True
+
+    architectures = getattr(config_obj, "architectures", None)
+    if isinstance(architectures, list | tuple) and any(
+        _value_mentions_falcon_ocr(architecture) for architecture in architectures
+    ):
+        return True
+
+    auto_map = getattr(config_obj, "auto_map", None)
+    return isinstance(auto_map, dict) and any(
+        _value_mentions_falcon_ocr(mapped_value) for mapped_value in auto_map.values()
+    )
+
+
+def _unwrap_compiled_vlm_model(
+    vlm_model: Optional[PreTrainedModel],
+) -> Optional[PreTrainedModel]:
+    return getattr(vlm_model, "_orig_mod", vlm_model)
+
+
+def _supports_falcon_ocr_native_generate(
+    vlm_model: Optional[PreTrainedModel],
+) -> bool:
+    base_model = _unwrap_compiled_vlm_model(vlm_model)
+    return base_model is not None and (
+        callable(getattr(base_model, "_generate_batch", None))
+        or callable(getattr(base_model, "generate", None))
+    )
+
+
+def _normalize_falcon_ocr_prompt(prompt: str) -> str:
+    normalized_prompt = prompt.strip() or _FALCON_OCR_DEFAULT_PROMPT
+    if "<|image|>" not in normalized_prompt:
+        normalized_prompt = f"<|image|>{normalized_prompt}"
+    if "<|OCR_PLAIN|>" not in normalized_prompt:
+        normalized_prompt = f"{normalized_prompt.rstrip()}\n<|OCR_PLAIN|>"
+    return normalized_prompt
+
+
+def _falcon_ocr_category_from_prompt(prompt: str) -> str:
+    normalized_prompt = prompt.lower()
+    for prompt_substring, category in _FALCON_OCR_CATEGORY_BY_PROMPT_SUBSTRING:
+        if prompt_substring in normalized_prompt:
+            return category
+    return "plain"
 
 
 class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
@@ -297,6 +359,90 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
         return "sdpa"
 
+    def _uses_falcon_ocr_native_generate(self) -> bool:
+        return _value_mentions_falcon_ocr(
+            self.model_config.repo_id if self.model_config is not None else None
+        ) or _config_mentions_falcon_ocr(
+            getattr(_unwrap_compiled_vlm_model(self.vlm_model), "config", None)
+        )
+
+    def _get_falcon_ocr_generation_kwargs(
+        self,
+        first_input: VlmEngineInput,
+    ) -> dict[str, Any]:
+        extra_generation_config = dict(first_input.extra_generation_config or {})
+        generation_kwargs: dict[str, Any] = {
+            "max_new_tokens": first_input.max_new_tokens,
+            "temperature": first_input.temperature,
+            "top_k": extra_generation_config.get("top_k"),
+            "min_dimension": extra_generation_config.get("min_dimension", 64),
+            "max_dimension": extra_generation_config.get("max_dimension", 1024),
+        }
+        if "seed" in extra_generation_config:
+            generation_kwargs["seed"] = extra_generation_config["seed"]
+        return generation_kwargs
+
+    def _predict_batch_with_falcon_ocr_native_generate(
+        self, input_batch: List[VlmEngineInput]
+    ) -> List[VlmEngineOutput]:
+        vlm_model = _unwrap_compiled_vlm_model(self.vlm_model)
+        if vlm_model is None:
+            raise RuntimeError("Falcon-OCR model is not loaded.")
+
+        ensure_device_buffers = getattr(vlm_model, "_ensure_device_buffers", None)
+        if callable(ensure_device_buffers):
+            ensure_device_buffers()
+
+        first_input = input_batch[0]
+        generation_kwargs = self._get_falcon_ocr_generation_kwargs(first_input)
+        metadata = {"falcon_ocr_native_generate": True}
+
+        generate_batch = getattr(vlm_model, "_generate_batch", None)
+        if callable(generate_batch):
+            image_prompt_pairs = [
+                (input_data.image, _normalize_falcon_ocr_prompt(input_data.prompt))
+                for input_data in input_batch
+            ]
+            generated_texts = generate_batch(
+                image_prompt_pairs,
+                **generation_kwargs,
+            )
+        else:
+            public_generate = getattr(vlm_model, "generate", None)
+            if not callable(public_generate):
+                raise RuntimeError(
+                    "Falcon-OCR model exposes no compatible generate method."
+                )
+
+            generate_kwargs = {
+                "category": [
+                    _falcon_ocr_category_from_prompt(input_data.prompt)
+                    for input_data in input_batch
+                ],
+                **generation_kwargs,
+                "compile": False,
+            }
+            try:
+                generated_texts = public_generate(
+                    [input_data.image for input_data in input_batch],
+                    **generate_kwargs,
+                )
+            except TypeError as exc:
+                if "compile" not in str(exc):
+                    raise
+                generate_kwargs.pop("compile", None)
+                generated_texts = public_generate(
+                    [input_data.image for input_data in input_batch],
+                    **generate_kwargs,
+                )
+
+            metadata["falcon_ocr_public_generate"] = True
+
+        return [
+            VlmEngineOutput(text=text, metadata=dict(metadata))
+            for text in generated_texts
+        ]
+
     def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs efficiently.
 
@@ -320,6 +466,12 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             raise RuntimeError(
                 "Model not loaded. Ensure EngineModelConfig was provided during initialization."
             )
+
+        if (
+            self._uses_falcon_ocr_native_generate()
+            and _supports_falcon_ocr_native_generate(self.vlm_model)
+        ):
+            return self._predict_batch_with_falcon_ocr_native_generate(input_batch)
 
         # Get prompt style from first input's extra config
         first_input = input_batch[0]
