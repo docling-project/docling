@@ -1,10 +1,13 @@
 from pathlib import Path
 from types import SimpleNamespace
 
+from PIL import Image
+
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options_vlm_model import TransformersModelType
 from docling.datamodel.stage_model_specs import EngineModelConfig
 from docling.datamodel.vlm_engine_options import TransformersVlmEngineOptions
+from docling.models.inference_engines.vlm.base import VlmEngineInput
 from docling.models.inference_engines.vlm.transformers_engine import (
     TransformersVlmEngine,
 )
@@ -244,3 +247,165 @@ def test_transformers_engine_falls_back_without_generation_config_file(
 
     assert engine.generation_config.source == "fallback"
     assert captured["fallback_model_config"] is captured["model"].config
+
+
+def test_transformers_engine_uses_falcon_native_generate_batch() -> None:
+    captured: dict[str, object] = {}
+
+    class NoChatTemplateProcessor:
+        pass
+
+    class FakeFalconModel:
+        def __init__(self):
+            self.config = SimpleNamespace(model_type="falcon_ocr")
+
+        def _ensure_device_buffers(self):
+            captured["buffers_ensured"] = True
+
+        def _generate_batch(self, image_prompt_pairs, **kwargs):
+            captured["image_prompt_pairs"] = image_prompt_pairs
+            captured["generation_kwargs"] = kwargs
+            return ["page-1", "page-2"]
+
+    engine = TransformersVlmEngine(
+        options=TransformersVlmEngineOptions(
+            compile_model=False,
+            trust_remote_code=True,
+        ),
+        accelerator_options=AcceleratorOptions(device="cpu"),
+        artifacts_path=None,
+    )
+    engine._initialized = True
+    engine.device = "cpu"
+    engine.processor = NoChatTemplateProcessor()
+    engine.vlm_model = FakeFalconModel()
+    engine.model_config = EngineModelConfig(repo_id="tiiuae/Falcon-OCR")
+
+    inputs = [
+        VlmEngineInput(
+            image=Image.new("RGB", (8, 8), color="white"),
+            prompt="",
+            temperature=0.2,
+            max_new_tokens=123,
+            extra_generation_config={
+                "top_k": 7,
+                "min_dimension": 80,
+                "max_dimension": 900,
+                "seed": 99,
+            },
+        ),
+        VlmEngineInput(
+            image=Image.new("RGB", (4, 4), color="white"),
+            prompt="Keep formulas",
+            temperature=0.2,
+            max_new_tokens=123,
+            extra_generation_config={
+                "top_k": 7,
+                "min_dimension": 80,
+                "max_dimension": 900,
+                "seed": 99,
+            },
+        ),
+    ]
+
+    outputs = engine.predict_batch(inputs)
+
+    assert [output.text for output in outputs] == ["page-1", "page-2"]
+    assert all(output.metadata["falcon_ocr_native_generate"] for output in outputs)
+    assert captured["buffers_ensured"] is True
+    assert captured["image_prompt_pairs"] == [
+        (
+            inputs[0].image,
+            "<|image|>Extract the text content from this image.\n<|OCR_PLAIN|>",
+        ),
+        (
+            inputs[1].image,
+            "<|image|>Keep formulas\n<|OCR_PLAIN|>",
+        ),
+    ]
+    assert captured["generation_kwargs"] == {
+        "max_new_tokens": 123,
+        "temperature": 0.2,
+        "top_k": 7,
+        "min_dimension": 80,
+        "max_dimension": 900,
+        "seed": 99,
+    }
+
+
+def test_transformers_engine_uses_falcon_public_generate_fallback() -> None:
+    captured: dict[str, object] = {}
+
+    class NoChatTemplateProcessor:
+        pass
+
+    class FakeFalconModel:
+        def __init__(self):
+            self.config = SimpleNamespace(model_type="falcon_ocr")
+
+        def _ensure_device_buffers(self):
+            captured["buffers_ensured"] = True
+
+        def generate(self, images, **kwargs):
+            captured["images"] = images
+            captured["generation_kwargs"] = kwargs
+            return ["page-a", "page-b"]
+
+    engine = TransformersVlmEngine(
+        options=TransformersVlmEngineOptions(
+            compile_model=False,
+            trust_remote_code=True,
+        ),
+        accelerator_options=AcceleratorOptions(device="cpu"),
+        artifacts_path=None,
+    )
+    engine._initialized = True
+    engine.device = "cpu"
+    engine.processor = NoChatTemplateProcessor()
+    engine.vlm_model = FakeFalconModel()
+    engine.model_config = EngineModelConfig(repo_id="tiiuae/Falcon-OCR")
+
+    inputs = [
+        VlmEngineInput(
+            image=Image.new("RGB", (8, 8), color="white"),
+            prompt="",
+            temperature=0.2,
+            max_new_tokens=123,
+            extra_generation_config={
+                "top_k": 7,
+                "min_dimension": 80,
+                "max_dimension": 900,
+                "seed": 99,
+            },
+        ),
+        VlmEngineInput(
+            image=Image.new("RGB", (4, 4), color="white"),
+            prompt="Extract the formula content from this image.\n<|OCR_PLAIN|>",
+            temperature=0.2,
+            max_new_tokens=123,
+            extra_generation_config={
+                "top_k": 7,
+                "min_dimension": 80,
+                "max_dimension": 900,
+                "seed": 99,
+            },
+        ),
+    ]
+
+    outputs = engine.predict_batch(inputs)
+
+    assert [output.text for output in outputs] == ["page-a", "page-b"]
+    assert all(output.metadata["falcon_ocr_native_generate"] for output in outputs)
+    assert all(output.metadata["falcon_ocr_public_generate"] for output in outputs)
+    assert captured["buffers_ensured"] is True
+    assert captured["images"] == [inputs[0].image, inputs[1].image]
+    assert captured["generation_kwargs"] == {
+        "category": ["plain", "formula"],
+        "max_new_tokens": 123,
+        "temperature": 0.2,
+        "top_k": 7,
+        "min_dimension": 80,
+        "max_dimension": 900,
+        "seed": 99,
+        "compile": False,
+    }
