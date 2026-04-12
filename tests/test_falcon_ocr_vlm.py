@@ -53,6 +53,7 @@ def test_falcon_ocr_preset_engine_config():
         tf_config.extra_config["transformers_prompt_style"]
         == TransformersPromptStyle.CHAT
     )
+    assert tf_config.extra_config["attn_implementation"] == "eager"
 
     # API overrides should have correct model params
     api_overrides = spec.api_overrides

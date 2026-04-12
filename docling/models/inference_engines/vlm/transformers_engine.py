@@ -203,12 +203,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             artifacts_path,
             device_map=self.device,
             dtype=torch_dtype,
-            _attn_implementation=(
-                "flash_attention_2"
-                if self.device.startswith("cuda")  # type: ignore[union-attr]
-                and self.accelerator_options.cuda_use_flash_attention2
-                else "sdpa"
-            ),
+            _attn_implementation=self._get_attn_implementation(),
             trust_remote_code=self.options.trust_remote_code,
             revision=revision,
             quantization_config=quantization_config,
@@ -248,6 +243,25 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         if self.processor is None:
             return None
         return getattr(self.processor, "tokenizer", None) or self.processor
+
+    def _get_attn_implementation(self) -> str:
+        """Resolve the attention backend for model loading.
+
+        Model-specific overrides take precedence over the engine defaults.
+        """
+        if self.model_config is not None:
+            explicit_attn = self.model_config.extra_config.get("attn_implementation")
+            if explicit_attn is not None:
+                return explicit_attn
+
+        if (
+            self.device is not None
+            and self.device.startswith("cuda")
+            and self.accelerator_options.cuda_use_flash_attention2
+        ):
+            return "flash_attention_2"
+
+        return "sdpa"
 
     def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs efficiently.
