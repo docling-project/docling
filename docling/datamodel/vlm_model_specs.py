@@ -298,6 +298,37 @@ NANONETS_OCR2_MLX = InlineVlmOptions(
     max_new_tokens=15000,
 )
 
+NANONETS_OCR2_VLLM = NANONETS_OCR2_TRANSFORMERS.model_copy(deep=True)
+NANONETS_OCR2_VLLM.inference_framework = InferenceFramework.VLLM
+
+NANONETS_OCR2_VLLM_API = ApiVlmOptions(
+    url="http://localhost:8000/v1/chat/completions",
+    params=dict(
+        model="nanonets/Nanonets-OCR2-3B",
+        max_tokens=15000,
+    ),
+    prompt=NANONETS_OCR2_TRANSFORMERS.prompt,
+    timeout=90,
+    scale=2.0,
+    temperature=0.0,
+    concurrency=4,
+    response_format=ResponseFormat.MARKDOWN,
+)
+
+NANONETS_OCR2_LMSTUDIO_API = ApiVlmOptions(
+    url=AnyUrl("http://localhost:1234/v1/chat/completions"),
+    params=dict(
+        model="nanonets-ocr2-3b",
+        max_tokens=15000,
+    ),
+    prompt=NANONETS_OCR2_TRANSFORMERS.prompt,
+    timeout=120,
+    scale=2.0,
+    temperature=0.0,
+    concurrency=2,
+    response_format=ResponseFormat.MARKDOWN,
+)
+
 # GoT 2.0
 GOT2_TRANSFORMERS = InlineVlmOptions(
     repo_id="stepfun-ai/GOT-OCR-2.0-hf",
@@ -478,6 +509,8 @@ class VlmModelType(str, Enum):
     GRANITEDOCLING = "granite_docling"
     GRANITEDOCLING_VLLM = "granite_docling_vllm"
     NANONETS_OCR2 = "nanonets_ocr2"
+    NANONETS_OCR2_VLLM = "nanonets_ocr2_vllm"
+    NANONETS_OCR2_LMSTUDIO = "nanonets_ocr2_lmstudio"
     GLMOCR = "glm_ocr"
     GLMOCR_VLLM = "glm_ocr_vllm"
     LIGHTONOCR = "lightonocr"

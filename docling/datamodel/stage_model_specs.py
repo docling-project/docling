@@ -1157,22 +1157,30 @@ VLM_CONVERT_NANONETS_OCR2 = StageModelPreset(
             "Prefer using ☐ and ☑ for check boxes."
         ),
         response_format=ResponseFormat.MARKDOWN,
-        supported_engines={
-            VlmEngineType.TRANSFORMERS,
-            VlmEngineType.MLX,
-        },
         max_new_tokens=15000,
         engine_overrides={
-            # MLX uses a qwen2_5_vl-compatible converted checkpoint.
-            VlmEngineType.MLX: EngineModelConfig(
-                repo_id="mlx-community/Nanonets-OCR2-3B-bf16"
-            ),
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                     "transformers_prompt_style": TransformersPromptStyle.CHAT,
                     "torch_dtype": "bfloat16",
-                }
+                },
+            ),
+            # MLX uses a qwen2_5_vl-compatible converted checkpoint.
+            VlmEngineType.MLX: EngineModelConfig(
+                repo_id="mlx-community/Nanonets-OCR2-3B-bf16"
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API: ApiModelConfig(
+                params={"model": "nanonets/Nanonets-OCR2-3B", "max_tokens": 15000}
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "nanonets-ocr2-3b", "max_tokens": 15000}
+            ),
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "nanonets-ocr2-3b", "max_tokens": 15000}
             ),
         },
     ),
