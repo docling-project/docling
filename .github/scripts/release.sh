@@ -9,9 +9,20 @@ if [ -z "${TARGET_VERSION}" ]; then
 fi
 CHGLOG_FILE="${CHGLOG_FILE:-CHANGELOG.md}"
 
-# update package version
+# update package version in all pyproject.toml files
 uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version "${TARGET_VERSION}"
-UV_FROZEN=0 uv lock --upgrade-package docling
+uvx --from=toml-cli toml set --toml-path=packages/docling-slim/pyproject.toml project.version "${TARGET_VERSION}"
+uvx --from=toml-cli toml set --toml-path=packages/docling/pyproject.toml project.version "${TARGET_VERSION}"
+
+# update docling-slim dependency version in docling package
+uvx --from=toml-cli toml set --toml-path=packages/docling/pyproject.toml "project.dependencies[0]" "docling-slim[standard]==${TARGET_VERSION}"
+
+# update all re-exported extras in docling package
+for extra in easyocr tesserocr ocrmac vlm rapidocr asr htmlrender remote-serving onnxruntime xbrl; do
+    uvx --from=toml-cli toml set --toml-path=packages/docling/pyproject.toml "project.optional-dependencies.${extra}[0]" "docling-slim[*]==${TARGET_VERSION}"
+done
+
+UV_FROZEN=0 uv lock --upgrade-package docling --upgrade-package docling-slim
 
 # collect release notes
 REL_NOTES=$(mktemp)
@@ -31,7 +42,7 @@ mv "${TMP_CHGLOG}" "${CHGLOG_FILE}"
 # push changes
 git config --global user.name 'github-actions[bot]'
 git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-git add pyproject.toml uv.lock "${CHGLOG_FILE}"
+git add pyproject.toml packages/docling-slim/pyproject.toml packages/docling/pyproject.toml uv.lock "${CHGLOG_FILE}"
 COMMIT_MSG="chore: bump version to ${TARGET_VERSION} [skip ci]"
 git commit -m "${COMMIT_MSG}"
 git push origin main

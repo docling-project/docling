@@ -1,4 +1,4 @@
-name: "Build and publish package"
+name: "Build and publish packages"
 
 on:
   release:
@@ -30,9 +30,21 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: uv sync --all-extras
-      - name: Build package
-        run: uv build
-      - name: Publish distribution 📦 to PyPI
+      - name: Build packages
+        run: bash .github/scripts/build-packages.sh
+      - name: Publish docling-slim to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           attestations: true
+          packages-dir: dist/
+          skip-existing: false
+      - name: Wait for docling-slim to be available on PyPI
+        run: |
+          echo "Waiting 60 seconds for docling-slim to be available on PyPI..."
+          sleep 60
+      - name: Publish docling to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          attestations: true
+          packages-dir: dist/
+          skip-existing: false

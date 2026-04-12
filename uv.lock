@@ -14,6 +14,13 @@ resolution-markers = [
     "python_full_version < '3.11'",
 ]
 
+[manifest]
+members = [
+    "docling",
+    "docling-slim",
+    "docling-workspace",
+]
+
 [[package]]
 name = "accelerate"
 version = "1.13.0"
@@ -1114,81 +1121,42 @@ wheels = [
 [[package]]
 name = "docling"
 version = "2.85.0"
-source = { editable = "." }
+source = { editable = "packages/docling" }
 dependencies = [
-    { name = "accelerate" },
-    { name = "beautifulsoup4" },
-    { name = "certifi" },
-    { name = "defusedxml" },
-    { name = "docling-core", extra = ["chunking"] },
-    { name = "docling-ibm-models" },
-    { name = "docling-parse" },
-    { name = "filetype" },
-    { name = "huggingface-hub" },
-    { name = "lxml" },
-    { name = "marko" },
-    { name = "ocrmac", marker = "sys_platform == 'darwin'" },
-    { name = "openpyxl" },
-    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "pandas", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "pillow" },
-    { name = "pluggy" },
-    { name = "polyfactory" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "pylatexenc" },
-    { name = "pypdfium2" },
-    { name = "python-docx" },
-    { name = "python-pptx" },
-    { name = "rapidocr" },
-    { name = "requests" },
-    { name = "rtree" },
-    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "torch" },
-    { name = "torchvision" },
-    { name = "tqdm" },
+    { name = "docling-slim", extra = ["standard"] },
     { name = "typer" },
 ]
 
 [package.optional-dependencies]
 asr = [
-    { name = "mlx-whisper", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "numba" },
-    { name = "openai-whisper" },
+    { name = "docling-slim", extra = ["asr"] },
 ]
 easyocr = [
-    { name = "easyocr" },
+    { name = "docling-slim", extra = ["ocr-easyocr"] },
 ]
 htmlrender = [
-    { name = "playwright" },
+    { name = "docling-slim", extra = ["htmlrender"] },
 ]
 ocrmac = [
-    { name = "ocrmac", marker = "sys_platform == 'darwin'" },
+    { name = "docling-slim", extra = ["ocr-mac"] },
 ]
 onnxruntime = [
-    { name = "onnxruntime", marker = "python_full_version < '3.14' and sys_platform == 'darwin'" },
-    { name = "onnxruntime-gpu", marker = "(python_full_version < '3.14' and sys_platform == 'linux') or (python_full_version < '3.14' and sys_platform == 'win32')" },
+    { name = "docling-slim", extra = ["onnxruntime"] },
 ]
 rapidocr = [
-    { name = "onnxruntime", marker = "python_full_version < '3.14'" },
-    { name = "rapidocr" },
+    { name = "docling-slim", extra = ["ocr-rapidocr-onnx"] },
 ]
 remote-serving = [
-    { name = "tritonclient", extra = ["grpc"] },
+    { name = "docling-slim", extra = ["remote-serving"] },
 ]
 tesserocr = [
-    { name = "tesserocr" },
+    { name = "docling-slim", extra = ["ocr-tesserocr"] },
 ]
 vlm = [
-    { name = "accelerate" },
-    { name = "mlx-vlm", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "peft" },
-    { name = "qwen-vl-utils" },
-    { name = "transformers" },
+    { name = "docling-slim", extra = ["vlm"] },
 ]
 xbrl = [
-    { name = "arelle-release" },
+    { name = "docling-slim", extra = ["xbrl"] },
 ]
 
 [package.dev-dependencies]
@@ -1240,57 +1208,20 @@ examples = [
 
 [package.metadata]
 requires-dist = [
-    { name = "accelerate", specifier = ">=1.0.0,<2" },
-    { name = "accelerate", marker = "extra == 'vlm'", specifier = ">=1.2.1,<2.0.0" },
-    { name = "arelle-release", marker = "extra == 'xbrl'", specifier = ">=2.38.17,<3.0.0" },
-    { name = "beautifulsoup4", specifier = ">=4.12.3,<5.0.0" },
-    { name = "certifi", specifier = ">=2024.7.4" },
-    { name = "defusedxml", specifier = ">=0.7.1,<0.8.0" },
-    { name = "docling-core", extras = ["chunking"], specifier = ">=2.71.0,<3.0.0" },
-    { name = "docling-ibm-models", specifier = ">=3.13.0,<4" },
-    { name = "docling-parse", specifier = ">=5.3.2,<6.0.0" },
-    { name = "easyocr", marker = "extra == 'easyocr'", specifier = ">=1.7,<2.0" },
-    { name = "filetype", specifier = ">=1.2.0,<2.0.0" },
-    { name = "huggingface-hub", specifier = ">=0.23,<2" },
-    { name = "lxml", specifier = ">=4.0.0,<7.0.0" },
-    { name = "marko", specifier = ">=2.1.2,<3.0.0" },
-    { name = "mlx-vlm", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'vlm'", specifier = ">=0.3.0,<1.0.0" },
-    { name = "mlx-whisper", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'asr'", specifier = ">=0.4.3" },
-    { name = "numba", marker = "extra == 'asr'", specifier = ">=0.63.0" },
-    { name = "ocrmac", marker = "sys_platform == 'darwin'", specifier = ">=1.0.0,<2.0.0" },
-    { name = "ocrmac", marker = "sys_platform == 'darwin' and extra == 'ocrmac'", specifier = ">=1.0.0,<2.0.0" },
-    { name = "onnxruntime", marker = "python_full_version < '3.14' and extra == 'rapidocr'", specifier = ">=1.7.0,<2.0.0" },
-    { name = "onnxruntime", marker = "python_full_version < '3.14' and sys_platform == 'darwin' and extra == 'onnxruntime'", specifier = "<1.24" },
-    { name = "onnxruntime-gpu", marker = "(python_full_version < '3.14' and sys_platform == 'linux' and extra == 'onnxruntime') or (python_full_version < '3.14' and sys_platform == 'win32' and extra == 'onnxruntime')", specifier = "<1.24" },
-    { name = "openai-whisper", marker = "extra == 'asr'", specifier = ">=20250625" },
-    { name = "openpyxl", specifier = ">=3.1.5,<4.0.0" },
-    { name = "pandas", specifier = ">=2.1.4,<4.0.0" },
-    { name = "peft", marker = "extra == 'vlm'", specifier = ">=0.18.1" },
-    { name = "pillow", specifier = ">=10.0.0,<13.0.0" },
-    { name = "playwright", marker = "extra == 'htmlrender'", specifier = ">=1.58.0" },
-    { name = "pluggy", specifier = ">=1.0.0,<2.0.0" },
-    { name = "polyfactory", specifier = ">=2.22.2" },
-    { name = "pydantic", specifier = ">=2.0.0,<3.0.0" },
-    { name = "pydantic-settings", specifier = ">=2.3.0,<3.0.0" },
-    { name = "pylatexenc", specifier = ">=2.10,<3.0" },
-    { name = "pypdfium2", specifier = ">=4.30.0,!=4.30.1,<6.0.0" },
-    { name = "python-docx", specifier = ">=1.1.2,<2.0.0" },
-    { name = "python-pptx", specifier = ">=1.0.2,<2.0.0" },
-    { name = "qwen-vl-utils", marker = "extra == 'vlm'", specifier = ">=0.0.11" },
-    { name = "rapidocr", specifier = ">=3.3,<4.0.0" },
-    { name = "rapidocr", marker = "extra == 'rapidocr'", specifier = ">=3.3,<4.0.0" },
-    { name = "requests", specifier = ">=2.32.2,<3.0.0" },
-    { name = "rtree", specifier = ">=1.3.0,<2.0.0" },
-    { name = "scipy", specifier = ">=1.6.0,<2.0.0" },
-    { name = "tesserocr", marker = "extra == 'tesserocr'", specifier = ">=2.7.1,<3.0.0" },
-    { name = "torch", specifier = ">=2.2.2,<3.0.0" },
-    { name = "torchvision", specifier = ">=0,<1" },
-    { name = "tqdm", specifier = ">=4.65.0,<5.0.0" },
-    { name = "transformers", marker = "extra == 'vlm'", specifier = ">=4.42.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,<6.0.0" },
-    { name = "tritonclient", extras = ["grpc"], marker = "extra == 'remote-serving'", specifier = ">=2.65.0,<3.0.0" },
+    { name = "docling-slim", extras = ["asr"], marker = "extra == 'asr'", editable = "packages/docling-slim" },
+    { name = "docling-slim", extras = ["htmlrender"], marker = "extra == 'htmlrender'", editable = "packages/docling-slim" },
+    { name = "docling-slim", extras = ["ocr-easyocr"], marker = "extra == 'easyocr'", editable = "packages/docling-slim" },
+    { name = "docling-slim", extras = ["ocr-mac"], marker = "extra == 'ocrmac'", editable = "packages/docling-slim" },
+    { name = "docling-slim", extras = ["ocr-rapidocr-onnx"], marker = "extra == 'rapidocr'", editable = "packages/docling-slim" },
+    { name = "docling-slim", extras = ["ocr-tesserocr"], marker = "extra == 'tesserocr'", editable = "packages/docling-slim" },
+    { name = "docling-slim", extras = ["onnxruntime"], marker = "extra == 'onnxruntime'", editable = "packages/docling-slim" },
+    { name = "docling-slim", extras = ["remote-serving"], marker = "extra == 'remote-serving'", editable = "packages/docling-slim" },
+    { name = "docling-slim", extras = ["standard"], editable = "packages/docling-slim" },
+    { name = "docling-slim", extras = ["vlm"], marker = "extra == 'vlm'", editable = "packages/docling-slim" },
+    { name = "docling-slim", extras = ["xbrl"], marker = "extra == 'xbrl'", editable = "packages/docling-slim" },
     { name = "typer", specifier = ">=0.12.5,<0.22.0" },
 ]
-provides-extras = ["easyocr", "tesserocr", "ocrmac", "htmlrender", "vlm", "rapidocr", "onnxruntime", "asr", "xbrl", "remote-serving"]
+provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "asr", "htmlrender", "remote-serving", "onnxruntime", "xbrl"]
 
 [package.metadata.requires-dev]
 constraints = [
@@ -1432,6 +1363,385 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/7c/54/dd62fb65a1af9c83ad64eae8c8faebe4dbda3f791197a59ccd29fb98f22e/docling_parse-5.6.2-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:bc32cb60e0dcf7577187d1ca9ad607df65736a2588caf12746dcebb29ff576cf", size = 8300243, upload-time = "2026-03-29T09:07:27.388Z" },
     { url = "https://files.pythonhosted.org/packages/ed/54/139c1aa0eb2123a1bc495008c5ee3cb8ecf0d7a88f4cdd26b21840e5f5fc/docling_parse-5.6.2-cp314-cp314-win_amd64.whl", hash = "sha256:f65bf98478053c75ba3e1184bb2f54e737059b81645a8807ac437ec4e8181016", size = 9568711, upload-time = "2026-03-29T09:07:28.935Z" },
 ]
+
+[[package]]
+name = "docling-slim"
+version = "2.85.0"
+source = { editable = "packages/docling-slim" }
+dependencies = [
+    { name = "certifi" },
+    { name = "docling-core" },
+    { name = "filetype" },
+    { name = "pluggy" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "requests" },
+    { name = "tqdm" },
+]
+
+[package.optional-dependencies]
+all = [
+    { name = "accelerate" },
+    { name = "arelle-release" },
+    { name = "beautifulsoup4" },
+    { name = "defusedxml" },
+    { name = "docling-core", extra = ["chunking"] },
+    { name = "docling-ibm-models" },
+    { name = "docling-parse" },
+    { name = "easyocr" },
+    { name = "huggingface-hub" },
+    { name = "lxml" },
+    { name = "marko" },
+    { name = "mlx-vlm", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "mlx-whisper", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "numba" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "ocrmac", marker = "sys_platform == 'darwin'" },
+    { name = "onnxruntime", marker = "python_full_version < '3.14' and sys_platform == 'darwin'" },
+    { name = "onnxruntime-gpu", marker = "(python_full_version < '3.14' and sys_platform == 'linux') or (python_full_version < '3.14' and sys_platform == 'win32')" },
+    { name = "openai-whisper" },
+    { name = "openpyxl" },
+    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pandas", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "peft" },
+    { name = "pillow" },
+    { name = "playwright" },
+    { name = "polyfactory" },
+    { name = "pylatexenc" },
+    { name = "pypdfium2" },
+    { name = "python-docx" },
+    { name = "python-pptx" },
+    { name = "qwen-vl-utils" },
+    { name = "rapidocr" },
+    { name = "rtree" },
+    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "tesserocr" },
+    { name = "torch" },
+    { name = "torchvision" },
+    { name = "transformers" },
+    { name = "tritonclient", extra = ["grpc"] },
+]
+asr = [
+    { name = "mlx-whisper", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "numba" },
+    { name = "openai-whisper" },
+]
+chunking = [
+    { name = "docling-core", extra = ["chunking"] },
+]
+format-docx = [
+    { name = "python-docx" },
+]
+format-html = [
+    { name = "beautifulsoup4" },
+    { name = "lxml" },
+]
+format-markdown = [
+    { name = "marko" },
+]
+format-office = [
+    { name = "openpyxl" },
+    { name = "python-docx" },
+    { name = "python-pptx" },
+]
+format-pptx = [
+    { name = "python-pptx" },
+]
+format-web = [
+    { name = "beautifulsoup4" },
+    { name = "lxml" },
+    { name = "marko" },
+]
+format-xlsx = [
+    { name = "openpyxl" },
+]
+htmlrender = [
+    { name = "playwright" },
+]
+latex = [
+    { name = "pylatexenc" },
+]
+models = [
+    { name = "accelerate" },
+    { name = "defusedxml" },
+    { name = "docling-ibm-models" },
+    { name = "docling-parse" },
+    { name = "huggingface-hub" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pillow" },
+    { name = "pypdfium2" },
+    { name = "rtree" },
+    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "torch" },
+    { name = "torchvision" },
+]
+models-core = [
+    { name = "rtree" },
+    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
+models-inference = [
+    { name = "accelerate" },
+    { name = "defusedxml" },
+    { name = "docling-ibm-models" },
+    { name = "huggingface-hub" },
+    { name = "torch" },
+    { name = "torchvision" },
+]
+ocr-easyocr = [
+    { name = "easyocr" },
+]
+ocr-mac = [
+    { name = "ocrmac", marker = "sys_platform == 'darwin'" },
+]
+ocr-rapidocr = [
+    { name = "rapidocr" },
+]
+ocr-rapidocr-onnx = [
+    { name = "onnxruntime", marker = "python_full_version < '3.14'" },
+    { name = "rapidocr" },
+]
+ocr-tesserocr = [
+    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pandas", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "tesserocr" },
+]
+onnxruntime = [
+    { name = "onnxruntime", marker = "python_full_version < '3.14' and sys_platform == 'darwin'" },
+    { name = "onnxruntime-gpu", marker = "(python_full_version < '3.14' and sys_platform == 'linux') or (python_full_version < '3.14' and sys_platform == 'win32')" },
+]
+parse = [
+    { name = "docling-parse" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pillow" },
+    { name = "pypdfium2" },
+    { name = "rtree" },
+]
+parse-core = [
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pillow" },
+]
+parse-pdf = [
+    { name = "docling-parse" },
+    { name = "pypdfium2" },
+]
+parse-spatial = [
+    { name = "rtree" },
+]
+polyfactory = [
+    { name = "polyfactory" },
+]
+remote-serving = [
+    { name = "tritonclient", extra = ["grpc"] },
+]
+standard = [
+    { name = "accelerate" },
+    { name = "beautifulsoup4" },
+    { name = "defusedxml" },
+    { name = "docling-core", extra = ["chunking"] },
+    { name = "docling-ibm-models" },
+    { name = "docling-parse" },
+    { name = "huggingface-hub" },
+    { name = "lxml" },
+    { name = "marko" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "openpyxl" },
+    { name = "pillow" },
+    { name = "polyfactory" },
+    { name = "pylatexenc" },
+    { name = "pypdfium2" },
+    { name = "python-docx" },
+    { name = "python-pptx" },
+    { name = "rapidocr" },
+    { name = "rtree" },
+    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "torch" },
+    { name = "torchvision" },
+]
+vlm = [
+    { name = "accelerate" },
+    { name = "mlx-vlm", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "peft" },
+    { name = "qwen-vl-utils" },
+    { name = "transformers" },
+]
+xbrl = [
+    { name = "arelle-release" },
+]
+
+[package.dev-dependencies]
+constraints = [
+    { name = "langchain-core" },
+    { name = "numba" },
+    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pandas", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
+dev = [
+    { name = "boto3-stubs" },
+    { name = "coverage" },
+    { name = "ipykernel" },
+    { name = "ipywidgets" },
+    { name = "mypy" },
+    { name = "nbqa" },
+    { name = "pandas-stubs" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-dependency" },
+    { name = "pytest-durations" },
+    { name = "pytest-xdist" },
+    { name = "python-semantic-release" },
+    { name = "types-defusedxml" },
+    { name = "types-openpyxl" },
+    { name = "types-requests" },
+    { name = "types-setuptools" },
+    { name = "types-tqdm" },
+    { name = "types-urllib3" },
+]
+docs = [
+    { name = "griffe-pydantic" },
+    { name = "mkdocs-click" },
+    { name = "mkdocs-jupyter" },
+    { name = "mkdocs-material" },
+    { name = "mkdocs-redirects" },
+    { name = "mkdocstrings", extra = ["python"] },
+]
+examples = [
+    { name = "datasets" },
+    { name = "gliner", marker = "python_full_version < '3.14'" },
+    { name = "langchain-huggingface" },
+    { name = "langchain-milvus" },
+    { name = "langchain-text-splitters" },
+    { name = "modelscope" },
+    { name = "python-dotenv" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "accelerate", marker = "extra == 'models-inference'", specifier = ">=1.0.0,<2" },
+    { name = "accelerate", marker = "extra == 'vlm'", specifier = ">=1.2.1,<2.0.0" },
+    { name = "arelle-release", marker = "extra == 'xbrl'", specifier = ">=2.38.17,<3.0.0" },
+    { name = "beautifulsoup4", marker = "extra == 'format-html'", specifier = ">=4.12.3,<5.0.0" },
+    { name = "certifi", specifier = ">=2024.7.4" },
+    { name = "defusedxml", marker = "extra == 'models-inference'", specifier = ">=0.7.1,<0.8.0" },
+    { name = "docling-core", specifier = ">=2.71.0,<3.0.0" },
+    { name = "docling-core", extras = ["chunking"], marker = "extra == 'chunking'", specifier = ">=2.71.0,<3.0.0" },
+    { name = "docling-ibm-models", marker = "extra == 'models-inference'", specifier = ">=3.13.0,<4" },
+    { name = "docling-parse", marker = "extra == 'parse-pdf'", specifier = ">=5.3.2,<6.0.0" },
+    { name = "docling-slim", extras = ["format-docx", "format-pptx", "format-xlsx"], marker = "extra == 'format-office'" },
+    { name = "docling-slim", extras = ["format-html", "format-markdown"], marker = "extra == 'format-web'" },
+    { name = "docling-slim", extras = ["parse", "models", "ocr-rapidocr", "format-office", "format-web", "latex", "chunking", "polyfactory"], marker = "extra == 'standard'" },
+    { name = "docling-slim", extras = ["parse", "models-core", "models-inference"], marker = "extra == 'models'" },
+    { name = "docling-slim", extras = ["parse-core", "parse-pdf", "parse-spatial"], marker = "extra == 'parse'" },
+    { name = "docling-slim", extras = ["standard", "vlm", "asr", "htmlrender", "xbrl", "remote-serving", "onnxruntime", "ocr-easyocr", "ocr-tesserocr", "ocr-mac"], marker = "extra == 'all'" },
+    { name = "easyocr", marker = "extra == 'ocr-easyocr'", specifier = ">=1.7,<2.0" },
+    { name = "filetype", specifier = ">=1.2.0,<2.0.0" },
+    { name = "huggingface-hub", marker = "extra == 'models-inference'", specifier = ">=0.23,<2" },
+    { name = "lxml", marker = "extra == 'format-html'", specifier = ">=4.0.0,<7.0.0" },
+    { name = "marko", marker = "extra == 'format-markdown'", specifier = ">=2.1.2,<3.0.0" },
+    { name = "mlx-vlm", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'vlm'", specifier = ">=0.3.0,<1.0.0" },
+    { name = "mlx-whisper", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'asr'", specifier = ">=0.4.3" },
+    { name = "numba", marker = "extra == 'asr'", specifier = ">=0.63.0" },
+    { name = "numpy", marker = "extra == 'parse-core'", specifier = ">=1.24.0,<3.0.0" },
+    { name = "ocrmac", marker = "sys_platform == 'darwin' and extra == 'ocr-mac'", specifier = ">=1.0.0,<2.0.0" },
+    { name = "onnxruntime", marker = "python_full_version < '3.14' and extra == 'ocr-rapidocr-onnx'", specifier = ">=1.7.0,<2.0.0" },
+    { name = "onnxruntime", marker = "python_full_version < '3.14' and sys_platform == 'darwin' and extra == 'onnxruntime'", specifier = "<1.24" },
+    { name = "onnxruntime-gpu", marker = "(python_full_version < '3.14' and sys_platform == 'linux' and extra == 'onnxruntime') or (python_full_version < '3.14' and sys_platform == 'win32' and extra == 'onnxruntime')", specifier = "<1.24" },
+    { name = "openai-whisper", marker = "extra == 'asr'", specifier = ">=20250625" },
+    { name = "openpyxl", marker = "extra == 'format-xlsx'", specifier = ">=3.1.5,<4.0.0" },
+    { name = "pandas", marker = "extra == 'ocr-tesserocr'", specifier = ">=2.1.4,<4.0.0" },
+    { name = "peft", marker = "extra == 'vlm'", specifier = ">=0.18.1" },
+    { name = "pillow", marker = "extra == 'parse-core'", specifier = ">=10.0.0,<13.0.0" },
+    { name = "playwright", marker = "extra == 'htmlrender'", specifier = ">=1.58.0" },
+    { name = "pluggy", specifier = ">=1.0.0,<2.0.0" },
+    { name = "polyfactory", marker = "extra == 'polyfactory'", specifier = ">=2.22.2" },
+    { name = "pydantic", specifier = ">=2.0.0,<3.0.0" },
+    { name = "pydantic-settings", specifier = ">=2.3.0,<3.0.0" },
+    { name = "pylatexenc", marker = "extra == 'latex'", specifier = ">=2.10,<3.0" },
+    { name = "pypdfium2", marker = "extra == 'parse-pdf'", specifier = ">=4.30.0,!=4.30.1,<6.0.0" },
+    { name = "python-docx", marker = "extra == 'format-docx'", specifier = ">=1.1.2,<2.0.0" },
+    { name = "python-pptx", marker = "extra == 'format-pptx'", specifier = ">=1.0.2,<2.0.0" },
+    { name = "qwen-vl-utils", marker = "extra == 'vlm'", specifier = ">=0.0.11" },
+    { name = "rapidocr", marker = "extra == 'ocr-rapidocr'", specifier = ">=3.3,<4.0.0" },
+    { name = "rapidocr", marker = "extra == 'ocr-rapidocr-onnx'", specifier = ">=3.3,<4.0.0" },
+    { name = "requests", specifier = ">=2.32.2,<3.0.0" },
+    { name = "rtree", marker = "extra == 'models-core'", specifier = ">=1.3.0,<2.0.0" },
+    { name = "rtree", marker = "extra == 'parse-spatial'", specifier = ">=1.3.0,<2.0.0" },
+    { name = "scipy", marker = "extra == 'models-core'", specifier = ">=1.6.0,<2.0.0" },
+    { name = "tesserocr", marker = "extra == 'ocr-tesserocr'", specifier = ">=2.7.1,<3.0.0" },
+    { name = "torch", marker = "extra == 'models-inference'", specifier = ">=2.2.2,<3.0.0" },
+    { name = "torchvision", marker = "extra == 'models-inference'", specifier = ">=0,<1" },
+    { name = "tqdm", specifier = ">=4.65.0,<5.0.0" },
+    { name = "transformers", marker = "extra == 'vlm'", specifier = ">=4.42.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,<6.0.0" },
+    { name = "tritonclient", extras = ["grpc"], marker = "extra == 'remote-serving'", specifier = ">=2.65.0,<3.0.0" },
+]
+provides-extras = ["parse-core", "parse-pdf", "parse-spatial", "parse", "models-core", "models-inference", "models", "ocr-rapidocr", "ocr-rapidocr-onnx", "ocr-easyocr", "ocr-tesserocr", "ocr-mac", "format-docx", "format-pptx", "format-xlsx", "format-office", "format-html", "format-markdown", "format-web", "vlm", "asr", "htmlrender", "xbrl", "remote-serving", "onnxruntime", "latex", "chunking", "polyfactory", "standard", "all"]
+
+[package.metadata.requires-dev]
+constraints = [
+    { name = "langchain-core", specifier = ">=0.3.81" },
+    { name = "numba", specifier = ">=0.63.0" },
+    { name = "pandas", marker = "python_full_version < '3.11'", specifier = ">=2.1.4,<3.0.0" },
+    { name = "pandas", marker = "python_full_version >= '3.11'", specifier = ">=2.1.4,<4.0.0" },
+]
+dev = [
+    { name = "boto3-stubs", specifier = "~=1.37" },
+    { name = "coverage", specifier = "~=7.6" },
+    { name = "ipykernel", specifier = "~=6.29" },
+    { name = "ipywidgets", specifier = "~=8.1" },
+    { name = "mypy", specifier = "~=1.10" },
+    { name = "nbqa", specifier = "~=1.9" },
+    { name = "pandas-stubs", specifier = "~=2.1" },
+    { name = "pre-commit", specifier = "~=3.7" },
+    { name = "pytest", specifier = "~=8.3" },
+    { name = "pytest-cov", specifier = ">=6.1.1" },
+    { name = "pytest-dependency", specifier = "~=0.6" },
+    { name = "pytest-durations", specifier = "~=1.6.1" },
+    { name = "pytest-xdist", specifier = "~=3.3" },
+    { name = "python-semantic-release", specifier = "~=7.32" },
+    { name = "types-defusedxml", specifier = ">=0.7.0.20250822,<0.8.0" },
+    { name = "types-openpyxl", specifier = "~=3.1" },
+    { name = "types-requests", specifier = "~=2.31" },
+    { name = "types-setuptools", specifier = "~=70.3" },
+    { name = "types-tqdm", specifier = "~=4.67" },
+    { name = "types-urllib3", specifier = "~=1.26" },
+]
+docs = [
+    { name = "griffe-pydantic", specifier = "~=1.1" },
+    { name = "mkdocs-click", specifier = "~=0.8" },
+    { name = "mkdocs-jupyter", specifier = ">=0.25,<0.26" },
+    { name = "mkdocs-material", specifier = "~=9.5" },
+    { name = "mkdocs-redirects", specifier = "~=1.2" },
+    { name = "mkdocstrings", extras = ["python"], specifier = "~=0.27" },
+]
+examples = [
+    { name = "datasets", specifier = "~=2.21" },
+    { name = "gliner", marker = "python_full_version < '3.14'", specifier = ">=0.2.21" },
+    { name = "langchain-huggingface", specifier = ">=0.0.3" },
+    { name = "langchain-milvus", specifier = "~=0.1" },
+    { name = "langchain-text-splitters", specifier = ">=0.2" },
+    { name = "modelscope", specifier = ">=1.29.0" },
+    { name = "python-dotenv", specifier = "~=1.0" },
+]
+
+[[package]]
+name = "docling-workspace"
+version = "2.85.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "docling" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "docling", editable = "packages/docling" }]
 
 [[package]]
 name = "docutils"

@@ -1,0 +1,147 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "docling"
+version = "2.85.0"  # DO NOT EDIT, updated automatically
+description = "Full-featured SDK and CLI for parsing PDF, DOCX, HTML, and more"
+license = "MIT"
+keywords = [
+  "docling",
+  "convert",
+  "document",
+  "pdf",
+  "docx",
+  "html",
+  "markdown",
+  "layout model",
+  "segmentation",
+  "table structure",
+  "table former",
+]
+classifiers = [
+  "Operating System :: MacOS :: MacOS X",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: Microsoft :: Windows",
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+# readme = "README.md"  # Omitted for now - will be included in sdist
+authors = [
+  { name = "Christoph Auer", email = "cau@zurich.ibm.com" },
+  { name = "Michele Dolfi", email = "dol@zurich.ibm.com" },
+  { name = "Maxim Lysak", email = "mly@zurich.ibm.com" },
+  { name = "Nikos Livathinos", email = "nli@zurich.ibm.com" },
+  { name = "Ahmed Nassar", email = "ahn@zurich.ibm.com" },
+  { name = "Panos Vagenas", email = "pva@zurich.ibm.com" },
+  { name = "Peter Staar", email = "taa@zurich.ibm.com" },
+]
+requires-python = '>=3.10,<4.0'
+
+# DEPENDS ON DOCLING-SLIM WITH CURRENT DEFAULT EXTRAS + CLI
+dependencies = [
+  'docling-slim[standard]==2.85.0',
+  'typer>=0.12.5,<0.22.0',  # CLI dependency
+]
+
+[project.urls]
+homepage = "https://github.com/docling-project/docling"
+repository = "https://github.com/docling-project/docling"
+issues = "https://github.com/docling-project/docling/issues"
+changelog = "https://github.com/docling-project/docling/blob/main/CHANGELOG.md"
+
+[project.entry-points.docling]
+"docling_defaults" = "docling.models.plugins.defaults"
+
+[project.scripts]
+docling = "docling.cli.main:app"
+docling-tools = "docling.cli.tools:app"
+
+[tool.uv.sources]
+# For local development: use workspace member
+docling-slim = { workspace = true }
+
+# Re-export slim extras for convenience
+[project.optional-dependencies]
+easyocr = ['docling-slim[ocr-easyocr]==2.85.0']
+tesserocr = ['docling-slim[ocr-tesserocr]==2.85.0']
+ocrmac = ['docling-slim[ocr-mac]==2.85.0']
+vlm = ['docling-slim[vlm]==2.85.0']
+rapidocr = ['docling-slim[ocr-rapidocr-onnx]==2.85.0']
+asr = ['docling-slim[asr]==2.85.0']
+htmlrender = ['docling-slim[htmlrender]==2.85.0']
+remote-serving = ['docling-slim[remote-serving]==2.85.0']
+onnxruntime = ['docling-slim[onnxruntime]==2.85.0']
+xbrl = ['docling-slim[xbrl]==2.85.0']
+
+[dependency-groups]
+dev = [
+  "pre-commit~=3.7",
+  "mypy~=1.10",
+  "types-setuptools~=70.3",
+  "pandas-stubs~=2.1",
+  "types-openpyxl~=3.1",
+  "types-requests~=2.31",
+  "boto3-stubs~=1.37",
+  "types-urllib3~=1.26",
+  "types-tqdm~=4.67",
+  "coverage~=7.6",
+  "pytest~=8.3",
+  "pytest-cov>=6.1.1",
+  "pytest-dependency~=0.6",
+  "pytest-durations~=1.6.1",
+  "pytest-xdist~=3.3",
+  "ipykernel~=6.29",
+  "ipywidgets~=8.1",
+  "nbqa~=1.9",
+  "python-semantic-release~=7.32",
+  "types-defusedxml>=0.7.0.20250822,<0.8.0",
+]
+
+docs = [
+  "mkdocs-material~=9.5",
+  "mkdocs-jupyter>=0.25,<0.26",
+  "mkdocs-click~=0.8",
+  "mkdocs-redirects~=1.2",
+  "mkdocstrings[python]~=0.27",
+  "griffe-pydantic~=1.1",
+]
+
+examples = [
+  "datasets~=2.21",
+  "python-dotenv~=1.0",
+  "langchain-huggingface>=0.0.3",
+  "langchain-milvus~=0.1",
+  "langchain-text-splitters>=0.2",
+  "modelscope>=1.29.0",
+  'gliner>=0.2.21 ; python_version < "3.14"',
+]
+
+constraints = [
+  'numba>=0.63.0',
+  'langchain-core>=0.3.81',
+  'pandas>=2.1.4,<3.0.0 ; python_version < "3.11"',
+  'pandas>=2.1.4,<4.0.0 ; python_version >= "3.11"',
+]
+
+[tool.hatch.build]
+directory = "../.."
+
+[tool.hatch.build.targets.wheel]
+packages = ["docling"]
+
+[tool.hatch.build.targets.sdist]
+# Force include the docling source directory from repository root
+force-include = {"../../docling" = "docling"}
+
+[tool.uv]
+package = true
