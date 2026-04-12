@@ -52,6 +52,12 @@ if TYPE_CHECKING:
 _log = logging.getLogger(__name__)
 
 
+def _value_mentions_falcon_ocr(value: Any) -> bool:
+    return isinstance(value, str) and (
+        "falcon-ocr" in value.lower() or "falcon_ocr" in value.lower()
+    )
+
+
 class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
     """HuggingFace Transformers engine for VLM inference.
 
@@ -257,6 +263,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 )
             if explicit_attn is not None:
                 return explicit_attn
+            if _value_mentions_falcon_ocr(self.model_config.repo_id):
+                return "eager"
 
         if (
             self.device is not None
