@@ -1,47 +1,59 @@
-# Docling Slim Refactoring Plan - UPDATED FOR v2.85.0
+# Docling Slim Refactoring Plan - v2.85.0
 
 ## Project Context
 - **Current Package**: `docling` (version 2.85.0)
 - **Goal**: Split into `docling-slim` (minimal dependencies) and `docling` (current default dependencies)
 - **Repository**: https://github.com/docling-project/docling
 
-## Key User Requirements (CONFIRMED)
+## Key Requirements
 
-1. **No source code movement** - This is purely a packaging refactoring
-2. **pyproject.toml REMAINS docling** - Keep current file as-is (with modifications)
-3. **Create pyproject-slim.toml** - New file for docling-slim package
-4. **docling depends on docling-slim** with SAME set of dependencies as current docling (not [all])
-5. **Exact version pinning** - docling depends on exact version of docling-slim
-6. **CLI in docling-slim[cli]** extra
-7. **Fine-grained extras** - Split parse and other components into granular options
-8. **CI/CD pushes both packages**
-9. **Local development** uses local docling-slim changes
+1. **No source code movement** - Source stays in `docling/`, only metadata moves
+2. **uv workspace structure** - Real package directories with standard workspace setup
+3. **docling depends on docling-slim** - Same dependencies as current docling
+4. **Exact version pinning** - docling depends on exact version of docling-slim
+5. **CLI in docling only** - Scripts in full package, not in slim
+6. **Fine-grained extras** - Split components into granular options
+7. **CI/CD pushes both packages** - Build from package directories
+8. **Local development** - Editable installs via workspace
 
-## Repository Structure (FINAL - No Code Movement)
+## Repository Structure
 
 ```
-docling/  (current repository, no restructuring)
-├── pyproject.toml              # REMAINS docling (modified to depend on docling-slim)
-├── pyproject-slim.toml         # NEW: docling-slim package definition
-├── pyproject.workspace.toml    # NEW: uv workspace configuration for local dev
-├── docling/                    # Source code (UNCHANGED)
-├── tests/                      # Tests (UNCHANGED)
-├── docs/                       # Docs (UNCHANGED)
+docling/  (current repository)
+├── pyproject.toml                    # Workspace root configuration
+├── packages/
+│   ├── docling-slim/
+│   │   └── pyproject.toml           # docling-slim package metadata
+│   └── docling/
+│       └── pyproject.toml           # docling package metadata (depends on slim)
+├── docling/                          # Source code (UNCHANGED LOCATION)
+│   ├── __init__.py
+│   ├── document_converter.py
+│   ├── cli/                         # CLI code stays here
+│   ├── datamodel/                   # Data models
+│   └── ...
+├── tests/                            # Tests (UNCHANGED)
+├── docs/                             # Docs (UNCHANGED)
 └── .github/
     └── workflows/
-        ├── ci.yml              # Modified: test both packages
-        ├── cd.yml              # Modified: release both
-        └── pypi.yml            # Modified: publish both (slim first, then full)
+        ├── ci.yml                    # Modified: test both packages
+        └── pypi.yml                  # Modified: publish both (slim first, then full)
 ```
 
-## Dependency Categorization (FINAL - v2.85.0)
+**Key Points:**
+- Source code stays in `docling/` at repository root
+- Both packages reference the same source via `packages = ["docling"]` in their pyproject.toml
+- Only package metadata files are in `packages/` subdirectories
+- Standard uv workspace pattern with shared source code
 
-### **docling-slim BASE (8 packages)** - ~50MB, Data Models Only
+## Dependency Categorization
+
+### **docling-slim BASE (8 packages)** - ~50MB, Library-First
 
 ```python
 dependencies = [
     'pydantic>=2.0.0,<3.0.0',
-    'docling-core>=2.70.0,<3.0.0',  # WITHOUT chunking
+    'docling-core>=2.70.0,<3.0.0',
     'pydantic-settings>=2.3.0,<3.0.0',
     'filetype>=1.2.0,<2.0.0',
     'requests>=2.32.2,<3.0.0',
@@ -51,11 +63,11 @@ dependencies = [
 ]
 ```
 
-**What this provides:**
+**Provides:**
 - Core data models (DoclingDocument, ConversionResult)
 - Document format definitions
 - Basic I/O utilities
-- **NO document processing** - just data structures
+- Library-only (no CLI tools)
 
 ### **docling-slim EXTRAS (Fine-grained)**
 
@@ -231,37 +243,65 @@ dependencies = [
 
 #### **6. Convenience Extras**
 
-**`[standard]` - Standard PDF processing (matches current docling default)**
+**`[standard]` - Standard installation (matches current docling default)**
 ```python
-'docling-slim[parse,models,ocr-rapidocr,format-office,format-web,format-latex,cli,chunking,extraction]',
+'docling-slim[parse,models,ocr-rapidocr,format-office,format-web,latex,chunking,polyfactory]',
 ```
 
 **`[all]` - Everything**
 ```python
-'docling-slim[parse,models,ocr-rapidocr,ocr-rapidocr-onnx,ocr-easyocr,ocr-tesserocr,ocr-mac,format-office,format-web,format-latex,format-xbrl,vlm,asr,cli,chunking,extraction,htmlrender,remote-serving,onnxruntime]',
+'docling-slim[standard,vlm,asr,htmlrender,xbrl,remote-serving,onnxruntime,ocr-easyocr,ocr-tesserocr,ocr-mac]',
 ```
 
-## docling Package Dependencies (FINAL)
+## docling Package Dependencies
 
-The `docling` package should have the SAME dependencies as current docling has now:
+The `docling` package depends on `docling-slim[standard]` plus CLI support:
 
 ```python
 dependencies = [
     'docling-slim[standard]==2.85.0',
+    'typer>=0.12.5,<0.22.0',  # CLI dependency
 ]
 ```
 
-This matches the current default installation of docling.
+## Detailed pyproject.toml Structures
 
-## Detailed pyproject.toml Structures (FINAL)
-
-### pyproject-slim.toml (NEW - docling-slim package)
+### Root pyproject.toml (Workspace Configuration)
 
 ```toml
+[project]
+name = "docling-workspace"
+version = "2.85.0"
+description = "Docling workspace - do not install directly"
+requires-python = ">=3.10,<4.0"
+
+# Minimal dependencies for workspace management
+dependencies = []
+
+[tool.uv.workspace]
+members = ["packages/docling-slim", "packages/docling"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+```
+
+**Note:** This root pyproject.toml is for workspace management only. Users install `docling-slim` or `docling` packages.
+
+### packages/docling-slim/pyproject.toml
+
+```toml
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "docling-slim"
 version = "2.85.0"  # DO NOT EDIT, updated automatically
 description = "Lightweight SDK for parsing documents (minimal dependencies, opt-in extras)"
+
+# Point to shared source code at repository root
+packages = ["docling"]
 license = "MIT"
 keywords = [
   "docling",
@@ -322,9 +362,7 @@ changelog = "https://github.com/docling-project/docling/blob/main/CHANGELOG.md"
 [project.entry-points.docling]
 "docling_defaults" = "docling.models.plugins.defaults"
 
-[project.scripts]
-docling = "docling.cli.main:app"
-docling-tools = "docling.cli.tools:app"
+# No CLI scripts in slim - see packages/docling/pyproject.toml for CLI
 
 [project.optional-dependencies]
 # Core parsing components (fine-grained)
@@ -453,9 +491,10 @@ latex = [
   'pylatexenc>=2.10,<3.0',
 ]
 
-cli = [
-  'typer>=0.12.5,<0.22.0',
-]
+# CLI REMOVED FROM SLIM - moved to full docling package
+# cli = [
+#   'typer>=0.12.5,<0.22.0',
+# ]
 
 chunking = [
   'docling-core[chunking]>=2.70.0,<3.0.0',
@@ -465,13 +504,13 @@ polyfactory = [
   'polyfactory>=2.22.2',
 ]
 
-# Convenience extras
+# Convenience extras (CLI removed from standard)
 standard = [
-  'docling-slim[parse,models,ocr-rapidocr,format-office,format-web,latex,cli,chunking,polyfactory]',
+  'docling-slim[parse,models,ocr-rapidocr,format-office,format-web,latex,chunking,polyfactory]',
 ]
 
 all = [
-  'docling-slim[parse,models,ocr-rapidocr,ocr-rapidocr-onnx,ocr-easyocr,ocr-tesserocr,ocr-mac,format-office,format-web,vlm,asr,latex,cli,chunking,polyfactory,htmlrender,xbrl,remote-serving,onnxruntime]',
+  'docling-slim[standard,vlm,asr,htmlrender,xbrl,remote-serving,onnxruntime,ocr-easyocr,ocr-tesserocr,ocr-mac]',
 ]
 
 [dependency-groups]
@@ -524,23 +563,25 @@ constraints = [
   'pandas>=2.1.4,<4.0.0 ; python_version >= "3.11"',
 ]
 
-[tool.uv]
-package = true
-default-groups = "all"
+[tool.hatch.build.targets.wheel]
+packages = ["docling"]
 
-[tool.setuptools.packages.find]
-include = ["docling*"]
-
-# Copy all tool configurations from pyproject.toml (ruff, mypy, etc.)
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 ```
 
-### pyproject.toml (REMAINS docling - modified)
+### packages/docling/pyproject.toml
 
 ```toml
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "docling"
 version = "2.85.0"  # DO NOT EDIT, updated automatically
-description = "SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation"
+description = "Full-featured SDK and CLI for parsing PDF, DOCX, HTML, and more"
 license = "MIT"
 keywords = [
   "docling",
@@ -582,9 +623,13 @@ authors = [
 ]
 requires-python = '>=3.10,<4.0'
 
-# DEPENDS ON DOCLING-SLIM WITH CURRENT DEFAULT EXTRAS
+# Point to shared source code at repository root
+packages = ["docling"]
+
+# DEPENDS ON DOCLING-SLIM WITH CURRENT DEFAULT EXTRAS + CLI
 dependencies = [
   'docling-slim[standard]==2.85.0',
+  'typer>=0.12.5,<0.22.0',  # CLI dependency
 ]
 
 [project.urls]
@@ -600,7 +645,11 @@ changelog = "https://github.com/docling-project/docling/blob/main/CHANGELOG.md"
 docling = "docling.cli.main:app"
 docling-tools = "docling.cli.tools:app"
 
-# Re-export extras for convenience
+[tool.uv.sources]
+# For local development: use workspace member
+docling-slim = { workspace = true }
+
+# Re-export slim extras for convenience
 [project.optional-dependencies]
 easyocr = ['docling-slim[ocr-easyocr]==2.85.0']
 tesserocr = ['docling-slim[ocr-tesserocr]==2.85.0']
@@ -659,33 +708,38 @@ constraints = [
   'pandas>=2.1.4,<4.0.0 ; python_version >= "3.11"',
 ]
 
-[tool.uv]
-package = true
-default-groups = "all"
+[tool.hatch.build.targets.wheel]
+packages = ["docling"]
 
-[tool.uv.sources]
-docling-slim = { workspace = true }
-
-# Keep all existing tool configurations (ruff, mypy, etc.)
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 ```
 
-## Build Process (FINAL)
+## Build Process
 
 ```bash
 # build-packages.sh
 #!/bin/bash
 set -e
 
-# Build docling-slim (uses pyproject-slim.toml)
+# Build docling-slim from its package directory
 echo "Building docling-slim..."
-uv build --config-file pyproject-slim.toml --out-dir dist-slim
+cd packages/docling-slim
+uv build --out-dir ../../dist
+cd ../..
 
-# Build docling (uses pyproject.toml - current)
+# Build docling from its package directory
 echo "Building docling..."
-uv build --out-dir dist-full
+cd packages/docling
+uv build --out-dir ../../dist
+cd ../..
+
+echo "Built packages:"
+ls -lh dist/
 ```
 
-## CI/CD Workflow (FINAL)
+## CI/CD Workflow
 
 ### Modified .github/workflows/pypi.yml
 
@@ -721,12 +775,13 @@ jobs:
       
       - name: Build docling-slim
         run: |
-          uv build --config-file pyproject-slim.toml --out-dir dist-slim
+          cd packages/docling-slim
+          uv build --out-dir ../../dist
       
       - name: Publish docling-slim to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: dist-slim/
+          packages-dir: dist/
           attestations: true
 
   build-and-publish-full:
@@ -748,7 +803,7 @@ jobs:
       
       - name: Wait for docling-slim availability
         run: |
-          VERSION=$(grep '^version = ' pyproject-slim.toml | cut -d'"' -f2)
+          VERSION=$(grep '^version = ' packages/docling-slim/pyproject.toml | cut -d'"' -f2)
           echo "Waiting for docling-slim==${VERSION}..."
           for i in {1..50}; do
             if pip index versions docling-slim | grep -q "${VERSION}"; then
@@ -760,12 +815,13 @@ jobs:
       
       - name: Build docling
         run: |
-          uv build --out-dir dist-full
+          cd packages/docling
+          uv build --out-dir ../../dist
       
       - name: Publish docling to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: dist-full/
+          packages-dir: dist/
           attestations: true
 ```
 
@@ -781,14 +837,17 @@ if [ -z "${TARGET_VERSION}" ]; then
     exit 1
 fi
 
-# Update version in both pyproject files
+# Update version in both package pyproject files
 echo "Updating versions to ${TARGET_VERSION}..."
-uvx --from=toml-cli toml set --toml-path=pyproject-slim.toml project.version "${TARGET_VERSION}"
+uvx --from=toml-cli toml set --toml-path=packages/docling-slim/pyproject.toml project.version "${TARGET_VERSION}"
+uvx --from=toml-cli toml set --toml-path=packages/docling/pyproject.toml project.version "${TARGET_VERSION}"
+
+# Update workspace root version (optional, for consistency)
 uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version "${TARGET_VERSION}"
 
 # Update docling's dependency on docling-slim
 DEPS="docling-slim[standard]==${TARGET_VERSION}"
-uvx --from=toml-cli toml set --toml-path=pyproject.toml project.dependencies.0 "${DEPS}"
+uvx --from=toml-cli toml set --toml-path=packages/docling/pyproject.toml project.dependencies.0 "${DEPS}"
 
 # Update all optional dependencies using embedded Python script
 python3 << 'EOF'
@@ -810,8 +869,8 @@ except ImportError:
 
 import tomli_w
 
-# Read pyproject.toml
-with open('pyproject.toml', 'rb') as f:
+# Read packages/docling/pyproject.toml
+with open('packages/docling/pyproject.toml', 'rb') as f:
     data = tomllib.load(f)
 
 # Update all optional dependencies that reference docling-slim
@@ -832,7 +891,7 @@ for extra_name, deps in optional_deps.items():
                 updated_count += 1
 
 # Write back
-with open('pyproject.toml', 'wb') as f:
+with open('packages/docling/pyproject.toml', 'wb') as f:
     tomli_w.dump(data, f)
 
 print(f"✓ Updated {updated_count} optional dependencies to version {TARGET_VERSION}")
@@ -845,7 +904,7 @@ UV_FROZEN=0 uv lock --upgrade-package docling-slim
 # ... (same as before)
 
 # Commit and push
-git add pyproject-slim.toml pyproject.toml uv.lock CHANGELOG.md
+git add packages/*/pyproject.toml pyproject.toml uv.lock CHANGELOG.md
 git commit -m "chore: bump version to ${TARGET_VERSION} [skip ci]"
 git push origin main
 
@@ -853,62 +912,59 @@ git push origin main
 gh release create "v${TARGET_VERSION}" -F "${REL_NOTES}"
 ```
 
-**Key Improvements:**
-- **Zero maintenance**: Automatically discovers and updates all `docling-slim[*]` dependencies
-- **No hardcoded extras**: Works with any optional dependencies that reference docling-slim
-- **Atomic operation**: All updates happen in one Python execution
-- **Type-safe**: Uses proper TOML libraries (`tomllib`/`tomli` for reading, `tomli_w` for writing)
-- **Clear feedback**: Prints confirmation of how many extras were updated
-- **Python 3.10+ compatible**: Falls back to `tomli` for Python < 3.11
-- **Future-proof**: Adding/removing extras in pyproject.toml automatically works
+## Local Development Workflow
 
-**Dependencies**: Requires `tomli` and `tomli-w` packages (can be installed via `pip install tomli tomli-w` or added to CI environment)
+### **How uv Workspace Works**
 
-## Local Development Workflow (FINAL)
-
-### **Workspace Configuration**
-
-Create `pyproject.workspace.toml` in the repository root:
+The workspace is defined in the root `pyproject.toml`:
 
 ```toml
 [tool.uv.workspace]
-members = [".", "slim"]
-
-[tool.uv.workspace.package-sources]
-docling-slim = { path = ".", config = "pyproject-slim.toml" }
+members = ["packages/docling-slim", "packages/docling"]
 ```
 
-This tells uv that:
-- The workspace has two members: the main package (`.`) and slim variant (`slim` virtual member)
-- `docling-slim` should be resolved from the local source using `pyproject-slim.toml`
+This tells uv:
+1. Both `packages/docling-slim` and `packages/docling` are workspace members
+2. When you run `uv sync`, both packages are installed in editable mode
+3. Dependencies between workspace members are resolved locally (no PyPI needed)
+4. Changes to source code or package metadata are immediately reflected
+```
 
-### **Standard Development Workflow (Recommended)**
+This tells uv:
+1. Both `packages/docling-slim` and `packages/docling` are workspace members
+2. When you run `uv sync`, both packages are installed in editable mode
+3. Dependencies between workspace members are resolved locally (no PyPI needed)
+4. Changes to source code or package metadata are immediately reflected
+
+### **Standard Development Workflow**
 
 ```bash
 # 1. Clone repository
 git clone https://github.com/docling-project/docling.git
 cd docling
 
-# 2. Sync dependencies - automatically uses local docling-slim
-uv sync --all-extras
+# 2. Sync dependencies - automatically uses local workspace members
+uv sync
 
 # 3. Make changes to code
-# Edit docling/*.py files or pyproject-slim.toml
+# Edit docling/*.py files (shared source code)
+# Or edit packages/docling-slim/pyproject.toml
+# Or edit packages/docling/pyproject.toml
 
 # 4. Changes are immediately reflected - no rebuild needed
 uv run pytest
 uv run docling <your-args>
 
-# 5. Update dependencies if pyproject-slim.toml changes
+# 5. If you modify pyproject.toml files, re-sync
 uv sync
 ```
 
 **How it works:**
-- `uv sync` reads `pyproject.workspace.toml` and recognizes the workspace
-- When resolving `docling-slim` dependency, it uses the local source with `pyproject-slim.toml`
-- Both packages are installed in editable mode
-- All changes to source code or `pyproject-slim.toml` are immediately visible
-- No circular dependency because workspace resolution handles it correctly
+- `uv sync` reads the workspace configuration from root `pyproject.toml`
+- Both `docling-slim` and `docling` are installed as editable packages
+- `docling` depends on `docling-slim`, but uv resolves it to the local workspace member
+- All changes to source code in `docling/` are immediately visible to both packages
+- Changes to package metadata require `uv sync` to update the environment
 
 ### **Testing Package Builds**
 
@@ -916,23 +972,103 @@ When you need to test the actual built packages:
 
 ```bash
 # Build both packages
-uv build --config-file pyproject-slim.toml --out-dir dist-slim
-uv build --out-dir dist-full
+cd packages/docling-slim && uv build --out-dir ../../dist && cd ../..
+cd packages/docling && uv build --out-dir ../../dist && cd ../..
+
+# Or use the build script
+./build-packages.sh
 
 # Test installations in a clean environment
-uv pip install dist-slim/docling_slim-*.whl
-uv pip install dist-full/docling-*.whl
+uv pip install dist/docling_slim-*.whl
+uv pip install dist/docling-*.whl
 ```
 
 ### **Benefits of Workspace Approach**
 
-✅ **Seamless development** - `uv sync` just works
-✅ **No circular dependencies** - workspace resolution handles it
-✅ **Immediate changes** - both source and config changes reflected instantly
+✅ **Seamless development** - `uv sync` just works with proper workspace members
+✅ **No circular dependencies** - workspace resolution handles local dependencies
+✅ **Immediate changes** - source changes reflected instantly, config changes need `uv sync`
 ✅ **Single command** - no manual package building during development
-✅ **CI/CD compatible** - can disable workspace for production builds
+✅ **Standard uv pattern** - follows documented uv workspace behavior
+✅ **Shared source code** - both packages reference same `docling/` directory
 
-## Migration Guide (FINAL)
+## Import Audit Requirements (NEW - CRITICAL)
+
+Before releasing `docling-slim`, a comprehensive import audit is required to ensure the base package can be imported without heavy optional dependencies.
+
+### **Audit Checklist**
+
+- [ ] **Base import test**: Verify `import docling` works with only base dependencies
+- [ ] **Module-level imports**: Check that top-level `__init__.py` files don't import optional modules
+- [ ] **Lazy imports**: Ensure optional backends/models use runtime imports, not module-level
+- [ ] **Guard patterns**: Verify all optional functionality has proper try/except or conditional imports
+- [ ] **CLI isolation**: Confirm CLI code doesn't get imported when using library-only
+
+### **Test Strategy**
+
+```bash
+# Create clean environment with only base dependencies
+uv venv test-env
+source test-env/bin/activate
+uv pip install pydantic docling-core pydantic-settings filetype requests certifi pluggy tqdm
+
+# Test basic imports
+python -c "import docling"
+python -c "from docling.datamodel import DoclingDocument"
+python -c "from docling import DocumentConverter"  # Should work or fail gracefully
+
+# Test that optional imports are guarded
+python -c "import docling.models"  # Should not fail if models are optional
+python -c "import docling.backend"  # Should not fail if backends are optional
+```
+
+### **Common Issues to Fix**
+
+1. **Module-level imports of optional deps**
+   ```python
+   # BAD - fails if torch not installed
+   import torch
+   from docling_ibm_models import LayoutModel
+   
+   # GOOD - lazy import
+   def get_layout_model():
+       import torch
+       from docling_ibm_models import LayoutModel
+       return LayoutModel()
+   ```
+
+2. **Unguarded optional imports**
+   ```python
+   # BAD
+   from docling.models.layout import LayoutModel
+   
+   # GOOD
+   try:
+       from docling.models.layout import LayoutModel
+   except ImportError:
+       LayoutModel = None
+   ```
+
+3. **CLI imports in library code**
+   ```python
+   # BAD - typer imported at module level
+   import typer
+   
+   # GOOD - only import in CLI entry point
+   def main():
+       import typer
+       app = typer.Typer()
+   ```
+
+### **Validation Criteria**
+
+✅ Base `docling-slim` installs successfully with only 8 dependencies
+✅ `import docling` succeeds without optional dependencies
+✅ Core data models are accessible
+✅ Optional features fail gracefully with clear error messages
+✅ No import-time failures due to missing optional dependencies
+
+## Migration Guide
 
 ### For Existing Users
 
@@ -967,7 +1103,7 @@ pip install docling-slim[standard]
 pip install docling
 ```
 
-### Feature Matrix (FINAL)
+### Feature Matrix
 
 | Feature | docling-slim base | Extra needed | docling |
 |---------|------------------|--------------|---------|
@@ -983,11 +1119,13 @@ pip install docling
 | PowerPoint | ❌ | `[format-pptx]` or `[format-office]` | ✅ |
 | HTML | ❌ | `[format-html]` or `[format-web]` | ✅ |
 | Markdown | ❌ | `[format-markdown]` or `[format-web]` | ✅ |
-| LaTeX | ❌ | `[format-latex]` | ✅ |
-| XBRL (financial) | ❌ | `[format-xbrl]` | ❌ (extra) |
-| CLI tools | ❌ | `[cli]` | ✅ |
-| Information extraction | ❌ | `[extraction]` | ✅ |
+| LaTeX | ❌ | `[latex]` | ✅ |
+| XBRL (financial) | ❌ | `[xbrl]` | ❌ (extra) |
+| **CLI tools** | ❌ | **Install `docling` package** | ✅ |
+| Information extraction | ❌ | `[polyfactory]` | ✅ |
 | VLM support | ❌ | `[vlm]` | ❌ (extra) |
+
+**Note:** CLI tools (docling, docling-tools) are only available in the full `docling` package, not in `docling-slim`.
 
 ## Size Comparison (Estimated)
 
@@ -1004,32 +1142,62 @@ pip install docling
 
 ## Implementation Checklist
 
-- [ ] Create `pyproject-slim.toml` for docling-slim package
-- [ ] Modify `pyproject.toml` to depend on docling-slim
-- [ ] Update dependency lists according to new extras structure
-- [ ] Create build script for both packages
-- [ ] Update `.github/workflows/pypi.yml`
-- [ ] Update `.github/scripts/release.sh`
+### Phase 1: Repository Structure
+- [ ] Create `packages/docling-slim/` directory
+- [ ] Create `packages/docling/` directory
+- [ ] Create `packages/docling-slim/pyproject.toml` for docling-slim package
+- [ ] Create `packages/docling/pyproject.toml` for docling package
+- [ ] Update root `pyproject.toml` with workspace configuration
+- [ ] Verify source code remains in `docling/` at repository root
+
+### Phase 2: Package Configuration
+- [ ] Configure docling-slim with base dependencies only (no CLI)
+- [ ] Configure docling-slim extras (all library features)
+- [ ] Configure docling to depend on docling-slim[standard]
+- [ ] Add CLI dependencies (typer) to docling package
+- [ ] Move CLI scripts to docling package only
+- [ ] Add `[tool.hatch.build.targets.wheel]` to both packages pointing to shared source
+
+### Phase 3: Build & Release Infrastructure
+- [ ] Create `build-packages.sh` script for building from package directories
+- [ ] Update `.github/workflows/pypi.yml` to build from package directories
+- [ ] Update `.github/scripts/release.sh` to update both package pyproject files
+- [ ] Update version sync logic for workspace structure
+- [ ] Test build process locally
+
+### Phase 4: Import Audit (CRITICAL)
+- [ ] Audit all module-level imports for optional dependencies
+- [ ] Add lazy imports for optional backends
+- [ ] Add try/except guards for optional features
+- [ ] Ensure CLI code is not imported in library usage
+- [ ] Test base slim import with minimal dependencies
+- [ ] Document any breaking changes or limitations
+
+### Phase 5: Testing & Documentation
 - [ ] Update `.github/workflows/ci.yml` to test both packages
+- [ ] Test workspace development workflow (`uv sync`)
+- [ ] Test building both packages
 - [ ] Update README.md with new installation options
 - [ ] Create migration guide documentation
-- [ ] Test local builds
+- [ ] Document import audit results
 - [ ] Test on test.pypi.org
-- [ ] Official release
 
-## Key Decisions Confirmed
+### Phase 6: Release
+- [ ] Final review of all changes
+- [ ] Verify backward compatibility
+- [ ] Test on test.pypi.org
+- [ ] Official release to PyPI
 
-✅ **Repository Structure**: No code movement, just packaging changes
-✅ **pyproject.toml**: REMAINS docling (modified to depend on docling-slim)
-✅ **pyproject-slim.toml**: NEW file for docling-slim
-✅ **Version Pinning**: Exact pinning (docling depends on docling-slim==X.Y.Z)
-✅ **CLI Location**: In docling-slim[cli] extra
-✅ **docling Dependencies**: Same as current default (not [all])
-✅ **Extras Design**: Fine-grained, composable extras
-✅ **PDF Backends**: Separate extras for pypdfium2 vs docling-parse backends
-✅ **Parse Component**: backend-pypdfium2, backend-docling-parse, parse-spatial, parse (convenience)
-✅ **Format Support**: Split into individual format extras (docx, pptx, xlsx, html, markdown, latex, xbrl)
-✅ **Extraction**: polyfactory moved to [extraction] extra for information extraction functionality
+## Key Decisions
+
+- **Repository Structure**: Real workspace members in `packages/` subdirectories
+- **Source Code Location**: Remains in `docling/` at repository root (shared by both packages)
+- **Workspace Configuration**: Standard uv workspace in root `pyproject.toml`
+- **Version Pinning**: Exact pinning (docling depends on docling-slim==X.Y.Z)
+- **CLI Location**: In docling package only (not in slim)
+- **docling Dependencies**: Same as current default (docling-slim[standard] + typer)
+- **Extras Design**: Fine-grained, composable extras
+- **Build Process**: Build from package directories
 
 ## Benefits
 
@@ -1037,11 +1205,13 @@ pip install docling
 - **Zero breaking changes** for existing users
 - **Maximum flexibility** with fine-grained extras
 - **Composable installation** - users pick exactly what they need
-- **No code movement** - simpler implementation
-- **Minimal disruption** to current development workflow
+- **Source code stays in place** - only metadata moves
+- **Standard uv workspace** - follows documented patterns
+- **Proper Python packaging** - no conditional console scripts
 
 ## Next Steps
 
-1. ✅ Review this final plan
-2. ⚠️ Begin implementation
-3. ⚠️ Test thoroughly before release
+1. Begin implementation following this structure
+2. Complete import audit before release
+3. Test thoroughly with workspace development workflow
+4. Release to PyPI
