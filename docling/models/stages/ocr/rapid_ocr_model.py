@@ -1,5 +1,5 @@
-import logging
 from collections.abc import Iterable
+import logging
 from pathlib import Path
 from typing import Literal, Type, TypedDict
 
