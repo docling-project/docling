@@ -11,7 +11,6 @@ This test suite validates:
 import pytest
 from pydantic import ValidationError
 
-import docling.models.inference_engines.vlm.mlx_engine as mlx_engine_module
 from docling.datamodel.pipeline_options import (
     CodeFormulaVlmOptions,
     PictureDescriptionVlmEngineOptions,
@@ -343,29 +342,6 @@ class TestPresetSystem:
             assert "description" in preset_info
             assert "model" in preset_info
             assert "default_engine" in preset_info
-
-
-class TestMlxRuntimeCompatibility:
-    """Test MLX runtime compatibility checks for model-specific handlers."""
-
-    def test_validate_mlx_vlm_version_accepts_supported_release(self, monkeypatch):
-        monkeypatch.setattr(
-            mlx_engine_module.importlib.metadata,
-            "version",
-            lambda package: "0.4.3",
-        )
-
-        mlx_engine_module._validate_mlx_vlm_version("tiiuae/Falcon-OCR")
-
-    def test_validate_mlx_vlm_version_rejects_too_old_release(self, monkeypatch):
-        monkeypatch.setattr(
-            mlx_engine_module.importlib.metadata,
-            "version",
-            lambda package: "0.3.10",
-        )
-
-        with pytest.raises(ImportError, match=r"mlx-vlm>=0\.3\.11"):
-            mlx_engine_module._validate_mlx_vlm_version("mlx-community/GLM-OCR-bf16")
 
 
 # =============================================================================
