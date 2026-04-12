@@ -1,5 +1,6 @@
 """Tests for api_image_request module."""
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -26,19 +27,29 @@ class TestApiImageRequest:
             finish_reason="stop",
             total_tokens=100,
             status_ok=True,
+            message=None,
         ):
             mock_resp = MagicMock()
             mock_resp.ok = status_ok
-            mock_resp.text = f"""{{
-                "id": "test-id",
-                "created": 1234567890,
-                "choices": [{{
-                    "index": 0,
-                    "message": {{"role": "assistant", "content": "{content}"}},
-                    "finish_reason": "{finish_reason}"
-                }}],
-                "usage": {{"prompt_tokens": 50, "completion_tokens": 50, "total_tokens": {total_tokens}}}
-            }}"""
+            mock_resp.text = json.dumps(
+                {
+                    "id": "test-id",
+                    "created": 1234567890,
+                    "choices": [
+                        {
+                            "index": 0,
+                            "message": message
+                            or {"role": "assistant", "content": content},
+                            "finish_reason": finish_reason,
+                        }
+                    ],
+                    "usage": {
+                        "prompt_tokens": 50,
+                        "completion_tokens": 50,
+                        "total_tokens": total_tokens,
+                    },
+                }
+            )
             return mock_resp
 
         return _create_mock_response
@@ -91,4 +102,36 @@ class TestApiImageRequest:
         )
 
         assert result_text == "Normal completion"
+        assert stop_reason == VlmStopReason.END_OF_SEQUENCE
+
+    @patch("docling.utils.api_image_request.requests.post")
+    def test_tool_calls_response(self, mock_post, sample_image, mock_response_factory):
+        """Test that tool calling responses are converted into generated text."""
+        mock_post.return_value = mock_response_factory(
+            message={
+                "role": "assistant",
+                "tool_calls": [
+                    {
+                        "function": {
+                            "name": "markdown_no_bbox",
+                            "arguments": json.dumps(
+                                [
+                                    {"text": "Extracted text"},
+                                    {"text": "Second block"},
+                                ]
+                            ),
+                        }
+                    }
+                ],
+            }
+        )
+
+        result_text, tokens, stop_reason = api_image_request(
+            image=sample_image,
+            prompt="Test prompt",
+            url="http://test.api/v1/chat/completions",
+        )
+
+        assert result_text == "Extracted text\nSecond block"
+        assert tokens == 100
         assert stop_reason == VlmStopReason.END_OF_SEQUENCE

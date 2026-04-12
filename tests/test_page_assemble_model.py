@@ -84,6 +84,62 @@ class TestSanitizeTextLigatures:
         """Ligature with spurious space works correctly across multi-line input."""
         assert model.sanitize_text(["\ufb01 eld", "of view"]) == "field of view"
 
+    def test_ij_capital_ligature(self, model):
+        """U+0132 Ĳ → IJ (Dutch capital ligature)."""
+        assert model.sanitize_text(["\u0132ssel"]) == "IJssel"
+
+    def test_ij_small_ligature(self, model):
+        """U+0133 ĳ → ij (Dutch small ligature)."""
+        assert model.sanitize_text(["be\u0133"]) == "beij"
+
+    def test_private_use_glyph_stripped(self, model):
+        """U+F0A0 private-use glyph is discarded (emitted by some PDF fonts)."""
+        assert model.sanitize_text(["hello\uf0a0world"]) == "helloworld"
+
+    def test_private_use_glyph_with_spurious_space_stripped(self, model):
+        """U+F0A0 followed by a real word-boundary space preserves the space.
+
+        Unlike true ligatures (which are always intra-word), U+F0A0 maps to "".
+        When it sits between two actual words the trailing space is a genuine word
+        separator and must be re-emitted so the words remain distinct.
+        """
+        assert model.sanitize_text(["hello\uf0a0 world"]) == "hello world"
+
+    def test_pua_glyph_at_string_start(self, model):
+        """U+F0A0 at start of string is discarded, rest preserved."""
+        assert model.sanitize_text(["\uf0a0word"]) == "word"
+
+    def test_pua_glyph_at_string_end(self, model):
+        """U+F0A0 at end of string is discarded."""
+        assert model.sanitize_text(["word\uf0a0"]) == "word"
+
+    def test_pua_glyph_alone(self, model):
+        """U+F0A0 in isolation produces empty string."""
+        assert model.sanitize_text(["\uf0a0"]) == ""
+
+    def test_pua_glyph_preserves_word_boundary_space(self, model):
+        """U+F0A0 between words preserves the separating space."""
+        assert model.sanitize_text(["hello\uf0a0 world"]) == "hello world"
+
+    def test_pua_glyph_no_space_merges(self, model):
+        """U+F0A0 with no following space still merges adjacent chars."""
+        assert model.sanitize_text(["hello\uf0a0world"]) == "helloworld"
+
+    def test_ij_capital_standalone(self, model):
+        """U+0132 as standalone token preserves trailing space."""
+        # "IJ is een rivier" — IJ appears as a standalone word
+        assert model.sanitize_text(["\u0132 is"]) == "IJ is"
+
+    def test_regex_matches_new_codepoints(self, model):
+        """Verify the regex actually matches U+0132, U+0133, U+F0A0."""
+        import re
+
+        from docling.models.stages.page_assemble.page_assemble_model import _LIGATURE_RE
+
+        assert _LIGATURE_RE.search("\u0132") is not None, "U+0132 not matched by regex"
+        assert _LIGATURE_RE.search("\u0133") is not None, "U+0133 not matched by regex"
+        assert _LIGATURE_RE.search("\uf0a0") is not None, "U+F0A0 not matched by regex"
+
 
 def _make_page(hyperlinks: list[PdfHyperlink], page_height: float = 100.0) -> Page:
     """Create a Page with mocked parsed_page carrying the given hyperlinks."""

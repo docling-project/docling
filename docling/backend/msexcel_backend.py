@@ -177,7 +177,16 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     @override
     def page_count(self) -> int:
         if self.is_valid() and self.workbook:
-            return len(self.workbook.sheetnames)
+            sheet_names_filter: Optional[list[str]] = (
+                self.options.sheet_names
+                if isinstance(self.options, MsExcelBackendOptions)
+                else None
+            )
+            if sheet_names_filter is None:
+                return len(self.workbook.sheetnames)
+            return sum(
+                1 for name in self.workbook.sheetnames if name in sheet_names_filter
+            )
         else:
             return 0
 
@@ -225,12 +234,23 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
 
         if self.workbook is not None:
+            sheet_names_filter: Optional[list[str]] = (
+                self.options.sheet_names
+                if isinstance(self.options, MsExcelBackendOptions)
+                else None
+            )
+
+            page_no = 0
             # Iterate over all sheets
             for idx, name in enumerate(self.workbook.sheetnames):
-                _log.info(f"Processing sheet {idx}: {name}")
+                if sheet_names_filter is not None and name not in sheet_names_filter:
+                    _log.debug(f"Skipping sheet {idx}: {name} (filtered out)")
+                    continue
+
+                page_no += 1
+                _log.info(f"Processing sheet {idx}: {name} as page {page_no}")
 
                 sheet = self.workbook[name]
-                page_no = idx + 1
                 # do not rely on sheet.max_column, sheet.max_row if there are images
                 page = doc.add_page(page_no=page_no, size=Size(width=0, height=0))
 
@@ -240,42 +260,52 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     name=f"sheet: {name}",
                     content_layer=self._get_sheet_content_layer(sheet),
                 )
-                doc = self._convert_sheet(doc, sheet)
+                doc = self._convert_sheet(doc, sheet, page_no)
                 width, height = self._find_page_size(doc, page_no)
                 page.size = Size(width=width, height=height)
+
+            if sheet_names_filter is not None:
+                unmatched = set(sheet_names_filter) - set(self.workbook.sheetnames)
+                if unmatched:
+                    _log.warning(
+                        "sheet_names filter contains names not found in workbook: %s",
+                        sorted(unmatched),
+                    )
         else:
             _log.error("Workbook is not initialized.")
 
         return doc
 
     def _convert_sheet(
-        self, doc: DoclingDocument, sheet: Union[Worksheet, Chartsheet]
+        self, doc: DoclingDocument, sheet: Union[Worksheet, Chartsheet], page_no: int
     ) -> DoclingDocument:
         """Parse an Excel worksheet and attach its structure to a DoclingDocument
 
         Args:
             doc: The DoclingDocument to be updated.
             sheet: The Excel worksheet to be parsed.
+            page_no: The dense (1-based) page number for this sheet in the output document.
 
         Returns:
             The updated DoclingDocument.
         """
         if isinstance(sheet, Worksheet):
-            doc = self._find_tables_in_sheet(doc, sheet)
-            doc = self._find_images_in_sheet(doc, sheet)
+            doc = self._find_tables_in_sheet(doc, sheet, page_no)
+            doc = self._find_images_in_sheet(doc, sheet, page_no)
 
         # TODO: parse charts in sheet
 
         return doc
 
     def _find_tables_in_sheet(
-        self, doc: DoclingDocument, sheet: Worksheet
+        self, doc: DoclingDocument, sheet: Worksheet, page_no: int
     ) -> DoclingDocument:
         """Find all tables in an Excel sheet and attach them to a DoclingDocument.
 
         Args:
             doc: The DoclingDocument to be updated.
             sheet: The Excel worksheet to be parsed.
+            page_no: The dense (1-based) page number for this sheet in the output document.
 
         Returns:
             The updated DoclingDocument.
@@ -296,7 +326,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 num_rows = excel_table.num_rows
                 num_cols = excel_table.num_cols
                 if treat_singleton_as_text and len(excel_table.data) == 1:
-                    page_no = self.workbook.index(sheet) + 1
                     doc.add_text(
                         text=excel_table.data[0].text,
                         label=DocItemLabel.TEXT,
@@ -337,7 +366,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                         )
                         table_data.table_cells.append(cell)
 
-                    page_no = self.workbook.index(sheet) + 1
                     doc.add_table(
                         data=table_data,
                         parent=self.parents[0],
@@ -606,13 +634,14 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         )
 
     def _find_images_in_sheet(
-        self, doc: DoclingDocument, sheet: Worksheet
+        self, doc: DoclingDocument, sheet: Worksheet, page_no: int
     ) -> DoclingDocument:
         """Find images in the Excel sheet and attach them to the DoclingDocument.
 
         Args:
             doc: The DoclingDocument to be updated.
             sheet: The Excel worksheet to be parsed.
+            page_no: The dense (1-based) page number for this sheet in the output document.
 
         Returns:
             The updated DoclingDocument.
@@ -624,7 +653,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 try:
                     image: Image = cast(Image, item)
                     pil_image = PILImage.open(image.ref)  # type: ignore[arg-type]
-                    page_no = self.workbook.index(sheet) + 1
                     anchor = (0, 0, 0, 0)
                     if isinstance(image.anchor, TwoCellAnchor):
                         anchor = (

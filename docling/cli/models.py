@@ -40,6 +40,7 @@ class _AvailableModels(str, Enum):
     SMOLDOCLING_MLX = "smoldocling_mlx"
     GRANITE_VISION = "granite_vision"
     GRANITE_CHART_EXTRACTION = "granite_chart_extraction"
+    GRANITE_CHART_EXTRACTION_V4 = "granite_chart_extraction_v4"
     RAPIDOCR = "rapidocr"
     EASYOCR = "easyocr"
 
@@ -120,6 +121,8 @@ def download(
         with_smoldocling_mlx=_AvailableModels.SMOLDOCLING_MLX in to_download,
         with_granite_vision=_AvailableModels.GRANITE_VISION in to_download,
         with_granite_chart_extraction=_AvailableModels.GRANITE_CHART_EXTRACTION
+        in to_download,
+        with_granite_chart_extraction_v4=_AvailableModels.GRANITE_CHART_EXTRACTION_V4
         in to_download,
         with_rapidocr=_AvailableModels.RAPIDOCR in to_download,
         with_easyocr=_AvailableModels.EASYOCR in to_download,

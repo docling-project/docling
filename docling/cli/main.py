@@ -518,8 +518,7 @@ def convert(  # noqa: C901
     enrich_chart_extraction: Annotated[
         bool,
         typer.Option(
-            ...,
-            help="Enable chart extraction to convert bar, pie, and line charts to tabular format.",
+            ..., help="Enable chart data extraction from bar, pie, and line charts."
         ),
     ] = False,
     artifacts_path: Annotated[
