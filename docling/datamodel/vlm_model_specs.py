@@ -390,6 +390,68 @@ LIGHTONOCR_VLLM_API = ApiVlmOptions(
     response_format=ResponseFormat.MARKDOWN,
 )
 
+# Nanonets-OCR2-3B
+NANONETS_OCR_PROMPT = (
+    "Extract the text from the above document as if you were reading it naturally. "
+    "Return the tables in html format. Return the equations in LaTeX representation. "
+    "If there is an image in the document and image caption is not present, add a "
+    "small description of the image inside the <img></img> tag; otherwise, add the "
+    "image caption inside <img></img>. Watermarks should be wrapped in brackets. "
+    "Ex: <watermark>OFFICIAL COPY</watermark>. Page numbers should be wrapped in "
+    "brackets. Ex: <page_number>14</page_number> or <page_number>9/22</page_number>. "
+    "Prefer using \u2610 and \u2611 for check boxes."
+)
+
+NANONETS_OCR_TRANSFORMERS = InlineVlmOptions(
+    repo_id="nanonets/Nanonets-OCR2-3B",
+    prompt=NANONETS_OCR_PROMPT,
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+    transformers_prompt_style=TransformersPromptStyle.CHAT,
+    supported_devices=[
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.MPS,
+        AcceleratorDevice.XPU,
+    ],
+    torch_dtype="bfloat16",
+    scale=2.0,
+    temperature=0.0,
+    max_new_tokens=8192,
+)
+
+NANONETS_OCR_VLLM = NANONETS_OCR_TRANSFORMERS.model_copy(deep=True)
+NANONETS_OCR_VLLM.inference_framework = InferenceFramework.VLLM
+
+NANONETS_OCR_VLLM_API = ApiVlmOptions(
+    url="http://localhost:8000/v1/chat/completions",
+    params=dict(
+        model="nanonets/Nanonets-OCR2-3B",
+        max_tokens=8192,
+    ),
+    prompt=NANONETS_OCR_PROMPT,
+    timeout=90,
+    scale=2.0,
+    temperature=0.0,
+    concurrency=4,
+    response_format=ResponseFormat.MARKDOWN,
+)
+
+NANONETS_OCR_LMSTUDIO_API = ApiVlmOptions(
+    url=AnyUrl("http://localhost:1234/v1/chat/completions"),
+    params=dict(
+        model="nanonets-ocr2-3b",
+        max_tokens=8192,
+    ),
+    prompt=NANONETS_OCR_PROMPT,
+    timeout=120,
+    scale=2.0,
+    temperature=0.0,
+    concurrency=2,
+    response_format=ResponseFormat.MARKDOWN,
+)
+
 # DeepSeek-OCR
 DEEPSEEKOCR_OLLAMA = ApiVlmOptions(
     url="http://localhost:11434/v1/chat/completions",
@@ -439,4 +501,7 @@ class VlmModelType(str, Enum):
     GLMOCR_VLLM = "glm_ocr_vllm"
     LIGHTONOCR = "lightonocr"
     LIGHTONOCR_VLLM = "lightonocr_vllm"
+    NANONETS_OCR = "nanonets_ocr"
+    NANONETS_OCR_VLLM = "nanonets_ocr_vllm"
+    NANONETS_OCR_LMSTUDIO = "nanonets_ocr_lmstudio"
     DEEPSEEKOCR_OLLAMA = "deepseekocr_ollama"

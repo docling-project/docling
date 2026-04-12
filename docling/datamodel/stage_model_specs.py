@@ -1304,6 +1304,53 @@ VLM_CONVERT_LIGHTONOCR = StageModelPreset(
     default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
+_NANONETS_OCR_PROMPT = (
+    "Extract the text from the above document as if you were reading it naturally. "
+    "Return the tables in html format. Return the equations in LaTeX representation. "
+    "If there is an image in the document and image caption is not present, add a "
+    "small description of the image inside the <img></img> tag; otherwise, add the "
+    "image caption inside <img></img>. Watermarks should be wrapped in brackets. "
+    "Ex: <watermark>OFFICIAL COPY</watermark>. Page numbers should be wrapped in "
+    "brackets. Ex: <page_number>14</page_number> or <page_number>9/22</page_number>. "
+    "Prefer using \u2610 and \u2611 for check boxes."
+)
+
+VLM_CONVERT_NANONETS_OCR = StageModelPreset(
+    preset_id="nanonets_ocr",
+    name="Nanonets-OCR2-3B",
+    description="Nanonets-OCR2 model for OCR and markdown conversion with tables, equations, and check boxes (3B parameters)",
+    model_spec=VlmModelSpec(
+        name="Nanonets-OCR2-3B",
+        default_repo_id="nanonets/Nanonets-OCR2-3B",
+        prompt=_NANONETS_OCR_PROMPT,
+        response_format=ResponseFormat.MARKDOWN,
+        max_new_tokens=8192,
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    "torch_dtype": "bfloat16",
+                },
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API: ApiModelConfig(
+                params={"model": "nanonets/Nanonets-OCR2-3B", "max_tokens": 8192}
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "nanonets-ocr2-3b", "max_tokens": 8192}
+            ),
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "nanonets-ocr2-3b", "max_tokens": 8192}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
 # -----------------------------------------------------------------------------
 # PICTURE_DESCRIPTION PRESETS (for image captioning/description)
 # -----------------------------------------------------------------------------
