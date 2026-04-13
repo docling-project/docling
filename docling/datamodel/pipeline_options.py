@@ -284,8 +284,7 @@ class PipelineOptions(BaseModel):
     allow_external_plugins: bool = False
     save_images: bool = True
     include_wmf: bool = False
-    save_result: bool = False
-    save_path: Optional[str] = None
+    dump_sdk_output: bool = False
 
 
 class PaginatedPipelineOptions(PipelineOptions):

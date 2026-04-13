@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 import hashlib
 import re
+import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from typing_extensions import override  # 상단 임포트에 추가
@@ -61,6 +62,9 @@ else:
     _log.warning(f"HWP SDK 경로를 찾을 수 없습니다: {SDK_PATH_STR}")
 # ------------------------------
 
+# dump_sdk_output=True 시 자유소프트 SDK 중간 산출물이 저장되는 디렉터리
+_SDK_DEBUG_OUTPUT_DIR = Path("/tmp/docparser_debug")
+
 class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
     def __init__(self, in_doc: InputDocument, path_or_stream: Union[Path, BytesIO], **kwargs) -> None:
         super().__init__(in_doc, path_or_stream)
@@ -70,9 +74,9 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         self.save_images = kwargs.get("save_images", True)
         # 만약 WMF 변환 포함 여부도 기존처럼 쓰고 싶다면 추가
         self.include_wmf = kwargs.get("include_wmf", True)
-        # 결과 저장 여부 및 저장 경로
-        self.save_result = kwargs.get("save_result", False)
-        self.save_path = kwargs.get("save_path", None)
+        # 자유소프트 SDK 중간 산출물(JSON, 이미지 등)을 디버깅 목적으로 보존할지 여부
+        # 저장 기본 경로는 환경변수 DOCPARSER_OUTPUT_DIR로 서버에서 지정 (없으면 원본 파일 옆)
+        self.dump_sdk_output = kwargs.get("dump_sdk_output", False)
 
         self._processed_hashes = set()  # 중복 텍스트(머리말/꼬리말) 필터링용
         
@@ -163,11 +167,15 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.source_path.stem or "file", origin=origin)
 
         # 4. 작업 디렉토리 결정 (임시 vs 영구)
-        if self.save_result:
-            # 영구 저장: save_path가 있으면 거기에, 없으면 원본 파일 옆에
+        if self.dump_sdk_output:
+            # 영구 저장: _SDK_DEBUG_OUTPUT_DIR 하위에 파일명 서브폴더로 저장
             base = self.original_path or self.source_path
-            root = Path(self.save_path).resolve() if self.save_path else base.parent / "docparser_result"
-            work_dir = root / base.stem / "jayu_sdk_result"
+            # BytesIO 입력은 파일명이 고유하지 않을 수 있으므로 UUID 접미사로 충돌 방지
+            if self.temp_input_path is not None:
+                subdir_name = f"{base.stem}_{uuid.uuid4().hex[:8]}"
+            else:
+                subdir_name = base.stem
+            work_dir = _SDK_DEBUG_OUTPUT_DIR / subdir_name / "jayu_sdk_result"
             work_dir.mkdir(parents=True, exist_ok=True)
             temp_dir_context = None  # 삭제할 임시 컨텍스트 없음
         else:

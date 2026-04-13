@@ -1091,16 +1091,16 @@ class DocxProcessor:
         else:
             raise GenosServiceException(1, f"chunk length is 0")
 
-        if kwargs.get('save_result', False):
-            _save_result_files(file_path, vectors, document, save_path=kwargs.get('save_path', None))
+        if kwargs.get('dump_sdk_output', False):
+            _save_result_files(file_path, vectors, document)
 
         return vectors
 
-def _save_result_files(file_path: str, vectors: list, document=None, save_path: Optional[str] = None):
+def _save_result_files(file_path: str, vectors: list, document=None):
     """docling/vectors 결과를 저장하는 공통 헬퍼. 모든 프로세서에서 사용."""
     try:
         base = Path(file_path).resolve()
-        root = Path(save_path).resolve() if save_path else base.parent / "docparser_result"
+        root = base.parent / "docparser_result"
         result_dir = root / base.stem
 
         if document is not None:
@@ -1166,17 +1166,16 @@ class HwpProcessor:
         save_images = kwargs.get('save_images', True)
         self.pipeline_options.save_images = save_images
 
-        # kwargs에서 save_result/save_path를 꺼내어 pipeline_options에 반영
-        self.pipeline_options.save_result = kwargs.get('save_result', False)
-        self.pipeline_options.save_path = kwargs.get('save_path', None)
+        # kwargs에서 dump_sdk_output을 꺼내어 pipeline_options에 반영
+        self.pipeline_options.dump_sdk_output = kwargs.get('dump_sdk_output', False)
         
         # 확장자가 .hwp든 .hwpx든 등록된 백엔드가 알아서 처리함
         conv_result: ConversionResult = self.converter.convert(Path(file_path).resolve(), raises_on_error=True)
         return conv_result.document
 
-    def _save_results(self, file_path: str, document: DoclingDocument, vectors: list, save_path: Optional[str] = None):
+    def _save_results(self, file_path: str, document: DoclingDocument, vectors: list):
         """docling/vectors 결과를 docparser_result 디렉토리에 저장"""
-        _save_result_files(file_path, vectors, document, save_path)
+        _save_result_files(file_path, vectors, document)
 
     def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
         """HybridChunker를 사용하여 문서 분할 및 페이지별 청크 수 집계"""
@@ -1256,8 +1255,8 @@ class HwpProcessor:
         if len(chunks) >= 1:
             vectors = await self.compose_vectors(document, chunks, request, **kwargs)
 
-            if kwargs.get('save_result', False):
-                self._save_results(file_path, document, vectors, save_path=kwargs.get('save_path', None))
+            if kwargs.get('dump_sdk_output', False):
+                self._save_results(file_path, document, vectors)
 
             return vectors
         else:
@@ -1554,7 +1553,7 @@ class DocumentProcessor:
 
             vectors: list[dict] = self.compose_vectors(file_path, chunks, **kwargs)
 
-            if kwargs.get('save_result', False):
-                _save_result_files(file_path, vectors, save_path=kwargs.get('save_path', None))
+            if kwargs.get('dump_sdk_output', False):
+                _save_result_files(file_path, vectors)
 
             return vectors
