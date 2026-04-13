@@ -1921,7 +1921,7 @@ toc_user_prompt = """
 Here is the Korean document you need to analyze:
 
 <document>
-{{raw_text}}
+{raw_text}
 </document>
 
 Your task is to extract and organize all structural elements from this document into a hierarchical table of contents. Korean documents often have mixed structures where some sections follow formal regulatory patterns (제x장/절/관/조) while others use general section numbering and headers.
