@@ -115,7 +115,7 @@ def save_document_visualizations(
     viz_images = document.get_visualization(show_label=show_label)
 
     if not viz_images:
-        print("[Warning] 시각화할 이미지가 없습니다. document.pages가 비어있는지 확인하세요.")
+        _log.warning("시각화할 이미지가 없습니다. document.pages가 비어있는지 확인하세요.")
         return
 
     saved_files = []
@@ -128,7 +128,7 @@ def save_document_visualizations(
         
         img.save(save_path)
         saved_files.append(str(save_path))
-        print(f"📸 시각화 이미지 저장 완료: {save_path}")
+        _log.info(f"시각화 이미지 저장 완료: {save_path}")
 
     return saved_files
 
@@ -184,14 +184,14 @@ def convert_to_pdf(file_path: str) -> str | None:
                     shutil.rmtree(tmp_dir, ignore_errors=True)
                 return str(pdf_path)
             # 실패해도 계속 시도 (로그만 찍고 무시)
-            print(f"[convert_to_pdf] stderr: {proc.stderr.strip()}")
+            _log.warning(f"[convert_to_pdf] stderr: {proc.stderr.strip()}")
 
         if tmp_dir:
             shutil.rmtree(tmp_dir, ignore_errors=True)
         return None
     except Exception as e:
         # 어떤 에러든 삼키고 None 반환
-        print(f"[convert_to_pdf] error: {e}")
+        _log.error(f"[convert_to_pdf] error: {e}")
         return None
 
 
@@ -216,7 +216,7 @@ def install_packages(packages):
         try:
             __import__(package)
         except ImportError:
-            print(f"[!] {package} 패키지가 없습니다. 설치를 시도합니다.")
+            _log.warning(f"{package} 패키지가 없습니다. 설치를 시도합니다.")
             subprocess.run([sys.executable, "-m", "pip", "install", package], check=True)
 
 
@@ -415,7 +415,7 @@ class TabularLoader:
             # convert_to_pdf(file_path) xlsx는 Pdf 변환 안 함
             self.data_dict = self.load_xlsx_documents(file_path)
         else:
-            print(f"[!] Inadequate extension for TabularLoader: {ext}")
+            _log.warning(f"Inadequate extension for TabularLoader: {ext}")
             return
 
     def check_sql_dtypes(self, df):
@@ -1108,7 +1108,7 @@ def _save_result_files(file_path: str, vectors: list, document=None, save_path: 
             docling_dir.mkdir(parents=True, exist_ok=True)
             with open(docling_dir / "docling.json", "w", encoding="utf-8") as f:
                 f.write(document.model_dump_json(indent=2))
-            print(f"docling_result 저장 완료: {docling_dir}")
+            _log.info(f"docling_result 저장 완료: {docling_dir}")
 
         vectors_dir = result_dir / "vectors_result"
         vectors_dir.mkdir(parents=True, exist_ok=True)
@@ -1117,10 +1117,10 @@ def _save_result_files(file_path: str, vectors: list, document=None, save_path: 
                 json.dump([v.model_dump() for v in vectors], f, ensure_ascii=False, indent=2)
             else:
                 json.dump(vectors, f, ensure_ascii=False, indent=2)
-        print(f"vectors_result 저장 완료: {vectors_dir}")
+        _log.info(f"vectors_result 저장 완료: {vectors_dir}")
 
     except Exception as e:
-        print(f"🔥 _save_result_files 실패: {e}")
+        _log.error(f"_save_result_files 실패: {e}")
 
 
 class HwpProcessor:
@@ -1479,7 +1479,7 @@ class DocumentProcessor:
             }
             return level_map.get(level_num, "INFO")
         level_name = get_level_name(level_num)
-        print(f"Setting log level to: {level_name}")
+        _log.info(f"Setting log level to: {level_name}")
 
         if level_name == "NOLOG" or not hasattr(logging, level_name):
             logging.disable(logging.CRITICAL)  # 모든 로그 비활성화

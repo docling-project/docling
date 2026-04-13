@@ -58,7 +58,7 @@ if SDK_DIR.exists():
     if SDK_PATH_STR not in os.environ.get("LD_LIBRARY_PATH", ""):
         os.environ["LD_LIBRARY_PATH"] = f"{SDK_PATH_STR}:{os.environ.get('LD_LIBRARY_PATH', '')}"
 else:
-    print(f"경고: HWP SDK 경로를 찾을 수 없습니다: {SDK_PATH_STR}")
+    _log.warning(f"HWP SDK 경로를 찾을 수 없습니다: {SDK_PATH_STR}")
 # ------------------------------
 
 class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
@@ -219,7 +219,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                         batch = json.loads(clean_line, strict=False)
                         hwp_data.append(batch) # SDK 결과는 항상 리스트이므로 바로 append
                     except json.JSONDecodeError as e:
-                        print(f"파싱 실패 (스킵): {e}")
+                        _log.warning(f"파싱 실패 (스킵): {e}")
                         continue
 
             # 7. hwp_data를 Docling 구조로 변환
@@ -376,7 +376,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             except: return False
 
         if not is_really_image(img_path):
-            print(f"유효하지 않은 이미지 데이터(XML 등 가능성): {os.path.basename(img_path)}")
+            _log.warning(f"유효하지 않은 이미지 데이터(XML 등 가능성): {os.path.basename(img_path)}")
             return
 
         pil_image = None
@@ -394,9 +394,9 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                         wand_img.format = 'png'
                         pil_image = Image.open(BytesIO(wand_img.make_blob()))
                 except Exception as e:
-                    print(f"Wand 변환 실패: {e}")
+                    _log.error(f"Wand 변환 실패: {e}")
             else:
-                print(f"Pillow 실패 및 Wand 미설치로 복구 불가: {img_path}")
+                _log.warning(f"Pillow 실패 및 Wand 미설치로 복구 불가: {img_path}")
 
         # [Salvaged 3] Docling 임베딩 (DPI 고정 및 BBox 설정)
         prov = ProvenanceItem(
@@ -413,7 +413,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             )
         else:
             # Pillow + Wand 모두 실패 시 빈 플레이스홀더라도 추가해 문서 구조 보존
-            print(f"이미지 로드 완전 실패, 플레이스홀더 추가: {os.path.basename(img_path)}")
+            _log.error(f"이미지 로드 완전 실패, 플레이스홀더 추가: {os.path.basename(img_path)}")
             doc.add_picture(
                 parent=parent,
                 caption=None,
@@ -539,7 +539,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
 
         except Exception as e:
             # 2. 오류가 나거나 정보가 없는 경우 (Fallback)
-            print(f"페이지 정보 로드 실패({e}). 기본 1페이지로 설정합니다.")
+            _log.warning(f"페이지 정보 로드 실패({e}). 기본 1페이지로 설정합니다.")
             doc.pages[1] = doc.add_page(
                 page_no=1, 
                 size=Size(width=595, height=842) # 표준 A4 pt
