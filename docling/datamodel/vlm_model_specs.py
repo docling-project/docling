@@ -409,6 +409,17 @@ GLMOCR_TRANSFORMERS = InlineVlmOptions(
     temperature=0.0,
 )
 
+# Requires mlx-vlm >=0.3.11.
+GLMOCR_MLX = InlineVlmOptions(
+    repo_id="mlx-community/GLM-OCR-bf16",
+    prompt="Text Recognition:",
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.MLX,
+    supported_devices=[AcceleratorDevice.MPS],
+    scale=2.0,
+    temperature=0.0,
+)
+
 GLMOCR_VLLM = GLMOCR_TRANSFORMERS.model_copy(deep=True)
 GLMOCR_VLLM.inference_framework = InferenceFramework.VLLM
 
@@ -441,6 +452,19 @@ LIGHTONOCR_TRANSFORMERS = InlineVlmOptions(
         AcceleratorDevice.XPU,
     ],
     torch_dtype="bfloat16",
+    scale=2.0,
+    temperature=0.0,
+    max_new_tokens=4096,
+)
+
+# Routed via mlx-vlm's generic mistral3 handler; there is no LightOn-specific
+# handler in mlx-vlm today.
+LIGHTONOCR_MLX = InlineVlmOptions(
+    repo_id="mlx-community/LightOnOCR-2-1B-bf16",
+    prompt="",
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.MLX,
+    supported_devices=[AcceleratorDevice.MPS],
     scale=2.0,
     temperature=0.0,
     max_new_tokens=4096,

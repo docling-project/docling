@@ -6,8 +6,10 @@ This module defines:
 3. StagePresetMixin - Mixin for stage options to manage presets
 """
 
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Set
 
 from pydantic import BaseModel, Field
 
@@ -48,15 +50,15 @@ class EngineModelConfig(BaseModel):
     For example, MLX might use a different repo_id than Transformers.
     """
 
-    repo_id: Optional[str] = Field(
+    repo_id: str | None = Field(
         default=None, description="Override model repository ID for this engine"
     )
 
-    revision: Optional[str] = Field(
+    revision: str | None = Field(
         default=None, description="Override model revision for this engine"
     )
 
-    torch_dtype: Optional[str] = Field(
+    torch_dtype: str | None = Field(
         default=None,
         description="Override torch dtype for this engine (e.g., 'bfloat16')",
     )
@@ -67,7 +69,7 @@ class EngineModelConfig(BaseModel):
 
     def merge_with(
         self, base_repo_id: str, base_revision: str = "main"
-    ) -> "EngineModelConfig":
+    ) -> EngineModelConfig:
         """Merge with base configuration.
 
         Args:
@@ -96,7 +98,7 @@ class ApiModelConfig(BaseModel):
         description="API parameters (model name, max_tokens, etc.)",
     )
 
-    def merge_with(self, base_params: Dict[str, Any]) -> "ApiModelConfig":
+    def merge_with(self, base_params: Dict[str, Any]) -> ApiModelConfig:
         """Merge with base parameters.
 
         Args:
@@ -137,7 +139,7 @@ class VlmModelSpec(BaseModel):
         description="Expected response format from the model"
     )
 
-    supported_engines: Optional[Set[VlmEngineType]] = Field(
+    supported_engines: Set[VlmEngineType] | None = Field(
         default=None, description="Set of supported engines (None = all supported)"
     )
 
@@ -250,13 +252,13 @@ class VlmModelSpec(BaseModel):
         """Check if this model has an explicit export for the given engine.
 
         An explicit export means either:
-        1. The engine has a different repo_id in engine_overrides, OR
+        1. The engine has an entry in engine_overrides, OR
         2. The engine is explicitly listed in supported_engines (not None)
 
         This is used by auto_inline to determine if it should attempt to use
-        a specific engine. For example, MLX should only be used if there's
-        an actual MLX export available (different repo_id) or if the model
-        explicitly declares MLX support.
+        a specific engine. For example, MLX should only be used if the model
+        explicitly declares MLX support, either via engine_overrides or
+        supported_engines.
 
         Args:
             engine_type: The engine type to check
@@ -276,7 +278,16 @@ class VlmModelSpec(BaseModel):
             >>> spec.has_explicit_engine_export(VlmEngineType.MLX)
             True
 
-            >>> # Model without MLX export (same repo_id or no override)
+            >>> # Model with same-repo MLX support (native handler, no separate weights)
+            >>> spec = VlmModelSpec(
+            ...     name="Test",
+            ...     default_repo_id="org/model",
+            ...     engine_overrides={VlmEngineType.MLX: EngineModelConfig()}
+            ... )
+            >>> spec.has_explicit_engine_export(VlmEngineType.MLX)
+            True
+
+            >>> # Model without MLX export
             >>> spec = VlmModelSpec(name="Test", default_repo_id="org/model")
             >>> spec.has_explicit_engine_export(VlmEngineType.MLX)
             False
@@ -294,16 +305,7 @@ class VlmModelSpec(BaseModel):
         if self.supported_engines is not None:
             return engine_type in self.supported_engines
 
-        # Check if there's a different repo_id for this engine
-        if engine_type in self.engine_overrides:
-            override = self.engine_overrides[engine_type]
-            if (
-                override.repo_id is not None
-                and override.repo_id != self.default_repo_id
-            ):
-                return True
-
-        return False
+        return engine_type in self.engine_overrides
 
 
 # =============================================================================
@@ -325,13 +327,13 @@ class ObjectDetectionModelSpec(BaseModel):
 
     revision: str = Field(default="main", description="Default model revision")
 
-    engine_overrides: Dict["ObjectDetectionEngineType", EngineModelConfig] = Field(
+    engine_overrides: Dict[ObjectDetectionEngineType, EngineModelConfig] = Field(
         default_factory=dict,
         description="Engine-specific configuration overrides",
     )
 
     def get_engine_config(
-        self, engine_type: "ObjectDetectionEngineType"
+        self, engine_type: ObjectDetectionEngineType
     ) -> EngineModelConfig:
         """Get EngineModelConfig for a specific object-detection engine.
 
@@ -346,7 +348,7 @@ class ObjectDetectionModelSpec(BaseModel):
             return override.merge_with(self.repo_id, self.revision)
         return EngineModelConfig(repo_id=self.repo_id, revision=self.revision)
 
-    def get_repo_id(self, engine_type: "ObjectDetectionEngineType") -> str:
+    def get_repo_id(self, engine_type: ObjectDetectionEngineType) -> str:
         """Get repository ID for specific engine.
 
         Args:
@@ -360,7 +362,7 @@ class ObjectDetectionModelSpec(BaseModel):
             return override.repo_id
         return self.repo_id
 
-    def get_revision(self, engine_type: "ObjectDetectionEngineType") -> str:
+    def get_revision(self, engine_type: ObjectDetectionEngineType) -> str:
         """Get revision for specific engine.
 
         Args:
@@ -389,13 +391,13 @@ class ImageClassificationModelSpec(BaseModel):
 
     revision: str = Field(default="main", description="Default model revision")
 
-    engine_overrides: Dict["ImageClassificationEngineType", EngineModelConfig] = Field(
+    engine_overrides: Dict[ImageClassificationEngineType, EngineModelConfig] = Field(
         default_factory=dict,
         description="Engine-specific configuration overrides",
     )
 
     def get_engine_config(
-        self, engine_type: "ImageClassificationEngineType"
+        self, engine_type: ImageClassificationEngineType
     ) -> EngineModelConfig:
         """Get EngineModelConfig for a specific image-classification engine."""
         override = self.engine_overrides.get(engine_type)
@@ -403,14 +405,14 @@ class ImageClassificationModelSpec(BaseModel):
             return override.merge_with(self.repo_id, self.revision)
         return EngineModelConfig(repo_id=self.repo_id, revision=self.revision)
 
-    def get_repo_id(self, engine_type: "ImageClassificationEngineType") -> str:
+    def get_repo_id(self, engine_type: ImageClassificationEngineType) -> str:
         """Get repository ID for specific engine."""
         override = self.engine_overrides.get(engine_type)
         if override and override.repo_id:
             return override.repo_id
         return self.repo_id
 
-    def get_revision(self, engine_type: "ImageClassificationEngineType") -> str:
+    def get_revision(self, engine_type: ImageClassificationEngineType) -> str:
         """Get revision for specific engine."""
         override = self.engine_overrides.get(engine_type)
         if override and override.revision:
@@ -442,7 +444,7 @@ class StageModelPreset(BaseModel):
 
     scale: float = Field(default=2.0, description="Image scaling factor")
 
-    max_size: Optional[int] = Field(default=None, description="Maximum image dimension")
+    max_size: int | None = Field(default=None, description="Maximum image dimension")
 
     default_engine_type: VlmEngineType = Field(
         default=VlmEngineType.AUTO_INLINE,
@@ -571,7 +573,7 @@ class StagePresetMixin:
     def from_preset(
         cls,
         preset_id: str,
-        engine_options: Optional[BaseVlmEngineOptions] = None,
+        engine_options: BaseVlmEngineOptions | None = None,
         **overrides,
     ):
         """Create options from a registered preset.
@@ -705,7 +707,7 @@ class ObjectDetectionStagePresetMixin:
     def from_preset(
         cls,
         preset_id: str,
-        engine_options: Optional["BaseObjectDetectionEngineOptions"] = None,
+        engine_options: BaseObjectDetectionEngineOptions | None = None,
         **overrides: Any,
     ):
         from docling.datamodel.object_detection_engine_options import (
@@ -815,7 +817,7 @@ class ImageClassificationStagePresetMixin:
     def from_preset(
         cls,
         preset_id: str,
-        engine_options: Optional["BaseImageClassificationEngineOptions"] = None,
+        engine_options: BaseImageClassificationEngineOptions | None = None,
         **overrides: Any,
     ):
         from docling.datamodel.image_classification_engine_options import (
@@ -1260,6 +1262,8 @@ VLM_CONVERT_GLMOCR = StageModelPreset(
         prompt="Text Recognition:",
         response_format=ResponseFormat.MARKDOWN,
         engine_overrides={
+            # Native GLM-OCR support was added to mlx-vlm in v0.3.11.
+            VlmEngineType.MLX: EngineModelConfig(repo_id="mlx-community/GLM-OCR-bf16"),
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 torch_dtype="bfloat16",
                 extra_config={
@@ -1268,8 +1272,6 @@ VLM_CONVERT_GLMOCR = StageModelPreset(
                     "torch_dtype": "bfloat16",
                 },
             ),
-            # No MLX export available yet; when one appears on mlx-community,
-            # add: VlmEngineType.MLX: EngineModelConfig(repo_id="mlx-community/GLM-OCR-...")
         },
         api_overrides={
             VlmEngineType.API: ApiModelConfig(
@@ -1295,6 +1297,11 @@ VLM_CONVERT_FALCON_OCR = StageModelPreset(
         response_format=ResponseFormat.MARKDOWN,
         trust_remote_code=True,
         engine_overrides={
+            # Native Falcon-OCR support was added to mlx-vlm in v0.4.3.
+            # A dedicated mlx-community checkpoint is now available for MLX.
+            VlmEngineType.MLX: EngineModelConfig(
+                repo_id="mlx-community/Falcon-OCR-bf16"
+            ),
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 torch_dtype="bfloat16",
                 extra_config={
@@ -1303,8 +1310,6 @@ VLM_CONVERT_FALCON_OCR = StageModelPreset(
                     "torch_dtype": "bfloat16",
                 },
             ),
-            # No MLX export available yet; when one appears on mlx-community,
-            # add: VlmEngineType.MLX: EngineModelConfig(repo_id="mlx-community/Falcon-OCR-...")
         },
         api_overrides={
             VlmEngineType.API_LMSTUDIO: ApiModelConfig(
@@ -1330,6 +1335,10 @@ VLM_CONVERT_LIGHTONOCR = StageModelPreset(
         response_format=ResponseFormat.MARKDOWN,
         max_new_tokens=4096,
         engine_overrides={
+            # LightOnOCR currently runs on mlx-vlm via the generic mistral3 handler.
+            VlmEngineType.MLX: EngineModelConfig(
+                repo_id="mlx-community/LightOnOCR-2-1B-bf16"
+            ),
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 torch_dtype="bfloat16",
                 extra_config={
