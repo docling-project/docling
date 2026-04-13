@@ -439,6 +439,50 @@ def test_external_image_references():
     assert "after the external image" in md
 
 
+def test_inline_sdt_references(tmp_path):
+    """Test that inline SDT citation blocks are preserved in DOCX paragraphs."""
+    from docx import Document
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    def _append_citation(paragraph, text: str):
+        sdt = OxmlElement("w:sdt")
+        sdt_pr = OxmlElement("w:sdtPr")
+        tag = OxmlElement("w:tag")
+        tag.set(qn("w:val"), "MENDELEY_CITATION_v3_test")
+        sdt_pr.append(tag)
+
+        sdt_content = OxmlElement("w:sdtContent")
+        run = OxmlElement("w:r")
+        run_text = OxmlElement("w:t")
+        run_text.text = text
+        run.append(run_text)
+        sdt_content.append(run)
+
+        sdt.append(sdt_pr)
+        sdt.append(sdt_content)
+        paragraph._p.append(sdt)
+
+    docx_path = tmp_path / "inline_sdt_reference.docx"
+    doc = Document()
+
+    first_paragraph = doc.add_paragraph()
+    first_paragraph.add_run("Impact ")
+    _append_citation(first_paragraph, "(Hagman G 1984)")
+    first_paragraph.add_run(". After.")
+
+    second_paragraph = doc.add_paragraph()
+    _append_citation(second_paragraph, "(Standalone citation)")
+
+    doc.save(docx_path)
+
+    conv_result = get_converter().convert(docx_path)
+    markdown = conv_result.document.export_to_markdown()
+
+    assert "Impact (Hagman G 1984). After." in markdown
+    assert "(Standalone citation)" in markdown
+
+
 def test_list_counter_and_enum_marker(docx_paths):
     """Test list counter increment, sub-level reset, marker building, and sequence reset."""
     docx_path = docx_paths[0]

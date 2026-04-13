@@ -639,13 +639,93 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             script=script,
         )
 
+    def _get_hyperlink_target(
+        self, hyperlink: Hyperlink
+    ) -> Optional[Union[AnyUrl, Path]]:
+        if hyperlink.address:
+            return (
+                AnyUrl(hyperlink.address)
+                if urlparse(hyperlink.address).scheme
+                else Path(hyperlink.address)
+            )
+
+        return None
+
+    def _iter_paragraph_content(
+        self, paragraph: Paragraph
+    ) -> list[tuple[str, Optional[Formatting], Optional[Union[AnyUrl, Path]]]]:
+        if not hasattr(paragraph, "_p"):
+            return []
+
+        content: list[
+            tuple[str, Optional[Formatting], Optional[Union[AnyUrl, Path]]]
+        ] = []
+
+        for child in paragraph._p:
+            tag_name = etree.QName(child).localname
+
+            if tag_name == "sdt":
+                text = "".join(
+                    child.xpath(
+                        ".//w:sdtContent//w:t/text()",
+                        namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
+                    )
+                )
+                if len(text) == 0:
+                    continue
+
+                runs = child.xpath(
+                    ".//w:sdtContent//w:r",
+                    namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
+                )
+                fmt = (
+                    self._get_format_from_run(Run(runs[0], paragraph)) if runs else None
+                )
+                content.append((text, fmt, None))
+                continue
+
+            if tag_name not in {"r", "hyperlink"}:
+                continue
+
+            item = (
+                Run(child, paragraph)
+                if tag_name == "r"
+                else Hyperlink(child, paragraph)
+            )
+
+            if isinstance(item, Hyperlink):
+                content.append(
+                    (
+                        item.text,
+                        (
+                            self._get_format_from_run(item.runs[0])
+                            if item.runs and len(item.runs) > 0
+                            else None
+                        ),
+                        self._get_hyperlink_target(item),
+                    )
+                )
+            elif isinstance(item, Run):
+                content.append((item.text, self._get_format_from_run(item), None))
+
+        return content
+
+    def _get_paragraph_text(self, paragraph: Paragraph) -> str:
+        if not hasattr(paragraph, "iter_inner_content") or not hasattr(paragraph, "_p"):
+            return paragraph.text
+
+        return "".join(
+            text
+            for text, _format, _hyperlink in self._iter_paragraph_content(paragraph)
+        )
+
     def _get_paragraph_elements(self, paragraph: Paragraph):
         """
         Extract paragraph elements along with their formatting and hyperlink
         """
 
         # for now retain empty paragraphs for backwards compatibility:
-        if paragraph.text.strip() == "":
+        if self._get_paragraph_text(paragraph).strip() == "":
             return [("", None, None)]
 
         paragraph_elements: list[
@@ -653,30 +733,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         ] = []
         group_text = ""
         previous_format = None
+        last_format = None
 
         # Iterate over the runs of the paragraph and group them by format
-        for c in paragraph.iter_inner_content():
-            if isinstance(c, Hyperlink):
-                text = c.text
-                if c.address:
-                    hyperlink = (
-                        AnyUrl(c.address)
-                        if urlparse(c.address).scheme
-                        else Path(c.address)
-                    )
-                else:
-                    hyperlink = None
-                format = (
-                    self._get_format_from_run(c.runs[0])
-                    if c.runs and len(c.runs) > 0
-                    else None
-                )
-            elif isinstance(c, Run):
-                text = c.text
-                hyperlink = None
-                format = self._get_format_from_run(c)
-            else:
-                continue
+        for text, format, hyperlink in self._iter_paragraph_content(paragraph):
+            last_format = format
 
             if (len(text.strip()) and format != previous_format) or (
                 hyperlink is not None
@@ -699,7 +760,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # Format the last group
         if len(group_text.strip()) > 0:
-            paragraph_elements.append((group_text.strip(), format, None))
+            paragraph_elements.append((group_text.strip(), last_format, None))
 
         return paragraph_elements
 
@@ -1008,7 +1069,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         paragraph = Paragraph(element, self.docx_obj)
         paragraph_elements = self._get_paragraph_elements(paragraph)
         text, equations = self._handle_equations_in_text(
-            element=element, text=paragraph.text
+            element=element, text=self._get_paragraph_text(paragraph)
         )
 
         if text is None:
