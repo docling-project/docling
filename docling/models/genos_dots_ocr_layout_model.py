@@ -79,6 +79,7 @@ class GenosDotsOCRLayoutModel(BasePageModel):
             self.dotsocr_options = self.options.genos_layout_options
         self.dotocr_endpoint = self.dotsocr_options.endpoint
         self.api_key = self.dotsocr_options.api_key
+        self.model = getattr(self.dotsocr_options, "model", "dots-mocr")
         self.max_completion_tokens = self.dotsocr_options.max_completion_tokens
         self.timeout = self.dotsocr_options.timeout
 
@@ -433,7 +434,7 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                         base64_image=base64_image,
                         url=self.dotocr_endpoint,
                         api_key=self.api_key,
-                        model="model",
+                        model=self.model,
                         max_completion_tokens=self.max_completion_tokens,
                         timeout=self.timeout,
                     )

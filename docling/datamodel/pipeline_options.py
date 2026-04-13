@@ -355,6 +355,7 @@ class GenosLayoutOptions(BaseModel):
 
     endpoint: str = None
     api_key: str = None
+    model: str = "dots-mocr"
     max_completion_tokens: int = 6000
     timeout: int = 3600
 
