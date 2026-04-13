@@ -195,12 +195,17 @@ class InputDocument(BaseModel):
         include_wmf: bool = False,
         dump_sdk_output: bool = False,
     ) -> None:
-        # GenosHwpDocumentBackend에 대해서만 save_images, dump_sdk_output 파라미터를 전달
+        # 백엔드 종류별 초기화 파라미터 분기
         if backend.__name__ == 'GenosHwpDocumentBackend':
             self._backend = backend(self, path_or_stream=path_or_stream,
                                    save_images=save_images,
                                    include_wmf=include_wmf,
                                    dump_sdk_output=dump_sdk_output)
+        elif backend.__name__ == 'HwpxDocumentBackend':
+            # 구버전 XML 백엔드: save_images/include_wmf는 지원하지만 dump_sdk_output은 없음
+            self._backend = backend(self, path_or_stream=path_or_stream,
+                                   save_images=save_images,
+                                   include_wmf=include_wmf)
         else:
             self._backend = backend(self, path_or_stream=path_or_stream)
         if not self._backend.is_valid():

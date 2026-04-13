@@ -74,6 +74,8 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import LevelNumber, ListItem, CodeItem
 from docling.backend.genos_msword_backend import GenosMsWordDocumentBackend
 from docling.backend.genos_hwp_backend import GenosHwpDocumentBackend
+from docling.backend.hwp_backend import HwpDocumentBackend
+from docling.backend.xml.hwpx_backend import HwpxDocumentBackend
 
 try:
     from genos_utils import upload_files
@@ -1126,24 +1128,35 @@ def _save_result_files(file_path: str, vectors: list, document=None):
 class HwpProcessor:
     def __init__(self):
         self.page_chunk_counts = defaultdict(int)
-        
         # 1. 한글 처리에 불필요한 PDF용 옵션이 없는 기본 파이프라인 옵션 사용
         self.pipeline_options = PipelineOptions()
-        self.pipeline_options.save_images = True 
-        
-        # 2. HwpxFormatOption을 사용하여 백엔드 주입
-        self.converter = DocumentConverter(
+        self.pipeline_options.save_images = True
+
+        # 2-a. 자유소프트 SDK 백엔드 사용 (use_hwp_sdk=True, 기본값)
+        self.jayu_converter = DocumentConverter(
             format_options={
-                # .hwp(바이너리)도 HwpxFormatOption의 틀을 빌려 우리 SDK 백엔드로 연결
                 InputFormat.HWP: HwpxFormatOption(
-                    pipeline_options=self.pipeline_options, # SimplePipeline으로 설정됨.
+                    pipeline_options=self.pipeline_options,
                     backend=GenosHwpDocumentBackend
                 ),
-                # .hwpx(XML)도 당연히 HwpxFormatOption 사용
                 InputFormat.XML_HWPX: HwpxFormatOption(
-                    pipeline_options=self.pipeline_options, # SimplePipeline으로 설정됨.
+                    pipeline_options=self.pipeline_options,
                     backend=GenosHwpDocumentBackend
-                )
+                ),
+            }
+        )
+
+        # 2-b. 구버전 XML 백엔드 (use_hwp_sdk=False)
+        self.xml_converter = DocumentConverter(
+            format_options={
+                InputFormat.HWP: HwpxFormatOption(
+                    pipeline_options=self.pipeline_options,
+                    backend=HwpDocumentBackend
+                ),
+                InputFormat.XML_HWPX: HwpxFormatOption(
+                    pipeline_options=self.pipeline_options,
+                    backend=HwpxDocumentBackend
+                ),
             }
         )
 
@@ -1163,14 +1176,18 @@ class HwpProcessor:
 
     def load_documents(self, file_path: str, **kwargs: dict) -> DoclingDocument:
         """SDK 백엔드를 통해 문서를 로드"""
-        save_images = kwargs.get('save_images', True)
-        self.pipeline_options.save_images = save_images
+        self.pipeline_options.save_images = kwargs.get('save_images', True)
 
-        # kwargs에서 dump_sdk_output을 꺼내어 pipeline_options에 반영
-        self.pipeline_options.dump_sdk_output = kwargs.get('dump_sdk_output', False)
-        
-        # 확장자가 .hwp든 .hwpx든 등록된 백엔드가 알아서 처리함
-        conv_result: ConversionResult = self.converter.convert(Path(file_path).resolve(), raises_on_error=True)
+        use_hwp_sdk = kwargs.get('use_hwp_sdk', True)
+
+        if use_hwp_sdk:
+            self.pipeline_options.dump_sdk_output = kwargs.get('dump_sdk_output', False)
+            converter = self.jayu_converter
+        else:
+            self.pipeline_options.dump_sdk_output = False
+            converter = self.xml_converter
+
+        conv_result: ConversionResult = converter.convert(Path(file_path).resolve(), raises_on_error=True)
         return conv_result.document
 
     def _save_results(self, file_path: str, document: DoclingDocument, vectors: list):
