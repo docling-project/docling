@@ -22,7 +22,7 @@ from bs4 import BeautifulSoup
 from docling_core.types.doc import (
     DocItemLabel, DoclingDocument, DocumentOrigin, GroupLabel,
     ImageRef, NodeItem, ProvenanceItem, TableCell, TableData,
-    BoundingBox, CoordOrigin, Size, Formatting
+    BoundingBox, CoordOrigin, Size
 )
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -117,13 +117,6 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         """추상 메서드 구현: 페이지 단위 처리를 지원하는지 여부 (HWP는 대개 False이나, 자유소프트 SDK는 true)"""
         return True
     
-    def _get_active_parent(self):
-        """현재 트리에서 가장 하위에 있는(None이 아닌) 부모 노드를 반환합니다."""
-        for level in sorted(self.parents.keys(), reverse=True):
-            if self.parents[level] is not None:
-                return self.parents[level]
-        return None # 정 없으면 Root
-
     def _get_label_and_level_hwp(self, text, size, is_bold):
         """폰트와 텍스트 패턴으로 p_style_id와 p_level을 결정합니다."""
         # 명시적 헤더 패턴 (1. , 가. , Ⅰ. 등)
@@ -135,31 +128,6 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             return "Heading", level
             
         return "Normal", 0
-
-    # --- 기존에 생략되었던 유틸리티 함수들 ---
-    def _update_history(self, name: str, level: Optional[int], page_no: int):
-        self.history["names"].append(name)
-        self.history["levels"].append(level)
-        self.history["page_nos"].append(page_no)
-
-    def _get_current_level(self) -> int:
-        for k, v in self.parents.items():
-            if k >= 0 and v is None:
-                return k
-        return 0
-
-    def _map_font_to_formatting(self, font_info: Dict) -> Formatting:
-        """SDK의 font 정보를 Docling의 Formatting 객체로 변환"""
-        return Formatting(
-            bold=font_info.get("bold", False),
-            italic=font_info.get("italic", False),
-            underline=font_info.get("underline", False), # SDK 지원 여부에 따라 조정
-        )
-
-    def _is_list_item(self, text: str) -> bool:
-        """리스트 기호(□, o, -, 숫자.) 감지 로직"""
-        list_patterns = [r'^□', r'^o\s', r'^-', r'^\d+\.', r'^[가-힣]\.']
-        return any(re.match(p, text.strip()) for p in list_patterns)
 
     # --- 핵심 변환 로직 ---
     def convert(self) -> DoclingDocument:
@@ -508,55 +476,6 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                 prov=prov
             )
 
-    def _handle_text(self, item: Dict, doc: DoclingDocument, prov: ProvenanceItem):
-        """텍스트의 성격(중복, TOC, 헤더, 본문)을 판별하여 추가합니다."""
-        text_val = item.get("value", "").strip()
-        if not text_val: 
-            return
-        
-        # 1. 중복 제거 (머리말/꼬리말 등 방어)
-        '''To DO: 현재는 자유 소프트 SDK에서 머리말/꼬리말 자체를 생략하는 상황. 추후 추가 시 처리 로직 구현해야.'''
-
-        # 2. 분석용 변수 추출
-        font_info = item.get("font", {})
-        font_size = font_info.get("size", 10.0)
-        is_bold = font_info.get("bold", False)
-
-        # 3. 패턴 감지 (이전 hwpx 로직 + 현재 정규식 최적화)
-        # TOC: 점(2개 이상), 탭, 또는 긴 공백 뒤에 숫자로 끝나는 패턴
-        is_toc = bool(re.search(r'(\.{2,}|…|\t|\s{4,})\s*\d+$', text_val))
-        
-        # Explicit Header: 숫자+점(1. ) 또는 로마자+점(Ⅱ. )으로 시작하는 패턴
-        is_explicit_header = bool(re.match(r'^(?:\d+\.\s+|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\.\s*)', text_val))
-
-        # 4. 분류 및 추가 로직
-        if is_toc:
-            parent_info = self.parents[1]
-            p_ref = getattr(parent_info, "self_ref", "N/A")
-            p_label = getattr(parent_info, "label", "N/A")
-            
-            doc.add_text(
-                label=DocItemLabel.DOCUMENT_INDEX, 
-                text=text_val, 
-                parent=self.parents[1], 
-                prov=prov
-            )
-
-        # 5. 헤더 판별: 명시적 패턴이 있거나, 폰트가 크거나, 볼드체인 경우
-        elif is_explicit_header or font_size >= 20 or is_bold:
-            level = self._estimate_header_level(font_info)
-            # 만약 명시적 패턴(1. 등)이 있는데 폰트가 작다면 레벨을 낮추는 등 미세조정 가능
-            self._add_header(doc, level, text_val, prov)
-
-        else:
-            # 6. 일반 본문
-            doc.add_text(
-                label=DocItemLabel.PARAGRAPH, 
-                text=text_val, 
-                parent=self.parents[1], 
-                prov=prov
-            )
-
     def _add_header(self, doc: DoclingDocument, level: int, text: str, prov: ProvenanceItem, parent: Any):
         """DOCX 표준 명칭(header-N)을 사용하여 논리적 섹션 마디를 만듭니다."""
         
@@ -591,13 +510,6 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         # _walk_hwp_data에서 문단들이 참고할 최신 부모 노드
         self.active_main_parent = new_section
 
-    def _estimate_header_level(self, font_info: Dict) -> int:
-        """폰트 크기에 따른 헤더 레벨 추정"""
-        size = font_info.get("size", 10.0)
-        if size >= 28: return 1
-        if size >= 20: return 2
-        return 3
-    
     def _setup_pages(self, doc: DoclingDocument, info_path: Path):
         """ .info 파일을 읽어 DoclingDocument에 페이지 정보를 설정합니다. """
         
