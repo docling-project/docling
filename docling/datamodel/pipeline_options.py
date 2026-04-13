@@ -2,7 +2,16 @@ import logging
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Any, Callable, ClassVar, Literal, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Callable,
+    ClassVar,
+    Literal,
+    Optional,
+    Union,
+)
 
 from docling_core.types.doc import PictureClassificationLabel
 from pydantic import (
@@ -69,6 +78,11 @@ from docling.models.inference_engines.object_detection.base import (
 )
 from docling.models.inference_engines.vlm.base import VlmEngineOptionsMixin
 
+if TYPE_CHECKING:
+    from docling_core.types.doc.page import SegmentedPage
+
+    from docling.datamodel.base_models import Page
+
 _log = logging.getLogger(__name__)
 
 
@@ -86,6 +100,21 @@ class BaseOptions(BaseModel):
     """
 
     kind: ClassVar[str]
+
+
+StagePromptBuilder = Callable[..., str]
+
+
+def _build_stage_prompt(
+    prompt_builder: StagePromptBuilder | None,
+    prompt: str,
+    *,
+    page: "SegmentedPage | None" = None,
+    _internal_page: "Page | None" = None,
+) -> str:
+    if prompt_builder is None:
+        return prompt
+    return prompt_builder(prompt, page=page, _internal_page=_internal_page)
 
 
 class TableFormerMode(str, Enum):
@@ -843,11 +872,11 @@ class PictureDescriptionVlmEngineOptions(
         ),
     ] = {"max_new_tokens": 200, "do_sample": False}
     prompt_builder: Annotated[
-        Callable[[str], str] | None,
+        StagePromptBuilder | None,
         Field(
             description=(
-                "Optional prompt post-processor applied before requests are sent "
-                "to the runtime."
+                "Optional prompt builder override applied before requests are sent "
+                "to the runtime. Receives the base prompt plus optional page context."
             ),
             exclude=True,
         ),
@@ -862,10 +891,19 @@ class PictureDescriptionVlmEngineOptions(
         ),
     ]
 
-    def build_prompt(self, prompt: str) -> str:
-        if self.prompt_builder is None:
-            return prompt
-        return self.prompt_builder(prompt)
+    def build_prompt(
+        self,
+        prompt: str,
+        *,
+        page: "SegmentedPage | None" = None,
+        _internal_page: "Page | None" = None,
+    ) -> str:
+        return _build_stage_prompt(
+            self.prompt_builder,
+            prompt,
+            page=page,
+            _internal_page=_internal_page,
+        )
 
 
 # SmolVLM
@@ -931,11 +969,11 @@ class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         default=False, description="Force use of backend text extraction instead of VLM"
     )
     prompt_builder: Annotated[
-        Callable[[str], str] | None,
+        StagePromptBuilder | None,
         Field(
             description=(
-                "Optional prompt post-processor applied before requests are sent "
-                "to the runtime."
+                "Optional prompt builder override applied before requests are sent "
+                "to the runtime. Receives the base prompt plus optional page context."
             ),
             exclude=True,
         ),
@@ -950,10 +988,19 @@ class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         ),
     ]
 
-    def build_prompt(self, prompt: str) -> str:
-        if self.prompt_builder is None:
-            return prompt
-        return self.prompt_builder(prompt)
+    def build_prompt(
+        self,
+        prompt: str,
+        *,
+        page: "SegmentedPage | None" = None,
+        _internal_page: "Page | None" = None,
+    ) -> str:
+        return _build_stage_prompt(
+            self.prompt_builder,
+            prompt,
+            page=page,
+            _internal_page=_internal_page,
+        )
 
 
 class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
@@ -991,11 +1038,11 @@ class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         default=True, description="Extract mathematical formulas"
     )
     prompt_builder: Annotated[
-        Callable[[str], str] | None,
+        StagePromptBuilder | None,
         Field(
             description=(
-                "Optional prompt post-processor applied before requests are sent "
-                "to the runtime."
+                "Optional prompt builder override applied before requests are sent "
+                "to the runtime. Receives the base prompt plus optional page context."
             ),
             exclude=True,
         ),
@@ -1010,10 +1057,19 @@ class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         ),
     ]
 
-    def build_prompt(self, prompt: str) -> str:
-        if self.prompt_builder is None:
-            return prompt
-        return self.prompt_builder(prompt)
+    def build_prompt(
+        self,
+        prompt: str,
+        *,
+        page: "SegmentedPage | None" = None,
+        _internal_page: "Page | None" = None,
+    ) -> str:
+        return _build_stage_prompt(
+            self.prompt_builder,
+            prompt,
+            page=page,
+            _internal_page=_internal_page,
+        )
 
 
 # =============================================================================

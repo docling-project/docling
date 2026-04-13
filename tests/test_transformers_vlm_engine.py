@@ -2,10 +2,14 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import torch
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.pipeline_options_vlm_model import TransformersModelType
+from docling.datamodel.pipeline_options_vlm_model import (
+    TransformersModelType,
+    TransformersPromptStyle,
+)
 from docling.datamodel.stage_model_specs import EngineModelConfig
 from docling.datamodel.vlm_engine_options import TransformersVlmEngineOptions
 from docling.models.inference_engines.vlm.base import VlmEngineInput
@@ -241,6 +245,56 @@ def test_transformers_engine_falls_back_without_generation_config_file(
     assert captured["model_kwargs"]["config"]._attn_implementation == "eager"
 
 
+def test_transformers_engine_uses_tokenizer_like_processor_directly(
+    monkeypatch,
+    tmp_path: Path,
+):
+    class FakeTokenizerLikeProcessor:
+        def __init__(self):
+            self.padding_side = "right"
+
+    class FakeModel:
+        def eval(self):
+            return self
+
+    processor = FakeTokenizerLikeProcessor()
+
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.transformers_engine.resolve_model_artifacts_path",
+        lambda **kwargs: tmp_path,
+    )
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.transformers_engine.AutoProcessor.from_pretrained",
+        lambda *args, **kwargs: processor,
+    )
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.transformers_engine.AutoModelForCausalLM.from_pretrained",
+        lambda *args, **kwargs: FakeModel(),
+    )
+    monkeypatch.setattr(
+        "docling.models.inference_engines.vlm.transformers_engine.GenerationConfig.from_pretrained",
+        lambda *args, **kwargs: SimpleNamespace(),
+    )
+
+    engine = TransformersVlmEngine(
+        options=TransformersVlmEngineOptions(
+            compile_model=False,
+            trust_remote_code=True,
+        ),
+        accelerator_options=AcceleratorOptions(device="cpu"),
+        artifacts_path=tmp_path,
+        model_config=EngineModelConfig(
+            repo_id="tiiuae/Falcon-OCR",
+            extra_config={
+                "transformers_model_type": TransformersModelType.AUTOMODEL_CAUSALLM,
+            },
+        ),
+    )
+
+    assert processor.padding_side == "left"
+    assert engine._get_tokenizer() is processor
+
+
 def test_transformers_engine_uses_runtime_adapter_private_batch_generate() -> None:
     captured: dict[str, object] = {}
 
@@ -413,3 +467,121 @@ def test_transformers_engine_uses_runtime_adapter_public_generate_fallback() -> 
         "compile": False,
         "seed": 99,
     }
+
+
+def test_transformers_engine_decodes_with_tokenizer_fallback() -> None:
+    captured: dict[str, object] = {}
+
+    class FakeTokenizer:
+        pad_token = "</pad>"
+
+        def batch_decode(self, sequences, **kwargs):
+            captured["decoded_sequences"] = sequences
+            captured["decoder_kwargs"] = kwargs
+            return ["decoded-text</pad>"]
+
+    class FakeProcessor:
+        def __init__(self):
+            self.tokenizer = FakeTokenizer()
+
+        def __call__(
+            self,
+            *,
+            text,
+            images,
+            return_tensors,
+            padding,
+            **kwargs,
+        ):
+            captured["processor_text"] = text
+            captured["processor_images"] = images
+            captured["processor_kwargs"] = kwargs
+            return {"input_ids": torch.tensor([[11, 12]])}
+
+    class FakeModel:
+        def generate(self, **kwargs):
+            captured["generate_kwargs"] = kwargs
+            return torch.tensor([[11, 12, 99]])
+
+    engine = TransformersVlmEngine(
+        options=TransformersVlmEngineOptions(
+            compile_model=False,
+            trust_remote_code=True,
+        ),
+        accelerator_options=AcceleratorOptions(device="cpu"),
+        artifacts_path=None,
+    )
+    engine._initialized = True
+    engine.device = "cpu"
+    engine.processor = FakeProcessor()
+    engine.vlm_model = FakeModel()
+    engine.generation_config = SimpleNamespace()
+
+    outputs = engine.predict_batch(
+        [
+            VlmEngineInput(
+                image=Image.new("RGB", (8, 8), color="white"),
+                prompt="decode me",
+                extra_generation_config={
+                    "skip_special_tokens": True,
+                    "transformers_prompt_style": TransformersPromptStyle.RAW,
+                },
+            )
+        ]
+    )
+
+    assert [output.text for output in outputs] == ["decoded-text"]
+    assert captured["processor_text"] == ["decode me"]
+    assert captured["decoder_kwargs"] == {"skip_special_tokens": True}
+    assert torch.equal(captured["decoded_sequences"], torch.tensor([[99]]))
+
+
+def test_transformers_engine_requires_decode_support() -> None:
+    class FakeProcessor:
+        def __init__(self):
+            self.tokenizer = SimpleNamespace()
+
+        def __call__(
+            self,
+            *,
+            text,
+            images,
+            return_tensors,
+            padding,
+            **kwargs,
+        ):
+            return {"input_ids": torch.tensor([[21, 22]])}
+
+    class FakeModel:
+        def generate(self, **kwargs):
+            return torch.tensor([[21, 22, 23]])
+
+    engine = TransformersVlmEngine(
+        options=TransformersVlmEngineOptions(
+            compile_model=False,
+            trust_remote_code=True,
+        ),
+        accelerator_options=AcceleratorOptions(device="cpu"),
+        artifacts_path=None,
+    )
+    engine._initialized = True
+    engine.device = "cpu"
+    engine.processor = FakeProcessor()
+    engine.vlm_model = FakeModel()
+    engine.generation_config = SimpleNamespace()
+
+    with pytest.raises(
+        RuntimeError,
+        match="Neither processor\\.batch_decode nor tokenizer\\.batch_decode is available\\.",
+    ):
+        engine.predict_batch(
+            [
+                VlmEngineInput(
+                    image=Image.new("RGB", (8, 8), color="white"),
+                    prompt="decode me",
+                    extra_generation_config={
+                        "transformers_prompt_style": TransformersPromptStyle.RAW
+                    },
+                )
+            ]
+        )
