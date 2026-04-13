@@ -80,16 +80,27 @@ class PageAssembleModel(BasePageModel):
                     elements: List[PageElement] = []
                     headers: List[PageElement] = []
                     body: List[PageElement] = []
+                    equation_map = (
+                        page.predictions.equations_prediction.equation_map
+                        if page.predictions.equations_prediction
+                        else {}
+                    )
 
                     for cluster in page.predictions.layout.clusters:
                         # _log.info("Cluster label seen:", cluster.label)
                         if cluster.label in LayoutModel.TEXT_ELEM_LABELS:
-                            textlines = [
-                                cell.text.replace("\x02", "-").strip()
-                                for cell in cluster.cells
-                                if len(cell.text.strip()) > 0
-                            ]
-                            text = self.sanitize_text(textlines)
+                            if (
+                                cluster.label == LayoutModel.FORMULA_LABEL
+                                and cluster.id in equation_map
+                            ):
+                                text = equation_map[cluster.id].text
+                            else:
+                                textlines = [
+                                    cell.text.replace("\x02", "-").strip()
+                                    for cell in cluster.cells
+                                    if len(cell.text.strip()) > 0
+                                ]
+                                text = self.sanitize_text(textlines)
                             text_el = TextElement(
                                 label=cluster.label,
                                 id=cluster.id,

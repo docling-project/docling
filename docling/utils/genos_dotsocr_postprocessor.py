@@ -220,10 +220,24 @@ class LayoutPostprocessor:
         )
 
     def postprocess(self) -> Tuple[List[Cluster], List[TextCell]]:
+        self.regular_clusters = self._process_regular_clusters()
+        self.special_clusters = self._process_special_clusters()
 
-        self.regular_clusters = self._process_regular_clusters()  # 여기 좀 수정했음
-        # final_clusters = self._sort_clusters(self.regular_clusters + [], mode="id")
-        final_clusters = self.regular_clusters
+        # Remove regular clusters that are included in wrappers/special containers.
+        contained_ids = {
+            child.id
+            for wrapper in self.special_clusters
+            if wrapper.label in self.SPECIAL_TYPES
+            for child in wrapper.children
+        }
+        self.regular_clusters = [
+            c for c in self.regular_clusters if c.id not in contained_ids
+        ]
+
+        # Keep cluster order stable by source cluster id (DotsOCR response order).
+        final_clusters = self._sort_clusters(
+            self.regular_clusters + self.special_clusters, mode="cluster_id"
+        )
         for cluster in final_clusters:
             cluster.cells = self._sort_cells(cluster.cells)
             # Also sort cells in children if any
@@ -247,7 +261,7 @@ class LayoutPostprocessor:
 
         clusters = [
             c
-            for c in self.all_clusters
+            for c in self.regular_clusters
             if c.confidence >= self.CONFIDENCE_THRESHOLDS[c.label]
         ]
 
@@ -259,8 +273,14 @@ class LayoutPostprocessor:
         # Initial cell assignment
         clusters = self._assign_cells_to_clusters(clusters)
 
-        # Remove clusters with no cells
-        clusters = [cluster for cluster in clusters if cluster.cells]
+        # Remove clusters with no cells (if keep_empty_clusters is False),
+        # but always keep formula clusters so formula text can be injected later.
+        if not self.options.keep_empty_clusters:
+            clusters = [
+                cluster
+                for cluster in clusters
+                if cluster.cells or cluster.label == DocItemLabel.FORMULA
+            ]
 
         # Handle orphaned cells
         unassigned = self._find_unassigned_cells(clusters)
@@ -635,6 +655,8 @@ class LayoutPostprocessor:
         self, clusters: List[Cluster], mode: str = "id"
     ) -> List[Cluster]:
         """Sort clusters in reading order (top-to-bottom, left-to-right)."""
+        if mode == "cluster_id":  # Keep incoming model order via source cluster id.
+            return sorted(clusters, key=lambda cluster: cluster.id)
         if mode == "id":  # sort in the order the cells are printed in the PDF.
             return sorted(
                 clusters,

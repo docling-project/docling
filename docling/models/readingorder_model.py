@@ -369,7 +369,7 @@ class ReadingOrderModel:
             current_list = None
 
             new_item = out_doc.add_text(
-                label=DocItemLabel.FORMULA, text="", orig=cap_text, prov=prov
+                label=DocItemLabel.FORMULA, text=cap_text, orig=cap_text, prov=prov
             )
         else:
             current_list = None
@@ -429,6 +429,29 @@ class ReadingOrderModel:
                 el_to_captions_mapping,
                 el_to_footnotes_mapping,
                 el_merges_mapping,
+            )
+
+        return docling_doc
+
+    def build_doc_preserving_assembled_order(
+        self, conv_res: ConversionResult
+    ) -> DoclingDocument:
+        """Build a DoclingDocument without running reading-order prediction.
+
+        This keeps the incoming order from conv_res.assembled.elements as-is.
+        """
+        with TimeRecorder(
+            conv_res, "reading_order_bypass", scope=ProfilingScope.DOCUMENT
+        ):
+            page_elements = self._assembled_to_readingorder_elements(conv_res)
+
+            # Keep incoming order and skip caption/footnote/merge prediction.
+            docling_doc: DoclingDocument = self._readingorder_elements_to_docling_doc(
+                conv_res,
+                page_elements,
+                {},
+                {},
+                {},
             )
 
         return docling_doc
