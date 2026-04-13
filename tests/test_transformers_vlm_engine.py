@@ -89,9 +89,7 @@ def test_transformers_engine_honors_explicit_attn_implementation(
     assert captured["model_kwargs"]["attn_implementation"] == "eager"
     assert captured["config_kwargs"]["attn_implementation"] == "eager"
     assert captured["model_kwargs"]["config"]._attn_implementation == "eager"
-    assert (
-        captured["model_kwargs"]["config"]._attn_implementation_internal == "eager"
-    )
+    assert captured["model_kwargs"]["config"]._attn_implementation_internal == "eager"
 
 
 def test_transformers_engine_accepts_legacy_private_attn_implementation_key(
@@ -159,9 +157,7 @@ def test_transformers_engine_accepts_legacy_private_attn_implementation_key(
     assert captured["model_kwargs"]["attn_implementation"] == "eager"
     assert captured["config_kwargs"]["attn_implementation"] == "eager"
     assert captured["model_kwargs"]["config"]._attn_implementation == "eager"
-    assert (
-        captured["model_kwargs"]["config"]._attn_implementation_internal == "eager"
-    )
+    assert captured["model_kwargs"]["config"]._attn_implementation_internal == "eager"
 
 
 def test_transformers_engine_falls_back_without_generation_config_file(
@@ -385,7 +381,9 @@ def test_transformers_engine_uses_runtime_adapter_public_generate_fallback() -> 
         ),
         VlmEngineInput(
             image=Image.new("RGB", (4, 4), color="white"),
-            prompt=falcon_ocr_build_prompt("Extract the formula content from this image."),
+            prompt=falcon_ocr_build_prompt(
+                "Extract the formula content from this image."
+            ),
             temperature=0.2,
             max_new_tokens=123,
             extra_generation_config={

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import inspect
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from transformers import AutoConfig, PreTrainedModel
 
@@ -51,6 +52,18 @@ class TransformersRuntimeAdapter(Protocol):
         """Run model-specific batch inference."""
 
 
+class _FalconGenerateBatchCallable(Protocol):
+    def __call__(
+        self,
+        image_prompt_pairs: list[tuple[Any, str]],
+        **kwargs: Any,
+    ) -> list[str]: ...
+
+
+class _FalconGenerateCallable(Protocol):
+    def __call__(self, images: list[Any], **kwargs: Any) -> list[str]: ...
+
+
 def falcon_ocr_build_prompt(prompt: str, *, page: Any | None = None) -> str:
     """Normalize Falcon-OCR prompts while still allowing raw user overrides."""
     del page
@@ -85,6 +98,24 @@ def _falcon_ocr_generation_kwargs(first_input: VlmEngineInput) -> dict[str, Any]
         generation_kwargs["seed"] = extra_generation_config["seed"]
 
     return generation_kwargs
+
+
+def _falcon_ocr_generate_batch(
+    model: PreTrainedModel,
+) -> _FalconGenerateBatchCallable | None:
+    generate_batch = getattr(model, "_generate_batch", None)
+    if not callable(generate_batch):
+        return None
+
+    return cast(_FalconGenerateBatchCallable, generate_batch)
+
+
+def _falcon_ocr_generate(model: PreTrainedModel) -> _FalconGenerateCallable:
+    generate = model.generate
+    if not callable(generate):
+        raise TypeError("Falcon-OCR model.generate must be callable")
+
+    return cast(_FalconGenerateCallable, generate)
 
 
 class FalconOCRTransformersAdapter:
@@ -135,8 +166,8 @@ class FalconOCRTransformersAdapter:
         # Falcon remote-code revisions have shipped either a private
         # ``_generate_batch`` helper or only the public ``generate`` API.
         # Probe both shapes here so the generic engine can stay model-agnostic.
-        generate_batch = getattr(model, "_generate_batch", None)
-        if callable(generate_batch):
+        generate_batch = _falcon_ocr_generate_batch(model)
+        if generate_batch is not None:
             image_prompt_pairs = [
                 (input_data.image, input_data.prompt) for input_data in input_batch
             ]
@@ -153,10 +184,14 @@ class FalconOCRTransformersAdapter:
                 **generation_kwargs,
             }
 
-            if "compile" in inspect.signature(model.generate).parameters:
+            generate = _falcon_ocr_generate(model)
+            if (
+                "compile"
+                in inspect.signature(cast(Callable[..., Any], generate)).parameters
+            ):
                 generate_kwargs["compile"] = False
 
-            generated_texts = model.generate(
+            generated_texts = generate(
                 [input_data.image for input_data in input_batch],
                 **generate_kwargs,
             )
