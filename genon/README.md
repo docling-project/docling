@@ -53,12 +53,18 @@
 ## 전처리기 빌드 및 등록
 
 1. build-script 디렉토리 이동
-2. [doc-parser-build.config](../build-script/doc-parser-build.config) 변경 사항 반영
-   - `HF_TOKEN`: 자유소프트 HWP SDK를 private 레포에서 다운로드하기 위한 토큰. [제논 내부 드라이브](https://drive.google.com/file/d/1m8aom4_zo3ZuQ-HdHHpkRsVOJakN-Lt5/view?usp=sharing)에 직접 접속하여 토큰 값을 확인한 뒤, 로컬 repo의 `doc-parser-build.config`에 직접 입력해야 빌드 가능 (토큰 값 입력된 상태로 push 금지)
-3. 실행 [doc-parser-build.sh](../build-script/doc-parser-build.sh)
-4. [register.config](preprocessor/scripts/register.config) 변경 사항 있을 시 변경 필요
-5. 실행 [register_image.sh](preprocessor/scripts/register_image.sh) : push와 디비에 등록해준다.
-6. 사이트 배포 시
+2. `HF_TOKEN` 설정 (자유소프트 HWP SDK를 private 레포에서 다운로드하기 위한 토큰)
+   - 토큰 값은 [제논 내부 드라이브](https://drive.google.com/file/d/1m8aom4_zo3ZuQ-HdHHpkRsVOJakN-Lt5/view?usp=sharing)에서 확인
+   - 아래 명령어로 로컬 전용 설정 파일에 입력 (Git에 커밋되지 않음):
+     ```shell
+     echo "HF_TOKEN=hf_your_token_here" > build-script/doc-parser-build.config.local
+     ```
+   - `doc-parser-build.config`에 직접 입력하거나 push하지 말 것
+3. [doc-parser-build.config](../build-script/doc-parser-build.config) 기타 변경 사항 반영
+4. 실행 [doc-parser-build.sh](../build-script/doc-parser-build.sh)
+5. [register.config](preprocessor/scripts/register.config) 변경 사항 있을 시 변경 필요
+6. 실행 [register_image.sh](preprocessor/scripts/register_image.sh) : push와 디비에 등록해준다.
+7. 사이트 배포 시
 ```shell
 1. 이미지 저장
 docker save mncregistry:30500/mnc/doc-parser-preprocessor:latest | gzip > doc-parser-preprocessor.tar.gz

@@ -1261,8 +1261,7 @@ class HwpProcessor:
 
             return vectors
         else:
-            # GenosServiceException 예외 처리
-            raise Exception("chunk length is 0")
+            raise GenosServiceException(1, "chunk length is 0")
 
 class GenosServiceException(Exception):
     """GenOS 와의 의존성 부분 제거를 위해 추가"""

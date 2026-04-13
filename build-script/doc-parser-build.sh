@@ -15,6 +15,13 @@ else
   echo "[WARN] ${CONFIG_FILE} 이(가) 없어서 기본값으로 빌드합니다."
 fi
 
+# 로컬 전용 설정 파일이 있으면 추가로 읽음 (HF_TOKEN 등 민감 정보용, Git 미추적)
+LOCAL_CONFIG_FILE="${ROOT_DIR}/build-script/doc-parser-build.config.local"
+if [[ -f "${LOCAL_CONFIG_FILE}" ]]; then
+  # shellcheck source=/dev/null
+  source "${LOCAL_CONFIG_FILE}"
+fi
+
 # build.config 에서 못 가져오면 기본값 세팅
 DOCKER_REGISTRY="${DOCKER_REGISTRY:-localhost:5000}"
 IMAGE_NAME="${IMAGE_NAME:-doc-parser-preprocessor}"
@@ -25,7 +32,7 @@ APP_GID="${APP_GID:-1000}"
 APP_UNAME="${APP_UNAME:-genos}"
 APP_GNAME="${APP_GNAME:-genos}"
 APP_NLTK_PACKAGES="${APP_NLTK_PACKAGES:-all}"
-HF_TOKEN="${HF_TOKEN:-}"
+export HF_TOKEN="${HF_TOKEN:-}"
 
 # 최종 이미지 태그
 IMAGE_TAG="${DOCKER_REGISTRY}/mnc/${IMAGE_NAME}:${IMAGE_VERSION}"
