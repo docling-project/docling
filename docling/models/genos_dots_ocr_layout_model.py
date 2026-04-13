@@ -545,13 +545,20 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                     }
 
                     if settings.debug.visualize_raw_layout:
-                        self.draw_clusters_and_cells_side_by_side(
-                            conv_res,
-                            page,
-                            clusters,
-                            mode_prefix="1_raw_dotsocr",
-                            cluster_order_map=source_order_map,
-                        )
+                        try:
+                            self.draw_clusters_and_cells_side_by_side(
+                                conv_res,
+                                page,
+                                clusters,
+                                mode_prefix="1_raw_dotsocr",
+                                cluster_order_map=source_order_map,
+                            )
+                        except Exception:
+                            _log.warning(
+                                "Failed to render raw DotsOCR layout debug image (page=%s).",
+                                page.page_no,
+                                exc_info=True,
+                            )
 
                     # processed_clusters
 
@@ -592,13 +599,20 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                         )
 
                 if settings.debug.visualize_layout:
-                    self.draw_clusters_and_cells_side_by_side(
-                        conv_res,
-                        page,
-                        processed_clusters,
-                        mode_prefix="2_postprocessed_dotsocr",
-                        cluster_order_map=source_order_map,
-                    )
+                    try:
+                        self.draw_clusters_and_cells_side_by_side(
+                            conv_res,
+                            page,
+                            processed_clusters,
+                            mode_prefix="2_postprocessed_dotsocr",
+                            cluster_order_map=source_order_map,
+                        )
+                    except Exception:
+                        _log.warning(
+                            "Failed to render postprocessed DotsOCR layout debug image (page=%s).",
+                            page.page_no,
+                            exc_info=True,
+                        )
                 yield page
 
 

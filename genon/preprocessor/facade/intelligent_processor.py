@@ -1019,8 +1019,8 @@ class DocumentProcessor:
         # self.pipe_line_options.ocr_options = ocr_options
         # self.pipe_line_options.artifacts_path = Path("/models/")
 
-        # layout 모델로 DOTSOCR 사용
-        # self.pipe_line_options.layout_options.layout_model_type = LayoutModelType.DOTSOCR
+        # layout 모델로 GENOS_LAYOUT 사용
+        # self.pipe_line_options.layout_options.layout_model_type = LayoutModelType.GENOS_LAYOUT
         # self.pipe_line_options.layout_options.dotsocr_options.endpoint = "https://genos.genon.ai:3443/api/gateway/rep/serving/733/v1/chat/completions"
         # self.pipe_line_options.layout_options.dotsocr_options.api_key = "3d0aed2e6aff4d8289052d50a7aaffaa"
 

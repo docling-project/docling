@@ -70,13 +70,13 @@ class StandardPdfPipeline(PaginatedPipeline):
 
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
 
-        use_dotsocr_layout = (
+        use_genos_layout = (
             pipeline_options.layout_options.layout_model_type
-            == LayoutModelType.DOTSOCR
+            == LayoutModelType.GENOS_LAYOUT
         )
         table_structure_options = pipeline_options.table_structure_options
         use_dotsocr_table_structure = (
-            use_dotsocr_layout
+            use_genos_layout
             and table_structure_options.table_structure_model_type
             == TableStructureModelType.DOTSOCR
         )
@@ -101,7 +101,7 @@ class StandardPdfPipeline(PaginatedPipeline):
                     accelerator_options=pipeline_options.accelerator_options,
                 )
 
-        if use_dotsocr_layout:
+        if use_genos_layout:
             self.build_pipe = [
                 # Pre-processing
                 PagePreprocessingModel(
@@ -254,9 +254,9 @@ class StandardPdfPipeline(PaginatedPipeline):
 
             if (
                 self.pipeline_options.layout_options.layout_model_type
-                == LayoutModelType.DOTSOCR
+                == LayoutModelType.GENOS_LAYOUT
             ):
-                # DotsOCR path: preserve assembled order from VLM output
+                # GENOS layout path: preserve assembled order from VLM output
                 # without running reading-order predictor reordering.
                 conv_res.document = (
                     self.reading_order_model.build_doc_preserving_assembled_order(

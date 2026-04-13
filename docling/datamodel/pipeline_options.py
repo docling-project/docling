@@ -59,7 +59,7 @@ class LayoutModelType(str, Enum):
     """Enum of valid layout model types."""
 
     DOCLING_LAYOUT = "docling_layout"
-    DOTSOCR = "dotsocr"
+    GENOS_LAYOUT = "genos_layout"
 
 
 class TableFormerMode(str, Enum):
@@ -350,8 +350,8 @@ class BaseLayoutOptions(BaseOptions):
     )
 
 
-class DotsOCRLayoutOptions(BaseModel):
-    """Options specific to DotsOCR layout inference."""
+class GenosLayoutOptions(BaseModel):
+    """Options specific to Genos layout inference."""
 
     endpoint: str = None
     api_key: str = None
@@ -367,7 +367,7 @@ class LayoutOptions(BaseLayoutOptions):
     visualize_layout_side_by_side: bool = (
         False  # Debug only: render layout visualization in split left/right panes
     )
-    dotsocr_options: DotsOCRLayoutOptions = DotsOCRLayoutOptions()
+    genos_layout_options: GenosLayoutOptions = GenosLayoutOptions()
     model_spec: LayoutModelConfig = DOCLING_LAYOUT_V2
 
 

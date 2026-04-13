@@ -261,7 +261,7 @@ class LayoutPostprocessor:
 
         clusters = [
             c
-            for c in self.all_clusters
+            for c in self.regular_clusters
             if c.confidence >= self.CONFIDENCE_THRESHOLDS[c.label]
         ]
 
