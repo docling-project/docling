@@ -74,15 +74,12 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import LevelNumber, ListItem, CodeItem
 from docling.backend.genos_msword_backend import GenosMsWordDocumentBackend
 from docling.backend.genos_hwp_backend import GenosHwpDocumentBackend
-# from utils import assert_cancelled
-# from genos_utils import upload_files, merge_overlapping_bboxes
 
 try:
     from genos_utils import upload_files
 except ImportError:
     upload_files = None
 
-# import platform
 from pathlib import Path
 import os
 import subprocess
@@ -118,7 +115,7 @@ def save_document_visualizations(
     viz_images = document.get_visualization(show_label=show_label)
 
     if not viz_images:
-        print("⚠️ [Warning] 시각화할 이미지가 없습니다. document.pages가 비어있는지 확인하세요.")
+        print("[Warning] 시각화할 이미지가 없습니다. document.pages가 비어있는지 확인하세요.")
         return
 
     saved_files = []
@@ -1111,7 +1108,7 @@ def _save_result_files(file_path: str, vectors: list, document=None, save_path: 
             docling_dir.mkdir(parents=True, exist_ok=True)
             with open(docling_dir / "docling.json", "w", encoding="utf-8") as f:
                 f.write(document.model_dump_json(indent=2))
-            print(f"✅ docling_result 저장 완료: {docling_dir}")
+            print(f"docling_result 저장 완료: {docling_dir}")
 
         vectors_dir = result_dir / "vectors_result"
         vectors_dir.mkdir(parents=True, exist_ok=True)
@@ -1120,7 +1117,7 @@ def _save_result_files(file_path: str, vectors: list, document=None, save_path: 
                 json.dump([v.model_dump() for v in vectors], f, ensure_ascii=False, indent=2)
             else:
                 json.dump(vectors, f, ensure_ascii=False, indent=2)
-        print(f"✅ vectors_result 저장 완료: {vectors_dir}")
+        print(f"vectors_result 저장 완료: {vectors_dir}")
 
     except Exception as e:
         print(f"🔥 _save_result_files 실패: {e}")
@@ -1215,7 +1212,7 @@ class HwpProcessor:
                 current_page = chunk_page
                 chunk_index_on_page = 0
 
-            # 🚀 [빌더 적용] GenOSVectorMetaBuilder를 통한 데이터 조립
+            # [빌더 적용] GenOSVectorMetaBuilder를 통한 데이터 조립
             builder = GenOSVectorMetaBuilder()
             vector_obj = (builder
                       .set_text(content)
@@ -1231,10 +1228,6 @@ class HwpProcessor:
 
             chunk_index_on_page += 1
             
-            # 이미지 파일 업로드 태그 (기존 upload_files 함수가 정의되어 있어야 함)
-            # if 'upload_files' in globals():
-            #     file_list = self.get_media_files(chunk.meta.doc_items)
-            #     upload_tasks.append(asyncio.create_task(upload_files(file_list, request=request)))
 
         if upload_tasks:
             await asyncio.gather(*upload_tasks)
@@ -1248,11 +1241,8 @@ class HwpProcessor:
         
         # 2. 이미지 참조 경로 설정
         artifacts_dir, reference_path = self.get_paths(file_path)
-        #print(f"👈 artifacts_dir:{artifacts_dir}")
-        #print(f"👈 reference_path:{reference_path}")
 
         # 2.5 디버깅: 시각화 이미지 저장
-        #save_document_visualizations(document, artifacts_dir)
         document = document._with_pictures_refs(
             image_dir=artifacts_dir, 
             page_no=None, 
@@ -1288,16 +1278,9 @@ class GenosServiceException(Exception):
         return f"{class_name}(code={self.code!r}, errMsg={self.error_msg!r})"
 
 
-# async def assert_cancelled(request: Request):
-#     """GenOS 와의 의존성 제거를 위해 추가"""
-#     if await request.is_disconnected():
-#         raise GenosServiceException(1, f"Cancelled")
-
-
 class DocumentProcessor:
     def __init__(self):
         self.page_chunk_counts = defaultdict(int)
-        #self.hwpx_processor = HwpxProcessor()
         self.hwp_processor = HwpProcessor()
         self.docx_processor = DocxProcessor()
 
@@ -1544,24 +1527,20 @@ class DocumentProcessor:
                 tmp_path=tmp_path
             )
             vectors = loader.return_vectormeta_format()
-            # await assert_cancelled(request)
 
             # Remove the temporal chunks
             try:
                 subprocess.run(['rm', '-r', tmp_path], check=True)
             except:
                 pass
-            # await assert_cancelled(request)
             return vectors
 
         elif ext in ('.csv', '.xlsx'):
             loader = TabularLoader(file_path, ext)
             vectors = loader.return_vectormeta_format()
-            # pdf_path = _get_pdf_path(file_path)
-            # await assert_cancelled(request)
             return vectors
 
-        # 🚀 [핵심 수정] HWP와 HWPX를 하나의 프로세서로 통합 실행
+        # [핵심 수정] HWP와 HWPX를 하나의 프로세서로 통합 실행
         elif ext in ('.hwp', '.hwpx'):
             _log.info(f"Processing Korean Document ({ext}) with Unified HwpProcessor")
             return await self.hwp_processor(request, file_path, **kwargs)
@@ -1571,10 +1550,8 @@ class DocumentProcessor:
 
         else:
             documents: list[Document] = self.load_documents(file_path, **kwargs)
-            # await assert_cancelled(request)
 
             chunks: list[Document] = self.split_documents(documents, **kwargs)
-            # await assert_cancelled(request)
 
             vectors: list[dict] = self.compose_vectors(file_path, chunks, **kwargs)
 

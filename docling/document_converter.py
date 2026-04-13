@@ -86,7 +86,6 @@ class ExcelFormatOption(FormatOption):
 
 class WordFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
-    # backend: Type[AbstractDocumentBackend] = MsWordDocumentBackend
     # GenosMsWordDocumentBackend 사용
     backend: Type[AbstractDocumentBackend] = GenosMsWordDocumentBackend
 
@@ -139,7 +138,7 @@ class AudioFormatOption(FormatOption):
 # [수정] HwpxFormatOption 클래스 수정
 class HwpxFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
-    # 🚀 구형 HwpxDocumentBackend 대신 GenosHwpDocumentBackend로 기본값 변경
+    # 구형 HwpxDocumentBackend 대신 GenosHwpDocumentBackend로 기본값 변경
     backend: Type[AbstractDocumentBackend] = GenosHwpDocumentBackend
     
     def __init__(self, pipeline_options: Optional[PipelineOptions] = None, backend: Optional[Type[AbstractDocumentBackend]] = None):
@@ -165,7 +164,6 @@ def _get_default_option(format: InputFormat) -> FormatOption:
             pipeline_cls=SimplePipeline, backend=MsExcelDocumentBackend
         ),
         InputFormat.DOCX: FormatOption(
-            # pipeline_cls=SimplePipeline, backend=MsWordDocumentBackend
             # GenosMsWordDocumentBackend 사용
             pipeline_cls=SimplePipeline, backend=GenosMsWordDocumentBackend
         ),
@@ -197,12 +195,12 @@ def _get_default_option(format: InputFormat) -> FormatOption:
             pipeline_cls=SimplePipeline, backend=DoclingJSONBackend
         ),
         InputFormat.AUDIO: FormatOption(pipeline_cls=AsrPipeline, backend=NoOpBackend),
-        # 🚀 [HWP 통합 수정] 구형 HwpDocumentBackend 삭제 후 교체
+        # [HWP 통합 수정] 구형 HwpDocumentBackend 삭제 후 교체
         InputFormat.HWP: FormatOption(
             pipeline_cls=SimplePipeline, backend=GenosHwpDocumentBackend
         ),
         
-        # 🚀 [HWPX 통합 수정] 구형 HwpxDocumentBackend 삭제 후 교체
+        # [HWPX 통합 수정] 구형 HwpxDocumentBackend 삭제 후 교체
         InputFormat.XML_HWPX: FormatOption(
             pipeline_cls=SimplePipeline, backend=GenosHwpDocumentBackend
         ),
@@ -330,10 +328,6 @@ class DocumentConverter:
             _log.info("Going to convert document batch...")
 
             # parallel processing only within input_batch
-            # with ThreadPoolExecutor(
-            #    max_workers=settings.perf.doc_batch_concurrency
-            # ) as pool:
-            #   yield from pool.map(self.process_document, input_batch)
             # Note: PDF backends are not thread-safe, thread pool usage was disabled.
 
             for item in map(

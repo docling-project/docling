@@ -13,7 +13,7 @@ from io import BytesIO
 
 try:
     from wand.image import Image as WandImage
-    from wand.exceptions import WandException # 👈 예외 클래스 추가
+    from wand.exceptions import WandException
     WAND_AVAILABLE = True
 except ImportError:
     WAND_AVAILABLE = False
@@ -58,7 +58,7 @@ if SDK_DIR.exists():
     if SDK_PATH_STR not in os.environ.get("LD_LIBRARY_PATH", ""):
         os.environ["LD_LIBRARY_PATH"] = f"{SDK_PATH_STR}:{os.environ.get('LD_LIBRARY_PATH', '')}"
 else:
-    print(f"⚠️ 경고: HWP SDK 경로를 찾을 수 없습니다: {SDK_PATH_STR}")
+    print(f"경고: HWP SDK 경로를 찾을 수 없습니다: {SDK_PATH_STR}")
 # ------------------------------
 
 class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
@@ -251,7 +251,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                         batch = json.loads(clean_line, strict=False)
                         hwp_data.append(batch) # SDK 결과는 항상 리스트이므로 바로 append
                     except json.JSONDecodeError as e:
-                        print(f"⚠️ 파싱 실패 (스킵): {e}")
+                        print(f"파싱 실패 (스킵): {e}")
                         continue
 
             # 7. hwp_data를 Docling 구조로 변환
@@ -271,7 +271,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         """페이지 그룹화를 제거하고 모든 아이템을 body에 직접 나열하여 DOCX 스타일로 구성합니다."""
         self._processed_hashes = set()
         root_parent = doc.body 
-        self.active_main_parent = root_parent # 🚀 초기값 설정
+        self.active_main_parent = root_parent
 
         for paragraph_items in data:
             if not paragraph_items:
@@ -299,7 +299,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                     # 표를 처리할 때 parent를 doc.body로 지정
                     self._handle_table(i_value, doc, page_no, parent=self.active_main_parent)
                 
-                # 🚀 2. [Step 3] 이미지(Picture) 처리 추가
+                # 2. [Step 3] 이미지(Picture) 처리 추가
                 elif i_type == "image":
                     if texts_in_batch:
                         self._handle_paragraph(texts_in_batch, doc, page_no, parent=self.active_main_parent)
@@ -387,7 +387,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         if not img_path or not os.path.exists(img_path):
             return
 
-        # 🚀 [Salvaged 1] 매직 넘버 기반의 강력한 유효성 검사 (XML/가짜파일 방어)
+        # [Salvaged 1] 매직 넘버 기반의 강력한 유효성 검사 (XML/가짜파일 방어)
         def is_really_image(file_path):
             signatures = [
                 b'\x89PNG',           # PNG
@@ -408,12 +408,12 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             except: return False
 
         if not is_really_image(img_path):
-            print(f"⚠️ 유효하지 않은 이미지 데이터(XML 등 가능성): {os.path.basename(img_path)}")
+            print(f"유효하지 않은 이미지 데이터(XML 등 가능성): {os.path.basename(img_path)}")
             return
 
         pil_image = None
         
-        # 🚀 [Salvaged 2] Pillow -> Wand 단계별 시도 (WMF/EMF 구제)
+        # [Salvaged 2] Pillow -> Wand 단계별 시도 (WMF/EMF 구제)
         try:
             # 1단계: 표준 포맷 시도
             pil_image = Image.open(img_path)
@@ -426,11 +426,11 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                         wand_img.format = 'png'
                         pil_image = Image.open(BytesIO(wand_img.make_blob()))
                 except Exception as e:
-                    print(f"❌ Wand 변환 실패: {e}")
+                    print(f"Wand 변환 실패: {e}")
             else:
-                print(f"⚠️ Pillow 실패 및 Wand 미설치로 복구 불가: {img_path}")
+                print(f"Pillow 실패 및 Wand 미설치로 복구 불가: {img_path}")
 
-        # 🚀 [Salvaged 3] Docling 임베딩 (DPI 고정 및 BBox 설정)
+        # [Salvaged 3] Docling 임베딩 (DPI 고정 및 BBox 설정)
         prov = ProvenanceItem(
             page_no=page_no,
             bbox=BoundingBox(l=0, t=0, r=1, b=1, coord_origin=CoordOrigin.TOPLEFT),
@@ -445,7 +445,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             )
         else:
             # Pillow + Wand 모두 실패 시 빈 플레이스홀더라도 추가해 문서 구조 보존
-            print(f"⚠️ 이미지 로드 완전 실패, 플레이스홀더 추가: {os.path.basename(img_path)}")
+            print(f"이미지 로드 완전 실패, 플레이스홀더 추가: {os.path.basename(img_path)}")
             doc.add_picture(
                 parent=parent,
                 caption=None,
@@ -468,7 +468,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         p_style_id, p_level = self._get_label_and_level_hwp(full_text, max_font_size, is_bold)
 
         # 3. 패턴 감지 (TOC 및 헤더)
-        # 🚀 [추가]: TOC 패턴 감지 (점 2개 이상, 탭, 또는 긴 공백 뒤에 숫자로 끝나는 경우)
+        # [추가]: TOC 패턴 감지 (점 2개 이상, 탭, 또는 긴 공백 뒤에 숫자로 끝나는 경우)
         is_toc = bool(re.search(r'(\.{2,}|…|\t|\s{4,})\s*\d+$', full_text))
         
         # 명시적 헤더 패턴 (1., 가., * 등)
@@ -531,18 +531,9 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
 
         # 4. 분류 및 추가 로직
         if is_toc:
-            # --- [DEBUG LOG START] ---
-            #print(f"\n📑 [TOC DETECTED]")
-            #print(f"   - Text: {text_val[:30]}...")
-            #print(f"   - Label: {DocItemLabel.DOCUMENT_INDEX}")
-            
             parent_info = self.parents[1]
             p_ref = getattr(parent_info, "self_ref", "N/A")
             p_label = getattr(parent_info, "label", "N/A")
-            #print(f"   - Parent: {p_label} (Ref: {p_ref})")
-            #print(f"   - Prov: Page {prov.page_no}, BBox {prov.bbox}")
-            #print(f"------------------------------------------")
-            # --- [DEBUG LOG END] ---
             
             doc.add_text(
                 label=DocItemLabel.DOCUMENT_INDEX, 
@@ -574,7 +565,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             if i in self.parents:
                 self.parents[i] = None
 
-        # 🚀 2. [명칭 변경]: level 1 -> header-0, level 2 -> header-1 방식으로 명명
+        # 2. [명칭 변경]: level 1 -> header-0, level 2 -> header-1 방식으로 명명
         header_name = f"header-{level - 1}"
         
         # 3. 새로운 섹션 그룹 생성
@@ -636,7 +627,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
 
         except Exception as e:
             # 2. 오류가 나거나 정보가 없는 경우 (Fallback)
-            print(f"⚠️ 페이지 정보 로드 실패({e}). 기본 1페이지로 설정합니다.")
+            print(f"페이지 정보 로드 실패({e}). 기본 1페이지로 설정합니다.")
             doc.pages[1] = doc.add_page(
                 page_no=1, 
                 size=Size(width=595, height=842) # 표준 A4 pt
