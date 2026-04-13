@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 from typing import Annotated, Optional, Tuple
 
-from pydantic import BaseModel, PlainValidator
+from pydantic import AfterValidator, BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,7 +14,7 @@ def _validate_page_range(v: Tuple[int, int]) -> Tuple[int, int]:
     return v
 
 
-PageRange = Annotated[Tuple[int, int], PlainValidator(_validate_page_range)]
+PageRange = Annotated[Tuple[int, int], AfterValidator(_validate_page_range)]
 
 DEFAULT_PAGE_RANGE: PageRange = (1, sys.maxsize)
 
