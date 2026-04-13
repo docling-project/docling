@@ -1,5 +1,5 @@
-from collections.abc import Iterable
 import logging
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Literal, Type, TypedDict
 
@@ -37,6 +37,7 @@ _RAPIDOCR_MODELSCOPE_RELEASE = "v3.8.0"
 _RAPIDOCR_MODELSCOPE_BASE_URL = (
     "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve"
 )
+_RAPIDOCR_DEFAULT_LANGUAGE = "chinese"
 _RAPIDOCR_CHINESE_MODEL_PATHS: dict[_ModelPathEngines, dict[_ModelPathTypes, str]] = {
     "onnxruntime": {
         "det_model_path": "onnx/PP-OCRv4/det/ch_PP-OCRv4_det_mobile.onnx",
@@ -55,17 +56,17 @@ _RAPIDOCR_CHINESE_MODEL_PATHS: dict[_ModelPathEngines, dict[_ModelPathTypes, str
 }
 _RAPIDOCR_ENGLISH_MODEL_PATHS: dict[_ModelPathEngines, dict[_ModelPathTypes, str]] = {
     "onnxruntime": {
-        "det_model_path": "onnx/PP-OCRv4/det/en_PP-OCRv3_det_infer.onnx",
+        "det_model_path": "onnx/PP-OCRv4/det/en_PP-OCRv3_det_mobile.onnx",
         "cls_model_path": "onnx/PP-OCRv4/cls/ch_ppocr_mobile_v2.0_cls_mobile.onnx",
-        "rec_model_path": "onnx/PP-OCRv4/rec/en_PP-OCRv4_rec_infer.onnx",
-        "rec_keys_path": "paddle/PP-OCRv4/rec/en_PP-OCRv4_rec_infer/en_dict.txt",
+        "rec_model_path": "onnx/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile.onnx",
+        "rec_keys_path": "paddle/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile/en_dict.txt",
         "font_path": "resources/fonts/FZYTK.TTF",
     },
     "torch": {
-        "det_model_path": "torch/PP-OCRv4/det/en_PP-OCRv3_det_infer.pth",
+        "det_model_path": "torch/PP-OCRv4/det/en_PP-OCRv3_det_mobile.pth",
         "cls_model_path": "torch/PP-OCRv4/cls/ch_ptocr_mobile_v2.0_cls_mobile.pth",
-        "rec_model_path": "torch/PP-OCRv4/rec/en_PP-OCRv4_rec_infer.pth",
-        "rec_keys_path": "paddle/PP-OCRv4/rec/en_PP-OCRv4_rec_infer/en_dict.txt",
+        "rec_model_path": "torch/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile.pth",
+        "rec_keys_path": "paddle/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile/en_dict.txt",
         "font_path": "resources/fonts/FZYTK.TTF",
     },
 }
@@ -76,6 +77,17 @@ def _build_model_detail(path: str) -> _ModelPathDetail:
         "url": f"{_RAPIDOCR_MODELSCOPE_BASE_URL}/{_RAPIDOCR_MODELSCOPE_RELEASE}/{path}",
         "path": path,
     }
+
+
+def _resolve_rapidocr_language(languages: list[str] | None) -> str:
+    if not languages:
+        return _RAPIDOCR_DEFAULT_LANGUAGE
+
+    normalized_languages = {language.strip().lower() for language in languages}
+    if {"en", "english"} & normalized_languages:
+        return "english"
+
+    return _RAPIDOCR_DEFAULT_LANGUAGE
 
 
 class RapidOcrModel(BaseOcrModel):
@@ -101,7 +113,6 @@ class RapidOcrModel(BaseOcrModel):
             for backend in ("onnxruntime", "torch")
         },
     }
-
 
     def __init__(
         self,
@@ -137,13 +148,6 @@ class RapidOcrModel(BaseOcrModel):
             gpu_id = 0
             if use_cuda and ":" in device:
                 gpu_id = int(device.split(":")[1])
-            # Decide the language
-            ocr_lang = "chinese"
-            if self.options.lang:
-                if any(lang.lower() in ["en", "english"] for lang in self.options.lang):
-                    ocr_lang = "english"
-                # Add more languages here as needed
-
             _ALIASES = {
                 "onnxruntime": EngineType.ONNXRUNTIME,
                 "openvino": EngineType.OPENVINO,
@@ -155,7 +159,8 @@ class RapidOcrModel(BaseOcrModel):
             if backend_enum == EngineType.TORCH:
                 backend_key = "torch"
 
-            model_set = self._models_by_language.get(ocr_lang, self._models_by_language["chinese"])[backend_key]
+            ocr_lang = _resolve_rapidocr_language(self.options.lang)
+            model_set = self._models_by_language[ocr_lang][backend_key]
 
             det_model_path = self.options.det_model_path
             cls_model_path = self.options.cls_model_path
@@ -265,7 +270,8 @@ class RapidOcrModel(BaseOcrModel):
         local_dir.mkdir(parents=True, exist_ok=True)
 
         # Download models
-        model_set = cls._models_by_language.get(lang, cls._models_by_language["chinese"])[backend]
+        resolved_lang = _resolve_rapidocr_language([lang])
+        model_set = cls._models_by_language[resolved_lang][backend]
         for model_type, model_details in model_set.items():
             output_path = local_dir / model_details["path"]
             if output_path.exists() and not force:

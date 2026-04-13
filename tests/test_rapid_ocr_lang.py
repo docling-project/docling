@@ -1,76 +1,146 @@
-import unittest
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 import sys
-
-# Mock rapidocr which might not be installed or is heavy
-mock_rapidocr = MagicMock()
-mock_rapidocr.EngineType.ONNXRUNTIME = "onnxruntime"
-mock_rapidocr.EngineType.TORCH = "torch"
-sys.modules["rapidocr"] = mock_rapidocr
+from io import BytesIO
+from pathlib import Path
+from types import ModuleType, SimpleNamespace
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import RapidOcrOptions
 from docling.models.stages.ocr.rapid_ocr_model import RapidOcrModel
+from docling.utils.model_downloader import download_models
 
-class TestRapidOcrLang(unittest.TestCase):
-    @patch("rapidocr.RapidOCR")
-    def test_language_selection(self, mock_rapidocr_engine):
-        acc_opts = AcceleratorOptions()
-        artifacts_path = Path("/tmp/artifacts")
 
-        # Case 1: English (explicitly requested)
-        opts_en = RapidOcrOptions(lang=["en"], backend="onnxruntime")
-        # Initialize normally; BaseOcrModel.__init__ is light.
-        model_en = RapidOcrModel(enabled=True, artifacts_path=artifacts_path, options=opts_en, accelerator_options=acc_opts)
-        # Verify English URLs would be used (this checks the internal logic)
-        assert "english" in RapidOcrModel._models_by_language
-        
-        # Case 2: Chinese (default)
-        opts_ch = RapidOcrOptions(backend="onnxruntime")
-        assert "chinese" in opts_ch.lang
-        model_ch = RapidOcrModel(enabled=True, artifacts_path=artifacts_path, options=opts_ch, accelerator_options=acc_opts)
+def _install_fake_rapidocr(
+    monkeypatch, captured_params: list[dict[str, object]]
+) -> None:
+    class FakeRapidOCR:
+        def __init__(self, *, params: dict[str, object]) -> None:
+            captured_params.append(params)
 
-    def test_download_models_lang(self):
-        # Mock download_url_with_progress to return a mock response with read() returning bytes
-        with patch("docling.models.stages.ocr.rapid_ocr_model.download_url_with_progress") as mock_download:
-            mock_response = MagicMock()
-            mock_response.read.return_value = b"dummy content"
-            mock_download.return_value = mock_response
-            
-            # We also need to mock builtins.open to avoid actually writing to /tmp
-            with patch("builtins.open", unittest.mock.mock_open()):
-                # Download English with force=True
-                RapidOcrModel.download_models(local_dir=Path("/tmp"), backend="onnxruntime", lang="english", force=True)
-                # Verify that the English detection model was requested in one of the calls
-                all_urls = [arg[0] for arg, _ in mock_download.call_args_list]
-                print(f"Captured URLs (English): {all_urls}")
-                assert any("en_PP-OCRv3_det_infer.onnx" in url for url in all_urls)
-                
-                # Download Chinese (default) with force=True
-                mock_download.reset_mock()
-                RapidOcrModel.download_models(local_dir=Path("/tmp"), backend="onnxruntime", lang="chinese", force=True)
-                all_urls_ch = [arg[0] for arg, _ in mock_download.call_args_list]
-                print(f"Captured URLs (Chinese): {all_urls_ch}")
-                assert any("ch_PP-OCRv4_det_mobile.onnx" in url for url in all_urls_ch)
+    fake_module = ModuleType("rapidocr")
+    fake_module.EngineType = SimpleNamespace(
+        ONNXRUNTIME="onnxruntime",
+        OPENVINO="openvino",
+        PADDLE="paddle",
+        TORCH="torch",
+    )
+    fake_module.RapidOCR = FakeRapidOCR
+    monkeypatch.setitem(sys.modules, "rapidocr", fake_module)
 
-    def test_full_model_downloader_coverage(self):
-        from docling.utils.model_downloader import download_models
-        with patch("docling.models.stages.ocr.rapid_ocr_model.RapidOcrModel.download_models") as mock_rapid_down:
-            download_models(
-                output_dir=Path("/tmp/models"),
-                with_layout=False,
-                with_tableformer=False,
-                with_code_formula=False,
-                with_picture_classifier=False,
-                with_rapidocr=True
-            )
-            # Verify 2 backends * 2 languages = 4 calls
-            assert mock_rapid_down.call_count == 4
-            call_args_list = [call.kwargs for call in mock_rapid_down.call_args_list]
-            langs = [c.get("lang") for c in call_args_list]
-            assert "english" in langs
-            assert "chinese" in langs
 
-if __name__ == "__main__":
-    unittest.main()
+def test_rapidocr_uses_english_mobile_assets(monkeypatch, tmp_path: Path) -> None:
+    captured_params: list[dict[str, object]] = []
+    _install_fake_rapidocr(monkeypatch, captured_params)
+
+    RapidOcrModel(
+        enabled=True,
+        artifacts_path=tmp_path,
+        options=RapidOcrOptions(lang=["en"], backend="onnxruntime"),
+        accelerator_options=AcceleratorOptions(),
+    )
+
+    assert len(captured_params) == 1
+    params = captured_params[0]
+    assert params["Det.model_path"] == (
+        tmp_path / "RapidOcr" / "onnx/PP-OCRv4/det/en_PP-OCRv3_det_mobile.onnx"
+    )
+    assert params["Rec.model_path"] == (
+        tmp_path / "RapidOcr" / "onnx/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile.onnx"
+    )
+    assert params["Rec.rec_keys_path"] == (
+        tmp_path / "RapidOcr" / "paddle/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile/en_dict.txt"
+    )
+
+
+def test_rapidocr_defaults_to_chinese_mobile_assets(
+    monkeypatch, tmp_path: Path
+) -> None:
+    captured_params: list[dict[str, object]] = []
+    _install_fake_rapidocr(monkeypatch, captured_params)
+
+    RapidOcrModel(
+        enabled=True,
+        artifacts_path=tmp_path,
+        options=RapidOcrOptions(backend="torch"),
+        accelerator_options=AcceleratorOptions(),
+    )
+
+    assert len(captured_params) == 1
+    params = captured_params[0]
+    assert params["Det.model_path"] == (
+        tmp_path / "RapidOcr" / "torch/PP-OCRv4/det/ch_PP-OCRv4_det_mobile.pth"
+    )
+    assert params["Rec.model_path"] == (
+        tmp_path / "RapidOcr" / "torch/PP-OCRv4/rec/ch_PP-OCRv4_rec_mobile.pth"
+    )
+    assert params["Rec.rec_keys_path"] == (
+        tmp_path
+        / "RapidOcr"
+        / "paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_mobile/ppocr_keys_v1.txt"
+    )
+
+
+def test_download_models_uses_language_specific_mobile_paths(
+    monkeypatch, tmp_path: Path
+) -> None:
+    downloaded_urls: list[str] = []
+
+    def fake_download_url_with_progress(url: str, *, progress: bool) -> BytesIO:
+        del progress
+        downloaded_urls.append(url)
+        return BytesIO(b"dummy content")
+
+    monkeypatch.setattr(
+        "docling.models.stages.ocr.rapid_ocr_model.download_url_with_progress",
+        fake_download_url_with_progress,
+    )
+
+    RapidOcrModel.download_models(
+        local_dir=tmp_path,
+        backend="onnxruntime",
+        lang="english",
+        force=True,
+    )
+
+    assert any("en_PP-OCRv3_det_mobile.onnx" in url for url in downloaded_urls)
+    assert any("en_PP-OCRv4_rec_mobile.onnx" in url for url in downloaded_urls)
+    assert (tmp_path / "onnx/PP-OCRv4/det/en_PP-OCRv3_det_mobile.onnx").exists()
+    assert (
+        tmp_path / "paddle/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile/en_dict.txt"
+    ).exists()
+
+
+def test_model_downloader_fetches_both_rapidocr_language_sets(
+    monkeypatch, tmp_path: Path
+) -> None:
+    captured_calls: list[dict[str, object]] = []
+
+    def fake_download_models(**kwargs: object) -> None:
+        captured_calls.append(kwargs)
+
+    monkeypatch.setattr(RapidOcrModel, "download_models", fake_download_models)
+    download_models(
+        output_dir=tmp_path,
+        with_layout=False,
+        with_tableformer=False,
+        with_tableformer_v2=False,
+        with_code_formula=False,
+        with_picture_classifier=False,
+        with_smolvlm=False,
+        with_granitedocling=False,
+        with_granitedocling_mlx=False,
+        with_smoldocling=False,
+        with_smoldocling_mlx=False,
+        with_granite_vision=False,
+        with_granite_chart_extraction=False,
+        with_granite_chart_extraction_v4=False,
+        with_rapidocr=True,
+        with_easyocr=False,
+    )
+
+    assert len(captured_calls) == 4
+    assert {(call["backend"], call["lang"]) for call in captured_calls} == {
+        ("torch", "chinese"),
+        ("torch", "english"),
+        ("onnxruntime", "chinese"),
+        ("onnxruntime", "english"),
+    }
