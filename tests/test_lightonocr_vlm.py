@@ -1,6 +1,5 @@
 """Test LightOnOCR-2-1B VLM integration."""
 
-import os
 from pathlib import Path
 
 import pytest

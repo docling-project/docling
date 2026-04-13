@@ -1,7 +1,6 @@
 """Test DeepSeek OCR markdown parsing in VLM pipeline."""
 
 import json
-import os
 import sys
 from pathlib import Path
 

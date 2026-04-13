@@ -132,6 +132,9 @@ class FalconOCRTransformersAdapter:
         generation_kwargs = _falcon_ocr_generation_kwargs(first_input)
         metadata = {"transformers_runtime_adapter": "falcon_ocr"}
 
+        # Falcon remote-code revisions have shipped either a private
+        # ``_generate_batch`` helper or only the public ``generate`` API.
+        # Probe both shapes here so the generic engine can stay model-agnostic.
         generate_batch = getattr(model, "_generate_batch", None)
         if callable(generate_batch):
             image_prompt_pairs = [

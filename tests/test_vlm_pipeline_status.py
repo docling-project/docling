@@ -7,7 +7,7 @@ CONTENT_FILTERED) or missing predictions.
 Related: https://github.com/docling-project/docling/issues/2583
 """
 
-from unittest.mock import MagicMock
+from types import SimpleNamespace
 
 import pytest
 
@@ -25,6 +25,11 @@ from docling.pipeline.vlm_pipeline import VlmPipeline
 pytestmark = pytest.mark.ml_vlm
 
 
+class _AlwaysValidBackend:
+    def is_valid(self) -> bool:
+        return True
+
+
 def _make_page(page_no: int, stop_reason: VlmStopReason) -> Page:
     """Create a Page with a VLM prediction using the given stop reason."""
     page = Page(page_no=page_no)
@@ -34,10 +39,7 @@ def _make_page(page_no: int, stop_reason: VlmStopReason) -> Page:
             stop_reason=stop_reason,
         )
     )
-    # Provide a valid mock backend so the parent check doesn't flag it
-    backend = MagicMock()
-    backend.is_valid.return_value = True
-    page._backend = backend
+    page._backend = _AlwaysValidBackend()
     return page
 
 
@@ -45,22 +47,18 @@ def _make_page_no_vlm(page_no: int) -> Page:
     """Create a Page with no VLM prediction."""
     page = Page(page_no=page_no)
     page.predictions = PagePredictions(vlm_response=None)
-    backend = MagicMock()
-    backend.is_valid.return_value = True
-    page._backend = backend
+    page._backend = _AlwaysValidBackend()
     return page
 
 
 def _make_conv_res(pages: list) -> ConversionResult:
     """Create a minimal ConversionResult with the given pages."""
-    conv_res = MagicMock(spec=ConversionResult)
-    conv_res.pages = pages
-    conv_res.errors = []
-    conv_res.status = ConversionStatus.STARTED
-    # Provide input with a mock backend for parent _determine_status
-    conv_res.input = MagicMock()
-    conv_res.input._backend = None
-    return conv_res
+    return SimpleNamespace(
+        pages=pages,
+        errors=[],
+        status=ConversionStatus.STARTED,
+        input=SimpleNamespace(_backend=None),
+    )
 
 
 @pytest.fixture
