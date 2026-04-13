@@ -401,7 +401,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         # [Salvaged 3] Docling 임베딩 (DPI 고정 및 BBox 설정)
         prov = ProvenanceItem(
             page_no=page_no,
-            bbox=BoundingBox(l=0, t=0, r=1, b=1, coord_origin=CoordOrigin.TOPLEFT),
+            bbox=BoundingBox(l=0, t=0, r=1, b=1, coord_origin=CoordOrigin.BOTTOMLEFT),
             charspan=(0, 0)
         )
         if pil_image:
