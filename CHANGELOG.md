@@ -1,3 +1,23 @@
+## [v2.87.0](https://github.com/docling-project/docling/releases/tag/v2.87.0) - 2026-04-13
+
+### Feature
+
+* **vlm:** Add Nanonets OCR2 onboarding ([#3274](https://github.com/docling-project/docling/issues/3274)) ([`9970d1e`](https://github.com/docling-project/docling/commit/9970d1ef94c5e826080834d0f8858cfd8f9e7edb))
+
+### Fix
+
+* Transformers v5 compatibility for AUTOMODEL_CAUSALLM VLMs ([#3276](https://github.com/docling-project/docling/issues/3276)) ([`d431224`](https://github.com/docling-project/docling/commit/d43122447f9b5b9dcad1f88819b8cb2a59f62b33))
+* **vlm:** Add explicit MLX support for OCR presets ([#3272](https://github.com/docling-project/docling/issues/3272)) ([`27d3cf4`](https://github.com/docling-project/docling/commit/27d3cf490ffcd3cb3c48fde8644844618b8a9d2f))
+* **markdown:** Normalize repeated leading dash markers ([#3286](https://github.com/docling-project/docling/issues/3286)) ([`a6aeddf`](https://github.com/docling-project/docling/commit/a6aeddf9e2fac7e3e3cfc73e558d1acf8299df61))
+* **docx:** Preserve inline SDT references ([#3280](https://github.com/docling-project/docling/issues/3280)) ([`6cb1bc0`](https://github.com/docling-project/docling/commit/6cb1bc0c0297d11a2fabd7115880acd3fcea46e0))
+* **pptx:** Respect page_range during conversion ([#3282](https://github.com/docling-project/docling/issues/3282)) ([`e4fd937`](https://github.com/docling-project/docling/commit/e4fd93742e5c5f473354bdb5f8853d3da438e9a7))
+* **vlm:** Support tool-calling API responses ([#3271](https://github.com/docling-project/docling/issues/3271)) ([`9c3ab93`](https://github.com/docling-project/docling/commit/9c3ab934d6d0abad6bbdda4474d18eb73f1dd661))
+* **pdf:** Extend ligature map with Dutch IJ and PUA glyph U+F0A0 ([#3254](https://github.com/docling-project/docling/issues/3254)) ([`ab5254d`](https://github.com/docling-project/docling/commit/ab5254df7c313ca258bdaa34f4bf64e0007b409f))
+
+### Documentation
+
+* Add AG2 multi-agent document analysis example ([#3261](https://github.com/docling-project/docling/issues/3261)) ([`1fed840`](https://github.com/docling-project/docling/commit/1fed840506ed3e6b1b0e29a3f9810b7b32d2268b))
+
 ## [v2.86.0](https://github.com/docling-project/docling/releases/tag/v2.86.0) - 2026-04-10
 
 ### Feature
