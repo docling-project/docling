@@ -7,7 +7,6 @@ using vision-language models through a pluggable runtime system.
 import logging
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional, Union
 
 from PIL import Image as PILImage
 
@@ -54,6 +53,7 @@ class VlmConvertModel(BasePageModel):
         """
         self.enabled = enabled
         self.options = options
+        self.engine: BaseVlmEngine | None = None
 
         if not self.enabled:
             return
@@ -71,7 +71,7 @@ class VlmConvertModel(BasePageModel):
         )
 
         # Create the engine - pass model_spec, let factory handle config generation
-        self.engine: BaseVlmEngine = create_vlm_engine(
+        self.engine = create_vlm_engine(
             options=self.options.engine_options,
             model_spec=self.options.model_spec,
             accelerator_options=accelerator_options,
@@ -139,7 +139,11 @@ class VlmConvertModel(BasePageModel):
 
                 images.append(image)
                 prompts.append(
-                    self.options.build_prompt(self.options.model_spec.prompt)
+                    self.options.build_prompt(
+                        self.options.model_spec.prompt,
+                        page=page.parsed_page,
+                        _internal_page=page,
+                    )
                 )
                 valid_pages.append(page)
 
@@ -149,6 +153,8 @@ class VlmConvertModel(BasePageModel):
 
             # Process through runtime using batch prediction
             _log.debug(f"Processing {len(images)} pages through VLM engine (batched)")
+            if self.engine is None:
+                raise RuntimeError("Engine not initialized")
 
             try:
                 # Create batch of runtime inputs
@@ -219,6 +225,8 @@ class VlmConvertModel(BasePageModel):
         images = list(image_batch)
         if not images:
             return
+        if self.engine is None:
+            raise RuntimeError("Engine not initialized")
 
         # Handle prompt
         if isinstance(prompt, str):
@@ -265,7 +273,7 @@ class VlmConvertModel(BasePageModel):
 
     def __del__(self):
         """Cleanup engine resources."""
-        if hasattr(self, "engine"):
+        if self.engine is not None:
             try:
                 self.engine.cleanup()
             except Exception as e:

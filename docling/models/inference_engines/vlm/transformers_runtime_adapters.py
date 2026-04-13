@@ -64,9 +64,15 @@ class _FalconGenerateCallable(Protocol):
     def __call__(self, images: list[Any], **kwargs: Any) -> list[str]: ...
 
 
-def falcon_ocr_build_prompt(prompt: str, *, page: Any | None = None) -> str:
+def falcon_ocr_build_prompt(
+    prompt: str,
+    *,
+    page: Any | None = None,
+    _internal_page: Any | None = None,
+) -> str:
     """Normalize Falcon-OCR prompts while still allowing raw user overrides."""
     del page
+    del _internal_page
 
     normalized_prompt = prompt.strip() or _FALCON_OCR_DEFAULT_PROMPT
     if "<|image|>" not in normalized_prompt:
