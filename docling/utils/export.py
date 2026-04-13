@@ -1,13 +1,111 @@
+import copy
 import logging
 from collections.abc import Iterable
-from typing import Any, Dict, List, Tuple, Union
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc.base import ImageRefMode
+from docling_core.types.doc.document import DoclingDocument, PictureItem
 from docling_core.types.legacy_doc.base import BaseCell, BaseText, Ref, Table
 
 from docling.datamodel.document import ConversionResult, Page
 
 _log = logging.getLogger(__name__)
+
+
+def export_to_markdown(
+    doc: DoclingDocument,
+    image_dir: Optional[Path] = None,
+    image_path_prefix: str = "",
+    image_mode: ImageRefMode = ImageRefMode.PLACEHOLDER,
+    **kwargs: Any,
+) -> str:
+    """Export a DoclingDocument to Markdown, optionally saving images to disk.
+
+    This is a convenience wrapper around :meth:`DoclingDocument.export_to_markdown`
+    that adds two extra parameters for automatic image saving.
+
+    When ``image_dir`` is provided together with
+    ``image_mode=ImageRefMode.REFERENCED``, all embedded picture images are
+    automatically saved to *image_dir* using sequential filenames
+    (``image_001.png``, ``image_002.png``, …).  The markdown image references
+    are rendered as ``![Image](<image_path_prefix>image_00N.png)``.
+
+    Without ``image_dir`` the function delegates directly to
+    :meth:`DoclingDocument.export_to_markdown`, so existing call-sites are
+    unaffected.
+
+    Args:
+        doc: The :class:`DoclingDocument` to serialize.
+        image_dir: Directory where images should be saved.  Created
+            automatically if it does not exist.  Only used when
+            ``image_mode=ImageRefMode.REFERENCED``.
+        image_path_prefix: Prefix prepended to each image filename in the
+            Markdown output (e.g. ``"images/"``).  Defaults to ``""``.
+        image_mode: How images are included in the output.  Defaults to
+            :attr:`ImageRefMode.PLACEHOLDER`.  Pass
+            :attr:`ImageRefMode.REFERENCED` together with *image_dir* to
+            get external image references.
+        **kwargs: All remaining keyword arguments are forwarded verbatim to
+            :meth:`DoclingDocument.export_to_markdown`.
+
+    Returns:
+        The Markdown string.
+
+    Example::
+
+        from pathlib import Path
+        from docling_core.types.doc.base import ImageRefMode
+        from docling.utils.export import export_to_markdown
+
+        md = export_to_markdown(
+            result.document,
+            image_mode=ImageRefMode.REFERENCED,
+            image_dir=Path("./output/images"),
+            image_path_prefix="images/",
+        )
+    """
+    if image_dir is None or image_mode != ImageRefMode.REFERENCED:
+        # Fast path: nothing special to do — delegate directly.
+        return doc.export_to_markdown(image_mode=image_mode, **kwargs)
+
+    # --- Save images and rewrite URIs in a deep copy so the original is untouched ---
+    image_dir = Path(image_dir)
+    image_dir.mkdir(parents=True, exist_ok=True)
+
+    doc_copy: DoclingDocument = copy.deepcopy(doc)
+
+    img_count = 0
+    for item, _ in doc_copy.iterate_items(with_groups=False):
+        if not isinstance(item, PictureItem):
+            continue
+
+        # Use the copy's item to get the image, but resolve pixel data from the
+        # *original* document's page images (still referenced inside the deep copy).
+        img = item.get_image(doc=doc_copy)
+        if img is None:
+            img_count += 1
+            continue
+
+        filename = f"image_{img_count + 1:03d}.png"
+        save_path = image_dir / filename
+        img.save(save_path)
+
+        # Build the URI that will appear in the Markdown output.
+        uri_str = f"{image_path_prefix}{filename}"
+
+        # Ensure item.image exists so we can set its uri.
+        if item.image is None:
+            from docling_core.types.doc.document import ImageRef  # local import to avoid cycles
+            scale = img.size[0] / item.prov[0].bbox.width if item.prov else 1.0
+            item.image = ImageRef.from_pil(image=img, dpi=round(72 * scale))
+
+        item.image.uri = Path(uri_str)  # type: ignore[assignment]
+
+        img_count += 1
+
+    return doc_copy.export_to_markdown(image_mode=image_mode, **kwargs)
 
 
 def generate_multimodal_pages(
