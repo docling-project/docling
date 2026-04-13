@@ -1,4 +1,5 @@
 import subprocess
+import logging
 import os
 from pathlib import Path
 from typing import Union
@@ -12,6 +13,7 @@ from docling.datamodel.document import InputDocument
 from docling_core.types.doc import DoclingDocument
 from docling.exceptions import HwpConversionError
 
+_log = logging.getLogger(__name__)
 
 class HwpDocumentBackend(DeclarativeDocumentBackend):
     def __init__(self, in_doc: InputDocument, path_or_stream: Union[Path, BytesIO]) -> None:
@@ -55,12 +57,17 @@ class HwpDocumentBackend(DeclarativeDocumentBackend):
         input_hwp = str(hwp_path)
         output_hwpx = str(hwp_path.with_suffix('.hwpx'))
 
-        result = subprocess.run(
-            ["/app/hwp2hwpx/run_hwp2hwpx.sh", input_hwp, output_hwpx],
-            capture_output=True,
-            text=True,
-            cwd=str(hwp_path.parent),
-        )
+        try:
+            result = subprocess.run(
+                ["/app/hwp2hwpx/run_hwp2hwpx.sh", input_hwp, output_hwpx],
+                capture_output=True,
+                text=True,
+                cwd=str(hwp_path.parent),
+                timeout=600,
+            )
+        except subprocess.TimeoutExpired as e:
+            _log.error(f"HWP→HWPX 변환 타임아웃: {input_hwp} → {output_hwpx}")
+            raise RuntimeError("HWP to HWPX conversion timed out") from e
 
         if result.returncode != 0:
             raise RuntimeError(f"HWP to HWPX conversion failed: {result.stderr}")

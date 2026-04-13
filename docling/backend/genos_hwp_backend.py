@@ -91,10 +91,11 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         }
         
         # 3. 소스 파일 준비
-        self.original_path = Path(in_doc.file) if in_doc.file else None  # 원본 입력 경로 보존
+        self.original_path = Path(in_doc.file) if in_doc.file else None
         self.temp_input_path = None
         if isinstance(path_or_stream, BytesIO):
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".hwp") as tmp:
+            suffix = self._infer_suffix(path_or_stream, in_doc)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
                 tmp.write(path_or_stream.getbuffer())
                 self.temp_input_path = Path(tmp.name)
             self.source_path = self.temp_input_path
@@ -103,6 +104,29 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
 
         if self.source_path and self.source_path.exists():
             self.valid = True
+
+    @staticmethod
+    def _infer_suffix(stream: BytesIO, in_doc: InputDocument) -> str:
+        # 1순위: in_doc.file에 확장자가 있으면 그대로 사용
+        if in_doc.file:
+            suffix = Path(in_doc.file).suffix
+            if suffix:
+                return suffix
+
+        # 2순위: 스트림 매직 바이트로 판별
+        header = stream.read(4)
+        stream.seek(0)  # 반드시 되감기
+
+        if header[:2] == b"PK":               # ZIP 시그니처 → HWPX
+            return ".hwpx"
+        if header == b"\xd0\xcf\x11\xe0":     # OLE 시그니처 → HWP
+            return ".hwp"
+
+        # 3순위: InputFormat으로 폴백
+        if getattr(in_doc, "format", None) == InputFormat.XML_HWPX:
+            return ".hwpx"
+
+        return ".hwp"
 
     @override
     def is_valid(self) -> bool:

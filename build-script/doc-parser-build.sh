@@ -45,7 +45,9 @@ echo "[INFO] NLTK_PACKAGES  = ${APP_NLTK_PACKAGES}"
 
 # HuggingFace 토큰 존재 여부 확인 (Private SDK 다운로드 시 필수)
 if [[ -z "${HF_TOKEN}" ]]; then
-  echo "[WARN] HF_TOKEN이 설정되지 않았습니다. Private 레포지토리 접근 시 빌드가 실패할 수 있습니다."
+  echo "[ERROR] HF_TOKEN이 설정되지 않았습니다. Private SDK 다운로드가 필요한 빌드는 진행할 수 없습니다."
+  echo "[ERROR] build-script/doc-parser-build.config.local 또는 환경변수에 HF_TOKEN을 설정하세요."
+  exit 1
 else
   echo "[INFO] HF_TOKEN이 감지되었습니다. Secret 마운트를 사용하여 빌드합니다."
 fi

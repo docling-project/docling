@@ -1128,37 +1128,6 @@ def _save_result_files(file_path: str, vectors: list, document=None):
 class HwpProcessor:
     def __init__(self):
         self.page_chunk_counts = defaultdict(int)
-        # 1. 한글 처리에 불필요한 PDF용 옵션이 없는 기본 파이프라인 옵션 사용
-        self.pipeline_options = PipelineOptions()
-        self.pipeline_options.save_images = True
-
-        # 2-a. 자유소프트 SDK 백엔드 사용 (use_hwp_sdk=True, 기본값)
-        self.jayu_converter = DocumentConverter(
-            format_options={
-                InputFormat.HWP: HwpxFormatOption(
-                    pipeline_options=self.pipeline_options,
-                    backend=GenosHwpDocumentBackend
-                ),
-                InputFormat.XML_HWPX: HwpxFormatOption(
-                    pipeline_options=self.pipeline_options,
-                    backend=GenosHwpDocumentBackend
-                ),
-            }
-        )
-
-        # 2-b. 구버전 XML 백엔드 (use_hwp_sdk=False)
-        self.xml_converter = DocumentConverter(
-            format_options={
-                InputFormat.HWP: HwpxFormatOption(
-                    pipeline_options=self.pipeline_options,
-                    backend=HwpDocumentBackend
-                ),
-                InputFormat.XML_HWPX: HwpxFormatOption(
-                    pipeline_options=self.pipeline_options,
-                    backend=HwpxDocumentBackend
-                ),
-            }
-        )
 
     def get_paths(self, file_path: str):
         """이미지 등 리소스가 저장될 경로 계산 (기존 로직 유지)"""
@@ -1176,16 +1145,39 @@ class HwpProcessor:
 
     def load_documents(self, file_path: str, **kwargs: dict) -> DoclingDocument:
         """SDK 백엔드를 통해 문서를 로드"""
-        self.pipeline_options.save_images = kwargs.get('save_images', True)
+        # 요청마다 독립적인 pipeline_options 생성 (공유 상태 변이 방지) --> save_images, dump_sdk_output
+        pipeline_options = PipelineOptions()
+        pipeline_options.save_images = kwargs.get('save_images', True)
 
         use_hwp_sdk = kwargs.get('use_hwp_sdk', True)
+        pipeline_options.dump_sdk_output = kwargs.get('dump_sdk_output', False) if use_hwp_sdk else False
 
         if use_hwp_sdk:
-            self.pipeline_options.dump_sdk_output = kwargs.get('dump_sdk_output', False)
-            converter = self.jayu_converter
+            converter = DocumentConverter(
+                format_options={
+                    InputFormat.HWP: HwpxFormatOption(
+                        pipeline_options=pipeline_options,
+                        backend=GenosHwpDocumentBackend
+                    ),
+                    InputFormat.XML_HWPX: HwpxFormatOption(
+                        pipeline_options=pipeline_options,
+                        backend=GenosHwpDocumentBackend
+                    ),
+                }
+            )
         else:
-            self.pipeline_options.dump_sdk_output = False
-            converter = self.xml_converter
+            converter = DocumentConverter(
+                format_options={
+                    InputFormat.HWP: HwpxFormatOption(
+                        pipeline_options=pipeline_options,
+                        backend=HwpDocumentBackend
+                    ),
+                    InputFormat.XML_HWPX: HwpxFormatOption(
+                        pipeline_options=pipeline_options,
+                        backend=HwpxDocumentBackend
+                    ),
+                }
+            )
 
         conv_result: ConversionResult = converter.convert(Path(file_path).resolve(), raises_on_error=True)
         return conv_result.document
