@@ -8,6 +8,7 @@ import logging
 import re
 import warnings
 from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
 
@@ -396,6 +397,230 @@ class GenosDotsOCRLayoutModel(BasePageModel):
             )
             placed_badges.append(selected_box)
 
+    def _process_page(self, conv_res: ConversionResult, page: Page) -> Page:
+        assert page._backend is not None
+        if not page._backend.is_valid():
+            return page
+
+        with TimeRecorder(conv_res, "layout"):
+            assert page.size is not None
+            page_image = page.get_image(scale=self.pipeline_options.images_scale)
+            assert page_image is not None
+
+            buffer = io.BytesIO()
+            page_image.save(
+                buffer, format="PNG"
+            )  # PNG 형식으로 저장 (필요에 따라 JPEG 등 변경 가능)
+            buffer.seek(0)
+
+            # 바이트 스트림을 base64로 인코딩
+            base64_image = base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+            response_text = call_vlm_server(
+                prompt=prompt,
+                base64_image=base64_image,
+                url=self.dotocr_endpoint,
+                api_key=self.api_key,
+                model=self.model,
+                max_completion_tokens=self.max_completion_tokens,
+                timeout=self.timeout,
+            )
+
+            # 디버그용으로 response_text 화면에 출력
+            # print("VLM Response Data:", json.dumps(json.loads(response_text), indent=2, ensure_ascii=False))
+
+            response = _parse_vlm_json_response(response_text)
+            if isinstance(response, dict):
+                result = response.get("result")
+                if result is None:
+                    # Fallback for providers that use a different list key.
+                    result = response.get("items")
+            elif isinstance(response, list):
+                result = response
+            else:
+                result = None
+
+            if isinstance(result, str):
+                nested = _parse_vlm_json_response(result)
+                if isinstance(nested, dict):
+                    result = nested.get("result")
+                    if result is None:
+                        result = nested.get("items")
+                elif isinstance(nested, list):
+                    result = nested
+
+            if not isinstance(result, list):
+                _log.warning(
+                    "Unexpected VLM response schema. Parsed type=%s; falling back to empty predictions. value=%r",
+                    type(response).__name__,
+                    response,
+                )
+                result = []
+
+            clusters = []
+            raw_table_html_by_cluster_id: dict[int, str] = {}
+            raw_formula_latex_by_cluster_id: dict[int, str] = {}
+            for idx, pred_item in enumerate(result):
+                if not isinstance(pred_item, dict):
+                    _log.warning(
+                        "Skipping non-dict layout item at index %d: %r",
+                        idx,
+                        pred_item,
+                    )
+                    continue
+
+                category = pred_item.get("category")
+                if category is None or pred_item.get("bbox") is None:
+                    _log.warning(
+                        "Skipping layout item missing required keys at index %d: %r",
+                        idx,
+                        pred_item,
+                    )
+                    continue
+
+                try:
+                    label = DocItemLabel(
+                        str(category).lower().replace(" ", "_").replace("-", "_")
+                    )  # Temporary, until docling-ibm-model uses docling-core types
+                except ValueError:
+                    _log.warning(
+                        "Skipping unknown layout category '%s' at index %d",
+                        category,
+                        idx,
+                    )
+                    continue
+
+                if label in self.TABLE_LABELS:
+                    table_item_text = _extract_layout_item_text(pred_item)
+                    if table_item_text:
+                        table_html = _extract_table_html(table_item_text)
+                        if table_html:
+                            raw_table_html_by_cluster_id[idx] = table_html
+
+                bbox_values = _rescale_dotsocr_bbox_to_page(
+                    bbox=pred_item["bbox"],
+                    source_width=page_image.width,
+                    source_height=page_image.height,
+                    page_width=page.size.width,
+                    page_height=page.size.height,
+                )
+                if bbox_values is None:
+                    _log.warning(
+                        "Skipping invalid bbox at index %d: %r",
+                        idx,
+                        pred_item.get("bbox"),
+                    )
+                    continue
+                bbox = {
+                    "l": bbox_values[0],
+                    "t": bbox_values[1],
+                    "r": bbox_values[2],
+                    "b": bbox_values[3],
+                }
+                cluster = Cluster(
+                    id=idx,
+                    label=label,
+                    confidence=_coerce_confidence(pred_item.get("confidence")),
+                    # bbox=BoundingBox.model_validate(pred_item),
+                    bbox=BoundingBox.model_validate(bbox),
+                    cells=[],
+                )
+                clusters.append(cluster)
+
+                if label == self.FORMULA_LABEL:
+                    formula_item_text = _extract_layout_item_text(pred_item)
+                    if formula_item_text:
+                        raw_formula_latex_by_cluster_id[idx] = formula_item_text
+
+            # Preserve source(DotsOCR raw) order across debug views and
+            # postprocessed cluster outputs.
+            source_order_map = {
+                cluster.id: order_idx + 1 for order_idx, cluster in enumerate(clusters)
+            }
+
+            if settings.debug.visualize_raw_layout:
+                try:
+                    self.draw_clusters_and_cells_side_by_side(
+                        conv_res,
+                        page,
+                        clusters,
+                        mode_prefix="1_raw_dotsocr",
+                        cluster_order_map=source_order_map,
+                    )
+                except Exception:
+                    _log.warning(
+                        "Failed to render raw DotsOCR layout debug image (page=%s).",
+                        page.page_no,
+                        exc_info=True,
+                    )
+
+            processed_clusters, processed_cells = LayoutPostprocessor(
+                page, clusters, self.options
+            ).postprocess()
+
+            # Note: LayoutPostprocessor updates page.cells and page.parsed_page internally
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    "Mean of empty slice|invalid value encountered in scalar divide",
+                    RuntimeWarning,
+                    "numpy",
+                )
+
+                conv_res.confidence.pages[page.page_no].layout_score = float(
+                    np.mean([c.confidence for c in processed_clusters])
+                )
+
+                conv_res.confidence.pages[page.page_no].ocr_score = float(
+                    np.mean([c.confidence for c in processed_cells if c.from_ocr])
+                )
+
+            page.predictions.layout = LayoutPrediction(clusters=processed_clusters)
+
+            equation_map: dict[int, TextElement] = {}
+            for cluster in processed_clusters:
+                if cluster.label != self.FORMULA_LABEL:
+                    continue
+                formula_latex = raw_formula_latex_by_cluster_id.get(cluster.id)
+                if not formula_latex:
+                    continue
+                equation_map[cluster.id] = TextElement(
+                    label=cluster.label,
+                    id=cluster.id,
+                    text=formula_latex,
+                    page_no=page.page_no,
+                    cluster=cluster,
+                )
+            page.predictions.equations_prediction = EquationPrediction(
+                equation_count=len(equation_map),
+                equation_map=equation_map,
+            )
+
+            if self._use_dotsocr_table_structure():
+                page.predictions.tablestructure = self._build_tablestructure_from_dotsocr(
+                    page=page,
+                    clusters=processed_clusters,
+                    table_html_by_cluster_id=raw_table_html_by_cluster_id,
+                )
+
+        if settings.debug.visualize_layout:
+            try:
+                self.draw_clusters_and_cells_side_by_side(
+                    conv_res,
+                    page,
+                    processed_clusters,
+                    mode_prefix="2_postprocessed_dotsocr",
+                    cluster_order_map=source_order_map,
+                )
+            except Exception:
+                _log.warning(
+                    "Failed to render postprocessed DotsOCR layout debug image (page=%s).",
+                    page.page_no,
+                    exc_info=True,
+                )
+
+        return page
+
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -405,246 +630,17 @@ class GenosDotsOCRLayoutModel(BasePageModel):
         conv_res.pages[0].predictions.layout.clusters -> conv_res.pages[0].assembled
         conv_res.pages[0].assembled -> conv_res.document
         """
-
         _log.info(f"Running GenosDotsOCRLayoutModel on {conv_res.input.file}")
 
-        for page in page_batch:
-            assert page._backend is not None
-            if not page._backend.is_valid():
-                yield page
-            else:
-                with TimeRecorder(conv_res, "layout"):
-                    assert page.size is not None
-                    page_image = page.get_image(
-                        scale=self.pipeline_options.images_scale
-                    )
-                    assert page_image is not None
+        pages = list(page_batch)
+        if not pages:
+            return
 
-                    buffer = io.BytesIO()
-                    page_image.save(
-                        buffer, format="PNG"
-                    )  # PNG 형식으로 저장 (필요에 따라 JPEG 등 변경 가능)
-                    buffer.seek(0)
+        def _process(page: Page) -> Page:
+            return self._process_page(conv_res, page)
 
-                    # 바이트 스트림을 base64로 인코딩
-                    base64_image = base64.b64encode(buffer.getvalue()).decode("utf-8")
-
-                    response_text = call_vlm_server(
-                        prompt=prompt,
-                        base64_image=base64_image,
-                        url=self.dotocr_endpoint,
-                        api_key=self.api_key,
-                        model=self.model,
-                        max_completion_tokens=self.max_completion_tokens,
-                        timeout=self.timeout,
-                    )
-
-                    # 디버그용으로 response_text 화면에 출력
-                    # print("VLM Response Data:", json.dumps(json.loads(response_text), indent=2, ensure_ascii=False))
-
-                    response = _parse_vlm_json_response(response_text)
-                    if isinstance(response, dict):
-                        result = response.get("result")
-                        if result is None:
-                            # Fallback for providers that use a different list key.
-                            result = response.get("items")
-                    elif isinstance(response, list):
-                        result = response
-                    else:
-                        result = None
-
-                    if isinstance(result, str):
-                        nested = _parse_vlm_json_response(result)
-                        if isinstance(nested, dict):
-                            result = nested.get("result")
-                            if result is None:
-                                result = nested.get("items")
-                        elif isinstance(nested, list):
-                            result = nested
-
-                    if not isinstance(result, list):
-                        _log.warning(
-                            "Unexpected VLM response schema. Parsed type=%s; falling back to empty predictions. value=%r",
-                            type(response).__name__,
-                            response,
-                        )
-                        result = []
-
-                    clusters = []
-                    raw_table_html_by_cluster_id: dict[int, str] = {}
-                    raw_formula_latex_by_cluster_id: dict[int, str] = {}
-                    for idx, pred_item in enumerate(result):
-                        if not isinstance(pred_item, dict):
-                            _log.warning(
-                                "Skipping non-dict layout item at index %d: %r",
-                                idx,
-                                pred_item,
-                            )
-                            continue
-
-                        category = pred_item.get("category")
-                        if category is None or pred_item.get("bbox") is None:
-                            _log.warning(
-                                "Skipping layout item missing required keys at index %d: %r",
-                                idx,
-                                pred_item,
-                            )
-                            continue
-
-                        try:
-                            label = DocItemLabel(
-                                str(category)
-                                .lower()
-                                .replace(" ", "_")
-                                .replace("-", "_")
-                            )  # Temporary, until docling-ibm-model uses docling-core types
-                        except ValueError:
-                            _log.warning(
-                                "Skipping unknown layout category '%s' at index %d",
-                                category,
-                                idx,
-                            )
-                            continue
-
-                        if label in self.TABLE_LABELS:
-                            table_item_text = _extract_layout_item_text(pred_item)
-                            if table_item_text:
-                                table_html = _extract_table_html(table_item_text)
-                                if table_html:
-                                    raw_table_html_by_cluster_id[idx] = table_html
-
-                        bbox_values = _rescale_dotsocr_bbox_to_page(
-                            bbox=pred_item["bbox"],
-                            source_width=page_image.width,
-                            source_height=page_image.height,
-                            page_width=page.size.width,
-                            page_height=page.size.height,
-                        )
-                        if bbox_values is None:
-                            _log.warning(
-                                "Skipping invalid bbox at index %d: %r",
-                                idx,
-                                pred_item.get("bbox"),
-                            )
-                            continue
-                        bbox = {
-                            "l": bbox_values[0],
-                            "t": bbox_values[1],
-                            "r": bbox_values[2],
-                            "b": bbox_values[3],
-                        }
-                        cluster = Cluster(
-                            id=idx,
-                            label=label,
-                            confidence=_coerce_confidence(pred_item.get("confidence")),
-                            # bbox=BoundingBox.model_validate(pred_item),
-                            bbox=BoundingBox.model_validate(bbox),
-                            cells=[],
-                        )
-                        clusters.append(cluster)
-
-                        if label == self.FORMULA_LABEL:
-                            formula_item_text = _extract_layout_item_text(pred_item)
-                            if formula_item_text:
-                                raw_formula_latex_by_cluster_id[idx] = formula_item_text
-
-                    # Preserve source(DotsOCR raw) order across debug views and
-                    # postprocessed cluster outputs.
-                    source_order_map = {
-                        cluster.id: order_idx + 1
-                        for order_idx, cluster in enumerate(clusters)
-                    }
-
-                    if settings.debug.visualize_raw_layout:
-                        try:
-                            self.draw_clusters_and_cells_side_by_side(
-                                conv_res,
-                                page,
-                                clusters,
-                                mode_prefix="1_raw_dotsocr",
-                                cluster_order_map=source_order_map,
-                            )
-                        except Exception:
-                            _log.warning(
-                                "Failed to render raw DotsOCR layout debug image (page=%s).",
-                                page.page_no,
-                                exc_info=True,
-                            )
-
-                    # processed_clusters
-
-                    processed_clusters, processed_cells = LayoutPostprocessor(
-                        page, clusters, self.options
-                    ).postprocess()
-
-                    # Note: LayoutPostprocessor updates page.cells and page.parsed_page internally
-
-                    with warnings.catch_warnings():
-                        warnings.filterwarnings(
-                            "ignore",
-                            "Mean of empty slice|invalid value encountered in scalar divide",
-                            RuntimeWarning,
-                            "numpy",
-                        )
-
-                        conv_res.confidence.pages[page.page_no].layout_score = float(
-                            np.mean([c.confidence for c in processed_clusters])
-                        )
-
-                        conv_res.confidence.pages[page.page_no].ocr_score = float(
-                            np.mean(
-                                [c.confidence for c in processed_cells if c.from_ocr]
-                            )
-                        )
-
-                    page.predictions.layout = LayoutPrediction(
-                        clusters=processed_clusters
-                    )
-
-                    equation_map: dict[int, TextElement] = {}
-                    for cluster in processed_clusters:
-                        if cluster.label != self.FORMULA_LABEL:
-                            continue
-                        formula_latex = raw_formula_latex_by_cluster_id.get(cluster.id)
-                        if not formula_latex:
-                            continue
-                        equation_map[cluster.id] = TextElement(
-                            label=cluster.label,
-                            id=cluster.id,
-                            text=formula_latex,
-                            page_no=page.page_no,
-                            cluster=cluster,
-                        )
-                    page.predictions.equations_prediction = EquationPrediction(
-                        equation_count=len(equation_map),
-                        equation_map=equation_map,
-                    )
-
-                    if self._use_dotsocr_table_structure():
-                        page.predictions.tablestructure = (
-                            self._build_tablestructure_from_dotsocr(
-                                page=page,
-                                clusters=processed_clusters,
-                                table_html_by_cluster_id=raw_table_html_by_cluster_id,
-                            )
-                        )
-
-                if settings.debug.visualize_layout:
-                    try:
-                        self.draw_clusters_and_cells_side_by_side(
-                            conv_res,
-                            page,
-                            processed_clusters,
-                            mode_prefix="2_postprocessed_dotsocr",
-                            cluster_order_map=source_order_map,
-                        )
-                    except Exception:
-                        _log.warning(
-                            "Failed to render postprocessed DotsOCR layout debug image (page=%s).",
-                            page.page_no,
-                            exc_info=True,
-                        )
-                yield page
+        with ThreadPoolExecutor(max_workers=len(pages)) as executor:
+            yield from executor.map(_process, pages)
 
 
 prompt = """Please output the layout information from the PDF image, including each layout element's bbox, its category, and the corresponding text content within the bbox.

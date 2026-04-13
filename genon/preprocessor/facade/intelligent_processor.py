@@ -74,6 +74,8 @@ from docling_core.types.doc import (
     PageItem,
     ProvenanceItem
 )
+from docling.datamodel.settings import settings
+
 from collections import Counter
 import re
 import json
@@ -1021,8 +1023,16 @@ class DocumentProcessor:
 
         # layout 모델로 GENOS_LAYOUT 사용
         # self.pipe_line_options.layout_options.layout_model_type = LayoutModelType.GENOS_LAYOUT
-        # self.pipe_line_options.layout_options.dotsocr_options.endpoint = "https://genos.genon.ai:3443/api/gateway/rep/serving/733/v1/chat/completions"
-        # self.pipe_line_options.layout_options.dotsocr_options.api_key = "3d0aed2e6aff4d8289052d50a7aaffaa"
+        # 운영망 T4
+        # self.pipe_line_options.layout_options.genos_layout_options.endpoint = "https://genos.genon.ai:3443/api/gateway/rep/serving/733/v1/chat/completions"
+        # self.pipe_line_options.layout_options.genos_layout_options.api_key = "3d0aed2e6aff4d8289052d50a7aaffaa"
+
+        # H100 gpu
+        # self.pipe_line_options.layout_options.genos_layout_options.endpoint = "http://192.168.75.174:26001/v1/chat/completions"
+        # self.pipe_line_options.layout_options.genos_layout_options.api_key = ""
+
+        # genos layout 모델은 batch size를 32로 설정
+        # settings.perf.page_batch_size = 32
 
         self.pipe_line_options.do_table_structure = True
         # VLM 기반 테이블 구조 모델 사용

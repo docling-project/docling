@@ -354,7 +354,7 @@ class GenosLayoutOptions(BaseModel):
     """Options specific to Genos layout inference."""
 
     endpoint: str = None
-    api_key: str = None
+    api_key: str = ""
     model: str = "dots-mocr"
     max_completion_tokens: int = 6000
     timeout: int = 3600
