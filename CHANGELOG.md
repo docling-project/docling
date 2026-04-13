@@ -1,3 +1,17 @@
+## [v2.88.0](https://github.com/docling-project/docling/releases/tag/v2.88.0) - 2026-04-13
+
+### Feature
+
+* **service:** Establish client SDK for docling serve ([#3264](https://github.com/docling-project/docling/issues/3264)) ([`42157a3`](https://github.com/docling-project/docling/commit/42157a3e100ae306f74938310018be3909cabf8c))
+
+### Fix
+
+* **ocr:** Support rapidocr 3.8 mobile model naming ([#3277](https://github.com/docling-project/docling/issues/3277)) ([`6b257ec`](https://github.com/docling-project/docling/commit/6b257ece330db9c39b8834b2b5a87b9c1eecb1fa))
+
+### Documentation
+
+* Add agent skill bundle for coding assistants (SKILL.md, pipelines, convert/evaluate) ([#3174](https://github.com/docling-project/docling/issues/3174)) ([`c23622f`](https://github.com/docling-project/docling/commit/c23622f6f53f3e286009a92545a2208cb62d148c))
+
 ## [v2.87.0](https://github.com/docling-project/docling/releases/tag/v2.87.0) - 2026-04-13
 
 ### Feature
