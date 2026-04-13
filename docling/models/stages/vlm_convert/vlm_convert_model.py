@@ -138,7 +138,9 @@ class VlmConvertModel(BasePageModel):
                         image = image.resize(new_size, PILImage.Resampling.LANCZOS)
 
                 images.append(image)
-                prompts.append(self.options.build_prompt(self.options.model_spec.prompt))
+                prompts.append(
+                    self.options.build_prompt(self.options.model_spec.prompt)
+                )
                 valid_pages.append(page)
 
             if not images:

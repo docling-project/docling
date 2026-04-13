@@ -857,9 +857,8 @@ class PictureDescriptionVlmEngineOptions(
         Field(
             default_factory=dict,
             description=(
-                "Additional runtime generation options merged into each engine "
-                "request."
-            )
+                "Additional runtime generation options merged into each engine request."
+            ),
         ),
     ]
 
@@ -946,9 +945,8 @@ class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         Field(
             default_factory=dict,
             description=(
-                "Additional runtime generation options merged into each engine "
-                "request."
-            )
+                "Additional runtime generation options merged into each engine request."
+            ),
         ),
     ]
 
@@ -1007,9 +1005,8 @@ class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         Field(
             default_factory=dict,
             description=(
-                "Additional runtime generation options merged into each engine "
-                "request."
-            )
+                "Additional runtime generation options merged into each engine request."
+            ),
         ),
     ]
 

@@ -89,8 +89,7 @@ def test_falcon_ocr_preset_instantiation():
         == TransformersPromptStyle.RAW
     )
     assert (
-        options.build_prompt("Keep formulas")
-        == "<|image|>Keep formulas\n<|OCR_PLAIN|>"
+        options.build_prompt("Keep formulas") == "<|image|>Keep formulas\n<|OCR_PLAIN|>"
     )
     assert (
         options.build_prompt("")
