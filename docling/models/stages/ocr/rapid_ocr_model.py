@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Literal, Optional, Type, TypedDict
+from typing import Literal, Type, TypedDict
 
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin
@@ -33,64 +33,57 @@ class _ModelPathDetail(TypedDict):
     path: str
 
 
+_RAPIDOCR_MODELSCOPE_RELEASE = "v3.8.0"
+_RAPIDOCR_MODELSCOPE_BASE_URL = (
+    "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve"
+)
+_RAPIDOCR_DEFAULT_MODEL_PATHS: dict[_ModelPathEngines, dict[_ModelPathTypes, str]] = {
+    "onnxruntime": {
+        "det_model_path": "onnx/PP-OCRv4/det/ch_PP-OCRv4_det_mobile.onnx",
+        "cls_model_path": "onnx/PP-OCRv4/cls/ch_ppocr_mobile_v2.0_cls_mobile.onnx",
+        "rec_model_path": "onnx/PP-OCRv4/rec/ch_PP-OCRv4_rec_mobile.onnx",
+        "rec_keys_path": "paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_mobile/ppocr_keys_v1.txt",
+        "font_path": "resources/fonts/FZYTK.TTF",
+    },
+    "torch": {
+        "det_model_path": "torch/PP-OCRv4/det/ch_PP-OCRv4_det_mobile.pth",
+        "cls_model_path": "torch/PP-OCRv4/cls/ch_ptocr_mobile_v2.0_cls_mobile.pth",
+        "rec_model_path": "torch/PP-OCRv4/rec/ch_PP-OCRv4_rec_mobile.pth",
+        "rec_keys_path": "paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_mobile/ppocr_keys_v1.txt",
+        "font_path": "resources/fonts/FZYTK.TTF",
+    },
+}
+
+
+def _build_model_detail(path: str) -> _ModelPathDetail:
+    return {
+        "url": f"{_RAPIDOCR_MODELSCOPE_BASE_URL}/{_RAPIDOCR_MODELSCOPE_RELEASE}/{path}",
+        "path": path,
+    }
+
+
 class RapidOcrModel(BaseOcrModel):
     _model_repo_folder = "RapidOcr"
-    # from https://github.com/RapidAI/RapidOCR/blob/main/python/rapidocr/default_models.yaml
-    # matching the default config in https://github.com/RapidAI/RapidOCR/blob/main/python/rapidocr/config.yaml
-    # and naming f"{file_info.engine_type.value}.{file_info.ocr_version.value}.{file_info.task_type.value}"
+    # Match the PP-OCRv4 mobile defaults used by RapidOCR 3.8+:
+    # - default_models.yaml in RapidOCR 3.8.1 points at the v3.8.0 modelscope assets
+    # - config.yaml defaults Det/Cls/Rec model_type to "mobile"
     _default_models: dict[
         _ModelPathEngines, dict[_ModelPathTypes, _ModelPathDetail]
     ] = {
         "onnxruntime": {
-            "det_model_path": {
-                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.5.0/onnx/PP-OCRv4/det/ch_PP-OCRv4_det_infer.onnx",
-                "path": "onnx/PP-OCRv4/det/ch_PP-OCRv4_det_infer.onnx",
-            },
-            "cls_model_path": {
-                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.5.0/onnx/PP-OCRv4/cls/ch_ppocr_mobile_v2.0_cls_infer.onnx",
-                "path": "onnx/PP-OCRv4/cls/ch_ppocr_mobile_v2.0_cls_infer.onnx",
-            },
-            "rec_model_path": {
-                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.5.0/onnx/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer.onnx",
-                "path": "onnx/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer.onnx",
-            },
-            "rec_keys_path": {
-                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.5.0/paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer/ppocr_keys_v1.txt",
-                "path": "paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer/ppocr_keys_v1.txt",
-            },
-            "font_path": {
-                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.5.0/resources/fonts/FZYTK.TTF",
-                "path": "fonts/FZYTK.TTF",
-            },
+            key: _build_model_detail(path)
+            for key, path in _RAPIDOCR_DEFAULT_MODEL_PATHS["onnxruntime"].items()
         },
         "torch": {
-            "det_model_path": {
-                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.5.0/torch/PP-OCRv4/det/ch_PP-OCRv4_det_infer.pth",
-                "path": "torch/PP-OCRv4/det/ch_PP-OCRv4_det_infer.pth",
-            },
-            "cls_model_path": {
-                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.5.0/torch/PP-OCRv4/cls/ch_ptocr_mobile_v2.0_cls_infer.pth",
-                "path": "torch/PP-OCRv4/cls/ch_ptocr_mobile_v2.0_cls_infer.pth",
-            },
-            "rec_model_path": {
-                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.5.0/torch/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer.pth",
-                "path": "torch/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer.pth",
-            },
-            "rec_keys_path": {
-                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.5.0/paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer/ppocr_keys_v1.txt",
-                "path": "paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer/ppocr_keys_v1.txt",
-            },
-            "font_path": {
-                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.5.0/resources/fonts/FZYTK.TTF",
-                "path": "fonts/FZYTK.TTF",
-            },
+            key: _build_model_detail(path)
+            for key, path in _RAPIDOCR_DEFAULT_MODEL_PATHS["torch"].items()
         },
     }
 
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         options: RapidOcrOptions,
         accelerator_options: AcceleratorOptions,
     ):
@@ -167,10 +160,10 @@ class RapidOcrModel(BaseOcrModel):
                 )
 
             for model_path in (
+                det_model_path,
                 rec_keys_path,
                 cls_model_path,
                 rec_model_path,
-                rec_keys_path,
                 font_path,
             ):
                 if model_path is None:
@@ -224,7 +217,7 @@ class RapidOcrModel(BaseOcrModel):
     @staticmethod
     def download_models(
         backend: _ModelPathEngines,
-        local_dir: Optional[Path] = None,
+        local_dir: Path | None = None,
         force: bool = False,
         progress: bool = False,
     ) -> Path:
