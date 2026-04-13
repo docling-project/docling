@@ -7,7 +7,6 @@ CONTENT_FILTERED) or missing predictions.
 Related: https://github.com/docling-project/docling/issues/2583
 """
 
-import os
 from types import SimpleNamespace
 
 import pytest
@@ -22,9 +21,10 @@ from docling.datamodel.base_models import (
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VlmPipelineOptions
 from docling.pipeline.vlm_pipeline import VlmPipeline
+from tests.test_data_gen_flag import IS_CI
 
 pytestmark = pytest.mark.skipif(
-    os.getenv("CI"),
+    IS_CI,
     reason="Skipping VLM unit tests in CI",
 )
 

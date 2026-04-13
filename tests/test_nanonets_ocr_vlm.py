@@ -1,6 +1,5 @@
 """Test Nanonets-OCR2-3B VLM integration."""
 
-import os
 from pathlib import Path
 
 import pytest
@@ -17,9 +16,10 @@ from docling.datamodel.pipeline_options_vlm_model import (
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.pipeline.vlm_pipeline import VlmPipeline
+from tests.test_data_gen_flag import IS_CI
 
 pytestmark = pytest.mark.skipif(
-    os.getenv("CI"),
+    IS_CI,
     reason="Skipping VLM unit tests in CI",
 )
 
@@ -135,7 +135,7 @@ def test_nanonets_ocr2_legacy_specs():
 
 def test_e2e_nanonets_ocr2_conversion():
     """E2E test with vLLM server (skipped in CI and when server is unavailable)."""
-    if os.getenv("CI"):
+    if IS_CI:
         pytest.skip("Skipping in CI environment")
 
     try:

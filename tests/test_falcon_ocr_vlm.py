@@ -1,6 +1,5 @@
 """Test Falcon-OCR VLM integration."""
 
-import os
 from pathlib import Path
 
 import pytest
@@ -19,9 +18,10 @@ from docling.models.inference_engines.vlm.transformers_runtime_adapters import (
     FalconOCRTransformersAdapter,
 )
 from docling.pipeline.vlm_pipeline import VlmPipeline
+from tests.test_data_gen_flag import IS_CI
 
 pytestmark = pytest.mark.skipif(
-    os.getenv("CI"),
+    IS_CI,
     reason="Skipping VLM unit tests in CI",
 )
 

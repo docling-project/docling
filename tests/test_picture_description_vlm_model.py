@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pytest
@@ -10,9 +9,10 @@ from docling.datamodel.pipeline_options import PictureDescriptionVlmOptions
 from docling.models.stages.picture_description.picture_description_vlm_model import (
     PictureDescriptionVlmModel,
 )
+from tests.test_data_gen_flag import IS_CI
 
 pytestmark = pytest.mark.skipif(
-    os.getenv("CI"),
+    IS_CI,
     reason="Skipping VLM unit tests in CI",
 )
 

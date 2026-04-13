@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -17,9 +16,10 @@ from docling.models.inference_engines.vlm.transformers_runtime_adapters import (
     FalconOCRTransformersAdapter,
     falcon_ocr_build_prompt,
 )
+from tests.test_data_gen_flag import IS_CI
 
 pytestmark = pytest.mark.skipif(
-    os.getenv("CI"),
+    IS_CI,
     reason="Skipping VLM unit tests in CI",
 )
 
