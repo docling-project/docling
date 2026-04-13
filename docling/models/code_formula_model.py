@@ -1,4 +1,5 @@
 import re
+import logging
 from collections import Counter
 from collections.abc import Iterable
 from pathlib import Path
@@ -18,9 +19,12 @@ from pydantic import BaseModel
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
+from docling.datamodel.document import ConversionResult
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
+
+_log = logging.getLogger(__name__)
 
 
 class CodeFormulaModelOptions(BaseModel):
@@ -150,6 +154,68 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
                 and self.options.do_formula_enrichment
             )
         )
+
+    def _find_page_by_doc_page_no(
+        self, conv_res: ConversionResult, doc_page_no: int
+    ):
+        page_no_zero_based = doc_page_no - 1
+        for page in conv_res.pages:
+            if page.page_no == page_no_zero_based:
+                return page
+        return None
+
+    def _bbox_almost_equal(self, a, b, tol: float = 1.0) -> bool:
+        return (
+            abs(a.l - b.l) <= tol
+            and abs(a.t - b.t) <= tol
+            and abs(a.r - b.r) <= tol
+            and abs(a.b - b.b) <= tol
+        )
+
+    def _should_skip_formula_enrichment_for_dotsocr(
+        self, conv_res: ConversionResult, element: NodeItem
+    ) -> bool:
+        if not (
+            isinstance(element, TextItem)
+            and element.label == DocItemLabel.FORMULA
+            and element.prov
+        ):
+            return False
+
+        prov = element.prov[0]
+        page = self._find_page_by_doc_page_no(conv_res=conv_res, doc_page_no=prov.page_no)
+        if page is None:
+            return False
+        if page.size is None:
+            return False
+
+        equations_prediction = page.predictions.equations_prediction
+        if equations_prediction is None or not equations_prediction.equation_map:
+            return False
+
+        element_text = (element.text or "").strip()
+        for eq in equations_prediction.equation_map.values():
+            dotsocr_text = (eq.text or "").strip()
+            if not dotsocr_text:
+                continue
+            if element_text != dotsocr_text:
+                continue
+
+            eq_bbox = eq.cluster.bbox.to_bottom_left_origin(page.size.height)
+            if self._bbox_almost_equal(eq_bbox, prov.bbox):
+                return True
+
+        return False
+
+    def prepare_element(
+        self, conv_res: ConversionResult, element: NodeItem
+    ) -> Optional[ItemAndImageEnrichmentElement]:
+        if self._should_skip_formula_enrichment_for_dotsocr(
+            conv_res=conv_res, element=element
+        ):
+            _log.debug("Skipping formula enrichment for DotsOCR formula element.")
+            return None
+        return super().prepare_element(conv_res=conv_res, element=element)
 
     def _extract_code_language(self, input_string: str) -> Tuple[str, Optional[str]]:
         """Extracts a programming language from the beginning of a string.

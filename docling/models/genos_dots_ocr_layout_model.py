@@ -20,10 +20,12 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import (
     BoundingBox,
     Cluster,
+    EquationPrediction,
     LayoutPrediction,
     Page,
     Table,
     TableStructurePrediction,
+    TextElement,
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_V2, LayoutModelConfig
@@ -72,7 +74,9 @@ class GenosDotsOCRLayoutModel(BasePageModel):
     def __init__(self, pipeline_options: PdfPipelineOptions) -> None:
         self.pipeline_options = pipeline_options
         self.options = pipeline_options.layout_options
-        self.dotsocr_options = self.options.dotsocr_options
+        self.dotsocr_options = getattr(self.options, "dotsocr_options", None)
+        if self.dotsocr_options is None:
+            self.dotsocr_options = self.options.genos_layout_options
         self.dotocr_endpoint = self.dotsocr_options.endpoint
         self.api_key = self.dotsocr_options.api_key
         self.max_completion_tokens = self.dotsocr_options.max_completion_tokens
@@ -467,6 +471,7 @@ class GenosDotsOCRLayoutModel(BasePageModel):
 
                     clusters = []
                     raw_table_html_by_cluster_id: dict[int, str] = {}
+                    raw_formula_latex_by_cluster_id: dict[int, str] = {}
                     for idx, pred_item in enumerate(result):
                         if not isinstance(pred_item, dict):
                             _log.warning(
@@ -537,6 +542,11 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                         )
                         clusters.append(cluster)
 
+                        if label == self.FORMULA_LABEL:
+                            formula_item_text = _extract_layout_item_text(pred_item)
+                            if formula_item_text:
+                                raw_formula_latex_by_cluster_id[idx] = formula_item_text
+
                     # Preserve source(DotsOCR raw) order across debug views and
                     # postprocessed cluster outputs.
                     source_order_map = {
@@ -589,6 +599,26 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                     page.predictions.layout = LayoutPrediction(
                         clusters=processed_clusters
                     )
+
+                    equation_map: dict[int, TextElement] = {}
+                    for cluster in processed_clusters:
+                        if cluster.label != self.FORMULA_LABEL:
+                            continue
+                        formula_latex = raw_formula_latex_by_cluster_id.get(cluster.id)
+                        if not formula_latex:
+                            continue
+                        equation_map[cluster.id] = TextElement(
+                            label=cluster.label,
+                            id=cluster.id,
+                            text=formula_latex,
+                            page_no=page.page_no,
+                            cluster=cluster,
+                        )
+                    page.predictions.equations_prediction = EquationPrediction(
+                        equation_count=len(equation_map),
+                        equation_map=equation_map,
+                    )
+
                     if self._use_dotsocr_table_structure():
                         page.predictions.tablestructure = (
                             self._build_tablestructure_from_dotsocr(
