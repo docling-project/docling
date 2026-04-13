@@ -42,7 +42,7 @@ class VlmConvertModel(BasePageModel):
         self,
         enabled: bool,
         enable_remote_services: bool,
-        artifacts_path: Optional[Union[Path, str]],
+        artifacts_path: Path | str | None,
         options: VlmConvertOptions,
         accelerator_options: AcceleratorOptions,
     ):
@@ -106,6 +106,9 @@ class VlmConvertModel(BasePageModel):
             images = []
             prompts = []
             valid_pages = []
+            extra_generation_config = dict(self.options.extra_generation_config)
+            stop_strings = list(self.options.model_spec.stop_strings)
+            max_new_tokens = self.options.model_spec.max_new_tokens
 
             for page in page_list:
                 if page.image is None:
@@ -135,7 +138,7 @@ class VlmConvertModel(BasePageModel):
                         image = image.resize(new_size, PILImage.Resampling.LANCZOS)
 
                 images.append(image)
-                prompts.append(self.options.model_spec.prompt)
+                prompts.append(self.options.build_prompt(self.options.model_spec.prompt))
                 valid_pages.append(page)
 
             if not images:
@@ -152,7 +155,9 @@ class VlmConvertModel(BasePageModel):
                         image=img,
                         prompt=prompt,
                         temperature=0.0,  # Use from options if needed
-                        max_new_tokens=4096,  # Use from options if needed
+                        max_new_tokens=max_new_tokens,
+                        stop_strings=stop_strings,
+                        extra_generation_config=dict(extra_generation_config),
                     )
                     for img, prompt in zip(images, prompts)
                 ]
@@ -228,9 +233,11 @@ class VlmConvertModel(BasePageModel):
         engine_inputs = [
             VlmEngineInput(
                 image=img,
-                prompt=p,
+                prompt=self.options.build_prompt(p),
                 temperature=0.0,
-                max_new_tokens=4096,
+                max_new_tokens=self.options.model_spec.max_new_tokens,
+                stop_strings=list(self.options.model_spec.stop_strings),
+                extra_generation_config=dict(self.options.extra_generation_config),
             )
             for img, p in zip(images, prompts)
         ]
