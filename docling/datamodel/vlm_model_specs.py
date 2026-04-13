@@ -256,6 +256,79 @@ QWEN25_VL_3B_MLX = InlineVlmOptions(
     temperature=0.0,
 )
 
+# Nanonets OCR2
+NANONETS_OCR2_TRANSFORMERS = InlineVlmOptions(
+    repo_id="nanonets/Nanonets-OCR2-3B",
+    prompt=(
+        "Extract the text from the above document as if you were reading it naturally. "
+        "Return the tables in html format. Return the equations in LaTeX representation. "
+        "If there is an image in the document and image caption is not present, add a "
+        "small description of the image inside the <img></img> tag; otherwise, add the "
+        "image caption inside <img></img>. Watermarks should be wrapped in brackets. "
+        "Ex: <watermark>OFFICIAL COPY</watermark>. Page numbers should be wrapped in "
+        "brackets. Ex: <page_number>14</page_number> or <page_number>9/22</page_number>. "
+        "Prefer using ☐ and ☑ for check boxes."
+    ),
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+    transformers_prompt_style=TransformersPromptStyle.CHAT,
+    supported_devices=[
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.MPS,
+        AcceleratorDevice.XPU,
+    ],
+    torch_dtype="bfloat16",
+    scale=2.0,
+    temperature=0.0,
+    max_new_tokens=15000,
+)
+
+# MLX uses the converted qwen2_5_vl-compatible checkpoint published by
+# mlx-community for Apple Silicon inference.
+NANONETS_OCR2_MLX = InlineVlmOptions(
+    repo_id="mlx-community/Nanonets-OCR2-3B-bf16",
+    prompt=NANONETS_OCR2_TRANSFORMERS.prompt,
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.MLX,
+    supported_devices=[AcceleratorDevice.MPS],
+    scale=2.0,
+    temperature=0.0,
+    max_new_tokens=15000,
+)
+
+NANONETS_OCR2_VLLM = NANONETS_OCR2_TRANSFORMERS.model_copy(deep=True)
+NANONETS_OCR2_VLLM.inference_framework = InferenceFramework.VLLM
+
+NANONETS_OCR2_VLLM_API = ApiVlmOptions(
+    url="http://localhost:8000/v1/chat/completions",
+    params=dict(
+        model="nanonets/Nanonets-OCR2-3B",
+        max_tokens=15000,
+    ),
+    prompt=NANONETS_OCR2_TRANSFORMERS.prompt,
+    timeout=90,
+    scale=2.0,
+    temperature=0.0,
+    concurrency=4,
+    response_format=ResponseFormat.MARKDOWN,
+)
+
+NANONETS_OCR2_LMSTUDIO_API = ApiVlmOptions(
+    url=AnyUrl("http://localhost:1234/v1/chat/completions"),
+    params=dict(
+        model="nanonets-ocr2-3b",
+        max_tokens=15000,
+    ),
+    prompt=NANONETS_OCR2_TRANSFORMERS.prompt,
+    timeout=120,
+    scale=2.0,
+    temperature=0.0,
+    concurrency=2,
+    response_format=ResponseFormat.MARKDOWN,
+)
+
 # GoT 2.0
 GOT2_TRANSFORMERS = InlineVlmOptions(
     repo_id="stepfun-ai/GOT-OCR-2.0-hf",
@@ -435,6 +508,9 @@ class VlmModelType(str, Enum):
     GOT_OCR_2 = "got_ocr_2"
     GRANITEDOCLING = "granite_docling"
     GRANITEDOCLING_VLLM = "granite_docling_vllm"
+    NANONETS_OCR2 = "nanonets_ocr2"
+    NANONETS_OCR2_VLLM = "nanonets_ocr2_vllm"
+    NANONETS_OCR2_LMSTUDIO = "nanonets_ocr2_lmstudio"
     GLMOCR = "glm_ocr"
     GLMOCR_VLLM = "glm_ocr_vllm"
     LIGHTONOCR = "lightonocr"
