@@ -5,13 +5,12 @@ import logging
 import sys
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union, cast
 
 import torch
 from packaging import version
 from PIL.Image import Image
 from transformers import (
-    AutoConfig,
     AutoModel,
     AutoModelForCausalLM,
     AutoModelForImageTextToText,
@@ -49,93 +48,11 @@ from docling.utils.accelerator_utils import decide_device
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
+    from docling.models.inference_engines.vlm.transformers_runtime_adapters import (
+        TransformersRuntimeAdapter,
+    )
 
 _log = logging.getLogger(__name__)
-_FALCON_OCR_DEFAULT_PROMPT = "Extract the text content from this image."
-_FALCON_OCR_CATEGORY_BY_PROMPT_SUBSTRING = (
-    ("formula", "formula"),
-    ("table", "table"),
-    ("caption", "caption"),
-    ("footnote", "footnote"),
-    ("list-item", "list-item"),
-    ("page-footer", "page-footer"),
-    ("page-header", "page-header"),
-    ("section-header", "section-header"),
-    ("title", "title"),
-)
-
-
-def _value_mentions_falcon_ocr(value: Any) -> bool:
-    return isinstance(value, str) and (
-        "falcon-ocr" in value.lower() or "falcon_ocr" in value.lower()
-    )
-
-
-def _config_mentions_falcon_ocr(config_obj: Any) -> bool:
-    model_type = getattr(config_obj, "model_type", None)
-    if _value_mentions_falcon_ocr(model_type):
-        return True
-
-    architectures = getattr(config_obj, "architectures", None)
-    if isinstance(architectures, list | tuple) and any(
-        _value_mentions_falcon_ocr(architecture) for architecture in architectures
-    ):
-        return True
-
-    auto_map = getattr(config_obj, "auto_map", None)
-    return isinstance(auto_map, dict) and any(
-        _value_mentions_falcon_ocr(mapped_value) for mapped_value in auto_map.values()
-    )
-
-
-def _unwrap_compiled_vlm_model(
-    vlm_model: Optional[PreTrainedModel],
-) -> Optional[PreTrainedModel]:
-    return getattr(vlm_model, "_orig_mod", vlm_model)
-
-
-def _supports_falcon_ocr_native_generate(
-    vlm_model: Optional[PreTrainedModel],
-) -> bool:
-    base_model = _unwrap_compiled_vlm_model(vlm_model)
-    return base_model is not None and (
-        callable(getattr(base_model, "_generate_batch", None))
-        or callable(getattr(base_model, "generate", None))
-    )
-
-
-def _normalize_falcon_ocr_prompt(prompt: str) -> str:
-    normalized_prompt = prompt.strip() or _FALCON_OCR_DEFAULT_PROMPT
-    if "<|image|>" not in normalized_prompt:
-        normalized_prompt = f"<|image|>{normalized_prompt}"
-    if "<|OCR_PLAIN|>" not in normalized_prompt:
-        normalized_prompt = f"{normalized_prompt.rstrip()}\n<|OCR_PLAIN|>"
-    return normalized_prompt
-
-
-def _falcon_ocr_category_from_prompt(prompt: str) -> str:
-    normalized_prompt = prompt.lower()
-    for prompt_substring, category in _FALCON_OCR_CATEGORY_BY_PROMPT_SUBSTRING:
-        if prompt_substring in normalized_prompt:
-            return category
-    return "plain"
-
-
-def _force_falcon_ocr_eager_attention_config(config_obj: Any) -> None:
-    if config_obj is None:
-        return
-    if getattr(config_obj, "_attn_implementation", None) in {
-        None,
-        "sdpa",
-        "paged|sdpa",
-    }:
-        config_obj._attn_implementation = "eager"
-    if getattr(config_obj, "_attn_implementation_internal", None) in {
-        None,
-        "sdpa",
-        "paged|sdpa",
-    }:
-        config_obj._attn_implementation_internal = "eager"
 
 
 class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
@@ -149,8 +66,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self,
         options: TransformersVlmEngineOptions,
         accelerator_options: AcceleratorOptions,
-        artifacts_path: Optional[Union[Path, str]],
-        model_config: Optional["EngineModelConfig"] = None,
+        artifacts_path: Path | str | None,
+        model_config: "EngineModelConfig | None" = None,
     ):
         """Initialize the Transformers engine.
 
@@ -166,10 +83,10 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self.artifacts_path = artifacts_path
 
         # These will be set during initialization
-        self.device: Optional[str] = None
-        self.processor: Optional[ProcessorMixin] = None
-        self.vlm_model: Optional[PreTrainedModel] = None
-        self.generation_config: Optional[GenerationConfig] = None
+        self.device: str | None = None
+        self.processor: ProcessorMixin | None = None
+        self.vlm_model: PreTrainedModel | None = None
+        self.generation_config: GenerationConfig | None = None
 
         # Initialize immediately if model_config is provided
         if self.model_config is not None:
@@ -249,7 +166,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
 
         # Setup quantization if needed
-        quantization_config: Optional[BitsAndBytesConfig] = None
+        quantization_config: BitsAndBytesConfig | None = None
         if self.options.quantized:
             quantization_config = BitsAndBytesConfig(
                 load_in_8bit=self.options.load_in_8bit,
@@ -270,15 +187,16 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             model_cls = AutoModelForImageTextToText  # type: ignore[assignment]
 
         attn_implementation = self._get_attn_implementation()
-        model_config = None
-        if _value_mentions_falcon_ocr(repo_id):
-            model_config = AutoConfig.from_pretrained(
-                artifacts_path,
-                trust_remote_code=self.options.trust_remote_code,
+        runtime_adapter = self._get_runtime_adapter()
+        resolved_model_config = None
+        if runtime_adapter is not None:
+            resolved_model_config = runtime_adapter.build_model_config(
+                artifacts_path=artifacts_path,
                 revision=revision,
+                options=self.options,
+                model_config=self.model_config,
                 attn_implementation=attn_implementation,
             )
-            _force_falcon_ocr_eager_attention_config(model_config)
 
         # Load processor
         self.processor = AutoProcessor.from_pretrained(
@@ -304,7 +222,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             trust_remote_code=self.options.trust_remote_code,
             revision=revision,
             quantization_config=quantization_config,
-            config=model_config,
+            config=resolved_model_config,
         )
 
         self.vlm_model.eval()
@@ -312,7 +230,11 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         # Optionally compile model for better performance (model must be in eval mode first)
         # Works for Python < 3.14 with any torch 2.x
         # Works for Python >= 3.14 with torch >= 2.10
-        if self.options.compile_model:
+        if self.options.compile_model and runtime_adapter is not None:
+            _log.warning(
+                "Model compilation requested but disabled because this model uses a custom Transformers runtime adapter."
+            )
+        elif self.options.compile_model:
             if sys.version_info < (3, 14):
                 self.vlm_model = torch.compile(self.vlm_model)  # type: ignore[assignment]
             elif version.parse(torch.__version__) >= version.parse("2.10"):
@@ -364,6 +286,15 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             return None
         return getattr(self.processor, "tokenizer", None) or self.processor
 
+    def _get_runtime_adapter(self) -> "type[TransformersRuntimeAdapter] | None":
+        if self.model_config is None:
+            return None
+
+        runtime_adapter = self.model_config.extra_config.get(
+            "transformers_runtime_adapter"
+        )
+        return cast("type[TransformersRuntimeAdapter] | None", runtime_adapter)
+
     def _get_attn_implementation(self) -> str:
         """Resolve the attention backend for model loading.
 
@@ -377,8 +308,6 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 )
             if explicit_attn is not None:
                 return explicit_attn
-            if _value_mentions_falcon_ocr(self.model_config.repo_id):
-                return "eager"
 
         if (
             self.device is not None
@@ -388,90 +317,6 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             return "flash_attention_2"
 
         return "sdpa"
-
-    def _uses_falcon_ocr_native_generate(self) -> bool:
-        return _value_mentions_falcon_ocr(
-            self.model_config.repo_id if self.model_config is not None else None
-        ) or _config_mentions_falcon_ocr(
-            getattr(_unwrap_compiled_vlm_model(self.vlm_model), "config", None)
-        )
-
-    def _get_falcon_ocr_generation_kwargs(
-        self,
-        first_input: VlmEngineInput,
-    ) -> dict[str, Any]:
-        extra_generation_config = dict(first_input.extra_generation_config or {})
-        generation_kwargs: dict[str, Any] = {
-            "max_new_tokens": first_input.max_new_tokens,
-            "temperature": first_input.temperature,
-            "top_k": extra_generation_config.get("top_k"),
-            "min_dimension": extra_generation_config.get("min_dimension", 64),
-            "max_dimension": extra_generation_config.get("max_dimension", 1024),
-        }
-        if "seed" in extra_generation_config:
-            generation_kwargs["seed"] = extra_generation_config["seed"]
-        return generation_kwargs
-
-    def _predict_batch_with_falcon_ocr_native_generate(
-        self, input_batch: List[VlmEngineInput]
-    ) -> List[VlmEngineOutput]:
-        vlm_model = _unwrap_compiled_vlm_model(self.vlm_model)
-        if vlm_model is None:
-            raise RuntimeError("Falcon-OCR model is not loaded.")
-
-        ensure_device_buffers = getattr(vlm_model, "_ensure_device_buffers", None)
-        if callable(ensure_device_buffers):
-            ensure_device_buffers()
-
-        first_input = input_batch[0]
-        generation_kwargs = self._get_falcon_ocr_generation_kwargs(first_input)
-        metadata = {"falcon_ocr_native_generate": True}
-
-        generate_batch = getattr(vlm_model, "_generate_batch", None)
-        if callable(generate_batch):
-            image_prompt_pairs = [
-                (input_data.image, _normalize_falcon_ocr_prompt(input_data.prompt))
-                for input_data in input_batch
-            ]
-            generated_texts = generate_batch(
-                image_prompt_pairs,
-                **generation_kwargs,
-            )
-        else:
-            public_generate = getattr(vlm_model, "generate", None)
-            if not callable(public_generate):
-                raise RuntimeError(
-                    "Falcon-OCR model exposes no compatible generate method."
-                )
-
-            generate_kwargs = {
-                "category": [
-                    _falcon_ocr_category_from_prompt(input_data.prompt)
-                    for input_data in input_batch
-                ],
-                **generation_kwargs,
-                "compile": False,
-            }
-            try:
-                generated_texts = public_generate(
-                    [input_data.image for input_data in input_batch],
-                    **generate_kwargs,
-                )
-            except TypeError as exc:
-                if "compile" not in str(exc):
-                    raise
-                generate_kwargs.pop("compile", None)
-                generated_texts = public_generate(
-                    [input_data.image for input_data in input_batch],
-                    **generate_kwargs,
-                )
-
-            metadata["falcon_ocr_public_generate"] = True
-
-        return [
-            VlmEngineOutput(text=text, metadata=dict(metadata))
-            for text in generated_texts
-        ]
 
     def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs efficiently.
@@ -492,16 +337,22 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             return []
 
         # Model should already be loaded via initialize()
-        if self.vlm_model is None or self.processor is None:
+        if self.vlm_model is None:
             raise RuntimeError(
                 "Model not loaded. Ensure EngineModelConfig was provided during initialization."
             )
 
-        if (
-            self._uses_falcon_ocr_native_generate()
-            and _supports_falcon_ocr_native_generate(self.vlm_model)
-        ):
-            return self._predict_batch_with_falcon_ocr_native_generate(input_batch)
+        runtime_adapter = self._get_runtime_adapter()
+        if runtime_adapter is not None:
+            return runtime_adapter.predict_batch(
+                model=self.vlm_model,
+                input_batch=input_batch,
+            )
+
+        if self.processor is None:
+            raise RuntimeError(
+                "Processor not loaded. Ensure EngineModelConfig was provided during initialization."
+            )
 
         # Get prompt style from first input's extra config
         first_input = input_batch[0]

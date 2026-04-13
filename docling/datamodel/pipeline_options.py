@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Any, ClassVar, Literal, Optional, Union
+from typing import Annotated, Any, Callable, ClassVar, Literal, Optional, Union
 
 from docling_core.types.doc import PictureClassificationLabel
 from pydantic import (
@@ -816,6 +816,7 @@ class PictureDescriptionVlmEngineOptions(
     kind: ClassVar[Literal["picture_description_vlm_engine"]] = (
         "picture_description_vlm_engine"
     )
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     model_spec: VlmModelSpec = Field(
         description="Model specification with runtime-specific overrides"
@@ -841,6 +842,31 @@ class PictureDescriptionVlmEngineOptions(
             )
         ),
     ] = {"max_new_tokens": 200, "do_sample": False}
+    prompt_builder: Annotated[
+        Callable[[str], str] | None,
+        Field(
+            description=(
+                "Optional prompt post-processor applied before requests are sent "
+                "to the runtime."
+            ),
+            exclude=True,
+        ),
+    ] = None
+    extra_generation_config: Annotated[
+        dict[str, Any],
+        Field(
+            default_factory=dict,
+            description=(
+                "Additional runtime generation options merged into each engine "
+                "request."
+            )
+        ),
+    ]
+
+    def build_prompt(self, prompt: str) -> str:
+        if self.prompt_builder is None:
+            return prompt
+        return self.prompt_builder(prompt)
 
 
 # SmolVLM
@@ -884,6 +910,8 @@ class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         )
     """
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     model_spec: VlmModelSpec = Field(
         description="Model specification with runtime-specific overrides"
     )
@@ -903,6 +931,31 @@ class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
     force_backend_text: bool = Field(
         default=False, description="Force use of backend text extraction instead of VLM"
     )
+    prompt_builder: Annotated[
+        Callable[[str], str] | None,
+        Field(
+            description=(
+                "Optional prompt post-processor applied before requests are sent "
+                "to the runtime."
+            ),
+            exclude=True,
+        ),
+    ] = None
+    extra_generation_config: Annotated[
+        dict[str, Any],
+        Field(
+            default_factory=dict,
+            description=(
+                "Additional runtime generation options merged into each engine "
+                "request."
+            )
+        ),
+    ]
+
+    def build_prompt(self, prompt: str) -> str:
+        if self.prompt_builder is None:
+            return prompt
+        return self.prompt_builder(prompt)
 
 
 class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
@@ -919,6 +972,8 @@ class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         # Use Granite Docling preset
         options = CodeFormulaVlmOptions.from_preset("granite_docling")
     """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     model_spec: VlmModelSpec = Field(
         description="Model specification with runtime-specific overrides"
@@ -937,6 +992,31 @@ class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
     extract_formulas: bool = Field(
         default=True, description="Extract mathematical formulas"
     )
+    prompt_builder: Annotated[
+        Callable[[str], str] | None,
+        Field(
+            description=(
+                "Optional prompt post-processor applied before requests are sent "
+                "to the runtime."
+            ),
+            exclude=True,
+        ),
+    ] = None
+    extra_generation_config: Annotated[
+        dict[str, Any],
+        Field(
+            default_factory=dict,
+            description=(
+                "Additional runtime generation options merged into each engine "
+                "request."
+            )
+        ),
+    ]
+
+    def build_prompt(self, prompt: str) -> str:
+        if self.prompt_builder is None:
+            return prompt
+        return self.prompt_builder(prompt)
 
 
 # =============================================================================

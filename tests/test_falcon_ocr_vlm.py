@@ -15,7 +15,15 @@ from docling.datamodel.pipeline_options_vlm_model import (
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.models.inference_engines.vlm.base import VlmEngineType
+from docling.models.inference_engines.vlm.transformers_runtime_adapters import (
+    FalconOCRTransformersAdapter,
+)
 from docling.pipeline.vlm_pipeline import VlmPipeline
+
+pytestmark = pytest.mark.skipif(
+    os.getenv("CI"),
+    reason="Skipping VLM unit tests in CI",
+)
 
 
 def test_falcon_ocr_preset_exists():
@@ -49,11 +57,11 @@ def test_falcon_ocr_preset_engine_config():
         tf_config.extra_config["transformers_model_type"]
         == TransformersModelType.AUTOMODEL_CAUSALLM
     )
-    assert (
-        tf_config.extra_config["transformers_prompt_style"]
-        == TransformersPromptStyle.CHAT
-    )
     assert tf_config.extra_config["attn_implementation"] == "eager"
+    assert (
+        tf_config.extra_config["transformers_runtime_adapter"]
+        == FalconOCRTransformersAdapter
+    )
 
     # API overrides should have correct model params
     api_overrides = spec.api_overrides
@@ -76,13 +84,22 @@ def test_falcon_ocr_preset_instantiation():
     assert options.model_spec.default_repo_id == "tiiuae/Falcon-OCR"
     assert options.model_spec.response_format == ResponseFormat.MARKDOWN
     assert options.engine_options is not None
+    assert (
+        options.extra_generation_config["transformers_prompt_style"]
+        == TransformersPromptStyle.RAW
+    )
+    assert (
+        options.build_prompt("Keep formulas")
+        == "<|image|>Keep formulas\n<|OCR_PLAIN|>"
+    )
+    assert (
+        options.build_prompt("")
+        == "<|image|>Extract the text content from this image.\n<|OCR_PLAIN|>"
+    )
 
 
 def test_e2e_falcon_ocr_conversion():
     """E2E test with an OpenAI-compatible Falcon-OCR server."""
-    if os.getenv("CI"):
-        pytest.skip("Skipping in CI environment")
-
     try:
         import requests
 
