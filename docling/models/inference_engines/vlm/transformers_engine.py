@@ -205,6 +205,9 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             revision=revision,
         )
         tokenizer = self._get_tokenizer()
+        # Tokenizer-like processors expose ``padding_side`` directly, while some
+        # multimodal processor wrappers do not. Left padding is only applied when
+        # that tokenizer interface is present.
         if tokenizer is not None and hasattr(tokenizer, "padding_side"):
             tokenizer.padding_side = "left"
 
@@ -501,6 +504,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         input_len = inputs["input_ids"].shape[1]
         trimmed_sequences = generated_ids[:, input_len:]
 
+        # Transformers processors are not consistent here: some expose decode on
+        # the processor wrapper, others only on the underlying tokenizer.
         decode_fn = getattr(self.processor, "batch_decode", None)
         if decode_fn is None and tokenizer is not None:
             decode_fn = getattr(tokenizer, "batch_decode", None)
@@ -512,6 +517,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         decoded_texts = decode_fn(trimmed_sequences, **decoder_config)
 
         # Remove padding
+        # Tokenizer-like processors may omit ``pad_token`` entirely; only strip
+        # it when that attribute exists and is populated.
         pad_token = getattr(tokenizer, "pad_token", None)
         if pad_token:
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]

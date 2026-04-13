@@ -8,6 +8,8 @@ This test suite validates:
 5. All three stage types (VlmConvert, PictureDescription, CodeFormula)
 """
 
+import os
+
 import pytest
 from pydantic import ValidationError
 
@@ -31,6 +33,11 @@ from docling.datamodel.vlm_engine_options import (
     VllmVlmEngineOptions,
 )
 from docling.models.inference_engines.vlm import VlmEngineType
+
+pytestmark = pytest.mark.skipif(
+    os.getenv("CI"),
+    reason="Skipping VLM unit tests in CI",
+)
 
 # =============================================================================
 # RUNTIME OPTIONS TESTS

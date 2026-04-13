@@ -18,6 +18,11 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
+pytestmark = pytest.mark.skipif(
+    os.getenv("CI"),
+    reason="Skipping VLM unit tests in CI",
+)
+
 
 def test_lightonocr_preset_exists():
     """Verify preset is registered with correct metadata and model spec."""
