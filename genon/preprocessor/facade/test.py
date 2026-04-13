@@ -41,7 +41,10 @@ async def process_document():
     kwargs['org_filename'] = os.path.basename(file_path)
     kwargs['max_tokens'] = 512
     # 🚀 True로 설정하면 jayu_sdk_result / docling_result / vectors_result 저장
+    # ※ save_result / save_path 는 attachment_processor 전용 기능입니다.
+    #    결과 파일은 save_path 하위에 파일명 기준 디렉토리로 저장됩니다.
     kwargs['save_result'] = True
+    kwargs['save_path'] = './results'
     
     vectors = await doc_processor(mock_request, file_path, **kwargs)
     return vectors
