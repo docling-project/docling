@@ -656,3 +656,104 @@ class DocumentConverter:
                 )
 
         return conv_res
+
+    def get_vlm_engine(self):
+        """Return the VLM inference engine from the initialised VlmPipeline, or None.
+
+        This allows callers to run batched image inference without going through
+        the full per-document ``convert()`` path.
+        """
+        from docling.pipeline.vlm_pipeline import VlmPipeline
+
+        for (_cls, _hash), pipeline in self.initialized_pipelines.items():
+            if isinstance(pipeline, VlmPipeline) and pipeline.build_pipe:
+                stage = pipeline.build_pipe[0]
+                if hasattr(stage, "engine"):
+                    return stage.engine
+        pipeline = self._get_pipeline(InputFormat.IMAGE)
+        if isinstance(pipeline, VlmPipeline) and pipeline.build_pipe:
+            stage = pipeline.build_pipe[0]
+            if hasattr(stage, "engine"):
+                return stage.engine
+        return None
+
+    def convert_images(
+        self,
+        images,
+        *,
+        batch_size: int = 16,
+        prompt: Optional[str] = None,
+        max_new_tokens: int = 4096,
+        temperature: float = 0.0,
+        stop_strings: Optional[list[str]] = None,
+    ):
+        """Run VLM inference on a list of PIL images and return per-image text.
+
+        This bypasses PDF parsing / page rendering entirely, sending images
+        straight to the VLM engine in batches.  Useful for evaluation loops
+        that already have page images.
+
+        Args:
+            images: Iterable of ``PIL.Image.Image`` objects.
+            batch_size: How many images to send to the engine per call.
+            prompt: Text prompt for the model.  ``None`` uses the preset default.
+            max_new_tokens: Maximum generation length per image.
+            temperature: Sampling temperature.
+            stop_strings: Optional stop strings for generation.
+
+        Returns:
+            List of dicts, one per image, each containing::
+
+                {"text": str, "stop_reason": str | None, "metadata": dict}
+        """
+        from docling.models.inference_engines.vlm.base import (
+            VlmEngineInput,
+        )
+
+        engine = self.get_vlm_engine()
+        if engine is None:
+            raise RuntimeError(
+                "No VLM engine available.  Make sure the converter was "
+                "created with a VLM pipeline (mode=vlm, vlm_engine=inline-vllm)."
+            )
+
+        if prompt is None:
+            if hasattr(engine, "model_config") and engine.model_config is not None:
+                prompt = getattr(engine.model_config, "prompt", None)
+            if prompt is None:
+                prompt = "Convert this page to docling."
+
+        if stop_strings is None:
+            if hasattr(engine, "model_config") and engine.model_config is not None:
+                spec = getattr(engine.model_config, "stop_strings", None)
+                if spec:
+                    stop_strings = list(spec)
+            if stop_strings is None:
+                stop_strings = []
+
+        image_list = list(images)
+        results: list[dict] = []
+
+        for chunk in chunkify(image_list, batch_size):
+            engine_inputs = [
+                VlmEngineInput(
+                    image=img,
+                    prompt=prompt,
+                    temperature=temperature,
+                    max_new_tokens=max_new_tokens,
+                    stop_strings=stop_strings,
+                    extra_generation_config={"skip_special_tokens": False},
+                )
+                for img in chunk
+            ]
+            outputs = engine.predict_batch(engine_inputs)
+            for out in outputs:
+                results.append(
+                    {
+                        "text": out.text,
+                        "stop_reason": out.stop_reason,
+                        "metadata": out.metadata,
+                    }
+                )
+
+        return results
