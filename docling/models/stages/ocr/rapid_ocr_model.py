@@ -26,6 +26,7 @@ _ModelPathEngines = Literal["onnxruntime", "torch"]
 _ModelPathTypes = Literal[
     "det_model_path", "cls_model_path", "rec_model_path", "rec_keys_path", "font_path"
 ]
+_RAPIDOCR_BACKENDS: tuple[_ModelPathEngines, ...] = ("onnxruntime", "torch")
 
 
 class _ModelPathDetail(TypedDict):
@@ -103,16 +104,19 @@ class RapidOcrModel(BaseOcrModel):
                 key: _build_model_detail(path)
                 for key, path in _RAPIDOCR_CHINESE_MODEL_PATHS[backend].items()
             }
-            for backend in ("onnxruntime", "torch")
+            for backend in _RAPIDOCR_BACKENDS
         },
         "english": {
             backend: {
                 key: _build_model_detail(path)
                 for key, path in _RAPIDOCR_ENGLISH_MODEL_PATHS[backend].items()
             }
-            for backend in ("onnxruntime", "torch")
+            for backend in _RAPIDOCR_BACKENDS
         },
     }
+    _default_models: dict[
+        _ModelPathEngines, dict[_ModelPathTypes, _ModelPathDetail]
+    ] = _models_by_language[_RAPIDOCR_DEFAULT_LANGUAGE]
 
     def __init__(
         self,
