@@ -99,7 +99,7 @@ build-backend = "hatchling.build"
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-addopts = "-p no:cacheprovider"
+addopts = "-p no:cacheprovider -m \"not update_baseline\""
 markers = [
     "smoke: 핵심 경로가 죽지 않는지 빠르게 확인하는 smoke 테스트",
     "unit: 격리된 함수/클래스 단위 테스트",

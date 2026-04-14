@@ -41,7 +41,7 @@ class HwpDocumentBackend(DeclarativeDocumentBackend):
                     f"HWP 파일을 변환하는 중에 오류가 발생하였습니다. "
                     f"HWPX로 직접 변환하신 후 다시 첨부해 주시기 바랍니다. "
                     f"번거롭게 해드려 죄송합니다.\n오류 내용: {e}"
-                )
+                ) from e
             finally:
                 # BytesIO에서 만든 임시 파일 삭제
                 if isinstance(path_or_stream, Path) and path_or_stream.name.startswith('temp_'):

@@ -28,6 +28,7 @@ from docling_core.types.doc import (
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import HwpConversionError
 
 _log = logging.getLogger(__name__)
 
@@ -229,30 +230,51 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             ]
             
             # 4-b) 실제 SDK 실행
-            subprocess.run(
-                cmd, 
-                capture_output=True, 
-                check=True, 
-                text=True,
-                cwd=str(SDK_DIR)
-            )
+            try:
+                subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    check=True,
+                    text=True,
+                    cwd=str(SDK_DIR),
+                    timeout=600,
+                )
+            except subprocess.TimeoutExpired as e:
+                raise HwpConversionError(
+                    f"SDK 실행 타임아웃 (600초 초과): {self.source_path.name}"
+                ) from e
+            except subprocess.CalledProcessError as e:
+                raise HwpConversionError(
+                    f"SDK 실행 실패 (exit code={e.returncode}): {self.source_path.name}\n"
+                    f"stderr: {e.stderr}"
+                ) from e
 
             # 5. '.info' 활용 설정
-            self._setup_pages(doc, info_out)
+            try:
+                self._setup_pages(doc, info_out)
+            except Exception as e:
+                raise HwpConversionError(
+                    f"페이지 정보 로드 실패: {self.source_path.name}"
+                ) from e
 
             # 6. SDK 결과를 hwp_data에 저장 (읽기 로직 단순화)
             hwp_data = []
-            with open(json_out, "r", encoding="utf-8") as f:
-                for line in f:
-                    clean_line = line.strip()
-                    if not clean_line:
-                        continue
-                    try:
-                        batch = json.loads(clean_line, strict=False)
-                        hwp_data.append(batch) # SDK 결과는 항상 리스트이므로 바로 append
-                    except json.JSONDecodeError as e:
-                        _log.warning(f"파싱 실패 (스킵): {e}")
-                        continue
+            try:
+                with open(json_out, "r", encoding="utf-8") as f:
+                    for line in f:
+                        clean_line = line.strip()
+                        if not clean_line:
+                            continue
+                        try:
+                            batch = json.loads(clean_line, strict=False)
+                            hwp_data.append(batch) # SDK 결과는 항상 리스트이므로 바로 append
+                        except json.JSONDecodeError as e:
+                            _log.warning(f"파싱 실패 (스킵): {e}")
+                            continue
+            except OSError as e:
+                raise HwpConversionError(
+                    f"SDK 결과 파일 읽기 실패: {json_out}"
+                ) from e
 
             # 7. hwp_data를 Docling 구조로 변환
             self.current_img_dir = img_dir
@@ -586,3 +608,4 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             except Exception:
                 pass
         self.temp_input_path = None
+        super().unload()

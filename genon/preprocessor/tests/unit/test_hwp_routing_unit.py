@@ -45,14 +45,15 @@ async def test_non_hwp_extension_does_not_route_to_hwp_processor(attachment_proc
     """
     dp = attachment_processor()
     dp.hwp_processor = AsyncMock(return_value=[])
+    dp.docx_processor = AsyncMock(return_value=[])
+    dp.load_documents = MagicMock(return_value=[])
+    dp.split_documents = MagicMock(return_value=[])
+    dp.compose_vectors = MagicMock(return_value=[])
 
     fake_request = MagicMock()
     fake_request.is_disconnected = AsyncMock(return_value=False)
 
-    try:
-        await dp(fake_request, f"/tmp/test_file{ext}")
-    except Exception:
-        pass  # 파일이 없으므로 에러는 예상됨
+    await dp(fake_request, f"/tmp/test_file{ext}")
 
     dp.hwp_processor.assert_not_called()
 
