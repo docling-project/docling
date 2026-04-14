@@ -31,6 +31,7 @@ source .venv/bin/activate && pytest
 - `test_pdf_regression.py`: PDF 파일 regression 테스트
 - `test_docx_regression.py`: DOCX 파일 regression 테스트
 - `test_md_regression.py`: Markdown 파일 regression 테스트
+- `test_hwp_regression.py`: HWP 파일 regression 테스트
 - `test_hwpx_regression.py`: HWPX 파일 regression 테스트
 - `test_pptx_regression.py`: PPTX 파일 regression 테스트
 - `baselines/`: 각 테스트 파일의 baseline 데이터 (JSON 형식)
@@ -42,29 +43,31 @@ source .venv/bin/activate && pytest
 
 ## 체크 항목
 
-각 테스트는 다음 항목들을 검증합니다:
+> ⚠️ **형식별 활성화 상태가 다릅니다.** HWP/HWPX는 아래 항목이 모두 활성화되어 있으며,
+> 나머지 형식(PDF/DOCX/MD/PPTX)은 현재 assert가 비활성화(주석 처리)된 상태입니다.
+
+### HWP / HWPX (활성화)
 
 1. **Vector 개수** (`num_vectors`)
    - 문서 처리 결과(vectors)의 개수 일관성 확인
    - 현재값 == baseline값
 
-2. **Label 분포** (`label_distribution`)
-   - 문서 구조 분석 결과의 일관성
-   - `chunk_bboxes` 내부의 각 bbox `type` 필드에서 추출
-   - Label 종류 예시:
-     - DOCX: `list_item`, `paragraph`, `table`
-     - PDF: `picture`, `section_header`, `text`, `page_footer`, `list_item`, `checkbox_unselected`, `table`
-     - MD: `title`, `text`, `section_header`, `list_item`, `code`
-   - 현재값 == baseline값 (각 label별 개수 완전 일치)
-
-3. **전체 텍스트 글자 수** (`total_characters`)
+2. **전체 텍스트 글자 수** (`total_characters`)
    - 전체 텍스트 길이 변화 감지
    - 허용 범위: baseline 대비 ±5% 이내
 
-4. **텍스트 유사도** (각 vector별)
+3. **텍스트 유사도** (각 vector별)
    - 각 vector의 텍스트 내용 유사도 확인
    - 최소 유사도: 85% 이상 (difflib.SequenceMatcher 사용)
-   - ⚠️ HWPX는 비결정적 처리로 인해 텍스트 유사도 검사 비활성화됨
+
+### PDF / DOCX / MD / PPTX (비활성화)
+
+아래 항목들은 코드에 구현되어 있으나 현재 assert가 주석 처리된 상태입니다:
+
+- Vector 개수 일치 확인
+- Label 분포(`label_distribution`) 일치 확인
+- 전체 글자 수 ±5% 이내 확인
+- 각 vector 텍스트 유사도 ≥85% 확인
 
 ## 새로운 파일 형식 추가
 
