@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -225,3 +226,41 @@ def test_confidence(test_doc_path):
 
     assert doc_result.confidence.mean_grade == QualityGrade.EXCELLENT
     assert doc_result.confidence.low_grade == QualityGrade.EXCELLENT
+
+
+def test_pipeline_cache_with_chart_extraction():
+    """Test that chart extraction doesn't cause pipeline cache invalidation.
+
+    Verifies the fix for a bug where enabling chart extraction mutated shared
+    pipeline_options, changing its hash and causing unnecessary re-initialization.
+    """
+
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.do_chart_extraction = True
+
+    with (
+        patch(
+            "docling.pipeline.base_pipeline.ChartExtractionModelGraniteVisionV4"
+        ) as mock_chart,
+        patch(
+            "docling.pipeline.base_pipeline.DocumentPictureClassifier"
+        ) as mock_classifier,
+    ):
+        mock_chart.return_value = Mock(enabled=True)
+        mock_classifier.return_value = Mock(enabled=True)
+
+        converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(
+                    pipeline_options=pipeline_options,
+                )
+            }
+        )
+
+        converter.initialize_pipeline(InputFormat.PDF)
+        assert len(converter._get_initialized_pipelines()) == 1
+
+        converter._get_pipeline(InputFormat.PDF)
+        assert len(converter._get_initialized_pipelines()) == 1, (
+            "Pipeline should be reused from cache, not re-initialized"
+        )
