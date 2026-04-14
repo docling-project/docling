@@ -770,7 +770,7 @@ def test_latex_nested_formatting_macros():
 
         all_text = " ".join(t.text for t in doc.texts)
         assert expected in all_text, (
-            f"[{description}] expected {repr(expected)} in output, got: {repr(all_text)}"
+            f"[{description}] expected {expected!r} in output, got: {all_text!r}"
         )
 
         leaked = re.findall(r"\\[a-zA-Z]+", all_text)
