@@ -1122,12 +1122,12 @@ def _save_result_files(file_path: str, vectors: list, document=None):
         _log.info(f"vectors_result 저장 완료: {vectors_dir}")
 
     except Exception as e:
-        _log.error(f"_save_result_files 실패: {e}")
+        _log.error(f"_save_result_files 실패 (file_path={file_path}): {e}")
 
 
 class HwpProcessor:
     def __init__(self):
-        self.page_chunk_counts = defaultdict(int)
+        pass
 
     def get_paths(self, file_path: str):
         """이미지 등 리소스가 저장될 경로 계산 (기존 로직 유지)"""
@@ -1186,20 +1186,21 @@ class HwpProcessor:
         """docling/vectors 결과를 docparser_result 디렉토리에 저장"""
         _save_result_files(file_path, vectors, document)
 
-    def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
+    def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> tuple[List[DocChunk], dict[int, int]]:
         """HybridChunker를 사용하여 문서 분할 및 페이지별 청크 수 집계"""
         # HybridChunker는 상단에 임포트되어 있어야 함
         chunker = HybridChunker(max_tokens=int(1e30), merge_peers=True, include_headings=False)
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
-        
-        self.page_chunk_counts.clear()
+
+        # 요청 단위 로컬 변수로 관리 (동시 요청 간 공유 상태 방지)
+        page_chunk_counts: dict[int, int] = defaultdict(int)
         for chunk in chunks:
             # 첫 번째 아이템의 출처(prov)를 기준으로 페이지 번호 획득
             p_no = chunk.meta.doc_items[0].prov[0].page_no
-            self.page_chunk_counts[p_no] += 1
-        return chunks
+            page_chunk_counts[p_no] += 1
+        return chunks, page_chunk_counts
 
-    async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], request: Any, **kwargs: dict) -> list[dict]:
+    async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], page_chunk_counts: dict[int, int], request: Any, **kwargs: dict) -> list[dict]:
         """빌더를 사용하여 최종 GenOSVectorMeta 리스트 생성"""
         global_metadata = dict(
             n_chunk_of_doc=len(chunks),
@@ -1224,7 +1225,7 @@ class HwpProcessor:
             builder = GenOSVectorMetaBuilder()
             vector_obj = (builder
                       .set_text(content)
-                      .set_page_info(chunk_page, chunk_index_on_page, self.page_chunk_counts[chunk_page])
+                      .set_page_info(chunk_page, chunk_index_on_page, page_chunk_counts[chunk_page])
                       .set_chunk_index(chunk_idx)
                       .set_global_metadata(**global_metadata)
                       .set_chunk_bboxes(chunk.meta.doc_items, document)
@@ -1258,11 +1259,11 @@ class HwpProcessor:
         )
 
         # 3. 청킹
-        chunks: list[DocChunk] = self.split_documents(document, **kwargs)
+        chunks, page_chunk_counts = self.split_documents(document, **kwargs)
 
         # 4. 벡터화 (빌더 활용)
         if len(chunks) >= 1:
-            vectors = await self.compose_vectors(document, chunks, request, **kwargs)
+            vectors = await self.compose_vectors(document, chunks, page_chunk_counts, request, **kwargs)
 
             if kwargs.get('dump_sdk_output', False):
                 self._save_results(file_path, document, vectors)

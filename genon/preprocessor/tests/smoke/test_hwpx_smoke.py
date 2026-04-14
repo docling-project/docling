@@ -19,5 +19,5 @@ def test_hwpx_load_and_chunk(basic_processor):
     doc = dp.hwp_processor.load_documents(str(SAMPLE))
     assert doc is not None
 
-    chunks = dp.hwp_processor.split_documents(doc)
+    chunks, page_chunk_counts = dp.hwp_processor.split_documents(doc)
     assert isinstance(chunks, list) and len(chunks) >= 1
