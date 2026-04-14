@@ -1,6 +1,7 @@
 import logging
 import re
 import warnings
+from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
@@ -225,6 +226,30 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if k >= 0 and v is None:
                 return k
         return 0
+
+    @contextmanager
+    def _isolated_list_context(self):
+        """Preserve list state during table cell processing.
+
+        This context manager saves the list-related state (history, level_at_new_list,
+        and parents) before entering a table cell, and restores it after processing.
+        This ensures that lists in different table cells are treated independently,
+        even when they share the same numId.
+        """
+        saved_history = {
+            "names": self.history["names"].copy(),
+            "levels": self.history["levels"].copy(),
+            "numids": self.history["numids"].copy(),
+            "indents": self.history["indents"].copy(),
+        }
+        saved_level_at_new_list = self.level_at_new_list
+        saved_parents = self.parents.copy()
+        try:
+            yield
+        finally:
+            self.history = saved_history
+            self.level_at_new_list = saved_level_at_new_list
+            self.parents = saved_parents
 
     def _walk_linear(
         self,
@@ -1620,7 +1645,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 rich_table_cell: bool = self._is_rich_table_cell(cell)
 
                 if rich_table_cell:
-                    _, provs_in_cell = self._walk_linear(cell._element, doc)
+                    with self._isolated_list_context():
+                        _, provs_in_cell = self._walk_linear(cell._element, doc)
                 _log.debug(f"Table cell {row_idx},{col_idx} rich? {rich_table_cell}")
 
                 if len(provs_in_cell) > 0:

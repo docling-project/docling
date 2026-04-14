@@ -1,6 +1,5 @@
 import logging
 import os
-import warnings
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -111,7 +110,7 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument
             f"DoclingDocument verification failed on {docx_path}"
         )
 
-        if docx_path.name == "word_tables.docx":
+        if docx_path.name in {"word_tables.docx", "docx_rich_cells.docx"}:
             pred_html: str = doc.export_to_html()
             assert verify_export(
                 pred_text=pred_html,
@@ -215,6 +214,14 @@ def test_is_rich_table_cell(docx_paths):
     gt_cells.extend([False, False, False, True, True, True])
     # table: Table with pictures
     gt_cells.extend([False, False, False, True, True, False])
+    # table: Lists with same numId in different cells
+    gt_cells.extend([True, True])
+    # table: Lists with different numIds in different cells
+    gt_cells.extend([True, True])
+    # table: Multiple columns with lists
+    gt_cells.extend([True, True, True, True])
+    # table: Mixed content - list and regular text in different cells
+    gt_cells.extend([True, False])
     gt_it = iter(gt_cells)
 
     for idx_t, table in enumerate(backend.docx_obj.tables):
