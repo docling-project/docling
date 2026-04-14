@@ -148,3 +148,16 @@ def test_model_invalid_backend_returns_empty_prediction():
     results = model.predict_tables(MagicMock(), [page])
     assert len(results) == 1
     assert results[0].table_map == {}
+
+
+def test_factory_registration():
+    """GraniteVisionTableStructureModel must be discoverable via the table structure factory."""
+    from docling.models.factories.table_factory import TableStructureFactory
+    from docling.models.stages.table_structure.table_structure_model_granite_vision import (
+        GraniteVisionTableStructureModel,
+    )
+
+    factory = TableStructureFactory()
+    factory.load_from_plugins()
+    registered = list(factory.classes.values())
+    assert GraniteVisionTableStructureModel in registered
