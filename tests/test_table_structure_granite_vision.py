@@ -103,18 +103,48 @@ def test_get_options_type():
 
 
 def test_model_disabled_skips_pages():
-    """When enabled=False, predict_tables returns empty predictions without loading the model."""
+    """When enabled=False, predict_tables returns empty prediction without running inference."""
+    from unittest.mock import MagicMock
+    from docling_core.types.doc import DocItemLabel
+
     model = GraniteVisionTableStructureModel(
         enabled=False,
         artifacts_path=None,
         options=GraniteVisionTableStructureOptions(),
         accelerator_options=AcceleratorOptions(),
     )
+
+    # Give the page a cluster labelled TABLE so the cluster filter passes —
+    # the skip must be triggered by enabled=False, not by an empty cluster list.
+    cluster = MagicMock()
+    cluster.label = DocItemLabel.TABLE
+
     page = MagicMock()
     page._backend.is_valid.return_value = True
-    page.predictions.layout.clusters = []
+    page.predictions.layout.clusters = [cluster]
     page.predictions.tablestructure = None
     page.size = MagicMock()
+
+    results = model.predict_tables(MagicMock(), [page])
+    assert len(results) == 1
+    assert results[0].table_map == {}
+
+
+def test_model_invalid_backend_returns_empty_prediction():
+    """Pages with invalid backends return an empty TableStructurePrediction."""
+    from unittest.mock import MagicMock
+
+    model = GraniteVisionTableStructureModel(
+        enabled=False,
+        artifacts_path=None,
+        options=GraniteVisionTableStructureOptions(),
+        accelerator_options=AcceleratorOptions(),
+    )
+
+    page = MagicMock()
+    page._backend.is_valid.return_value = False
+    page.predictions.tablestructure = None
+
     results = model.predict_tables(MagicMock(), [page])
     assert len(results) == 1
     assert results[0].table_map == {}
