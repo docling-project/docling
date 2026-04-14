@@ -1,5 +1,9 @@
+from unittest.mock import MagicMock
+
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import GraniteVisionTableStructureOptions
 from docling.models.stages.table_structure.table_structure_model_granite_vision import (
+    GraniteVisionTableStructureModel,
     _parse_otsl_output,
 )
 
@@ -92,3 +96,25 @@ def test_parse_empty_string():
     assert cells == []
     assert num_rows == 0
     assert num_cols == 0
+
+
+def test_get_options_type():
+    assert GraniteVisionTableStructureModel.get_options_type() is GraniteVisionTableStructureOptions
+
+
+def test_model_disabled_skips_pages():
+    """When enabled=False, predict_tables returns empty predictions without loading the model."""
+    model = GraniteVisionTableStructureModel(
+        enabled=False,
+        artifacts_path=None,
+        options=GraniteVisionTableStructureOptions(),
+        accelerator_options=AcceleratorOptions(),
+    )
+    page = MagicMock()
+    page._backend.is_valid.return_value = True
+    page.predictions.layout.clusters = []
+    page.predictions.tablestructure = None
+    page.size = MagicMock()
+    results = model.predict_tables(MagicMock(), [page])
+    assert len(results) == 1
+    assert results[0].table_map == {}
