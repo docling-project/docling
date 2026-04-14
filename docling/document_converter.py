@@ -657,7 +657,7 @@ class DocumentConverter:
 
         return conv_res
 
-    def get_vlm_engine(self):
+    def _get_vlm_engine(self):
         """Return the VLM inference engine from the initialised VlmPipeline, or None.
 
         This allows callers to run batched image inference without going through
@@ -677,7 +677,7 @@ class DocumentConverter:
                 return stage.engine
         return None
 
-    def convert_images(
+    def _convert_images(
         self,
         images,
         *,
@@ -710,7 +710,7 @@ class DocumentConverter:
             VlmEngineInput,
         )
 
-        engine = self.get_vlm_engine()
+        engine = self._get_vlm_engine()
         if engine is None:
             raise RuntimeError(
                 "No VLM engine available.  Make sure the converter was "
