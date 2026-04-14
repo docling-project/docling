@@ -15,6 +15,7 @@ from typing import Optional
 import numpy as np
 from bs4 import BeautifulSoup, Tag
 from docling_core.types.doc import DocItemLabel, TableData
+from docling_core.types.doc.page import BoundingRectangle, TextCell
 from PIL import Image, ImageDraw, ImageFont
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
@@ -52,6 +53,8 @@ DOTSOCR_MAX_PIXELS = 11289600
 
 
 class GenosDotsOCRLayoutModel(BasePageModel):
+    GLYPH_RE = re.compile(r"GLYPH\w*")
+
     TEXT_ELEM_LABELS = [
         DocItemLabel.TEXT,
         DocItemLabel.FOOTNOTE,
@@ -90,6 +93,172 @@ class GenosDotsOCRLayoutModel(BasePageModel):
             and self.pipeline_options.table_structure_options.table_structure_model_type
             == TableStructureModelType.DOTSOCR
         )
+
+    @classmethod
+    def _check_glyph_text(cls, text: str, threshold: int = 1) -> bool:
+        # Keep parity with intelligent_processor.check_glyph_text
+        if not text:
+            return False
+        return len(cls.GLYPH_RE.findall(text)) >= threshold
+
+    @classmethod
+    def _check_glyphs(cls, texts: Iterable[str]) -> bool:
+        # Keep parity with intelligent_processor.check_glyphs (>10 glyph markers)
+        for text in texts:
+            if not text:
+                continue
+            if len(cls.GLYPH_RE.findall(text)) > 10:
+                return True
+        return False
+
+    @staticmethod
+    def _collect_cluster_text(cluster: Cluster) -> str:
+        return " ".join(
+            (cell.text or "").strip()
+            for cell in cluster.cells
+            if (cell.text or "").strip()
+        )
+
+    @staticmethod
+    def _overwrite_cells_text(cells: list[TextCell], replacement_text: str) -> bool:
+        if not cells:
+            return False
+
+        target_idx = 0
+        for idx, cell in enumerate(cells):
+            if (cell.text or "").strip():
+                target_idx = idx
+                break
+
+        updated = False
+        for idx, cell in enumerate(cells):
+            new_text = replacement_text if idx == target_idx else ""
+            if cell.text != new_text:
+                cell.text = new_text
+                cell.orig = new_text
+                updated = True
+
+        return updated
+
+    @staticmethod
+    def _assign_cells_to_best_cluster(
+        page_cells: list[TextCell],
+        clusters: list[Cluster],
+        min_overlap: float = 0.2,
+    ) -> dict[int, list[TextCell]]:
+        assigned_cells_by_cluster_id: dict[int, list[TextCell]] = {}
+
+        for cell in page_cells:
+            cell_bbox = cell.rect.to_bounding_box()
+            if cell_bbox.area() <= 0:
+                continue
+
+            best_overlap = min_overlap
+            best_cluster_id: Optional[int] = None
+            for cluster in clusters:
+                overlap_ratio = cell_bbox.intersection_over_self(cluster.bbox)
+                if overlap_ratio > best_overlap:
+                    best_overlap = overlap_ratio
+                    best_cluster_id = cluster.id
+
+            if best_cluster_id is None:
+                continue
+
+            assigned_cells_by_cluster_id.setdefault(best_cluster_id, []).append(cell)
+
+        return assigned_cells_by_cluster_id
+
+    def _replace_glyph_text_with_dotsocr(
+        self,
+        page: Page,
+        clusters: list[Cluster],
+        dotsocr_text_by_cluster_id: dict[int, str],
+    ) -> int:
+        text_clusters = [
+            cluster
+            for cluster in clusters
+            if cluster.label in self.TEXT_ELEM_LABELS and cluster.label != self.FORMULA_LABEL
+        ]
+        special_labels = set(self.TABLE_LABELS)
+        special_labels.add(self.FIGURE_LABEL)
+        special_labels.update(self.CONTAINER_LABELS)
+        regular_clusters = [
+            cluster for cluster in clusters if cluster.label not in special_labels
+        ]
+        assigned_cells_by_cluster_id = self._assign_cells_to_best_cluster(
+            page_cells=page.cells,
+            clusters=regular_clusters,
+        )
+        source_text_by_cluster_id = {
+            cluster.id: " ".join(
+                (cell.text or "").strip()
+                for cell in assigned_cells_by_cluster_id.get(cluster.id, [])
+                if (cell.text or "").strip()
+            )
+            for cluster in text_clusters
+        }
+
+        # Follow intelligent_processor.check_glyphs-style gating for glyph-based replacement.
+        # Missing source text replacement is always allowed.
+        has_glyph_issue = self._check_glyphs(source_text_by_cluster_id.values())
+
+        replaced_clusters = 0
+        replaced_missing_clusters = 0
+        replaced_glyph_clusters = 0
+        created_synthetic_cells = 0
+        next_cell_index = max((cell.index for cell in page.cells), default=-1) + 1
+
+        for cluster in text_clusters:
+            source_text = source_text_by_cluster_id.get(cluster.id, "")
+            source_text_missing = not source_text.strip()
+            source_text_has_glyph = has_glyph_issue and self._check_glyph_text(
+                source_text, threshold=1
+            )
+            if not source_text_missing and not source_text_has_glyph:
+                continue
+
+            dotsocr_text = (dotsocr_text_by_cluster_id.get(cluster.id) or "").strip()
+            if not dotsocr_text:
+                continue
+            if self._check_glyph_text(dotsocr_text, threshold=1):
+                continue
+
+            target_cells = assigned_cells_by_cluster_id.get(cluster.id, [])
+            if target_cells:
+                updated = self._overwrite_cells_text(target_cells, dotsocr_text)
+            else:
+                synthetic_cell = TextCell(
+                    index=next_cell_index,
+                    text=dotsocr_text,
+                    orig=dotsocr_text,
+                    confidence=cluster.confidence,
+                    from_ocr=True,
+                    rect=BoundingRectangle.from_bounding_box(cluster.bbox),
+                )
+                page.cells.append(synthetic_cell)
+                assigned_cells_by_cluster_id[cluster.id] = [synthetic_cell]
+                next_cell_index += 1
+                created_synthetic_cells += 1
+                updated = True
+
+            if updated:
+                replaced_clusters += 1
+                if source_text_missing:
+                    replaced_missing_clusters += 1
+                elif source_text_has_glyph:
+                    replaced_glyph_clusters += 1
+
+        if replaced_clusters:
+            _log.info(
+                "Replaced parser text with DotsOCR text "
+                "(page=%s, clusters=%s, missing=%s, glyph=%s, synthetic_cells=%s).",
+                page.page_no,
+                replaced_clusters,
+                replaced_missing_clusters,
+                replaced_glyph_clusters,
+                created_synthetic_cells,
+            )
+        return replaced_clusters
 
     def _build_tablestructure_from_dotsocr(
         self,
@@ -460,6 +629,7 @@ class GenosDotsOCRLayoutModel(BasePageModel):
             clusters = []
             raw_table_html_by_cluster_id: dict[int, str] = {}
             raw_formula_latex_by_cluster_id: dict[int, str] = {}
+            raw_text_by_cluster_id: dict[int, str] = {}
             for idx, pred_item in enumerate(result):
                 if not isinstance(pred_item, dict):
                     _log.warning(
@@ -490,10 +660,10 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                     )
                     continue
 
+                pred_item_text = _extract_layout_item_text(pred_item)
                 if label in self.TABLE_LABELS:
-                    table_item_text = _extract_layout_item_text(pred_item)
-                    if table_item_text:
-                        table_html = _extract_table_html(table_item_text)
+                    if pred_item_text:
+                        table_html = _extract_table_html(pred_item_text)
                         if table_html:
                             raw_table_html_by_cluster_id[idx] = table_html
 
@@ -528,9 +698,14 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                 clusters.append(cluster)
 
                 if label == self.FORMULA_LABEL:
-                    formula_item_text = _extract_layout_item_text(pred_item)
-                    if formula_item_text:
-                        raw_formula_latex_by_cluster_id[idx] = formula_item_text
+                    if pred_item_text:
+                        raw_formula_latex_by_cluster_id[idx] = pred_item_text
+                elif (
+                    label in self.TEXT_ELEM_LABELS
+                    and pred_item_text
+                    and label != self.FORMULA_LABEL
+                ):
+                    raw_text_by_cluster_id[idx] = pred_item_text
 
             # Preserve source(DotsOCR raw) order across debug views and
             # postprocessed cluster outputs.
@@ -553,6 +728,14 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                         page.page_no,
                         exc_info=True,
                     )
+
+            # Run replacement before postprocess so clusters with empty parser text
+            # can receive DotsOCR text and avoid being dropped as empty clusters.
+            self._replace_glyph_text_with_dotsocr(
+                page=page,
+                clusters=clusters,
+                dotsocr_text_by_cluster_id=raw_text_by_cluster_id,
+            )
 
             processed_clusters, processed_cells = LayoutPostprocessor(
                 page, clusters, self.options
