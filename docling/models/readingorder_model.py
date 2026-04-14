@@ -453,12 +453,15 @@ class ReadingOrderModel:
             el_to_captions_mapping = self.ro_model.predict_to_captions(
                 sorted_elements=sorted_for_links
             )
+            el_to_footnotes_mapping = self.ro_model.predict_to_footnotes(
+                sorted_elements=sorted_for_links
+            )
 
             docling_doc: DoclingDocument = self._readingorder_elements_to_docling_doc(
                 conv_res,
                 page_elements,
                 el_to_captions_mapping,
-                {},
+                el_to_footnotes_mapping,
                 {},
             )
 
