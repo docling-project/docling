@@ -148,6 +148,41 @@ def test_model_invalid_backend_returns_empty_prediction():
     assert results[0].table_map == {}
 
 
+def test_parse_xcel_2d_merge():
+    """xcel produces both rowspan=2 and colspan=2 on the origin cell."""
+    text = "<fcel>Big</fcel><lcel><nl><ucel><xcel><nl>"
+    _, cells, num_rows, num_cols = _parse_otsl_output(text)
+
+    assert num_rows == 2
+    assert num_cols == 2
+    origin = [c for c in cells if c.start_row_offset_idx == 0 and c.start_col_offset_idx == 0]
+    assert len(origin) == 1
+    assert origin[0].col_span == 2
+    assert origin[0].row_span == 2
+    assert origin[0].end_col_offset_idx == 2
+    assert origin[0].end_row_offset_idx == 2
+
+
+def test_parse_srow():
+    """srow token produces row_section=True."""
+    text = "<srow>Category</srow><fcel>Data</fcel><nl>"
+    _, cells, _, _ = _parse_otsl_output(text)
+
+    srow_cells = [c for c in cells if c.row_section]
+    assert len(srow_cells) == 1
+    assert srow_cells[0].text == "Category"
+
+
+def test_parse_ecel_self_closing():
+    """<ecel/> self-closing form produces an empty cell."""
+    text = "<fcel>A</fcel><ecel/><nl>"
+    _, cells, _, _ = _parse_otsl_output(text)
+
+    empty = [c for c in cells if c.start_col_offset_idx == 1]
+    assert len(empty) == 1
+    assert empty[0].text == ""
+
+
 def test_factory_registration():
     """GraniteVisionTableStructureModel must be discoverable via the table structure factory."""
     from docling.models.factories.table_factory import TableStructureFactory
