@@ -1,22 +1,8 @@
 import logging
 import re
-from collections.abc import Sequence
 from itertools import groupby
-from pathlib import Path
-from typing import Any, ClassVar, Literal, Optional, cast
 
-import torch
-from docling_core.types.doc import DocItemLabel, TableCell
-from transformers import AutoModelForImageTextToText, AutoProcessor
-
-from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
-from docling.datamodel.base_models import Page, Table, TableStructurePrediction
-from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import GraniteVisionTableStructureOptions
-from docling.models.base_table_model import BaseTableStructureModel
-from docling.models.utils.hf_model_download import download_hf_model
-from docling.utils.accelerator_utils import decide_device
-from docling.utils.profiling import TimeRecorder
+from docling_core.types.doc import TableCell
 
 _log = logging.getLogger(__name__)
 
@@ -96,18 +82,18 @@ def _parse_otsl_output(
             if tag not in _CONTENT_TOKENS:
                 continue
 
-            # Detect colspan: count consecutive lcel / xcel to the right
+            # Detect colspan: count consecutive span-extension tokens to the right
             colspan = 1
             for c in range(col_idx + 1, num_cols):
-                if grid[row_idx][c][0] in ("lcel", "xcel"):
+                if grid[row_idx][c][0] in _SPAN_TOKENS:
                     colspan += 1
                 else:
                     break
 
-            # Detect rowspan: count consecutive ucel / xcel below
+            # Detect rowspan: count consecutive span-extension tokens below
             rowspan = 1
             for r in range(row_idx + 1, num_rows):
-                if grid[r][col_idx][0] in ("ucel", "xcel"):
+                if grid[r][col_idx][0] in _SPAN_TOKENS:
                     rowspan += 1
                 else:
                     break
