@@ -55,6 +55,31 @@ def test_e2e_pptx_conversions():
         )
 
 
+def test_pptx_unrecognized_shape_type():
+    """PPTX with a <p:sp> that has no geometry should not crash.
+
+    python-pptx raises NotImplementedError from Shape.shape_type for shapes
+    that aren't placeholders, autoshapes, textboxes, or freeforms. The
+    backend should skip the unrecognized shape gracefully and still extract
+    text from the rest of the presentation.
+
+    Ref: https://github.com/docling-project/docling/issues/3308
+    """
+    converter = get_converter()
+    pptx_path = Path("./tests/data/pptx/powerpoint_unrecognized_shape.pptx")
+
+    conv_result: ConversionResult = converter.convert(pptx_path)
+    doc: DoclingDocument = conv_result.document
+
+    pred_md = doc.export_to_markdown()
+
+    # Normal slide content should still be extracted
+    assert "Q3 Revenue Summary" in pred_md
+    assert "Enterprise segment" in pred_md
+    assert "Key Metrics" in pred_md
+    assert "Next Steps" in pred_md
+
+
 def test_pptx_page_range():
     converter = get_converter()
     pptx_path = Path("./tests/data/pptx/powerpoint_sample.pptx")
