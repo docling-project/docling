@@ -224,16 +224,16 @@ class RapidOcrOptions(OcrOptions):
     """
 
     kind: ClassVar[Literal["rapidocr"]] = "rapidocr"
-    # English and chinese are the most commly used models and have been tested with RapidOCR.
+    # English and chinese are the most commonly used models and have been tested with RapidOCR.
     lang: Annotated[
         list[str],
         Field(
             description=(
-                "List of OCR languages. Note: RapidOCR does not currently support language selection; "
-                "this parameter is reserved for future compatibility. See RapidOCR documentation for supported languages."
+                "List of OCR languages. Note: RapidOCR currently supports 'english' and 'chinese' (default). "
+                "See RapidOCR documentation for other supported languages."
             )
         ),
-    ] = ["english", "chinese"]
+    ] = ["chinese"]
     backend: Annotated[
         Literal["onnxruntime", "openvino", "paddle", "torch"],
         Field(
