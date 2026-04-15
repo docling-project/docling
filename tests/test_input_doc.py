@@ -253,9 +253,7 @@ def test_guess_format(tmp_path):
     assert dci._guess_format(doc_path) == InputFormat.MD
 
     # Plain .txt file detected as MD
-    stream = DocumentStream(
-        name="readme.txt", stream=BytesIO(b"Hello, world!\n")
-    )
+    stream = DocumentStream(name="readme.txt", stream=BytesIO(b"Hello, world!\n"))
     assert dci._guess_format(stream) == InputFormat.MD
 
     # Valid WebVTT
