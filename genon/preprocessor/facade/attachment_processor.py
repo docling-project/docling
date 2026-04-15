@@ -99,40 +99,6 @@ for n in ("fontTools", "fontTools.ttLib", "fontTools.ttLib.ttFont"):
 # pdf 변환 대상 확장자
 CONVERTIBLE_EXTENSIONS = ['.hwp', '.txt', '.json', '.md', '.ppt', '.pptx', '.docx']
 
-def save_document_visualizations(
-    document: DoclingDocument, 
-    output_dir: str | Path, 
-    prefix: str = "viz",
-    show_label: bool = True
-):
-    """
-    DoclingDocument의 시각화 데이터를 이미지 파일로 저장합니다.
-    """
-    # 1. 저장 디렉토리 생성
-    out_path = Path(output_dir)
-    out_path.mkdir(parents=True, exist_ok=True)
-
-    # 2. 시각화 데이터 생성
-    # viz_mode: "reading_order" (순서 확인용) 또는 "key_value"
-    viz_images = document.get_visualization(show_label=show_label)
-
-    if not viz_images:
-        _log.warning("시각화할 이미지가 없습니다. document.pages가 비어있는지 확인하세요.")
-        return
-
-    saved_files = []
-    
-    # 3. 페이지별 저장 루프
-    for page_no, img in viz_images.items():
-        p_num = page_no if page_no is not None else 0
-        file_name = f"{prefix}_page_{p_num}.png"
-        save_path = out_path / file_name
-        
-        img.save(save_path)
-        saved_files.append(str(save_path))
-        _log.info(f"시각화 이미지 저장 완료: {save_path}")
-
-    return saved_files
 
 def convert_to_pdf(file_path: str) -> str | None:
     """
@@ -1093,36 +1059,7 @@ class DocxProcessor:
         else:
             raise GenosServiceException(1, f"chunk length is 0")
 
-        if kwargs.get('dump_sdk_output', False):
-            _save_result_files(file_path, vectors, document)
-
         return vectors
-
-def _save_result_files(file_path: str, vectors: list, document=None):
-    """docling/vectors 결과를 저장하는 공통 헬퍼. 모든 프로세서에서 사용."""
-    try:
-        base = Path(file_path).resolve()
-        root = base.parent / "docparser_result"
-        result_dir = root / base.stem
-
-        if document is not None:
-            docling_dir = result_dir / "docling_result"
-            docling_dir.mkdir(parents=True, exist_ok=True)
-            with open(docling_dir / "docling.json", "w", encoding="utf-8") as f:
-                f.write(document.model_dump_json(indent=2))
-            _log.info(f"docling_result 저장 완료: {docling_dir}")
-
-        vectors_dir = result_dir / "vectors_result"
-        vectors_dir.mkdir(parents=True, exist_ok=True)
-        with open(vectors_dir / "vectors.json", "w", encoding="utf-8") as f:
-            if vectors and hasattr(vectors[0], 'model_dump'):
-                json.dump([v.model_dump() for v in vectors], f, ensure_ascii=False, indent=2)
-            else:
-                json.dump(vectors, f, ensure_ascii=False, indent=2)
-        _log.info(f"vectors_result 저장 완료: {vectors_dir}")
-
-    except Exception as e:
-        _log.error(f"_save_result_files 실패 (file_path={file_path}): {e}")
 
 
 class HwpProcessor:
@@ -1181,10 +1118,6 @@ class HwpProcessor:
 
         conv_result: ConversionResult = converter.convert(Path(file_path).resolve(), raises_on_error=True)
         return conv_result.document
-
-    def _save_results(self, file_path: str, document: DoclingDocument, vectors: list):
-        """docling/vectors 결과를 docparser_result 디렉토리에 저장"""
-        _save_result_files(file_path, vectors, document)
 
     def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> tuple[List[DocChunk], dict[int, int]]:
         """HybridChunker를 사용하여 문서 분할 및 페이지별 청크 수 집계"""
@@ -1264,9 +1197,6 @@ class HwpProcessor:
         # 4. 벡터화 (빌더 활용)
         if len(chunks) >= 1:
             vectors = await self.compose_vectors(document, chunks, page_chunk_counts, request, **kwargs)
-
-            if kwargs.get('dump_sdk_output', False):
-                self._save_results(file_path, document, vectors)
 
             return vectors
         else:
@@ -1562,8 +1492,5 @@ class DocumentProcessor:
             chunks: list[Document] = self.split_documents(documents, **kwargs)
 
             vectors: list[dict] = self.compose_vectors(file_path, chunks, **kwargs)
-
-            if kwargs.get('dump_sdk_output', False):
-                _save_result_files(file_path, vectors)
 
             return vectors

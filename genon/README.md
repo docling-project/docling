@@ -52,15 +52,15 @@
 
 ## 전처리기 빌드 및 등록
 
-1. build-script 디렉토리 이동
-2. `HF_TOKEN` 설정 (자유소프트 HWP SDK를 private 레포에서 다운로드하기 위한 토큰)
+1. `HF_TOKEN` 설정 (자유소프트 HWP SDK를 private 레포에서 다운로드하기 위한 토큰)
    - 토큰 값은 [제논 내부 드라이브](https://drive.google.com/file/d/1m8aom4_zo3ZuQ-HdHHpkRsVOJakN-Lt5/view?usp=sharing)에서 확인
-   - repo 루트에서 아래 명령어 한 번 실행 (이후 재실행 불필요, Git에 커밋되지 않음):
+   - `doc_parser/` (레포 최상위 경로) 에서 아래 명령어 한 번 실행 (이후 재실행 불필요, Git에 커밋되지 않음):
      ```shell
      echo "HF_TOKEN=hf_your_token_here" > build-script/doc-parser-build.config.local
      ```
-   - `doc-parser-build.config`에 직접 입력하거나 push하지 말 것
-3. [doc-parser-build.config](../build-script/doc-parser-build.config) 기타 변경 사항 반영
+   - `doc-parser-build.config`에 직접 입력하거나 push하지 말 것 (토큰은 반드시 `.local` 파일에만)
+2. build-script 디렉토리 이동
+3. [doc-parser-build.config](../build-script/doc-parser-build.config) 기타 변경 사항 반영 (1번을 수행했다면 `HF_TOKEN`값은 직접 입력하지 말 것)
 4. 실행 [doc-parser-build.sh](../build-script/doc-parser-build.sh)
 5. [register.config](preprocessor/scripts/register.config) 변경 사항 있을 시 변경 필요
 6. 실행 [register_image.sh](preprocessor/scripts/register_image.sh) : push와 디비에 등록해준다.
