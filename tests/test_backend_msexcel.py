@@ -59,9 +59,11 @@ def documents() -> list[tuple[Path, DoclingDocument]]:
 
 
 def test_e2e_excel_conversions(documents) -> None:
-    from docling_core.transforms.serializer.markdown_excel import (
-        MsExcelMarkdownDocSerializer,
+    _mod = pytest.importorskip(
+        "docling_core.transforms.serializer.markdown_excel",
+        reason="docling-core with MsExcelMarkdownDocSerializer not installed",
     )
+    MsExcelMarkdownDocSerializer = _mod.MsExcelMarkdownDocSerializer
 
     for gt_path, doc in documents:
         pred_md: str = MsExcelMarkdownDocSerializer(doc=doc).serialize().text
@@ -284,9 +286,11 @@ def test_sheet_names_as_headings(documents) -> None:
     injected into the document model by the backend.
     Sheet4 in xlsx_01 is empty and intentionally has no heading.
     """
-    from docling_core.transforms.serializer.markdown_excel import (
-        MsExcelMarkdownDocSerializer,
+    _mod = pytest.importorskip(
+        "docling_core.transforms.serializer.markdown_excel",
+        reason="docling-core with MsExcelMarkdownDocSerializer not installed",
     )
+    MsExcelMarkdownDocSerializer = _mod.MsExcelMarkdownDocSerializer
 
     doc = next(item for path, item in documents if path.stem == "xlsx_01")
 
