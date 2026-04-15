@@ -40,7 +40,9 @@ class ReadingOrderOptions(BaseModel):
 
 
 class ReadingOrderModel:
-    def __init__(self, enabled: bool = True, options: ReadingOrderOptions = ReadingOrderOptions()):
+    def __init__(
+        self, enabled: bool = True, options: ReadingOrderOptions = ReadingOrderOptions()
+    ):
         self.enabled = enabled
         self.options = options
         self.ro_model = ReadingOrderPredictor()
