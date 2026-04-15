@@ -1,7 +1,8 @@
 import logging
 from collections.abc import Iterable
+from enum import Enum
 from pathlib import Path
-from typing import Literal, Type, TypedDict
+from typing import Any, Literal, Type, TypedDict
 
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin
@@ -117,6 +118,64 @@ class RapidOcrModel(BaseOcrModel):
     _default_models: dict[
         _ModelPathEngines, dict[_ModelPathTypes, _ModelPathDetail]
     ] = _models_by_language[_RAPIDOCR_DEFAULT_LANGUAGE]
+
+    @staticmethod
+    def _normalize_rapidocr_param_value(value: Any, enum_type: type[Enum]) -> Any:
+        if isinstance(value, enum_type):
+            return value
+
+        candidate = value.value if isinstance(value, Enum) else value
+        if not isinstance(candidate, str):
+            return value
+
+        for member in enum_type:
+            if member.value == candidate:
+                return member
+
+        return value
+
+    @classmethod
+    def _normalize_rapidocr_params(cls, params: dict[str, Any]) -> dict[str, Any]:
+        from rapidocr import EngineType  # type: ignore
+        from rapidocr.utils.typings import (  # type: ignore
+            LangCls,
+            LangDet,
+            LangRec,
+            ModelType,
+            OCRVersion,
+            TaskType,
+        )
+
+        common_enum_types: dict[str, type[Enum]] = {
+            "engine_type": EngineType,
+            "model_type": ModelType,
+            "ocr_version": OCRVersion,
+            "task_type": TaskType,
+        }
+        language_enum_types: dict[str, type[Enum]] = {
+            "Det": LangDet,
+            "Cls": LangCls,
+            "Rec": LangRec,
+        }
+
+        normalized_params: dict[str, Any] = {}
+        for key, value in params.items():
+            section, separator, option = key.partition(".")
+            if not separator:
+                normalized_params[key] = value
+                continue
+
+            enum_type = common_enum_types.get(option)
+            if option == "lang_type":
+                enum_type = language_enum_types.get(section)
+
+            normalized_params[key] = (
+                cls._normalize_rapidocr_param_value(value, enum_type)
+                if enum_type is not None
+                else value
+            )
+
+        return normalized_params
 
     def __init__(
         self,
@@ -253,7 +312,7 @@ class RapidOcrModel(BaseOcrModel):
             user_params = self.options.rapidocr_params
             if user_params:
                 _log.debug("Overwriting RapidOCR params with user-provided values.")
-                params.update(user_params)
+                params.update(self._normalize_rapidocr_params(user_params))
 
             self.reader = RapidOCR(
                 params=params,

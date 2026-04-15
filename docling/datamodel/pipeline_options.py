@@ -318,7 +318,9 @@ class RapidOcrOptions(OcrOptions):
         Field(
             description=(
                 "Additional parameters to pass through to RapidOCR engine. Use this to override or extend "
-                "default RapidOCR configuration with engine-specific options."
+                "default RapidOCR configuration with engine-specific options. Enum-backed string values "
+                "for keys such as `Det.lang_type`, `Det.model_type`, and `Det.ocr_version` are accepted "
+                "and normalized internally before Docling constructs `RapidOCR`."
             )
         ),
     ] = {}

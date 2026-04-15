@@ -4,6 +4,7 @@
 # What this example does
 # - Downloads RapidOCR models from Hugging Face via ModelScope.
 # - Configures `RapidOcrOptions` with explicit det/rec/cls model paths.
+# - Shows `rapidocr_params` overrides using plain strings; Docling normalizes enum-backed keys.
 # - Runs the PDF pipeline with RapidOCR and prints Markdown output.
 #
 # Prerequisites
@@ -54,6 +55,18 @@ def main():
         det_model_path=det_model_path,
         rec_model_path=rec_model_path,
         cls_model_path=cls_model_path,
+        rapidocr_params={
+            # String values are accepted here; Docling converts enum-backed keys for RapidOCR.
+            "Det.lang_type": "ch",
+            "Det.model_type": "server",
+            "Det.ocr_version": "PP-OCRv5",
+            "Cls.lang_type": "ch",
+            "Cls.model_type": "mobile",
+            "Cls.ocr_version": "PP-OCRv4",
+            "Rec.lang_type": "ch",
+            "Rec.model_type": "server",
+            "Rec.ocr_version": "PP-OCRv5",
+        },
     )
 
     pipeline_options = PdfPipelineOptions(
