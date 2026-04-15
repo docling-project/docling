@@ -21,6 +21,7 @@ class HwpDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream)
         self.hwpx_backend = None
         self.valid = False
+        temp_input_path = None
 
         if isinstance(path_or_stream, (Path, BytesIO)):
             try:
@@ -30,6 +31,7 @@ class HwpDocumentBackend(DeclarativeDocumentBackend):
                     temp_hwp_path = Path(f'/tmp/temp_{random_int}.hwp')
                     with open(temp_hwp_path, 'wb') as temp_file:
                         temp_file.write(path_or_stream.getbuffer())
+                    temp_input_path = temp_hwp_path
                     path_or_stream = temp_hwp_path
 
                 hwpx_path = self._convert_hwp_to_hwpx(path_or_stream)
@@ -43,10 +45,10 @@ class HwpDocumentBackend(DeclarativeDocumentBackend):
                     f"번거롭게 해드려 죄송합니다.\n오류 내용: {e}"
                 ) from e
             finally:
-                # BytesIO에서 만든 임시 파일 삭제
-                if isinstance(path_or_stream, Path) and path_or_stream.name.startswith('temp_'):
+                # BytesIO에서 이 백엔드가 직접 생성한 임시 파일만 삭제
+                if temp_input_path is not None:
                     try:
-                        os.remove(path_or_stream)
+                        os.remove(temp_input_path)
                     except OSError:
                         pass
         else:
@@ -96,5 +98,5 @@ class HwpDocumentBackend(DeclarativeDocumentBackend):
     def convert(self) -> DoclingDocument:
         """실제 변환은 HwpxDocumentBackend에 위임."""
         if not self.is_valid():
-            raise RuntimeError("Invalid HWP document or conversion failed")
+            raise HwpConversionError("Invalid HWP document or conversion failed")
         return self.hwpx_backend.convert()
