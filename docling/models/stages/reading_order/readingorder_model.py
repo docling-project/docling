@@ -421,10 +421,12 @@ class ReadingOrderModel:
             ),
             bbox=merged_elem.cluster.bbox.to_bottom_left_origin(page_height),
         )
-        if new_item.text.endswith('\u00AD'):
+        if new_item.text.endswith("\u00ad"):
             # Soft hyphen (U+00AD): strip it and join without space (hyphenated word split across lines)
             new_item.text = new_item.text[:-1] + merged_elem.text
-            new_item.orig = new_item.orig[:-1] + merged_elem.text  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
+            new_item.orig = (
+                new_item.orig[:-1] + merged_elem.text
+            )  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
         else:
             new_item.text += f" {merged_elem.text}"
             new_item.orig += f" {merged_elem.text}"  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
