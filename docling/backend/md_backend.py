@@ -297,7 +297,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         ) and len(element.children) > 0:
             self._close_table(doc)
             _log.debug(
-                f" - Heading level {element.level}, content: {element.children[0].children}"  # type: ignore
+                " - Heading level %s, content: %s",
+                element.level,
+                element.children[0].children,  # type: ignore
             )
 
             if len(element.children) > 1:  # inline group will be created further down
@@ -320,7 +322,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     break
 
             self._close_table(doc)
-            _log.debug(f" - List {'ordered' if element.ordered else 'unordered'}")
+            _log.debug(" - List %s", "ordered" if element.ordered else "unordered")
             if has_non_empty_list_items:
                 parent_item = doc.add_list_group(name="list", parent=parent_item)
                 list_ordered_flag_by_ref[parent_item.self_ref] = element.ordered
@@ -363,7 +365,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         elif isinstance(element, marko.inline.Image):
             self._close_table(doc)
-            _log.debug(f" - Image with alt: {element.title}, url: {element.dest}")
+            _log.debug(" - Image with alt: %s, url: %s", element.title, element.dest)
 
             fig_caption: Optional[TextItem] = None
             if element.title is not None and element.title != "":
@@ -378,23 +380,23 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             doc.add_picture(parent=parent_item, caption=fig_caption)
 
         elif isinstance(element, marko.inline.Emphasis):
-            _log.debug(f" - Emphasis: {element.children}")
+            _log.debug(" - Emphasis: %s", element.children)
             formatting = deepcopy(formatting) if formatting else Formatting()
             formatting.italic = True
 
         elif isinstance(element, marko.inline.StrongEmphasis):
-            _log.debug(f" - StrongEmphasis: {element.children}")
+            _log.debug(" - StrongEmphasis: %s", element.children)
             formatting = deepcopy(formatting) if formatting else Formatting()
             formatting.bold = True
 
         elif isinstance(element, marko.inline.Link):
-            _log.debug(f" - Link: {element.children}")
+            _log.debug(" - Link: %s", element.children)
             hyperlink = TypeAdapter(Optional[Union[AnyUrl, Path]]).validate_python(
                 element.dest
             )
 
         elif isinstance(element, marko.inline.RawText | marko.inline.Literal):
-            _log.debug(f" - RawText/Literal: {element.children}")
+            _log.debug(" - RawText/Literal: %s", element.children)
             original_text = (
                 element.children if isinstance(element.children, str) else ""
             )
@@ -463,7 +465,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         elif isinstance(element, marko.inline.CodeSpan):
             self._close_table(doc)
-            _log.debug(f" - Code Span: {element.children}")
+            _log.debug(" - Code Span: %s", element.children)
             snippet_text = str(element.children).strip()
             doc.add_code(
                 parent=parent_item,
@@ -479,7 +481,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             and len(snippet_text := (child.children.strip())) > 0
         ):
             self._close_table(doc)
-            _log.debug(f" - Code Block: {element.children}")
+            _log.debug(" - Code Block: %s", element.children)
             doc.add_code(
                 parent=parent_item,
                 text=snippet_text,
@@ -495,7 +497,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         elif isinstance(element, marko.block.HTMLBlock):
             self._html_blocks += 1
             self._close_table(doc)
-            _log.debug(f"HTML Block: {element}")
+            _log.debug("HTML Block: %s", element)
             if (
                 len(element.body) > 0
             ):  # If Marko doesn't return any content for HTML block, skip it
@@ -538,7 +540,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     and list_last_item_by_ref.get(parent_item.self_ref, None)
                 ):
                     _log.debug(
-                        f"walking into new List hanging from item of parent list {parent_item.self_ref}"
+                        "walking into new List hanging from item of parent list %s",
+                        parent_item.self_ref,
                     )
                     parent_item = list_last_item_by_ref[parent_item.self_ref]
 
