@@ -1213,6 +1213,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     parent=inline_equation,
                     text=text,
                     equations=equations,
+                    elem_ref=elem_ref,
                 )
 
         elif p_style_id in [
@@ -1416,6 +1417,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         parent: NodeItem,
         text: str,
         equations: list[str],
+        elem_ref: list[RefItem] | None = None,
     ) -> None:
         """Add text and inline equations as children of a parent element.
 
@@ -1429,6 +1431,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             parent: The parent element (inline_group) to add children to.
             text: The paragraph text with equation placeholders (e.g., "<eq>formula</eq>").
             equations: List of equation strings with markers (e.g., ["<eq>A=B</eq>", ...]).
+            elem_ref: Optional list to append created element references to.
         """
         text_tmp = text
         for eq in equations:
@@ -1441,27 +1444,33 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             text_tmp = "" if len(split_text_tmp) == 1 else split_text_tmp[1]
 
             if len(pre_eq_text) > 0:
-                doc.add_text(
+                e1 = doc.add_text(
                     label=DocItemLabel.TEXT,
                     parent=parent,
                     text=pre_eq_text,
                     content_layer=self.content_layer,
                 )
+                if elem_ref is not None:
+                    elem_ref.append(e1.get_ref())
 
-            doc.add_text(
+            e2 = doc.add_text(
                 label=DocItemLabel.FORMULA,
                 parent=parent,
                 text=eq.replace("<eq>", "").replace("</eq>", ""),
                 content_layer=self.content_layer,
             )
+            if elem_ref is not None:
+                elem_ref.append(e2.get_ref())
 
         if len(text_tmp) > 0:
-            doc.add_text(
+            e3 = doc.add_text(
                 label=DocItemLabel.TEXT,
                 parent=parent,
                 text=text_tmp.strip(),
                 content_layer=self.content_layer,
             )
+            if elem_ref is not None:
+                elem_ref.append(e3.get_ref())
 
     def _manage_list_structure(
         self,
