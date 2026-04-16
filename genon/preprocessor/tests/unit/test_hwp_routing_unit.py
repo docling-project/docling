@@ -69,7 +69,7 @@ async def test_non_hwp_extension_does_not_route_to_hwp_processor(attachment_proc
 ])
 def test_use_hwp_sdk_flag_selects_correct_hwp_backend(use_hwp_sdk, expected_backend):
     """
-    use_hwp_sdk=True  → GenosHwpDocumentBackend (자유소프트 SDK)
+    use_hwp_sdk=True  → GenosHwpDocumentBackend (hwp_sdk)
     use_hwp_sdk=False → HwpDocumentBackend (레거시 XML 변환)
     InputFormat.HWP 키 기준으로 확인.
     """

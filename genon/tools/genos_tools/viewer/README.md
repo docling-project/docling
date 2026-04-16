@@ -8,7 +8,7 @@
 
 ```
 viewer/
-├── jayu_viewer.py      # 자유소프트 SDK 원시 파싱 결과 시각화
+├── hwp_sdk_viewer.py   # HWP SDK 원시 파싱 결과 시각화
 ├── docling_viewer.py   # Docling 변환 결과 시각화
 └── vectors_viewer.py   # 최종 벡터 청킹 결과 시각화
 ```
@@ -17,17 +17,17 @@ viewer/
 
 ## 뷰어별 설명
 
-### 1. `jayu_viewer.py` — 자유소프트 SDK 원시 결과 뷰어
+### 1. `hwp_sdk_viewer.py` — HWP SDK 원시 결과 뷰어
 
-**대상 파일**: `jayu_sdk_result/output.json`
+**대상 파일**: `hwp_sdk_result/output.json`
 
-자유소프트 HWP/HWPX 파서 SDK(`convtext`)가 출력한 raw JSON을 시각화합니다.
+HWP/HWPX 파서 SDK(`convtext`)가 출력한 raw JSON을 시각화합니다.
 텍스트, 테이블, 이미지(BMP 등)를 페이지별로 렌더링합니다.
 
 **실행**
 ```bash
-python jayu_viewer.py
-# 경로 입력: results/hwpx_sample/jayu_sdk_result/output.json
+python hwp_sdk_viewer.py
+# 경로 입력: results/hwpx_sample/hwp_sdk_result/output.json
 ```
 
 **포트**: 8000 (수정 가능)
@@ -38,7 +38,7 @@ python jayu_viewer.py
 
 **대상 파일**: `docling_result/docling.json`
 
-자유소프트 SDK 결과를 Docling 파이프라인이 처리한 중간 결과물(`DoclingDocument`)을 시각화합니다.
+HWP SDK 결과를 Docling 파이프라인이 처리한 중간 결과물(`DoclingDocument`)을 시각화합니다.
 texts / tables / pictures를 페이지별로 분류하여 렌더링합니다.
 
 **실행**
@@ -75,7 +75,7 @@ python vectors_viewer.py
 HWP/HWPX 파일
     │
     ▼
-[자유소프트 SDK]  →  output.json       →  jayu_viewer.py
+[HWP SDK]         →  output.json       →  hwp_sdk_viewer.py
     │
     ▼
 [Docling 변환]    →  docling.json      →  docling_viewer.py
@@ -83,8 +83,6 @@ HWP/HWPX 파일
     ▼
 [청킹 + 벡터화]   →  vectors.json      →  vectors_viewer.py
 ```
-
-> DOCX, PDF 파일의 경우 자유소프트 SDK 단계가 없으므로 `docling_result/`와 `vectors_result/`만 생성됩니다.
 
 ---
 

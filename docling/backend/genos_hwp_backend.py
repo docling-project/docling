@@ -63,7 +63,7 @@ else:
     _log.warning(f"HWP SDK 경로를 찾을 수 없습니다: {SDK_PATH_STR}")
 # ------------------------------
 
-# dump_sdk_output=True 시 자유소프트 SDK 중간 산출물이 저장되는 디렉터리
+# dump_sdk_output=True 시 HWP SDK 중간 산출물이 저장되는 디렉터리
 _SDK_DEBUG_OUTPUT_DIR = Path("/tmp/docparser_debug")
 
 class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
@@ -75,7 +75,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         self.save_images = kwargs.get("save_images", True)
         # 만약 WMF 변환 포함 여부도 기존처럼 쓰고 싶다면 추가
         self.include_wmf = kwargs.get("include_wmf", True)
-        # 자유소프트 SDK 중간 산출물(JSON, 이미지 등)을 디버깅 목적으로 보존할지 여부
+        # HWP SDK 중간 산출물(JSON, 이미지 등)을 디버깅 목적으로 보존할지 여부
         # 저장 기본 경로는 환경변수 DOCPARSER_OUTPUT_DIR로 서버에서 지정 (없으면 원본 파일 옆)
         self.dump_sdk_output = kwargs.get("dump_sdk_output", False)
 
@@ -143,7 +143,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
     @classmethod
     @override
     def supports_pagination(cls) -> bool:
-        """추상 메서드 구현: 페이지 단위 처리를 지원하는지 여부 (HWP는 대개 False이나, 자유소프트 SDK는 true)"""
+        """추상 메서드 구현: 페이지 단위 처리를 지원하는지 여부 (HWP는 대개 False이나, hwp_sdk는 true)"""
         return True
     
     def _get_label_and_level_hwp(self, text, size, is_bold):
@@ -200,7 +200,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                 subdir_name = f"{base.stem}_{uuid.uuid4().hex[:8]}"
             else:
                 subdir_name = base.stem
-            work_dir = _SDK_DEBUG_OUTPUT_DIR / subdir_name / "jayu_sdk_result"
+            work_dir = _SDK_DEBUG_OUTPUT_DIR / subdir_name / "hwp_sdk_result"
             work_dir.mkdir(parents=True, exist_ok=True)
             temp_dir_context = None  # 삭제할 임시 컨텍스트 없음
         else:
@@ -288,7 +288,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
 
         return doc
 
-    # --- DoclingDocument 객체에 자유소프트 SDK의 결과를 채워주는 함수 ---
+    # --- DoclingDocument 객체에 HWP SDK의 결과를 채워주는 함수 ---
     def _walk_hwp_data(self, data: List[List[Dict]], doc: DoclingDocument):
         """페이지 그룹화를 제거하고 모든 아이템을 body에 직접 나열하여 DOCX 스타일로 구성합니다."""
         self._processed_hashes = set()

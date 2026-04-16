@@ -52,7 +52,7 @@
 
 ## 전처리기 빌드 및 등록
 
-1. `HF_TOKEN` 설정 (자유소프트 HWP SDK를 private 레포에서 다운로드하기 위한 토큰)
+1. `HF_TOKEN` 설정 (HWP SDK를 private 레포에서 다운로드하기 위한 토큰)
    - 토큰 값은 [제논 내부 드라이브](https://drive.google.com/file/d/1m8aom4_zo3ZuQ-HdHHpkRsVOJakN-Lt5/view?usp=sharing)에서 확인
    - `doc_parser/` (레포 최상위 경로) 에서 아래 명령어 한 번 실행 (이후 재실행 불필요, Git에 커밋되지 않음):
      ```shell

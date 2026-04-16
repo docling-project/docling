@@ -1183,7 +1183,7 @@ async def __call__(self, request: Request, file_path: str, **kwargs: dict):
 attachment_processor.__call__():
 ├── .wav/.mp3/.m4a → AudioLoader
 ├── .csv/.xlsx → TabularLoader
-├── .hwp/.hwpx → HwpProcessor (자유소프트 SDK + Docling)
+├── .hwp/.hwpx → HwpProcessor (hwp_sdk + Docling)
 ├── .docx → DocxProcessor (Docling)
 └── 기타 → LangChain 로더 → RecursiveTextSplitter
 

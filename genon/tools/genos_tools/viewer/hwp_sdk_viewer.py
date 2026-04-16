@@ -247,7 +247,7 @@ class BOKReportWebViewer:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>자유소프트 HWP/HWPX 파서 뷰어 - 페이지 {page_num}</title>
+    <title>HWP/HWPX 파서 뷰어 - 페이지 {page_num}</title>
     <style>
         body {{
             font-family: '맑은 고딕', 'Malgun Gothic', Arial, sans-serif;
@@ -433,7 +433,7 @@ class BOKReportWebViewer:
 </head>
 <body>
     <div class="header">
-        <h1>🏦 자유소프트 HWP/HWPX 파서 뷰어</h1>
+        <h1>🏦 HWP/HWPX 파서 뷰어</h1>
         <p>데이터 분석 뷰어</p>
     </div>
 
@@ -568,7 +568,7 @@ def create_web_server(json_file_path, port=8000):
 
 
 def main():
-    print("=== 자유소프트 HWP/HWPX 파서 뷰어 ===")
+    print("=== HWP/HWPX 파서 뷰어 ===")
 
     # 파일 경로 입력받기
     json_file = input("JSON 파일 경로를 입력하세요 (또는 엔터키로 현재 경로의 'output.json' 사용): ").strip()

@@ -71,7 +71,7 @@
         ├── .csv/.xlsx ──────────► TabularLoader ──► DataFrame 파싱 ──► GenOSVectorMeta
         │
         ├── .hwp  ───────────────► HwpProcessor ──► GenosHwpDocumentBackend ──► HybridChunker
-        │                                           (자유소프트 SDK: convtext)     │
+        │                                           (hwp_sdk: convtext)           │
         ├── .hwpx ───────────────► HwpProcessor ──► GenosHwpDocumentBackend ──► HybridChunker
         │                                                               │
         ├── .docx ───────────────► DocxProcessor ──► Docling 파싱 ──► HybridChunker
@@ -353,7 +353,7 @@ def set_chunk_bboxes(self, doc_items: list, document: DoclingDocument):
 
 각 파일 포맷별로 텍스트를 추출하는 전용 로더입니다.
 
-> **변경 사항**: 기존의 `HwpLoader` (hwp5html → PDF 경로) 는 제거되었습니다. HWP 처리는 이제 [섹션 8.2의 `HwpProcessor`](#82-hwpprocessor)가 담당하며, 자유소프트 SDK(`convtext`)를 통해 .hwp와 .hwpx를 통합 처리합니다.
+> **변경 사항**: 기존의 `HwpLoader` (hwp5html → PDF 경로) 는 제거되었습니다. HWP 처리는 이제 [섹션 8.2의 `HwpProcessor`](#82-hwpprocessor)가 담당하며, hwp_sdk(`convtext`)를 통해 .hwp와 .hwpx를 통합 처리합니다.
 
 ### 6.1 `TextLoader`
 
@@ -817,7 +817,7 @@ def safe_join(self, iterable):
 class HwpProcessor:
 ```
 
-**목적**: `.hwp`(바이너리 한글)과 `.hwpx`(XML 한글) 파일을 **자유소프트 SDK**(`convtext`)를 통해 통합 처리합니다.
+**목적**: `.hwp`(바이너리 한글)과 `.hwpx`(XML 한글) 파일을 **hwp_sdk**(`convtext`)를 통해 통합 처리합니다.
 
 기존에는 `.hwp`는 `HwpLoader`(hwp5html → PDF)로, `.hwpx`는 `HwpxProcessor`(순수 XML 파싱)로 각각 처리했습니다. 이번 업데이트에서 두 클래스를 하나로 통합하고, 백엔드를 `GenosHwpDocumentBackend`로 교체했습니다.
 
@@ -864,7 +864,7 @@ async def __call__(self, request, file_path, **kwargs):
 |-----------|--------------|--------------|
 | 입력 포맷 | `InputFormat.DOCX` | `InputFormat.HWP` + `InputFormat.XML_HWPX` |
 | 포맷 옵션 | `WordFormatOption` | `HwpxFormatOption` |
-| 백엔드 | `GenosMsWordDocumentBackend` | `GenosHwpDocumentBackend` (자유소프트 SDK) |
+| 백엔드 | `GenosMsWordDocumentBackend` | `GenosHwpDocumentBackend` (hwp_sdk) |
 | 청킹 | `HybridChunker(merge_peers=True)` | `HybridChunker(merge_peers=True, include_headings=False)` |
 | 나머지 로직 | 동일 | 동일 |
 
@@ -902,7 +902,7 @@ async def __call__(self, request: Request, file_path: str, **kwargs: dict):
         return vectors
 
     elif ext in ('.hwp', '.hwpx'):
-        # ── 한글(HWP/HWPX) ── 자유소프트 SDK 기반 통합 프로세서에 위임
+        # ── 한글(HWP/HWPX) ── hwp_sdk 기반 통합 프로세서에 위임
         return await self.hwp_processor(request, file_path, **kwargs)
 
     elif ext == '.docx':
@@ -940,7 +940,7 @@ def get_loader(self, file_path: str):
 | `.ppt`, `.pptx` | `UnstructuredPowerPointLoader` | LibreOffice로 PDF 변환 후 처리 |
 | `.jpg`, `.jpeg`, `.png` | `UnstructuredImageLoader` | OCR로 텍스트 추출 (한/영) |
 | `.txt`, `.json` | `TextLoader` (커스텀) | 인코딩 자동 감지 |
-| `.hwp`, `.hwpx` | `HwpProcessor` (섹션 8.2 참고) | 자유소프트 SDK → Docling 파싱 |
+| `.hwp`, `.hwpx` | `HwpProcessor` (섹션 8.2 참고) | HWP/HWPX 변환 → Docling 파싱 |
 | `.md` | `UnstructuredMarkdownLoader` | 마크다운 구조 파싱 |
 | 기타 | `UnstructuredFileLoader` | 범용 폴백 로더 |
 
@@ -1131,7 +1131,7 @@ __call__()
 | 카테고리 | 확장자 | 처리 경로 | 핵심 도구 |
 |----------|--------|-----------|-----------|
 | **PDF** | `.pdf` | 직접 텍스트 추출 | PyMuPDF |
-| **한글** | `.hwp`, `.hwpx` | 자유소프트 SDK → Docling 구조 파싱 | GenosHwpDocumentBackend + HybridChunker |
+| **한글** | `.hwp`, `.hwpx` | HWP/HWPX 변환 → Docling 구조 파싱 | HwpProcessor + HybridChunker |
 | **Word** | `.docx` | Docling 구조 파싱 | Docling + HybridChunker |
 | **Word 레거시** | `.doc` | LibreOffice → PDF 변환 | LangChain Unstructured |
 | **프레젠테이션** | `.ppt`, `.pptx` | LibreOffice → PDF 변환 | LangChain Unstructured |
