@@ -1178,16 +1178,32 @@ class HwpProcessor:
     
     async def __call__(self, request: Any, file_path: str, **kwargs: dict):
         """외부에서 호출되는 통합 프로세서 입구"""
-        # 1. SDK 백엔드로 문서 변환
-        document: DoclingDocument = self.load_documents(file_path, **kwargs)
-        
+        ext = os.path.splitext(file_path)[-1].lower()
+
+        # 1. SDK 백엔드로 문서 변환 (실패 시 폴백)
+        document: DoclingDocument = None
+        try:
+            document = self.load_documents(file_path, **kwargs)
+        except Exception as sdk_err:
+            _log.warning(f"[HwpProcessor] GenosHwp SDK 변환 실패: {sdk_err}")
+            if ext == '.hwp':
+                # GenosHwp SDK 실패 시 표준 HwpDocumentBackend로 폴백
+                try:
+                    _log.info(f"[HwpProcessor] HwpDocumentBackend로 폴백 시도: {file_path}")
+                    kwargs_fallback = dict(kwargs, use_hwp_sdk=False)
+                    document = self.load_documents(file_path, **kwargs_fallback)
+                    _log.info(f"[HwpProcessor] HwpDocumentBackend 폴백 성공")
+                except Exception as fallback_err:
+                    _log.warning(f"[HwpProcessor] HwpDocumentBackend 폴백도 실패: {fallback_err}")
+                    raise sdk_err
+            else:
+                raise
+
         # 2. 이미지 참조 경로 설정
         artifacts_dir, reference_path = self.get_paths(file_path)
-
-        # 2.5 디버깅: 시각화 이미지 저장
         document = document._with_pictures_refs(
-            image_dir=artifacts_dir, 
-            page_no=None, 
+            image_dir=artifacts_dir,
+            page_no=None,
             reference_path=reference_path
         )
 
@@ -1197,7 +1213,6 @@ class HwpProcessor:
         # 4. 벡터화 (빌더 활용)
         if len(chunks) >= 1:
             vectors = await self.compose_vectors(document, chunks, page_chunk_counts, request, **kwargs)
-
             return vectors
         else:
             raise GenosServiceException(1, "chunk length is 0")
@@ -1481,7 +1496,23 @@ class DocumentProcessor:
         # [핵심 수정] HWP와 HWPX를 하나의 프로세서로 통합 실행
         elif ext in ('.hwp', '.hwpx'):
             _log.info(f"Processing Korean Document ({ext}) with Unified HwpProcessor")
-            return await self.hwp_processor(request, file_path, **kwargs)
+            try:
+                return await self.hwp_processor(request, file_path, **kwargs)
+            except Exception as hwp_err:
+                if ext == '.hwp':
+                    # 모든 docling 백엔드 실패 시 LibreOffice PDF 변환으로 최종 폴백
+                    _log.warning(f"[DocumentProcessor] HWP 처리기 전체 실패, LibreOffice 폴백 시도: {hwp_err}")
+                    converted = convert_to_pdf(file_path)
+                    if converted:
+                        _log.info(f"[DocumentProcessor] LibreOffice PDF 변환 성공: {converted}")
+                        documents: list[Document] = self.load_documents(converted, **kwargs)
+                        chunks: list[Document] = self.split_documents(documents, **kwargs)
+                        vectors: list[dict] = self.compose_vectors(converted, chunks, **kwargs)
+                        return vectors
+                    else:
+                        raise hwp_err
+                else:
+                    raise hwp_err
 
         elif ext == '.docx':
             return await self.docx_processor(request, file_path, **kwargs)
