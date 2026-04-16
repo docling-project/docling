@@ -70,11 +70,9 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
     def __init__(self, in_doc: InputDocument, path_or_stream: Union[Path, BytesIO], **kwargs) -> None:
         super().__init__(in_doc, path_or_stream)
 
-        # 1. PipelineOptions 등에서 넘어오는 이미 저장 여부 설정 받기
-        # kwargs에 없으면 기본적으로 True로 설정합니다.
-        self.save_images = kwargs.get("save_images", True)
-        # 만약 WMF 변환 포함 여부도 기존처럼 쓰고 싶다면 추가
         self.include_wmf = kwargs.get("include_wmf", True)
+        # include_wmf=True이면 save_images도 자동으로 True (hwpx_backend 동일 패턴)
+        self.save_images = kwargs.get("save_images", True) or self.include_wmf
         # HWP SDK 중간 산출물(JSON, 이미지 등)을 디버깅 목적으로 보존할지 여부
         # 저장 기본 경로는 환경변수 DOCPARSER_OUTPUT_DIR로 서버에서 지정 (없으면 원본 파일 옆)
         self.dump_sdk_output = kwargs.get("dump_sdk_output", False)
@@ -403,6 +401,9 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             )
 
     def _handle_image(self, item: Dict, doc: DoclingDocument, page_no: int, parent: Any):
+        if not self.save_images:
+            return
+
         # 1. JSON에 적힌 값(이미지 경로)을 가져옴 (예: "/tmp/old_path/images/image6.bmp")
         img_path = item.get("value", "")
 
@@ -441,8 +442,8 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
             pil_image = Image.open(img_path)
             pil_image.load() # 강제 로드하여 오류 조기 감지
         except (UnidentifiedImageError, OSError):
-            # 2단계: Pillow 실패 시 Wand 가동
-            if WAND_AVAILABLE:
+            # 2단계: Pillow 실패 시 Wand 가동 (include_wmf=True인 경우에만)
+            if self.include_wmf and WAND_AVAILABLE:
                 try:
                     with WandImage(filename=img_path) as wand_img:
                         wand_img.format = 'png'
@@ -450,7 +451,7 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                 except Exception as e:
                     _log.error(f"Wand 변환 실패: {e}")
             else:
-                _log.warning(f"Pillow 실패 및 Wand 미설치로 복구 불가: {img_path}")
+                _log.warning(f"Pillow 실패, WMF/EMF 복구 미시도 (include_wmf={self.include_wmf}): {img_path}")
 
         # [Salvaged 3] Docling 임베딩 (DPI 고정 및 BBox 설정)
         prov = ProvenanceItem(
