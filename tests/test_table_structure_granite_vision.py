@@ -37,12 +37,14 @@ def test_parse_simple_table():
 def test_parse_empty_cell():
     """Empty cell produces empty text, still in grid."""
     text = "<ched>A</ched><ched>B</ched><nl><fcel>x</fcel><ecel></ecel><nl>"
-    otsl_seq, cells, num_rows, num_cols = _parse_otsl_output(text)
+    _otsl_seq, cells, num_rows, num_cols = _parse_otsl_output(text)
 
     assert num_rows == 2
     assert num_cols == 2
     assert len(cells) == 4
-    empty = [c for c in cells if c.start_row_offset_idx == 1 and c.start_col_offset_idx == 1]
+    empty = [
+        c for c in cells if c.start_row_offset_idx == 1 and c.start_col_offset_idx == 1
+    ]
     assert len(empty) == 1
     assert empty[0].text == ""
 
@@ -50,10 +52,12 @@ def test_parse_empty_cell():
 def test_parse_colspan():
     """lcel produces colspan=2 on the preceding fcel."""
     text = "<fcel>Merged</fcel><lcel><nl><fcel>A</fcel><fcel>B</fcel><nl>"
-    otsl_seq, cells, num_rows, num_cols = _parse_otsl_output(text)
+    _otsl_seq, cells, _num_rows, num_cols = _parse_otsl_output(text)
 
     assert num_cols == 2
-    merged = [c for c in cells if c.start_row_offset_idx == 0 and c.start_col_offset_idx == 0]
+    merged = [
+        c for c in cells if c.start_row_offset_idx == 0 and c.start_col_offset_idx == 0
+    ]
     assert len(merged) == 1
     assert merged[0].col_span == 2
     assert merged[0].end_col_offset_idx == 2
@@ -62,9 +66,11 @@ def test_parse_colspan():
 def test_parse_rowspan():
     """ucel produces rowspan=2 on the preceding fcel above it."""
     text = "<fcel>Tall</fcel><fcel>A</fcel><nl><ucel><fcel>B</fcel><nl>"
-    otsl_seq, cells, num_rows, num_cols = _parse_otsl_output(text)
+    _otsl_seq, cells, _num_rows, _num_cols = _parse_otsl_output(text)
 
-    tall = [c for c in cells if c.start_row_offset_idx == 0 and c.start_col_offset_idx == 0]
+    tall = [
+        c for c in cells if c.start_row_offset_idx == 0 and c.start_col_offset_idx == 0
+    ]
     assert len(tall) == 1
     assert tall[0].row_span == 2
     assert tall[0].end_row_offset_idx == 2
@@ -97,12 +103,16 @@ def test_parse_empty_string():
 
 
 def test_get_options_type():
-    assert GraniteVisionTableStructureModel.get_options_type() is GraniteVisionTableStructureOptions
+    assert (
+        GraniteVisionTableStructureModel.get_options_type()
+        is GraniteVisionTableStructureOptions
+    )
 
 
 def test_model_disabled_skips_pages():
     """When enabled=False, predict_tables returns empty prediction without running inference."""
     from unittest.mock import MagicMock
+
     from docling_core.types.doc import DocItemLabel
 
     model = GraniteVisionTableStructureModel(
@@ -155,7 +165,9 @@ def test_parse_xcel_2d_merge():
 
     assert num_rows == 2
     assert num_cols == 2
-    origin = [c for c in cells if c.start_row_offset_idx == 0 and c.start_col_offset_idx == 0]
+    origin = [
+        c for c in cells if c.start_row_offset_idx == 0 and c.start_col_offset_idx == 0
+    ]
     assert len(origin) == 1
     assert origin[0].col_span == 2
     assert origin[0].row_span == 2

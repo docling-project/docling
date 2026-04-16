@@ -4,7 +4,7 @@ import warnings
 from collections.abc import Sequence
 from itertools import groupby
 from pathlib import Path
-from typing import Any, ClassVar, Literal, Optional, cast
+from typing import Any, ClassVar, Literal, cast
 
 import torch
 from docling_core.types.doc import DocItemLabel, TableCell
@@ -27,11 +27,14 @@ _CONTENT_TOKENS = {"fcel", "ecel", "ched", "rhed", "srow"}
 _SPAN_TOKENS = {"lcel", "ucel", "xcel"}
 
 # Regex to extract (tag_name, inner_text) from VLM OTSL output.
-# Matches: <tag>text</tag>  OR  <tag/>  OR  <tag>  (self-closing / bare nl)
+# Handles two OTSL serialisation styles:
+#   Closed:  <tag>text</tag>  — used in unit tests and some model outputs
+#   Open:    <tag>text<next>  — used by ibm-granite model (no closing tag)
+# Also handles self-closing tags: <tag/>
 _TAG_RE = re.compile(
-    r"<(?P<tag>[a-z]+)>(?P<text>.*?)</(?P=tag)>"  # <tag>text</tag>
-    r"|<(?P<stag>[a-z]+)\s*/>"                     # <tag/>
-    r"|<(?P<btag>[a-z]+)>",                        # <tag> (bare, e.g. <nl>, <lcel>)
+    r"<(?P<tag>[a-z]+)>(?P<text>.*?)</(?P=tag)>"  # <tag>text</tag> (closed form)
+    r"|<(?P<stag>[a-z]+)\s*/>"  # <tag/>  (self-closing)
+    r"|<(?P<otag>[a-z]+)>(?P<otext>[^<]*)",  # <tag>text  (open form; otext may be "")
     re.DOTALL,
 )
 
@@ -58,6 +61,11 @@ def _parse_otsl_output(
     if not text or not text.strip():
         return [], [], 0, 0
 
+    # Unwrap optional [<otsl>...</otsl>] container produced by the model
+    otsl_match = re.search(r"<otsl>(.*)</otsl>", text, re.DOTALL)
+    if otsl_match:
+        text = otsl_match.group(1)
+
     # Extract (tag, inner_text) pairs
     token_pairs: list[tuple[str, str]] = []
     for m in _TAG_RE.finditer(text):
@@ -65,8 +73,8 @@ def _parse_otsl_output(
             token_pairs.append((m.group("tag"), m.group("text") or ""))
         elif m.group("stag"):
             token_pairs.append((m.group("stag"), ""))
-        elif m.group("btag"):
-            token_pairs.append((m.group("btag"), ""))
+        elif m.group("otag"):
+            token_pairs.append((m.group("otag"), m.group("otext") or ""))
 
     if not token_pairs:
         return [], [], 0, 0
@@ -141,13 +149,14 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         options: GraniteVisionTableStructureOptions,
         accelerator_options: AcceleratorOptions,
         enable_remote_services: Literal[False] = False,
     ):
         self.enabled = enabled
         self.options = options
+        self.accelerator_options = accelerator_options
 
         if self.enabled:
             self.device = decide_device(
@@ -174,7 +183,7 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
     @classmethod
     def download_models(
         cls,
-        local_dir: Optional[Path] = None,
+        local_dir: Path | None = None,
         force: bool = False,
         progress: bool = False,
     ) -> Path:
@@ -207,6 +216,12 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
                 artifacts_path,
                 device_map=self.device,
                 dtype=torch.bfloat16,
+                _attn_implementation=(
+                    "flash_attention_2"
+                    if self.device.startswith("cuda")
+                    and self.accelerator_options.cuda_use_flash_attention2
+                    else "sdpa"
+                ),
                 trust_remote_code=True,
             )
         cast(Any, self._model).merge_lora_adapters()
@@ -294,7 +309,7 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
                 # Decode only generated tokens (strip input prompt tokens)
                 output_texts = [
                     self._processor.decode(
-                        output_ids[i, inputs["input_ids"].shape[1]:],
+                        output_ids[i, inputs["input_ids"].shape[1] :],
                         skip_special_tokens=True,
                     )
                     for i in range(len(valid_images))
