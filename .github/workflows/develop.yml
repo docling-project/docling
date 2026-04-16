@@ -25,6 +25,13 @@ jobs:
 
       - run: uv python pin ${{ matrix.python-version }}
 
+      - name: Cache apt packages
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: apt-${{ runner.os }}-libreoffice-${{ hashFiles('.github/workflows/develop.yml') }}
+          restore-keys: apt-${{ runner.os }}-libreoffice-
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
