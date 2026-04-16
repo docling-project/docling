@@ -137,7 +137,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync
 
 ############################
-# 4-1) 자유소프트 SDK 아티팩트
+# 4-1) HWP SDK 아티팩트
 ############################
 FROM builder AS sdk_artifacts
 ARG APP_VENV
@@ -244,7 +244,7 @@ COPY ./genon/preprocessor/configs /app/configs
 COPY ./genon/preprocessor/env /app/env
 COPY ./genon/preprocessor/src /app/src
 
-# 🔴 자유소프트 sdk 다운로드
+# 🔴 HWP sdk 다운로드
 COPY --from=sdk_artifacts /app/hwp_sdk /app/hwp_sdk
 
 # ✅ 공통 venv 위치만 복사
