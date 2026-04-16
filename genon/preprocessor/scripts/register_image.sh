@@ -59,61 +59,61 @@ else
 fi
 
 ## ── 로컬 이미지 확인 ────────────────────────────────────────
-#step "로컬 Docker 이미지 확인"
-#if docker image inspect "${FULL_IMAGE_NAME}" >/dev/null 2>&1; then
-#  ok "로컬 이미지 존재"
-#  HAS_LOCAL_IMAGE="yes"
-#else
-#  echo "⚠️ 로컬에 ${FULL_IMAGE_NAME} 없음."
-#  HAS_LOCAL_IMAGE="no"
-#fi
-#
+step "로컬 Docker 이미지 확인"
+if docker image inspect "${FULL_IMAGE_NAME}" >/dev/null 2>&1; then
+  ok "로컬 이미지 존재"
+  HAS_LOCAL_IMAGE="yes"
+else
+  echo "⚠️ 로컬에 ${FULL_IMAGE_NAME} 없음."
+  HAS_LOCAL_IMAGE="no"
+fi
+
 ## ── docker push (포그라운드 / 재시도) ───────────────────────
-#step "docker push"
-#SKIP_PUSH="no"
-#if [[ "${HAS_LOCAL_IMAGE}" != "yes" ]]; then
-#  if [[ -n "${REGISTRY_API_URL:-}" ]]; then
-#    step "레지스트리 존재 확인 (${REGISTRY_API_URL})"
-#    if curl -fsS "${REGISTRY_API_URL}/v2/${IMAGE_NAME}/manifests/${IMAGE_TAG}" >/dev/null 2>&1; then
-#      ok "레지스트리에 동일 태그 존재, push 스킵"
-#      SKIP_PUSH="yes"
-#    else
-#      fail "로컬 이미지 없음 + 레지스트리에도 태그 없음. build/push 필요"
-#      exit 1
-#    fi
-#  else
-#    read -rp "로컬 이미지 없음. 레지스트리에 이미 푸쉬된 상태면 y 입력 (y/N): " _SKIP
-#    if [[ "${_SKIP:-N}" =~ ^[Yy]$ ]]; then
-#      ok "사용자 확인으로 push 스킵"
-#      SKIP_PUSH="yes"
-#    else
-#      fail "로컬 이미지 없음. build/push 필요"
-#      exit 1
-#    fi
-#  fi
-#fi
-#
-#if [[ "${SKIP_PUSH}" != "yes" ]]; then
-#  PUSH_MAX_RETRY="${PUSH_MAX_RETRY:-3}"
-#  for i in $(seq 1 "${PUSH_MAX_RETRY}"); do
-#    echo "push ${i}/${PUSH_MAX_RETRY}: ${FULL_IMAGE_NAME}"
-#    if docker push "${FULL_IMAGE_NAME}"; then ok "docker push 성공"; break; fi
-#    [[ $i -lt ${PUSH_MAX_RETRY} ]] || { fail "docker push 실패"; exit 1; }
-#    echo "10초 대기 후 재시도..."; sleep 10
-#  done
-#else
-#  echo "⏩ docker push 스킵"
-#fi
-#
-## (옵션) 레지스트리 API 확인
-#if [[ -n "${REGISTRY_API_URL:-}" ]]; then
-#  step "레지스트리 API 확인 (${REGISTRY_API_URL})"
-#  if curl -fsS "${REGISTRY_API_URL}/v2/_catalog" >/dev/null 2>&1; then
-#    ok "레지스트리 API OK"
-#  else
-#    echo "⚠️ API 응답 없음(무시 가능). push는 완료됨."
-#  fi
-#fi
+step "docker push"
+SKIP_PUSH="no"
+if [[ "${HAS_LOCAL_IMAGE}" != "yes" ]]; then
+  if [[ -n "${REGISTRY_API_URL:-}" ]]; then
+    step "레지스트리 존재 확인 (${REGISTRY_API_URL})"
+    if curl -fsS "${REGISTRY_API_URL}/v2/${IMAGE_NAME}/manifests/${IMAGE_TAG}" >/dev/null 2>&1; then
+      ok "레지스트리에 동일 태그 존재, push 스킵"
+      SKIP_PUSH="yes"
+    else
+      fail "로컬 이미지 없음 + 레지스트리에도 태그 없음. build/push 필요"
+      exit 1
+    fi
+  else
+    read -rp "로컬 이미지 없음. 레지스트리에 이미 푸쉬된 상태면 y 입력 (y/N): " _SKIP
+    if [[ "${_SKIP:-N}" =~ ^[Yy]$ ]]; then
+      ok "사용자 확인으로 push 스킵"
+      SKIP_PUSH="yes"
+    else
+      fail "로컬 이미지 없음. build/push 필요"
+      exit 1
+    fi
+  fi
+fi
+
+if [[ "${SKIP_PUSH}" != "yes" ]]; then
+  PUSH_MAX_RETRY="${PUSH_MAX_RETRY:-3}"
+  for i in $(seq 1 "${PUSH_MAX_RETRY}"); do
+    echo "push ${i}/${PUSH_MAX_RETRY}: ${FULL_IMAGE_NAME}"
+    if docker push "${FULL_IMAGE_NAME}"; then ok "docker push 성공"; break; fi
+    [[ $i -lt ${PUSH_MAX_RETRY} ]] || { fail "docker push 실패"; exit 1; }
+    echo "10초 대기 후 재시도..."; sleep 10
+  done
+else
+  echo "⏩ docker push 스킵"
+fi
+
+# (옵션) 레지스트리 API 확인
+if [[ -n "${REGISTRY_API_URL:-}" ]]; then
+  step "레지스트리 API 확인 (${REGISTRY_API_URL})"
+  if curl -fsS "${REGISTRY_API_URL}/v2/_catalog" >/dev/null 2>&1; then
+    ok "레지스트리 API OK"
+  else
+    echo "⚠️ API 응답 없음(무시 가능). push는 완료됨."
+  fi
+fi
 
 # ────────────────────────────────────────────────────────────
 # ⬇⬇⬇ 여기부터 DB 파트 *원하신 형태 그대로* (유저/패스/설정만 치환)
