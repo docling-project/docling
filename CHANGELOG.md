@@ -1,3 +1,23 @@
+## [v2.89.0](https://github.com/docling-project/docling/releases/tag/v2.89.0) - 2026-04-16
+
+### Feature
+
+* Explicit TikZ environment handling in LaTeX backend ([#3187](https://github.com/docling-project/docling/issues/3187)) ([`a15c16e`](https://github.com/docling-project/docling/commit/a15c16e19fc9531e68916d15a1976ba76414c545))
+
+### Fix
+
+* **ocr:** Align RapidOCR english assets with 3.8 mobile models ([#3291](https://github.com/docling-project/docling/issues/3291)) ([`251c8b2`](https://github.com/docling-project/docling/commit/251c8b217a72453205242993e03ca8004cb2877e))
+* **docx:** Isolate list state in table cells ([#3294](https://github.com/docling-project/docling/issues/3294)) ([`740c386`](https://github.com/docling-project/docling/commit/740c386730db1e846abc83c16e8519cd776e3ca6))
+* **pipeline:** Prevent cache miss due to pipeline options mutation during chart extraction ([#3300](https://github.com/docling-project/docling/issues/3300)) ([`5b84911`](https://github.com/docling-project/docling/commit/5b84911a4cbed35e75e80134188be3ff4f962df0))
+
+### Documentation
+
+* Add indexed picture placeholder example to serialization notebook ([#3293](https://github.com/docling-project/docling/issues/3293)) ([`cd2e5b6`](https://github.com/docling-project/docling/commit/cd2e5b633d41733053bd5490f9de496c0b2d5d15))
+
+### Performance
+
+* **markdown:** Avoid eager string formatting in Markdown backend debug logs ([#3301](https://github.com/docling-project/docling/issues/3301)) ([`a64c378`](https://github.com/docling-project/docling/commit/a64c3784d049d1b36013f26e31c302fafc8dd239))
+
 ## [v2.88.0](https://github.com/docling-project/docling/releases/tag/v2.88.0) - 2026-04-13
 
 ### Feature
