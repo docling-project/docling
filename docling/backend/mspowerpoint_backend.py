@@ -698,9 +698,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 try:
                     return shape.shape_type
                 except NotImplementedError:
-                    _log.debug(
-                        "Skipping shape with unrecognized type: %s", shape.name
-                    )
+                    _log.debug("Skipping shape with unrecognized type: %s", shape.name)
                     return None
 
             def handle_shapes(shape, parent_slide, slide_ind, doc, slide_size):
