@@ -1186,15 +1186,16 @@ class HwpProcessor:
             document = self.load_documents(file_path, **kwargs)
         except Exception as sdk_err:
             _log.warning(f"[HwpProcessor] GenosHwp SDK 변환 실패: {sdk_err}")
-            if ext == '.hwp':
-                # GenosHwp SDK 실패 시 표준 HwpDocumentBackend로 폴백
+            if ext in ('.hwp', '.hwpx'):
+                # GenosHwp SDK 실패 시 레거시 백엔드로 폴백 (.hwp → HwpDocumentBackend, .hwpx → HwpxDocumentBackend)
+                backend_name = "HwpDocumentBackend" if ext == '.hwp' else "HwpxDocumentBackend"
                 try:
-                    _log.info(f"[HwpProcessor] HwpDocumentBackend로 폴백 시도: {file_path}")
+                    _log.info(f"[HwpProcessor] {backend_name}로 폴백 시도: {file_path}")
                     kwargs_fallback = dict(kwargs, use_hwp_sdk=False)
                     document = self.load_documents(file_path, **kwargs_fallback)
-                    _log.info(f"[HwpProcessor] HwpDocumentBackend 폴백 성공")
+                    _log.info(f"[HwpProcessor] {backend_name} 폴백 성공")
                 except Exception as fallback_err:
-                    _log.warning(f"[HwpProcessor] HwpDocumentBackend 폴백도 실패: {fallback_err}")
+                    _log.warning(f"[HwpProcessor] {backend_name} 폴백도 실패: {fallback_err}")
                     raise sdk_err
             else:
                 raise
@@ -1499,18 +1500,15 @@ class DocumentProcessor:
             try:
                 return await self.hwp_processor(request, file_path, **kwargs)
             except Exception as hwp_err:
-                if ext == '.hwp':
-                    # 모든 docling 백엔드 실패 시 LibreOffice PDF 변환으로 최종 폴백
-                    _log.warning(f"[DocumentProcessor] HWP 처리기 전체 실패, LibreOffice 폴백 시도: {hwp_err}")
-                    converted = convert_to_pdf(file_path)
-                    if converted:
-                        _log.info(f"[DocumentProcessor] LibreOffice PDF 변환 성공: {converted}")
-                        documents: list[Document] = self.load_documents(converted, **kwargs)
-                        chunks: list[Document] = self.split_documents(documents, **kwargs)
-                        vectors: list[dict] = self.compose_vectors(converted, chunks, **kwargs)
-                        return vectors
-                    else:
-                        raise hwp_err
+                # 모든 docling 백엔드 실패 시 LibreOffice PDF 변환으로 최종 폴백
+                _log.warning(f"[DocumentProcessor] HWP/HWPX 처리기 전체 실패, LibreOffice 폴백 시도: {hwp_err}")
+                converted = convert_to_pdf(file_path)
+                if converted:
+                    _log.info(f"[DocumentProcessor] LibreOffice PDF 변환 성공: {converted}")
+                    documents: list[Document] = self.load_documents(converted, **kwargs)
+                    chunks: list[Document] = self.split_documents(documents, **kwargs)
+                    vectors: list[dict] = self.compose_vectors(converted, chunks, **kwargs)
+                    return vectors
                 else:
                     raise hwp_err
 

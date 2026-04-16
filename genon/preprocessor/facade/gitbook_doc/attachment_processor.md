@@ -70,10 +70,9 @@
         │
         ├── .csv/.xlsx ──────────► TabularLoader ──► DataFrame 파싱 ──► GenOSVectorMeta
         │
-        ├── .hwp  ───────────────► HwpProcessor ──► GenosHwpDocumentBackend ──► HybridChunker
-        │                                           (hwp_sdk: convtext)           │
-        ├── .hwpx ───────────────► HwpProcessor ──► GenosHwpDocumentBackend ──► HybridChunker
-        │                                                               │
+        ├── .hwp/.hwpx ─────────► HwpProcessor ──────────────────────► HybridChunker
+        │                         (폴백 체인은 아래 2-1 참고)               │
+        │
         ├── .docx ───────────────► DocxProcessor ──► Docling 파싱 ──► HybridChunker
         │                                                               │
         └── 기타 (.pdf, .ppt,    ► get_loader() ──► LangChain Loader     │
@@ -89,6 +88,28 @@
                                               │  List[GenOSVectorMeta]      │
                                               │  (최종 출력: 청크별 메타데이터)    │
                                               └─────────────────────────────┘
+```
+
+---
+
+## 2-1. HwpProcessor 폴백 체인
+
+HWP/HWPX 파일은 변환 실패 시 단계적으로 폴백을 시도합니다.
+
+```
+.hwp / .hwpx 입력
+        │
+        ├─[use_hwp_sdk=True]──► ① GenosHwpDocumentBackend ──── 성공 ──► HybridChunker
+        │                                   │ 실패
+        │                                   ▼
+        └─[use_hwp_sdk=False]─► ② .hwp  → HwpDocumentBackend ─ 성공 ──► HybridChunker
+                                   .hwpx → HwpxDocumentBackend
+                                           │ 실패
+                                           ▼
+                                ③ LibreOffice PDF 변환 ─────── 성공 ──► compose_vectors()
+                                           │ 실패
+                                           ▼
+                                        에러 반환
 ```
 
 ---

@@ -453,4 +453,4 @@ hwp_sdk/
 test_results/
 
 # 로컬 빌드 설정 (HF_TOKEN 등 민감 정보 포함, 절대 커밋 금지)
-build-script/doc-parser-build.config.local
+build-script/hf_private_token.env

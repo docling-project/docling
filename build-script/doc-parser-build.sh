@@ -15,8 +15,8 @@ else
   echo "[WARN] ${CONFIG_FILE} 이(가) 없어서 기본값으로 빌드합니다."
 fi
 
-# 로컬 전용 설정 파일이 있으면 추가로 읽음 (HF_TOKEN 등 민감 정보용, Git 미추적)
-LOCAL_CONFIG_FILE="${ROOT_DIR}/build-script/doc-parser-build.config.local"
+# 로컬 전용 토큰 파일이 있으면 추가로 읽음 (HF_TOKEN 등 민감 정보용, Git 미추적)
+LOCAL_CONFIG_FILE="${ROOT_DIR}/build-script/hf_private_token.env"
 if [[ -f "${LOCAL_CONFIG_FILE}" ]]; then
   # shellcheck source=/dev/null
   source "${LOCAL_CONFIG_FILE}"
@@ -46,7 +46,7 @@ echo "[INFO] NLTK_PACKAGES  = ${APP_NLTK_PACKAGES}"
 # HuggingFace 토큰 존재 여부 확인 (Private SDK 다운로드 시 필수)
 if [[ -z "${HF_TOKEN}" ]]; then
   echo "[ERROR] HF_TOKEN이 설정되지 않았습니다. Private SDK 다운로드가 필요한 빌드는 진행할 수 없습니다."
-  echo "[ERROR] build-script/doc-parser-build.config.local 또는 환경변수에 HF_TOKEN을 설정하세요."
+  echo "[ERROR] build-script/hf_private_token.env 또는 환경변수에 HF_TOKEN을 설정하세요."
   exit 1
 else
   echo "[INFO] HF_TOKEN이 감지되었습니다. Secret 마운트를 사용하여 빌드합니다."
