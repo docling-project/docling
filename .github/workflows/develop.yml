@@ -25,6 +25,13 @@ jobs:
 
       - run: uv python pin ${{ matrix.python-version }}
 
+      - name: Cache apt packages
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: apt-${{ runner.os }}-libreoffice-${{ hashFiles('.github/workflows/develop.yml') }}
+          restore-keys: apt-${{ runner.os }}-libreoffice-
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -45,6 +52,22 @@ jobs:
 #            pytesseract>=0.3.10 \
 #            weasyprint>=60.0 \
 #            opencv-python>=4.8.0
+
+      - name: Download HWP SDK from HuggingFace
+        working-directory: genon/preprocessor
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          HWP_SDK_DIR="${{ github.workspace }}/hwp_sdk"
+          mkdir -p "$HWP_SDK_DIR"
+          uv run huggingface-cli download HeechanKim-Genon/hwp_sdk \
+            --repo-type dataset \
+            --local-dir "$HWP_SDK_DIR" \
+            --local-dir-use-symlinks False \
+            --token "$HF_TOKEN"
+          chmod +x "$HWP_SDK_DIR/convtext"
+          SITE_PKG=$(uv run python -c "import site; print(site.getsitepackages()[0])")
+          ln -sf "$HWP_SDK_DIR" "${SITE_PKG}/hwp_sdk"
 
       - name: Download NLTK data
         working-directory: genon/preprocessor

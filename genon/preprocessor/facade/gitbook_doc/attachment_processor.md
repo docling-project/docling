@@ -17,16 +17,15 @@
    - 5.1 [`GenOSVectorMeta`](#51-genosvectormeta)
    - 5.2 [`GenOSVectorMetaBuilder`](#52-genosvectormetabuilder)
 6. [파일 로더 (Loader) 클래스들](#6-파일-로더-loader-클래스들)
-   - 6.1 [`HwpLoader`](#61-hwploader)
-   - 6.2 [`TextLoader`](#62-textloader)
-   - 6.3 [`TabularLoader`](#63-tabularloader)
-   - 6.4 [`AudioLoader`](#64-audioloader)
+   - 6.1 [`TextLoader`](#61-textloader)
+   - 6.2 [`TabularLoader`](#62-tabularloader)
+   - 6.3 [`AudioLoader`](#63-audioloader)
 7. [청킹(Chunking) 클래스들](#7-청킹chunking-클래스들)
    - 7.1 [`HierarchicalChunker`](#71-hierarchicalchunker)
    - 7.2 [`HybridChunker`](#72-hybridchunker)
 8. [문서 프로세서 (Processor) 클래스들](#8-문서-프로세서-processor-클래스들)
    - 8.1 [`DocxProcessor`](#81-docxprocessor)
-   - 8.2 [`HwpxProcessor`](#82-hwpxprocessor)
+   - 8.2 [`HwpProcessor`](#82-hwpprocessor)
    - 8.3 [`DocumentProcessor` (메인 엔트리포인트)](#83-documentprocessor-메인-엔트리포인트)
 9. [예외 클래스](#9-예외-클래스)
 10. [실행 흐름 요약](#10-실행-흐름-요약)
@@ -71,10 +70,9 @@
         │
         ├── .csv/.xlsx ──────────► TabularLoader ──► DataFrame 파싱 ──► GenOSVectorMeta
         │
-        ├── .hwp ────────────────► HwpLoader ──► hwp5html ──► PDF ──► 텍스트 추출
-        │                                                       │
-        ├── .hwpx ───────────────► HwpxProcessor ──► Docling 파싱 ──► HybridChunker
-        │                                                               │
+        ├── .hwp/.hwpx ─────────► HwpProcessor ──────────────────────► HybridChunker
+        │                         (폴백 체인은 아래 2-1 참고)               │
+        │
         ├── .docx ───────────────► DocxProcessor ──► Docling 파싱 ──► HybridChunker
         │                                                               │
         └── 기타 (.pdf, .ppt,    ► get_loader() ──► LangChain Loader     │
@@ -90,6 +88,28 @@
                                               │  List[GenOSVectorMeta]      │
                                               │  (최종 출력: 청크별 메타데이터)    │
                                               └─────────────────────────────┘
+```
+
+---
+
+## 2-1. HwpProcessor 폴백 체인
+
+HWP/HWPX 파일은 변환 실패 시 단계적으로 폴백을 시도합니다.
+
+```
+.hwp / .hwpx 입력
+        │
+        ├─[use_hwp_sdk=True]──► ① GenosHwpDocumentBackend ──── 성공 ──► HybridChunker
+        │                                   │ 실패
+        │                                   ▼
+        └─[use_hwp_sdk=False]─► ② .hwp  → HwpDocumentBackend ─ 성공 ──► HybridChunker
+                                   .hwpx → HwpxDocumentBackend
+                                           │ 실패
+                                           ▼
+                                ③ LibreOffice PDF 변환 ─────── 성공 ──► compose_vectors()
+                                           │ 실패
+                                           ▼
+                                        에러 반환
 ```
 
 ---
@@ -354,69 +374,9 @@ def set_chunk_bboxes(self, doc_items: list, document: DoclingDocument):
 
 각 파일 포맷별로 텍스트를 추출하는 전용 로더입니다.
 
-### 6.1 `HwpLoader`
+> **변경 사항**: 기존의 `HwpLoader` (hwp5html → PDF 경로) 는 제거되었습니다. HWP 처리는 이제 [섹션 8.2의 `HwpProcessor`](#82-hwpprocessor)가 담당하며, hwp_sdk(`convtext`)를 통해 .hwp와 .hwpx를 통합 처리합니다.
 
-```python
-class HwpLoader:
-    def __init__(self, file_path: str):
-        self.file_path = file_path
-        self.output_dir = os.path.join('/tmp', str(uuid.uuid4()))  # 고유한 임시 디렉토리
-```
-
-**목적**: HWP(한글) 파일에서 텍스트를 추출합니다.
-
-**처리 흐름**:
-
-```
-.hwp 파일
-    │
-    ▼
-hwp5html 명령어로 XHTML 변환
-    │  (hwp5html은 pyhwp 패키지에 포함된 CLI 도구)
-    │  결과: /tmp/{uuid}/index.xhtml
-    │
-    ▼
-WeasyPrint로 XHTML → PDF 변환
-    │  결과: 원본경로/파일명.pdf
-    │
-    ▼
-PyMuPDFLoader로 PDF에서 텍스트 추출
-    │
-    ▼
-List[Document] 반환
-```
-
-**주의**
-> HWP는 한컴오피스 고유의 바이너리 포맷이므로 상용 소프트웨어가 아닌 이상 텍스트를 추출하기 어렵습니다. 
-> `hwp5html`은 오픈소스로서 HTML 구조로 변환한 뒤 PDF를 거쳐 텍스트를 추출하지만, 오류를 자주 동반합니다.
-> Site 별로 상황에 맞게 상용솔루션으로 이부분을 대체합니다.
-
-```python
-    def load(self):
-        try:
-            # 1단계: HWP → XHTML
-            subprocess.run(
-                ['hwp5html', self.file_path, '--output', self.output_dir],
-                check=True,
-                timeout=600          # 10분 타임아웃 (대용량 파일 대비)
-            )
-            # 2단계: XHTML → PDF
-            converted_file_path = os.path.join(self.output_dir, 'index.xhtml')
-            pdf_save_path = _get_pdf_path(self.file_path)
-            HTML(converted_file_path).write_pdf(pdf_save_path)
-
-            # 3단계: PDF → 텍스트 추출
-            loader = PyMuPDFLoader(pdf_save_path)
-            return loader.load()
-        finally:
-            # 임시 디렉토리 정리 (성공/실패 무관)
-            if os.path.exists(self.output_dir):
-                shutil.rmtree(self.output_dir)
-```
-
----
-
-### 6.2 `TextLoader`
+### 6.1 `TextLoader`
 
 ```python
 class TextLoader:
@@ -465,7 +425,7 @@ chardet로 인코딩 자동 감지
 
 ---
 
-### 6.3 `TabularLoader`
+### 6.2 `TabularLoader`
 
 ```python
 class TabularLoader:
@@ -537,7 +497,7 @@ def load_xlsx_documents(self, file_path: str):
 
 ---
 
-### 6.4 `AudioLoader`
+### 6.3 `AudioLoader`
 
 ```python
 class AudioLoader:
@@ -605,7 +565,7 @@ for t in threads: t.join()    # 모든 스레드 완료 대기
 
 ## 7. 청킹(Chunking) 클래스들
 
-HWPX와 DOCX 파일 처리 시 사용되는 고급 청킹 로직입니다. `Genos 지능형 전처리기` 의 `DoclingDocument` 구조를 기반으로 동작합니다.
+HWP, HWPX와 DOCX 파일 처리 시 사용되는 고급 청킹 로직입니다. `Genos 지능형 전처리기` 의 `DoclingDocument` 구조를 기반으로 동작합니다.
 
 ### 7.1 `HierarchicalChunker`
 
@@ -872,31 +832,61 @@ def safe_join(self, iterable):
 
 ---
 
-### 8.2 `HwpxProcessor`
+### 8.2 `HwpProcessor`
 
 ```python
-class HwpxProcessor:
+class HwpProcessor:
 ```
 
-**목적**: `.hwpx` (한글 오피스 XML) 파일을 Docling 엔진으로 파싱합니다.
+**목적**: `.hwp`(바이너리 한글)과 `.hwpx`(XML 한글) 파일을 **hwp_sdk**(`convtext`)를 통해 통합 처리합니다.
 
-`DocxProcessor`와 거의 동일한 구조이며, 차이점은 변환기 설정뿐입니다:
+기존에는 `.hwp`는 `HwpLoader`(hwp5html → PDF)로, `.hwpx`는 `HwpxProcessor`(순수 XML 파싱)로 각각 처리했습니다. 이번 업데이트에서 두 클래스를 하나로 통합하고, 백엔드를 `GenosHwpDocumentBackend`로 교체했습니다.
+
+**변환기 설정**:
 
 ```python
 self.converter = DocumentConverter(
     format_options={
-        InputFormat.XML_HWPX: HwpxFormatOption(       # HWPX 전용 포맷 옵션
-            pipeline_options=self.pipeline_options
+        # .hwp(바이너리)도 HwpxFormatOption의 틀을 빌려 SDK 백엔드로 연결
+        InputFormat.HWP: HwpxFormatOption(
+            pipeline_options=self.pipeline_options,
+            backend=GenosHwpDocumentBackend
+        ),
+        # .hwpx(XML)도 동일한 SDK 백엔드로 처리
+        InputFormat.XML_HWPX: HwpxFormatOption(
+            pipeline_options=self.pipeline_options,
+            backend=GenosHwpDocumentBackend
         )
     }
 )
 ```
 
-| 비교 항목 | DocxProcessor | HwpxProcessor |
-|-----------|--------------|---------------|
-| 입력 포맷 | `InputFormat.DOCX` | `InputFormat.XML_HWPX` |
+**처리 흐름**:
+
+```python
+async def __call__(self, request, file_path, **kwargs):
+    # 1단계: SDK 백엔드로 문서 변환 (.hwp / .hwpx 모두 동일 경로)
+    document: DoclingDocument = self.load_documents(file_path, **kwargs)
+
+    # 2단계: 이미지 참조 경로 설정
+    artifacts_dir, reference_path = self.get_paths(file_path)
+    document = document._with_pictures_refs(...)
+
+    # 3단계: HybridChunker로 청킹
+    chunks: list[DocChunk] = self.split_documents(document, **kwargs)
+
+    # 4단계: GenOSVectorMetaBuilder로 벡터 조립
+    vectors = await self.compose_vectors(document, chunks, request, **kwargs)
+
+    return vectors
+```
+
+| 비교 항목 | DocxProcessor | HwpProcessor |
+|-----------|--------------|--------------|
+| 입력 포맷 | `InputFormat.DOCX` | `InputFormat.HWP` + `InputFormat.XML_HWPX` |
 | 포맷 옵션 | `WordFormatOption` | `HwpxFormatOption` |
-| 이미지 저장 | 기본값 | `save_images=False` (기본, kwargs로 변경 가능) |
+| 백엔드 | `GenosMsWordDocumentBackend` | `GenosHwpDocumentBackend` (hwp_sdk) |
+| 청킹 | `HybridChunker(merge_peers=True)` | `HybridChunker(merge_peers=True, include_headings=False)` |
 | 나머지 로직 | 동일 | 동일 |
 
 ---
@@ -932,16 +922,9 @@ async def __call__(self, request: Request, file_path: str, **kwargs: dict):
         vectors = loader.return_vectormeta_format()
         return vectors
 
-    elif ext == '.hwp':
-        # ── 한글(HWP) ──
-        documents = self.load_documents(file_path)    # HwpLoader 사용
-        chunks = self.split_documents(documents)       # RecursiveCharacterTextSplitter
-        vectors = self.compose_vectors(file_path, chunks)
-        return vectors
-
-    elif ext == '.hwpx':
-        # ── 한글(HWPX) ── Docling 기반 프로세서에 위임
-        return await self.hwpx_processor(request, file_path, **kwargs)
+    elif ext in ('.hwp', '.hwpx'):
+        # ── 한글(HWP/HWPX) ── hwp_sdk 기반 통합 프로세서에 위임
+        return await self.hwp_processor(request, file_path, **kwargs)
 
     elif ext == '.docx':
         # ── Word(DOCX) ── Docling 기반 프로세서에 위임
@@ -978,7 +961,7 @@ def get_loader(self, file_path: str):
 | `.ppt`, `.pptx` | `UnstructuredPowerPointLoader` | LibreOffice로 PDF 변환 후 처리 |
 | `.jpg`, `.jpeg`, `.png` | `UnstructuredImageLoader` | OCR로 텍스트 추출 (한/영) |
 | `.txt`, `.json` | `TextLoader` (커스텀) | 인코딩 자동 감지 |
-| `.hwp` | `HwpLoader` (커스텀) | hwp5html → PDF 경로 |
+| `.hwp`, `.hwpx` | `HwpProcessor` (섹션 8.2 참고) | HWP/HWPX 변환 → Docling 파싱 |
 | `.md` | `UnstructuredMarkdownLoader` | 마크다운 구조 파싱 |
 | 기타 | `UnstructuredFileLoader` | 범용 폴백 로더 |
 
@@ -1033,7 +1016,7 @@ chunk_size=1000, chunk_overlap=100 이면:
 
 #### `compose_vectors()` — 벡터 메타데이터 조립
 
-이 메서드는 `HwpxProcessor`/`DocxProcessor`와 달리 빌더 패턴을 사용하지 않고, 딕셔너리를 직접 구성합니다:
+이 메서드는 `HwpProcessor`/`DocxProcessor`와 달리 빌더 패턴을 사용하지 않고, 딕셔너리를 직접 구성합니다:
 
 ```python
 def compose_vectors(self, file_path, chunks, **kwargs):
@@ -1092,7 +1075,7 @@ class GenosServiceException(Exception):
 
 **사용 위치**:
 - `DocxProcessor.__call__()`: 청크가 0개일 때 발생
-- `HwpxProcessor.__call__()`: 청크가 0개일 때 발생
+- `HwpProcessor.__call__()`: 청크가 0개일 때 발생
 
 ```python
 if len(chunks) >= 1:
@@ -1169,8 +1152,7 @@ __call__()
 | 카테고리 | 확장자 | 처리 경로 | 핵심 도구 |
 |----------|--------|-----------|-----------|
 | **PDF** | `.pdf` | 직접 텍스트 추출 | PyMuPDF |
-| **한글** | `.hwp` | hwp5html → PDF → 추출 | pyhwp, WeasyPrint |
-| **한글 XML** | `.hwpx` | Docling 구조 파싱 | Docling + HybridChunker |
+| **한글** | `.hwp`, `.hwpx` | HWP/HWPX 변환 → Docling 구조 파싱 | HwpProcessor + HybridChunker |
 | **Word** | `.docx` | Docling 구조 파싱 | Docling + HybridChunker |
 | **Word 레거시** | `.doc` | LibreOffice → PDF 변환 | LangChain Unstructured |
 | **프레젠테이션** | `.ppt`, `.pptx` | LibreOffice → PDF 변환 | LangChain Unstructured |

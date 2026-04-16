@@ -137,7 +137,26 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync
 
 ############################
-# 4) 모델 아티팩트
+# 4-1) HWP SDK 아티팩트
+############################
+FROM builder AS sdk_artifacts
+ARG APP_VENV
+
+RUN --mount=type=cache,target=${HF_HOME} \
+    --mount=type=secret,id=HF_TOKEN \
+    echo "[INFO] Downloading HWP SDK from Private HF Repo..."; \
+    # /run/secrets/HF_TOKEN 경로에서 값을 읽어옴
+    HF_TOKEN_VAL=$(cat /run/secrets/HF_TOKEN) && \
+    mkdir -p /app/hwp_sdk && \
+    huggingface-cli download HeechanKim-Genon/hwp_sdk \
+      --repo-type dataset \
+      --local-dir /app/hwp_sdk \
+      --local-dir-use-symlinks False \
+      --token "${HF_TOKEN_VAL}" && \
+    chmod +x /app/hwp_sdk/convtext
+
+############################
+# 4-2) 모델 아티팩트
 ############################
 FROM builder AS models_artifacts
 ARG APP_VENV
@@ -225,8 +244,14 @@ COPY ./genon/preprocessor/configs /app/configs
 COPY ./genon/preprocessor/env /app/env
 COPY ./genon/preprocessor/src /app/src
 
+# 🔴 HWP sdk 다운로드
+COPY --from=sdk_artifacts /app/hwp_sdk /app/hwp_sdk
+
 # ✅ 공통 venv 위치만 복사
 COPY --from=builder ${APP_VENV} ${APP_VENV}
+
+# 🔴 [매우 중요] 경로 문제 해결을 위한 링크 (USER 설정 이전에 수행)
+RUN ln -s /app/hwp_sdk /app/.venv/lib/python3.12/site-packages/hwp_sdk
 
 # ✅ 모델/자료
 COPY --from=models_artifacts /app/nltk_data /app/nltk_data

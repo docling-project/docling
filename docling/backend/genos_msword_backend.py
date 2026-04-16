@@ -185,7 +185,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             owner_part=self.docx_obj.part,  # ← 현재 XML의 소유 파트
         )
 
-        doc.pages[1] =  doc.add_page(page_no=1, size=Size(width=595, height=842))
+        doc.pages[1] = doc.add_page(page_no=1, size=Size(width=595, height=842))
         return doc
 
 

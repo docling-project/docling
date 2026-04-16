@@ -29,11 +29,11 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
     def __init__(self, in_doc: InputDocument, path_or_stream: Union[Path, BytesIO], save_images: bool = True, include_wmf: bool = False) -> None:
         """Initialize the HWPX backend by loading the .hwpx file (zip archive)."""
         super().__init__(in_doc, path_or_stream)
-        
+
         # include_wmf가 True이면 save_images도 자동으로 True
-        self.save_images = save_images or include_wmf 
+        self.save_images = save_images or include_wmf
         self.include_wmf = include_wmf
-        
+
         # print(f'save_images: {self.save_images}, include_wmf: {self.include_wmf}')
         self.zip = None
         self.valid = False
@@ -49,7 +49,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
         # 리스트 중첩 관리를 위한 스택 [(NodeItem, indent_level), …]
         self.list_stack: List[tuple[NodeItem, int]] = []
         self.current_indent: int = 0
-        self._next_as_header = False # '참고'다음 문장을 SECTION-HEADER로 
+        self._next_as_header = False # '참고'다음 문장을 SECTION-HEADER로
         # Open the HWPX zip file
         try:
             if isinstance(path_or_stream, BytesIO):
@@ -77,20 +77,20 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
 
     def is_valid(self) -> bool:
         return self.valid
-    
+
     @classmethod
     def supported_formats(cls) -> set:
         return {InputFormat.XML_HWPX}
-    
+
     @classmethod
     def supports_pagination(cls) -> bool:
         return False
-    
+
     def unload(self) -> None:
         if self.zip:
             self.zip.close()
             self.zip = None
-    
+
 
     def _is_toc_numbered_entry(self, t_elem: etree._Element) -> bool:
         """
@@ -113,7 +113,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
         return False
 
     def _handle_list_symbol(self, txt: str, doc: DoclingDocument):
-        
+
         # 1) 심볼 → 레벨 매핑
         SYMBOL_LEVEL = {
             '□': 0,
@@ -167,25 +167,25 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
             # Read section0.xml to get page properties
             section_xml = self.zip.read("Contents/section0.xml")
             section_root = etree.fromstring(section_xml)
-            
+
             # Find hp:pagePr element
             page_pr = section_root.find(".//hp:pagePr", namespaces=section_root.nsmap)
             if page_pr is not None:
                 # Get width and height attributes
                 width_str = page_pr.get("width", "59528")  # Default HWPX width
                 height_str = page_pr.get("height", "84188")  # Default HWPX height
-                
+
                 # Convert HWPUNIT to points (1 HWPUNIT ≈ 0.0178 mm ≈ 0.0506 points)
                 hwp_to_points = 0.0178 * 2.83465  # HWPUNIT to points conversion
-                
+
                 width = float(width_str) * hwp_to_points
                 height = float(height_str) * hwp_to_points
-                
+
                 return width, height
             else:
                 # Fallback to A4 size if hp:pagePr not found
                 return 595.0, 842.0
-                
+
         except Exception as e:
             # Fallback to A4 size on any error
             # logging.warning(f"Failed to extract page size from HWPX: {e}")
@@ -248,12 +248,12 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
             binary_hash=self.document_hash
         )
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
-        
+
         # Extract page size from section0.xml
         page_width, page_height = self._extract_page_size()
         # Add page for prov values using actual page size from XML
         doc.pages[1] = doc.add_page(page_no=1, size=Size(width=page_width, height=page_height))
-        
+
         # Create a root group as the top-level parent for all content
         root_group = doc.add_group(parent=None, label=GroupLabel.SECTION, name="root")
         self.parents[0] = root_group
@@ -269,7 +269,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                 if not isinstance(elem, etree._Element):
                     continue
                 tag_name = etree.QName(elem).localname
-       
+
                 if tag_name == "p":
                     self._process_paragraph(elem, doc)
                 # elif tag_name == "tbl":
@@ -424,7 +424,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
 
 
         # 정규표현식 헤더:
-        #    - 숫자+점 뒤에 반드시 공백: r'^\d+\.\s+'  
+        #    - 숫자+점 뒤에 반드시 공백: r'^\d+\.\s+'
         #    - 로마자+점 뒤에는 공백 없어도 O: r'^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\.\s*'
         if not toc_candidate and re.match(r'^(?:\d+\.\s+|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\.\s*)', full_para.strip()):
             header_found  = True
@@ -437,8 +437,8 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
             self._add_header(doc, header_level, header_text)
             self.current_section_group = self.parents[header_level]
             return
-             
-        # ── 2) 셀 내부(tc)이면서 중첩 테이블이 run 안에 있는 경우 ──       
+
+        # ── 2) 셀 내부(tc)이면서 중첩 테이블이 run 안에 있는 경우 ──
         if "tc" in parents:
             runs = p_elem.findall("hp:run", namespaces=p_elem.nsmap)
 
@@ -454,7 +454,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                 None
             )
 
-            if nested_idx is not None: 
+            if nested_idx is not None:
                 parent_node = self.current_list_item or self.current_section_group
                 # ── 2.3) pre-content: nested 테이블 이전의 inlines 처리 ──
                 for i, (ri, elem) in enumerate(inlines[:nested_idx]):
@@ -463,7 +463,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                         txt = self._extract_text(elem).strip()
                         if not txt and not self._is_toc_numbered_entry(elem):
                             continue
-                        norm = "".join(final_text.split())  
+                        norm = "".join(final_text.split())
                         if re.match(r'^(?:\d+|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+)\.\s+', final_text):
                             self._seen_section_texts.add(norm)
                             self._end_list()
@@ -562,13 +562,13 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
             tag = etree.QName(child).localname
             if tag == "t":
                 text_buffer += (child.text or "")
-                
+
                 for inline in child:
                     if etree.QName(inline).localname in ("tab", "fwSpace", "lineBreak"):
                         text_buffer += " "
                     if inline.tail:
                         text_buffer += inline.tail
-                        
+
             if tag == "tbl":
                 if text_buffer.strip():
                     doc.add_text(
@@ -642,13 +642,13 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                     charspan=(0, len(full_text))
                 )
             )
-            return 
+            return
 
-        if self._handle_list_symbol(full_text, doc):  
+        if self._handle_list_symbol(full_text, doc):
             return
 
         if final_text:
-            norm = "".join(final_text.split())  
+            norm = "".join(final_text.split())
             if re.match(r'^(?:\d+|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+)\.\s+', final_text):
                 self._seen_section_texts.add(norm)
                 self._end_list()
@@ -673,14 +673,14 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
         """ Process a <hp:tbl> element and extract its content into a TableData object."""
         # 0) TOC 감지
         toc = False
-        for t in tbl_elem.findall(".//hp:t", namespaces=tbl_elem.nsmap): 
+        for t in tbl_elem.findall(".//hp:t", namespaces=tbl_elem.nsmap):
             if self._is_toc_numbered_entry(t):
                 # → TOC 테이블이라면, 각 <hp:p> 에서 run 안의 텍스트를 합쳐서 plain paragraph로 추가
                 for p in tbl_elem.findall(".//hp:p", namespaces=tbl_elem.nsmap):
                     parts = []
                     for run in p.findall("hp:run", namespaces=p.nsmap):
                         t0 = run.find("hp:t", namespaces=run.nsmap)
-                        if t0 is None: 
+                        if t0 is None:
                             continue
                         parts.append(self._extract_text(t0))
                     full = " ".join(parts).strip()
@@ -696,7 +696,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                             )
                         )
                 return
-    
+
         # parent = self.current_list_item or self.current_section_group or None
 
         # 1) 크기 파싱
@@ -707,8 +707,8 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
             trs = tbl_elem.findall("hp:tr", namespaces=tbl_elem.nsmap)
             num_rows = len(trs)
             num_cols = len(trs[0].findall("hp:tc", namespaces=tbl_elem.nsmap)) if trs else 0
-        parent = self.current_list_item or self.current_section_group    
-        
+        parent = self.current_list_item or self.current_section_group
+
         # ── 특수 1×1 케이스: txt+pic 섞여있으면 헤더가 아니라 일반 테이블 분기 타기 ──
         if (num_rows, num_cols) == (1, 1):
             # (a) 셀 안의 텍스트 추출
@@ -724,21 +724,21 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
             if txt and has_pic and (len(txt) <= 50) and not nested_tbl:
                 parent = self.current_section_group
                 self._process_paragraph(tbl_elem, doc)
-                return  
+                return
             else:
                 # 그 외의 경우엔 기존 헤더 분기 그대로 수행
                 # ── 1a) 작거나 단순한 표를 헤더로 간주 ──
                 level = 1  if num_rows == 1 else 2
-                norm = "".join(txt.split()) 
-                if (txt 
-                    and (len(txt) <= 200) 
+                norm = "".join(txt.split())
+                if (txt
+                    and (len(txt) <= 200)
                     and norm != "여백"
                 ):
                     self._seen_section_texts.add(norm)
                     self._end_list()
                     self._add_header(doc, level, txt)
-                    self.current_section_group = self.parents[level] 
-                    return      
+                    self.current_section_group = self.parents[level]
+                    return
         # ── 1a) 작거나 단순한 표를 헤더로 간주 ──
 
         if (num_rows, num_cols) in [(1,2), (1,3)]:
@@ -747,28 +747,28 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                 self._extract_text(t0)
                 for t0 in tbl_elem.findall(".//hp:t", namespaces=tbl_elem.nsmap)
             ]
-            txt = "".join(parts).strip()  
-            norm = "".join(txt.split())      
+            txt = "".join(parts).strip()
+            norm = "".join(txt.split())
             has_pic = any(
                 etree.QName(e).localname in "pic"
                 for e in tbl_elem.iter()
-            ) 
-                        
-            if txt and (len(txt) <= 200): 
+            )
+
+            if txt and (len(txt) <= 200):
                 self._seen_section_texts.add(norm)
                 self._end_list()
-                level = 1 
+                level = 1
                 self._add_header(doc, level, txt)
                 self.current_section_group = self.parents[level]
-                return         
-                          
+                return
+
         data = TableData(num_rows=num_rows, num_cols=num_cols)
         occupied = [[False]*num_cols for _ in range(num_rows)]
 
         # 2) 위치별 정보 수집
         cell_items = defaultdict(list)   # (r,c) -> [ ('caption', str), ('paragraph', Element), ('table', Element), … ]
         caption_map   = {}                      # (r,c) -> TextItem
-        skip_caption  = set()                   # nested 처리된 셀 좌표를 담을 집합 
+        skip_caption  = set()                   # nested 처리된 셀 좌표를 담을 집합
         # toptitle이 먼저 table cell로 저장되는 것을 삭제하기 위한 집합
         skip_rows = set()
         rows = tbl_elem.findall("hp:tr", namespaces=tbl_elem.nsmap)
@@ -776,7 +776,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
         for r_idx, tr in enumerate(rows):
             tcs = tr.findall("hp:tc", namespaces=tbl_elem.nsmap)
             num_tcs_curr_row = len(tcs)
-            
+
             for tc in tr.findall("hp:tc", namespaces=tbl_elem.nsmap):
                 addr = tc.find("hp:cellAddr", namespaces=tc.nsmap)
                 span = tc.find("hp:cellSpan", namespaces=tc.nsmap)
@@ -794,7 +794,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                 for rr in range(r, r+rs):
                     for cc in range(c, c+cs):
                         occupied[rr][cc] = True
-            
+
                 # ── 다음 행에 tc가 2개 이상이고, 그중 하나 이상에 그림(pic)이 있으면,
                     # 현재 행(tc=1)의 caption을 다음 행의 각 열 위로 복제해서 붙이기 ──
                 if num_tcs_curr_row == 1 and r_idx + 1 < len(rows):
@@ -830,11 +830,11 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                                     cell_items[(r2, c2)].append(('caption', cap_text))
 
                             # 한 번 복제해 주었으므로, 이 tc는 본문 처리하지 않고 다음 tc로 넘어간다
-                            continue 
+                            continue
                 nested_in_this = bool(tc.findall(".//hp:tbl", namespaces=tc.nsmap))
                 # 2) 캡션 감지 전에, 이미 processed_cells에 있다면 스킵
                 if (r,c) in skip_caption:
-                    continue   
+                    continue
 
                # 1) 바로 아래 행(r_idx+1)이 존재하는지, 같은 열(c)을 가진 tc2만 찾기
                 next_nested = False
@@ -852,7 +852,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                                next_nested = True
                            if tc2.findall(".//hp:pic", namespaces=tc2.nsmap):
                                next_pic = True
-                                                                                                                       
+
                 if not nested_in_this and (next_nested or next_pic) :
                     if 0 <= r_idx - 1 < len(rows):
                         prev_row = rows[r_idx -1]
@@ -861,7 +861,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                             "".join(tc.itertext()).strip()
                             for tc in tc1_list
                         ]
-                        
+
                         if cell_texts and len(set(cell_texts)) == 1:
                             toptitle = cell_texts[0]
                             # toptitle이 comment 패턴(* 또는 주: / 자료: )이면 toptitle 처리하지 않는다
@@ -872,7 +872,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                                     skip_caption.add((r-1,c))
                                     skip_rows.add(r-1)
                                     has_top_title = True
-                            
+
                     title = "".join(self._extract_text(t) for t in tc.findall(".//hp:t", namespaces=tc.nsmap)).strip()
                     # ─────────────── colSpan ≥ 2일 때 "같은 행에 붙여넣기" ───────────────
                     # cs = int(span.get("colSpan"))
@@ -885,10 +885,10 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                     #     # 복제 후에도, 원본 셀에는 한 번만 추가
                     cell_items[(r,c)].append(('caption', title))
                     continue
-                
+
                 # 2-b) nested table 감지
                 if nested_in_this and not toc:
-                    # 중첩 테이블 앞뒤 p까지 셀 내부 순서대로 처리 
+                    # 중첩 테이블 앞뒤 p까지 셀 내부 순서대로 처리
                     for p in tc.findall("./hp:subList/hp:p", namespaces=tc.nsmap):
                         tbl = p.find(".//hp:tbl", namespaces=p.nsmap)
                         if tbl is not None:
@@ -896,11 +896,11 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                         else:
                             cell_items[(r,c)].append(('paragraph', p))
                     continue
-                
+
                 pics = tc.findall(".//hp:pic", namespaces=tc.nsmap)
                 if pics:
                 #     cap_node = caption_map.get((r,c))
-                    
+
                     # (tc 안의 <hp:p> 전부를 가져올 때는, hp:subList/hp:p 경로를 사용)
                     for p in tc.findall("./hp:subList/hp:p", namespaces=tc.nsmap):
                         # (1) 이 <hp:p> 안에 <hp:t>가 있어서 실제 문자열이 있는지 확인
@@ -920,7 +920,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
 
                         # 해당 셀(tc)의 다른 처리를 건너뛰기 위해 continue
                     continue
-                
+
                 # ── 2-d) comment 감지 ('주:' or '자료:' or '*') ───────────────────────────────────────
                 texts = [
                     "".join(self._extract_text(t) for t in p.findall(".//hp:t", namespaces=tc.nsmap)).strip()
@@ -937,7 +937,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                     )
 
                     if num_tcs_curr_row == 1 and len(prev_row_tcs) >= 2:
-                        # 3) prev_row 중 하나라도 <hp:pic> 태그가 있는지 확인하여 순수테이블과 구분 
+                        # 3) prev_row 중 하나라도 <hp:pic> 태그가 있는지 확인하여 순수테이블과 구분
                         prev_has_pic = any(
                             p_tc.findall(".//hp:pic", namespaces=tbl_elem.nsmap)
                             for p_tc in prev_row_tcs
@@ -949,11 +949,11 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                             span   = tc.find("hp:cellSpan",  namespaces=tc.nsmap)
                             r_cur  = int(addr.get("rowAddr"))
                             c_cur  = int(addr.get("colAddr"))
-                            cs     = int(span.get("colSpan")) 
+                            cs     = int(span.get("colSpan"))
 
                             # (B) colSpan ≥ 2라면, 같은 행(r_cur)의 오른쪽 셀들에도 복제
                             if cs > 1:
-                                for offset in range(1,2): # 한 번씩만 복제 
+                                for offset in range(1,2): # 한 번씩만 복제
                                     target_col = c_cur + offset
                                     cell_items.setdefault((r_cur, target_col), []).append(('comment', txt))
 
@@ -975,7 +975,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                     for sub_p in tc.findall(".//hp:p", namespaces=tc.nsmap):
                         cell_items[(r,c)].append(('paragraph', sub_p))
                     continue
-                
+
                 data.table_cells.append(
                     TableCell(
                         text=cell_text,
@@ -989,7 +989,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                         row_header=False
                     )
                 )
-        # 한 table 안에 주석이 포함되어 있는 경우에 사용 
+        # 한 table 안에 주석이 포함되어 있는 경우에 사용
         # 'table' 없이 'comment'만 있는 경우 판별
         has_table = any(
             typ == 'table'
@@ -1001,7 +1001,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
             for (row_idx, col_idx), items in cell_items.items()
             if col_idx == c
             for typ, _ in items
-        ) # 해당 열에 picture 없으면 has picture = False처리 
+        ) # 해당 열에 picture 없으면 has picture = False처리
         has_comment = any(
             typ == 'comment'
             for items in cell_items.values()
@@ -1009,16 +1009,16 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
         )
 
         # comment만 있고 nested 테이블이 없는 경우 (순수 테이블 맨 아래 행에 주석이 있는 경우)
-        if (not has_table 
-            and has_comment 
-            and not has_picture 
+        if (not has_table
+            and has_comment
+            and not has_picture
             and not nested_in_this
             and not toc
         ):
             # 실제 테이블 추가
             is_empty = not any(cell.text for cell in data.table_cells)
             if not is_empty:
-                
+
                 copied_cells = deepcopy(data.table_cells)
                 temp_data = TableData(num_rows=data.num_rows, num_cols=data.num_cols)
                 temp_data.table_cells = copied_cells
@@ -1029,7 +1029,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                                  charspan=(0, 0)
                              ))
                 data.table_cells.clear()
- 
+
                 # comment 출력
                 for items in cell_items.values():
                     for typ, txt in items:
@@ -1044,10 +1044,10 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                                     charspan=(0, len(txt))
                                 )
                             )
-                            
-                        
-             # return 대신 초기화 
-             # 3) comment만 제거 
+
+
+             # return 대신 초기화
+             # 3) comment만 제거
                 for (r, c), items in list(cell_items.items()):
                     # 'comment' 타입이 아닌 것만 필터링
                     new_items = [(typ, payload) for (typ, payload) in items if typ != 'comment']
@@ -1055,17 +1055,17 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                         cell_items[(r, c)] = new_items
                     else:
                         # 만약 해당 위치에 남은 항목이 없으면 키 자체를 삭제
-                        del cell_items[(r, c)]            
+                        del cell_items[(r, c)]
 
-            
+
         # 4) 마지막에 한 번에 "순수 테이블"만 TableItem 으로 출력
         sorted_coords = sorted(cell_items.keys(), key=lambda x: (x[1], x[0]))  # (c,r) 순서로 정렬
         for r, c in sorted_coords:
             for typ, payload in cell_items[(r,c)]:
                 if typ == 'top_caption':
-                    # 제목 있으면 이게 parent 
+                    # 제목 있으면 이게 parent
                     norm_payload = re.sub(r"\s+", "",payload)
-                    if norm_payload in self._seen_section_texts: # section header 로 처리된거면 제외 
+                    if norm_payload in self._seen_section_texts: # section header 로 처리된거면 제외
                         continue
                     doc.add_text(
                         label=DocItemLabel.PARAGRAPH,
@@ -1077,9 +1077,9 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                             charspan=(0, len(payload))
                         )
                     )
-                elif typ == 'caption':                    
+                elif typ == 'caption':
                     parent = self.current_section_group
-                    norm = "".join(payload.split())  
+                    norm = "".join(payload.split())
                     if re.match(r'^(?:\d+\.\s+|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\.\s*)', payload):
                         self._seen_section_texts.add(norm)
                         self._end_list()
@@ -1096,7 +1096,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                             bbox=BoundingBox(l=0, t=0, r=1, b=1),
                             charspan=(0, len(payload))
                         )
-                    )                    
+                    )
                 elif typ == 'paragraph':
                     self._process_paragraph(payload, doc)
                 elif typ == 'table':
@@ -1134,9 +1134,9 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                 break
         if is_empty_tbl or has_top_title:
             return
-        
+
         parent = self.current_section_group
-        # 마지막에 순수 테이블 한 번만 추가 
+        # 마지막에 순수 테이블 한 번만 추가
         doc.add_table(data=data, parent=parent,
                      prov=ProvenanceItem(
                          page_no=1,
@@ -1149,7 +1149,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
         draw_text_elem = rect_elem.find(".//hp:drawText", namespaces=rect_elem.nsmap)
         if draw_text_elem is None:
             return
-        
+
         text_parts = [t.text for t in draw_text_elem.findall(".//hp:t", namespaces=draw_text_elem.nsmap) if t.text]
         full_text = "".join(text_parts).strip()
         norm_text = "".join(full_text.split())
@@ -1163,13 +1163,13 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
             self._end_list()
             self._add_header(doc, 1, full_text)
             self.current_section_group = self.parents[1]
-            return 
+            return
         else:
             #     100자 초과 시: drawText 내의 <hp:p> 단락들을 _process_paragraph로 넘기기
             for p in draw_text_elem.findall(".//hp:p", namespaces=draw_text_elem.nsmap):
-                # p 안의 모든 run/t/pic/equation은 _process_paragraph에서 다시 분기 처리 
+                # p 안의 모든 run/t/pic/equation은 _process_paragraph에서 다시 분기 처리
                 self._process_paragraph(p, doc)
-    
+
     def _convert_wmf_to_png(self, wmf_bytes: bytes) -> Optional[bytes]:
         """Convert WMF bytes to PNG using Wand, if available."""
         if not WAND_AVAILABLE:
@@ -1177,7 +1177,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
         try:
             import os
             import sys
-            
+
             # ImageMagick의 stderr 경고 메시지를 임시로 억제
             original_stderr = sys.stderr
             with open(os.devnull, 'w') as devnull:
@@ -1202,7 +1202,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
             extensions = (".bmp", ".png", ".jpg", ".jpeg", ".wmf", ".tif")
         else:
             extensions = (".bmp", ".png", ".jpg", ".jpeg", ".tif")  # wmf 제외
-            
+
         for ext in extensions:
             try:
                 data = self.zip.read(f"BinData/{bin_id}{ext}")
@@ -1227,9 +1227,9 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
         """Process a picture <hp:pic> element and add an image node."""
         if not self.save_images:
             return
-            
+
         parent_node = self.current_list_item or self.current_section_group
-        
+
         # 1) Extract binaryItemIDRef
         img_ref = pic_elem.find("hc:img", namespaces=pic_elem.nsmap)
         if img_ref is None:
@@ -1268,7 +1268,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                 charspan=(0, 0),
             ),
         )
-    
+
     def _process_equation(self, eq_elem: etree._Element, doc: DoclingDocument) -> None:
         """Process an equation <hp:equation> element by adding its text content."""
         parent_node = self.current_list_item or self.current_section_group or None
@@ -1279,12 +1279,12 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                         bbox=BoundingBox(l=0, t=0, r=1, b=1),
                         charspan=(0, len(formula_text))
                     ))
-    
+
     def _add_header(self, doc: DoclingDocument, level: int, text: str) -> None:
         """Add a heading node of the given level with the specified text."""
         curr_level = level
 
-        # 상위 그룹들 채워 넣기 - 헤더가 뒤에서 나오는 경우 해결 위해 추가됨 
+        # 상위 그룹들 채워 넣기 - 헤더가 뒤에서 나오는 경우 해결 위해 추가됨
         for lvl in range(0, curr_level):
             if self.parents.get(lvl) is None:
                 self.parents[lvl] = doc.add_group(
@@ -1292,7 +1292,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                     label=GroupLabel.SECTION,
                     name=f"header-{lvl}"
                 )
-        # ------------- 
+        # -------------
         # Add intermediate groups for skipped levels
         for lvl in range(0, curr_level):
             if self.parents.get(lvl) is None and lvl < curr_level:
@@ -1307,7 +1307,7 @@ class HwpxDocumentBackend(DeclarativeDocumentBackend):
                                                       bbox=BoundingBox(l=0, t=0, r=1, b=1),
                                                       charspan=(0, len(text))
                                                   ))
-    
+
     def _end_list(self) -> None:
         """End the current list grouping (if any)."""
         self.current_list_group = None

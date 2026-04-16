@@ -1,5 +1,5 @@
 """
-HWPX regression test — baseline과 실제 비교 assert가 활성화된 상태.
+HWP regression test — baseline과 실제 비교 assert가 활성화된 상태.
 비교 항목: 벡터 수, 전체 문자수 ±5%, 벡터별 텍스트 유사도 ≥ 0.85.
 """
 from pathlib import Path
@@ -9,7 +9,7 @@ import difflib
 from collections import Counter
 
 SAMPLE_DIR = Path(__file__).resolve().parents[2] / "sample_files"
-HWPX_FILES = sorted([f for f in SAMPLE_DIR.glob("*.hwpx") if f.is_file()])
+HWP_FILES = sorted([f for f in SAMPLE_DIR.glob("*.hwp") if f.is_file()])
 BASELINE_DIR = Path(__file__).parent / "baselines"
 
 
@@ -43,21 +43,21 @@ def _summarize(vectors: list) -> dict:
 # ---- Regression Test -------------------------------------------------------
 
 @pytest.mark.regression
-@pytest.mark.skipif(len(HWPX_FILES) == 0, reason="no .hwpx samples found")
-@pytest.mark.parametrize("hwpx_file", HWPX_FILES, ids=lambda f: f.stem)
+@pytest.mark.skipif(len(HWP_FILES) == 0, reason="no .hwp samples found")
+@pytest.mark.parametrize("hwp_file", HWP_FILES, ids=lambda f: f.stem)
 @pytest.mark.asyncio
-async def test_hwpx_regression(hwpx_file, basic_processor):
-    """HWPX 문서 처리 결과를 baseline과 비교합니다."""
-    baseline_path = BASELINE_DIR / f"hwpx_{hwpx_file.stem}.json"
+async def test_hwp_regression(hwp_file, basic_processor):
+    """HWP 문서 처리 결과를 baseline과 비교합니다."""
+    baseline_path = BASELINE_DIR / f"hwp_{hwp_file.stem}.json"
 
     if not baseline_path.exists():
         pytest.fail(
             f"Baseline not found: {baseline_path}. "
-            f"Run: pytest -m update_baseline -k test_update_hwpx_baselines"
+            f"Run: pytest -m update_baseline -k test_update_hwp_baselines"
         )
 
     dp = basic_processor()
-    vectors = await dp(None, str(hwpx_file))
+    vectors = await dp(None, str(hwp_file))
     current = _summarize(vectors)
 
     with open(baseline_path, "r", encoding="utf-8") as f:
@@ -65,7 +65,7 @@ async def test_hwpx_regression(hwpx_file, basic_processor):
 
     # 1) 벡터 수 일치
     assert current["num_vectors"] == baseline["num_vectors"], (
-        f"[{hwpx_file.name}] vector count: "
+        f"[{hwp_file.name}] vector count: "
         f"{current['num_vectors']} != {baseline['num_vectors']}"
     )
 
@@ -73,7 +73,7 @@ async def test_hwpx_regression(hwpx_file, basic_processor):
     base_chars = max(baseline["total_characters"], 1)
     char_ratio = abs(current["total_characters"] - base_chars) / base_chars
     assert char_ratio < 0.05, (
-        f"[{hwpx_file.name}] char count drift {char_ratio:.1%} "
+        f"[{hwp_file.name}] char count drift {char_ratio:.1%} "
         f"({current['total_characters']} vs {base_chars})"
     )
 
@@ -85,7 +85,7 @@ async def test_hwpx_regression(hwpx_file, basic_processor):
             None, cur_v.get("text", ""), base_v.get("text", "")
         ).ratio()
         assert sim >= 0.85, (
-            f"[{hwpx_file.name}] vector[{i}] text similarity {sim:.2%} < 85%"
+            f"[{hwp_file.name}] vector[{i}] text similarity {sim:.2%} < 85%"
         )
 
 
@@ -93,19 +93,19 @@ async def test_hwpx_regression(hwpx_file, basic_processor):
 
 @pytest.mark.update_baseline
 @pytest.mark.asyncio
-async def test_update_hwpx_baselines(basic_processor):
-    """모든 HWPX baseline 데이터를 (재)생성합니다."""
+async def test_update_hwp_baselines(basic_processor):
+    """모든 HWP baseline 데이터를 (재)생성합니다."""
     BASELINE_DIR.mkdir(parents=True, exist_ok=True)
 
-    for hwpx_file in HWPX_FILES:
+    for hwp_file in HWP_FILES:
         dp = basic_processor()
-        vectors = await dp(None, str(hwpx_file))
+        vectors = await dp(None, str(hwp_file))
         result = _summarize(vectors)
 
-        out = BASELINE_DIR / f"hwpx_{hwpx_file.stem}.json"
+        out = BASELINE_DIR / f"hwp_{hwp_file.stem}.json"
         with open(out, "w", encoding="utf-8") as f:
             json.dump(result, f, indent=2, ensure_ascii=False)
         print(f"✓ Updated baseline: {out}")
 
-    if not HWPX_FILES:
-        print("⚠ No HWPX files found in sample_files directory")
+    if not HWP_FILES:
+        print("⚠ No HWP files found in sample_files directory")

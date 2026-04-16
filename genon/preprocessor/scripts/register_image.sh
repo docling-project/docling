@@ -58,7 +58,7 @@ else
   read -srp "MySQL 비밀번호: " MYSQL_PASS; echo
 fi
 
-# ── 로컬 이미지 확인 ────────────────────────────────────────
+## ── 로컬 이미지 확인 ────────────────────────────────────────
 step "로컬 Docker 이미지 확인"
 if docker image inspect "${FULL_IMAGE_NAME}" >/dev/null 2>&1; then
   ok "로컬 이미지 존재"
@@ -68,7 +68,7 @@ else
   HAS_LOCAL_IMAGE="no"
 fi
 
-# ── docker push (포그라운드 / 재시도) ───────────────────────
+## ── docker push (포그라운드 / 재시도) ───────────────────────
 step "docker push"
 SKIP_PUSH="no"
 if [[ "${HAS_LOCAL_IMAGE}" != "yes" ]]; then

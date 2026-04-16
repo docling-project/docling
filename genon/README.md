@@ -52,12 +52,19 @@
 
 ## 전처리기 빌드 및 등록
 
-1. build-script 디렉토리 이동
-2. [doc-parser-build.config](../build-script/doc-parser-build.config) 변경 사항 반영
-3. 실행 [doc-parser-build.sh](../build-script/doc-parser-build.sh)
-4. [register.config](preprocessor/scripts/register.config) 변경 사항 있을 시 변경 필요
-5. 실행 [register_image.sh](preprocessor/scripts/register_image.sh) : push와 디비에 등록해준다.
-6. 사이트 배포 시
+1. `HF_TOKEN` 설정 (HWP SDK를 private 레포에서 다운로드하기 위한 토큰)
+   - 토큰 값은 [제논 내부 드라이브](https://drive.google.com/file/d/1m8aom4_zo3ZuQ-HdHHpkRsVOJakN-Lt5/view?usp=sharing)에서 확인
+   - `doc_parser/` (레포 최상위 경로) 에서 아래 명령어 한 번 실행 (이후 재실행 불필요, Git에 커밋되지 않음):
+     ```shell
+     echo "HF_TOKEN=hf_your_token_here" > build-script/hf_private_token.env
+     ```
+   - `doc-parser-build.config`에 직접 입력하거나 push하지 말 것 (토큰은 반드시 `hf_private_token.env` 파일에만)
+2. build-script 디렉토리 이동
+3. [doc-parser-build.config](../build-script/doc-parser-build.config) 기타 변경 사항 반영 (1번을 수행했다면 `HF_TOKEN`값은 직접 입력하지 말 것)
+4. 실행 [doc-parser-build.sh](../build-script/doc-parser-build.sh)
+5. [register.config](preprocessor/scripts/register.config) 변경 사항 있을 시 변경 필요
+6. 실행 [register_image.sh](preprocessor/scripts/register_image.sh) : push와 디비에 등록해준다.
+7. 사이트 배포 시
 ```shell
 1. 이미지 저장
 docker save mncregistry:30500/mnc/doc-parser-preprocessor:latest | gzip > doc-parser-preprocessor.tar.gz

@@ -98,6 +98,14 @@ build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-p no:cacheprovider -m \"not update_baseline\""
+markers = [
+    "smoke: 핵심 경로가 죽지 않는지 빠르게 확인하는 smoke 테스트",
+    "unit: 격리된 함수/클래스 단위 테스트",
+    "regression: baseline과 비교하여 회귀를 감지하는 테스트",
+    "update_baseline: baseline 데이터를 (재)생성하는 유틸리티 (일반 실행에서 제외)",
+]
 
 [tool.hatch.metadata]
 allow-direct-references = true  # Direct reference 허용

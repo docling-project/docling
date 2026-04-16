@@ -1,6 +1,14 @@
 # Genos 전처리기 (Genos Doc Parser)
 - Genos는 문서의 활용 목적과 요구 사항에 따라 최적화된 3가지 유형의 전처리 파이프라인을 제공합니다.
-- 용법: genos 에서 새로운 facade 를 생성하고 아래 전처리 중 하나의 전처리기를 facade에 복붙하기만 하면 끝
+- 용법: Genos 웹 UI에서 **관리 > 리소스 > 전처리기 > 전처리기 생성**으로 이동하여, 아래 전처리기 파일 중 하나의 코드를 **전처리 코드(facade)** 영역에 그대로 복붙하면 됩니다.
+
+  ![전처리기 등록 방법](./images/pre_register_guide.jpg)
+
+  | 용도 | 파일 경로 |
+  |---|---|
+  | 첨부용 (채팅 실시간) | `preprocessor/facade/attachment_processor.py` |
+  | 변환용 (LibreOffice PDF 표준화) | `preprocessor/facade/convert_processor.py` |
+  | 적재용 지능형 (RAG 고품질) | `preprocessor/facade/intelligent_processor.py` |
 
 ## 1. 첨부용 전처리기 (Attachment Processor) 
 사용자가 채팅 중 첨부로 업로드하는 파일을 실시간으로 분석하기 위한 경량화 전처리기입니다. 복잡한 구조 분석 과정을 생략하고, **텍스트 추출(Text Extraction)**에 집중하여 즉각적인 응답 속도를 보장합니다.
