@@ -93,9 +93,7 @@ def test_api_vlm_engine_allows_explicit_user_params_to_override_request_settings
         ),
     )
 
-    outputs = engine.predict_batch(
-        [_make_input(temperature=0.4, max_new_tokens=128)]
-    )
+    outputs = engine.predict_batch([_make_input(temperature=0.4, max_new_tokens=128)])
 
     assert [output.text for output in outputs] == ["ok"]
     assert captured_api_call["model"] == "override-model"

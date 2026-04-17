@@ -179,7 +179,9 @@ def test_process_images_shares_generation_template_across_batch() -> None:
     assert first.extra_generation_config == model_spec.extra_generation_config
 
 
-def test_process_images_uses_selected_auto_inline_engine_for_runtime_input_config() -> None:
+def test_process_images_uses_selected_auto_inline_engine_for_runtime_input_config() -> (
+    None
+):
     model = VlmConvertModel.__new__(VlmConvertModel)
     model.enabled = True
     model.engine = _CapturingEngine()
