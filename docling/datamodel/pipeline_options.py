@@ -153,6 +153,12 @@ class TableStructureV2Options(BaseTableStructureOptions):
     )
 
 
+class GraniteVisionTableStructureOptions(BaseTableStructureOptions):
+    """Options for the table structure model using Granite Vision (VLM-based)."""
+
+    kind: ClassVar[str] = "granite_vision_table"
+
+
 class OcrOptions(BaseOptions):
     """Base configuration for Optical Character Recognition engines.
 
