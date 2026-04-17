@@ -85,6 +85,21 @@ The following table shows all processing stages in Docling, their model families
     </tr>
     <tr>
       <td rowspan="3"><strong>Table Structure</strong><br/><em>Table cell recognition</em></td>
+      <td rowspan="3">Vision-Language Model<br/>(Granite Vision)</td>
+      <td>
+        <ul>
+          <li><code>granite-4.0-3b-vision</code></li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2"><strong>Inference Engine:</strong> Transformers</td>
+    </tr>
+    <tr>
+      <td colspan="2"><strong>Purpose:</strong> VLM-based table structure recognition using OTSL (Open Table Structure Language) output</td>
+    </tr>
+    <tr>
+      <td rowspan="3"><strong>Table Structure</strong><br/><em>Table cell recognition</em></td>
       <td rowspan="3">Object Detection</td>
       <td>
         <ul>
