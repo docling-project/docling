@@ -29,6 +29,29 @@ class ServiceUnavailableError(ServiceError):
     """Raised for unavailable service or exhausted HTTP 500 retries."""
 
 
+class UsageLimitExceededError(ServiceError):
+    """Raised when the service rejects work because the usage quota is exhausted."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int | None = None,
+        detail: str | None = None,
+        current_usage: int | None = None,
+        limit: int | None = None,
+    ) -> None:
+        super().__init__(message, status_code=status_code, detail=detail)
+        self.current_usage = current_usage
+        self.limit = limit
+
+    def __str__(self) -> str:
+        base = super().__str__()
+        if self.current_usage is None or self.limit is None:
+            return base
+        return f"{base} [current_usage={self.current_usage}, limit={self.limit}]"
+
+
 class TaskTimeoutError(DoclingServiceClientError):
     """Raised when waiting for task completion exceeds timeout."""
 

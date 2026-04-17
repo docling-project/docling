@@ -19,6 +19,7 @@ from docling.service_client.exceptions import (
     ServiceUnavailableError,
     TaskNotFoundError,
     TaskTimeoutError,
+    UsageLimitExceededError,
 )
 from docling.service_client.job import ConversionJob
 
@@ -39,5 +40,6 @@ __all__ = [
     "StatusWatcherKind",
     "TaskNotFoundError",
     "TaskTimeoutError",
+    "UsageLimitExceededError",
     "VersionResponse",
 ]
