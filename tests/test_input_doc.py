@@ -245,12 +245,18 @@ def test_guess_format(tmp_path):
     stream = DocumentStream(name="docling_test.xml", stream=buf)
     assert dci._guess_format(stream) is None
 
-    # Invalid USPTO patent (as plain text)
+    # Plain .txt file (not USPTO) should be detected as Markdown
     stream = DocumentStream(name="pftaps057006474.txt", stream=BytesIO(b"xyz"))
-    assert dci._guess_format(stream) is None
+    assert dci._guess_format(stream) == InputFormat.MD
     doc_path = temp_dir / "pftaps_wrong.txt"
     doc_path.write_text("xyz", encoding="utf-8")
-    assert dci._guess_format(doc_path) is None
+    assert dci._guess_format(doc_path) == InputFormat.MD
+
+    # Plain .txt with typical text content
+    stream = DocumentStream(
+        name="readme.txt", stream=BytesIO(b"Hello, this is a plain text file.")
+    )
+    assert dci._guess_format(stream) == InputFormat.MD
 
     # Valid WebVTT
     buf = BytesIO(Path("./tests/data/webvtt/webvtt_example_01.vtt").open("rb").read())
