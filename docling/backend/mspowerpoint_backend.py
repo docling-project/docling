@@ -688,12 +688,25 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             slide_size = Size(width=slide_width, height=slide_height)
             doc.add_page(page_no=slide_ind + 1, size=slide_size)
 
+            def _safe_shape_type(shape):
+                """Return shape.shape_type, or None if unrecognized.
+
+                python-pptx raises NotImplementedError for <p:sp> elements
+                that don't match any known shape category (placeholder,
+                freeform, autoshape, textbox).
+                """
+                try:
+                    return shape.shape_type
+                except NotImplementedError:
+                    _log.debug("Skipping shape with unrecognized type: %s", shape.name)
+                    return None
+
             def handle_shapes(shape, parent_slide, slide_ind, doc, slide_size):
                 handle_groups(shape, parent_slide, slide_ind, doc, slide_size)
                 if shape.has_table:
                     # Handle Tables
                     self._handle_tables(shape, parent_slide, slide_ind, doc, slide_size)
-                if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                if _safe_shape_type(shape) == MSO_SHAPE_TYPE.PICTURE:
                     # Handle Pictures
                     self._handle_pictures(
                         shape, parent_slide, slide_ind, doc, slide_size
@@ -716,7 +729,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 return
 
             def handle_groups(shape, parent_slide, slide_ind, doc, slide_size):
-                if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+                if _safe_shape_type(shape) == MSO_SHAPE_TYPE.GROUP:
                     for groupedshape in shape.shapes:
                         handle_shapes(
                             groupedshape, parent_slide, slide_ind, doc, slide_size
