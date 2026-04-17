@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Annotated, Any, Literal, Union
 
-from pydantic import AnyUrl, BaseModel, Field
+from pydantic import AnyUrl, BaseModel, Field, model_validator
 from typing_extensions import deprecated
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
@@ -265,6 +265,24 @@ class InlineAsrMlxWhisperOptions(InlineAsrOptions):
     ] = 2.4
 
 
+# English-only WhisperS2T models (cannot transcribe non-English audio)
+_ENGLISH_ONLY_S2T_REPOS = frozenset(
+    {
+        "tiny.en",
+        "base.en",
+        "small.en",
+        "medium.en",
+        "distil-small.en",
+        "distil-medium.en",
+        "distil-large-v3",
+        "distil-large-v3.5",
+    }
+)
+
+# Models without translate-to-English capability (English-only + turbo)
+_NO_TRANSLATE_S2T_REPOS = _ENGLISH_ONLY_S2T_REPOS | {"large-v3-turbo"}
+
+
 class InlineAsrWhisperS2TOptions(InlineAsrOptions):
     """Configuration for WhisperS2T (CTranslate2-based) high-speed ASR.
 
@@ -367,3 +385,22 @@ class InlineAsrWhisperS2TOptions(InlineAsrOptions):
         AcceleratorDevice.CPU,
         AcceleratorDevice.CUDA,
     ]
+
+    @model_validator(mode="after")
+    def _validate_repo_capabilities(self) -> "InlineAsrWhisperS2TOptions":
+        # Reject non-English language for English-only repos
+        if self.repo_id in _ENGLISH_ONLY_S2T_REPOS and self.language != "en":
+            raise ValueError(
+                f"Model `{self.repo_id}` is English-only and does not support "
+                f"language `{self.language}`. Set language='en' or choose a "
+                f"multilingual model (e.g., `tiny`, `base`, `small`, `medium`, "
+                f"`large-v3`)."
+            )
+        # Reject translate task for repos without translate capability
+        if self.repo_id in _NO_TRANSLATE_S2T_REPOS and self.task == "translate":
+            raise ValueError(
+                f"Model `{self.repo_id}` does not support the `translate` task. "
+                f"Set task='transcribe' or choose a multilingual model with "
+                f"translation capability (e.g., `large-v3`)."
+            )
+        return self
