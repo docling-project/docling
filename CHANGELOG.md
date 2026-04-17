@@ -1,3 +1,21 @@
+## [v2.90.0](https://github.com/docling-project/docling/releases/tag/v2.90.0) - 2026-04-17
+
+### Feature
+
+* Implement GraniteVisionTableStructureModel for VLM-based table extraction ([#3323](https://github.com/docling-project/docling/issues/3323)) ([`1569e42`](https://github.com/docling-project/docling/commit/1569e42f8484f7abda8b8fb615e9c67d47e83855))
+
+### Fix
+
+* **latex:** Fully unwrap deeply nested formatting macros ([#3249](https://github.com/docling-project/docling/issues/3249)) ([`101233e`](https://github.com/docling-project/docling/commit/101233ebe211ece703605a16a23225da836e3c46))
+* **docx:** Handle inline formulas in list items ([#3304](https://github.com/docling-project/docling/issues/3304)) ([`c761512`](https://github.com/docling-project/docling/commit/c7615123e6b9d8b5e772e54496db24d8adc64d92))
+* **format:** Add MD fallback for .txt files in _guess_from_content ([#3311](https://github.com/docling-project/docling/issues/3311)) ([`3bab6b4`](https://github.com/docling-project/docling/commit/3bab6b4d38362f592b7d00f4cf6050bf23a72122))
+* Strip soft hyphen when joining merged text elements ([#3232](https://github.com/docling-project/docling/issues/3232)) ([`8274892`](https://github.com/docling-project/docling/commit/827489275e16892ec75f767637de2a9451448441))
+* **pptx:** Handle NotImplementedError from shape.shape_type ([#3309](https://github.com/docling-project/docling/issues/3309)) ([`043ed2d`](https://github.com/docling-project/docling/commit/043ed2dd3d0536b76016b2ac99ebdb11d6433767))
+
+### Documentation
+
+* Fix nanonets_ocr2 runtime support matrix ([#3317](https://github.com/docling-project/docling/issues/3317)) ([`8ec14f2`](https://github.com/docling-project/docling/commit/8ec14f2c6feab2e600d8879d0939de2466d267f4))
+
 ## [v2.89.0](https://github.com/docling-project/docling/releases/tag/v2.89.0) - 2026-04-16
 
 ### Feature
