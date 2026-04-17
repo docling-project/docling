@@ -1,4 +1,10 @@
-This is a word document and this is an inline equation:  $A= \pi r^{2}$ . If instead, I want an equation by line, I can do this:
+This is a word document and this is an inline equation:  $A= \pi r^{2}$ .
+
+- First item with inline equation:  $A= \pi r^{2}$ is the area formula.
+- Second item with equations:  $E=mc^{2}$  and  $F=ma$ are physics formulas.
+- The formula  $a^{2}+b^{2}=c^{2}$ is the Pythagorean theorem.
+
+If instead, I want an equation by line, I can do this:
 
 $$a^{2}+b^{2}=c^{2} \text{ \texttimes } 23$$
 

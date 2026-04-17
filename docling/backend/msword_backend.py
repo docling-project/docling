@@ -1115,13 +1115,24 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Check if this is actually a numbered list by examining the numFmt
             is_numbered = self._is_numbered_list(numid, ilevel)
 
-            li = self._add_list_item(
-                doc=doc,
-                numid=numid,
-                ilevel=ilevel,
-                elements=paragraph_elements,
-                is_numbered=is_numbered,
-            )
+            # If there are equations in the list item, handle them specially
+            if len(equations) > 0:
+                li = self._add_list_item_with_equations(
+                    doc=doc,
+                    numid=numid,
+                    ilevel=ilevel,
+                    text=text,
+                    equations=equations,
+                    is_numbered=is_numbered,
+                )
+            else:
+                li = self._add_list_item(
+                    doc=doc,
+                    numid=numid,
+                    ilevel=ilevel,
+                    elements=paragraph_elements,
+                    is_numbered=is_numbered,
+                )
             elem_ref.extend(li)  # MUST BE REF!!!
             self._update_history(p_style_id, p_level, numid, ilevel)
             return elem_ref
@@ -1196,40 +1207,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     parent=self.parents[level - 1], content_layer=self.content_layer
                 )
                 elem_ref.append(inline_equation.get_ref())
-                text_tmp = text
-                for eq in equations:
-                    if len(text_tmp) == 0:
-                        break
 
-                    split_text_tmp = text_tmp.split(eq.strip(), maxsplit=1)
-
-                    pre_eq_text = split_text_tmp[0]
-                    text_tmp = "" if len(split_text_tmp) == 1 else split_text_tmp[1]
-
-                    if len(pre_eq_text) > 0:
-                        e1 = doc.add_text(
-                            label=DocItemLabel.TEXT,
-                            parent=inline_equation,
-                            text=pre_eq_text,
-                            content_layer=self.content_layer,
-                        )
-                        elem_ref.append(e1.get_ref())
-                    e2 = doc.add_text(
-                        label=DocItemLabel.FORMULA,
-                        parent=inline_equation,
-                        text=eq.replace("<eq>", "").replace("</eq>", ""),
-                        content_layer=self.content_layer,
-                    )
-                    elem_ref.append(e2.get_ref())
-
-                if len(text_tmp) > 0:
-                    e3 = doc.add_text(
-                        label=DocItemLabel.TEXT,
-                        parent=inline_equation,
-                        text=text_tmp.strip(),
-                        content_layer=self.content_layer,
-                    )
-                    elem_ref.append(e3.get_ref())
+                self._add_inline_equations_to_parent(
+                    doc=doc,
+                    parent=inline_equation,
+                    text=text,
+                    equations=equations,
+                    elem_ref=elem_ref,
+                )
 
         elif p_style_id in [
             "Paragraph",
@@ -1425,28 +1410,99 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             enum_marker = ""
         self._add_formatted_list_item(doc, elements, enum_marker, is_numbered, level)
 
-    def _add_list_item(
+    def _add_inline_equations_to_parent(
+        self,
+        *,
+        doc: DoclingDocument,
+        parent: NodeItem,
+        text: str,
+        equations: list[str],
+        elem_ref: list[RefItem] | None = None,
+    ) -> None:
+        """Add text and inline equations as children of a parent element.
+
+        This helper method splits text by equation markers and adds alternating
+        TEXT and FORMULA elements as children of the given parent. This logic
+        is shared between regular paragraphs with inline equations and list items
+        with inline equations.
+
+        Args:
+            doc: The DoclingDocument being constructed.
+            parent: The parent element (inline_group) to add children to.
+            text: The paragraph text with equation placeholders (e.g., "<eq>formula</eq>").
+            equations: List of equation strings with markers (e.g., ["<eq>A=B</eq>", ...]).
+            elem_ref: Optional list to append created element references to.
+        """
+        text_tmp = text
+        for eq in equations:
+            if len(text_tmp) == 0:
+                break
+
+            split_text_tmp = text_tmp.split(eq.strip(), maxsplit=1)
+
+            pre_eq_text = split_text_tmp[0]
+            text_tmp = "" if len(split_text_tmp) == 1 else split_text_tmp[1]
+
+            if len(pre_eq_text) > 0:
+                e1 = doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    parent=parent,
+                    text=pre_eq_text,
+                    content_layer=self.content_layer,
+                )
+                if elem_ref is not None:
+                    elem_ref.append(e1.get_ref())
+
+            e2 = doc.add_text(
+                label=DocItemLabel.FORMULA,
+                parent=parent,
+                text=eq.replace("<eq>", "").replace("</eq>", ""),
+                content_layer=self.content_layer,
+            )
+            if elem_ref is not None:
+                elem_ref.append(e2.get_ref())
+
+        if len(text_tmp) > 0:
+            e3 = doc.add_text(
+                label=DocItemLabel.TEXT,
+                parent=parent,
+                text=text_tmp.strip(),
+                content_layer=self.content_layer,
+            )
+            if elem_ref is not None:
+                elem_ref.append(e3.get_ref())
+
+    def _manage_list_structure(
         self,
         *,
         doc: DoclingDocument,
         numid: int,
         ilevel: int,
-        elements: list,
-        is_numbered: bool = False,
-    ) -> list[RefItem]:
-        elem_ref: list[RefItem] = []
-        # this method is always called with is_numbered. Numbered lists should be properly addressed.
-        if not elements:
-            return elem_ref
+    ) -> tuple[list[RefItem], int]:
+        """Manage list structure and return elem_ref and use_level.
 
+        This helper method handles the list group creation and level management
+        that is common to both regular list items and list items with equations.
+        It determines whether to open a new list, continue an existing one, handle
+        indentation changes, or close lists based on the numbering context.
+
+        Args:
+            doc: The DoclingDocument being constructed.
+            numid: The numbering ID from the DOCX paragraph properties.
+            ilevel: The indentation level from the DOCX paragraph properties.
+
+        Returns:
+            A tuple containing the list of references to created list groups and
+            the level at which the list item should be added.
+        """
+        elem_ref: list[RefItem] = []
         level = self._get_level()
         prev_indent = self._prev_indent()
+
         if self._prev_numid() is None or (
             self._prev_numid() == numid and self.level_at_new_list is None
         ):  # Open new list
             self.level_at_new_list = level
-
-            # Reset counters for the new numbering sequence
             self._reset_list_counters_for_new_sequence(numid)
 
             list_gr = doc.add_list_group(
@@ -1456,10 +1512,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
             self.parents[level] = list_gr
             elem_ref.append(list_gr.get_ref())
+            use_level = level
 
-            self._add_list_item_with_marker(
-                doc, elements, numid, ilevel, is_numbered, level
-            )
         elif (
             self._prev_numid() == numid
             and self.level_at_new_list is not None
@@ -1477,15 +1531,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
                 self.parents[i] = list_gr1
                 elem_ref.append(list_gr1.get_ref())
+            use_level = self.level_at_new_list + ilevel
 
-            self._add_list_item_with_marker(
-                doc,
-                elements,
-                numid,
-                ilevel,
-                is_numbered,
-                self.level_at_new_list + ilevel,
-            )
         elif (
             self._prev_numid() == numid
             and self.level_at_new_list is not None
@@ -1495,28 +1542,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             for k in self.parents:
                 if k > self.level_at_new_list + ilevel:
                     self.parents[k] = None
-
-            self._add_list_item_with_marker(
-                doc,
-                elements,
-                numid,
-                ilevel,
-                is_numbered,
-                self.level_at_new_list + ilevel,
-            )
+            use_level = self.level_at_new_list + ilevel
 
         elif self._prev_numid() == numid and isinstance(
             self.parents.get(level - 1), ListGroup
         ):
-            # Continue existing list - only if parent is actually a ListGroup
-            self._add_list_item_with_marker(
-                doc, elements, numid, ilevel, is_numbered, level - 1
-            )
+            # Continue existing list
+            use_level = level - 1
+
         elif self._prev_numid() != numid or not isinstance(
             self.parents.get(level - 1), ListGroup
         ):
-            # New list sequence: Different numid OR parent is not a ListGroup
-            # Use anchor-based level to place new list at the correct document position
+            # New list sequence
             if self.level_at_new_list is not None:
                 use_level = self.level_at_new_list + ilevel
                 for k in list(self.parents.keys()):
@@ -1533,16 +1570,113 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
             self.parents[use_level] = list_gr
             elem_ref.append(list_gr.get_ref())
+        else:
+            use_level = level - 1
 
-            # Set marker and enumerated arguments if this is an enumeration element.
-            if is_numbered:
-                self._get_list_counter(numid, ilevel)
-                enum_marker = self._build_enum_marker(numid, ilevel)
-            else:
-                enum_marker = ""
-            self._add_formatted_list_item(
-                doc, elements, enum_marker, is_numbered, use_level
+        return elem_ref, use_level
+
+    def _add_list_item(
+        self,
+        *,
+        doc: DoclingDocument,
+        numid: int,
+        ilevel: int,
+        elements: list,
+        is_numbered: bool = False,
+    ) -> list[RefItem]:
+        """Add a regular list item without inline equations.
+
+        Args:
+            doc: The DoclingDocument being constructed.
+            numid: The numbering ID from the DOCX paragraph properties.
+            ilevel: The indentation level from the DOCX paragraph properties.
+            elements: List of (text, formatting, hyperlink) tuples representing the paragraph content.
+            is_numbered: Whether this is a numbered list (True) or bulleted list (False).
+
+        Returns:
+            List of references to created document elements.
+        """
+        if not elements:
+            return []
+
+        elem_ref, use_level = self._manage_list_structure(
+            doc=doc, numid=numid, ilevel=ilevel
+        )
+
+        if is_numbered:
+            self._get_list_counter(numid, ilevel)
+            enum_marker = self._build_enum_marker(numid, ilevel)
+        else:
+            enum_marker = ""
+
+        self._add_formatted_list_item(
+            doc, elements, enum_marker, is_numbered, use_level
+        )
+        return elem_ref
+
+    def _add_list_item_with_equations(
+        self,
+        *,
+        doc: DoclingDocument,
+        numid: int,
+        ilevel: int,
+        text: str,
+        equations: list[str],
+        is_numbered: bool = False,
+    ) -> list[RefItem]:
+        """Add a list item that contains inline equations.
+
+        This method handles list items with inline formulas by creating an inline_group
+        structure similar to how non-list paragraphs with equations are handled. The text
+        is split by equation markers, and alternating TEXT and FORMULA elements are added
+        as children of the inline_group.
+
+        Args:
+            doc: The DoclingDocument being constructed.
+            numid: The numbering ID from the DOCX paragraph properties.
+            ilevel: The indentation level from the DOCX paragraph properties.
+            text: The paragraph text with equation placeholders (e.g., "<eq>formula</eq>").
+            equations: List of equation strings with markers (e.g., ["<eq>A=B</eq>", ...]).
+            is_numbered: Whether this is a numbered list (True) or bulleted list (False).
+
+        Returns:
+            List of references to created document elements.
+        """
+        elem_ref, use_level = self._manage_list_structure(
+            doc=doc, numid=numid, ilevel=ilevel
+        )
+
+        if is_numbered:
+            self._get_list_counter(numid, ilevel)
+            enum_marker = self._build_enum_marker(numid, ilevel)
+        else:
+            enum_marker = ""
+
+        if not isinstance(self.parents[use_level], ListGroup):
+            _log.warning(
+                "Parent element of the list item is not a ListGroup. The list item will be ignored."
             )
+            return elem_ref
+
+        list_item = doc.add_list_item(
+            marker=enum_marker,
+            enumerated=is_numbered,
+            parent=self.parents[use_level],
+            text="",
+        )
+
+        inline_group = doc.add_inline_group(
+            parent=list_item,
+            content_layer=self.content_layer,
+        )
+
+        self._add_inline_equations_to_parent(
+            doc=doc,
+            parent=inline_group,
+            text=text,
+            equations=equations,
+        )
+
         return elem_ref
 
     @staticmethod
