@@ -147,6 +147,17 @@ class ConvertDocumentErrorResponse(BaseModel):
     status: ConversionStatus
 
 
+class UsageLimitExceededDetails(BaseModel):
+    currentUsage: int
+    limit: int
+
+
+class UsageLimitExceededResponse(BaseModel):
+    error: Literal["usage_limit_exceeded"]
+    message: str
+    details: UsageLimitExceededDetails
+
+
 class ChunkDocumentResponse(BaseModel):
     chunks: list[ChunkedDocumentResultItem]
     documents: list[ExportResult]

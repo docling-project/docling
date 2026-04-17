@@ -22,6 +22,7 @@ from urllib.parse import urlencode, urlparse
 import httpx
 from docling_core.types.doc import DoclingDocument
 from docling_core.types.io import DocumentStream
+from pydantic import ValidationError
 
 from docling.backend.noop_backend import NoOpBackend
 from docling.datamodel.base_models import (
@@ -49,6 +50,7 @@ from docling.datamodel.service.responses import (
     ConvertDocumentResponse,
     HealthCheckResponse,
     TaskStatusResponse,
+    UsageLimitExceededResponse,
 )
 from docling.datamodel.service.targets import InBodyTarget, ZipTarget
 from docling.datamodel.settings import DocumentLimits, PageRange
@@ -62,6 +64,7 @@ from docling.service_client.exceptions import (
     ServiceUnavailableError,
     TaskNotFoundError,
     TaskTimeoutError,
+    UsageLimitExceededError,
 )
 from docling.service_client.job import ConversionJob, _JobHandlers
 from docling.service_client.watchers import (
@@ -1563,6 +1566,18 @@ class DoclingServiceClient:
         response: httpx.Response,
         message: str,
     ) -> None:
+        if response.status_code == 402:
+            usage_limit = self._parse_usage_limit_exceeded_response(response)
+            raise UsageLimitExceededError(
+                message,
+                status_code=response.status_code,
+                detail=None if usage_limit is None else usage_limit.message,
+                current_usage=(
+                    None if usage_limit is None else usage_limit.details.currentUsage
+                ),
+                limit=None if usage_limit is None else usage_limit.details.limit,
+            )
+
         detail = self._http_error_detail(response)
         if 400 <= response.status_code < 500:
             raise ServiceError(message, status_code=response.status_code, detail=detail)
@@ -1571,6 +1586,15 @@ class DoclingServiceClient:
             status_code=response.status_code,
             detail=detail,
         )
+
+    def _parse_usage_limit_exceeded_response(
+        self,
+        response: httpx.Response,
+    ) -> UsageLimitExceededResponse | None:
+        try:
+            return UsageLimitExceededResponse.model_validate_json(response.text)
+        except (ValidationError, ValueError):
+            return None
 
     def _http_error_detail(self, response: httpx.Response) -> str | None:
         try:
