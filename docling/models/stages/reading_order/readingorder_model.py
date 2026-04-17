@@ -37,13 +37,11 @@ class ReadingOrderOptions(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
     model_names: str = ""  # e.g. "language;term;reference"
+    reorder_elements: bool = True  # if False, keep layout postprocessor order as-is
 
 
 class ReadingOrderModel:
-    def __init__(
-        self, enabled: bool = True, options: ReadingOrderOptions = ReadingOrderOptions()
-    ):
-        self.enabled = enabled
+    def __init__(self, options: ReadingOrderOptions = ReadingOrderOptions()):
         self.options = options
         self.ro_model = ReadingOrderPredictor()
         self.list_item_processor = ListItemMarkerProcessor()
@@ -436,7 +434,7 @@ class ReadingOrderModel:
             page_elements = self._assembled_to_readingorder_elements(conv_res)
 
             # Apply reading order
-            if not self.enabled:
+            if not self.options.reorder_elements:
                 sorted_elements = page_elements
             else:
                 sorted_elements = self.ro_model.predict_reading_order(

@@ -504,8 +504,9 @@ class StandardPdfPipeline(ConvertPipeline):
         )
         self.assemble_model = PageAssembleModel(options=PageAssembleOptions())
         self.reading_order_model = ReadingOrderModel(
-            enabled=self.pipeline_options.do_reading_order,
-            options=ReadingOrderOptions(),
+            options=ReadingOrderOptions(
+                reorder_elements=self.pipeline_options.do_reading_order,
+            ),
         )
 
         # --- optional enrichment ------------------------------------------------
