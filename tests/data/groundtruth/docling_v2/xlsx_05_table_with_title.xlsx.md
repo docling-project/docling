@@ -1,5 +1,3 @@
-## Duck Observations
-
 | Number of freshwater ducks per year   |
 |---------------------------------------|
 
