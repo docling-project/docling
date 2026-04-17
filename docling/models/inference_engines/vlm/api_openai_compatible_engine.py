@@ -56,6 +56,8 @@ class ApiVlmEngine(BaseVlmEngine):
         super().__init__(options, model_config=model_config)
         self.enable_remote_services = enable_remote_services
         self.options: ApiVlmEngineOptions = options
+        self.model_api_params: dict[str, object] = {}
+        self.user_params: dict[str, object] = self.options.params.copy()
 
         if not self.enable_remote_services:
             raise OperationNotAllowed(
@@ -63,21 +65,12 @@ class ApiVlmEngine(BaseVlmEngine):
                 "pipeline_options.enable_remote_services=True."
             )
 
-        # Merge model_config extra_config (which contains API params from model spec)
-        # with runtime options params. Runtime options take precedence.
+        # Keep model spec API params as defaults only when the user has not
+        # provided explicit API params; explicit runtime params are treated as
+        # complete overrides to avoid vendor-specific conflicts.
         if model_config and "api_params" in model_config.extra_config:
-            # Model spec provides API params (e.g., model name)
-            model_api_params = model_config.extra_config["api_params"]
-
-            # Only use model spec params if user hasn't provided any params
-            # This prevents conflicts when users provide custom params (e.g., model_id for watsonx)
             if not self.options.params:
-                self.merged_params = model_api_params.copy()
-            else:
-                # User provided params - use them as-is (don't merge with model spec)
-                self.merged_params = self.options.params.copy()
-        else:
-            self.merged_params = self.options.params.copy()
+                self.model_api_params = model_config.extra_config["api_params"].copy()
 
     def initialize(self) -> None:
         """Initialize the API engine.
@@ -122,19 +115,21 @@ class ApiVlmEngine(BaseVlmEngine):
             images = preprocess_image_batch([input_data.image])
             image = images[0]
 
-            # Prepare API parameters: engine defaults first, then user/model
-            # params override. This allows users to set Azure-specific params
-            # like max_completion_tokens or override temperature (#3112).
-            api_params: dict[str, object] = {
-                "temperature": input_data.temperature,
-            }
+            # Apply precedence in this order:
+            # 1. model spec API defaults
+            # 2. per-request generation settings from VlmEngineInput
+            # 3. explicit user API params from engine_options.params
+            api_params: dict[str, object] = self.model_api_params.copy()
+            api_params["temperature"] = input_data.temperature
 
             # Add max_tokens if specified
             if input_data.max_new_tokens:
                 api_params["max_tokens"] = input_data.max_new_tokens
 
-            # User/model spec params take precedence over engine defaults
-            api_params.update(self.merged_params)
+            # Explicit user params take precedence over per-request defaults.
+            # This allows users to set Azure-specific params like
+            # max_completion_tokens or override temperature (#3112).
+            api_params.update(self.user_params)
 
             # If user specified max_completion_tokens, remove conflicting
             # max_tokens (required for Azure OpenAI compatibility)
