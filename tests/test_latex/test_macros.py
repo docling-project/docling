@@ -1,3 +1,4 @@
+import re
 from io import BytesIO
 from pathlib import Path
 
@@ -721,3 +722,56 @@ def test_latex_citet_macro_2():
     md = doc.export_to_markdown()
     assert "[author2022]" in md
     assert "showed this" in md
+
+
+def test_latex_nested_formatting_macros():
+    """Nested formatting macros must be fully unwrapped without leaking raw commands."""
+    # Each case is a single-paragraph document so we can assert on the exact text node.
+    cases = [
+        # (description, latex_body, expected_text)
+        (
+            "textsc inline stays in paragraph",
+            b"\\documentclass{article}\\begin{document}Some \\textsc{small caps} text.\\end{document}",
+            "Some small caps text.",
+        ),
+        (
+            "textcolor+textbf inline stays in paragraph",
+            b"\\documentclass{article}\\begin{document}Some \\textcolor{blue}{\\textbf{nested bold}} and more.\\end{document}",
+            "Some nested bold and more.",
+        ),
+        (
+            "deep nesting textcolor+textbf+textsc inline",
+            b"\\documentclass{article}\\begin{document}Text \\textcolor{blue}{\\textbf{\\textsc{inline}}} here.\\end{document}",
+            "Text inline here.",
+        ),
+        (
+            "textbf wrapping textsc inline",
+            b"\\documentclass{article}\\begin{document}Plain \\textbf{\\textsc{bold sc}} text.\\end{document}",
+            "Plain bold sc text.",
+        ),
+        (
+            "color name must not appear in heading",
+            b"\\documentclass{article}\\begin{document}\\section{\\textcolor{blue}{\\textbf{\\textsc{[SEP]}}}}\\end{document}",
+            "[SEP]",
+        ),
+    ]
+
+    for description, latex_content, expected in cases:
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(latex_content),
+            format=InputFormat.LATEX,
+            backend=LatexDocumentBackend,
+            filename="test.tex",
+        )
+        backend = LatexDocumentBackend(
+            in_doc=in_doc, path_or_stream=BytesIO(latex_content)
+        )
+        doc = backend.convert()
+
+        all_text = " ".join(t.text for t in doc.texts)
+        assert expected in all_text, (
+            f"[{description}] expected {expected!r} in output, got: {all_text!r}"
+        )
+
+        leaked = re.findall(r"\\[a-zA-Z]+", all_text)
+        assert not leaked, f"[{description}] leaked raw LaTeX commands: {leaked}"
