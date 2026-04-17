@@ -5,9 +5,9 @@ using vision-language models through a pluggable runtime system.
 """
 
 import logging
+import time
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional, Union
 
 from PIL import Image as PILImage
 
@@ -19,6 +19,7 @@ from docling.models.base_model import BasePageModel
 from docling.models.inference_engines.vlm import (
     BaseVlmEngine,
     VlmEngineInput,
+    VlmEngineType,
     create_vlm_engine,
 )
 from docling.utils.profiling import TimeRecorder
@@ -42,7 +43,7 @@ class VlmConvertModel(BasePageModel):
         self,
         enabled: bool,
         enable_remote_services: bool,
-        artifacts_path: Union[Path, str] | None,
+        artifacts_path: Path | str | None,
         options: VlmConvertOptions,
         accelerator_options: AcceleratorOptions,
     ):
@@ -81,6 +82,26 @@ class VlmConvertModel(BasePageModel):
 
         _log.info("VlmConvertModel initialized successfully")
 
+    def _get_runtime_engine_type(self) -> VlmEngineType:
+        selected_engine_type = getattr(self.engine, "selected_engine_type", None)
+        if selected_engine_type is not None:
+            return selected_engine_type
+        return self.options.engine_options.engine_type
+
+    def _build_engine_input(self, image: PILImage.Image, prompt: str) -> VlmEngineInput:
+        model_spec = self.options.model_spec
+        runtime_engine_type = self._get_runtime_engine_type()
+        return VlmEngineInput(
+            image=image,
+            prompt=prompt,
+            temperature=model_spec.temperature,
+            max_new_tokens=model_spec.max_new_tokens,
+            stop_strings=list(model_spec.stop_strings),
+            extra_generation_config=model_spec.get_runtime_input_extra_config(
+                runtime_engine_type
+            ),
+        )
+
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -106,12 +127,18 @@ class VlmConvertModel(BasePageModel):
             images = []
             prompts = []
             valid_pages = []
+            rasterize_time = 0.0
+            scale_resize_time = 0.0
+            max_size_resize_time = 0.0
 
             for page in page_list:
+                rasterize_start = time.perf_counter()
                 image = page.get_image(
                     scale=self.options.scale,
                     max_size=self.options.max_size,
                 )
+                rasterize_time += time.perf_counter() - rasterize_start
+
                 if image is None:
                     _log.warning(
                         f"Page {page.page_no} has no image, skipping VLM conversion"
@@ -127,23 +154,29 @@ class VlmConvertModel(BasePageModel):
                 return
 
             # Process through runtime using batch prediction
-            _log.debug(f"Processing {len(images)} pages through VLM engine (batched)")
+            _log.debug(
+                "Prepared %s pages for VLM engine: rasterize=%.3fs, scale_resize=%.3fs, max_size_resize=%.3fs",
+                len(images),
+                rasterize_time,
+                scale_resize_time,
+                max_size_resize_time,
+            )
 
             try:
                 # Create batch of runtime inputs
                 engine_inputs = [
-                    VlmEngineInput(
-                        image=img,
-                        prompt=prompt,
-                        temperature=self.options.model_spec.temperature,
-                        max_new_tokens=self.options.model_spec.max_new_tokens,
-                        stop_strings=self.options.model_spec.stop_strings,
-                    )
+                    self._build_engine_input(image=img, prompt=prompt)
                     for img, prompt in zip(images, prompts)
                 ]
 
                 # Run batch inference
+                batch_start = time.perf_counter()
                 outputs = self.engine.predict_batch(engine_inputs)
+                _log.debug(
+                    "Processed %s pages through VLM engine in %.3fs",
+                    len(engine_inputs),
+                    time.perf_counter() - batch_start,
+                )
 
                 # Attach predictions to pages
                 for page, output in zip(valid_pages, outputs):
@@ -211,13 +244,7 @@ class VlmConvertModel(BasePageModel):
 
         # Process batch of images
         engine_inputs = [
-            VlmEngineInput(
-                image=img,
-                prompt=p,
-                temperature=self.options.model_spec.temperature,
-                max_new_tokens=self.options.model_spec.max_new_tokens,
-                stop_strings=self.options.model_spec.stop_strings,
-            )
+            self._build_engine_input(image=img, prompt=p)
             for img, p in zip(images, prompts)
         ]
 
