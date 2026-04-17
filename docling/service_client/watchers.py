@@ -6,6 +6,7 @@ import time
 from collections.abc import Callable, Iterator
 from typing import Protocol
 
+from websockets.exceptions import ConnectionClosedOK
 from websockets.sync.client import connect
 
 from docling.datamodel.service.responses import (
@@ -196,7 +197,19 @@ class WebSocketWatcher:
                     # the server later consumes as a request for a post-terminal
                     # UPDATE, causing a send-after-close RuntimeError.
                     if envelope.message == MessageKind.UPDATE:
-                        websocket.send("next")
+                        try:
+                            websocket.send("next")
+                        except ConnectionClosedOK:
+                            # The current server contract mixes request/response
+                            # "next" handshakes with async notifier-driven closes.
+                            # Under that contract, the socket may close cleanly
+                            # after an UPDATE but before the client can ask for
+                            # the next one. Treat that as normal end-of-stream.
+                            #
+                            # Once the server websocket contract is simplified to
+                            # a pure push stream, remove the "next" handshake
+                            # entirely instead of keeping this special case.
+                            return
 
         except TaskTimeoutError:
             raise

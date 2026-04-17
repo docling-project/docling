@@ -14,7 +14,11 @@ from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
-from docling.datamodel.service.responses import TaskStatusResponse
+from docling.datamodel.service.responses import (
+    MessageKind,
+    TaskStatusResponse,
+    WebsocketMessage,
+)
 from docling.service_client import ConversionItem, DoclingServiceClient
 from docling.service_client.exceptions import (
     ConversionError,
@@ -235,6 +239,58 @@ def test_polling_watcher_supports_explicit_client_interval(
     assert [update.task_status for update in updates] == ["pending", "success"]
     assert wait_values == [5.0, 5.0]
     assert clock.sleep_calls == [pytest.approx(1.0)]
+
+
+def test_websocket_watcher_treats_clean_close_on_next_as_end_of_stream(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeConnectionClosedOK(Exception):
+        pass
+
+    class FakeWebSocket:
+        def __init__(self) -> None:
+            self._messages = iter(
+                [
+                    WebsocketMessage(
+                        message=MessageKind.CONNECTION,
+                        task=_status_response("task-1", "pending"),
+                    ).model_dump_json(),
+                    WebsocketMessage(
+                        message=MessageKind.UPDATE,
+                        task=_status_response("task-1", "pending"),
+                    ).model_dump_json(),
+                ]
+            )
+
+        def recv(self, timeout: float | None = None) -> str:
+            return next(self._messages)
+
+        def send(self, message: str) -> None:
+            raise FakeConnectionClosedOK
+
+    class FakeConnection:
+        def __enter__(self) -> FakeWebSocket:
+            return FakeWebSocket()
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+    monkeypatch.setattr(watchers_module, "ConnectionClosedOK", FakeConnectionClosedOK)
+    monkeypatch.setattr(
+        watchers_module, "connect", lambda *args, **kwargs: FakeConnection()
+    )
+
+    watcher = watchers_module.WebSocketWatcher(
+        ws_url_for_task=lambda task_id: f"ws://example.invalid/{task_id}",
+        poll_fallback=None,
+        fallback_to_poll=False,
+        connect_timeout=1.0,
+        default_timeout=10.0,
+    )
+
+    updates = list(watcher.iter_updates(task_id="task-1"))
+
+    assert [update.task_status for update in updates] == ["pending", "pending"]
 
 
 @pytest.mark.anyio
