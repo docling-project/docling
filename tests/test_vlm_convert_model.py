@@ -150,6 +150,35 @@ def test_process_images_flattens_nested_override_generation_config() -> None:
     assert "extra_generation_config" not in engine_input.extra_generation_config
 
 
+def test_process_images_shares_generation_template_across_batch() -> None:
+    """Batch items get consistent generation settings without per-item reallocation."""
+    model, model_spec = _build_model()
+
+    list(
+        model.process_images(
+            [
+                Image.new("RGB", (8, 8), "white"),
+                Image.new("RGB", (8, 8), "black"),
+                Image.new("RGB", (8, 8), "red"),
+            ],
+            prompt="Prompt.",
+        )
+    )
+
+    batch = model.engine.batches[-1]
+    assert len(batch) == 3
+
+    first = batch[0]
+    for engine_input in batch[1:]:
+        assert engine_input.temperature == first.temperature
+        assert engine_input.max_new_tokens == first.max_new_tokens
+        assert engine_input.stop_strings == first.stop_strings
+        assert engine_input.extra_generation_config == first.extra_generation_config
+
+    assert first.stop_strings == model_spec.stop_strings
+    assert first.extra_generation_config == model_spec.extra_generation_config
+
+
 def test_process_images_uses_selected_auto_inline_engine_for_runtime_input_config() -> None:
     model = VlmConvertModel.__new__(VlmConvertModel)
     model.enabled = True

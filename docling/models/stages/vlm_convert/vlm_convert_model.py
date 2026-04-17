@@ -82,25 +82,40 @@ class VlmConvertModel(BasePageModel):
 
         _log.info("VlmConvertModel initialized successfully")
 
-    def _get_runtime_engine_type(self) -> VlmEngineType:
+    def _resolve_runtime_engine_type(self) -> VlmEngineType:
         selected_engine_type = getattr(self.engine, "selected_engine_type", None)
         if selected_engine_type is not None:
             return selected_engine_type
         return self.options.engine_options.engine_type
 
-    def _build_engine_input(self, image: PILImage.Image, prompt: str) -> VlmEngineInput:
+    def _build_engine_inputs(
+        self,
+        images: list[PILImage.Image],
+        prompts: list[str],
+    ) -> list[VlmEngineInput]:
+        """Build a batch of ``VlmEngineInput`` sharing one generation-config template.
+
+        Stop strings and the runtime generation config are identical for every
+        page in a batch, so building them once here avoids reallocating them
+        per item.
+        """
         model_spec = self.options.model_spec
-        runtime_engine_type = self._get_runtime_engine_type()
-        return VlmEngineInput(
-            image=image,
-            prompt=prompt,
-            temperature=model_spec.temperature,
-            max_new_tokens=model_spec.max_new_tokens,
-            stop_strings=list(model_spec.stop_strings),
-            extra_generation_config=model_spec.get_runtime_input_extra_config(
-                runtime_engine_type
-            ),
+        runtime_engine_type = self._resolve_runtime_engine_type()
+        stop_strings = list(model_spec.stop_strings)
+        extra_generation_config = model_spec.get_runtime_input_extra_config(
+            runtime_engine_type
         )
+        return [
+            VlmEngineInput(
+                image=image,
+                prompt=prompt,
+                temperature=model_spec.temperature,
+                max_new_tokens=model_spec.max_new_tokens,
+                stop_strings=stop_strings,
+                extra_generation_config=extra_generation_config,
+            )
+            for image, prompt in zip(images, prompts)
+        ]
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
@@ -183,11 +198,8 @@ class VlmConvertModel(BasePageModel):
             )
 
             try:
-                # Create batch of runtime inputs
-                engine_inputs = [
-                    self._build_engine_input(image=img, prompt=prompt)
-                    for img, prompt in zip(images, prompts)
-                ]
+                # Create batch of runtime inputs (shared generation template)
+                engine_inputs = self._build_engine_inputs(images, prompts)
 
                 # Run batch inference
                 batch_start = time.perf_counter()
@@ -262,11 +274,8 @@ class VlmConvertModel(BasePageModel):
                 )
             prompts = prompt
 
-        # Process batch of images
-        engine_inputs = [
-            self._build_engine_input(image=img, prompt=p)
-            for img, p in zip(images, prompts)
-        ]
+        # Process batch of images (shared generation template)
+        engine_inputs = self._build_engine_inputs(images, prompts)
 
         # Run batch inference
         outputs = self.engine.predict_batch(engine_inputs)

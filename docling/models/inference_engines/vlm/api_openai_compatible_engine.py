@@ -122,23 +122,21 @@ class ApiVlmEngine(BaseVlmEngine):
             api_params: dict[str, object] = self.model_api_params.copy()
             api_params["temperature"] = input_data.temperature
 
-            # Add max_tokens if specified
             if input_data.max_new_tokens:
                 api_params["max_tokens"] = input_data.max_new_tokens
 
-            # Explicit user params take precedence over per-request defaults.
-            # This allows users to set Azure-specific params like
-            # max_completion_tokens or override temperature (#3112).
+            if input_data.stop_strings:
+                api_params["stop"] = input_data.stop_strings
+
+            # Explicit user params win over both model defaults and per-request
+            # settings. This allows users to set Azure-specific params like
+            # max_completion_tokens or override temperature/stop (#3112).
             api_params.update(self.user_params)
 
             # If user specified max_completion_tokens, remove conflicting
             # max_tokens (required for Azure OpenAI compatibility)
             if "max_completion_tokens" in api_params:
                 api_params.pop("max_tokens", None)
-
-            # Add stop strings if specified
-            if input_data.stop_strings:
-                api_params["stop"] = input_data.stop_strings
 
             # Extract custom stopping criteria using shared utility
             custom_stoppers = extract_generation_stoppers(
