@@ -300,7 +300,8 @@ class GenosBucketChunker(BaseChunker):
 
     def _generate_text_from_items_with_headers(self, items: list[DocItem],
                                               header_info_list: list[dict],
-                                              dl_doc: DoclingDocument) -> str:
+                                              dl_doc: DoclingDocument,
+                                              **kwargs) -> str:
         """DocItem 리스트로부터 헤더 정보를 포함한 텍스트 생성"""
         text_parts = []
         current_section_headers = {}  # 현재 섹션의 헤더 정보
@@ -335,7 +336,7 @@ class GenosBucketChunker(BaseChunker):
 
             # 아이템 텍스트 추가
             if isinstance(item, TableItem):
-                table_text = self._extract_table_text(item, dl_doc)
+                table_text = self._extract_table_text(item, dl_doc, **kwargs)
                 if table_text:
                     text_parts.append(table_text)
             elif hasattr(item, 'text') and item.text:
@@ -357,11 +358,15 @@ class GenosBucketChunker(BaseChunker):
         result_text = self.delim.join(text_parts)
         return result_text
 
-    def _extract_table_text(self, table_item: TableItem, dl_doc: DoclingDocument) -> str:
+    def _extract_table_text(self, table_item: TableItem, dl_doc: DoclingDocument, **kwargs) -> str:
         """테이블에서 텍스트를 추출하는 일반화된 메서드"""
         try:
             # 먼저 export_to_markdown 시도
-            table_text = table_item.export_to_markdown(dl_doc)
+            export_to_html = kwargs.get('export_to_html', 1)
+            if export_to_html == 1:
+                table_text = table_item.export_to_html(dl_doc)
+            else:
+                table_text = table_item.export_to_markdown(dl_doc)
             if table_text and table_text.strip():
                 return table_text
         except Exception:
@@ -450,7 +455,8 @@ class GenosBucketChunker(BaseChunker):
 
     def _generate_section_text_with_heading(self, section_items: list[DocItem],
                                             section_header_infos: list[dict],
-                                            dl_doc: DoclingDocument) -> str:
+                                            dl_doc: DoclingDocument,
+                                            **kwargs) -> str:
         """섹션의 텍스트를 생성하되, 앞에 heading을 붙임"""
         # 첫 번째 item의 header_info에서 heading 추출
         if section_header_infos and section_header_infos[0]:
@@ -471,7 +477,7 @@ class GenosBucketChunker(BaseChunker):
 
         # 섹션의 일반 텍스트 생성
         section_text = self._generate_text_from_items_with_headers(
-            section_items, section_header_infos, dl_doc
+            section_items, section_header_infos, dl_doc, **kwargs
         )
 
         # heading이 있으면 앞에 붙이기
@@ -480,7 +486,7 @@ class GenosBucketChunker(BaseChunker):
         else:
             return section_text
 
-    def _split_document_by_tokens(self, doc_chunk: DocChunk, dl_doc: DoclingDocument) -> list[DocChunk]:
+    def _split_document_by_tokens(self, doc_chunk: DocChunk, dl_doc: DoclingDocument, **kwargs) -> list[DocChunk]:
         """문서를 토큰 제한에 맞게 분할 (v2: 섹션 헤더 기준으로 분할 후 max_tokens로 병합)"""
         items = doc_chunk.meta.doc_items
         header_info_list = getattr(doc_chunk, '_header_info_list', [])
@@ -520,7 +526,7 @@ class GenosBucketChunker(BaseChunker):
         def get_text_from_item(item: DocItem) -> str:
             """DocItem에서 텍스트 추출"""
             if isinstance(item, TableItem):
-                return self._extract_table_text(item, dl_doc)
+                return self._extract_table_text(item, dl_doc, **kwargs)
             elif hasattr(item, 'text') and item.text:
                 return item.text
             elif isinstance(item, PictureItem):
@@ -699,7 +705,7 @@ class GenosBucketChunker(BaseChunker):
         sections_with_text = []
         for items, header_infos, header_short_infos in sections:
             text = self._generate_section_text_with_heading(
-                items, header_short_infos, dl_doc
+                items, header_short_infos, dl_doc, **kwargs
             )
             sections_with_text.append((
                 text,
@@ -750,7 +756,7 @@ class GenosBucketChunker(BaseChunker):
                             group_h_short.append(g[2])
 
                     new_text = self._generate_section_text_with_heading(
-                        group_items, group_h_short, dl_doc
+                        group_items, group_h_short, dl_doc, **kwargs
                     )
                     new_sections.append((new_text, group_items, group_h_infos, group_h_short))
 
@@ -857,7 +863,7 @@ class GenosBucketChunker(BaseChunker):
 
         doc_chunk = doc_chunks[0]  # preprocess는 하나의 청크만 반환
 
-        final_chunks = self._split_document_by_tokens(doc_chunk, dl_doc)
+        final_chunks = self._split_document_by_tokens(doc_chunk, dl_doc, **kwargs)
 
         return iter(final_chunks)
 
@@ -1022,17 +1028,17 @@ class DocumentProcessor:
         # self.pipe_line_options.artifacts_path = Path("/models/")
 
         # layout 모델로 GENOS_LAYOUT 사용
-        # self.pipe_line_options.layout_options.layout_model_type = LayoutModelType.GENOS_LAYOUT
+        self.pipe_line_options.layout_options.layout_model_type = LayoutModelType.GENOS_LAYOUT
         # 운영망 T4
         # self.pipe_line_options.layout_options.genos_layout_options.endpoint = "https://genos.genon.ai:3443/api/gateway/rep/serving/733/v1/chat/completions"
         # self.pipe_line_options.layout_options.genos_layout_options.api_key = "3d0aed2e6aff4d8289052d50a7aaffaa"
 
         # H100 gpu
-        # self.pipe_line_options.layout_options.genos_layout_options.endpoint = "http://192.168.75.174:26001/v1/chat/completions"
-        # self.pipe_line_options.layout_options.genos_layout_options.api_key = ""
+        self.pipe_line_options.layout_options.genos_layout_options.endpoint = "http://192.168.75.174:26001/v1/chat/completions"
+        self.pipe_line_options.layout_options.genos_layout_options.api_key = ""
 
         # genos layout 모델은 batch size를 32로 설정
-        # settings.perf.page_batch_size = 32
+        settings.perf.page_batch_size = 32
 
         self.pipe_line_options.do_table_structure = True
         # VLM 기반 테이블 구조 모델 사용
@@ -1160,13 +1166,13 @@ class DocumentProcessor:
             conv_result: ConversionResult = self.ocr_second_converter.convert(file_path, raises_on_error=True)
         return conv_result.document
 
-    def load_documents(self, file_path: str, **kwargs) -> DoclingDocument:
+    def load_documents(self, file_path: str, **kwargs: dict) -> DoclingDocument:
         return self.load_documents_with_docling(file_path, **kwargs)
 
     def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
         chunker: GenosBucketChunker = GenosBucketChunker(
-            max_tokens=0,
-            merge_peers=True
+            max_tokens = kwargs.get('max_chunk_size', 0),
+            merge_peers = True
         )
 
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
@@ -1235,17 +1241,17 @@ class DocumentProcessor:
         document = enrich_document(document, self.enrichment_options, **kwargs)
         return document
 
-    async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request,
-                              **kwargs: dict) -> \
+    async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request, **kwargs: dict) -> \
             list[dict]:
         title = ""
         created_date = 0
         try:
             if (document.key_value_items and
-                    len(document.key_value_items) > 0 and
-                    hasattr(document.key_value_items[0], 'graph') and
-                    hasattr(document.key_value_items[0].graph, 'cells') and
-                    len(document.key_value_items[0].graph.cells) > 1):
+                len(document.key_value_items) > 0 and
+                hasattr(document.key_value_items[0], 'graph') and
+                hasattr(document.key_value_items[0].graph, 'cells') and
+                len(document.key_value_items[0].graph.cells) > 1):
+
                 # 작성일 추출 (cells[1])
                 date_text = document.key_value_items[0].graph.cells[1].text
                 created_date = self.parse_created_date(date_text)

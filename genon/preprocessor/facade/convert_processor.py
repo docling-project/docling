@@ -3,15 +3,17 @@ from __future__ import annotations
 import json
 import os
 import logging
+import math, bisect
 from pathlib import Path
 
 from collections import defaultdict
 from datetime import datetime
 from typing import Optional, Iterable, Any, List, Dict, Tuple
 
+from fastapi import Request
+
 _log = logging.getLogger(__name__)
 
-from fastapi import Request
 # from utils import assert_cancelled
 import shutil
 import subprocess
@@ -33,21 +35,22 @@ from langchain_community.document_loaders import (
 )
 from langchain_core.documents import Document
 # docling imports
-from docling.pipeline.simple_pipeline import SimplePipeline
+
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.backend.genos_msword_backend import GenosMsWordDocumentBackend
 from docling.datamodel.base_models import InputFormat
+from docling.pipeline.simple_pipeline import SimplePipeline
 # from docling.datamodel.document import ConversionStatus
 from docling.datamodel.pipeline_options import (
     AcceleratorDevice,
     AcceleratorOptions,
-    # EasyOcrOptions,
     # OcrEngine,
     # PdfBackend,
+    LayoutModelType,
     PdfPipelineOptions,
     TableFormerMode,
-    TesseractOcrOptions,
+    TableStructureModelType,
     PipelineOptions,
     PaddleOcrOptions,
 )
@@ -72,10 +75,8 @@ from docling_core.types import DoclingDocument
 
 from pandas import DataFrame
 import asyncio
-# from docling_core.transforms.chunker import BaseChunk, BaseChunker, BaseMeta
 from docling_core.types import DoclingDocument as DLDocument
 from docling_core.types.doc.document import (
-    # DocItem,
     DocumentOrigin,
     LevelNumber,
     ListItem,
@@ -85,27 +86,22 @@ from docling_core.types.doc.document import (
 from docling_core.types.doc.labels import DocItemLabel
 from docling_core.types.doc import (
     BoundingBox,
-    # CoordOrigin,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
-    # GroupLabel,
-    # ImageRef,
-    # ProvenanceItem,
-    # Size,
-    # TableCell,
-    # TableData,
-    # GroupItem,
-
     DocItem,
     PictureItem,
     SectionHeaderItem,
     TableItem,
     TextItem,
-    PageItem
+    PageItem,
+    ProvenanceItem
 )
+from docling.datamodel.settings import settings
+
 from collections import Counter
 import re
+import json
 import warnings
 import asyncio
 
@@ -403,7 +399,8 @@ class GenosBucketChunker(BaseChunker):
 
     def _generate_text_from_items_with_headers(self, items: list[DocItem],
                                               header_info_list: list[dict],
-                                              dl_doc: DoclingDocument) -> str:
+                                              dl_doc: DoclingDocument,
+                                              **kwargs) -> str:
         """DocItem 리스트로부터 헤더 정보를 포함한 텍스트 생성"""
         text_parts = []
         current_section_headers = {}  # 현재 섹션의 헤더 정보
@@ -438,7 +435,7 @@ class GenosBucketChunker(BaseChunker):
 
             # 아이템 텍스트 추가
             if isinstance(item, TableItem):
-                table_text = self._extract_table_text(item, dl_doc)
+                table_text = self._extract_table_text(item, dl_doc, **kwargs)
                 if table_text:
                     text_parts.append(table_text)
             elif hasattr(item, 'text') and item.text:
@@ -460,11 +457,15 @@ class GenosBucketChunker(BaseChunker):
         result_text = self.delim.join(text_parts)
         return result_text
 
-    def _extract_table_text(self, table_item: TableItem, dl_doc: DoclingDocument) -> str:
+    def _extract_table_text(self, table_item: TableItem, dl_doc: DoclingDocument, **kwargs) -> str:
         """테이블에서 텍스트를 추출하는 일반화된 메서드"""
         try:
             # 먼저 export_to_markdown 시도
-            table_text = table_item.export_to_markdown(dl_doc)
+            export_to_html = kwargs.get('export_to_html', 1)
+            if export_to_html == 1:
+                table_text = table_item.export_to_html(dl_doc)
+            else:
+                table_text = table_item.export_to_markdown(dl_doc)
             if table_text and table_text.strip():
                 return table_text
         except Exception:
@@ -553,7 +554,8 @@ class GenosBucketChunker(BaseChunker):
 
     def _generate_section_text_with_heading(self, section_items: list[DocItem],
                                             section_header_infos: list[dict],
-                                            dl_doc: DoclingDocument) -> str:
+                                            dl_doc: DoclingDocument,
+                                            **kwargs) -> str:
         """섹션의 텍스트를 생성하되, 앞에 heading을 붙임"""
         # 첫 번째 item의 header_info에서 heading 추출
         if section_header_infos and section_header_infos[0]:
@@ -574,7 +576,7 @@ class GenosBucketChunker(BaseChunker):
 
         # 섹션의 일반 텍스트 생성
         section_text = self._generate_text_from_items_with_headers(
-            section_items, section_header_infos, dl_doc
+            section_items, section_header_infos, dl_doc, **kwargs
         )
 
         # heading이 있으면 앞에 붙이기
@@ -583,7 +585,7 @@ class GenosBucketChunker(BaseChunker):
         else:
             return section_text
 
-    def _split_document_by_tokens(self, doc_chunk: DocChunk, dl_doc: DoclingDocument) -> list[DocChunk]:
+    def _split_document_by_tokens(self, doc_chunk: DocChunk, dl_doc: DoclingDocument, **kwargs) -> list[DocChunk]:
         """문서를 토큰 제한에 맞게 분할 (v2: 섹션 헤더 기준으로 분할 후 max_tokens로 병합)"""
         items = doc_chunk.meta.doc_items
         header_info_list = getattr(doc_chunk, '_header_info_list', [])
@@ -623,7 +625,7 @@ class GenosBucketChunker(BaseChunker):
         def get_text_from_item(item: DocItem) -> str:
             """DocItem에서 텍스트 추출"""
             if isinstance(item, TableItem):
-                return self._extract_table_text(item, dl_doc)
+                return self._extract_table_text(item, dl_doc, **kwargs)
             elif hasattr(item, 'text') and item.text:
                 return item.text
             elif isinstance(item, PictureItem):
@@ -802,7 +804,7 @@ class GenosBucketChunker(BaseChunker):
         sections_with_text = []
         for items, header_infos, header_short_infos in sections:
             text = self._generate_section_text_with_heading(
-                items, header_short_infos, dl_doc
+                items, header_short_infos, dl_doc, **kwargs
             )
             sections_with_text.append((
                 text,
@@ -853,7 +855,7 @@ class GenosBucketChunker(BaseChunker):
                             group_h_short.append(g[2])
 
                     new_text = self._generate_section_text_with_heading(
-                        group_items, group_h_short, dl_doc
+                        group_items, group_h_short, dl_doc, **kwargs
                     )
                     new_sections.append((new_text, group_items, group_h_infos, group_h_short))
 
@@ -960,7 +962,7 @@ class GenosBucketChunker(BaseChunker):
 
         doc_chunk = doc_chunks[0]  # preprocess는 하나의 청크만 반환
 
-        final_chunks = self._split_document_by_tokens(doc_chunk, dl_doc)
+        final_chunks = self._split_document_by_tokens(doc_chunk, dl_doc, **kwargs)
 
         return iter(final_chunks)
 
@@ -1111,6 +1113,8 @@ class DocumentProcessor:
         self.pipe_line_options.generate_picture_images = True
         self.pipe_line_options.do_ocr = False
         self.pipe_line_options.ocr_options = ocr_options
+        self.pipe_line_options.images_scale = 2
+
         # self.pipe_line_options.ocr_options.lang = ["ko", 'en']
         # self.pipe_line_options.ocr_options.model_storage_directory = "./.EasyOCR/model"
         # self.pipe_line_options.ocr_options.force_full_page_ocr = True
@@ -1119,8 +1123,27 @@ class DocumentProcessor:
         # ocr_options.path = './.tesseract/tessdata'
         # self.pipe_line_options.ocr_options = ocr_options
         # self.pipe_line_options.artifacts_path = Path("/models/")
+
+        # layout 모델로 GENOS_LAYOUT 사용
+        self.pipe_line_options.layout_options.layout_model_type = LayoutModelType.GENOS_LAYOUT
+        # 운영망 T4
+        # self.pipe_line_options.layout_options.genos_layout_options.endpoint = "https://genos.genon.ai:3443/api/gateway/rep/serving/733/v1/chat/completions"
+        # self.pipe_line_options.layout_options.genos_layout_options.api_key = "3d0aed2e6aff4d8289052d50a7aaffaa"
+
+        # H100 gpu
+        self.pipe_line_options.layout_options.genos_layout_options.endpoint = "http://192.168.75.174:26001/v1/chat/completions"
+        self.pipe_line_options.layout_options.genos_layout_options.api_key = ""
+
+        # genos layout 모델은 batch size를 32로 설정
+        settings.perf.page_batch_size = 32
+
         self.pipe_line_options.do_table_structure = True
-        self.pipe_line_options.images_scale = 2
+        # VLM 기반 테이블 구조 모델 사용
+        # self.pipe_line_options.table_structure_options.table_structure_model_type = TableStructureModelType.VLM
+        # self.pipe_line_options.table_structure_options.vlm_table_structure_options.url = "http://localhost:8000/v1/chat/completions"
+        # self.pipe_line_options.table_structure_options.vlm_table_structure_options.api_key = ""
+        # self.pipe_line_options.table_structure_options.vlm_table_structure_options.model = ""
+
         self.pipe_line_options.table_structure_options.do_cell_matching = True
         self.pipe_line_options.table_structure_options.mode = TableFormerMode.ACCURATE
         self.pipe_line_options.accelerator_options = accelerator_options
@@ -1277,9 +1300,10 @@ class DocumentProcessor:
 
     def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
         chunker: GenosBucketChunker = GenosBucketChunker(
-              max_tokens=2000,
-              merge_peers=True
-            )
+            max_tokens = kwargs.get('max_chunk_size', 0),
+            merge_peers = True
+        )
+
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
         for chunk in chunks:
             self.page_chunk_counts[chunk.meta.doc_items[0].prov[0].page_no] += 1
@@ -1293,8 +1317,10 @@ class DocumentProcessor:
     def parse_created_date(self, date_text: str) -> Optional[int]:
         """
         작성일 텍스트를 파싱하여 YYYYMMDD 형식의 정수로 변환
+
         Args:
             date_text: 작성일 텍스트 (YYYY-MM 또는 YYYY-MM-DD 형식)
+
         Returns:
             YYYYMMDD 형식의 정수, 파싱 실패시 None
         """
@@ -1909,7 +1935,8 @@ class GenosServiceException(Exception):
 # GenOS 와의 의존성 제거를 위해 추가
 async def assert_cancelled(request: Request):
     if await request.is_disconnected():
-        raise GenosServiceException("1", f"Cancelled")
+        raise GenosServiceException(1, f"Cancelled")
+
 
 #-----------------------------------------------------------------
 # enrichment 프롬프트

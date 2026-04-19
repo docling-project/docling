@@ -727,6 +727,32 @@ self._create_converters()
 self.enrichment_options = DataEnrichmentOptions(...)
 ```
 
+#### 차이점 — Layout 모델 옵션
+
+레이아웃 분석 모델을 아래와 같이 2가지 중 하나를 선택할 수 있습니다.
+
+- `DOCLING_LAYOUT`: Docling 기본 레이아웃 모델입니다. `PdfPipelineOptions`의 기본값도 `DOCLING_LAYOUT`입니다.
+- `GENOS_LAYOUT`: 외부 서빙형 GenOS 레이아웃 모델입니다. `layout_model_type`을 `GENOS_LAYOUT`로 변경하고, `genos_layout_options.endpoint`를 설정해야 합니다. `api_key`는 배포 환경 정책에 따라 필요할 수 있습니다.
+
+**DOCLING_LAYOUT vs GENOS_LAYOUT**:
+- GENOS_LAYOUT은 제목/본문/표/이미지 등의 레이아웃 요소 검출과 reading order 품질 개선을 기대할 수 있습니다.
+- GENOS_LAYOUT은 별도 서빙 인프라가 필요하므로, 해당 환경이 없으면 DOCLING_LAYOUT을 사용합니다.
+
+```python
+# 기본값 (별도 지정이 없으면 DOCLING_LAYOUT)
+# self.pipe_line_options.layout_options.layout_model_type = LayoutModelType.DOCLING_LAYOUT
+
+# GENOS_LAYOUT 적용
+self.pipe_line_options.layout_options.layout_model_type = LayoutModelType.GENOS_LAYOUT
+
+# 운영망 T4 예시
+self.pipe_line_options.layout_options.genos_layout_options.endpoint = "https://genos.genon.ai:3443/api/gateway/rep/serving/733/v1/chat/completions"
+self.pipe_line_options.layout_options.genos_layout_options.api_key = "..."
+
+# 처리량 튜닝(전역 perf 설정)
+settings.perf.page_batch_size = 32
+```
+
 #### 차이점 — Simple 파이프라인 옵션
 
 ```python
