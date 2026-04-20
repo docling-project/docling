@@ -11,6 +11,7 @@ on:
                 default: "3.12"
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   UV_FROZEN: "1"
 
 jobs:

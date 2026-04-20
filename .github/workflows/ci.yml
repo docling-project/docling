@@ -13,7 +13,10 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ !contains(github.event.pull_request.labels.*.name, 'graphite:merge') }}
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 env:
   DEFAULT_PYTHON_VERSIONS: '["3.10"]'

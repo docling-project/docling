@@ -5,11 +5,12 @@ on:
     types: [opened, reopened, synchronize, ready_for_review]
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   UV_FROZEN: "1"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ !contains(github.event.pull_request.labels.*.name, 'graphite:merge') }}
 
 jobs:
   changes:

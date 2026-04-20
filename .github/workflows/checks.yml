@@ -34,6 +34,7 @@ on:
         required: false
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   HF_HUB_DOWNLOAD_TIMEOUT: "90"
   HF_HUB_ETAG_TIMEOUT: "90"
   UV_FROZEN: "1"
@@ -596,28 +597,20 @@ jobs:
       - build-package
       - test-package
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
-      - name: Verify required jobs
-        env:
-          NEEDS_JSON: ${{ toJSON(needs) }}
-        run: |
-          python - <<'PY'
-          import json
-          import os
-          import sys
-
-          needs = json.loads(os.environ["NEEDS_JSON"])
-          blocking = {
-              job: data["result"]
-              for job, data in needs.items()
-              if data["result"] not in {"success", "skipped"}
-          }
-
-          if blocking:
-              print("Blocking workflow results detected:")
-              for job, result in sorted(blocking.items()):
-                  print(f"- {job}: {result}")
-              sys.exit(1)
-
-          print("All required jobs succeeded or were skipped.")
-          PY
+      - name: All Green
+        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe # v1.2.2
+        with:
+          jobs: ${{ toJSON(needs) }}
+          allowed-skips: >-
+            changes,
+            lint,
+            tach,
+            run-tests-1,
+            run-tests-2,
+            run-examples,
+            test-pip-install-no-lock,
+            test-pip-install-no-dev-headers,
+            build-package,
+            test-package
