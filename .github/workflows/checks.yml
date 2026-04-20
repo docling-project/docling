@@ -65,7 +65,7 @@ jobs:
       - name: Detect changed paths
         if: ${{ !inputs.force_all_checks }}
         id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         with:
           filters: |
             run_tests:

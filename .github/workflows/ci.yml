@@ -3,6 +3,8 @@ name: "Run CI"
 on:
   pull_request:
     types: [opened, reopened, synchronize, labeled, unlabeled]
+  merge_group:
+    types: [checks_requested]
   push:
     branches:
       - "**"
@@ -30,20 +32,20 @@ jobs:
       run_ci: ${{ steps.manual.outputs.run_ci || steps.filter.outputs.run_ci }}
       full_matrix_override: ${{ steps.filter.outputs.full_matrix_override }}
     steps:
-      - name: Mark manual runs to execute CI
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+      - name: Mark manual and merge queue runs to execute CI
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' }}
         id: manual
         run: echo "run_ci=true" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v6
-        if: ${{ github.event_name != 'workflow_dispatch' }}
+        if: ${{ github.event_name != 'workflow_dispatch' && github.event_name != 'merge_group' }}
         with:
           fetch-depth: 0
 
       - name: Detect changed paths
-        if: ${{ github.event_name != 'workflow_dispatch' }}
+        if: ${{ github.event_name != 'workflow_dispatch' && github.event_name != 'merge_group' }}
         id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         with:
           filters: |
             run_ci:
@@ -70,25 +72,15 @@ jobs:
 
   code-checks:
     needs: changes
-    if: >-
-      ${{
-        needs.changes.outputs.run_ci == 'true' &&
-        (
-          github.event_name == 'workflow_dispatch' ||
-          github.event_name == 'push' ||
-          (
-            github.event_name == 'pull_request' &&
-            (
-              github.event.pull_request.head.repo.full_name != github.repository ||
-              contains(github.event.pull_request.labels.*.name, 'tests:full')
-            )
-          )
-        )
-      }}
+    if: ${{ needs.changes.outputs.run_ci == 'true' }}
     uses: ./.github/workflows/checks.yml
     with:
       run_lint: ${{ github.event_name != 'pull_request' }}
-      force_all_checks: ${{ github.event_name == 'workflow_dispatch' }}
+      force_all_checks: >-
+        ${{
+          github.event_name == 'workflow_dispatch' ||
+          github.event_name == 'merge_group'
+        }}
       run_package_compat: >-
         ${{
           github.event_name == 'workflow_dispatch' ||

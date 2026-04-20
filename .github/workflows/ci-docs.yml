@@ -3,6 +3,8 @@ name: "Run Docs CI"
 on:
   pull_request:
     types: [opened, reopened, synchronize]
+  merge_group:
+    types: [checks_requested]
   push:
     branches:
       - "**"
@@ -22,15 +24,22 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      run_docs: ${{ steps.filter.outputs.run_docs }}
+      run_docs: ${{ steps.manual.outputs.run_docs || steps.filter.outputs.run_docs }}
     steps:
+      - name: Mark merge queue runs to execute docs CI
+        if: ${{ github.event_name == 'merge_group' }}
+        id: manual
+        run: echo "run_docs=true" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v6
+        if: ${{ github.event_name != 'merge_group' }}
         with:
           fetch-depth: 0
 
       - name: Detect changed paths
+        if: ${{ github.event_name != 'merge_group' }}
         id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         with:
           filters: |
             run_docs:
@@ -44,7 +53,7 @@ jobs:
 
   build-docs:
     needs: changes
-    if: ${{ needs.changes.outputs.run_docs == 'true' && (github.event_name == 'push' || (github.event.pull_request.head.repo.full_name != 'docling-project/docling' && github.event.pull_request.head.repo.full_name != 'docling-project/docling')) }}
+    if: ${{ needs.changes.outputs.run_docs == 'true' }}
     uses: ./.github/workflows/docs.yml
     with:
       deploy: false
