@@ -3,6 +3,17 @@ name: "Run PR Fast Checks"
 on:
   pull_request_target:
     types: [opened, reopened, synchronize, ready_for_review]
+    paths:
+      - ".github/workflows/pr-fast-checks.yml"
+      - ".github/scripts/run_pr_fast_checks.py"
+      - ".pre-commit-config.yaml"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/scripts/**/*.py"
+      - "docling/**/*.py"
+      - "tests/**/*.py"
+      - "docs/examples/**/*.py"
+      - "docs/examples/**/*.ipynb"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -38,11 +49,8 @@ jobs:
           python-version: "3.12"
           enable-cache: true
 
-      - name: Install trusted lint and typing dependencies
-        run: uv sync --frozen --no-default-groups --group dev --no-install-project
-
-      - name: Install Ruff
-        run: uv pip install --python .venv/bin/python ruff==0.11.5
+      - name: Install minimal trusted lint and typing dependencies
+        run: uv sync --frozen --only-group pr-fast-checks --no-install-project
 
       - name: Run fast lint and typing checks
         run: |
