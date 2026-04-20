@@ -86,6 +86,16 @@ class GenosDotsOCRLayoutModel(BasePageModel):
         self.model = getattr(self.dotsocr_options, "model", "dots-mocr")
         self.max_completion_tokens = self.dotsocr_options.max_completion_tokens
         self.timeout = self.dotsocr_options.timeout
+        retry_count = getattr(self.dotsocr_options, "retry_count", 2)
+        try:
+            retry_count = int(retry_count)
+        except (TypeError, ValueError):
+            _log.warning(
+                "Invalid genos_layout_options.retry_count=%r. Falling back to 2.",
+                retry_count,
+            )
+            retry_count = 2
+        self.retry_count = max(0, retry_count)
 
     def _use_dotsocr_table_structure(self) -> bool:
         return (
@@ -585,46 +595,67 @@ class GenosDotsOCRLayoutModel(BasePageModel):
             # 바이트 스트림을 base64로 인코딩
             base64_image = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
-            response_text = call_vlm_server(
-                prompt=prompt,
-                base64_image=base64_image,
-                url=self.dotocr_endpoint,
-                api_key=self.api_key,
-                model=self.model,
-                max_completion_tokens=self.max_completion_tokens,
-                timeout=self.timeout,
-            )
+            total_attempts = self.retry_count + 1
+            response = None
+            result = None
+            for attempt in range(1, total_attempts + 1):
+                try:
+                    response_text = call_vlm_server(
+                        prompt=prompt,
+                        base64_image=base64_image,
+                        url=self.dotocr_endpoint,
+                        api_key=self.api_key,
+                        model=self.model,
+                        max_completion_tokens=self.max_completion_tokens,
+                        timeout=self.timeout,
+                    )
+                    if not isinstance(response_text, str) or not response_text.strip():
+                        raise ValueError("Empty VLM response text")
+                    response = _parse_vlm_json_response(response_text)
+                except Exception:
+                    if attempt >= total_attempts:
+                        raise
+                    _log.warning(
+                        "DotsOCR layout request failed (page=%s, attempt=%d/%d). Retrying...",
+                        page.page_no,
+                        attempt,
+                        total_attempts,
+                        exc_info=True,
+                    )
+                    continue
 
-            # 디버그용으로 response_text 화면에 출력
-            # print("VLM Response Data:", json.dumps(json.loads(response_text), indent=2, ensure_ascii=False))
+                result = _extract_layout_result_items(response)
+                if isinstance(result, list):
+                    if attempt > 1:
+                        _log.info(
+                            "DotsOCR layout request recovered after retry (page=%s, attempt=%d/%d).",
+                            page.page_no,
+                            attempt,
+                            total_attempts,
+                        )
+                    break
 
-            response = _parse_vlm_json_response(response_text)
-            if isinstance(response, dict):
-                result = response.get("result")
-                if result is None:
-                    # Fallback for providers that use a different list key.
-                    result = response.get("items")
-            elif isinstance(response, list):
-                result = response
-            else:
-                result = None
+                if attempt < total_attempts:
+                    _log.warning(
+                        "Unexpected VLM response schema (page=%s, attempt=%d/%d). Retrying. Parsed type=%s; value=%r",
+                        page.page_no,
+                        attempt,
+                        total_attempts,
+                        type(response).__name__,
+                        response,
+                    )
+                    continue
 
-            if isinstance(result, str):
-                nested = _parse_vlm_json_response(result)
-                if isinstance(nested, dict):
-                    result = nested.get("result")
-                    if result is None:
-                        result = nested.get("items")
-                elif isinstance(nested, list):
-                    result = nested
-
-            if not isinstance(result, list):
                 _log.warning(
-                    "Unexpected VLM response schema. Parsed type=%s; falling back to empty predictions. value=%r",
+                    "Unexpected VLM response schema after retries (page=%s, attempts=%d). Falling back to empty predictions. Parsed type=%s; value=%r",
+                    page.page_no,
+                    total_attempts,
                     type(response).__name__,
                     response,
                 )
                 result = []
+
+            assert isinstance(result, list)
 
             clusters = []
             raw_table_html_by_cluster_id: dict[int, str] = {}
@@ -903,6 +934,29 @@ def call_vlm_server(
         raise RuntimeError(f"HTTP 요청 오류: {e}") from e
     except KeyError as e:
         raise ValueError(f"응답 파싱 오류: {e}\n응답 본문: {response.text}") from e
+
+
+def _extract_layout_result_items(response):
+    if isinstance(response, dict):
+        result = response.get("result")
+        if result is None:
+            # Fallback for providers that use a different list key.
+            result = response.get("items")
+    elif isinstance(response, list):
+        result = response
+    else:
+        result = None
+
+    if isinstance(result, str):
+        nested = _parse_vlm_json_response(result)
+        if isinstance(nested, dict):
+            result = nested.get("result")
+            if result is None:
+                result = nested.get("items")
+        elif isinstance(nested, list):
+            result = nested
+
+    return result
 
 
 def _parse_vlm_json_response(response_text: str):
