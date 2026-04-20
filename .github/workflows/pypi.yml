@@ -17,7 +17,7 @@ jobs:
       matrix:
         python-version: ['3.12']
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-ubuntu-ci
         with:
           python_version: ${{ matrix.python-version }}
@@ -45,7 +45,7 @@ jobs:
           name: dist
           path: dist/
       - name: Publish docling-slim to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           attestations: true
           packages-dir: dist/docling-slim/
@@ -72,7 +72,7 @@ jobs:
           echo "Waiting 60 seconds for docling-slim to propagate on PyPI..."
           sleep 60
       - name: Publish docling to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           attestations: true
           packages-dir: dist/docling/

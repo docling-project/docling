@@ -28,7 +28,7 @@ runs:
 
     - name: Cache APT packages
       if: ${{ inputs.install_system_deps == 'true' }}
-      uses: actions/cache@v5
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: /var/cache/apt/archives
         key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/actions/setup-ubuntu-ci/action.yml') }}
@@ -48,7 +48,7 @@ runs:
       run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
 
     - name: Install uv and set the python version
-      uses: astral-sh/setup-uv@v7
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       with:
         python-version: ${{ inputs.python_version }}
         enable-cache: ${{ inputs.enable_cache }}
@@ -60,7 +60,7 @@ runs:
 
     - name: Cache models
       if: ${{ inputs.cache_models == 'true' }}
-      uses: actions/cache@v5
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: |
           ~/.cache/huggingface
