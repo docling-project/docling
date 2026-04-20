@@ -66,7 +66,10 @@ runs:
           ~/.cache/huggingface
           ~/.cache/modelscope
           ~/.EasyOCR/
-        key: models-cache
+        key: models-cache-${{ runner.os }}-${{ hashFiles('uv.lock', 'pyproject.toml') }}
+        restore-keys: |
+          models-cache-${{ runner.os }}-
+          models-cache-
 
     - name: Grant permissions to APT cache directory # allows backup
       if: ${{ inputs.install_system_deps == 'true' }}

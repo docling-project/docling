@@ -23,6 +23,7 @@ depends_on = [
   "docling.backend.docx",
   "docling.backend.latex",
   "docling.datamodel",
+  "docling.datamodel.backend_options",
   "docling.exceptions",
   "docling.utils",
 ]
@@ -37,16 +38,33 @@ depends_on = ["docling.backend", "docling.datamodel"]
 
 [[modules]]
 path = "docling.backend.latex"
-depends_on = ["docling.backend", "docling.datamodel"]
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.backend_options",
+]
 
 [[modules]]
 path = "docling.backend.xml"
-depends_on = ["docling.backend", "docling.datamodel", "docling.exceptions"]
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.backend_options",
+  "docling.exceptions",
+]
 
 [[modules]]
 path = "docling.datamodel"
 depends_on = [
   "docling.backend",
+  "docling.datamodel.asr_model_specs",
+  "docling.datamodel.backend_options",
+  "docling.datamodel.layout_model_specs",
+  "docling.datamodel.pipeline_options_asr_model",
+  "docling.datamodel.pipeline_options_vlm_model",
+  "docling.datamodel.stage_model_specs",
+  "docling.datamodel.vlm_engine_options",
+  "docling.datamodel.vlm_model_specs",
   "docling.models.inference_engines.image_classification",
   "docling.models.inference_engines.object_detection",
   "docling.models.inference_engines.vlm",
@@ -55,8 +73,67 @@ depends_on = [
 ]
 
 [[modules]]
+path = "docling.datamodel.asr_model_specs"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_asr_model",
+]
+
+[[modules]]
+path = "docling.datamodel.backend_options"
+depends_on = []
+
+[[modules]]
+path = "docling.datamodel.layout_model_specs"
+depends_on = ["docling.datamodel"]
+
+[[modules]]
+path = "docling.datamodel.pipeline_options_asr_model"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+]
+
+[[modules]]
+path = "docling.datamodel.pipeline_options_vlm_model"
+depends_on = [
+  "docling.datamodel",
+  "docling.models.utils",
+]
+
+[[modules]]
 path = "docling.datamodel.service"
-depends_on = ["docling.datamodel", "docling.utils"]
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+  "docling.datamodel.vlm_model_specs",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.datamodel.stage_model_specs"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+  "docling.datamodel.vlm_engine_options",
+  "docling.models.inference_engines.image_classification",
+  "docling.models.inference_engines.object_detection",
+  "docling.models.inference_engines.vlm",
+]
+
+[[modules]]
+path = "docling.datamodel.vlm_engine_options"
+depends_on = [
+  "docling.datamodel",
+  "docling.models.inference_engines.vlm",
+]
+
+[[modules]]
+path = "docling.datamodel.vlm_model_specs"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+]
 
 [[modules]]
 path = "docling.models.utils"
@@ -66,6 +143,7 @@ depends_on = []
 path = "docling.utils"
 depends_on = [
   "docling.datamodel",
+  "docling.datamodel.vlm_model_specs",
   "docling.models.stages.chart_extraction",
   "docling.models.stages.code_formula",
   "docling.models.stages.layout",
@@ -77,12 +155,16 @@ depends_on = [
 
 [[modules]]
 path = "docling.models"
-depends_on = ["docling.datamodel"]
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+]
 
 [[modules]]
 path = "docling.models.extraction"
 depends_on = [
   "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
   "docling.models",
   "docling.models.utils",
   "docling.utils",
@@ -126,6 +208,8 @@ depends_on = [
 path = "docling.models.inference_engines.vlm"
 depends_on = [
   "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+  "docling.datamodel.vlm_engine_options",
   "docling.exceptions",
   "docling.models.utils",
   "docling.utils",
@@ -158,6 +242,7 @@ depends_on = [
 path = "docling.models.stages.layout"
 depends_on = [
   "docling.datamodel",
+  "docling.datamodel.layout_model_specs",
   "docling.models",
   "docling.models.inference_engines.object_detection",
   "docling.models.utils",
@@ -199,6 +284,7 @@ depends_on = [
 path = "docling.models.stages.picture_description"
 depends_on = [
   "docling.datamodel",
+  "docling.datamodel.stage_model_specs",
   "docling.exceptions",
   "docling.models",
   "docling.models.inference_engines.vlm",
@@ -242,6 +328,7 @@ depends_on = [
 path = "docling.models.vlm_pipeline_models"
 depends_on = [
   "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
   "docling.exceptions",
   "docling.models",
   "docling.models.utils",
@@ -268,14 +355,110 @@ depends_on = [
 ]
 
 [[modules]]
+path = "docling.pipeline.base_pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.models",
+  "docling.models.factories",
+  "docling.models.stages.chart_extraction",
+  "docling.models.stages.picture_classifier",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.pipeline.simple_pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.pipeline.base_extraction_pipeline"
+depends_on = ["docling.datamodel"]
+
+[[modules]]
+path = "docling.pipeline.asr_pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_asr_model",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.pipeline.vlm_pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+  "docling.models.stages.vlm_convert",
+  "docling.models.vlm_pipeline_models",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.pipeline.extraction_vlm_pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.models.extraction",
+  "docling.pipeline.base_extraction_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.pipeline.standard_pdf_pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.models.factories",
+  "docling.models.stages.code_formula",
+  "docling.models.stages.page_assemble",
+  "docling.models.stages.page_preprocessing",
+  "docling.models.stages.reading_order",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.pipeline.threaded_standard_pdf_pipeline"
+depends_on = ["docling.pipeline.standard_pdf_pipeline"]
+
+[[modules]]
+path = "docling.pipeline.legacy_standard_pdf_pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.layout_model_specs",
+  "docling.models",
+  "docling.models.factories",
+  "docling.models.stages.code_formula",
+  "docling.models.stages.page_assemble",
+  "docling.models.stages.page_preprocessing",
+  "docling.models.stages.reading_order",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
 path = "docling.document_converter"
 depends_on = [
   "docling.backend",
   "docling.backend.json",
   "docling.backend.xml",
   "docling.datamodel",
+  "docling.datamodel.backend_options",
   "docling.exceptions",
   "docling.pipeline",
+  "docling.pipeline.asr_pipeline",
+  "docling.pipeline.base_pipeline",
+  "docling.pipeline.simple_pipeline",
+  "docling.pipeline.standard_pdf_pipeline",
   "docling.utils",
 ]
 
@@ -286,22 +469,32 @@ depends_on = [
   "docling.datamodel",
   "docling.exceptions",
   "docling.pipeline",
+  "docling.pipeline.base_extraction_pipeline",
+  "docling.pipeline.extraction_vlm_pipeline",
   "docling.utils",
 ]
 
 [[modules]]
 path = "docling.service_client"
-depends_on = ["docling.backend", "docling.datamodel", "docling.datamodel.service"]
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.service",
+]
 
 [[modules]]
 path = "docling.cli"
 depends_on = [
   "docling.backend",
   "docling.datamodel",
+  "docling.datamodel.asr_model_specs",
+  "docling.datamodel.backend_options",
   "docling.document_converter",
   "docling.models.factories",
   "docling.models.utils",
   "docling.pipeline",
+  "docling.pipeline.asr_pipeline",
+  "docling.pipeline.vlm_pipeline",
   "docling.utils",
 ]
 
@@ -311,7 +504,12 @@ depends_on = []
 
 [[modules]]
 path = "docling.experimental.datamodel"
-depends_on = ["docling.datamodel"]
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.layout_model_specs",
+  "docling.datamodel.pipeline_options_vlm_model",
+  "docling.datamodel.vlm_model_specs",
+]
 
 [[modules]]
 path = "docling.experimental.models"
@@ -326,10 +524,13 @@ path = "docling.experimental.pipeline"
 depends_on = [
   "docling.backend",
   "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
   "docling.experimental.datamodel",
   "docling.models",
   "docling.models.stages.layout",
   "docling.models.vlm_pipeline_models",
   "docling.pipeline",
+  "docling.pipeline.base_pipeline",
+  "docling.pipeline.standard_pdf_pipeline",
   "docling.utils",
 ]
