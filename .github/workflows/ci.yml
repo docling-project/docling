@@ -9,9 +9,44 @@ on:
       - "!main"
       - "!gh-pages"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      run_ci: ${{ steps.filter.outputs.run_ci }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            run_ci:
+              - ".github/workflows/ci.yml"
+              - ".github/workflows/checks.yml"
+              - ".pre-commit-config.yaml"
+              - "pyproject.toml"
+              - "uv.lock"
+              - "Dockerfile"
+              - "README.md"
+              - "LICENSE"
+              - "docling/**"
+              - "tests/**"
+              - "docs/examples/**"
+
   code-checks:
-    if: ${{ github.event_name == 'push' || (github.event.pull_request.head.repo.full_name != 'docling-project/docling' && github.event.pull_request.head.repo.full_name != 'docling-project/docling') }}
+    needs: changes
+    if: ${{ needs.changes.outputs.run_ci == 'true' && (github.event_name == 'push' || (github.event.pull_request.head.repo.full_name != 'docling-project/docling' && github.event.pull_request.head.repo.full_name != 'docling-project/docling')) }}
     uses: ./.github/workflows/checks.yml
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
