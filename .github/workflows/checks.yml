@@ -38,16 +38,32 @@ env:
   HF_HUB_DOWNLOAD_TIMEOUT: "90"
   HF_HUB_ETAG_TIMEOUT: "90"
   UV_FROZEN: "1"
-  PYTEST_ML: |-
+  PYTEST_SPECIALIZED: |-
+    tests/test_asr_mlx_whisper.py
+    tests/test_asr_pipeline.py
+    tests/test_backend_pdfium.py
+    tests/test_backend_webp.py
+    tests/test_code_formula.py
+    tests/test_deepseekocr_vlm.py
+    tests/test_document_picture_classifier.py
     tests/test_e2e_conversion.py
     tests/test_e2e_ocr_conversion.py
-    tests/test_backend_webp.py
-    tests/test_asr_pipeline.py
+    tests/test_falcon_ocr_vlm.py
+    tests/test_glmocr_vlm.py
+    tests/test_lightonocr_vlm.py
+    tests/test_nanonets_ocr_vlm.py
+    tests/test_picture_description_base_model.py
+    tests/test_picture_description_filters.py
+    tests/test_picture_description_rgb_conversion.py
+    tests/test_picture_description_vlm_model.py
+    tests/test_rapid_ocr_lang.py
+    tests/test_rapid_ocr_model.py
+    tests/test_table_structure_granite_vision.py
     tests/test_threaded_pipeline.py
-    tests/test_backend_pdfium.py
-    tests/test_code_formula.py
-  PYTEST_TO_SKIP: |-
-  EXAMPLES_TO_SKIP: '^(batch_convert|compare_vlm_models|minimal|minimal_vlm_pipeline|minimal_asr_pipeline|export_multimodal|custom_convert|develop_picture_enrichment|rapidocr_with_custom_models|suryaocr_with_custom_models|offline_convert|pictures_description|pictures_description_api|vlm_pipeline_api_model|granitedocling_repetition_stopping|mlx_whisper_example|gpu_standard_pipeline|gpu_vlm_pipeline|demo_layout_vlm|post_process_ocr_with_vlm|run_with_formats_html_rendered|run_with_formats_html_rendered_mp|chart_extraction|granite_vision_table_structure)\.py$|xbrl_conversion\.ipynb$'
+    tests/test_vlm_pipeline_status.py
+    tests/test_vlm_presets_and_runtime_options.py
+  EXAMPLES_HEAVY: '^(batch_convert|chart_extraction|granite_vision_table_structure|minimal_asr_pipeline|minimal_vlm_pipeline)\.py$'
+  EXAMPLES_UNSUPPORTED_IN_CI: '^(compare_vlm_models|custom_convert|demo_layout_vlm|develop_picture_enrichment|export_multimodal|gpu_standard_pipeline|gpu_vlm_pipeline|granitedocling_repetition_stopping|minimal|mlx_whisper_example|offline_convert|pictures_description|pictures_description_api|post_process_ocr_with_vlm|rapidocr_with_custom_models|run_with_formats_html_rendered|run_with_formats_html_rendered_mp|suryaocr_with_custom_models|vlm_pipeline_api_model)\.py$|xbrl_conversion\.ipynb$'
 
 jobs:
   changes:
@@ -58,7 +74,7 @@ jobs:
       pull-requests: read
     outputs:
       run_tests: ${{ steps.force.outputs.run_tests || steps.filter.outputs.run_tests }}
-      run_tests_ml: ${{ steps.force.outputs.run_tests_ml || steps.filter.outputs.run_tests_ml }}
+      ml_suites: ${{ steps.force.outputs.ml_suites || steps.ml-matrix.outputs.ml_suites || '[]' }}
       run_examples_all: ${{ steps.force.outputs.run_examples_all || steps.filter.outputs.run_examples_all }}
       changed_example_scripts: ${{ steps.force.outputs.changed_example_scripts || steps.filter.outputs.changed_example_scripts }}
       changed_example_scripts_files: ${{ steps.force.outputs.changed_example_scripts_files || steps.filter.outputs.changed_example_scripts_files || '[]' }}
@@ -70,7 +86,7 @@ jobs:
         id: force
         run: |
           echo "run_tests=true" >> "$GITHUB_OUTPUT"
-          echo "run_tests_ml=true" >> "$GITHUB_OUTPUT"
+          echo 'ml_suites=["ocr","pdf-model","vlm","asr"]' >> "$GITHUB_OUTPUT"
           echo "run_examples_all=true" >> "$GITHUB_OUTPUT"
           echo "changed_example_scripts=true" >> "$GITHUB_OUTPUT"
           echo "changed_example_scripts_files=[]" >> "$GITHUB_OUTPUT"
@@ -98,7 +114,29 @@ jobs:
               - "Dockerfile"
               - "docling/**"
               - "tests/**"
-            run_tests_ml:
+              - "!tests/test_asr_*.py"
+              - "!tests/test_backend_pdfium.py"
+              - "!tests/test_backend_webp.py"
+              - "!tests/test_code_formula.py"
+              - "!tests/test_deepseekocr_vlm.py"
+              - "!tests/test_document_picture_classifier.py"
+              - "!tests/test_e2e_conversion.py"
+              - "!tests/test_e2e_ocr_conversion.py"
+              - "!tests/test_falcon_ocr_vlm.py"
+              - "!tests/test_glmocr_vlm.py"
+              - "!tests/test_lightonocr_vlm.py"
+              - "!tests/test_nanonets_ocr_vlm.py"
+              - "!tests/test_picture_description_*.py"
+              - "!tests/test_rapid_ocr_*.py"
+              - "!tests/test_table_structure_granite_vision.py"
+              - "!tests/test_threaded_pipeline.py"
+              - "!tests/test_vlm_*.py"
+              - "!tests/data/audio/**"
+              - "!tests/data/groundtruth/**"
+              - "!tests/data/pdf/**"
+              - "!tests/data/webp/**"
+              - "!tests/data_scanned/**"
+            run_tests_ml_ocr:
               - ".github/workflows/**"
               - ".github/scripts/**"
               - ".github/actions/**"
@@ -110,31 +148,113 @@ jobs:
               - "docling/backend/**"
               - "docling/datamodel/**"
               - "docling/document_converter.py"
-              - "docling/experimental/**"
-              - "docling/models/**"
+              - "docling/models/*.py"
+              - "docling/models/factories/ocr_factory.py"
+              - "docling/models/inference_engines/common/**"
+              - "docling/models/plugins/**"
+              - "docling/models/stages/ocr/**"
+              - "docling/pipeline/**"
+              - "docling/utils/accelerator_utils.py"
+              - "docling/utils/model_downloader.py"
+              - "docling/utils/ocr_utils.py"
+              - "docling/utils/orientation.py"
+              - "tests/test_backend_webp.py"
+              - "tests/test_e2e_ocr_conversion.py"
+              - "tests/test_rapid_ocr_*.py"
+              - "tests/data/pdf/**"
+              - "tests/data/webp/**"
+              - "tests/data_scanned/**"
+            run_tests_ml_pdf_model:
+              - ".github/workflows/**"
+              - ".github/scripts/**"
+              - ".github/actions/**"
+              - ".pre-commit-config.yaml"
+              - "tach.toml"
+              - "pyproject.toml"
+              - "uv.lock"
+              - "Dockerfile"
+              - "docling/backend/**"
+              - "docling/datamodel/**"
+              - "docling/document_converter.py"
+              - "docling/models/*.py"
+              - "docling/models/factories/**"
+              - "docling/models/inference_engines/common/**"
+              - "docling/models/inference_engines/image_classification/**"
+              - "docling/models/inference_engines/object_detection/**"
+              - "docling/models/plugins/**"
+              - "docling/models/stages/code_formula/**"
+              - "docling/models/stages/layout/**"
+              - "docling/models/stages/page_assemble/**"
+              - "docling/models/stages/page_preprocessing/**"
+              - "docling/models/stages/picture_classifier/**"
+              - "docling/models/stages/reading_order/**"
+              - "docling/models/stages/table_structure/**"
+              - "docling/models/utils/**"
               - "docling/pipeline/**"
               - "docling/utils/**"
-              - "tests/test_asr_pipeline.py"
-              - "tests/test_backend_webp.py"
               - "tests/test_backend_pdfium.py"
               - "tests/test_code_formula.py"
               - "tests/test_document_picture_classifier.py"
               - "tests/test_e2e_conversion.py"
-              - "tests/test_e2e_ocr_conversion.py"
+              - "tests/test_threaded_pipeline.py"
+              - "tests/data/groundtruth/**"
+              - "tests/data/pdf/**"
+            run_tests_ml_vlm:
+              - ".github/workflows/**"
+              - ".github/scripts/**"
+              - ".github/actions/**"
+              - ".pre-commit-config.yaml"
+              - "tach.toml"
+              - "pyproject.toml"
+              - "uv.lock"
+              - "Dockerfile"
+              - "docling/datamodel/**"
+              - "docling/document_converter.py"
+              - "docling/experimental/**"
+              - "docling/models/*.py"
+              - "docling/models/extraction/**"
+              - "docling/models/factories/picture_description_factory.py"
+              - "docling/models/inference_engines/**"
+              - "docling/models/plugins/**"
+              - "docling/models/stages/chart_extraction/**"
+              - "docling/models/stages/code_formula/**"
+              - "docling/models/stages/picture_description/**"
+              - "docling/models/stages/table_structure/**"
+              - "docling/models/stages/vlm_convert/**"
+              - "docling/models/utils/**"
+              - "docling/models/vlm_pipeline_models/**"
+              - "docling/pipeline/extraction_vlm_pipeline.py"
+              - "docling/pipeline/vlm_pipeline.py"
+              - "docling/utils/deepseekocr_utils.py"
+              - "docling/utils/glm_utils.py"
+              - "docling/utils/model_downloader.py"
+              - "tests/test_deepseekocr_vlm.py"
               - "tests/test_falcon_ocr_vlm.py"
               - "tests/test_glmocr_vlm.py"
               - "tests/test_lightonocr_vlm.py"
               - "tests/test_nanonets_ocr_vlm.py"
               - "tests/test_picture_description_*.py"
-              - "tests/test_rapid_ocr_*.py"
               - "tests/test_table_structure_granite_vision.py"
-              - "tests/test_threaded_pipeline.py"
               - "tests/test_vlm_*.py"
-              - "tests/data/audio/**"
               - "tests/data/groundtruth/**"
               - "tests/data/pdf/**"
-              - "tests/data/webp/**"
-              - "tests/data_scanned/**"
+            run_tests_ml_asr:
+              - ".github/workflows/**"
+              - ".github/scripts/**"
+              - ".github/actions/**"
+              - ".pre-commit-config.yaml"
+              - "tach.toml"
+              - "pyproject.toml"
+              - "uv.lock"
+              - "Dockerfile"
+              - "docling/backend/noop_backend.py"
+              - "docling/datamodel/**"
+              - "docling/document_converter.py"
+              - "docling/models/plugins/**"
+              - "docling/pipeline/**"
+              - "docling/utils/accelerator_utils.py"
+              - "tests/test_asr_*.py"
+              - "tests/data/audio/**"
             run_examples_all:
               - ".github/workflows/**"
               - ".github/scripts/**"
@@ -163,6 +283,34 @@ jobs:
               - "tach.toml"
               - "uv.lock"
               - "docling/**"
+
+      - name: Build ML suite matrix
+        if: ${{ !inputs.force_all_checks }}
+        id: ml-matrix
+        env:
+          RUN_OCR: ${{ steps.filter.outputs.run_tests_ml_ocr }}
+          RUN_PDF_MODEL: ${{ steps.filter.outputs.run_tests_ml_pdf_model }}
+          RUN_VLM: ${{ steps.filter.outputs.run_tests_ml_vlm }}
+          RUN_ASR: ${{ steps.filter.outputs.run_tests_ml_asr }}
+        run: |
+          suites=()
+          if [ "$RUN_OCR" = "true" ]; then
+            suites+=('"ocr"')
+          fi
+          if [ "$RUN_PDF_MODEL" = "true" ]; then
+            suites+=('"pdf-model"')
+          fi
+          if [ "$RUN_VLM" = "true" ]; then
+            suites+=('"vlm"')
+          fi
+          if [ "$RUN_ASR" = "true" ]; then
+            suites+=('"asr"')
+          fi
+          if [ ${#suites[@]} -eq 0 ]; then
+            echo "ml_suites=[]" >> "$GITHUB_OUTPUT"
+          else
+            echo "ml_suites=[$(IFS=,; echo "${suites[*]}")]" >> "$GITHUB_OUTPUT"
+          fi
 
   lint:
     if: ${{ inputs.run_lint }}
@@ -209,7 +357,7 @@ jobs:
       - name: Check module boundaries
         run: uv run --no-sync tach check
 
-  run-tests-1:
+  run-tests-core:
     needs: changes
     if: ${{ needs.changes.outputs.run_tests == 'true' }}
     runs-on: ubuntu-latest
@@ -229,17 +377,17 @@ jobs:
           install_system_deps: "true"
           cache_models: "true"
 
-      - name: Run tests for GROUP1
+      - name: Run core test suite
         env:
           TACH_BASE_REF: ${{ inputs.tach_base_ref }}
         run: |
-          echo "--- Running tests ---"
-          GROUP1=$(echo "$PYTEST_ML" | sed -e 's/^/--ignore=/' | tr '\n' ' ')
+          echo "--- Running core tests ---"
+          GROUP1=$(echo "$PYTEST_SPECIALIZED" | sed -e 's/^/--ignore=/' | tr '\n' ' ')
           TACH_ARGS=""
           if [ "${{ inputs.use_tach }}" = "true" ] && [ -n "$TACH_BASE_REF" ] && [ "$TACH_BASE_REF" != "0000000000000000000000000000000000000000" ]; then
             TACH_ARGS="--tach-base $TACH_BASE_REF"
           fi
-          echo "Running tests for GROUP1"
+          echo "Running core test suite"
           uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $TACH_ARGS $GROUP1
 
       - name: Upload coverage to Codecov
@@ -248,17 +396,18 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
-          flags: run-tests-1
+          flags: run-tests-core
 
-  run-tests-2:
+  run-tests-ml:
     needs: changes
-    if: ${{ needs.changes.outputs.run_tests_ml == 'true' }}
+    if: ${{ needs.changes.outputs.ml_suites != '[]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         python-version: ${{ fromJSON(inputs.python_versions) }}
+        suite: ${{ fromJSON(needs.changes.outputs.ml_suites) }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -270,26 +419,66 @@ jobs:
           install_system_deps: "true"
           cache_models: "true"
 
-      - name: Pre-download Models
+      - name: Pre-download OCR models
+        if: ${{ matrix.suite == 'ocr' }}
         run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
 
-      - name: Run tests for GROUP2
+      - name: Run ML test suite
         env:
           TACH_BASE_REF: ${{ inputs.tach_base_ref }}
         run: |
-          echo "--- Running tests ---"
-          GROUP2=$(echo "$PYTEST_ML" | tr '\n' ' ')
+          echo "--- Running ML suite: ${{ matrix.suite }} ---"
+          case "${{ matrix.suite }}" in
+            ocr)
+              GROUP2=$(printf '%s\n' \
+                tests/test_e2e_ocr_conversion.py \
+                tests/test_backend_webp.py \
+                tests/test_rapid_ocr_lang.py \
+                tests/test_rapid_ocr_model.py
+              )
+              ;;
+            pdf-model)
+              GROUP2=$(printf '%s\n' \
+                tests/test_e2e_conversion.py \
+                tests/test_backend_pdfium.py \
+                tests/test_code_formula.py \
+                tests/test_document_picture_classifier.py \
+                tests/test_threaded_pipeline.py
+              )
+              ;;
+            vlm)
+              GROUP2=$(printf '%s\n' \
+                tests/test_deepseekocr_vlm.py \
+                tests/test_falcon_ocr_vlm.py \
+                tests/test_glmocr_vlm.py \
+                tests/test_lightonocr_vlm.py \
+                tests/test_nanonets_ocr_vlm.py \
+                tests/test_picture_description_base_model.py \
+                tests/test_picture_description_filters.py \
+                tests/test_picture_description_rgb_conversion.py \
+                tests/test_picture_description_vlm_model.py \
+                tests/test_table_structure_granite_vision.py \
+                tests/test_vlm_pipeline_status.py \
+                tests/test_vlm_presets_and_runtime_options.py
+              )
+              ;;
+            asr)
+              GROUP2=$(printf '%s\n' \
+                tests/test_asr_mlx_whisper.py \
+                tests/test_asr_pipeline.py
+              )
+              ;;
+            *)
+              echo "Unknown ML suite: ${{ matrix.suite }}" >&2
+              exit 1
+              ;;
+          esac
           TACH_ARGS=""
           if [ "${{ inputs.use_tach }}" = "true" ] && [ -n "$TACH_BASE_REF" ] && [ "$TACH_BASE_REF" != "0000000000000000000000000000000000000000" ]; then
             TACH_ARGS="--tach-base $TACH_BASE_REF"
           fi
-          echo "Running tests for GROUP2"
-          DESELECT_OPT=""
-          if [ -n "$PYTEST_TO_SKIP" ]; then
-            DESELECT_OPT="--deselect $PYTEST_TO_SKIP"
-          fi
-          echo "Running tests for GROUP2"
-          uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $TACH_ARGS $GROUP2 $DESELECT_OPT
+          GROUP2_ARGS=$(printf '%s\n' "$GROUP2" | tr '\n' ' ')
+          uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $TACH_ARGS $GROUP2_ARGS
 
       - name: Upload coverage to Codecov
         if: inputs.push_coverage
@@ -297,9 +486,9 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
-          flags: run-tests-2
+          flags: run-tests-ml-${{ matrix.suite }}
 
-  run-examples:
+  run-examples-light:
     needs: changes
     if: >-
       ${{
@@ -330,78 +519,20 @@ jobs:
           sudo apt-get clean
           df -h
 
-      - name: Run selected examples
+      - name: Run selected light examples
         env:
           RUN_ALL_EXAMPLES: ${{ needs.changes.outputs.run_examples_all }}
           CHANGED_EXAMPLE_FILES: ${{ needs.changes.outputs.changed_example_scripts_files }}
         run: |
-          python - <<'PY'
-          import json
-          import os
-          import pathlib
-          import re
-          import subprocess
-          import sys
-          import time
-
-          examples_dir = pathlib.Path("docs/examples")
-          run_all = os.environ["RUN_ALL_EXAMPLES"] == "true"
-          skip_pattern = re.compile(os.environ["EXAMPLES_TO_SKIP"])
-
-          if run_all:
-              candidates = sorted(str(path) for path in examples_dir.glob("*.py"))
-          else:
-              changed_files = json.loads(os.environ.get("CHANGED_EXAMPLE_FILES") or "[]")
-              candidates = sorted(
-                  path
-                  for path in changed_files
-                  if pathlib.Path(path).suffix == ".py"
-                  and pathlib.Path(path).parent.as_posix() == examples_dir.as_posix()
-              )
-
-          selected = [
-              path
-              for path in candidates
-              if not skip_pattern.match(pathlib.Path(path).name)
-          ]
-
-          pathlib.Path("scratch").mkdir(exist_ok=True)
-          summary_path = pathlib.Path("runtime_summary.log")
-          summary_path.write_text("--- Example Runtimes ---\n", encoding="utf-8")
-
-          if not selected:
-              print("No runnable example scripts were selected.")
-              summary_path.write_text(
-                  "--- Example Runtimes ---\nNo runnable example scripts were selected.\n",
-                  encoding="utf-8",
-              )
-              sys.exit(0)
-
-          for file in selected:
-              name = pathlib.Path(file).name
-              print(f"--- Running example {name} ---")
-              start_time = time.perf_counter()
-              completed = subprocess.run(
-                  ["uv", "run", "--no-sync", "python", file],
-                  check=False,
-              )
-              duration = int(time.perf_counter() - start_time)
-              print(f"Finished in {duration}s.")
-              with summary_path.open("a", encoding="utf-8") as handle:
-                  handle.write(f"{name}: {duration}s\n")
-              if completed.returncode != 0:
-                  sys.exit(completed.returncode)
-
-          print()
-          print("===================================")
-          print("       Final Runtime Summary       ")
-          print("===================================")
-          print(summary_path.read_text(encoding="utf-8"), end="")
-          print("===================================")
-          PY
-
-      - name: Grant permissions to APT cache directory # allows backup
-        run: sudo chown -R $USER:$USER /var/cache/apt/archives
+          args=(
+            --examples-dir docs/examples
+            --changed-files-json "$CHANGED_EXAMPLE_FILES"
+            --exclude-pattern "${EXAMPLES_HEAVY}|${EXAMPLES_UNSUPPORTED_IN_CI}"
+          )
+          if [ "$RUN_ALL_EXAMPLES" = "true" ]; then
+            args+=(--run-all)
+          fi
+          python3 .github/scripts/run_selected_examples.py "${args[@]}"
 
   test-pip-install-no-lock:
     needs: changes
@@ -593,9 +724,9 @@ jobs:
       - changes
       - lint
       - tach
-      - run-tests-1
-      - run-tests-2
-      - run-examples
+      - run-tests-core
+      - run-tests-ml
+      - run-examples-light
       - test-pip-install-no-lock
       - test-pip-install-no-dev-headers
       - build-package
@@ -611,9 +742,9 @@ jobs:
             changes,
             lint,
             tach,
-            run-tests-1,
-            run-tests-2,
-            run-examples,
+            run-tests-core,
+            run-tests-ml,
+            run-examples-light,
             test-pip-install-no-lock,
             test-pip-install-no-dev-headers,
             build-package,
