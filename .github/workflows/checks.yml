@@ -55,7 +55,10 @@ jobs:
       pull-requests: read
     outputs:
       run_tests: ${{ steps.force.outputs.run_tests || steps.filter.outputs.run_tests }}
-      run_examples: ${{ steps.force.outputs.run_examples || steps.filter.outputs.run_examples }}
+      run_tests_ml: ${{ steps.force.outputs.run_tests_ml || steps.filter.outputs.run_tests_ml }}
+      run_examples_all: ${{ steps.force.outputs.run_examples_all || steps.filter.outputs.run_examples_all }}
+      changed_example_scripts: ${{ steps.force.outputs.changed_example_scripts || steps.filter.outputs.changed_example_scripts }}
+      changed_example_scripts_files: ${{ steps.force.outputs.changed_example_scripts_files || steps.filter.outputs.changed_example_scripts_files || '[]' }}
       run_package: ${{ steps.force.outputs.run_package || steps.filter.outputs.run_package }}
       run_tach: ${{ steps.force.outputs.run_tach || steps.filter.outputs.run_tach }}
     steps:
@@ -64,7 +67,10 @@ jobs:
         id: force
         run: |
           echo "run_tests=true" >> "$GITHUB_OUTPUT"
-          echo "run_examples=true" >> "$GITHUB_OUTPUT"
+          echo "run_tests_ml=true" >> "$GITHUB_OUTPUT"
+          echo "run_examples_all=true" >> "$GITHUB_OUTPUT"
+          echo "changed_example_scripts=true" >> "$GITHUB_OUTPUT"
+          echo "changed_example_scripts_files=[]" >> "$GITHUB_OUTPUT"
           echo "run_package=true" >> "$GITHUB_OUTPUT"
           echo "run_tach=true" >> "$GITHUB_OUTPUT"
 
@@ -78,34 +84,72 @@ jobs:
         id: filter
         uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         with:
+          list-files: json
           filters: |
             run_tests:
-              - ".github/workflows/ci.yml"
-              - ".github/workflows/checks.yml"
+              - ".github/workflows/**"
+              - ".github/scripts/**"
+              - ".github/actions/**"
               - "pyproject.toml"
               - "uv.lock"
               - "Dockerfile"
               - "docling/**"
               - "tests/**"
-            run_examples:
-              - ".github/workflows/ci.yml"
-              - ".github/workflows/checks.yml"
+            run_tests_ml:
+              - ".github/workflows/**"
+              - ".github/scripts/**"
+              - ".github/actions/**"
+              - ".pre-commit-config.yaml"
+              - "tach.toml"
+              - "pyproject.toml"
+              - "uv.lock"
+              - "Dockerfile"
+              - "docling/backend/**"
+              - "docling/datamodel/**"
+              - "docling/document_converter.py"
+              - "docling/experimental/**"
+              - "docling/models/**"
+              - "docling/pipeline/**"
+              - "docling/utils/**"
+              - "tests/test_asr_pipeline.py"
+              - "tests/test_backend_webp.py"
+              - "tests/test_document_picture_classifier.py"
+              - "tests/test_e2e_conversion.py"
+              - "tests/test_e2e_ocr_conversion.py"
+              - "tests/test_falcon_ocr_vlm.py"
+              - "tests/test_glmocr_vlm.py"
+              - "tests/test_lightonocr_vlm.py"
+              - "tests/test_nanonets_ocr_vlm.py"
+              - "tests/test_picture_description_*.py"
+              - "tests/test_rapid_ocr_*.py"
+              - "tests/test_table_structure_granite_vision.py"
+              - "tests/test_threaded_pipeline.py"
+              - "tests/test_vlm_*.py"
+              - "tests/data/**"
+              - "tests/data_scanned/**"
+            run_examples_all:
+              - ".github/workflows/**"
+              - ".github/scripts/**"
+              - ".github/actions/**"
               - "pyproject.toml"
               - "uv.lock"
               - "Dockerfile"
               - "docling/**"
-              - "docs/examples/**"
+            changed_example_scripts:
+              - added|modified: "docs/examples/*.py"
             run_package:
-              - ".github/workflows/ci.yml"
-              - ".github/workflows/checks.yml"
+              - ".github/workflows/**"
+              - ".github/scripts/**"
+              - ".github/actions/**"
               - "pyproject.toml"
               - "uv.lock"
               - "README.md"
               - "LICENSE"
               - "docling/**"
             run_tach:
-              - ".github/workflows/ci.yml"
-              - ".github/workflows/checks.yml"
+              - ".github/workflows/**"
+              - ".github/scripts/**"
+              - ".github/actions/**"
               - ".pre-commit-config.yaml"
               - "pyproject.toml"
               - "tach.toml"
@@ -122,12 +166,10 @@ jobs:
         python-version: ["3.12"]
     steps:
       - uses: actions/checkout@v6
-
-      - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v7
+      - uses: ./.github/actions/setup-ubuntu-ci
         with:
-          python-version: ${{ matrix.python-version }}
-          enable-cache: true
+          python_version: ${{ matrix.python-version }}
+          uv_sync_args: --frozen --group dev --all-extras --no-group docs --no-group examples
 
       - name: Set pre-commit cache key
         run: echo "PY=$(python -VV | sha256sum | cut -d' ' -f1)" >> "$GITHUB_ENV"
@@ -140,9 +182,6 @@ jobs:
           restore-keys: |
             pre-commit|${{ env.PY }}|
 
-      - name: Install Python Dependencies
-        run: uv sync --frozen --all-extras --all-packages
-
       - name: Check style
         run: |
           echo "--- Running pre-commit style checks ---"
@@ -154,15 +193,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
-      - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v7
+      - uses: ./.github/actions/setup-ubuntu-ci
         with:
-          python-version: "3.12"
-          enable-cache: true
-
-      - name: Install Tach dependencies
-        run: uv sync --frozen --only-group dev --no-install-project
+          python_version: "3.12"
+          uv_sync_args: --frozen --only-group dev --no-install-project
 
       - name: Check module boundaries
         run: uv run --no-sync tach check
@@ -180,43 +214,12 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Grant permissions to APT cache directory # allows restore
-        run: sudo chown -R $USER:$USER /var/cache/apt/archives
-
-      - name: Cache APT packages
-        id: apt-cache
-        uses: actions/cache@v5
+      - uses: ./.github/actions/setup-ubuntu-ci
         with:
-          path: /var/cache/apt/archives
-          key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/checks.yml') }}
-          restore-keys: |
-            apt-packages-${{ runner.os }}-
-
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get -qq update
-          sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev libreoffice pkg-config
-
-      - name: Set TESSDATA_PREFIX
-        run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
-
-      - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install Python Dependencies
-        run: uv sync --frozen --all-extras --all-packages
-
-      - name: Cache Models
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cache/huggingface
-            ~/.cache/modelscope
-            ~/.EasyOCR/
-          key: models-cache
+          python_version: ${{ matrix.python-version }}
+          uv_sync_args: --frozen --group dev --all-extras --no-group docs --no-group examples
+          install_system_deps: "true"
+          cache_models: "true"
 
       - name: Pre-download Models
         run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
@@ -242,12 +245,9 @@ jobs:
           files: ./coverage.xml
           flags: run-tests-1
 
-      - name: Grant permissions to APT cache directory # allows backup
-        run: sudo chown -R $USER:$USER /var/cache/apt/archives
-
   run-tests-2:
     needs: changes
-    if: ${{ needs.changes.outputs.run_tests == 'true' }}
+    if: ${{ needs.changes.outputs.run_tests_ml == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -258,43 +258,12 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Grant permissions to APT cache directory # allows restore
-        run: sudo chown -R $USER:$USER /var/cache/apt/archives
-
-      - name: Cache APT packages
-        id: apt-cache
-        uses: actions/cache@v5
+      - uses: ./.github/actions/setup-ubuntu-ci
         with:
-          path: /var/cache/apt/archives
-          key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/checks.yml') }}
-          restore-keys: |
-            apt-packages-${{ runner.os }}-
-
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get -qq update
-          sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev libreoffice pkg-config
-
-      - name: Set TESSDATA_PREFIX
-        run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
-
-      - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install Python Dependencies
-        run: uv sync --frozen --all-extras --all-packages
-
-      - name: Cache Models
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cache/huggingface
-            ~/.cache/modelscope
-            ~/.EasyOCR/
-          key: models-cache
+          python_version: ${{ matrix.python-version }}
+          uv_sync_args: --frozen --group dev --all-extras --no-group docs --no-group examples
+          install_system_deps: "true"
+          cache_models: "true"
 
       - name: Pre-download Models
         run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
@@ -325,12 +294,13 @@ jobs:
           files: ./coverage.xml
           flags: run-tests-2
 
-      - name: Grant permissions to APT cache directory # allows backup
-        run: sudo chown -R $USER:$USER /var/cache/apt/archives
-
   run-examples:
     needs: changes
-    if: ${{ needs.changes.outputs.run_examples == 'true' }}
+    if: >-
+      ${{
+        needs.changes.outputs.run_examples_all == 'true' ||
+        needs.changes.outputs.changed_example_scripts == 'true'
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -339,43 +309,12 @@ jobs:
         python-version: ${{ fromJSON(inputs.python_versions) }}
     steps:
       - uses: actions/checkout@v6
-
-      - name: Grant permissions to APT cache directory # allows restore
-        run: sudo chown -R $USER:$USER /var/cache/apt/archives
-
-      - name: Cache APT packages
-        id: apt-cache
-        uses: actions/cache@v5
+      - uses: ./.github/actions/setup-ubuntu-ci
         with:
-          path: /var/cache/apt/archives
-          key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/checks.yml') }}
-          restore-keys: |
-            apt-packages-${{ runner.os }}-
-
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get -qq update
-          sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev libreoffice pkg-config
-
-      - name: Set TESSDATA_PREFIX
-        run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
-
-      - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install Python Dependencies
-        run: uv sync --frozen --all-extras --all-packages
-
-      - name: Cache Models
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cache/huggingface
-            ~/.cache/modelscope
-            ~/.EasyOCR/
-          key: models-cache
+          python_version: ${{ matrix.python-version }}
+          uv_sync_args: --frozen --group examples --all-extras --no-group docs --no-group dev
+          install_system_deps: "true"
+          cache_models: "true"
 
       - name: Free up disk space
         run: |
@@ -386,38 +325,75 @@ jobs:
           sudo apt-get clean
           df -h
 
-      - name: Run examples
+      - name: Run selected examples
+        env:
+          RUN_ALL_EXAMPLES: ${{ needs.changes.outputs.run_examples_all }}
+          CHANGED_EXAMPLE_FILES: ${{ needs.changes.outputs.changed_example_scripts_files }}
         run: |
-          echo "--- Creating output directory ---"
-          mkdir -p scratch
+          python - <<'PY'
+          import json
+          import os
+          import pathlib
+          import re
+          import subprocess
+          import sys
+          import time
 
-          echo "--- Running examples ---"
+          examples_dir = pathlib.Path("docs/examples")
+          run_all = os.environ["RUN_ALL_EXAMPLES"] == "true"
+          skip_pattern = re.compile(os.environ["EXAMPLES_TO_SKIP"])
 
-          summary_file="runtime_summary.log"
-          echo "--- Example Runtimes ---" > "$summary_file"
+          if run_all:
+              candidates = sorted(str(path) for path in examples_dir.glob("*.py"))
+          else:
+              changed_files = json.loads(os.environ.get("CHANGED_EXAMPLE_FILES") or "[]")
+              candidates = sorted(
+                  path
+                  for path in changed_files
+                  if pathlib.Path(path).suffix == ".py"
+                  and pathlib.Path(path).parent.as_posix() == examples_dir.as_posix()
+              )
 
-          for file in docs/examples/*.py; do
-            if [[ "$(basename "$file")" =~ ${EXAMPLES_TO_SKIP} ]]; then
-              echo "Skipping example: $(basename "$file")"
-            else
-              echo "--- Running example $(basename "$file") ---"
-              
-              start_time=$SECONDS
+          selected = [
+              path
+              for path in candidates
+              if not skip_pattern.match(pathlib.Path(path).name)
+          ]
 
-              uv run --no-sync python "$file" || exit 1
-              duration=$((SECONDS - start_time))
-              echo "Finished in ${duration}s."
-              
-              echo "$(basename "$file"): ${duration}s" >> "$summary_file"
-            fi
-          done
+          pathlib.Path("scratch").mkdir(exist_ok=True)
+          summary_path = pathlib.Path("runtime_summary.log")
+          summary_path.write_text("--- Example Runtimes ---\n", encoding="utf-8")
 
-          echo
-          echo "==================================="
-          echo "       Final Runtime Summary       "
-          echo "==================================="
-          cat "$summary_file"
-          echo "==================================="
+          if not selected:
+              print("No runnable example scripts were selected.")
+              summary_path.write_text(
+                  "--- Example Runtimes ---\nNo runnable example scripts were selected.\n",
+                  encoding="utf-8",
+              )
+              sys.exit(0)
+
+          for file in selected:
+              name = pathlib.Path(file).name
+              print(f"--- Running example {name} ---")
+              start_time = time.perf_counter()
+              completed = subprocess.run(
+                  ["uv", "run", "--no-sync", "python", file],
+                  check=False,
+              )
+              duration = int(time.perf_counter() - start_time)
+              print(f"Finished in {duration}s.")
+              with summary_path.open("a", encoding="utf-8") as handle:
+                  handle.write(f"{name}: {duration}s\n")
+              if completed.returncode != 0:
+                  sys.exit(completed.returncode)
+
+          print()
+          print("===================================")
+          print("       Final Runtime Summary       ")
+          print("===================================")
+          print(summary_path.read_text(encoding="utf-8"), end="")
+          print("===================================")
+          PY
 
       - name: Grant permissions to APT cache directory # allows backup
         run: sudo chown -R $USER:$USER /var/cache/apt/archives

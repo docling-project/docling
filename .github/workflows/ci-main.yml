@@ -6,6 +6,12 @@ on:
       - "main"
   schedule:
     - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      full_matrix:
+        description: "Run the full Python and package-compatibility matrix."
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
@@ -20,8 +26,20 @@ jobs:
     with:
       run_lint: true
       force_all_checks: true
-      run_package_compat: true
+      run_package_compat: >-
+        ${{
+          github.event_name == 'schedule' ||
+          (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
+        }}
       use_tach: false
-      python_versions: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+      python_versions: >-
+        ${{
+          (
+            github.event_name == 'schedule' ||
+            (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
+          ) &&
+          '["3.10", "3.11", "3.12", "3.13", "3.14"]' ||
+          '["3.10"]'
+        }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

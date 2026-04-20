@@ -18,13 +18,10 @@ jobs:
         python-version: ['3.12']
     steps:
       - uses: actions/checkout@v6
-      - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v7
+      - uses: ./.github/actions/setup-ubuntu-ci
         with:
-          python-version: ${{ matrix.python-version }}
-          enable-cache: true
-      - name: Install dependencies
-        run: uv sync --all-extras
+          python_version: ${{ matrix.python-version }}
+          uv_sync_args: --frozen --all-extras
       - name: Build packages
         run: bash .github/scripts/build-packages.sh
       - name: Upload build artifacts

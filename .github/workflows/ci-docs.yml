@@ -30,8 +30,8 @@ jobs:
         with:
           filters: |
             run_docs:
-              - ".github/workflows/ci-docs.yml"
-              - ".github/workflows/docs.yml"
+              - ".github/workflows/**"
+              - ".github/actions/**"
               - "mkdocs.yml"
               - "pyproject.toml"
               - "uv.lock"

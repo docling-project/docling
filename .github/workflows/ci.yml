@@ -54,10 +54,9 @@ jobs:
         with:
           filters: |
             run_ci:
-              - ".github/workflows/ci.yml"
-              - ".github/workflows/checks.yml"
-              - ".github/workflows/pr-fast-checks.yml"
-              - ".github/scripts/run_pr_fast_checks.py"
+              - ".github/workflows/**"
+              - ".github/scripts/**"
+              - ".github/actions/**"
               - ".pre-commit-config.yaml"
               - "pyproject.toml"
               - "tach.toml"
@@ -69,8 +68,9 @@ jobs:
               - "tests/**"
               - "docs/examples/**"
             full_matrix_override:
-              - ".github/workflows/ci.yml"
-              - ".github/workflows/checks.yml"
+              - ".github/workflows/**"
+              - ".github/scripts/**"
+              - ".github/actions/**"
               - "tach.toml"
               - "pyproject.toml"
               - "uv.lock"

@@ -26,12 +26,10 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # for fetching tags, required for semantic-release
-      - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v7
+      - uses: ./.github/actions/setup-ubuntu-ci
         with:
-          enable-cache: true
-      - name: Install dependencies
-        run: uv sync --only-dev
+          python_version: "3.12"
+          uv_sync_args: --frozen --only-dev
       - name: Check version of potential release
         id: version_check
         run: |
@@ -56,12 +54,10 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0  # for fetching tags, required for semantic-release
-      - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v7
+      - uses: ./.github/actions/setup-ubuntu-ci
         with:
-          enable-cache: true
-      - name: Install dependencies
-        run: uv sync --only-dev
+          python_version: "3.12"
+          uv_sync_args: --frozen --only-dev
       - name: Run release script
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
