@@ -5,6 +5,10 @@ on:
         type: boolean
         description: "If true, the coverage results are pushed to codecov.io."
         default: true
+      run_lint:
+        type: boolean
+        description: "If true, run the full lint job in this workflow."
+        default: true
     secrets:
       CODECOV_TOKEN:
         required: false
@@ -68,6 +72,7 @@ jobs:
               - "docling/**"
 
   lint:
+    if: ${{ inputs.run_lint }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

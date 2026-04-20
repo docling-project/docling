@@ -34,6 +34,8 @@ jobs:
             run_ci:
               - ".github/workflows/ci.yml"
               - ".github/workflows/checks.yml"
+              - ".github/workflows/pr-fast-checks.yml"
+              - ".github/scripts/run_pr_fast_checks.py"
               - ".pre-commit-config.yaml"
               - "pyproject.toml"
               - "uv.lock"
@@ -48,5 +50,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.run_ci == 'true' && (github.event_name == 'push' || (github.event.pull_request.head.repo.full_name != 'docling-project/docling' && github.event.pull_request.head.repo.full_name != 'docling-project/docling')) }}
     uses: ./.github/workflows/checks.yml
+    with:
+      run_lint: ${{ github.event_name == 'push' }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
