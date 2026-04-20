@@ -2,12 +2,19 @@ name: "Run CI"
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened, synchronize, labeled, unlabeled]
   push:
     branches:
       - "**"
       - "!main"
       - "!gh-pages"
+  workflow_dispatch:
+    inputs:
+      python_versions:
+        description: 'JSON array of Python versions to run, e.g. ["3.10"] or ["3.10", "3.12", "3.14"].'
+        required: true
+        default: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -20,13 +27,21 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      run_ci: ${{ steps.filter.outputs.run_ci }}
+      run_ci: ${{ steps.manual.outputs.run_ci || steps.filter.outputs.run_ci }}
+      full_matrix_override: ${{ steps.filter.outputs.full_matrix_override }}
     steps:
+      - name: Mark manual runs to execute CI
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        id: manual
+        run: echo "run_ci=true" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v6
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         with:
           fetch-depth: 0
 
       - name: Detect changed paths
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         id: filter
         uses: dorny/paths-filter@v3
         with:
@@ -45,12 +60,60 @@ jobs:
               - "docling/**"
               - "tests/**"
               - "docs/examples/**"
+            full_matrix_override:
+              - ".github/workflows/ci.yml"
+              - ".github/workflows/checks.yml"
+              - "pyproject.toml"
+              - "uv.lock"
+              - "README.md"
+              - "LICENSE"
 
   code-checks:
     needs: changes
-    if: ${{ needs.changes.outputs.run_ci == 'true' && (github.event_name == 'push' || (github.event.pull_request.head.repo.full_name != 'docling-project/docling' && github.event.pull_request.head.repo.full_name != 'docling-project/docling')) }}
+    if: >-
+      ${{
+        needs.changes.outputs.run_ci == 'true' &&
+        (
+          github.event_name == 'workflow_dispatch' ||
+          github.event_name == 'push' ||
+          (
+            github.event_name == 'pull_request' &&
+            (
+              github.event.pull_request.head.repo.full_name != github.repository ||
+              contains(github.event.pull_request.labels.*.name, 'tests:full')
+            )
+          )
+        )
+      }}
     uses: ./.github/workflows/checks.yml
     with:
-      run_lint: ${{ github.event_name == 'push' }}
+      run_lint: ${{ github.event_name != 'pull_request' }}
+      force_all_checks: ${{ github.event_name == 'workflow_dispatch' }}
+      run_package_compat: >-
+        ${{
+          github.event_name == 'workflow_dispatch' ||
+          needs.changes.outputs.full_matrix_override == 'true' ||
+          (
+            github.event_name == 'pull_request' &&
+            contains(github.event.pull_request.labels.*.name, 'tests:full')
+          )
+        }}
+      python_versions: >-
+        ${{
+          (
+            github.event_name == 'workflow_dispatch' &&
+            inputs.python_versions
+          ) ||
+          (
+            needs.changes.outputs.full_matrix_override == 'true' &&
+            '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+          ) ||
+          (
+            github.event_name == 'pull_request' &&
+            contains(github.event.pull_request.labels.*.name, 'tests:full') &&
+            '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+          ) ||
+          '["3.10"]'
+        }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

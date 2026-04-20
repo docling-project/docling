@@ -1,0 +1,23 @@
+name: "Run CI Main"
+
+on:
+  push:
+    branches:
+      - "main"
+  schedule:
+    - cron: "17 3 * * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  code-checks:
+    uses: ./.github/workflows/checks.yml
+    with:
+      run_lint: true
+      force_all_checks: true
+      run_package_compat: true
+      python_versions: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
