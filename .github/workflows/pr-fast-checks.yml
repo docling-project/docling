@@ -37,11 +37,15 @@ jobs:
           persist-credentials: false
 
       - name: Fetch PR head commit
+        env:
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           git fetch --no-tags --depth=1 \
-            "https://github.com/${{ github.event.pull_request.head.repo.full_name }}.git" \
-            "${{ github.event.pull_request.head.ref }}"
-          test "$(git rev-parse FETCH_HEAD)" = "${{ github.event.pull_request.head.sha }}"
+            "https://github.com/${PR_HEAD_REPO}.git" \
+            "${PR_HEAD_REF}"
+          test "$(git rev-parse FETCH_HEAD)" = "${PR_HEAD_SHA}"
 
       - name: Install uv and set the python version
         uses: astral-sh/setup-uv@v7
