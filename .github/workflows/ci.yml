@@ -60,6 +60,7 @@ jobs:
               - ".github/scripts/run_pr_fast_checks.py"
               - ".pre-commit-config.yaml"
               - "pyproject.toml"
+              - "tach.toml"
               - "uv.lock"
               - "Dockerfile"
               - "README.md"
@@ -70,6 +71,7 @@ jobs:
             full_matrix_override:
               - ".github/workflows/ci.yml"
               - ".github/workflows/checks.yml"
+              - "tach.toml"
               - "pyproject.toml"
               - "uv.lock"
               - "README.md"
@@ -86,7 +88,8 @@ jobs:
       run_lint: true
       force_all_checks: >-
         ${{
-          github.event_name == 'workflow_dispatch'
+          github.event_name == 'workflow_dispatch' ||
+          needs.changes.outputs.full_matrix_override == 'true'
         }}
       run_package_compat: >-
         ${{
@@ -96,6 +99,19 @@ jobs:
             github.event_name == 'pull_request' &&
             contains(github.event.pull_request.labels.*.name, 'tests:full')
           )
+        }}
+      use_tach: >-
+        ${{
+          github.event_name == 'pull_request' &&
+          needs.changes.outputs.full_matrix_override != 'true' &&
+          !contains(github.event.pull_request.labels.*.name, 'tests:full')
+        }}
+      tach_base_ref: >-
+        ${{
+          (
+            github.event_name == 'pull_request' &&
+            github.event.pull_request.base.sha
+          ) || ''
         }}
       python_versions: >-
         ${{

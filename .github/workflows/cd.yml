@@ -16,6 +16,7 @@ jobs:
       push_coverage: false
       force_all_checks: true
       run_package_compat: true
+      use_tach: false
       python_versions: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
   pre-release-check:
     runs-on: ubuntu-latest

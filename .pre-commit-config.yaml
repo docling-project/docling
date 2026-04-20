@@ -21,6 +21,12 @@ repos:
         pass_filenames: false
         language: system
         files: '\.py$'
+      - id: tach
+        name: Tach
+        entry: uv run --no-sync tach check
+        pass_filenames: false
+        language: system
+        files: '^docling/.*\.py$|^tach\.toml$'
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.8.3
     hooks:

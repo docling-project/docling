@@ -1,0 +1,58 @@
+interfaces = []
+exclude = [
+  "**/__pycache__",
+  ".github",
+  ".venv",
+  "docs",
+  "tests",
+]
+root_module = "ignore"
+source_roots = ["."]
+
+[[modules]]
+path = "docling.backend"
+depends_on = ["docling.exceptions", "docling.datamodel", "docling.utils"]
+
+[[modules]]
+path = "docling.chunking"
+depends_on = []
+
+[[modules]]
+path = "docling.cli"
+depends_on = ["docling.models", "docling.document_converter", "docling.utils", "docling.backend", "docling.datamodel", "docling.pipeline"]
+
+[[modules]]
+path = "docling.datamodel"
+depends_on = ["docling.models", "docling.utils", "docling.backend"]
+
+[[modules]]
+path = "docling.document_converter"
+depends_on = ["docling.utils", "docling.pipeline", "docling.datamodel", "docling.backend", "docling.exceptions"]
+
+[[modules]]
+path = "docling.document_extractor"
+depends_on = ["docling.backend", "docling.pipeline", "docling.utils", "docling.exceptions", "docling.datamodel"]
+
+[[modules]]
+path = "docling.exceptions"
+depends_on = []
+
+[[modules]]
+path = "docling.experimental"
+depends_on = ["docling.datamodel", "docling.utils", "docling.pipeline", "docling.backend", "docling.models"]
+
+[[modules]]
+path = "docling.models"
+depends_on = ["docling.utils", "docling.exceptions", "docling.experimental", "docling.datamodel"]
+
+[[modules]]
+path = "docling.pipeline"
+depends_on = ["docling.utils", "docling.datamodel", "docling.backend", "docling.models"]
+
+[[modules]]
+path = "docling.service_client"
+depends_on = ["docling.backend", "docling.datamodel"]
+
+[[modules]]
+path = "docling.utils"
+depends_on = ["docling.datamodel", "docling.models"]

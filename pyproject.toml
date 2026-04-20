@@ -254,6 +254,7 @@ pr-fast-checks = [
 dev = [
   "pre-commit~=3.7",
   "mypy~=1.10",
+  "tach>=0.34.0,<1",
   "types-setuptools~=70.3",
   "pandas-stubs~=2.1",
   "types-openpyxl~=3.1",

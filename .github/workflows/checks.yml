@@ -17,6 +17,14 @@ on:
         type: boolean
         description: "If true, run the cross-version package compatibility lanes."
         default: false
+      use_tach:
+        type: boolean
+        description: "If true, enable Tach-aware test skipping in the cheap CI lanes."
+        default: false
+      tach_base_ref:
+        type: string
+        description: "Base git ref or commit used for Tach impact analysis."
+        default: ""
       python_versions:
         type: string
         description: 'JSON array of Python versions to use for multi-version jobs, e.g. ["3.10", "3.12"].'
@@ -49,6 +57,7 @@ jobs:
       run_tests: ${{ steps.force.outputs.run_tests || steps.filter.outputs.run_tests }}
       run_examples: ${{ steps.force.outputs.run_examples || steps.filter.outputs.run_examples }}
       run_package: ${{ steps.force.outputs.run_package || steps.filter.outputs.run_package }}
+      run_tach: ${{ steps.force.outputs.run_tach || steps.filter.outputs.run_tach }}
     steps:
       - name: Force all lanes
         if: ${{ inputs.force_all_checks }}
@@ -57,6 +66,7 @@ jobs:
           echo "run_tests=true" >> "$GITHUB_OUTPUT"
           echo "run_examples=true" >> "$GITHUB_OUTPUT"
           echo "run_package=true" >> "$GITHUB_OUTPUT"
+          echo "run_tach=true" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v6
         if: ${{ !inputs.force_all_checks }}
@@ -92,6 +102,14 @@ jobs:
               - "uv.lock"
               - "README.md"
               - "LICENSE"
+              - "docling/**"
+            run_tach:
+              - ".github/workflows/ci.yml"
+              - ".github/workflows/checks.yml"
+              - ".pre-commit-config.yaml"
+              - "pyproject.toml"
+              - "tach.toml"
+              - "uv.lock"
               - "docling/**"
 
   lint:
@@ -130,6 +148,25 @@ jobs:
           echo "--- Running pre-commit style checks ---"
           uv run pre-commit run --all-files
 
+  tach:
+    needs: changes
+    if: ${{ needs.changes.outputs.run_tach == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install Tach dependencies
+        run: uv sync --frozen --only-group dev --no-install-project
+
+      - name: Check module boundaries
+        run: uv run --no-sync tach check
+
   run-tests-1:
     needs: changes
     if: ${{ needs.changes.outputs.run_tests == 'true' }}
@@ -141,6 +178,8 @@ jobs:
         python-version: ${{ fromJSON(inputs.python_versions) }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Grant permissions to APT cache directory # allows restore
         run: sudo chown -R $USER:$USER /var/cache/apt/archives
@@ -183,11 +222,17 @@ jobs:
         run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
 
       - name: Run tests for GROUP1
+        env:
+          TACH_BASE_REF: ${{ inputs.tach_base_ref }}
         run: |
           echo "--- Running tests ---"
           GROUP1=$(echo "$PYTEST_ML" | sed -e 's/^/--ignore=/' | tr '\n' ' ')
+          TACH_ARGS=""
+          if [ "${{ inputs.use_tach }}" = "true" ] && [ -n "$TACH_BASE_REF" ] && [ "$TACH_BASE_REF" != "0000000000000000000000000000000000000000" ]; then
+            TACH_ARGS="--tach-base $TACH_BASE_REF"
+          fi
           echo "Running tests for GROUP1"
-          uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP1
+          uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $TACH_ARGS $GROUP1
 
       - name: Upload coverage to Codecov
         if: inputs.push_coverage
@@ -211,6 +256,8 @@ jobs:
         python-version: ${{ fromJSON(inputs.python_versions) }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Grant permissions to APT cache directory # allows restore
         run: sudo chown -R $USER:$USER /var/cache/apt/archives
@@ -253,16 +300,22 @@ jobs:
         run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
 
       - name: Run tests for GROUP2
+        env:
+          TACH_BASE_REF: ${{ inputs.tach_base_ref }}
         run: |
           echo "--- Running tests ---"
           GROUP2=$(echo "$PYTEST_ML" | tr '\n' ' ')
+          TACH_ARGS=""
+          if [ "${{ inputs.use_tach }}" = "true" ] && [ -n "$TACH_BASE_REF" ] && [ "$TACH_BASE_REF" != "0000000000000000000000000000000000000000" ]; then
+            TACH_ARGS="--tach-base $TACH_BASE_REF"
+          fi
           echo "Running tests for GROUP2"
           DESELECT_OPT=""
           if [ -n "$PYTEST_TO_SKIP" ]; then
             DESELECT_OPT="--deselect $PYTEST_TO_SKIP"
           fi
           echo "Running tests for GROUP2"
-          uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP2 $DESELECT_OPT
+          uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $TACH_ARGS $GROUP2 $DESELECT_OPT
 
       - name: Upload coverage to Codecov
         if: inputs.push_coverage
@@ -552,3 +605,43 @@ jobs:
 
       - name: Run docling
         run: uv run docling --help
+
+  check:
+    if: ${{ always() }}
+    needs:
+      - changes
+      - lint
+      - tach
+      - run-tests-1
+      - run-tests-2
+      - run-examples
+      - test-pip-install-no-lock
+      - test-pip-install-no-dev-headers
+      - build-package
+      - test-package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required jobs
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+
+          needs = json.loads(os.environ["NEEDS_JSON"])
+          blocking = {
+              job: data["result"]
+              for job, data in needs.items()
+              if data["result"] not in {"success", "skipped"}
+          }
+
+          if blocking:
+              print("Blocking workflow results detected:")
+              for job, result in sorted(blocking.items()):
+                  print(f"- {job}: {result}")
+              sys.exit(1)
+
+          print("All required jobs succeeded or were skipped.")
+          PY

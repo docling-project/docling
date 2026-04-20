@@ -21,6 +21,7 @@ jobs:
       run_lint: true
       force_all_checks: true
       run_package_compat: true
+      use_tach: false
       python_versions: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
