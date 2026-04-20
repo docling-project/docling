@@ -9,9 +9,16 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-
 RUFF_DIRECTORIES = ("docling", "tests", "docs/examples", ".github/scripts")
 MYPY_DIRECTORIES = ("docling", ".github/scripts")
+TOOLING_SMOKE_TRIGGER_PATHS = (
+    ".github/scripts/run_pr_fast_checks.py",
+    ".github/workflows/pr-fast-checks.yml",
+    ".pre-commit-config.yaml",
+    "pyproject.toml",
+    "uv.lock",
+)
+SMOKE_CHECK_TARGET = ".github/scripts/run_pr_fast_checks.py"
 RELATIVE_INCREASE_THRESHOLD = 0.5
 ABSOLUTE_INCREASE_THRESHOLD_SECONDS = 2.0
 
@@ -117,14 +124,20 @@ def is_python_or_notebook_file(path: str, directories: tuple[str, ...]) -> bool:
     if suffix not in {".py", ".ipynb"}:
         return False
 
-    return any(path == directory or path.startswith(f"{directory}/") for directory in directories)
+    return any(
+        path == directory or path.startswith(f"{directory}/")
+        for directory in directories
+    )
 
 
 def is_mypy_target(path: str) -> bool:
     if Path(path).suffix != ".py":
         return False
 
-    return any(path == directory or path.startswith(f"{directory}/") for directory in MYPY_DIRECTORIES)
+    return any(
+        path == directory or path.startswith(f"{directory}/")
+        for directory in MYPY_DIRECTORIES
+    )
 
 
 def filter_existing(repo_root: Path, paths: list[str]) -> list[str]:
@@ -147,7 +160,9 @@ def resolve_executable(repo_root: Path, executable_name: str) -> Path:
 
     system_executable = shutil.which(executable_name)
     if system_executable is None:
-        raise FileNotFoundError(f"Could not find `{executable_name}` in .venv or on PATH.")
+        raise FileNotFoundError(
+            f"Could not find `{executable_name}` in .venv or on PATH."
+        )
 
     return Path(system_executable)
 
@@ -187,6 +202,9 @@ def build_check_units(repo_root: Path) -> list[CheckUnit]:
                 str(mypy_executable),
                 "--config-file",
                 str(config_path),
+                "--follow-imports",
+                "skip",
+                "--ignore-missing-imports",
             ],
             base_targets=[],
             head_targets=[],
@@ -196,7 +214,7 @@ def build_check_units(repo_root: Path) -> list[CheckUnit]:
 
 def collect_targets(
     repo_root: Path, changed_paths: list[str]
-) -> tuple[list[str], list[str], list[str], list[str]]:
+) -> tuple[list[str], list[str], list[str], list[str], bool]:
     ruff_targets = [
         path
         for path in changed_paths
@@ -204,10 +222,25 @@ def collect_targets(
     ]
     mypy_targets = [path for path in changed_paths if is_mypy_target(path)]
 
+    used_tooling_smoke_targets = (
+        not ruff_targets
+        and not mypy_targets
+        and any(path in TOOLING_SMOKE_TRIGGER_PATHS for path in changed_paths)
+    )
+    if used_tooling_smoke_targets:
+        ruff_targets = [SMOKE_CHECK_TARGET]
+        mypy_targets = [SMOKE_CHECK_TARGET]
+
     existing_ruff_targets = filter_existing(repo_root, ruff_targets)
     existing_mypy_targets = filter_existing(repo_root, mypy_targets)
 
-    return ruff_targets, mypy_targets, existing_ruff_targets, existing_mypy_targets
+    return (
+        ruff_targets,
+        mypy_targets,
+        existing_ruff_targets,
+        existing_mypy_targets,
+        used_tooling_smoke_targets,
+    )
 
 
 def populate_targets(
@@ -234,7 +267,9 @@ def render_target_list(paths: list[str]) -> str:
     return "<br>".join(f"`{path}`" for path in paths)
 
 
-def is_significant_regression(base: CommandResult | None, head: CommandResult | None) -> bool:
+def is_significant_regression(
+    base: CommandResult | None, head: CommandResult | None
+) -> bool:
     if base is None or head is None:
         return False
     if base.returncode != 0 or head.returncode != 0:
@@ -289,23 +324,38 @@ def main() -> int:
     summary_file = Path(summary_path) if summary_path else None
 
     changed_paths = get_changed_paths(repo_root, args.base_ref, args.head_ref)
-    ruff_targets, mypy_targets, existing_ruff_targets, existing_mypy_targets = collect_targets(
-        repo_root, changed_paths
-    )
+    (
+        ruff_targets,
+        mypy_targets,
+        existing_ruff_targets,
+        existing_mypy_targets,
+        used_tooling_smoke_targets,
+    ) = collect_targets(repo_root, changed_paths)
 
-    all_head_targets = sorted(
-        set(ruff_targets).union(mypy_targets)
-    )
+    all_head_targets = sorted(set(ruff_targets).union(mypy_targets))
 
     append_summary(summary_file, "## PR Fast Checks\n")
-    append_summary(summary_file, "### Changed files considered\n")
+    append_summary(summary_file, "### Changed paths\n")
+    append_summary(
+        summary_file,
+        "\n".join(f"- `{path}`" for path in changed_paths) + "\n",
+    )
+    append_summary(summary_file, "\n### Check targets\n")
+    if used_tooling_smoke_targets:
+        append_summary(
+            summary_file,
+            "- Tooling-only change detected; using the smoke target set.\n",
+        )
     if all_head_targets:
         append_summary(
             summary_file,
             "\n".join(f"- `{target}`" for target in all_head_targets) + "\n",
         )
     else:
-        append_summary(summary_file, "- No Python or notebook targets matched the fast-check rules.\n")
+        append_summary(
+            summary_file,
+            "- No Python or notebook targets matched the fast-check rules.\n",
+        )
         print("No Python or notebook targets matched the fast-check rules.")
         return 0
 
@@ -369,21 +419,28 @@ def main() -> int:
 
     regressions: list[str] = []
     for unit in units:
-        base_result = base_results[unit.name]
-        head_result = head_results[unit.name]
+        summary_base_result = base_results[unit.name]
+        summary_head_result = head_results[unit.name]
 
         delta_cell = "_n/a_"
         note = ""
-        if base_result is not None and head_result is not None:
-            delta_seconds = head_result.duration_seconds - base_result.duration_seconds
+        if summary_base_result is not None and summary_head_result is not None:
+            delta_seconds = (
+                summary_head_result.duration_seconds
+                - summary_base_result.duration_seconds
+            )
             delta_cell = f"{delta_seconds:+.2f}s"
-            if base_result.targets != head_result.targets:
+            if summary_base_result.targets != summary_head_result.targets:
                 note = "target set changed"
-            elif is_significant_regression(base_result, head_result):
+            elif is_significant_regression(
+                summary_base_result, summary_head_result
+            ):
                 note = "significant increase"
                 regressions.append(
-                    f"`{unit.name}` increased from {base_result.duration_seconds:.2f}s "
-                    f"to {head_result.duration_seconds:.2f}s on the same target set."
+                    f"`{unit.name}` increased from "
+                    f"{summary_base_result.duration_seconds:.2f}s to "
+                    f"{summary_head_result.duration_seconds:.2f}s on the same "
+                    f"target set."
                 )
             else:
                 note = "within threshold"
@@ -396,8 +453,8 @@ def main() -> int:
                     unit.name,
                     render_target_list(unit.base_targets),
                     render_target_list(unit.head_targets),
-                    format_result_cell(base_result),
-                    format_result_cell(head_result),
+                    format_result_cell(summary_base_result),
+                    format_result_cell(summary_head_result),
                     delta_cell,
                     note or "_n/a_",
                 ]
