@@ -1,0 +1,52 @@
+name: "Run PR Fast Checks"
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  UV_FROZEN: "1"
+
+jobs:
+  lint-and-type:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Fetch PR head commit
+        run: |
+          git fetch --no-tags --depth=1 \
+            "https://github.com/${{ github.event.pull_request.head.repo.full_name }}.git" \
+            "${{ github.event.pull_request.head.ref }}"
+          test "$(git rev-parse FETCH_HEAD)" = "${{ github.event.pull_request.head.sha }}"
+
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install trusted lint and typing dependencies
+        run: uv sync --frozen --no-default-groups --group dev --no-install-project
+
+      - name: Install Ruff
+        run: uv pip install --python .venv/bin/python ruff==0.11.5
+
+      - name: Run fast lint and typing checks
+        run: |
+          .venv/bin/python .github/scripts/run_pr_fast_checks.py \
+            --repo-root "$PWD" \
+            --base-ref HEAD \
+            --head-ref FETCH_HEAD
