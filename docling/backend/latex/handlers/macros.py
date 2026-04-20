@@ -1,7 +1,7 @@
 import logging
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     from io import BytesIO
@@ -162,7 +162,7 @@ class MacroHandlerMixin:
         parent: NodeItem | None,
         formatting: Formatting | None,
         text_label: DocItemLabel | None,
-        text_buffer: List[str],
+        text_buffer: list[str],
         flush_fn: Callable[[], None],
         following_nodes=None,
     ) -> int:
