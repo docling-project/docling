@@ -91,6 +91,10 @@ jobs:
         run: |
           check_script=".github/scripts/run_pr_fast_checks.py"
           if [[ ! -f "${check_script}" ]]; then
+            if [[ "${GITHUB_EVENT_NAME}" != "pull_request" ]]; then
+              echo "::error::Trusted check script is missing from the base checkout."
+              exit 1
+            fi
             check_script="${RUNNER_TEMP}/run_pr_fast_checks.py"
             git show "FETCH_HEAD:.github/scripts/run_pr_fast_checks.py" > "${check_script}"
           fi
