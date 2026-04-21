@@ -1,21 +1,6 @@
 name: "Run PR Fast Checks"
 
 on:
-  # Temporary validation trigger for this PR branch. Remove before merge; the
-  # permanent trigger should remain pull_request_target only.
-  pull_request:
-    types: [opened, reopened, synchronize, ready_for_review]
-    paths:
-      - ".github/workflows/pr-fast-checks.yml"
-      - ".github/scripts/run_pr_fast_checks.py"
-      - ".pre-commit-config.yaml"
-      - "pyproject.toml"
-      - "uv.lock"
-      - ".github/scripts/**/*.py"
-      - "docling/**/*.py"
-      - "tests/**/*.py"
-      - "docs/examples/**/*.py"
-      - "docs/examples/**/*.ipynb"
   pull_request_target:
     types: [opened, reopened, synchronize, ready_for_review]
     paths:
@@ -70,41 +55,12 @@ jobs:
           python-version: "3.12"
           enable-cache: true
 
-      - name: Install trusted lint and typing dependencies
-        run: |
-          if python3 - <<'PY'
-          import sys
-          import tomllib
-
-          with open("pyproject.toml", "rb") as handle:
-              dependency_groups = tomllib.load(handle).get("dependency-groups", {})
-          sys.exit(0 if "pr-fast-checks" in dependency_groups else 1)
-          PY
-          then
-            uv sync --frozen --only-group pr-fast-checks --no-install-project
-          else
-            if [[ "${GITHUB_EVENT_NAME}" != "pull_request" ]]; then
-              echo "::error::pr-fast-checks group is missing from the trusted base."
-              exit 1
-            fi
-            echo "pr-fast-checks group is not on the trusted base yet; using PR metadata for temporary pull_request validation."
-            git show "FETCH_HEAD:pyproject.toml" > pyproject.toml
-            git show "FETCH_HEAD:uv.lock" > uv.lock
-            uv sync --frozen --only-group pr-fast-checks --no-install-project
-          fi
+      - name: Install minimal trusted lint and typing dependencies
+        run: uv sync --frozen --only-group pr-fast-checks --no-install-project
 
       - name: Run fast lint and typing checks
         run: |
-          check_script=".github/scripts/run_pr_fast_checks.py"
-          if [[ ! -f "${check_script}" ]]; then
-            if [[ "${GITHUB_EVENT_NAME}" != "pull_request" ]]; then
-              echo "::error::Trusted check script is missing from the base checkout."
-              exit 1
-            fi
-            check_script="${RUNNER_TEMP}/run_pr_fast_checks.py"
-            git show "FETCH_HEAD:.github/scripts/run_pr_fast_checks.py" > "${check_script}"
-          fi
-          .venv/bin/python "${check_script}" \
+          .venv/bin/python .github/scripts/run_pr_fast_checks.py \
             --repo-root "$PWD" \
             --base-ref HEAD \
             --head-ref FETCH_HEAD
