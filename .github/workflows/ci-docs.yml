@@ -1,8 +1,6 @@
 name: "Run Docs CI"
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
   merge_group:
     types: [checks_requested]
   push:
