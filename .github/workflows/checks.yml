@@ -17,6 +17,14 @@ on:
         type: boolean
         description: "If true, run the cross-version package compatibility lanes."
         default: false
+      run_windows:
+        type: boolean
+        description: "If true, run the Windows smoke test lane on GitHub-hosted runners."
+        default: false
+      run_macos:
+        type: boolean
+        description: "If true, run the macOS smoke test lane on GitHub-hosted runners."
+        default: false
       use_tach:
         type: boolean
         description: "If true, enable Tach-aware test skipping in the cheap CI lanes."
@@ -64,6 +72,15 @@ env:
     tests/test_vlm_presets_and_runtime_options.py
   EXAMPLES_HEAVY: '^(batch_convert|chart_extraction|granite_vision_table_structure|minimal_asr_pipeline|minimal_vlm_pipeline)\.py$'
   EXAMPLES_UNSUPPORTED_IN_CI: '^(compare_vlm_models|custom_convert|demo_layout_vlm|develop_picture_enrichment|export_multimodal|gpu_standard_pipeline|gpu_vlm_pipeline|granitedocling_repetition_stopping|minimal|mlx_whisper_example|offline_convert|pictures_description|pictures_description_api|post_process_ocr_with_vlm|rapidocr_with_custom_models|run_with_formats_html_rendered|run_with_formats_html_rendered_mp|suryaocr_with_custom_models|vlm_pipeline_api_model)\.py$|xbrl_conversion\.ipynb$'
+  CROSS_PLATFORM_SMOKE_TESTS: |-
+    tests/test_backend_csv.py
+    tests/test_backend_docling_json.py
+    tests/test_backend_markdown.py
+    tests/test_backend_vtt.py
+    tests/test_invalid_input.py
+    tests/test_settings_load.py
+    tests/test_api_kserve_v2_engine_scaffolding.py
+    tests/test_api_image_request.py
 
 jobs:
   changes:
@@ -551,6 +568,85 @@ jobs:
           fi
           python3 .github/scripts/run_selected_examples.py "${args[@]}"
 
+  run-tests-windows:
+    needs: changes
+    if: ${{ inputs.run_windows }}
+    runs-on: windows-latest
+    env:
+      PYTHONUTF8: "1"
+      UV_PYTHON_PREFERENCE: only-system
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          uv python pin "${{ matrix.python-version }}"
+          uv sync --frozen --group dev --no-group docs --no-group examples
+
+      - name: Check import and CLI wiring
+        shell: bash
+        run: |
+          uv run python -c "import docling; from docling.document_converter import DocumentConverter; DocumentConverter(); print('Docling import smoke passed')"
+          uv run docling --help
+
+      - name: Run cross-platform smoke tests
+        shell: bash
+        run: uv run pytest -p no:tach $CROSS_PLATFORM_SMOKE_TESTS --durations=10
+
+  run-tests-macos:
+    needs: changes
+    if: ${{ inputs.run_macos }}
+    runs-on: macos-latest
+    env:
+      UV_PYTHON_PREFERENCE: only-system
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          uv python pin "${{ matrix.python-version }}"
+          uv sync --frozen --group dev --no-group docs --no-group examples
+
+      - name: Check import and CLI wiring
+        shell: bash
+        run: |
+          uv run python -c "import docling; from docling.document_converter import DocumentConverter; DocumentConverter(); print('Docling import smoke passed')"
+          uv run docling --help
+
+      - name: Run cross-platform smoke tests
+        shell: bash
+        run: uv run pytest -p no:tach $CROSS_PLATFORM_SMOKE_TESTS --durations=10
+
   test-pip-install-no-lock:
     needs: changes
     if: ${{ inputs.run_package_compat && needs.changes.outputs.run_package == 'true' }}
@@ -744,6 +840,8 @@ jobs:
       - run-tests-core
       - run-tests-ml
       - run-examples-light
+      - run-tests-windows
+      - run-tests-macos
       - test-pip-install-no-lock
       - test-pip-install-no-dev-headers
       - build-package
@@ -762,6 +860,8 @@ jobs:
             run-tests-core,
             run-tests-ml,
             run-examples-light,
+            run-tests-windows,
+            run-tests-macos,
             test-pip-install-no-lock,
             test-pip-install-no-dev-headers,
             build-package,

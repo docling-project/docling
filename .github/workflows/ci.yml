@@ -10,6 +10,16 @@ on:
         required: false
         default: ""
         type: string
+      run_windows:
+        description: "Run the Windows smoke test lane."
+        required: false
+        default: false
+        type: boolean
+      run_macos:
+        description: "Run the macOS smoke test lane."
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -27,7 +37,7 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      run_ci: ${{ steps.manual.outputs.run_ci || steps.filter.outputs.run_ci }}
+      run_ci: ${{ steps.manual.outputs.run_ci || steps.labeled.outputs.run_ci || steps.filter.outputs.run_ci }}
       full_matrix_override: ${{ steps.filter.outputs.full_matrix_override }}
       default_python_versions: ${{ steps.python_versions.outputs.default_python_versions }}
       full_python_versions: ${{ steps.python_versions.outputs.full_python_versions }}
@@ -43,13 +53,33 @@ jobs:
         id: manual
         run: echo "run_ci=true" >> "$GITHUB_OUTPUT"
 
+      - name: Mark explicitly labeled PR runs to execute CI
+        if: >-
+          ${{
+            github.event_name == 'pull_request' &&
+            (
+              contains(github.event.pull_request.labels.*.name, 'tests:full') ||
+              contains(github.event.pull_request.labels.*.name, 'tests:cross-platform')
+            )
+          }}
+        id: labeled
+        run: echo "run_ci=true" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        if: ${{ github.event_name != 'workflow_dispatch' }}
+        if: >-
+          ${{
+            github.event_name != 'workflow_dispatch' &&
+            steps.labeled.outcome == 'skipped'
+          }}
         with:
           fetch-depth: 0
 
       - name: Detect changed paths
-        if: ${{ github.event_name != 'workflow_dispatch' }}
+        if: >-
+          ${{
+            github.event_name != 'workflow_dispatch' &&
+            steps.labeled.outcome == 'skipped'
+          }}
         id: filter
         uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         with:
@@ -97,6 +127,34 @@ jobs:
           (
             github.event_name == 'pull_request' &&
             contains(github.event.pull_request.labels.*.name, 'tests:full')
+          )
+        }}
+      run_windows: >-
+        ${{
+          (
+            github.event_name == 'workflow_dispatch' &&
+            inputs.run_windows
+          ) ||
+          (
+            github.event_name == 'pull_request' &&
+            (
+              contains(github.event.pull_request.labels.*.name, 'tests:full') ||
+              contains(github.event.pull_request.labels.*.name, 'tests:cross-platform')
+            )
+          )
+        }}
+      run_macos: >-
+        ${{
+          (
+            github.event_name == 'workflow_dispatch' &&
+            inputs.run_macos
+          ) ||
+          (
+            github.event_name == 'pull_request' &&
+            (
+              contains(github.event.pull_request.labels.*.name, 'tests:full') ||
+              contains(github.event.pull_request.labels.*.name, 'tests:cross-platform')
+            )
           )
         }}
       use_tach: >-

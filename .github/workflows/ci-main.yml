@@ -12,6 +12,10 @@ on:
         description: "Run the full Python and package-compatibility matrix."
         type: boolean
         default: false
+      run_cross_platform:
+        description: "Run Windows and macOS smoke lanes."
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
@@ -33,6 +37,22 @@ jobs:
         ${{
           github.event_name == 'schedule' ||
           (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
+        }}
+      run_windows: >-
+        ${{
+          github.event_name == 'schedule' ||
+          (
+            github.event_name == 'workflow_dispatch' &&
+            (inputs.full_matrix || inputs.run_cross_platform)
+          )
+        }}
+      run_macos: >-
+        ${{
+          github.event_name == 'schedule' ||
+          (
+            github.event_name == 'workflow_dispatch' &&
+            (inputs.full_matrix || inputs.run_cross_platform)
+          )
         }}
       use_tach: false
       python_versions: >-
