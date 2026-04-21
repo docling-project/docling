@@ -70,8 +70,22 @@ jobs:
           python-version: "3.12"
           enable-cache: true
 
-      - name: Install minimal trusted lint and typing dependencies
-        run: uv sync --frozen --only-group pr-fast-checks --no-install-project
+      - name: Install trusted lint and typing dependencies
+        run: |
+          if python3 - <<'PY'
+          import sys
+          import tomllib
+
+          with open("pyproject.toml", "rb") as handle:
+              dependency_groups = tomllib.load(handle).get("dependency-groups", {})
+          sys.exit(0 if "pr-fast-checks" in dependency_groups else 1)
+          PY
+          then
+            uv sync --frozen --only-group pr-fast-checks --no-install-project
+          else
+            echo "pr-fast-checks group is not on the trusted base yet; falling back to dev."
+            uv sync --frozen --no-default-groups --group dev --no-install-project
+          fi
 
       - name: Run fast lint and typing checks
         run: |
