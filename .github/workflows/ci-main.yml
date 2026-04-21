@@ -33,27 +33,9 @@ jobs:
     with:
       run_lint: true
       force_all_checks: true
-      run_package_compat: >-
-        ${{
-          github.event_name == 'schedule' ||
-          (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
-        }}
-      run_windows: >-
-        ${{
-          github.event_name == 'schedule' ||
-          (
-            github.event_name == 'workflow_dispatch' &&
-            (inputs.full_matrix || inputs.run_cross_platform)
-          )
-        }}
-      run_macos: >-
-        ${{
-          github.event_name == 'schedule' ||
-          (
-            github.event_name == 'workflow_dispatch' &&
-            (inputs.full_matrix || inputs.run_cross_platform)
-          )
-        }}
+      run_package_compat: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.full_matrix) }}
+      run_windows: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.full_matrix || inputs.run_cross_platform)) }}
+      run_macos: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.full_matrix || inputs.run_cross_platform)) }}
       use_tach: false
       python_versions: >-
         ${{

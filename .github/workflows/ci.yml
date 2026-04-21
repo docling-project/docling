@@ -115,54 +115,11 @@ jobs:
     uses: ./.github/workflows/checks.yml
     with:
       run_lint: true
-      force_all_checks: >-
-        ${{
-          github.event_name == 'workflow_dispatch' ||
-          needs.changes.outputs.full_matrix_override == 'true'
-        }}
-      run_package_compat: >-
-        ${{
-          github.event_name == 'workflow_dispatch' ||
-          needs.changes.outputs.full_matrix_override == 'true' ||
-          (
-            github.event_name == 'pull_request' &&
-            contains(github.event.pull_request.labels.*.name, 'tests:full')
-          )
-        }}
-      run_windows: >-
-        ${{
-          (
-            github.event_name == 'workflow_dispatch' &&
-            inputs.run_windows
-          ) ||
-          (
-            github.event_name == 'pull_request' &&
-            (
-              contains(github.event.pull_request.labels.*.name, 'tests:full') ||
-              contains(github.event.pull_request.labels.*.name, 'tests:cross-platform')
-            )
-          )
-        }}
-      run_macos: >-
-        ${{
-          (
-            github.event_name == 'workflow_dispatch' &&
-            inputs.run_macos
-          ) ||
-          (
-            github.event_name == 'pull_request' &&
-            (
-              contains(github.event.pull_request.labels.*.name, 'tests:full') ||
-              contains(github.event.pull_request.labels.*.name, 'tests:cross-platform')
-            )
-          )
-        }}
-      use_tach: >-
-        ${{
-          github.event_name == 'pull_request' &&
-          needs.changes.outputs.full_matrix_override != 'true' &&
-          !contains(github.event.pull_request.labels.*.name, 'tests:full')
-        }}
+      force_all_checks: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.full_matrix_override == 'true' }}
+      run_package_compat: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.full_matrix_override == 'true' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tests:full')) }}
+      run_windows: ${{ (github.event_name == 'workflow_dispatch' && inputs.run_windows) || (github.event_name == 'pull_request' && (contains(github.event.pull_request.labels.*.name, 'tests:full') || contains(github.event.pull_request.labels.*.name, 'tests:cross-platform'))) }}
+      run_macos: ${{ (github.event_name == 'workflow_dispatch' && inputs.run_macos) || (github.event_name == 'pull_request' && (contains(github.event.pull_request.labels.*.name, 'tests:full') || contains(github.event.pull_request.labels.*.name, 'tests:cross-platform'))) }}
+      use_tach: ${{ github.event_name == 'pull_request' && needs.changes.outputs.full_matrix_override != 'true' && !contains(github.event.pull_request.labels.*.name, 'tests:full') }}
       tach_base_ref: >-
         ${{
           (
