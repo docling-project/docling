@@ -13,6 +13,9 @@ concurrency:
 
 jobs:
   code-checks:
+    permissions:
+      contents: read
+      pull-requests: read
     uses: ./.github/workflows/checks.yml
     with:
       run_lint: true

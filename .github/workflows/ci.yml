@@ -85,6 +85,9 @@ jobs:
   code-checks:
     needs: changes
     if: ${{ needs.changes.outputs.run_ci == 'true' }}
+    permissions:
+      contents: read
+      pull-requests: read
     uses: ./.github/workflows/checks.yml
     with:
       run_lint: ${{ github.event_name != 'pull_request' }}
