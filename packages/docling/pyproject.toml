@@ -47,7 +47,8 @@ authors = [
 ]
 requires-python = '>=3.10,<4.0'
 
-# DEPENDS ON DOCLING-SLIM WITH CURRENT DEFAULT EXTRAS + CLI
+# Meta-package: pulls in docling-slim with standard extras + CLI.
+# The `docling` Python module itself is provided by docling-slim.
 dependencies = [
   'docling-slim[standard]==2.90.0',
   'typer>=0.12.5,<0.22.0',  # CLI dependency
@@ -58,9 +59,6 @@ homepage = "https://github.com/docling-project/docling"
 repository = "https://github.com/docling-project/docling"
 issues = "https://github.com/docling-project/docling/issues"
 changelog = "https://github.com/docling-project/docling/blob/main/CHANGELOG.md"
-
-[project.entry-points.docling]
-"docling_defaults" = "docling.models.plugins.defaults"
 
 [project.scripts]
 docling = "docling.cli.main:app"
@@ -83,65 +81,15 @@ remote-serving = ['docling-slim[remote-serving]==2.90.0']
 onnxruntime = ['docling-slim[onnxruntime]==2.90.0']
 xbrl = ['docling-slim[xbrl]==2.90.0']
 
-[dependency-groups]
-dev = [
-  "pre-commit~=3.7",
-  "mypy~=1.10",
-  "types-setuptools~=70.3",
-  "pandas-stubs~=2.1",
-  "types-openpyxl~=3.1",
-  "types-requests~=2.31",
-  "boto3-stubs~=1.37",
-  "types-urllib3~=1.26",
-  "types-tqdm~=4.67",
-  "coverage~=7.6",
-  "pytest~=8.3",
-  "pytest-cov>=6.1.1",
-  "pytest-dependency~=0.6",
-  "pytest-durations~=1.6.1",
-  "pytest-xdist~=3.3",
-  "ipykernel~=6.29",
-  "ipywidgets~=8.1",
-  "nbqa~=1.9",
-  "python-semantic-release~=7.32",
-  "types-defusedxml>=0.7.0.20250822,<0.8.0",
-]
-
-docs = [
-  "mkdocs-material~=9.5",
-  "mkdocs-jupyter>=0.25,<0.26",
-  "mkdocs-click~=0.8",
-  "mkdocs-redirects~=1.2",
-  "mkdocstrings[python]~=0.27",
-  "griffe-pydantic~=1.1",
-]
-
-examples = [
-  "datasets~=2.21",
-  "python-dotenv~=1.0",
-  "langchain-huggingface>=0.0.3",
-  "langchain-milvus~=0.1",
-  "langchain-text-splitters>=0.2",
-  "modelscope>=1.29.0",
-  'gliner>=0.2.21 ; python_version < "3.14"',
-]
-
-constraints = [
-  'numba>=0.63.0',
-  'langchain-core>=0.3.81',
-  'pandas>=2.1.4,<3.0.0 ; python_version < "3.11"',
-  'pandas>=2.1.4,<4.0.0 ; python_version >= "3.11"',
-]
-
-[tool.hatch.build]
-directory = "../.."
-
+# Dependency-only wheel: no Python modules shipped here. All source lives in
+# the docling-slim wheel (built from the repo root). This avoids the prior
+# bug where both wheels shipped the same `docling/` module and collided on
+# install.
 [tool.hatch.build.targets.wheel]
-packages = ["docling"]
+bypass-selection = true
 
 [tool.hatch.build.targets.sdist]
-# Force include the docling source directory from repository root
-force-include = {"../../docling" = "docling"}
+only-include = ["pyproject.toml"]
 
 [tool.uv]
 package = true

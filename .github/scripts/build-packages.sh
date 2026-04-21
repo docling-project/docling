@@ -6,11 +6,11 @@ set -x  # display command on output
 # Create dist directory if it doesn't exist
 mkdir -p dist
 
-# Build docling-slim package
+# Build docling-slim package (from repo root — source co-located)
 echo "Building docling-slim package..."
-(cd packages/docling-slim && uv build --out-dir ../../dist)
+uv build --out-dir dist
 
-# Build docling package  
+# Build docling package (meta-package, dependency-only wheel)
 echo "Building docling package..."
 (cd packages/docling && uv build --out-dir ../../dist)
 
