@@ -8,24 +8,36 @@ exclude = [
 ]
 root_module = "ignore"
 source_roots = ["."]
-# Layers (highest first). Unlayered modules form the implicit "core" that
-# everything is allowed to depend on; they carry the cyclic backend<->datamodel
-# and utils<->stages deps that block further layering without a code refactor.
+# Layers (highest first). Entrypoints and pipeline sit cleanly above the
+# rest of the codebase. `models` contains the model/stage modules that
+# core never imports back (model factories, extraction, plugins, vlm
+# pipeline models, and the "upper" stages: page_assemble, page_preproc,
+# reading_order, picture_description, vlm_convert). `core` carries the
+# cyclic datamodel<->backend and utils<->stages clusters plus the
+# inference engines and the six "core stages" that utils imports back
+# (chart_extraction, code_formula, layout, ocr, picture_classifier,
+# table_structure). Breaking those cycles is a code-level refactor and
+# would unlock a finer layering later.
 layers = [
-  "orchestration",
+  "entrypoints",
   "pipeline",
+  "models",
+  "core",
 ]
 
 [[modules]]
 path = "docling.exceptions"
+layer = "core"
 depends_on = []
 
 [[modules]]
 path = "docling.chunking"
+layer = "core"
 depends_on = []
 
 [[modules]]
 path = "docling.backend"
+layer = "core"
 depends_on = [
   "docling.backend.docx",
   "docling.backend.latex",
@@ -37,14 +49,17 @@ depends_on = [
 
 [[modules]]
 path = "docling.backend.docx"
+layer = "core"
 depends_on = []
 
 [[modules]]
 path = "docling.backend.json"
+layer = "core"
 depends_on = ["docling.backend", "docling.datamodel"]
 
 [[modules]]
 path = "docling.backend.latex"
+layer = "core"
 depends_on = [
   "docling.backend",
   "docling.datamodel",
@@ -53,6 +68,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.backend.xml"
+layer = "core"
 depends_on = [
   "docling.backend",
   "docling.datamodel",
@@ -62,6 +78,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.datamodel"
+layer = "core"
 depends_on = [
   "docling.backend",
   "docling.datamodel.asr_model_specs",
@@ -81,6 +98,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.datamodel.asr_model_specs"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.pipeline_options_asr_model",
@@ -88,14 +106,17 @@ depends_on = [
 
 [[modules]]
 path = "docling.datamodel.backend_options"
+layer = "core"
 depends_on = []
 
 [[modules]]
 path = "docling.datamodel.layout_model_specs"
+layer = "core"
 depends_on = ["docling.datamodel"]
 
 [[modules]]
 path = "docling.datamodel.pipeline_options_asr_model"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.pipeline_options_vlm_model",
@@ -103,6 +124,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.datamodel.pipeline_options_vlm_model"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.models.utils",
@@ -110,6 +132,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.datamodel.service"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.pipeline_options_vlm_model",
@@ -119,6 +142,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.datamodel.stage_model_specs"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.pipeline_options_vlm_model",
@@ -130,6 +154,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.datamodel.vlm_engine_options"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.models.inference_engines.vlm",
@@ -137,6 +162,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.datamodel.vlm_model_specs"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.pipeline_options_vlm_model",
@@ -144,10 +170,12 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.utils"
+layer = "core"
 depends_on = []
 
 [[modules]]
 path = "docling.utils"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.vlm_model_specs",
@@ -162,6 +190,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.models"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.pipeline_options_vlm_model",
@@ -169,6 +198,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.extraction"
+layer = "models"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.pipeline_options_vlm_model",
@@ -179,14 +209,17 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.factories"
+layer = "models"
 depends_on = ["docling.datamodel", "docling.models"]
 
 [[modules]]
 path = "docling.models.inference_engines"
+layer = "core"
 depends_on = []
 
 [[modules]]
 path = "docling.models.inference_engines.common"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.models.inference_engines.vlm",
@@ -195,6 +228,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.inference_engines.image_classification"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.exceptions",
@@ -204,6 +238,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.inference_engines.object_detection"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.exceptions",
@@ -213,6 +248,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.inference_engines.vlm"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.pipeline_options_vlm_model",
@@ -224,10 +260,12 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.stages"
+layer = "core"
 depends_on = []
 
 [[modules]]
 path = "docling.models.stages.chart_extraction"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.models",
@@ -237,6 +275,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.stages.code_formula"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.models",
@@ -247,6 +286,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.stages.layout"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.layout_model_specs",
@@ -258,6 +298,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.stages.ocr"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.models",
@@ -267,6 +308,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.stages.page_assemble"
+layer = "models"
 depends_on = [
   "docling.datamodel",
   "docling.models",
@@ -276,10 +318,12 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.stages.page_preprocessing"
+layer = "models"
 depends_on = ["docling.datamodel", "docling.models", "docling.utils"]
 
 [[modules]]
 path = "docling.models.stages.picture_classifier"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.models",
@@ -289,6 +333,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.stages.picture_description"
+layer = "models"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.stage_model_specs",
@@ -301,10 +346,12 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.stages.reading_order"
+layer = "models"
 depends_on = ["docling.datamodel", "docling.utils"]
 
 [[modules]]
 path = "docling.models.stages.table_structure"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.models",
@@ -314,6 +361,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.stages.vlm_convert"
+layer = "models"
 depends_on = [
   "docling.datamodel",
   "docling.models",
@@ -323,6 +371,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.plugins"
+layer = "models"
 depends_on = [
   "docling.experimental.models",
   "docling.models.stages.layout",
@@ -333,6 +382,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.vlm_pipeline_models"
+layer = "models"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.pipeline_options_vlm_model",
@@ -464,7 +514,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.document_converter"
-layer = "orchestration"
+layer = "entrypoints"
 depends_on = [
   "docling.backend",
   "docling.backend.json",
@@ -482,7 +532,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.document_extractor"
-layer = "orchestration"
+layer = "entrypoints"
 depends_on = [
   "docling.backend",
   "docling.datamodel",
@@ -495,6 +545,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.service_client"
+layer = "core"
 depends_on = [
   "docling.backend",
   "docling.datamodel",
@@ -503,7 +554,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.cli"
-layer = "orchestration"
+layer = "entrypoints"
 depends_on = [
   "docling.backend",
   "docling.datamodel",
@@ -520,10 +571,12 @@ depends_on = [
 
 [[modules]]
 path = "docling.experimental"
+layer = "core"
 depends_on = []
 
 [[modules]]
 path = "docling.experimental.datamodel"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.layout_model_specs",
@@ -533,6 +586,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.experimental.models"
+layer = "core"
 depends_on = [
   "docling.datamodel",
   "docling.experimental.datamodel",
@@ -541,7 +595,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.experimental.pipeline"
-layer = "orchestration"
+layer = "entrypoints"
 depends_on = [
   "docling.backend",
   "docling.datamodel",
