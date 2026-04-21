@@ -41,6 +41,7 @@ env:
 jobs:
   changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
       pull-requests: read
@@ -96,6 +97,7 @@ jobs:
   lint:
     if: ${{ inputs.run_lint }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -132,6 +134,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.run_tests == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -201,6 +204,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.run_tests == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -275,6 +279,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.run_examples == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -368,6 +373,7 @@ jobs:
     needs: changes
     if: ${{ inputs.run_package_compat && needs.changes.outputs.run_package == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       SELECTED_PYTHON_VERSIONS: ${{ join(fromJSON(inputs.python_versions), ' ') }}
     steps:
@@ -405,6 +411,7 @@ jobs:
     needs: changes
     if: ${{ inputs.run_package_compat && needs.changes.outputs.run_package == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       SELECTED_PYTHON_VERSIONS: ${{ join(fromJSON(inputs.python_versions), ' ') }}
     steps:
@@ -483,6 +490,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.run_package == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       matrix:
         python-version: ["3.12"]
@@ -520,6 +528,7 @@ jobs:
       - build-package
     if: ${{ needs.changes.outputs.run_package == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       matrix:
         python-version: ["3.12"]
