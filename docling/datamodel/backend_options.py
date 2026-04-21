@@ -54,33 +54,6 @@ class HTMLBackendOptions(BaseBackendOptions):
     render_wait_ms: int = Field(
         0, description="Extra delay in milliseconds after load."
     )
-    render_network_policy: Literal["strict", "allowlist", "open"] = Field(
-        "strict",
-        description=(
-            "Network policy used by Playwright page rendering. "
-            "'strict' keeps browser offline and allows only local/data schemes; "
-            "'allowlist' enables network but allows only configured hosts/schemes; "
-            "'open' does not restrict browser requests."
-        ),
-    )
-    render_allowed_url_schemes: list[str] = Field(
-        default_factory=lambda: ["file", "data", "about", "blob"],
-        description=(
-            "URL schemes allowed by browser request filtering when network policy "
-            "is 'strict' or 'allowlist'."
-        ),
-    )
-    render_allowed_hosts: list[str] = Field(
-        default_factory=list,
-        description=(
-            "Allowed hosts for http/https requests when network policy is "
-            "'allowlist'. Supports exact hostnames and wildcard forms like '*.example.com'."
-        ),
-    )
-    render_block_service_workers: bool = Field(
-        True,
-        description="Block service workers in Playwright rendering contexts.",
-    )
     render_device_scale: float = Field(
         1.0, description="Device scale factor for rendering."
     )
