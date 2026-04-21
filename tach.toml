@@ -8,31 +8,28 @@ exclude = [
 ]
 root_module = "ignore"
 source_roots = ["."]
-# Layers (highest first). Entrypoints and pipeline sit cleanly above the
-# rest of the codebase. `models` contains the model/stage modules that
-# core never imports back (model factories, extraction, plugins, vlm
-# pipeline models, and the "upper" stages: page_assemble, page_preproc,
-# reading_order, picture_description, vlm_convert). `core` carries the
-# cyclic datamodel<->backend and utils<->stages clusters plus the
-# inference engines and the six "core stages" that utils imports back
-# (chart_extraction, code_formula, layout, ocr, picture_classifier,
-# table_structure). Breaking those cycles is a code-level refactor and
-# would unlock a finer layering later.
+# Layers are ordered highest first. Entrypoints, clients, pipeline, and the
+# acyclic model/stage modules sit cleanly above the core conversion graph.
+# `core` still carries the cyclic datamodel<->backend and utils<->stages
+# clusters plus inference engines. Breaking those cycles is a code-level
+# refactor and would unlock finer datamodel/backend/VLM layers later.
 layers = [
   "entrypoints",
+  "clients",
   "pipeline",
   "models",
   "core",
+  "foundation",
 ]
 
 [[modules]]
 path = "docling.exceptions"
-layer = "core"
+layer = "foundation"
 depends_on = []
 
 [[modules]]
 path = "docling.chunking"
-layer = "core"
+layer = "foundation"
 depends_on = []
 
 [[modules]]
@@ -106,7 +103,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.datamodel.backend_options"
-layer = "core"
+layer = "foundation"
 depends_on = []
 
 [[modules]]
@@ -132,7 +129,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.datamodel.service"
-layer = "core"
+layer = "clients"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.pipeline_options_vlm_model",
@@ -170,7 +167,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.models.utils"
-layer = "core"
+layer = "foundation"
 depends_on = []
 
 [[modules]]
@@ -545,7 +542,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.service_client"
-layer = "core"
+layer = "clients"
 depends_on = [
   "docling.backend",
   "docling.datamodel",
@@ -576,7 +573,7 @@ depends_on = []
 
 [[modules]]
 path = "docling.experimental.datamodel"
-layer = "core"
+layer = "models"
 depends_on = [
   "docling.datamodel",
   "docling.datamodel.layout_model_specs",
@@ -586,7 +583,7 @@ depends_on = [
 
 [[modules]]
 path = "docling.experimental.models"
-layer = "core"
+layer = "models"
 depends_on = [
   "docling.datamodel",
   "docling.experimental.datamodel",
