@@ -432,9 +432,7 @@ def main() -> int:
             delta_cell = f"{delta_seconds:+.2f}s"
             if summary_base_result.targets != summary_head_result.targets:
                 note = "target set changed"
-            elif is_significant_regression(
-                summary_base_result, summary_head_result
-            ):
+            elif is_significant_regression(summary_base_result, summary_head_result):
                 note = "significant increase"
                 regressions.append(
                     f"`{unit.name}` increased from "
