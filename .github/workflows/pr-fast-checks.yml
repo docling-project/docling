@@ -89,7 +89,12 @@ jobs:
 
       - name: Run fast lint and typing checks
         run: |
-          .venv/bin/python .github/scripts/run_pr_fast_checks.py \
+          check_script=".github/scripts/run_pr_fast_checks.py"
+          if [[ ! -f "${check_script}" ]]; then
+            check_script="${RUNNER_TEMP}/run_pr_fast_checks.py"
+            git show "FETCH_HEAD:.github/scripts/run_pr_fast_checks.py" > "${check_script}"
+          fi
+          .venv/bin/python "${check_script}" \
             --repo-root "$PWD" \
             --base-ref HEAD \
             --head-ref FETCH_HEAD
