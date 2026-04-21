@@ -48,7 +48,7 @@ runs:
       run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
 
     - name: Install uv and set the python version
-      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      uses: astral-sh/setup-uv@v7
       with:
         python-version: ${{ inputs.python_version }}
         enable-cache: ${{ inputs.enable_cache }}
