@@ -1,8 +1,11 @@
 name: "Run Heavy Examples CI"
 
 on:
+  # Heavy examples are expensive (~45-60min). Do not run on every PR push.
+  # Run on main merges, nightly, on-demand via workflow_dispatch, or when a PR
+  # is explicitly labeled `tests:full` / `tests:heavy-examples`.
   pull_request:
-    types: [opened, reopened, synchronize, labeled, unlabeled]
+    types: [labeled]
   push:
     branches:
       - "main"
@@ -20,81 +23,15 @@ env:
   EXAMPLES_HEAVY: '^(batch_convert|chart_extraction|granite_vision_table_structure|minimal_asr_pipeline|minimal_vlm_pipeline)\.py$'
 
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      run_examples: ${{ steps.manual.outputs.run_examples || steps.label.outputs.run_examples || steps.filter.outputs.run_examples || steps.filter.outputs.changed_example_scripts }}
-      run_all_examples: ${{ steps.manual.outputs.run_all_examples || steps.label.outputs.run_all_examples || steps.filter.outputs.run_all_examples || 'false' }}
-      changed_example_scripts_files: ${{ steps.manual.outputs.changed_example_scripts_files || steps.label.outputs.changed_example_scripts_files || steps.filter.outputs.changed_example_scripts_files || '[]' }}
-    steps:
-      - name: Mark scheduled, main, and manual runs to execute heavy examples
-        if: ${{ github.event_name == 'schedule' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
-        id: manual
-        run: |
-          echo "run_examples=true" >> "$GITHUB_OUTPUT"
-          echo "run_all_examples=true" >> "$GITHUB_OUTPUT"
-          echo "changed_example_scripts_files=[]" >> "$GITHUB_OUTPUT"
-
-      - name: Mark full PR runs to execute heavy examples
-        if: >-
-          ${{
-            github.event_name == 'pull_request' &&
-            (
-              contains(github.event.pull_request.labels.*.name, 'tests:full') ||
-              contains(github.event.pull_request.labels.*.name, 'tests:heavy-examples')
-            )
-          }}
-        id: label
-        run: |
-          echo "run_examples=true" >> "$GITHUB_OUTPUT"
-          echo "run_all_examples=true" >> "$GITHUB_OUTPUT"
-          echo "changed_example_scripts_files=[]" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        if: ${{ github.event_name == 'pull_request' && steps.label.outcome == 'skipped' }}
-        with:
-          fetch-depth: 0
-
-      - name: Detect changed paths
-        if: ${{ github.event_name == 'pull_request' && steps.label.outcome == 'skipped' }}
-        id: filter
-        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
-        with:
-          list-files: json
-          filters: |
-            run_all_examples:
-              - ".github/workflows/ci-heavy-examples.yml"
-              - ".github/actions/**"
-              - ".github/scripts/run_selected_examples.py"
-              - "pyproject.toml"
-              - "uv.lock"
-              - "docs/examples/data/**"
-            run_examples:
-              - ".github/workflows/ci-heavy-examples.yml"
-              - ".github/actions/**"
-              - ".github/scripts/run_selected_examples.py"
-              - "pyproject.toml"
-              - "uv.lock"
-              - "docs/examples/data/**"
-              - "docs/examples/batch_convert.py"
-              - "docs/examples/chart_extraction.py"
-              - "docs/examples/granite_vision_table_structure.py"
-              - "docs/examples/minimal_asr_pipeline.py"
-              - "docs/examples/minimal_vlm_pipeline.py"
-            changed_example_scripts:
-              - added|modified: "docs/examples/batch_convert.py"
-              - added|modified: "docs/examples/chart_extraction.py"
-              - added|modified: "docs/examples/granite_vision_table_structure.py"
-              - added|modified: "docs/examples/minimal_asr_pipeline.py"
-              - added|modified: "docs/examples/minimal_vlm_pipeline.py"
-
   run-heavy-examples:
-    needs: changes
-    if: ${{ needs.changes.outputs.run_examples == 'true' }}
+    if: >-
+      ${{
+        github.event_name != 'pull_request' ||
+        contains(github.event.pull_request.labels.*.name, 'tests:full') ||
+        contains(github.event.pull_request.labels.*.name, 'tests:heavy-examples')
+      }}
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -118,24 +55,16 @@ jobs:
           df -h
 
       - name: Run selected heavy examples
-        env:
-          RUN_ALL_EXAMPLES: ${{ needs.changes.outputs.run_all_examples }}
-          CHANGED_EXAMPLE_FILES: ${{ needs.changes.outputs.changed_example_scripts_files }}
         run: |
-          args=(
-            --examples-dir docs/examples
-            --changed-files-json "$CHANGED_EXAMPLE_FILES"
-            --include-pattern "$EXAMPLES_HEAVY"
-          )
-          if [ "$RUN_ALL_EXAMPLES" = "true" ]; then
-            args+=(--run-all)
-          fi
-          python3 .github/scripts/run_selected_examples.py "${args[@]}"
+          python3 .github/scripts/run_selected_examples.py \
+            --examples-dir docs/examples \
+            --changed-files-json "[]" \
+            --include-pattern "$EXAMPLES_HEAVY" \
+            --run-all
 
   check:
     if: ${{ always() }}
     needs:
-      - changes
       - run-heavy-examples
     runs-on: ubuntu-latest
     permissions: {}
@@ -143,7 +72,7 @@ jobs:
       - name: All Green
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
-          ALLOWED_SKIPS: changes run-heavy-examples
+          ALLOWED_SKIPS: run-heavy-examples
         run: |
           failures=()
           while IFS=$'\t' read -r job result; do

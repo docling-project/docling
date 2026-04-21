@@ -366,6 +366,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.run_tach == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ./.github/actions/setup-ubuntu-ci
@@ -421,7 +422,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.ml_suites != '[]' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -530,6 +531,7 @@ jobs:
     needs: changes
     if: ${{ inputs.run_windows }}
     runs-on: windows-latest
+    timeout-minutes: 30
     env:
       PYTHONUTF8: "1"
       UV_PYTHON_PREFERENCE: only-system
@@ -570,6 +572,7 @@ jobs:
     needs: changes
     if: ${{ inputs.run_macos }}
     runs-on: macos-latest
+    timeout-minutes: 30
     env:
       UV_PYTHON_PREFERENCE: only-system
     strategy:
@@ -805,6 +808,7 @@ jobs:
       - build-package
       - test-package
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions: {}
     steps:
       - name: All Green
