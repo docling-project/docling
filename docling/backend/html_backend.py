@@ -529,6 +529,48 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return value
         return Path(value).resolve().as_uri()
 
+    @staticmethod
+    def _host_matches_allowed_entry(hostname: str, allowed_entry: str) -> bool:
+        allowed = allowed_entry.strip().lower()
+        if not allowed:
+            return False
+        if allowed.startswith("*."):
+            suffix = allowed[2:]
+            return bool(suffix) and (
+                hostname == suffix or hostname.endswith(f".{suffix}")
+            )
+        return hostname == allowed or hostname.endswith(f".{allowed}")
+
+    def _is_browser_request_allowed(self, request_url: str) -> bool:
+        options = cast(HTMLBackendOptions, self.options)
+        policy = options.render_network_policy
+        if policy == "open":
+            return True
+
+        parsed = urlparse(request_url)
+        scheme = (parsed.scheme or "").lower()
+        allowed_schemes = {
+            scheme_name.strip().lower()
+            for scheme_name in options.render_allowed_url_schemes
+            if scheme_name and scheme_name.strip()
+        }
+        if scheme in allowed_schemes:
+            return True
+
+        if policy == "strict":
+            return False
+
+        if scheme not in {"http", "https"}:
+            return False
+
+        hostname = (parsed.hostname or "").strip().lower()
+        if not hostname:
+            return False
+        for allowed_host in options.render_allowed_hosts:
+            if self._host_matches_allowed_entry(hostname, allowed_host):
+                return True
+        return False
+
     def _get_render_html_text(self) -> str:
         if self._raw_html_bytes is None:
             return ""
@@ -582,10 +624,28 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
+            offline_mode = options.render_network_policy == "strict"
             context = browser.new_context(
                 viewport={"width": width, "height": height},
                 device_scale_factor=options.render_device_scale,
+                # Disable page JavaScript execution for deterministic static rendering.
+                java_script_enabled=False,
+                offline=offline_mode,
+                service_workers="block"
+                if options.render_block_service_workers
+                else "allow",
             )
+
+            if options.render_network_policy != "open":
+
+                def _route_request(route, request) -> None:
+                    if self._is_browser_request_allowed(request.url):
+                        route.continue_()
+                    else:
+                        route.abort("blockedbyclient")
+
+                context.route("**/*", _route_request)
+
             page = context.new_page()
             if options.render_print_media:
                 page.emulate_media(media="print")
