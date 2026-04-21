@@ -6,6 +6,7 @@ import platform
 import re
 import sys
 import tarfile
+import warnings
 import zipfile
 from collections.abc import Iterable, Mapping
 from datetime import datetime
@@ -15,6 +16,7 @@ from pathlib import Path, PurePath
 from typing import (
     TYPE_CHECKING,
     Annotated,
+    Final,
     Literal,
     Optional,
     Type,
@@ -753,16 +755,67 @@ class _DocumentConversionInput(BaseModel):
         content = obj if isinstance(obj, Path) else obj.stream
         tar: tarfile.TarFile
         member: tarfile.TarInfo
+
+        METS_MAX_EXTRACT_SIZE: Final[int] = 10 * 1024 * 1024
+        """Maximum size in bytes for individual files during METS-GBS detection.
+
+        This limit applies to individual XML files extracted from tar archives during
+        format detection. Files exceeding this limit are skipped to prevent resource
+        exhaustion attacks.
+        """
+
+        METS_MAX_TOTAL_SIZE: Final[int] = 50 * 1024 * 1024
+        """Maximum total size in bytes for all extracted files during METS-GBS detection.
+
+        This cumulative limit prevents decompression bombs where many small files
+        collectively consume excessive resources. Extraction stops when this limit
+        is reached.
+        """
+
+        METS_MAX_MEMBER_COUNT: Final[int] = 1000
+        """Maximum number of archive members to process during METS-GBS detection.
+
+        This limit prevents attacks using archives with an excessive number of files.
+        Processing stops when this limit is reached.
+        """
+
         with tarfile.open(
             name=content if isinstance(content, Path) else None,
             fileobj=content if isinstance(content, BytesIO) else None,
             mode="r:gz",
         ) as tar:
+            total_size = 0
+            member_count = 0
+
             for member in tar.getmembers():
+                member_count += 1
+                if member_count > METS_MAX_MEMBER_COUNT:
+                    warnings.warn(
+                        f"Archive contains too many members (>{METS_MAX_MEMBER_COUNT}), "
+                        "stopping METS-GBS detection to prevent resource exhaustion"
+                    )
+                    return None
+
+                # check member size before extraction
+                if member.size > METS_MAX_EXTRACT_SIZE:
+                    continue
+
+                total_size += member.size
+                if total_size > METS_MAX_TOTAL_SIZE:
+                    warnings.warn(
+                        f"Archive total size exceeds limit ({METS_MAX_TOTAL_SIZE} bytes), "
+                        "stopping METS-GBS detection to prevent resource exhaustion"
+                    )
+                    return None
+
                 if member.name.endswith(".xml"):
                     file = tar.extractfile(member)
                     if file is not None:
-                        content_str = file.read().decode(errors="ignore")
+                        content_str = file.read(METS_MAX_EXTRACT_SIZE + 1).decode(
+                            errors="ignore"
+                        )
+                        if len(content_str) > METS_MAX_EXTRACT_SIZE:
+                            continue  # Skip if file is too large
                         if "http://www.loc.gov/METS/" in content_str:
                             return "application/mets+xml"
         return None

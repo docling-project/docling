@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Dict, Final, List, Optional, Set, Tuple, Union
 
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.page import (
@@ -29,6 +29,14 @@ if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
+
+MAX_EXTRACT_SIZE: Final[int] = 100 * 1024 * 1024
+"""Maximum size in bytes for extracted files to prevent decompression bombs.
+
+This limit applies to individual files extracted from tar archives during
+METS-GBS document processing. Files exceeding this limit will raise a
+ValueError to prevent resource exhaustion attacks.
+"""
 
 
 def _get_pdf_page_geometry(
@@ -283,7 +291,11 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
             self.page_map[page_no] = page_files
 
     def _validate_mets_xml(self, xml_string) -> Optional[etree._Element]:
-        root: etree._Element = etree.fromstring(xml_string)
+        # Security: disable entity resolution
+        parser = etree.XMLParser(
+            resolve_entities=False, load_dtd=False, no_network=True
+        )
+        root: etree._Element = etree.fromstring(xml_string, parser=parser)
         if (
             root.tag == "{http://www.loc.gov/METS/}mets"
             and root.get("PROFILE") == "gbs"
@@ -300,14 +312,22 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         ocr_info = self.page_map[page_no].coordOCR
         assert ocr_info is not None
 
+        # Security: limit extraction size to prevent decompression bombs
         image_file = self._tar.extractfile(image_info.path)
         assert image_file is not None
-        buf = BytesIO(image_file.read())
+        image_data = image_file.read(MAX_EXTRACT_SIZE + 1)
+        if len(image_data) > MAX_EXTRACT_SIZE:
+            raise ValueError(f"Image file {image_info.path} exceeds size limit")
+        buf = BytesIO(image_data)
         im: PILImage = Image.open(buf)
+
         ocr_file = self._tar.extractfile(ocr_info.path)
         assert ocr_file is not None
-        ocr_content = ocr_file.read()
-        parser = etree.HTMLParser()
+        ocr_content = ocr_file.read(MAX_EXTRACT_SIZE + 1)
+        if len(ocr_content) > MAX_EXTRACT_SIZE:
+            raise ValueError(f"OCR file {ocr_info.path} exceeds size limit")
+
+        parser = etree.HTMLParser(no_network=True)
         ocr_root: etree._Element = etree.fromstring(ocr_content, parser=parser)
 
         line_cells: List[TextCell] = []
