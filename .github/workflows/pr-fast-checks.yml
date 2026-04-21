@@ -1,6 +1,21 @@
 name: "Run PR Fast Checks"
 
 on:
+  # Temporary validation trigger for this PR branch. Remove before merge; the
+  # permanent trigger should remain pull_request_target only.
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+    paths:
+      - ".github/workflows/pr-fast-checks.yml"
+      - ".github/scripts/run_pr_fast_checks.py"
+      - ".pre-commit-config.yaml"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/scripts/**/*.py"
+      - "docling/**/*.py"
+      - "tests/**/*.py"
+      - "docs/examples/**/*.py"
+      - "docs/examples/**/*.ipynb"
   pull_request_target:
     types: [opened, reopened, synchronize, ready_for_review]
     paths:
