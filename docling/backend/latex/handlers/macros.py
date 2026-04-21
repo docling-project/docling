@@ -1,7 +1,7 @@
 import logging
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     from io import BytesIO
@@ -162,7 +162,7 @@ class MacroHandlerMixin:
         parent: NodeItem | None,
         formatting: Formatting | None,
         text_label: DocItemLabel | None,
-        text_buffer: List[str],
+        text_buffer: list[str],
         flush_fn: Callable[[], None],
         following_nodes=None,
     ) -> int:
@@ -307,7 +307,19 @@ class MacroHandlerMixin:
                 image = None
                 try:
                     if isinstance(self.path_or_stream, Path):
+                        base_dir = self.path_or_stream.parent.resolve()
                         img_full_path = self.path_or_stream.parent / img_path
+                        try:
+                            if not img_full_path.resolve().is_relative_to(base_dir):
+                                _log.warning(
+                                    f"Path traversal attempt blocked for image: {img_path}"
+                                )
+                                raise ValueError("Path traversal not allowed")
+                        except ValueError:
+                            _log.warning(
+                                f"Invalid path for image (different drive or traversal): {img_path}"
+                            )
+                            raise
                         if img_full_path.exists():
                             suffix = img_full_path.suffix.lower()
                             if suffix == ".pdf":
@@ -353,9 +365,23 @@ class MacroHandlerMixin:
 
             filepath = self._extract_macro_arg(node)
             if filepath and isinstance(self.path_or_stream, Path):
+                base_dir = self.path_or_stream.parent.resolve()
                 input_path = self.path_or_stream.parent / filepath
                 if not input_path.suffix:
                     input_path = input_path.with_suffix(".tex")
+
+                try:
+                    if not input_path.resolve().is_relative_to(base_dir):
+                        _log.warning(
+                            f"Path traversal attempt blocked for input file: {filepath}"
+                        )
+                        return
+                except ValueError:
+                    _log.warning(
+                        f"Invalid path for input file (different drive or traversal): {filepath}"
+                    )
+                    return
+
                 resolved = str(input_path.resolve())
                 if resolved in self._input_stack:
                     _log.warning(f"Circular \\input detected: {filepath}")
