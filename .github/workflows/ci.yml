@@ -13,14 +13,18 @@ on:
   workflow_dispatch:
     inputs:
       python_versions:
-        description: 'JSON array of Python versions to run, e.g. ["3.10"] or ["3.10", "3.12", "3.14"].'
-        required: true
-        default: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+        description: 'JSON array of Python versions to run. Leave empty for the full default matrix.'
+        required: false
+        default: ""
         type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
+env:
+  DEFAULT_PYTHON_VERSIONS: '["3.10"]'
+  FULL_PYTHON_VERSIONS: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
 
 jobs:
   changes:
@@ -31,7 +35,15 @@ jobs:
     outputs:
       run_ci: ${{ steps.manual.outputs.run_ci || steps.filter.outputs.run_ci }}
       full_matrix_override: ${{ steps.filter.outputs.full_matrix_override }}
+      default_python_versions: ${{ steps.python_versions.outputs.default_python_versions }}
+      full_python_versions: ${{ steps.python_versions.outputs.full_python_versions }}
     steps:
+      - name: Set Python version selections
+        id: python_versions
+        run: |
+          echo "default_python_versions=${DEFAULT_PYTHON_VERSIONS}" >> "$GITHUB_OUTPUT"
+          echo "full_python_versions=${FULL_PYTHON_VERSIONS}" >> "$GITHUB_OUTPUT"
+
       - name: Mark manual and merge queue runs to execute CI
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' }}
         id: manual
@@ -94,18 +106,18 @@ jobs:
         ${{
           (
             github.event_name == 'workflow_dispatch' &&
-            inputs.python_versions
+            (inputs.python_versions || needs.changes.outputs.full_python_versions)
           ) ||
           (
             needs.changes.outputs.full_matrix_override == 'true' &&
-            '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+            needs.changes.outputs.full_python_versions
           ) ||
           (
             github.event_name == 'pull_request' &&
             contains(github.event.pull_request.labels.*.name, 'tests:full') &&
-            '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+            needs.changes.outputs.full_python_versions
           ) ||
-          '["3.10"]'
+          needs.changes.outputs.default_python_versions
         }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

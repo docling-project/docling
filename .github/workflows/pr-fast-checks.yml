@@ -30,6 +30,8 @@ jobs:
   lint-and-type:
     runs-on: ubuntu-latest
     steps:
+      # Keep the worktree on the trusted base commit for dependency installation.
+      # The untrusted PR head is fetched separately and only read by the checker.
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.base.sha }}
