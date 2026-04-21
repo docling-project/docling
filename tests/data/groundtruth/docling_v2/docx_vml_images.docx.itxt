@@ -1,0 +1,9 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: VML Image Test Document
+    item-2 at level 2: text: This document contains VML image ... ents for testing VML image extraction.
+    item-3 at level 2: text: Below is a VML image with v:imagedata:
+    item-4 at level 2: picture
+    item-5 at level 2: text: Above is a VML image with v:imagedata element.
+    item-6 at level 2: text: Below is another VML image:
+    item-7 at level 2: picture
+    item-8 at level 2: text: Above is the second VML image.
