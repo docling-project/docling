@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from docling.backend.md_backend import MarkdownDocumentBackend
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
@@ -109,3 +109,27 @@ def test_e2e_md_conversions():
 
         pred_md_: str = doc_.export_to_markdown()
         assert true_md == pred_md_
+
+
+def test_convert_leading_dash_sequences():
+    converter = get_converter()
+    markdown = """## Research Article
+
+Here is some content...
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -This is an open access article under the terms of the Creative Commons Attribution License, which permits use, distribution and reproduction in any medium, provided the original work is properly cited.
+
+<!-- image -->
+"""
+
+    conv_result: ConversionResult = converter.convert_string(
+        markdown, format=InputFormat.MD
+    )
+
+    pred_md = conv_result.document.export_to_markdown()
+
+    assert conv_result.status == ConversionStatus.SUCCESS
+    assert (
+        "- This is an open access article under the terms of the Creative Commons Attribution License"
+        in pred_md
+    )

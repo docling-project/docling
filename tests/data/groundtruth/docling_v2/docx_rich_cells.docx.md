@@ -23,3 +23,27 @@ After table with **bold** , underline , ~~strikethrough~~ , and *italic* formatt
 |----------------------------------|----------------|
 | Only text                        | <!-- image --> |
 | Text and picture  <!-- image --> |                |
+
+### Lists with same numId in different cells
+
+| - Cell 1 item 1 - Cell 1 item 2   |
+|-----------------------------------|
+| - Cell 2 item 1 - Cell 2 item 2   |
+
+### Lists with different numIds in different cells
+
+| - Cell 1 item 1 - Cell 1 item 2   |
+|-----------------------------------|
+| - Cell 2 item 1 - Cell 2 item 2   |
+
+### Multiple columns with lists
+
+| - R1C1 item 1 - R1C1 item 2   | - R1C2 item 1 - R1C2 item 2   |
+|-------------------------------|-------------------------------|
+| - R2C1 item 1 - R2C1 item 2   | - R2C2 item 1 - R2C2 item 2   |
+
+### Mixed content - list and regular text in different cells
+
+| - List item 1 - List item 2   |
+|-------------------------------|
+| Regular text in second cell   |

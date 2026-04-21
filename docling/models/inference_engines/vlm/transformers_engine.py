@@ -189,7 +189,9 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             trust_remote_code=self.options.trust_remote_code,
             revision=revision,
         )
-        self.processor.tokenizer.padding_side = "left"  # type: ignore[union-attr]
+        tokenizer = self._get_tokenizer()
+        if tokenizer is not None and hasattr(tokenizer, "padding_side"):
+            tokenizer.padding_side = "left"
 
         # Resolve torch_dtype: options override > extra_config > None
         torch_dtype = self.options.torch_dtype
@@ -234,6 +236,18 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
 
         _log.info(f"Loaded model {repo_id} (revision: {revision})")
+
+    def _get_tokenizer(self) -> Any:
+        """Resolve the tokenizer from the processor.
+
+        Why: transformers v5 may return a tokenizer-like object directly from
+        AutoProcessor.from_pretrained for pure-tokenizer processors (e.g.
+        AUTOMODEL_CAUSALLM OCR models), whereas v4 and wrapper processors
+        expose the tokenizer via a ``.tokenizer`` attribute.
+        """
+        if self.processor is None:
+            return None
+        return getattr(self.processor, "tokenizer", None) or self.processor
 
     def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs efficiently.
@@ -322,11 +336,13 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         # Setup stopping criteria (use first input's config)
         stopping_criteria_list = StoppingCriteriaList()
 
+        tokenizer = self._get_tokenizer()
+
         if first_input.stop_strings:
             stopping_criteria_list.append(
                 StopStringCriteria(
                     stop_strings=first_input.stop_strings,
-                    tokenizer=self.processor.tokenizer,  # type: ignore[union-attr,attr-defined]
+                    tokenizer=tokenizer,
                 )
             )
 
@@ -336,7 +352,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
         for stopper in custom_stoppers:
             wrapped_criteria = HFStoppingCriteriaWrapper(
-                self.processor.tokenizer,  # type: ignore[union-attr,attr-defined]
+                tokenizer,
                 stopper,
             )
             stopping_criteria_list.append(wrapped_criteria)
@@ -405,8 +421,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         trimmed_sequences = generated_ids[:, input_len:]
 
         decode_fn = getattr(self.processor, "batch_decode", None)
-        if decode_fn is None and hasattr(self.processor, "tokenizer"):
-            decode_fn = self.processor.tokenizer.batch_decode  # type: ignore[union-attr]
+        if decode_fn is None and tokenizer is not None:
+            decode_fn = getattr(tokenizer, "batch_decode", None)
         if decode_fn is None:
             raise RuntimeError(
                 "Neither processor.batch_decode nor tokenizer.batch_decode is available."
@@ -415,7 +431,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         decoded_texts = decode_fn(trimmed_sequences, **decoder_config)
 
         # Remove padding
-        pad_token = self.processor.tokenizer.pad_token  # type: ignore[union-attr,attr-defined]
+        pad_token = getattr(tokenizer, "pad_token", None)
         if pad_token:
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
 

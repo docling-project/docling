@@ -1,6 +1,6 @@
 [project]
 name = "docling-workspace"
-version = "2.85.0"
+version = "2.90.0"
 description = "Docling workspace - do not install directly, use 'docling' or 'docling-slim' packages"
 requires-python = ">=3.10,<4.0"
 
@@ -101,6 +101,7 @@ module = [
   "vllm.*",
   "qwen_vl_utils.*",
   "arelle.*",
+  "websockets.*",
   "torchvision.*",
   "torchvision.transforms.*",
 ]

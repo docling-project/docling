@@ -1,0 +1,3 @@
+# pip install -r scripts/requirements.txt
+docling>=2.81.0
+docling-core>=2.67.1

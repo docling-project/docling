@@ -189,6 +189,18 @@ class TestVlmModelSpec:
         config_other = spec.get_engine_config(VlmEngineType.MLX)
         assert "torch_dtype" not in config_other.extra_config
 
+    def test_same_repo_engine_override_counts_as_explicit_support(self):
+        """Native handlers can use the default repo_id and still be explicit."""
+        spec = VlmModelSpec(
+            name="Falcon-Style Model",
+            default_repo_id="org/model",
+            prompt="Test prompt",
+            response_format=ResponseFormat.MARKDOWN,
+            engine_overrides={VlmEngineType.MLX: EngineModelConfig()},
+        )
+
+        assert spec.has_explicit_engine_export(VlmEngineType.MLX) is True
+
     def test_model_spec_with_api_overrides(self):
         """Test model spec with API-specific overrides."""
         spec = VlmModelSpec(
@@ -257,6 +269,7 @@ class TestPresetSystem:
         assert "granite_vision" in preset_ids
         assert "pixtral" in preset_ids
         assert "got_ocr" in preset_ids
+        assert "nanonets_ocr2" in preset_ids
         assert "glm_ocr" in preset_ids
         assert "lightonocr" in preset_ids
 

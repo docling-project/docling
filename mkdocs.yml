@@ -80,6 +80,7 @@ nav:
     - Plugins: concepts/plugins.md
   - Examples:
     - Examples: examples/index.md
+    - "🤝 Agent skill (Cursor / assistants)": examples/agent_skill/docling-document-intelligence/README.md
     - 🔀 Conversion:
       - "Simple conversion": examples/minimal.py
       - "Custom conversion": examples/custom_convert.py

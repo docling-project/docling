@@ -137,6 +137,15 @@ class MsExcelBackendOptions(BaseBackendOptions):
             "data clusters into a single table. Default is 0 (strict)."
         ),
     )
+    sheet_names: Optional[list[str]] = Field(
+        None,
+        description=(
+            "An optional list of sheet names to include in conversion. "
+            "When set, only sheets whose names appear in this list will be processed. "
+            "Sheet names are matched case-sensitively. "
+            "Set to None (default) to include all sheets."
+        ),
+    )
 
 
 class LatexBackendOptions(BaseBackendOptions):

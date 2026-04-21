@@ -43,6 +43,9 @@ def extract_with_preset(preset_name: str, input_doc: Path):
 
     # Configure the PDF pipeline to use code/formula enrichment
     pipeline_options = PdfPipelineOptions(
+        # The sample PDF already contains embedded text, so OCR only adds an
+        # unrelated backend dependency for this code/formula comparison example.
+        do_ocr=False,
         do_code_enrichment=True,
         do_formula_enrichment=True,
         code_formula_options=code_formula_options,

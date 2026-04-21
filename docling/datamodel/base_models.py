@@ -1,7 +1,7 @@
 from collections import defaultdict
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Optional, Type, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -373,7 +373,8 @@ class Page(BaseModel):
 
 class OpenAiChatMessage(BaseModel):
     role: str
-    content: str
+    content: str | None = None
+    tool_calls: list[dict[str, Any]] | None = None
 
 
 class OpenAiResponseChoice(BaseModel):

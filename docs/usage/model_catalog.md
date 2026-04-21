@@ -85,6 +85,21 @@ The following table shows all processing stages in Docling, their model families
     </tr>
     <tr>
       <td rowspan="3"><strong>Table Structure</strong><br/><em>Table cell recognition</em></td>
+      <td rowspan="3">Vision-Language Model<br/>(Granite Vision)</td>
+      <td>
+        <ul>
+          <li><code>granite-4.0-3b-vision</code></li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2"><strong>Inference Engine:</strong> Transformers</td>
+    </tr>
+    <tr>
+      <td colspan="2"><strong>Purpose:</strong> VLM-based table structure recognition using OTSL (Open Table Structure Language) output</td>
+    </tr>
+    <tr>
+      <td rowspan="3"><strong>Table Structure</strong><br/><em>Table cell recognition</em></td>
       <td rowspan="3">Object Detection</td>
       <td>
         <ul>
@@ -126,6 +141,7 @@ The following table shows all processing stages in Docling, their model families
           <li><strong>GOT-OCR-2.0</strong> (Markdown)</li>
           <li><strong>Phi-4-Multimodal</strong> (Markdown)</li>
           <li><strong>Qwen2.5-VL-3B</strong> (Markdown)</li>
+          <li><strong>Nanonets-OCR2-3B</strong> (Markdown)</li>
           <li><strong>Gemma-3-12B/27B</strong> (Markdown, MLX-only)</li>
           <li><strong>Dolphin</strong> (Markdown)</li>
         </ul>
@@ -227,9 +243,12 @@ The following table shows all processing stages in Docling, their model families
 | `got_ocr` | GOT-OCR-2.0 | - | ✅ | ❌ | ❌ | ❌ | Markdown |
 | `phi4` | Phi-4-Multimodal | - | ✅ | ❌ | ❌ | ✅ | Markdown |
 | `qwen` | Qwen2.5-VL-3B | 3B | ✅ | ✅ | ❌ | ❌ | Markdown |
+| `nanonets_ocr2` | Nanonets-OCR2-3B | 3B | ✅ | ✅ | OpenAI-compatible<br/>LM Studio | ✅ | Markdown |
 | `gemma_12b` | Gemma-3-12B | 12B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `gemma_27b` | Gemma-3-27B | 27B | ❌ | ✅ | ❌ | ❌ | Markdown |
 | `dolphin` | Dolphin | - | ✅ | ❌ | ❌ | ❌ | Markdown |
+
+`nanonets_ocr2` includes preset API overrides for OpenAI-compatible runtimes and LM Studio, and can also be used with vLLM runtimes.
 
 #### Picture Description Stage
 

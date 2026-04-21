@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling"
-version = "2.85.0"  # DO NOT EDIT, updated automatically
+version = "2.90.0"  # DO NOT EDIT, updated automatically
 description = "Full-featured SDK and CLI for parsing PDF, DOCX, HTML, and more"
 license = "MIT"
 keywords = [
@@ -49,7 +49,7 @@ requires-python = '>=3.10,<4.0'
 
 # DEPENDS ON DOCLING-SLIM WITH CURRENT DEFAULT EXTRAS + CLI
 dependencies = [
-  'docling-slim[standard]==2.85.0',
+  'docling-slim[standard]==2.90.0',
   'typer>=0.12.5,<0.22.0',  # CLI dependency
 ]
 
@@ -72,16 +72,16 @@ docling-slim = { workspace = true }
 
 # Re-export slim extras for convenience
 [project.optional-dependencies]
-easyocr = ['docling-slim[ocr-easyocr]==2.85.0']
-tesserocr = ['docling-slim[ocr-tesserocr]==2.85.0']
-ocrmac = ['docling-slim[ocr-mac]==2.85.0']
-vlm = ['docling-slim[vlm]==2.85.0']
-rapidocr = ['docling-slim[ocr-rapidocr-onnx]==2.85.0']
-asr = ['docling-slim[asr]==2.85.0']
-htmlrender = ['docling-slim[htmlrender]==2.85.0']
-remote-serving = ['docling-slim[remote-serving]==2.85.0']
-onnxruntime = ['docling-slim[onnxruntime]==2.85.0']
-xbrl = ['docling-slim[xbrl]==2.85.0']
+easyocr = ['docling-slim[ocr-easyocr]==2.90.0']
+tesserocr = ['docling-slim[ocr-tesserocr]==2.90.0']
+ocrmac = ['docling-slim[ocr-mac]==2.90.0']
+vlm = ['docling-slim[vlm]==2.90.0']
+rapidocr = ['docling-slim[ocr-rapidocr-onnx]==2.90.0']
+asr = ['docling-slim[asr]==2.90.0']
+htmlrender = ['docling-slim[htmlrender]==2.90.0']
+remote-serving = ['docling-slim[remote-serving]==2.90.0']
+onnxruntime = ['docling-slim[onnxruntime]==2.90.0']
+xbrl = ['docling-slim[xbrl]==2.90.0']
 
 [dependency-groups]
 dev = [

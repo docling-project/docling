@@ -153,6 +153,12 @@ class TableStructureV2Options(BaseTableStructureOptions):
     )
 
 
+class GraniteVisionTableStructureOptions(BaseTableStructureOptions):
+    """Options for the table structure model using Granite Vision (VLM-based)."""
+
+    kind: ClassVar[str] = "granite_vision_table"
+
+
 class OcrOptions(BaseOptions):
     """Base configuration for Optical Character Recognition engines.
 
@@ -224,16 +230,16 @@ class RapidOcrOptions(OcrOptions):
     """
 
     kind: ClassVar[Literal["rapidocr"]] = "rapidocr"
-    # English and chinese are the most commly used models and have been tested with RapidOCR.
+    # English and chinese are the most commonly used models and have been tested with RapidOCR.
     lang: Annotated[
         list[str],
         Field(
             description=(
-                "List of OCR languages. Note: RapidOCR does not currently support language selection; "
-                "this parameter is reserved for future compatibility. See RapidOCR documentation for supported languages."
+                "List of OCR languages. Note: RapidOCR currently supports 'english' and 'chinese' (default). "
+                "See RapidOCR documentation for other supported languages."
             )
         ),
-    ] = ["english", "chinese"]
+    ] = ["chinese"]
     backend: Annotated[
         Literal["onnxruntime", "openvino", "paddle", "torch"],
         Field(
@@ -952,6 +958,7 @@ VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_PIXTRAL)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GOT_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_PHI4)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_QWEN)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_NANONETS_OCR2)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_12B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_27B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOLPHIN)

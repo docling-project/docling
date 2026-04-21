@@ -488,12 +488,13 @@ class _DocumentConversionInput(BaseModel):
     def _guess_format(self, obj: Union[Path, DocumentStream]) -> Optional[InputFormat]:
         content = b""  # empty binary blob
         formats: list[InputFormat] = []
+        obj_ext: Optional[str] = None
 
         if isinstance(obj, Path):
             mime = filetype.guess_mime(str(obj))
+            obj_ext = obj.suffix[1:] if obj.suffix else ""
             if mime is None:
-                ext = obj.suffix[1:]
-                mime = _DocumentConversionInput._mime_from_extension(ext)
+                mime = _DocumentConversionInput._mime_from_extension(obj_ext)
             if mime is None:  # must guess from content
                 with obj.open("rb") as f:
                     content = f.read(1024)  # Read first 1KB
@@ -517,13 +518,13 @@ class _DocumentConversionInput(BaseModel):
             content = obj.stream.read(8192)
             obj.stream.seek(0)
             mime = filetype.guess_mime(content)
+            obj_ext = (
+                obj.name.rsplit(".", 1)[-1]
+                if ("." in obj.name and not obj.name.startswith("."))
+                else ""
+            )
             if mime is None:
-                ext = (
-                    obj.name.rsplit(".", 1)[-1]
-                    if ("." in obj.name and not obj.name.startswith("."))
-                    else ""
-                )
-                mime = _DocumentConversionInput._mime_from_extension(ext.lower())
+                mime = _DocumentConversionInput._mime_from_extension(obj_ext.lower())
             if mime is not None and mime.lower() == "application/zip":
                 objname = obj.name.lower()
                 mime_root = "application/vnd.openxmlformats-officedocument"
@@ -555,7 +556,7 @@ class _DocumentConversionInput(BaseModel):
                 return formats[0]
             else:  # ambiguity in formats
                 return _DocumentConversionInput._guess_from_content(
-                    content, mime, formats
+                    content, mime, formats, ext=obj_ext
                 )
         else:
             return None
@@ -588,7 +589,10 @@ class _DocumentConversionInput(BaseModel):
 
     @staticmethod
     def _guess_from_content(
-        content: bytes, mime: str, formats: list[InputFormat]
+        content: bytes,
+        mime: str,
+        formats: list[InputFormat],
+        ext: Optional[str] = None,
     ) -> Optional[InputFormat]:
         """Guess the input format of a document by checking part of its content."""
         input_format: Optional[InputFormat] = None
@@ -627,8 +631,15 @@ class _DocumentConversionInput(BaseModel):
             content_str = content.decode("utf-8", errors="replace")
             if InputFormat.XML_USPTO in formats and content_str.startswith("PATN\r\n"):
                 input_format = InputFormat.XML_USPTO
-            # No MD fallback: unrecognised text/plain content returns None.
-            # MD is detected via text/markdown mime (from .md/.text/.qmd/… extensions).
+            elif (
+                InputFormat.MD in formats
+                and ext is not None
+                and ext.lower() in FormatToExtensions[InputFormat.MD]
+            ):
+                # Only fall back to MD when the extension is a known plain-text
+                # extension (md/txt/text/qmd/rmd). Unknown extensions (e.g. .xyz)
+                # must not be silently treated as Markdown.
+                input_format = InputFormat.MD
 
         return input_format
 

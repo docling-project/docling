@@ -1,18 +1,26 @@
+import logging
+import re
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from typing import Any
 
+from docling_core.types.doc import CodeLanguageLabel
 from docling_core.types.doc.document import (
+    CodeMetaField,
     DocItemLabel,
     DoclingDocument,
     Formatting,
     GroupLabel,
     NodeItem,
+    PictureMeta,
 )
 from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
 
 from docling.backend.latex.constants import ENV_LIST, ENV_MATH, ENV_QUOTE, ENV_THEOREM
+
+_log = logging.getLogger(__name__)
+_TIKZ_END_PATTERN = re.compile(r"\\end\s*\{\s*tikzpicture\s*\}")
 
 
 class EnvironmentHandlerMixin:
@@ -118,6 +126,9 @@ class EnvironmentHandlerMixin:
         elif node.envname in ["figure", "figure*"]:
             self._process_figure(node, doc, parent, formatting, text_label)
 
+        elif node.envname == "tikzpicture":
+            self._process_tikzpicture(node, doc, parent, formatting, text_label)
+
         elif node.envname in ["verbatim", "lstlisting", "minted"]:
             code_text = self._extract_verbatim_content(
                 node.latex_verbatim(), node.envname
@@ -133,6 +144,66 @@ class EnvironmentHandlerMixin:
 
         else:
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
+
+    def _process_tikzpicture(
+        self,
+        node: LatexEnvironmentNode,
+        doc: DoclingDocument,
+        parent: NodeItem | None = None,
+        formatting: Formatting | None = None,
+        text_label: DocItemLabel | None = None,
+    ):
+        tikz_raw = self._extract_tikzpicture_atomic(node)
+        if tikz_raw is None:
+            _log.warning(
+                "tikzpicture extraction failed, using recursive environment fallback"
+            )
+            self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
+            return
+
+        pic = doc.add_picture(parent=parent)
+        pic.meta = PictureMeta(
+            code=CodeMetaField(
+                text=tikz_raw,
+                language=CodeLanguageLabel.TIKZ,
+            )
+        )
+
+    def _extract_tikzpicture_atomic(self, node: LatexEnvironmentNode) -> str | None:
+        raw = node.latex_verbatim()
+        if _TIKZ_END_PATTERN.search(raw) is None:
+            return None
+        if not self._validate_tikz_nodelist(node.nodelist, 0):
+            return None
+        return raw
+
+    def _validate_tikz_nodelist(self, nodes, depth: int = 0) -> bool:
+        if nodes is None:
+            return True
+        if depth > 50:
+            return False
+
+        for node in nodes:
+            if isinstance(node, LatexEnvironmentNode) and node.envname == "tikzpicture":
+                nested_raw = node.latex_verbatim()
+                if _TIKZ_END_PATTERN.search(nested_raw) is None:
+                    return False
+
+            if hasattr(node, "nodelist") and node.nodelist is not None:
+                if not self._validate_tikz_nodelist(node.nodelist, depth + 1):
+                    return False
+
+            if hasattr(node, "nodeargd") and node.nodeargd:
+                argnlist = getattr(node.nodeargd, "argnlist", None)
+                if argnlist:
+                    for arg in argnlist:
+                        if hasattr(arg, "nodelist") and arg.nodelist is not None:
+                            if not self._validate_tikz_nodelist(
+                                arg.nodelist, depth + 1
+                            ):
+                                return False
+
+        return True
 
     def _process_figure(
         self,

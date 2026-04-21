@@ -173,7 +173,10 @@ if __name__ == "__main__":
         # Other presets with MLX (macOS only)
         ("pixtral", MlxVlmEngineOptions()),
         ("qwen", MlxVlmEngineOptions()),
+        ("nanonets_ocr2", MlxVlmEngineOptions()),
         ("gemma_12b", MlxVlmEngineOptions()),
+        # OCR-focused markdown presets on CUDA / CPU
+        ("nanonets_ocr2", TransformersVlmEngineOptions()),
         # Other presets with Ollama
         ("deepseek_ocr", ApiVlmEngineOptions(runtime_type=VlmEngineType.API_OLLAMA)),
         # Other presets with LM Studio
