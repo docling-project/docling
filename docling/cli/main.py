@@ -48,7 +48,7 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_TURBO_NATIVE,
     AsrModelType,
 )
-from docling.datamodel.backend_options import PdfBackendOptions
+from docling.datamodel.backend_options import LatexBackendOptions, PdfBackendOptions
 from docling.datamodel.base_models import (
     ConversionStatus,
     FormatToExtensions,
@@ -631,6 +631,13 @@ def convert(  # noqa: C901
             help="If enabled, it saves the profiling summaries to json.",
         ),
     ] = False,
+    tikz_engine: Annotated[
+        str | None,
+        typer.Option(
+            ...,
+            help="The engine to use for rendering Tikz diagrams into images (e.g. 'tectonic').",
+        ),
+    ] = None,
 ):
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
@@ -839,7 +846,10 @@ def convert(  # noqa: C901
                     pipeline_options=simple_format_option
                 ),
                 InputFormat.LATEX: LatexFormatOption(
-                    pipeline_options=simple_format_option
+                    pipeline_options=simple_format_option,
+                    backend_options=LatexBackendOptions(tikz_engine=tikz_engine)
+                    if tikz_engine
+                    else LatexBackendOptions(),
                 ),
             }
 

@@ -161,6 +161,53 @@ class EnvironmentHandlerMixin:
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
             return
 
+        opts = getattr(self, "options", None)
+        tikz_engine_option = getattr(opts, "tikz_engine", None) if opts else None
+        if tikz_engine_option == "tectonic":
+            try:
+                from docling.backend.latex.engines.tectonic import TectonicEngine
+
+                if not hasattr(self, "_tectonic_engine"):
+                    self._tectonic_engine = TectonicEngine()
+
+                pic = doc.add_picture(parent=parent)
+
+                def render_task(engine, raw_tikz, picture_item, preamble):
+                    try:
+                        img_ref = engine.render(raw_tikz, preamble=preamble)
+                        if img_ref:
+                            picture_item.image = img_ref
+                        else:
+                            picture_item.meta = PictureMeta(
+                                code=CodeMetaField(
+                                    text=raw_tikz,
+                                    language=CodeLanguageLabel.TIKZ,
+                                )
+                            )
+                    except Exception as e:
+                        _log.warning(f"Async Tectonic rendering failed: {e}")
+                        picture_item.meta = PictureMeta(
+                            code=CodeMetaField(
+                                text=raw_tikz,
+                                language=CodeLanguageLabel.TIKZ,
+                            )
+                        )
+
+                preamble = getattr(self, "latex_preamble", "")
+                executor = getattr(self, "_tikz_executor", None)
+                if executor:
+                    future = executor.submit(
+                        render_task, self._tectonic_engine, tikz_raw, pic, preamble
+                    )
+                    futures_list = getattr(self, "_tikz_futures", None)
+                    if futures_list is not None:
+                        futures_list.append(future)
+                else:
+                    render_task(self._tectonic_engine, tikz_raw, pic, preamble)
+                return
+            except Exception as e:
+                _log.warning(f"Failed to setup Tectonic async task: {e}")
+
         pic = doc.add_picture(parent=parent)
         pic.meta = PictureMeta(
             code=CodeMetaField(

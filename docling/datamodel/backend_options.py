@@ -159,6 +159,13 @@ class LatexBackendOptions(BaseBackendOptions):
             "Set to None to disable the timeout. Defaults to 30 s."
         ),
     )
+    tikz_engine: Optional[Literal["tectonic"]] = Field(
+        None,
+        description=(
+            "The engine to use for rendering Tikz diagrams into images. "
+            "Set to 'tectonic' to enable asynchronous image generation."
+        ),
+    )
 
 
 class XBRLBackendOptions(BaseBackendOptions):
