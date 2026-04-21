@@ -83,8 +83,14 @@ jobs:
           then
             uv sync --frozen --only-group pr-fast-checks --no-install-project
           else
-            echo "pr-fast-checks group is not on the trusted base yet; falling back to dev."
-            uv sync --frozen --no-default-groups --group dev --no-install-project
+            if [[ "${GITHUB_EVENT_NAME}" != "pull_request" ]]; then
+              echo "::error::pr-fast-checks group is missing from the trusted base."
+              exit 1
+            fi
+            echo "pr-fast-checks group is not on the trusted base yet; using PR metadata for temporary pull_request validation."
+            git show "FETCH_HEAD:pyproject.toml" > pyproject.toml
+            git show "FETCH_HEAD:uv.lock" > uv.lock
+            uv sync --frozen --only-group pr-fast-checks --no-install-project
           fi
 
       - name: Run fast lint and typing checks
