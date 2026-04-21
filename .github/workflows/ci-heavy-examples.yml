@@ -141,9 +141,29 @@ jobs:
     permissions: {}
     steps:
       - name: All Green
-        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe # v1.2.2
-        with:
-          jobs: ${{ toJSON(needs) }}
-          allowed-skips: >-
-            changes,
-            run-heavy-examples
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          ALLOWED_SKIPS: changes run-heavy-examples
+        run: |
+          failures=()
+          while IFS=$'\t' read -r job result; do
+            case "$result" in
+              success)
+                ;;
+              skipped)
+                if [[ " $ALLOWED_SKIPS " == *" $job "* ]]; then
+                  echo "::notice title=Allowed skipped job::$job"
+                else
+                  failures+=("$job=$result")
+                fi
+                ;;
+              *)
+                failures+=("$job=$result")
+                ;;
+            esac
+          done < <(jq -r 'to_entries[] | [.key, .value.result] | @tsv' <<< "$NEEDS_JSON")
+
+          if [ "${#failures[@]}" -gt 0 ]; then
+            printf '::error title=Required jobs failed::%s\n' "${failures[*]}"
+            exit 1
+          fi
