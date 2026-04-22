@@ -529,6 +529,25 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return value
         return Path(value).resolve().as_uri()
 
+    def _get_browser_request_block_reason(self, request_url: str) -> Optional[str]:
+        parsed = urlparse(request_url)
+        scheme = (parsed.scheme or "").lower()
+        if scheme in {"file", "data", "about", "blob"}:
+            return None
+
+        if HTMLDocumentBackend._is_remote_url(request_url):
+            if self.options.enable_remote_fetch:
+                return None
+            return (
+                "remote fetch is disabled "
+                "(set options.enable_remote_fetch=True to allow)"
+            )
+
+        return f"URL scheme '{scheme or '<empty>'}' is not allowed"
+
+    def _is_browser_request_allowed(self, request_url: str) -> bool:
+        return self._get_browser_request_block_reason(request_url) is None
+
     def _get_render_html_text(self) -> str:
         if self._raw_html_bytes is None:
             return ""
@@ -582,10 +601,30 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
+            # If remote fetch is disabled, keep Chromium offline.
+            offline_mode = not options.enable_remote_fetch
             context = browser.new_context(
                 viewport={"width": width, "height": height},
                 device_scale_factor=options.render_device_scale,
+                # Disable page JavaScript execution for deterministic static rendering.
+                java_script_enabled=False,
+                offline=offline_mode,
+                service_workers="block",
             )
+
+            def _route_request(route, request) -> None:
+                block_reason = self._get_browser_request_block_reason(request.url)
+                if block_reason is None:
+                    route.continue_()
+                else:
+                    warnings.warn(
+                        "Blocked browser request during HTML rendering: "
+                        f"{request.method} {request.url} ({block_reason})"
+                    )
+                    route.abort("blockedbyclient")
+
+            context.route("**/*", _route_request)
+
             page = context.new_page()
             if options.render_print_media:
                 page.emulate_media(media="print")
