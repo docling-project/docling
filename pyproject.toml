@@ -109,11 +109,11 @@ models = [
 
 # OCR engines (separate extras)
 ocr-rapidocr = [
-  'rapidocr>=3.3,<4.0.0',
+  'rapidocr>=3.8,<4.0.0',
 ]
 
 ocr-rapidocr-onnx = [
-  'rapidocr>=3.3,<4.0.0',
+  'rapidocr>=3.8,<4.0.0',
   'onnxruntime>=1.7.0,<2.0.0 ; python_version < "3.14"',
 ]
 
@@ -164,7 +164,7 @@ format-web = [
 vlm = [
   'transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*',
   'accelerate>=1.2.1,<2.0.0',
-  'mlx-vlm>=0.3.0,<1.0.0 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
+  'mlx-vlm>=0.4.3,<1.0.0 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
   'qwen-vl-utils>=0.0.11',
   'peft>=0.18.1',
 ]
