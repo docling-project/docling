@@ -1,5 +1,20 @@
 fail_fast: true
+minimum_pre_commit_version: "3.7.0"
+default_stages: [pre-commit]
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        files: '^(docling|docs/examples|tests)/.*\.py$|^(\.pre-commit-config\.yaml|pyproject\.toml|tach\.toml)$'
+      - id: end-of-file-fixer
+        files: '^(docling|docs/examples|tests)/.*\.py$|^(\.pre-commit-config\.yaml|pyproject\.toml|tach\.toml)$'
+      - id: check-yaml
+        args: [--unsafe]
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=5120]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.5
     hooks:
@@ -27,6 +42,12 @@ repos:
         pass_filenames: false
         language: system
         files: '^docling/.*\.py$|^tach\.toml$'
+      - id: max-lines
+        name: Check max lines per file
+        entry: python3 scripts/check_max_lines.py
+        language: system
+        files: '\.(py|ts|tsx|js|jsx|rs|json|sql|md|txt|yaml|yml)$'
+        pass_filenames: true
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.8.3
     hooks:
