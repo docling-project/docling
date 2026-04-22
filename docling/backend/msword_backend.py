@@ -65,6 +65,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         "wps": "http://schemas.microsoft.com/office/word/2010/wordprocessingShape",
         "w10": "urn:schemas-microsoft-com:office:word",
         "a14": "http://schemas.microsoft.com/office/drawing/2010/main",
+        "w14": "http://schemas.microsoft.com/office/word/2010/wordml",
     }
 
     @override
@@ -799,6 +800,70 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return paragraph_elements
 
+    def _has_checkbox(self, element: BaseOxmlElement) -> bool:
+        """Check if a paragraph element contains a checkbox."""
+        try:
+            checkboxes = element.findall(
+                ".//{http://schemas.microsoft.com/office/word/2010/wordml}checkbox"
+            )
+            return len(checkboxes) > 0
+        except (AttributeError, TypeError):
+            return False
+
+    def _is_checkbox_checked(self, element: BaseOxmlElement) -> bool:
+        """Check if a checkbox in the paragraph is checked.
+
+        Returns True if checked (w14:checked val="1"), False if unchecked (val="0" or missing).
+        """
+        checkboxes = element.findall(
+            ".//{http://schemas.microsoft.com/office/word/2010/wordml}checkbox"
+        )
+        if not checkboxes:
+            return False
+
+        checkbox = checkboxes[0]
+        checked_elem = checkbox.find(
+            ".//{http://schemas.microsoft.com/office/word/2010/wordml}checked"
+        )
+
+        if checked_elem is not None:
+            val = checked_elem.get(
+                "{http://schemas.microsoft.com/office/word/2010/wordml}val"
+            )
+            return val == "1"
+
+        return False
+
+    def _get_checkbox_label(self, element: BaseOxmlElement) -> DocItemLabel | None:
+        """Get the appropriate checkbox label for a paragraph element.
+
+        Returns CHECKBOX_SELECTED if checked, CHECKBOX_UNSELECTED if unchecked,
+        or None if no checkbox is present.
+        """
+        if not self._has_checkbox(element):
+            return None
+
+        if self._is_checkbox_checked(element):
+            return DocItemLabel.CHECKBOX_SELECTED
+        else:
+            return DocItemLabel.CHECKBOX_UNSELECTED
+
+    def _clean_checkbox_symbols(self, text: str) -> str:
+        """Remove checkbox symbols from text.
+
+        Removes common checkbox symbols like ☐, ☑, ☒ from the beginning of text.
+        """
+        # Common checkbox symbols in docx documents
+        checkbox_symbols = ["☐", "☑", "☒", "□", "■", "▪", "▫"]
+
+        text = text.strip()
+        for symbol in checkbox_symbols:
+            if text.startswith(symbol):
+                text = text[len(symbol) :].strip()
+                break
+
+        return text
+
     def _get_paragraph_position(self, paragraph_element):
         """Extract vertical position information from paragraph element."""
         # First try to directly get the index from w:p element that has an order-related attribute
@@ -1115,6 +1180,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         para_element_id = id(element)
         comment_ids = self._get_comment_ids_for_element(element)
 
+        # Check if this paragraph contains a checkbox
+        checkbox_label = self._get_checkbox_label(element)
+
         # Common styles for bullet and numbered lists.
         # "List Bullet", "List Number", "List Paragraph"
         # Identify whether list is a numbered list or not
@@ -1251,10 +1319,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 paragraph_elements=paragraph_elements,
             )
             for text, format, hyperlink in paragraph_elements:
+                # Clean checkbox symbols from text if this is a checkbox item
+                clean_text = (
+                    self._clean_checkbox_symbols(text) if checkbox_label else text
+                )
                 t2 = doc.add_text(
-                    label=DocItemLabel.TEXT,
+                    label=checkbox_label if checkbox_label else DocItemLabel.TEXT,
                     parent=parent,
-                    text=text,
+                    text=clean_text,
                     formatting=format,
                     hyperlink=hyperlink,
                     content_layer=self.content_layer,
@@ -1271,10 +1343,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 paragraph_elements=paragraph_elements,
             )
             for text, format, hyperlink in paragraph_elements:
+                # Clean checkbox symbols from text if this is a checkbox item
+                clean_text = (
+                    self._clean_checkbox_symbols(text) if checkbox_label else text
+                )
                 t3 = doc.add_text(
-                    label=DocItemLabel.TEXT,
+                    label=checkbox_label if checkbox_label else DocItemLabel.TEXT,
                     parent=parent,
-                    text=text,
+                    text=clean_text,
                     formatting=format,
                     hyperlink=hyperlink,
                     content_layer=self.content_layer,
