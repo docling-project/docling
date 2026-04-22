@@ -756,7 +756,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                             parent=parent_slide,
                             text=notes_text,
                             prov=prov,
-                            content_layer=ContentLayer.FURNITURE,
+                            content_layer=ContentLayer.NOTES,
                         )
 
         return doc
