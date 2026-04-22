@@ -801,7 +801,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return paragraph_elements
 
     def _has_checkbox(self, element: BaseOxmlElement) -> bool:
-        """Check if a paragraph element contains a checkbox."""
+        """Check if a paragraph element contains a checkbox.
+
+        Args:
+            element: The paragraph element to check for checkbox presence.
+
+        Returns:
+            True if the element contains a checkbox, False otherwise.
+        """
         try:
             checkboxes = element.findall(
                 ".//{http://schemas.microsoft.com/office/word/2010/wordml}checkbox"
@@ -813,7 +820,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _is_checkbox_checked(self, element: BaseOxmlElement) -> bool:
         """Check if a checkbox in the paragraph is checked.
 
-        Returns True if checked (w14:checked val="1"), False if unchecked (val="0" or missing).
+        Args:
+            element: The paragraph element containing the checkbox.
+
+        Returns:
+            True if checked (w14:checked val="1"), False if unchecked
+                (val="0" or missing).
         """
         checkboxes = element.findall(
             ".//{http://schemas.microsoft.com/office/word/2010/wordml}checkbox"
@@ -837,8 +849,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _get_checkbox_label(self, element: BaseOxmlElement) -> DocItemLabel | None:
         """Get the appropriate checkbox label for a paragraph element.
 
-        Returns CHECKBOX_SELECTED if checked, CHECKBOX_UNSELECTED if unchecked,
-        or None if no checkbox is present.
+        Args:
+            element: The paragraph element to check for checkbox.
+
+        Returns:
+            DocItemLabel.CHECKBOX_SELECTED if checked, DocItemLabel.CHECKBOX_UNSELECTED
+                if unchecked, or None if no checkbox is present.
         """
         if not self._has_checkbox(element):
             return None
@@ -852,6 +868,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """Remove checkbox symbols from text.
 
         Removes common checkbox symbols like ☐, ☑, ☒ from the beginning of text.
+
+        Args:
+            text: The text string to clean.
+
+        Returns:
+            The text with checkbox symbols removed from the beginning.
         """
         # Common checkbox symbols in docx documents
         checkbox_symbols = ["☐", "☑", "☒", "□", "■", "▪", "▫"]
