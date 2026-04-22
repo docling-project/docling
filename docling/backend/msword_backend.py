@@ -1302,40 +1302,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     elem_ref=elem_ref,
                 )
 
-        elif p_style_id in [
-            "Paragraph",
-            "Normal",
-            "Subtitle",
-            "Author",
-            "DefaultText",
-            "ListParagraph",
-            "ListBullet",
-            "Quote",
-        ]:
-            level = self._get_level()
-            parent = self._create_or_reuse_parent(
-                doc=doc,
-                prev_parent=self.parents.get(level - 1),
-                paragraph_elements=paragraph_elements,
-            )
-            for text, format, hyperlink in paragraph_elements:
-                # Clean checkbox symbols from text if this is a checkbox item
-                clean_text = (
-                    self._clean_checkbox_symbols(text) if checkbox_label else text
-                )
-                t2 = doc.add_text(
-                    label=checkbox_label if checkbox_label else DocItemLabel.TEXT,
-                    parent=parent,
-                    text=clean_text,
-                    formatting=format,
-                    hyperlink=hyperlink,
-                    content_layer=self.content_layer,
-                )
-                elem_ref.append(t2.get_ref())
-
         else:
-            # Text style names can, and will have, not only default values but user values too
-            # hence we treat all other labels as pure text
+            # Handle standard paragraph styles and any other text styles
+            # Text style names can have not only default values but user values too
             level = self._get_level()
             parent = self._create_or_reuse_parent(
                 doc=doc,
@@ -1347,7 +1316,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 clean_text = (
                     self._clean_checkbox_symbols(text) if checkbox_label else text
                 )
-                t3 = doc.add_text(
+                text_item = doc.add_text(
                     label=checkbox_label if checkbox_label else DocItemLabel.TEXT,
                     parent=parent,
                     text=clean_text,
@@ -1355,7 +1324,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     hyperlink=hyperlink,
                     content_layer=self.content_layer,
                 )
-                elem_ref.append(t3.get_ref())
+                elem_ref.append(text_item.get_ref())
 
         self._update_history(p_style_id, p_level, numid, ilevel)
 
