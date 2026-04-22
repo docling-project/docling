@@ -182,7 +182,6 @@ def format_prompt_for_vlm(
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "This is a page from a document."},
                     {"type": "image"},
                     {"type": "text", "text": prompt},
                 ],
