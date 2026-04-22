@@ -48,6 +48,12 @@ repos:
         language: system
         files: '\.(py|ts|tsx|js|jsx|rs|json|sql|md|txt|yaml|yml)$'
         pass_filenames: true
+      - id: dprint
+        name: Dprint check
+        entry: uv run --no-sync dprint check
+        pass_filenames: false
+        language: system
+        files: '^(dprint\.json|tach\.toml)$'
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.8.3
     hooks:
