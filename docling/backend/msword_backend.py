@@ -811,7 +811,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """
         try:
             checkboxes = element.findall(
-                ".//{http://schemas.microsoft.com/office/word/2010/wordml}checkbox"
+                f".//{{{self._BLIP_NAMESPACES['w14']}}}checkbox"
             )
             return len(checkboxes) > 0
         except (AttributeError, TypeError):
@@ -827,21 +827,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             True if checked (w14:checked val="1"), False if unchecked
                 (val="0" or missing).
         """
-        checkboxes = element.findall(
-            ".//{http://schemas.microsoft.com/office/word/2010/wordml}checkbox"
-        )
+        w14_ns = self._BLIP_NAMESPACES["w14"]
+        checkboxes = element.findall(f".//{{{w14_ns}}}checkbox")
         if not checkboxes:
             return False
 
         checkbox = checkboxes[0]
-        checked_elem = checkbox.find(
-            ".//{http://schemas.microsoft.com/office/word/2010/wordml}checked"
-        )
+        checked_elem = checkbox.find(f".//{{{w14_ns}}}checked")
 
         if checked_elem is not None:
-            val = checked_elem.get(
-                "{http://schemas.microsoft.com/office/word/2010/wordml}val"
-            )
+            val = checked_elem.get(f"{{{w14_ns}}}val")
             return val == "1"
 
         return False
