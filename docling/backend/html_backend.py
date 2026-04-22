@@ -602,7 +602,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
             # If remote fetch is disabled, keep Chromium offline.
-            offline_mode = not bool(options.enable_remote_fetch)
+            offline_mode = not options.enable_remote_fetch
             context = browser.new_context(
                 viewport={"width": width, "height": height},
                 device_scale_factor=options.render_device_scale,
