@@ -1,8 +1,10 @@
 import base64
+import ipaddress
 import logging
 import math
 import os
 import re
+import socket
 import warnings
 from contextlib import contextmanager
 from copy import deepcopy
@@ -147,6 +149,38 @@ _FORM_MARKER_ID_RE: Final = re.compile(r"^key(?P<key_id>[A-Za-z0-9]+)_marker$")
 _FORM_VALUE_ID_RE: Final = re.compile(
     r"^key(?P<key_id>[A-Za-z0-9]+)_value(?P<value_id>[A-Za-z0-9]+)$"
 )
+
+
+def _validate_url_safety(url: str) -> None:
+    parsed = urlparse(url)
+    hostname = parsed.hostname
+
+    if not hostname:
+        raise ValueError("URL must contain a valid hostname")
+
+    try:
+        ip = ipaddress.ip_address(hostname)
+    except ValueError:
+        try:
+            ip_str = socket.gethostbyname(hostname)
+            ip = ipaddress.ip_address(ip_str)
+        except (socket.gaierror, socket.herror) as e:
+            raise ValueError(f"Cannot resolve hostname: {hostname}") from e
+
+    if not (
+        ip.is_global
+        and not (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_reserved
+            or ip.is_multicast
+            or ip.is_unspecified
+        )
+    ):
+        raise ValueError(f"Access to restricted IP address not allowed: {ip}")
+
+
 _CUSTOM_CHECKBOX_CLASSES: Final = {"checkbox", "checkbox-box", "checkbox-input"}
 _CHECKBOX_MARK_TEXTS: Final = {"x", "✓", "✔", "☑"}
 _CHECKBOX_CONTAINER_CLASSES: Final = {
@@ -4247,12 +4281,41 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     "Fetching remote resources is only allowed when set explicitly. "
                     "Set options.enable_remote_fetch=True."
                 )
-            response = requests.get(src_loc, stream=True)
+
+            _validate_url_safety(src_loc)
+
+            max_size = self.options.max_remote_image_bytes
+            headers = {"Range": f"bytes=0-{max_size - 1}"}
+
+            response = requests.get(
+                src_loc, stream=True, headers=headers, timeout=(5, 30)
+            )
             response.raise_for_status()
-            return response.content
+
+            content_length = response.headers.get("content-length")
+            if content_length and int(content_length) > max_size:
+                raise ValueError(f"Resource size exceeds limit: {content_length} bytes")
+
+            chunks = []
+            total_size = 0
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    total_size += len(chunk)
+                    if total_size > max_size:
+                        raise ValueError("Downloaded data exceeds size limit")
+                    chunks.append(chunk)
+
+            return b"".join(chunks)
         elif src_loc.startswith("data:"):
-            data = re.sub(r"^data:image/.+;base64,", "", src_loc)
-            return base64.b64decode(data)
+            encoded_data = re.sub(r"^data:image/.+;base64,", "", src_loc)
+            decoded_data = base64.b64decode(encoded_data)
+
+            if len(decoded_data) > self.options.max_image_data_base64_bytes:
+                raise ValueError(
+                    f"Decoded image exceeds size limit of {self.options.max_image_data_base64_bytes} bytes."
+                )
+
+            return decoded_data
 
         if src_loc.startswith("file://"):
             src_loc = src_loc[7:]
@@ -4262,7 +4325,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 "Fetching local resources is only allowed when set explicitly. "
                 "Set options.enable_local_fetch=True."
             )
-        # add check that file exists and can read
         if os.path.isfile(src_loc) and os.access(src_loc, os.R_OK):
             with open(src_loc, "rb") as f:
                 return f.read()

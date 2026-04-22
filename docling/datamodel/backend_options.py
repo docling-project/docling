@@ -1,7 +1,7 @@
 from pathlib import Path, PurePath
 from typing import Annotated, Literal, Optional, Union
 
-from pydantic import AnyUrl, BaseModel, Field, SecretStr
+from pydantic import AnyUrl, BaseModel, Field, PositiveInt, SecretStr
 
 
 class BaseBackendOptions(BaseModel):
@@ -89,6 +89,14 @@ class HTMLBackendOptions(BaseBackendOptions):
     )
     infer_furniture: bool = Field(
         True, description="Infer all the content before the first header as furniture."
+    )
+    max_image_data_base64_bytes: PositiveInt = Field(
+        20 * 1024 * 1024,  # 20 MB
+        description="The maximum number of base64 data bytes that the backend will accept.",
+    )
+    max_remote_image_bytes: PositiveInt = Field(
+        20 * 1024 * 1024,  # 20 MB
+        description="The maximum number of bytes for remote image downloads.",
     )
 
 
