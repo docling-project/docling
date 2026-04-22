@@ -19,8 +19,10 @@ jobs:
           with:
             python-version: ${{ matrix.python-version }}
             enable-cache: true
+        - name: Install Python Dependencies
+          run: uv sync --frozen --all-extras --all-packages
         - name: Build docs
-          run: uv run mkdocs build --verbose --clean
+          run: uv run --no-sync mkdocs build --verbose --clean
         - name: Build and push docs
           if: inputs.deploy
           run: uv run --no-sync mkdocs gh-deploy --force
