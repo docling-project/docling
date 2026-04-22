@@ -264,7 +264,8 @@ pr-fast-checks = [
 ]
 dev = [
   { include-group = "typecheck" },
-  "pre-commit~=3.7",
+  "dprint-py==0.53.1.0",
+  "prek>=0.3.10",
   "tach>=0.34.0,<1",
   "coverage~=7.6",
   "pytest~=8.3",

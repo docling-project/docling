@@ -156,21 +156,21 @@ jobs:
           python_version: ${{ matrix.python-version }}
           uv_sync_args: --frozen --group dev --all-extras --all-packages --no-group docs --no-group examples
 
-      - name: Set pre-commit cache key
+      - name: Set prek cache key
         run: echo "PY=$(python -VV | sha256sum | cut -d' ' -f1)" >> "$GITHUB_ENV"
 
-      - name: Cache pre-commit environments
+      - name: Cache prek environments
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          path: ~/.cache/pre-commit
-          key: pre-commit|${{ env.PY }}|${{ hashFiles('.pre-commit-config.yaml') }}
+          path: ~/.cache/prek
+          key: prek|${{ env.PY }}|${{ hashFiles('.pre-commit-config.yaml', 'dprint.json') }}
           restore-keys: |
-            pre-commit|${{ env.PY }}|
+            prek|${{ env.PY }}|
 
       - name: Check style
         run: |
-          echo "--- Running pre-commit style checks ---"
-          uv run pre-commit run --all-files
+          echo "--- Running prek style checks ---"
+          uv run prek run --all-files
 
   tach:
     needs: changes
