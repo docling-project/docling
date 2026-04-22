@@ -48,6 +48,7 @@ class VllmVlmEngine(BaseVlmEngine):
         # Stops / outputs
         "stop",
         "stop_token_ids",
+        "include_stop_str_in_output",
         "skip_special_tokens",
         "spaces_between_special_tokens",
         # Search / length
