@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+from typing import Optional
+
 from pydantic_settings import BaseSettings
 
 PROFILE = os.getenv("PROFILE", "dev")
@@ -28,9 +30,10 @@ class Settings(BaseSettings):
     class Config(BaseConfig):
         pass
 
+    PREPROCESSOR_ID: Optional[str] = _ID
     POD_ID: str = _POD_ID
     LOG_PATH: list[str] = [
-        "/var/log/supervisor/gunicorn_stderr.log", 
+        "/var/log/supervisor/gunicorn_stderr.log",
         "/var/log/supervisor/gunicorn_stdout.log"
     ]
 
@@ -59,5 +62,15 @@ class MsgQueueConfig(BaseSettings):
     MQ_ROUTING_KEY_LOG: str = f'log.preprocessor.{_ID}.{_POD_ID}'
 
 
+class MinioConfig(BaseSettings):
+    class Config(BaseConfig):
+        pass
+
+    MINIO_ENDPOINT: str
+    MINIO_ACCESS_KEY: str
+    MINIO_SECRET_KEY: str
+
+
 settings = Settings()
 msg_queue_config = MsgQueueConfig()
+minio_config = MinioConfig()
