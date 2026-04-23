@@ -21,8 +21,8 @@ from lxml import etree
 from PIL import Image
 from PIL.Image import Image as PILImage
 
-from docling.backend.abstract_backend import PaginatedDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
+from docling.datamodel.backend_options import MetsGbsBackendOptions
 from docling.datamodel.base_models import InputFormat
 
 if TYPE_CHECKING:
@@ -195,9 +195,14 @@ def _extract_confidence(title_str) -> float:
 
 
 class MetsGbsDocumentBackend(PdfDocumentBackend):
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
-        super().__init__(in_doc, path_or_stream)
-
+    def __init__(
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        options: MetsGbsBackendOptions = MetsGbsBackendOptions(),
+    ):
+        super().__init__(in_doc, path_or_stream, options)
+        self.options: MetsGbsBackendOptions
         self._tar: tarfile.TarFile = (
             tarfile.open(name=self.path_or_stream, mode="r:gz")
             if isinstance(self.path_or_stream, Path)
@@ -205,12 +210,31 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         )
         self.root_mets: Optional[etree._Element] = None
         self.page_map: Dict[int, _PageFiles] = {}
+        self._total_bytes_extracted = 0
+        member_count = 0
 
         for member in self._tar.getmembers():
+            member_count += 1
+            if member_count > self.options.max_member_count:
+                raise ValueError(
+                    f"Archive exceeds maximum member count limit of {self.options.max_member_count}"
+                )
+
             if member.name.endswith(".xml"):
                 file = self._tar.extractfile(member)
                 if file is not None:
-                    content = file.read()
+                    content = file.read(self.options.max_file_bytes + 1)
+                    if len(content) > self.options.max_file_bytes:
+                        raise ValueError(
+                            f"XML file {member.name} exceeds size limit of {self.options.max_file_bytes} bytes"
+                        )
+
+                    self._total_bytes_extracted += len(content)
+                    if self._total_bytes_extracted > self.options.max_total_bytes:
+                        raise ValueError(
+                            f"Archive exceeds maximum total extraction size of {self.options.max_total_bytes} bytes"
+                        )
+
                     self.root_mets = self._validate_mets_xml(content)
                     if self.root_mets is not None:
                         break
@@ -283,7 +307,11 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
             self.page_map[page_no] = page_files
 
     def _validate_mets_xml(self, xml_string) -> Optional[etree._Element]:
-        root: etree._Element = etree.fromstring(xml_string)
+        # Security: disable entity resolution
+        parser = etree.XMLParser(
+            resolve_entities=False, load_dtd=False, no_network=True
+        )
+        root: etree._Element = etree.fromstring(xml_string, parser=parser)
         if (
             root.tag == "{http://www.loc.gov/METS/}mets"
             and root.get("PROFILE") == "gbs"
@@ -300,14 +328,41 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         ocr_info = self.page_map[page_no].coordOCR
         assert ocr_info is not None
 
+        # Security: limit extraction size to prevent decompression bombs
         image_file = self._tar.extractfile(image_info.path)
         assert image_file is not None
-        buf = BytesIO(image_file.read())
+        image_data = image_file.read(self.options.max_file_bytes + 1)
+        if len(image_data) > self.options.max_file_bytes:
+            raise ValueError(
+                f"Image file {image_info.path} exceeds individual file size limit of {self.options.max_file_bytes} bytes"
+            )
+
+        # Security: Track total bytes extracted
+        self._total_bytes_extracted += len(image_data)
+        if self._total_bytes_extracted > self.options.max_total_bytes:
+            raise ValueError(
+                f"Total extracted data exceeds maximum limit of {self.options.max_total_bytes} bytes"
+            )
+
+        buf = BytesIO(image_data)
         im: PILImage = Image.open(buf)
+
         ocr_file = self._tar.extractfile(ocr_info.path)
         assert ocr_file is not None
-        ocr_content = ocr_file.read()
-        parser = etree.HTMLParser()
+        ocr_content = ocr_file.read(self.options.max_file_bytes + 1)
+        if len(ocr_content) > self.options.max_file_bytes:
+            raise ValueError(
+                f"OCR file {ocr_info.path} exceeds individual file size limit of {self.options.max_file_bytes} bytes"
+            )
+
+        # Security: Track total bytes extracted
+        self._total_bytes_extracted += len(ocr_content)
+        if self._total_bytes_extracted > self.options.max_total_bytes:
+            raise ValueError(
+                f"Total extracted data exceeds maximum limit of {self.options.max_total_bytes} bytes"
+            )
+
+        parser = etree.HTMLParser(no_network=True)
         ocr_root: etree._Element = etree.fromstring(ocr_content, parser=parser)
 
         line_cells: List[TextCell] = []

@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend, MetsGbsPageBackend
+from docling.datamodel.backend_options import MetsGbsBackendOptions
 from docling.datamodel.base_models import BoundingBox, InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -74,4 +75,113 @@ def test_num_pages(test_doc_path):
     assert doc_backend.page_count() == 3
 
     # Explicitly clean up resources to prevent race conditions in CI
+    doc_backend.unload()
+
+
+def test_max_file_bytes_limit(test_doc_path):
+    """Test that max_file_bytes limit is enforced during extraction."""
+
+    options = MetsGbsBackendOptions(max_file_bytes=100)
+
+    with pytest.raises(ValueError, match=r"exceeds.*size limit"):
+        InputDocument(
+            path_or_stream=test_doc_path,
+            format=InputFormat.METS_GBS,
+            backend=MetsGbsDocumentBackend,
+            backend_options=options,
+        )
+
+
+def test_max_total_bytes_limit(test_doc_path):
+    """Test that max_total_bytes limit is enforced across all extractions."""
+
+    options = MetsGbsBackendOptions(
+        max_file_bytes=10 * 1024 * 1024,
+        max_total_bytes=1000,
+    )
+
+    with pytest.raises(ValueError, match="exceeds maximum total extraction size"):
+        InputDocument(
+            path_or_stream=test_doc_path,
+            format=InputFormat.METS_GBS,
+            backend=MetsGbsDocumentBackend,
+            backend_options=options,
+        )
+
+
+def test_max_member_count_limit(test_doc_path):
+    """Test that max_member_count limit is enforced during extraction."""
+
+    options = MetsGbsBackendOptions(max_member_count=2)
+
+    with pytest.raises(ValueError, match="exceeds maximum member count limit"):
+        InputDocument(
+            path_or_stream=test_doc_path,
+            format=InputFormat.METS_GBS,
+            backend=MetsGbsDocumentBackend,
+            backend_options=options,
+        )
+
+
+def test_limits_with_valid_values(test_doc_path):
+    """Test that processing succeeds with generous limits."""
+    options = MetsGbsBackendOptions(
+        max_file_bytes=10 * 1024 * 1024,  # 10 MB
+        max_total_bytes=300 * 1024 * 1024,  # 300 MB
+        max_member_count=1000,
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.METS_GBS,
+        backend=MetsGbsDocumentBackend,
+        backend_options=options,
+    )
+
+    assert in_doc.valid
+    doc_backend: MetsGbsDocumentBackend = in_doc._backend
+    assert doc_backend.is_valid()
+    assert doc_backend.page_count() == 3
+
+    page_backend: MetsGbsPageBackend = doc_backend.load_page(0)
+    assert page_backend.is_valid()
+
+    page_backend.unload()
+    doc_backend.unload()
+
+
+def test_total_bytes_tracking_across_pages(test_doc_path):
+    """Test that total bytes are tracked cumulatively across initialization and page loading.
+
+    This test ensures that when max_total_bytes is larger than max_file_bytes,
+    initialization succeeds but page loading eventually fails due to cumulative limit.
+    """
+    options = MetsGbsBackendOptions(
+        max_file_bytes=10 * 1024 * 1024,
+        max_total_bytes=20 * 1024,
+        max_member_count=1000,
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.METS_GBS,
+        backend=MetsGbsDocumentBackend,
+        backend_options=options,
+    )
+
+    assert in_doc.valid
+    doc_backend: MetsGbsDocumentBackend = in_doc._backend
+    assert doc_backend.is_valid()
+
+    page_load_failed = False
+    for page_index in range(doc_backend.page_count()):
+        try:
+            page_backend: MetsGbsPageBackend = doc_backend.load_page(page_index)
+            page_backend.unload()
+        except ValueError as e:
+            assert "Total extracted data exceeds maximum limit" in str(e)
+            page_load_failed = True
+            break
+
+    assert page_load_failed, "Expected page loading to fail due to total bytes limit"
     doc_backend.unload()

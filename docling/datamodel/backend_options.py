@@ -127,6 +127,27 @@ class PdfBackendOptions(BaseBackendOptions):
     password: Optional[SecretStr] = None
 
 
+class MetsGbsBackendOptions(PdfBackendOptions):
+    """Options specific to the METS-GBS document backend."""
+
+    kind: Annotated[Literal["mets-gbs"], Field(exclude=True, repr=False)] = "mets-gbs"  # type: ignore[assignment]
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum cumulative size in bytes of all data extracted from the archive during processing"
+        ),
+    ] = 300 * 1024 * 1024
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum size in bytes for any single file extracted from the archive"
+        ),
+    ] = 10 * 1024 * 1024
+    max_member_count: Annotated[
+        PositiveInt, Field(description="Maximum number of archive members to process")
+    ] = 1000
+
+
 class MsExcelBackendOptions(BaseBackendOptions):
     """Options specific to the MS Excel backend."""
 
@@ -194,6 +215,7 @@ BackendOptions = Annotated[
         HTMLBackendOptions,
         MarkdownBackendOptions,
         PdfBackendOptions,
+        MetsGbsBackendOptions,
         MsExcelBackendOptions,
         LatexBackendOptions,
         XBRLBackendOptions,
