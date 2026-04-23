@@ -158,6 +158,10 @@ ocr-rapidocr-onnx = [
 
 ocr-easyocr = [
   'easyocr>=1.7,<2.0',
+  # easyocr declares scikit-image with no lower bound; without this pin,
+  # resolvers on Python 3.10 backtrack to 0.16.2 (2019), which has no
+  # Py3.10 wheels and fails to build from source.
+  'scikit-image>=0.19',
 ]
 
 ocr-tesserocr = [
