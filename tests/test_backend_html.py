@@ -90,6 +90,17 @@ def test_resolve_relative_path():
     relative_path = "subdir/file.html"
     assert html_doc._resolve_relative_path(relative_path) == relative_path
 
+    # Fragment-only hrefs must pass through unchanged
+    html_doc.base_path = "/local/path/to/file.html"
+    assert html_doc._resolve_relative_path("#section1") == "#section1"
+    assert html_doc._resolve_relative_path("#") == "#"
+
+    html_doc.base_path = "http://example.com/page.html"
+    assert html_doc._resolve_relative_path("#section1") == "#section1"
+
+    html_doc.base_path = None
+    assert html_doc._resolve_relative_path("#section1") == "#section1"
+
 
 def test_heading_levels():
     in_path = Path("tests/data/html/wiki_duck.html")
@@ -797,3 +808,30 @@ def test_load_image_data_enforces_data_uri_size_limit():
 
     with pytest.raises(ValueError, match="exceeds size limit"):
         backend._load_image_data(data_uri)
+
+
+def test_anchor_fragment_links_with_source_uri():
+    """Fragment-only hrefs must not be mangled when source_uri is set."""
+    html_path = Path("tests/data/html/hyperlink_06.html")
+    in_doc = InputDocument(
+        path_or_stream=html_path,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=html_path,
+        options=HTMLBackendOptions(source_uri=PurePath(str(html_path.resolve()))),
+    )
+    doc = backend.convert()
+    md = doc.export_to_markdown()
+
+    # Fragment links preserved
+    assert "[Section 2](#section-2)" in md
+    assert "[top link](#)" in md
+    # External links still work (regression check)
+    assert (
+        "[Example](https://example.com)" in md
+        or "[Example](https://example.com/)" in md
+    )

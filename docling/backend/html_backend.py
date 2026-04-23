@@ -1309,7 +1309,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if loc.startswith("//"):
                 # Protocol-relative URL - default to https
                 abs_loc = "https:" + loc
-            elif not loc.startswith(("http://", "https://", "data:", "file://")):
+            elif not loc.startswith(("http://", "https://", "data:", "file://", "#")):
                 if HTMLDocumentBackend._is_remote_url(self.base_path):  # remote fetch
                     abs_loc = urljoin(self.base_path, loc)
                 elif self.base_path:  # local fetch
