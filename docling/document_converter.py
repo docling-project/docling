@@ -40,7 +40,6 @@ from docling.datamodel.backend_options import (
     HTMLBackendOptions,
     LatexBackendOptions,
     MarkdownBackendOptions,
-    MetsGbsBackendOptions,
     PdfBackendOptions,
     XBRLBackendOptions,
 )
@@ -149,12 +148,6 @@ class PdfFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
     backend: Type[AbstractDocumentBackend] = DoclingParseDocumentBackend
     backend_options: Optional[PdfBackendOptions] = None
-
-
-class MetsGbsFormatOption(FormatOption):
-    pipeline_cls: Type = StandardPdfPipeline
-    backend: Type[AbstractDocumentBackend] = MetsGbsDocumentBackend
-    backend_options: MetsGbsBackendOptions | None = None
 
 
 class AudioFormatOption(FormatOption):
