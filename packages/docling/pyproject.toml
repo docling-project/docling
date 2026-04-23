@@ -75,11 +75,11 @@ tesserocr = ['docling-slim[ocr-tesserocr]==2.90.0']
 ocrmac = ['docling-slim[ocr-mac]==2.90.0']
 vlm = ['docling-slim[vlm]==2.90.0']
 rapidocr = ['docling-slim[ocr-rapidocr-onnx]==2.90.0']
-asr = ['docling-slim[asr]==2.90.0']
-htmlrender = ['docling-slim[htmlrender]==2.90.0']
-remote-serving = ['docling-slim[remote-serving]==2.90.0']
-onnxruntime = ['docling-slim[onnxruntime]==2.90.0']
-xbrl = ['docling-slim[xbrl]==2.90.0']
+format-audio = ['docling-slim[format-audio]==2.90.0']
+format-html-render = ['docling-slim[format-html-render]==2.90.0']
+models-remote = ['docling-slim[models-remote]==2.90.0']
+models-onnxruntime = ['docling-slim[models-onnxruntime]==2.90.0']
+format-xml-xbrl = ['docling-slim[format-xml-xbrl]==2.90.0']
 
 # Dependency-only wheel: no Python modules shipped here. All source lives in
 # the docling-slim wheel (built from the repo root). This avoids the prior

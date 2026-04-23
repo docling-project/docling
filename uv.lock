@@ -1209,26 +1209,29 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-asr = [
-    { name = "docling-slim", extra = ["asr"] },
-]
 easyocr = [
     { name = "docling-slim", extra = ["ocr-easyocr"] },
 ]
-htmlrender = [
-    { name = "docling-slim", extra = ["htmlrender"] },
+format-audio = [
+    { name = "docling-slim", extra = ["format-audio"] },
+]
+format-html-render = [
+    { name = "docling-slim", extra = ["format-html-render"] },
+]
+format-xml-xbrl = [
+    { name = "docling-slim", extra = ["format-xml-xbrl"] },
+]
+models-onnxruntime = [
+    { name = "docling-slim", extra = ["models-onnxruntime"] },
+]
+models-remote = [
+    { name = "docling-slim", extra = ["models-remote"] },
 ]
 ocrmac = [
     { name = "docling-slim", extra = ["ocr-mac"] },
 ]
-onnxruntime = [
-    { name = "docling-slim", extra = ["onnxruntime"] },
-]
 rapidocr = [
     { name = "docling-slim", extra = ["ocr-rapidocr-onnx"] },
-]
-remote-serving = [
-    { name = "docling-slim", extra = ["remote-serving"] },
 ]
 tesserocr = [
     { name = "docling-slim", extra = ["ocr-tesserocr"] },
@@ -1236,26 +1239,23 @@ tesserocr = [
 vlm = [
     { name = "docling-slim", extra = ["vlm"] },
 ]
-xbrl = [
-    { name = "docling-slim", extra = ["xbrl"] },
-]
 
 [package.metadata]
 requires-dist = [
-    { name = "docling-slim", extras = ["asr"], marker = "extra == 'asr'", editable = "." },
-    { name = "docling-slim", extras = ["htmlrender"], marker = "extra == 'htmlrender'", editable = "." },
+    { name = "docling-slim", extras = ["format-audio"], marker = "extra == 'format-audio'", editable = "." },
+    { name = "docling-slim", extras = ["format-html-render"], marker = "extra == 'format-html-render'", editable = "." },
+    { name = "docling-slim", extras = ["format-xml-xbrl"], marker = "extra == 'format-xml-xbrl'", editable = "." },
+    { name = "docling-slim", extras = ["models-onnxruntime"], marker = "extra == 'models-onnxruntime'", editable = "." },
+    { name = "docling-slim", extras = ["models-remote"], marker = "extra == 'models-remote'", editable = "." },
     { name = "docling-slim", extras = ["ocr-easyocr"], marker = "extra == 'easyocr'", editable = "." },
     { name = "docling-slim", extras = ["ocr-mac"], marker = "extra == 'ocrmac'", editable = "." },
     { name = "docling-slim", extras = ["ocr-rapidocr-onnx"], marker = "extra == 'rapidocr'", editable = "." },
     { name = "docling-slim", extras = ["ocr-tesserocr"], marker = "extra == 'tesserocr'", editable = "." },
-    { name = "docling-slim", extras = ["onnxruntime"], marker = "extra == 'onnxruntime'", editable = "." },
-    { name = "docling-slim", extras = ["remote-serving"], marker = "extra == 'remote-serving'", editable = "." },
     { name = "docling-slim", extras = ["standard"], editable = "." },
     { name = "docling-slim", extras = ["vlm"], marker = "extra == 'vlm'", editable = "." },
-    { name = "docling-slim", extras = ["xbrl"], marker = "extra == 'xbrl'", editable = "." },
     { name = "typer", specifier = ">=0.12.5,<0.22.0" },
 ]
-provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "asr", "htmlrender", "remote-serving", "onnxruntime", "xbrl"]
+provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "format-audio", "format-html-render", "models-remote", "models-onnxruntime", "format-xml-xbrl"]
 
 [[package]]
 name = "docling-core"
@@ -1412,13 +1412,30 @@ all = [
     { name = "tritonclient", extra = ["grpc"] },
     { name = "websockets" },
 ]
-asr = [
+chunking = [
+    { name = "docling-core", extra = ["chunking"] },
+]
+convert-core = [
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pillow" },
+    { name = "rtree" },
+    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
+extract-core = [
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pillow" },
+    { name = "polyfactory" },
+    { name = "rtree" },
+    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
+format-audio = [
     { name = "mlx-whisper", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "numba" },
     { name = "openai-whisper" },
-]
-chunking = [
-    { name = "docling-core", extra = ["chunking"] },
 ]
 format-docx = [
     { name = "python-docx" },
@@ -1427,6 +1444,12 @@ format-html = [
     { name = "beautifulsoup4" },
     { name = "lxml" },
 ]
+format-html-render = [
+    { name = "playwright" },
+]
+format-latex = [
+    { name = "pylatexenc" },
+]
 format-markdown = [
     { name = "marko" },
 ]
@@ -1434,6 +1457,17 @@ format-office = [
     { name = "openpyxl" },
     { name = "python-docx" },
     { name = "python-pptx" },
+]
+format-pdf = [
+    { name = "docling-parse" },
+    { name = "pypdfium2" },
+]
+format-pdf-docling = [
+    { name = "docling-parse" },
+    { name = "pypdfium2" },
+]
+format-pdf-pypdfium2 = [
+    { name = "pypdfium2" },
 ]
 format-pptx = [
     { name = "python-pptx" },
@@ -1446,40 +1480,23 @@ format-web = [
 format-xlsx = [
     { name = "openpyxl" },
 ]
-htmlrender = [
-    { name = "playwright" },
+format-xml-xbrl = [
+    { name = "arelle-release" },
 ]
-latex = [
-    { name = "pylatexenc" },
-]
-models = [
-    { name = "accelerate" },
-    { name = "defusedxml" },
-    { name = "docling-ibm-models" },
-    { name = "docling-parse" },
-    { name = "huggingface-hub" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "pillow" },
-    { name = "pypdfium2" },
-    { name = "rtree" },
-    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "torch" },
-    { name = "torchvision" },
-]
-models-core = [
-    { name = "rtree" },
-    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-]
-models-inference = [
+models-local = [
     { name = "accelerate" },
     { name = "defusedxml" },
     { name = "docling-ibm-models" },
     { name = "huggingface-hub" },
     { name = "torch" },
     { name = "torchvision" },
+]
+models-onnxruntime = [
+    { name = "onnxruntime", marker = "python_full_version < '3.14' and sys_platform == 'darwin'" },
+    { name = "onnxruntime-gpu", marker = "(python_full_version < '3.14' and sys_platform == 'linux') or (python_full_version < '3.14' and sys_platform == 'win32')" },
+]
+models-remote = [
+    { name = "tritonclient", extra = ["grpc"] },
 ]
 ocr-easyocr = [
     { name = "easyocr" },
@@ -1498,36 +1515,6 @@ ocr-tesserocr = [
     { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pandas", version = "3.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "tesserocr" },
-]
-onnxruntime = [
-    { name = "onnxruntime", marker = "python_full_version < '3.14' and sys_platform == 'darwin'" },
-    { name = "onnxruntime-gpu", marker = "(python_full_version < '3.14' and sys_platform == 'linux') or (python_full_version < '3.14' and sys_platform == 'win32')" },
-]
-parse = [
-    { name = "docling-parse" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "pillow" },
-    { name = "pypdfium2" },
-    { name = "rtree" },
-]
-parse-core = [
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "pillow" },
-]
-parse-pdf = [
-    { name = "docling-parse" },
-    { name = "pypdfium2" },
-]
-parse-spatial = [
-    { name = "rtree" },
-]
-polyfactory = [
-    { name = "polyfactory" },
-]
-remote-serving = [
-    { name = "tritonclient", extra = ["grpc"] },
 ]
 service-client = [
     { name = "httpx" },
@@ -1567,9 +1554,6 @@ vlm = [
     { name = "peft" },
     { name = "qwen-vl-utils" },
     { name = "transformers" },
-]
-xbrl = [
-    { name = "arelle-release" },
 ]
 
 [package.dev-dependencies]
@@ -1621,66 +1605,66 @@ examples = [
 
 [package.metadata]
 requires-dist = [
-    { name = "accelerate", marker = "extra == 'models-inference'", specifier = ">=1.0.0,<2" },
+    { name = "accelerate", marker = "extra == 'models-local'", specifier = ">=1.0.0,<2" },
     { name = "accelerate", marker = "extra == 'vlm'", specifier = ">=1.2.1,<2.0.0" },
-    { name = "arelle-release", marker = "extra == 'xbrl'", specifier = ">=2.38.17,<3.0.0" },
+    { name = "arelle-release", marker = "extra == 'format-xml-xbrl'", specifier = ">=2.38.17,<3.0.0" },
     { name = "beautifulsoup4", marker = "extra == 'format-html'", specifier = ">=4.12.3,<5.0.0" },
     { name = "certifi", specifier = ">=2024.7.4" },
-    { name = "defusedxml", marker = "extra == 'models-inference'", specifier = ">=0.7.1,<0.8.0" },
+    { name = "defusedxml", marker = "extra == 'models-local'", specifier = ">=0.7.1,<0.8.0" },
     { name = "docling-core", specifier = ">=2.73.0,<3.0.0" },
     { name = "docling-core", extras = ["chunking"], marker = "extra == 'chunking'", specifier = ">=2.73.0,<3.0.0" },
-    { name = "docling-ibm-models", marker = "extra == 'models-inference'", specifier = ">=3.13.0,<4" },
-    { name = "docling-parse", marker = "extra == 'parse-pdf'", specifier = ">=5.3.2,<6.0.0" },
+    { name = "docling-ibm-models", marker = "extra == 'models-local'", specifier = ">=3.13.0,<4" },
+    { name = "docling-parse", marker = "extra == 'format-pdf-docling'", specifier = ">=5.3.2,<6.0.0" },
+    { name = "docling-slim", extras = ["convert-core"], marker = "extra == 'extract-core'" },
     { name = "docling-slim", extras = ["format-docx", "format-pptx", "format-xlsx"], marker = "extra == 'format-office'" },
     { name = "docling-slim", extras = ["format-html", "format-markdown"], marker = "extra == 'format-web'" },
-    { name = "docling-slim", extras = ["parse", "models", "ocr-rapidocr", "format-office", "format-web", "latex", "chunking", "polyfactory", "service-client"], marker = "extra == 'standard'" },
-    { name = "docling-slim", extras = ["parse", "models-core", "models-inference"], marker = "extra == 'models'" },
-    { name = "docling-slim", extras = ["parse-core", "parse-pdf", "parse-spatial"], marker = "extra == 'parse'" },
-    { name = "docling-slim", extras = ["standard", "vlm", "asr", "htmlrender", "xbrl", "remote-serving", "onnxruntime", "ocr-easyocr", "ocr-tesserocr", "ocr-mac"], marker = "extra == 'all'" },
+    { name = "docling-slim", extras = ["format-pdf", "models-local", "ocr-rapidocr", "format-office", "format-web", "format-latex", "chunking", "extract-core", "service-client"], marker = "extra == 'standard'" },
+    { name = "docling-slim", extras = ["format-pdf-pypdfium2", "format-pdf-docling"], marker = "extra == 'format-pdf'" },
+    { name = "docling-slim", extras = ["standard", "vlm", "format-audio", "format-html-render", "format-xml-xbrl", "models-remote", "models-onnxruntime", "ocr-easyocr", "ocr-tesserocr", "ocr-mac"], marker = "extra == 'all'" },
     { name = "easyocr", marker = "extra == 'ocr-easyocr'", specifier = ">=1.7,<2.0" },
     { name = "filetype", specifier = ">=1.2.0,<2.0.0" },
     { name = "httpx", marker = "extra == 'service-client'", specifier = ">=0.28,<1.0.0" },
-    { name = "huggingface-hub", marker = "extra == 'models-inference'", specifier = ">=0.23,<2" },
+    { name = "huggingface-hub", marker = "extra == 'models-local'", specifier = ">=0.23,<2" },
     { name = "lxml", marker = "extra == 'format-html'", specifier = ">=4.0.0,<7.0.0" },
     { name = "marko", marker = "extra == 'format-markdown'", specifier = ">=2.1.2,<3.0.0" },
     { name = "mlx-vlm", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'vlm'", specifier = ">=0.4.3,<1.0.0" },
-    { name = "mlx-whisper", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'asr'", specifier = ">=0.4.3" },
-    { name = "numba", marker = "extra == 'asr'", specifier = ">=0.63.0" },
-    { name = "numpy", marker = "extra == 'parse-core'", specifier = ">=1.24.0,<3.0.0" },
+    { name = "mlx-whisper", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'format-audio'", specifier = ">=0.4.3" },
+    { name = "numba", marker = "extra == 'format-audio'", specifier = ">=0.63.0" },
+    { name = "numpy", marker = "extra == 'convert-core'", specifier = ">=1.24.0,<3.0.0" },
     { name = "ocrmac", marker = "sys_platform == 'darwin' and extra == 'ocr-mac'", specifier = ">=1.0.0,<2.0.0" },
     { name = "onnxruntime", marker = "python_full_version < '3.14' and extra == 'ocr-rapidocr-onnx'", specifier = ">=1.7.0,<2.0.0" },
-    { name = "onnxruntime", marker = "python_full_version < '3.14' and sys_platform == 'darwin' and extra == 'onnxruntime'", specifier = "<1.24" },
-    { name = "onnxruntime-gpu", marker = "(python_full_version < '3.14' and sys_platform == 'linux' and extra == 'onnxruntime') or (python_full_version < '3.14' and sys_platform == 'win32' and extra == 'onnxruntime')", specifier = "<1.24" },
-    { name = "openai-whisper", marker = "extra == 'asr'", specifier = ">=20250625" },
+    { name = "onnxruntime", marker = "python_full_version < '3.14' and sys_platform == 'darwin' and extra == 'models-onnxruntime'", specifier = "<1.24" },
+    { name = "onnxruntime-gpu", marker = "(python_full_version < '3.14' and sys_platform == 'linux' and extra == 'models-onnxruntime') or (python_full_version < '3.14' and sys_platform == 'win32' and extra == 'models-onnxruntime')", specifier = "<1.24" },
+    { name = "openai-whisper", marker = "extra == 'format-audio'", specifier = ">=20250625" },
     { name = "openpyxl", marker = "extra == 'format-xlsx'", specifier = ">=3.1.5,<4.0.0" },
     { name = "pandas", marker = "extra == 'ocr-tesserocr'", specifier = ">=2.1.4,<4.0.0" },
     { name = "peft", marker = "extra == 'vlm'", specifier = ">=0.18.1" },
-    { name = "pillow", marker = "extra == 'parse-core'", specifier = ">=10.0.0,<13.0.0" },
-    { name = "playwright", marker = "extra == 'htmlrender'", specifier = ">=1.58.0" },
+    { name = "pillow", marker = "extra == 'convert-core'", specifier = ">=10.0.0,<13.0.0" },
+    { name = "playwright", marker = "extra == 'format-html-render'", specifier = ">=1.58.0" },
     { name = "pluggy", specifier = ">=1.0.0,<2.0.0" },
-    { name = "polyfactory", marker = "extra == 'polyfactory'", specifier = ">=2.22.2" },
+    { name = "polyfactory", marker = "extra == 'extract-core'", specifier = ">=2.22.2" },
     { name = "pydantic", specifier = ">=2.0.0,<3.0.0" },
     { name = "pydantic-settings", specifier = ">=2.3.0,<3.0.0" },
-    { name = "pylatexenc", marker = "extra == 'latex'", specifier = ">=2.10,<3.0" },
-    { name = "pypdfium2", marker = "extra == 'parse-pdf'", specifier = ">=4.30.0,!=4.30.1,<6.0.0" },
+    { name = "pylatexenc", marker = "extra == 'format-latex'", specifier = ">=2.10,<3.0" },
+    { name = "pypdfium2", marker = "extra == 'format-pdf-docling'", specifier = ">=4.30.0,!=4.30.1,<6.0.0" },
+    { name = "pypdfium2", marker = "extra == 'format-pdf-pypdfium2'", specifier = ">=4.30.0,!=4.30.1,<6.0.0" },
     { name = "python-docx", marker = "extra == 'format-docx'", specifier = ">=1.1.2,<2.0.0" },
     { name = "python-pptx", marker = "extra == 'format-pptx'", specifier = ">=1.0.2,<2.0.0" },
     { name = "qwen-vl-utils", marker = "extra == 'vlm'", specifier = ">=0.0.11" },
     { name = "rapidocr", marker = "extra == 'ocr-rapidocr'", specifier = ">=3.8,<4.0.0" },
     { name = "rapidocr", marker = "extra == 'ocr-rapidocr-onnx'", specifier = ">=3.8,<4.0.0" },
     { name = "requests", specifier = ">=2.32.2,<3.0.0" },
-    { name = "rtree", marker = "extra == 'models-core'", specifier = ">=1.3.0,<2.0.0" },
-    { name = "rtree", marker = "extra == 'parse-spatial'", specifier = ">=1.3.0,<2.0.0" },
-    { name = "scipy", marker = "extra == 'models-core'", specifier = ">=1.6.0,<2.0.0" },
+    { name = "rtree", marker = "extra == 'convert-core'", specifier = ">=1.3.0,<2.0.0" },
+    { name = "scipy", marker = "extra == 'convert-core'", specifier = ">=1.6.0,<2.0.0" },
     { name = "tesserocr", marker = "extra == 'ocr-tesserocr'", specifier = ">=2.7.1,<3.0.0" },
-    { name = "torch", marker = "extra == 'models-inference'", specifier = ">=2.2.2,<3.0.0" },
-    { name = "torchvision", marker = "extra == 'models-inference'", specifier = ">=0,<1" },
+    { name = "torch", marker = "extra == 'models-local'", specifier = ">=2.2.2,<3.0.0" },
+    { name = "torchvision", marker = "extra == 'models-local'", specifier = ">=0,<1" },
     { name = "tqdm", specifier = ">=4.65.0,<5.0.0" },
     { name = "transformers", marker = "extra == 'vlm'", specifier = ">=4.42.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,<6.0.0" },
-    { name = "tritonclient", extras = ["grpc"], marker = "extra == 'remote-serving'", specifier = ">=2.65.0,<3.0.0" },
+    { name = "tritonclient", extras = ["grpc"], marker = "extra == 'models-remote'", specifier = ">=2.65.0,<3.0.0" },
     { name = "websockets", marker = "extra == 'service-client'", specifier = ">=14.0,<17.0" },
 ]
-provides-extras = ["parse-core", "parse-pdf", "parse-spatial", "parse", "models-core", "models-inference", "models", "ocr-rapidocr", "ocr-rapidocr-onnx", "ocr-easyocr", "ocr-tesserocr", "ocr-mac", "format-docx", "format-pptx", "format-xlsx", "format-office", "format-html", "format-markdown", "format-web", "vlm", "asr", "htmlrender", "xbrl", "remote-serving", "service-client", "onnxruntime", "latex", "chunking", "polyfactory", "standard", "all"]
+provides-extras = ["convert-core", "extract-core", "format-pdf-pypdfium2", "format-pdf-docling", "format-pdf", "format-docx", "format-pptx", "format-xlsx", "format-office", "format-html", "format-markdown", "format-web", "format-latex", "format-xml-xbrl", "format-html-render", "format-audio", "ocr-rapidocr", "ocr-rapidocr-onnx", "ocr-easyocr", "ocr-tesserocr", "ocr-mac", "models-local", "models-remote", "models-onnxruntime", "vlm", "service-client", "chunking", "standard", "all"]
 
 [package.metadata.requires-dev]
 constraints = [
