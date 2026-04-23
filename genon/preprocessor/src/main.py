@@ -46,11 +46,12 @@ async def healthcheck() -> object:
     return {'status': 'ok'}
 
 
-download_resource_files(
-    bucket_name='preprocessor',
-    resource_id=settings.PREPROCESSOR_ID,
-    path='/app/resource',
-)
+if settings.PREPROCESSOR_ID:
+    download_resource_files(
+        bucket_name='preprocessor',
+        resource_id=settings.PREPROCESSOR_ID,
+        path='/app/resource',
+    )
 
 # 이 파일 마운트
 from preprocessor import DocumentProcessor
