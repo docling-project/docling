@@ -12,7 +12,11 @@ uv build --out-dir dist
 
 # Build docling package (meta-package, dependency-only wheel)
 echo "Building docling package..."
+# Copy root README to docling package directory for build
+cp README.md packages/docling/README.md
 (cd packages/docling && uv build --out-dir ../../dist)
+# Clean up copied README
+rm packages/docling/README.md
 
 echo "Build complete. Packages are in dist/"
 ls -lh dist/

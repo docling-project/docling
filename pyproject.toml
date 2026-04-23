@@ -33,7 +33,7 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
 ]
-readme = "README.md"
+readme = "packages/docling-slim/README.md"
 authors = [
   { name = "Christoph Auer", email = "cau@zurich.ibm.com" },
   { name = "Michele Dolfi", email = "dol@zurich.ibm.com" },

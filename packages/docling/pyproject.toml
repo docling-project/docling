@@ -35,7 +35,7 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
 ]
-# readme = "README.md"  # Omitted for now - will be included in sdist
+readme = "README.md"
 authors = [
   { name = "Christoph Auer", email = "cau@zurich.ibm.com" },
   { name = "Michele Dolfi", email = "dol@zurich.ibm.com" },
@@ -89,7 +89,7 @@ format-xml-xbrl = ['docling-slim[format-xml-xbrl]==2.90.0']
 bypass-selection = true
 
 [tool.hatch.build.targets.sdist]
-only-include = ["pyproject.toml"]
+only-include = ["pyproject.toml", "README.md"]
 
 [tool.uv]
 package = true
