@@ -47,11 +47,11 @@ authors = [
 ]
 requires-python = '>=3.10,<4.0'
 
-# Meta-package: pulls in docling-slim with standard extras + CLI.
+# Meta-package: pulls in docling-slim with standard extras (includes CLI).
 # The `docling` Python module itself is provided by docling-slim.
+# CLI entry points are now defined in docling-slim's pyproject.toml.
 dependencies = [
   'docling-slim[standard]==2.90.0',
-  'typer>=0.12.5,<0.22.0',  # CLI dependency
 ]
 
 [project.urls]
@@ -59,10 +59,6 @@ homepage = "https://github.com/docling-project/docling"
 repository = "https://github.com/docling-project/docling"
 issues = "https://github.com/docling-project/docling/issues"
 changelog = "https://github.com/docling-project/docling/blob/main/CHANGELOG.md"
-
-[project.scripts]
-docling = "docling.cli.main:app"
-docling-tools = "docling.cli.tools:app"
 
 [tool.uv.sources]
 # For local development: use workspace member

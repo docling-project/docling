@@ -1,6 +1,7 @@
 import datetime
 import logging
 import re
+import sys
 import tempfile
 import time
 import warnings
@@ -8,8 +9,23 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Annotated, Type
 
-import rich.table
-import typer
+# Check for CLI dependencies
+try:
+    import rich.table
+    import typer
+except ImportError as e:
+    missing_package = str(e).split("'")[1] if "'" in str(e) else "typer or rich"
+    print(f"Error: Missing required CLI dependency '{missing_package}'", file=sys.stderr)
+    print("\nThe docling CLI requires additional dependencies.", file=sys.stderr)
+    print("Please install them using one of the following options:\n", file=sys.stderr)
+    print("  1. Install the full docling package (recommended):", file=sys.stderr)
+    print("     pip install docling\n", file=sys.stderr)
+    print("  2. Install docling-slim with CLI support:", file=sys.stderr)
+    print("     pip install docling-slim[cli]\n", file=sys.stderr)
+    print("  3. Install just the missing dependencies:", file=sys.stderr)
+    print("     pip install typer rich\n", file=sys.stderr)
+    sys.exit(1)
+
 from docling_core.transforms.serializer.html import (
     HTMLDocSerializer,
     HTMLOutputStyle,

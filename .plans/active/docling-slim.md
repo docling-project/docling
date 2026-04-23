@@ -229,7 +229,9 @@ dependencies = [
 **`[cli]` - Command-line interface**
 ```python
 'typer>=0.12.5,<0.22.0',
+'rich>=13.0.0',
 ```
+*Note: CLI entry points (`docling`, `docling-tools`) are defined in docling-slim. Wrapper scripts check for typer/rich availability and provide helpful installation instructions if missing.*
 
 **`[chunking]` - Document chunking**
 ```python
@@ -245,7 +247,7 @@ dependencies = [
 
 **`[standard]` - Standard installation (matches current docling default)**
 ```python
-'docling-slim[parse,models,ocr-rapidocr,format-office,format-web,latex,chunking,polyfactory]',
+'docling-slim[format-pdf,models-local,ocr-rapidocr,format-office,format-web,format-latex,chunking,extract-core,service-client,cli]',
 ```
 
 **`[all]` - Everything**
@@ -255,14 +257,15 @@ dependencies = [
 
 ## docling Package Dependencies
 
-The `docling` package depends on `docling-slim[standard]` plus CLI support:
+The `docling` package is a meta-package that depends on `docling-slim[standard]`:
 
 ```python
 dependencies = [
-    'docling-slim[standard]==2.85.0',
-    'typer>=0.12.5,<0.22.0',  # CLI dependency
+    'docling-slim[standard]==2.90.0',
 ]
 ```
+
+**Note:** CLI support is now included in the `standard` extra via the `cli` extra in docling-slim. The CLI entry points (`docling` and `docling-tools`) are defined in docling-slim's pyproject.toml, not in the docling package.
 
 ## Detailed pyproject.toml Structures
 

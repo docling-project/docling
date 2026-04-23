@@ -66,7 +66,10 @@ changelog = "https://github.com/docling-project/docling/blob/main/CHANGELOG.md"
 [project.entry-points.docling]
 "docling_defaults" = "docling.models.plugins.defaults"
 
-# No CLI scripts in slim - see packages/docling/pyproject.toml for CLI
+# CLI scripts (require cli extra: pip install docling-slim[cli])
+[project.scripts]
+docling = "docling.cli.main:app"
+docling-tools = "docling.cli.tools:app"
 
 [project.optional-dependencies]
 # Core conversion components
@@ -211,9 +214,15 @@ chunking = [
   'docling-core[chunking]>=2.73.0,<3.0.0',
 ]
 
+# CLI
+cli = [
+  'typer>=0.12.5,<0.22.0',
+  'rich>=13.0.0',
+]
+
 # Convenience extras
 standard = [
-  'docling-slim[format-pdf,models-local,ocr-rapidocr,format-office,format-web,format-latex,chunking,extract-core,service-client]',
+  'docling-slim[format-pdf,models-local,ocr-rapidocr,format-office,format-web,format-latex,chunking,extract-core,service-client,cli]',
 ]
 
 all = [

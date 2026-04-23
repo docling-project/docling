@@ -29,8 +29,8 @@ pip install docling-slim[format-pdf,models-local]
 # Office formats only
 pip install docling-slim[format-office]
 
-# Standard features (same as docling package)
-pip install docling-slim[standard]
+# PDF + CLI
+pip install docling-slim[format-pdf,cli]
 
 # Docling service client for using the Docling Serve API
 pip install docling-slim[service-client]
@@ -42,6 +42,8 @@ pip install docling-slim[service-client]
 |-------|-------------|----------|
 | `standard` | All standard features (same as `docling` package) | Full-featured usage |
 | `all` | All available extras | Complete installation |
+| **CLI** | | |
+| `cli` | Command-line interface (typer, rich) | CLI tools (docling, docling-tools) |
 | **Core Components** | | |
 | `convert-core` | Core conversion components (numpy, pillow, scipy) | Basic document conversion |
 | `extract-core` | Structured information extraction | Data extraction from documents |
