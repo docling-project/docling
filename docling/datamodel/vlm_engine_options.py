@@ -177,6 +177,18 @@ class VllmVlmEngineOptions(BaseVlmEngineOptions):
         ),
     )
 
+    model_impl: Optional[str] = Field(
+        default="transformers",
+        description=(
+            "vLLM model implementation backend. "
+            "'transformers' runs the HuggingFace forward pass inside vLLM — required for "
+            "architectures not registered in vLLM's native model zoo, but incompatible with "
+            "prefix caching and chunked prefill. "
+            "Set to None to use vLLM's native paged-attention implementation, which is "
+            "stable for fine-tuned checkpoints of any architecture vLLM supports natively."
+        ),
+    )
+
 
 # =============================================================================
 # API ENGINE OPTIONS
