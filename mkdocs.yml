@@ -126,6 +126,8 @@ nav:
       - "Enrich a DoclingDocument": examples/enrich_doclingdocument.py
     - ⚡️ GPU optimization:
       - "Standard pipeline": examples/gpu_standard_pipeline.py
+      - "Remote standard pipeline": examples/remote_standard_pipeline.py
+      - "Remote standard pipeline service": examples/remote_standard_pipeline_service.py
       - "VLM pipeline": examples/gpu_vlm_pipeline.py
       - "Parquet benchmark": examples/parquet_images.py
     - 🗂️ More examples:

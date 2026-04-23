@@ -85,7 +85,14 @@ _Note: This option is only related to the system sending user data to remote ser
 
 The options in this list require the explicit `enable_remote_services=True` when processing the documents.
 
+- `KserveV2OcrOptions`: Offload OCR to a remote KServe/Triton endpoint.
+- `KserveV2LayoutOptions`: Offload layout detection to a remote KServe HTTP endpoint.
+- `KserveV2TableStructureOptions`: Offload table structure extraction to a remote KServe HTTP endpoint.
+- `LayoutObjectDetectionOptions` with `ApiKserveV2ObjectDetectionEngineOptions`: Offload layout detection to a remote KServe/Triton endpoint while keeping HuggingFace pre/post-processing local.
 - `PictureDescriptionApiOptions`: Using vision models via API calls.
+
+For a complete CPU-Docling / GPU-service example, see [remote_standard_pipeline.py](../examples/remote_standard_pipeline.py) and
+[remote_standard_pipeline_service.py](../examples/remote_standard_pipeline_service.py).
 
 
 ## Adjust pipeline features

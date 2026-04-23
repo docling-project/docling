@@ -153,6 +153,72 @@ class TableStructureV2Options(BaseTableStructureOptions):
     )
 
 
+class KserveV2TableStructureOptions(BaseTableStructureOptions, KserveV2OptionsMixin):
+    """Configuration for remote table structure extraction over KServe v2 HTTP.
+
+    The remote endpoint receives the cropped table image plus a JSON request
+    describing local text tokens and matching preferences. It responds with a
+    JSON payload describing table cells in crop-local coordinates.
+    """
+
+    kind: ClassVar[Literal["kserve_v2_table_structure"]] = (
+        "kserve_v2_table_structure"
+    )
+
+    do_cell_matching: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether the remote table service should try to align predicted cells "
+                "with the provided local text tokens."
+            )
+        ),
+    ] = True
+
+    scale: Annotated[
+        float,
+        Field(
+            description=(
+                "Scale factor used when cropping tables before sending them to the "
+                "remote service. Default 2.0 converts 72 DPI to 144 DPI."
+            ),
+            gt=0.0,
+        ),
+    ] = 2.0
+
+    model_name: str = Field(
+        default="table_structure",
+        description="Remote model name registered in the KServe v2 endpoint.",
+    )
+
+    transport: Literal["http"] = Field(
+        default="http",
+        description=(
+            "KServe transport for remote table structure. HTTP is required because "
+            "the request and response include JSON string tensors."
+        ),
+    )
+
+    image_input_name: str = Field(
+        default="image",
+        description="Input tensor name for the table crop image.",
+    )
+
+    request_input_name: str = Field(
+        default="request_json",
+        description="Input tensor name for the JSON request payload.",
+    )
+
+    response_output_name: str = Field(
+        default="response_json",
+        description="Output tensor name for the JSON response payload.",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+
 class GraniteVisionTableStructureOptions(BaseTableStructureOptions):
     """Options for the table structure model using Granite Vision (VLM-based)."""
 
@@ -1431,6 +1497,70 @@ class LayoutObjectDetectionOptions(
 LayoutObjectDetectionOptions.register_preset(
     stage_model_specs.OBJECT_DETECTION_LAYOUT_HERON
 )
+
+
+class KserveV2LayoutOptions(BaseLayoutOptions, KserveV2OptionsMixin):
+    """Configuration for remote layout extraction over KServe v2 HTTP."""
+
+    kind: ClassVar[Literal["kserve_v2_layout"]] = "kserve_v2_layout"
+
+    create_orphan_clusters: Annotated[
+        bool,
+        Field(
+            description=(
+                "Create clusters for orphaned elements not assigned to any structure. "
+                "When True, isolated text or elements are grouped into their own clusters."
+            )
+        ),
+    ] = False
+
+    model_name: str = Field(
+        default="layout",
+        description="Remote model name registered in the KServe v2 endpoint.",
+    )
+
+    transport: Literal["http"] = Field(
+        default="http",
+        description=(
+            "KServe transport for remote layout extraction. HTTP is required because "
+            "label outputs are returned as string tensors."
+        ),
+    )
+
+    scale: Annotated[
+        float,
+        Field(
+            description=(
+                "Scaling factor used when rendering page images before sending them to "
+                "the remote layout service."
+            ),
+            gt=0.0,
+        ),
+    ] = 1.0
+
+    image_input_name: str = Field(
+        default="image",
+        description="Input tensor name for the page image.",
+    )
+
+    label_output_name: str = Field(
+        default="label_names",
+        description="Output tensor name for predicted label strings.",
+    )
+
+    box_output_name: str = Field(
+        default="boxes",
+        description="Output tensor name for predicted bounding boxes.",
+    )
+
+    score_output_name: str = Field(
+        default="scores",
+        description="Output tensor name for predicted confidence scores.",
+    )
+
+    model_config = ConfigDict(
+        extra="forbid",
+    )
 
 
 class AsrPipelineOptions(PipelineOptions):

@@ -143,6 +143,7 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
             enabled=self.pipeline_options.do_ocr,
             artifacts_path=artifacts_path,
             accelerator_options=self.pipeline_options.accelerator_options,
+            enable_remote_services=self.pipeline_options.enable_remote_services,
         )
 
     def initialize_page(self, conv_res: ConversionResult, page: Page) -> Page:

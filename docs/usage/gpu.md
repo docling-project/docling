@@ -58,6 +58,53 @@ pipeline_options.ocr_options = RapidOcrOptions(
 
 More details in the GitHub discussion [#2451](https://github.com/docling-project/docling/discussions/2451).
 
+#### Disaggregating CPU and GPU pools
+
+If PDF parsing, page assembly, and document bookkeeping are CPU / RAM heavy while
+OCR, layout, and table models are GPU heavy, keep Docling itself on CPU-only
+machines and point those stages to remote inference endpoints instead.
+
+```python
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.pipeline_options import (
+    KserveV2LayoutOptions,
+    KserveV2OcrOptions,
+    KserveV2TableStructureOptions,
+    PdfPipelineOptions,
+)
+
+pipeline_options = PdfPipelineOptions(
+    enable_remote_services=True,
+    accelerator_options=AcceleratorOptions(
+        device=AcceleratorDevice.CPU,
+        num_threads=8,
+    ),
+)
+
+pipeline_options.ocr_options = KserveV2OcrOptions(
+    url="http://ocr-gpu.example.com:8000",
+    model_name="rapidocr",
+    transport="http",
+)
+
+pipeline_options.layout_options = KserveV2LayoutOptions(
+    url="http://layout-gpu.example.com:8000",
+    model_name="layout-heron",
+)
+
+pipeline_options.table_structure_options = KserveV2TableStructureOptions(
+    url="http://table-gpu.example.com:8000",
+    model_name="table-structure",
+)
+```
+
+This allows the Docling workers to scale CPU and RAM independently from the
+GPU-serving pool. See [remote_standard_pipeline.py](../examples/remote_standard_pipeline.py)
+for the client-side wiring and
+[remote_standard_pipeline_service.py](../examples/remote_standard_pipeline_service.py)
+for a KServe-compatible service that wraps the real RapidOCR, layout, and
+table runtimes.
+
 
 ### VLM Pipeline
 

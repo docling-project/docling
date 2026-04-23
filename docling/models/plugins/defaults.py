@@ -44,6 +44,9 @@ def layout_engines():
     from docling.experimental.models.table_crops_layout_model import (
         TableCropsLayoutModel,
     )
+    from docling.models.stages.layout.kserve_v2_layout_model import (
+        KserveV2LayoutModel,
+    )
     from docling.models.stages.layout.layout_model import LayoutModel
     from docling.models.stages.layout.layout_object_detection_model import (
         LayoutObjectDetectionModel,
@@ -51,6 +54,7 @@ def layout_engines():
 
     return {
         "layout_engines": [
+            KserveV2LayoutModel,
             LayoutObjectDetectionModel,
             LayoutModel,
             TableCropsLayoutModel,
@@ -59,6 +63,9 @@ def layout_engines():
 
 
 def table_structure_engines():
+    from docling.models.stages.table_structure.kserve_v2_table_structure_model import (
+        KserveV2TableStructureModel,
+    )
     from docling.models.stages.table_structure.table_structure_model import (
         TableStructureModel,
     )
@@ -73,6 +80,7 @@ def table_structure_engines():
         "table_structure_engines": [
             TableStructureModel,
             TableStructureModelV2,
+            KserveV2TableStructureModel,
             GraniteVisionTableStructureModel,
         ]
     }

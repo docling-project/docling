@@ -9,6 +9,7 @@ from rtree import index
 
 from docling.datamodel.base_models import BoundingBox, Cluster, Page
 from docling.datamodel.pipeline_options import (
+    KserveV2LayoutOptions,
     LayoutObjectDetectionOptions,
     LayoutOptions,
 )
@@ -201,7 +202,7 @@ class LayoutPostprocessor:
         self,
         page: Page,
         clusters: list[Cluster],
-        options: LayoutOptions | LayoutObjectDetectionOptions,
+        options: LayoutOptions | LayoutObjectDetectionOptions | KserveV2LayoutOptions,
     ) -> None:
         """Initialize processor with page and clusters."""
 

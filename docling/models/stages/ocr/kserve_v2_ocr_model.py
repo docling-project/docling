@@ -16,6 +16,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.kserve_transport_utils import resolve_kserve_transport_base_url
 from docling.datamodel.pipeline_options import KserveV2OcrOptions, OcrOptions
 from docling.datamodel.settings import settings
+from docling.exceptions import OperationNotAllowed
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.inference_engines.common import KserveV2Client, KserveV2HttpClient
 from docling.utils.profiling import TimeRecorder
@@ -44,6 +45,7 @@ class KserveV2OcrModel(BaseOcrModel):
         artifacts_path: Optional[Path],
         options: KserveV2OcrOptions,
         accelerator_options: AcceleratorOptions,
+        enable_remote_services: bool = False,
     ):
         """Initialize the KServe v2 OCR model.
 
@@ -61,6 +63,12 @@ class KserveV2OcrModel(BaseOcrModel):
         )
         self.options: KserveV2OcrOptions
         self._kserve_client: Optional[KserveV2Client] = None
+
+        if self.enabled and not enable_remote_services:
+            raise OperationNotAllowed(
+                "Connections to remote services are only allowed when set explicitly. "
+                "pipeline_options.enable_remote_services=True."
+            )
 
         if self.enabled:
             self._initialize_client()

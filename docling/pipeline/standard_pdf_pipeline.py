@@ -547,6 +547,7 @@ class StandardPdfPipeline(ConvertPipeline):
             enabled=self.pipeline_options.do_ocr,
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
+            enable_remote_services=self.pipeline_options.enable_remote_services,
         )
 
     def _release_page_resources(self, item: ThreadedItem) -> None:
