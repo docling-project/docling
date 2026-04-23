@@ -1129,7 +1129,6 @@ version = "2.90.0"
 source = { editable = "packages/docling" }
 dependencies = [
     { name = "docling-slim", extra = ["standard"] },
-    { name = "typer" },
 ]
 
 [package.optional-dependencies]
@@ -1177,7 +1176,6 @@ requires-dist = [
     { name = "docling-slim", extras = ["ocr-tesserocr"], marker = "extra == 'tesserocr'", editable = "." },
     { name = "docling-slim", extras = ["standard"], editable = "." },
     { name = "docling-slim", extras = ["vlm"], marker = "extra == 'vlm'", editable = "." },
-    { name = "typer", specifier = ">=0.12.5,<0.22.0" },
 ]
 provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "format-audio", "format-html-render", "models-remote", "models-onnxruntime", "format-xml-xbrl"]
 
@@ -1326,6 +1324,7 @@ all = [
     { name = "python-pptx" },
     { name = "qwen-vl-utils" },
     { name = "rapidocr" },
+    { name = "rich" },
     { name = "rtree" },
     { name = "scikit-image", version = "0.25.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scikit-image", version = "0.26.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -1336,10 +1335,15 @@ all = [
     { name = "torchvision" },
     { name = "transformers" },
     { name = "tritonclient", extra = ["grpc"] },
+    { name = "typer" },
     { name = "websockets" },
 ]
 chunking = [
     { name = "docling-core", extra = ["chunking"] },
+]
+cli = [
+    { name = "rich" },
+    { name = "typer" },
 ]
 convert-core = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -1469,11 +1473,13 @@ standard = [
     { name = "python-docx" },
     { name = "python-pptx" },
     { name = "rapidocr" },
+    { name = "rich" },
     { name = "rtree" },
     { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "torch" },
     { name = "torchvision" },
+    { name = "typer" },
     { name = "websockets" },
 ]
 vlm = [
@@ -1546,7 +1552,7 @@ requires-dist = [
     { name = "docling-slim", extras = ["convert-core"], marker = "extra == 'extract-core'" },
     { name = "docling-slim", extras = ["format-docx", "format-pptx", "format-xlsx"], marker = "extra == 'format-office'" },
     { name = "docling-slim", extras = ["format-html", "format-markdown"], marker = "extra == 'format-web'" },
-    { name = "docling-slim", extras = ["format-pdf", "models-local", "ocr-rapidocr", "format-office", "format-web", "format-latex", "chunking", "extract-core", "service-client"], marker = "extra == 'standard'" },
+    { name = "docling-slim", extras = ["format-pdf", "models-local", "ocr-rapidocr", "format-office", "format-web", "format-latex", "chunking", "extract-core", "service-client", "cli"], marker = "extra == 'standard'" },
     { name = "docling-slim", extras = ["format-pdf-pypdfium2", "format-pdf-docling"], marker = "extra == 'format-pdf'" },
     { name = "docling-slim", extras = ["standard", "vlm", "format-audio", "format-html-render", "format-xml-xbrl", "models-remote", "models-onnxruntime", "ocr-easyocr", "ocr-tesserocr", "ocr-mac"], marker = "extra == 'all'" },
     { name = "easyocr", marker = "extra == 'ocr-easyocr'", specifier = ">=1.7,<2.0" },
@@ -1582,6 +1588,7 @@ requires-dist = [
     { name = "rapidocr", marker = "extra == 'ocr-rapidocr'", specifier = ">=3.8,<4.0.0" },
     { name = "rapidocr", marker = "extra == 'ocr-rapidocr-onnx'", specifier = ">=3.8,<4.0.0" },
     { name = "requests", specifier = ">=2.32.2,<3.0.0" },
+    { name = "rich", marker = "extra == 'cli'", specifier = ">=13.0.0" },
     { name = "rtree", marker = "extra == 'convert-core'", specifier = ">=1.3.0,<2.0.0" },
     { name = "scikit-image", marker = "extra == 'ocr-easyocr'", specifier = ">=0.19" },
     { name = "scipy", marker = "extra == 'convert-core'", specifier = ">=1.6.0,<2.0.0" },
@@ -1591,9 +1598,10 @@ requires-dist = [
     { name = "tqdm", specifier = ">=4.65.0,<5.0.0" },
     { name = "transformers", marker = "extra == 'vlm'", specifier = ">=4.42.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*,<6.0.0" },
     { name = "tritonclient", extras = ["grpc"], marker = "extra == 'models-remote'", specifier = ">=2.65.0,<3.0.0" },
+    { name = "typer", marker = "extra == 'cli'", specifier = ">=0.12.5,<0.22.0" },
     { name = "websockets", marker = "extra == 'service-client'", specifier = ">=14.0,<17.0" },
 ]
-provides-extras = ["convert-core", "extract-core", "format-pdf-pypdfium2", "format-pdf-docling", "format-pdf", "format-docx", "format-pptx", "format-xlsx", "format-office", "format-html", "format-markdown", "format-web", "format-latex", "format-xml-xbrl", "format-html-render", "format-audio", "ocr-rapidocr", "ocr-rapidocr-onnx", "ocr-easyocr", "ocr-tesserocr", "ocr-mac", "models-local", "models-remote", "models-onnxruntime", "vlm", "service-client", "chunking", "standard", "all"]
+provides-extras = ["convert-core", "extract-core", "format-pdf-pypdfium2", "format-pdf-docling", "format-pdf", "format-docx", "format-pptx", "format-xlsx", "format-office", "format-html", "format-markdown", "format-web", "format-latex", "format-xml-xbrl", "format-html-render", "format-audio", "ocr-rapidocr", "ocr-rapidocr-onnx", "ocr-easyocr", "ocr-tesserocr", "ocr-mac", "models-local", "models-remote", "models-onnxruntime", "vlm", "service-client", "chunking", "cli", "standard", "all"]
 
 [package.metadata.requires-dev]
 constraints = [

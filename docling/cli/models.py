@@ -12,7 +12,9 @@ try:
     from rich.logging import RichHandler
 except ImportError as e:
     missing_package = str(e).split("'")[1] if "'" in str(e) else "typer or rich"
-    print(f"Error: Missing required CLI dependency '{missing_package}'", file=sys.stderr)
+    print(
+        f"Error: Missing required CLI dependency '{missing_package}'", file=sys.stderr
+    )
     print("\nThe docling-tools CLI requires additional dependencies.", file=sys.stderr)
     print("Please install them using one of the following options:\n", file=sys.stderr)
     print("  1. Install the full docling package (recommended):", file=sys.stderr)
