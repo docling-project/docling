@@ -66,11 +66,12 @@ docling-slim = { workspace = true }
 
 # Re-export slim extras for convenience
 [project.optional-dependencies]
-easyocr = ['docling-slim[ocr-easyocr]==2.91.0']
-tesserocr = ['docling-slim[ocr-tesserocr]==2.91.0']
-ocrmac = ['docling-slim[ocr-mac]==2.91.0']
-vlm = ['docling-slim[vlm]==2.91.0']
-rapidocr = ['docling-slim[ocr-rapidocr-onnx]==2.91.0']
+easyocr = ['docling-slim[feat-ocr-easyocr]==2.91.0']
+tesserocr = ['docling-slim[feat-ocr-tesserocr]==2.91.0']
+ocrmac = ['docling-slim[feat-ocr-mac]==2.91.0']
+vlm = ['docling-slim[models-vlm-inline]==2.91.0']
+rapidocr = ['docling-slim[feat-ocr-rapidocr-onnx]==2.91.0']
+chunking = ['docling-slim[feat-chunking]==2.91.0']
 format-audio = ['docling-slim[format-audio]==2.91.0']
 format-html-render = ['docling-slim[format-html-render]==2.91.0']
 models-remote = ['docling-slim[models-remote]==2.91.0']

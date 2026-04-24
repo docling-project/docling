@@ -72,7 +72,9 @@ docling = "docling.cli.main:app"
 docling-tools = "docling.cli.tools:app"
 
 [project.optional-dependencies]
-# Core conversion components
+# ============================================================================
+# CORE COMPONENTS
+# ============================================================================
 convert-core = [
   'numpy>=1.24.0,<3.0.0',
   'pillow>=10.0.0,<13.0.0',
@@ -85,7 +87,11 @@ extract-core = [
   'polyfactory>=2.22.2',
 ]
 
-# PDF format support (fine-grained)
+# ============================================================================
+# FORMAT SUPPORT
+# ============================================================================
+
+# --- PDF Formats ---
 format-pdf-pypdfium2 = [
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
 ]
@@ -99,7 +105,7 @@ format-pdf = [
   'docling-slim[format-pdf-pypdfium2,format-pdf-docling]',
 ]
 
-# Office format support
+# --- Office Formats (office = docx + pptx + xlsx) ---
 format-docx = [
   'python-docx>=1.1.2,<2.0.0',
 ]
@@ -116,7 +122,7 @@ format-office = [
   'docling-slim[format-docx,format-pptx,format-xlsx]',
 ]
 
-# Web format support
+# --- Web Formats (web = html + markdown) ---
 format-html = [
   'beautifulsoup4>=4.12.3,<5.0.0',
   'lxml>=4.0.0,<7.0.0',
@@ -130,7 +136,7 @@ format-web = [
   'docling-slim[format-html,format-markdown]',
 ]
 
-# Other format support
+# --- Other Formats ---
 format-latex = [
   'pylatexenc>=2.10,<3.0',
 ]
@@ -149,17 +155,19 @@ format-audio = [
   'numba>=0.63.0',
 ]
 
-# OCR engines (separate extras)
-ocr-rapidocr = [
+# ============================================================================
+# OCR ENGINES (feat-ocr-*)
+# ============================================================================
+feat-ocr-rapidocr = [
   'rapidocr>=3.8,<4.0.0',
 ]
 
-ocr-rapidocr-onnx = [
+feat-ocr-rapidocr-onnx = [
   'rapidocr>=3.8,<4.0.0',
   'onnxruntime>=1.7.0,<2.0.0 ; python_version < "3.14"',
 ]
 
-ocr-easyocr = [
+feat-ocr-easyocr = [
   'easyocr>=1.7,<2.0',
   # easyocr declares scikit-image with no lower bound; without this pin,
   # resolvers on Python 3.10 backtrack to 0.16.2 (2019), which has no
@@ -167,16 +175,18 @@ ocr-easyocr = [
   'scikit-image>=0.19',
 ]
 
-ocr-tesserocr = [
+feat-ocr-tesserocr = [
   'tesserocr>=2.7.1,<3.0.0',
   'pandas>=2.1.4,<4.0.0',
 ]
 
-ocr-mac = [
+feat-ocr-mac = [
   'ocrmac>=1.0.0,<2.0.0 ; sys_platform == "darwin"',
 ]
 
-# Models
+# ============================================================================
+# MODELS
+# ============================================================================
 models-local = [
   'torch>=2.2.2,<3.0.0',
   'torchvision>=0,<1',
@@ -195,8 +205,8 @@ models-onnxruntime = [
   'onnxruntime-gpu<1.24 ; python_version < "3.14" and (sys_platform == "linux" or sys_platform == "win32")',
 ]
 
-# VLM
-vlm = [
+# Vision Language Models for inline processing
+models-vlm-inline = [
   'transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*',
   'accelerate>=1.2.1,<2.0.0',
   'mlx-vlm>=0.4.3,<1.0.0 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
@@ -204,29 +214,33 @@ vlm = [
   'peft>=0.18.1',
 ]
 
-# Other
+# ============================================================================
+# FEATURES
+# ============================================================================
+# Document chunking for RAG applications
+feat-chunking = [
+  'docling-core[chunking]>=2.73.0,<3.0.0',
+]
+
 service-client = [
   'httpx>=0.28,<1.0.0',
   'websockets>=14.0,<17.0',
 ]
 
-chunking = [
-  'docling-core[chunking]>=2.73.0,<3.0.0',
-]
-
-# CLI
 cli = [
   'typer>=0.12.5,<0.22.0',
   'rich>=13.0.0',
 ]
 
-# Convenience extras
+# ============================================================================
+# CONVENIENCE BUNDLES
+# ============================================================================
 standard = [
-  'docling-slim[format-pdf,models-local,ocr-rapidocr,format-office,format-web,format-latex,chunking,extract-core,service-client,cli]',
+  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-latex,feat-chunking,extract-core,service-client,cli]',
 ]
 
 all = [
-  'docling-slim[standard,vlm,format-audio,format-html-render,format-xml-xbrl,models-remote,models-onnxruntime,ocr-easyocr,ocr-tesserocr,ocr-mac]',
+  'docling-slim[standard,models-vlm-inline,format-audio,format-html-render,format-xml-xbrl,models-remote,models-onnxruntime,feat-ocr-easyocr,feat-ocr-tesserocr,feat-ocr-mac]',
 ]
 
 [dependency-groups]

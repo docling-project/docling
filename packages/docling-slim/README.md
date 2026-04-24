@@ -38,43 +38,86 @@ pip install docling-slim[service-client]
 
 ## Available Extras
 
+### Convenience Bundles
+
 | Extra | Description | Use Case |
 |-------|-------------|----------|
 | `standard` | All standard features (same as `docling` package) | Full-featured usage |
 | `all` | All available extras | Complete installation |
-| **CLI** | | |
+
+### CLI
+
+| Extra | Description | Use Case |
+|-------|-------------|----------|
 | `cli` | Command-line interface (typer, rich) | CLI tools (docling, docling-tools) |
-| **Core Components** | | |
+
+### Core Components
+
+| Extra | Description | Use Case |
+|-------|-------------|----------|
 | `convert-core` | Core conversion components (numpy, pillow, scipy) | Basic document conversion |
 | `extract-core` | Structured information extraction | Data extraction from documents |
-| **Format Support** | | |
-| `format-pdf` | PDF parsing with pypdfium2 and docling-parse | PDF documents |
+
+### Format Support
+
+#### PDF Formats
+
+| Extra | Description | Use Case |
+|-------|-------------|----------|
+| `format-pdf` | PDF parsing (pypdfium2 + docling-parse) | PDF documents |
 | `format-pdf-pypdfium2` | PDF rendering only | Lightweight PDF support |
 | `format-pdf-docling` | Advanced PDF parsing | Complex PDF layouts |
+
+#### Office Formats (office = docx + pptx + xlsx)
+
+| Extra | Description | Use Case |
+|-------|-------------|----------|
+| `format-office` | All Office formats | Microsoft Office documents |
 | `format-docx` | Microsoft Word documents | .docx files |
 | `format-pptx` | Microsoft PowerPoint | .pptx files |
 | `format-xlsx` | Microsoft Excel | .xlsx files |
-| `format-office` | All Office formats (docx, pptx, xlsx) | Microsoft Office documents |
+
+#### Web Formats (web = html + markdown)
+
+| Extra | Description | Use Case |
+|-------|-------------|----------|
+| `format-web` | HTML and Markdown | Web content |
 | `format-html` | HTML parsing | Web pages and HTML files |
 | `format-markdown` | Markdown parsing | .md files |
-| `format-web` | HTML and Markdown | Web content |
+
+#### Other Formats
+
+| Extra | Description | Use Case |
+|-------|-------------|----------|
 | `format-latex` | LaTeX documents | .tex files |
 | `format-xml-xbrl` | XBRL financial reports | Financial documents |
 | `format-html-render` | HTML rendering with Playwright | Dynamic web content |
 | `format-audio` | Audio transcription (Whisper) | .wav, .mp3 files |
-| **OCR Engines** | | |
-| `ocr-rapidocr` | RapidOCR (lightweight) | Fast OCR |
-| `ocr-rapidocr-onnx` | RapidOCR with ONNX runtime | Optimized OCR |
-| `ocr-easyocr` | EasyOCR | Multi-language OCR |
-| `ocr-tesserocr` | Tesseract OCR | High-accuracy OCR |
-| `ocr-mac` | macOS native OCR | macOS only |
-| **Models** | | |
+
+### OCR Engines
+
+| Extra | Description | Use Case |
+|-------|-------------|----------|
+| `feat-ocr-rapidocr` | RapidOCR (lightweight) | Fast OCR |
+| `feat-ocr-rapidocr-onnx` | RapidOCR with ONNX runtime | Optimized OCR |
+| `feat-ocr-easyocr` | EasyOCR | Multi-language OCR |
+| `feat-ocr-tesserocr` | Tesseract OCR | High-accuracy OCR |
+| `feat-ocr-mac` | macOS native OCR | macOS only |
+
+### Models
+
+| Extra | Description | Use Case |
+|-------|-------------|----------|
 | `models-local` | Local PyTorch models | GPU/CPU inference |
 | `models-remote` | Remote model serving (Triton) | Production deployments |
 | `models-onnxruntime` | ONNX Runtime acceleration | Optimized inference |
-| **Advanced Features** | | |
-| `vlm` | Vision Language Models | Image understanding |
-| `chunking` | Document chunking | RAG applications |
+| `models-vlm-inline` | Vision Language Models | Image understanding, inline processing |
+
+### Other features
+
+| Extra | Description | Use Case |
+|-------|-------------|----------|
+| `feat-chunking` | Document chunking | RAG applications |
 | `service-client` | Docling service client | Remote processing |
 
 
