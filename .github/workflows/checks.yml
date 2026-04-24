@@ -416,7 +416,7 @@ jobs:
 
       - name: Check content of wheels
         run: |
-          for whl in dist/*.whl; do
+          for whl in dist/*/*.whl; do
             echo "=== $whl ==="
             unzip -l "$whl"
           done
@@ -450,7 +450,7 @@ jobs:
 
       - name: Install package
         run: |
-          uv pip install --find-links dist/ dist/docling-*.whl
+          uv pip install --find-links dist/docling-slim/ dist/docling/docling-*.whl
 
       - name: Run docling
         run: uv run docling --help
