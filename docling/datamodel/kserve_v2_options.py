@@ -39,7 +39,7 @@ class KserveV2OptionsMixin(BaseModel):
         default="grpc",
         description=(
             "Transport protocol for KServe v2 calls. "
-            "Use 'grpc' for binary tensor payloads (default), or 'http' for JSON REST."
+            "Use 'grpc' or 'http' for KServe v2 inference."
         ),
     )
 
@@ -70,11 +70,12 @@ class KserveV2OptionsMixin(BaseModel):
         description="Max send/receive gRPC message size in bytes.",
     )
 
-    grpc_use_binary_data: bool = Field(
+    use_binary_data: bool = Field(
         default=True,
         description=(
-            "Whether to request/expect binary tensor payloads on gRPC output tensors. "
-            "Set to False for servers that do not support binary_data output parameters."
+            "Whether to prefer binary tensor payloads when supported by the selected "
+            "KServe transport. For gRPC this controls binary_data tensor handling; for "
+            "HTTP this enables REST binary framing."
         ),
     )
 

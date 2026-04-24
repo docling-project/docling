@@ -23,16 +23,13 @@ KSERVE_OCR_URL_ENVS = {
     "grpc": KSERVE_OCR_GRPC_URL_ENV,
 }
 
-# TODO: Add support for binary mode for the http transfer
-# KSERVE_OCR_TRANSPORTS = ["http", "grpc"]
-# KSERVE_OCR_TRANSPORTS = ["grpc"]
-KSERVE_OCR_TRANSPORTS = ["http"]
+KSERVE_OCR_TRANSPORTS = ["http", "grpc"]
 KSERVE_OCR_LANGUAGES = [
     "en",
-    # "ch",
-    # "arabic",
-    # "korean",
-    # "latin",
+    "ch",
+    "arabic",
+    "korean",
+    "latin",
 ]
 
 

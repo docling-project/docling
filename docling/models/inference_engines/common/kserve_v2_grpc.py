@@ -26,6 +26,11 @@ from docling.models.inference_engines.common.kserve_v2_types import (
     KserveV2ModelMetadataResponse,
     KserveV2ModelTensorSpec,
 )
+from docling.models.inference_engines.common.kserve_v2_utils import (
+    decode_bytes_tensor,
+    encode_bytes_element,
+    encode_bytes_tensor,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -98,43 +103,6 @@ def _set_request_parameter(
     )
 
 
-def _encode_bytes_element(value: Any) -> bytes:
-    if isinstance(value, bytes):
-        return value
-    if isinstance(value, bytearray | memoryview | np.bytes_):
-        return bytes(value)
-    if isinstance(value, str):
-        return value.encode("utf-8")
-    return str(value).encode("utf-8")
-
-
-def _encode_bytes_tensor(tensor: np.ndarray) -> bytes:
-    chunks: list[bytes] = []
-    for value in tensor.reshape(-1):
-        encoded = _encode_bytes_element(value)
-        chunks.append(len(encoded).to_bytes(4, byteorder="little"))
-        chunks.append(encoded)
-    return b"".join(chunks)
-
-
-def _decode_bytes_tensor(raw_output: bytes, shape: tuple[int, ...]) -> np.ndarray:
-    strings, offset = [], 0
-    for _ in range(int(np.prod(shape))):
-        if offset + 4 > len(raw_output):
-            raise RuntimeError(
-                f"Invalid BYTES data: insufficient bytes for length prefix at offset {offset}"
-            )
-        str_len = int.from_bytes(raw_output[offset : offset + 4], byteorder="little")
-        offset += 4
-        if offset + str_len > len(raw_output):
-            raise RuntimeError(
-                f"Invalid BYTES data: insufficient bytes for string of length {str_len} at offset {offset}"
-            )
-        strings.append(raw_output[offset : offset + str_len])
-        offset += str_len
-    return np.array(strings, dtype=object).reshape(shape)
-
-
 def _encode_contents(tensor: np.ndarray, contents: Any) -> None:
     """Populate an InferTensorContents message from a numpy array (non-binary path)."""
     flat = tensor.flatten()
@@ -153,7 +121,7 @@ def _encode_contents(tensor: np.ndarray, contents: Any) -> None:
     elif tensor.dtype == np.bool_:
         contents.bool_contents.extend(flat.tolist())
     elif tensor.dtype == object:
-        contents.bytes_contents.extend(_encode_bytes_element(value) for value in flat)
+        contents.bytes_contents.extend(encode_bytes_element(value) for value in flat)
     else:
         raise ValueError(
             f"Unsupported numpy dtype for gRPC inline (non-binary) encoding: {tensor.dtype!s}. "
@@ -331,7 +299,7 @@ class KserveV2GrpcClient:
             if self.use_binary_data:
                 input_tensor.parameters["binary_data"].bool_param = True
                 if kserve_dtype == "BYTES":  # Bytes encoding
-                    request.raw_input_contents.append(_encode_bytes_tensor(np_tensor))
+                    request.raw_input_contents.append(encode_bytes_tensor(np_tensor))
                 else:
                     contiguous = np.ascontiguousarray(np_tensor)
                     request.raw_input_contents.append(contiguous.tobytes())
@@ -399,7 +367,7 @@ class KserveV2GrpcClient:
                 # Bytes decoding
                 # Special handling for BYTES datatype (variable-length strings)
                 if output_tensor.datatype == "BYTES":
-                    decoded_outputs[output_tensor.name] = _decode_bytes_tensor(
+                    decoded_outputs[output_tensor.name] = decode_bytes_tensor(
                         raw_output, shape
                     )
                 else:
