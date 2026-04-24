@@ -410,11 +410,15 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras
 
-      - name: Build package
-        run: uv build
+      - name: Build packages
+        run: bash .github/scripts/build-packages.sh
 
-      - name: Check content of wheel
-        run: unzip -l dist/*.whl
+      - name: Check content of wheels
+        run: |
+          for whl in dist/*.whl; do
+            echo "=== $whl ==="
+            unzip -l "$whl"
+          done
 
       - name: Store the distribution packages
         uses: actions/upload-artifact@v6
@@ -445,7 +449,7 @@ jobs:
 
       - name: Install package
         run: |
-          uv pip install dist/*.whl
+          uv pip install --find-links dist/ dist/docling-*.whl
 
       - name: Run docling
         run: uv run docling --help
