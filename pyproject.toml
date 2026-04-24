@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "docling-slim"
 version = "2.91.0"  # DO NOT EDIT, updated automatically
-description = "Lightweight SDK for parsing documents (minimal dependencies, opt-in extras)"
+description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
   "docling",
