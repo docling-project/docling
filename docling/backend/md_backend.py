@@ -270,6 +270,60 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             )
         return item
 
+    def _flush_creation_stack(
+        self,
+        *,
+        doc: DoclingDocument,
+        creation_stack: list[_CreationPayload],
+        snippet_text: str,
+        parent_item: Optional[NodeItem],
+        list_ordered_flag_by_ref: dict[str, bool],
+        list_last_item_by_ref: dict[str, ListItem],
+        formatting: Optional[Formatting],
+        hyperlink: Optional[Union[AnyUrl, Path]],
+    ) -> Optional[NodeItem]:
+        """
+        Lazily create list items / headings when we first see their inline content.
+
+        Important: Marko list items/headings can contain inline nodes that are NOT RawText
+        (e.g. CodeSpan, Link). If we only flush on RawText, pending payloads can leak to
+        later nodes and attach to a wrong parent, producing a very deep tree.
+        """
+        while len(creation_stack) > 0:
+            to_create = creation_stack.pop()
+            if isinstance(to_create, _ListItemCreationPayload):
+                enumerated = (
+                    list_ordered_flag_by_ref.get(parent_item.self_ref, False)
+                    if parent_item
+                    else False
+                )
+                parent_ref = parent_item.self_ref if parent_item else None
+                parent_item = self._create_list_item(
+                    doc=doc,
+                    parent_item=parent_item,
+                    text=snippet_text,
+                    enumerated=enumerated,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
+                if parent_ref:
+                    list_last_item_by_ref[parent_ref] = cast(ListItem, parent_item)
+
+            elif isinstance(to_create, _HeadingCreationPayload):
+                # Not keeping as parent_item as logic for correctly tracking
+                # that not implemented yet (section components not captured
+                # as heading children in marko)
+                self._create_heading_item(
+                    doc=doc,
+                    parent_item=parent_item,
+                    text=snippet_text,
+                    level=to_create.level,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
+
+        return parent_item
+
     def _iterate_elements(  # noqa: C901
         self,
         *,
@@ -418,42 +472,16 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 self._close_table(doc)
 
                 if creation_stack:
-                    while len(creation_stack) > 0:
-                        to_create = creation_stack.pop()
-                        if isinstance(to_create, _ListItemCreationPayload):
-                            enumerated = (
-                                list_ordered_flag_by_ref.get(
-                                    parent_item.self_ref, False
-                                )
-                                if parent_item
-                                else False
-                            )
-                            parent_ref = parent_item.self_ref if parent_item else None
-                            parent_item = self._create_list_item(
-                                doc=doc,
-                                parent_item=parent_item,
-                                text=snippet_text,
-                                enumerated=enumerated,
-                                formatting=formatting,
-                                hyperlink=hyperlink,
-                            )
-                            if parent_ref:
-                                list_last_item_by_ref[parent_ref] = cast(
-                                    ListItem, parent_item
-                                )
-
-                        elif isinstance(to_create, _HeadingCreationPayload):
-                            # not keeping as parent_item as logic for correctly tracking
-                            # that not implemented yet (section components not captured
-                            # as heading children in marko)
-                            self._create_heading_item(
-                                doc=doc,
-                                parent_item=parent_item,
-                                text=snippet_text,
-                                level=to_create.level,
-                                formatting=formatting,
-                                hyperlink=hyperlink,
-                            )
+                    parent_item = self._flush_creation_stack(
+                        doc=doc,
+                        creation_stack=creation_stack,
+                        snippet_text=snippet_text,
+                        parent_item=parent_item,
+                        list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                        list_last_item_by_ref=list_last_item_by_ref,
+                        formatting=formatting,
+                        hyperlink=hyperlink,
+                    )
                 else:
                     doc.add_text(
                         label=DocItemLabel.TEXT,
@@ -467,6 +495,21 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             self._close_table(doc)
             _log.debug(" - Code Span: %s", element.children)
             snippet_text = str(element.children).strip()
+            # If this CodeSpan is the only content of a list item / heading, Marko won't
+            # emit RawText. Flush pending creations here to avoid leaking payloads.
+            if creation_stack and snippet_text:
+                parent_item = self._flush_creation_stack(
+                    doc=doc,
+                    creation_stack=creation_stack,
+                    snippet_text=snippet_text,
+                    parent_item=parent_item,
+                    list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                    list_last_item_by_ref=list_last_item_by_ref,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
+                # Represent CodeSpan as the container's text; avoid adding a duplicate CodeItem.
+                return
             doc.add_code(
                 parent=parent_item,
                 text=snippet_text,
