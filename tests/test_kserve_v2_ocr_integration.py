@@ -25,7 +25,8 @@ KSERVE_OCR_URL_ENVS = {
 
 # TODO: Add support for binary mode for the http transfer
 # KSERVE_OCR_TRANSPORTS = ["http", "grpc"]
-KSERVE_OCR_TRANSPORTS = ["grpc"]
+# KSERVE_OCR_TRANSPORTS = ["grpc"]
+KSERVE_OCR_TRANSPORTS = ["http"]
 KSERVE_OCR_LANGUAGES = [
     "en",
     # "ch",
@@ -47,15 +48,6 @@ def test_kserve_v2_ocr_conversion() -> None:
 
     for transport in KSERVE_OCR_TRANSPORTS:
         url = os.environ[KSERVE_OCR_URL_ENVS[transport]]
-        ###################################################
-        # TODO: Clarify what's wrong with the DNS resolution of doclingforce2.zurich.ibm.com
-        if transport == "grpc":
-            host, _, port = url.rpartition(":")
-            resolved_host = socket.getaddrinfo(
-                host, int(port), type=socket.SOCK_STREAM
-            )[0][4][0]
-            url = f"{resolved_host}:{port}"
-        ###################################################
         for lang in KSERVE_OCR_LANGUAGES:
             pipeline_options = PdfPipelineOptions()
             pipeline_options.accelerator_options.device = AcceleratorDevice.CPU
