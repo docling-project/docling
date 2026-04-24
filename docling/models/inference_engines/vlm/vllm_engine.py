@@ -204,8 +204,7 @@ class VllmVlmEngine(BaseVlmEngine):
                 "trust_remote_code": self.options.trust_remote_code,
                 **load_cfg,
             }
-            if self.options.model_impl is not None:
-                llm_kwargs["model_impl"] = self.options.model_impl
+            llm_kwargs["model_impl"] = self.options.model_impl
 
             if self.device == "cpu":
                 llm_kwargs.setdefault("enforce_eager", True)

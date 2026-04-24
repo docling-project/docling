@@ -110,6 +110,10 @@ class TestRuntimeOptions:
         """Test VllmVlmEngineOptions creation."""
         options = VllmVlmEngineOptions()
         assert options.engine_type == VlmEngineType.VLLM
+        assert options.model_impl == "auto"
+
+        with pytest.raises(ValidationError):
+            VllmVlmEngineOptions(model_impl=None)
 
 
 # =============================================================================

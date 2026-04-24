@@ -177,15 +177,15 @@ class VllmVlmEngineOptions(BaseVlmEngineOptions):
         ),
     )
 
-    model_impl: Optional[str] = Field(
-        default="transformers",
+    model_impl: str = Field(
+        default="auto",
         description=(
             "vLLM model implementation backend. "
-            "'transformers' runs the HuggingFace forward pass inside vLLM — required for "
-            "architectures not registered in vLLM's native model zoo, but incompatible with "
-            "prefix caching and chunked prefill. "
-            "Set to None to use vLLM's native paged-attention implementation, which is "
-            "stable for fine-tuned checkpoints of any architecture vLLM supports natively."
+            "Accepted values depend on the installed vLLM version; common values are "
+            "'auto', 'vllm', and 'transformers'. "
+            "'auto' uses vLLM's native implementation when available and otherwise falls back "
+            "to the Transformers modeling backend; 'vllm' forces the native implementation; "
+            "'transformers' forces the Transformers modeling backend."
         ),
     )
 
