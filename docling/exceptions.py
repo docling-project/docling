@@ -8,3 +8,7 @@ class ConversionError(BaseError):
 
 class OperationNotAllowed(BaseError):
     pass
+
+
+class SecurityError(BaseError):
+    pass
