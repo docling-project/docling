@@ -380,7 +380,8 @@ jobs:
             fi
 
             # Install docling-slim with pip (no lock file, no compilation)
-            uv pip install --torch-backend=cpu -e .[all]
+            echo "grpcio>=1.71.0" > override-grpcio.txt
+            uv pip install --torch-backend=cpu -e ".[all]" --overrides override-grpcio.txt
 
             # Run basic import test
             python -c "import docling; print('Import successful for Python ${py_version} without dev headers')"
