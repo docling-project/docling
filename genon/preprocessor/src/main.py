@@ -1,13 +1,20 @@
-from fastapi import FastAPI, Request, Body
-from fastapi.exceptions import RequestValidationError
-
+import os
+import sys
 import traceback
 import time
+
+from fastapi import FastAPI, Request, Body
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
 from logger import Logger
 from utils import make_failure_response, make_success_response
 from config import cors_config
 from common.exception import GenosServiceException
-from fastapi.responses import JSONResponse
+from common.settings import settings
+from util.minio_resource import download_resource_files
+
+sys.path.append(os.path.dirname(__file__) + '/util')
 
 logger = Logger.getLogger(__name__)
 
@@ -38,6 +45,13 @@ async def exception_handler(request, exc: Exception):
 async def healthcheck() -> object:
     return {'status': 'ok'}
 
+
+if settings.PREPROCESSOR_ID:
+    download_resource_files(
+        bucket_name='preprocessor',
+        resource_id=settings.PREPROCESSOR_ID,
+        path='/app/resource',
+    )
 
 # 이 파일 마운트
 from preprocessor import DocumentProcessor
