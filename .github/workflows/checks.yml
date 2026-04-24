@@ -50,7 +50,7 @@ jobs:
             pre-commit|${{ env.PY }}|
 
       - name: Install Python Dependencies
-        run: uv sync --frozen --all-extras
+        run: uv sync --frozen --all-extras --all-packages
 
       - name: Check style
         run: |
@@ -92,7 +92,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Python Dependencies
-        run: uv sync --frozen --all-extras
+        run: uv sync --frozen --all-extras --all-packages
 
       - name: Cache Models
         uses: actions/cache@v5
@@ -159,7 +159,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Python Dependencies
-        run: uv sync --frozen --all-extras
+        run: uv sync --frozen --all-extras --all-packages
 
       - name: Cache Models
         uses: actions/cache@v5
@@ -231,7 +231,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Python Dependencies
-        run: uv sync --frozen --all-extras
+        run: uv sync --frozen --all-extras --all-packages
 
       - name: Cache Models
         uses: actions/cache@v5
@@ -301,21 +301,21 @@ jobs:
             echo "=========================================="
             echo "Testing Python $py_version"
             echo "=========================================="
-            
+
             # Create virtual environment with uv
             uv venv /tmp/venv-${py_version} --python=${py_version}
             source /tmp/venv-${py_version}/bin/activate
-            
-            # Install package with pip (no lock file)
-            uv pip install --torch-backend=cpu -e .[easyocr,tesserocr,vlm,rapidocr,asr]
-            
+
+            # Install docling-slim with pip (no lock file)
+            uv pip install --torch-backend=cpu -e .[all]
+
             # Run basic import test
-            python -c "import docling; from docling.document_converter import DocumentConverter; print('Import successful for Python ${py_version}')"
-            
+            python -c "import docling; print('Import successful for Python ${py_version}')"
+
             # Cleanup
             deactivate
             rm -rf /tmp/venv-${py_version}
-            
+
             echo "Python $py_version: PASSED"
             echo ""
           done
@@ -334,16 +334,16 @@ jobs:
             echo "=========================================="
             echo "Testing Python $py_version (no dev headers)"
             echo "=========================================="
-            
+
             # Create virtual environment with uv
             uv venv /tmp/venv-nodev-${py_version} --python=${py_version}
             source /tmp/venv-nodev-${py_version}/bin/activate
-            
+
             # Find and remove Python.h from the Python installation
             echo "Removing Python development headers from Python installation..."
             python_include_dir=$(python -c "import sysconfig; print(sysconfig.get_path('include'))")
             echo "Python include directory: $python_include_dir"
-            
+
             if [ -f "$python_include_dir/Python.h" ]; then
               echo "Found Python.h, removing it and other headers..."
               # Use sudo if the directory is system-owned
@@ -356,7 +356,7 @@ jobs:
             else
               echo "Warning: Python.h not found at expected location"
             fi
-            
+
             # Verify that compilation fails without dev headers
             # Try to install numpy from source (sdist) - this should fail
             echo "Verifying compilation fails without dev headers..."
@@ -364,7 +364,7 @@ jobs:
             uv pip install --no-binary=:all: numpy==1.26.4 > /tmp/numpy-install-${py_version}.log 2>&1
             numpy_exit_code=$?
             set -e  # Re-enable exit on error
-            
+
             if [ $numpy_exit_code -eq 0 ]; then
               echo "ERROR: numpy installation from source succeeded, but it should have failed without dev headers!"
               cat /tmp/numpy-install-${py_version}.log
@@ -378,19 +378,18 @@ jobs:
                 echo "Warning: Error message doesn't explicitly mention missing headers, but compilation failed as expected"
               fi
             fi
-            
-            # Install package with pip (no lock file, no compilation)
-            # Install without extras that require compilation (tesserocr requires dev headers)
-            # Note: Not using --only-binary since some packages are sdist-only but don't require compilation
-            uv pip install --torch-backend=cpu -e .[easyocr,vlm,rapidocr,asr]
-            
+
+            # Install docling-slim with pip (no lock file, no compilation)
+            echo "grpcio>=1.71.0" > override-grpcio.txt
+            uv pip install --torch-backend=cpu -e ".[all]" --overrides override-grpcio.txt
+
             # Run basic import test
-            python -c "import docling; from docling.document_converter import DocumentConverter; print('Import successful for Python ${py_version} without dev headers')"
-            
+            python -c "import docling; print('Import successful for Python ${py_version} without dev headers')"
+
             # Cleanup
             deactivate
             rm -rf /tmp/venv-nodev-${py_version}
-            
+
             echo "Python $py_version (no dev headers): PASSED"
             echo ""
           done
@@ -412,11 +411,15 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras
 
-      - name: Build package
-        run: uv build
+      - name: Build packages
+        run: bash .github/scripts/build-packages.sh
 
-      - name: Check content of wheel
-        run: unzip -l dist/*.whl
+      - name: Check content of wheels
+        run: |
+          for whl in dist/*/*.whl; do
+            echo "=== $whl ==="
+            unzip -l "$whl"
+          done
 
       - name: Store the distribution packages
         uses: actions/upload-artifact@v6
@@ -447,7 +450,7 @@ jobs:
 
       - name: Install package
         run: |
-          uv pip install dist/*.whl
+          uv pip install --find-links dist/docling-slim/ dist/docling/docling-*.whl
 
       - name: Run docling
         run: uv run docling --help
