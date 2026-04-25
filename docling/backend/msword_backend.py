@@ -77,6 +77,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.blip_xpath_expr = etree.XPath(
             ".//a:blip", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
         )
+        self.vml_imagedata_xpath_expr = etree.XPath(
+            ".//v:imagedata", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+        )
         # self.initialise(path_or_stream)
         # Word file:
         self.path_or_stream: BytesIO | Path = path_or_stream
@@ -263,6 +266,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             drawingml_els = element.findall(
                 ".//w:drawing", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
             )
+            vml_images = self.vml_imagedata_xpath_expr(element)
 
             # Check for textbox content - check multiple textbox formats
             # Only process if the element hasn't been processed before
@@ -348,6 +352,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 ):
                     te1 = self._handle_text_elements(element, doc)
                     added_elements.extend(te1)
+            # Check for VML images (legacy format, e.g., embedded Visio drawings)
+            elif vml_images:
+                vml_pics = self._handle_vml_pictures(vml_images, doc)
+                added_elements.extend(vml_pics)
+                # Check for Text after the VML Image
+                if (
+                    tag_name == "p"
+                    and element.find(
+                        ".//w:t", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                    )
+                    is not None
+                ):
+                    te2 = self._handle_text_elements(element, doc)
+                    added_elements.extend(te2)
             # Check for DrawingML elements
             elif drawingml_els:
                 if (
@@ -1887,32 +1905,145 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # All checks passed: plain text only
         return False
 
+    def _get_image_from_relationship(
+        self, element: Any, rel_attr: str, image_type: str = "image"
+    ) -> bytes | None:
+        """Get image data from a relationship ID.
+
+        Args:
+            element: The XML element containing the relationship reference
+            rel_attr: The attribute name for the relationship ID
+            image_type: Type of image for warning messages
+
+        Returns:
+            Image data as bytes, or None if not found or external
+        """
+        image_data: bytes | None = None
+        rId = element.get(rel_attr)
+        if rId and rId in self.docx_obj.part.rels:
+            rel = self.docx_obj.part.rels[rId]
+            if rel.is_external:
+                warnings.warn(
+                    f"Skipping external {image_type} reference: {rel.target_ref}",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                return None
+            # Access the image part using the relationship ID
+            image_part = rel.target_part
+            image_data = image_part.blob  # Get the binary image data
+        return image_data
+
+    def _add_picture_to_doc(
+        self,
+        doc: DoclingDocument,
+        parent: NodeItem | None,
+        pil_image: Image.Image | None,
+    ) -> RefItem:
+        """Add a picture element to the document.
+
+        Args:
+            doc: The DoclingDocument being constructed
+            parent: Parent node for the picture
+            pil_image: PIL Image object, or None for placeholder
+
+        Returns:
+            Reference to the added picture element
+        """
+        if pil_image is not None:
+            p = doc.add_picture(
+                parent=parent,
+                image=ImageRef.from_pil(image=pil_image, dpi=72),
+                caption=None,
+                content_layer=self.content_layer,
+            )
+        else:
+            p = doc.add_picture(
+                parent=parent,
+                caption=None,
+                content_layer=self.content_layer,
+            )
+        return p.get_ref()
+
+    def _convert_elements_via_docx(
+        self, elements: Any | list[Any], element_tag: str | list[str] | None = None
+    ) -> Image.Image | None:
+        """Convert XML element(s) to image by rendering through DOCX->PDF->PNG.
+
+        This method creates a temporary DOCX with the specified element(s),
+        converts it to PDF using LibreOffice, then renders to PNG.
+
+        Args:
+            elements: Single XML element or list of elements to convert
+            element_tag: Tag name(s) to look for in parent hierarchy when processing a
+                single element. If None, elements are added directly without searching
+                for parent.
+
+        Returns:
+            PIL Image object, or None if conversion failed
+        """
+        # Initialize converter if needed
+        if (
+            self.docx_to_pdf_converter is None
+            and self.docx_to_pdf_converter_init is False
+        ):
+            self.docx_to_pdf_converter = get_docx_to_pdf_converter()
+            self.docx_to_pdf_converter_init = True
+
+        if self.docx_to_pdf_converter is None:
+            return None
+
+        try:
+            # Create a temporary document with just these elements
+            temp_doc = self.load_msword_file(self.path_or_stream, self.document_hash)
+            body = temp_doc._element.body
+            for child in list(body):
+                body.remove(child)
+
+            # Add elements to empty document
+            new_para = temp_doc.add_paragraph()
+            new_r = new_para.add_run()
+
+            # Handle list of elements (e.g., multiple DrawingML elements)
+            if isinstance(elements, list):
+                for elem in elements:
+                    new_r._r.append(deepcopy(elem))
+            else:
+                # Handle single element - find parent if element_tag specified
+                if element_tag is not None:
+                    if isinstance(element_tag, str):
+                        element_tag = [element_tag]
+
+                    parent_elem = elements
+                    while parent_elem is not None:
+                        tag = etree.QName(parent_elem).localname
+                        if tag in element_tag:
+                            new_r._r.append(deepcopy(parent_elem))
+                            break
+                        parent_elem = parent_elem.getparent()
+
+                    if parent_elem is None:
+                        return None
+                else:
+                    # Add element directly
+                    new_r._r.append(deepcopy(elements))
+
+            # Convert DOCX->PDF->PNG
+            pil_image = get_pil_from_dml_docx(
+                temp_doc, converter=self.docx_to_pdf_converter
+            )
+            return pil_image
+        except Exception as e:
+            _log.debug(f"Element conversion via DOCX failed: {e}")
+            return None
+
     def _handle_pictures(
         self, drawing_blip: Any, doc: DoclingDocument
     ) -> list[RefItem]:
-        def get_docx_image(image: Any) -> bytes | None:
-            image_data: bytes | None = None
-            rId = image.get(
-                "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
-            )
-            if rId in self.docx_obj.part.rels:
-                rel = self.docx_obj.part.rels[rId]
-                if rel.is_external:
-                    warnings.warn(
-                        f"Skipping external image reference: {rel.target_ref}",
-                        UserWarning,
-                        stacklevel=2,
-                    )
-                    return None
-                # Access the image part using the relationship ID
-                image_part = rel.target_part
-                image_data = image_part.blob  # Get the binary image data
-            return image_data
-
+        """Handle DrawingML pictures with blip elements."""
         elem_ref: list[RefItem] = []
         if drawing_blip:
             level = self._get_level()
-            # Open the BytesIO object with PIL to create an Image
             parent: NodeItem | None = (
                 self.parents[level - 1]
                 if len(drawing_blip) == 1
@@ -1923,71 +2054,123 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
             )
             for image in drawing_blip:
-                image_data: bytes | None = get_docx_image(image)
+                image_data = self._get_image_from_relationship(
+                    image,
+                    "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed",
+                    "image",
+                )
+                pil_image: Image.Image | None = None
+
                 if image_data is None:
                     _log.warning("Warning: image cannot be found")
-                    p1 = doc.add_picture(
-                        parent=parent,
-                        caption=None,
-                        content_layer=self.content_layer,
-                    )
-                    elem_ref.append(p1.get_ref())
                 else:
                     try:
                         image_bytes = BytesIO(image_data)
                         pil_image = Image.open(image_bytes)
-                        p2 = doc.add_picture(
-                            parent=parent,
-                            image=ImageRef.from_pil(image=pil_image, dpi=72),
-                            caption=None,
-                            content_layer=self.content_layer,
+                        # Try to ensure the image is usable by converting to PNG
+                        # This will fail for WMF/EMF files that PIL can't render
+                        test_bytes = BytesIO()
+                        pil_image.save(test_bytes, format="PNG")
+                        test_bytes.seek(0)
+                        pil_image = Image.open(test_bytes)
+                    except (UnidentifiedImageError, OSError) as e:
+                        _log.warning(f"Warning: image cannot be loaded by Pillow: {e}")
+                        pil_image = None
+
+                elem_ref.append(self._add_picture_to_doc(doc, parent, pil_image))
+        return elem_ref
+
+    def _handle_vml_pictures(
+        self, vml_imagedatas: Any, doc: DoclingDocument
+    ) -> list[RefItem]:
+        """Handle VML (Vector Markup Language) images.
+
+        VML images are legacy format images often used for embedded objects like Visio
+        drawings, charts, etc. They use v:imagedata elements instead of a:blip
+        elements.
+
+        For EMF/WMF formats that PIL cannot render, we use the same approach as
+        DrawingML: create a temporary DOCX with the VML element, convert to PDF via
+        LibreOffice, then render to PNG.
+
+        Args:
+            vml_imagedatas: List of v:imagedata elements
+            doc: The DoclingDocument being constructed
+
+        Returns:
+            List of RefItem references to the added picture elements
+        """
+        elem_ref: list[RefItem] = []
+        if vml_imagedatas:
+            level = self._get_level()
+            parent: NodeItem | None = (
+                self.parents[level - 1]
+                if len(vml_imagedatas) == 1
+                else doc.add_group(
+                    label=GroupLabel.PICTURE_AREA,
+                    parent=self.parents[level - 1],
+                    content_layer=self.content_layer,
+                )
+            )
+            for imagedata in vml_imagedatas:
+                image_data = self._get_image_from_relationship(
+                    imagedata,
+                    "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id",
+                    "VML image",
+                )
+                pil_image: Image.Image | None = None
+
+                if image_data is None:
+                    _log.warning("Warning: VML image cannot be found")
+                else:
+                    try:
+                        image_bytes = BytesIO(image_data)
+                        pil_image = Image.open(image_bytes)
+                        test_bytes = BytesIO()
+                        pil_image.save(test_bytes, format="PNG")
+                        test_bytes.seek(0)
+                        pil_image = Image.open(test_bytes)
+                    except (UnidentifiedImageError, OSError, Exception) as e:
+                        _log.debug(
+                            f"Direct PIL loading failed: {e}, trying DOCX conversion"
                         )
-                        elem_ref.append(p2.get_ref())
-                    except (UnidentifiedImageError, OSError):
-                        _log.warning("Warning: image cannot be loaded by Pillow")
-                        p3 = doc.add_picture(
-                            parent=parent,
-                            caption=None,
-                            content_layer=self.content_layer,
+                        pil_image = None
+
+                    if pil_image is None:
+                        pil_image = self._convert_elements_via_docx(
+                            imagedata, ["object", "pict"]
                         )
-                        elem_ref.append(p3.get_ref())
+                        if pil_image is None:
+                            _log.warning(
+                                "Warning: VML image cannot be loaded. "
+                                "Install LibreOffice for better VML/EMF/WMF support."
+                            )
+
+                elem_ref.append(self._add_picture_to_doc(doc, parent, pil_image))
         return elem_ref
 
     def _handle_drawingml(self, doc: DoclingDocument, drawingml_els: Any):
-        # 1) Make an empty copy of the original document
-        dml_doc = self.load_msword_file(self.path_or_stream, self.document_hash)
-        body = dml_doc._element.body
-        for child in list(body):
-            body.remove(child)
+        """Handle DrawingML elements by converting to image via DOCX->PDF->PNG.
 
-        # 2) Add DrawingML to empty document
-        new_para = dml_doc.add_paragraph()
-        new_r = new_para.add_run()
-        for dml in drawingml_els:
-            new_r._r.append(deepcopy(dml))
+        DrawingML elements without blips (e.g., charts, SmartArt) need to be
+        rendered through LibreOffice to extract as images.
 
-        # 3) Export DOCX->PDF->PNG and save it in DoclingDocument
+        Args:
+            doc: The DoclingDocument being constructed
+            drawingml_els: List of DrawingML elements to process
+        """
         level = self._get_level()
+        parent = self.parents[level - 1]
+
         try:
-            pil_image = get_pil_from_dml_docx(
-                dml_doc, converter=self.docx_to_pdf_converter
-            )
+            pil_image = self._convert_elements_via_docx(drawingml_els, element_tag=None)
             if pil_image is None:
                 raise UnidentifiedImageError
 
-            doc.add_picture(
-                parent=self.parents[level - 1],
-                image=ImageRef.from_pil(image=pil_image, dpi=72),
-                caption=None,
-                content_layer=self.content_layer,
-            )
+            self._add_picture_to_doc(doc, parent, pil_image)
         except (UnidentifiedImageError, OSError):
             _log.warning("Warning: DrawingML image cannot be loaded by Pillow")
-            doc.add_picture(
-                parent=self.parents[level - 1],
-                caption=None,
-                content_layer=self.content_layer,
-            )
+            self._add_picture_to_doc(doc, parent, None)
 
         return
 

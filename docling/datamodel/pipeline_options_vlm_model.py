@@ -91,6 +91,7 @@ class BaseVlmOptions(BaseModel):
 
 class ResponseFormat(str, Enum):
     DOCTAGS = "doctags"
+    DOCLANG = "doclang"
     MARKDOWN = "markdown"
     DEEPSEEKOCR_MARKDOWN = "deepseekocr_markdown"
     HTML = "html"
@@ -220,8 +221,9 @@ class InlineVlmOptions(BaseVlmOptions):
         Field(
             description=(
                 "Expected output format from the VLM. Options: `doctags` "
-                "(structured tags), `markdown`, `html`, `otsl` (table "
-                "structure), `plaintext`. Guides model output parsing."
+                "(structured tags), `doclang` (Doclang XML), `markdown`, "
+                "`html`, `otsl` (table structure), `plaintext`. Guides model "
+                "output parsing."
             ),
         ),
     ]
@@ -400,8 +402,9 @@ class ApiVlmOptions(BaseVlmOptions):
         Field(
             description=(
                 "Expected output format from the VLM API. Options: `doctags` "
-                "(structured tags), `markdown`, `html`, `otsl` (table "
-                "structure), `plaintext`. Guides response parsing."
+                "(structured tags), `doclang` (Doclang XML), `markdown`, "
+                "`html`, `otsl` (table structure), `plaintext`. Guides "
+                "response parsing."
             ),
         ),
     ]

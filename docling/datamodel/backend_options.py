@@ -1,7 +1,7 @@
 from pathlib import Path, PurePath
 from typing import Annotated, Literal, Optional, Union
 
-from pydantic import AnyUrl, BaseModel, Field, SecretStr
+from pydantic import AnyUrl, BaseModel, Field, PositiveInt, SecretStr
 
 
 class BaseBackendOptions(BaseModel):
@@ -90,6 +90,14 @@ class HTMLBackendOptions(BaseBackendOptions):
     infer_furniture: bool = Field(
         True, description="Infer all the content before the first header as furniture."
     )
+    max_image_data_base64_bytes: PositiveInt = Field(
+        20 * 1024 * 1024,  # 20 MB
+        description="The maximum number of base64 data bytes that the backend will accept.",
+    )
+    max_remote_image_bytes: PositiveInt = Field(
+        20 * 1024 * 1024,  # 20 MB
+        description="The maximum number of bytes for remote image downloads.",
+    )
 
 
 class MarkdownBackendOptions(BaseBackendOptions):
@@ -117,6 +125,27 @@ class PdfBackendOptions(BaseBackendOptions):
 
     kind: Literal["pdf"] = Field("pdf", exclude=True, repr=False)
     password: Optional[SecretStr] = None
+
+
+class MetsGbsBackendOptions(PdfBackendOptions):
+    """Options specific to the METS-GBS document backend."""
+
+    kind: Annotated[Literal["mets-gbs"], Field(exclude=True, repr=False)] = "mets-gbs"  # type: ignore[assignment]
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum cumulative size in bytes of all data extracted from the archive during processing"
+        ),
+    ] = 300 * 1024 * 1024
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum size in bytes for any single file extracted from the archive"
+        ),
+    ] = 10 * 1024 * 1024
+    max_member_count: Annotated[
+        PositiveInt, Field(description="Maximum number of archive members to process")
+    ] = 1000
 
 
 class MsExcelBackendOptions(BaseBackendOptions):
@@ -193,6 +222,7 @@ BackendOptions = Annotated[
         HTMLBackendOptions,
         MarkdownBackendOptions,
         PdfBackendOptions,
+        MetsGbsBackendOptions,
         MsExcelBackendOptions,
         LatexBackendOptions,
         XBRLBackendOptions,

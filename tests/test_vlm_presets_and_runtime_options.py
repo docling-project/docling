@@ -110,6 +110,10 @@ class TestRuntimeOptions:
         """Test VllmVlmEngineOptions creation."""
         options = VllmVlmEngineOptions()
         assert options.engine_type == VlmEngineType.VLLM
+        assert options.model_impl == "auto"
+
+        with pytest.raises(ValidationError):
+            VllmVlmEngineOptions(model_impl=None)
 
 
 # =============================================================================
@@ -530,6 +534,7 @@ class TestPresetEngineIntegration:
         # Note: Presets may be shared across different stage types
         all_valid_formats = [
             ResponseFormat.DOCTAGS,
+            ResponseFormat.DOCLANG,
             ResponseFormat.MARKDOWN,
             ResponseFormat.DEEPSEEKOCR_MARKDOWN,
             ResponseFormat.PLAINTEXT,
