@@ -51,7 +51,7 @@ print(result.document.export_to_markdown())
 - 💻 CLI Quickstart
 
 ````
-docling input.pdf --to json
+docling https://arxiv.org/pdf/2206.01062
 ````
 
 ## Features
