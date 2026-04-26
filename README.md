@@ -28,7 +28,7 @@
 
 ## What is Docling?
 
-Docling is an open-source document understanding and conversion toolkit that transforms unstructured documents (PDF, DOCX, PPTX, HTML, etc.) into structured, machine-readable representations such as Markdown, JSON, or DocTags.
+Docling simplifies document processing, parsing diverse formats — including advanced PDF understanding — and providing seamless integrations with the gen AI ecosystem.
 
 ## 🚀 Quickstart + TL;DR
 
