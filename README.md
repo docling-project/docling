@@ -26,22 +26,51 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10101/badge)](https://www.bestpractices.dev/projects/10101)
 [![LF AI & Data](https://img.shields.io/badge/LF%20AI%20%26%20Data-003778?logo=linuxfoundation&logoColor=fff&color=0094ff&labelColor=003778)](https://lfaidata.foundation/projects/)
 
-Docling simplifies document processing, parsing diverse formats — including advanced PDF understanding — and providing seamless integrations with the gen AI ecosystem.
+## What is Docling?
+
+Docling is an open-source document understanding and conversion toolkit that transforms unstructured documents (PDF, DOCX, PPTX, HTML, etc.) into structured, machine-readable representations such as Markdown, JSON, or DocTags.
+
+## 🚀 Quickstart + TL;DR
+
+Docling converts complex documents (PDF, DOCX, etc.) into structured formats optimized for AI workflows.
+
+- ⚡Install
+
+```
+ pip install docling
+
+- 🐍 Python Quickstart
+```
+
+from docling.document_converter import DocumentConverter
+source = "https://arxiv.org/pdf/2408.09869"
+converter = DocumentConverter()
+result = converter.convert(source)
+print(result.document.export_to_markdown())
+
+- 💻 CLI Quickstart
+
+````
+docling input.pdf --to json
+
 
 ## Features
 
-* 🗂️ Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, PPTX, XLSX, HTML, WAV, MP3, WebVTT, images (PNG, TIFF, JPEG, ...), LaTeX, plain text, and more
-* 📑 Advanced PDF understanding incl. page layout, reading order, table structure, code, formulas, image classification, and more
-* 🧬 Unified, expressive [DoclingDocument][docling_document] representation format
-* ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, WebVTT, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
-* 📜 Support of several application-specifc XML schemas incl. [USPTO](https://www.uspto.gov/patents) patents, [JATS](https://jats.nlm.nih.gov/) articles, and [XBRL](https://www.xbrl.org/) financial reports.
-* 🔒 Local execution capabilities for sensitive data and air-gapped environments
-* 🤖 Plug-and-play [integrations][integrations] incl. LangChain, LlamaIndex, Crew AI & Haystack for agentic AI
-* 🔍 Extensive OCR support for scanned PDFs and images
-* 👓 Support of several Visual Language Models ([GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M))
-* 🎙️ Audio support with Automatic Speech Recognition (ASR) models
-* 🔌 Connect to any agent using the [MCP server](https://docling-project.github.io/docling/usage/mcp/)
-* 💻 Simple and convenient CLI
+- 🗂️ Parse [multiple document formats][supported_formats], including PDF, DOCX, PPTX, XLSX, HTML, WAV, MP3, WebVTT, images (PNG, TIFF, JPEG, ...), LaTeX, plain text, and more
+- 📑 Advanced PDF understanding, including page layout, reading order, table structure, code blocks, formulas, image classification, and more
+- 🧬 Unified and expressive [DoclingDocument][docling_document] representation format
+- ↪️ Export to various [output formats][supported_formats], including Markdown, HTML, WebVTT, [DocTags](https://arxiv.org/abs/2503.11576), and lossless JSON
+- 📜 Support for several application-specific XML schemas, including [USPTO](https://www.uspto.gov/patents) patents, [JATS](https://jats.nlm.nih.gov/) articles, and [XBRL](https://www.xbrl.org/) financial reports
+- 🔒 Local execution for sensitive data workflows and air-gapped environments
+- 🤖 Plug-and-play [integrations][integrations] with LangChain, LlamaIndex, CrewAI, and Haystack for agentic AI workflows
+- 🔍 Extensive OCR support for scanned PDFs and images
+- 👓 Support for Visual Language Models, including [GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M)
+- 🎙️ Audio processing with Automatic Speech Recognition (ASR) models
+- 🔌 Connect to any agent using the [MCP server](https://docling-project.github.io/docling/usage/mcp/)
+- 💻 Simple and convenient CLI
+
+
+
 
 ### What's new
 * 📤 Structured [information extraction][extraction] \[🧪 beta\]
@@ -63,7 +92,7 @@ Docling simplifies document processing, parsing diverse formats — including ad
 To use Docling, simply install `docling` from your package manager, e.g. pip:
 ```bash
 pip install docling
-```
+````
 
 > **Note:** Python 3.9 support was dropped in docling version 2.70.0. Please use Python 3.10 or higher.
 
@@ -96,9 +125,11 @@ docling https://arxiv.org/pdf/2206.01062
 ```
 
 You can also use 🥚[GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M) and other VLMs via Docling CLI:
+
 ```bash
 docling --pipeline vlm --vlm-model granite_docling https://arxiv.org/pdf/2206.01062
 ```
+
 This will use MLX acceleration on supported Apple Silicon hardware.
 
 Read more [here](https://docling-project.github.io/docling/usage/)
