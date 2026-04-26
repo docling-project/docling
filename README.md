@@ -38,7 +38,6 @@ Docling converts complex documents (PDF, DOCX, etc.) into structured formats opt
 
 ```
  pip install docling
-
 ```
 
 - 🐍 Python Quickstart
@@ -48,13 +47,11 @@ source = "https://arxiv.org/pdf/2408.09869"
 converter = DocumentConverter()
 result = converter.convert(source)
 print(result.document.export_to_markdown())
-
 ```
 - 💻 CLI Quickstart
 
 ````
 docling input.pdf --to json
-
 ````
 
 ## Features
