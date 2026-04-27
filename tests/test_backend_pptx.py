@@ -80,6 +80,30 @@ def test_pptx_unrecognized_shape_type():
     assert "Next Steps" in pred_md
 
 
+def test_pptx_malformed_picture_shapes():
+    """PPTX with malformed <p:pic> shapes should not crash conversion.
+
+    python-pptx's shape.image accessor raises three distinct exceptions on
+    picture shapes that slip past other tools' parsers (Keynote/Google Drive
+    open these files fine): InvalidXmlError when <p:blipFill> is missing,
+    KeyError when <a:blip r:embed> points at an unknown relationship, and
+    AttributeError when the embedded part's content-type isn't an image.
+
+    The backend should skip each malformed picture with a warning and still
+    extract text from the slides.
+    """
+    converter = get_converter()
+    pptx_path = Path("./tests/data/pptx/powerpoint_malformed_pictures.pptx")
+
+    conv_result: ConversionResult = converter.convert(pptx_path)
+    doc: DoclingDocument = conv_result.document
+
+    pred_md = doc.export_to_markdown()
+    assert "Slide With Missing BlipFill" in pred_md
+    assert "Slide With Dangling Rel" in pred_md
+    assert "Slide With Wrong Content Type" in pred_md
+
+
 def test_pptx_page_range():
     converter = get_converter()
     pptx_path = Path("./tests/data/pptx/powerpoint_sample.pptx")

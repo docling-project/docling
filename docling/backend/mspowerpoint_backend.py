@@ -21,6 +21,7 @@ from lxml import etree
 from PIL import Image, UnidentifiedImageError
 from pptx import Presentation, presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
+from pptx.exc import InvalidXmlError
 from pptx.oxml.text import CT_TextLineBreak
 from typing_extensions import override
 
@@ -594,7 +595,14 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 caption=None,
                 prov=prov,
             )
-        except (UnidentifiedImageError, OSError, ValueError) as e:
+        except (
+            UnidentifiedImageError,
+            OSError,
+            ValueError,
+            InvalidXmlError,
+            KeyError,
+            AttributeError,
+        ) as e:
             _log.warning(f"Warning: image cannot be loaded: {e}")
         return
 
