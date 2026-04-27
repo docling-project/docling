@@ -101,6 +101,7 @@ class StandardPdfPipeline(PaginatedPipeline):
                     accelerator_options=pipeline_options.accelerator_options,
                 )
 
+        ocr_model = self.get_ocr_model(artifacts_path=artifacts_path)
         if use_genos_layout:
             self.build_pipe = [
                 # Pre-processing
@@ -109,6 +110,7 @@ class StandardPdfPipeline(PaginatedPipeline):
                         images_scale=pipeline_options.images_scale,
                     )
                 ),
+                ocr_model,
                 # layout and reading order
                 GenosDotsOCRLayoutModel(pipeline_options=pipeline_options),
             ]
@@ -119,7 +121,6 @@ class StandardPdfPipeline(PaginatedPipeline):
             # Page assemble
             self.build_pipe.append(PageAssembleModel(options=PageAssembleOptions()))
         else:
-            ocr_model = self.get_ocr_model(artifacts_path=artifacts_path)
             assert table_model is not None
             self.build_pipe = [
                 # Pre-processing
