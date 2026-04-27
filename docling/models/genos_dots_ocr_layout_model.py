@@ -564,13 +564,19 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                 outline=(0, 0, 0, 255),
                 width=1,
             )
+            text_w_px = text_mask.width
+            text_h_px = text_mask.height
+            text_x0 = int(round(box_x0 + pad))
+            text_y0 = int(round(box_y0 + pad))
+            text_x0 = min(max(text_x0, 0), max(image.width - text_w_px, 0))
+            text_y0 = min(max(text_y0, 0), max(image.height - text_h_px, 0))
             image.paste(
                 (0, 0, 0),
                 (
-                    int(round(box_x0 + pad)),
-                    int(round(box_y0 + pad)),
-                    int(round(box_x0 + pad + text_w)),
-                    int(round(box_y0 + pad + text_h)),
+                    text_x0,
+                    text_y0,
+                    text_x0 + text_w_px,
+                    text_y0 + text_h_px,
                 ),
                 text_mask,
             )
