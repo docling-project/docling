@@ -650,12 +650,40 @@ def convert(  # noqa: C901
         ),
     ] = False,
     tikz_engine: Annotated[
-        str | None,
+        bool,
         typer.Option(
-            ...,
-            help="The engine to use for rendering Tikz diagrams into images (e.g. 'tectonic').",
+            "--tikz-engine",
+            "-T",
+            help="Render TikZ diagrams into images using Tectonic.",
         ),
-    ] = None,
+    ] = False,
+    no_tikz_engine_download: Annotated[
+        bool,
+        typer.Option(
+            "--no-tikz-engine-download",
+            help=(
+                "Disable automatic Tectonic download when TikZ rendering is enabled "
+                "and no local binary is available."
+            ),
+        ),
+    ] = False,
+    tikz_shell_escape: Annotated[
+        bool,
+        typer.Option(
+            "--tikz-shell-escape",
+            help=(
+                "Enable shell escape for Tectonic TikZ rendering. "
+                "Needed for some diagrams, but less safe for untrusted LaTeX."
+            ),
+        ),
+    ] = False,
+    tikz_engine_timeout: Annotated[
+        float,
+        typer.Option(
+            "--tikz-engine-timeout",
+            help="The timeout in seconds for rendering a single TikZ diagram.",
+        ),
+    ] = 60.0,
 ):
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
@@ -865,7 +893,12 @@ def convert(  # noqa: C901
                 ),
                 InputFormat.LATEX: LatexFormatOption(
                     pipeline_options=simple_format_option,
-                    backend_options=LatexBackendOptions(tikz_engine=tikz_engine)
+                    backend_options=LatexBackendOptions(
+                        tikz_engine="tectonic",
+                        allow_tikz_engine_download=not no_tikz_engine_download,
+                        tikz_engine_timeout=tikz_engine_timeout,
+                        tikz_engine_allow_shell_escape=tikz_shell_escape,
+                    )
                     if tikz_engine
                     else LatexBackendOptions(),
                 ),
