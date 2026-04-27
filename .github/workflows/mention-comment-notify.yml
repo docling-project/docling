@@ -1,0 +1,111 @@
+name: "Mention Comment Notify to Slack"
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  mention-comment-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Parse Mentions in Comment
+        id: parse-comment
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // 'core', 'github', 'context'는 github-script 액션에서 자동으로 주입됨.
+
+            // 1) GitHub Secrets로부터 멘션 매핑(JSON) 읽기
+            const userMapJson = process.env.GENOS_MAP_JSON || "{}";
+            const userMap = JSON.parse(userMapJson);
+
+            // 2) 봇 코멘트 무시 (coderabbitai[bot] 등 GitHub bot 계정)
+            const commentUser = context.payload.comment?.user?.login || "";
+            const commentUserType = context.payload.comment?.user?.type || "";
+            if (commentUserType === "Bot") {
+              console.log("Skipping bot comment from:", commentUser);
+              core.setOutput("shouldSend", "false");
+              return;
+            }
+
+            // 3) 이슈 코멘트 본문
+            const commentBody = context.payload.comment?.body || "";
+            const mentionRegex = /@([a-zA-Z0-9-_]+)/g;
+            let transformed = commentBody;
+            let hasMention = false;
+            let match;
+
+            console.log("commentBody =", commentBody);
+            console.log("userMap =", userMap);
+            // 3) GitHub 멘션 → Slack 멘션 치환
+            while ((match = mentionRegex.exec(commentBody)) !== null) {
+              console.log("Found mention:", match[1]);
+              const ghId = match[1];     // @ 뒤의 GitHub ID
+
+              // Skip copilot mentions as they are for AI instructions, not human notifications
+              if (ghId.toLowerCase() === "copilot") {
+                console.log("Skipping copilot mention");
+                continue;
+              }
+
+              // Explicitly set hasMention only for valid (non-copilot) mentions
+              hasMention = true;
+              if (userMap[ghId]) {
+                // Slack 유저 ID로 치환 (ex: @명대우 -> <@UABC12345>)
+                transformed = transformed.replace(`@${ghId}`, `<@${userMap[ghId]}>`);
+              }
+            }
+
+            // 멘션이 전혀 없으면 Slack 보낼 필요 X
+            if (!hasMention) {
+              core.setOutput("shouldSend", "false");
+              return;
+            }
+
+            // 4) Slack에 표시할 정보
+            const issueUrl = context.payload.issue?.html_url || "";
+            const issueNumber = context.payload.issue?.number || "";
+            const issueTitle = context.payload.issue?.title || "";
+
+            // 5) Slack Blocks 구조를 JavaScript 객체로 생성
+            const blocks = [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": `*이슈 댓글에 멘션이 발생했습니다!* \n\n` +
+                          `이슈: <${issueUrl}|#${issueNumber} - ${issueTitle}> \n` +
+                          `*코멘트 내용:* ${transformed}`
+                }
+              },
+              {
+                "type": "context",
+                "elements": [
+                  {
+                    "type": "mrkdwn",
+                    "text": `By: ${commentUser}`
+                  }
+                ]
+              }
+            ];
+
+            // 6) Slack에 보낼 최종 Payload
+            const payloadObj = {
+              blocks: blocks
+            };
+
+            // 7) JSON 문자열로 변환 + GitHub Actions output에 저장
+            core.setOutput("shouldSend", "true");
+            core.setOutput("payload", JSON.stringify(payloadObj));
+        env:
+          GENOS_MAP_JSON: ${{ secrets.GENOS_MAP_JSON }}
+
+      - name: Send Slack Notification
+        if: steps.parse-comment.outputs.shouldSend == 'true'
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          # 바로 위 단계에서 만든 payload 그대로 사용
+          payload: ${{ steps.parse-comment.outputs.payload }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
