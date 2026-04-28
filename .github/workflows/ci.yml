@@ -83,7 +83,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/checks.yml
     with:
-      run_lint: ${{ github.event_name != 'pull_request' }}
+      run_lint: true
       force_all_checks: >-
         ${{
           github.event_name == 'workflow_dispatch'
