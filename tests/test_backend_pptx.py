@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument
 from docling.document_converter import DocumentConverter
@@ -95,7 +97,9 @@ def test_pptx_malformed_picture_shapes():
     converter = get_converter()
     pptx_path = Path("./tests/data/pptx/powerpoint_malformed_pictures.pptx")
 
-    conv_result: ConversionResult = converter.convert(pptx_path)
+    with pytest.warns(UserWarning, match="Skipping malformed picture shape"):
+        conv_result: ConversionResult = converter.convert(pptx_path)
+
     doc: DoclingDocument = conv_result.document
 
     pred_md = doc.export_to_markdown()

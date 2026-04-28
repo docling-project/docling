@@ -1,4 +1,5 @@
 import logging
+import warnings
 from io import BytesIO
 from pathlib import Path
 from typing import Optional, Union
@@ -603,7 +604,11 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             KeyError,
             AttributeError,
         ) as e:
-            _log.warning(f"Warning: image cannot be loaded: {e}")
+            warnings.warn(
+                f"Skipping malformed picture shape: {e}",
+                UserWarning,
+                stacklevel=2,
+            )
         return
 
     def _handle_tables(self, shape, parent_slide, slide_ind, doc, slide_size):
