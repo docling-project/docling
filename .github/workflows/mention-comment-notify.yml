@@ -30,7 +30,8 @@ jobs:
 
             // 3) 이슈 코멘트 본문
             const commentBody = context.payload.comment?.body || "";
-            const mentionRegex = /@([a-zA-Z0-9-_]+)/g;
+            // GitHub usernames: alphanumeric and single hyphens, max 39 chars.
+            const mentionRegex = /(?<![A-Za-z0-9_])@([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}))/g;
             let transformed = commentBody;
             let hasMention = false;
             let match;
