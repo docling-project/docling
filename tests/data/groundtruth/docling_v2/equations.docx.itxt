@@ -70,3 +70,7 @@ item-0 at level 0: unspecified: group _root_
   item-69 at level 1: formula: \oiint_{0}^{2 \pi }idt
   item-70 at level 1: formula: \oiiint_{C}^{}\frac{1}{z}dz
   item-71 at level 1: text: 
+  item-72 at level 1: text: 
+  item-73 at level 1: text: Operators used with limits:
+  item-74 at level 1: text: 
+  item-75 at level 1: formula: \operatorname{argmax}_{ \epsilon ... ed_{n}{\left(1+\frac{1}{n}\right)}^{n}
