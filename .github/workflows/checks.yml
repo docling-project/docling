@@ -344,7 +344,7 @@ jobs:
       - uses: ./.github/actions/setup-ubuntu-ci
         with:
           python_version: ${{ matrix.python-version }}
-          uv_sync_args: --frozen --group dev --all-extras --no-group docs --no-group examples
+          uv_sync_args: --frozen --group dev --all-extras --all-packages --no-group docs --no-group examples
 
       - name: Set pre-commit cache key
         run: echo "PY=$(python -VV | sha256sum | cut -d' ' -f1)" >> "$GITHUB_ENV"
@@ -393,7 +393,7 @@ jobs:
       - uses: ./.github/actions/setup-ubuntu-ci
         with:
           python_version: ${{ matrix.python-version }}
-          uv_sync_args: --frozen --group dev --all-extras --no-group docs --no-group examples
+          uv_sync_args: --frozen --group dev --all-extras --all-packages --no-group docs --no-group examples
           install_system_deps: "true"
           cache_models: "true"
 
@@ -435,7 +435,7 @@ jobs:
       - uses: ./.github/actions/setup-ubuntu-ci
         with:
           python_version: ${{ matrix.python-version }}
-          uv_sync_args: --frozen --group dev --all-extras --no-group docs --no-group examples
+          uv_sync_args: --frozen --group dev --all-extras --all-packages --no-group docs --no-group examples
           install_system_deps: "true"
           cache_models: "true"
 
@@ -499,7 +499,7 @@ jobs:
       - uses: ./.github/actions/setup-ubuntu-ci
         with:
           python_version: ${{ matrix.python-version }}
-          uv_sync_args: --frozen --group examples --all-extras --no-group docs --no-group dev
+          uv_sync_args: --frozen --group examples --all-extras --all-packages --no-group docs --no-group dev
           install_system_deps: "true"
           cache_models: "true"
 
@@ -556,7 +556,7 @@ jobs:
         shell: bash
         run: |
           uv python pin "${{ matrix.python-version }}"
-          uv sync --frozen --group dev --no-group docs --no-group examples
+          uv sync --frozen --group dev --all-packages --no-group docs --no-group examples
 
       - name: Check import and CLI wiring
         shell: bash
@@ -596,7 +596,7 @@ jobs:
         shell: bash
         run: |
           uv python pin "${{ matrix.python-version }}"
-          uv sync --frozen --group dev --no-group docs --no-group examples
+          uv sync --frozen --group dev --all-packages --no-group docs --no-group examples
 
       - name: Check import and CLI wiring
         shell: bash
