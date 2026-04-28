@@ -354,6 +354,13 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
 
         with TimeRecorder(conv_res, "doc_assemble", scope=ProfilingScope.DOCUMENT):
+            if self.pipeline_options.vlm_options.response_format == ResponseFormat.DOCLANG:
+                _log.info(
+                    "Skipping document assembly for DOCLANG response format. "
+                    "Raw model output is available in page.predictions.vlm_response."
+                )
+                return conv_res
+
             # Response format validation is done in ThreadedLayoutVlmPipelineOptions
             # This check is kept as a safety net, but should never trigger if validation works
             if (

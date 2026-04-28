@@ -97,6 +97,7 @@ class ResponseFormat(str, Enum):
     HTML = "html"
     OTSL = "otsl"
     PLAINTEXT = "plaintext"
+    DOCLANG = "doclang"
 
 
 class InferenceFramework(str, Enum):

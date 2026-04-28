@@ -66,6 +66,7 @@ class VllmVlmEngine(BaseVlmEngine):
     # Allowlist of vLLM LLM/EngineArgs arguments (engine/load-time controls)
     _VLLM_ENGINE_KEYS = {
         # Model/tokenizer/impl
+        "model_impl",
         "tokenizer",
         "tokenizer_mode",
         "model_impl",
@@ -229,14 +230,48 @@ class VllmVlmEngine(BaseVlmEngine):
                 llm_kwargs.setdefault("quantization", extra_cfg["quantization"])
 
             # Initialize vLLM LLM
+            print(f"Initializing vLLM LLM with kwargs: {llm_kwargs}")
             self.llm = LLM(**llm_kwargs)
 
-            # Initialize processor for prompt templating
-            self.processor = AutoProcessor.from_pretrained(
-                artifacts_path,
-                trust_remote_code=self.options.trust_remote_code,
-                revision=revision,
-            )
+            # # Initialize processor for prompt templating
+            # self.processor = AutoProcessor.from_pretrained(
+            #     artifacts_path,
+            #     trust_remote_code=self.options.trust_remote_code,
+            #     revision=revision,
+            # )
+            if "v2" in llm_kwargs["model"].lower():
+                print("\n\n\n\n\n\n")
+                print("Using GOT-OCR 2 style processor with explicit tokenizer + image processor + Idefics3Processor wiring.")
+                print(artifacts_path)
+                from transformers import AutoTokenizer, Idefics3Processor
+
+                try:
+                    from transformers import GotOcr2ImageProcessor
+                except ImportError:
+                    from transformers.models.got_ocr2.image_processing_got_ocr2 import (
+                        GotOcr2ImageProcessor,
+                    )
+
+                tokenizer = AutoTokenizer.from_pretrained(
+                    artifacts_path,
+                )
+                image_processor = GotOcr2ImageProcessor.from_pretrained(
+                    artifacts_path,
+                )
+
+                self.processor = Idefics3Processor(
+                    image_processor=image_processor,
+                    tokenizer=tokenizer,
+                    image_seq_len=64,
+                    chat_template=getattr(tokenizer, "chat_template", None),
+                )
+            else:
+                # Initialize processor for prompt templating (needed for CHAT style)
+                self.processor = AutoProcessor.from_pretrained(
+                    artifacts_path,
+                    trust_remote_code=self.options.trust_remote_code,
+                    revision=revision,
+                )
 
             # Create default SamplingParams (will be overridden per-batch in predict_batch)
             # Use reasonable defaults since these come from input data

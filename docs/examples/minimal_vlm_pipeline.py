@@ -33,70 +33,64 @@ from docling.datamodel.vlm_engine_options import (
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
-# Convert a public arXiv PDF; replace with a local path if preferred.
-source = "https://arxiv.org/pdf/2501.17887"
+def main():
+    # Convert a public arXiv PDF; replace with a local path if preferred.
+    source = "https://arxiv.org/pdf/2501.17887"
 
-###### EXAMPLE 1: USING DEFAULT SETTINGS (SIMPLEST)
-# - No configuration needed
-# - Uses default VLM model (GraniteDocling)
-# - Auto-selects the best runtime for your platform
+    ###### EXAMPLE 2: USING PRESETS (RECOMMENDED)
+    # - Uses the "granite_docling" preset explicitly
+    # - Same as default but more explicit and configurable
+    # - Auto-selects the best runtime for your platform (Transformers by default)
 
-converter = DocumentConverter(
-    format_options={
-        InputFormat.PDF: PdfFormatOption(
-            pipeline_cls=VlmPipeline,
-        ),
-    }
-)
+    vlm_options = VlmConvertOptions.from_preset("granite_docling_v2")
+    pipeline_options = VlmPipelineOptions(vlm_options=vlm_options)
+    pipeline_options.artifacts_path = "/gpfs/ess6000-1/proj/docling-vision/users/mao/repos/our_nano_vlm/checkpoints/got_image_processor_3B_mamba/test_for_docling"  # Optional: specify local path to model artifacts
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_cls=VlmPipeline,
+                pipeline_options=pipeline_options,
+            ),
+        }
+    )
 
-doc = converter.convert(source=source).document
+    conv_res = converter.convert(source=source)
 
-print(doc.export_to_markdown())
+    print("status:", conv_res.status)
+    print("errors:", [e.error_message for e in conv_res.errors])
 
-
-###### EXAMPLE 2: USING PRESETS (RECOMMENDED)
-# - Uses the "granite_docling" preset explicitly
-# - Same as default but more explicit and configurable
-# - Auto-selects the best runtime for your platform (Transformers by default)
-
-vlm_options = VlmConvertOptions.from_preset("granite_docling")
-
-converter = DocumentConverter(
-    format_options={
-        InputFormat.PDF: PdfFormatOption(
-            pipeline_cls=VlmPipeline,
-            pipeline_options=VlmPipelineOptions(vlm_options=vlm_options),
-        ),
-    }
-)
-
-doc = converter.convert(source=source).document
-
-print(doc.export_to_markdown())
+    for p in conv_res.pages:
+        text = p.predictions.vlm_response.text if p.predictions.vlm_response else None
+        print(f"\n--- page {p.page_no} ---")
+        print(text[:2000] if text else "<no vlm_response>")
 
 
-###### EXAMPLE 3: USING PRESETS WITH RUNTIME OVERRIDE (ADVANCED)
-# Demonstrates using the same preset but overriding the runtime to use MLX
-# on macOS with MPS acceleration. The preset automatically uses the MLX-specific
-# model variant when available.
+# ###### EXAMPLE 3: USING PRESETS WITH RUNTIME OVERRIDE (ADVANCED)
+# # Demonstrates using the same preset but overriding the runtime to use MLX
+# # on macOS with MPS acceleration. The preset automatically uses the MLX-specific
+# # model variant when available.
 
-vlm_options = VlmConvertOptions.from_preset(
-    "granite_docling",
-    engine_options=MlxVlmEngineOptions(),
-)
+# vlm_options = VlmConvertOptions.from_preset(
+#     "granite_docling",
+#     engine_options=MlxVlmEngineOptions(),
+# )
 
-# The preset automatically selects the MLX-optimized model variant
-print(f"Using model: {vlm_options.model_spec.get_repo_id(VlmEngineType.MLX)}")
+# # The preset automatically selects the MLX-optimized model variant
+# print(f"Using model: {vlm_options.model_spec.get_repo_id(VlmEngineType.MLX)}")
 
-converter = DocumentConverter(
-    format_options={
-        InputFormat.PDF: PdfFormatOption(
-            pipeline_cls=VlmPipeline,
-            pipeline_options=VlmPipelineOptions(vlm_options=vlm_options),
-        ),
-    }
-)
+# converter = DocumentConverter(
+#     format_options={
+#         InputFormat.PDF: PdfFormatOption(
+#             pipeline_cls=VlmPipeline,
+#             pipeline_options=VlmPipelineOptions(vlm_options=vlm_options),
+#         ),
+#     }
+# )
 
-doc = converter.convert(source=source).document
+# doc = converter.convert(source=source).document
 
-print(doc.export_to_markdown())
+# print(doc.export_to_markdown())
+
+
+if __name__ == "__main__":
+    main()

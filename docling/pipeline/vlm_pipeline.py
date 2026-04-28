@@ -286,6 +286,13 @@ class VlmPipeline(PaginatedPipeline):
                     conv_res, InputFormat.HTML, HTMLDocumentBackend
                 )
 
+            elif response_format_legacy == ResponseFormat.DOCLANG:
+                _log.info(
+                    "Skipping document assembly for DOCLANG response format. "
+                    "Raw model output is available in page.predictions.vlm_response."
+                )
+                return conv_res
+
             else:
                 raise RuntimeError(
                     f"Unsupported VLM response format {response_format_legacy}"

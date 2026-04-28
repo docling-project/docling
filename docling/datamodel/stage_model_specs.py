@@ -895,6 +895,34 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
     },
 }
 
+GRANITE_DOCLING_MODEL_SPEC_BASE_V2 = {
+    "name": "Granite-Docling-v2",
+    "default_repo_id": "ibm-granite/granite-docling-v2",
+    "stop_strings": ["</doclang>", "<|end_of_text|>"],
+    "max_new_tokens": 4096,
+    "engine_overrides": {
+        VlmEngineType.MLX: EngineModelConfig(
+            repo_id="..."
+        ),
+        VlmEngineType.TRANSFORMERS: EngineModelConfig(
+            extra_config={
+                "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                "extra_generation_config": {"skip_special_tokens": False},
+            }
+        ),
+        VlmEngineType.VLLM: EngineModelConfig(
+            extra_config={
+                "model_impl": "auto",
+            }
+        ),
+    },
+    "api_overrides": {
+        VlmEngineType.API_OLLAMA: ApiModelConfig(
+            params={"model": "ibm/granite-docling:258m"}
+        ),
+    },
+}
+
 # Shared Pixtral model spec used across VLM_CONVERT and PICTURE_DESCRIPTION stages
 PIXTRAL_MODEL_SPEC_BASE = {
     "name": "Pixtral-12B",
@@ -1014,6 +1042,20 @@ VLM_CONVERT_GRANITE_DOCLING = StageModelPreset(
     ),
     scale=2.0,
     default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+
+VLM_CONVERT_GRANITE_DOCLING_V2 = StageModelPreset(
+    preset_id="granite_docling_v2",
+    name="Granite-Docling v2",
+    description="IBM Granite DocTags model for document conversion (258M parameters)",
+    model_spec=VlmModelSpec(
+        **GRANITE_DOCLING_MODEL_SPEC_BASE_V2,
+        prompt="<doclang>",
+        response_format=ResponseFormat.DOCLANG,
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.VLLM,
 )
 
 VLM_CONVERT_DEEPSEEK_OCR = StageModelPreset(

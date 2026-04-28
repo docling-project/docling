@@ -122,12 +122,44 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             ):
                 model_cls = AutoModelForImageTextToText
 
-            self.processor = AutoProcessor.from_pretrained(
-                artifacts_path,
-                trust_remote_code=vlm_options.trust_remote_code,
-                revision=vlm_options.revision,
-            )
-            self.processor.tokenizer.padding_side = "left"
+            # Hack for GOT-OCR 2 style processors that require explicit
+            # tokenizer + image processor + Idefics3Processor wiring.
+            if "v2" in str(artifacts_path).lower():
+                from transformers import AutoTokenizer, Idefics3Processor
+
+                try:
+                    from transformers import GotOcr2ImageProcessor
+                except ImportError:
+                    from transformers.models.got_ocr2.image_processing_got_ocr2 import (
+                        GotOcr2ImageProcessor,
+                    )
+
+                tokenizer = AutoTokenizer.from_pretrained(
+                    artifacts_path,
+                    trust_remote_code=vlm_options.trust_remote_code,
+                    revision=vlm_options.revision,
+                )
+                image_processor = GotOcr2ImageProcessor.from_pretrained(
+                    artifacts_path,
+                    trust_remote_code=vlm_options.trust_remote_code,
+                    revision=vlm_options.revision,
+                )
+
+                self.processor = Idefics3Processor(
+                    image_processor=image_processor,
+                    tokenizer=tokenizer,
+                    image_seq_len=64,
+                    chat_template=getattr(tokenizer, "chat_template", None),
+                )
+            else:
+                self.processor = AutoProcessor.from_pretrained(
+                    artifacts_path,
+                    trust_remote_code=vlm_options.trust_remote_code,
+                    revision=vlm_options.revision,
+                )
+
+            if getattr(self.processor, "tokenizer", None) is not None:
+                self.processor.tokenizer.padding_side = "left"
 
             self.vlm_model = model_cls.from_pretrained(
                 artifacts_path,
