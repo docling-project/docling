@@ -14,26 +14,14 @@ jobs:
         with:
           created_time: ${{ github.event.issue.created_at }}
           script: |
-            def convert_time_to_kr(time_utc):
-              curtime = time_utc
-              date, time = curtime.split("T")
-              year, month, day = date.split("-")
-              day = int(day)
-              h, m, s = time.split(":")
-              h = int(h)
-              h += 9
-              if h >= 24:
-                h -= 24
-                day += 1
-              h = str(h)
-              day = str(day)
-              date = year + '-' + month + '-' + day
-              time = h + ':' + m + ':' + s
-
-              return date + " " + time[:-1]
-            created_time = get_input("created_time")
-            output = convert_time_to_kr(created_time)
-            set_output("time", output)
+        from datetime import datetime, timedelta, timezone
+        kst = timezone(timedelta(hours=9))
+        created_time = get_input("created_time")
+        # GitHub timestamps end with 'Z' (UTC); fromisoformat in 3.11+ accepts it,
+        # but normalize for older runtimes too.
+        iso = created_time.replace("Z", "+00:00")
+        dt_kst = datetime.fromisoformat(iso).astimezone(kst)
+        set_output("time", dt_kst.strftime("%Y-%m-%d %H:%M:%S"))
       - name: Create Slack payload
         id: create_payload
         run: |
