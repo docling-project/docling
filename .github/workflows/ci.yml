@@ -1,13 +1,8 @@
 name: "Run CI"
 
 on:
-  merge_group:
-    types: [checks_requested]
-  push:
-    branches:
-      - "**"
-      - "!main"
-      - "!gh-pages"
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]
   workflow_dispatch:
     inputs:
       python_versions:
@@ -42,18 +37,18 @@ jobs:
           echo "default_python_versions=${DEFAULT_PYTHON_VERSIONS}" >> "$GITHUB_OUTPUT"
           echo "full_python_versions=${FULL_PYTHON_VERSIONS}" >> "$GITHUB_OUTPUT"
 
-      - name: Mark manual and merge queue runs to execute CI
-        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group' }}
+      - name: Mark manual runs to execute CI
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         id: manual
         run: echo "run_ci=true" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v6
-        if: ${{ github.event_name != 'workflow_dispatch' && github.event_name != 'merge_group' }}
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         with:
           fetch-depth: 0
 
       - name: Detect changed paths
-        if: ${{ github.event_name != 'workflow_dispatch' && github.event_name != 'merge_group' }}
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         id: filter
         uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         with:
@@ -91,8 +86,7 @@ jobs:
       run_lint: ${{ github.event_name != 'pull_request' }}
       force_all_checks: >-
         ${{
-          github.event_name == 'workflow_dispatch' ||
-          github.event_name == 'merge_group'
+          github.event_name == 'workflow_dispatch'
         }}
       run_package_compat: >-
         ${{
