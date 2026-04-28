@@ -9,6 +9,10 @@ BLANK = ""
 BACKSLASH = "\\"
 ALN = "&"
 
+# Characters that indicate mathematical expressions (not plain text)
+# Used to detect when spaces should be escaped in limit labels
+MATH_CHARS = (BACKSLASH, "<", ">", "=", "+", "*", "/", "^", "_", "{", "}")
+
 CHR = {
     # Unicode : Latex Math Symbols
     # Top accents

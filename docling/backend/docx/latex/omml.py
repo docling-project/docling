@@ -27,6 +27,7 @@ from docling.backend.docx.latex.latex_dict import (
     LIM_FUNC,
     LIM_TO,
     LIM_UPP,
+    MATH_CHARS,
     POS,
     POS_DEFAULT,
     RAD,
@@ -402,7 +403,17 @@ class oMath2Latex(Tag2Method):
         """
         the lower limit of the limLow object and the upper limit of the limUpp function
         """
-        return self.process_children(elm).replace(LIM_TO[0], LIM_TO[1])
+        result = self.process_children(elm).replace(LIM_TO[0], LIM_TO[1])
+
+        # Strip trailing LaTeX line breaks (\\) and whitespace
+        result = result.rstrip()
+        if result.endswith(BACKSLASH + BACKSLASH):
+            result = result[:-2].rstrip()
+
+        # Escape spaces with backslash-space for plain text labels in math mode
+        if result and not any(char in result for char in MATH_CHARS):
+            result = result.replace(" ", BACKSLASH + " ")
+        return result
 
     def do_m(self, elm):
         """
