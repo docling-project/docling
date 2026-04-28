@@ -21,10 +21,8 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersPromptStyle,
 )
 from docling.models.base_model import BaseVlmPageModel
-from docling.models.utils.generation_utils import (
-    GenerationStopper,
-    HFStoppingCriteriaWrapper,
-)
+from docling.models.utils.generation_utils import GenerationStopper
+from docling.models.utils.hf_stopping_criteria import HFStoppingCriteriaWrapper
 from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )

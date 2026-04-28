@@ -3,8 +3,16 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional, Union
 
 from docling_core.types.doc.page import SegmentedPage
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field
-from transformers import StoppingCriteria
 from typing_extensions import deprecated
+
+try:
+    from transformers import StoppingCriteria
+except ImportError:
+    # `transformers` is optional for slim installs (e.g. `service-client`
+    # extra). The placeholder keeps the `custom_stopping_criteria` field
+    # annotation valid; pydantic accepts it via `arbitrary_types_allowed`.
+    class StoppingCriteria:  # type: ignore[no-redef]
+        pass
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.models.utils.generation_utils import GenerationStopper

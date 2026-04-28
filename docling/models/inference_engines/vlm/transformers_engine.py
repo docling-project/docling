@@ -39,10 +39,8 @@ from docling.models.inference_engines.vlm.base import (
     VlmEngineInput,
     VlmEngineOutput,
 )
-from docling.models.utils.generation_utils import (
-    GenerationStopper,
-    HFStoppingCriteriaWrapper,
-)
+from docling.models.utils.generation_utils import GenerationStopper
+from docling.models.utils.hf_stopping_criteria import HFStoppingCriteriaWrapper
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 from docling.utils.accelerator_utils import decide_device
 

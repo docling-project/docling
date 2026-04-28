@@ -229,11 +229,27 @@ class DocumentFormat(str, Enum):
     V1 = "v1"
 
 
+def _safe_version(name: str) -> str:
+    """Return the installed version of `name`, or `"unknown"` if the
+    distribution is not present.
+
+    Slim installs may not have every distribution available (e.g. the
+    `docling` meta-package is absent when only `docling-slim` is
+    installed; `docling-ibm-models` and `docling-parse` are gated behind
+    optional extras).
+    """
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"
+
+
 class DoclingVersion(BaseModel):
-    docling_version: str = importlib.metadata.version("docling")
-    docling_core_version: str = importlib.metadata.version("docling-core")
-    docling_ibm_models_version: str = importlib.metadata.version("docling-ibm-models")
-    docling_parse_version: str = importlib.metadata.version("docling-parse")
+    docling_version: str = _safe_version("docling")
+    docling_slim_version: str = _safe_version("docling-slim")
+    docling_core_version: str = _safe_version("docling-core")
+    docling_ibm_models_version: str = _safe_version("docling-ibm-models")
+    docling_parse_version: str = _safe_version("docling-parse")
     platform_str: str = platform.platform()
     py_impl_version: str = sys.implementation.cache_tag
     py_lang_version: str = platform.python_version()
