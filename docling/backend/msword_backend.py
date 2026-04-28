@@ -1147,20 +1147,24 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # Insert equations into original text
         # This is done to preserve white space structure
-        output_text = text[:]
-        init_i = 0
-        for i_substr, substr in enumerate(texts_and_equations):
+        output_text = ""
+        text_pos = 0
+
+        for substr in texts_and_equations:
             if len(substr) == 0:
                 continue
-
-            if substr in output_text[init_i:]:
-                init_i += output_text[init_i:].find(substr) + len(substr)
+            if substr.startswith("<eq>"):
+                # This is an equation - insert it directly
+                output_text += substr
             else:
-                if i_substr > 0:
-                    output_text = output_text[:init_i] + substr + output_text[init_i:]
-                    init_i += len(substr)
+                # This is a text fragment - find it in original text
+                pos = text.find(substr, text_pos)
+                if pos >= 0:
+                    output_text += substr
+                    text_pos = pos + len(substr)
                 else:
-                    output_text = substr + output_text
+                    # Fallback: if not found, just append it
+                    output_text += substr
 
         return output_text, only_equations
 

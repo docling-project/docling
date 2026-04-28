@@ -4,7 +4,7 @@
   "name": "equations",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "binary_hash": 13452965240408182890,
+    "binary_hash": 15129791106175345334,
     "filename": "equations.docx"
   },
   "furniture": {
@@ -99,12 +99,6 @@
         "$ref": "#/groups/6"
       },
       {
-        "$ref": "#/texts/46"
-      },
-      {
-        "$ref": "#/texts/47"
-      },
-      {
         "$ref": "#/texts/48"
       },
       {
@@ -184,6 +178,12 @@
       },
       {
         "$ref": "#/texts/74"
+      },
+      {
+        "$ref": "#/texts/75"
+      },
+      {
+        "$ref": "#/texts/76"
       }
     ],
     "content_layer": "body",
@@ -331,6 +331,12 @@
         },
         {
           "$ref": "#/texts/45"
+        },
+        {
+          "$ref": "#/texts/46"
+        },
+        {
+          "$ref": "#/texts/47"
         }
       ],
       "content_layer": "body",
@@ -931,8 +937,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This is a word document and this is an inline equation: ",
-      "text": "This is a word document and this is an inline equation: "
+      "orig": "This is a word document and these are inline equations: ",
+      "text": "This is a word document and these are inline equations: "
     },
     {
       "self_ref": "#/texts/44",
@@ -943,8 +949,8 @@
       "content_layer": "body",
       "label": "formula",
       "prov": [],
-      "orig": "A= \\pi r^{2}",
-      "text": "A= \\pi r^{2}"
+      "orig": "N_{s}^{H}",
+      "text": "N_{s}^{H}"
     },
     {
       "self_ref": "#/texts/45",
@@ -955,32 +961,32 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". If instead, I want an equation by line, I can do this:",
-      "text": ". If instead, I want an equation by line, I can do this:"
+      "orig": "/",
+      "text": "/"
     },
     {
       "self_ref": "#/texts/46",
       "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/47",
-      "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
       "label": "formula",
       "prov": [],
-      "orig": "e^{x}=1+\\frac{x}{1!}+\\frac{x^{2}}{2!}+\\frac{x^{3}}{3!}+ \\text{ \\textellipsis } , - \\infty  < x <  \\infty",
-      "text": "e^{x}=1+\\frac{x}{1!}+\\frac{x^{2}}{2!}+\\frac{x^{3}}{3!}+ \\text{ \\textellipsis } , - \\infty  < x <  \\infty"
+      "orig": "N_{s}^{P}",
+      "text": "N_{s}^{P}"
+    },
+    {
+      "self_ref": "#/texts/47",
+      "parent": {
+        "$ref": "#/groups/6"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "​. If instead, I want an equation by line, I can do this:",
+      "text": "​. If instead, I want an equation by line, I can do this:"
     },
     {
       "self_ref": "#/texts/48",
@@ -1001,17 +1007,10 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
+      "label": "formula",
       "prov": [],
-      "orig": "And that is an equation by itself. Cheers!",
-      "text": "And that is an equation by itself. Cheers!",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "e^{x}=1+\\frac{x}{1!}+\\frac{x^{2}}{2!}+\\frac{x^{3}}{3!}+ \\text{ \\textellipsis } , - \\infty  < x <  \\infty",
+      "text": "e^{x}=1+\\frac{x}{1!}+\\frac{x^{2}}{2!}+\\frac{x^{3}}{3!}+ \\text{ \\textellipsis } , - \\infty  < x <  \\infty"
     },
     {
       "self_ref": "#/texts/50",
@@ -1034,8 +1033,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Large operators and integrals are represented with n-ary objects in OMML XML:",
-      "text": "Large operators and integrals are represented with n-ary objects in OMML XML:",
+      "orig": "And that is an equation by itself. Cheers!",
+      "text": "And that is an equation by itself. Cheers!",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -1063,13 +1062,44 @@
       },
       "children": [],
       "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Large operators and integrals are represented with n-ary objects in OMML XML:",
+      "text": "Large operators and integrals are represented with n-ary objects in OMML XML:",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/54",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/55",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
       "label": "formula",
       "prov": [],
       "orig": "\\sum_{0}^{2}x",
       "text": "\\sum_{0}^{2}x"
     },
     {
-      "self_ref": "#/texts/54",
+      "self_ref": "#/texts/56",
       "parent": {
         "$ref": "#/body"
       },
@@ -1081,7 +1111,7 @@
       "text": "\\bigcup_{n=1}^{m}\\left(X_{n} \\cap Y_{n}\\right)"
     },
     {
-      "self_ref": "#/texts/55",
+      "self_ref": "#/texts/57",
       "parent": {
         "$ref": "#/body"
       },
@@ -1093,7 +1123,7 @@
       "text": "\\prod_{k=1}^{n}A_{k}"
     },
     {
-      "self_ref": "#/texts/56",
+      "self_ref": "#/texts/58",
       "parent": {
         "$ref": "#/body"
       },
@@ -1105,7 +1135,7 @@
       "text": "\\bigwedge_{}^{}x"
     },
     {
-      "self_ref": "#/texts/57",
+      "self_ref": "#/texts/59",
       "parent": {
         "$ref": "#/body"
       },
@@ -1117,7 +1147,7 @@
       "text": "\\int_{}^{}(2x+1)dx"
     },
     {
-      "self_ref": "#/texts/58",
+      "self_ref": "#/texts/60",
       "parent": {
         "$ref": "#/body"
       },
@@ -1129,7 +1159,7 @@
       "text": "\\iint_{0}^{1}xdx"
     },
     {
-      "self_ref": "#/texts/59",
+      "self_ref": "#/texts/61",
       "parent": {
         "$ref": "#/body"
       },
@@ -1141,7 +1171,7 @@
       "text": "\\iiint_{}^{}ydy"
     },
     {
-      "self_ref": "#/texts/60",
+      "self_ref": "#/texts/62",
       "parent": {
         "$ref": "#/body"
       },
@@ -1153,7 +1183,7 @@
       "text": "\\oint_{}^{}\\frac{dy}{dx}"
     },
     {
-      "self_ref": "#/texts/61",
+      "self_ref": "#/texts/63",
       "parent": {
         "$ref": "#/body"
       },
@@ -1165,7 +1195,7 @@
       "text": "\\oiint_{0}^{2 \\pi }idt"
     },
     {
-      "self_ref": "#/texts/62",
+      "self_ref": "#/texts/64",
       "parent": {
         "$ref": "#/body"
       },
@@ -1177,30 +1207,6 @@
       "text": "\\oiiint_{C}^{}\\frac{1}{z}dz"
     },
     {
-      "self_ref": "#/texts/63",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/64",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
       "self_ref": "#/texts/65",
       "parent": {
         "$ref": "#/body"
@@ -1209,15 +1215,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Operators used with limits:",
-      "text": "Operators used with limits:",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/66",
@@ -1238,10 +1237,17 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "formula",
+      "label": "text",
       "prov": [],
-      "orig": "\\operatorname{argmax}_{ \\epsilon}f(x),   \\lim_{n}{\\left(1+\\frac{1}{n}\\right)}^{n} ,  \\max_{0 \\leq x \\leq 1}xe^{-x^{2}},  unsupported_{n}{\\left(1+\\frac{1}{n}\\right)}^{n}",
-      "text": "\\operatorname{argmax}_{ \\epsilon}f(x),   \\lim_{n}{\\left(1+\\frac{1}{n}\\right)}^{n} ,  \\max_{0 \\leq x \\leq 1}xe^{-x^{2}},  unsupported_{n}{\\left(1+\\frac{1}{n}\\right)}^{n}"
+      "orig": "Operators used with limits:",
+      "text": "Operators used with limits:",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/68",
@@ -1262,10 +1268,10 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
+      "label": "formula",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": "\\operatorname{argmax}_{ \\epsilon}f(x),   \\lim_{n}{\\left(1+\\frac{1}{n}\\right)}^{n} ,  \\max_{0 \\leq x \\leq 1}xe^{-x^{2}},  unsupported_{n}{\\left(1+\\frac{1}{n}\\right)}^{n}",
+      "text": "\\operatorname{argmax}_{ \\epsilon}f(x),   \\lim_{n}{\\left(1+\\frac{1}{n}\\right)}^{n} ,  \\max_{0 \\leq x \\leq 1}xe^{-x^{2}},  unsupported_{n}{\\left(1+\\frac{1}{n}\\right)}^{n}"
     },
     {
       "self_ref": "#/texts/70",
@@ -1276,15 +1282,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Equations with the OMML group character object:",
-      "text": "Equations with the OMML group character object:",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/71",
@@ -1305,13 +1304,44 @@
       },
       "children": [],
       "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Equations with the OMML group character object:",
+      "text": "Equations with the OMML group character object:",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/73",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/74",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
       "label": "formula",
       "prov": [],
       "orig": "P_{ x}=\\underbrace{S \\cdot T \\cdot G \\cdot (x+y+z)}_{group\\ with\\ underbraces}+e^{x}",
       "text": "P_{ x}=\\underbrace{S \\cdot T \\cdot G \\cdot (x+y+z)}_{group\\ with\\ underbraces}+e^{x}"
     },
     {
-      "self_ref": "#/texts/73",
+      "self_ref": "#/texts/75",
       "parent": {
         "$ref": "#/body"
       },
@@ -1323,7 +1353,7 @@
       "text": "Q_{ y}=\\overset{group\\ with\\ overbraces}{\\overbrace{G \\cdot T \\cdot S \\cdot (x+y+z)}}+e^{y}"
     },
     {
-      "self_ref": "#/texts/74",
+      "self_ref": "#/texts/76",
       "parent": {
         "$ref": "#/body"
       },

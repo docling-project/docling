@@ -28,7 +28,7 @@ $$\left(1+x\right)^{n}=1+\frac{nx}{1!}+\frac{n\left(n-1\right)x^{2}}{2!}+ \text{
 
 This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text.
 
-This is a word document and this is an inline equation:  $A= \pi r^{2}$ . If instead, I want an equation by line, I can do this:
+This is a word document and these are inline equations:  $N_{s}^{H}$ / $N_{s}^{P}$ ​. If instead, I want an equation by line, I can do this:
 
 $$e^{x}=1+\frac{x}{1!}+\frac{x^{2}}{2!}+\frac{x^{3}}{3!}+ \text{ \textellipsis } , - \infty  < x <  \infty$$
 
