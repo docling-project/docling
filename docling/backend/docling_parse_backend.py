@@ -25,6 +25,7 @@ from docling.backend.managed_pdfium_backend import (
     ManagedPdfiumPageBackend,
 )
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import Size
 from docling.utils.locks import pypdfium2_lock
@@ -409,9 +410,11 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             None if end_page == sys.maxsize else list(range(start_page, end_page + 1))
         )
 
+        parser_threads = AcceleratorOptions().num_threads
         self.parser = DoclingThreadedPdfParser(
             parser_config=ThreadedPdfParserConfig(
                 loglevel="fatal",
+                threads=parser_threads,
                 render_config=_make_threaded_render_config(),
             ),
             decode_config=_make_threaded_decode_config(),

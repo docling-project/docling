@@ -233,6 +233,36 @@ def test_threaded_backend_no_page_range_passes_none(
     in_doc._backend.unload()
 
 
+def test_threaded_backend_uses_accelerator_thread_count(
+    test_doc_path, monkeypatch: pytest.MonkeyPatch
+):
+    class _FakeAcceleratorOptions:
+        def __init__(self) -> None:
+            self.num_threads = 7
+
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.DoclingThreadedPdfParser",
+        _FakeThreadedParser,
+    )
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.AcceleratorOptions",
+        _FakeAcceleratorOptions,
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+    )
+
+    parser = _FakeThreadedParser.created
+    assert parser is not None
+    assert parser.parser_config is not None
+    assert parser.parser_config.threads == 7
+
+    in_doc._backend.unload()
+
+
 def test_threaded_page_backend_delegates_image_access() -> None:
     result = _FakeThreadedResult(page_number=4, page_width=120.0, page_height=90.0)
     page_backend = ThreadedDoclingParsePageBackend(result)

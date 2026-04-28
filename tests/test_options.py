@@ -4,7 +4,10 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import (
+    DoclingParseDocumentBackend,
+    ThreadedDoclingParseDocumentBackend,
+)
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ConversionStatus, InputFormat, QualityGrade
@@ -175,6 +178,7 @@ def test_parser_backends(test_doc_path):
 
     for backend_t in [
         DoclingParseDocumentBackend,
+        ThreadedDoclingParseDocumentBackend,
         PyPdfiumDocumentBackend,
     ]:
         converter = DocumentConverter(
