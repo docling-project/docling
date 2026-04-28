@@ -54,6 +54,7 @@ class _BaseChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
     ):
         self.enabled = enabled
         self.options = options
+        self.accelerator_options = accelerator_options
 
         if self.enabled:
             self.device = decide_device(
@@ -363,6 +364,12 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
                 artifacts_path,
                 device_map=self.device,
                 dtype=torch.bfloat16,
+                _attn_implementation=(
+                    "flash_attention_2"
+                    if self.device.startswith("cuda")
+                    and self.accelerator_options.cuda_use_flash_attention2
+                    else "sdpa"
+                ),
                 trust_remote_code=True,
             )
         if hasattr(self._model, "merge_lora_adapters"):
