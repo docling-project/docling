@@ -1,0 +1,79 @@
+name: "Message Issue to slack"
+on:
+  issues:
+    types:
+      - opened
+
+jobs:
+  send-messages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run github variable preprocess
+        uses: jannekem/run-python-script-action@v1
+        id: preprocess
+        with:
+          created_time: ${{ github.event.issue.created_at }}
+          script: |
+        from datetime import datetime, timedelta, timezone
+        kst = timezone(timedelta(hours=9))
+        created_time = get_input("created_time")
+        # GitHub timestamps end with 'Z' (UTC); fromisoformat in 3.11+ accepts it,
+        # but normalize for older runtimes too.
+        iso = created_time.replace("Z", "+00:00")
+        dt_kst = datetime.fromisoformat(iso).astimezone(kst)
+        set_output("time", dt_kst.strftime("%Y-%m-%d %H:%M:%S"))
+      - name: Create Slack payload
+        id: create_payload
+        run: |
+          # jq를 사용하여 안전한 JSON 생성
+          jq -n \
+            --arg title "$ISSUE_TITLE" \
+            --arg number "$ISSUE_NUMBER" \
+            --arg url "$ISSUE_URL" \
+            --arg user "$ISSUE_USER" \
+            --arg avatar "$ISSUE_AVATAR" \
+            --arg time "$CREATED_TIME" \
+            '{
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*새로운 Issue가 생성되었습니다* :fire: \n\n *\($title)* #\($number) \n Link: <\($url)> "
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Username:* \n \($user)"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Created at:* \n \($time)"
+                    }
+                  ],
+                  "accessory": {
+                    "type": "image",
+                    "image_url": $avatar,
+                    "alt_text": "profile_image"
+                  }
+                }
+              ]
+            }' > payload.json
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ISSUE_USER: ${{ github.event.issue.user.login }}
+          ISSUE_AVATAR: ${{ github.event.issue.user.avatar_url }}
+          CREATED_TIME: ${{ steps.preprocess.outputs.time }}
+      - name: Send Issue created message to Slack
+        id: slack
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload-file-path: "./payload.json"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

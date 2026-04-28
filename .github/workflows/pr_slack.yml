@@ -1,0 +1,81 @@
+name: "Message PR to slack"
+on:
+  pull_request:
+    types:
+      - opened
+
+jobs:
+  send-messages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run github variable preprocess
+        uses: jannekem/run-python-script-action@v1
+        id: preprocess
+        with:
+          created_time: ${{ github.event.pull_request.created_at }}
+          script: |
+            def convert_time_to_kr(time_utc):
+              curtime = time_utc
+              date, time = curtime.split("T")
+              year, month, day = date.split("-")
+              day = int(day)
+              h, m, s = time.split(":")
+              h = int(h)
+              h += 9
+              if h >= 24:
+                h -= 24
+                day += 1
+              h = str(h)
+              day = str(day)
+              date = year + '-' + month + '-' + day
+              time = h + ':' + m + ':' + s
+
+              return date + " " + time[:-1]
+            created_time = get_input("created_time")
+            output = convert_time_to_kr(created_time)
+            set_output("time", output)
+      - name: Send PR created message to Slack
+        id: slack
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+            {
+                "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*새로운 PR이 생성되었습니다* :fire: \n\n *${{ github.event.pull_request.title }}* #${{ github.event.pull_request.number }} \n branch: `${{ github.head_ref }}` >> `${{ github.base_ref }}` \n Link: <${{ github.event.pull_request.html_url }}> "
+                    }
+                },
+                {
+                    "type": "section",
+                    "fields": [
+                      {
+                          "type": "mrkdwn",
+                          "text": "*Username:* \n ${{ github.event.pull_request.user.login }}"
+                      },
+                      {
+                          "type": "mrkdwn",
+                          "text": "*Created at:* \n ${{ steps.preprocess.outputs.time }}"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "*Updated at:* \n ${{ github.event.pull_request.updated_at }}"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "*Status:* \n ${{ github.event.pull_request.state }}"
+                      }
+                    ],
+                    "accessory": {
+                      "type": "image",
+                      "image_url": "${{ github.event.pull_request.user.avatar_url }}",
+                      "alt_text": "profile_image"
+                    }
+                }
+                ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

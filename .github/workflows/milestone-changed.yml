@@ -1,0 +1,122 @@
+name: "Milestone Change Notify to Slack"
+
+on:
+  issues:
+    types: [milestoned, demilestoned]
+  pull_request:
+    types: [milestoned, demilestoned]
+
+env:
+  # ▼ 필요에 맞게 수정하세요 (쉼표로 여러 개 가능)
+  TARGET_IN_MILESTONES: "v2.1.0 05/07 운영망 배포, v2.2.0 05/21 운영망 배포"
+  TARGET_FROM_MILESTONES: "v2.1.0 05/07 운영망 배포, v2.2.0 05/21 운영망 배포"
+  TIMEZONE_OFFSET_KST_HOURS: "9" # KST(+9)
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Slack payload (filter by milestone rules)
+        id: build
+        uses: actions/github-script@v6
+        env:
+          TARGET_IN_MILESTONES: ${{ env.TARGET_IN_MILESTONES }}
+          TARGET_FROM_MILESTONES: ${{ env.TARGET_FROM_MILESTONES }}
+          TIMEZONE_OFFSET_KST_HOURS: ${{ env.TIMEZONE_OFFSET_KST_HOURS }}
+        with:
+          script: |
+            // github-script 환경에서는 context/core/github 가 이미 주입되어 있습니다.
+            const act = context.payload.action; // 'milestoned' | 'demilestoned'
+            const isIssue = !!context.payload.issue;
+            const obj = isIssue ? context.payload.issue : context.payload.pull_request;
+            const typeLabel = isIssue ? 'Issue' : 'PR';
+
+            // fork에서 온 PR은 repo 시크릿 접근 불가 → 슬랙 전송 단계 스킵하도록 플래그 설정
+            const isForkPR = !isIssue && !!context.payload.pull_request?.head?.repo?.fork;
+
+            const msTitle = (obj?.milestone?.title || '').trim();
+            const repo = `${context.repo.owner}/${context.repo.repo}`;
+            const actor = context.actor;
+            const number = obj?.number;
+            const title = obj?.title || '';
+            const html_url = obj?.html_url || '';
+            const eventTime = obj?.updated_at || obj?.created_at || new Date().toISOString();
+
+            // 간단 KST 변환 (+offset hours)
+            const toLocal = (iso, offsetHours) => {
+              try {
+                const dt = new Date(iso);
+                const ms = dt.getTime() + (parseInt(offsetHours || '0', 10) * 3600 * 1000);
+                const d = new Date(ms);
+                const p = (n) => String(n).padStart(2, '0');
+                return `${d.getUTCFullYear()}-${p(d.getUTCMonth()+1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`;
+              } catch {
+                return iso;
+              }
+            };
+            const eventTimeKST = toLocal(eventTime, process.env.TIMEZONE_OFFSET_KST_HOURS);
+
+            const inTargets = (process.env.TARGET_IN_MILESTONES || '')
+              .split(',').map(s => s.trim()).filter(Boolean);
+            const fromTargets = (process.env.TARGET_FROM_MILESTONES || '')
+              .split(',').map(s => s.trim()).filter(Boolean);
+
+            core.info(`action=${act} type=${typeLabel} number=${number} milestone='${msTitle}'`);
+            core.info(`IN targets=[${inTargets.join(', ')}], FROM targets=[${fromTargets.join(', ')}]`);
+            if (isForkPR) core.info('Fork PR detected -> will skip Slack (secrets not available)');
+
+            let shouldSend = false;
+            let variant = ''; // 'IN' | 'FROM'
+
+            if (act === 'milestoned' && inTargets.includes(msTitle)) {
+              shouldSend = true;
+              variant = 'IN';
+            }
+            if (act === 'demilestoned' && fromTargets.includes(msTitle)) {
+              shouldSend = true;
+              variant = 'FROM';
+            }
+
+            if (!shouldSend) {
+              core.setOutput('shouldSend', 'false');
+              core.setOutput('skipSlack', isForkPR ? 'true' : 'false');
+              return;
+            }
+
+            const headline =
+              variant === 'IN'
+                ? `*:triangular_flag_on_post: ${typeLabel} #${number}* 가 *'${msTitle}'* 마일스톤으로 설정되었습니다.`
+                : `*:arrow_right: ${typeLabel} #${number}* 가 *'${msTitle}'* 마일스톤에서 제거되었습니다.`;
+
+            const blocks = [
+              {
+                type: "section",
+                text: { type: "mrkdwn", text: `*[${repo}]* ${typeLabel} <${html_url}|#${number}>` }
+              },
+              {
+                type: "section",
+                text: { type: "mrkdwn", text: `*제목*: ${title}\n${headline}` }
+              },
+              {
+                type: "section",
+                fields: [
+                  { type: "mrkdwn", text: `*액션*\n${act}` },
+                  { type: "mrkdwn", text: `*변경자*\n${actor}` },
+                  { type: "mrkdwn", text: `*마일스톤*\n${msTitle || '-'}` },
+                  { type: "mrkdwn", text: `*시각(KST)*\n${eventTimeKST}` }
+                ]
+              }
+            ];
+
+            core.setOutput('shouldSend', 'true');
+            core.setOutput('skipSlack', isForkPR ? 'true' : 'false');
+            core.setOutput('payload', JSON.stringify({ blocks }));
+
+      - name: Send Slack
+        if: steps.build.outputs.shouldSend == 'true' && steps.build.outputs.skipSlack != 'true'
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: ${{ steps.build.outputs.payload }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
