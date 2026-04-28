@@ -338,9 +338,9 @@ class ChartExtractionModelGraniteVision(_BaseChartExtractionModelGraniteVision):
 
 
 class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision):
-    _model_repo_folder = "ibm-granite--granite-4.0-3b-vision"
-    _model_repo_id = "ibm-granite/granite-4.0-3b-vision"
-    _model_repo_revision = "f0d034897bae1cd438c961c8c170a3a3089ebf01"
+    _model_repo_folder = "ibm-granite--granite-vision-4.1-4b"
+    _model_repo_id = "ibm-granite/granite-vision-4.1-4b"
+    _model_repo_revision = "dd48e97503de471803850df70843cf9eb5da8712"
 
     def _load_model(self, artifacts_path: Path) -> None:
         with warnings.catch_warnings():
@@ -365,7 +365,8 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
                 dtype=torch.bfloat16,
                 trust_remote_code=True,
             )
-        cast(Any, self._model).merge_lora_adapters()
+        if hasattr(self._model, "merge_lora_adapters"):
+            cast(Any, self._model).merge_lora_adapters()
         self._model.eval()
 
     def __call__(
