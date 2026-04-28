@@ -338,7 +338,7 @@ class ThreadedPipelineStage:
 
 
 class PreprocessThreadedStage(ThreadedPipelineStage):
-    """Pipeline stage that lazily loads PDF backends just-in-time."""
+    """Pipeline stage that validates pre-attached backends and runs preprocessing."""
 
     def __init__(
         self,
@@ -378,35 +378,48 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
             if not good:
                 result.extend(items)
                 continue
+
+            # Validate backends before the model call so that invalid-page
+            # items are emitted exactly once, even if the model later raises.
+            invalid: list[ThreadedItem] = []
+            valid: list[tuple[ThreadedItem, Page]] = []
+            for it in good:
+                page = it.payload
+                if page is None:
+                    it.is_failed = True
+                    it.error = RuntimeError("Page payload is None")
+                    invalid.append(it)
+                elif page._backend is None:
+                    it.is_failed = True
+                    it.error = RuntimeError(
+                        "Page backend must be attached before preprocess"
+                    )
+                    invalid.append(it)
+                elif not page._backend.is_valid():
+                    it.is_failed = True
+                    it.error = RuntimeError(f"Page {page.page_no} failed to parse.")
+                    invalid.append(it)
+                else:
+                    valid.append((it, page))
+
+            result.extend(invalid)
+
+            if not valid:
+                continue
+
             try:
                 if _log.isEnabledFor(logging.DEBUG):
                     _t_start = time.time()
                     _t_mono = time.monotonic()
-                pages_with_payloads: list[tuple[ThreadedItem, Page]] = []
-                for it in good:
-                    page = it.payload
-                    if page is None:
-                        raise RuntimeError("Page payload is None")
-                    if page._backend is None:
-                        backend = it.conv_res.input._backend
-                        assert isinstance(backend, PdfDocumentBackend), (
-                            "Threaded pipeline only supports PdfDocumentBackend."
-                        )
-                        page_backend = backend.load_page(page.page_no - 1)
-                        page._backend = page_backend
-                        if page_backend.is_valid():
-                            page.size = page_backend.get_size()
-                    pages_with_payloads.append((it, page))
-
-                pages = [payload for _, payload in pages_with_payloads]
+                pages = [page for _, page in valid]
                 processed_pages = list(
-                    self.model(good[0].conv_res, pages)  # type: ignore[arg-type]
+                    self.model(valid[0][0].conv_res, pages)  # type: ignore[arg-type]
                 )
                 if _log.isEnabledFor(logging.DEBUG):
                     _log.debug(
                         "PIPELINE_PROFILING Stage preprocess: run_id=%d pages=%s start=%.3f end=%.3f duration=%.3fs",
                         rid,
-                        [it.page_no for it in good],
+                        [it.page_no for it, _ in valid],
                         _t_start,
                         time.time(),
                         time.monotonic() - _t_mono,
@@ -420,23 +433,22 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
                         ThreadedItem(
                             payload=processed_page,
                             run_id=rid,
-                            page_no=good[idx].page_no,
-                            conv_res=good[idx].conv_res,
+                            page_no=valid[idx][0].page_no,
+                            conv_res=valid[idx][0].conv_res,
                         )
                     )
             except Exception as exc:
-                page_numbers = [it.page_no for it in good]
                 _log.error(
                     "Stage preprocess failed for run %d, pages %s: %s",
                     rid,
-                    page_numbers,
+                    [it.page_no for it, _ in valid],
                     exc,
-                    exc_info=False,  # Put to True if you want detailed exception info
+                    exc_info=False,
                 )
-                for it in good:
+                for it, _ in valid:
                     it.is_failed = True
                     it.error = exc
-                result.extend(items)
+                result.extend(it for it, _ in valid)
         return result
 
 
@@ -626,40 +638,83 @@ class StandardPdfPipeline(ConvertPipeline):
 
     # --------------------------------------------------------------------- build
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
-        """Stream-build the document while interleaving producer and consumer work.
+        """Stream-build the document with a dedicated producer thread.
 
         Note: If a worker thread gets stuck in a blocking call (model inference or PDF backend
-        load_page/get_size), that thread will be abandoned after a brief wait (15s) during cleanup.
+        iter_pages/get_size), that thread will be abandoned after a brief wait (15s) during cleanup.
         The thread continues running until the blocking call completes, potentially holding
         resources (e.g., pypdfium2_lock).
         """
         run_id = next(self._run_seq)
         assert isinstance(conv_res.input._backend, PdfDocumentBackend)
+        backend = conv_res.input._backend
 
-        # Collect page placeholders; backends are loaded lazily in preprocess stage
         start_page, end_page = conv_res.input.limits.page_range
-        pages: list[Page] = []
-        for i in range(conv_res.input.page_count):
-            if start_page - 1 <= i <= end_page - 1:
-                page = Page(page_no=i + 1)
-                conv_res.pages.append(page)
-                pages.append(page)
-
-        if not pages:
+        expected_page_nos = list(
+            range(
+                max(1, start_page),
+                min(conv_res.input.page_count, end_page) + 1,
+            )
+        )
+        if not expected_page_nos:
             conv_res.status = ConversionStatus.FAILURE
             return conv_res
 
-        total_pages: int = len(pages)
+        page_by_no: dict[int, Page] = {}
+        for page_no in expected_page_nos:
+            page = Page(page_no=page_no)
+            conv_res.pages.append(page)
+            page_by_no[page_no] = page
+
+        total_pages: int = len(expected_page_nos)
         ctx: RunContext = self._create_run_ctx()
         for st in ctx.stages:
             st.start()
 
         proc = ProcessingResult(total_expected=total_pages)
-        fed_idx: int = 0  # number of pages successfully queued
         batch_size: int = 32  # drain chunk
         start_time = time.monotonic()
         timeout_exceeded = False
-        input_queue_closed = False
+        producer_error: list[Exception] = []
+
+        def _completed_page_nos() -> set[int]:
+            failed_page_nos = {
+                page_no for page_no, _ in proc.failed_pages if page_no > 0
+            }
+            return {page.page_no for page in proc.pages} | failed_page_nos
+
+        def _produce_pages() -> None:
+            try:
+                for page_backend in backend.iter_pages():
+                    page = page_by_no.get(page_backend.page_no)
+                    if page is None:
+                        continue
+                    page._backend = page_backend
+                    try:
+                        page.size = page_backend.get_size()
+                    except Exception:
+                        if page_backend.is_valid():
+                            raise
+                    if not ctx.first_stage.input_queue.put(
+                        ThreadedItem(
+                            payload=page,
+                            run_id=run_id,
+                            page_no=page.page_no,
+                            conv_res=conv_res,
+                        )
+                    ):
+                        break
+            except Exception as exc:
+                producer_error.append(exc)
+                _log.error("Producer failed for run %d: %s", run_id, exc, exc_info=True)
+            finally:
+                ctx.first_stage.input_queue.close()
+
+        producer_thread = threading.Thread(
+            target=_produce_pages, name=f"PageProducer-{run_id}", daemon=False
+        )
+        producer_thread.start()
+
         try:
             while proc.success_count + proc.failure_count < total_pages:
                 # Check timeout
@@ -675,33 +730,11 @@ class StandardPdfPipeline(ConvertPipeline):
                         )
                         timeout_exceeded = True
                         ctx.timed_out_run_ids.add(run_id)
-                        if not input_queue_closed:
-                            ctx.first_stage.input_queue.close()
-                            input_queue_closed = True
+                        ctx.first_stage.input_queue.close()
                         # Break immediately - don't wait for in-flight work
                         break
 
-                # 1) feed - try to enqueue until the first queue is full
-                if not input_queue_closed:
-                    while fed_idx < total_pages:
-                        ok = ctx.first_stage.input_queue.put(
-                            ThreadedItem(
-                                payload=pages[fed_idx],
-                                run_id=run_id,
-                                page_no=pages[fed_idx].page_no,
-                                conv_res=conv_res,
-                            ),
-                            timeout=0.0,  # non-blocking try-put
-                        )
-                        if ok:
-                            fed_idx += 1
-                            if fed_idx == total_pages:
-                                ctx.first_stage.input_queue.close()
-                                input_queue_closed = True
-                        else:  # queue full - switch to draining
-                            break
-
-                # 2) drain - pull whatever is ready from the output side
+                # Drain - pull whatever is ready from the output side
                 out_batch = ctx.output_queue.get_batch(batch_size, timeout=0.05)
                 for itm in out_batch:
                     if itm.run_id != run_id:
@@ -714,29 +747,43 @@ class StandardPdfPipeline(ConvertPipeline):
                         assert itm.payload is not None
                         proc.pages.append(itm.payload)
 
-                # 3) failure safety - downstream closed early
+                # Failure safety - downstream closed early
                 if not out_batch and ctx.output_queue.closed:
-                    missing = total_pages - (proc.success_count + proc.failure_count)
-                    if missing > 0:
+                    missing_page_nos = sorted(
+                        set(expected_page_nos) - _completed_page_nos()
+                    )
+                    if missing_page_nos:
+                        error = (
+                            producer_error[0]
+                            if producer_error
+                            else RuntimeError("pipeline terminated early")
+                        )
                         proc.failed_pages.extend(
-                            [(-1, RuntimeError("pipeline terminated early"))] * missing
+                            [(page_no, error) for page_no in missing_page_nos]
                         )
                     break
 
             # Mark remaining pages as failed if timeout occurred
             if timeout_exceeded:
-                completed_page_nos = {p.page_no for p in proc.pages} | {
-                    fp for fp, _ in proc.failed_pages
-                }
-                for page in pages[fed_idx:]:
-                    if page.page_no not in completed_page_nos:
-                        proc.failed_pages.append(
-                            (page.page_no, RuntimeError("document timeout exceeded"))
-                        )
+                missing_page_nos = sorted(
+                    set(expected_page_nos) - _completed_page_nos()
+                )
+                proc.failed_pages.extend(
+                    [
+                        (page_no, RuntimeError("document timeout exceeded"))
+                        for page_no in missing_page_nos
+                    ]
+                )
         finally:
             for st in ctx.stages:
                 st.stop()
             ctx.output_queue.close()
+            producer_thread.join(timeout=15.0)
+            if producer_thread.is_alive():
+                _log.warning(
+                    "Producer thread for run %d did not terminate within 15s and will be abandoned.",
+                    run_id,
+                )
 
         self._integrate_results(conv_res, proc, timeout_exceeded=timeout_exceeded)
         return conv_res

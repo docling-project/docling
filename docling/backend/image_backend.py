@@ -23,9 +23,14 @@ _log = logging.getLogger(__name__)
 
 
 class _ImagePageBackend(PdfPageBackend):
-    def __init__(self, image: Image.Image):
+    def __init__(self, image: Image.Image, page_no: int):
         self._image: Image.Image | None = image
+        self._page_no = page_no
         self.valid: bool = self._image is not None
+
+    @property
+    def page_no(self) -> int:
+        return self._page_no + 1
 
     def is_valid(self) -> bool:
         return self.valid
@@ -174,7 +179,7 @@ class ImageDocumentBackend(PdfDocumentBackend):
     def load_page(self, page_no: int) -> _ImagePageBackend:
         if not (0 <= page_no < len(self._frames)):
             raise IndexError(f"Page index out of range: {page_no}")
-        return _ImagePageBackend(self._frames[page_no])
+        return _ImagePageBackend(self._frames[page_no], page_no)
 
     @classmethod
     def supported_formats(cls) -> set[InputFormat]:

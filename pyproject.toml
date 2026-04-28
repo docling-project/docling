@@ -298,6 +298,7 @@ members = ["packages/docling"]
 
 [tool.uv.sources]
 docling = { workspace = true }
+docling-parse = { path = "../docling-parse", editable = true }
 
 [tool.uv]
 package = true
