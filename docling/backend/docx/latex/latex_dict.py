@@ -240,6 +240,7 @@ BRK = "\\\\"
 
 CHR_DEFAULT = {
     "ACC_VAL": "\\hat{{{0}}}",
+    "GROUPCHR_VAL": "\\underbrace{{{0}}}",
 }
 
 POS = {

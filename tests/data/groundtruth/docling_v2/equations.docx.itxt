@@ -74,3 +74,10 @@ item-0 at level 0: unspecified: group _root_
   item-73 at level 1: text: Operators used with limits:
   item-74 at level 1: text: 
   item-75 at level 1: formula: \operatorname{argmax}_{ \epsilon ... ed_{n}{\left(1+\frac{1}{n}\right)}^{n}
+  item-76 at level 1: text: 
+  item-77 at level 1: text: 
+  item-78 at level 1: text: Equations with the OMML group character object:
+  item-79 at level 1: text: 
+  item-80 at level 1: formula: P_{ x}=\underbrace{S \cdot T \cd ... x+y+z)}_{group with underbraces}+e^{x}
+  item-81 at level 1: formula: Q_{ y}=\overset{group with overb ...  \cdot T \cdot S \cdot (x+y+z)}}+e^{y}
+  item-82 at level 1: text: 

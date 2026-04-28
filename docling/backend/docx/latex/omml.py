@@ -343,10 +343,13 @@ class oMath2Latex(Tag2Method):
     def do_groupchr(self, elm):
         """
         the Group-Character object
+
+        According to OMML spec, when chr is not specified and pos is not specified,
+        the default position is "bot" (bottom), which corresponds to underbrace.
         """
         c_dict = self.process_children_dict(elm)
         pr = c_dict["groupChrPr"]
-        latex_s = get_val(pr.chr)
+        latex_s = get_val(pr.chr, default=CHR_DEFAULT.get("GROUPCHR_VAL"), store=CHR)
         return pr.text + latex_s.format(c_dict["e"])
 
     def do_rad(self, elm):
