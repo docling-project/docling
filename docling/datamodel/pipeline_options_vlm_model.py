@@ -14,6 +14,7 @@ except ImportError:
     class StoppingCriteria:  # type: ignore[no-redef]
         pass
 
+
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.models.utils.generation_utils import GenerationStopper
 
