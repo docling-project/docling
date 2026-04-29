@@ -6,7 +6,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ !contains(github.event.pull_request.labels.*.name, 'graphite:merge') }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
