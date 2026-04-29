@@ -11,6 +11,7 @@ tests/data_scanned/groundtruth/**
 tests/data/webp/groundtruth/**
 
 [warn]
+.plans/active/docling-slim.md
 CHANGELOG.md
 docling/backend/html_backend.py
 docling/backend/msword_backend.py
