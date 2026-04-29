@@ -89,7 +89,7 @@ jobs:
               - ".github/workflows/**"
               - ".github/scripts/**"
               - ".github/actions/**"
-              - ".max-lines-ignore"
+              - ".github/max-lines-ignore"
               - ".pre-commit-config.yaml"
               - "dprint.json"
               - "pyproject.toml"

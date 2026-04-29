@@ -1,7 +1,9 @@
 # Files over the 1000-line limit that are accepted for now.
 #
 # [silent] is for generated fixtures, snapshots, vendored data, or bulk data.
-# [warn] is for source/docs debt that should not block this initial guardrail.
+# [warn] is for source/docs/test debt that should not block this initial guardrail.
+# Long test files are temporary exceptions; the real fix is to split and rework
+# those tests instead of growing this list.
 
 [silent]
 docs/examples/data/**
