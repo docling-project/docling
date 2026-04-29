@@ -483,11 +483,15 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
             yield item
 
     def _extract_csv_to_dataframe(self, decoded_text: str) -> pd.DataFrame:
-        # decoded_text is already the raw generated output (no conversation wrapper)
+        # decoded_text is already the raw generated output (no conversation wrapper).
+        # Prefer a fenced ```csv ... ``` block, but fall back to bare CSV if the
+        # model omits the fence (observed with granite-vision-4.1-4b).
         csv_match = re.search(r"```csv\s*\n(.*?)\n```", decoded_text, re.DOTALL)
-        if not csv_match:
-            raise ValueError("No ```csv``` block found in model output")
-        csv_content = csv_match.group(1).strip()
+        if csv_match:
+            csv_content = csv_match.group(1).strip()
+        else:
+            csv_content = re.sub(r"^```+(?:csv)?\s*", "", decoded_text.strip())
+            csv_content = re.sub(r"```+\s*$", "", csv_content).strip()
         try:
             return pd.read_csv(StringIO(csv_content), header=None)
         except Exception as e:
