@@ -42,6 +42,12 @@ repos:
         pass_filenames: false
         language: system
         files: '^docling/.*\.py$|^tach\.toml$'
+      - id: tach-module-coverage
+        name: Tach module coverage
+        entry: python3 scripts/check_tach_module_coverage.py
+        pass_filenames: false
+        language: system
+        files: '^docling/.*\.py$|^tach\.toml$|^scripts/check_tach_module_coverage\.py$'
       - id: max-lines
         name: Check max lines per file
         entry: python3 scripts/check_max_lines.py

@@ -94,6 +94,7 @@ jobs:
               - "dprint.json"
               - "pyproject.toml"
               - "scripts/check_max_lines.py"
+              - "scripts/check_tach_module_coverage.py"
               - "tach.toml"
               - "uv.lock"
               - "Dockerfile"

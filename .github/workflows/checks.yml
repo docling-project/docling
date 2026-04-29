@@ -126,6 +126,7 @@ jobs:
               - ".github/actions/**"
               - ".pre-commit-config.yaml"
               - "pyproject.toml"
+              - "scripts/check_tach_module_coverage.py"
               - "tach.toml"
               - "uv.lock"
               - "docling/**"
@@ -183,6 +184,9 @@ jobs:
         with:
           python_version: "3.12"
           uv_sync_args: --frozen --only-group dev --no-install-project
+
+      - name: Check module coverage
+        run: python3 scripts/check_tach_module_coverage.py
 
       - name: Check module boundaries
         run: uv run --no-sync tach check
