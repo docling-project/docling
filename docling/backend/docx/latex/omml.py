@@ -29,6 +29,7 @@ from docling.backend.docx.latex.latex_dict import (
     F_DEFAULT,
     FUNC,
     FUNC_PLACE,
+    GROUPING_FUNCS,
     LIM_FUNC,
     LIM_TO,
     LIM_UPP,
@@ -356,7 +357,7 @@ class oMath2Latex(Tag2Method):
         latex_s = get_val(
             c_dict["accPr"].chr, default=CHR_DEFAULT["ACC_VAL"], store=CHR
         )
-        return latex_s.format(c_dict["e"])
+        return latex_s % c_dict["e"]
 
     def do_bar(self, elm: _Element) -> str:
         """Process bar element (overline/underline).
@@ -370,7 +371,7 @@ class oMath2Latex(Tag2Method):
         c_dict = self.process_children_dict(elm)
         pr = c_dict["barPr"]
         latex_s = get_val(pr.pos, default=POS_DEFAULT["BAR_VAL"], store=POS)
-        return pr.text + latex_s.format(c_dict["e"])
+        return pr.text + (latex_s % c_dict["e"])
 
     def do_d(self, elm: _Element) -> str:
         """Process delimiter element.
@@ -387,10 +388,13 @@ class oMath2Latex(Tag2Method):
 
         s_val = get_val(pr.begChr, default=D_DEFAULT["left"], store=T)
         e_val = get_val(pr.endChr, default=D_DEFAULT["right"], store=T)
-        delim = pr.text + D.format(
-            left=null if not s_val else escape_latex(s_val),
-            text=c_dict["e"],
-            right=null if not e_val else escape_latex(e_val),
+        delim = pr.text + (
+            D
+            % {
+                "left": null if not s_val else escape_latex(s_val),
+                "text": c_dict["e"],
+                "right": null if not e_val else escape_latex(e_val),
+            }
         )
         return delim
 
@@ -448,7 +452,7 @@ class oMath2Latex(Tag2Method):
         sub = self._unwrap_script(c_dict.get("sub", ""), "_")
         if self._needs_grouping(base):
             base = "{" + base + "}"
-        return base + SUB.format(sub)
+        return base + (SUB % sub)
 
     def do_ssup(self, elm: _Element) -> str:
         """Process superscript element.
@@ -464,7 +468,7 @@ class oMath2Latex(Tag2Method):
         sup = self._unwrap_script(c_dict.get("sup", ""), "^")
         if self._needs_grouping(base):
             base = "{" + base + "}"
-        return base + SUP.format(sup)
+        return base + (SUP % sup)
 
     def do_ssubsup(self, elm: _Element) -> str:
         """Process combined sub-superscript element.
@@ -483,7 +487,7 @@ class oMath2Latex(Tag2Method):
         sup = self._unwrap_script(c_dict.get("sup", ""), "^")
         if self._needs_grouping(base):
             base = "{" + base + "}"
-        return base + SUB.format(sub) + SUP.format(sup)
+        return base + (SUB % sub) + (SUP % sup)
 
     def do_sub(self, elm: _Element) -> str:
         """Process standalone subscript content.
@@ -495,7 +499,7 @@ class oMath2Latex(Tag2Method):
             LaTeX subscript string.
         """
         text = self.process_children(elm)
-        return SUB.format(text)
+        return SUB % text
 
     def do_sup(self, elm: _Element) -> str:
         """Process standalone superscript content.
@@ -507,7 +511,7 @@ class oMath2Latex(Tag2Method):
             LaTeX superscript string.
         """
         text = self.process_children(elm)
-        return SUP.format(text)
+        return SUP % text
 
     def do_f(self, elm: _Element) -> str:
         """Process fraction element.
@@ -522,12 +526,14 @@ class oMath2Latex(Tag2Method):
         pr = c_dict.get("fPr")
         if pr is None:
             _log.debug("Missing fPr element in fraction, using default formatting")
-            return F_DEFAULT.format(
-                num=c_dict.get("num"),
-                den=c_dict.get("den"),
-            )
+            return F_DEFAULT % {
+                "num": c_dict.get("num"),
+                "den": c_dict.get("den"),
+            }
         latex_s = get_val(pr.type, default=F_DEFAULT, store=F)
-        return pr.text + latex_s.format(num=c_dict.get("num"), den=c_dict.get("den"))
+        return pr.text + (
+            latex_s % {"num": c_dict.get("num"), "den": c_dict.get("den")}
+        )
 
     def do_func(self, elm: _Element) -> str:
         """Process function application element.
@@ -580,7 +586,7 @@ class oMath2Latex(Tag2Method):
         c_dict = self.process_children_dict(elm)
         pr = c_dict["groupChrPr"]
         latex_s = get_val(pr.chr, default=CHR_DEFAULT["GROUPCHR_VAL"], store=CHR)
-        return pr.text + latex_s.format(c_dict["e"])
+        return pr.text + (latex_s % c_dict["e"])
 
     def do_rad(self, elm: _Element) -> str:
         """Process radical (root) element.
@@ -595,9 +601,9 @@ class oMath2Latex(Tag2Method):
         text = c_dict.get("e")
         deg_text = c_dict.get("deg")
         if deg_text:
-            return RAD.format(deg=deg_text, text=text)
+            return RAD % {"deg": deg_text, "text": text}
         else:
-            return RAD_DEFAULT.format(text=text)
+            return RAD_DEFAULT % {"text": text}
 
     def do_eqarr(self, elm: _Element) -> str:
         """Process equation array element.
@@ -608,11 +614,11 @@ class oMath2Latex(Tag2Method):
         Returns:
             LaTeX array string.
         """
-        return ARR.format(
-            text=BRK.join(
+        return ARR % {
+            "text": BRK.join(
                 [t for stag, t, e in self.process_children_list(elm, include=("e",))]
             )
-        )
+        }
 
     def do_limlow(self, elm: _Element) -> str:
         """Process lower limit element.
@@ -624,16 +630,24 @@ class oMath2Latex(Tag2Method):
             LaTeX string with lower limit applied.
         """
         t_dict = self.process_children_dict(elm, include=("e", "lim"))
-        latex_s = LIM_FUNC.get(t_dict["e"])
-        if not latex_s:
-            base = t_dict.get("e", "")
-            lim = t_dict.get("lim", "")
-            _log.warning(
-                f"Limit function {base} not in LIM_FUNC dictionary, using fallback format"
-            )
+        base = t_dict.get("e", "")
+        lim = t_dict.get("lim", "")
+
+        # Check if base is a known limit function
+        latex_s = LIM_FUNC.get(base)
+        if latex_s:
+            return latex_s % {"lim": lim}
+
+        # Check if base is a grouping function (underbrace, overbrace, etc.)
+        # These are already formatted LaTeX commands that just need a subscript
+        if any(base.startswith(f"{func}{{") for func in GROUPING_FUNCS):
             return f"{base}_{{{lim}}}"
-        else:
-            return latex_s.format(lim=t_dict.get("lim"))
+
+        # For unknown functions, log warning and use fallback
+        _log.warning(
+            f"Limit function {base} not in LIM_FUNC dictionary, using fallback format"
+        )
+        return f"{base}_{{{lim}}}"
 
     def do_limupp(self, elm: _Element) -> str:
         """Process upper limit element.
@@ -645,7 +659,7 @@ class oMath2Latex(Tag2Method):
             LaTeX string with upper limit applied.
         """
         t_dict = self.process_children_dict(elm, include=("e", "lim"))
-        return LIM_UPP.format(lim=t_dict.get("lim"), text=t_dict.get("e"))
+        return LIM_UPP % {"lim": t_dict.get("lim"), "text": t_dict.get("e")}
 
     def do_lim(self, elm: _Element) -> str:
         """Process limit content element.
@@ -689,7 +703,7 @@ class oMath2Latex(Tag2Method):
                 pass
             elif stag == "mr":
                 rows.append(t)
-        return M.format(text=BRK.join(rows))
+        return M % {"text": BRK.join(rows)}
 
     def do_mr(self, elm: _Element) -> str:
         """Process matrix row element.
