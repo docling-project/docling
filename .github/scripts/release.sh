@@ -15,13 +15,30 @@ CHGLOG_FILE="${CHGLOG_FILE:-CHANGELOG.md}"
 uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version "${TARGET_VERSION}"
 uvx --from=toml-cli toml set --toml-path=packages/docling/pyproject.toml project.version "${TARGET_VERSION}"
 
-# update docling-slim dependency version in docling package
-uvx --from=toml-cli toml set --toml-path=packages/docling/pyproject.toml "project.dependencies[0]" "docling-slim[standard]==${TARGET_VERSION}"
+# Update all docling-slim dependencies in docling package using Python
+TARGET_VERSION="${TARGET_VERSION}" python3 << 'PYTHON_SCRIPT'
+import os
+import re
+from pathlib import Path
 
-# update all re-exported extras in docling package
-for extra in easyocr tesserocr ocrmac vlm rapidocr asr htmlrender remote-serving onnxruntime xbrl; do
-    uvx --from=toml-cli toml set --toml-path=packages/docling/pyproject.toml "project.optional-dependencies.${extra}[0]" "docling-slim[*]==${TARGET_VERSION}"
-done
+target_version = os.environ['TARGET_VERSION']
+pyproject_path = Path("packages/docling/pyproject.toml")
+
+# Read the file
+content = pyproject_path.read_text()
+
+# Pattern to match docling-slim dependencies with version pinning
+# Matches: docling-slim[extra]==version or docling-slim==version
+pattern = r'(docling-slim(?:\[[^\]]+\])?)==[\d\.]+'
+
+# Replace all occurrences with the new version
+updated_content = re.sub(pattern, rf'\1=={target_version}', content)
+
+# Write back
+pyproject_path.write_text(updated_content)
+
+print(f"Updated all docling-slim dependencies to version {target_version}")
+PYTHON_SCRIPT
 
 UV_FROZEN=0 uv lock --upgrade-package docling --upgrade-package docling-slim
 
