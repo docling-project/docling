@@ -156,7 +156,20 @@ RUN --mount=type=cache,target=${HF_HOME} \
     chmod +x /app/hwp_sdk/convtext
 
 ############################
-# 4-2) 모델 아티팩트
+# 4-2) 추가 폰트 아티팩트
+############################
+FROM builder AS font_artifacts
+
+RUN --mount=type=cache,target=${HF_HOME} \
+    echo "[INFO] Downloading extra fonts from HF (public)..." && \
+    mkdir -p /app/extra_fonts && \
+    huggingface-cli download HeechanKim-Genon/additional_fonts \
+      --repo-type dataset \
+      --local-dir /app/extra_fonts \
+      --local-dir-use-symlinks False
+
+############################
+# 4-3) 모델 아티팩트
 ############################
 FROM builder AS models_artifacts
 ARG APP_VENV
@@ -246,6 +259,10 @@ COPY ./genon/preprocessor/src /app/src
 
 # 🔴 HWP sdk 다운로드
 COPY --from=sdk_artifacts /app/hwp_sdk /app/hwp_sdk
+
+# 추가 폰트 설치
+COPY --from=font_artifacts /app/extra_fonts /usr/share/fonts/additional
+RUN fc-cache -f -v
 
 # ✅ 공통 venv 위치만 복사
 COPY --from=builder ${APP_VENV} ${APP_VENV}
