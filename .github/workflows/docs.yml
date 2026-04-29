@@ -14,6 +14,15 @@ jobs:
         runs-on: ubuntu-latest
         steps:
         - uses: actions/checkout@v6
+        - name: Checkout editable docling-parse source
+          run: |
+            if ! grep -Rqs '../docling-parse' pyproject.toml uv.lock; then
+              exit 0
+            fi
+
+            if [ ! -d ../docling-parse ]; then
+              git clone --depth=1 https://github.com/docling-project/docling-parse.git ../docling-parse
+            fi
         - name: Install uv and set the python version
           uses: astral-sh/setup-uv@v7
           with:
