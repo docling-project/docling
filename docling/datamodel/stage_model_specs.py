@@ -1498,3 +1498,134 @@ CODE_FORMULA_GRANITE_DOCLING = StageModelPreset(
     scale=2.0,
     default_engine_type=VlmEngineType.AUTO_INLINE,
 )
+
+# -----------------------------------------------------------------------------
+# CHANDRA / DOTS VLM_CONVERT PRESETS
+# -----------------------------------------------------------------------------
+
+VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
+    preset_id="chandra_ocr2",
+    name="Chandra-OCR-2",
+    description="Chandra OCR 2 model for document layout parsing with bounding boxes (5.3B parameters)",
+    model_spec=VlmModelSpec(
+        name="Chandra-OCR-2-5.3B",
+        default_repo_id="datalab-to/chandra-ocr-2",
+        prompt=(
+            "OCR this image to HTML, arranged as layout blocks. "
+            "Each div uses data-bbox attribute (x0 y0 x1 y1 format, normalized 0-1000) "
+            "and data-label attribute for the block category."
+        ),
+        response_format=ResponseFormat.CHANDRA_HTML,
+        max_new_tokens=12384,
+        trust_remote_code=True,
+        stop_strings=["assistant"],
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                },
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "datalab-to/chandra-ocr-2", "max_tokens": 12384}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+VLM_CONVERT_DOTS_OCR = StageModelPreset(
+    preset_id="dots_ocr",
+    name="Dots-OCR",
+    description="dots.ocr model for multilingual document layout parsing with bounding boxes (3B parameters)",
+    model_spec=VlmModelSpec(
+        name="dots.ocr-3B",
+        default_repo_id="rednote-hilab/dots.ocr",
+        prompt=(
+            "Please output the layout information from the PDF image, including each layout "
+            "element's bbox, its category, and the corresponding text content within the bbox.\n\n"
+            "1. Bbox format: [x1, y1, x2, y2]\n\n"
+            "2. Layout Categories: The possible categories are ['Caption', 'Footnote', 'Formula', "
+            "'List-item', 'Page-footer', 'Page-header', 'Picture', 'Section-header', 'Table', "
+            "'Text', 'Title'].\n\n"
+            "3. Text Extraction & Formatting Rules:\n"
+            "    - Picture: For the 'Picture' category, the text field should be omitted.\n"
+            "    - Formula: Format its text as LaTeX.\n"
+            "    - Table: Format its text as HTML.\n"
+            "    - All Others (Text, Title, etc.): Format their text as Markdown.\n\n"
+            "4. Constraints:\n"
+            "    - The output text must be the original text from the image, with no translation.\n"
+            "    - All layout elements must be sorted according to human reading order.\n\n"
+            "5. Final Output: The entire output must be a single JSON object."
+        ),
+        response_format=ResponseFormat.DOTS_JSON,
+        max_new_tokens=24000,
+        trust_remote_code=True,
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_CAUSALLM,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                },
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "rednote-hilab/dots.ocr", "max_tokens": 24000}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+VLM_CONVERT_DOTS_MOCR = StageModelPreset(
+    preset_id="dots_mocr",
+    name="Dots-MOCR",
+    description="dots.mocr multimodal OCR model for document layout parsing with bounding boxes (3B parameters)",
+    model_spec=VlmModelSpec(
+        name="dots.mocr-3B",
+        default_repo_id="rednote-hilab/dots.mocr",
+        prompt=(
+            "Please output the layout information from the PDF image, including each layout "
+            "element's bbox, its category, and the corresponding text content within the bbox.\n\n"
+            "1. Bbox format: [x1, y1, x2, y2]\n\n"
+            "2. Layout Categories: The possible categories are ['Caption', 'Footnote', 'Formula', "
+            "'List-item', 'Page-footer', 'Page-header', 'Picture', 'Section-header', 'Table', "
+            "'Text', 'Title'].\n\n"
+            "3. Text Extraction & Formatting Rules:\n"
+            "    - Picture: For the 'Picture' category, the text field should be omitted.\n"
+            "    - Formula: Format its text as LaTeX.\n"
+            "    - Table: Format its text as HTML.\n"
+            "    - All Others (Text, Title, etc.): Format their text as Markdown.\n\n"
+            "4. Constraints:\n"
+            "    - The output text must be the original text from the image, with no translation.\n"
+            "    - All layout elements must be sorted according to human reading order.\n\n"
+            "5. Final Output: The entire output must be a single JSON object."
+        ),
+        response_format=ResponseFormat.DOTS_JSON,
+        max_new_tokens=24000,
+        trust_remote_code=True,
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_CAUSALLM,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                },
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "rednote-hilab/dots.mocr", "max_tokens": 24000}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)

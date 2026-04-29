@@ -286,6 +286,12 @@ class VlmPipeline(PaginatedPipeline):
                     conv_res, InputFormat.HTML, HTMLDocumentBackend
                 )
 
+            elif response_format_legacy == ResponseFormat.CHANDRA_HTML:
+                conv_res.document = self._parse_chandra_html(conv_res)
+
+            elif response_format_legacy == ResponseFormat.DOTS_JSON:
+                conv_res.document = self._parse_dots_json(conv_res)
+
             else:
                 raise RuntimeError(
                     f"Unsupported VLM response format {response_format_legacy}"
@@ -493,6 +499,58 @@ class VlmPipeline(PaginatedPipeline):
             page_docs.append(page_doc)
 
         # Add page metadata and concatenate
+        return self._add_page_metadata_and_concatenate(page_docs, conv_res)
+
+    def _parse_chandra_html(
+        self, conv_res: ConversionResult
+    ) -> DoclingDocument:
+        """Parse chandra-ocr-2 HTML output into a DoclingDocument."""
+        from docling.utils.chandra_utils import parse_chandra_html
+
+        page_docs = []
+
+        for pg_idx, page in enumerate(conv_res.pages):
+            predicted_text = ""
+            if page.predictions.vlm_response:
+                predicted_text = page.predictions.vlm_response.text
+
+            assert page.size is not None
+
+            page_doc = parse_chandra_html(
+                content=predicted_text,
+                original_page_size=page.size,
+                page_no=pg_idx + 1,
+                filename=conv_res.input.file.name or "file",
+                page_image=page.image,
+            )
+            page_docs.append(page_doc)
+
+        return self._add_page_metadata_and_concatenate(page_docs, conv_res)
+
+    def _parse_dots_json(
+        self, conv_res: ConversionResult
+    ) -> DoclingDocument:
+        """Parse dots.ocr / dots.mocr JSON output into a DoclingDocument."""
+        from docling.utils.dots_utils import parse_dots_json
+
+        page_docs = []
+
+        for pg_idx, page in enumerate(conv_res.pages):
+            predicted_text = ""
+            if page.predictions.vlm_response:
+                predicted_text = page.predictions.vlm_response.text
+
+            assert page.size is not None
+
+            page_doc = parse_dots_json(
+                content=predicted_text,
+                original_page_size=page.size,
+                page_no=pg_idx + 1,
+                filename=conv_res.input.file.name or "file",
+                page_image=page.image,
+            )
+            page_docs.append(page_doc)
+
         return self._add_page_metadata_and_concatenate(page_docs, conv_res)
 
     def _extract_code_block(self, text: str) -> str:
