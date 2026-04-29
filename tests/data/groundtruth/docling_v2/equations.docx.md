@@ -55,3 +55,7 @@ $$\oint_{}^{}\frac{dy}{dx}$$
 $$\oiint_{0}^{2 \pi }idt$$
 
 $$\oiiint_{C}^{}\frac{1}{z}dz$$
+
+Operators used with limits:
+
+$$\operatorname{argmax}_{ \epsilon }f(x),   \lim_{n}{\left(1+\frac{1}{n}\right)}^{n} ,  \max_{0 \leq x \leq 1}xe^{-x^{2}},  unsupported_{n}{\left(1+\frac{1}{n}\right)}^{n}$$

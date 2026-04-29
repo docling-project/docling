@@ -127,8 +127,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
-        options: MarkdownBackendOptions = MarkdownBackendOptions(),
+        options: Optional[MarkdownBackendOptions] = None,
     ):
+        if options is None:
+            options = MarkdownBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
 
         _log.debug("Starting MarkdownDocumentBackend...")

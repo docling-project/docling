@@ -2,18 +2,45 @@ name: "Run Docs CI"
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
-  push:
-    branches:
-      - "**"
-      - "!gh-pages"
+    types: [opened, reopened, synchronize, ready_for_review]
 
 env:
   UV_FROZEN: "1"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      run_docs: ${{ steps.filter.outputs.run_docs }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        with:
+          filters: |
+            run_docs:
+              - ".github/workflows/ci-docs.yml"
+              - ".github/workflows/docs.yml"
+              - "mkdocs.yml"
+              - "pyproject.toml"
+              - "uv.lock"
+              - "docling/**"
+              - "docs/**"
+
   build-docs:
-    if: ${{ github.event_name == 'push' || (github.event.pull_request.head.repo.full_name != 'docling-project/docling' && github.event.pull_request.head.repo.full_name != 'docling-project/docling') }}
+    needs: changes
+    if: ${{ needs.changes.outputs.run_docs == 'true' }}
     uses: ./.github/workflows/docs.yml
     with:
       deploy: false

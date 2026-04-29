@@ -204,8 +204,10 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         self,
         in_doc: "InputDocument",
         path_or_stream: Union[BytesIO, Path],
-        options: MetsGbsBackendOptions = MetsGbsBackendOptions(),
+        options: Optional[MetsGbsBackendOptions] = None,
     ):
+        if options is None:
+            options = MetsGbsBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
         self.options: MetsGbsBackendOptions
         self._tar: tarfile.TarFile = (

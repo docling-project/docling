@@ -378,7 +378,13 @@ class oMath2Latex(Tag2Method):
         t_dict = self.process_children_dict(elm, include=("e", "lim"))
         latex_s = LIM_FUNC.get(t_dict["e"])
         if not latex_s:
-            raise RuntimeError("Not support lim {}".format(t_dict["e"]))
+            # Handle unsupported limit functions gracefully
+            base = t_dict.get("e", "")
+            lim = t_dict.get("lim", "")
+            _log.warning(
+                f"Limit function {base} not in LIM_FUNC dictionary, using fallback format"
+            )
+            return f"{base}_{{{lim}}}"
         else:
             return latex_s.format(lim=t_dict.get("lim"))
 

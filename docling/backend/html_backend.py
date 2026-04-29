@@ -409,8 +409,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
-        options: HTMLBackendOptions = HTMLBackendOptions(),
+        options: Optional[HTMLBackendOptions] = None,
     ):
+        if options is None:
+            options = HTMLBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
         self.options: HTMLBackendOptions
         self.soup: Optional[BeautifulSoup] = None

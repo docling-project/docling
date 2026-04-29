@@ -4,7 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from docling_core.types.doc import GroupItem
+from docling_core.types.doc import DocItemLabel, GroupItem
 from lxml import etree
 
 import docling.backend.msword_backend as msword_backend_module
@@ -645,3 +645,79 @@ def test_handle_text_elements_inline_equations_stop_when_text_is_consumed(
     refs = backend._handle_text_elements(object(), DoclingDocument(name="test"))
 
     assert len(refs) == 2
+
+
+def test_checkbox_detection_and_parsing(documents):
+    """Test that checkboxes in DOCX files are correctly detected and parsed."""
+    name = "docx_checkboxes.docx"
+    doc = next((item[1] for item in documents if item[0].name == name), None)
+
+    if doc is None:
+        pytest.skip(f"Test file not found: {name}")
+
+    checkbox_items = [
+        item
+        for item in doc.texts
+        if item.label
+        in (DocItemLabel.CHECKBOX_SELECTED, DocItemLabel.CHECKBOX_UNSELECTED)
+    ]
+
+    assert len(checkbox_items) > 0, "No checkboxes found in the document"
+
+    # Verify we have both selected and unselected checkboxes
+    selected = [
+        item for item in checkbox_items if item.label == DocItemLabel.CHECKBOX_SELECTED
+    ]
+    unselected = [
+        item
+        for item in checkbox_items
+        if item.label == DocItemLabel.CHECKBOX_UNSELECTED
+    ]
+
+    assert len(selected) > 0, "No selected checkboxes found"
+    assert len(unselected) > 0, "No unselected checkboxes found"
+
+    checkbox_texts = [item.text for item in checkbox_items]
+    assert any("Design" in text for text in checkbox_texts), (
+        "Expected checkbox text not found"
+    )
+    assert any("Implementation" in text for text in checkbox_texts), (
+        "Expected checkbox text not found"
+    )
+    assert any("Documentation" in text for text in checkbox_texts), (
+        "Expected checkbox text not found"
+    )
+
+
+def test_checkbox_labels_in_tables(documents):
+    """Test that checkboxes in table cells are correctly parsed."""
+    name = "docx_checkboxes.docx"
+    doc = next((item[1] for item in documents if item[0].name == name), None)
+
+    if doc is None:
+        pytest.skip(f"Test file not found: {name}")
+
+    checkbox_items = [
+        item
+        for item in doc.texts
+        if item.label
+        in (DocItemLabel.CHECKBOX_SELECTED, DocItemLabel.CHECKBOX_UNSELECTED)
+    ]
+
+    food_items = [
+        "Orange juice",
+        "Tea",
+        "Coffee",
+        "Milk",
+        "Water",
+        "Scramble eggs",
+        "Porridge",
+        "Bread",
+        "Croissant",
+    ]
+
+    found_food_checkboxes = [
+        item for item in checkbox_items if any(food in item.text for food in food_items)
+    ]
+
+    assert len(found_food_checkboxes) > 0, "No checkboxes found in table cells"

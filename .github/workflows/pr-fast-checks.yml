@@ -1,0 +1,54 @@
+name: "Run PR Fast Checks"
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  UV_FROZEN: "1"
+
+jobs:
+  lint-and-type:
+    runs-on: ubuntu-latest
+    steps:
+      # Keep the worktree on the trusted base commit for dependency installation.
+      # The untrusted PR merge commit is fetched separately and only read by the checker.
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Fetch PR merge commit
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git fetch --no-tags --depth=2 origin "pull/${PR_NUMBER}/merge"
+          test "$(git rev-parse FETCH_HEAD^1)" = "${PR_BASE_SHA}"
+          test "$(git rev-parse FETCH_HEAD^2)" = "${PR_HEAD_SHA}"
+
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install minimal trusted lint and typing dependencies
+        run: uv sync --frozen --only-group pr-fast-checks --no-install-project
+
+      - name: Run fast lint and typing checks
+        run: |
+          .venv/bin/python .github/scripts/run_pr_fast_checks.py \
+            --repo-root "$PWD" \
+            --base-ref HEAD \
+            --head-ref FETCH_HEAD

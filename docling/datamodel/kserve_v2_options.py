@@ -1,8 +1,9 @@
 """Common KServe v2 API configuration options mixin."""
 
+import warnings
 from typing import Any, Dict, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field, model_validator
 
 
 class KserveV2OptionsMixin(BaseModel):
@@ -39,7 +40,7 @@ class KserveV2OptionsMixin(BaseModel):
         default="grpc",
         description=(
             "Transport protocol for KServe v2 calls. "
-            "Use 'grpc' for binary tensor payloads (default), or 'http' for JSON REST."
+            "Use 'grpc' or 'http' for KServe v2 inference."
         ),
     )
 
@@ -70,11 +71,11 @@ class KserveV2OptionsMixin(BaseModel):
         description="Max send/receive gRPC message size in bytes.",
     )
 
-    grpc_use_binary_data: bool = Field(
+    use_binary_data: bool = Field(
         default=True,
+        validation_alias=AliasChoices("use_binary_data", "grpc_use_binary_data"),
         description=(
-            "Whether to request/expect binary tensor payloads on gRPC output tensors. "
-            "Set to False for servers that do not support binary_data output parameters."
+            "For gRPC this controls binary_data tensor handling; for HTTP this enables REST binary framing."
         ),
     )
 
@@ -87,6 +88,27 @@ class KserveV2OptionsMixin(BaseModel):
         default_factory=dict,
         description="Optional top-level KServe v2 infer request parameters.",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _warn_deprecated_alias(cls, data):
+        """Emit deprecation warning if old field name is used during initialization."""
+        if isinstance(data, dict) and "grpc_use_binary_data" in data:
+            warnings.warn(
+                "grpc_use_binary_data is deprecated; use use_binary_data instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        return data
+
+    @property
+    def grpc_use_binary_data(self) -> bool:
+        warnings.warn(
+            "grpc_use_binary_data is deprecated; use use_binary_data instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.use_binary_data
 
 
 # Made with Bob

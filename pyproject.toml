@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.91.0"  # DO NOT EDIT, updated automatically
+version = "2.92.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -244,6 +244,13 @@ all = [
 ]
 
 [dependency-groups]
+pr-fast-checks = [
+    "docling-core[chunking] (>=2.73.0,<3.0.0)",
+    "mypy~=1.10",
+    "pydantic (>=2.0.0,<3.0.0)",
+    "pydantic-settings (>=2.3.0,<3.0.0)",
+    "ruff==0.11.5",
+]
 dev = [
   "pre-commit~=3.7",
   "mypy~=1.10",
