@@ -1,13 +1,18 @@
-"""
-Office Math Markup Language (OMML)
+"""Office Math Markup Language (OMML) to LaTeX converter.
 
-Adapted from https://github.com/xiilei/dwml/blob/master/dwml/omml.py
-On 23/01/2025
+This module provides functionality to convert Office Math Markup Language (OMML)
+elements from Word documents into LaTeX format. It handles various mathematical
+constructs including fractions, subscripts, superscripts, matrices, limits, and
+special characters.
+
+Adapted from https://github.com/xiilei/dwml/blob/master/dwml/omml.py on 23/01/2025.
 """
 
 import logging
+from typing import Any, Iterator
 
 import lxml.etree as ET
+from lxml.etree import _Element
 from pylatexenc.latexencode import UnicodeToLatexEncoder
 
 from docling.backend.docx.latex.latex_dict import (
@@ -45,19 +50,43 @@ OMML_NS = "{http://schemas.openxmlformats.org/officeDocument/2006/math}"
 _log = logging.getLogger(__name__)
 
 
-def load(stream):
+def load(stream: Any) -> Iterator[str]:
+    """Load and convert OMML elements from a stream.
+
+    Args:
+        stream: Input stream containing OMML XML data.
+
+    Yields:
+        LaTeX string representation of each oMath element found.
+    """
     tree = ET.parse(stream)
     for omath in tree.findall(OMML_NS + "oMath"):
-        yield oMath2Latex(omath)
+        yield str(oMath2Latex(omath))
 
 
-def load_string(string):
+def load_string(string: str) -> Iterator[str]:
+    """Load and convert OMML elements from a string.
+
+    Args:
+        string: XML string containing OMML data.
+
+    Yields:
+        LaTeX string representation of each oMath element found.
+    """
     root = ET.fromstring(string)
     for omath in root.findall(OMML_NS + "oMath"):
-        yield oMath2Latex(omath)
+        yield str(oMath2Latex(omath))
 
 
-def escape_latex(strs):
+def escape_latex(strs: str) -> str:
+    """Escape special LaTeX characters in a string.
+
+    Args:
+        strs: Input string to escape.
+
+    Returns:
+        String with LaTeX special characters properly escaped.
+    """
     last = None
     new_chr = []
     strs = strs.replace(r"\\", "\\")
@@ -70,7 +99,19 @@ def escape_latex(strs):
     return BLANK.join(new_chr)
 
 
-def get_val(key, default=None, store=CHR):
+def get_val(key: str | None, default: str, store: dict | None = CHR) -> str:
+    """Get a value from a dictionary store or return the key/default.
+
+    When default is provided, this function always returns a non-None string.
+
+    Args:
+        key: Key to look up in the store.
+        default: Default value if key is None.
+        store: Dictionary to look up the key in. If None, returns key directly.
+
+    Returns:
+        Value from store, the key itself, or the default value.
+    """
     if key is not None:
         return key if not store else store.get(key, key)
     else:
@@ -78,7 +119,20 @@ def get_val(key, default=None, store=CHR):
 
 
 class Tag2Method:
-    def call_method(self, elm, stag=None):
+    """Base class for processing XML elements by mapping tags to methods."""
+
+    tag2meth: dict[str, Any] = {}
+
+    def call_method(self, elm: _Element, stag: str | None = None) -> Any | None:
+        """Call the appropriate method for an XML element based on its tag.
+
+        Args:
+            elm: XML element to process.
+            stag: Optional simplified tag name (without namespace).
+
+        Returns:
+            Result of the method call, or None if no method is found.
+        """
         getmethod = self.tag2meth.get
         if stag is None:
             stag = elm.tag.replace(OMML_NS, "")
@@ -88,9 +142,17 @@ class Tag2Method:
         else:
             return None
 
-    def process_children_list(self, elm, include=None):
-        """
-        process children of the elm,return iterable
+    def process_children_list(
+        self, elm: _Element, include: tuple[str, ...] | None = None
+    ) -> Iterator[tuple[str, Any, _Element]]:
+        """Process children of an element and yield results as tuples.
+
+        Args:
+            elm: Parent XML element.
+            include: Optional tuple of tag names to include. If None, includes all.
+
+        Yields:
+            Tuple of (tag_name, processed_result, element) for each child.
         """
         for _e in list(elm):
             if OMML_NS not in _e.tag:
@@ -105,18 +167,34 @@ class Tag2Method:
                     continue
             yield (stag, t, _e)
 
-    def process_children_dict(self, elm, include=None):
-        """
-        process children of the elm,return dict
+    def process_children_dict(
+        self, elm: _Element, include: tuple[str, ...] | None = None
+    ) -> dict[str, Any]:
+        """Process children of an element and return results as a dictionary.
+
+        Args:
+            elm: Parent XML element.
+            include: Optional tuple of tag names to include. If None, includes all.
+
+        Returns:
+            Dictionary mapping tag names to their processed results.
         """
         latex_chars = dict()
         for stag, t, e in self.process_children_list(elm, include):
             latex_chars[stag] = t
         return latex_chars
 
-    def process_children(self, elm, include=None):
-        """
-        process children of the elm,return string
+    def process_children(
+        self, elm: _Element, include: tuple[str, ...] | None = None
+    ) -> str:
+        """Process children of an element and return concatenated string result.
+
+        Args:
+            elm: Parent XML element.
+            include: Optional tuple of tag names to include. If None, includes all.
+
+        Returns:
+            Concatenated string of all processed children.
         """
         return BLANK.join(
             (
@@ -125,37 +203,76 @@ class Tag2Method:
             )
         )
 
-    def process_unknow(self, elm, stag):
+    def process_unknow(self, elm: _Element, stag: str) -> Any | None:
+        """Handle unknown element types.
+
+        Args:
+            elm: XML element.
+            stag: Simplified tag name.
+
+        Returns:
+            None by default. Subclasses can override to provide custom handling.
+        """
         return None
 
 
 class Pr(Tag2Method):
-    text = ""
+    """Properties element processor for OMML elements."""
 
-    __val_tags = ("chr", "pos", "begChr", "endChr", "type")
+    text: str
+    __val_tags: tuple[str, ...]
+    __innerdict: dict[str, Any]
 
-    __innerdict = None  # can't use the __dict__
+    def __init__(self, elm: _Element):
+        """Initialize properties processor.
 
-    """ common properties of element"""
-
-    def __init__(self, elm):
+        Args:
+            elm: XML element containing properties.
+        """
+        self.__val_tags = ("chr", "pos", "begChr", "endChr", "type")
         self.__innerdict = {}
         self.text = self.process_children(elm)
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Return string representation."""
         return self.text
 
-    def __unicode__(self):
-        return self.__str__(self)
+    def __unicode__(self) -> str:
+        """Return unicode representation."""
+        return self.__str__()
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any | None:
+        """Get attribute from internal dictionary.
+
+        Args:
+            name: Attribute name.
+
+        Returns:
+            Attribute value or None if not found.
+        """
         return self.__innerdict.get(name, None)
 
-    def do_brk(self, elm):
+    def do_brk(self, elm: _Element) -> str:
+        """Process line break element.
+
+        Args:
+            elm: XML element.
+
+        Returns:
+            LaTeX line break string.
+        """
         self.__innerdict["brk"] = BRK
         return BRK
 
-    def do_common(self, elm):
+    def do_common(self, elm: _Element) -> None:
+        """Process common property elements.
+
+        Args:
+            elm: XML element.
+
+        Returns:
+            None (stores value in internal dictionary).
+        """
         stag = elm.tag.replace(OMML_NS, "")
         if stag in self.__val_tags:
             t = elm.get(f"{OMML_NS}val")
@@ -173,29 +290,43 @@ class Pr(Tag2Method):
 
 
 class oMath2Latex(Tag2Method):
-    """
-    Convert oMath element of omml to latex
-    """
+    """Convert OMML oMath elements to LaTeX format."""
 
-    _t_dict = T
-
-    __direct_tags = ("box", "num", "den", "deg", "e")
-    u = UnicodeToLatexEncoder(
+    _t_dict: dict[str, str] = T
+    __direct_tags: tuple[str, ...] = ("box", "num", "den", "deg", "e")
+    u: UnicodeToLatexEncoder = UnicodeToLatexEncoder(
         replacement_latex_protection="braces-all",
         unknown_char_policy="keep",
         unknown_char_warning=False,
     )
 
-    def __init__(self, element):
+    def __init__(self, element: _Element):
+        """Initialize OMML to LaTeX converter.
+
+        Args:
+            element: Root oMath XML element to convert.
+        """
         self._latex = self.process_children(element)
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Return LaTeX string with normalized spacing."""
         return self.latex.replace("  ", " ")
 
-    def __unicode__(self):
-        return self.__str__(self)
+    def __unicode__(self) -> str:
+        """Return unicode representation."""
+        return self.__str__()
 
-    def process_unknow(self, elm, stag):
+    def process_unknow(self, elm: _Element, stag: str) -> Any | None:
+        """Handle unknown element types.
+
+        Args:
+            elm: XML element.
+            stag: Simplified tag name.
+
+        Returns:
+            Processed children for direct tags, Pr object for property tags,
+            or None for other unknown tags.
+        """
         if stag in self.__direct_tags:
             return self.process_children(elm)
         elif stag[-2:] == "Pr":
@@ -204,38 +335,58 @@ class oMath2Latex(Tag2Method):
             return None
 
     @property
-    def latex(self):
+    def latex(self) -> str:
+        """Get the LaTeX representation.
+
+        Returns:
+            LaTeX string.
+        """
         return self._latex
 
-    def do_acc(self, elm):
-        """
-        the accent function
+    def do_acc(self, elm: _Element) -> str:
+        """Process accent element.
+
+        Args:
+            elm: XML element containing accent.
+
+        Returns:
+            LaTeX string with accent applied.
         """
         c_dict = self.process_children_dict(elm)
         latex_s = get_val(
-            c_dict["accPr"].chr, default=CHR_DEFAULT.get("ACC_VAL"), store=CHR
+            c_dict["accPr"].chr, default=CHR_DEFAULT["ACC_VAL"], store=CHR
         )
         return latex_s.format(c_dict["e"])
 
-    def do_bar(self, elm):
-        """
-        the bar function
+    def do_bar(self, elm: _Element) -> str:
+        """Process bar element (overline/underline).
+
+        Args:
+            elm: XML element containing bar.
+
+        Returns:
+            LaTeX string with bar applied.
         """
         c_dict = self.process_children_dict(elm)
         pr = c_dict["barPr"]
-        latex_s = get_val(pr.pos, default=POS_DEFAULT.get("BAR_VAL"), store=POS)
+        latex_s = get_val(pr.pos, default=POS_DEFAULT["BAR_VAL"], store=POS)
         return pr.text + latex_s.format(c_dict["e"])
 
-    def do_d(self, elm):
-        """
-        the delimiter object
+    def do_d(self, elm: _Element) -> str:
+        """Process delimiter element.
+
+        Args:
+            elm: XML element containing delimiter.
+
+        Returns:
+            LaTeX string with delimiters applied.
         """
         c_dict = self.process_children_dict(elm)
         pr = c_dict["dPr"]
-        null = D_DEFAULT.get("null")
+        null = D_DEFAULT["null"]
 
-        s_val = get_val(pr.begChr, default=D_DEFAULT.get("left"), store=T)
-        e_val = get_val(pr.endChr, default=D_DEFAULT.get("right"), store=T)
+        s_val = get_val(pr.begChr, default=D_DEFAULT["left"], store=T)
+        e_val = get_val(pr.endChr, default=D_DEFAULT["right"], store=T)
         delim = pr.text + D.format(
             left=null if not s_val else escape_latex(s_val),
             text=c_dict["e"],
@@ -243,25 +394,55 @@ class oMath2Latex(Tag2Method):
         )
         return delim
 
-    def do_spre(self, elm):
+    def do_spre(self, elm: _Element) -> None:
+        """Process pre-sub-superscript element (not supported yet).
+
+        Args:
+            elm: XML element.
+
+        Returns:
+            None.
         """
-        the Pre-Sub-Superscript object -- Not support yet
-        """
+        _log.warning("pre-sub-superscript element not supported yet")
+        return None
 
     @staticmethod
-    def _needs_grouping(latex_str):
-        """Check if a LaTeX string needs wrapping in braces for sub/superscript."""
+    def _needs_grouping(latex_str: str) -> bool:
+        """Check if a LaTeX string needs wrapping in braces for sub/superscript.
+
+        Args:
+            latex_str: LaTeX string to check.
+
+        Returns:
+            True if the string contains constructs that need grouping.
+        """
         return "\\frac" in latex_str or "\\sqrt" in latex_str
 
     @staticmethod
     def _unwrap_script(script: str, marker: str) -> str:
+        """Remove outer script wrapper if present.
+
+        Args:
+            script: Script string (subscript or superscript).
+            marker: Script marker ("_" or "^").
+
+        Returns:
+            Unwrapped script content.
+        """
         prefix = f"{marker}{{"
         if script.startswith(prefix) and script.endswith("}"):
             return script[len(prefix) : -1]
         return script
 
-    def do_ssub(self, elm):
-        """the Subscript object"""
+    def do_ssub(self, elm: _Element) -> str:
+        """Process subscript element.
+
+        Args:
+            elm: XML element containing subscript.
+
+        Returns:
+            LaTeX string with subscript applied.
+        """
         c_dict = self.process_children_dict(elm, include=("e", "sub", "sSubPr"))
         base = c_dict.get("e", "")
         sub = self._unwrap_script(c_dict.get("sub", ""), "_")
@@ -269,8 +450,15 @@ class oMath2Latex(Tag2Method):
             base = "{" + base + "}"
         return base + SUB.format(sub)
 
-    def do_ssup(self, elm):
-        """the Superscript object"""
+    def do_ssup(self, elm: _Element) -> str:
+        """Process superscript element.
+
+        Args:
+            elm: XML element containing superscript.
+
+        Returns:
+            LaTeX string with superscript applied.
+        """
         c_dict = self.process_children_dict(elm, include=("e", "sup", "sSupPr"))
         base = c_dict.get("e", "")
         sup = self._unwrap_script(c_dict.get("sup", ""), "^")
@@ -278,8 +466,15 @@ class oMath2Latex(Tag2Method):
             base = "{" + base + "}"
         return base + SUP.format(sup)
 
-    def do_ssubsup(self, elm):
-        """the Sub-Superscript object"""
+    def do_ssubsup(self, elm: _Element) -> str:
+        """Process combined sub-superscript element.
+
+        Args:
+            elm: XML element containing both subscript and superscript.
+
+        Returns:
+            LaTeX string with both scripts applied.
+        """
         c_dict = self.process_children_dict(
             elm, include=("e", "sub", "sup", "sSubSupPr")
         )
@@ -290,42 +485,71 @@ class oMath2Latex(Tag2Method):
             base = "{" + base + "}"
         return base + SUB.format(sub) + SUP.format(sup)
 
-    def do_sub(self, elm):
+    def do_sub(self, elm: _Element) -> str:
+        """Process standalone subscript content.
+
+        Args:
+            elm: XML element containing subscript content.
+
+        Returns:
+            LaTeX subscript string.
+        """
         text = self.process_children(elm)
         return SUB.format(text)
 
-    def do_sup(self, elm):
+    def do_sup(self, elm: _Element) -> str:
+        """Process standalone superscript content.
+
+        Args:
+            elm: XML element containing superscript content.
+
+        Returns:
+            LaTeX superscript string.
+        """
         text = self.process_children(elm)
         return SUP.format(text)
 
-    def do_f(self, elm):
-        """
-        the fraction object
+    def do_f(self, elm: _Element) -> str:
+        """Process fraction element.
+
+        Args:
+            elm: XML element containing fraction.
+
+        Returns:
+            LaTeX fraction string.
         """
         c_dict = self.process_children_dict(elm)
         pr = c_dict.get("fPr")
         if pr is None:
-            # Handle missing fPr element gracefully
             _log.debug("Missing fPr element in fraction, using default formatting")
-            latex_s = F_DEFAULT
-            return latex_s.format(
+            return F_DEFAULT.format(
                 num=c_dict.get("num"),
                 den=c_dict.get("den"),
             )
         latex_s = get_val(pr.type, default=F_DEFAULT, store=F)
         return pr.text + latex_s.format(num=c_dict.get("num"), den=c_dict.get("den"))
 
-    def do_func(self, elm):
-        """
-        the Function-Apply object (Examples:sin cos)
+    def do_func(self, elm: _Element) -> str:
+        """Process function application element.
+
+        Args:
+            elm: XML element containing function application.
+
+        Returns:
+            LaTeX function string.
         """
         c_dict = self.process_children_dict(elm)
-        func_name = c_dict.get("fName")
-        return func_name.replace(FUNC_PLACE, c_dict.get("e"))
+        func_name = c_dict.get("fName", "")
+        return func_name.replace(FUNC_PLACE, c_dict.get("e", ""))
 
-    def do_fname(self, elm):
-        """
-        the func name
+    def do_fname(self, elm: _Element) -> str:
+        """Process function name element.
+
+        Args:
+            elm: XML element containing function name.
+
+        Returns:
+            LaTeX function name with placeholder.
         """
         latex_chars = []
         for stag, t, e in self.process_children_list(elm):
@@ -339,23 +563,33 @@ class oMath2Latex(Tag2Method):
             elif isinstance(t, str):
                 latex_chars.append(t)
         t = BLANK.join(latex_chars)
-        return t if FUNC_PLACE in t else t + FUNC_PLACE  # do_func will replace this
+        return t if FUNC_PLACE in t else t + FUNC_PLACE
 
-    def do_groupchr(self, elm):
-        """
-        the Group-Character object
+    def do_groupchr(self, elm: _Element) -> str:
+        """Process group character element (e.g., underbrace, overbrace).
 
         According to OMML spec, when chr is not specified and pos is not specified,
         the default position is "bot" (bottom), which corresponds to underbrace.
+
+        Args:
+            elm: XML element containing group character.
+
+        Returns:
+            LaTeX string with group character applied.
         """
         c_dict = self.process_children_dict(elm)
         pr = c_dict["groupChrPr"]
-        latex_s = get_val(pr.chr, default=CHR_DEFAULT.get("GROUPCHR_VAL"), store=CHR)
+        latex_s = get_val(pr.chr, default=CHR_DEFAULT["GROUPCHR_VAL"], store=CHR)
         return pr.text + latex_s.format(c_dict["e"])
 
-    def do_rad(self, elm):
-        """
-        the radical object
+    def do_rad(self, elm: _Element) -> str:
+        """Process radical (root) element.
+
+        Args:
+            elm: XML element containing radical.
+
+        Returns:
+            LaTeX radical string.
         """
         c_dict = self.process_children_dict(elm)
         text = c_dict.get("e")
@@ -365,9 +599,14 @@ class oMath2Latex(Tag2Method):
         else:
             return RAD_DEFAULT.format(text=text)
 
-    def do_eqarr(self, elm):
-        """
-        the Array object
+    def do_eqarr(self, elm: _Element) -> str:
+        """Process equation array element.
+
+        Args:
+            elm: XML element containing equation array.
+
+        Returns:
+            LaTeX array string.
         """
         return ARR.format(
             text=BRK.join(
@@ -375,14 +614,18 @@ class oMath2Latex(Tag2Method):
             )
         )
 
-    def do_limlow(self, elm):
-        """
-        the Lower-Limit object
+    def do_limlow(self, elm: _Element) -> str:
+        """Process lower limit element.
+
+        Args:
+            elm: XML element containing lower limit.
+
+        Returns:
+            LaTeX string with lower limit applied.
         """
         t_dict = self.process_children_dict(elm, include=("e", "lim"))
         latex_s = LIM_FUNC.get(t_dict["e"])
         if not latex_s:
-            # Handle unsupported limit functions gracefully
             base = t_dict.get("e", "")
             lim = t_dict.get("lim", "")
             _log.warning(
@@ -392,16 +635,32 @@ class oMath2Latex(Tag2Method):
         else:
             return latex_s.format(lim=t_dict.get("lim"))
 
-    def do_limupp(self, elm):
-        """
-        the Upper-Limit object
+    def do_limupp(self, elm: _Element) -> str:
+        """Process upper limit element.
+
+        Args:
+            elm: XML element containing upper limit.
+
+        Returns:
+            LaTeX string with upper limit applied.
         """
         t_dict = self.process_children_dict(elm, include=("e", "lim"))
         return LIM_UPP.format(lim=t_dict.get("lim"), text=t_dict.get("e"))
 
-    def do_lim(self, elm):
-        """
-        the lower limit of the limLow object and the upper limit of the limUpp function
+    def do_lim(self, elm: _Element) -> str:
+        """Process limit content element.
+
+        This processes the lower limit of limLow and upper limit of limUpp.
+        It handles special formatting for limit labels including:
+        - Replacing `rightarrow` with `to`
+        - Stripping trailing line breaks
+        - Escaping spaces in plain text labels
+
+        Args:
+            elm: XML element containing limit content.
+
+        Returns:
+            Processed limit string.
         """
         result = self.process_children(elm).replace(LIM_TO[0], LIM_TO[1])
 
@@ -415,9 +674,14 @@ class oMath2Latex(Tag2Method):
             result = result.replace(" ", BACKSLASH + " ")
         return result
 
-    def do_m(self, elm):
-        """
-        the Matrix object
+    def do_m(self, elm: _Element) -> str:
+        """Process matrix element.
+
+        Args:
+            elm: XML element containing matrix.
+
+        Returns:
+            LaTeX matrix string.
         """
         rows = []
         for stag, t, e in self.process_children_list(elm):
@@ -427,17 +691,27 @@ class oMath2Latex(Tag2Method):
                 rows.append(t)
         return M.format(text=BRK.join(rows))
 
-    def do_mr(self, elm):
-        """
-        a single row of the matrix m
+    def do_mr(self, elm: _Element) -> str:
+        """Process matrix row element.
+
+        Args:
+            elm: XML element containing matrix row.
+
+        Returns:
+            LaTeX matrix row string.
         """
         return ALN.join(
             [t for stag, t, e in self.process_children_list(elm, include=("e",))]
         )
 
-    def do_nary(self, elm):
-        """
-        the n-ary object
+    def do_nary(self, elm: _Element) -> str:
+        """Process n-ary operator element (e.g., sum, product, integral).
+
+        Args:
+            elm: XML element containing n-ary operator.
+
+        Returns:
+            LaTeX n-ary operator string.
         """
         res = []
         bo = ""
@@ -449,15 +723,22 @@ class oMath2Latex(Tag2Method):
                 res.append(t)
         return bo + BLANK.join(res)
 
-    # Characters that should be treated as math operators, not text-mode macros.
-    _MATH_CHAR_MAP = {
+    _MATH_CHAR_MAP: dict[str, str] = {
         "\u2013": "-",  # EN DASH → minus
         "\u2014": "-",  # EM DASH → minus
         "\u2212": "-",  # MINUS SIGN → minus
         "\u005e": "^",  # CIRCUMFLEX → superscript operator
     }
 
-    def process_unicode(self, s):
+    def process_unicode(self, s: str) -> str:
+        """Process Unicode character and convert to LaTeX.
+
+        Args:
+            s: Unicode character to process.
+
+        Returns:
+            LaTeX representation of the character.
+        """
         # Map characters that are math operators before the text encoder
         # converts them to text-mode macros like \textendash.
         if s in self._MATH_CHAR_MAP:
@@ -482,11 +763,14 @@ class oMath2Latex(Tag2Method):
 
         return out_latex_str
 
-    def do_r(self, elm):
-        """
-        Get text from 'r' element,And try convert them to latex symbols
-        @todo text style support , (sty)
-        @todo \text (latex pure text support)
+    def do_r(self, elm: _Element) -> str:
+        """Process run element containing text.
+
+        Args:
+            elm: XML element containing text run.
+
+        Returns:
+            LaTeX string with text properly escaped and formatted.
         """
         _str = []
         _base_str = []

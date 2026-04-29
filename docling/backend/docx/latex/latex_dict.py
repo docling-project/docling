@@ -1,19 +1,37 @@
-"""
-Adapted from https://github.com/xiilei/dwml/blob/master/dwml/latex_dict.py
-On 23/01/2025
+"""LaTeX dictionary for OMML to LaTeX conversion.
+
+This module contains constants and dictionaries used for converting Office Math
+Markup Language (OMML) to LaTeX format. It includes mappings for special characters,
+mathematical symbols, functions, and formatting templates.
+
+Adapted from https://github.com/xiilei/dwml/blob/master/dwml/latex_dict.py on 23/01/2025
 """
 
-CHARS = ("{", "}", "_", "^", "#", "&", "$", "%", "~")
+from typing import Final
 
-BLANK = ""
-BACKSLASH = "\\"
-ALN = "&"
+CHARS: Final[tuple[str, ...]] = ("{", "}", "_", "^", "#", "&", "$", "%", "~")
+
+BLANK: Final[str] = ""
+BACKSLASH: Final[str] = "\\"
+ALN: Final[str] = "&"
 
 # Characters that indicate mathematical expressions (not plain text)
 # Used to detect when spaces should be escaped in limit labels
-MATH_CHARS = (BACKSLASH, "<", ">", "=", "+", "*", "/", "^", "_", "{", "}")
+MATH_CHARS: Final[tuple[str, ...]] = (
+    BACKSLASH,
+    "<",
+    ">",
+    "=",
+    "+",
+    "*",
+    "/",
+    "^",
+    "_",
+    "{",
+    "}",
+)
 
-CHR = {
+CHR: Final[dict[str, str]] = {
     # Unicode : Latex Math Symbols
     # Top accents
     "\u0300": "\\grave{{{0}}}",
@@ -62,8 +80,8 @@ CHR = {
     "\u23df": "\\underbrace{{{0}}}",
 }
 
-CHR_BO = {
-    # Big operators,
+CHR_BO: Final[dict[str, str]] = {
+    # Big operators
     "\u2140": "\\Bbbsum",
     "\u220f": "\\prod",
     "\u2210": "\\coprod",
@@ -83,7 +101,7 @@ CHR_BO = {
     "\u2a02": "\\bigotimes",
 }
 
-T = {
+T: Final[dict[str, str]] = {
     # Greek letters
     "\U0001d6fc": "\\alpha ",
     "\U0001d6fd": "\\beta ",
@@ -205,7 +223,7 @@ T = {
     "\U0001d467": "z",
 }
 
-FUNC = {
+FUNC: Final[dict[str, str]] = {
     "sin": "\\sin({fe})",
     "cos": "\\cos({fe})",
     "tan": "\\tan({fe})",
@@ -238,49 +256,49 @@ FUNC = {
     "Pr": "\\Pr({fe})",
 }
 
-FUNC_PLACE = "{fe}"
+FUNC_PLACE: Final[str] = "{fe}"
 
-BRK = "\\\\"
+BRK: Final[str] = "\\\\"
 
-CHR_DEFAULT = {
+CHR_DEFAULT: Final[dict[str, str]] = {
     "ACC_VAL": "\\hat{{{0}}}",
     "GROUPCHR_VAL": "\\underbrace{{{0}}}",
 }
 
-POS = {
-    "top": "\\overline{{{0}}}",  # not sure
+POS: Final[dict[str, str]] = {
+    "top": "\\overline{{{0}}}",
     "bot": "\\underline{{{0}}}",
 }
 
-POS_DEFAULT = {
+POS_DEFAULT: Final[dict[str, str]] = {
     "BAR_VAL": "\\overline{{{0}}}",
 }
 
-SUB = "_{{{0}}}"
+SUB: Final[str] = "_{{{0}}}"
 
-SUP = "^{{{0}}}"
+SUP: Final[str] = "^{{{0}}}"
 
-F = {
+F: Final[dict[str, str]] = {
     "bar": "\\frac{{{num}}}{{{den}}}",
     "skw": r"^{{{num}}}/_{{{den}}}",
     "noBar": "\\genfrac{{}}{{}}{{0pt}}{{}}{{{num}}}{{{den}}}",
     "lin": "{{{num}}}/{{{den}}}",
 }
-F_DEFAULT = "\\frac{{{num}}}{{{den}}}"
+F_DEFAULT: Final[str] = "\\frac{{{num}}}{{{den}}}"
 
-D = "\\left{left}{text}\\right{right}"
+D: Final[str] = "\\left{left}{text}\\right{right}"
 
-D_DEFAULT = {
+D_DEFAULT: Final[dict[str, str]] = {
     "left": "(",
     "right": ")",
     "null": ".",
 }
 
-RAD = "\\sqrt[{deg}]{{{text}}}"
-RAD_DEFAULT = "\\sqrt{{{text}}}"
-ARR = "{text}"
+RAD: Final[str] = "\\sqrt[{deg}]{{{text}}}"
+RAD_DEFAULT: Final[str] = "\\sqrt{{{text}}}"
+ARR: Final[str] = "{text}"
 
-LIM_FUNC = {
+LIM_FUNC: Final[dict[str, str]] = {
     "lim": "\\lim_{{{lim}}}",
     "max": "\\max_{{{lim}}}",
     "min": "\\min_{{{lim}}}",
@@ -288,8 +306,8 @@ LIM_FUNC = {
     "argmin": "\\operatorname{{argmin}}_{{{lim}}}",
 }
 
-LIM_TO = ("\\rightarrow", "\\to")
+LIM_TO: Final[tuple[str, str]] = ("\\rightarrow", "\\to")
 
-LIM_UPP = "\\overset{{{lim}}}{{{text}}}"
+LIM_UPP: Final[str] = "\\overset{{{lim}}}{{{text}}}"
 
-M = "\\begin{{matrix}}{text}\\end{{matrix}}"
+M: Final[str] = "\\begin{{matrix}}{text}\\end{{matrix}}"
