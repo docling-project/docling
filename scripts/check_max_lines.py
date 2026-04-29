@@ -41,7 +41,7 @@ SKIP_DIRS = {
 }
 
 DEFAULT_MAX_LINES = 1000
-DEFAULT_IGNORE_FILE = ".max-lines-ignore"
+DEFAULT_IGNORE_FILE = ".github/max-lines-ignore"
 
 
 def load_ignore_patterns(ignore_file: Path) -> tuple[list[str], list[str]]:
@@ -176,7 +176,10 @@ def main() -> int:
             violations.append((rel_path, line_count))
 
     if warnings:
-        print(f"Ignored files exceeding {args.max_lines} line limit (TODO refactor):")
+        print(
+            f"Ignored files exceeding {args.max_lines} line limit "
+            "(TODO split or refactor):"
+        )
         for path, line_count in warnings:
             print(f"  WARN: {path} has {line_count} lines")
         print()
