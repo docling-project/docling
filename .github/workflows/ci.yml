@@ -2,16 +2,117 @@ name: "Run CI"
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
-  push:
-    branches:
-      - "**"
-      - "!main"
-      - "!gh-pages"
+    types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]
+  workflow_dispatch:
+    inputs:
+      python_versions:
+        description: 'JSON array of Python versions to run. Leave empty for the full default matrix.'
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEFAULT_PYTHON_VERSIONS: '["3.10"]'
+  FULL_PYTHON_VERSIONS: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      run_ci: ${{ steps.manual.outputs.run_ci || steps.filter.outputs.run_ci }}
+      full_matrix_override: ${{ steps.filter.outputs.full_matrix_override }}
+      default_python_versions: ${{ steps.python_versions.outputs.default_python_versions }}
+      full_python_versions: ${{ steps.python_versions.outputs.full_python_versions }}
+    steps:
+      - name: Set Python version selections
+        id: python_versions
+        run: |
+          echo "default_python_versions=${DEFAULT_PYTHON_VERSIONS}" >> "$GITHUB_OUTPUT"
+          echo "full_python_versions=${FULL_PYTHON_VERSIONS}" >> "$GITHUB_OUTPUT"
+
+      - name: Mark manual runs to execute CI
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        id: manual
+        run: echo "run_ci=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v6
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        id: filter
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        with:
+          filters: |
+            run_ci:
+              - ".github/workflows/ci.yml"
+              - ".github/workflows/checks.yml"
+              - ".github/workflows/pr-fast-checks.yml"
+              - ".github/scripts/run_pr_fast_checks.py"
+              - ".pre-commit-config.yaml"
+              - "pyproject.toml"
+              - "uv.lock"
+              - "Dockerfile"
+              - "README.md"
+              - "LICENSE"
+              - "docling/**"
+              - "tests/**"
+              - "docs/examples/**"
+            full_matrix_override:
+              - ".github/workflows/ci.yml"
+              - ".github/workflows/checks.yml"
+              - "pyproject.toml"
+              - "uv.lock"
+              - "README.md"
+              - "LICENSE"
+
   code-checks:
-    if: ${{ github.event_name == 'push' || (github.event.pull_request.head.repo.full_name != 'docling-project/docling' && github.event.pull_request.head.repo.full_name != 'docling-project/docling') }}
+    needs: changes
+    if: ${{ needs.changes.outputs.run_ci == 'true' }}
+    permissions:
+      contents: read
+      pull-requests: read
     uses: ./.github/workflows/checks.yml
+    with:
+      run_lint: true
+      force_all_checks: >-
+        ${{
+          github.event_name == 'workflow_dispatch'
+        }}
+      run_package_compat: >-
+        ${{
+          github.event_name == 'workflow_dispatch' ||
+          needs.changes.outputs.full_matrix_override == 'true' ||
+          (
+            github.event_name == 'pull_request' &&
+            contains(github.event.pull_request.labels.*.name, 'tests:full')
+          )
+        }}
+      python_versions: >-
+        ${{
+          (
+            github.event_name == 'workflow_dispatch' &&
+            (inputs.python_versions || needs.changes.outputs.full_python_versions)
+          ) ||
+          (
+            needs.changes.outputs.full_matrix_override == 'true' &&
+            needs.changes.outputs.full_python_versions
+          ) ||
+          (
+            github.event_name == 'pull_request' &&
+            contains(github.event.pull_request.labels.*.name, 'tests:full') &&
+            needs.changes.outputs.full_python_versions
+          ) ||
+          needs.changes.outputs.default_python_versions
+        }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

@@ -5,6 +5,22 @@ on:
         type: boolean
         description: "If true, the coverage results are pushed to codecov.io."
         default: true
+      run_lint:
+        type: boolean
+        description: "If true, run the full lint job in this workflow."
+        default: true
+      force_all_checks:
+        type: boolean
+        description: "If true, run all test/example/package lanes regardless of changed-path filters."
+        default: false
+      run_package_compat:
+        type: boolean
+        description: "If true, run the cross-version package compatibility lanes."
+        default: false
+      python_versions:
+        type: string
+        description: 'JSON array of Python versions to use for multi-version jobs, e.g. ["3.10", "3.12"].'
+        default: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
     secrets:
       CODECOV_TOKEN:
         required: false
@@ -23,8 +39,65 @@ env:
   EXAMPLES_TO_SKIP: '^(batch_convert|compare_vlm_models|minimal|minimal_vlm_pipeline|minimal_asr_pipeline|export_multimodal|custom_convert|develop_picture_enrichment|rapidocr_with_custom_models|suryaocr_with_custom_models|offline_convert|pictures_description|pictures_description_api|vlm_pipeline_api_model|granitedocling_repetition_stopping|mlx_whisper_example|gpu_standard_pipeline|gpu_vlm_pipeline|demo_layout_vlm|post_process_ocr_with_vlm|run_with_formats_html_rendered|run_with_formats_html_rendered_mp|chart_extraction|granite_vision_table_structure)\.py$|xbrl_conversion\.ipynb$'
 
 jobs:
-  lint:
+  changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      run_tests: ${{ steps.force.outputs.run_tests || steps.filter.outputs.run_tests }}
+      run_examples: ${{ steps.force.outputs.run_examples || steps.filter.outputs.run_examples }}
+      run_package: ${{ steps.force.outputs.run_package || steps.filter.outputs.run_package }}
+    steps:
+      - name: Force all lanes
+        if: ${{ inputs.force_all_checks }}
+        id: force
+        run: |
+          echo "run_tests=true" >> "$GITHUB_OUTPUT"
+          echo "run_examples=true" >> "$GITHUB_OUTPUT"
+          echo "run_package=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v6
+        if: ${{ !inputs.force_all_checks }}
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        if: ${{ !inputs.force_all_checks }}
+        id: filter
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        with:
+          filters: |
+            run_tests:
+              - ".github/workflows/ci.yml"
+              - ".github/workflows/checks.yml"
+              - "pyproject.toml"
+              - "uv.lock"
+              - "Dockerfile"
+              - "docling/**"
+              - "tests/**"
+            run_examples:
+              - ".github/workflows/ci.yml"
+              - ".github/workflows/checks.yml"
+              - "pyproject.toml"
+              - "uv.lock"
+              - "Dockerfile"
+              - "docling/**"
+              - "docs/examples/**"
+            run_package:
+              - ".github/workflows/ci.yml"
+              - ".github/workflows/checks.yml"
+              - "pyproject.toml"
+              - "uv.lock"
+              - "README.md"
+              - "LICENSE"
+              - "docling/**"
+
+  lint:
+    if: ${{ inputs.run_lint }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -58,11 +131,14 @@ jobs:
           uv run pre-commit run --all-files
 
   run-tests-1:
+    needs: changes
+    if: ${{ needs.changes.outputs.run_tests == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ${{ fromJSON(inputs.python_versions) }}
     steps:
       - uses: actions/checkout@v6
 
@@ -125,11 +201,14 @@ jobs:
         run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
   run-tests-2:
+    needs: changes
+    if: ${{ needs.changes.outputs.run_tests == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ${{ fromJSON(inputs.python_versions) }}
     steps:
       - uses: actions/checkout@v6
 
@@ -197,11 +276,14 @@ jobs:
         run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
   run-examples:
+    needs: changes
+    if: ${{ needs.changes.outputs.run_examples == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ${{ fromJSON(inputs.python_versions) }}
     steps:
       - uses: actions/checkout@v6
 
@@ -288,16 +370,21 @@ jobs:
         run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
   test-pip-install-no-lock:
+    needs: changes
+    if: ${{ inputs.run_package_compat && needs.changes.outputs.run_package == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SELECTED_PYTHON_VERSIONS: ${{ join(fromJSON(inputs.python_versions), ' ') }}
     steps:
       - uses: actions/checkout@v5
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
 
-      - name: Test pip install across Python versions
+      - name: Test pip install across selected Python versions
         run: |
-          for py_version in 3.10 3.11 3.12 3.13 3.14; do
+          for py_version in $SELECTED_PYTHON_VERSIONS; do
             echo "=========================================="
             echo "Testing Python $py_version"
             echo "=========================================="
@@ -321,16 +408,21 @@ jobs:
           done
 
   test-pip-install-no-dev-headers:
+    needs: changes
+    if: ${{ inputs.run_package_compat && needs.changes.outputs.run_package == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SELECTED_PYTHON_VERSIONS: ${{ join(fromJSON(inputs.python_versions), ' ') }}
     steps:
       - uses: actions/checkout@v5
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
 
-      - name: Test pip install without dev headers across Python versions
+      - name: Test pip install without dev headers across selected Python versions
         run: |
-          for py_version in 3.10 3.11 3.12 3.13 3.14; do
+          for py_version in $SELECTED_PYTHON_VERSIONS; do
             echo "=========================================="
             echo "Testing Python $py_version (no dev headers)"
             echo "=========================================="
@@ -395,7 +487,10 @@ jobs:
           done
 
   build-package:
+    needs: changes
+    if: ${{ needs.changes.outputs.run_package == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       matrix:
         python-version: ["3.12"]
@@ -429,8 +524,11 @@ jobs:
 
   test-package:
     needs:
+      - changes
       - build-package
+    if: ${{ needs.changes.outputs.run_package == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       matrix:
         python-version: ["3.12"]

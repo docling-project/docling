@@ -244,6 +244,13 @@ all = [
 ]
 
 [dependency-groups]
+pr-fast-checks = [
+    "docling-core[chunking] (>=2.73.0,<3.0.0)",
+    "mypy~=1.10",
+    "pydantic (>=2.0.0,<3.0.0)",
+    "pydantic-settings (>=2.3.0,<3.0.0)",
+    "ruff==0.11.5",
+]
 dev = [
   "pre-commit~=3.7",
   "mypy~=1.10",
