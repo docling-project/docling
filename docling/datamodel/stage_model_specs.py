@@ -26,6 +26,10 @@ from docling.models.inference_engines.object_detection.base import (
     ObjectDetectionEngineType,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineType
+from docling.models.inference_engines.vlm.transformers_runtime_adapters import (
+    FalconOCRTransformersAdapter,
+    falcon_ocr_build_prompt,
+)
 
 if TYPE_CHECKING:
     from docling.datamodel.image_classification_engine_options import (
@@ -1306,8 +1310,9 @@ VLM_CONVERT_FALCON_OCR = StageModelPreset(
                 torch_dtype="bfloat16",
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_CAUSALLM,
-                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
                     "torch_dtype": "bfloat16",
+                    "attn_implementation": "eager",
+                    "transformers_runtime_adapter": FalconOCRTransformersAdapter,
                 },
             ),
         },
@@ -1322,6 +1327,12 @@ VLM_CONVERT_FALCON_OCR = StageModelPreset(
     ),
     scale=2.0,
     default_engine_type=VlmEngineType.AUTO_INLINE,
+    stage_options={
+        "prompt_builder": falcon_ocr_build_prompt,
+        "extra_generation_config": {
+            "transformers_prompt_style": TransformersPromptStyle.RAW
+        },
+    },
 )
 
 VLM_CONVERT_LIGHTONOCR = StageModelPreset(

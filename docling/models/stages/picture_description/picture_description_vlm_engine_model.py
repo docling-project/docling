@@ -65,7 +65,7 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
         self,
         enabled: bool,
         enable_remote_services: bool,
-        artifacts_path: Optional[Union[Path, str]],
+        artifacts_path: Path | str | None,
         options: PictureDescriptionVlmEngineOptions,
         accelerator_options: AcceleratorOptions,
     ):
@@ -77,7 +77,7 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
             accelerator_options=accelerator_options,
         )
         self.options: PictureDescriptionVlmEngineOptions
-        self.engine: Optional[BaseVlmEngine] = None
+        self.engine: BaseVlmEngine | None = None
 
         if self.enabled:
             # Get engine type from options
@@ -118,7 +118,13 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
             raise RuntimeError("Engine not initialized")
 
         # Get prompt from options
-        prompt = self.options.prompt
+        prompt = self.options.build_prompt(self.options.prompt)
+        generation_config = {
+            **self.options.extra_generation_config,
+            **self.options.generation_config,
+        }
+        max_new_tokens = int(generation_config.pop("max_new_tokens", 200))
+        stop_strings = list(self.options.model_spec.stop_strings)
 
         # Convert to list for batch processing
         image_list = list(images)
@@ -133,7 +139,9 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
                     image=image,
                     prompt=prompt,
                     temperature=0.0,
-                    max_new_tokens=200,  # Use from options if available
+                    max_new_tokens=max_new_tokens,
+                    stop_strings=stop_strings,
+                    extra_generation_config=dict(generation_config),
                 )
                 for image in image_list
             ]

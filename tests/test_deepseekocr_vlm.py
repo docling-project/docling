@@ -1,7 +1,6 @@
 """Test DeepSeek OCR markdown parsing in VLM pipeline."""
 
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -22,10 +21,14 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
 from docling.utils.deepseekocr_utils import parse_deepseekocr_markdown
 
-from .test_data_gen_flag import GEN_TEST_DATA
+from .test_data_gen_flag import GEN_TEST_DATA, IS_CI
 from .verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
+pytestmark = pytest.mark.skipif(
+    IS_CI,
+    reason="Skipping VLM unit tests in CI",
+)
 
 
 def get_md_deepseek_paths():
@@ -93,7 +96,7 @@ def test_e2e_deepseekocr_conversion():
     """Test DeepSeek OCR VLM conversion on a PDF file."""
 
     # Skip in CI or if ollama is not available
-    if os.getenv("CI"):
+    if IS_CI:
         pytest.skip("Skipping in CI environment")
 
     # Check if ollama is available

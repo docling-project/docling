@@ -72,7 +72,7 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
         self,
         enabled: bool,
         enable_remote_services: bool,
-        artifacts_path: Optional[Union[Path, str]],
+        artifacts_path: Path | str | None,
         options: CodeFormulaVlmOptions,
         accelerator_options: AcceleratorOptions,
     ):
@@ -86,7 +86,7 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
         """
         self.enabled = enabled
         self.options = options
-        self.engine: Optional[BaseVlmEngine] = None
+        self.engine: BaseVlmEngine | None = None
 
         if self.enabled:
             # New runtime system path
@@ -151,7 +151,7 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
         else:
             raise NotImplementedError("Label must be either code or formula")
 
-    def _extract_code_language(self, input_string: str) -> Tuple[str, Optional[str]]:
+    def _extract_code_language(self, input_string: str) -> Tuple[str, str | None]:
         """Extract programming language from the beginning of a string.
 
         Checks if the input string starts with a pattern of the form
@@ -174,7 +174,7 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
         else:
             return input_string, None
 
-    def _get_code_language_enum(self, value: Optional[str]) -> CodeLanguageLabel:
+    def _get_code_language_enum(self, value: str | None) -> CodeLanguageLabel:
         """Convert a string to a CodeLanguageLabel enum member.
 
         Args:
@@ -252,18 +252,21 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
 
         # Process batch through engine
         try:
+            base_generation_config = {
+                **self.options.extra_generation_config,
+                "skip_special_tokens": False,
+            }
+
             # Prepare batch of engine inputs
             engine_inputs = [
                 VlmEngineInput(
                     image=image
                     if isinstance(image, Image.Image)
                     else Image.fromarray(image),
-                    prompt=self._get_prompt(label),
+                    prompt=self.options.build_prompt(self._get_prompt(label)),
                     temperature=0.0,
                     max_new_tokens=2048,
-                    extra_generation_config={
-                        "skip_special_tokens": False,  # Keep special tokens for post-processing
-                    },
+                    extra_generation_config=dict(base_generation_config),
                 )
                 for image, label in zip(images, labels)
             ]

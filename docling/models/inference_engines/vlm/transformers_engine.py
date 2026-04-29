@@ -5,7 +5,7 @@ import logging
 import sys
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union, cast
 
 import torch
 from packaging import version
@@ -46,6 +46,9 @@ from docling.utils.accelerator_utils import decide_device
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
+    from docling.models.inference_engines.vlm.transformers_runtime_adapters import (
+        TransformersRuntimeAdapter,
+    )
 
 _log = logging.getLogger(__name__)
 
@@ -61,8 +64,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self,
         options: TransformersVlmEngineOptions,
         accelerator_options: AcceleratorOptions,
-        artifacts_path: Optional[Union[Path, str]],
-        model_config: Optional["EngineModelConfig"] = None,
+        artifacts_path: Path | str | None,
+        model_config: "EngineModelConfig | None" = None,
     ):
         """Initialize the Transformers engine.
 
@@ -78,10 +81,10 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self.artifacts_path = artifacts_path
 
         # These will be set during initialization
-        self.device: Optional[str] = None
-        self.processor: Optional[ProcessorMixin] = None
-        self.vlm_model: Optional[PreTrainedModel] = None
-        self.generation_config: Optional[GenerationConfig] = None
+        self.device: str | None = None
+        self.processor: ProcessorMixin | None = None
+        self.vlm_model: PreTrainedModel | None = None
+        self.generation_config: GenerationConfig | None = None
 
         # Initialize immediately if model_config is provided
         if self.model_config is not None:
@@ -161,7 +164,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
 
         # Setup quantization if needed
-        quantization_config: Optional[BitsAndBytesConfig] = None
+        quantization_config: BitsAndBytesConfig | None = None
         if self.options.quantized:
             quantization_config = BitsAndBytesConfig(
                 load_in_8bit=self.options.load_in_8bit,
@@ -181,6 +184,18 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         elif model_type == TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT:
             model_cls = AutoModelForImageTextToText  # type: ignore[assignment]
 
+        attn_implementation = self._get_attn_implementation()
+        runtime_adapter = self._get_runtime_adapter()
+        resolved_model_config = None
+        if runtime_adapter is not None:
+            resolved_model_config = runtime_adapter.build_model_config(
+                artifacts_path=artifacts_path,
+                revision=revision,
+                options=self.options,
+                model_config=self.model_config,
+                attn_implementation=attn_implementation,
+            )
+
         # Load processor
         self.processor = AutoProcessor.from_pretrained(
             artifacts_path,
@@ -188,6 +203,9 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             revision=revision,
         )
         tokenizer = self._get_tokenizer()
+        # Tokenizer-like processors expose ``padding_side`` directly, while some
+        # multimodal processor wrappers do not. Left padding is only applied when
+        # that tokenizer interface is present.
         if tokenizer is not None and hasattr(tokenizer, "padding_side"):
             tokenizer.padding_side = "left"
 
@@ -201,15 +219,11 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             artifacts_path,
             device_map=self.device,
             dtype=torch_dtype,
-            _attn_implementation=(
-                "flash_attention_2"
-                if self.device.startswith("cuda")  # type: ignore[union-attr]
-                and self.accelerator_options.cuda_use_flash_attention2
-                else "sdpa"
-            ),
+            attn_implementation=attn_implementation,
             trust_remote_code=self.options.trust_remote_code,
             revision=revision,
             quantization_config=quantization_config,
+            config=resolved_model_config,
         )
 
         self.vlm_model.eval()
@@ -217,7 +231,11 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         # Optionally compile model for better performance (model must be in eval mode first)
         # Works for Python < 3.14 with any torch 2.x
         # Works for Python >= 3.14 with torch >= 2.10
-        if self.options.compile_model:
+        if self.options.compile_model and runtime_adapter is not None:
+            _log.warning(
+                "Model compilation requested but disabled because this model uses a custom Transformers runtime adapter."
+            )
+        elif self.options.compile_model:
             if sys.version_info < (3, 14):
                 self.vlm_model = torch.compile(self.vlm_model)  # type: ignore[assignment]
             elif version.parse(torch.__version__) >= version.parse("2.10"):
@@ -229,11 +247,33 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 )
 
         # Load generation config
-        self.generation_config = GenerationConfig.from_pretrained(
-            artifacts_path, revision=revision
+        self.generation_config = self._load_generation_config(
+            artifacts_path=artifacts_path,
+            revision=revision,
         )
 
         _log.info(f"Loaded model {repo_id} (revision: {revision})")
+
+    def _load_generation_config(
+        self,
+        *,
+        artifacts_path: Union[Path, str],
+        revision: str,
+    ) -> GenerationConfig:
+        try:
+            return GenerationConfig.from_pretrained(artifacts_path, revision=revision)
+        except OSError as exc:
+            if "generation_config.json" not in str(exc):
+                raise
+            if self.vlm_model is None:
+                raise
+            _log.warning(
+                "Model %s does not provide generation_config.json; deriving generation config from model config instead.",
+                self.model_config.repo_id
+                if self.model_config is not None
+                else artifacts_path,
+            )
+            return GenerationConfig.from_model_config(self.vlm_model.config)
 
     def _get_tokenizer(self) -> Any:
         """Resolve the tokenizer from the processor.
@@ -246,6 +286,38 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         if self.processor is None:
             return None
         return getattr(self.processor, "tokenizer", None) or self.processor
+
+    def _get_runtime_adapter(self) -> "type[TransformersRuntimeAdapter] | None":
+        if self.model_config is None:
+            return None
+
+        runtime_adapter = self.model_config.extra_config.get(
+            "transformers_runtime_adapter"
+        )
+        return cast("type[TransformersRuntimeAdapter] | None", runtime_adapter)
+
+    def _get_attn_implementation(self) -> str:
+        """Resolve the attention backend for model loading.
+
+        Model-specific overrides take precedence over the engine defaults.
+        """
+        if self.model_config is not None:
+            explicit_attn = self.model_config.extra_config.get("attn_implementation")
+            if explicit_attn is None:
+                explicit_attn = self.model_config.extra_config.get(
+                    "_attn_implementation"
+                )
+            if explicit_attn is not None:
+                return explicit_attn
+
+        if (
+            self.device is not None
+            and self.device.startswith("cuda")
+            and self.accelerator_options.cuda_use_flash_attention2
+        ):
+            return "flash_attention_2"
+
+        return "sdpa"
 
     def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs efficiently.
@@ -266,9 +338,21 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             return []
 
         # Model should already be loaded via initialize()
-        if self.vlm_model is None or self.processor is None:
+        if self.vlm_model is None:
             raise RuntimeError(
                 "Model not loaded. Ensure EngineModelConfig was provided during initialization."
+            )
+
+        runtime_adapter = self._get_runtime_adapter()
+        if runtime_adapter is not None:
+            return runtime_adapter.predict_batch(
+                model=self.vlm_model,
+                input_batch=input_batch,
+            )
+
+        if self.processor is None:
+            raise RuntimeError(
+                "Processor not loaded. Ensure EngineModelConfig was provided during initialization."
             )
 
         # Get prompt style from first input's extra config
@@ -418,6 +502,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         input_len = inputs["input_ids"].shape[1]
         trimmed_sequences = generated_ids[:, input_len:]
 
+        # Transformers processors are not consistent here: some expose decode on
+        # the processor wrapper, others only on the underlying tokenizer.
         decode_fn = getattr(self.processor, "batch_decode", None)
         if decode_fn is None and tokenizer is not None:
             decode_fn = getattr(tokenizer, "batch_decode", None)
@@ -429,6 +515,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         decoded_texts = decode_fn(trimmed_sequences, **decoder_config)
 
         # Remove padding
+        # Tokenizer-like processors may omit ``pad_token`` entirely; only strip
+        # it when that attribute exists and is populated.
         pad_token = getattr(tokenizer, "pad_token", None)
         if pad_token:
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]

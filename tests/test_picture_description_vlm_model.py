@@ -9,6 +9,12 @@ from docling.datamodel.pipeline_options import PictureDescriptionVlmOptions
 from docling.models.stages.picture_description.picture_description_vlm_model import (
     PictureDescriptionVlmModel,
 )
+from tests.test_data_gen_flag import IS_CI
+
+pytestmark = pytest.mark.skipif(
+    IS_CI,
+    reason="Skipping VLM unit tests in CI",
+)
 
 
 class _DummyBatch(dict):

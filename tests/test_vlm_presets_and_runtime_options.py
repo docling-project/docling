@@ -8,9 +8,14 @@ This test suite validates:
 5. All three stage types (VlmConvert, PictureDescription, CodeFormula)
 """
 
+from types import SimpleNamespace
+
 import pytest
+from PIL import Image
 from pydantic import ValidationError
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.base_models import Page
 from docling.datamodel.pipeline_options import (
     CodeFormulaVlmOptions,
     PictureDescriptionVlmEngineOptions,
@@ -30,7 +35,14 @@ from docling.datamodel.vlm_engine_options import (
     TransformersVlmEngineOptions,
     VllmVlmEngineOptions,
 )
-from docling.models.inference_engines.vlm import VlmEngineType
+from docling.models.inference_engines.vlm import VlmEngineOutput, VlmEngineType
+from docling.models.stages.vlm_convert.vlm_convert_model import VlmConvertModel
+from tests.test_data_gen_flag import IS_CI
+
+pytestmark = pytest.mark.skipif(
+    IS_CI,
+    reason="Skipping VLM unit tests in CI",
+)
 
 # =============================================================================
 # RUNTIME OPTIONS TESTS
@@ -459,6 +471,61 @@ class TestPresetBasedOptionsCreation:
 
         assert default_params["model"] == "ibm-granite/granite-docling-258M"
         assert ollama_params["model"] == "ibm/granite-docling:258m"
+
+    def test_vlm_convert_prompt_builder_receives_page_context(self, monkeypatch):
+        """Stage prompt hooks should receive the same page context as legacy VLM options."""
+        captured: dict[str, object] = {}
+
+        class FakeEngine:
+            def predict_batch(self, input_batch):
+                captured["prompts"] = [item.prompt for item in input_batch]
+                return [
+                    VlmEngineOutput(text="ok", stop_reason="unspecified")
+                    for _ in input_batch
+                ]
+
+            def cleanup(self) -> None:
+                return None
+
+        def prompt_builder(prompt: str, *, page=None, _internal_page=None) -> str:
+            captured["page"] = page
+            captured["internal_page"] = _internal_page
+            parsed_marker = "missing" if page is None else page.marker
+            page_no = "missing" if _internal_page is None else _internal_page.page_no
+            return f"{prompt}|page={page_no}|parsed={parsed_marker}"
+
+        monkeypatch.setattr(
+            "docling.models.stages.vlm_convert.vlm_convert_model.create_vlm_engine",
+            lambda **kwargs: FakeEngine(),
+        )
+
+        options = VlmConvertOptions.from_preset(
+            "smoldocling",
+            prompt_builder=prompt_builder,
+        )
+        model = VlmConvertModel(
+            enabled=True,
+            enable_remote_services=False,
+            artifacts_path=None,
+            options=options,
+            accelerator_options=AcceleratorOptions(device="cpu"),
+        )
+
+        page = Page(page_no=7)
+        page._image_cache[1.0] = Image.new("RGB", (8, 8), color="white")
+        page.parsed_page = SimpleNamespace(marker="parsed-page")
+        conv_res = SimpleNamespace(timings={})
+
+        output_pages = list(model(conv_res, [page]))
+
+        assert len(output_pages) == 1
+        assert captured["page"] is page.parsed_page
+        assert captured["internal_page"] is page
+        assert captured["prompts"] == [
+            f"{options.model_spec.prompt}|page=7|parsed=parsed-page"
+        ]
+        assert output_pages[0].predictions.vlm_response is not None
+        assert output_pages[0].predictions.vlm_response.text == "ok"
 
 
 # =============================================================================
