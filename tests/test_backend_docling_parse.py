@@ -2,6 +2,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from docling_core.types.doc import CoordOrigin
+from PIL import Image, ImageDraw, ImageStat
 
 from docling.backend.docling_parse_backend import (
     DoclingParseDocumentBackend,
@@ -277,3 +279,84 @@ def test_threaded_page_backend_delegates_image_access() -> None:
     assert image.size == (60, 40)
     assert result.scales == [2.0]
     assert result.cropboxes == [cropbox]
+
+
+def _create_black_square_pdf(path: Path) -> None:
+    image = Image.new("RGB", (100, 100), "white")
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((20, 40, 49, 69), fill="black")
+    image.save(path, "PDF", resolution=72.0)
+
+
+def _load_first_page_backend(doc_backend: Any) -> Any:
+    if isinstance(doc_backend, ThreadedDoclingParseDocumentBackend):
+        return next(doc_backend.iter_pages())
+    return doc_backend.load_page(0)
+
+
+@pytest.mark.parametrize(
+    "backend_cls",
+    [DoclingParseDocumentBackend, ThreadedDoclingParseDocumentBackend],
+    ids=["docling_parse", "threaded_docling_parse"],
+)
+@pytest.mark.parametrize("scale", [1, 2], ids=["scale_1", "scale_2"])
+def test_get_page_image_crop_contains_black_square(
+    tmp_path: Path, backend_cls: Any, scale: int
+) -> None:
+    pdf_path = tmp_path / "black_square.pdf"
+    _create_black_square_pdf(pdf_path)
+
+    cropbox = BoundingBox(
+        l=21,
+        t=41,
+        r=49,
+        b=69,
+        coord_origin=CoordOrigin.TOPLEFT,
+    )
+    full_square_cropbox = BoundingBox(
+        l=20,
+        t=40,
+        r=50,
+        b=70,
+        coord_origin=CoordOrigin.TOPLEFT,
+    )
+    white_cropbox = BoundingBox(
+        l=0,
+        t=0,
+        r=10,
+        b=10,
+        coord_origin=CoordOrigin.TOPLEFT,
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=pdf_path,
+        format=InputFormat.PDF,
+        backend=backend_cls,
+    )
+    doc_backend = in_doc._backend
+    page_backend = _load_first_page_backend(doc_backend)
+
+    try:
+        black_crop = page_backend.get_page_image(scale=scale, cropbox=cropbox).convert(
+            "RGB"
+        )
+        white_crop = page_backend.get_page_image(
+            scale=scale, cropbox=white_cropbox
+        ).convert("RGB")
+    finally:
+        page_backend.unload()
+        doc_backend.unload()
+
+    assert black_crop.size == (28 * scale, 28 * scale)
+    assert white_crop.size == (10 * scale, 10 * scale)
+    assert full_square_cropbox.width == 30
+    assert full_square_cropbox.height == 30
+
+    black_extrema = black_crop.getextrema()
+    assert black_extrema is not None
+    assert all(channel_max <= 8 for _, channel_max in black_extrema)
+
+    black_mean = ImageStat.Stat(black_crop).mean
+    white_mean = ImageStat.Stat(white_crop).mean
+    assert all(channel_mean < 5.0 for channel_mean in black_mean)
+    assert all(channel_mean > 250.0 for channel_mean in white_mean)

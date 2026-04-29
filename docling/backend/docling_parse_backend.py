@@ -382,7 +382,7 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
     ) -> Image.Image:
-        return self._result.get_image(scale=scale, cropbox=cropbox)
+        return self._result.get_image(scale=scale, cropbox=cropbox).convert("RGB")
 
     def get_size(self) -> Size:
         return Size(width=self._result.page_width, height=self._result.page_height)
