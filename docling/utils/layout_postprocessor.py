@@ -594,20 +594,26 @@ class LayoutPostprocessor:
         for cluster in clusters:
             cluster.cells = []
 
+        cluster_by_id = {cluster.id: cluster for cluster in clusters}
+        cluster_ids = set(cluster_by_id)
+        cluster_order = {cluster.id: order for order, cluster in enumerate(clusters)}
+
         for cell in self.cells:
             if not cell.text.strip():
                 continue
 
+            cell_bbox = cell.rect.to_bounding_box()
+            if cell_bbox.area() <= 0:
+                continue
+
             best_overlap = min_overlap
             best_cluster = None
+            candidate_ids = self.regular_index.find_candidates(cell_bbox) & cluster_ids
 
-            for cluster in clusters:
-                if cell.rect.to_bounding_box().area() <= 0:
-                    continue
+            for cluster_id in sorted(candidate_ids, key=cluster_order.__getitem__):
+                cluster = cluster_by_id[cluster_id]
 
-                overlap_ratio = cell.rect.to_bounding_box().intersection_over_self(
-                    cluster.bbox
-                )
+                overlap_ratio = cell_bbox.intersection_over_self(cluster.bbox)
                 if overlap_ratio > best_overlap:
                     best_overlap = overlap_ratio
                     best_cluster = cluster
