@@ -1125,39 +1125,33 @@ wheels = [
 
 [[package]]
 name = "docling"
-version = "2.91.0"
+version = "2.92.0"
 source = { editable = "packages/docling" }
 dependencies = [
     { name = "docling-slim", extra = ["standard"] },
 ]
 
 [package.optional-dependencies]
-chunking = [
-    { name = "docling-slim", extra = ["feat-chunking"] },
+asr = [
+    { name = "docling-slim", extra = ["format-audio"] },
 ]
 easyocr = [
     { name = "docling-slim", extra = ["feat-ocr-easyocr"] },
 ]
-format-audio = [
-    { name = "docling-slim", extra = ["format-audio"] },
-]
-format-html-render = [
+htmlrender = [
     { name = "docling-slim", extra = ["format-html-render"] },
-]
-format-xml-xbrl = [
-    { name = "docling-slim", extra = ["format-xml-xbrl"] },
-]
-models-onnxruntime = [
-    { name = "docling-slim", extra = ["models-onnxruntime"] },
-]
-models-remote = [
-    { name = "docling-slim", extra = ["models-remote"] },
 ]
 ocrmac = [
     { name = "docling-slim", extra = ["feat-ocr-mac"] },
 ]
+onnxruntime = [
+    { name = "docling-slim", extra = ["models-onnxruntime"] },
+]
 rapidocr = [
     { name = "docling-slim", extra = ["feat-ocr-rapidocr-onnx"] },
+]
+remote-serving = [
+    { name = "docling-slim", extra = ["models-remote"] },
 ]
 tesserocr = [
     { name = "docling-slim", extra = ["feat-ocr-tesserocr"] },
@@ -1165,23 +1159,25 @@ tesserocr = [
 vlm = [
     { name = "docling-slim", extra = ["models-vlm-inline"] },
 ]
+xbrl = [
+    { name = "docling-slim", extra = ["format-xml-xbrl"] },
+]
 
 [package.metadata]
 requires-dist = [
-    { name = "docling-slim", extras = ["feat-chunking"], marker = "extra == 'chunking'", editable = "." },
     { name = "docling-slim", extras = ["feat-ocr-easyocr"], marker = "extra == 'easyocr'", editable = "." },
     { name = "docling-slim", extras = ["feat-ocr-mac"], marker = "extra == 'ocrmac'", editable = "." },
     { name = "docling-slim", extras = ["feat-ocr-rapidocr-onnx"], marker = "extra == 'rapidocr'", editable = "." },
     { name = "docling-slim", extras = ["feat-ocr-tesserocr"], marker = "extra == 'tesserocr'", editable = "." },
-    { name = "docling-slim", extras = ["format-audio"], marker = "extra == 'format-audio'", editable = "." },
-    { name = "docling-slim", extras = ["format-html-render"], marker = "extra == 'format-html-render'", editable = "." },
-    { name = "docling-slim", extras = ["format-xml-xbrl"], marker = "extra == 'format-xml-xbrl'", editable = "." },
-    { name = "docling-slim", extras = ["models-onnxruntime"], marker = "extra == 'models-onnxruntime'", editable = "." },
-    { name = "docling-slim", extras = ["models-remote"], marker = "extra == 'models-remote'", editable = "." },
+    { name = "docling-slim", extras = ["format-audio"], marker = "extra == 'asr'", editable = "." },
+    { name = "docling-slim", extras = ["format-html-render"], marker = "extra == 'htmlrender'", editable = "." },
+    { name = "docling-slim", extras = ["format-xml-xbrl"], marker = "extra == 'xbrl'", editable = "." },
+    { name = "docling-slim", extras = ["models-onnxruntime"], marker = "extra == 'onnxruntime'", editable = "." },
+    { name = "docling-slim", extras = ["models-remote"], marker = "extra == 'remote-serving'", editable = "." },
     { name = "docling-slim", extras = ["models-vlm-inline"], marker = "extra == 'vlm'", editable = "." },
     { name = "docling-slim", extras = ["standard"], editable = "." },
 ]
-provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "chunking", "format-audio", "format-html-render", "models-remote", "models-onnxruntime", "format-xml-xbrl"]
+provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "asr", "htmlrender", "remote-serving", "onnxruntime", "xbrl"]
 
 [[package]]
 name = "docling-core"
@@ -1279,7 +1275,7 @@ wheels = [
 
 [[package]]
 name = "docling-slim"
-version = "2.91.0"
+version = "2.92.0"
 source = { editable = "." }
 dependencies = [
     { name = "certifi" },
