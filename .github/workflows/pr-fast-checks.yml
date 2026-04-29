@@ -20,23 +20,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Keep the worktree on the trusted base commit for dependency installation.
-      # The untrusted PR head is fetched separately and only read by the checker.
+      # The untrusted PR merge commit is fetched separately and only read by the checker.
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Fetch PR head commit
+      - name: Fetch PR merge commit
         env:
-          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          git fetch --no-tags --depth=1 \
-            "https://github.com/${PR_HEAD_REPO}.git" \
-            "${PR_HEAD_REF}"
-          test "$(git rev-parse FETCH_HEAD)" = "${PR_HEAD_SHA}"
+          git fetch --no-tags --depth=2 origin "pull/${PR_NUMBER}/merge"
+          test "$(git rev-parse FETCH_HEAD^1)" = "${PR_BASE_SHA}"
+          test "$(git rev-parse FETCH_HEAD^2)" = "${PR_HEAD_SHA}"
 
       - name: Install uv and set the python version
         uses: astral-sh/setup-uv@v7
