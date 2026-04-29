@@ -57,13 +57,13 @@ if [ -f "${CHGLOG_FILE}" ]; then
 fi
 mv "${TMP_CHGLOG}" "${CHGLOG_FILE}"
 
-# # push changes
-# git config --global user.name 'github-actions[bot]'
-# git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-# git add pyproject.toml packages/docling/pyproject.toml uv.lock "${CHGLOG_FILE}"
-# COMMIT_MSG="chore: bump version to ${TARGET_VERSION} [skip ci]"
-# git commit -m "${COMMIT_MSG}"
-# git push origin main
+# push changes
+git config --global user.name 'github-actions[bot]'
+git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+git add pyproject.toml packages/docling/pyproject.toml uv.lock "${CHGLOG_FILE}"
+COMMIT_MSG="chore: bump version to ${TARGET_VERSION} [skip ci]"
+git commit -m "${COMMIT_MSG}"
+git push origin main
 
-# # create GitHub release (incl. Git tag)
-# gh release create "${TARGET_TAG_NAME}" -F "${REL_NOTES}"
+# create GitHub release (incl. Git tag)
+gh release create "${TARGET_TAG_NAME}" -F "${REL_NOTES}"
