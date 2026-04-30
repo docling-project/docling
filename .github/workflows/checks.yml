@@ -115,6 +115,10 @@ jobs:
         with:
           list-files: json
           filters: |
+            # Default catch-all for regular tests. The negative patterns only
+            # move known expensive ML suites into dedicated lanes below; newly
+            # added tests still run here unless intentionally assigned to an ML
+            # suite.
             run_tests:
               - ".github/workflows/**"
               - ".github/scripts/**"
