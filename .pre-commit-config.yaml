@@ -16,7 +16,7 @@ repos:
       - id: check-added-large-files
         args: [--maxkb=5120]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.5
+    rev: v0.15.12
     hooks:
       # Run the Ruff formatter.
       - id: ruff-format
@@ -30,12 +30,11 @@ repos:
         files: '^(docling|tests|docs/examples).*\.(py|ipynb)$'
   - repo: local
     hooks:
-      - id: mypy
-        name: MyPy
-        entry: uv run --no-sync mypy docling
-        pass_filenames: false
+      - id: ty
+        name: ty
+        entry: uv run --no-sync ty check
         language: system
-        files: '\.py$'
+        files: '^(docling|\.github/scripts)/.*\.py$'
       - id: tach
         name: Tach
         entry: uv run --no-sync tach check

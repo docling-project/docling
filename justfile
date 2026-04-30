@@ -26,7 +26,7 @@ check:
 check-all:
     uv run ruff format --check --config=pyproject.toml docling tests docs/examples
     uv run ruff check --config=pyproject.toml docling tests docs/examples
-    uv run --no-sync mypy docling
+    uv run --no-sync ty check
     uv run --no-sync tach check
     python3 scripts/check_tach_module_coverage.py
     python3 scripts/check_max_lines.py
@@ -58,9 +58,9 @@ fix:
     uv run ruff check --fix --config=pyproject.toml docling tests docs/examples
     uv run dprint fmt
 
-# Run MyPy
+# Run ty
 typecheck:
-    uv run --no-sync mypy docling
+    uv run --no-sync ty check
 
 # Run Tach module-boundary checks
 tach:
