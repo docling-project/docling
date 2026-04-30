@@ -48,7 +48,7 @@ uv add [OPTIONS] <PACKAGES|--requirements <REQUIREMENTS>>
 We use the following tools to enforce code style:
 
 - [Ruff](https://docs.astral.sh/ruff/), as linter and code formatter
-- [MyPy](https://mypy.readthedocs.io), as static type checker
+- [ty](https://docs.astral.sh/ty/), as static type checker
 
 A set of styling checks, as well as regression tests, are defined and managed through [prek](https://pypi.org/project/prek/), a fast runner for pre-commit-compatible hook configs.
 To ensure that those scripts run automatically before a commit is finalized, install `prek` on your local repository:

@@ -245,7 +245,7 @@ all = [
 
 [dependency-groups]
 typecheck = [
-  "mypy~=1.10",
+  "ty==0.0.33",
   "types-setuptools~=70.3",
   "pandas-stubs~=2.1",
   "types-openpyxl~=3.1",
@@ -260,7 +260,7 @@ pr-fast-checks = [
   "docling-core[chunking] (>=2.73.0,<3.0.0)",
   "pydantic (>=2.0.0,<3.0.0)",
   "pydantic-settings (>=2.3.0,<3.0.0)",
-  "ruff==0.11.5",
+  "ruff==0.15.12",
 ]
 dev = [
   { include-group = "typecheck" },
@@ -363,9 +363,11 @@ ignore = [
   "F811",   # "redefinition of the same function"
   "PL",     # Pylint
   "RUF012", # Mutable Class Attributes
+  "RUF059", # Unused unpacked variables
   "UP006",  # List vs list, etc
   "UP007",  # Option and Union
   "UP035",  # `typing.Set` is deprecated, use `set` instead"
+  "UP045",  # `Optional[T]` vs `T | None`
 ]
 
 [tool.ruff.lint.pep8-naming]
@@ -383,37 +385,41 @@ max-complexity = 30
 [tool.ruff.lint.isort]
 combine-as-imports = true
 
-[tool.mypy]
-pretty = true
-no_implicit_optional = true
-plugins = "pydantic.mypy"
-python_version = "3.10"
+[tool.ty.rules]
+all = "warn"
 
-[[tool.mypy.overrides]]
-module = [
-  "docling_parse.*",
-  "pypdfium2.*",
-  "networkx.*",
-  "scipy.*",
-  "filetype.*",
-  "tesserocr.*",
-  "docling_ibm_models.*",
-  "easyocr.*",
-  "ocrmac.*",
-  "onnxruntime.*",
-  "mlx_vlm.*",
-  "lxml.*",
-  "huggingface_hub.*",
-  "transformers.*",
-  "pylatexenc.*",
-  "vllm.*",
-  "qwen_vl_utils.*",
-  "arelle.*",
-  "websockets.*",
-  "torchvision.*",
-  "torchvision.transforms.*",
+[tool.ty.environment]
+python-version = "3.10"
+
+[tool.ty.src]
+include = ["docling", ".github/scripts"]
+
+[tool.ty.analysis]
+allowed-unresolved-imports = [
+  "arelle.**",
+  "docling_ibm_models.**",
+  "docling_parse.**",
+  "easyocr.**",
+  "filetype.**",
+  "huggingface_hub.**",
+  "lxml.**",
+  "mlx_vlm.**",
+  "networkx.**",
+  "ocrmac.**",
+  "onnxruntime.**",
+  "pylatexenc.**",
+  "pypdfium2.**",
+  "qwen_vl_utils.**",
+  "scipy.**",
+  "tesserocr.**",
+  "torchvision.**",
+  "transformers.**",
+  "vllm.**",
+  "websockets.**",
 ]
-ignore_missing_imports = true
+
+[tool.ty.terminal]
+output-format = "concise"
 
 [tool.semantic_release]
 # for default values check:
