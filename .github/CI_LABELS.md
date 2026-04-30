@@ -23,3 +23,7 @@ file globs:
 New tests run in the core lane by default. If a new test belongs in an ML lane,
 add the matching module-level `pytestmark`; do not add per-test file globs to
 the workflow.
+
+The workflow intentionally uses a broad ML trigger for code, test, and tooling
+changes. Tach performs the fine-grained affected-test selection inside the ML
+lanes.

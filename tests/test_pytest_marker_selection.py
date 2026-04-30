@@ -55,42 +55,14 @@ def test_discover_test_markers_uses_module_level_pytestmark(tmp_path: Path) -> N
     assert discovered["ml_asr"] == []
 
 
-def test_build_ml_suites_combines_source_flags_and_changed_marked_tests(
-    tmp_path: Path,
-) -> None:
-    write_test_file(
-        tmp_path,
-        "tests/test_audio.py",
-        "import pytest\n\npytestmark = pytest.mark.ml_asr\n\ndef test_audio(): pass\n",
-    )
+def test_build_ml_suites_returns_all_suites_when_ml_is_triggered() -> None:
+    suites = marker_selection.build_ml_suites(run_all_ml=True)
 
-    suites = marker_selection.build_ml_suites(
-        repo_root=tmp_path,
-        changed_test_files=[Path("tests/test_audio.py")],
-        source_flags={
-            "run_ocr": False,
-            "run_pdf_model": True,
-            "run_vlm": False,
-            "run_asr": False,
-        },
-    )
-
-    assert suites == ["pdf-model", "asr"]
+    assert suites == ["ocr", "pdf-model", "vlm", "asr"]
 
 
-def test_changed_unmarked_test_does_not_select_ml_suite(tmp_path: Path) -> None:
-    write_test_file(tmp_path, "tests/test_core.py", "def test_core(): pass\n")
-
-    suites = marker_selection.build_ml_suites(
-        repo_root=tmp_path,
-        changed_test_files=[Path("tests/test_core.py")],
-        source_flags={
-            "run_ocr": False,
-            "run_pdf_model": False,
-            "run_vlm": False,
-            "run_asr": False,
-        },
-    )
+def test_build_ml_suites_returns_empty_without_ml_trigger() -> None:
+    suites = marker_selection.build_ml_suites(run_all_ml=False)
 
     assert suites == []
 

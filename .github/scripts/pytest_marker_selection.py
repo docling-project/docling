@@ -14,27 +14,10 @@ SUITE_MARKERS = {
     "asr": "ml_asr",
 }
 MARKER_SUITES = {marker: suite for suite, marker in SUITE_MARKERS.items()}
-SOURCE_FLAG_MARKERS = {
-    "run_ocr": "ml_ocr",
-    "run_pdf_model": "ml_pdf_model",
-    "run_vlm": "ml_vlm",
-    "run_asr": "ml_asr",
-}
 
 
 def parse_bool(value: str) -> bool:
     return value.lower() == "true"
-
-
-def parse_changed_test_files(raw_json: str) -> list[Path]:
-    if not raw_json:
-        return []
-
-    decoded = json.loads(raw_json)
-    if not isinstance(decoded, list):
-        raise ValueError("Changed test files must be encoded as a JSON list.")
-
-    return [Path(str(item)) for item in decoded]
 
 
 def is_pytest_mark_attribute(node: ast.AST, marker: str) -> bool:
@@ -105,22 +88,11 @@ def discover_test_markers(repo_root: Path) -> dict[str, list[Path]]:
     return discovered
 
 
-def build_ml_suites(
-    *,
-    repo_root: Path,
-    changed_test_files: list[Path],
-    source_flags: dict[str, bool],
-) -> list[str]:
-    selected = {
-        marker
-        for flag_name, marker in SOURCE_FLAG_MARKERS.items()
-        if source_flags.get(flag_name, False)
-    }
+def build_ml_suites(*, run_all_ml: bool) -> list[str]:
+    if not run_all_ml:
+        return []
 
-    for path in changed_test_files:
-        selected.update(detect_ml_markers(repo_root / path))
-
-    return [MARKER_SUITES[marker] for marker in ML_MARKERS if marker in selected]
+    return [MARKER_SUITES[marker] for marker in ML_MARKERS]
 
 
 def write_github_output(name: str, value: str) -> None:
@@ -139,16 +111,7 @@ def print_paths(paths: list[Path]) -> None:
 
 
 def run_matrix(args: argparse.Namespace) -> None:
-    suites = build_ml_suites(
-        repo_root=args.repo_root,
-        changed_test_files=parse_changed_test_files(args.changed_test_files_json),
-        source_flags={
-            "run_ocr": parse_bool(args.run_ocr),
-            "run_pdf_model": parse_bool(args.run_pdf_model),
-            "run_vlm": parse_bool(args.run_vlm),
-            "run_asr": parse_bool(args.run_asr),
-        },
-    )
+    suites = build_ml_suites(run_all_ml=parse_bool(args.run_all_ml))
     write_github_output("ml_suites", json.dumps(suites, separators=(",", ":")))
 
 
@@ -182,11 +145,7 @@ def parse_args() -> argparse.Namespace:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     matrix_parser = subparsers.add_parser("matrix")
-    matrix_parser.add_argument("--changed-test-files-json", default="[]")
-    matrix_parser.add_argument("--run-ocr", default="false")
-    matrix_parser.add_argument("--run-pdf-model", default="false")
-    matrix_parser.add_argument("--run-vlm", default="false")
-    matrix_parser.add_argument("--run-asr", default="false")
+    matrix_parser.add_argument("--run-all-ml", default="false")
     matrix_parser.set_defaults(func=run_matrix)
 
     core_parser = subparsers.add_parser("core-ignore-args")

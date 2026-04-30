@@ -110,9 +110,9 @@ jobs:
               - "Dockerfile"
               - "docling/**"
               - "tests/**"
-            changed_tests:
-              - added|modified: "tests/**/*.py"
-            run_tests_ml_ocr:
+            # Broad trigger for marker-owned ML lanes. Tach decides the
+            # fine-grained affected tests inside each lane.
+            run_tests_ml:
               - ".github/workflows/**"
               - ".github/scripts/**"
               - ".github/actions/**"
@@ -121,116 +121,8 @@ jobs:
               - "pyproject.toml"
               - "uv.lock"
               - "Dockerfile"
-              - "docling/backend/**"
-              - "docling/datamodel/**"
-              - "docling/document_converter.py"
-              - "docling/models/*.py"
-              - "docling/models/factories/ocr_factory.py"
-              - "docling/models/inference_engines/common/**"
-              - "docling/models/plugins/**"
-              - "docling/models/stages/ocr/**"
-              - "docling/pipeline/__init__.py"
-              - "docling/pipeline/base_pipeline.py"
-              - "docling/pipeline/simple_pipeline.py"
-              - "docling/pipeline/standard_pdf_pipeline.py"
-              - "docling/pipeline/threaded_standard_pdf_pipeline.py"
-              - "docling/pipeline/legacy_standard_pdf_pipeline.py"
-              - "docling/utils/accelerator_utils.py"
-              - "docling/utils/model_downloader.py"
-              - "docling/utils/ocr_utils.py"
-              - "docling/utils/orientation.py"
-              - "tests/data/pdf/**"
-              - "tests/data/webp/**"
-              - "tests/data_scanned/**"
-            run_tests_ml_pdf_model:
-              - ".github/workflows/**"
-              - ".github/scripts/**"
-              - ".github/actions/**"
-              - ".pre-commit-config.yaml"
-              - "tach.toml"
-              - "pyproject.toml"
-              - "uv.lock"
-              - "Dockerfile"
-              - "docling/backend/**"
-              - "docling/datamodel/**"
-              - "docling/document_converter.py"
-              - "docling/models/*.py"
-              - "docling/models/factories/**"
-              - "docling/models/inference_engines/common/**"
-              - "docling/models/inference_engines/image_classification/**"
-              - "docling/models/inference_engines/object_detection/**"
-              - "docling/models/plugins/**"
-              - "docling/models/stages/code_formula/**"
-              - "docling/models/stages/layout/**"
-              - "docling/models/stages/page_assemble/**"
-              - "docling/models/stages/page_preprocessing/**"
-              - "docling/models/stages/picture_classifier/**"
-              - "docling/models/stages/reading_order/**"
-              - "docling/models/stages/table_structure/**"
-              - "docling/models/utils/**"
-              - "docling/pipeline/__init__.py"
-              - "docling/pipeline/base_pipeline.py"
-              - "docling/pipeline/simple_pipeline.py"
-              - "docling/pipeline/standard_pdf_pipeline.py"
-              - "docling/pipeline/threaded_standard_pdf_pipeline.py"
-              - "docling/pipeline/legacy_standard_pdf_pipeline.py"
-              - "docling/utils/**"
-              - "tests/data/groundtruth/**"
-              - "tests/data/pdf/**"
-            run_tests_ml_vlm:
-              - ".github/workflows/**"
-              - ".github/scripts/**"
-              - ".github/actions/**"
-              - ".pre-commit-config.yaml"
-              - "tach.toml"
-              - "pyproject.toml"
-              - "uv.lock"
-              - "Dockerfile"
-              - "docling/datamodel/**"
-              - "docling/document_converter.py"
-              - "docling/document_extractor.py"
-              - "docling/experimental/**"
-              - "docling/models/*.py"
-              - "docling/models/extraction/**"
-              - "docling/models/factories/picture_description_factory.py"
-              - "docling/models/inference_engines/**"
-              - "docling/models/plugins/**"
-              - "docling/models/stages/chart_extraction/**"
-              - "docling/models/stages/code_formula/**"
-              - "docling/models/stages/picture_description/**"
-              - "docling/models/stages/table_structure/**"
-              - "docling/models/stages/vlm_convert/**"
-              - "docling/models/utils/**"
-              - "docling/models/vlm_pipeline_models/**"
-              - "docling/pipeline/__init__.py"
-              - "docling/pipeline/base_pipeline.py"
-              - "docling/pipeline/base_extraction_pipeline.py"
-              - "docling/pipeline/extraction_vlm_pipeline.py"
-              - "docling/pipeline/vlm_pipeline.py"
-              - "docling/utils/deepseekocr_utils.py"
-              - "docling/utils/glm_utils.py"
-              - "docling/utils/model_downloader.py"
-              - "tests/data/groundtruth/**"
-              - "tests/data/pdf/**"
-            run_tests_ml_asr:
-              - ".github/workflows/**"
-              - ".github/scripts/**"
-              - ".github/actions/**"
-              - ".pre-commit-config.yaml"
-              - "tach.toml"
-              - "pyproject.toml"
-              - "uv.lock"
-              - "Dockerfile"
-              - "docling/backend/noop_backend.py"
-              - "docling/datamodel/**"
-              - "docling/document_converter.py"
-              - "docling/models/plugins/**"
-              - "docling/pipeline/__init__.py"
-              - "docling/pipeline/base_pipeline.py"
-              - "docling/pipeline/simple_pipeline.py"
-              - "docling/pipeline/asr_pipeline.py"
-              - "docling/utils/accelerator_utils.py"
-              - "tests/data/audio/**"
+              - "docling/**"
+              - "tests/**"
             run_examples_all:
               - ".github/workflows/**"
               - ".github/scripts/**"
@@ -264,18 +156,10 @@ jobs:
         if: ${{ !inputs.force_all_checks }}
         id: ml-matrix
         env:
-          RUN_OCR: ${{ steps.filter.outputs.run_tests_ml_ocr }}
-          RUN_PDF_MODEL: ${{ steps.filter.outputs.run_tests_ml_pdf_model }}
-          RUN_VLM: ${{ steps.filter.outputs.run_tests_ml_vlm }}
-          RUN_ASR: ${{ steps.filter.outputs.run_tests_ml_asr }}
-          CHANGED_TEST_FILES: ${{ steps.filter.outputs.changed_tests_files }}
+          RUN_ML: ${{ steps.filter.outputs.run_tests_ml }}
         run: |
           python3 .github/scripts/pytest_marker_selection.py matrix \
-            --changed-test-files-json "$CHANGED_TEST_FILES" \
-            --run-ocr "$RUN_OCR" \
-            --run-pdf-model "$RUN_PDF_MODEL" \
-            --run-vlm "$RUN_VLM" \
-            --run-asr "$RUN_ASR"
+            --run-all-ml "$RUN_ML"
 
   lint:
     if: ${{ inputs.run_lint }}
