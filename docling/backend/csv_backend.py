@@ -3,7 +3,7 @@ import logging
 import warnings
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import Set, Union
+from typing import Set, Union, cast
 
 from docling_core.types.doc import DoclingDocument, DocumentOrigin, TableCell, TableData
 
@@ -81,7 +81,7 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         origin = DocumentOrigin(
             filename=self.file.name or "file.csv",
             mimetype="text/csv",
-            binary_hash=self.document_hash,
+            binary_hash=cast(int, self.document_hash),
         )
 
         doc = DoclingDocument(name=self.file.stem or "file.csv", origin=origin)

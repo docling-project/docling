@@ -222,7 +222,7 @@ class Pr(Tag2Method):
 
     text: str
     __val_tags: tuple[str, ...]
-    __innerdict: dict[str, Any]
+    __innerdict: dict[str, str | None]  # can't use the __dict__
 
     def __init__(self, elm: _Element):
         """Initialize properties processor.

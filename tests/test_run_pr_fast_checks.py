@@ -143,6 +143,7 @@ def test_build_check_units_uses_ty_check(monkeypatch) -> None:
         "check",
         "--project",
         "/tmp/repo",
+        "--error-on-warning",
     ]
 
 

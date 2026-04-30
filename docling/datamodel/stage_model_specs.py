@@ -571,7 +571,7 @@ class StagePresetMixin:
 
     @classmethod
     def from_preset(
-        cls,
+        cls: type[Any],
         preset_id: str,
         engine_options: BaseVlmEngineOptions | None = None,
         **overrides,
@@ -705,7 +705,7 @@ class ObjectDetectionStagePresetMixin:
 
     @classmethod
     def from_preset(
-        cls,
+        cls: type[Any],
         preset_id: str,
         engine_options: BaseObjectDetectionEngineOptions | None = None,
         **overrides: Any,
@@ -815,7 +815,7 @@ class ImageClassificationStagePresetMixin:
 
     @classmethod
     def from_preset(
-        cls,
+        cls: type[Any],
         preset_id: str,
         engine_options: BaseImageClassificationEngineOptions | None = None,
         **overrides: Any,
@@ -872,7 +872,7 @@ class ImageClassificationStagePresetMixin:
 
 # Shared Granite Docling model spec used across VLM_CONVERT and CODE_FORMULA stages
 # Note: prompt and response_format are intentionally excluded here as they vary per stage
-GRANITE_DOCLING_MODEL_SPEC_BASE = {
+GRANITE_DOCLING_MODEL_SPEC_BASE: dict[str, Any] = {
     "name": "Granite-Docling-258M",
     "default_repo_id": "ibm-granite/granite-docling-258M",
     "stop_strings": ["</doctag>", "<|end_of_text|>"],
@@ -896,7 +896,7 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
 }
 
 # Shared Pixtral model spec used across VLM_CONVERT and PICTURE_DESCRIPTION stages
-PIXTRAL_MODEL_SPEC_BASE = {
+PIXTRAL_MODEL_SPEC_BASE: dict[str, Any] = {
     "name": "Pixtral-12B",
     "default_repo_id": "mistral-community/pixtral-12b",
     "engine_overrides": {
@@ -910,7 +910,7 @@ PIXTRAL_MODEL_SPEC_BASE = {
 }
 
 # Shared Granite Vision model spec used across VLM_CONVERT and PICTURE_DESCRIPTION stages
-GRANITE_VISION_MODEL_SPEC_BASE = {
+GRANITE_VISION_MODEL_SPEC_BASE: dict[str, Any] = {
     "name": "Granite-Vision-3.3-2B",
     "default_repo_id": "ibm-granite/granite-vision-3.3-2b",
     "supported_engines": {

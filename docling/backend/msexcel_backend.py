@@ -211,7 +211,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         origin = DocumentOrigin(
             filename=self.file.name or "file.xlsx",
             mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            binary_hash=self.document_hash,
+            binary_hash=cast(int, self.document_hash),
         )
 
         doc = DoclingDocument(name=self.file.stem or "file.xlsx", origin=origin)
@@ -407,7 +407,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         max_row, max_col = 0, 0
 
         for cell in sheet._cells.values():
-            if cell.value is not None:
+            if (
+                cell.value is not None
+                and cell.row is not None
+                and cell.column is not None
+            ):
                 r, c = cell.row, cell.column
                 min_row = r if min_row is None else min(min_row, r)
                 min_col = c if min_col is None else min(min_col, c)
@@ -651,10 +655,10 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         if self.workbook is not None:
             content_layer = self._get_sheet_content_layer(sheet)
             # Iterate over byte images in the sheet
-            for item in sheet._images:  # type: ignore[attr-defined]
+            for item in cast(Any, sheet)._images:
                 try:
                     image: Image = cast(Image, item)
-                    pil_image = PILImage.open(image.ref)  # type: ignore[arg-type]
+                    pil_image = PILImage.open(cast(Any, image.ref))
                     anchor = (0, 0, 0, 0)
                     if isinstance(image.anchor, TwoCellAnchor):
                         anchor = (

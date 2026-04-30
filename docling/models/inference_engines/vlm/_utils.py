@@ -6,7 +6,7 @@ implementations to avoid code duplication and ensure consistency.
 
 import logging
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 import numpy as np
 from PIL import Image
@@ -33,10 +33,10 @@ def normalize_image_to_pil(image: Union[Image.Image, np.ndarray]) -> Image.Image
     if isinstance(image, np.ndarray):
         if image.ndim == 3 and image.shape[2] in [3, 4]:
             # RGB or RGBA array
-            image = Image.fromarray(image.astype(np.uint8))
+            image = Image.fromarray(cast(Any, image).astype(np.uint8))
         elif image.ndim == 2:
             # Grayscale array
-            image = Image.fromarray(image.astype(np.uint8), mode="L")
+            image = Image.fromarray(cast(Any, image).astype(np.uint8), mode="L")
         else:
             raise ValueError(f"Unsupported numpy array shape: {image.shape}")
 

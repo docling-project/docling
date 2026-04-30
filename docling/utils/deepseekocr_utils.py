@@ -336,7 +336,7 @@ def parse_deepseekocr_markdown(
                         b=coords[3] * scale_y,
                         coord_origin=CoordOrigin.TOPLEFT,
                     )
-                    prov = ProvenanceItem(page_no=page_no, bbox=bbox, charspan=[0, 0])
+                    prov = ProvenanceItem(page_no=page_no, bbox=bbox, charspan=(0, 0))
 
                     # Get the content (next non-empty line)
                     i += 1

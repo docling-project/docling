@@ -2,7 +2,7 @@ import logging
 import re
 from io import BytesIO
 from pathlib import Path
-from typing import Final, Union
+from typing import Final, Union, cast
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -15,6 +15,7 @@ from docling_core.types.doc import (
     TableCell,
     TableData,
 )
+from pydantic import AnyUrl
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -69,7 +70,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         origin = DocumentOrigin(
             filename=self.file.name or "file",
             mimetype="text/asciidoc",
-            binary_hash=self.document_hash,
+            binary_hash=cast(int, self.document_hash),
         )
 
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
@@ -209,23 +210,17 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 else:
                     size = Size(width=DEFAULT_IMAGE_WIDTH, height=DEFAULT_IMAGE_HEIGHT)
 
-                uri = None
-                if (
-                    "uri" in item
-                    and not item["uri"].startswith("http")
-                    and item["uri"].startswith("//")
-                ):
-                    uri = "file:" + item["uri"]
-                elif (
-                    "uri" in item
-                    and not item["uri"].startswith("http")
-                    and item["uri"].startswith("/")
-                ):
-                    uri = "file:/" + item["uri"]
-                elif "uri" in item and not item["uri"].startswith("http"):
-                    uri = "file://" + item["uri"]
+                uri = item["uri"]
+                if not uri.startswith("http") and uri.startswith("//"):
+                    uri = "file:" + uri
+                elif not uri.startswith("http") and uri.startswith("/"):
+                    uri = "file:/" + uri
+                elif not uri.startswith("http"):
+                    uri = "file://" + uri
 
-                image = ImageRef(mimetype="image/png", size=size, dpi=70, uri=uri)
+                image = ImageRef(
+                    mimetype="image/png", size=size, dpi=70, uri=cast(AnyUrl, uri)
+                )
                 doc.add_picture(image=image, caption=caption)
 
             # Caption
@@ -302,6 +297,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
     @staticmethod
     def _parse_section_header(line):
         match = re.match(r"^(=+)\s+(.*)", line)
+        assert match is not None
 
         marker = match.group(1)  # The list marker (e.g., "*", "-", "1.")
         text = match.group(2)  # The actual text of the list item

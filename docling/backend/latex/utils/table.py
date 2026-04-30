@@ -1,7 +1,4 @@
-from typing import TYPE_CHECKING, Callable, List, Optional
-
-if TYPE_CHECKING:
-    from typing import Any
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, cast
 
 from docling_core.types.doc.document import TableCell, TableData
 from pylatexenc.latexwalker import (
@@ -132,8 +129,8 @@ class TableHelperMixin:
                 start_col_offset_idx=0,
                 end_col_offset_idx=0,
             )
-            cell._col_span = col_span  # type: ignore[attr-defined]
-            cell._row_span = row_span  # type: ignore[attr-defined]
+            cast(Any, cell)._col_span = col_span
+            cast(Any, cell)._row_span = row_span
             current_row.append(cell)
             current_cell_nodes.clear()
 
@@ -145,7 +142,7 @@ class TableHelperMixin:
                     start_col_offset_idx=0,
                     end_col_offset_idx=0,
                 )
-                placeholder._is_placeholder = True  # type: ignore[attr-defined]
+                cast(Any, placeholder)._is_placeholder = True
                 current_row.append(placeholder)
 
         def finish_row():

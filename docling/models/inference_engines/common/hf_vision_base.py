@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from importlib import import_module
 from numbers import Integral, Real
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
@@ -93,8 +94,7 @@ class HfVisionModelMixin(HuggingFaceModelDownloadMixin):
     def _load_label_mapping(self, model_folder: Path) -> Dict[int, str]:
         """Load label mapping from HuggingFace model config."""
         try:
-            from transformers import AutoConfig
-
+            AutoConfig = getattr(import_module("transformers"), "AutoConfig")
             config = AutoConfig.from_pretrained(str(model_folder))
             return {
                 int(label_id): label_name

@@ -418,7 +418,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream, options)
         self.options: HTMLBackendOptions
         self.soup: Optional[BeautifulSoup] = None
-        self.path_or_stream: Union[BytesIO, Path] = path_or_stream
+        self.path_or_stream: Union[BytesIO, Path, None] = path_or_stream
         self.base_path: Optional[str] = (
             str(options.source_uri) if options.source_uri is not None else None
         )
@@ -489,17 +489,17 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         origin = DocumentOrigin(
             filename=self.file.name or "file",
             mimetype="text/html",
-            binary_hash=self.document_hash,
+            binary_hash=cast(int, self.document_hash),
         )
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
 
-        if cast(HTMLBackendOptions, self.options).render_page:
+        if self.options.render_page:
             self._render_with_browser()
             if self._rendered_html:
                 self.soup = BeautifulSoup(self._rendered_html, "html.parser")
 
         if self._rendered_page_images and self._rendered_page_size:
-            render_dpi = cast(HTMLBackendOptions, self.options).render_dpi
+            render_dpi = self.options.render_dpi
             for page_no, page_image in enumerate(self._rendered_page_images, start=1):
                 doc.add_page(
                     page_no=page_no,
@@ -555,7 +555,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return doc
 
     def _get_render_page_size(self) -> tuple[int, int]:
-        options = cast(HTMLBackendOptions, self.options)
+        options = self.options
         width = options.render_page_width
         height = options.render_page_height
         if options.render_page_orientation == "landscape":
@@ -611,7 +611,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return canvas
 
     def _render_with_browser(self) -> None:
-        options = cast(HTMLBackendOptions, self.options)
+        options = self.options
         if not options.render_page:
             return
 
@@ -1242,8 +1242,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             nonlocal current_p
             if current_p is None:
                 current_p = soup.new_tag("p")
-                if p.get(_DATA_DOCLING_ID_ATTR):
-                    current_p[_DATA_DOCLING_ID_ATTR] = p.get(_DATA_DOCLING_ID_ATTR)
+                tag_id = p.get(_DATA_DOCLING_ID_ATTR)
+                if tag_id:
+                    current_p[_DATA_DOCLING_ID_ATTR] = str(tag_id)
                 new_nodes.append(current_p)
 
         def _flush_para_if_empty():
@@ -1484,6 +1485,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
                 provs_in_cell: list[RefItem] = []
                 rich_table_cell = self._is_rich_table_cell(html_cell)
+                ref_for_rich_cell: RefItem | None = None
                 if rich_table_cell:
                     # Parse table cell sub-tree for Rich Cells content:
                     with self._use_table_cell_context():
@@ -1518,6 +1520,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             grid[row_idx + r][col_idx + c] = text
 
                 if rich_table_cell:
+                    assert ref_for_rich_cell is not None
                     rich_cell = RichTableCell(
                         text=text,
                         bbox=cell_bbox,
@@ -2367,9 +2370,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if not isinstance(row, Tag):
                 continue
             for cell in row(["td", "th"], recursive=False):
-                if not isinstance(row, Tag):
+                if not isinstance(cell, Tag):
                     continue
-                cell_tag = cast(Tag, cell)
+                cell_tag = cell
                 col_span, row_span = HTMLDocumentBackend._get_cell_spans(cell_tag)
                 col_count += col_span
                 if cell_tag.name == "td" or row_span == 1:
@@ -4150,17 +4153,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         parent = self.parents[self.level]
 
         # check if the figure has a link - this is HACK:
-        def get_img_hyperlink(img_tag):
+        def get_img_hyperlink(img_tag: Tag) -> Optional[str]:
             this_parent = img_tag.parent
             while this_parent is not None:
                 if this_parent.name == "a" and this_parent.get("href"):
-                    return this_parent.get("href")
+                    return self._get_attr_as_string(this_parent, "href")
                 this_parent = this_parent.parent
             return None
 
         if img_hyperlink := get_img_hyperlink(img_tag):
-            img_text = img_tag.get("alt") or ""
-            caption.append(AnnotatedText(text=img_text, hyperlink=img_hyperlink))
+            img_text = self._get_attr_as_string(img_tag, "alt")
+            caption.append(
+                AnnotatedText(text=img_text, hyperlink=cast(AnyUrl, img_hyperlink))
+            )
             caption_prov_tag = img_tag
 
         if isinstance(figure, Tag):
@@ -4170,8 +4175,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     caption_tag, find_parent_annotation=True
                 )
                 caption_prov_tag = caption_tag
-        if not caption and img_tag.get("alt"):
-            caption = AnnotatedTextList([AnnotatedText(text=img_tag.get("alt"))])
+        img_alt = self._get_attr_as_string(img_tag, "alt")
+        if not caption and img_alt:
+            caption = AnnotatedTextList([AnnotatedText(text=img_alt)])
             caption_prov_tag = img_tag
 
         caption_anno_text = caption.to_single_text_element()
@@ -4198,7 +4204,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         src_loc: str = self._get_attr_as_string(img_tag, "src")
         pic_prov = self._make_prov(text="", tag=img_tag)
-        if not cast(HTMLBackendOptions, self.options).fetch_images or not src_loc:
+        if not self.options.fetch_images or not src_loc:
             # Do not fetch the image, just add a placeholder
             placeholder: PictureItem = doc.add_picture(
                 caption=caption_item,
@@ -4229,6 +4235,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         label = DocItemLabel.TEXT
         checkbox_label = self._get_checkbox_label_for_tag(input_tag)
+        checkbox_label_tags: list[Tag] = []
         if checkbox_label is not None:
             label = checkbox_label
             (

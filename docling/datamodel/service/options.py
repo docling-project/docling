@@ -599,11 +599,11 @@ class ConvertDocumentsOptions(BaseModel):
             description="DEPRECATED: API details for using a vision-language model in the picture description. This parameter is mutually exclusive with picture_description_local. Please migrate to picture_description_preset or picture_description_custom_config.",
             examples=[
                 PictureDescriptionApi(
-                    url="http://localhost:1234/v1/chat/completions",
+                    url=AnyUrl("http://localhost:1234/v1/chat/completions"),
                     params={"model": "granite3.2-vision:2b"},
                 ),
                 PictureDescriptionApi(
-                    url="http://localhost:11434/v1/chat/completions",
+                    url=AnyUrl("http://localhost:11434/v1/chat/completions"),
                     params={"model": "granite3.2-vision:2b"},
                 ),
             ],
@@ -638,7 +638,7 @@ class ConvertDocumentsOptions(BaseModel):
             description="DEPRECATED: API details for using a vision-language model for the vlm pipeline. This parameter is mutually exclusive with vlm_pipeline_model_local and vlm_pipeline_model. Please migrate to vlm_pipeline_preset or vlm_pipeline_custom_config.",
             examples=[
                 VlmModelApi(
-                    url="http://localhost:1234/v1/chat/completions",
+                    url=AnyUrl("http://localhost:1234/v1/chat/completions"),
                     params={"model": "ibm-granite/granite-docling-258M-mlx"},
                     response_format=ResponseFormat.DOCTAGS,
                     prompt="Convert this page to docling.",

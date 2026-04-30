@@ -213,6 +213,8 @@ class BaseItemAndImageEnrichmentModel(
                 return ItemAndImageEnrichmentElement(item=element, image=embedded_im)
             else:
                 return None
+        if cropped_image is None:
+            return None
 
         # Return the proper cropped image
         return ItemAndImageEnrichmentElement(item=element, image=cropped_image)

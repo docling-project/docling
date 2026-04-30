@@ -4,17 +4,14 @@ import importlib.metadata
 import logging
 import sys
 import time
+from importlib import import_module
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union, cast
 
 import torch
 from packaging import version
 from PIL.Image import Image
 from transformers import (
-    AutoModel,
-    AutoModelForCausalLM,
-    AutoModelForImageTextToText,
-    AutoProcessor,
     BitsAndBytesConfig,
     GenerationConfig,
     PreTrainedModel,
@@ -46,6 +43,12 @@ from docling.utils.accelerator_utils import decide_device
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
+
+_transformers = import_module("transformers")
+AutoModel = getattr(_transformers, "AutoModel")
+AutoModelForCausalLM = getattr(_transformers, "AutoModelForCausalLM")
+AutoModelForImageTextToText = getattr(_transformers, "AutoModelForImageTextToText")
+AutoProcessor = getattr(_transformers, "AutoProcessor")
 
 _log = logging.getLogger(__name__)
 
@@ -203,7 +206,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             dtype=torch_dtype,
             _attn_implementation=(
                 "flash_attention_2"
-                if self.device.startswith("cuda")  # type: ignore[union-attr]
+                if self.device is not None
+                and self.device.startswith("cuda")
                 and self.accelerator_options.cuda_use_flash_attention2
                 else "sdpa"
             ),
@@ -298,8 +302,6 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                         ],
                     }
                 ]
-                from typing import cast
-
                 formatted_prompt = self.processor.apply_chat_template(  # type: ignore[union-attr]
                     cast(Any, messages),
                     tokenize=False,
@@ -411,7 +413,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
         start_time = time.time()
         with torch.inference_mode():
-            generated_ids = self.vlm_model.generate(**gen_kwargs)  # type: ignore[union-attr,operator]
+            generated_ids = cast(Any, self.vlm_model).generate(**gen_kwargs)
         generation_time = time.time() - start_time
 
         # Decode

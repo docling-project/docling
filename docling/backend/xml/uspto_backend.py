@@ -43,7 +43,7 @@ from abc import ABC, abstractmethod
 from enum import Enum, unique
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import Final
+from typing import Final, cast
 from xml.sax import SAXParseException
 from xml.sax.handler import ContentHandler, feature_external_ges, feature_external_pes
 from xml.sax.xmlreader import AttributesImpl
@@ -169,7 +169,7 @@ class PatentUsptoDocumentBackend(DeclarativeDocumentBackend):
             )
             doc.origin = DocumentOrigin(
                 mimetype=mime_type,
-                binary_hash=self.document_hash,
+                binary_hash=cast(int, self.document_hash),
                 filename=self.file.name or "file",
             )
 
@@ -217,7 +217,7 @@ class PatentUsptoIce(PatentUspto):
             parser.forbid_dtd = False
             parser.forbid_entities = False
             parser.forbid_external = False
-            parser.setContentHandler(self.handler)
+            parser.setContentHandler(cast(ContentHandler, self.handler))
             parser.parse(StringIO(patent_content))
         except SAXParseException as exc_sax:
             _log.error(f"Error in parsing USPTO document (malformed XML): {exc_sax}")
@@ -309,13 +309,15 @@ class PatentUsptoIce(PatentUspto):
             self.style_html = HtmlEntity()
 
         @override
-        def startElement(self, tag, attributes):
+        def startElement(self, name: str, attrs: AttributesImpl) -> None:
             """Signal the start of an element.
 
             Args:
                 tag: The element tag.
                 attributes: The element attributes.
             """
+            tag = name
+            attributes = attrs
             if tag in (
                 self.APP_DOC_ELEMENT,
                 self.GRANT_DOC_ELEMENT,
@@ -359,12 +361,13 @@ class PatentUsptoIce(PatentUspto):
                         self.text += unescaped
 
         @override
-        def endElement(self, tag):
+        def endElement(self, name: str) -> None:
             """Signal the end of an element.
 
             Args:
                 tag: The element tag.
             """
+            tag = name
             if tag in (
                 self.APP_DOC_ELEMENT,
                 self.GRANT_DOC_ELEMENT,
@@ -568,7 +571,7 @@ class PatentUsptoGrantV2(PatentUspto):
             parser.forbid_dtd = False
             parser.forbid_entities = False
             parser.forbid_external = False
-            parser.setContentHandler(self.handler)
+            parser.setContentHandler(cast(ContentHandler, self.handler))
             parser.parse(StringIO(patent_content))
         except SAXParseException as exc_sax:
             _log.error(f"Error in parsing USPTO document (malformed XML): {exc_sax}")
@@ -661,13 +664,15 @@ class PatentUsptoGrantV2(PatentUspto):
             self.style_html = HtmlEntity()
 
         @override
-        def startElement(self, tag, attributes):
+        def startElement(self, name: str, attrs: AttributesImpl) -> None:
             """Signal the start of an element.
 
             Args:
                 tag: The element tag.
                 attributes: The element attributes.
             """
+            tag = name
+            attributes = attrs
             if tag == self.GRANT_DOC_ELEMENT:
                 self.doc = DoclingDocument(name="file")
                 self.text = ""
@@ -708,12 +713,13 @@ class PatentUsptoGrantV2(PatentUspto):
                         self.text += unescaped
 
         @override
-        def endElement(self, tag):
+        def endElement(self, name: str) -> None:
             """Signal the end of an element.
 
             Args:
                 tag: The element tag.
             """
+            tag = name
             if tag == self.GRANT_DOC_ELEMENT:
                 self._clean_data()
             self._end_registered_element(tag)
@@ -1143,7 +1149,7 @@ class PatentUsptoAppV1(PatentUspto):
             parser.forbid_dtd = False
             parser.forbid_entities = False
             parser.forbid_external = False
-            parser.setContentHandler(self.handler)
+            parser.setContentHandler(cast(ContentHandler, self.handler))
             parser.parse(StringIO(patent_content))
         except SAXParseException as exc_sax:
             _log.error(f"Error in parsing USPTO document (malformed XML): {exc_sax}")
@@ -1236,13 +1242,15 @@ class PatentUsptoAppV1(PatentUspto):
             self.style_html = HtmlEntity()
 
         @override
-        def startElement(self, tag, attributes):
+        def startElement(self, name: str, attrs: AttributesImpl) -> None:
             """Signal the start of an element.
 
             Args:
                 tag: The element tag.
                 attributes: The element attributes.
             """
+            tag = name
+            attributes = attrs
             if tag == self.APP_DOC_ELEMENT:
                 self.doc = DoclingDocument(name="file")
                 self.text = ""
@@ -1283,12 +1291,13 @@ class PatentUsptoAppV1(PatentUspto):
                         self.text += unescaped
 
         @override
-        def endElement(self, tag):
+        def endElement(self, name: str) -> None:
             """Signal the end of an element.
 
             Args:
                 tag: The element tag.
             """
+            tag = name
             if tag == self.APP_DOC_ELEMENT:
                 self._clean_data()
             self._end_registered_element(tag)
@@ -1483,8 +1492,8 @@ class XmlTable:
         colinfo: list[dict]
 
     class MinColInfoType(TypedDict):
-        offset: list[int]
-        colwidth: list[int]
+        offset: list[int | float]
+        colwidth: list[int | float]
 
     class ColInfoType(MinColInfoType):
         cell_range: list[int]
