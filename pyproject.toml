@@ -317,6 +317,14 @@ packages = ["docling"]
 [tool.hatch.build.targets.sdist]
 only-include = ["docling", "pyproject.toml", "README.md", "LICENSE"]
 
+[tool.pytest.ini_options]
+markers = [
+  "ml_ocr: OCR tests that download or execute OCR model code.",
+  "ml_pdf_model: PDF conversion tests that download or execute document AI model code.",
+  "ml_vlm: VLM and picture-description tests that download or execute vision-language model code.",
+  "ml_asr: ASR tests that download or execute speech model code.",
+]
+
 [tool.ruff]
 target-version = "py310"
 line-length = 88

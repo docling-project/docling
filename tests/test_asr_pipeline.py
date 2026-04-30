@@ -11,6 +11,8 @@ from docling.datamodel.pipeline_options import AsrPipelineOptions
 from docling.document_converter import AudioFormatOption, DocumentConverter
 from docling.pipeline.asr_pipeline import AsrPipeline
 
+pytestmark = pytest.mark.ml_asr
+
 # pytestmark = pytest.mark.skipif(
 #     sys.version_info >= (3, 14),
 #     reason="Python 3.14 is not yet supported by whisper dependencies.",

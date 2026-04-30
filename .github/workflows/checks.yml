@@ -46,23 +46,6 @@ env:
   HF_HUB_DOWNLOAD_TIMEOUT: "90"
   HF_HUB_ETAG_TIMEOUT: "90"
   UV_FROZEN: "1"
-  PYTEST_ML_OCR: |-
-    tests/test_e2e_ocr_conversion.py
-    tests/test_backend_webp.py
-    tests/test_rapid_ocr_*.py
-  PYTEST_ML_PDF_MODEL: |-
-    tests/test_e2e_conversion.py
-    tests/test_backend_pdfium.py
-    tests/test_code_formula.py
-    tests/test_document_picture_classifier.py
-    tests/test_threaded_pipeline.py
-  PYTEST_ML_VLM: |-
-    tests/test_*_vlm.py
-    tests/test_picture_description_*.py
-    tests/test_table_structure_granite_vision.py
-    tests/test_vlm_*.py
-  PYTEST_ML_ASR: |-
-    tests/test_asr_*.py
   EXAMPLES_HEAVY: '^(batch_convert|chart_extraction|granite_vision_table_structure|minimal_asr_pipeline|minimal_vlm_pipeline)\.py$'
   EXAMPLES_UNSUPPORTED_IN_CI: '^(compare_vlm_models|custom_convert|demo_layout_vlm|develop_picture_enrichment|export_multimodal|gpu_standard_pipeline|gpu_vlm_pipeline|granitedocling_repetition_stopping|minimal|mlx_whisper_example|offline_convert|pictures_description|pictures_description_api|post_process_ocr_with_vlm|rapidocr_with_custom_models|run_with_formats_html_rendered|run_with_formats_html_rendered_mp|suryaocr_with_custom_models|vlm_pipeline_api_model)\.py$|xbrl_conversion\.ipynb$'
   CROSS_PLATFORM_SMOKE_TESTS: |-
@@ -115,10 +98,9 @@ jobs:
         with:
           list-files: json
           filters: |
-            # Default catch-all for regular tests. The negative patterns only
-            # move known expensive ML suites into dedicated lanes below; newly
-            # added tests still run here unless intentionally assigned to an ML
-            # suite.
+            # Default catch-all for regular tests. The core pytest command
+            # ignores modules marked with ML pytest markers; newly added tests
+            # still run here unless intentionally marked for an ML lane.
             run_tests:
               - ".github/workflows/**"
               - ".github/scripts/**"
@@ -128,24 +110,8 @@ jobs:
               - "Dockerfile"
               - "docling/**"
               - "tests/**"
-              - "!tests/test_asr_*.py"
-              - "!tests/test_backend_pdfium.py"
-              - "!tests/test_backend_webp.py"
-              - "!tests/test_code_formula.py"
-              - "!tests/test_document_picture_classifier.py"
-              - "!tests/test_e2e_conversion.py"
-              - "!tests/test_e2e_ocr_conversion.py"
-              - "!tests/test_*_vlm.py"
-              - "!tests/test_picture_description_*.py"
-              - "!tests/test_rapid_ocr_*.py"
-              - "!tests/test_table_structure_granite_vision.py"
-              - "!tests/test_threaded_pipeline.py"
-              - "!tests/test_vlm_*.py"
-              - "!tests/data/audio/**"
-              - "!tests/data/groundtruth/**"
-              - "!tests/data/pdf/**"
-              - "!tests/data/webp/**"
-              - "!tests/data_scanned/**"
+            changed_tests:
+              - added|modified: "tests/**/*.py"
             run_tests_ml_ocr:
               - ".github/workflows/**"
               - ".github/scripts/**"
@@ -173,9 +139,6 @@ jobs:
               - "docling/utils/model_downloader.py"
               - "docling/utils/ocr_utils.py"
               - "docling/utils/orientation.py"
-              - "tests/test_backend_webp.py"
-              - "tests/test_e2e_ocr_conversion.py"
-              - "tests/test_rapid_ocr_*.py"
               - "tests/data/pdf/**"
               - "tests/data/webp/**"
               - "tests/data_scanned/**"
@@ -212,11 +175,6 @@ jobs:
               - "docling/pipeline/threaded_standard_pdf_pipeline.py"
               - "docling/pipeline/legacy_standard_pdf_pipeline.py"
               - "docling/utils/**"
-              - "tests/test_backend_pdfium.py"
-              - "tests/test_code_formula.py"
-              - "tests/test_document_picture_classifier.py"
-              - "tests/test_e2e_conversion.py"
-              - "tests/test_threaded_pipeline.py"
               - "tests/data/groundtruth/**"
               - "tests/data/pdf/**"
             run_tests_ml_vlm:
@@ -252,10 +210,6 @@ jobs:
               - "docling/utils/deepseekocr_utils.py"
               - "docling/utils/glm_utils.py"
               - "docling/utils/model_downloader.py"
-              - "tests/test_*_vlm.py"
-              - "tests/test_picture_description_*.py"
-              - "tests/test_table_structure_granite_vision.py"
-              - "tests/test_vlm_*.py"
               - "tests/data/groundtruth/**"
               - "tests/data/pdf/**"
             run_tests_ml_asr:
@@ -276,7 +230,6 @@ jobs:
               - "docling/pipeline/simple_pipeline.py"
               - "docling/pipeline/asr_pipeline.py"
               - "docling/utils/accelerator_utils.py"
-              - "tests/test_asr_*.py"
               - "tests/data/audio/**"
             run_examples_all:
               - ".github/workflows/**"
@@ -315,25 +268,14 @@ jobs:
           RUN_PDF_MODEL: ${{ steps.filter.outputs.run_tests_ml_pdf_model }}
           RUN_VLM: ${{ steps.filter.outputs.run_tests_ml_vlm }}
           RUN_ASR: ${{ steps.filter.outputs.run_tests_ml_asr }}
+          CHANGED_TEST_FILES: ${{ steps.filter.outputs.changed_tests_files }}
         run: |
-          suites=()
-          if [ "$RUN_OCR" = "true" ]; then
-            suites+=('"ocr"')
-          fi
-          if [ "$RUN_PDF_MODEL" = "true" ]; then
-            suites+=('"pdf-model"')
-          fi
-          if [ "$RUN_VLM" = "true" ]; then
-            suites+=('"vlm"')
-          fi
-          if [ "$RUN_ASR" = "true" ]; then
-            suites+=('"asr"')
-          fi
-          if [ ${#suites[@]} -eq 0 ]; then
-            echo "ml_suites=[]" >> "$GITHUB_OUTPUT"
-          else
-            echo "ml_suites=[$(IFS=,; echo "${suites[*]}")]" >> "$GITHUB_OUTPUT"
-          fi
+          python3 .github/scripts/pytest_marker_selection.py matrix \
+            --changed-test-files-json "$CHANGED_TEST_FILES" \
+            --run-ocr "$RUN_OCR" \
+            --run-pdf-model "$RUN_PDF_MODEL" \
+            --run-vlm "$RUN_VLM" \
+            --run-asr "$RUN_ASR"
 
   lint:
     if: ${{ inputs.run_lint }}
@@ -406,13 +348,13 @@ jobs:
           TACH_BASE_REF: ${{ inputs.tach_base_ref }}
         run: |
           echo "--- Running core tests ---"
-          GROUP1=$(printf '%s\n%s\n%s\n%s\n' "$PYTEST_ML_OCR" "$PYTEST_ML_PDF_MODEL" "$PYTEST_ML_VLM" "$PYTEST_ML_ASR" | sed '/^$/d' | sed -e 's/^/--ignore-glob=/' | tr '\n' ' ')
+          mapfile -t ML_IGNORE_ARGS < <(python3 .github/scripts/pytest_marker_selection.py core-ignore-args)
           TACH_ARGS=""
           if [ "${{ inputs.use_tach }}" = "true" ] && [ -n "$TACH_BASE_REF" ] && [ "$TACH_BASE_REF" != "0000000000000000000000000000000000000000" ]; then
             TACH_ARGS="--tach-base $TACH_BASE_REF"
           fi
           echo "Running core test suite"
-          uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $TACH_ARGS $GROUP1
+          uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $TACH_ARGS "${ML_IGNORE_ARGS[@]}"
 
       - name: Upload coverage to Codecov
         if: inputs.push_coverage
@@ -452,30 +394,17 @@ jobs:
           TACH_BASE_REF: ${{ inputs.tach_base_ref }}
         run: |
           echo "--- Running ML suite: ${{ matrix.suite }} ---"
-          case "${{ matrix.suite }}" in
-            ocr)
-              GROUP2="$PYTEST_ML_OCR"
-              ;;
-            pdf-model)
-              GROUP2="$PYTEST_ML_PDF_MODEL"
-              ;;
-            vlm)
-              GROUP2="$PYTEST_ML_VLM"
-              ;;
-            asr)
-              GROUP2="$PYTEST_ML_ASR"
-              ;;
-            *)
-              echo "Unknown ML suite: ${{ matrix.suite }}" >&2
-              exit 1
-              ;;
-          esac
+          SUITE_MARKER=$(python3 .github/scripts/pytest_marker_selection.py suite-marker "${{ matrix.suite }}")
+          mapfile -t SUITE_ARGS < <(python3 .github/scripts/pytest_marker_selection.py suite-args "${{ matrix.suite }}")
+          if [ ${#SUITE_ARGS[@]} -eq 0 ]; then
+            echo "No tests are marked for ${{ matrix.suite }}" >&2
+            exit 1
+          fi
           TACH_ARGS=""
           if [ "${{ inputs.use_tach }}" = "true" ] && [ -n "$TACH_BASE_REF" ] && [ "$TACH_BASE_REF" != "0000000000000000000000000000000000000000" ]; then
             TACH_ARGS="--tach-base $TACH_BASE_REF"
           fi
-          GROUP2_ARGS=$(printf '%s\n' "$GROUP2" | sed '/^$/d' | tr '\n' ' ')
-          uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $TACH_ARGS $GROUP2_ARGS
+          uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $TACH_ARGS -m "$SUITE_MARKER" "${SUITE_ARGS[@]}"
 
       - name: Upload coverage to Codecov
         if: inputs.push_coverage
