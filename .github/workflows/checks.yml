@@ -101,19 +101,6 @@ jobs:
               - "Dockerfile"
               - "docling/**"
               - "tests/**"
-            # Broad trigger for marker-owned ML lanes. Tach decides the
-            # fine-grained affected tests inside each lane.
-            run_tests_ml:
-              - ".github/workflows/**"
-              - ".github/scripts/**"
-              - ".github/actions/**"
-              - ".pre-commit-config.yaml"
-              - "tach.toml"
-              - "pyproject.toml"
-              - "uv.lock"
-              - "Dockerfile"
-              - "docling/**"
-              - "tests/**"
             run_examples_all:
               - ".github/workflows/**"
               - ".github/scripts/**"
@@ -147,7 +134,9 @@ jobs:
         if: ${{ !inputs.force_all_checks }}
         id: ml-matrix
         env:
-          RUN_ML: ${{ steps.filter.outputs.run_tests_ml }}
+          # ML lanes share the regular test trigger; run_tach adds Tach and
+          # pre-commit config changes that can affect test selection.
+          RUN_ML: ${{ steps.filter.outputs.run_tests == 'true' || steps.filter.outputs.run_tach == 'true' }}
         run: |
           python3 .github/scripts/pytest_marker_selection.py matrix \
             --run-all-ml "$RUN_ML"
