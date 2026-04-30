@@ -18,15 +18,37 @@ hooks-install:
 # Validation
 # ---------------------------------------------------------------------------
 
-# Run the full local validation suite on all files
+# Run read-only local checks
 check:
-    just validate-all
+    just check-all
 
-# Run hooks on staged files only
+# Run read-only local checks on all supported files
+check-all:
+    uv run ruff format --check --config=pyproject.toml docling tests docs/examples
+    uv run ruff check --config=pyproject.toml docling tests docs/examples
+    uv run --no-sync mypy docling
+    uv run --no-sync tach check
+    python3 scripts/check_tach_module_coverage.py
+    python3 scripts/check_max_lines.py
+    uv run --no-sync dprint check
+    uv lock --locked
+
+# Run hooks on the current changeset; hooks may modify those files
 validate:
-    uv run prek run
+    @files="$( \
+        { \
+            git diff --name-only --diff-filter=ACMR; \
+            git diff --cached --name-only --diff-filter=ACMR; \
+            git ls-files --others --exclude-standard; \
+        } | sort -u \
+    )"; \
+    if [ -z "$files" ]; then \
+        echo "No changed files to validate."; \
+    else \
+        printf '%s\n' "$files" | xargs uv run prek run --files; \
+    fi
 
-# Run hooks on all files in the repo
+# Run hooks on all files in the repo; hooks may modify files
 validate-all:
     uv run prek run --all-files
 
