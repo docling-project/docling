@@ -476,10 +476,12 @@ class _DocumentConversionInput(BaseModel):
             else:
                 raise RuntimeError(f"Unexpected obj type in iterator: {type(obj)}")
 
-            assert format is not None
+            # Unknown formats intentionally keep `format` as None so downstream
+            # processing reports them as skipped rather than treating them as
+            # invalid known-format files.
             yield InputDocument(
                 path_or_stream=path_or_stream,
-                format=format,
+                format=cast(InputFormat, format),
                 filename=obj.name,
                 limits=self.limits,
                 backend=backend,
