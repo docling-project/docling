@@ -2,13 +2,13 @@ import logging
 import re
 import warnings
 from collections.abc import Sequence
+from importlib import import_module
 from itertools import groupby
 from pathlib import Path
-from typing import Any, ClassVar, Literal, cast
+from typing import ClassVar, Literal
 
 import torch
 from docling_core.types.doc import DocItemLabel, TableCell
-from transformers import AutoModelForImageTextToText, AutoProcessor
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import Page, Table, TableStructurePrediction
@@ -20,6 +20,9 @@ from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
+_transformers = import_module("transformers")
+AutoModelForImageTextToText = getattr(_transformers, "AutoModelForImageTextToText")
+AutoProcessor = getattr(_transformers, "AutoProcessor")
 
 # OTSL tokens that represent content-bearing cells (produce a TableCell)
 _CONTENT_TOKENS = {"fcel", "ecel", "ched", "rhed", "srow"}
@@ -225,7 +228,7 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
                 trust_remote_code=True,
             )
         if hasattr(self._model, "merge_lora_adapters"):
-            cast(Any, self._model).merge_lora_adapters()
+            self._model.merge_lora_adapters()
         self._model.eval()
 
     def predict_tables(
@@ -301,7 +304,7 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
                     do_pad=True,
                 ).to(self.device)
 
-                output_ids = cast(Any, self._model).generate(
+                output_ids = self._model.generate(
                     **inputs,
                     max_new_tokens=self._model_max_length,
                     use_cache=True,

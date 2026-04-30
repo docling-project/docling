@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass, field
 from io import BytesIO
 from pathlib import Path
+from typing import cast
 
 from docling_core.types.doc import (
     ContentLayer,
@@ -105,7 +106,7 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
         origin = DocumentOrigin(
             filename=self.file.name or "file",
             mimetype="text/vtt",
-            binary_hash=self.document_hash,
+            binary_hash=cast(int, self.document_hash),
         )
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
 

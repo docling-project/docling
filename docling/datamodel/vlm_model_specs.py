@@ -54,7 +54,9 @@ GRANITEDOCLING_MLX = InlineVlmOptions(
 )
 
 GRANITEDOCLING_VLLM_API = ApiVlmOptions(
-    url="http://localhost:8000/v1/chat/completions",  # LM studio defaults to port 1234, VLLM to 8000
+    url=AnyUrl(
+        "http://localhost:8000/v1/chat/completions"
+    ),  # LM studio defaults to port 1234, VLLM to 8000
     params=dict(
         model=GRANITEDOCLING_TRANSFORMERS.repo_id,
         max_tokens=4096,
@@ -324,7 +326,7 @@ NANONETS_OCR2_VLLM = NANONETS_OCR2_TRANSFORMERS.model_copy(deep=True)
 NANONETS_OCR2_VLLM.inference_framework = InferenceFramework.VLLM
 
 NANONETS_OCR2_VLLM_API = ApiVlmOptions(
-    url="http://localhost:8000/v1/chat/completions",
+    url=AnyUrl("http://localhost:8000/v1/chat/completions"),
     params=dict(
         model="nanonets/Nanonets-OCR2-3B",
         max_tokens=15000,
@@ -446,7 +448,7 @@ GLMOCR_VLLM = GLMOCR_TRANSFORMERS.model_copy(deep=True)
 GLMOCR_VLLM.inference_framework = InferenceFramework.VLLM
 
 GLMOCR_VLLM_API = ApiVlmOptions(
-    url="http://localhost:8000/v1/chat/completions",
+    url=AnyUrl("http://localhost:8000/v1/chat/completions"),
     params=dict(
         model="zai-org/GLM-OCR",
         max_tokens=4096,
@@ -496,7 +498,7 @@ LIGHTONOCR_VLLM = LIGHTONOCR_TRANSFORMERS.model_copy(deep=True)
 LIGHTONOCR_VLLM.inference_framework = InferenceFramework.VLLM
 
 LIGHTONOCR_VLLM_API = ApiVlmOptions(
-    url="http://localhost:8000/v1/chat/completions",
+    url=AnyUrl("http://localhost:8000/v1/chat/completions"),
     params=dict(
         model="lightonai/LightOnOCR-2-1B",
         max_tokens=4096,
@@ -511,7 +513,7 @@ LIGHTONOCR_VLLM_API = ApiVlmOptions(
 
 # DeepSeek-OCR
 DEEPSEEKOCR_OLLAMA = ApiVlmOptions(
-    url="http://localhost:11434/v1/chat/completions",
+    url=AnyUrl("http://localhost:11434/v1/chat/completions"),
     params=dict(
         model="deepseek-ocr:3b",
         max_tokens=4096,

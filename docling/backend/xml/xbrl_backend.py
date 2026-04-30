@@ -24,7 +24,7 @@ from collections import defaultdict
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Final
+from typing import Final, cast
 
 from docling_core.types.doc import (
     DoclingDocument,
@@ -254,7 +254,7 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
         origin = DocumentOrigin(
             filename=self.file.name or "file",
             mimetype="application/xml",
-            binary_hash=self.document_hash,
+            binary_hash=cast(int, self.document_hash),
         )
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         doc_name = doc.name
@@ -271,6 +271,7 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
             if fact.qname.localName == "DocumentPeriodEndDate" and fact.value:
                 doc_period = fact.value
         title = f"{doc_type} {doc_org} {doc_period}".strip()
+        assert self.model_xbrl.modelDocument is not None
         title = title if title else self.model_xbrl.modelDocument.basename
         doc.add_title(text=title)
 

@@ -3,7 +3,7 @@ import sys
 import time
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union, cast
 
 import numpy as np
 from PIL.Image import Image
@@ -280,9 +280,11 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         for img in image_batch:
             if isinstance(img, np.ndarray):
                 if img.ndim == 3 and img.shape[2] in (3, 4):
-                    pil_img = PILImage.fromarray(img.astype(np.uint8))
+                    pil_img = PILImage.fromarray(cast(Any, img).astype(np.uint8))
                 elif img.ndim == 2:
-                    pil_img = PILImage.fromarray(img.astype(np.uint8), mode="L")
+                    pil_img = PILImage.fromarray(
+                        cast(Any, img).astype(np.uint8), mode="L"
+                    )
                 else:
                     raise ValueError(f"Unsupported numpy array shape: {img.shape}")
             else:

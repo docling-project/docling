@@ -261,8 +261,11 @@ class KserveV2HttpClient:
                 f"Failed to connect to {url}"
             ) from exc
         except requests.exceptions.HTTPError as exc:
+            response = exc.response
+            status_code = response.status_code if response is not None else "unknown"
+            response_text = response.text if response is not None else ""
             raise requests.exceptions.HTTPError(
-                f"HTTP error {response.status_code} from {url}: {response.text}"
+                f"HTTP error {status_code} from {url}: {response_text}"
             ) from exc
 
     @property
@@ -335,8 +338,11 @@ class KserveV2HttpClient:
             requests.exceptions.HTTPError: If server returns error status
             RuntimeError: If response format is invalid
         """
+        _batch_size = next(iter(inputs.values())).shape[0] if inputs else 0
+        _t_ser_start = _t_ser_mono = _t_http_start = _t_http_mono = 0.0
+        _t_deser_start = _t_deser_mono = 0.0
+
         if _log.isEnabledFor(logging.DEBUG):
-            _batch_size = next(iter(inputs.values())).shape[0] if inputs else 0
             _t_ser_start = time.time()
             _t_ser_mono = time.monotonic()
         request_kwargs: Dict[str, Any]

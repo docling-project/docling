@@ -3,7 +3,7 @@ import sys
 import tempfile
 from io import BytesIO
 from pathlib import Path
-from typing import Final
+from typing import Final, cast
 
 from docling_core.types.doc import (
     ContentLayer,
@@ -53,7 +53,7 @@ def _process_conversation(
     origin = DocumentOrigin(
         filename=conv_res.input.file.name or "audio.wav",
         mimetype="audio/x-wav",
-        binary_hash=conv_res.input.document_hash,
+        binary_hash=cast(int, conv_res.input.document_hash),
     )
     conv_res.document = DoclingDocument(
         name=conv_res.input.file.stem or "audio.wav", origin=origin

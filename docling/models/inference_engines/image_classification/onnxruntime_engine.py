@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
 
 import numpy as np
 
@@ -98,6 +98,8 @@ class OnnxRuntimeImageClassificationEngine(HfImageClassificationEngineBase):
     def initialize(self) -> None:
         """Initialize ONNX session and preprocessor."""
         import onnxruntime as ort
+
+        ort = cast(Any, ort)
 
         _log.info("Initializing ONNX Runtime image-classification engine")
 

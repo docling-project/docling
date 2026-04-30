@@ -28,7 +28,7 @@ class PdfPageBackend(ABC):
         pass
 
     @abstractmethod
-    def get_bitmap_rects(self, float: int = 1) -> Iterable[BoundingBox]:
+    def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         pass
 
     @abstractmethod

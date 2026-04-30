@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
 
 import numpy as np
 
@@ -99,6 +99,8 @@ class OnnxRuntimeObjectDetectionEngine(HfObjectDetectionEngineBase):
         """Initialize ONNX session and preprocessor."""
         import onnxruntime as ort
 
+        ort = cast(Any, ort)
+
         _log.info("Initializing ONNX Runtime object-detection engine")
 
         # Resolve model folder and model path in one step
@@ -108,7 +110,7 @@ class OnnxRuntimeObjectDetectionEngine(HfObjectDetectionEngineBase):
 
         # Load preprocessor (source of truth for preprocessing)
         self._processor = self._load_preprocessor(model_folder)
-        _log.debug(f"Loaded preprocessor with size: {self._processor.size}")  # type: ignore[attr-defined]
+        _log.debug(f"Loaded preprocessor with size: {cast(Any, self._processor).size}")
 
         # Load label mapping from config
         self._id_to_label = self._load_label_mapping(model_folder)
@@ -194,7 +196,9 @@ class OnnxRuntimeObjectDetectionEngine(HfObjectDetectionEngineBase):
                 "[labels, boxes, scores]"
             )
 
-        labels_batch, boxes_batch, scores_batch = output_tensors[:3]
+        labels_batch = cast(Any, output_tensors[0])
+        boxes_batch = cast(Any, output_tensors[1])
+        scores_batch = cast(Any, output_tensors[2])
 
         batch_outputs: List[ObjectDetectionEngineOutput] = []
         for idx, input_item in enumerate(input_batch):

@@ -10,7 +10,7 @@ from __future__ import annotations
 import itertools
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
 
 from docling_core.types.doc import DoclingDocument
 from docling_core.types.doc.document import DocTagsDocument
@@ -80,8 +80,9 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         # VLM model based on options type
         # Create layout-aware VLM options internally
         base_vlm_options = self.pipeline_options.vlm_options
+        base_vlm_options_type = cast(Any, type(base_vlm_options))
 
-        class LayoutAwareVlmOptions(type(base_vlm_options)):  # type: ignore[misc]
+        class LayoutAwareVlmOptions(base_vlm_options_type):  # type: ignore[misc]
             def build_prompt(
                 self,
                 page: Optional[SegmentedPage],

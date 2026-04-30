@@ -3,8 +3,9 @@ import logging
 import sys
 import time
 from collections.abc import Iterable
+from importlib import import_module
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 import numpy as np
 from PIL.Image import Image
@@ -46,14 +47,16 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
 
         if self.enabled:
             import torch
-            from transformers import (
-                AutoModel,
-                AutoModelForCausalLM,
-                AutoModelForImageTextToText,
-                AutoProcessor,
-                BitsAndBytesConfig,
-                GenerationConfig,
+
+            transformers = import_module("transformers")
+            AutoModel = getattr(transformers, "AutoModel")
+            AutoModelForCausalLM = getattr(transformers, "AutoModelForCausalLM")
+            AutoModelForImageTextToText = getattr(
+                transformers, "AutoModelForImageTextToText"
             )
+            AutoProcessor = getattr(transformers, "AutoProcessor")
+            BitsAndBytesConfig = getattr(transformers, "BitsAndBytesConfig")
+            GenerationConfig = getattr(transformers, "GenerationConfig")
 
             transformers_version = importlib.metadata.version("transformers")
             if (
@@ -226,9 +229,11 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         for img in image_batch:
             if isinstance(img, np.ndarray):
                 if img.ndim == 3 and img.shape[2] in (3, 4):
-                    pil_img = PILImage.fromarray(img.astype(np.uint8))
+                    pil_img = PILImage.fromarray(cast(Any, img).astype(np.uint8))
                 elif img.ndim == 2:
-                    pil_img = PILImage.fromarray(img.astype(np.uint8), mode="L")
+                    pil_img = PILImage.fromarray(
+                        cast(Any, img).astype(np.uint8), mode="L"
+                    )
                 else:
                     raise ValueError(f"Unsupported numpy array shape: {img.shape}")
             else:
@@ -252,6 +257,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
 
         # Use your prompt formatter verbatim
         if self.vlm_options.transformers_prompt_style == TransformersPromptStyle.NONE:
+            prompts: list[str] = []
             inputs = self.processor(
                 pil_images,
                 return_tensors="pt",
@@ -298,7 +304,9 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                         stopping_criteria_list.append(wrapped_criteria)
                     elif issubclass(criteria, StoppingCriteria):
                         # It's a StoppingCriteria class, instantiate with tokenizer
-                        criteria_instance = criteria(self.processor.tokenizer)
+                        criteria_instance = cast(Any, criteria)(
+                            self.processor.tokenizer
+                        )
                         stopping_criteria_list.append(criteria_instance)
                 elif isinstance(criteria, GenerationStopper):
                     # Wrap GenerationStopper instances in HFStoppingCriteriaWrapper

@@ -6,7 +6,7 @@ from enum import Enum
 from html import unescape
 from io import BytesIO
 from pathlib import Path
-from typing import Literal, Optional, Union, cast
+from typing import Any, Literal, Optional, Union, cast
 
 import marko
 import marko.element
@@ -577,7 +577,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         if hasattr(element, "children") and not isinstance(
             element, processed_block_types
         ):
-            for child in element.children:
+            for child in cast(list[Any], element.children):
                 if (
                     isinstance(element, marko.block.ListItem)
                     and isinstance(child, marko.block.List)
@@ -625,7 +625,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         origin = DocumentOrigin(
             filename=self.file.name or "file",
             mimetype="text/markdown",
-            binary_hash=self.document_hash,
+            binary_hash=cast(int, self.document_hash),
         )
 
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)

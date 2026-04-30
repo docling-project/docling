@@ -2,12 +2,12 @@ import logging
 import sys
 import time
 from collections.abc import Iterable
+from importlib import import_module
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 import numpy as np
 from PIL.Image import Image
-from transformers import AutoModelForImageTextToText, AutoProcessor, GenerationConfig
 
 from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
@@ -19,6 +19,11 @@ from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
 from docling.utils.accelerator_utils import decide_device
+
+_transformers = import_module("transformers")
+AutoModelForImageTextToText = getattr(_transformers, "AutoModelForImageTextToText")
+AutoProcessor = getattr(_transformers, "AutoProcessor")
+GenerationConfig = getattr(_transformers, "GenerationConfig")
 
 _log = logging.getLogger(__name__)
 
@@ -77,9 +82,7 @@ def process_all_vision_info(messages, examples=None):
         and (isinstance(examples[0], list) or examples[0] is None)
     )
     examples_batch = (
-        examples
-        if is_batch_examples
-        else ([examples] if examples is not None else None)
+        examples if is_batch_examples else ([examples] if examples is not None else [])
     )
 
     # Ensure examples batch matches messages batch if provided
@@ -187,9 +190,11 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
         for img in image_batch:
             if isinstance(img, np.ndarray):
                 if img.ndim == 3 and img.shape[2] in (3, 4):
-                    pil_img = PILImage.fromarray(img.astype(np.uint8))
+                    pil_img = PILImage.fromarray(cast(Any, img).astype(np.uint8))
                 elif img.ndim == 2:
-                    pil_img = PILImage.fromarray(img.astype(np.uint8), mode="L")
+                    pil_img = PILImage.fromarray(
+                        cast(Any, img).astype(np.uint8), mode="L"
+                    )
                 else:
                     raise ValueError(f"Unsupported numpy array shape: {img.shape}")
             else:
@@ -270,9 +275,7 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
 
         start_time = time.time()
         with torch.inference_mode():
-            from typing import cast
-
-            generated_ids = cast(Any, self.vlm_model).generate(**gen_kwargs)
+            generated_ids = self.vlm_model.generate(**gen_kwargs)
         generation_time = time.time() - start_time
 
         # Trim generated sequences

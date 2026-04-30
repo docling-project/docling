@@ -180,6 +180,8 @@ class ApiKserveV2ObjectDetectionEngine(HfObjectDetectionEngineBase):
         assert self._output_boxes_name is not None
         assert self._output_scores_name is not None
 
+        _t_preproc_start = 0.0
+        _t_preproc_mono = 0.0
         if _log.isEnabledFor(logging.DEBUG):
             _t_preproc_start = time.time()
             _t_preproc_mono = time.monotonic()

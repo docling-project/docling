@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Iterable, Optional, Type
+from typing import Any, Iterable, Optional, Type, cast
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import TextCell
@@ -89,6 +89,7 @@ class TesseractOcrModel(BaseOcrModel):
                 "init": True,
                 "oem": tesserocr.OEM.DEFAULT,
             }
+            tess_base_api = cast(Any, tesserocr.PyTessBaseAPI)
 
             self.osd_reader = None
 
@@ -100,15 +101,15 @@ class TesseractOcrModel(BaseOcrModel):
                 self.options.psm if self.options.psm is not None else tesserocr.PSM.AUTO
             )
             if lang == "auto":
-                self.reader = tesserocr.PyTessBaseAPI(psm=main_psm, **tesserocr_kwargs)
+                self.reader = tess_base_api(psm=main_psm, **tesserocr_kwargs)
             else:
-                self.reader = tesserocr.PyTessBaseAPI(
+                self.reader = tess_base_api(
                     lang=lang,
                     psm=main_psm,
                     **tesserocr_kwargs,
                 )
             # OSD reader must use PSM.OSD_ONLY for orientation detection
-            self.osd_reader = tesserocr.PyTessBaseAPI(
+            self.osd_reader = tess_base_api(
                 lang="osd", psm=tesserocr.PSM.OSD_ONLY, **tesserocr_kwargs
             )
             self.reader_RIL = tesserocr.RIL
@@ -189,16 +190,16 @@ class TesseractOcrModel(BaseOcrModel):
                                 if script not in self.script_readers:
                                     import tesserocr
 
-                                    self.script_readers[script] = (
-                                        tesserocr.PyTessBaseAPI(
-                                            path=self.reader.GetDatapath(),
-                                            lang=lang,
-                                            psm=self.options.psm
-                                            if self.options.psm is not None
-                                            else tesserocr.PSM.AUTO,
-                                            init=True,
-                                            oem=tesserocr.OEM.DEFAULT,
-                                        )
+                                    self.script_readers[script] = cast(
+                                        Any, tesserocr.PyTessBaseAPI
+                                    )(
+                                        path=self.reader.GetDatapath(),
+                                        lang=lang,
+                                        psm=self.options.psm
+                                        if self.options.psm is not None
+                                        else tesserocr.PSM.AUTO,
+                                        init=True,
+                                        oem=tesserocr.OEM.DEFAULT,
                                     )
                                 local_reader = self.script_readers[script]
 

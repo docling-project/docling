@@ -1,7 +1,8 @@
 import re
 from collections.abc import Iterable
+from importlib import import_module
 from pathlib import Path
-from typing import List, Literal, Optional, Tuple, Union
+from typing import List, Literal, Optional, Tuple, Union, cast
 
 import numpy as np
 from docling_core.types.doc import (
@@ -108,7 +109,11 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
             else:
                 artifacts_path = artifacts_path / self._model_repo_folder
 
-            from transformers import AutoModelForImageTextToText, AutoProcessor
+            transformers = import_module("transformers")
+            AutoModelForImageTextToText = getattr(
+                transformers, "AutoModelForImageTextToText"
+            )
+            AutoProcessor = getattr(transformers, "AutoProcessor")
 
             self._processor = AutoProcessor.from_pretrained(
                 artifacts_path,
@@ -308,8 +313,9 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
         images: List[Union[Image.Image, np.ndarray]] = []
         elements: List[TextItem] = []
         for el in element_batch:
-            elements.append(el.item)  # type: ignore[arg-type]
-            labels.append(el.item.label)  # type: ignore[attr-defined]
+            item = cast(TextItem, el.item)
+            elements.append(item)
+            labels.append(item.label)
             images.append(el.image)
 
         prompts = [self._get_prompt(label) for label in labels]
@@ -326,9 +332,7 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
             do_sample=False,
         )
 
-        from typing import Any, cast
-
-        generated_ids = cast(Any, self._model).generate(**inputs, **gen_kwargs)
+        generated_ids = self._model.generate(**inputs, **gen_kwargs)
 
         outputs = self._processor.batch_decode(
             generated_ids[:, inputs.input_ids.shape[1] :], skip_special_tokens=False

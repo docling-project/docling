@@ -148,8 +148,9 @@ class ImageDocumentBackend(PdfDocumentBackend):
 
         # Load frames eagerly for thread-safety across pages
         self._frames: List[Image.Image] = []
+        assert self.path_or_stream is not None
         try:
-            with Image.open(self.path_or_stream) as img:  # type: ignore[arg-type]
+            with Image.open(self.path_or_stream) as img:
                 # Handle multi-frame and single-frame images
                 # - multiframe formats: TIFF, GIF, ICO
                 # - singleframe formats: JPEG (.jpg, .jpeg), PNG (.png), BMP, WEBP (unless animated), HEIC

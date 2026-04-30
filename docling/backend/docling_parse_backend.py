@@ -174,7 +174,7 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
             padbox.t = page_size.height - padbox.t
 
         with pypdfium2_lock:
-            bitmap = self._ppage.render(
+            bitmap = self._require_page().render(
                 scale=scale * 1.5,
                 rotation=0,  # no additional rotation
                 crop=padbox.as_tuple(),
@@ -231,8 +231,10 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
             self._pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
         self.parser = DoclingPdfParser(loglevel="fatal")
 
+        assert self.path_or_stream is not None
         self.dp_doc: Optional[PdfDocument] = self.parser.load(
-            path_or_stream=self.path_or_stream, password=password
+            path_or_stream=self.path_or_stream,
+            password=password,
         )
         success = self.dp_doc is not None
 
@@ -244,6 +246,7 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
     def page_count(self) -> int:
         # return len(self._pdoc)  # To be replaced with docling-parse API
 
+        assert self._pdoc is not None
         len_1 = len(self._pdoc)
         assert self.dp_doc is not None
         len_2 = self.dp_doc.number_of_pages()
@@ -257,6 +260,7 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
         self, page_no: int, create_words: bool = True, create_textlines: bool = True
     ) -> DoclingParsePageBackend:
         assert self.dp_doc is not None
+        assert self._pdoc is not None
         with pypdfium2_lock:
             ppage = self._pdoc[page_no]
 

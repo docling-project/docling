@@ -387,6 +387,7 @@ combine-as-imports = true
 
 [tool.ty.rules]
 all = "warn"
+unused-type-ignore-comment = "ignore"
 
 [tool.ty.environment]
 python-version = "3.10"

@@ -1,8 +1,9 @@
 import logging
 from collections.abc import Iterable, Sequence
+from importlib import import_module
 from itertools import groupby
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal, Optional, cast
 
 import numpy
 import torch
@@ -12,7 +13,6 @@ from docling_core.types.doc.page import (
     TextCell,
 )
 from PIL import Image, ImageDraw
-from transformers import AutoTokenizer
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import Cluster, Page, Table, TableStructurePrediction
@@ -23,6 +23,8 @@ from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
+
+AutoTokenizer = getattr(import_module("transformers"), "AutoTokenizer")
 
 _log = logging.getLogger(__name__)
 
@@ -71,8 +73,6 @@ class TableStructureModelV2(BaseTableStructureModel):
             from docling_ibm_models.tableformer_v2 import TableFormerV2
 
             self.model = TableFormerV2.from_pretrained(model_path)
-            from typing import Any, cast
-
             cast(Any, self.model).to(self.device)
             self.model.eval()
 

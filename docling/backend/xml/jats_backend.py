@@ -166,14 +166,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
     @override
     def convert(self) -> DoclingDocument:
+        origin = DocumentOrigin(
+            filename=self.file.name or "file",
+            mimetype="application/xml",
+            binary_hash=cast(int, self.document_hash),
+        )
+        doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         try:
-            # Create empty document
-            origin = DocumentOrigin(
-                filename=self.file.name or "file",
-                mimetype="application/xml",
-                binary_hash=self.document_hash,
-            )
-            doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
             self.hlevel = 0
 
             # Get metadata XML components
@@ -438,7 +437,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         for item in fields:
             item_node = node.xpath(item)
             if len(item_node) > 0:
-                citation[item.replace("-", "_")] = (  # type: ignore[literal-required]
+                citation_dict = cast(dict[str, str], citation)
+                citation_dict[item.replace("-", "_")] = (
                     item_node[0].text.replace("\n", " ").strip()
                 )
 
@@ -579,9 +579,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             if not isinstance(row, Tag):
                 continue
             for cell in row(["td", "th"]):
-                if not isinstance(row, Tag):
+                if not isinstance(cell, Tag):
                     continue
-                cell_tag = cast(Tag, cell)
+                cell_tag = cell
                 col_span, row_span = HTMLDocumentBackend._get_cell_spans(cell_tag)
                 col_count += col_span
                 if cell_tag.name == "td" or row_span == 1:
@@ -752,6 +752,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         for child in list(node):
             stop_walk: bool = False
+            section_text: str | None = None
 
             # flush text into TextItem for some tags in paragraph nodes
             if node.tag == "p" and node_text.strip() and child.tag in flush_tags:
@@ -763,15 +764,14 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             # add elements and decide whether to stop walking
             if child.tag in ("sec", "ack"):
                 header = child.xpath("title|label")
-                text: str | None = None
                 if len(header) > 0:
-                    text = JatsDocumentBackend._get_text(header[0])
+                    section_text = JatsDocumentBackend._get_text(header[0])
                 elif child.tag == "ack":
-                    text = DEFAULT_HEADER_ACKNOWLEDGMENTS
-                if text:
+                    section_text = DEFAULT_HEADER_ACKNOWLEDGMENTS
+                if section_text:
                     self.hlevel += 1
                     new_parent = doc.add_heading(
-                        text=text, parent=parent, level=self.hlevel
+                        text=section_text, parent=parent, level=self.hlevel
                     )
             elif child.tag == "list":
                 new_parent = doc.add_group(
@@ -829,7 +829,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 new_text = self._walk_linear(doc, new_parent, child)
                 if not (node.getparent().tag == "p" and node.tag in flush_tags):
                     node_text += new_text
-                if child.tag in ("sec", "ack") and text:
+                if child.tag in ("sec", "ack") and section_text:
                     self.hlevel -= 1
 
             # pick up the tail text

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
 
 from packaging import version
 
@@ -134,7 +134,7 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
 
         # Load preprocessor (source of truth for preprocessing)
         self._processor = self._load_preprocessor(model_folder)
-        _log.debug(f"Loaded preprocessor with size: {self._processor.size}")  # type: ignore[attr-defined]
+        _log.debug(f"Loaded preprocessor with size: {cast(Any, self._processor).size}")
 
         # Load label mapping from config
         self._id_to_label = self._load_label_mapping(model_folder)
@@ -202,10 +202,10 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
 
         # Run inference
         with torch.inference_mode():
-            outputs = self._model(**inputs)  # type: ignore[operator]
+            outputs = cast(Any, self._model)(**inputs)
 
         # Post-process using HuggingFace processor
-        results = self._processor.post_process_object_detection(  # type: ignore[attr-defined]
+        results = cast(Any, self._processor).post_process_object_detection(
             outputs,
             target_sizes=target_sizes,  # type: ignore[arg-type]
             threshold=self.options.score_threshold,

@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any, cast
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -52,17 +53,21 @@ class ReadingOrderModel:
         page_no_to_pages = {p.page_no: p for p in conv_res.pages}
 
         for element in conv_res.assembled.elements:
-            page_height = page_no_to_pages[element.page_no].size.height  # type: ignore
+            page_size = page_no_to_pages[element.page_no].size
+            assert page_size is not None
+            page_height = page_size.height
             bbox = element.cluster.bbox.to_bottom_left_origin(page_height)
             text = element.text or ""
 
             elements.append(
                 ReadingOrderPageElement(
                     cid=len(elements),
-                    ref=RefItem(cref=f"#/{element.page_no}/{element.cluster.id}"),
+                    ref=cast(Any, RefItem)(
+                        cref=f"#/{element.page_no}/{element.cluster.id}"
+                    ),
                     text=text,
                     page_no=element.page_no,
-                    page_size=page_no_to_pages[element.page_no].size,
+                    page_size=page_size,
                     label=element.label,
                     l=bbox.l,
                     r=bbox.r,
@@ -140,7 +145,7 @@ class ReadingOrderModel:
         el_merges_mapping: dict[int, list[int]],
     ) -> DoclingDocument:
         id_to_elem = {
-            RefItem(cref=f"#/{elem.page_no}/{elem.cluster.id}").cref: elem
+            cast(Any, RefItem)(cref=f"#/{elem.page_no}/{elem.cluster.id}").cref: elem
             for elem in conv_res.assembled.elements
         }
         cid_to_rels = {rel.cid: rel for rel in ro_elements}
@@ -148,7 +153,7 @@ class ReadingOrderModel:
         origin = DocumentOrigin(
             mimetype="application/pdf",
             filename=conv_res.input.file.name,
-            binary_hash=conv_res.input.document_hash,
+            binary_hash=cast(int, conv_res.input.document_hash),
         )
         doc_name = Path(origin.filename).stem
         out_doc: DoclingDocument = DoclingDocument(name=doc_name, origin=origin)

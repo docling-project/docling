@@ -205,6 +205,7 @@ def build_check_units(repo_root: Path) -> list[CheckUnit]:
                 "check",
                 "--project",
                 str(repo_root),
+                "--error-on-warning",
             ],
             base_targets=[],
             head_targets=[],

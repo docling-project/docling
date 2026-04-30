@@ -8,7 +8,12 @@ from pydantic import BaseModel
 
 from docling.backend.abstract_backend import PaginatedDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
-from docling.datamodel.base_models import ConversionStatus, ErrorItem, VlmStopReason
+from docling.datamodel.base_models import (
+    ConversionStatus,
+    DoclingComponentType,
+    ErrorItem,
+    VlmStopReason,
+)
 from docling.datamodel.document import InputDocument
 from docling.datamodel.extraction import (
     ExtractedPageData,
@@ -58,7 +63,7 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
                 ext_res.status = ConversionStatus.FAILURE
                 ext_res.errors.append(
                     ErrorItem(
-                        component_type="extraction_pipeline",
+                        component_type=DoclingComponentType.PIPELINE,
                         module_name=self.__class__.__name__,
                         error_message="No images found in document",
                     )
@@ -123,7 +128,7 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             _log.error(f"Error during extraction: {e}")
             ext_res.errors.append(
                 ErrorItem(
-                    component_type="extraction_pipeline",
+                    component_type=DoclingComponentType.PIPELINE,
                     module_name=self.__class__.__name__,
                     error_message=str(e),
                 )

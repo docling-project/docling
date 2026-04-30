@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, Final
+from typing import Any, Callable, Final, cast
 from urllib.parse import urlparse
 
 from docling_core.types.doc import (
@@ -83,7 +83,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         )
         # self.initialise(path_or_stream)
         # Word file:
-        self.path_or_stream: BytesIO | Path = path_or_stream
+        self.path_or_stream: BytesIO | Path | None = path_or_stream
         self.valid: bool = False
         # Initialise the parents for the hierarchy
         self.max_levels: int = 10
@@ -161,7 +161,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         origin = DocumentOrigin(
             filename=self.file.name or "file",
             mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            binary_hash=self.document_hash,
+            binary_hash=cast(int, self.document_hash),
         )
 
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
@@ -1853,6 +1853,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 provs_in_cell: list[RefItem] = []
                 rich_table_cell: bool = self._is_rich_table_cell(cell)
+                ref_for_rich_cell: RefItem | None = None
 
                 if rich_table_cell:
                     with self._isolated_list_context():
@@ -1872,6 +1873,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     )
 
                 if rich_table_cell:
+                    assert ref_for_rich_cell is not None
                     rich_cell = RichTableCell(
                         text=text,
                         row_span=spanned_idx - row_idx,
@@ -2059,6 +2061,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if self.docx_to_pdf_converter is None:
             return None
 
+        assert self.path_or_stream is not None
         try:
             # Create a temporary document with just these elements
             temp_doc = self.load_msword_file(self.path_or_stream, self.document_hash)
@@ -2374,7 +2377,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Manually link targets to the comment GROUP (not the text item)
             # This allows multiple comment replies to be grouped together
             if targets:
-                group_ref = FineRef(cref=comment_group.self_ref)
+                group_ref = cast(Any, FineRef)(cref=comment_group.self_ref)
                 for target in targets:
                     # Only DocItem has a 'comments' field; GroupItem does not,
                     # so skip non-DocItem targets (fixes #2955).

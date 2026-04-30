@@ -32,7 +32,7 @@ repos:
     hooks:
       - id: ty
         name: ty
-        entry: uv run --no-sync ty check
+        entry: uv run --no-sync ty check --error-on-warning
         language: system
         files: '^(docling|\.github/scripts)/.*\.py$'
       - id: tach

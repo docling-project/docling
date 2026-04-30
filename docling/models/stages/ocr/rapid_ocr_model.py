@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Literal, Type, TypedDict
+from typing import Any, Literal, Type, TypedDict, cast
 
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin
@@ -311,17 +311,24 @@ class RapidOcrModel(BaseOcrModel):
                             scale=self.scale, cropbox=ocr_rect
                         )
                         im = numpy.array(high_res_image)
-                        result = self.reader(
-                            im,
-                            use_det=self.options.use_det,
-                            use_cls=self.options.use_cls,
-                            use_rec=self.options.use_rec,
+                        ocr_output = cast(
+                            Any,
+                            self.reader(
+                                im,
+                                use_det=self.options.use_det,
+                                use_cls=self.options.use_cls,
+                                use_rec=self.options.use_rec,
+                            ),
                         )
-                        if result is None or result.boxes is None:
+                        if ocr_output is None or ocr_output.boxes is None:
                             _log.warning("RapidOCR returned empty result!")
                             continue
                         result = list(
-                            zip(result.boxes.tolist(), result.txts, result.scores)
+                            zip(
+                                ocr_output.boxes.tolist(),
+                                ocr_output.txts,
+                                ocr_output.scores,
+                            )
                         )
 
                         del high_res_image

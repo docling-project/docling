@@ -4,7 +4,7 @@ import threading
 import time
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Union
+from typing import Any, Union, cast
 
 import numpy as np
 from PIL.Image import Image
@@ -92,8 +92,8 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 )
 
             ## Load the model
-            self.vlm_model, self.processor = load(artifacts_path)
-            self.config = load_config(artifacts_path)
+            self.vlm_model, self.processor = load(str(artifacts_path))
+            self.config = load_config(str(artifacts_path))
 
             # Validate custom stopping criteria - MLX doesn't support HF StoppingCriteria
             if self.vlm_options.custom_stopping_criteria:
@@ -213,12 +213,14 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                         # RGB or RGBA array
                         from PIL import Image as PILImage
 
-                        image = PILImage.fromarray(image.astype(np.uint8))
+                        image = PILImage.fromarray(cast(Any, image).astype(np.uint8))
                     elif image.ndim == 2:
                         # Grayscale array
                         from PIL import Image as PILImage
 
-                        image = PILImage.fromarray(image.astype(np.uint8), mode="L")
+                        image = PILImage.fromarray(
+                            cast(Any, image).astype(np.uint8), mode="L"
+                        )
                     else:
                         raise ValueError(
                             f"Unsupported numpy array shape: {image.shape}"
@@ -244,12 +246,13 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 for token in self.stream_generate(
                     self.vlm_model,
                     self.processor,
-                    formatted_prompt,
-                    [image],  # MLX stream_generate expects list of images
+                    cast(Any, formatted_prompt),
+                    cast(Any, [image]),  # MLX stream_generate expects list of images
                     max_tokens=self.max_tokens,
                     verbose=False,
                     temp=self.temperature,
                 ):
+                    token = cast(Any, token)
                     # Collect token information
                     if len(token.logprobs.shape) == 1:
                         tokens.append(
@@ -288,6 +291,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                     # Check for custom stopping criteria (GenerationStopper instances)
                     if self.vlm_options.custom_stopping_criteria:
                         for criteria in self.vlm_options.custom_stopping_criteria:
+                            stopper: GenerationStopper | None = None
                             # Handle both instances and classes of GenerationStopper
                             if isinstance(criteria, GenerationStopper):
                                 stopper = criteria
@@ -295,6 +299,8 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                                 criteria, GenerationStopper
                             ):
                                 stopper = criteria()
+                            if stopper is None:
+                                continue
 
                             # Determine the text window to check based on lookback_tokens
                             lookback_tokens = stopper.lookback_tokens()
@@ -330,8 +336,9 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
 
                 # Apply decode_response to the output before yielding
                 decoded_output = self.vlm_options.decode_response(output)
-                input_prompt = (
-                    formatted_prompt if self.vlm_options.track_input_prompt else None
+                input_prompt = cast(
+                    str | None,
+                    formatted_prompt if self.vlm_options.track_input_prompt else None,
                 )
                 yield VlmPrediction(
                     text=decoded_output,

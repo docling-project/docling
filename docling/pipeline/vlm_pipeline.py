@@ -139,9 +139,10 @@ class VlmPipeline(PaginatedPipeline):
 
         # force_backend_text = False - use text that is coming from VLM response
         # force_backend_text = True - get text from backend using bounding boxes predicted by SmolDocling doctags
+        vlm_options = pipeline_options.vlm_options
         self.force_backend_text = (
             pipeline_options.force_backend_text
-            and pipeline_options.vlm_options.response_format == ResponseFormat.DOCTAGS  # type: ignore[union-attr]
+            and getattr(vlm_options, "response_format", None) == ResponseFormat.DOCTAGS
         )
 
         self.keep_images = self.pipeline_options.generate_page_images
@@ -155,7 +156,7 @@ class VlmPipeline(PaginatedPipeline):
                 ),
             ]
         elif isinstance(self.pipeline_options.vlm_options, InlineVlmOptions):
-            vlm_options = cast(InlineVlmOptions, self.pipeline_options.vlm_options)
+            vlm_options = self.pipeline_options.vlm_options
             if vlm_options.inference_framework == InferenceFramework.MLX:
                 self.build_pipe = [
                     HuggingFaceMlxModel(
@@ -440,20 +441,23 @@ class VlmPipeline(PaginatedPipeline):
         )
 
         # If forced backend text, replace model predicted text with backend one
-        if page.size:
-            if self.force_backend_text:
-                scale = self.pipeline_options.images_scale
-                for element, _level in conv_res.document.iterate_items():
-                    if not isinstance(element, TextItem) or len(element.prov) == 0:
-                        continue
-                    crop_bbox = (
-                        element.prov[0]
-                        .bbox.scaled(scale=scale)
-                        .to_top_left_origin(page_height=page.size.height * scale)
-                    )
-                    txt = self.extract_text_from_backend(page, crop_bbox)
-                    element.text = txt
-                    element.orig = txt
+        if self.force_backend_text:
+            scale = self.pipeline_options.images_scale
+            pages_by_no = {page.page_no: page for page in conv_res.pages}
+            for element, _level in conv_res.document.iterate_items():
+                if not isinstance(element, TextItem) or len(element.prov) == 0:
+                    continue
+                source_page = pages_by_no.get(element.prov[0].page_no)
+                if source_page is None or source_page.size is None:
+                    continue
+                crop_bbox = (
+                    element.prov[0]
+                    .bbox.scaled(scale=scale)
+                    .to_top_left_origin(page_height=source_page.size.height * scale)
+                )
+                txt = self.extract_text_from_backend(source_page, crop_bbox)
+                element.text = txt
+                element.orig = txt
 
         return conv_res.document
 
@@ -609,7 +613,7 @@ class VlmPipeline(PaginatedPipeline):
                             bbox=BoundingBox(
                                 t=0.0, b=0.0, l=0.0, r=0.0
                             ),  # FIXME: would be nice not to have to "fake" it
-                            charspan=[0, 0],
+                            charspan=(0, 0),
                         )
                     ]
 

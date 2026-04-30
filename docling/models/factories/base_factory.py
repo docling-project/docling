@@ -35,7 +35,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
     def registered_kind(self) -> list[str]:
         return [opt.kind for opt in self._classes.keys()]
 
-    def get_enum(self) -> enum.Enum:
+    def get_enum(self) -> type[enum.Enum]:
         return enum.Enum(
             self.plugin_attr_name + "_enum",
             names={kind: kind for kind in self.registered_kind},

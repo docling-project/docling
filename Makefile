@@ -14,7 +14,7 @@ check: check-all ## Run read-only local checks.
 check-all: ## Run all read-only local checks.
 	uv run ruff format --check --config=pyproject.toml docling tests docs/examples
 	uv run ruff check --config=pyproject.toml docling tests docs/examples
-	uv run --no-sync ty check
+	uv run --no-sync ty check --error-on-warning
 	uv run --no-sync tach check
 	python3 scripts/check_tach_module_coverage.py
 	python3 scripts/check_max_lines.py
@@ -44,7 +44,7 @@ fix: ## Run Ruff and dprint auto-format/fixers.
 	uv run dprint fmt --config .github/dprint.json --config-discovery=false
 
 typecheck: ## Run ty.
-	uv run --no-sync ty check
+	uv run --no-sync ty check --error-on-warning
 
 tach: ## Run Tach module-boundary checks.
 	uv run --no-sync tach check
