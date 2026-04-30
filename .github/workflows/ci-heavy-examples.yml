@@ -56,7 +56,7 @@ jobs:
 
       - name: Run selected heavy examples
         run: |
-          python3 .github/scripts/run_selected_examples.py \
+          uv run --no-sync python .github/scripts/run_selected_examples.py \
             --examples-dir docs/examples \
             --changed-files-json "[]" \
             --include-pattern "$EXAMPLES_HEAVY" \
@@ -67,32 +67,16 @@ jobs:
     needs:
       - run-heavy-examples
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      contents: read
     steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - name: All Green
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
           ALLOWED_SKIPS: run-heavy-examples
-        run: |
-          failures=()
-          while IFS=$'\t' read -r job result; do
-            case "$result" in
-              success)
-                ;;
-              skipped)
-                if [[ " $ALLOWED_SKIPS " == *" $job "* ]]; then
-                  echo "::notice title=Allowed ${result} job::$job"
-                else
-                  failures+=("$job=$result")
-                fi
-                ;;
-              *)
-                failures+=("$job=$result")
-                ;;
-            esac
-          done < <(jq -r 'to_entries[] | [.key, .value.result] | @tsv' <<< "$NEEDS_JSON")
-
-          if [ "${#failures[@]}" -gt 0 ]; then
-            printf '::error title=Required jobs failed::%s\n' "${failures[*]}"
-            exit 1
-          fi
+        run: >-
+          python3 .github/scripts/check_needs_results.py
+          --needs-json "$NEEDS_JSON"
+          --allowed-skips "$ALLOWED_SKIPS"

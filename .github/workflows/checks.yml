@@ -212,7 +212,7 @@ jobs:
           TACH_BASE_REF: ${{ inputs.tach_base_ref }}
         run: |
           echo "--- Running core tests ---"
-          mapfile -t ML_IGNORE_ARGS < <(python3 .github/scripts/pytest_marker_selection.py core-ignore-args)
+          mapfile -t ML_IGNORE_ARGS < <(uv run --no-sync python .github/scripts/pytest_marker_selection.py core-ignore-args)
           TACH_ARGS=""
           if [ "${{ inputs.use_tach }}" = "true" ] && [ -n "$TACH_BASE_REF" ] && [ "$TACH_BASE_REF" != "0000000000000000000000000000000000000000" ]; then
             TACH_ARGS="--tach-base $TACH_BASE_REF"
@@ -258,8 +258,8 @@ jobs:
           TACH_BASE_REF: ${{ inputs.tach_base_ref }}
         run: |
           echo "--- Running ML suite: ${{ matrix.suite }} ---"
-          SUITE_MARKER=$(python3 .github/scripts/pytest_marker_selection.py suite-marker "${{ matrix.suite }}")
-          mapfile -t SUITE_ARGS < <(python3 .github/scripts/pytest_marker_selection.py suite-args "${{ matrix.suite }}")
+          SUITE_MARKER=$(uv run --no-sync python .github/scripts/pytest_marker_selection.py suite-marker "${{ matrix.suite }}")
+          mapfile -t SUITE_ARGS < <(uv run --no-sync python .github/scripts/pytest_marker_selection.py suite-args "${{ matrix.suite }}")
           if [ ${#SUITE_ARGS[@]} -eq 0 ]; then
             echo "No tests are marked for ${{ matrix.suite }}" >&2
             exit 1
@@ -322,7 +322,7 @@ jobs:
           if [ "$RUN_ALL_EXAMPLES" = "true" ]; then
             args+=(--run-all)
           fi
-          python3 .github/scripts/run_selected_examples.py "${args[@]}"
+          uv run --no-sync python .github/scripts/run_selected_examples.py "${args[@]}"
 
   run-tests-windows:
     needs: changes
@@ -364,7 +364,7 @@ jobs:
       - name: Run cross-platform smoke tests
         shell: bash
         run: |
-          mapfile -t cross_platform_args < <(uv run python .github/scripts/pytest_marker_selection.py marker-args cross_platform)
+          mapfile -t cross_platform_args < <(uv run --no-sync python .github/scripts/pytest_marker_selection.py marker-args cross_platform)
           if [ "${#cross_platform_args[@]}" -eq 0 ]; then
             echo "No tests are marked with pytest.mark.cross_platform" >&2
             exit 1
@@ -410,7 +410,7 @@ jobs:
       - name: Run cross-platform smoke tests
         shell: bash
         run: |
-          mapfile -t cross_platform_args < <(uv run python .github/scripts/pytest_marker_selection.py marker-args cross_platform)
+          mapfile -t cross_platform_args < <(uv run --no-sync python .github/scripts/pytest_marker_selection.py marker-args cross_platform)
           if [ "${#cross_platform_args[@]}" -eq 0 ]; then
             echo "No tests are marked with pytest.mark.cross_platform" >&2
             exit 1
@@ -618,8 +618,11 @@ jobs:
       - test-package
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}
+    permissions:
+      contents: read
     steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - name: All Green
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
@@ -627,26 +630,7 @@ jobs:
             lint tach run-tests-core run-tests-ml run-examples-light run-tests-windows
             run-tests-macos test-pip-install-no-lock test-pip-install-no-dev-headers
             build-package test-package
-        run: |
-          failures=()
-          while IFS=$'\t' read -r job result; do
-            case "$result" in
-              success)
-                ;;
-              skipped)
-                if [[ " $ALLOWED_SKIPS " == *" $job "* ]]; then
-                  echo "::notice title=Allowed ${result} job::$job"
-                else
-                  failures+=("$job=$result")
-                fi
-                ;;
-              *)
-                failures+=("$job=$result")
-                ;;
-            esac
-          done < <(jq -r 'to_entries[] | [.key, .value.result] | @tsv' <<< "$NEEDS_JSON")
-
-          if [ "${#failures[@]}" -gt 0 ]; then
-            printf '::error title=Required jobs failed::%s\n' "${failures[*]}"
-            exit 1
-          fi
+        run: >-
+          python3 .github/scripts/check_needs_results.py
+          --needs-json "$NEEDS_JSON"
+          --allowed-skips "$ALLOWED_SKIPS"

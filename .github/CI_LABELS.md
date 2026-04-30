@@ -28,6 +28,9 @@ The workflow intentionally uses a broad ML trigger for code, test, and tooling
 changes. Tach performs the fine-grained affected-test selection inside the ML
 lanes.
 
+Path filters still decide whether a CI lane should be created at all. Pytest
+markers only select which test modules run after a test lane has started.
+
 ## Cross-platform smoke tests
 
 Windows and macOS smoke tests are selected with `pytest.mark.cross_platform`.
