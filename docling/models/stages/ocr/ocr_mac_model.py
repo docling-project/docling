@@ -1,9 +1,9 @@
 import logging
 import sys
 import tempfile
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Optional, Type
+from typing import Any, Optional, Type
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
@@ -39,6 +39,7 @@ class OcrMacModel(BaseOcrModel):
         self.options: OcrMacOptions
 
         self.scale = 3  # multiplier for 72 dpi == 216 dpi.
+        self.reader_RIL: Callable[..., Any] | None = None
 
         if self.enabled:
             if "darwin" != sys.platform:
@@ -63,6 +64,7 @@ class OcrMacModel(BaseOcrModel):
             yield from page_batch
             return
 
+        assert self.reader_RIL is not None
         for page in page_batch:
             assert page._backend is not None
             if not page._backend.is_valid():
