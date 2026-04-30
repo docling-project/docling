@@ -44,3 +44,41 @@ jobs:
     uses: ./.github/workflows/docs.yml
     with:
       deploy: false
+
+  docs-status:
+    if: ${{ always() }}
+    needs:
+      - changes
+      - build-docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Check docs result
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          RUN_DOCS: ${{ needs.changes.outputs.run_docs }}
+          BUILD_DOCS_RESULT: ${{ needs.build-docs.result }}
+        run: |
+          if [ "$CHANGES_RESULT" != "success" ]; then
+            echo "::error title=Docs changes job failed::changes result was $CHANGES_RESULT"
+            exit 1
+          fi
+
+          if [ "$RUN_DOCS" != "true" ]; then
+            if [ "$BUILD_DOCS_RESULT" = "skipped" ]; then
+              echo "Docs checks are not required for this change set."
+              exit 0
+            fi
+
+            echo "::error title=Unexpected docs result::build-docs result was $BUILD_DOCS_RESULT while run_docs=$RUN_DOCS"
+            exit 1
+          fi
+
+          if [ "$BUILD_DOCS_RESULT" = "success" ]; then
+            echo "Docs checks passed."
+            exit 0
+          fi
+
+          echo "::error title=Docs checks failed::build-docs result was $BUILD_DOCS_RESULT"
+          exit 1
