@@ -323,6 +323,7 @@ markers = [
   "ml_pdf_model: PDF conversion tests that download or execute document AI model code.",
   "ml_vlm: VLM and picture-description tests that download or execute vision-language model code.",
   "ml_asr: ASR tests that download or execute speech model code.",
+  "cross_platform: Lightweight smoke tests run on Windows and macOS workflow-dispatch lanes.",
 ]
 
 [tool.ruff]

@@ -48,15 +48,6 @@ env:
   UV_FROZEN: "1"
   EXAMPLES_HEAVY: '^(batch_convert|chart_extraction|granite_vision_table_structure|minimal_asr_pipeline|minimal_vlm_pipeline)\.py$'
   EXAMPLES_UNSUPPORTED_IN_CI: '^(compare_vlm_models|custom_convert|demo_layout_vlm|develop_picture_enrichment|export_multimodal|gpu_standard_pipeline|gpu_vlm_pipeline|granitedocling_repetition_stopping|minimal|mlx_whisper_example|offline_convert|pictures_description|pictures_description_api|post_process_ocr_with_vlm|rapidocr_with_custom_models|run_with_formats_html_rendered|run_with_formats_html_rendered_mp|suryaocr_with_custom_models|vlm_pipeline_api_model)\.py$|xbrl_conversion\.ipynb$'
-  CROSS_PLATFORM_SMOKE_TESTS: |-
-    tests/test_backend_csv.py
-    tests/test_backend_docling_json.py
-    tests/test_backend_markdown.py
-    tests/test_backend_vtt.py
-    tests/test_invalid_input.py
-    tests/test_settings_load.py
-    tests/test_api_kserve_v2_engine_scaffolding.py
-    tests/test_api_image_request.py
 
 jobs:
   changes:
@@ -383,7 +374,13 @@ jobs:
 
       - name: Run cross-platform smoke tests
         shell: bash
-        run: uv run pytest -p no:tach $CROSS_PLATFORM_SMOKE_TESTS --durations=10
+        run: |
+          mapfile -t cross_platform_args < <(uv run python .github/scripts/pytest_marker_selection.py marker-args cross_platform)
+          if [ "${#cross_platform_args[@]}" -eq 0 ]; then
+            echo "No tests are marked with pytest.mark.cross_platform" >&2
+            exit 1
+          fi
+          uv run pytest -p no:tach -m cross_platform "${cross_platform_args[@]}" --durations=10
 
   run-tests-macos:
     needs: changes
@@ -423,7 +420,13 @@ jobs:
 
       - name: Run cross-platform smoke tests
         shell: bash
-        run: uv run pytest -p no:tach $CROSS_PLATFORM_SMOKE_TESTS --durations=10
+        run: |
+          mapfile -t cross_platform_args < <(uv run python .github/scripts/pytest_marker_selection.py marker-args cross_platform)
+          if [ "${#cross_platform_args[@]}" -eq 0 ]; then
+            echo "No tests are marked with pytest.mark.cross_platform" >&2
+            exit 1
+          fi
+          uv run pytest -p no:tach -m cross_platform "${cross_platform_args[@]}" --durations=10
 
   test-pip-install-no-lock:
     needs: changes

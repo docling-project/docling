@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 
 ML_MARKERS = ("ml_ocr", "ml_pdf_model", "ml_vlm", "ml_asr")
+CROSS_PLATFORM_MARKER = "cross_platform"
+CI_FILE_MARKERS = (*ML_MARKERS, CROSS_PLATFORM_MARKER)
 SUITE_MARKERS = {
     "ocr": "ml_ocr",
     "pdf-model": "ml_pdf_model",
@@ -31,13 +33,13 @@ def is_pytest_mark_attribute(node: ast.AST, marker: str) -> bool:
 def markers_in_node(node: ast.AST) -> set[str]:
     markers: set[str] = set()
     for child in ast.walk(node):
-        for marker in ML_MARKERS:
+        for marker in CI_FILE_MARKERS:
             if is_pytest_mark_attribute(child, marker):
                 markers.add(marker)
     return markers
 
 
-def module_level_ml_markers(tree: ast.Module) -> set[str]:
+def module_level_ci_markers(tree: ast.Module) -> set[str]:
     markers: set[str] = set()
     for statement in tree.body:
         value: ast.AST | None = None
@@ -59,29 +61,33 @@ def module_level_ml_markers(tree: ast.Module) -> set[str]:
     return markers
 
 
-def detect_ml_markers(path: Path) -> set[str]:
+def detect_ci_markers(path: Path) -> set[str]:
     if not path.exists() or path.suffix != ".py":
         return set()
 
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     all_markers = markers_in_node(tree)
-    module_markers = module_level_ml_markers(tree)
+    module_markers = module_level_ci_markers(tree)
     if all_markers != module_markers:
         raise ValueError(
-            f"{path}: ML pytest markers must be declared with module-level "
+            f"{path}: CI pytest markers must be declared with module-level "
             "`pytestmark` so CI can select whole test modules."
         )
     return module_markers
 
 
+def detect_ml_markers(path: Path) -> set[str]:
+    return detect_ci_markers(path) & set(ML_MARKERS)
+
+
 def discover_test_markers(repo_root: Path) -> dict[str, list[Path]]:
-    discovered: dict[str, list[Path]] = {marker: [] for marker in ML_MARKERS}
+    discovered: dict[str, list[Path]] = {marker: [] for marker in CI_FILE_MARKERS}
     tests_dir = repo_root / "tests"
     if not tests_dir.exists():
         return discovered
 
     for path in sorted(tests_dir.rglob("*.py")):
-        markers = detect_ml_markers(path)
+        markers = detect_ci_markers(path)
         for marker in markers:
             discovered[marker].append(path.relative_to(repo_root))
 
@@ -117,7 +123,9 @@ def run_matrix(args: argparse.Namespace) -> None:
 
 def run_core_ignore_args(args: argparse.Namespace) -> None:
     discovered = discover_test_markers(args.repo_root)
-    marked_paths = sorted({path for paths in discovered.values() for path in paths})
+    marked_paths = sorted(
+        {path for marker in ML_MARKERS for path in discovered[marker]}
+    )
     for path in marked_paths:
         print(f"--ignore={path.as_posix()}")
 
@@ -135,6 +143,14 @@ def run_suite_marker(args: argparse.Namespace) -> None:
         raise ValueError(f"Unknown ML suite: {args.suite}")
 
     print(SUITE_MARKERS[args.suite])
+
+
+def run_marker_args(args: argparse.Namespace) -> None:
+    if args.marker not in CI_FILE_MARKERS:
+        raise ValueError(f"Unknown CI marker: {args.marker}")
+
+    discovered = discover_test_markers(args.repo_root)
+    print_paths(discovered[args.marker])
 
 
 def parse_args() -> argparse.Namespace:
@@ -158,6 +174,10 @@ def parse_args() -> argparse.Namespace:
     marker_parser = subparsers.add_parser("suite-marker")
     marker_parser.add_argument("suite")
     marker_parser.set_defaults(func=run_suite_marker)
+
+    marker_args_parser = subparsers.add_parser("marker-args")
+    marker_args_parser.add_argument("marker")
+    marker_args_parser.set_defaults(func=run_marker_args)
 
     return parser.parse_args()
 

@@ -27,3 +27,10 @@ the workflow.
 The workflow intentionally uses a broad ML trigger for code, test, and tooling
 changes. Tach performs the fine-grained affected-test selection inside the ML
 lanes.
+
+## Cross-platform smoke tests
+
+Windows and macOS smoke tests are selected with `pytest.mark.cross_platform`.
+Use this marker for lightweight modules that should be exercised by the
+workflow-dispatch cross-platform lanes; do not maintain a separate test-file
+list in the workflow.

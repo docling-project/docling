@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import (
@@ -12,6 +14,8 @@ from tests.verify_utils import CONFID_PREC, COORD_PREC
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document
+
+pytestmark = pytest.mark.cross_platform
 
 
 def test_convert_valid():

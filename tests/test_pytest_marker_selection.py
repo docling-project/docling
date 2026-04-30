@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import importlib.util
 import sys
 from pathlib import Path
@@ -45,6 +46,11 @@ def test_discover_test_markers_uses_module_level_pytestmark(tmp_path: Path) -> N
         "tests/test_vlm.py",
         "import pytest\n\npytestmark = [pytest.mark.ml_vlm]\n\ndef test_vlm(): pass\n",
     )
+    write_test_file(
+        tmp_path,
+        "tests/test_smoke.py",
+        "import pytest\n\npytestmark = pytest.mark.cross_platform\n\ndef test_smoke(): pass\n",
+    )
     write_test_file(tmp_path, "tests/test_core.py", "def test_core(): pass\n")
 
     discovered = marker_selection.discover_test_markers(tmp_path)
@@ -53,6 +59,7 @@ def test_discover_test_markers_uses_module_level_pytestmark(tmp_path: Path) -> N
     assert discovered["ml_vlm"] == [Path("tests/test_vlm.py")]
     assert discovered["ml_pdf_model"] == []
     assert discovered["ml_asr"] == []
+    assert discovered["cross_platform"] == [Path("tests/test_smoke.py")]
 
 
 def test_build_ml_suites_returns_all_suites_when_ml_is_triggered() -> None:
@@ -76,3 +83,23 @@ def test_function_level_ml_marker_is_rejected(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="module-level `pytestmark`"):
         marker_selection.detect_ml_markers(tmp_path / "tests/test_mixed.py")
+
+
+def test_core_ignore_args_only_ignores_ml_marked_modules(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    write_test_file(
+        tmp_path,
+        "tests/test_ocr.py",
+        "import pytest\n\npytestmark = pytest.mark.ml_ocr\n\ndef test_ocr(): pass\n",
+    )
+    write_test_file(
+        tmp_path,
+        "tests/test_smoke.py",
+        "import pytest\n\npytestmark = pytest.mark.cross_platform\n\ndef test_smoke(): pass\n",
+    )
+
+    args = argparse.Namespace(repo_root=tmp_path)
+    marker_selection.run_core_ignore_args(args)
+
+    assert capsys.readouterr().out.splitlines() == ["--ignore=tests/test_ocr.py"]
