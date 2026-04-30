@@ -129,7 +129,6 @@ jobs:
       - name: Check CI result
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
-          RUN_CI: ${{ needs.changes.outputs.run_ci }}
           CODE_CHECKS_RESULT: ${{ needs.code-checks.result }}
         run: |
           if [ "$CHANGES_RESULT" != "success" ]; then
@@ -137,20 +136,15 @@ jobs:
             exit 1
           fi
 
-          if [ "$RUN_CI" != "true" ]; then
-            if [ "$CODE_CHECKS_RESULT" = "skipped" ]; then
+          case "$CODE_CHECKS_RESULT" in
+            success)
+              echo "CI checks passed."
+              ;;
+            skipped)
               echo "CI checks are not required for this change set."
-              exit 0
-            fi
-
-            echo "::error title=Unexpected CI result::code-checks result was $CODE_CHECKS_RESULT while run_ci=$RUN_CI"
-            exit 1
-          fi
-
-          if [ "$CODE_CHECKS_RESULT" = "success" ]; then
-            echo "CI checks passed."
-            exit 0
-          fi
-
-          echo "::error title=CI checks failed::code-checks result was $CODE_CHECKS_RESULT"
-          exit 1
+              ;;
+            *)
+              echo "::error title=CI checks failed::code-checks result was $CODE_CHECKS_RESULT"
+              exit 1
+              ;;
+          esac
