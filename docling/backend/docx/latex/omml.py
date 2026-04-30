@@ -357,7 +357,11 @@ class oMath2Latex(Tag2Method):
         latex_s = get_val(
             c_dict["accPr"].chr, default=CHR_DEFAULT["ACC_VAL"], store=CHR
         )
-        return latex_s % c_dict["e"]
+        # If latex_s contains %s, format it; otherwise return as-is (unmapped character)
+        if "%s" in latex_s:
+            return latex_s % (c_dict["e"],)
+        else:
+            return latex_s
 
     def do_bar(self, elm: _Element) -> str:
         """Process bar element (overline/underline).
@@ -371,7 +375,11 @@ class oMath2Latex(Tag2Method):
         c_dict = self.process_children_dict(elm)
         pr = c_dict["barPr"]
         latex_s = get_val(pr.pos, default=POS_DEFAULT["BAR_VAL"], store=POS)
-        return pr.text + (latex_s % c_dict["e"])
+        # If latex_s contains %s, format it; otherwise return as-is (unmapped character)
+        if "%s" in latex_s:
+            return pr.text + (latex_s % (c_dict["e"],))
+        else:
+            return pr.text + latex_s
 
     def do_d(self, elm: _Element) -> str:
         """Process delimiter element.
@@ -586,7 +594,11 @@ class oMath2Latex(Tag2Method):
         c_dict = self.process_children_dict(elm)
         pr = c_dict["groupChrPr"]
         latex_s = get_val(pr.chr, default=CHR_DEFAULT["GROUPCHR_VAL"], store=CHR)
-        return pr.text + (latex_s % c_dict["e"])
+        # If latex_s contains %s, format it; otherwise return as-is (unmapped character)
+        if "%s" in latex_s:
+            return pr.text + (latex_s % (c_dict["e"],))
+        else:
+            return pr.text + latex_s
 
     def do_rad(self, elm: _Element) -> str:
         """Process radical (root) element.
