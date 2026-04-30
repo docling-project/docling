@@ -92,7 +92,7 @@ def detect_ml_markers(path: Path) -> set[str]:
 
 
 def discover_test_markers(repo_root: Path) -> dict[str, list[Path]]:
-    discovered = {marker: [] for marker in ML_MARKERS}
+    discovered: dict[str, list[Path]] = {marker: [] for marker in ML_MARKERS}
     tests_dir = repo_root / "tests"
     if not tests_dir.exists():
         return discovered
