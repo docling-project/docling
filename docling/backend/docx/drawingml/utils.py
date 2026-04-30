@@ -1,10 +1,9 @@
 import os
 import shutil
+import subprocess
 from pathlib import Path
 from tempfile import mkdtemp
 from typing import Callable, Optional
-
-_subprocess = __import__("subprocess")
 
 import pypdfium2
 from docx.document import Document
@@ -29,13 +28,13 @@ def get_libreoffice_cmd(raise_if_unavailable: bool = False) -> Optional[str]:
             raise RuntimeError("Libreoffice not found")
 
         # The following test will raise if the libreoffice_cmd cannot be used
-        _subprocess.run(
+        subprocess.run(
             [
                 libreoffice_cmd,
                 "-h",
             ],
-            stdout=_subprocess.DEVNULL,
-            stderr=_subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             check=True,
         )
 
@@ -55,7 +54,7 @@ def get_docx_to_pdf_converter() -> Optional[Callable]:
     if libreoffice_cmd:
 
         def convert_with_libreoffice(input_path, output_path):
-            _subprocess.run(
+            subprocess.run(
                 [
                     libreoffice_cmd,
                     "--headless",
@@ -66,8 +65,8 @@ def get_docx_to_pdf_converter() -> Optional[Callable]:
                     "--",
                     os.path.abspath(input_path),
                 ],
-                stdout=_subprocess.DEVNULL,
-                stderr=_subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
                 check=True,
             )
 
