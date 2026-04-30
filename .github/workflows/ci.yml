@@ -38,7 +38,7 @@ jobs:
       pull-requests: read
     outputs:
       run_ci: ${{ steps.manual.outputs.run_ci || steps.labeled.outputs.run_ci || steps.filter.outputs.run_ci }}
-      full_matrix_override: ${{ steps.filter.outputs.full_matrix_override }}
+      full_ci: ${{ steps.manual.outputs.full_ci || steps.labeled.outputs.full_ci || steps.filter.outputs.full_matrix_override }}
       default_python_versions: ${{ steps.python_versions.outputs.default_python_versions }}
       full_python_versions: ${{ steps.python_versions.outputs.full_python_versions }}
     steps:
@@ -51,7 +51,9 @@ jobs:
       - name: Mark manual runs to execute CI
         if: ${{ github.event_name == 'workflow_dispatch' }}
         id: manual
-        run: echo "run_ci=true" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "run_ci=true" >> "$GITHUB_OUTPUT"
+          echo "full_ci=true" >> "$GITHUB_OUTPUT"
 
       - name: Mark explicitly labeled PR runs to execute CI
         if: >-
@@ -60,7 +62,9 @@ jobs:
             contains(github.event.pull_request.labels.*.name, 'tests:full')
           }}
         id: labeled
-        run: echo "run_ci=true" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "run_ci=true" >> "$GITHUB_OUTPUT"
+          echo "full_ci=true" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         if: >-
@@ -112,11 +116,11 @@ jobs:
     uses: ./.github/workflows/checks.yml
     with:
       run_lint: true
-      force_all_checks: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.full_matrix_override == 'true' }}
-      run_package_compat: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.full_matrix_override == 'true' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tests:full')) }}
+      force_all_checks: ${{ needs.changes.outputs.full_ci == 'true' }}
+      run_package_compat: ${{ needs.changes.outputs.full_ci == 'true' }}
       run_windows: ${{ github.event_name == 'workflow_dispatch' && inputs.run_windows }}
       run_macos: ${{ github.event_name == 'workflow_dispatch' && inputs.run_macos }}
-      use_tach: ${{ github.event_name == 'pull_request' && needs.changes.outputs.full_matrix_override != 'true' && !contains(github.event.pull_request.labels.*.name, 'tests:full') }}
+      use_tach: ${{ github.event_name == 'pull_request' && needs.changes.outputs.full_ci != 'true' }}
       tach_base_ref: >-
         ${{
           (
@@ -131,12 +135,7 @@ jobs:
             (inputs.python_versions || needs.changes.outputs.full_python_versions)
           ) ||
           (
-            needs.changes.outputs.full_matrix_override == 'true' &&
-            needs.changes.outputs.full_python_versions
-          ) ||
-          (
-            github.event_name == 'pull_request' &&
-            contains(github.event.pull_request.labels.*.name, 'tests:full') &&
+            needs.changes.outputs.full_ci == 'true' &&
             needs.changes.outputs.full_python_versions
           ) ||
           needs.changes.outputs.default_python_versions

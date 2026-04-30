@@ -79,7 +79,7 @@ jobs:
             case "$result" in
               success)
                 ;;
-              skipped|cancelled)
+              skipped)
                 if [[ " $ALLOWED_SKIPS " == *" $job "* ]]; then
                   echo "::notice title=Allowed ${result} job::$job"
                 else

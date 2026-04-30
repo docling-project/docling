@@ -624,16 +624,16 @@ jobs:
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
           ALLOWED_SKIPS: >-
-            changes lint tach run-tests-core run-tests-ml run-examples-light
-            run-tests-windows run-tests-macos test-pip-install-no-lock
-            test-pip-install-no-dev-headers build-package test-package
+            lint tach run-tests-core run-tests-ml run-examples-light run-tests-windows
+            run-tests-macos test-pip-install-no-lock test-pip-install-no-dev-headers
+            build-package test-package
         run: |
           failures=()
           while IFS=$'\t' read -r job result; do
             case "$result" in
               success)
                 ;;
-              skipped|cancelled)
+              skipped)
                 if [[ " $ALLOWED_SKIPS " == *" $job "* ]]; then
                   echo "::notice title=Allowed ${result} job::$job"
                 else
