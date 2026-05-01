@@ -1,6 +1,9 @@
 from pathlib import Path
 
 import pytest
+from pptx import Presentation
+from pptx.oxml.xmlchemy import OxmlElement
+from pptx.util import Inches, Pt
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument
@@ -122,3 +125,87 @@ def test_pptx_page_range():
     assert "Second slide title" in pred_md
     assert "Test Table Slide" not in pred_md
     assert "List item4" not in pred_md
+
+
+def test_pptx_split_list_textboxes_follow_visual_order(tmp_path):
+    """Visually ordered subheadings should keep their own following bullets."""
+
+    def add_textbox(slide, left, top, width, height, text, font_size=24):
+        textbox = slide.shapes.add_textbox(
+            Inches(left), Inches(top), Inches(width), Inches(height)
+        )
+        text_frame = textbox.text_frame
+        text_frame.clear()
+        paragraph = text_frame.paragraphs[0]
+        paragraph.text = text
+        paragraph.font.size = Pt(font_size)
+        return textbox
+
+    def mark_as_bullet(paragraph):
+        paragraph_properties = paragraph._p.get_or_add_pPr()
+        bullet = OxmlElement("a:buChar")
+        bullet.set("char", "\u2022")
+        paragraph_properties.insert(0, bullet)
+
+    def add_bullet_textbox(slide, left, top, width, height, items):
+        textbox = slide.shapes.add_textbox(
+            Inches(left), Inches(top), Inches(width), Inches(height)
+        )
+        text_frame = textbox.text_frame
+        text_frame.clear()
+
+        for index, item in enumerate(items):
+            paragraph = (
+                text_frame.paragraphs[0] if index == 0 else text_frame.add_paragraph()
+            )
+            paragraph.text = item
+            paragraph.font.size = Pt(18)
+            mark_as_bullet(paragraph)
+
+        return textbox
+
+    presentation = Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+
+    add_textbox(slide, 3.0, 0.4, 4.0, 0.5, "Open-Source Software", 32)
+    add_textbox(slide, 4.6, 1.4, 2.5, 0.4, "Introduction", 20)
+    add_textbox(slide, 0.9, 1.5, 3.0, 0.4, "Key Benefits:", 22)
+    add_bullet_textbox(
+        slide,
+        1.2,
+        2.1,
+        8.0,
+        1.6,
+        [
+            "Cost effective",
+            "Transparent community",
+        ],
+    )
+    # Add this textbox before its subheading to mimic PPTX creation/z-order that
+    # does not match the visual reading order.
+    add_bullet_textbox(
+        slide,
+        1.2,
+        5.2,
+        8.0,
+        1.2,
+        [
+            "Community support can vary",
+            "Maintenance requires expertise",
+        ],
+    )
+    add_textbox(slide, 0.9, 4.6, 6.0, 0.4, "Considerations:", 22)
+
+    pptx_path = tmp_path / "split_list_textboxes.pptx"
+    presentation.save(pptx_path)
+
+    converter = get_converter()
+    conv_result: ConversionResult = converter.convert(pptx_path)
+    pred_md = conv_result.document.export_to_markdown()
+
+    assert pred_md.index("Key Benefits:") < pred_md.index("Cost effective")
+    assert pred_md.index("Transparent community") < pred_md.index("Considerations:")
+    assert pred_md.index("Considerations:") < pred_md.index("Community support")
+    assert pred_md.index("Community support") < pred_md.index(
+        "Maintenance requires expertise"
+    )
