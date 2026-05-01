@@ -19,12 +19,22 @@ from docling.models.base_model import BasePageModel
 from docling.models.inference_engines.vlm import (
     BaseVlmEngine,
     VlmEngineInput,
+    VlmEngineOutput,
     VlmEngineType,
     create_vlm_engine,
 )
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
+_VLM_STOP_REASON_VALUES = {reason.value for reason in VlmStopReason}
+
+
+def _prediction_from_engine_output(output: VlmEngineOutput) -> VlmPrediction:
+    stop_reason = VlmStopReason.UNSPECIFIED
+    if output.stop_reason in _VLM_STOP_REASON_VALUES:
+        stop_reason = VlmStopReason(output.stop_reason)
+
+    return VlmPrediction(text=output.text, stop_reason=stop_reason)
 
 
 class VlmConvertModel(BasePageModel):
@@ -212,17 +222,8 @@ class VlmConvertModel(BasePageModel):
 
                 # Attach predictions to pages
                 for page, output in zip(valid_pages, outputs):
-                    # Convert string stop_reason to VlmStopReason enum
-                    stop_reason = VlmStopReason.UNSPECIFIED
-                    if output.stop_reason:
-                        try:
-                            stop_reason = VlmStopReason(output.stop_reason)
-                        except ValueError:
-                            stop_reason = VlmStopReason.UNSPECIFIED
-
-                    page.predictions.vlm_response = VlmPrediction(
-                        text=output.text,
-                        stop_reason=stop_reason,
+                    page.predictions.vlm_response = _prediction_from_engine_output(
+                        output
                     )
                     _log.debug(
                         f"Page {page.page_no}: Generated {len(output.text)} chars, "
@@ -282,19 +283,7 @@ class VlmConvertModel(BasePageModel):
 
         # Convert outputs to VlmPredictions
         for output in outputs:
-            # Convert string stop_reason to VlmStopReason enum
-            stop_reason = VlmStopReason.UNSPECIFIED
-            if output.stop_reason:
-                try:
-                    stop_reason = VlmStopReason(output.stop_reason)
-                except ValueError:
-                    stop_reason = VlmStopReason.UNSPECIFIED
-
-            # Convert to VlmPrediction
-            yield VlmPrediction(
-                text=output.text,
-                stop_reason=stop_reason,
-            )
+            yield _prediction_from_engine_output(output)
 
     def __del__(self):
         """Cleanup engine resources."""
