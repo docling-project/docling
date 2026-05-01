@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.91.0"  # DO NOT EDIT, updated automatically
+version = "2.92.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -244,9 +244,17 @@ all = [
 ]
 
 [dependency-groups]
+pr-fast-checks = [
+    "docling-core[chunking] (>=2.73.0,<3.0.0)",
+    "mypy~=1.10",
+    "pydantic (>=2.0.0,<3.0.0)",
+    "pydantic-settings (>=2.3.0,<3.0.0)",
+    "ruff==0.11.5",
+]
 dev = [
   "pre-commit~=3.7",
   "mypy~=1.10",
+  "tach>=0.34.0,<1",
   "types-setuptools~=70.3",
   "pandas-stubs~=2.1",
   "types-openpyxl~=3.1",
@@ -308,6 +316,15 @@ packages = ["docling"]
 
 [tool.hatch.build.targets.sdist]
 only-include = ["docling", "pyproject.toml", "README.md", "LICENSE"]
+
+[tool.pytest.ini_options]
+markers = [
+  "ml_ocr: OCR tests that download or execute OCR model code.",
+  "ml_pdf_model: PDF conversion tests that download or execute document AI model code.",
+  "ml_vlm: VLM and picture-description tests that download or execute vision-language model code.",
+  "ml_asr: ASR tests that download or execute speech model code.",
+  "cross_platform: Lightweight smoke tests run on Windows and macOS workflow-dispatch lanes.",
+]
 
 [tool.ruff]
 target-version = "py310"

@@ -279,6 +279,8 @@ LIM_FUNC = {
     "lim": "\\lim_{{{lim}}}",
     "max": "\\max_{{{lim}}}",
     "min": "\\min_{{{lim}}}",
+    "argmax": "\\operatorname{{argmax}}_{{{lim}}}",
+    "argmin": "\\operatorname{{argmin}}_{{{lim}}}",
 }
 
 LIM_TO = ("\\rightarrow", "\\to")

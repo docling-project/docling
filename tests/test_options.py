@@ -9,6 +9,9 @@ from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ConversionStatus, InputFormat, QualityGrade
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.image_classification_engine_options import (
+    ApiKserveV2ImageClassificationEngineOptions,
+)
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     TableFormerMode,
@@ -96,6 +99,25 @@ def test_accelerator_options():
     ao7 = AcceleratorOptions()
     assert ao7.num_threads == 4
     assert ao7.device == AcceleratorDevice.AUTO
+
+
+def test_kserve_v2_binary_data_deprecated_alias():
+    options = ApiKserveV2ImageClassificationEngineOptions(
+        url="localhost:8001",
+        grpc_use_binary_data=False,
+    )
+
+    assert options.use_binary_data is False
+    with pytest.deprecated_call(match="deprecated; use use_binary_data instead"):
+        assert options.grpc_use_binary_data is False
+    assert "grpc_use_binary_data" not in options.model_dump()
+
+    options = ApiKserveV2ImageClassificationEngineOptions(
+        url="localhost:8001",
+        use_binary_data=True,
+        grpc_use_binary_data=False,
+    )
+    assert options.use_binary_data is True
 
 
 def test_e2e_conversions(test_doc_path):

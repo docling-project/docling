@@ -1,4 +1,5 @@
 import logging
+import warnings
 from io import BytesIO
 from pathlib import Path
 from typing import Optional, Union
@@ -21,6 +22,7 @@ from lxml import etree
 from PIL import Image, UnidentifiedImageError
 from pptx import Presentation, presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
+from pptx.exc import InvalidXmlError
 from pptx.oxml.text import CT_TextLineBreak
 from typing_extensions import override
 
@@ -594,8 +596,19 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 caption=None,
                 prov=prov,
             )
-        except (UnidentifiedImageError, OSError, ValueError) as e:
-            _log.warning(f"Warning: image cannot be loaded: {e}")
+        except (
+            UnidentifiedImageError,
+            OSError,
+            ValueError,
+            InvalidXmlError,
+            KeyError,
+            AttributeError,
+        ) as e:
+            warnings.warn(
+                f"Skipping malformed picture shape: {e}",
+                UserWarning,
+                stacklevel=2,
+            )
         return
 
     def _handle_tables(self, shape, parent_slide, slide_ind, doc, slide_size):

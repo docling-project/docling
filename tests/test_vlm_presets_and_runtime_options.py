@@ -32,6 +32,8 @@ from docling.datamodel.vlm_engine_options import (
 )
 from docling.models.inference_engines.vlm import VlmEngineType
 
+pytestmark = pytest.mark.ml_vlm
+
 # =============================================================================
 # RUNTIME OPTIONS TESTS
 # =============================================================================

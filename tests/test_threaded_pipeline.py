@@ -16,6 +16,8 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 from docling.pipeline.threaded_standard_pdf_pipeline import ThreadedStandardPdfPipeline
 
+pytestmark = pytest.mark.ml_pdf_model
+
 
 def test_threaded_pipeline_multiple_documents():
     """Test threaded pipeline with multiple documents and compare with standard pipeline"""

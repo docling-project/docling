@@ -65,6 +65,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         "wps": "http://schemas.microsoft.com/office/word/2010/wordprocessingShape",
         "w10": "urn:schemas-microsoft-com:office:word",
         "a14": "http://schemas.microsoft.com/office/drawing/2010/main",
+        "w14": "http://schemas.microsoft.com/office/word/2010/wordml",
     }
 
     @override
@@ -799,6 +800,87 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return paragraph_elements
 
+    def _has_checkbox(self, element: BaseOxmlElement) -> bool:
+        """Check if a paragraph element contains a checkbox.
+
+        Args:
+            element: The paragraph element to check for checkbox presence.
+
+        Returns:
+            True if the element contains a checkbox, False otherwise.
+        """
+        try:
+            checkboxes = element.findall(
+                f".//{{{self._BLIP_NAMESPACES['w14']}}}checkbox"
+            )
+            return len(checkboxes) > 0
+        except (AttributeError, TypeError):
+            return False
+
+    def _is_checkbox_checked(self, element: BaseOxmlElement) -> bool:
+        """Check if a checkbox in the paragraph is checked.
+
+        Args:
+            element: The paragraph element containing the checkbox.
+
+        Returns:
+            True if checked (w14:checked val="1"), False if unchecked
+                (val="0" or missing).
+        """
+        w14_ns = self._BLIP_NAMESPACES["w14"]
+        checkboxes = element.findall(f".//{{{w14_ns}}}checkbox")
+        if not checkboxes:
+            return False
+
+        checkbox = checkboxes[0]
+        checked_elem = checkbox.find(f".//{{{w14_ns}}}checked")
+
+        if checked_elem is not None:
+            val = checked_elem.get(f"{{{w14_ns}}}val")
+            return val == "1"
+
+        return False
+
+    def _get_checkbox_label(self, element: BaseOxmlElement) -> DocItemLabel | None:
+        """Get the appropriate checkbox label for a paragraph element.
+
+        Args:
+            element: The paragraph element to check for checkbox.
+
+        Returns:
+            DocItemLabel.CHECKBOX_SELECTED if checked, DocItemLabel.CHECKBOX_UNSELECTED
+                if unchecked, or None if no checkbox is present.
+        """
+        if not self._has_checkbox(element):
+            return None
+
+        if self._is_checkbox_checked(element):
+            return DocItemLabel.CHECKBOX_SELECTED
+        else:
+            return DocItemLabel.CHECKBOX_UNSELECTED
+
+    def _clean_checkbox_symbols(self, text: str) -> str:
+        """Remove checkbox symbols from text.
+
+        Removes common checkbox symbols like ☐, ☑, ☒ from the beginning of text.
+
+        Args:
+            text: The text string to clean.
+
+        Returns:
+            The text with checkbox symbols removed from the beginning.
+        """
+        # Common checkbox symbols in docx documents
+        checkbox_symbols = ["☐", "☑", "☒", "□", "■", "▪", "▫"]
+
+        text = text.strip()
+        for symbol in checkbox_symbols:
+            if text.startswith(symbol):
+                text = text[len(symbol) :].strip()
+                break
+
+        return text
+
     def _get_paragraph_position(self, paragraph_element):
         """Extract vertical position information from paragraph element."""
         # First try to directly get the index from w:p element that has an order-related attribute
@@ -1115,6 +1197,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         para_element_id = id(element)
         comment_ids = self._get_comment_ids_for_element(element)
 
+        # Check if this paragraph contains a checkbox
+        checkbox_label = self._get_checkbox_label(element)
+
         # Common styles for bullet and numbered lists.
         # "List Bullet", "List Number", "List Paragraph"
         # Identify whether list is a numbered list or not
@@ -1234,36 +1319,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     elem_ref=elem_ref,
                 )
 
-        elif p_style_id in [
-            "Paragraph",
-            "Normal",
-            "Subtitle",
-            "Author",
-            "DefaultText",
-            "ListParagraph",
-            "ListBullet",
-            "Quote",
-        ]:
-            level = self._get_level()
-            parent = self._create_or_reuse_parent(
-                doc=doc,
-                prev_parent=self.parents.get(level - 1),
-                paragraph_elements=paragraph_elements,
-            )
-            for text, format, hyperlink in paragraph_elements:
-                t2 = doc.add_text(
-                    label=DocItemLabel.TEXT,
-                    parent=parent,
-                    text=text,
-                    formatting=format,
-                    hyperlink=hyperlink,
-                    content_layer=self.content_layer,
-                )
-                elem_ref.append(t2.get_ref())
-
         else:
-            # Text style names can, and will have, not only default values but user values too
-            # hence we treat all other labels as pure text
+            # Handle standard paragraph styles and any other text styles
+            # Text style names can have not only default values but user values too
             level = self._get_level()
             parent = self._create_or_reuse_parent(
                 doc=doc,
@@ -1271,15 +1329,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 paragraph_elements=paragraph_elements,
             )
             for text, format, hyperlink in paragraph_elements:
-                t3 = doc.add_text(
-                    label=DocItemLabel.TEXT,
+                # Clean checkbox symbols from text if this is a checkbox item
+                clean_text = (
+                    self._clean_checkbox_symbols(text) if checkbox_label else text
+                )
+                text_item = doc.add_text(
+                    label=checkbox_label if checkbox_label else DocItemLabel.TEXT,
                     parent=parent,
-                    text=text,
+                    text=clean_text,
                     formatting=format,
                     hyperlink=hyperlink,
                     content_layer=self.content_layer,
                 )
-                elem_ref.append(t3.get_ref())
+                elem_ref.append(text_item.get_ref())
 
         self._update_history(p_style_id, p_level, numid, ilevel)
 

@@ -5,22 +5,24 @@ on:
                 type: boolean
                 description: "If true, the docs will be deployed."
                 default: false
+            python_version:
+                type: string
+                description: "Python version used for the docs environment."
+                default: "3.12"
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   UV_FROZEN: "1"
 
 jobs:
     run-docs:
         runs-on: ubuntu-latest
         steps:
-        - uses: actions/checkout@v6
-        - name: Install uv and set the python version
-          uses: astral-sh/setup-uv@v7
+        - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        - uses: ./.github/actions/setup-ubuntu-ci
           with:
-            python-version: ${{ matrix.python-version }}
-            enable-cache: true
-        - name: Install Python Dependencies
-          run: uv sync --frozen --all-extras --all-packages
+            python_version: ${{ inputs.python_version }}
+            uv_sync_args: --frozen --group docs --all-extras --all-packages --no-group dev --no-group examples
         - name: Build docs
           run: uv run --no-sync mkdocs build --verbose --clean
         - name: Build and push docs

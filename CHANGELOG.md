@@ -1,3 +1,18 @@
+## [v2.92.0](https://github.com/docling-project/docling/releases/tag/v2.92.0) - 2026-04-29
+
+### Feature
+
+* Extend the kserve-triton OCR model to have multi-lingual support ([#3368](https://github.com/docling-project/docling/issues/3368)) ([`8b67fae`](https://github.com/docling-project/docling/commit/8b67fae6873a10b7af3ac061b766e4caaa6fe137))
+* **docx:** Add checkbox parsing support ([#3349](https://github.com/docling-project/docling/issues/3349)) ([`c455a65`](https://github.com/docling-project/docling/commit/c455a65e36f1897543793bc9df37bb633d0ca7ae))
+* Introduce modular docling-slim package ([#3285](https://github.com/docling-project/docling/issues/3285)) ([`ed32c5e`](https://github.com/docling-project/docling/commit/ed32c5e993b95a9c34212f0b536171d308a61cab))
+* Add ResponseFormat.DOCLANG and parsing branch in VLM pipeline ([#3350](https://github.com/docling-project/docling/issues/3350)) ([`0f6f8d0`](https://github.com/docling-project/docling/commit/0f6f8d0bcdf9ee41fef5a34845f7d4231a7219c7))
+
+### Fix
+
+* **pptx:** Skip malformed picture shapes instead of aborting conversion ([#3372](https://github.com/docling-project/docling/issues/3372)) ([`7294248`](https://github.com/docling-project/docling/commit/72942486ffd542a50188a2a567d56a3a58d865a2))
+* **docx:** OMML conversion failures for unsupported limit functions ([#3359](https://github.com/docling-project/docling/issues/3359)) ([`3df80e7`](https://github.com/docling-project/docling/commit/3df80e7f46dbe9b7d6cfccdc9ed3f02459bae6f8))
+* Make VLLM model_impl configurable ([#3358](https://github.com/docling-project/docling/issues/3358)) ([`a6a37ca`](https://github.com/docling-project/docling/commit/a6a37ca895d81979f79cdb71194e51347dc56b4d))
+
 ## [v2.91.0](https://github.com/docling-project/docling/releases/tag/v2.91.0) - 2026-04-23
 
 ### Feature
