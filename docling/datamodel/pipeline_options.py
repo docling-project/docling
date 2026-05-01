@@ -322,11 +322,7 @@ class RapidOcrOptions(OcrOptions):
     use_bundled_models: Annotated[
         bool,
         Field(
-            description=(
-                "Use RapidOCR's bundled models instead of resolving defaults from `artifacts_path`. "
-                "When enabled, Docling skips its artifact-path model lookup and lets RapidOCR use its "
-                "package-managed default models. Explicit model paths still take precedence."
-            )
+            description="Use RapidOCR's bundled models instead of Docling's artifact-path defaults."
         ),
     ] = False
     rapidocr_params: Annotated[
