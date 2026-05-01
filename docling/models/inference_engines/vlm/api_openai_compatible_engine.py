@@ -54,6 +54,7 @@ class ApiVlmEngine(BaseVlmEngine):
             model_config: Model configuration (repo_id, revision, extra_config)
         """
         super().__init__(options, model_config=model_config)
+        self._initialized: bool = False
         self.enable_remote_services = enable_remote_services
         self.options: ApiVlmEngineOptions = options
         self.model_api_params: dict[str, object] = {}
