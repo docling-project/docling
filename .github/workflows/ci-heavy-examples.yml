@@ -1,16 +1,7 @@
 name: "Run Heavy Examples CI"
 
 on:
-  # Heavy examples are expensive (~45-60min). Do not run on every PR push.
-  # Run on main merges, nightly, on-demand via workflow_dispatch, or when a PR
-  # is explicitly labeled `tests:full` / `tests:heavy-examples`.
-  pull_request:
-    types: [labeled]
-  push:
-    branches:
-      - "main"
-  schedule:
-    - cron: "47 5 * * *"
+  # Heavy examples are expensive (~45-60min). Run them only on demand.
   workflow_dispatch:
 
 concurrency:
@@ -24,12 +15,6 @@ env:
 
 jobs:
   run-heavy-examples:
-    if: >-
-      ${{
-        github.event_name != 'pull_request' ||
-        contains(github.event.pull_request.labels.*.name, 'tests:full') ||
-        contains(github.event.pull_request.labels.*.name, 'tests:heavy-examples')
-      }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
