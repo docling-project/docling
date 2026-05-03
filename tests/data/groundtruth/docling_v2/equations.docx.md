@@ -6,7 +6,7 @@ This is a word document and this is an inline equation:  $A= \pi r^{2}$ .
 
 If instead, I want an equation by line, I can do this:
 
-$$a^{2}+b^{2}=c^{2} \text{ \texttimes } 23$$
+$$a^{2}+b^{2}=c^{2}  \times  23$$
 
 And that is an equation by itself. Cheers!
 
@@ -58,4 +58,4 @@ $$\oiiint_{C}^{}\frac{1}{z}dz$$
 
 Operators used with limits:
 
-$$\operatorname{argmax}_{ \epsilon }f(x),   \lim_{n}{\left(1+\frac{1}{n}\right)}^{n} ,  \max_{0 \leq x \leq 1}xe^{-x^{2}},  unsupported_{n}{\left(1+\frac{1}{n}\right)}^{n}$$
+$$\operatorname_{argmax}_{ \epsilon }f(x),   \lim_{n}{\left(1+\frac{1}{n}\right)}^{n} ,  \max_{0 \leq x \leq 1}xe^{-x^{2}},  unsupported_{n}{\left(1+\frac{1}{n}\right)}^{n}$$
