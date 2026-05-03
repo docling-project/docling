@@ -46,6 +46,8 @@ def get_pptx_paths():
 
 
 def get_converter():
+    from docling.document_converter import DocumentConverter
+
     converter = DocumentConverter(allowed_formats=[InputFormat.PPTX])
 
     return converter
@@ -341,6 +343,38 @@ def test_chart_image_rendering(libreoffice_available):
     assert image.width > 50 and image.height > 50, (
         f"rendered chart image is implausibly small: {image.size}"
     )
+
+
+def test_pptx_shapes_are_sorted_by_visual_position():
+    class FakeShape:
+        def __init__(self, name, top=None, left=None):
+            self.name = name
+            self.top = top
+            self.left = left
+
+    class BadPositionShape:
+        @property
+        def top(self):
+            raise ValueError("bad position")
+
+    backend = object.__new__(MsPowerpointDocumentBackend)
+
+    same_row_right = FakeShape("same-row-right", top=100, left=300)
+    lower_left = FakeShape("lower-left", top=200000, left=100)
+    same_row_left = FakeShape("same-row-left", top=1000, left=100)
+    unpositioned = FakeShape("unpositioned")
+
+    ordered_shapes = backend._iter_shapes_by_position(
+        [lower_left, same_row_right, unpositioned, same_row_left]
+    )
+
+    assert [shape.name for shape in ordered_shapes] == [
+        "same-row-left",
+        "same-row-right",
+        "lower-left",
+        "unpositioned",
+    ]
+    assert backend._get_shape_position(BadPositionShape(), "top") is None
 
 
 def test_pptx_split_list_textboxes_follow_visual_order(tmp_path):
