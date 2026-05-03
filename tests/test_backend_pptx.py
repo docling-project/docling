@@ -7,7 +7,7 @@ from pptx.util import Inches, Pt
 
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import ConversionResult, DoclingDocument
+from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -30,6 +30,17 @@ def get_converter():
     converter = DocumentConverter(allowed_formats=[InputFormat.PPTX])
 
     return converter
+
+
+def convert_with_pptx_backend(pptx_path: Path) -> DoclingDocument:
+    in_doc = InputDocument(
+        path_or_stream=pptx_path,
+        format=InputFormat.PPTX,
+        backend=MsPowerpointDocumentBackend,
+    )
+
+    assert in_doc.valid
+    return in_doc._backend.convert()
 
 
 def test_e2e_pptx_conversions():
@@ -127,6 +138,23 @@ def test_pptx_page_range():
     assert "Second slide title" in pred_md
     assert "Test Table Slide" not in pred_md
     assert "List item4" not in pred_md
+
+
+def test_pptx_issue_2663_keeps_bullets_with_subheadings():
+    pptx_path = Path("./tests/data/pptx/powerpoint_issue_2663.pptx")
+
+    doc = convert_with_pptx_backend(pptx_path)
+    pred_md = doc.export_to_markdown()
+
+    key_benefits = pred_md.index("Key Benefits:")
+    benefit_bullet = pred_md.index("Open-source software is cost-effective")
+    last_benefit_bullet = pred_md.index("Offers flexibility")
+    considerations = pred_md.index("Considerations When Using Open-Source Software:")
+    first_consideration_bullet = pred_md.index("Open-source projects often rely")
+    last_consideration_bullet = pred_md.index("advanced technical expertise")
+
+    assert key_benefits < benefit_bullet < last_benefit_bullet < considerations
+    assert considerations < first_consideration_bullet < last_consideration_bullet
 
 
 def test_pptx_shapes_are_sorted_by_visual_position():
@@ -233,13 +261,39 @@ def test_pptx_split_list_textboxes_follow_visual_order(tmp_path):
     pptx_path = tmp_path / "split_list_textboxes.pptx"
     presentation.save(pptx_path)
 
-    converter = get_converter()
-    conv_result: ConversionResult = converter.convert(pptx_path)
-    pred_md = conv_result.document.export_to_markdown()
+    doc = convert_with_pptx_backend(pptx_path)
+    pred_md = doc.export_to_markdown()
 
     assert pred_md.index("Key Benefits:") < pred_md.index("Cost effective")
     assert pred_md.index("Transparent community") < pred_md.index("Considerations:")
     assert pred_md.index("Considerations:") < pred_md.index("Community support")
     assert pred_md.index("Community support") < pred_md.index(
         "Maintenance requires expertise"
+    )
+
+
+def test_pptx_grouped_shapes_follow_visual_order(tmp_path):
+    presentation = Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+
+    lower_textbox = slide.shapes.add_textbox(
+        Inches(1.0), Inches(2.0), Inches(4.0), Inches(0.5)
+    )
+    lower_textbox.text = "Lower grouped textbox"
+
+    upper_textbox = slide.shapes.add_textbox(
+        Inches(1.0), Inches(1.0), Inches(4.0), Inches(0.5)
+    )
+    upper_textbox.text = "Upper grouped textbox"
+
+    slide.shapes.add_group_shape([lower_textbox, upper_textbox])
+
+    pptx_path = tmp_path / "grouped_textboxes.pptx"
+    presentation.save(pptx_path)
+
+    doc = convert_with_pptx_backend(pptx_path)
+    pred_md = doc.export_to_markdown()
+
+    assert pred_md.index("Upper grouped textbox") < pred_md.index(
+        "Lower grouped textbox"
     )
