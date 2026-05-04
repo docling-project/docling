@@ -17,7 +17,7 @@
 # - Defaults to `tests/data/pdf/2206.01062.pdf`. Change `input_doc_path` as needed.
 #
 # Notes
-# - The Granite Vision model (`ibm-granite/granite-4.0-3b-vision`) is downloaded
+# - The Granite Vision model (`ibm-granite/granite-vision-4.1-4b`) is downloaded
 #   automatically from HuggingFace on first run.
 # - The model outputs table structure in OTSL (Open Table Structure Language) format,
 #   which Docling parses into structured table cells.
