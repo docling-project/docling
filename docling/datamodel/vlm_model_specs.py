@@ -523,6 +523,62 @@ NU_EXTRACT_2B_TRANSFORMERS = InlineVlmOptions(
 )
 
 
+def _has_apple_silicon_mlx() -> bool:
+    """Return True if MPS is available and mlx-vlm is installed."""
+    try:
+        import torch
+
+        has_mps = torch.backends.mps.is_built() and torch.backends.mps.is_available()
+    except ImportError:
+        has_mps = False
+
+    if not has_mps:
+        return False
+
+    try:
+        import mlx_vlm  # type: ignore
+
+        return True
+    except ImportError:
+        return False
+
+
+def _get_granitedocling_model():
+    """Get the best GraniteDocling variant for the current hardware.
+
+    Automatically selects MLX variant on Apple Silicon if mlx-vlm is installed,
+    otherwise falls back to Transformers variant.
+    """
+    if _has_apple_silicon_mlx():
+        _log.debug("Auto-selected GraniteDocling MLX variant (Apple Silicon)")
+        return GRANITEDOCLING_MLX
+    else:
+        _log.debug("Auto-selected GraniteDocling Transformers variant")
+        return GRANITEDOCLING_TRANSFORMERS
+
+
+# Auto-selecting: picks MLX on Apple Silicon, Transformers otherwise
+GRANITEDOCLING = _get_granitedocling_model()
+
+
+def _get_smoldocling_model():
+    """Get the best SmolDocling variant for the current hardware.
+
+    Automatically selects MLX variant on Apple Silicon if mlx-vlm is installed,
+    otherwise falls back to Transformers variant.
+    """
+    if _has_apple_silicon_mlx():
+        _log.debug("Auto-selected SmolDocling MLX variant (Apple Silicon)")
+        return SMOLDOCLING_MLX
+    else:
+        _log.debug("Auto-selected SmolDocling Transformers variant")
+        return SMOLDOCLING_TRANSFORMERS
+
+
+# Auto-selecting: picks MLX on Apple Silicon, Transformers otherwise
+SMOLDOCLING = _get_smoldocling_model()
+
+
 class VlmModelType(str, Enum):
     SMOLDOCLING = "smoldocling"
     SMOLDOCLING_VLLM = "smoldocling_vllm"

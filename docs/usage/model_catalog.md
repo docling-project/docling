@@ -207,10 +207,8 @@ The following table shows all processing stages in Docling, their model families
 
 | Model | Inference Engine | Supported Devices |
 |-------|------------------|-------------------|
-| TableFormer (fast) | docling-ibm-models | CPU, CUDA, XPU |
-| TableFormer (accurate) | docling-ibm-models | CPU, CUDA, XPU |
-
-**Note:** MPS is currently disabled for TableFormer due to performance issues.
+| TableFormer (fast) | docling-ibm-models | CPU, CUDA, MPS, XPU |
+| TableFormer (accurate) | docling-ibm-models | CPU, CUDA, MPS, XPU |
 
 ### Image Classifier (Picture Classifier)
 

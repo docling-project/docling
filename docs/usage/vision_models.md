@@ -52,8 +52,10 @@ The following table reports the models currently available out-of-the-box.
 
 | Model instance | Model | Framework | Device | Num pages | Inference time (sec) |
 | ---------------|------ | --------- | ------ | --------- | ---------------------|
+| `vlm_model_specs.GRANITEDOCLING` | Auto-selects MLX or Transformers | `Auto` | MPS | 1 | - |
 | `vlm_model_specs.GRANITEDOCLING_TRANSFORMERS` | [ibm-granite/granite-docling-258M](https://huggingface.co/ibm-granite/granite-docling-258M) | `Transformers/AutoModelForVision2Seq` | MPS | 1 |  - |
 | `vlm_model_specs.GRANITEDOCLING_MLX` | [ibm-granite/granite-docling-258M-mlx-bf16](https://huggingface.co/ibm-granite/granite-docling-258M-mlx-bf16) | `MLX`| MPS | 1 |    - |
+| `vlm_model_specs.SMOLDOCLING` | Auto-selects MLX or Transformers | `Auto` | MPS | 1 | - |
 | `vlm_model_specs.SMOLDOCLING_TRANSFORMERS` | [ds4sd/SmolDocling-256M-preview](https://huggingface.co/ds4sd/SmolDocling-256M-preview) | `Transformers/AutoModelForVision2Seq` | MPS | 1 |  102.212 |
 | `vlm_model_specs.SMOLDOCLING_MLX` | [ds4sd/SmolDocling-256M-preview-mlx-bf16](https://huggingface.co/ds4sd/SmolDocling-256M-preview-mlx-bf16) | `MLX`| MPS | 1 |    6.15453 |
 | `vlm_model_specs.QWEN25_VL_3B_MLX` | [mlx-community/Qwen2.5-VL-3B-Instruct-bf16](https://huggingface.co/mlx-community/Qwen2.5-VL-3B-Instruct-bf16)  |  `MLX`| MPS | 1 |   23.4951 |

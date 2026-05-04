@@ -58,9 +58,16 @@ class TableStructureModelV2(BaseTableStructureModel):
                 model_path = artifacts_path
 
             # Determine device
-            device = decide_device(accelerator_options.device)
-            if device == AcceleratorDevice.MPS.value:
-                device = AcceleratorDevice.CPU.value
+            device = decide_device(
+                accelerator_options.device,
+                supported_devices=[
+                    AcceleratorDevice.CPU,
+                    AcceleratorDevice.CUDA,
+                    AcceleratorDevice.MPS,
+                    AcceleratorDevice.XPU,
+                ],
+            )
+            _log.debug(f"TableStructureModelV2 using device: {device}")
             self.device = device
 
             # Set number of threads for CPU inference
