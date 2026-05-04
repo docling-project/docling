@@ -172,7 +172,7 @@ class RapidOcrModel(BaseOcrModel):
             rec_keys_path = self.options.rec_keys_path
             font_path = self.options.font_path
 
-            if artifacts_path is not None:
+            if not self.options.use_bundled_models and artifacts_path is not None:
                 det_model_path = (
                     det_model_path
                     or artifacts_path
@@ -220,7 +220,6 @@ class RapidOcrModel(BaseOcrModel):
                 # Global settings (these are still correct)
                 "Global.text_score": self.options.text_score,
                 "Global.font_path": font_path,
-                # Engine-level ONNXRuntime settings
                 "EngineConfig.onnxruntime.intra_op_num_threads": intra_op_num_threads,
                 # "Global.verbose": self.options.print_verbose,
                 # Detection model settings

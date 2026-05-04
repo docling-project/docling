@@ -319,6 +319,12 @@ class RapidOcrOptions(OcrOptions):
             description="Custom path to font file for text rendering in visualization."
         ),
     ] = None
+    use_bundled_models: Annotated[
+        bool,
+        Field(
+            description="Use RapidOCR's bundled models instead of Docling's artifact-path defaults."
+        ),
+    ] = False
     rapidocr_params: Annotated[
         dict[str, Any],
         Field(
