@@ -89,7 +89,7 @@ You can also use 🥚[GraniteDocling](https://huggingface.co/ibm-granite/granite
 docling --pipeline vlm --vlm-model granite_docling https://arxiv.org/pdf/2206.01062
 ```
 
-## 3. Python usage (optional)
+## 3. Python usage (recommended)
 
 ```python
 from docling.document_converter import DocumentConverter
