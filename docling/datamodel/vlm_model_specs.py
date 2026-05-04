@@ -522,6 +522,26 @@ NU_EXTRACT_2B_TRANSFORMERS = InlineVlmOptions(
     temperature=0.0,
 )
 
+# Granite Vision 4.1
+GRANITE_VISION_4_1_TRANSFORMERS = InlineVlmOptions(
+    repo_id="ibm-granite/granite-vision-4.1-4b",
+    revision="dd48e97503de471803850df70843cf9eb5da8712",
+    prompt="",  # Template is passed separately via extract()
+    torch_dtype="bfloat16",
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+    response_format=ResponseFormat.PLAINTEXT,
+    supported_devices=[
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.MPS,
+        AcceleratorDevice.XPU,
+    ],
+    scale=2.0,
+    temperature=0.0,
+    trust_remote_code=True,
+)
+
 
 class VlmModelType(str, Enum):
     SMOLDOCLING = "smoldocling"
