@@ -140,11 +140,11 @@ def _parse_otsl_output(
 
 
 class GraniteVisionTableStructureModel(BaseTableStructureModel):
-    """Table structure model using ibm-granite/granite-4.0-3b-vision with <tables_otsl>."""
+    """Table structure model using ibm-granite/granite-vision-4.1-4b with <tables_otsl>."""
 
-    _model_repo_id: ClassVar[str] = "ibm-granite/granite-4.0-3b-vision"
-    _model_repo_folder: ClassVar[str] = "ibm-granite--granite-4.0-3b-vision"
-    _model_repo_revision: ClassVar[str] = "f0d034897bae1cd438c961c8c170a3a3089ebf01"
+    _model_repo_id: ClassVar[str] = "ibm-granite/granite-vision-4.1-4b"
+    _model_repo_folder: ClassVar[str] = "ibm-granite--granite-vision-4.1-4b"
+    _model_repo_revision: ClassVar[str] = "dd48e97503de471803850df70843cf9eb5da8712"
 
     def __init__(
         self,
@@ -224,7 +224,8 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
                 ),
                 trust_remote_code=True,
             )
-        cast(Any, self._model).merge_lora_adapters()
+        if hasattr(self._model, "merge_lora_adapters"):
+            cast(Any, self._model).merge_lora_adapters()
         self._model.eval()
 
     def predict_tables(
