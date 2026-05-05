@@ -1,15 +1,15 @@
 """Post-process TableFormer's per-cell predictions.
 
-Three issues TableFormer's output occasionally exhibits:
+Four issues TableFormer's output occasionally exhibits:
 
-1. **Wrapped-header collapse.** When column titles are long enough to wrap
-   onto 2-3 visual lines (e.g. "Net Cash for / Reinvestment# / Amount ($)"),
-   TableFormer marks only one of those lines as ``column_header=True`` and
-   rolls the others into row 1 of the data section. The result is a header
-   row missing several columns' titles and a data row that contains header
-   fragments. ``promote_wrapped_header_rows`` walks forward from the last
-   predicted header row and promotes following rows that look like header
-   continuations (no digits/currency, short text, similar line height).
+1. **Header marking dropped or wrapped across rows.** When column titles
+   wrap onto 2-3 visual lines (e.g. "Net Cash for / Reinvestment# / Amount
+   ($)"), TableFormer marks only one of those lines as
+   ``column_header=True`` and rolls the others into row 1 of data. On
+   simpler grids it occasionally drops header marking entirely.
+   ``promote_wrapped_header_rows`` handles both: when no header is marked
+   it seeds row 0 if it looks like an alphabetic caption over a numeric
+   data row, then walks forward promoting header-like continuations.
 
 2. **Merged-cell duplication.** When a label visually spans multiple grid
    columns (or rows), TableFormer's matcher can emit the same text into
@@ -24,12 +24,24 @@ Three issues TableFormer's output occasionally exhibits:
    Words it does not grid are otherwise silently dropped — they appear in
    neither the table nor any other layout element. ``recover_leftover_words``
    restores conservation: every input word ends up in *some* output element,
-   even if not the table, by emitting the leftovers as a new TEXT cluster.
+   either as a new table row (when leftovers form a clear tabular pattern)
+   or as a new TEXT cluster on the page layout.
 
-All three helpers are conservative: they require strong evidence (text
-equality, bbox adjacency, codebase-standard 0.5 IoS containment) and only
-act on cells that are obviously redundant or obviously outside the grid.
-Tables where TableFormer already emitted the correct grid are unaffected.
+4. **Multiple sub-tables merged into one cluster.** The layout
+   postprocessor occasionally merges visually-distinct tables into a single
+   TABLE cluster (e.g. a stack of "label, value" summary tables followed
+   by a wide totals table). TableFormer is then forced to invent a grid
+   covering all of them, with rows of sharply-different structural shape.
+   ``split_into_structural_subtables`` detects per-row distinct-cell-count
+   shifts (sustained across multiple rows) and emits each piece as its own
+   TABLE Cluster + Table. Page assembly handles multiple Tables on one
+   page natively.
+
+All four helpers are conservative: they require strong structural evidence
+(text equality, bbox adjacency, codebase-standard 0.5 IoS containment,
+sustained pattern shifts) and only act on cells that are obviously
+redundant or obviously misplaced. Tables where TableFormer already emitted
+the correct grid are unaffected.
 """
 
 from __future__ import annotations
@@ -61,6 +73,58 @@ def _avg_height(cells: Sequence[TableCell]) -> float:
     return sum(heights) / len(heights) if heights else 0.0
 
 
+def _seed_row_0_as_header(
+    table_cells: list[TableCell],
+    by_row: dict[int, list[TableCell]],
+) -> bool:
+    """Promote row 0 to ``column_header=True`` when it looks like an
+    alphabetic-caption row over a numeric data row.
+
+    TableFormer occasionally returns ``column_header=False`` on every cell
+    despite the row clearly being headers (the grid + cell text are
+    correct; only the boolean is wrong). Without this seed step, the
+    walk-forward continuation logic in ``promote_wrapped_header_rows``
+    has nothing to walk from and the table is rendered headerless.
+
+    Discriminator (must satisfy ALL):
+
+    * Row 0 and row 1 both exist (gate at caller-side typically also
+      enforces this via ``num_rows >= 2``).
+    * Every non-empty cell in row 0 is non-digit (alphabetic caption).
+      Currency symbols / percent signs without surrounding digits are
+      tolerated so headers like "Cash per Unit ($)" still qualify.
+    * At least one row-1 cell contains digit / currency / percent
+      characters — confirms row 1 is a data row, not another header.
+
+    Returns True iff at least one row-0 cell was promoted.
+    """
+    if 0 not in by_row or 1 not in by_row:
+        return False
+
+    row0_text_cells = [c for c in by_row[0] if c.text and c.text.strip()]
+    if not row0_text_cells:
+        return False
+
+    # Row 0 must be alphabetic — no digits in any non-empty cell. (The
+    # `_DIGIT_OR_CURRENCY` regex matches currency too, but caption-style
+    # headers like "Cash per Unit ($)" should pass; reject only on
+    # digits, since numeric content is the strong "this is data" signal.)
+    for c in row0_text_cells:
+        if any(ch.isdigit() for ch in c.text):
+            return False
+
+    # Row 1 must contain at least one numeric / currency / percent token.
+    row1_text_cells = [c for c in by_row[1] if c.text and c.text.strip()]
+    if not any(_DIGIT_OR_CURRENCY.search(c.text) for c in row1_text_cells):
+        return False
+
+    promoted_any = False
+    for c in row0_text_cells:
+        c.column_header = True
+        promoted_any = True
+    return promoted_any
+
+
 def promote_wrapped_header_rows(
     table_cells: list[TableCell],
     num_rows: int,
@@ -68,22 +132,34 @@ def promote_wrapped_header_rows(
     max_avg_text_len: int = 25,
     line_height_tol: float = 0.20,
 ) -> None:
-    """In-place: promote rows that look like wrapped header continuations.
+    """In-place: promote rows that look like header rows or wrapped header
+    continuations.
 
-    Walks forward from the last existing column-header row. For each
-    subsequent row, the row is promoted if all the following hold:
+    Two cases:
 
-    * No cell text contains digits, currency symbols, or %.
-    * Mean cell-text length is short (<= ``max_avg_text_len``), label-like.
-    * Average row height matches the header's average within ``line_height_tol``.
-    * At least one cell in the row is non-empty.
+    * **Seed case** — when no cell currently has ``column_header=True`` but
+      row 0 is an alphabetic caption above a numeric row 1, promote row 0
+      first (see ``_seed_row_0_as_header``). This handles tables where
+      TableFormer dropped the column-header flag entirely.
 
-    Stops at the first row that fails any check.
+    * **Continuation case** — walks forward from the last existing
+      column-header row. For each subsequent row, the row is promoted if
+      all the following hold:
+        - No cell text contains digits, currency symbols, or %.
+        - Mean cell-text length is short (<= ``max_avg_text_len``).
+        - Average row height matches the header's average within
+          ``line_height_tol``.
+        - At least one cell in the row is non-empty.
+      Stops at the first row that fails any check.
 
-    No-op if there is no header row, no rows, or num_rows < 2.
+    No-op if there are no rows or ``num_rows < 2``.
     """
     if not table_cells or num_rows < 2:
         return
+
+    by_row: dict[int, list[TableCell]] = {}
+    for c in table_cells:
+        by_row.setdefault(c.start_row_offset_idx, []).append(c)
 
     header_idxs = [
         c.start_row_offset_idx
@@ -91,12 +167,19 @@ def promote_wrapped_header_rows(
         if getattr(c, "column_header", False)
     ]
     if not header_idxs:
-        return
+        # Seed: no header at all. Try to promote row 0 if it looks like a
+        # caption over a numeric data row.
+        if not _seed_row_0_as_header(table_cells, by_row):
+            return
+        # Re-collect now that row 0 has been promoted.
+        header_idxs = [
+            c.start_row_offset_idx
+            for c in table_cells
+            if getattr(c, "column_header", False)
+        ]
+        if not header_idxs:
+            return
     last_header_row = max(header_idxs)
-
-    by_row: dict[int, list[TableCell]] = {}
-    for c in table_cells:
-        by_row.setdefault(c.start_row_offset_idx, []).append(c)
 
     header_cells = [c for c in table_cells if getattr(c, "column_header", False)]
     hdr_h = _avg_height(header_cells)
