@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Sequence
+from itertools import pairwise
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -48,9 +49,11 @@ if TYPE_CHECKING:
 _DIGIT_OR_CURRENCY = re.compile(r"[\d$€£¥%]")
 
 
-def _avg_height(cells: Sequence["TableCell"]) -> float:
+def _avg_height(cells: Sequence[TableCell]) -> float:
     heights = [
-        c.bbox.t - c.bbox.b if c.bbox.coord_origin == "BOTTOMLEFT" else c.bbox.b - c.bbox.t
+        c.bbox.t - c.bbox.b
+        if c.bbox.coord_origin == "BOTTOMLEFT"
+        else c.bbox.b - c.bbox.t
         for c in cells
         if c.bbox is not None
     ]
@@ -59,7 +62,7 @@ def _avg_height(cells: Sequence["TableCell"]) -> float:
 
 
 def promote_wrapped_header_rows(
-    table_cells: list["TableCell"],
+    table_cells: list[TableCell],
     num_rows: int,
     *,
     max_avg_text_len: int = 25,
@@ -83,13 +86,15 @@ def promote_wrapped_header_rows(
         return
 
     header_idxs = [
-        c.start_row_offset_idx for c in table_cells if getattr(c, "column_header", False)
+        c.start_row_offset_idx
+        for c in table_cells
+        if getattr(c, "column_header", False)
     ]
     if not header_idxs:
         return
     last_header_row = max(header_idxs)
 
-    by_row: dict[int, list["TableCell"]] = {}
+    by_row: dict[int, list[TableCell]] = {}
     for c in table_cells:
         by_row.setdefault(c.start_row_offset_idx, []).append(c)
 
@@ -106,7 +111,10 @@ def promote_wrapped_header_rows(
         if any(_DIGIT_OR_CURRENCY.search(t) for t in texts if t):
             return
         non_empty = [t for t in texts if t]
-        if non_empty and (sum(len(t) for t in non_empty) / len(non_empty)) > max_avg_text_len:
+        if (
+            non_empty
+            and (sum(len(t) for t in non_empty) / len(non_empty)) > max_avg_text_len
+        ):
             return
         row_h = _avg_height(row)
         if hdr_h > 0 and row_h > 0 and abs(row_h - hdr_h) / hdr_h > line_height_tol:
@@ -129,7 +137,7 @@ def _norm_text(s: str | None) -> str:
     return _WS_COLLAPSE.sub(" ", (s or "").strip()).lower()
 
 
-def _bbox_iou(a: "BoundingBox", b: "BoundingBox") -> float:
+def _bbox_iou(a: BoundingBox, b: BoundingBox) -> float:
     """Intersection over Union of two bboxes. Coord-origin-agnostic."""
     inter = a.intersection_area_with(b)
     if inter <= 0:
@@ -138,7 +146,9 @@ def _bbox_iou(a: "BoundingBox", b: "BoundingBox") -> float:
     return inter / union if union > 0 else 0.0
 
 
-def _bboxes_touch_horizontally(a: "BoundingBox", b: "BoundingBox", tol: float = 2.0) -> bool:
+def _bboxes_touch_horizontally(
+    a: BoundingBox, b: BoundingBox, tol: float = 2.0
+) -> bool:
     # Same vertical band (overlap), horizontally adjacent.
     if a.coord_origin == "BOTTOMLEFT":
         v_overlap = min(a.t, b.t) - max(a.b, b.b)
@@ -150,7 +160,7 @@ def _bboxes_touch_horizontally(a: "BoundingBox", b: "BoundingBox", tol: float = 
     return abs(a.r - b.l) <= tol or abs(b.r - a.l) <= tol
 
 
-def _bboxes_touch_vertically(a: "BoundingBox", b: "BoundingBox", tol: float = 2.0) -> bool:
+def _bboxes_touch_vertically(a: BoundingBox, b: BoundingBox, tol: float = 2.0) -> bool:
     # Same horizontal band (overlap), vertically adjacent.
     h_overlap = min(a.r, b.r) - max(a.l, b.l)
     if h_overlap <= 0:
@@ -160,7 +170,7 @@ def _bboxes_touch_vertically(a: "BoundingBox", b: "BoundingBox", tol: float = 2.
     return abs(a.b - b.t) <= tol or abs(b.b - a.t) <= tol
 
 
-def _union_bbox(cells: Sequence["TableCell"]) -> "BoundingBox":
+def _union_bbox(cells: Sequence[TableCell]) -> BoundingBox:
     from docling_core.types.doc import BoundingBox
 
     boxes = [c.bbox for c in cells if c.bbox is not None]
@@ -174,8 +184,8 @@ def _union_bbox(cells: Sequence["TableCell"]) -> "BoundingBox":
 
 
 def consolidate_duplicate_spans(
-    table_cells: list["TableCell"],
-) -> list["TableCell"]:
+    table_cells: list[TableCell],
+) -> list[TableCell]:
     """Collapse adjacent cells with identical text into one cell with span > 1.
 
     Returns a new list. The original list is not modified.
@@ -189,15 +199,15 @@ def consolidate_duplicate_spans(
 
     # ----- 1) Horizontal merge (collapse colspan duplicates). -----
     # Group by start_row_offset_idx, sort by start_col_offset_idx.
-    by_row: dict[int, list["TableCell"]] = {}
-    others: list["TableCell"] = []
+    by_row: dict[int, list[TableCell]] = {}
+    others: list[TableCell] = []
     for c in table_cells:
         if c.bbox is None or not (c.text and c.text.strip()):
             others.append(c)
             continue
         by_row.setdefault(c.start_row_offset_idx, []).append(c)
 
-    horizontally_merged: list["TableCell"] = list(others)
+    horizontally_merged: list[TableCell] = list(others)
     for row_cells in by_row.values():
         row_cells.sort(key=lambda c: c.start_col_offset_idx)
         i = 0
@@ -234,15 +244,15 @@ def consolidate_duplicate_spans(
             i = j
 
     # ----- 2) Vertical merge (collapse rowspan duplicates). -----
-    by_col: dict[int, list["TableCell"]] = {}
-    leftovers: list["TableCell"] = []
+    by_col: dict[int, list[TableCell]] = {}
+    leftovers: list[TableCell] = []
     for c in horizontally_merged:
         if c.bbox is None or not (c.text and c.text.strip()):
             leftovers.append(c)
             continue
         by_col.setdefault(c.start_col_offset_idx, []).append(c)
 
-    final: list["TableCell"] = list(leftovers)
+    final: list[TableCell] = list(leftovers)
     for col_cells in by_col.values():
         col_cells.sort(key=lambda c: c.start_row_offset_idx)
         i = 0
@@ -287,8 +297,8 @@ def consolidate_duplicate_spans(
     # Conservative: requires normalised-text equality AND IoU >= 0.95
     # (essentially "same bbox") so distinct cells with coincidentally
     # equal values stay separate.
-    deduped: list["TableCell"] = []
-    by_text: dict[str, list["TableCell"]] = {}
+    deduped: list[TableCell] = []
+    by_text: dict[str, list[TableCell]] = {}
     for c in final:
         if c.bbox is None or not (c.text and c.text.strip()):
             deduped.append(c)
@@ -306,7 +316,7 @@ def consolidate_duplicate_spans(
     return deduped
 
 
-def _grid_bbox(table_cells: Sequence["TableCell"]) -> "BoundingBox | None":
+def _grid_bbox(table_cells: Sequence[TableCell]) -> BoundingBox | None:
     from docling_core.types.doc import BoundingBox
 
     boxes = [c.bbox for c in table_cells if c.bbox is not None]
@@ -321,9 +331,9 @@ def _grid_bbox(table_cells: Sequence["TableCell"]) -> "BoundingBox | None":
     )
 
 
-def _column_centroids(table_cells: Sequence["TableCell"]) -> dict[int, float]:
+def _column_centroids(table_cells: Sequence[TableCell]) -> dict[int, float]:
     """Per-column X-centroid, computed over all gridded cells in that column."""
-    by_col: dict[int, list["BoundingBox"]] = {}
+    by_col: dict[int, list[BoundingBox]] = {}
     for c in table_cells:
         if c.bbox is None:
             continue
@@ -334,14 +344,14 @@ def _column_centroids(table_cells: Sequence["TableCell"]) -> dict[int, float]:
     }
 
 
-def _median_row_pitch(table_cells: Sequence["TableCell"]) -> float | None:
+def _median_row_pitch(table_cells: Sequence[TableCell]) -> float | None:
     """Median Y-distance between consecutive predicted rows.
 
     Returns None for tables with fewer than 2 distinct rows — there is no
     structural signal to derive a row-pitch from in that case, so callers
     should fall back to conservative behaviour rather than guessing.
     """
-    by_row: dict[int, list["BoundingBox"]] = {}
+    by_row: dict[int, list[BoundingBox]] = {}
     for c in table_cells:
         if c.bbox is None:
             continue
@@ -351,16 +361,16 @@ def _median_row_pitch(table_cells: Sequence["TableCell"]) -> float | None:
     centroids = sorted(
         (min(b.t for b in bs) + max(b.b for b in bs)) / 2 for bs in by_row.values()
     )
-    deltas = [abs(b - a) for a, b in zip(centroids, centroids[1:])]
+    deltas = [abs(b - a) for a, b in pairwise(centroids)]
     if not deltas:
         return None
     return sorted(deltas)[len(deltas) // 2]
 
 
 def _attach_as_table_rows(
-    leftover_cells: list["TextCell"],
-    table_cells: list["TableCell"],
-) -> tuple[list["TableCell"], list["TextCell"]]:
+    leftover_cells: list[TextCell],
+    table_cells: list[TableCell],
+) -> tuple[list[TableCell], list[TextCell]]:
     """Try to place leftover words as new table rows.
 
     Discriminator (purely structural, no content / template hints): cluster
@@ -411,7 +421,7 @@ def _attach_as_table_rows(
     # the same logical row. `pitch` is a property of *this* table, not a
     # magic constant, so the threshold adapts to dense vs sparse layouts.
     clusters: list[list[tuple]] = [[enriched[0]]]
-    for prev, curr in zip(enriched, enriched[1:]):
+    for prev, curr in pairwise(enriched):
         if abs(curr[0] - prev[0]) < pitch:
             clusters[-1].append(curr)
         else:
@@ -419,8 +429,8 @@ def _attach_as_table_rows(
 
     existing_max_row = max(c.start_row_offset_idx for c in table_cells)
 
-    placed: list["TableCell"] = []
-    unplaced: list["TextCell"] = []
+    placed: list[TableCell] = []
+    unplaced: list[TextCell] = []
     next_row = existing_max_row + 1
 
     for cluster in clusters:
@@ -473,12 +483,12 @@ def _attach_as_table_rows(
 
 def recover_leftover_words(
     *,
-    tcells: Sequence["TextCell"],
-    table_cells: list["TableCell"],
-    table_cluster: "Cluster",
-    page_clusters: list["Cluster"],
+    tcells: Sequence[TextCell],
+    table_cells: list[TableCell],
+    table_cluster: Cluster,
+    page_clusters: list[Cluster],
     threshold: float = 0.5,
-) -> tuple[int, "Cluster | None"]:
+) -> tuple[int, Cluster | None]:
     """Recover input PDF words TableFormer did not place in its predicted grid.
 
     The TABLE cluster bbox is grown by ``LayoutPostprocessor`` (TABLE-only
@@ -519,14 +529,15 @@ def recover_leftover_words(
     * ``table_cells`` produced no grid (no signal for what to keep);
     * no ``tcells`` entry falls outside the grid by more than ``threshold``.
     """
-    from docling.datamodel.base_models import Cluster
     from docling_core.types.doc import BoundingBox, DocItemLabel
+
+    from docling.datamodel.base_models import Cluster
 
     grid_bbox = _grid_bbox(table_cells)
     if grid_bbox is None or not tcells:
         return 0, None
 
-    leftover_cells: list["TextCell"] = []
+    leftover_cells: list[TextCell] = []
     for c in tcells:
         if not c.text or not c.text.strip():
             continue
@@ -544,7 +555,7 @@ def recover_leftover_words(
     new_row_count = len(new_row_ids)
 
     # Pass 2: cells that didn't qualify → emit as TEXT cluster (conservation).
-    leftover_cluster: "Cluster | None" = None
+    leftover_cluster: Cluster | None = None
     if unplaced:
         unplaced_bboxes = [c.rect.to_bounding_box() for c in unplaced]
         leftover_bbox = BoundingBox(
