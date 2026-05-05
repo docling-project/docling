@@ -846,3 +846,192 @@ def split_into_structural_subtables(
         table_map[next_id] = sub_table
 
     return first_cells, first_nr, first_nc, True
+
+
+def _bbox_inside(
+    inner: BoundingBox, outer: BoundingBox, threshold: float = 0.5
+) -> bool:
+    """True when more than `threshold` of `inner`'s area lies inside `outer`."""
+    return inner.intersection_over_self(outer) >= threshold
+
+
+def _y_clusters(
+    items: list[tuple[float, TextCell, BoundingBox]], threshold: float
+) -> list[list[tuple]]:
+    """Cluster by Y-centroid into adjacency groups within `threshold`.
+
+    Each item is ``(y_centroid, text_cell, bbox)``. Items are sorted by
+    Y first; consecutive items within `threshold` join the same cluster.
+    """
+    if not items:
+        return []
+    items.sort(key=lambda x: x[0])
+    clusters: list[list[tuple]] = [[items[0]]]
+    for prev, curr in pairwise(items):
+        if abs(curr[0] - prev[0]) < threshold:
+            clusters[-1].append(curr)
+        else:
+            clusters.append([curr])
+    return clusters
+
+
+def split_tall_fused_rows(
+    *,
+    tcells: Sequence[TextCell],
+    table_cells: list[TableCell],
+    height_ratio: float = 1.5,
+) -> int:
+    """Split rows whose cells fuse multiple visual lines from the source PDF.
+
+    When the layout postprocessor over-extends a TABLE bbox to swallow an
+    adjacent un-detected mini-table, TableFormer can absorb the extra
+    content into a single row whose cell bboxes are abnormally tall and
+    whose text concatenates content from multiple visual lines (e.g. row 2
+    of IOZ_2019: cells of height 2.5x median, text
+    ``'Australian NET PAYMENT:'`` + ``'withholding tax: $340.00 $385.31'``).
+
+    This helper detects such rows by comparing each row's max cell-bbox
+    height against the table's median row height; when a row exceeds
+    ``height_ratio`` x median AND its input tcells form >=2 distinct
+    Y-clusters within the row's combined bbox, the row is rebuilt:
+    each Y-cluster becomes a sub-row, and tcells are reassigned to
+    columns by X-centroid using the table's own normal-height column
+    centroids (so the rebuilt row matches the table's existing column
+    layout, not the fused cells' layout).
+
+    Purely structural — uses bbox geometry only, no text-content matching
+    (no amount-token detection, no template hints). The cleanest signal:
+    rows with abnormal height containing tcells that resolve into distinct
+    visual lines are almost always cases of fused content.
+
+    Returns the net number of rows added (e.g. one row split into 2 = 1).
+    No-op when ``tcells`` is empty, the median-height baseline can't be
+    derived, or no row's tcells cluster into >=2 lines.
+    """
+    from docling_core.types.doc import BoundingBox as BB
+
+    if not tcells or not table_cells:
+        return 0
+
+    by_row: dict[int, list[TableCell]] = {}
+    for c in table_cells:
+        if c.bbox is not None:
+            by_row.setdefault(c.start_row_offset_idx, []).append(c)
+    if len(by_row) < 2:
+        return 0
+
+    row_heights = sorted(
+        max(abs(c.bbox.t - c.bbox.b) for c in cells if c.bbox is not None)
+        for cells in by_row.values()
+        if any(c.bbox is not None for c in cells)
+    )
+    if not row_heights:
+        return 0
+    median_h = row_heights[len(row_heights) // 2]
+    if median_h <= 0:
+        return 0
+
+    # Use only normal-height cells to derive column centroids — avoids
+    # contaminating the column geometry with the fused tall cells we're
+    # about to replace.
+    normal_cells = [
+        c
+        for c in table_cells
+        if c.bbox is not None and abs(c.bbox.t - c.bbox.b) < height_ratio * median_h
+    ]
+    col_centroids = _column_centroids(normal_cells)
+    if len(col_centroids) < 1:
+        return 0
+
+    cluster_threshold = median_h * 0.7
+
+    rows_to_split: list[tuple[int, list[list[tuple]], list[TableCell]]] = []
+    for r in sorted(by_row):
+        cells = by_row[r]
+        # Skip header rows — promoting/splitting headers needs different handling.
+        if any(getattr(c, "column_header", False) for c in cells):
+            continue
+        max_h = max(abs(c.bbox.t - c.bbox.b) for c in cells if c.bbox is not None)
+        if max_h < height_ratio * median_h:
+            continue
+        row_bbox = _grid_bbox(cells)
+        if row_bbox is None:
+            continue
+        items = []
+        for tc in tcells:
+            if not tc.text or not tc.text.strip():
+                continue
+            bb = tc.rect.to_bounding_box()
+            if not _bbox_inside(bb, row_bbox):
+                continue
+            items.append(((bb.t + bb.b) / 2, tc, bb))
+        if not items:
+            continue
+        clusters = _y_clusters(items, threshold=cluster_threshold)
+        if len(clusters) < 2:
+            continue
+        rows_to_split.append((r, clusters, cells))
+
+    if not rows_to_split:
+        return 0
+
+    # Process in reverse row order so renumbering doesn't shift unprocessed rows.
+    rows_to_split.sort(key=lambda x: x[0], reverse=True)
+    template = next((c for c in table_cells if c.bbox is not None), None)
+    if template is None:
+        return 0
+
+    new_rows_total = 0
+    for r, clusters, original_cells in rows_to_split:
+        n = len(clusters)
+        # Bump rows below r by (n - 1) so the row that was r occupies r..r+n-1.
+        for c in table_cells:
+            if c.start_row_offset_idx > r:
+                c.start_row_offset_idx += n - 1
+                c.end_row_offset_idx += n - 1
+        # Remove the original (fused) cells.
+        for c in original_cells:
+            try:
+                table_cells.remove(c)
+            except ValueError:
+                pass
+        # Rebuild as N sub-rows from the Y-clustered tcells.
+        for sub_idx, cluster in enumerate(clusters):
+            sub_row = r + sub_idx
+            by_col: dict[int, list[tuple]] = {}
+            for _, tc, bb in cluster:
+                x_cent = (bb.l + bb.r) / 2
+                nearest_col = min(
+                    col_centroids, key=lambda col: abs(col_centroids[col] - x_cent)
+                )
+                by_col.setdefault(nearest_col, []).append((tc, bb))
+            for col_id, tcs in by_col.items():
+                tcs.sort(key=lambda x: x[1].l)
+                text = " ".join(tc.text.strip() for tc, _ in tcs if tc.text)
+                bboxes = [bb for _, bb in tcs]
+                merged_bbox = BB(
+                    l=min(b.l for b in bboxes),
+                    t=min(b.t for b in bboxes),
+                    r=max(b.r for b in bboxes),
+                    b=max(b.b for b in bboxes),
+                    coord_origin=bboxes[0].coord_origin,
+                )
+                new_cell = template.model_copy(
+                    update={
+                        "bbox": merged_bbox,
+                        "text": text,
+                        "start_row_offset_idx": sub_row,
+                        "end_row_offset_idx": sub_row + 1,
+                        "start_col_offset_idx": col_id,
+                        "end_col_offset_idx": col_id + 1,
+                        "row_span": 1,
+                        "col_span": 1,
+                        "column_header": False,
+                        "row_header": False,
+                        "row_section": False,
+                    }
+                )
+                table_cells.append(new_cell)
+        new_rows_total += n - 1
+
+    return new_rows_total

@@ -30,6 +30,7 @@ from docling.utils.table_cell_postprocess import (
     promote_wrapped_header_rows,
     recover_leftover_words,
     split_into_structural_subtables,
+    split_tall_fused_rows,
 )
 
 _log = logging.getLogger(__name__)
@@ -315,6 +316,18 @@ class TableStructureModel(BaseTableStructureModel):
                         page_clusters=page.predictions.layout.clusters,
                     )
                     num_rows += new_row_count
+
+                    # Split rows whose cells fused multiple visual lines
+                    # from the source PDF (TableFormer absorbed an
+                    # un-detected mini-table into one over-tall row with
+                    # concatenated cell text). Uses tcells geometry to
+                    # find the original visual lines and re-assigns words
+                    # to the table's existing column layout.
+                    tall_added = split_tall_fused_rows(
+                        tcells=tcells,
+                        table_cells=table_cells,
+                    )
+                    num_rows += tall_added
 
                     # Split when the layout postprocessor merged multiple
                     # visually-distinct tables into one TABLE cluster.
