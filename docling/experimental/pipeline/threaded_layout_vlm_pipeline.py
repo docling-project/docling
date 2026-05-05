@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ConversionStatus, Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import (
@@ -29,6 +30,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
 )
 from docling.datamodel.settings import settings
+from docling.datamodel.vlm_model_specs import DOCLING_BASE_PAGE_PROMPT
 from docling.experimental.datamodel.threaded_layout_vlm_pipeline_options import (
     ThreadedLayoutVlmPipelineOptions,
 )
@@ -70,10 +72,15 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         """Initialize layout and VLM models."""
         art_path = self._resolve_artifacts_path()
 
-        # Layout model
+        # The layout model is forced to run on CPU.
+        # In this threaded pipeline, the VLM exclusively owns the GPU.
+        # Allowing multiple models to use the GPU concurrently can cause
+        # device contention, memory spikes, and unstable inference behavior.
+        # Since the layout model is lightweight, running it on CPU avoids
+        # cross-thread GPU contention without significantly impacting latency.
         self.layout_model = LayoutModel(
             artifacts_path=art_path,
-            accelerator_options=self.pipeline_options.accelerator_options,
+            accelerator_options=AcceleratorOptions(device="cpu"),
             options=self.pipeline_options.layout_options,
         )
 
@@ -90,6 +97,10 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
             ) -> str:
                 base_prompt = self.prompt
                 augmented_prompt = base_prompt
+
+                # Only augment convert to docling base prompts
+                if base_prompt != DOCLING_BASE_PAGE_PROMPT:
+                    return base_prompt
 
                 # In this layout-aware pipeline, _internal_page is always provided
                 if _internal_page is None:
@@ -111,6 +122,14 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                             label=cluster.label
                         )
 
+                        # Replace TABLE by otsl for consistency with doctags
+                        if tag_name == DocumentToken.TABLE:
+                            tag_name = "otsl"
+
+                        # Remove section level details
+                        if tag_name == "section_header_level_1":
+                            tag_name = "section_header"
+
                         # Convert bbox to tuple and get location tokens
                         bbox_tuple = cluster.bbox.as_tuple()
                         location_tokens = DocumentToken.get_location(
@@ -126,11 +145,9 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                     if layout_elements:
                         # Join elements with newlines and wrap in layout tags
                         layout_xml = (
-                            "<layout>" + "\n".join(layout_elements) + "</layout>"
+                            "<layout>\n" + "\n".join(layout_elements) + "</layout>"
                         )
-                        layout_injection = f"{layout_xml}"
-
-                        augmented_prompt = base_prompt + layout_injection
+                        augmented_prompt += f"\n{layout_xml}"
 
                     _log.debug(
                         "Enhanced Prompt with Layout Info: %s\n", augmented_prompt
