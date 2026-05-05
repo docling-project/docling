@@ -583,3 +583,183 @@ def recover_leftover_words(
         table_cluster.bbox = new_grid_bbox
 
     return new_row_count, leftover_cluster
+
+
+def detect_subtable_boundaries(
+    table_cells: list[TableCell],
+    *,
+    min_count_ratio: float = 1.5,
+    min_consecutive: int = 2,
+) -> list[int]:
+    """Detect rows where a TABLE cluster transitions between sub-tables.
+
+    Layout postprocessing occasionally merges several visually-distinct
+    tables on a page into one TABLE cluster (e.g. a stack of "label, value"
+    summary tables followed by a wide totals table). TableFormer then has
+    to invent a single grid covering all of them, producing rows whose
+    structural shape differs sharply: some rows have just two cells (label
+    spanning N-1 cols + value), others have N cells across distinct
+    columns. This function detects those structural breaks so the caller
+    can split the cluster into separate ``Table`` objects.
+
+    The discriminator is the per-row distinct-cell count. A boundary is
+    declared between row r-1 and r when:
+
+    * ``max(count_prev, count_curr) / max(min(count_prev, count_curr), 1)``
+      is at least ``min_count_ratio`` — the change is structurally large,
+      not a one-cell wobble; AND
+    * the new shape is **sustained** for ``min_consecutive`` rows — i.e.
+      rows ``r..r+min_consecutive-1`` all stay within ``min_count_ratio``
+      of each other. A single odd row (e.g. an isolated subtotal in the
+      middle of a wide table) does not trigger a split.
+
+    Returns the list of row indices where each sub-table starts. Always
+    includes the first row index. Returns an empty list when
+    ``table_cells`` is empty.
+
+    Conservative by design: no template-specific or text-content
+    heuristics; the discriminator is purely the structural shape of each
+    row, and the sustain rule prevents single-row outliers from
+    fragmenting otherwise-coherent tables.
+    """
+    if not table_cells:
+        return []
+
+    counts: dict[int, int] = {}
+    for c in table_cells:
+        counts[c.start_row_offset_idx] = counts.get(c.start_row_offset_idx, 0) + 1
+    sorted_rows = sorted(counts)
+
+    boundaries = [sorted_rows[0]]
+    for i in range(1, len(sorted_rows)):
+        prev_r, curr_r = sorted_rows[i - 1], sorted_rows[i]
+        prev_c, curr_c = counts[prev_r], counts[curr_r]
+        ratio = max(prev_c, curr_c) / max(min(prev_c, curr_c), 1)
+        if ratio < min_count_ratio:
+            continue
+        # Sustain check: do at least `min_consecutive - 1` more rows after
+        # `curr_r` stay within ratio of curr_c?
+        sustained = True
+        for j in range(1, min_consecutive):
+            if i + j >= len(sorted_rows):
+                # Ran off the end before sustaining — treat as not sustained
+                # (a single trailing odd row is more likely noise than a
+                # genuine sub-table).
+                sustained = False
+                break
+            next_c = counts[sorted_rows[i + j]]
+            r2 = max(curr_c, next_c) / max(min(curr_c, next_c), 1)
+            if r2 > min_count_ratio:
+                sustained = False
+                break
+        if sustained:
+            boundaries.append(curr_r)
+    return boundaries
+
+
+def _renumber_rows(cells: list[TableCell], offset: int) -> list[TableCell]:
+    """Return cells with start/end_row_offset_idx shifted down by ``offset``.
+
+    Each cell is replaced via ``model_copy`` so the originals are not
+    mutated (callers may still hold references to them).
+    """
+    out = []
+    for c in cells:
+        out.append(
+            c.model_copy(
+                update={
+                    "start_row_offset_idx": c.start_row_offset_idx - offset,
+                    "end_row_offset_idx": c.end_row_offset_idx - offset,
+                }
+            )
+        )
+    return out
+
+
+def split_into_structural_subtables(
+    *,
+    table_cells: list[TableCell],
+    table_cluster: Cluster,
+    page_clusters: list[Cluster],
+    table_map: dict,
+    page_no: int,
+) -> tuple[list[TableCell], int, int, bool]:
+    """Split ``table_cells`` into multiple Tables on row-pattern boundaries.
+
+    When ``detect_subtable_boundaries`` finds the cluster contains multiple
+    structurally-distinct sub-tables, this orchestrator:
+
+    * partitions ``table_cells`` by row range,
+    * keeps the first sub-table on the original ``table_cluster`` (with
+      bbox shrunk to its extent),
+    * for each subsequent sub-table, mints a new cluster id (mirroring the
+      idiom in ``recover_leftover_words``), appends a TABLE ``Cluster`` to
+      ``page_clusters``, constructs a ``Table`` from the renumbered cells,
+      and writes ``table_map[new_id] = table``.
+
+    Returns ``(first_cells, first_num_rows, first_num_cols, did_split)``.
+    The caller uses ``first_cells`` / ``first_num_rows`` / ``first_num_cols``
+    to construct the Table for the original cluster id; ``did_split=True``
+    means caller should also clear ``otsl_seq`` because the predicted
+    sequence describes the un-split whole.
+
+    No-op (returns the input unchanged with ``did_split=False``) when the
+    discriminator finds at most one sub-table.
+    """
+    from docling_core.types.doc import DocItemLabel
+
+    from docling.datamodel.base_models import Cluster as ClusterModel, Table
+
+    boundaries = detect_subtable_boundaries(table_cells)
+    if len(boundaries) <= 1 or not table_cells:
+        nr = max((c.end_row_offset_idx for c in table_cells), default=0)
+        nc = max((c.end_col_offset_idx for c in table_cells), default=0)
+        return list(table_cells), nr, nc, False
+
+    # Partition cells by row range (boundary[i] inclusive .. boundary[i+1] exclusive)
+    sub_groups: list[tuple[int, list[TableCell]]] = []
+    for i, start in enumerate(boundaries):
+        end = boundaries[i + 1] if i + 1 < len(boundaries) else float("inf")
+        cells = [c for c in table_cells if start <= c.start_row_offset_idx < end]
+        sub_groups.append((start, cells))
+
+    # First sub-group keeps the original cluster id; renumber its rows so
+    # the kept sub-table starts at row 0.
+    first_start, first_raw = sub_groups[0]
+    first_cells = _renumber_rows(first_raw, first_start)
+    first_nr = max((c.end_row_offset_idx for c in first_cells), default=0)
+    first_nc = max((c.end_col_offset_idx for c in first_cells), default=0)
+    first_bbox = _grid_bbox(first_cells)
+    if first_bbox is not None:
+        table_cluster.bbox = first_bbox
+
+    # Subsequent sub-groups become new clusters + table_map entries.
+    for start, raw_cells in sub_groups[1:]:
+        sub_cells = _renumber_rows(raw_cells, start)
+        sub_nr = max((c.end_row_offset_idx for c in sub_cells), default=0)
+        sub_nc = max((c.end_col_offset_idx for c in sub_cells), default=0)
+        sub_bbox = _grid_bbox(sub_cells)
+        if sub_bbox is None:
+            continue
+        next_id = max((cl.id for cl in page_clusters), default=-1) + 1
+        new_cluster = ClusterModel(
+            id=next_id,
+            label=DocItemLabel.TABLE,
+            bbox=sub_bbox,
+            confidence=table_cluster.confidence,
+            cells=[],
+        )
+        page_clusters.append(new_cluster)
+        sub_table = Table(
+            otsl_seq=[],
+            table_cells=sub_cells,
+            num_rows=sub_nr,
+            num_cols=sub_nc,
+            id=next_id,
+            page_no=page_no,
+            cluster=new_cluster,
+            label=new_cluster.label,
+        )
+        table_map[next_id] = sub_table
+
+    return first_cells, first_nr, first_nc, True
