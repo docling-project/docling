@@ -200,7 +200,9 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         # )
 
     def _close_native_page(self) -> None:
+        print("_close_native_page")
         if not self._unloaded and self._dp_doc is not None:
+            print(f" -> self._dp_doc.unload_pages(({self._page_no + 1}, {self._page_no + 2}))")
             self._dp_doc.unload_pages((self._page_no + 1, self._page_no + 2))
             self._unloaded = True
 
