@@ -4,14 +4,38 @@ import re
 import shutil
 import subprocess
 import tempfile
+import threading
 from pathlib import Path
 
 from docling_core.types.doc.document import ImageRef
+from PIL import Image, ImageChops
 
 from docling.backend.latex.engines.base import RenderEngine
-from docling.utils.locks import pypdfium2_lock
 
 _log = logging.getLogger(__name__)
+_PYPDFIUM2_LOCK = threading.Lock()
+
+
+def _crop_whitespace(
+    image: Image.Image,
+    bg_color: float | tuple[int, ...] | int | None = None,
+    padding: int = 0,
+) -> Image.Image:
+    if bg_color is None:
+        bg_color = image.getpixel((0, 0))
+
+    bg = Image.new(image.mode, image.size, bg_color)
+    diff = ImageChops.difference(image, bg)
+    bbox = diff.getbbox()
+    if bbox is None:
+        return image
+
+    left, upper, right, lower = bbox
+    left = max(0, left - padding)
+    upper = max(0, upper - padding)
+    right = min(image.width, right + padding)
+    lower = min(image.height, lower + padding)
+    return image.crop((left, upper, right, lower))
 
 
 class TectonicEngine(RenderEngine):
@@ -281,9 +305,7 @@ class TectonicEngine(RenderEngine):
             try:
                 import pypdfium2 as pdfium
 
-                from docling.backend.docx.drawingml.utils import crop_whitespace
-
-                with pypdfium2_lock:
+                with _PYPDFIUM2_LOCK:
                     with pdfium.PdfDocument(pdf_file) as pdf:
                         page = pdf[0]
                         pil_image = page.render(scale=300 / 72).to_pil()
@@ -291,7 +313,7 @@ class TectonicEngine(RenderEngine):
 
                 # Auto-crop the generous border added by standalone,
                 # keeping a small padding (10px) for clean margins.
-                pil_image = crop_whitespace(pil_image, padding=10)
+                pil_image = _crop_whitespace(pil_image, padding=10)
 
                 return ImageRef.from_pil(pil_image, dpi=300)
             except Exception as e:
