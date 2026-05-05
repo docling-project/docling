@@ -25,6 +25,11 @@ from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
+from docling.utils.table_cell_postprocess import (
+    consolidate_duplicate_spans,
+    promote_wrapped_header_rows,
+    recover_leftover_words,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -283,6 +288,32 @@ class TableStructureModel(BaseTableStructureModel):
                         .get("prediction", {})
                         .get("rs_seq", [])
                     )
+
+                    # Collapse adjacent same-text cells into one with span > 1.
+                    # TableFormer occasionally emits N duplicates for a label
+                    # that visually spans N grid cells instead of one
+                    # colspan/rowspan cell.
+                    table_cells = consolidate_duplicate_spans(table_cells)
+
+                    # Promote rows that look like wrapped header continuations
+                    # (no digits, short text, header-matching line height) so
+                    # multi-line headers don't leak into the data section.
+                    promote_wrapped_header_rows(table_cells, num_rows)
+
+                    # Recover input PDF words TableFormer did not grid.
+                    # Two-pass: leftovers that look like tabular rows
+                    # (≥2 cells in distinct columns at similar Y) get
+                    # placed as new rows in table_cells; the rest are
+                    # emitted as a TEXT cluster so the data still appears
+                    # in the JSON. Both passes preserve the conservation
+                    # invariant that TABLE alone violates.
+                    new_row_count, _ = recover_leftover_words(
+                        tcells=tcells,
+                        table_cells=table_cells,
+                        table_cluster=table_cluster,
+                        page_clusters=page.predictions.layout.clusters,
+                    )
+                    num_rows += new_row_count
 
                     tbl = Table(
                         otsl_seq=otsl_seq,
