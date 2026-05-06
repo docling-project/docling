@@ -78,7 +78,7 @@ class VlmPipeline(PaginatedPipeline):
         else:
             self._initialize_legacy_vlm_models(pipeline_options)
 
-        self.enrichment_pipe = [
+        self.enrichment_pipe: list = [
             # Other models working on `NodeItem` elements in the DoclingDocument
         ]
 
