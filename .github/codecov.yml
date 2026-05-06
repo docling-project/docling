@@ -1,5 +1,6 @@
 codecov:
   # https://docs.codecov.io/docs/comparing-commits
+  require_ci_to_pass: true
   allow_coverage_offsets: true
 coverage:
   status:
@@ -8,11 +9,55 @@ coverage:
         informational: true
         target: auto  # auto compares coverage to the previous base commit
         if_ci_failed: success
-        flags:
-          - docling
+    patch:
+      default:
+        informational: true
+        target: 80%
+        if_ci_failed: success
 comment:
-  layout: "reach, diff, flags, files"
+  layout: "condensed_header, condensed_files, condensed_footer"
   behavior: default
-  require_changes: false  # if true: only post the comment if coverage changes
-  branches:               # branch names that can post comment
-    - "main"
+  require_changes: true
+
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        informational: true
+
+  individual_components:
+    - component_id: cli
+      name: CLI
+      paths:
+        - docling/cli/**
+
+    - component_id: backend
+      name: Backend
+      paths:
+        - docling/backend/**
+
+    - component_id: datamodel
+      name: Datamodel
+      paths:
+        - docling/datamodel/**
+
+    - component_id: models
+      name: Models
+      paths:
+        - docling/models/**
+
+    - component_id: pipelines
+      name: Pipelines
+      paths:
+        - docling/pipeline/**
+
+    - component_id: service-client
+      name: Service Client
+      paths:
+        - docling/service_client/**
+
+    - component_id: utilities
+      name: Utilities
+      paths:
+        - docling/utils/**
