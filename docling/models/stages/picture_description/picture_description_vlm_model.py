@@ -1,6 +1,7 @@
 import sys
 import threading
 from collections.abc import Iterable
+from importlib import import_module
 from pathlib import Path
 from typing import Optional, Type, Union
 
@@ -55,14 +56,16 @@ class PictureDescriptionVlmModel(
 
             try:
                 import torch
-                from transformers import (
-                    AutoModelForImageTextToText,
-                    AutoProcessor,
+
+                transformers = import_module("transformers")
+                AutoModelForImageTextToText = getattr(
+                    transformers, "AutoModelForImageTextToText"
                 )
-            except ImportError:
+                AutoProcessor = getattr(transformers, "AutoProcessor")
+            except (AttributeError, ImportError) as e:
                 raise ImportError(
                     "transformers >=4.46 is not installed. Please install Docling with the required extras `pip install docling[vlm]`."
-                )
+                ) from e
 
             # Initialize processor and model
             with _model_init_lock:
@@ -117,9 +120,7 @@ class PictureDescriptionVlmModel(
         )
         inputs = inputs.to(self.device)
 
-        from typing import Any, cast
-
-        generated_ids = cast(Any, self.model).generate(
+        generated_ids = self.model.generate(
             **inputs,
             generation_config=GenerationConfig(**self.options.generation_config),
         )

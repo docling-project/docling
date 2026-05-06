@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union, cast
 
 import numpy as np
 from docling_core.types.doc import (
@@ -149,7 +149,7 @@ class DocumentPictureClassifier(
         if self.engine is None:
             raise RuntimeError("Picture classifier engine is not initialized.")
 
-        images: List[Union[Image.Image, np.ndarray]] = []
+        images: list[Image.Image] = []
         elements: List[PictureItem] = []
         for i, el in enumerate(element_batch):
             assert isinstance(el.item, PictureItem)
@@ -159,7 +159,7 @@ class DocumentPictureClassifier(
             if isinstance(raw_image, Image.Image):
                 raw_image = raw_image.convert("RGB")
             elif isinstance(raw_image, np.ndarray):
-                raw_image = Image.fromarray(raw_image).convert("RGB")
+                raw_image = Image.fromarray(cast(Any, raw_image)).convert("RGB")
             else:
                 raise TypeError(
                     "Supported input formats are PIL.Image.Image or numpy.ndarray."

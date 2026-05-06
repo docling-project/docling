@@ -204,6 +204,7 @@ def api_image_request_streaming(
         r.raise_for_status()
 
         full_text = []
+        num_tokens = None
         for raw_line in r.iter_lines(decode_unicode=True):
             if not raw_line:  # keep-alives / blank lines
                 continue
@@ -231,7 +232,6 @@ def api_image_request_streaming(
                 piece = ""
 
             # Try to extract token count
-            num_tokens = None
             try:
                 if "usage" in obj:
                     usage = obj["usage"]

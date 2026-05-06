@@ -1,6 +1,6 @@
 import enum
 from functools import cache
-from typing import Annotated, Generic, Literal
+from typing import Annotated, Any, Generic, Literal, cast
 
 from pydantic import BaseModel, Field
 from typing_extensions import TypeVar
@@ -96,9 +96,10 @@ def make_request_model(
     Dynamically create (and cache) a subclass of GenericChunkDocumentsRequest[opt_type]
     with chunking_options having a default factory.
     """
+    base_model = cast(Any, GenericChunkDocumentsRequest)[opt_type]
     return type(
         f"{opt_type.__name__}DocumentsRequest",
-        (GenericChunkDocumentsRequest[opt_type],),  # type: ignore[valid-type]
+        (base_model,),
         {
             "__annotations__": {"chunking_options": opt_type},
             "chunking_options": Field(

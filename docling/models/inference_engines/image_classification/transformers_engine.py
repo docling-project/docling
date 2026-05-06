@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import logging
 import sys
+from importlib import import_module
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
 
 from packaging import version
 
 if TYPE_CHECKING:
     import torch
-    from transformers import AutoModelForImageClassification
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.image_classification_engine_options import (
@@ -51,7 +51,7 @@ class TransformersImageClassificationEngine(HfImageClassificationEngineBase):
             artifacts_path=artifacts_path,
         )
         self.options: TransformersImageClassificationEngineOptions = options
-        self._model: Optional[AutoModelForImageClassification] = None
+        self._model: Optional[Any] = None
         self._device: Optional[torch.device] = None
 
     def _resolve_device(self) -> torch.device:
@@ -99,7 +99,11 @@ class TransformersImageClassificationEngine(HfImageClassificationEngineBase):
     def initialize(self) -> None:
         """Initialize PyTorch model and preprocessor."""
         import torch
-        from transformers import AutoModelForImageClassification
+
+        AutoModelForImageClassification = getattr(
+            import_module("transformers"),
+            "AutoModelForImageClassification",
+        )
 
         _log.info("Initializing Transformers image-classification engine")
 
@@ -169,7 +173,7 @@ class TransformersImageClassificationEngine(HfImageClassificationEngineBase):
         inputs = self._processor(images=images, return_tensors="pt").to(self._device)
 
         with torch.inference_mode():
-            outputs = self._model(**inputs)  # type: ignore[operator]
+            outputs = cast(Any, self._model)(**inputs)
             probs_batch = torch.softmax(outputs.logits, dim=-1)
 
         batch_outputs: List[ImageClassificationEngineOutput] = []

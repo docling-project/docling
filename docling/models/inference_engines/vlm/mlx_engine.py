@@ -141,8 +141,8 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             )
 
         # Load the model
-        self.vlm_model, self.processor = load(artifacts_path)
-        self.config = load_config(artifacts_path)
+        self.vlm_model, self.processor = load(str(artifacts_path))
+        self.config = load_config(str(artifacts_path))
 
         _log.info(f"Loaded MLX model {repo_id} (revision: {revision})")
 

@@ -339,7 +339,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             textline_cells=text_cells,
             char_cells=[],
             word_cells=[],
-            has_textlines=len(text_cells) > 0,
+            has_lines=len(text_cells) > 0,
             has_words=False,
             has_chars=False,
         )
@@ -422,10 +422,12 @@ class PyPdfiumDocumentBackend(ManagedPdfiumDocumentBackend):
             ) from e
 
     def page_count(self) -> int:
+        assert self._pdoc is not None
         with pypdfium2_lock:
             return len(self._pdoc)
 
     def load_page(self, page_no: int) -> PyPdfiumPageBackend:
+        assert self._pdoc is not None
         with pypdfium2_lock:
             return PyPdfiumPageBackend(self._pdoc, self.document_hash, page_no)
 

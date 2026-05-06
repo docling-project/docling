@@ -1,32 +1,13 @@
 import datetime
 import logging
 import re
-import sys
 import tempfile
 import time
 import warnings
 from collections.abc import Iterable
+from importlib import import_module
 from pathlib import Path
-from typing import Annotated, Type
-
-# Check for CLI dependencies
-try:
-    import rich.table
-    import typer
-except ImportError as e:
-    missing_package = str(e).split("'")[1] if "'" in str(e) else "typer or rich"
-    print(
-        f"Error: Missing required CLI dependency '{missing_package}'", file=sys.stderr
-    )
-    print("\nThe docling CLI requires additional dependencies.", file=sys.stderr)
-    print("Please install them using one of the following options:\n", file=sys.stderr)
-    print("  1. Install the full docling package (recommended):", file=sys.stderr)
-    print("     pip install docling\n", file=sys.stderr)
-    print("  2. Install docling-slim with CLI support:", file=sys.stderr)
-    print("     pip install docling-slim[cli]\n", file=sys.stderr)
-    print("  3. Install just the missing dependencies:", file=sys.stderr)
-    print("     pip install typer rich\n", file=sys.stderr)
-    sys.exit(1)
+from typing import Annotated, Any, Type
 
 from docling_core.transforms.serializer.html import (
     HTMLDocSerializer,
@@ -36,14 +17,14 @@ from docling_core.transforms.serializer.html import (
 from docling_core.transforms.visualizer.layout_visualizer import LayoutVisualizer
 from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
-from pydantic import TypeAdapter
-from rich.console import Console
+from pydantic import SecretStr, TypeAdapter
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.cli._dependencies import missing_cli_dependency_error
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
     WHISPER_BASE,
@@ -114,6 +95,19 @@ from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.vlm_pipeline import VlmPipeline
 from docling.utils.profiling import ProfilingItem
 
+typer: Any = None
+Console: Any = None
+rich_table: Any = None
+rich_print: Any = None
+try:
+    typer = import_module("typer")
+    rich_table = import_module("rich.table")
+    rich_print = getattr(import_module("rich"), "print")
+    Console = getattr(import_module("rich.console"), "Console")
+except ImportError as e:
+    missing_cli_dependency_error(e, cli_name="docling")
+
+
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
 warnings.filterwarnings(action="ignore", category=FutureWarning, module="easyocr")
 
@@ -123,7 +117,7 @@ console = Console()
 err_console = Console(stderr=True)
 
 ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
-ocr_engines_enum_internal = ocr_factory_internal.get_enum()
+ocr_engines_internal = ", ".join(ocr_factory_internal.registered_kind)
 
 # Get available VLM presets from the registry
 vlm_preset_ids = VlmConvertOptions.list_preset_ids()
@@ -199,7 +193,7 @@ def show_external_plugins_callback(value: bool):
         table_factory_all = get_table_structure_factory(allow_external_plugins=True)
 
         def print_external_plugins(factory: BaseFactory, factory_name: str):
-            table = rich.table.Table(title=f"Available {factory_name} engines")
+            table = rich_table.Table(title=f"Available {factory_name} engines")
             table.add_column("Name", justify="right")
             table.add_column("Plugin")
             table.add_column("Package")
@@ -210,7 +204,7 @@ def show_external_plugins_callback(value: bool):
                         meta.plugin_name,
                         meta.module.split(".")[0],
                     )
-            rich.print(table)
+            rich_print(table)
 
         print_external_plugins(ocr_factory_all, "OCR")
         print_external_plugins(layout_factory_all, "layout")
@@ -325,7 +319,7 @@ def export_documents(
 
             # Print profiling timings
             if print_timings:
-                table = rich.table.Table(title=f"Profiling Summary, {doc_filename}")
+                table = rich_table.Table(title=f"Profiling Summary, {doc_filename}")
                 metric_columns = [
                     "Stage",
                     "count",
@@ -485,7 +479,7 @@ def convert(  # noqa: C901
             ...,
             help=(
                 f"The OCR engine to use. When --allow-external-plugins is *not* set, the available values are: "
-                f"{', '.join(o.value for o in ocr_engines_enum_internal)}. "
+                f"{ocr_engines_internal}. "
                 f"Use the option --show-external-plugins to see the options allowed with external plugins."
             ),
         ),
@@ -713,8 +707,11 @@ def convert(  # noqa: C901
                                         continue
                                     input_doc_paths.append(path)
                     elif local_path.exists():
-                        if not local_path.name.startswith("~$") and ext == "docx":
-                            _log.info(f"Ignoring temporary Word file: {path}")
+                        if (
+                            local_path.name.startswith("~$")
+                            and local_path.suffix.lower() == ".docx"
+                        ):
+                            _log.info(f"Ignoring temporary Word file: {local_path}")
                             continue
                         input_doc_paths.append(local_path)
                     else:
@@ -760,7 +757,7 @@ def convert(  # noqa: C901
 
         format_options: dict[InputFormat, FormatOption] = {}
         pdf_backend_options: PdfBackendOptions | None = PdfBackendOptions(
-            password=pdf_password
+            password=SecretStr(pdf_password) if pdf_password is not None else None
         )
 
         if pipeline == ProcessingPipeline.STANDARD:
@@ -887,6 +884,8 @@ def convert(  # noqa: C901
                 InputFormat.PDF: pdf_format_option,
                 InputFormat.IMAGE: pdf_format_option,
             }
+        else:
+            raise RuntimeError(f"Unexpected processing pipeline: {pipeline}")
 
         # Set ASR options
         asr_pipeline_options = AsrPipelineOptions(

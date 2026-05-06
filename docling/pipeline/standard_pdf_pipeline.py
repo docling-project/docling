@@ -290,6 +290,7 @@ class ThreadedPipelineStage:
                     continue
 
                 pages: List[Page] = [payload for _, payload in pages_with_payloads]
+                _t_start = _t_mono = 0.0
                 if _log.isEnabledFor(logging.DEBUG):
                     _t_start = time.time()
                     _t_mono = time.monotonic()
@@ -379,6 +380,7 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
                 result.extend(items)
                 continue
             try:
+                _t_start = _t_mono = 0.0
                 if _log.isEnabledFor(logging.DEBUG):
                     _t_start = time.time()
                     _t_mono = time.monotonic()

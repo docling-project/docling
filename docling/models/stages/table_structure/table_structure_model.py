@@ -3,7 +3,7 @@ import logging
 import warnings
 from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Any, Literal, Optional, cast
 
 import numpy
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
@@ -253,7 +253,7 @@ class TableStructureModel(BaseTableStructureModel):
                                     "bbox": new_cell.rect.to_bounding_box().model_dump(),
                                 }
                             )
-                    page_input["tokens"] = tokens
+                    cast(Any, page_input)["tokens"] = tokens
 
                     tf_output = self.tf_predictor.multi_table_predict(
                         page_input, [tbl_box], do_matching=self.do_cell_matching

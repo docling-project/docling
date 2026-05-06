@@ -2,7 +2,7 @@ import logging
 import warnings
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -47,7 +47,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
         }
         # Powerpoint file:
-        self.path_or_stream: Union[BytesIO, Path] = path_or_stream
+        self.path_or_stream: Union[BytesIO, Path, None] = path_or_stream
         self.page_range = in_doc.limits.page_range
 
         self.pptx_obj: Optional[presentation.Presentation] = None
@@ -104,7 +104,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         origin = DocumentOrigin(
             filename=self.file.name or "file",
             mimetype="application/vnd.ms-powerpoint",
-            binary_hash=self.document_hash,
+            binary_hash=cast(int, self.document_hash),
         )
 
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
@@ -129,10 +129,15 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             top = 0
             width = slide_size.width
             height = slide_size.height
-        shape_bbox = [left, top, left + width, top + height]
+        shape_bbox = (
+            float(left),
+            float(top),
+            float(left + width),
+            float(top + height),
+        )
         shape_bbox = BoundingBox.from_tuple(shape_bbox, origin=CoordOrigin.BOTTOMLEFT)
         prov = ProvenanceItem(
-            page_no=slide_ind + 1, charspan=[0, len(text)], bbox=shape_bbox
+            page_no=slide_ind + 1, charspan=(0, len(text)), bbox=shape_bbox
         )
 
         return prov
@@ -698,7 +703,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 name=f"slide-{slide_ind}", label=GroupLabel.CHAPTER, parent=parents[0]
             )
 
-            slide_size = Size(width=slide_width, height=slide_height)
+            slide_size = Size(
+                width=float(slide_width or 0), height=float(slide_height or 0)
+            )
             doc.add_page(page_no=slide_ind + 1, size=slide_size)
 
             def _safe_shape_type(shape):
@@ -761,7 +768,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         bbox = BoundingBox(l=0, t=0, r=0, b=0)
                         prov = ProvenanceItem(
                             page_no=slide_ind + 1,
-                            charspan=[0, len(notes_text)],
+                            charspan=(0, len(notes_text)),
                             bbox=bbox,
                         )
                         doc.add_text(

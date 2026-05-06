@@ -3,6 +3,7 @@ import re
 import warnings
 from abc import abstractmethod
 from collections.abc import Iterable
+from importlib import import_module
 from io import StringIO
 from pathlib import Path
 from typing import Any, List, Literal, Optional, cast
@@ -24,7 +25,6 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import CodeMetaField
 from PIL import Image
 from pydantic import BaseModel
-from transformers import AutoModelForImageTextToText, AutoProcessor
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
@@ -35,6 +35,10 @@ from docling.datamodel.chart_extraction_options import (
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
+
+_transformers = import_module("transformers")
+AutoModelForImageTextToText = getattr(_transformers, "AutoModelForImageTextToText")
+AutoProcessor = getattr(_transformers, "AutoProcessor")
 
 _log = logging.getLogger(__name__)
 
@@ -224,7 +228,7 @@ class ChartExtractionModelGraniteVision(_BaseChartExtractionModelGraniteVision):
         images: List[Image.Image] = []
         elements: List[PictureItem] = []
         for el in element_batch:
-            elements.append(el.item)  # type: ignore[arg-type]
+            elements.append(cast(PictureItem, el.item))
             images.append(el.image)
 
         # Create a batch of conversations
@@ -262,7 +266,7 @@ class ChartExtractionModelGraniteVision(_BaseChartExtractionModelGraniteVision):
         ]
 
         # autoregressively complete prompt for batch
-        output_ids = cast(Any, self._model).generate(
+        output_ids = self._model.generate(
             **inputs,
             max_new_tokens=self._model_max_length,
             eos_token_id=eos_ids,
@@ -373,7 +377,7 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
                 trust_remote_code=True,
             )
         if hasattr(self._model, "merge_lora_adapters"):
-            cast(Any, self._model).merge_lora_adapters()
+            self._model.merge_lora_adapters()
         self._model.eval()
 
     def __call__(
@@ -389,7 +393,7 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
         images: List[Image.Image] = []
         elements: List[PictureItem] = []
         for el in element_batch:
-            elements.append(el.item)  # type: ignore[arg-type]
+            elements.append(cast(PictureItem, el.item))
             images.append(el.image)
 
         active_prompts: list[str] = []
@@ -435,7 +439,7 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
             do_pad=True,
         ).to(self.device)
 
-        output_ids = cast(Any, self._model).generate(
+        output_ids = self._model.generate(
             **inputs,
             max_new_tokens=self._model_max_length,
             use_cache=True,

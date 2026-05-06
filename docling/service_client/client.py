@@ -533,7 +533,7 @@ class DoclingServiceClient:
                 options=options,
                 sources=[
                     HttpSourceRequest(
-                        url=source,
+                        url=cast(Any, source),
                         headers={} if source_headers is None else source_headers,
                     )
                 ],
@@ -589,7 +589,9 @@ class DoclingServiceClient:
                     mode="json", exclude_none=True
                 ),
                 "sources": [
-                    HttpSourceRequest(url=source, headers={}).model_dump(mode="json")
+                    HttpSourceRequest(url=cast(Any, source), headers={}).model_dump(
+                        mode="json"
+                    )
                 ],
                 "include_converted_doc": False,
                 "target": InBodyTarget().model_dump(mode="json"),
@@ -1206,7 +1208,7 @@ class DoclingServiceClient:
                 options=options,
                 sources=[
                     HttpSourceRequest(
-                        url=source,
+                        url=cast(Any, source),
                         headers={} if source_headers is None else source_headers,
                     )
                 ],

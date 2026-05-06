@@ -426,7 +426,7 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
             textline_cells=line_cells,
             char_cells=[],
             word_cells=word_cells,
-            has_textlines=True,
+            has_lines=True,
             has_words=True,
             has_chars=False,
         )

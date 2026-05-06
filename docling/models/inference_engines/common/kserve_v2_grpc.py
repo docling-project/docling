@@ -5,20 +5,19 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, Mapping, Sequence, Tuple
+from importlib import import_module
+from typing import Any, Dict, Mapping, Sequence, Tuple, cast
 
 import numpy as np
 
 try:
-    import grpc  # type: ignore[import-untyped]
-    from tritonclient.grpc import (  # type: ignore[import-untyped, import-not-found]
-        service_pb2,
-        service_pb2_grpc,
-    )
+    grpc = cast(Any, import_module("grpc"))
+    service_pb2 = cast(Any, import_module("tritonclient.grpc.service_pb2"))
+    service_pb2_grpc = cast(Any, import_module("tritonclient.grpc.service_pb2_grpc"))
 except ImportError:
-    grpc = None  # type: ignore[assignment]
-    service_pb2 = None  # type: ignore[assignment]
-    service_pb2_grpc = None  # type: ignore[assignment]
+    grpc = cast(Any, None)
+    service_pb2 = cast(Any, None)
+    service_pb2_grpc = cast(Any, None)
 
 from docling.models.inference_engines.common.kserve_v2_types import (
     KSERVE_V2_NUMPY_DATATYPES,
@@ -269,6 +268,8 @@ class KserveV2GrpcClient:
         request_parameters: Mapping[str, Any] | None = None,
     ) -> Dict[str, np.ndarray]:
         _batch_size = next(iter(inputs.values())).shape[0] if inputs else 0
+        _t_ser_start = _t_ser_mono = _t_grpc_start = _t_grpc_mono = 0.0
+        _t_deser_start = _t_deser_mono = 0.0
 
         if _log.isEnabledFor(logging.DEBUG):
             _t_ser_start = time.time()
