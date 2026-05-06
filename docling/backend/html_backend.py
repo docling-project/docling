@@ -4323,7 +4323,28 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             max_size = self.options.max_remote_image_bytes
             headers = {"Range": f"bytes=0-{max_size - 1}"}
 
-            response = requests.get(
+            # Create session with redirect limit
+            session = requests.Session()
+            session.max_redirects = self.options.max_redirects
+
+            # Hook to validate each redirect target
+            def _check_redirect_safety(response, *args, **kwargs):
+                """Validate each redirect target before following it."""
+                if response.is_redirect or response.is_permanent_redirect:
+                    redirect_url = response.headers.get("location")
+                    if redirect_url:
+                        # Handle relative redirects
+                        if not redirect_url.startswith(("http://", "https://")):
+                            from urllib.parse import urljoin
+
+                            redirect_url = urljoin(response.url, redirect_url)
+
+                        # Validate the redirect target
+                        _validate_url_safety(redirect_url)
+
+            session.hooks["response"].append(_check_redirect_safety)
+
+            response = session.get(
                 src_loc, stream=True, headers=headers, timeout=(5, 30)
             )
             response.raise_for_status()

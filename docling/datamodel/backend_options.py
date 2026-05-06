@@ -1,7 +1,7 @@
 from pathlib import Path, PurePath
 from typing import Annotated, Literal, Optional, Union
 
-from pydantic import AnyUrl, BaseModel, Field, PositiveInt, SecretStr
+from pydantic import AnyUrl, BaseModel, Field, PositiveInt, SecretStr, conint
 
 
 class BaseBackendOptions(BaseModel):
@@ -97,6 +97,10 @@ class HTMLBackendOptions(BaseBackendOptions):
     max_remote_image_bytes: PositiveInt = Field(
         20 * 1024 * 1024,  # 20 MB
         description="The maximum number of bytes for remote image downloads.",
+    )
+    max_redirects: Annotated[int, Field(ge=0)] = Field(
+        5,
+        description="Maximum number of HTTP redirects to follow when fetching remote resources. Set to 0 to disable redirects.",
     )
 
 
