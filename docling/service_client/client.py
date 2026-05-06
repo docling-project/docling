@@ -56,7 +56,6 @@ from docling.datamodel.service.targets import InBodyTarget, ZipTarget
 from docling.datamodel.settings import DocumentLimits, PageRange
 from docling.service_client._scheduler import _run_bounded
 from docling.service_client.exceptions import (
-    BatchConversionError,
     ConversionError,
     ResultExpiredError,
     ResultNotReadyError,
@@ -259,12 +258,7 @@ class DoclingServiceClient:
         page_range: PageRange | None = None,
         options: ConvertDocumentsRequestOptions | None = None,
         max_concurrency: int | None = None,
-        raises_on_error: bool = True,
     ) -> Iterator[ConversionResult]:
-        source_list = list(sources)
-        if not source_list:
-            return iter(())
-
         resolved = self._resolve_options(
             options=options,
             max_num_pages=max_num_pages,
@@ -272,61 +266,17 @@ class DoclingServiceClient:
             page_range=page_range,
         )
         effective_cap = self._effective_concurrency(max_concurrency)
-        in_flight = effective_cap
         submit_options, _ = self._options_for_target_format(
             resolved.options, OutputFormat.JSON
         )
-        ordered_results, ordered_errors = self._run_convert_all_async(
-            source_list=source_list,
+        results = self._run_convert_all_async(
+            sources=sources,
             headers=headers,
             resolved=resolved,
             submit_options=submit_options,
-            in_flight=in_flight,
+            in_flight=effective_cap,
         )
-
-        failures: list[Exception] = []
-        if raises_on_error:
-            for idx, source in enumerate(source_list):
-                exc = ordered_errors[idx]
-                result = ordered_results[idx]
-                if exc is not None:
-                    failures.append(exc)
-                    continue
-                if result is None:
-                    failures.append(
-                        ConversionError(
-                            f"Conversion failed for source {self._source_name(source)}."
-                        )
-                    )
-                    continue
-                if result.status not in SUCCESS_CONVERSION_STATUSES:
-                    failures.append(ConversionError(self._failure_message(result)))
-
-            if failures:
-                raise BatchConversionError(
-                    "One or more conversions failed in convert_all().",
-                    failures=failures,
-                )
-
-            return iter([result for result in ordered_results if result is not None])
-
-        emitted: list[ConversionResult] = []
-        for idx, source in enumerate(source_list):
-            result = ordered_results[idx]
-            exc = ordered_errors[idx]
-            if result is not None:
-                emitted.append(result)
-                continue
-            error_message = str(exc) if exc is not None else "Unknown conversion error."
-            emitted.append(
-                self._build_failed_conversion_result(
-                    descriptor=self._describe_source(source),
-                    limits=resolved.limits,
-                    error_message=error_message,
-                    status=ConversionStatus.FAILURE,
-                )
-            )
-        return iter(emitted)
+        return iter(results)
 
     def submit_and_retrieve_many(
         self,
@@ -973,18 +923,18 @@ class DoclingServiceClient:
 
     def _run_convert_all_async(
         self,
-        source_list: list[SourceType],
+        sources: Iterable[SourceType],
         headers: dict[str, str] | None,
         resolved: _ResolvedOptions,
         submit_options: ConvertDocumentsRequestOptions,
         in_flight: int,
-    ) -> tuple[list[ConversionResult | None], list[Exception | None]]:
+    ) -> list[ConversionResult]:
         try:
             asyncio.get_running_loop()
         except RuntimeError:
             return asyncio.run(
                 self._convert_all_async(
-                    source_list=source_list,
+                    sources=sources,
                     headers=headers,
                     resolved=resolved,
                     submit_options=submit_options,
@@ -1072,28 +1022,40 @@ class DoclingServiceClient:
 
     async def _convert_all_async(
         self,
-        source_list: list[SourceType],
+        sources: Iterable[SourceType],
         headers: dict[str, str] | None,
         resolved: _ResolvedOptions,
         submit_options: ConvertDocumentsRequestOptions,
         in_flight: int,
-    ) -> tuple[list[ConversionResult | None], list[Exception | None]]:
-        ordered_results: list[ConversionResult | None] = [None] * len(source_list)
-        ordered_errors: list[Exception | None] = [None] * len(source_list)
-        if not source_list:
-            return ordered_results, ordered_errors
+    ) -> list[ConversionResult]:
+        results: dict[int, ConversionResult] = {}
+        descriptors: dict[int, _SourceDescriptor] = {}
+        errors: dict[int, Exception] = {}
+        total = 0
 
-        items: list[ConversionItem] = []
-        for idx, source in enumerate(source_list):
-            descriptor = self._describe_source(source)
-            preflight = self._preflight_limits(
-                descriptor=descriptor, limits=resolved.limits
-            )
-            if preflight is not None:
-                ordered_results[idx] = preflight
-                continue
-            items.append(
-                ConversionItem(
+        def make_items() -> Iterator[ConversionItem]:
+            nonlocal total
+            for idx, source in enumerate(sources):
+                total = idx + 1
+                try:
+                    descriptor = self._describe_source(source)
+                except Exception as exc:
+                    errors[idx] = exc
+                    name = source.name if hasattr(source, "name") else str(source)
+                    descriptors[idx] = _SourceDescriptor(
+                        source_name=name,
+                        input_format=self._guess_input_format(name),
+                        file_size=None,
+                    )
+                    continue
+                descriptors[idx] = descriptor
+                preflight = self._preflight_limits(
+                    descriptor=descriptor, limits=resolved.limits
+                )
+                if preflight is not None:
+                    results[idx] = preflight
+                    continue
+                yield ConversionItem(
                     source=source,
                     options=submit_options,
                     source_headers=headers,
@@ -1102,25 +1064,36 @@ class DoclingServiceClient:
                         descriptor=descriptor,
                     ),
                 )
-            )
 
         async for item, outcome in self._submit_and_retrieve_many_async(
-            item_list=items,
+            item_list=make_items(),
             max_in_flight=in_flight,
             ordered=True,
         ):
             metadata = cast(_ConvertAllItemMetadata, item.metadata)
             if isinstance(outcome, BaseException):
-                ordered_errors[metadata.source_index] = self._normalize_exception(
-                    outcome
+                errors[metadata.source_index] = self._normalize_exception(outcome)
+            else:
+                results[metadata.source_index] = self._build_conversion_result(
+                    payload=outcome,
+                    descriptor=metadata.descriptor,
+                    limits=resolved.limits,
                 )
-                continue
-            ordered_results[metadata.source_index] = self._build_conversion_result(
-                payload=outcome,
-                descriptor=metadata.descriptor,
-                limits=resolved.limits,
-            )
-        return ordered_results, ordered_errors
+
+        for idx in range(total):
+            if idx not in results:
+                exc = errors.get(idx)
+                error_message = (
+                    str(exc) if exc is not None else "Unknown conversion error."
+                )
+                results[idx] = self._build_failed_conversion_result(
+                    descriptor=descriptors[idx],
+                    limits=resolved.limits,
+                    error_message=error_message,
+                    status=ConversionStatus.FAILURE,
+                )
+
+        return [results[i] for i in range(total)]
 
     async def _submit_and_retrieve_many_async(
         self,

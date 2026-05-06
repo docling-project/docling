@@ -422,16 +422,17 @@ def test_convert_all_uses_async_pipeline_and_preserves_order(tmp_path) -> None:
             max_in_flight,
             ordered,
         ):
+            items = list(item_list)
             calls.append(
                 {
-                    "count": len(item_list),
+                    "count": len(items),
                     "max_in_flight": max_in_flight,
                     "ordered": ordered,
-                    "source_headers": [item.source_headers for item in item_list],
-                    "request_headers": [item.headers for item in item_list],
+                    "source_headers": [item.source_headers for item in items],
+                    "request_headers": [item.headers for item in items],
                 }
             )
-            for item in item_list:
+            for item in items:
                 yield item, _convert_payload(Path(item.source).name)
 
         client._submit_and_retrieve_many_async = MethodType(
@@ -821,6 +822,9 @@ def test_submit_and_retrieve_many_consumes_iterable_incrementally(
             return _status_response(f"task-{Path(source).name}", "pending")
 
         async def fake_wait(self, task_id, timeout, async_client):
+            await asyncio.sleep(
+                0
+            )  # yield so the event loop can process completed results
             return _status_response(task_id, "success")
 
         async def fake_fetch_payload(self, task_id, last_status, async_client):

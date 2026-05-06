@@ -12,7 +12,6 @@ from docling.service_client.client import (
     VersionResponse,
 )
 from docling.service_client.exceptions import (
-    BatchConversionError,
     ConversionError,
     DoclingServiceClientError,
     ResultExpiredError,
@@ -28,7 +27,6 @@ from docling.service_client.job import ConversionJob
 __all__ = [
     "DEFAULT_MAX_CONCURRENCY",
     "MAX_CONCURRENCY_LIMIT",
-    "BatchConversionError",
     "ChunkerKind",
     "ConversionError",
     "ConversionItem",
