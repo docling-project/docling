@@ -52,10 +52,15 @@ def _get_pdf_page_geometry(
 
 
 class MetsGbsPageBackend(PdfPageBackend):
-    def __init__(self, parsed_page: SegmentedPdfPage, page_im: PILImage):
+    def __init__(self, parsed_page: SegmentedPdfPage, page_im: PILImage, page_no: int):
         self._im = page_im
         self._dpage = parsed_page
+        self._page_no = page_no
         self.valid = parsed_page is not None
+
+    @property
+    def page_no(self) -> int:
+        return self._page_no + 1
 
     def is_valid(self) -> bool:
         return self.valid
@@ -438,7 +443,7 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
     def load_page(self, page_no: int) -> MetsGbsPageBackend:
         # TODO: is this thread-safe?
         page, im = self._parse_page(page_no)
-        return MetsGbsPageBackend(parsed_page=page, page_im=im)
+        return MetsGbsPageBackend(parsed_page=page, page_im=im, page_no=page_no)
 
     def is_valid(self) -> bool:
         return self.root_mets is not None and self.page_count() > 0

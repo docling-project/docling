@@ -1,11 +1,14 @@
 from pathlib import Path
+from typing import Any
 
 import pytest
 from docling_core.types.doc import ImageRefMode
 from typer.testing import CliRunner
 
 from docling.cli.main import _should_generate_export_images, app
-from docling.datamodel.base_models import OutputFormat
+from docling.datamodel.base_models import InputFormat, OutputFormat
+from docling.datamodel.pipeline_options import PdfBackend
+from docling.document_converter import PdfFormatOption
 
 runner = CliRunner()
 
@@ -122,3 +125,50 @@ def test_cli_audio_extensions_coverage():
         assert ext in audio_extensions, (
             f"Audio extension {ext} not found in FormatToExtensions[InputFormat.AUDIO]"
         )
+
+
+def test_cli_accepts_threaded_docling_parse_backend(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured_backend: type[Any] | None = None
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            nonlocal captured_backend
+            pdf_option = format_options[InputFormat.PDF]
+            assert isinstance(pdf_option, PdfFormatOption)
+            captured_backend = pdf_option.backend
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+        ) -> list[Any]:
+            assert len(input_doc_paths) == 1
+            return []
+
+    monkeypatch.setattr("docling.cli.main.DocumentConverter", _FakeDocumentConverter)
+
+    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            source,
+            "--output",
+            str(output),
+            "--pdf-backend",
+            PdfBackend.THREADED_DOCLING_PARSE.value,
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_backend is not None
+    assert captured_backend.__name__ == "ThreadedDoclingParseDocumentBackend"

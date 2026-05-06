@@ -1023,6 +1023,8 @@ class PdfBackend(str, Enum):
         DOCLING_PARSE: Docling Parse backend providing enhanced layout
             analysis, structure preservation, and advanced table detection.
             This is the recommended backend for most use cases.
+        THREADED_DOCLING_PARSE: Threaded Docling Parse backend optimized for
+            concurrent page parsing in the standard PDF pipeline.
         DLPARSE_V1: Deprecated. Maps to `DOCLING_PARSE`.
         DLPARSE_V2: Deprecated. Maps to `DOCLING_PARSE`.
         DLPARSE_V4: Deprecated. Maps to `DOCLING_PARSE`.
@@ -1030,6 +1032,7 @@ class PdfBackend(str, Enum):
 
     PYPDFIUM2 = "pypdfium2"
     DOCLING_PARSE = "docling_parse"
+    THREADED_DOCLING_PARSE = "threaded_docling_parse"
 
     # Deprecated - these map to DOCLING_PARSE
     DLPARSE_V1 = "dlparse_v1"  # deprecated

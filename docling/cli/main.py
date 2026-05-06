@@ -39,7 +39,10 @@ from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
 from rich.console import Console
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import (
+    DoclingParseDocumentBackend,
+    ThreadedDoclingParseDocumentBackend,
+)
 from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
@@ -802,6 +805,8 @@ def convert(  # noqa: C901
             backend: Type[PdfDocumentBackend]
             if pdf_backend == PdfBackend.DOCLING_PARSE:
                 backend = DoclingParseDocumentBackend  # type: ignore
+            elif pdf_backend == PdfBackend.THREADED_DOCLING_PARSE:
+                backend = ThreadedDoclingParseDocumentBackend  # type: ignore
             elif pdf_backend == PdfBackend.PYPDFIUM2:
                 backend = PyPdfiumDocumentBackend  # type: ignore
             else:
