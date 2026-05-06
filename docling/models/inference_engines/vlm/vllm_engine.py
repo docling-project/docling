@@ -228,6 +228,14 @@ class VllmVlmEngine(BaseVlmEngine):
             if "quantization" in extra_cfg:
                 llm_kwargs.setdefault("quantization", extra_cfg["quantization"])
 
+            # Workaround: vllm 0.19+ with torch 2.10+ triggers a duplicate
+            # TritonTemplate assertion via @torch.compile in deep_gemm.
+            # Spawning (not forking) avoids CUDA re-init in worker processes.
+            import os
+
+            os.environ.setdefault("TORCHDYNAMO_DISABLE", "1")
+            os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
+
             # Initialize vLLM LLM
             self.llm = LLM(**llm_kwargs)
 
