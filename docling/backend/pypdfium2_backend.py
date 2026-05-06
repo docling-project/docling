@@ -256,7 +256,7 @@ class PyPdfiumPageBackend(PdfPageBackend):
         page_size = self.get_size()
         with pypdfium2_lock:
             for obj in self._ppage.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]):
-                pos = obj.get_pos()
+                pos = obj.get_bounds()
                 cropbox = BoundingBox.from_tuple(
                     pos, origin=CoordOrigin.BOTTOMLEFT
                 ).to_top_left_origin(page_height=page_size.height)
