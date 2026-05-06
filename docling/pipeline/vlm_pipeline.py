@@ -501,9 +501,7 @@ class VlmPipeline(PaginatedPipeline):
         # Add page metadata and concatenate
         return self._add_page_metadata_and_concatenate(page_docs, conv_res)
 
-    def _parse_chandra_html(
-        self, conv_res: ConversionResult
-    ) -> DoclingDocument:
+    def _parse_chandra_html(self, conv_res: ConversionResult) -> DoclingDocument:
         """Parse chandra-ocr-2 HTML output into a DoclingDocument."""
         from docling.utils.chandra_utils import parse_chandra_html
 
@@ -527,9 +525,7 @@ class VlmPipeline(PaginatedPipeline):
 
         return self._add_page_metadata_and_concatenate(page_docs, conv_res)
 
-    def _parse_dots_json(
-        self, conv_res: ConversionResult
-    ) -> DoclingDocument:
+    def _parse_dots_json(self, conv_res: ConversionResult) -> DoclingDocument:
         """Parse dots.ocr / dots.mocr JSON output into a DoclingDocument."""
         from docling.utils.dots_utils import parse_dots_json
 

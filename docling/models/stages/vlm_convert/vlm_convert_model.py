@@ -42,7 +42,7 @@ class VlmConvertModel(BasePageModel):
         self,
         enabled: bool,
         enable_remote_services: bool,
-        artifacts_path: Optional[Union[Path, str]],
+        artifacts_path: Union[Path, str] | None,
         options: VlmConvertOptions,
         accelerator_options: AcceleratorOptions,
     ):

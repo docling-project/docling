@@ -61,7 +61,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self,
         options: TransformersVlmEngineOptions,
         accelerator_options: AcceleratorOptions,
-        artifacts_path: Optional[Union[Path, str]],
+        artifacts_path: Union[Path, str] | None,
         model_config: Optional["EngineModelConfig"] = None,
     ):
         """Initialize the Transformers engine.
@@ -78,10 +78,10 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self.artifacts_path = artifacts_path
 
         # These will be set during initialization
-        self.device: Optional[str] = None
-        self.processor: Optional[ProcessorMixin] = None
-        self.vlm_model: Optional[PreTrainedModel] = None
-        self.generation_config: Optional[GenerationConfig] = None
+        self.device: str | None = None
+        self.processor: ProcessorMixin | None = None
+        self.vlm_model: PreTrainedModel | None = None
+        self.generation_config: GenerationConfig | None = None
 
         # Initialize immediately if model_config is provided
         if self.model_config is not None:
@@ -161,7 +161,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
 
         # Setup quantization if needed
-        quantization_config: Optional[BitsAndBytesConfig] = None
+        quantization_config: BitsAndBytesConfig | None = None
         if self.options.quantized:
             quantization_config = BitsAndBytesConfig(
                 load_in_8bit=self.options.load_in_8bit,
@@ -392,9 +392,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         }
 
         # Generate — filter processor-only keys that generate() doesn't accept
-        gen_kwargs = {
-            k: v for k, v in inputs.items() if k != "mm_token_type_ids"
-        }
+        gen_kwargs = {k: v for k, v in inputs.items() if k != "mm_token_type_ids"}
         gen_kwargs.update(
             max_new_tokens=first_input.max_new_tokens,
             use_cache=self.options.use_kv_cache,
@@ -447,7 +445,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                         # Remove partial prefix (e.g. "<|im_" from "<|im_end|>")
                         for k in range(len(ss) - 1, 0, -1):
                             if text.endswith(ss[:k]):
-                                text = text[: -k]
+                                text = text[:-k]
                                 break
                 cleaned.append(text)
             decoded_texts = cleaned

@@ -1558,8 +1558,7 @@ _CHANDRA_OCR_LAYOUT_PROMPT = (
     "- Caption\n- Footnote\n- Equation-Block\n- List-Group\n- Page-Header\n"
     "- Page-Footer\n- Image\n- Section-Header\n- Table\n- Text\n- Complex-Block\n"
     "- Code-Block\n- Form\n- Table-Of-Contents\n- Figure\n- Chemical-Block\n"
-    "- Diagram\n- Bibliography\n- Blank-Page\n\n"
-    + _CHANDRA_PROMPT_ENDING
+    "- Diagram\n- Bibliography\n- Blank-Page\n\n" + _CHANDRA_PROMPT_ENDING
 )
 
 VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(

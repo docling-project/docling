@@ -28,7 +28,9 @@ def test_chandra_simple_parsing():
     assert isinstance(doc, DoclingDocument)
     assert len(doc.texts) > 0, "Should have text elements"
 
-    labels = [t.label.value if hasattr(t.label, "value") else str(t.label) for t in doc.texts]
+    labels = [
+        t.label.value if hasattr(t.label, "value") else str(t.label) for t in doc.texts
+    ]
     assert "section_header" in labels, "Should have section headers"
     assert "caption" in labels, "Should have caption"
     assert "page_footer" in labels, "Should have page footer"
@@ -36,7 +38,7 @@ def test_chandra_simple_parsing():
     assert len(doc.tables) > 0, "Should have table elements"
 
     for item in doc.texts:
-        assert len(item.prov) > 0, f"Text item should have provenance"
+        assert len(item.prov) > 0, "Text item should have provenance"
         bbox = item.prov[0].bbox
         assert bbox is not None, "Should have bbox"
         assert bbox.l >= 0 and bbox.t >= 0, "Bbox coords should be non-negative"
@@ -54,7 +56,9 @@ def test_chandra_multiblock_parsing():
         filename="chandra_multiblock.html",
     )
 
-    labels = [t.label.value if hasattr(t.label, "value") else str(t.label) for t in doc.texts]
+    labels = [
+        t.label.value if hasattr(t.label, "value") else str(t.label) for t in doc.texts
+    ]
     assert "page_header" in labels, "Should have page header"
     assert "footnote" in labels, "Should have footnote"
 

@@ -90,7 +90,7 @@ class VllmVlmEngine(BaseVlmEngine):
         self,
         options: VllmVlmEngineOptions,
         accelerator_options: AcceleratorOptions,
-        artifacts_path: Optional[Union[Path, str]],
+        artifacts_path: Union[Path, str] | None,
         model_config: Optional["EngineModelConfig"] = None,
     ):
         """Initialize the vLLM engine.
@@ -107,7 +107,7 @@ class VllmVlmEngine(BaseVlmEngine):
         self.artifacts_path = artifacts_path
 
         # These will be set during initialization
-        self.device: Optional[str] = None
+        self.device: str | None = None
         self.llm: Any = None
         self.sampling_params: Any = None
         self.processor: Any = None
@@ -294,7 +294,7 @@ class VllmVlmEngine(BaseVlmEngine):
         )
 
         # Format prompts
-        prompts: List[Optional[str]] = []
+        prompts: List[str | None] = []
         for input_data in input_batch:
             formatted_prompt = format_prompt_for_vlm(
                 prompt=input_data.prompt,

@@ -28,7 +28,9 @@ def test_dots_simple_parsing():
     assert isinstance(doc, DoclingDocument)
     assert len(doc.texts) > 0, "Should have text elements"
 
-    labels = [t.label.value if hasattr(t.label, "value") else str(t.label) for t in doc.texts]
+    labels = [
+        t.label.value if hasattr(t.label, "value") else str(t.label) for t in doc.texts
+    ]
     assert "title" in labels, "Should have a title element"
     assert "section_header" in labels, "Should have section headers"
 
@@ -54,7 +56,9 @@ def test_dots_formula_parsing():
         filename="dots_formula.json",
     )
 
-    labels = [t.label.value if hasattr(t.label, "value") else str(t.label) for t in doc.texts]
+    labels = [
+        t.label.value if hasattr(t.label, "value") else str(t.label) for t in doc.texts
+    ]
     assert "list_item" in labels, "Should have list items"
 
     assert any("\\mathcal{L}" in (t.text or "") for t in doc.texts), (
