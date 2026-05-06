@@ -26,41 +26,45 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10101/badge)](https://www.bestpractices.dev/projects/10101)
 [![LF AI & Data](https://img.shields.io/badge/LF%20AI%20%26%20Data-003778?logo=linuxfoundation&logoColor=fff&color=0094ff&labelColor=003778)](https://lfaidata.foundation/projects/)
 
+## What is Docling ?
+
 Docling simplifies document processing, parsing diverse formats — including advanced PDF understanding — and providing seamless integrations with the gen AI ecosystem.
 
 ## Features
 
-* 🗂️ Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, PPTX, XLSX, HTML, WAV, MP3, WebVTT, images (PNG, TIFF, JPEG, ...), LaTeX, plain text, and more
-* 📑 Advanced PDF understanding incl. page layout, reading order, table structure, code, formulas, image classification, and more
-* 🧬 Unified, expressive [DoclingDocument][docling_document] representation format
-* ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, WebVTT, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
-* 📜 Support of several application-specifc XML schemas incl. [USPTO](https://www.uspto.gov/patents) patents, [JATS](https://jats.nlm.nih.gov/) articles, and [XBRL](https://www.xbrl.org/) financial reports.
-* 🔒 Local execution capabilities for sensitive data and air-gapped environments
-* 🤖 Plug-and-play [integrations][integrations] incl. LangChain, LlamaIndex, Crew AI & Haystack for agentic AI
-* 🔍 Extensive OCR support for scanned PDFs and images
-* 👓 Support of several Visual Language Models ([GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M))
-* 🎙️ Audio support with Automatic Speech Recognition (ASR) models
-* 🔌 Connect to any agent using the [MCP server](https://docling-project.github.io/docling/usage/mcp/)
-* 💻 Simple and convenient CLI
+- 🗂️ Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, PPTX, XLSX, HTML, WAV, MP3, WebVTT, images (PNG, TIFF, JPEG, ...), LaTeX, plain text, and more
+- 📑 Advanced PDF understanding incl. page layout, reading order, table structure, code, formulas, image classification, and more
+- 🧬 Unified, expressive [DoclingDocument][docling_document] representation format
+- ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, WebVTT, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
+- 📜 Support of several application-specifc XML schemas incl. [USPTO](https://www.uspto.gov/patents) patents, [JATS](https://jats.nlm.nih.gov/) articles, and [XBRL](https://www.xbrl.org/) financial reports.
+- 🔒 Local execution capabilities for sensitive data and air-gapped environments
+- 🤖 Plug-and-play [integrations][integrations] incl. LangChain, LlamaIndex, Crew AI & Haystack for agentic AI
+- 🔍 Extensive OCR support for scanned PDFs and images
+- 👓 Support of several Visual Language Models ([GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M))
+- 🎙️ Audio support with Automatic Speech Recognition (ASR) models
+- 🔌 Connect to any agent using the [MCP server](https://docling-project.github.io/docling/usage/mcp/)
+- 💻 Simple and convenient CLI
 
 ### What's new
-* 📤 Structured [information extraction][extraction] \[🧪 beta\]
-* 📑 New layout model (**Heron**) by default, for faster PDF parsing
-* 🔌 [MCP server](https://docling-project.github.io/docling/usage/mcp/) for agentic applications
-* 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
-* 💬 Parsing of WebVTT (Web Video Text Tracks) files and export to WebVTT format
-* 💬 Parsing of LaTeX files
-* 📝 Parsing of plain-text files (`.txt`, `.text`) and Markdown supersets (`.qmd`, `.Rmd`)
-* 📝 Chart understanding (Barchart, Piechart, LinePlot): converting them into tables, code or adding detailed descriptions
+
+- 📤 Structured [information extraction][extraction] \[🧪 beta\]
+- 📑 New layout model (**Heron**) by default, for faster PDF parsing
+- 🔌 [MCP server](https://docling-project.github.io/docling/usage/mcp/) for agentic applications
+- 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
+- 💬 Parsing of WebVTT (Web Video Text Tracks) files and export to WebVTT format
+- 💬 Parsing of LaTeX files
+- 📝 Parsing of plain-text files (`.txt`, `.text`) and Markdown supersets (`.qmd`, `.Rmd`)
+- 📝 Chart understanding (Barchart, Piechart, LinePlot): converting them into tables, code or adding detailed descriptions
 
 ### Coming soon
 
-* 📝 Metadata extraction, including title, authors, references & language
-* 📝 Complex chemistry understanding (Molecular structures)
+- 📝 Metadata extraction, including title, authors, references & language
+- 📝 Complex chemistry understanding (Molecular structures)
 
-## Installation
+## Quickstart
 
-To use Docling, simply install `docling` from your package manager, e.g. pip:
+### 1. Install
+
 ```bash
 pip install docling
 ```
@@ -71,9 +75,21 @@ Works on macOS, Linux and Windows environments. Both x86_64 and arm64 architectu
 
 More [detailed installation instructions](https://docling-project.github.io/docling/installation/) are available in the docs.
 
-## Getting started
+## 2. Convert a document (CLI)
 
-To convert individual documents with python, use `convert()`, for example:
+```bash
+docling https://arxiv.org/pdf/2206.01062
+```
+
+This generates a .md file in the current directory containing structured document content.
+
+You can also use 🥚[GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M) and other VLMs via Docling CLI:
+
+```bash
+docling --pipeline vlm --vlm-model granite_docling https://arxiv.org/pdf/2206.01062
+```
+
+## 3. Python usage (recommended)
 
 ```python
 from docling.document_converter import DocumentConverter
@@ -84,24 +100,7 @@ result = converter.convert(source)
 print(result.document.export_to_markdown())  # output: "## Docling Technical Report[...]"
 ```
 
-More [advanced usage options](https://docling-project.github.io/docling/usage/advanced_options/) are available in
-the docs.
-
-## CLI
-
-Docling has a built-in CLI to run conversions.
-
-```bash
-docling https://arxiv.org/pdf/2206.01062
-```
-
-You can also use 🥚[GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M) and other VLMs via Docling CLI:
-```bash
-docling --pipeline vlm --vlm-model granite_docling https://arxiv.org/pdf/2206.01062
-```
-This will use MLX acceleration on supported Apple Silicon hardware.
-
-Read more [here](https://docling-project.github.io/docling/usage/)
+More advanced [usage](https://docling-project.github.io/docling/usage/) and [configuration](https://docling-project.github.io/docling/installation/) options.
 
 ## Documentation
 
