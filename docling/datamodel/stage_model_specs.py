@@ -1272,6 +1272,11 @@ VLM_CONVERT_GLMOCR = StageModelPreset(
                     "torch_dtype": "bfloat16",
                 },
             ),
+            VlmEngineType.VLLM: EngineModelConfig(
+                extra_config={
+                    "enforce_eager": True,
+                },
+            ),
         },
         api_overrides={
             VlmEngineType.API: ApiModelConfig(
@@ -1518,13 +1523,18 @@ VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
         response_format=ResponseFormat.CHANDRA_HTML,
         max_new_tokens=12384,
         trust_remote_code=True,
-        stop_strings=["assistant"],
+        stop_strings=["<|im_end|>"],
         engine_overrides={
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 torch_dtype="bfloat16",
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                     "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                },
+            ),
+            VlmEngineType.VLLM: EngineModelConfig(
+                extra_config={
+                    "enforce_eager": True,
                 },
             ),
         },
@@ -1573,6 +1583,11 @@ VLM_CONVERT_DOTS_OCR = StageModelPreset(
                     "transformers_prompt_style": TransformersPromptStyle.CHAT,
                 },
             ),
+            VlmEngineType.VLLM: EngineModelConfig(
+                extra_config={
+                    "enforce_eager": True,
+                },
+            ),
         },
         api_overrides={
             VlmEngineType.API_OPENAI: ApiModelConfig(
@@ -1581,7 +1596,7 @@ VLM_CONVERT_DOTS_OCR = StageModelPreset(
         },
     ),
     scale=2.0,
-    default_engine_type=VlmEngineType.AUTO_INLINE,
+    default_engine_type=VlmEngineType.VLLM,
 )
 
 VLM_CONVERT_DOTS_MOCR = StageModelPreset(
@@ -1619,6 +1634,11 @@ VLM_CONVERT_DOTS_MOCR = StageModelPreset(
                     "transformers_prompt_style": TransformersPromptStyle.CHAT,
                 },
             ),
+            VlmEngineType.VLLM: EngineModelConfig(
+                extra_config={
+                    "enforce_eager": True,
+                },
+            ),
         },
         api_overrides={
             VlmEngineType.API_OPENAI: ApiModelConfig(
@@ -1627,5 +1647,5 @@ VLM_CONVERT_DOTS_MOCR = StageModelPreset(
         },
     ),
     scale=2.0,
-    default_engine_type=VlmEngineType.AUTO_INLINE,
+    default_engine_type=VlmEngineType.VLLM,
 )
