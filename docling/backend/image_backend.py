@@ -1,7 +1,7 @@
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Iterable, List, Union
+from typing import Iterable, List, Optional, Union
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import (
@@ -133,8 +133,10 @@ class ImageDocumentBackend(PdfDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
-        options: PdfBackendOptions = PdfBackendOptions(),
+        options: Optional[PdfBackendOptions] = None,
     ):
+        if options is None:
+            options = PdfBackendOptions()
         # Bypass PdfDocumentBackend.__init__ to avoid image→PDF conversion
         AbstractDocumentBackend.__init__(self, in_doc, path_or_stream, options)
         self.options: PdfBackendOptions = options

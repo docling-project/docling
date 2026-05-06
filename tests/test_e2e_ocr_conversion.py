@@ -2,6 +2,8 @@ import sys
 from pathlib import Path
 from typing import List, Tuple
 
+import pytest
+
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice
@@ -22,6 +24,7 @@ from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_conversion_result_v2
 
 GENERATE_V2 = GEN_TEST_DATA
+pytestmark = pytest.mark.ml_ocr
 
 
 def get_pdf_paths():

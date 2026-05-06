@@ -1,0 +1,77 @@
+name: Setup Ubuntu CI
+description: Set up Python, uv, and optional Docling CI dependencies on Ubuntu.
+
+inputs:
+  python_version:
+    description: Python version passed to astral-sh/setup-uv.
+    required: true
+  enable_cache:
+    description: Whether to enable the uv cache.
+    default: "true"
+  uv_sync_args:
+    description: Arguments passed to `uv sync`. Leave empty to skip syncing.
+    default: ""
+  install_system_deps:
+    description: Whether to install Ubuntu OCR and office dependencies.
+    default: "false"
+  cache_models:
+    description: Whether to restore and save the shared model cache.
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Grant permissions to APT cache directory # allows restore
+      if: ${{ inputs.install_system_deps == 'true' }}
+      shell: bash
+      run: sudo chown -R "$USER:$USER" /var/cache/apt/archives
+
+    - name: Cache APT packages
+      if: ${{ inputs.install_system_deps == 'true' }}
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: /var/cache/apt/archives
+        key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/actions/setup-ubuntu-ci/action.yml') }}
+        restore-keys: |
+          apt-packages-${{ runner.os }}-
+
+    - name: Install system dependencies
+      if: ${{ inputs.install_system_deps == 'true' }}
+      shell: bash
+      run: |
+        sudo apt-get -qq update
+        sudo apt-get -qq install -y build-essential ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev libreoffice pkg-config
+
+    - name: Set TESSDATA_PREFIX
+      if: ${{ inputs.install_system_deps == 'true' }}
+      shell: bash
+      run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
+
+    - name: Install uv and set the python version
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: ${{ inputs.python_version }}
+        enable-cache: ${{ inputs.enable_cache }}
+
+    - name: Install Python dependencies
+      if: ${{ inputs.uv_sync_args != '' }}
+      shell: bash
+      run: uv sync ${{ inputs.uv_sync_args }}
+
+    - name: Cache models
+      if: ${{ inputs.cache_models == 'true' }}
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: |
+          ~/.cache/huggingface
+          ~/.cache/modelscope
+          ~/.EasyOCR/
+        key: models-cache-${{ runner.os }}-${{ hashFiles('uv.lock', 'pyproject.toml') }}
+        restore-keys: |
+          models-cache-${{ runner.os }}-
+          models-cache-
+
+    - name: Grant permissions to APT cache directory # allows backup
+      if: ${{ inputs.install_system_deps == 'true' }}
+      shell: bash
+      run: sudo chown -R "$USER:$USER" /var/cache/apt/archives

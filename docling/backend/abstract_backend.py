@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from docling_core.types.doc import DoclingDocument
 
@@ -22,13 +22,13 @@ class AbstractDocumentBackend(ABC):
         self,
         in_doc: "InputDocument",
         path_or_stream: Union[BytesIO, Path],
-        options: BaseBackendOptions = BaseBackendOptions(),
+        options: Optional[BaseBackendOptions] = None,
     ):
         self.file = in_doc.file
         self.path_or_stream = path_or_stream
         self.document_hash = in_doc.document_hash
         self.input_format = in_doc.format
-        self.options = options
+        self.options = BaseBackendOptions() if options is None else options
 
     @abstractmethod
     def is_valid(self) -> bool:
@@ -75,8 +75,10 @@ class DeclarativeDocumentBackend(AbstractDocumentBackend):
         self,
         in_doc: "InputDocument",
         path_or_stream: Union[BytesIO, Path],
-        options: BackendOptions = DeclarativeBackendOptions(),
+        options: Optional[BackendOptions] = None,
     ) -> None:
+        if options is None:
+            options = DeclarativeBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
 
     @abstractmethod

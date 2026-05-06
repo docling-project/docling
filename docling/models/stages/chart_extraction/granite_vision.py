@@ -54,6 +54,7 @@ class _BaseChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
     ):
         self.enabled = enabled
         self.options = options
+        self.accelerator_options = accelerator_options
 
         if self.enabled:
             self.device = decide_device(
@@ -338,9 +339,9 @@ class ChartExtractionModelGraniteVision(_BaseChartExtractionModelGraniteVision):
 
 
 class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision):
-    _model_repo_folder = "ibm-granite--granite-4.0-3b-vision"
-    _model_repo_id = "ibm-granite/granite-4.0-3b-vision"
-    _model_repo_revision = "f0d034897bae1cd438c961c8c170a3a3089ebf01"
+    _model_repo_folder = "ibm-granite--granite-vision-4.1-4b"
+    _model_repo_id = "ibm-granite/granite-vision-4.1-4b"
+    _model_repo_revision = "dd48e97503de471803850df70843cf9eb5da8712"
 
     def _load_model(self, artifacts_path: Path) -> None:
         with warnings.catch_warnings():
@@ -363,9 +364,16 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
                 artifacts_path,
                 device_map=self.device,
                 dtype=torch.bfloat16,
+                _attn_implementation=(
+                    "flash_attention_2"
+                    if self.device.startswith("cuda")
+                    and self.accelerator_options.cuda_use_flash_attention2
+                    else "sdpa"
+                ),
                 trust_remote_code=True,
             )
-        cast(Any, self._model).merge_lora_adapters()
+        if hasattr(self._model, "merge_lora_adapters"):
+            cast(Any, self._model).merge_lora_adapters()
         self._model.eval()
 
     def __call__(
@@ -475,11 +483,15 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
             yield item
 
     def _extract_csv_to_dataframe(self, decoded_text: str) -> pd.DataFrame:
-        # decoded_text is already the raw generated output (no conversation wrapper)
+        # decoded_text is already the raw generated output (no conversation wrapper).
+        # Prefer a fenced ```csv ... ``` block, but fall back to bare CSV if the
+        # model omits the fence (observed with granite-vision-4.1-4b).
         csv_match = re.search(r"```csv\s*\n(.*?)\n```", decoded_text, re.DOTALL)
-        if not csv_match:
-            raise ValueError("No ```csv``` block found in model output")
-        csv_content = csv_match.group(1).strip()
+        if csv_match:
+            csv_content = csv_match.group(1).strip()
+        else:
+            csv_content = re.sub(r"^```+(?:csv)?\s*", "", decoded_text.strip())
+            csv_content = re.sub(r"```+\s*$", "", csv_content).strip()
         try:
             return pd.read_csv(StringIO(csv_content), header=None)
         except Exception as e:

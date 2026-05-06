@@ -1,5 +1,4 @@
 import csv
-import importlib
 import json
 import logging
 import platform
@@ -76,7 +75,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.settings import DocumentLimits
 from docling.utils.profiling import ProfilingItem
-from docling.utils.utils import create_file_hash
+from docling.utils.utils import create_file_hash, safe_version
 
 if TYPE_CHECKING:
     from docling.datamodel.base_models import BaseFormatOption
@@ -230,10 +229,11 @@ class DocumentFormat(str, Enum):
 
 
 class DoclingVersion(BaseModel):
-    docling_version: str = importlib.metadata.version("docling")
-    docling_core_version: str = importlib.metadata.version("docling-core")
-    docling_ibm_models_version: str = importlib.metadata.version("docling-ibm-models")
-    docling_parse_version: str = importlib.metadata.version("docling-parse")
+    docling_version: str = safe_version("docling")
+    docling_slim_version: str = safe_version("docling-slim")
+    docling_core_version: str = safe_version("docling-core")
+    docling_ibm_models_version: str = safe_version("docling-ibm-models")
+    docling_parse_version: str = safe_version("docling-parse")
     platform_str: str = platform.platform()
     py_impl_version: str = sys.implementation.cache_tag
     py_lang_version: str = platform.python_version()

@@ -18,6 +18,8 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
+pytestmark = pytest.mark.ml_vlm
+
 
 def test_glmocr_preset_exists():
     """Verify preset is registered with correct metadata and model spec."""

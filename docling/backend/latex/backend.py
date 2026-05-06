@@ -2,7 +2,7 @@ import logging
 import threading
 from io import BytesIO
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem
 from docling_core.types.doc.document import Formatting
@@ -41,8 +41,10 @@ class LatexDocumentBackend(
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
-        options: LatexBackendOptions = LatexBackendOptions(),
+        options: Optional[LatexBackendOptions] = None,
     ):
+        if options is None:
+            options = LatexBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
         self.labels: dict[str, bool] = {}
         self._custom_macros: dict[str, str] = {}
