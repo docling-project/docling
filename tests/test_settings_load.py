@@ -1,3 +1,8 @@
+import pytest
+
+pytestmark = pytest.mark.cross_platform
+
+
 def _setup_env(monkeypatch):
     monkeypatch.setenv("DOCLING_PERF_PAGE_BATCH_SIZE", "12")
     monkeypatch.setenv("DOCLING_DEBUG_VISUALIZE_RAW_LAYOUT", "True")

@@ -3,12 +3,15 @@
 from collections.abc import Iterable
 from typing import ClassVar, List, Type
 
+import pytest
 from docling_core.types.doc import DoclingDocument, PictureItem
 from PIL import Image
 
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.datamodel.pipeline_options import PictureDescriptionBaseOptions
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
+
+pytestmark = pytest.mark.ml_vlm
 
 
 class _TestOptions(PictureDescriptionBaseOptions):

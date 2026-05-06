@@ -185,7 +185,7 @@ def download_models(
         )
 
     if with_granite_chart_extraction_v4:
-        _log.info("Downloading Granite Vision 4.0 Charts Extraction model...")
+        _log.info("Downloading Granite Vision 4.1 Charts Extraction model...")
         ChartExtractionModelGraniteVisionV4.download_models(
             local_dir=output_dir
             / ChartExtractionModelGraniteVisionV4._model_repo_folder,
@@ -195,13 +195,15 @@ def download_models(
 
     if with_rapidocr:
         for backend in ("torch", "onnxruntime"):
-            _log.info(f"Downloading rapidocr {backend} models...")
-            RapidOcrModel.download_models(
-                backend=backend,
-                local_dir=output_dir / RapidOcrModel._model_repo_folder,
-                force=force,
-                progress=progress,
-            )
+            for lang in ("chinese", "english"):
+                _log.info(f"Downloading rapidocr {backend} {lang} models...")
+                RapidOcrModel.download_models(
+                    backend=backend,
+                    local_dir=output_dir / RapidOcrModel._model_repo_folder,
+                    force=force,
+                    progress=progress,
+                    lang=lang,
+                )
 
     if with_easyocr:
         _log.info("Downloading easyocr models...")

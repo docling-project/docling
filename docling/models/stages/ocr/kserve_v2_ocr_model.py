@@ -44,6 +44,7 @@ class KserveV2OcrModel(BaseOcrModel):
         artifacts_path: Optional[Path],
         options: KserveV2OcrOptions,
         accelerator_options: AcceleratorOptions,
+        default_language: str = "en",
     ):
         """Initialize the KServe v2 OCR model.
 
@@ -65,6 +66,10 @@ class KserveV2OcrModel(BaseOcrModel):
         if self.enabled:
             self._initialize_client()
 
+            # Prepare the lang_input during the initialization as it stays the same for all requests
+            self._lang = options.lang[0] if len(options.lang) > 0 else default_language
+            self._lang_input = np.array([[self._lang]], dtype=object)
+
     def _initialize_client(self) -> None:
         """Initialize the KServe v2 client for remote inference."""
         base_url = resolve_kserve_transport_base_url(
@@ -79,8 +84,10 @@ class KserveV2OcrModel(BaseOcrModel):
                 model_version=self.options.model_version,
                 timeout=self.options.timeout,
                 headers=self.options.headers,
+                use_binary_data=self.options.use_binary_data,
             )
         else:
+            # Import guard in case of missing optional dependencies
             from docling.models.inference_engines.common.kserve_v2_grpc import (
                 KserveV2GrpcClient,
             )
@@ -93,7 +100,7 @@ class KserveV2OcrModel(BaseOcrModel):
                 metadata=self.options.grpc_metadata,
                 use_tls=self.options.grpc_use_tls,
                 max_message_bytes=self.options.grpc_max_message_bytes,
-                use_binary_data=self.options.grpc_use_binary_data,
+                use_binary_data=self.options.use_binary_data,
             )
 
         _log.info(
@@ -218,7 +225,10 @@ class KserveV2OcrModel(BaseOcrModel):
                     # Call KServe v2 endpoint
                     try:
                         outputs = self._kserve_client.infer(
-                            inputs={"image": image_array},
+                            inputs={
+                                "lang_type": self._lang_input,
+                                "image": image_array,
+                            },
                             output_names=["boxes", "txts", "scores"],
                             request_parameters=self.options.request_parameters,
                         )

@@ -23,6 +23,8 @@ from docling.models.inference_engines.object_detection import (
     create_object_detection_engine,
 )
 
+pytestmark = pytest.mark.cross_platform
+
 
 def test_object_detection_factory_requires_remote_enablement() -> None:
     options = ApiKserveV2ObjectDetectionEngineOptions(

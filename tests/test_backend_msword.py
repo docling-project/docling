@@ -1,11 +1,10 @@
 import logging
 import os
-import warnings
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from docling_core.types.doc import GroupItem
+from docling_core.types.doc import DocItemLabel, GroupItem
 from lxml import etree
 
 import docling.backend.msword_backend as msword_backend_module
@@ -111,7 +110,7 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument
             f"DoclingDocument verification failed on {docx_path}"
         )
 
-        if docx_path.name == "word_tables.docx":
+        if docx_path.name in {"word_tables.docx", "docx_rich_cells.docx"}:
             pred_html: str = doc.export_to_html()
             assert verify_export(
                 pred_text=pred_html,
@@ -215,6 +214,14 @@ def test_is_rich_table_cell(docx_paths):
     gt_cells.extend([False, False, False, True, True, True])
     # table: Table with pictures
     gt_cells.extend([False, False, False, True, True, False])
+    # table: Lists with same numId in different cells
+    gt_cells.extend([True, True])
+    # table: Lists with different numIds in different cells
+    gt_cells.extend([True, True])
+    # table: Multiple columns with lists
+    gt_cells.extend([True, True, True, True])
+    # table: Mixed content - list and regular text in different cells
+    gt_cells.extend([True, False])
     gt_it = iter(gt_cells)
 
     for idx_t, table in enumerate(backend.docx_obj.tables):
@@ -439,6 +446,50 @@ def test_external_image_references():
     assert "after the external image" in md
 
 
+def test_inline_sdt_references(tmp_path):
+    """Test that inline SDT citation blocks are preserved in DOCX paragraphs."""
+    from docx import Document
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    def _append_citation(paragraph, text: str):
+        sdt = OxmlElement("w:sdt")
+        sdt_pr = OxmlElement("w:sdtPr")
+        tag = OxmlElement("w:tag")
+        tag.set(qn("w:val"), "MENDELEY_CITATION_v3_test")
+        sdt_pr.append(tag)
+
+        sdt_content = OxmlElement("w:sdtContent")
+        run = OxmlElement("w:r")
+        run_text = OxmlElement("w:t")
+        run_text.text = text
+        run.append(run_text)
+        sdt_content.append(run)
+
+        sdt.append(sdt_pr)
+        sdt.append(sdt_content)
+        paragraph._p.append(sdt)
+
+    docx_path = tmp_path / "inline_sdt_reference.docx"
+    doc = Document()
+
+    first_paragraph = doc.add_paragraph()
+    first_paragraph.add_run("Impact ")
+    _append_citation(first_paragraph, "(Hagman G 1984)")
+    first_paragraph.add_run(". After.")
+
+    second_paragraph = doc.add_paragraph()
+    _append_citation(second_paragraph, "(Standalone citation)")
+
+    doc.save(docx_path)
+
+    conv_result = get_converter().convert(docx_path)
+    markdown = conv_result.document.export_to_markdown()
+
+    assert "Impact (Hagman G 1984). After." in markdown
+    assert "(Standalone citation)" in markdown
+
+
 def test_list_counter_and_enum_marker(docx_paths):
     """Test list counter increment, sub-level reset, marker building, and sequence reset."""
     docx_path = docx_paths[0]
@@ -594,3 +645,79 @@ def test_handle_text_elements_inline_equations_stop_when_text_is_consumed(
     refs = backend._handle_text_elements(object(), DoclingDocument(name="test"))
 
     assert len(refs) == 2
+
+
+def test_checkbox_detection_and_parsing(documents):
+    """Test that checkboxes in DOCX files are correctly detected and parsed."""
+    name = "docx_checkboxes.docx"
+    doc = next((item[1] for item in documents if item[0].name == name), None)
+
+    if doc is None:
+        pytest.skip(f"Test file not found: {name}")
+
+    checkbox_items = [
+        item
+        for item in doc.texts
+        if item.label
+        in (DocItemLabel.CHECKBOX_SELECTED, DocItemLabel.CHECKBOX_UNSELECTED)
+    ]
+
+    assert len(checkbox_items) > 0, "No checkboxes found in the document"
+
+    # Verify we have both selected and unselected checkboxes
+    selected = [
+        item for item in checkbox_items if item.label == DocItemLabel.CHECKBOX_SELECTED
+    ]
+    unselected = [
+        item
+        for item in checkbox_items
+        if item.label == DocItemLabel.CHECKBOX_UNSELECTED
+    ]
+
+    assert len(selected) > 0, "No selected checkboxes found"
+    assert len(unselected) > 0, "No unselected checkboxes found"
+
+    checkbox_texts = [item.text for item in checkbox_items]
+    assert any("Design" in text for text in checkbox_texts), (
+        "Expected checkbox text not found"
+    )
+    assert any("Implementation" in text for text in checkbox_texts), (
+        "Expected checkbox text not found"
+    )
+    assert any("Documentation" in text for text in checkbox_texts), (
+        "Expected checkbox text not found"
+    )
+
+
+def test_checkbox_labels_in_tables(documents):
+    """Test that checkboxes in table cells are correctly parsed."""
+    name = "docx_checkboxes.docx"
+    doc = next((item[1] for item in documents if item[0].name == name), None)
+
+    if doc is None:
+        pytest.skip(f"Test file not found: {name}")
+
+    checkbox_items = [
+        item
+        for item in doc.texts
+        if item.label
+        in (DocItemLabel.CHECKBOX_SELECTED, DocItemLabel.CHECKBOX_UNSELECTED)
+    ]
+
+    food_items = [
+        "Orange juice",
+        "Tea",
+        "Coffee",
+        "Milk",
+        "Water",
+        "Scramble eggs",
+        "Porridge",
+        "Bread",
+        "Croissant",
+    ]
+
+    found_food_checkboxes = [
+        item for item in checkbox_items if any(food in item.text for food in food_items)
+    ]
+
+    assert len(found_food_checkboxes) > 0, "No checkboxes found in table cells"

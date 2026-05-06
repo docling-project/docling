@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -8,6 +9,9 @@ from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ConversionStatus, InputFormat, QualityGrade
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.image_classification_engine_options import (
+    ApiKserveV2ImageClassificationEngineOptions,
+)
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     TableFormerMode,
@@ -95,6 +99,25 @@ def test_accelerator_options():
     ao7 = AcceleratorOptions()
     assert ao7.num_threads == 4
     assert ao7.device == AcceleratorDevice.AUTO
+
+
+def test_kserve_v2_binary_data_deprecated_alias():
+    options = ApiKserveV2ImageClassificationEngineOptions(
+        url="localhost:8001",
+        grpc_use_binary_data=False,
+    )
+
+    assert options.use_binary_data is False
+    with pytest.deprecated_call(match="deprecated; use use_binary_data instead"):
+        assert options.grpc_use_binary_data is False
+    assert "grpc_use_binary_data" not in options.model_dump()
+
+    options = ApiKserveV2ImageClassificationEngineOptions(
+        url="localhost:8001",
+        use_binary_data=True,
+        grpc_use_binary_data=False,
+    )
+    assert options.use_binary_data is True
 
 
 def test_e2e_conversions(test_doc_path):
@@ -225,3 +248,41 @@ def test_confidence(test_doc_path):
 
     assert doc_result.confidence.mean_grade == QualityGrade.EXCELLENT
     assert doc_result.confidence.low_grade == QualityGrade.EXCELLENT
+
+
+def test_pipeline_cache_with_chart_extraction():
+    """Test that chart extraction doesn't cause pipeline cache invalidation.
+
+    Verifies the fix for a bug where enabling chart extraction mutated shared
+    pipeline_options, changing its hash and causing unnecessary re-initialization.
+    """
+
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.do_chart_extraction = True
+
+    with (
+        patch(
+            "docling.pipeline.base_pipeline.ChartExtractionModelGraniteVisionV4"
+        ) as mock_chart,
+        patch(
+            "docling.pipeline.base_pipeline.DocumentPictureClassifier"
+        ) as mock_classifier,
+    ):
+        mock_chart.return_value = Mock(enabled=True)
+        mock_classifier.return_value = Mock(enabled=True)
+
+        converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(
+                    pipeline_options=pipeline_options,
+                )
+            }
+        )
+
+        converter.initialize_pipeline(InputFormat.PDF)
+        assert len(converter._get_initialized_pipelines()) == 1
+
+        converter._get_pipeline(InputFormat.PDF)
+        assert len(converter._get_initialized_pipelines()) == 1, (
+            "Pipeline should be reused from cache, not re-initialized"
+        )

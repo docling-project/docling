@@ -1,4 +1,5 @@
 import logging
+import warnings
 from io import BytesIO
 from pathlib import Path
 from typing import Optional, Union
@@ -21,6 +22,7 @@ from lxml import etree
 from PIL import Image, UnidentifiedImageError
 from pptx import Presentation, presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
+from pptx.exc import InvalidXmlError
 from pptx.oxml.text import CT_TextLineBreak
 from typing_extensions import override
 
@@ -46,6 +48,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         }
         # Powerpoint file:
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
+        self.page_range = in_doc.limits.page_range
 
         self.pptx_obj: Optional[presentation.Presentation] = None
         self.valid: bool = False
@@ -106,7 +109,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         if self.pptx_obj:
-            doc = self._walk_linear(self.pptx_obj, doc)
+            start_page, end_page = self.page_range
+            doc = self._walk_linear(
+                self.pptx_obj, doc, start_page=start_page, end_page=end_page
+            )
 
         return doc
 
@@ -590,8 +596,19 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 caption=None,
                 prov=prov,
             )
-        except (UnidentifiedImageError, OSError, ValueError) as e:
-            _log.warning(f"Warning: image cannot be loaded: {e}")
+        except (
+            UnidentifiedImageError,
+            OSError,
+            ValueError,
+            InvalidXmlError,
+            KeyError,
+            AttributeError,
+        ) as e:
+            warnings.warn(
+                f"Skipping malformed picture shape: {e}",
+                UserWarning,
+                stacklevel=2,
+            )
         return
 
     def _handle_tables(self, shape, parent_slide, slide_ind, doc, slide_size):
@@ -659,7 +676,11 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         return
 
     def _walk_linear(
-        self, pptx_obj: presentation.Presentation, doc: DoclingDocument
+        self,
+        pptx_obj: presentation.Presentation,
+        doc: DoclingDocument,
+        start_page: int = 1,
+        end_page: Optional[int] = None,
     ) -> DoclingDocument:
         # Units of size in PPTX by default are EMU units (English Metric Units)
         slide_width = pptx_obj.slide_width
@@ -671,8 +692,8 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             parents[i] = None
 
         # Loop through each slide
-        for _, slide in enumerate(pptx_obj.slides):
-            slide_ind = pptx_obj.slides.index(slide)
+        selected_slides = list(enumerate(pptx_obj.slides))[start_page - 1 : end_page]
+        for slide_ind, slide in selected_slides:
             parent_slide = doc.add_group(
                 name=f"slide-{slide_ind}", label=GroupLabel.CHAPTER, parent=parents[0]
             )
@@ -680,12 +701,25 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             slide_size = Size(width=slide_width, height=slide_height)
             doc.add_page(page_no=slide_ind + 1, size=slide_size)
 
+            def _safe_shape_type(shape):
+                """Return shape.shape_type, or None if unrecognized.
+
+                python-pptx raises NotImplementedError for <p:sp> elements
+                that don't match any known shape category (placeholder,
+                freeform, autoshape, textbox).
+                """
+                try:
+                    return shape.shape_type
+                except NotImplementedError:
+                    _log.debug("Skipping shape with unrecognized type: %s", shape.name)
+                    return None
+
             def handle_shapes(shape, parent_slide, slide_ind, doc, slide_size):
                 handle_groups(shape, parent_slide, slide_ind, doc, slide_size)
                 if shape.has_table:
                     # Handle Tables
                     self._handle_tables(shape, parent_slide, slide_ind, doc, slide_size)
-                if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                if _safe_shape_type(shape) == MSO_SHAPE_TYPE.PICTURE:
                     # Handle Pictures
                     self._handle_pictures(
                         shape, parent_slide, slide_ind, doc, slide_size
@@ -708,7 +742,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 return
 
             def handle_groups(shape, parent_slide, slide_ind, doc, slide_size):
-                if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+                if _safe_shape_type(shape) == MSO_SHAPE_TYPE.GROUP:
                     for groupedshape in shape.shapes:
                         handle_shapes(
                             groupedshape, parent_slide, slide_ind, doc, slide_size
@@ -735,7 +769,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                             parent=parent_slide,
                             text=notes_text,
                             prov=prov,
-                            content_layer=ContentLayer.FURNITURE,
+                            content_layer=ContentLayer.NOTES,
                         )
 
         return doc

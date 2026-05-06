@@ -1,3 +1,4 @@
+import base64
 import threading
 import time
 from io import BytesIO
@@ -5,12 +6,13 @@ from pathlib import Path, PurePath
 from unittest.mock import Mock, mock_open, patch
 
 import pytest
+import requests
 from bs4 import BeautifulSoup
 from docling_core.types.doc import PictureItem
 from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
 
-from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.html_backend import HTMLDocumentBackend, _validate_url_safety
 from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
@@ -87,6 +89,17 @@ def test_resolve_relative_path():
     html_doc.base_path = None
     relative_path = "subdir/file.html"
     assert html_doc._resolve_relative_path(relative_path) == relative_path
+
+    # Fragment-only hrefs must pass through unchanged
+    html_doc.base_path = "/local/path/to/file.html"
+    assert html_doc._resolve_relative_path("#section1") == "#section1"
+    assert html_doc._resolve_relative_path("#") == "#"
+
+    html_doc.base_path = "http://example.com/page.html"
+    assert html_doc._resolve_relative_path("#section1") == "#section1"
+
+    html_doc.base_path = None
+    assert html_doc._resolve_relative_path("#section1") == "#section1"
 
 
 def test_heading_levels():
@@ -284,7 +297,9 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
     # fetching image remotely
     mock_resp = Mock()
     mock_resp.status_code = 200
-    mock_resp.content = img_bytes
+    mock_resp.headers = {}
+    mock_resp.raise_for_status = Mock()
+    mock_resp.iter_content = Mock(return_value=[img_bytes])
     mock_remote.return_value = mock_resp
     source_location = "https://example.com/example_01.html"
 
@@ -299,7 +314,10 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
     )
     res_remote = converter.convert(source)
     mock_remote.assert_called_once_with(
-        "https://example.com/example_image_01.png", stream=True
+        "https://example.com/example_image_01.png",
+        stream=True,
+        headers={"Range": "bytes=0-20971519"},  # 20 MB - 1
+        timeout=(5, 30),
     )
     assert res_remote.document
     num_pic = 0
@@ -418,10 +436,14 @@ def test_fetch_remote_images(monkeypatch):
             InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
         },
     )
-    with (
-        patch("docling.backend.html_backend.requests.get") as mocked_get,
-        pytest.warns(match="a bytes-like object is required"),
-    ):
+    with patch("docling.backend.html_backend.requests.get") as mocked_get:
+        # Mock the response to support the new streaming interface
+        mock_resp = Mock()
+        mock_resp.headers = {}
+        mock_resp.raise_for_status = Mock()
+        mock_resp.iter_content = Mock(return_value=[b"fake_image_data"])
+        mocked_get.return_value = mock_resp
+
         res = converter.convert(source)
         mocked_get.assert_called_once()
     assert res.document
@@ -706,3 +728,110 @@ def test_nested_table_images_no_quadratic_pictures():
 
     assert isinstance(md, str) and len(md) > 0
     assert elapsed < 5.0, f"export_to_markdown() took {elapsed:.2f}s; should be < 5s"
+
+
+def test_validate_url_safety_rejects_private_ips():
+    """Test that private and restricted IP addresses are rejected."""
+    with pytest.raises(ValueError, match="Access to restricted IP address"):
+        _validate_url_safety("http://127.0.0.1/file")
+
+    with pytest.raises(ValueError, match="Access to restricted IP address"):
+        _validate_url_safety("http://10.0.0.1/file")
+
+    with pytest.raises(ValueError, match="Access to restricted IP address"):
+        _validate_url_safety("http://192.168.1.1/file")
+
+    with pytest.raises(ValueError, match="Access to restricted IP address"):
+        _validate_url_safety("http://172.16.0.1/file")
+
+    with pytest.raises(ValueError, match="Access to restricted IP address"):
+        _validate_url_safety("http://169.254.169.254/metadata")
+
+
+def test_load_image_data_enforces_size_limit(monkeypatch):
+    """Test that image downloads are capped at the size limit."""
+
+    class MockResponse:
+        def __init__(self, content_size):
+            self.status_code = 200
+            self.headers = {"content-length": str(content_size)}
+            self._content_size = content_size
+
+        def raise_for_status(self):
+            pass
+
+        def iter_content(self, chunk_size=8192):
+            remaining = self._content_size
+            while remaining > 0:
+                chunk_len = min(chunk_size, remaining)
+                yield b"x" * chunk_len
+                remaining -= chunk_len
+
+    html_path = Path("./tests/data/html/example_01.html")
+    in_doc = InputDocument(
+        path_or_stream=html_path,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=html_path,
+        options=HTMLBackendOptions(enable_remote_fetch=True),
+    )
+
+    oversized_response = MockResponse(25 * 1024 * 1024)  # 25 MB, exceeds 20 MB limit
+    monkeypatch.setattr(requests, "get", lambda *args, **kwargs: oversized_response)
+
+    with pytest.raises(ValueError, match="Resource size exceeds limit"):
+        backend._load_image_data("http://example.com/huge_image.png")
+
+
+def test_load_image_data_enforces_data_uri_size_limit():
+    """Test that base64 data URIs are capped at the size limit."""
+    html_path = Path("./tests/data/html/example_01.html")
+    in_doc = InputDocument(
+        path_or_stream=html_path,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=html_path,
+        options=HTMLBackendOptions(),
+    )
+
+    oversized_data = b"x" * (21 * 1024 * 1024)
+    encoded = base64.b64encode(oversized_data).decode()
+    data_uri = f"data:image/png;base64,{encoded}"
+
+    with pytest.raises(ValueError, match="exceeds size limit"):
+        backend._load_image_data(data_uri)
+
+
+def test_anchor_fragment_links_with_source_uri():
+    """Fragment-only hrefs must not be mangled when source_uri is set."""
+    html_path = Path("tests/data/html/hyperlink_06.html")
+    in_doc = InputDocument(
+        path_or_stream=html_path,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=html_path,
+        options=HTMLBackendOptions(source_uri=PurePath(str(html_path.resolve()))),
+    )
+    doc = backend.convert()
+    md = doc.export_to_markdown()
+
+    # Fragment links preserved
+    assert "[Section 2](#section-2)" in md
+    assert "[top link](#)" in md
+    # External links still work (regression check)
+    assert (
+        "[Example](https://example.com)" in md
+        or "[Example](https://example.com/)" in md
+    )

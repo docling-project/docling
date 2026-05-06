@@ -1,7 +1,7 @@
 from pathlib import Path, PurePath
 from typing import Annotated, Literal, Optional, Union
 
-from pydantic import AnyUrl, BaseModel, Field, SecretStr
+from pydantic import AnyUrl, BaseModel, Field, PositiveInt, SecretStr
 
 
 class BaseBackendOptions(BaseModel):
@@ -90,6 +90,14 @@ class HTMLBackendOptions(BaseBackendOptions):
     infer_furniture: bool = Field(
         True, description="Infer all the content before the first header as furniture."
     )
+    max_image_data_base64_bytes: PositiveInt = Field(
+        20 * 1024 * 1024,  # 20 MB
+        description="The maximum number of base64 data bytes that the backend will accept.",
+    )
+    max_remote_image_bytes: PositiveInt = Field(
+        20 * 1024 * 1024,  # 20 MB
+        description="The maximum number of bytes for remote image downloads.",
+    )
 
 
 class MarkdownBackendOptions(BaseBackendOptions):
@@ -119,6 +127,27 @@ class PdfBackendOptions(BaseBackendOptions):
     password: Optional[SecretStr] = None
 
 
+class MetsGbsBackendOptions(PdfBackendOptions):
+    """Options specific to the METS-GBS document backend."""
+
+    kind: Annotated[Literal["mets-gbs"], Field(exclude=True, repr=False)] = "mets-gbs"  # type: ignore[assignment]
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum cumulative size in bytes of all data extracted from the archive during processing"
+        ),
+    ] = 300 * 1024 * 1024
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum size in bytes for any single file extracted from the archive"
+        ),
+    ] = 10 * 1024 * 1024
+    max_member_count: Annotated[
+        PositiveInt, Field(description="Maximum number of archive members to process")
+    ] = 1000
+
+
 class MsExcelBackendOptions(BaseBackendOptions):
     """Options specific to the MS Excel backend."""
 
@@ -135,6 +164,15 @@ class MsExcelBackendOptions(BaseBackendOptions):
         description=(
             "The tolerance (in number of empty rows/columns) for merging nearby "
             "data clusters into a single table. Default is 0 (strict)."
+        ),
+    )
+    sheet_names: Optional[list[str]] = Field(
+        None,
+        description=(
+            "An optional list of sheet names to include in conversion. "
+            "When set, only sheets whose names appear in this list will be processed. "
+            "Sheet names are matched case-sensitively. "
+            "Set to None (default) to include all sheets."
         ),
     )
 
@@ -177,6 +215,7 @@ BackendOptions = Annotated[
         HTMLBackendOptions,
         MarkdownBackendOptions,
         PdfBackendOptions,
+        MetsGbsBackendOptions,
         MsExcelBackendOptions,
         LatexBackendOptions,
         XBRLBackendOptions,
