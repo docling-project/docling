@@ -13,6 +13,11 @@ runner = CliRunner()
 def test_cli_help():
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
+    assert "Input formats to" in result.output
+    assert "all supported" in result.output
+    assert "layout clusters" in result.output
+    assert "layour" not in result.output
+    assert "input_sources" not in result.output
 
 
 def test_cli_version():

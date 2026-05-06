@@ -409,7 +409,7 @@ def _should_generate_export_images(
 
 @app.command(no_args_is_help=True)
 def convert(  # noqa: C901
-    input_sources: Annotated[
+    source: Annotated[
         list[str],
         typer.Argument(
             ...,
@@ -420,7 +420,7 @@ def convert(  # noqa: C901
     from_formats: list[InputFormat] = typer.Option(
         None,
         "--from",
-        help="Specify input formats to convert from. Defaults to all formats.",
+        help="Input formats to accept. Defaults to all supported formats.",
     ),
     to_formats: list[OutputFormat] = typer.Option(
         None, "--to", help="Specify output formats. Defaults to Markdown."
@@ -595,7 +595,7 @@ def convert(  # noqa: C901
     debug_visualize_layout: Annotated[
         bool,
         typer.Option(
-            ..., help="Enable debug output which visualizes the layour clusters"
+            ..., help="Enable debug output which visualizes the layout clusters"
         ),
     ] = False,
     debug_visualize_tables: Annotated[
@@ -678,13 +678,13 @@ def convert(  # noqa: C901
 
     with tempfile.TemporaryDirectory() as tempdir:
         input_doc_paths: list[Path] = []
-        for src in input_sources:
+        for src in source:
             try:
                 # check if we can fetch some remote url
-                source = resolve_source_to_path(
+                resolved_source = resolve_source_to_path(
                     source=src, headers=parsed_headers, workdir=Path(tempdir)
                 )
-                input_doc_paths.append(source)
+                input_doc_paths.append(resolved_source)
             except FileNotFoundError:
                 err_console.print(
                     f"[red]Error: The input file {src} does not exist.[/red]"
