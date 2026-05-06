@@ -293,7 +293,7 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                         _log.warning(
                             f"Document processing time ({total_elapsed_time:.3f} seconds) exceeded the specified timeout of {self.pipeline_options.document_timeout:.3f} seconds"
                         )
-                        conv_res.status = ConversionStatus.PARTIAL_SUCCESS
+                        conv_res.status = ConversionStatus.TIMEOUT
                         break
                     total_pages_processed += len(page_batch)
                     _log.debug(
@@ -339,7 +339,7 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
         if status in [
             ConversionStatus.PENDING,
             ConversionStatus.STARTED,
-        ]:  # preserves ConversionStatus.PARTIAL_SUCCESS
+        ]:  # preserves ConversionStatus.PARTIAL_SUCCESS and TIMEOUT
             status = ConversionStatus.SUCCESS
 
         for page in conv_res.pages:

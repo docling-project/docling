@@ -173,6 +173,7 @@ class DocumentExtractor:
             if raises_on_error and ext_res.status not in {
                 ConversionStatus.SUCCESS,
                 ConversionStatus.PARTIAL_SUCCESS,
+                ConversionStatus.TIMEOUT,
             }:
                 raise ConversionError(
                     f"Extraction failed for: {ext_res.input.file} with status: {ext_res.status}"

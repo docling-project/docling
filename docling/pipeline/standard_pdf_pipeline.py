@@ -764,8 +764,9 @@ class StandardPdfPipeline(ConvertPipeline):
             )
             conv_res.errors.append(error_item)
         if timeout_exceeded and proc.total_expected > 0:
-            # Timeout exceeded: set PARTIAL_SUCCESS if any pages were attempted
-            conv_res.status = ConversionStatus.PARTIAL_SUCCESS
+            # Timeout exceeded: use dedicated TIMEOUT status so downstream
+            # consumers can distinguish this from individual page failures.
+            conv_res.status = ConversionStatus.TIMEOUT
         elif proc.is_complete_failure:
             conv_res.status = ConversionStatus.FAILURE
         elif proc.is_partial_success:

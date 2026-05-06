@@ -53,6 +53,7 @@ class ConversionStatus(str, Enum):
     FAILURE = "failure"
     SUCCESS = "success"
     PARTIAL_SUCCESS = "partial_success"
+    TIMEOUT = "timeout"
     SKIPPED = "skipped"
 
 
