@@ -84,6 +84,74 @@ def test_dots_model_image_size_rescaling():
     assert abs(bbox.b - 792) < 1, f"Bottom edge should map to page height, got {bbox.b}"
 
 
+def test_dots_empty_content():
+    """Test that empty/whitespace content returns empty doc."""
+    for content in ["", "   ", "\n"]:
+        doc = parse_dots_json(
+            content=content,
+            original_page_size=Size(width=612, height=792),
+            page_no=1,
+            filename="empty.json",
+        )
+        assert isinstance(doc, DoclingDocument)
+        assert len(doc.texts) == 0
+
+
+def test_dots_malformed_json():
+    """Test graceful handling of invalid JSON."""
+    doc = parse_dots_json(
+        content="this is not json at all",
+        original_page_size=Size(width=612, height=792),
+        page_no=1,
+        filename="bad.json",
+    )
+    assert isinstance(doc, DoclingDocument)
+    assert len(doc.texts) == 0
+
+
+def test_dots_truncated_json():
+    """Test that truncated JSON (common in model output) is recovered."""
+    content = '[{"bbox": [0, 0, 100, 100], "category": "Text", "text": "hello"}, {"bbox": [0, 100, 200, 200], "category": "Tex'
+    doc = parse_dots_json(
+        content=content,
+        original_page_size=Size(width=612, height=792),
+        page_no=1,
+        filename="truncated.json",
+    )
+    assert len(doc.texts) >= 1
+
+
+def test_dots_bad_bbox_elements():
+    """Test that elements with invalid bbox are skipped."""
+    content = (
+        "["
+        '{"bbox": "not a list", "category": "Text", "text": "bad"},'
+        '{"bbox": [0, 0], "category": "Text", "text": "short"},'
+        '{"bbox": [0, 0, 100, 100], "category": "Text", "text": "good"}'
+        "]"
+    )
+    doc = parse_dots_json(
+        content=content,
+        original_page_size=Size(width=612, height=792),
+        page_no=1,
+        filename="bad_bbox.json",
+    )
+    assert len(doc.texts) == 1
+    assert doc.texts[0].text == "good"
+
+
+def test_dots_non_dict_elements():
+    """Test that non-dict elements in array are skipped."""
+    content = '[42, "string", {"bbox": [0, 0, 100, 100], "category": "Text", "text": "valid"}]'
+    doc = parse_dots_json(
+        content=content,
+        original_page_size=Size(width=612, height=792),
+        page_no=1,
+        filename="mixed.json",
+    )
+    assert len(doc.texts) == 1
+
+
 def test_dots_all_files_parse():
     """Ensure all dots test files parse without errors."""
     for path in get_dots_test_paths():

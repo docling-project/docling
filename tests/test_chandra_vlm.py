@@ -82,6 +82,69 @@ def test_chandra_bbox_normalization():
     assert abs(bbox.b - 792) < 1, f"Bottom edge should map to page height, got {bbox.b}"
 
 
+def test_chandra_empty_content():
+    """Test that empty/whitespace content returns empty doc."""
+    for content in ["", "   ", "\n\t"]:
+        doc = parse_chandra_html(
+            content=content,
+            original_page_size=Size(width=612, height=792),
+            page_no=1,
+            filename="empty.html",
+        )
+        assert isinstance(doc, DoclingDocument)
+        assert len(doc.texts) == 0
+
+
+def test_chandra_malformed_divs():
+    """Test graceful handling of divs with missing or bad attributes."""
+    content = (
+        '<div data-label="Text"><p>no bbox</p></div>'
+        '<div data-bbox="0 0 500 500"><p>no label</p></div>'
+        '<div data-bbox="bad coords" data-label="Text"><p>bad</p></div>'
+        '<div data-bbox="0 0 500" data-label="Text"><p>incomplete</p></div>'
+    )
+    doc = parse_chandra_html(
+        content=content,
+        original_page_size=Size(width=612, height=792),
+        page_no=1,
+        filename="malformed.html",
+    )
+    assert isinstance(doc, DoclingDocument)
+    assert len(doc.texts) == 0
+
+
+def test_chandra_unknown_label_fallback():
+    """Test that unknown labels fall back to TEXT."""
+    content = '<div data-bbox="100 100 200 200" data-label="UnknownType"><p>fallback</p></div>'
+    doc = parse_chandra_html(
+        content=content,
+        original_page_size=Size(width=612, height=792),
+        page_no=1,
+        filename="unknown.html",
+    )
+    assert len(doc.texts) == 1
+    labels = [
+        t.label.value if hasattr(t.label, "value") else str(t.label) for t in doc.texts
+    ]
+    assert "text" in labels
+
+
+def test_chandra_table_parsing():
+    """Test that Table elements use HTML table parser."""
+    content = (
+        '<div data-bbox="50 50 500 300" data-label="Table">'
+        "<table><tr><th>Header</th></tr><tr><td>Cell</td></tr></table>"
+        "</div>"
+    )
+    doc = parse_chandra_html(
+        content=content,
+        original_page_size=Size(width=612, height=792),
+        page_no=1,
+        filename="table.html",
+    )
+    assert len(doc.tables) == 1
+
+
 def test_chandra_all_files_parse():
     """Ensure all chandra test files parse without errors."""
     for path in get_chandra_test_paths():

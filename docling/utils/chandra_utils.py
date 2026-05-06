@@ -5,6 +5,8 @@ chandra-ocr-2 produces HTML where each layout element is a top-level
 Bboxes are in 0-1000 normalized coordinate space.
 """
 
+from __future__ import annotations
+
 import logging
 import re
 from html.parser import HTMLParser
