@@ -1287,6 +1287,12 @@ VLM_CONVERT_GLMOCR = StageModelPreset(
             VlmEngineType.API_OPENAI: ApiModelConfig(
                 params={"model": "glm-ocr", "max_tokens": 4096}
             ),
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
+                params={"model": "glm-ocr", "max_tokens": 4096}
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "glm-ocr", "max_tokens": 4096}
+            ),
         },
     ),
     scale=2.0,
@@ -1586,6 +1592,12 @@ VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
             VlmEngineType.API_OPENAI: ApiModelConfig(
                 params={"model": "datalab-to/chandra-ocr-2", "max_tokens": 12384}
             ),
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
+                params={"model": "chandra-ocr-2", "max_tokens": 12384}
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "chandra-ocr-2", "max_tokens": 12384}
+            ),
         },
     ),
     scale=2.0,
@@ -1637,6 +1649,12 @@ VLM_CONVERT_DOTS_OCR = StageModelPreset(
             VlmEngineType.API_OPENAI: ApiModelConfig(
                 params={"model": "rednote-hilab/dots.ocr", "max_tokens": 24000}
             ),
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
+                params={"model": "dots.ocr", "max_tokens": 24000}
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "dots.ocr", "max_tokens": 24000}
+            ),
         },
     ),
     scale=2.0,
@@ -1687,6 +1705,12 @@ VLM_CONVERT_DOTS_MOCR = StageModelPreset(
         api_overrides={
             VlmEngineType.API_OPENAI: ApiModelConfig(
                 params={"model": "rednote-hilab/dots.mocr", "max_tokens": 24000}
+            ),
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
+                params={"model": "dots.mocr", "max_tokens": 24000}
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "dots.mocr", "max_tokens": 24000}
             ),
         },
     ),
