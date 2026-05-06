@@ -6,6 +6,8 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
+import pytest
+
 
 def load_fast_checks_module() -> ModuleType:
     module_path = (
@@ -146,6 +148,10 @@ def test_build_check_units_uses_fast_mypy_flags(monkeypatch) -> None:
     ]
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="PR fast checks run on Ubuntu CI.",
+)
 def test_git_helpers_accept_synthetic_merge_tree(tmp_path: Path) -> None:
     run_git(tmp_path, "init")
     run_git(tmp_path, "config", "user.name", "Test User")
