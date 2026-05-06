@@ -887,6 +887,25 @@ def test_path_traversal_blocked_in_resolve_relative_path():
     ):
         html_doc._resolve_relative_path("file:///etc/something")
 
+    # Windows absolute paths blocked with local base_path
+    with pytest.raises(
+        ValueError, match="Absolute paths are not allowed with local base_path"
+    ):
+        html_doc._resolve_relative_path("C:/Windows/System32/config/sam")
+
+    with pytest.raises(
+        ValueError, match="Absolute paths are not allowed with local base_path"
+    ):
+        html_doc._resolve_relative_path("D:/sensitive/data.txt")
+
+    # Hypothetical single-letter URI schemes (c://, z://) should be rejected as URIs
+    with pytest.raises(ValueError, match="Invalid base_path format"):
+        html_doc.base_path = "c://example.com/path"
+        html_doc._resolve_relative_path("image.png")
+
+    # Reset base_path for remaining tests
+    html_doc.base_path = "/tmp/docs/report.html"
+
     # Filesystem access blocked when base_path is None
     html_doc.base_path = None
 

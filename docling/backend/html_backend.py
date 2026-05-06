@@ -1308,12 +1308,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def _is_local_path(value: str) -> bool:
         """Check if value is a local filesystem path (not a URI)."""
         parsed = urlparse(value)
-        return (
+        return not parsed.netloc and (
             not parsed.scheme
-            and not parsed.netloc
-            and not parsed.params
-            and not parsed.query
-            and not parsed.fragment
+            or (len(parsed.scheme) == 1 and parsed.scheme.isalpha())  # Windows case
+        )
+
+    def _is_absolute_path(self, loc: str) -> bool:
+        return Path(loc).is_absolute() or (  # Windows-specific absolute paths:
+            len((parsed_loc := urlparse(loc)).scheme) == 1
+            and parsed_loc.scheme.isalpha()
+            and not parsed_loc.netloc
         )
 
     def _resolve_relative_path(self, loc: str) -> str:
@@ -1332,7 +1336,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if HTMLDocumentBackend._is_remote_url(self.base_path):
                     abs_loc = urljoin(self.base_path, loc)
                 elif HTMLDocumentBackend._is_local_path(self.base_path):
-                    if Path(loc).is_absolute():
+                    if self._is_absolute_path(loc):
                         raise ValueError(
                             f"Absolute paths are not allowed with local base_path: '{loc}'"
                         )
