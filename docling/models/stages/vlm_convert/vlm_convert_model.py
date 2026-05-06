@@ -5,9 +5,9 @@ using vision-language models through a pluggable runtime system.
 """
 
 import logging
+import time
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional, Union
 
 from PIL import Image as PILImage
 
@@ -19,11 +19,22 @@ from docling.models.base_model import BasePageModel
 from docling.models.inference_engines.vlm import (
     BaseVlmEngine,
     VlmEngineInput,
+    VlmEngineOutput,
+    VlmEngineType,
     create_vlm_engine,
 )
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
+_VLM_STOP_REASON_VALUES = {reason.value for reason in VlmStopReason}
+
+
+def _prediction_from_engine_output(output: VlmEngineOutput) -> VlmPrediction:
+    stop_reason = VlmStopReason.UNSPECIFIED
+    if output.stop_reason in _VLM_STOP_REASON_VALUES:
+        stop_reason = VlmStopReason(output.stop_reason)
+
+    return VlmPrediction(text=output.text, stop_reason=stop_reason)
 
 
 class VlmConvertModel(BasePageModel):
@@ -42,7 +53,7 @@ class VlmConvertModel(BasePageModel):
         self,
         enabled: bool,
         enable_remote_services: bool,
-        artifacts_path: Optional[Union[Path, str]],
+        artifacts_path: Path | str | None,
         options: VlmConvertOptions,
         accelerator_options: AcceleratorOptions,
     ):
@@ -81,6 +92,41 @@ class VlmConvertModel(BasePageModel):
 
         _log.info("VlmConvertModel initialized successfully")
 
+    def _resolve_runtime_engine_type(self) -> VlmEngineType:
+        selected_engine_type = getattr(self.engine, "selected_engine_type", None)
+        if selected_engine_type is not None:
+            return selected_engine_type
+        return self.options.engine_options.engine_type
+
+    def _build_engine_inputs(
+        self,
+        images: list[PILImage.Image],
+        prompts: list[str],
+    ) -> list[VlmEngineInput]:
+        """Build a batch of ``VlmEngineInput`` sharing one generation-config template.
+
+        Stop strings and the runtime generation config are identical for every
+        page in a batch, so building them once here avoids reallocating them
+        per item.
+        """
+        model_spec = self.options.model_spec
+        runtime_engine_type = self._resolve_runtime_engine_type()
+        stop_strings = list(model_spec.stop_strings)
+        extra_generation_config = model_spec.get_runtime_input_extra_config(
+            runtime_engine_type
+        )
+        return [
+            VlmEngineInput(
+                image=image,
+                prompt=prompt,
+                temperature=model_spec.temperature,
+                max_new_tokens=model_spec.max_new_tokens,
+                stop_strings=stop_strings,
+                extra_generation_config=extra_generation_config,
+            )
+            for image, prompt in zip(images, prompts)
+        ]
+
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -106,33 +152,43 @@ class VlmConvertModel(BasePageModel):
             images = []
             prompts = []
             valid_pages = []
+            rasterize_time = 0.0
+            scale_resize_time = 0.0
+            max_size_resize_time = 0.0
 
             for page in page_list:
-                if page.image is None:
+                rasterize_start = time.perf_counter()
+                image = page.image
+                rasterize_time += time.perf_counter() - rasterize_start
+
+                if image is None:
                     _log.warning(
                         f"Page {page.page_no} has no image, skipping VLM conversion"
                     )
                     continue
 
                 # Scale image if needed
-                image = page.image
                 if self.options.scale != 1.0:
+                    resize_start = time.perf_counter()
                     new_size = (
                         int(image.width * self.options.scale),
                         int(image.height * self.options.scale),
                     )
                     image = image.resize(new_size, PILImage.Resampling.LANCZOS)
+                    scale_resize_time += time.perf_counter() - resize_start
 
                 # Apply max_size constraint if specified
                 if self.options.max_size is not None:
                     max_dim = max(image.width, image.height)
                     if max_dim > self.options.max_size:
+                        resize_start = time.perf_counter()
                         scale_factor = self.options.max_size / max_dim
                         new_size = (
                             int(image.width * scale_factor),
                             int(image.height * scale_factor),
                         )
                         image = image.resize(new_size, PILImage.Resampling.LANCZOS)
+                        max_size_resize_time += time.perf_counter() - resize_start
 
                 images.append(image)
                 prompts.append(self.options.model_spec.prompt)
@@ -143,36 +199,31 @@ class VlmConvertModel(BasePageModel):
                 return
 
             # Process through runtime using batch prediction
-            _log.debug(f"Processing {len(images)} pages through VLM engine (batched)")
+            _log.debug(
+                "Prepared %s pages for VLM engine: rasterize=%.3fs, scale_resize=%.3fs, max_size_resize=%.3fs",
+                len(images),
+                rasterize_time,
+                scale_resize_time,
+                max_size_resize_time,
+            )
 
             try:
-                # Create batch of runtime inputs
-                engine_inputs = [
-                    VlmEngineInput(
-                        image=img,
-                        prompt=prompt,
-                        temperature=0.0,  # Use from options if needed
-                        max_new_tokens=4096,  # Use from options if needed
-                    )
-                    for img, prompt in zip(images, prompts)
-                ]
+                # Create batch of runtime inputs (shared generation template)
+                engine_inputs = self._build_engine_inputs(images, prompts)
 
                 # Run batch inference
+                batch_start = time.perf_counter()
                 outputs = self.engine.predict_batch(engine_inputs)
+                _log.debug(
+                    "Processed %s pages through VLM engine in %.3fs",
+                    len(engine_inputs),
+                    time.perf_counter() - batch_start,
+                )
 
                 # Attach predictions to pages
                 for page, output in zip(valid_pages, outputs):
-                    # Convert string stop_reason to VlmStopReason enum
-                    stop_reason = VlmStopReason.UNSPECIFIED
-                    if output.stop_reason:
-                        try:
-                            stop_reason = VlmStopReason(output.stop_reason)
-                        except ValueError:
-                            stop_reason = VlmStopReason.UNSPECIFIED
-
-                    page.predictions.vlm_response = VlmPrediction(
-                        text=output.text,
-                        stop_reason=stop_reason,
+                    page.predictions.vlm_response = _prediction_from_engine_output(
+                        output
                     )
                     _log.debug(
                         f"Page {page.page_no}: Generated {len(output.text)} chars, "
@@ -224,35 +275,15 @@ class VlmConvertModel(BasePageModel):
                 )
             prompts = prompt
 
-        # Process batch of images
-        engine_inputs = [
-            VlmEngineInput(
-                image=img,
-                prompt=p,
-                temperature=0.0,
-                max_new_tokens=4096,
-            )
-            for img, p in zip(images, prompts)
-        ]
+        # Process batch of images (shared generation template)
+        engine_inputs = self._build_engine_inputs(images, prompts)
 
         # Run batch inference
         outputs = self.engine.predict_batch(engine_inputs)
 
         # Convert outputs to VlmPredictions
         for output in outputs:
-            # Convert string stop_reason to VlmStopReason enum
-            stop_reason = VlmStopReason.UNSPECIFIED
-            if output.stop_reason:
-                try:
-                    stop_reason = VlmStopReason(output.stop_reason)
-                except ValueError:
-                    stop_reason = VlmStopReason.UNSPECIFIED
-
-            # Convert to VlmPrediction
-            yield VlmPrediction(
-                text=output.text,
-                stop_reason=stop_reason,
-            )
+            yield _prediction_from_engine_output(output)
 
     def __del__(self):
         """Cleanup engine resources."""
