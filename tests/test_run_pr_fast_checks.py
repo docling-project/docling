@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import importlib.util
+import subprocess
 import sys
 from pathlib import Path
 from types import ModuleType
+
+import pytest
 
 
 def load_fast_checks_module() -> ModuleType:
@@ -27,6 +30,17 @@ def write_file(repo_root: Path, relative_path: str, content: str = "pass\n") -> 
     file_path = repo_root / relative_path
     file_path.parent.mkdir(parents=True, exist_ok=True)
     file_path.write_text(content, encoding="utf-8")
+
+
+def run_git(repo_root: Path, *args: str) -> str:
+    completed = subprocess.run(
+        ["git", *args],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return completed.stdout.strip()
 
 
 def test_collect_targets_limits_scope_to_supported_paths(tmp_path: Path) -> None:
@@ -132,6 +146,53 @@ def test_build_check_units_uses_fast_mypy_flags(monkeypatch) -> None:
         "skip",
         "--ignore-missing-imports",
     ]
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="PR fast checks run on Ubuntu CI.",
+)
+def test_git_helpers_accept_synthetic_merge_tree(tmp_path: Path) -> None:
+    run_git(tmp_path, "init")
+    run_git(tmp_path, "config", "user.name", "Test User")
+    run_git(tmp_path, "config", "user.email", "test@example.com")
+
+    write_file(tmp_path, "docling/module.py", "VALUE = 1\n")
+    run_git(tmp_path, "add", ".")
+    run_git(tmp_path, "commit", "-m", "base")
+    base_ref = run_git(tmp_path, "rev-parse", "HEAD")
+
+    run_git(tmp_path, "switch", "-c", "pr")
+    write_file(tmp_path, "docling/module.py", "VALUE = 2\n")
+    write_file(tmp_path, "tests/test_module.py", "def test_value():\n    pass\n")
+    run_git(tmp_path, "add", ".")
+    run_git(tmp_path, "commit", "-m", "pr")
+    head_ref = run_git(tmp_path, "rev-parse", "HEAD")
+
+    merge_tree = run_git(
+        tmp_path,
+        "merge-tree",
+        "--write-tree",
+        "--merge-base",
+        base_ref,
+        base_ref,
+        head_ref,
+    )
+
+    assert fast_checks.get_changed_paths(tmp_path, base_ref, merge_tree) == [
+        "docling/module.py",
+        "tests/test_module.py",
+    ]
+
+    run_git(tmp_path, "switch", "--detach", base_ref)
+    fast_checks.overlay_head_files(
+        tmp_path,
+        merge_tree,
+        ["docling/module.py", "tests/test_module.py"],
+    )
+
+    assert (tmp_path / "docling/module.py").read_text(encoding="utf-8") == "VALUE = 2\n"
+    assert (tmp_path / "tests/test_module.py").exists()
 
 
 def test_significant_regression_requires_same_successful_target_set() -> None:

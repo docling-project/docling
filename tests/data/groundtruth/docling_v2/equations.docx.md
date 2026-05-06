@@ -28,7 +28,7 @@ $$\left(1+x\right)^{n}=1+\frac{nx}{1!}+\frac{n\left(n-1\right)x^{2}}{2!}+ \text{
 
 This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text.
 
-This is a word document and this is an inline equation:  $A= \pi r^{2}$ . If instead, I want an equation by line, I can do this:
+This is a word document and these are inline equations:  $N_{s}^{H}$ / $N_{s}^{P}$ ​. If instead, I want an equation by line, I can do this:
 
 $$e^{x}=1+\frac{x}{1!}+\frac{x^{2}}{2!}+\frac{x^{3}}{3!}+ \text{ \textellipsis } , - \infty  < x <  \infty$$
 
@@ -58,4 +58,10 @@ $$\oiiint_{C}^{}\frac{1}{z}dz$$
 
 Operators used with limits:
 
-$$\operatorname{argmax}_{ \epsilon }f(x),   \lim_{n}{\left(1+\frac{1}{n}\right)}^{n} ,  \max_{0 \leq x \leq 1}xe^{-x^{2}},  unsupported_{n}{\left(1+\frac{1}{n}\right)}^{n}$$
+$$\operatorname{argmax}_{ \epsilon}f(x),   \lim_{n}{\left(1+\frac{1}{n}\right)}^{n} ,  \max_{0 \leq x \leq 1}xe^{-x^{2}},  unsupported_{n}{\left(1+\frac{1}{n}\right)}^{n}$$
+
+Equations with the OMML group character object:
+
+$$P_{ x}=\underbrace{S \cdot T \cdot G \cdot (x+y+z)}_{group\ with\ underbraces}+e^{x}$$
+
+$$Q_{ y}=\overset{group\ with\ overbraces}{\overbrace{G \cdot T \cdot S \cdot (x+y+z)}}+e^{y}$$
