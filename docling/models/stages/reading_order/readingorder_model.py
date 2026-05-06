@@ -347,7 +347,11 @@ class ReadingOrderModel:
             bbox=elem.cluster.bbox.to_bottom_left_origin(page_height),
         )
         new_item = out_doc.add_text(
-            label=elem.label, text=text, prov=prov, parent=parent
+            label=elem.label,
+            text=text,
+            prov=prov,
+            parent=parent,
+            hyperlink=elem.hyperlink,
         )
         return new_item
 
@@ -366,14 +370,20 @@ class ReadingOrderModel:
 
             # TODO: Infer if this is a numbered or a bullet list item
             new_item = out_doc.add_list_item(
-                text=cap_text, enumerated=False, prov=prov, parent=current_list
+                text=cap_text,
+                enumerated=False,
+                prov=prov,
+                parent=current_list,
+                hyperlink=element.hyperlink,
             )
             self.list_item_processor.process_list_item(new_item)
 
         elif label == DocItemLabel.SECTION_HEADER:
             current_list = None
 
-            new_item = out_doc.add_heading(text=cap_text, prov=prov)
+            new_item = out_doc.add_heading(
+                text=cap_text, prov=prov, hyperlink=element.hyperlink
+            )
         elif label == DocItemLabel.FORMULA:
             current_list = None
 
@@ -392,6 +402,7 @@ class ReadingOrderModel:
                 text=cap_text,
                 prov=prov,
                 content_layer=content_layer,
+                hyperlink=element.hyperlink,
             )
         return new_item, current_list
 
@@ -410,9 +421,19 @@ class ReadingOrderModel:
             ),
             bbox=merged_elem.cluster.bbox.to_bottom_left_origin(page_height),
         )
-        new_item.text += f" {merged_elem.text}"
-        new_item.orig += f" {merged_elem.text}"  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
+        if new_item.text.endswith("\u00ad"):
+            # Soft hyphen (U+00AD): strip it and join without space (hyphenated word split across lines)
+            new_item.text = new_item.text[:-1] + merged_elem.text
+            new_item.orig = (
+                new_item.orig[:-1] + merged_elem.text
+            )  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
+        else:
+            new_item.text += f" {merged_elem.text}"
+            new_item.orig += f" {merged_elem.text}"  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
         new_item.prov.append(prov)
+
+        if new_item.hyperlink != merged_elem.hyperlink:
+            new_item.hyperlink = None
 
     def __call__(self, conv_res: ConversionResult) -> DoclingDocument:
         with TimeRecorder(conv_res, "reading_order", scope=ProfilingScope.DOCUMENT):

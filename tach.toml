@@ -1,0 +1,608 @@
+interfaces = []
+exclude = [
+  "**/__pycache__",
+  ".github",
+  ".venv",
+  "docs",
+  "tests",
+]
+root_module = "ignore"
+source_roots = ["."]
+# Layers are ordered highest first. Entrypoints, clients, pipeline, and the
+# acyclic model/stage modules sit cleanly above the core conversion graph.
+# `core` still carries the cyclic datamodel<->backend and utils<->stages
+# clusters plus inference engines. Breaking those cycles is a code-level
+# refactor and would unlock finer datamodel/backend/VLM layers later.
+layers = [
+  "entrypoints",
+  "clients",
+  "pipeline",
+  "models",
+  "core",
+  "foundation",
+]
+
+[[modules]]
+path = "docling.exceptions"
+layer = "foundation"
+depends_on = []
+
+[[modules]]
+path = "docling.chunking"
+layer = "foundation"
+depends_on = []
+
+[[modules]]
+path = "docling.backend"
+layer = "core"
+depends_on = [
+  "docling.backend.docx",
+  "docling.backend.latex",
+  "docling.datamodel",
+  "docling.datamodel.backend_options",
+  "docling.exceptions",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.backend.docx"
+layer = "core"
+depends_on = []
+
+[[modules]]
+path = "docling.backend.json"
+layer = "core"
+depends_on = ["docling.backend", "docling.datamodel"]
+
+[[modules]]
+path = "docling.backend.latex"
+layer = "core"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.backend_options",
+]
+
+[[modules]]
+path = "docling.backend.xml"
+layer = "core"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.backend_options",
+  "docling.exceptions",
+]
+
+[[modules]]
+path = "docling.datamodel"
+layer = "core"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel.asr_model_specs",
+  "docling.datamodel.backend_options",
+  "docling.datamodel.layout_model_specs",
+  "docling.datamodel.pipeline_options_asr_model",
+  "docling.datamodel.pipeline_options_vlm_model",
+  "docling.datamodel.stage_model_specs",
+  "docling.datamodel.vlm_engine_options",
+  "docling.datamodel.vlm_model_specs",
+  "docling.models.inference_engines.image_classification",
+  "docling.models.inference_engines.object_detection",
+  "docling.models.inference_engines.vlm",
+  "docling.models.utils",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.datamodel.asr_model_specs"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_asr_model",
+]
+
+[[modules]]
+path = "docling.datamodel.backend_options"
+layer = "foundation"
+depends_on = []
+
+[[modules]]
+path = "docling.datamodel.layout_model_specs"
+layer = "core"
+depends_on = ["docling.datamodel"]
+
+[[modules]]
+path = "docling.datamodel.pipeline_options_asr_model"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+]
+
+[[modules]]
+path = "docling.datamodel.pipeline_options_vlm_model"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.models.utils",
+]
+
+[[modules]]
+path = "docling.datamodel.service"
+layer = "clients"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+  "docling.datamodel.vlm_model_specs",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.datamodel.stage_model_specs"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+  "docling.datamodel.vlm_engine_options",
+  "docling.models.inference_engines.image_classification",
+  "docling.models.inference_engines.object_detection",
+  "docling.models.inference_engines.vlm",
+]
+
+[[modules]]
+path = "docling.datamodel.vlm_engine_options"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.models.inference_engines.vlm",
+]
+
+[[modules]]
+path = "docling.datamodel.vlm_model_specs"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+]
+
+[[modules]]
+path = "docling.models.utils"
+layer = "foundation"
+depends_on = []
+
+[[modules]]
+path = "docling.utils"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.vlm_model_specs",
+  "docling.models.stages.chart_extraction",
+  "docling.models.stages.code_formula",
+  "docling.models.stages.layout",
+  "docling.models.stages.ocr",
+  "docling.models.stages.picture_classifier",
+  "docling.models.stages.table_structure",
+  "docling.models.utils",
+]
+
+[[modules]]
+path = "docling.models"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+]
+
+[[modules]]
+path = "docling.models.extraction"
+layer = "models"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+  "docling.models",
+  "docling.models.utils",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.models.factories"
+layer = "models"
+depends_on = ["docling.datamodel", "docling.models"]
+
+[[modules]]
+path = "docling.models.inference_engines"
+layer = "core"
+depends_on = []
+
+[[modules]]
+path = "docling.models.inference_engines.common"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.models.inference_engines.vlm",
+  "docling.models.utils",
+]
+
+[[modules]]
+path = "docling.models.inference_engines.image_classification"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.exceptions",
+  "docling.models.inference_engines.common",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.models.inference_engines.object_detection"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.exceptions",
+  "docling.models.inference_engines.common",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.models.inference_engines.vlm"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+  "docling.datamodel.vlm_engine_options",
+  "docling.exceptions",
+  "docling.models.utils",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.models.stages"
+layer = "core"
+depends_on = []
+
+[[modules]]
+path = "docling.models.stages.chart_extraction"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.models",
+  "docling.models.utils",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.models.stages.code_formula"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.models",
+  "docling.models.inference_engines.vlm",
+  "docling.models.utils",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.models.stages.layout"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.layout_model_specs",
+  "docling.models",
+  "docling.models.inference_engines.object_detection",
+  "docling.models.utils",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.models.stages.ocr"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.models",
+  "docling.models.inference_engines.common",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.models.stages.page_assemble"
+layer = "models"
+depends_on = [
+  "docling.datamodel",
+  "docling.models",
+  "docling.models.stages.layout",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.models.stages.page_preprocessing"
+layer = "models"
+depends_on = ["docling.datamodel", "docling.models", "docling.utils"]
+
+[[modules]]
+path = "docling.models.stages.picture_classifier"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.models",
+  "docling.models.inference_engines.image_classification",
+  "docling.models.utils",
+]
+
+[[modules]]
+path = "docling.models.stages.picture_description"
+layer = "models"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.stage_model_specs",
+  "docling.exceptions",
+  "docling.models",
+  "docling.models.inference_engines.vlm",
+  "docling.models.utils",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.models.stages.reading_order"
+layer = "models"
+depends_on = ["docling.datamodel", "docling.utils"]
+
+[[modules]]
+path = "docling.models.stages.table_structure"
+layer = "core"
+depends_on = [
+  "docling.datamodel",
+  "docling.models",
+  "docling.models.utils",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.models.stages.vlm_convert"
+layer = "models"
+depends_on = [
+  "docling.datamodel",
+  "docling.models",
+  "docling.models.inference_engines.vlm",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.models.plugins"
+layer = "models"
+depends_on = [
+  "docling.experimental.models",
+  "docling.models.stages.layout",
+  "docling.models.stages.ocr",
+  "docling.models.stages.picture_description",
+  "docling.models.stages.table_structure",
+]
+
+[[modules]]
+path = "docling.models.vlm_pipeline_models"
+layer = "models"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+  "docling.exceptions",
+  "docling.models",
+  "docling.models.utils",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.pipeline"
+layer = "pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.models",
+  "docling.models.extraction",
+  "docling.models.factories",
+  "docling.models.stages.chart_extraction",
+  "docling.models.stages.code_formula",
+  "docling.models.stages.page_assemble",
+  "docling.models.stages.page_preprocessing",
+  "docling.models.stages.picture_classifier",
+  "docling.models.stages.reading_order",
+  "docling.models.stages.vlm_convert",
+  "docling.models.vlm_pipeline_models",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.pipeline.base_pipeline"
+layer = "pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.models",
+  "docling.models.factories",
+  "docling.models.stages.chart_extraction",
+  "docling.models.stages.picture_classifier",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.pipeline.simple_pipeline"
+layer = "pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.pipeline.base_extraction_pipeline"
+layer = "pipeline"
+depends_on = ["docling.datamodel"]
+
+[[modules]]
+path = "docling.pipeline.asr_pipeline"
+layer = "pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_asr_model",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.pipeline.vlm_pipeline"
+layer = "pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+  "docling.models.stages.vlm_convert",
+  "docling.models.vlm_pipeline_models",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.pipeline.extraction_vlm_pipeline"
+layer = "pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.models.extraction",
+  "docling.pipeline.base_extraction_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.pipeline.standard_pdf_pipeline"
+layer = "pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.models.factories",
+  "docling.models.stages.code_formula",
+  "docling.models.stages.page_assemble",
+  "docling.models.stages.page_preprocessing",
+  "docling.models.stages.reading_order",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.pipeline.threaded_standard_pdf_pipeline"
+layer = "pipeline"
+depends_on = ["docling.pipeline.standard_pdf_pipeline"]
+
+[[modules]]
+path = "docling.pipeline.legacy_standard_pdf_pipeline"
+layer = "pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.layout_model_specs",
+  "docling.models",
+  "docling.models.factories",
+  "docling.models.stages.code_formula",
+  "docling.models.stages.page_assemble",
+  "docling.models.stages.page_preprocessing",
+  "docling.models.stages.reading_order",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.document_converter"
+layer = "entrypoints"
+depends_on = [
+  "docling.backend",
+  "docling.backend.json",
+  "docling.backend.xml",
+  "docling.datamodel",
+  "docling.datamodel.backend_options",
+  "docling.exceptions",
+  "docling.pipeline",
+  "docling.pipeline.asr_pipeline",
+  "docling.pipeline.base_pipeline",
+  "docling.pipeline.simple_pipeline",
+  "docling.pipeline.standard_pdf_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.document_extractor"
+layer = "entrypoints"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.exceptions",
+  "docling.pipeline",
+  "docling.pipeline.base_extraction_pipeline",
+  "docling.pipeline.extraction_vlm_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.service_client"
+layer = "clients"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.service",
+]
+
+[[modules]]
+path = "docling.cli"
+layer = "entrypoints"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.asr_model_specs",
+  "docling.datamodel.backend_options",
+  "docling.document_converter",
+  "docling.models.factories",
+  "docling.models.utils",
+  "docling.pipeline",
+  "docling.pipeline.asr_pipeline",
+  "docling.pipeline.vlm_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
+path = "docling.experimental"
+layer = "core"
+depends_on = []
+
+[[modules]]
+path = "docling.experimental.datamodel"
+layer = "models"
+depends_on = [
+  "docling.datamodel",
+  "docling.datamodel.layout_model_specs",
+  "docling.datamodel.pipeline_options_vlm_model",
+  "docling.datamodel.vlm_model_specs",
+]
+
+[[modules]]
+path = "docling.experimental.models"
+layer = "models"
+depends_on = [
+  "docling.datamodel",
+  "docling.experimental.datamodel",
+  "docling.models",
+]
+
+[[modules]]
+path = "docling.experimental.pipeline"
+layer = "entrypoints"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_vlm_model",
+  "docling.experimental.datamodel",
+  "docling.models",
+  "docling.models.stages.layout",
+  "docling.models.vlm_pipeline_models",
+  "docling.pipeline",
+  "docling.pipeline.base_pipeline",
+  "docling.pipeline.standard_pdf_pipeline",
+  "docling.utils",
+]

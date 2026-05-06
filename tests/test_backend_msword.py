@@ -1,10 +1,13 @@
 import logging
 import os
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
-from docling_core.types.doc import GroupItem
+from docling_core.types.doc import DocItemLabel, GroupItem
+from lxml import etree
 
+import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -41,6 +44,17 @@ def get_converter():
     converter = DocumentConverter(allowed_formats=[InputFormat.DOCX])
 
     return converter
+
+
+@pytest.fixture(scope="module")
+def backend(docx_paths) -> MsWordDocumentBackend:
+    docx_path = docx_paths[0]
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    return in_doc._backend
 
 
 @pytest.fixture(scope="module")
@@ -96,7 +110,7 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument
             f"DoclingDocument verification failed on {docx_path}"
         )
 
-        if docx_path.name == "word_tables.docx":
+        if docx_path.name in {"word_tables.docx", "docx_rich_cells.docx"}:
             pred_html: str = doc.export_to_html()
             assert verify_export(
                 pred_text=pred_html,
@@ -200,6 +214,14 @@ def test_is_rich_table_cell(docx_paths):
     gt_cells.extend([False, False, False, True, True, True])
     # table: Table with pictures
     gt_cells.extend([False, False, False, True, True, False])
+    # table: Lists with same numId in different cells
+    gt_cells.extend([True, True])
+    # table: Lists with different numIds in different cells
+    gt_cells.extend([True, True])
+    # table: Multiple columns with lists
+    gt_cells.extend([True, True, True, True])
+    # table: Mixed content - list and regular text in different cells
+    gt_cells.extend([True, False])
     gt_it = iter(gt_cells)
 
     for idx_t, table in enumerate(backend.docx_obj.tables):
@@ -392,3 +414,310 @@ def test_get_heading_and_level_non_heading(
     label, level = backend._get_heading_and_level(style_label)
     assert label == expected_label
     assert level == expected_level
+
+
+def test_external_image_references():
+    """Test that .docx files with external image references convert without crashing.
+
+    Docx files saved from web browsers often have images as external references
+    (TargetMode="External") pointing to URLs or file:// paths rather than embedded
+    in word/media/. Previously this caused a ValueError from python-docx:
+    "target_part property on _Relationship is undefined when target mode is External"
+
+    See: https://github.com/docling-project/docling/issues/3113
+    """
+    docx_path = Path("./tests/data/docx/docx_external_image.docx")
+    assert docx_path.exists(), f"Test file not found: {docx_path}"
+
+    converter = get_converter()
+
+    with pytest.warns(UserWarning, match="Skipping external image reference"):
+        conv_result = converter.convert(docx_path)
+
+    doc = conv_result.document
+
+    # Document should convert successfully (not crash)
+    assert doc is not None
+
+    # Text content should still be extracted even though the external image is skipped
+    md = doc.export_to_markdown()
+    assert "Test Document with External Image" in md
+    assert "text before the image" in md
+    assert "after the external image" in md
+
+
+def test_inline_sdt_references(tmp_path):
+    """Test that inline SDT citation blocks are preserved in DOCX paragraphs."""
+    from docx import Document
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    def _append_citation(paragraph, text: str):
+        sdt = OxmlElement("w:sdt")
+        sdt_pr = OxmlElement("w:sdtPr")
+        tag = OxmlElement("w:tag")
+        tag.set(qn("w:val"), "MENDELEY_CITATION_v3_test")
+        sdt_pr.append(tag)
+
+        sdt_content = OxmlElement("w:sdtContent")
+        run = OxmlElement("w:r")
+        run_text = OxmlElement("w:t")
+        run_text.text = text
+        run.append(run_text)
+        sdt_content.append(run)
+
+        sdt.append(sdt_pr)
+        sdt.append(sdt_content)
+        paragraph._p.append(sdt)
+
+    docx_path = tmp_path / "inline_sdt_reference.docx"
+    doc = Document()
+
+    first_paragraph = doc.add_paragraph()
+    first_paragraph.add_run("Impact ")
+    _append_citation(first_paragraph, "(Hagman G 1984)")
+    first_paragraph.add_run(". After.")
+
+    second_paragraph = doc.add_paragraph()
+    _append_citation(second_paragraph, "(Standalone citation)")
+
+    doc.save(docx_path)
+
+    conv_result = get_converter().convert(docx_path)
+    markdown = conv_result.document.export_to_markdown()
+
+    assert "Impact (Hagman G 1984). After." in markdown
+    assert "(Standalone citation)" in markdown
+
+
+def test_list_counter_and_enum_marker(docx_paths):
+    """Test list counter increment, sub-level reset, marker building, and sequence reset."""
+    docx_path = docx_paths[0]
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = in_doc._backend
+
+    # Basic increment
+    assert backend._get_list_counter(1, 0) == 1
+    assert backend._get_list_counter(1, 0) == 2
+    assert backend._get_list_counter(1, 1) == 1
+    assert backend._get_list_counter(1, 1) == 2
+    assert backend._get_list_counter(1, 1) == 3
+
+    # Advancing parent level resets sub-levels
+    backend._get_list_counter(1, 2)  # (1,2) = 1
+    backend._get_list_counter(1, 0)  # (1,0) = 3, resets lvl 1 and 2
+    assert backend.list_counters[(1, 1)] == 0
+    assert backend.list_counters[(1, 2)] == 0
+    assert backend._get_list_counter(1, 1) == 1  # restarts from 1
+
+    # Hierarchical enum markers
+    backend.list_counters[(1, 0)] = 2
+    backend.list_counters[(1, 1)] = 3
+    backend.list_counters[(1, 2)] = 1
+    assert backend._build_enum_marker(1, 0) == "2."
+    assert backend._build_enum_marker(1, 1) == "2.3."
+    assert backend._build_enum_marker(1, 2) == "2.3.1."
+    assert backend._build_enum_marker(99, 0) == "1."  # missing counter defaults to 1
+
+    # Reset sequence for a specific numid
+    backend._get_list_counter(2, 0)  # (2,0) = 1
+    backend._reset_list_counters_for_new_sequence(1)
+    assert backend.list_counters[(1, 0)] == 0
+    assert backend.list_counters[(1, 1)] == 0
+    assert backend.list_counters[(2, 0)] == 1  # unaffected
+
+
+def test_handle_equations_in_text_returns_original_text_on_mismatch(
+    backend, monkeypatch
+):
+    element = etree.Element("p")
+    run = etree.SubElement(element, "r")
+    text_elem = etree.SubElement(run, "t")
+    text_elem.text = "alpha"
+    etree.SubElement(element, "oMath")
+
+    monkeypatch.setattr(msword_backend_module, "oMath2Latex", lambda _: "x")
+
+    text, equations = backend._handle_equations_in_text(element=element, text="beta")
+
+    assert text == "beta"
+    assert equations == []
+
+
+def test_handle_equations_in_text_skips_empty_substrings(backend, monkeypatch):
+    equation = backend.equation_bookends.format(EQ="x")
+
+    element = etree.Element("p")
+    empty_run = etree.SubElement(element, "r")
+    empty_text = etree.SubElement(empty_run, "t")
+    empty_text.text = ""
+    etree.SubElement(element, "oMath")
+    tail_run = etree.SubElement(element, "r")
+    tail_text = etree.SubElement(tail_run, "t")
+    tail_text.text = "tail"
+
+    monkeypatch.setattr(msword_backend_module, "oMath2Latex", lambda _: "x")
+
+    text, equations = backend._handle_equations_in_text(element=element, text="tail")
+
+    assert equations == [equation]
+    assert text == f"{equation}tail"
+
+
+def test_handle_text_elements_returns_empty_refs_when_text_is_none(
+    backend, monkeypatch
+):
+    element = backend.docx_obj.paragraphs[0]._element
+
+    monkeypatch.setattr(
+        backend, "_handle_equations_in_text", lambda element, text: (None, [])
+    )
+
+    refs = backend._handle_text_elements(element, DoclingDocument(name="test"))
+
+    assert refs == []
+
+
+def test_handle_text_elements_heading_defaults_to_non_numbered_when_style_missing(
+    backend, monkeypatch
+):
+    captured: dict[str, tuple[int, str, bool]] = {}
+
+    class FakeParagraph:
+        def __init__(self, element, docx_obj):
+            self.text = "Heading text"
+            self.style = SimpleNamespace()
+
+    monkeypatch.setattr(msword_backend_module, "Paragraph", FakeParagraph)
+    monkeypatch.setattr(backend, "_get_paragraph_elements", lambda paragraph: [])
+    monkeypatch.setattr(
+        backend, "_handle_equations_in_text", lambda element, text: (text, [])
+    )
+    monkeypatch.setattr(backend, "_get_comment_ids_for_element", lambda element: [])
+    monkeypatch.setattr(
+        backend, "_get_label_and_level", lambda paragraph: ("Heading", 1)
+    )
+    monkeypatch.setattr(backend, "_get_numId_and_ilvl", lambda paragraph: (None, None))
+
+    def fake_add_heading(doc, level, text, is_numbered_style):
+        captured["heading"] = (level, text, is_numbered_style)
+        return []
+
+    monkeypatch.setattr(backend, "_add_heading", fake_add_heading)
+
+    refs = backend._handle_text_elements(object(), DoclingDocument(name="test"))
+
+    assert refs == []
+    assert captured["heading"] == (1, "Heading text", False)
+
+
+def test_handle_text_elements_inline_equations_stop_when_text_is_consumed(
+    backend, monkeypatch
+):
+    equation_one = backend.equation_bookends.format(EQ="a")
+    equation_two = backend.equation_bookends.format(EQ="b")
+
+    class FakeParagraph:
+        def __init__(self, element, docx_obj):
+            self.text = "inline eq"
+            self.style = SimpleNamespace()
+
+    monkeypatch.setattr(msword_backend_module, "Paragraph", FakeParagraph)
+    monkeypatch.setattr(backend, "_get_paragraph_elements", lambda paragraph: [])
+    monkeypatch.setattr(
+        backend,
+        "_handle_equations_in_text",
+        lambda element, text: (equation_one, [equation_one, equation_two]),
+    )
+    monkeypatch.setattr(backend, "_get_comment_ids_for_element", lambda element: [])
+    monkeypatch.setattr(
+        backend, "_get_label_and_level", lambda paragraph: ("Normal", None)
+    )
+    monkeypatch.setattr(backend, "_get_numId_and_ilvl", lambda paragraph: (None, None))
+    monkeypatch.setattr(backend, "_prev_numid", lambda: None)
+    monkeypatch.setattr(backend, "_get_level", lambda: 1)
+    backend.parents[0] = None
+
+    refs = backend._handle_text_elements(object(), DoclingDocument(name="test"))
+
+    assert len(refs) == 2
+
+
+def test_checkbox_detection_and_parsing(documents):
+    """Test that checkboxes in DOCX files are correctly detected and parsed."""
+    name = "docx_checkboxes.docx"
+    doc = next((item[1] for item in documents if item[0].name == name), None)
+
+    if doc is None:
+        pytest.skip(f"Test file not found: {name}")
+
+    checkbox_items = [
+        item
+        for item in doc.texts
+        if item.label
+        in (DocItemLabel.CHECKBOX_SELECTED, DocItemLabel.CHECKBOX_UNSELECTED)
+    ]
+
+    assert len(checkbox_items) > 0, "No checkboxes found in the document"
+
+    # Verify we have both selected and unselected checkboxes
+    selected = [
+        item for item in checkbox_items if item.label == DocItemLabel.CHECKBOX_SELECTED
+    ]
+    unselected = [
+        item
+        for item in checkbox_items
+        if item.label == DocItemLabel.CHECKBOX_UNSELECTED
+    ]
+
+    assert len(selected) > 0, "No selected checkboxes found"
+    assert len(unselected) > 0, "No unselected checkboxes found"
+
+    checkbox_texts = [item.text for item in checkbox_items]
+    assert any("Design" in text for text in checkbox_texts), (
+        "Expected checkbox text not found"
+    )
+    assert any("Implementation" in text for text in checkbox_texts), (
+        "Expected checkbox text not found"
+    )
+    assert any("Documentation" in text for text in checkbox_texts), (
+        "Expected checkbox text not found"
+    )
+
+
+def test_checkbox_labels_in_tables(documents):
+    """Test that checkboxes in table cells are correctly parsed."""
+    name = "docx_checkboxes.docx"
+    doc = next((item[1] for item in documents if item[0].name == name), None)
+
+    if doc is None:
+        pytest.skip(f"Test file not found: {name}")
+
+    checkbox_items = [
+        item
+        for item in doc.texts
+        if item.label
+        in (DocItemLabel.CHECKBOX_SELECTED, DocItemLabel.CHECKBOX_UNSELECTED)
+    ]
+
+    food_items = [
+        "Orange juice",
+        "Tea",
+        "Coffee",
+        "Milk",
+        "Water",
+        "Scramble eggs",
+        "Porridge",
+        "Bread",
+        "Croissant",
+    ]
+
+    found_food_checkboxes = [
+        item for item in checkbox_items if any(food in item.text for food in food_items)
+    ]
+
+    assert len(found_food_checkboxes) > 0, "No checkboxes found in table cells"

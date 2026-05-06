@@ -32,6 +32,8 @@ from docling.datamodel.vlm_engine_options import (
 )
 from docling.models.inference_engines.vlm import VlmEngineType
 
+pytestmark = pytest.mark.ml_vlm
+
 # =============================================================================
 # RUNTIME OPTIONS TESTS
 # =============================================================================
@@ -110,6 +112,10 @@ class TestRuntimeOptions:
         """Test VllmVlmEngineOptions creation."""
         options = VllmVlmEngineOptions()
         assert options.engine_type == VlmEngineType.VLLM
+        assert options.model_impl == "auto"
+
+        with pytest.raises(ValidationError):
+            VllmVlmEngineOptions(model_impl=None)
 
 
 # =============================================================================
@@ -159,6 +165,47 @@ class TestVlmModelSpec:
         # Test Transformers override (only revision)
         assert spec.get_repo_id(VlmEngineType.TRANSFORMERS) == "test/model"
         assert spec.get_revision(VlmEngineType.TRANSFORMERS) == "v2.0"
+
+    def test_get_engine_config_preserves_torch_dtype_in_extra_config(self):
+        """Test that get_engine_config() preserves torch_dtype in extra_config.
+
+        Regression test for #3026: torch_dtype needs to be passed via
+        extra_config so it flows through to the engine.
+        """
+        spec = VlmModelSpec(
+            name="Test Model",
+            default_repo_id="test/model",
+            prompt="Test prompt",
+            response_format=ResponseFormat.DOCTAGS,
+            engine_overrides={
+                VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                    extra_config={
+                        "some_key": "some_value",
+                        "torch_dtype": "bfloat16",
+                    },
+                ),
+            },
+        )
+
+        config = spec.get_engine_config(VlmEngineType.TRANSFORMERS)
+        assert config.extra_config["torch_dtype"] == "bfloat16"
+        assert config.extra_config["some_key"] == "some_value"
+
+        # Engine without override should not have torch_dtype in extra_config
+        config_other = spec.get_engine_config(VlmEngineType.MLX)
+        assert "torch_dtype" not in config_other.extra_config
+
+    def test_same_repo_engine_override_counts_as_explicit_support(self):
+        """Native handlers can use the default repo_id and still be explicit."""
+        spec = VlmModelSpec(
+            name="Falcon-Style Model",
+            default_repo_id="org/model",
+            prompt="Test prompt",
+            response_format=ResponseFormat.MARKDOWN,
+            engine_overrides={VlmEngineType.MLX: EngineModelConfig()},
+        )
+
+        assert spec.has_explicit_engine_export(VlmEngineType.MLX) is True
 
     def test_model_spec_with_api_overrides(self):
         """Test model spec with API-specific overrides."""
@@ -228,6 +275,9 @@ class TestPresetSystem:
         assert "granite_vision" in preset_ids
         assert "pixtral" in preset_ids
         assert "got_ocr" in preset_ids
+        assert "nanonets_ocr2" in preset_ids
+        assert "glm_ocr" in preset_ids
+        assert "lightonocr" in preset_ids
 
         # Verify we can retrieve them
         smoldocling = VlmConvertOptions.get_preset("smoldocling")
@@ -486,6 +536,7 @@ class TestPresetEngineIntegration:
         # Note: Presets may be shared across different stage types
         all_valid_formats = [
             ResponseFormat.DOCTAGS,
+            ResponseFormat.DOCLANG,
             ResponseFormat.MARKDOWN,
             ResponseFormat.DEEPSEEKOCR_MARKDOWN,
             ResponseFormat.PLAINTEXT,

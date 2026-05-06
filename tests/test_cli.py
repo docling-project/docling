@@ -1,8 +1,11 @@
 from pathlib import Path
 
+import pytest
+from docling_core.types.doc import ImageRefMode
 from typer.testing import CliRunner
 
-from docling.cli.main import app
+from docling.cli.main import _should_generate_export_images, app
+from docling.datamodel.base_models import OutputFormat
 
 runner = CliRunner()
 
@@ -25,6 +28,35 @@ def test_cli_convert(tmp_path):
     assert result.exit_code == 0
     converted = output / f"{Path(source).stem}.md"
     assert converted.exists()
+
+
+@pytest.mark.parametrize(
+    ("image_export_mode", "to_formats", "expected"),
+    [
+        (ImageRefMode.PLACEHOLDER, [OutputFormat.JSON], False),
+        (ImageRefMode.EMBEDDED, [OutputFormat.TEXT, OutputFormat.DOCTAGS], False),
+        (ImageRefMode.EMBEDDED, [OutputFormat.MARKDOWN], True),
+        (
+            ImageRefMode.EMBEDDED,
+            [OutputFormat.TEXT, OutputFormat.MARKDOWN],
+            True,
+        ),
+    ],
+)
+def test_should_generate_export_images(image_export_mode, to_formats, expected):
+    assert _should_generate_export_images(image_export_mode, to_formats) is expected
+
+
+def test_image_export_policy_covers_all_output_formats():
+    non_image_export_formats = {
+        OutputFormat.TEXT,
+        OutputFormat.DOCTAGS,
+        OutputFormat.VTT,
+    }
+    image_export_formats = set(OutputFormat) - non_image_export_formats
+
+    assert image_export_formats.isdisjoint(non_image_export_formats)
+    assert image_export_formats | non_image_export_formats == set(OutputFormat)
 
 
 def test_cli_audio_auto_detection(tmp_path):

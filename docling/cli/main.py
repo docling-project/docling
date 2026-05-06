@@ -1,6 +1,7 @@
 import datetime
 import logging
 import re
+import sys
 import tempfile
 import time
 import warnings
@@ -8,8 +9,25 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Annotated, Type
 
-import rich.table
-import typer
+# Check for CLI dependencies
+try:
+    import rich.table
+    import typer
+except ImportError as e:
+    missing_package = str(e).split("'")[1] if "'" in str(e) else "typer or rich"
+    print(
+        f"Error: Missing required CLI dependency '{missing_package}'", file=sys.stderr
+    )
+    print("\nThe docling CLI requires additional dependencies.", file=sys.stderr)
+    print("Please install them using one of the following options:\n", file=sys.stderr)
+    print("  1. Install the full docling package (recommended):", file=sys.stderr)
+    print("     pip install docling\n", file=sys.stderr)
+    print("  2. Install docling-slim with CLI support:", file=sys.stderr)
+    print("     pip install docling-slim[cli]\n", file=sys.stderr)
+    print("  3. Install just the missing dependencies:", file=sys.stderr)
+    print("     pip install typer rich\n", file=sys.stderr)
+    sys.exit(1)
+
 from docling_core.transforms.serializer.html import (
     HTMLDocSerializer,
     HTMLOutputStyle,
@@ -376,6 +394,25 @@ def _split_list(raw: str | None) -> list[str] | None:
     return re.split(r"[;,]", raw)
 
 
+_OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING = frozenset(
+    {
+        OutputFormat.TEXT,
+        OutputFormat.DOCTAGS,
+        OutputFormat.VTT,
+    }
+)
+
+
+def _should_generate_export_images(
+    image_export_mode: ImageRefMode,
+    to_formats: list[OutputFormat],
+) -> bool:
+    return image_export_mode != ImageRefMode.PLACEHOLDER and any(
+        to_format not in _OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING
+        for to_format in to_formats
+    )
+
+
 @app.command(no_args_is_help=True)
 def convert(  # noqa: C901
     input_sources: Annotated[
@@ -410,7 +447,7 @@ def convert(  # noqa: C901
         ImageRefMode,
         typer.Option(
             ...,
-            help="Image export mode for the document (only in case of JSON, Markdown or HTML). With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document.",
+            help="Image export mode for image-capable document outputs (JSON, YAML, HTML, HTML split-page, and Markdown). Text, DocTags, and WebVTT outputs do not export images. With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document.",
         ),
     ] = ImageRefMode.EMBEDDED,
     pipeline: Annotated[
@@ -505,8 +542,7 @@ def convert(  # noqa: C901
     enrich_chart_extraction: Annotated[
         bool,
         typer.Option(
-            ...,
-            help="Enable chart extraction to convert bar, pie, and line charts to tabular format.",
+            ..., help="Enable chart data extraction from bar, pie, and line charts."
         ),
     ] = False,
     artifacts_path: Annotated[
@@ -667,7 +703,7 @@ def convert(  # noqa: C901
                     f"[red]Error: The input file {src} does not exist.[/red]"
                 )
                 raise typer.Abort()
-            except IsADirectoryError:
+            except (IsADirectoryError, PermissionError):
                 # if the input matches to a file or a folder
                 try:
                     local_path = TypeAdapter(Path).validate_python(src)
@@ -763,7 +799,10 @@ def convert(  # noqa: C901
                 )
                 pipeline_options.table_structure_options.mode = table_mode
 
-            if image_export_mode != ImageRefMode.PLACEHOLDER:
+            if _should_generate_export_images(
+                image_export_mode,
+                to_formats,
+            ):
                 pipeline_options.generate_page_images = True
                 pipeline_options.generate_picture_images = (
                     True  # FIXME: to be deprecated in version 3

@@ -3,7 +3,6 @@ import logging
 import sys
 import threading
 import time
-import warnings
 from collections.abc import Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
@@ -155,13 +154,6 @@ class DocumentExtractor:
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
     ) -> Iterator[ExtractionResult]:
-        warnings.warn(
-            "The extract API is currently experimental and may change without prior notice.\n"
-            "Only PDF and image formats are supported.",
-            UserWarning,
-            stacklevel=2,
-        )
-
         limits = DocumentLimits(
             max_num_pages=max_num_pages,
             max_file_size=max_file_size,

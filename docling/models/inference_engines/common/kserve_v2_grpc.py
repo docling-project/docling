@@ -5,13 +5,13 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, Mapping, Sequence, Tuple
 
 import numpy as np
 
 try:
     import grpc  # type: ignore[import-untyped]
-    from tritonclient.grpc import (  # type: ignore[import-untyped,import-not-found]
+    from tritonclient.grpc import (  # type: ignore[import-untyped, import-not-found]
         service_pb2,
         service_pb2_grpc,
     )
@@ -25,6 +25,11 @@ from docling.models.inference_engines.common.kserve_v2_types import (
     NUMPY_KSERVE_V2_DATATYPES,
     KserveV2ModelMetadataResponse,
     KserveV2ModelTensorSpec,
+)
+from docling.models.inference_engines.common.kserve_v2_utils import (
+    decode_bytes_tensor,
+    encode_bytes_element,
+    encode_bytes_tensor,
 )
 
 _log = logging.getLogger(__name__)
@@ -115,11 +120,13 @@ def _encode_contents(tensor: np.ndarray, contents: Any) -> None:
         contents.uint64_contents.extend(flat.tolist())
     elif tensor.dtype == np.bool_:
         contents.bool_contents.extend(flat.tolist())
+    elif tensor.dtype == object:
+        contents.bytes_contents.extend(encode_bytes_element(value) for value in flat)
     else:
         raise ValueError(
             f"Unsupported numpy dtype for gRPC inline (non-binary) encoding: {tensor.dtype!s}. "
             "Supported non-binary dtypes: bool, uint8/uint16/uint32/uint64, "
-            "int8/int16/int32/int64, float32/float64."
+            "int8/int16/int32/int64, float32/float64, BYTES."
         )
 
 
@@ -151,11 +158,13 @@ def _decode_contents(
         data = list(contents.uint64_contents)
     elif canonical_dtype == np.dtype(np.bool_):
         data = list(contents.bool_contents)
+    elif canonical_dtype == np.dtype(object):
+        data = list(contents.bytes_contents)
     else:
         raise RuntimeError(
             f"Unsupported numpy dtype for gRPC inline (non-binary) decoding: {canonical_dtype!s}. "
             "Supported non-binary dtypes: bool, uint8/uint16/uint32/uint64, "
-            "int8/int16/int32/int64, float32/float64."
+            "int8/int16/int32/int64, float32/float64, BYTES."
         )
     return np.asarray(data, dtype=canonical_dtype).reshape(shape)
 
@@ -166,7 +175,7 @@ class KserveV2GrpcClient:
 
     base_url: str
     model_name: str
-    model_version: Optional[str]
+    model_version: str | None
     timeout: float
     metadata: Mapping[str, str]
     use_tls: bool
@@ -257,7 +266,7 @@ class KserveV2GrpcClient:
         *,
         inputs: Mapping[str, np.ndarray],
         output_names: list[str],
-        request_parameters: Optional[Mapping[str, Any]] = None,
+        request_parameters: Mapping[str, Any] | None = None,
     ) -> Dict[str, np.ndarray]:
         _batch_size = next(iter(inputs.values())).shape[0] if inputs else 0
 
@@ -289,8 +298,11 @@ class KserveV2GrpcClient:
 
             if self.use_binary_data:
                 input_tensor.parameters["binary_data"].bool_param = True
-                contiguous = np.ascontiguousarray(np_tensor)
-                request.raw_input_contents.append(contiguous.tobytes())
+                if kserve_dtype == "BYTES":  # Bytes encoding
+                    request.raw_input_contents.append(encode_bytes_tensor(np_tensor))
+                else:
+                    contiguous = np.ascontiguousarray(np_tensor)
+                    request.raw_input_contents.append(contiguous.tobytes())
             else:
                 _encode_contents(np_tensor, input_tensor.contents)
 
@@ -351,8 +363,16 @@ class KserveV2GrpcClient:
                         f"Supported types: {list(KSERVE_V2_NUMPY_DATATYPES.keys())}"
                     )
                 shape = tuple(int(dim) for dim in output_tensor.shape)
-                array = np.frombuffer(raw_output, dtype=np_dtype)
-                decoded_outputs[output_tensor.name] = array.reshape(shape)
+
+                # Bytes decoding
+                # Special handling for BYTES datatype (variable-length strings)
+                if output_tensor.datatype == "BYTES":
+                    decoded_outputs[output_tensor.name] = decode_bytes_tensor(
+                        raw_output, shape
+                    )
+                else:
+                    array = np.frombuffer(raw_output, dtype=np_dtype)
+                    decoded_outputs[output_tensor.name] = array.reshape(shape)
         else:
             for output_tensor in response.outputs:
                 np_dtype = KSERVE_V2_NUMPY_DATATYPES.get(output_tensor.datatype)

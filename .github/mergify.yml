@@ -4,9 +4,15 @@ merge_protections:
     if:
       - base = main
     success_conditions:
-      - "title ~=
-        ^(fix|feat|docs|style|refactor|perf|test|build|ci|chore|revert)(?:\\(.+\
-        \\))?(!)?:"
+      - "title ~= ^(fix|feat|docs|style|refactor|perf|test|build|ci|chore|revert)(?:\\(.+\\\
+        ))?(!)?:"
+  - name: Require three reviewers for breaking changes
+    description: Breaking changes require additional scrutiny with 3 approvers
+    if:
+      - base = main
+      - "title ~= !:"
+    success_conditions:
+      - "#approved-reviews-by >= 3"
   - name: Require two reviewer for test updates
     description: When test data is updated, we require two reviewers
     if:
@@ -16,3 +22,5 @@ merge_protections:
           - files ~= ^tests/data_scanned
     success_conditions:
       - "#approved-reviews-by >= 2"
+merge_protections_settings:
+  reporting_method: check-runs

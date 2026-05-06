@@ -14,10 +14,13 @@ Warning:
     will need to be updated accordingly when that release is available.
 """
 
+from __future__ import annotations
+
 import logging
 import re
 import shutil
 import zipfile
+from collections import defaultdict
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -46,6 +49,7 @@ _XBRL_IMPORT_ERROR: ImportError | None = None
 try:
     from arelle import Cntlr  # type: ignore
     from arelle.ModelDocument import Type  # type: ignore
+    from arelle.ModelDtsObject import ModelConcept  # type: ignore
     from arelle.ModelXbrl import ModelXbrl  # type: ignore
 
     _XBRL_AVAILABLE = True
@@ -78,10 +82,12 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
     @override
     def __init__(
         self,
-        in_doc: "InputDocument",
+        in_doc: InputDocument,
         path_or_stream: BytesIO | Path,
-        options: XBRLBackendOptions = XBRLBackendOptions(),
+        options: XBRLBackendOptions | None = None,
     ) -> None:
+        if options is None:
+            options = XBRLBackendOptions()
         # Check if arelle is available before proceeding
         if not _XBRL_AVAILABLE:
             raise ImportError(
@@ -92,6 +98,12 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream)
         self.options: XBRLBackendOptions = options
         self.model_xbrl: ModelXbrl | None = None
+        self._kv_idx: int = 0
+        self._cells: list[GraphCell] = []
+        self._links: list[GraphLink] = []
+        self._hierarchy_cell_ids: dict[str, int] = {}
+        self._fact_cell_ids: dict[str, list[int]] = defaultdict(list)
+        self._created_links: set[tuple[int, int]] = set()
 
         try:
             if (
@@ -190,6 +202,44 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.XML_XBRL}
 
+    def _get_hierarchy_cell(
+        self,
+        concept: ModelConcept,
+    ) -> int:
+        """Get existing or create new cell for a concept node."""
+        qname_str = str(concept.qname)
+        if qname_str not in self._hierarchy_cell_ids:
+            cell_id = self._kv_idx
+            self._cells.append(
+                GraphCell(
+                    label=GraphCellLabel.KEY,
+                    cell_id=cell_id,
+                    text=concept.qname.localName,
+                    orig=qname_str,
+                )
+            )
+            self._hierarchy_cell_ids[qname_str] = cell_id
+            self._kv_idx += 1
+        return self._hierarchy_cell_ids[qname_str]
+
+    def _add_link(
+        self,
+        label: GraphLinkLabel,
+        src: int,
+        tgt: int,
+    ) -> None:
+        """Add a link if it doesn't already exist."""
+        key = (src, tgt)
+        if key not in self._created_links:
+            self._created_links.add(key)
+            self._links.append(
+                GraphLink(
+                    label=label,
+                    source_cell_id=src,
+                    target_cell_id=tgt,
+                )
+            )
+
     @override
     def convert(self) -> DoclingDocument:
         """Convert XBRL document to DoclingDocument using Arelle library.
@@ -234,10 +284,8 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
             add_title=False,
         )
 
-        _log.info("Parsing text block items and key-value items...")
-        kv_idx: int = 0
-        cells: list[GraphCell] = []
-        links: list[GraphLink] = []
+        _log.debug("Parsing text block items and key-value items...")
+
         for fact in self.model_xbrl.facts:
             if fact.concept is None:
                 continue
@@ -263,38 +311,156 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
                 html_doc = html_backend.convert()
                 doc = DoclingDocument.concatenate(docs=(doc, html_doc))
 
-            if fact.concept.isNumeric:
-                # TODO: deal with context, units, precision, types,...
-                if not fact.localName or not fact.value:
-                    continue
-                cells.append(
+            if fact.concept.isNumeric and fact.localName and fact.value:
+                # period
+                period_text = ""
+                if fact.context is not None:
+                    if fact.context.isInstantPeriod:
+                        period_text = str(fact.context.instantDatetime.date())
+                    elif fact.context.isStartEndPeriod:
+                        period_text = f"{fact.context.startDatetime.date()} - {fact.context.endDatetime.date()}"
+
+                # unit
+                unit_text = ""
+                if (
+                    fact.unit is not None
+                    and fact.unit.measures
+                    and fact.unit.measures[0]
+                ):
+                    unit_text = fact.unit.measures[0][0].localName
+
+                # decimals
+                decimals_text = str(fact.decimals) if fact.decimals is not None else ""
+
+                # dimensions
+                dimensions = []
+                if fact.context is not None and fact.context.qnameDims:
+                    for dim_qname, dim_value in fact.context.qnameDims.items():
+                        dimensions.append(
+                            (
+                                f"{dim_qname.localName}: {dim_value.memberQname.localName}",
+                                "dimension",
+                            )
+                        )
+
+                key_id = self._kv_idx
+                self._cells.append(
                     GraphCell(
                         label=GraphCellLabel.KEY,
-                        cell_id=kv_idx,
-                        text=fact.localName,
-                        orig=fact.localName,
+                        cell_id=key_id,
+                        text=str(fact.localName),
+                        orig=str(fact.qname),
                     )
                 )
-                cells.append(
-                    GraphCell(
-                        label=GraphCellLabel.VALUE,
-                        cell_id=kv_idx + 1,
-                        text=fact.value,
-                        orig=fact.value,
+                self._fact_cell_ids[str(fact.qname)].append(key_id)
+                self._kv_idx += 1
+
+                value_cells = [
+                    (f"value: {fact.value}" if fact.value else "", "value"),
+                    (f"period: {period_text}" if period_text else "", "period"),
+                    (f"currency: {unit_text}" if unit_text else "", "unit"),
+                    (f"decimals: {decimals_text}" if decimals_text else "", "decimals"),
+                ]
+
+                for text, orig in value_cells:
+                    self._cells.append(
+                        GraphCell(
+                            label=GraphCellLabel.VALUE,
+                            cell_id=self._kv_idx,
+                            text=str(text),
+                            orig=str(orig),
+                        )
                     )
-                )
-                links.append(
-                    GraphLink(
-                        label=GraphLinkLabel.TO_VALUE,
-                        source_cell_id=kv_idx,
-                        target_cell_id=kv_idx + 1,
+                    self._links.append(
+                        GraphLink(
+                            label=GraphLinkLabel.TO_VALUE,
+                            source_cell_id=key_id,
+                            target_cell_id=self._kv_idx,
+                        )
                     )
+                    self._kv_idx += 1
+
+        # 1) presentation linkbase
+        _log.debug("Building presentation linkbase hierarchy...")
+        visited_concepts = set()
+        pre_links = self.model_xbrl.relationshipSet(
+            "http://www.xbrl.org/2003/arcrole/parent-child"
+        )
+        for fact in self.model_xbrl.facts:
+            fact_qname = str(fact.qname)
+            if (
+                fact.concept is None
+                or not fact.concept.isNumeric
+                or not fact.localName
+                or not fact.value
+                or fact_qname in visited_concepts
+            ):
+                continue
+
+            # link fact to its concept
+            visited_concepts.add(fact_qname)
+            if fact_qname in self._fact_cell_ids:
+                concept_cell_id = self._get_hierarchy_cell(fact.concept)
+                for fact_cell_id in self._fact_cell_ids[fact_qname]:
+                    if fact_cell_id != concept_cell_id:
+                        self._add_link(
+                            GraphLinkLabel.TO_CHILD,
+                            concept_cell_id,
+                            fact_cell_id,
+                        )
+
+            # build concept hierarchy
+            current_concept = fact.concept
+            while True:
+                parent = pre_links.toModelObject(current_concept)
+                if not parent:
+                    break
+                parent_concept = parent[0].fromModelObject
+                child_cell_id = self._get_hierarchy_cell(current_concept)
+                parent_cell_id = self._get_hierarchy_cell(parent_concept)
+                self._add_link(
+                    GraphLinkLabel.TO_CHILD,
+                    parent_cell_id,
+                    child_cell_id,
                 )
-                kv_idx += 2
+                parent_qname = str(parent_concept.qname)
+                if parent_qname in visited_concepts:
+                    break
+                visited_concepts.add(parent_qname)
+                current_concept = parent_concept
+
+        # 2) calculation linkbase
+        _log.debug("Building calculation linkbase relationships...")
+        calc_links = self.model_xbrl.relationshipSet(
+            "http://www.xbrl.org/2003/arcrole/summation-item"
+        )
+        for link in calc_links.modelRelationships:
+            parent_cell_id = self._get_hierarchy_cell(link.fromModelObject)
+            child_cell_id = self._get_hierarchy_cell(link.toModelObject)
+            self._add_link(
+                GraphLinkLabel.TO_CHILD,
+                parent_cell_id,
+                child_cell_id,
+            )
+            weight_id = self._kv_idx
+            self._cells.append(
+                GraphCell(
+                    label=GraphCellLabel.VALUE,
+                    cell_id=weight_id,
+                    text=f"weight: {link.weight}",
+                    orig="weight",
+                )
+            )
+            self._kv_idx += 1
+            self._add_link(
+                GraphLinkLabel.TO_VALUE,
+                child_cell_id,
+                weight_id,
+            )
 
         doc.name = doc_name
-        if cells and links:
-            graph_data: GraphData = GraphData(cells=cells, links=links)
+        if self._cells and self._links:
+            graph_data: GraphData = GraphData(cells=self._cells, links=self._links)
             doc.add_key_values(graph=graph_data)
 
         return doc

@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "name": "2206.01062",
   "origin": {
     "mimetype": "application/pdf",
@@ -9609,7 +9609,8 @@
         }
       ],
       "orig": "1 https://developer.ibm.com/exchanges/data/all/doclaynet",
-      "text": "1 https://developer.ibm.com/exchanges/data/all/doclaynet"
+      "text": "1 https://developer.ibm.com/exchanges/data/all/doclaynet",
+      "hyperlink": "https://developer.ibm.com/exchanges/data/all/doclaynet"
     },
     {
       "self_ref": "#/texts/335",
@@ -10789,7 +10790,8 @@
         }
       ],
       "orig": "3 https://arxiv.org/",
-      "text": "3 https://arxiv.org/"
+      "text": "3 https://arxiv.org/",
+      "hyperlink": "https://arxiv.org/"
     },
     {
       "self_ref": "#/texts/378",

@@ -21,13 +21,11 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersPromptStyle,
 )
 from docling.models.base_model import BaseVlmPageModel
-from docling.models.utils.generation_utils import (
-    GenerationStopper,
-    HFStoppingCriteriaWrapper,
-)
+from docling.models.utils.generation_utils import GenerationStopper
 from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
+from docling.models.utils.hf_stopping_criteria import HFStoppingCriteriaWrapper
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
 
@@ -52,7 +50,6 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 AutoModel,
                 AutoModelForCausalLM,
                 AutoModelForImageTextToText,
-                AutoModelForVision2Seq,
                 AutoProcessor,
                 BitsAndBytesConfig,
                 GenerationConfig,
@@ -117,11 +114,6 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 == TransformersModelType.AUTOMODEL_CAUSALLM
             ):
                 model_cls = AutoModelForCausalLM
-            elif (
-                self.vlm_options.transformers_model_type
-                == TransformersModelType.AUTOMODEL_VISION2SEQ
-            ):
-                model_cls = AutoModelForVision2Seq
             elif (
                 self.vlm_options.transformers_model_type
                 == TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT

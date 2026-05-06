@@ -40,6 +40,7 @@ from docling.datamodel.backend_options import (
     HTMLBackendOptions,
     LatexBackendOptions,
     MarkdownBackendOptions,
+    MetsGbsBackendOptions,
     PdfBackendOptions,
     XBRLBackendOptions,
 )
@@ -153,6 +154,12 @@ class PdfFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
     backend: Type[AbstractDocumentBackend] = DoclingParseDocumentBackend
     backend_options: Optional[PdfBackendOptions] = None
+
+
+class MetsGbsFormatOption(FormatOption):
+    pipeline_cls: Type = StandardPdfPipeline
+    backend: Type[AbstractDocumentBackend] = MetsGbsDocumentBackend
+    backend_options: MetsGbsBackendOptions | None = None
 
 
 class AudioFormatOption(FormatOption):
@@ -672,6 +679,9 @@ class DocumentConverter:
                         f"No pipeline could be initialized for {in_doc.file}."
                     )
                 else:
+                    _log.warning(
+                        "No pipeline could be initialized for %s.", in_doc.file
+                    )
                     conv_res = ConversionResult(
                         input=in_doc,
                         status=ConversionStatus.FAILURE,
@@ -680,11 +690,10 @@ class DocumentConverter:
             if raises_on_error:
                 raise ConversionError(f"Input document {in_doc.file} is not valid.")
             else:
-                # invalid doc or not of desired format
+                _log.warning("Input document %s is not valid.", in_doc.file)
                 conv_res = ConversionResult(
                     input=in_doc,
                     status=ConversionStatus.FAILURE,
                 )
-                # TODO add error log why it failed.
 
         return conv_res

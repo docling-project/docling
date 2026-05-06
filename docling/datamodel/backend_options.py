@@ -1,7 +1,7 @@
 from pathlib import Path, PurePath
 from typing import Annotated, Literal, Optional, Union
 
-from pydantic import AnyUrl, BaseModel, Field, SecretStr
+from pydantic import AnyUrl, BaseModel, Field, PositiveInt, SecretStr
 
 
 class BaseBackendOptions(BaseModel):
@@ -28,6 +28,48 @@ class HTMLBackendOptions(BaseBackendOptions):
     """
 
     kind: Literal["html"] = Field("html", exclude=True, repr=False)
+    render_page: bool = Field(
+        False,
+        description=(
+            "Render HTML in a headless browser to capture page images and "
+            "element bounding boxes."
+        ),
+    )
+    render_page_width: int = Field(
+        794, description="Render page width in CSS pixels (A4 @ 96 DPI)."
+    )
+    render_page_height: int = Field(
+        1123, description="Render page height in CSS pixels (A4 @ 96 DPI)."
+    )
+    render_page_orientation: Literal["portrait", "landscape"] = Field(
+        "portrait", description="Render page orientation."
+    )
+    render_print_media: bool = Field(
+        True, description="Use print media emulation when rendering."
+    )
+    render_wait_until: Literal["load", "domcontentloaded", "networkidle"] = Field(
+        "networkidle",
+        description="Playwright wait condition before extracting the DOM.",
+    )
+    render_wait_ms: int = Field(
+        0, description="Extra delay in milliseconds after load."
+    )
+    render_device_scale: float = Field(
+        1.0, description="Device scale factor for rendering."
+    )
+    page_padding: int = Field(
+        0,
+        description=(
+            "Padding in CSS pixels applied to the HTML body before rendering."
+        ),
+    )
+    render_full_page: bool = Field(
+        False,
+        description=("Capture a single full-height page image instead of paginating."),
+    )
+    render_dpi: int = Field(
+        96, description="DPI used for page images created from rendering."
+    )
     fetch_images: bool = Field(
         False,
         description=(
@@ -47,6 +89,14 @@ class HTMLBackendOptions(BaseBackendOptions):
     )
     infer_furniture: bool = Field(
         True, description="Infer all the content before the first header as furniture."
+    )
+    max_image_data_base64_bytes: PositiveInt = Field(
+        20 * 1024 * 1024,  # 20 MB
+        description="The maximum number of base64 data bytes that the backend will accept.",
+    )
+    max_remote_image_bytes: PositiveInt = Field(
+        20 * 1024 * 1024,  # 20 MB
+        description="The maximum number of bytes for remote image downloads.",
     )
 
 
@@ -77,6 +127,27 @@ class PdfBackendOptions(BaseBackendOptions):
     password: Optional[SecretStr] = None
 
 
+class MetsGbsBackendOptions(PdfBackendOptions):
+    """Options specific to the METS-GBS document backend."""
+
+    kind: Annotated[Literal["mets-gbs"], Field(exclude=True, repr=False)] = "mets-gbs"  # type: ignore[assignment]
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum cumulative size in bytes of all data extracted from the archive during processing"
+        ),
+    ] = 300 * 1024 * 1024
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum size in bytes for any single file extracted from the archive"
+        ),
+    ] = 10 * 1024 * 1024
+    max_member_count: Annotated[
+        PositiveInt, Field(description="Maximum number of archive members to process")
+    ] = 1000
+
+
 class MsExcelBackendOptions(BaseBackendOptions):
     """Options specific to the MS Excel backend."""
 
@@ -93,6 +164,15 @@ class MsExcelBackendOptions(BaseBackendOptions):
         description=(
             "The tolerance (in number of empty rows/columns) for merging nearby "
             "data clusters into a single table. Default is 0 (strict)."
+        ),
+    )
+    sheet_names: Optional[list[str]] = Field(
+        None,
+        description=(
+            "An optional list of sheet names to include in conversion. "
+            "When set, only sheets whose names appear in this list will be processed. "
+            "Sheet names are matched case-sensitively. "
+            "Set to None (default) to include all sheets."
         ),
     )
 
@@ -135,6 +215,7 @@ BackendOptions = Annotated[
         HTMLBackendOptions,
         MarkdownBackendOptions,
         PdfBackendOptions,
+        MetsGbsBackendOptions,
         MsExcelBackendOptions,
         LatexBackendOptions,
         XBRLBackendOptions,

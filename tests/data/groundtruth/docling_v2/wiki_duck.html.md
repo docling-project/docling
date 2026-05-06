@@ -25,11 +25,11 @@ hide
     - [8.2 Sources](#Sources)
 - [9 External links](#External_links)
 
-Toggle the table of contents
+- [ ] Toggle the table of contents
 
 # Duck
 
-136 languages
+- [ ] 136 languages
 
 - [Acèh](https://ace.wikipedia.org/wiki/It%C3%A9k)
 - [Afrikaans](https://af.wikipedia.org/wiki/Eend)
@@ -173,13 +173,13 @@ Toggle the table of contents
 - [Article](/wiki/Duck)
 - [Talk](/wiki/Talk:Duck)
 
-English
+- [ ] English
 
 - [Read](/wiki/Duck)
 - [View source](/w/index.php?title=Duck&action=edit)
 - [View history](/w/index.php?title=Duck&action=history)
 
-Tools
+- [ ] Tools
 
 Tools
 
@@ -230,8 +230,6 @@ From Wikipedia, the free encyclopedia
 
 (Redirected from [Duckling](/w/index.php?title=Duckling&redirect=no) )
 
-Common name for many species of bird
-
 This article is about the bird. For duck as a food, see [Duck as food](/wiki/Duck_as_food) . For other uses, see [Duck (disambiguation)](/wiki/Duck_(disambiguation)) .
 
 "Duckling" redirects here. For other uses, see [Duckling (disambiguation)](/wiki/Duckling_(disambiguation)) .
@@ -239,7 +237,7 @@ This article is about the bird. For duck as a food, see [Duck as food](/wiki/Duc
 | Duck                                                                                            | Duck                               |
 |-------------------------------------------------------------------------------------------------|------------------------------------|
 | <!-- image -->                                                                                  |                                    |
-| [Bufflehead](/wiki/Bufflehead)  (  *Bucephala albeola*  )                                       |                                    |
+| [Bufflehead](/wiki/Bufflehead)  ( *Bucephala albeola* )                                         |                                    |
 | [Scientific classification](/wiki/Taxonomy_(biology))  Edit this classification  <!-- image --> |                                    |
 | Domain:                                                                                         | [Eukaryota](/wiki/Eukaryote)       |
 | Kingdom:                                                                                        | [Animalia](/wiki/Animal)           |
@@ -516,9 +514,7 @@ The 1992 Disney film [*The Mighty Ducks*](/wiki/The_Mighty_Ducks_(film)) , starr
 
 Retrieved from " [https://en.wikipedia.org/w/index.php?title=Duck&amp;oldid=1246843351](https://en.wikipedia.org/w/index.php?title=Duck&oldid=1246843351) "
 
-[Categories](/wiki/Help:Category)
-
-:
+[Categories](/wiki/Help:Category) :
 
 - [Ducks](/wiki/Category:Ducks)
 - [Game birds](/wiki/Category:Game_birds)

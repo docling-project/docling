@@ -80,6 +80,7 @@ nav:
     - Plugins: concepts/plugins.md
   - Examples:
     - Examples: examples/index.md
+    - "🤝 Agent skill (Cursor / assistants)": examples/agent_skill/docling-document-intelligence/README.md
     - 🔀 Conversion:
       - "Simple conversion": examples/minimal.py
       - "Custom conversion": examples/custom_convert.py
@@ -105,6 +106,7 @@ nav:
     - ✂️ Serialization & chunking:
       - examples/serialization.ipynb
       - examples/hybrid_chunking.ipynb
+      - examples/line_based_chunking.ipynb
       - examples/advanced_chunking_and_serialization.ipynb
     - 📤 Information extraction:
       - examples/extraction.ipynb

@@ -1,0 +1,76 @@
+name: "Run Heavy Examples CI"
+
+on:
+  # Heavy examples are expensive (~45-60min). Run them only on demand or when a
+  # PR is explicitly labeled `tests:full` / `tests:heavy-examples`.
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  UV_FROZEN: "1"
+  EXAMPLES_HEAVY: '^(batch_convert|chart_extraction|granite_vision_table_structure|minimal_asr_pipeline|minimal_vlm_pipeline)\.py$'
+
+jobs:
+  run-heavy-examples:
+    if: >-
+      ${{
+        github.event_name != 'pull_request' ||
+        contains(github.event.pull_request.labels.*.name, 'tests:full') ||
+        contains(github.event.pull_request.labels.*.name, 'tests:heavy-examples')
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10"]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/setup-ubuntu-ci
+        with:
+          python_version: ${{ matrix.python-version }}
+          uv_sync_args: --frozen --group examples --all-extras --no-group docs --no-group dev
+          install_system_deps: "true"
+          cache_models: "true"
+
+      - name: Free up disk space
+        run: |
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo apt-get clean
+          df -h
+
+      - name: Run selected heavy examples
+        run: |
+          uv run --no-sync python .github/scripts/run_selected_examples.py \
+            --examples-dir docs/examples \
+            --changed-files-json "[]" \
+            --include-pattern "$EXAMPLES_HEAVY" \
+            --run-all
+
+  check:
+    if: ${{ always() }}
+    needs:
+      - run-heavy-examples
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: All Green
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          ALLOWED_SKIPS: run-heavy-examples
+        run: >-
+          python3 .github/scripts/check_needs_results.py
+          --needs-json "$NEEDS_JSON"
+          --allowed-skips "$ALLOWED_SKIPS"

@@ -77,16 +77,6 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         self.csv_data = list(result)
         _log.info(f"Detected {len(self.csv_data)} lines")
 
-        # Ensure uniform column length
-        expected_length = len(self.csv_data[0])
-        is_uniform = all(len(row) == expected_length for row in self.csv_data)
-        if not is_uniform:
-            warnings.warn(
-                f"Inconsistent column lengths detected in CSV data. "
-                f"Expected {expected_length} columns, but found rows with varying lengths. "
-                f"Ensure all rows have the same number of columns."
-            )
-
         # Parse the CSV into a structured document model
         origin = DocumentOrigin(
             filename=self.file.name or "file.csv",
@@ -98,7 +88,18 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
 
         if self.is_valid():
             # Convert CSV data to table
-            if self.csv_data:
+            if not self.csv_data:
+                _log.warning("CSV file is empty, returning empty document.")
+            else:
+                expected_length = len(self.csv_data[0])
+                is_uniform = all(len(row) == expected_length for row in self.csv_data)
+                if not is_uniform:
+                    warnings.warn(
+                        f"Inconsistent column lengths detected in CSV data. "
+                        f"Expected {expected_length} columns, but found rows with varying lengths. "
+                        f"Ensure all rows have the same number of columns."
+                    )
+
                 num_rows = len(self.csv_data)
                 num_cols = max(len(row) for row in self.csv_data)
 
