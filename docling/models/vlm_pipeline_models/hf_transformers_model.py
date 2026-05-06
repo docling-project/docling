@@ -377,6 +377,22 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         if pad_token:
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
 
+        # -- Strip stop strings and their partial prefixes from decoded output
+        if self.vlm_options.stop_strings:
+            cleaned = []
+            for text in decoded_texts:
+                for ss in self.vlm_options.stop_strings:
+                    idx = text.find(ss)
+                    if idx != -1:
+                        text = text[:idx]
+                    else:
+                        for k in range(len(ss) - 1, 0, -1):
+                            if text.endswith(ss[:k]):
+                                text = text[: -k]
+                                break
+                cleaned.append(text)
+            decoded_texts = cleaned
+
         # -- Optional logging
         num_tokens = None
         if generated_ids.shape[0] > 0:

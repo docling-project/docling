@@ -214,8 +214,6 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
         self.vlm_model.eval()
 
-        self._apply_compat_patches(repo_id)
-
         # Optionally compile model for better performance (model must be in eval mode first)
         # Works for Python < 3.14 with any torch 2.x
         # Works for Python >= 3.14 with torch >= 2.10
@@ -236,34 +234,6 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
 
         _log.info(f"Loaded model {repo_id} (revision: {revision})")
-
-    def _apply_compat_patches(self, repo_id: str) -> None:
-        """Apply model-specific compatibility patches for transformers 5.x."""
-        import types
-
-        _DOTS_REPOS = {"rednote-hilab/dots.ocr", "rednote-hilab/dots.mocr"}
-        if repo_id not in _DOTS_REPOS:
-            return
-
-        from transformers.models.qwen2 import Qwen2ForCausalLM
-
-        def _compat_prepare(self_model, input_ids, **kwargs):
-            pixel_values = kwargs.pop("pixel_values", None)
-            image_grid_thw = kwargs.pop("image_grid_thw", None)
-            is_first = kwargs.pop("is_first_iteration", False)
-            kwargs.pop("mm_token_type_ids", None)
-            model_inputs = Qwen2ForCausalLM.prepare_inputs_for_generation(
-                self_model, input_ids, is_first_iteration=is_first, **kwargs
-            )
-            if is_first:
-                model_inputs["pixel_values"] = pixel_values
-                model_inputs["image_grid_thw"] = image_grid_thw
-            return model_inputs
-
-        self.vlm_model.prepare_inputs_for_generation = types.MethodType(
-            _compat_prepare, self.vlm_model
-        )
-        _log.info(f"Applied transformers 5.x compat patch for {repo_id}")
 
     def _get_tokenizer(self) -> Any:
         """Resolve the tokenizer from the processor.
@@ -464,6 +434,23 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         pad_token = getattr(tokenizer, "pad_token", None)
         if pad_token:
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
+
+        # Strip stop strings and their partial prefixes from decoded output
+        if first_input.stop_strings:
+            cleaned = []
+            for text in decoded_texts:
+                for ss in first_input.stop_strings:
+                    idx = text.find(ss)
+                    if idx != -1:
+                        text = text[:idx]
+                    else:
+                        # Remove partial prefix (e.g. "<|im_" from "<|im_end|>")
+                        for k in range(len(ss) - 1, 0, -1):
+                            if text.endswith(ss[:k]):
+                                text = text[: -k]
+                                break
+                cleaned.append(text)
+            decoded_texts = cleaned
 
         # Create outputs
         outputs = []
