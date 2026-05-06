@@ -435,20 +435,9 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
         # Strip stop strings and their partial prefixes from decoded output
         if first_input.stop_strings:
-            cleaned = []
-            for text in decoded_texts:
-                for ss in first_input.stop_strings:
-                    idx = text.find(ss)
-                    if idx != -1:
-                        text = text[:idx]
-                    else:
-                        # Remove partial prefix (e.g. "<|im_" from "<|im_end|>")
-                        for k in range(len(ss) - 1, 0, -1):
-                            if text.endswith(ss[:k]):
-                                text = text[:-k]
-                                break
-                cleaned.append(text)
-            decoded_texts = cleaned
+            from docling.utils.vlm_utils import strip_stop_strings
+
+            decoded_texts = strip_stop_strings(decoded_texts, first_input.stop_strings)
 
         # Create outputs
         outputs = []

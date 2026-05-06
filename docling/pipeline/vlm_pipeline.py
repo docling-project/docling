@@ -528,6 +528,7 @@ class VlmPipeline(PaginatedPipeline):
     def _parse_dots_json(self, conv_res: ConversionResult) -> DoclingDocument:
         """Parse dots.ocr / dots.mocr JSON output into a DoclingDocument."""
         from docling.utils.dots_utils import parse_dots_json
+        from docling.utils.vlm_utils import compute_qwen2vl_image_size
 
         vlm_options = self.pipeline_options.vlm_options
         vlm_scale = getattr(vlm_options, "scale", 1.0)
@@ -542,36 +543,14 @@ class VlmPipeline(PaginatedPipeline):
 
             assert page.size is not None
 
-            # Compute the actual image resolution the model saw.
-            # Qwen2.5-VL preprocessor applies smart_resize: round to factor
-            # (patch_size * merge_size = 28), then clamp to max_pixels budget.
             model_image_size = None
             if page.image is not None:
-                import math
-
-                mw = int(page.image.width * vlm_scale)
-                mh = int(page.image.height * vlm_scale)
-                if vlm_max_size is not None:
-                    max_dim = max(mw, mh)
-                    if max_dim > vlm_max_size:
-                        sf = vlm_max_size / max_dim
-                        mw = int(mw * sf)
-                        mh = int(mh * sf)
-                # Replicate Qwen2VL smart_resize: round to factor, clamp pixels
-                factor = 28  # patch_size(14) * merge_size(2)
-                min_pixels = 200704  # from preprocessor_config
-                max_pixels = 2_500_000
-                h_bar = round(mh / factor) * factor
-                w_bar = round(mw / factor) * factor
-                if h_bar * w_bar > max_pixels:
-                    beta = math.sqrt((mh * mw) / max_pixels)
-                    h_bar = max(factor, math.floor(mh / beta / factor) * factor)
-                    w_bar = max(factor, math.floor(mw / beta / factor) * factor)
-                elif h_bar * w_bar < min_pixels:
-                    beta = math.sqrt(min_pixels / (mh * mw))
-                    h_bar = math.ceil(mh * beta / factor) * factor
-                    w_bar = math.ceil(mw * beta / factor) * factor
-                model_image_size = Size(width=w_bar, height=h_bar)
+                model_image_size = compute_qwen2vl_image_size(
+                    width=page.image.width,
+                    height=page.image.height,
+                    scale=vlm_scale,
+                    max_size=vlm_max_size,
+                )
 
             page_doc = parse_dots_json(
                 content=predicted_text,

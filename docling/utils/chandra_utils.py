@@ -94,8 +94,8 @@ class _TableHTMLParser(HTMLParser):
             attr_dict = dict(attrs)
             self._current_cell = {
                 "tag": tag_lower,
-                "colspan": int(attr_dict.get("colspan", "1")),
-                "rowspan": int(attr_dict.get("rowspan", "1")),
+                "colspan": int(attr_dict.get("colspan") or "1"),
+                "rowspan": int(attr_dict.get("rowspan") or "1"),
             }
             self._cell_text_parts = []
 
