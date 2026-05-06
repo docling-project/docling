@@ -1259,6 +1259,8 @@ VLM_CONVERT_GLMOCR = StageModelPreset(
     model_spec=VlmModelSpec(
         name="GLM-OCR-0.9B",
         default_repo_id="zai-org/GLM-OCR",
+        # GLM-OCR supports three prompts: "Text Recognition:", "Formula Recognition:",
+        # "Table Recognition:". We use text-only for full-page document conversion.
         prompt="Text Recognition:",
         response_format=ResponseFormat.MARKDOWN,
         engine_overrides={
@@ -1508,6 +1510,52 @@ CODE_FORMULA_GRANITE_DOCLING = StageModelPreset(
 # CHANDRA / DOTS VLM_CONVERT PRESETS
 # -----------------------------------------------------------------------------
 
+_CHANDRA_ALLOWED_TAGS = (
+    "['math', 'br', 'i', 'b', 'u', 'del', 'sup', 'sub', 'table', 'tr', 'td', "
+    "'p', 'th', 'div', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'ul', 'ol', 'li', "
+    "'input', 'a', 'span', 'img', 'hr', 'tbody', 'small', 'caption', 'strong', "
+    "'thead', 'big', 'code', 'chem']"
+)
+_CHANDRA_ALLOWED_ATTRS = (
+    "['class', 'colspan', 'rowspan', 'display', 'checked', 'type', 'border', "
+    "'value', 'style', 'href', 'alt', 'align', 'data-bbox', 'data-label']"
+)
+_CHANDRA_PROMPT_ENDING = (
+    f"Only use these tags {_CHANDRA_ALLOWED_TAGS}, "
+    f"and these attributes {_CHANDRA_ALLOWED_ATTRS}.\n\n"
+    "Guidelines:\n"
+    "* Inline math: Surround math with <math>...</math> tags. Math expressions "
+    "should be rendered in KaTeX-compatible LaTeX. Use display for block math.\n"
+    "* Tables: Use colspan and rowspan attributes to match table structure.\n"
+    "* Formatting: Maintain consistent formatting with the image, including spacing, "
+    "indentation, subscripts/superscripts, and special characters.\n"
+    "* Images: Include a description of any images in the alt attribute of an <img> tag. "
+    "Do not fill out the src property. Describe in detail inside the div tag. "
+    "Also convert charts to high fidelity data, and convert diagrams to mermaid.\n"
+    "* Forms: Mark checkboxes and radio buttons properly.\n"
+    "* Text: join lines together properly into paragraphs using <p>...</p> tags. "
+    "Use <br> tags for line breaks within paragraphs, but only when absolutely "
+    "necessary to maintain meaning.\n"
+    "* Chemistry: Use <chem>...</chem> tags for chemical formulas with reactive SMILES.\n"
+    "* Lists: Preserve indents and proper list markers.\n"
+    "* Use the simplest possible HTML structure that accurately represents the content "
+    "of the block.\n"
+    "* Make sure the text is accurate and easy for a human to read and interpret. "
+    "Reading order should be correct and natural."
+)
+_CHANDRA_OCR_LAYOUT_PROMPT = (
+    "OCR this image to HTML, arranged as layout blocks. Each layout block should be "
+    "a div with the data-bbox attribute representing the bounding box of the block in "
+    "x0 y0 x1 y1 format. Bboxes are normalized 0-1000. The data-label attribute is "
+    "the label for the block.\n\n"
+    "Use the following labels:\n"
+    "- Caption\n- Footnote\n- Equation-Block\n- List-Group\n- Page-Header\n"
+    "- Page-Footer\n- Image\n- Section-Header\n- Table\n- Text\n- Complex-Block\n"
+    "- Code-Block\n- Form\n- Table-Of-Contents\n- Figure\n- Chemical-Block\n"
+    "- Diagram\n- Bibliography\n- Blank-Page\n\n"
+    + _CHANDRA_PROMPT_ENDING
+)
+
 VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
     preset_id="chandra_ocr2",
     name="Chandra-OCR-2",
@@ -1515,15 +1563,11 @@ VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
     model_spec=VlmModelSpec(
         name="Chandra-OCR-2-5.3B",
         default_repo_id="datalab-to/chandra-ocr-2",
-        prompt=(
-            "OCR this image to HTML, arranged as layout blocks. "
-            "Each div uses data-bbox attribute (x0 y0 x1 y1 format, normalized 0-1000) "
-            "and data-label attribute for the block category."
-        ),
+        prompt=_CHANDRA_OCR_LAYOUT_PROMPT,
         response_format=ResponseFormat.CHANDRA_HTML,
         max_new_tokens=12384,
         trust_remote_code=True,
-        stop_strings=["<|im_end|>"],
+        stop_strings=["<|im_end|>", "<|endoftext|>"],
         engine_overrides={
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 torch_dtype="bfloat16",
