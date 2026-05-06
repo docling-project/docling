@@ -1,6 +1,8 @@
 """Client SDK for interacting with docling-serve."""
 
 from docling.service_client.client import (
+    DEFAULT_MAX_CONCURRENCY,
+    MAX_CONCURRENCY_LIMIT,
     ChunkerKind,
     ConversionItem,
     DoclingServiceClient,
@@ -24,6 +26,8 @@ from docling.service_client.exceptions import (
 from docling.service_client.job import ConversionJob
 
 __all__ = [
+    "DEFAULT_MAX_CONCURRENCY",
+    "MAX_CONCURRENCY_LIMIT",
     "BatchConversionError",
     "ChunkerKind",
     "ConversionError",

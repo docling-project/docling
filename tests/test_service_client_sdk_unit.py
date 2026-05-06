@@ -19,7 +19,12 @@ from docling.datamodel.service.responses import (
     TaskStatusResponse,
     WebsocketMessage,
 )
-from docling.service_client import ConversionItem, DoclingServiceClient
+from docling.service_client import (
+    DEFAULT_MAX_CONCURRENCY,
+    MAX_CONCURRENCY_LIMIT,
+    ConversionItem,
+    DoclingServiceClient,
+)
 from docling.service_client.exceptions import (
     ConversionError,
     ResultExpiredError,
@@ -64,9 +69,21 @@ def _convert_payload(source_name: str) -> SimpleNamespace:
 def test_base_url_accepts_root_with_or_without_trailing_slash() -> None:
     with DoclingServiceClient(url=TEST_BASE_URL) as client:
         assert client._base_url == TEST_BASE_URL
+        assert client._max_concurrency == DEFAULT_MAX_CONCURRENCY
 
     with DoclingServiceClient(url=f"{TEST_BASE_URL}/") as client:
         assert client._base_url == TEST_BASE_URL
+
+
+@pytest.mark.parametrize("value", [0, -1, MAX_CONCURRENCY_LIMIT + 1])
+def test_client_rejects_invalid_default_max_concurrency(value: int) -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            f"max_concurrency must be between 1 and {MAX_CONCURRENCY_LIMIT}, got {value}."
+        ),
+    ):
+        DoclingServiceClient(url=TEST_BASE_URL, max_concurrency=value)
 
 
 @pytest.mark.parametrize(
@@ -454,6 +471,23 @@ def test_convert_all_uses_async_pipeline_and_preserves_order(tmp_path) -> None:
     assert all(result.status == ConversionStatus.SUCCESS for result in results)
 
 
+@pytest.mark.parametrize("value", [0, -1, MAX_CONCURRENCY_LIMIT + 1])
+def test_convert_all_rejects_invalid_max_concurrency(
+    tmp_path: Path, value: int
+) -> None:
+    source = tmp_path / "a.pdf"
+    source.write_bytes(b"%PDF-1.4\n")
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        with pytest.raises(
+            ValueError,
+            match=(
+                f"max_concurrency must be between 1 and {MAX_CONCURRENCY_LIMIT}, got {value}."
+            ),
+        ):
+            list(client.convert_all([source], max_concurrency=value))
+
+
 def test_submit_and_retrieve_many_yields_completion_order_and_ordered_mode(
     tmp_path: Path,
 ) -> None:
@@ -761,6 +795,89 @@ def test_submit_and_retrieve_many_respects_max_in_flight(tmp_path: Path) -> None
     assert state["max_seen"] == 2
 
 
+def test_submit_and_retrieve_many_consumes_iterable_incrementally(
+    tmp_path: Path,
+) -> None:
+    class _DummyAsyncClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+    generated: list[str] = []
+
+    with DoclingServiceClient(
+        url=TEST_BASE_URL,
+        status_watcher="polling",
+    ) as client:
+
+        def fake_build_async_http_client(self):
+            return _DummyAsyncClient()
+
+        async def fake_submit(
+            self, source, source_headers, options, async_client, request_headers=None
+        ):
+            return _status_response(f"task-{Path(source).name}", "pending")
+
+        async def fake_wait(self, task_id, timeout, async_client):
+            return _status_response(task_id, "success")
+
+        async def fake_fetch_payload(self, task_id, last_status, async_client):
+            return _convert_payload(task_id.removeprefix("task-"))
+
+        client._build_async_http_client = MethodType(
+            fake_build_async_http_client, client
+        )
+        client._submit_convert_task_async = MethodType(fake_submit, client)
+        client._wait_for_terminal_status_async = MethodType(fake_wait, client)
+        client._fetch_convert_result_payload_async = MethodType(
+            fake_fetch_payload, client
+        )
+
+        def item_iter():
+            for idx in range(50):
+                path = tmp_path / f"{idx}.pdf"
+                path.write_bytes(b"%PDF-1.4\n")
+                generated.append(path.name)
+                yield ConversionItem(source=path)
+
+        iterator = client.submit_and_retrieve_many(
+            item_iter(),
+            max_in_flight=1,
+        )
+        assert generated == []
+
+        first_item, _ = next(iterator)
+        assert Path(first_item.source).name == "0.pdf"
+        assert len(generated) < 50
+
+        remaining_names = [Path(item.source).name for item, _ in iterator]
+
+    assert remaining_names[-1] == "49.pdf"
+    assert len(generated) == 50
+
+
+@pytest.mark.parametrize("value", [0, -1, MAX_CONCURRENCY_LIMIT + 1])
+def test_submit_and_retrieve_many_rejects_invalid_max_in_flight(
+    tmp_path: Path, value: int
+) -> None:
+    source = tmp_path / "a.pdf"
+    source.write_bytes(b"%PDF-1.4\n")
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        with pytest.raises(
+            ValueError,
+            match=(
+                f"max_in_flight must be between 1 and {MAX_CONCURRENCY_LIMIT}, got {value}."
+            ),
+        ):
+            client.submit_and_retrieve_many(
+                [ConversionItem(source=source)],
+                max_in_flight=value,
+            )
+
+
 @pytest.mark.anyio
 async def test_submit_and_retrieve_many_prefers_websocket_wait_at_or_below_threshold() -> (
     None
@@ -864,6 +981,82 @@ async def test_submit_and_retrieve_many_respects_explicit_polling_watcher_for_wa
 
     assert result.task_status == "success"
     assert seen == [("task-3", 5.0, marker)]
+
+
+@pytest.mark.anyio
+async def test_submit_and_retrieve_many_ordered_mode_yields_before_batch_completion(
+    tmp_path: Path,
+) -> None:
+    class _DummyAsyncClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+    release_first = asyncio.Event()
+    release_third = asyncio.Event()
+
+    with DoclingServiceClient(
+        url=TEST_BASE_URL,
+        status_watcher="polling",
+    ) as client:
+
+        def fake_build_async_http_client(self):
+            return _DummyAsyncClient()
+
+        async def fake_submit(
+            self, source, source_headers, options, async_client, request_headers=None
+        ):
+            return _status_response(f"task-{Path(source).name}", "pending")
+
+        async def fake_wait(self, task_id, timeout, async_client):
+            if task_id == "task-a.pdf":
+                await release_first.wait()
+            if task_id == "task-c.pdf":
+                await release_third.wait()
+            return _status_response(task_id, "success")
+
+        async def fake_fetch_payload(self, task_id, last_status, async_client):
+            return _convert_payload(task_id.removeprefix("task-"))
+
+        client._build_async_http_client = MethodType(
+            fake_build_async_http_client, client
+        )
+        client._submit_convert_task_async = MethodType(fake_submit, client)
+        client._wait_for_terminal_status_async = MethodType(fake_wait, client)
+        client._fetch_convert_result_payload_async = MethodType(
+            fake_fetch_payload, client
+        )
+
+        items: list[ConversionItem] = []
+        for name in ["a.pdf", "b.pdf", "c.pdf"]:
+            path = tmp_path / name
+            path.write_bytes(b"%PDF-1.4\n")
+            items.append(ConversionItem(source=path))
+
+        async_iterator = client._submit_and_retrieve_many_async(
+            item_list=items,
+            max_in_flight=2,
+            ordered=True,
+        )
+
+        first_result_task = asyncio.create_task(anext(async_iterator))
+        await asyncio.sleep(0)
+        release_first.set()
+
+        first_item, _ = await asyncio.wait_for(first_result_task, timeout=0.2)
+        second_item, _ = await asyncio.wait_for(anext(async_iterator), timeout=0.2)
+
+        assert Path(first_item.source).name == "a.pdf"
+        assert Path(second_item.source).name == "b.pdf"
+
+        release_third.set()
+        third_item, _ = await asyncio.wait_for(anext(async_iterator), timeout=0.2)
+        assert Path(third_item.source).name == "c.pdf"
+
+        with pytest.raises(StopAsyncIteration):
+            await asyncio.wait_for(anext(async_iterator), timeout=0.2)
 
 
 def test_submit_url_forwards_request_headers() -> None:

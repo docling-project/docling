@@ -3,7 +3,15 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import (
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Iterable,
+    Iterator,
+    Sized,
+)
+from dataclasses import dataclass
 from typing import TypeVar
 
 import httpx
@@ -12,47 +20,65 @@ T_Item = TypeVar("T_Item")
 T_Result = TypeVar("T_Result")
 
 
+@dataclass(frozen=True, slots=True)
+class _WorkerDone:
+    pass
+
+
 async def _run_bounded(
-    items: list[T_Item],
+    items: Iterable[T_Item],
     process_one: Callable[[int, T_Item, httpx.AsyncClient], Awaitable[T_Result]],
     async_client: httpx.AsyncClient,
     max_in_flight: int,
-) -> AsyncIterator[tuple[int, T_Result | BaseException]]:
+) -> AsyncIterator[tuple[int, T_Item, T_Result | BaseException]]:
     """Yield item outcomes in completion order with bounded concurrency."""
 
-    if not items:
+    if isinstance(items, Sized) and len(items) == 0:
         return
 
-    worker_count = min(len(items), max(1, max_in_flight))
-    queue: asyncio.Queue[tuple[int, T_Result | BaseException]] = asyncio.Queue()
+    item_iterator: Iterator[T_Item] = iter(items)
+    worker_limit = max(1, max_in_flight)
+    worker_count = (
+        min(len(items), worker_limit) if isinstance(items, Sized) else worker_limit
+    )
+    queue: asyncio.Queue[tuple[int, T_Item, T_Result | BaseException] | _WorkerDone] = (
+        asyncio.Queue()
+    )
     index_lock = asyncio.Lock()
     next_idx = 0
 
     async def worker() -> None:
         nonlocal next_idx
-        while True:
-            async with index_lock:
-                if next_idx >= len(items):
-                    return
-                idx = next_idx
-                next_idx += 1
+        try:
+            while True:
+                async with index_lock:
+                    try:
+                        item = next(item_iterator)
+                    except StopIteration:
+                        return
+                    idx = next_idx
+                    next_idx += 1
 
-            item = items[idx]
-            try:
-                result = await process_one(idx, item, async_client)
-            except asyncio.CancelledError:
-                raise
-            except BaseException as exc:
-                await queue.put((idx, exc))
-            else:
-                await queue.put((idx, result))
+                try:
+                    result = await process_one(idx, item, async_client)
+                except asyncio.CancelledError:
+                    raise
+                except BaseException as exc:
+                    await queue.put((idx, item, exc))
+                else:
+                    await queue.put((idx, item, result))
+        finally:
+            await queue.put(_WorkerDone())
 
     tasks = [asyncio.create_task(worker()) for _ in range(worker_count)]
-    completed = 0
+    finished_workers = 0
     try:
-        while completed < len(items):
-            yield await queue.get()
-            completed += 1
+        while finished_workers < worker_count:
+            queue_item = await queue.get()
+            if isinstance(queue_item, _WorkerDone):
+                finished_workers += 1
+                continue
+            yield queue_item
     finally:
         for task in tasks:
             if not task.done():

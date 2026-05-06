@@ -89,6 +89,8 @@ SUCCESS_CONVERSION_STATUSES: set[ConversionStatus] = {
     ConversionStatus.SUCCESS,
     ConversionStatus.PARTIAL_SUCCESS,
 }
+DEFAULT_MAX_CONCURRENCY = 8
+MAX_CONCURRENCY_LIMIT = 512
 SUBMIT_AND_RETRIEVE_MANY_MAX_IN_FLIGHT_WEBSOCKETS = 64
 HTTP_RETRY_BACKOFF_BASE_SECONDS = 1.0
 
@@ -153,7 +155,7 @@ class DoclingServiceClient:
         poll_server_wait: float = 5.0,
         poll_client_interval: float | None = None,
         job_timeout: float = 300.0,
-        max_concurrency: int = 0,
+        max_concurrency: int = DEFAULT_MAX_CONCURRENCY,
         http_retries: int = 3,
         http_connect_timeout: float = 10.0,
         http_read_timeout: float = 60.0,
@@ -173,7 +175,9 @@ class DoclingServiceClient:
             poll_server_wait if poll_client_interval is None else poll_client_interval
         )
         self._job_timeout = job_timeout
-        self._max_concurrency = max_concurrency
+        self._max_concurrency = self._validate_concurrency(
+            max_concurrency, name="max_concurrency"
+        )
         self._http_retries = http_retries
         self._http_connect_timeout = http_connect_timeout
         self._http_read_timeout = http_read_timeout
@@ -254,7 +258,7 @@ class DoclingServiceClient:
         max_file_size: int | None = None,
         page_range: PageRange | None = None,
         options: ConvertDocumentsRequestOptions | None = None,
-        max_concurrency: int = 0,
+        max_concurrency: int | None = None,
         raises_on_error: bool = True,
     ) -> Iterator[ConversionResult]:
         source_list = list(sources)
@@ -267,10 +271,8 @@ class DoclingServiceClient:
             max_file_size=max_file_size,
             page_range=page_range,
         )
-        effective_cap = (
-            max_concurrency if max_concurrency > 0 else self._max_concurrency
-        )
-        in_flight = len(source_list) if effective_cap <= 0 else max(1, effective_cap)
+        effective_cap = self._effective_concurrency(max_concurrency)
+        in_flight = effective_cap
         submit_options, _ = self._options_for_target_format(
             resolved.options, OutputFormat.JSON
         )
@@ -329,17 +331,14 @@ class DoclingServiceClient:
     def submit_and_retrieve_many(
         self,
         items: Iterable[ConversionItem],
-        max_in_flight: int = 8,
+        max_in_flight: int = DEFAULT_MAX_CONCURRENCY,
         ordered: bool = False,
     ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
-        item_list = list(items)
-        if not item_list:
-            return iter(())
-
-        effective_cap = len(item_list) if max_in_flight <= 0 else max(1, max_in_flight)
         return self._run_submit_and_retrieve_many_async(
-            item_list=item_list,
-            max_in_flight=effective_cap,
+            item_list=items,
+            max_in_flight=self._validate_concurrency(
+                max_in_flight, name="max_in_flight"
+            ),
             ordered=ordered,
         )
 
@@ -999,7 +998,7 @@ class DoclingServiceClient:
 
     def _run_submit_and_retrieve_many_async(
         self,
-        item_list: list[ConversionItem],
+        item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
     ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
@@ -1018,7 +1017,7 @@ class DoclingServiceClient:
 
     def _iterate_submit_and_retrieve_many_sync(
         self,
-        item_list: list[ConversionItem],
+        item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
     ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
@@ -1051,6 +1050,19 @@ class DoclingServiceClient:
                     loop.close()
 
         return iterator()
+
+    @staticmethod
+    def _validate_concurrency(value: int, *, name: str) -> int:
+        if value < 1 or value > MAX_CONCURRENCY_LIMIT:
+            raise ValueError(
+                f"{name} must be between 1 and {MAX_CONCURRENCY_LIMIT}, got {value}."
+            )
+        return value
+
+    def _effective_concurrency(self, override: int | None) -> int:
+        if override is None:
+            return self._max_concurrency
+        return self._validate_concurrency(override, name="max_concurrency")
 
     @staticmethod
     def _normalize_exception(exc: BaseException) -> Exception:
@@ -1112,7 +1124,7 @@ class DoclingServiceClient:
 
     async def _submit_and_retrieve_many_async(
         self,
-        item_list: list[ConversionItem],
+        item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
     ) -> AsyncGenerator[
@@ -1153,10 +1165,11 @@ class DoclingServiceClient:
                     async_client=async_client,
                 )
 
-            completed: list[
-                tuple[int, ConversionItem, ConvertDocumentResponse | Exception]
-            ] = []
-            async for idx, outcome in _run_bounded(
+            buffered_results: dict[
+                int, tuple[ConversionItem, ConvertDocumentResponse | Exception]
+            ] = {}
+            next_ordered_index = 0
+            async for idx, item, outcome in _run_bounded(
                 items=item_list,
                 process_one=process_one,
                 async_client=async_client,
@@ -1169,14 +1182,13 @@ class DoclingServiceClient:
                     normalized = outcome
 
                 if ordered:
-                    completed.append((idx, item_list[idx], normalized))
+                    buffered_results[idx] = (item, normalized)
+                    while next_ordered_index in buffered_results:
+                        yield buffered_results.pop(next_ordered_index)
+                        next_ordered_index += 1
                     continue
 
-                yield item_list[idx], normalized
-
-            if ordered:
-                for _, item, outcome in sorted(completed, key=lambda entry: entry[0]):
-                    yield item, outcome
+                yield item, normalized
 
     def _build_async_http_client(self) -> httpx.AsyncClient:
         timeout = httpx.Timeout(
