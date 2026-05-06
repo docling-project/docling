@@ -16,7 +16,7 @@ from email.utils import parsedate_to_datetime
 from enum import Enum
 from io import BytesIO
 from pathlib import Path, PurePath
-from typing import IO, Any, Literal, cast, overload
+from typing import IO, Any, Literal, TypeVar, cast, overload
 from urllib.parse import urlencode, urlparse
 
 import httpx
@@ -78,6 +78,7 @@ SourceType = Path | str | DocumentStream
 VersionResponse = dict[str, Any]
 HealthResponse = HealthCheckResponse
 logger = logging.getLogger(__name__)
+_T = TypeVar("_T")
 
 
 class ExperimentalWarning(UserWarning):
@@ -269,14 +270,13 @@ class DoclingServiceClient:
         submit_options, _ = self._options_for_target_format(
             resolved.options, OutputFormat.JSON
         )
-        results = self._run_convert_all_async(
+        return self._iterate_convert_all_sync(
             sources=sources,
             headers=headers,
             resolved=resolved,
             submit_options=submit_options,
             in_flight=effective_cap,
         )
-        return iter(results)
 
     def submit_and_retrieve_many(
         self,
@@ -921,29 +921,23 @@ class DoclingServiceClient:
         mime = mimetypes.guess_type(filename)[0] or "application/octet-stream"
         return {"files": (filename, content, mime)}
 
-    def _run_convert_all_async(
+    def _iterate_convert_all_sync(
         self,
         sources: Iterable[SourceType],
         headers: dict[str, str] | None,
         resolved: _ResolvedOptions,
         submit_options: ConvertDocumentsRequestOptions,
         in_flight: int,
-    ) -> list[ConversionResult]:
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            return asyncio.run(
-                self._convert_all_async(
-                    sources=sources,
-                    headers=headers,
-                    resolved=resolved,
-                    submit_options=submit_options,
-                    in_flight=in_flight,
-                )
+    ) -> Iterator[ConversionResult]:
+        self._ensure_sync_bridge_allowed()
+        return self._iterate_async_generator_sync(
+            self._convert_all_async(
+                sources=sources,
+                headers=headers,
+                resolved=resolved,
+                submit_options=submit_options,
+                in_flight=in_flight,
             )
-        raise RuntimeError(
-            "convert_all cannot run inside an active asyncio loop. "
-            "Call it from synchronous code."
         )
 
     def _run_submit_and_retrieve_many_async(
@@ -952,17 +946,11 @@ class DoclingServiceClient:
         max_in_flight: int,
         ordered: bool,
     ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            return self._iterate_submit_and_retrieve_many_sync(
-                item_list=item_list,
-                max_in_flight=max_in_flight,
-                ordered=ordered,
-            )
-        raise RuntimeError(
-            "submit_and_retrieve_many cannot run inside an active asyncio loop. "
-            "Call it from synchronous code."
+        self._ensure_sync_bridge_allowed()
+        return self._iterate_submit_and_retrieve_many_sync(
+            item_list=item_list,
+            max_in_flight=max_in_flight,
+            ordered=ordered,
         )
 
     def _iterate_submit_and_retrieve_many_sync(
@@ -971,18 +959,30 @@ class DoclingServiceClient:
         max_in_flight: int,
         ordered: bool,
     ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
-        async_iterator: AsyncGenerator[
-            tuple[ConversionItem, ConvertDocumentResponse | Exception], None
-        ] = self._submit_and_retrieve_many_async(
-            item_list=item_list,
-            max_in_flight=max_in_flight,
-            ordered=ordered,
+        return self._iterate_async_generator_sync(
+            self._submit_and_retrieve_many_async(
+                item_list=item_list,
+                max_in_flight=max_in_flight,
+                ordered=ordered,
+            )
         )
+
+    def _ensure_sync_bridge_allowed(self) -> None:
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        raise RuntimeError(
+            "This method cannot run inside an active asyncio loop. "
+            "Call it from synchronous code."
+        )
+
+    def _iterate_async_generator_sync(
+        self, async_iterator: AsyncGenerator[_T, None]
+    ) -> Iterator[_T]:
         loop = asyncio.new_event_loop()
 
-        def iterator() -> Iterator[
-            tuple[ConversionItem, ConvertDocumentResponse | Exception]
-        ]:
+        def iterator() -> Iterator[_T]:
             try:
                 asyncio.set_event_loop(loop)
                 while True:
@@ -1027,11 +1027,26 @@ class DoclingServiceClient:
         resolved: _ResolvedOptions,
         submit_options: ConvertDocumentsRequestOptions,
         in_flight: int,
-    ) -> list[ConversionResult]:
+    ) -> AsyncGenerator[ConversionResult, None]:
         results: dict[int, ConversionResult] = {}
         descriptors: dict[int, _SourceDescriptor] = {}
         errors: dict[int, Exception] = {}
         total = 0
+
+        def result_for_index(idx: int) -> ConversionResult:
+            if idx in results:
+                return results[idx]
+
+            exc = errors.get(idx)
+            error_message = str(exc) if exc is not None else "Unknown conversion error."
+            result = self._build_failed_conversion_result(
+                descriptor=descriptors[idx],
+                limits=resolved.limits,
+                error_message=error_message,
+                status=ConversionStatus.FAILURE,
+            )
+            results[idx] = result
+            return result
 
         def make_items() -> Iterator[ConversionItem]:
             nonlocal total
@@ -1040,8 +1055,8 @@ class DoclingServiceClient:
                 try:
                     descriptor = self._describe_source(source)
                 except Exception as exc:
-                    errors[idx] = exc
-                    name = source.name if hasattr(source, "name") else str(source)
+                    errors[idx] = self._normalize_exception(exc)
+                    name = str(source) if isinstance(source, str) else source.name
                     descriptors[idx] = _SourceDescriptor(
                         source_name=name,
                         input_format=self._guess_input_format(name),
@@ -1065,35 +1080,32 @@ class DoclingServiceClient:
                     ),
                 )
 
+        next_output_index = 0
         async for item, outcome in self._submit_and_retrieve_many_async(
             item_list=make_items(),
             max_in_flight=in_flight,
             ordered=True,
         ):
             metadata = cast(_ConvertAllItemMetadata, item.metadata)
+            while next_output_index < metadata.source_index:
+                yield result_for_index(next_output_index)
+                next_output_index += 1
+
             if isinstance(outcome, BaseException):
                 errors[metadata.source_index] = self._normalize_exception(outcome)
+                yield result_for_index(metadata.source_index)
             else:
-                results[metadata.source_index] = self._build_conversion_result(
+                result = self._build_conversion_result(
                     payload=outcome,
                     descriptor=metadata.descriptor,
                     limits=resolved.limits,
                 )
+                results[metadata.source_index] = result
+                yield result
+            next_output_index += 1
 
-        for idx in range(total):
-            if idx not in results:
-                exc = errors.get(idx)
-                error_message = (
-                    str(exc) if exc is not None else "Unknown conversion error."
-                )
-                results[idx] = self._build_failed_conversion_result(
-                    descriptor=descriptors[idx],
-                    limits=resolved.limits,
-                    error_message=error_message,
-                    status=ConversionStatus.FAILURE,
-                )
-
-        return [results[i] for i in range(total)]
+        for idx in range(next_output_index, total):
+            yield result_for_index(idx)
 
     async def _submit_and_retrieve_many_async(
         self,

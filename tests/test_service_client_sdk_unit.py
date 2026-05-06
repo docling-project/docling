@@ -1,4 +1,7 @@
 import asyncio
+import queue
+import threading
+import time
 import warnings
 from datetime import datetime, timezone
 from pathlib import Path, PurePath
@@ -470,6 +473,150 @@ def test_convert_all_uses_async_pipeline_and_preserves_order(tmp_path) -> None:
     ]
     assert [result.input.file.name for result in results] == ["a.pdf", "b.pdf", "c.pdf"]
     assert all(result.status == ConversionStatus.SUCCESS for result in results)
+
+
+def test_convert_all_returns_iterator_and_yields_before_batch_completion(
+    tmp_path: Path,
+) -> None:
+    release_first = threading.Event()
+    release_third = threading.Event()
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+
+        async def fake_submit_and_retrieve_many_async(
+            self,
+            item_list,
+            max_in_flight,
+            ordered,
+        ):
+            items = list(item_list)
+            assert max_in_flight == 2
+            assert ordered is True
+
+            await asyncio.to_thread(release_first.wait)
+            yield items[0], _convert_payload(Path(items[0].source).name)
+            yield items[1], _convert_payload(Path(items[1].source).name)
+
+            await asyncio.to_thread(release_third.wait)
+            yield items[2], _convert_payload(Path(items[2].source).name)
+
+        client._submit_and_retrieve_many_async = MethodType(
+            fake_submit_and_retrieve_many_async, client
+        )
+
+        p1 = tmp_path / "a.pdf"
+        p2 = tmp_path / "b.pdf"
+        p3 = tmp_path / "c.pdf"
+        p1.write_bytes(b"%PDF-1.4\n")
+        p2.write_bytes(b"%PDF-1.4\n")
+        p3.write_bytes(b"%PDF-1.4\n")
+
+        iterator_queue: queue.Queue[object] = queue.Queue(maxsize=1)
+
+        def build_iterator() -> None:
+            try:
+                iterator_queue.put(
+                    client.convert_all(
+                        [p1, p2, p3],
+                        options=ConvertDocumentsRequestOptions(),
+                        max_concurrency=2,
+                    )
+                )
+            except BaseException as exc:
+                iterator_queue.put(exc)
+
+        build_thread = threading.Thread(target=build_iterator)
+        build_thread.start()
+
+        iterator_or_exc = iterator_queue.get(timeout=0.2)
+        build_thread.join(timeout=0.2)
+
+        if isinstance(iterator_or_exc, BaseException):
+            raise iterator_or_exc
+
+        assert build_thread.is_alive() is False
+        iterator = iterator_or_exc
+
+        first_result_queue: queue.Queue[object] = queue.Queue(maxsize=1)
+
+        def consume_first_result() -> None:
+            try:
+                first_result_queue.put(next(iterator))
+            except BaseException as exc:
+                first_result_queue.put(exc)
+
+        first_thread = threading.Thread(target=consume_first_result)
+        first_thread.start()
+        time.sleep(0.05)
+        assert first_result_queue.empty()
+
+        release_first.set()
+        first_result_or_exc = first_result_queue.get(timeout=0.2)
+        first_thread.join(timeout=0.2)
+
+        if isinstance(first_result_or_exc, BaseException):
+            raise first_result_or_exc
+
+        first_result = first_result_or_exc
+        assert first_thread.is_alive() is False
+        assert first_result.input.file.name == "a.pdf"
+        assert next(iterator).input.file.name == "b.pdf"
+
+        release_third.set()
+        assert next(iterator).input.file.name == "c.pdf"
+
+        with pytest.raises(StopIteration):
+            next(iterator)
+
+
+def test_convert_all_interleaves_preflight_skips_correctly(tmp_path: Path) -> None:
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        submitted_names: list[str] = []
+
+        async def fake_submit_and_retrieve_many_async(
+            self,
+            item_list,
+            max_in_flight,
+            ordered,
+        ):
+            items = list(item_list)
+            assert max_in_flight == DEFAULT_MAX_CONCURRENCY
+            assert ordered is True
+
+            for item in items:
+                submitted_names.append(Path(item.source).name)
+                yield item, _convert_payload(Path(item.source).name)
+
+        client._submit_and_retrieve_many_async = MethodType(
+            fake_submit_and_retrieve_many_async, client
+        )
+
+        p1 = tmp_path / "a.pdf"
+        p2 = tmp_path / "b.pdf"
+        p3 = tmp_path / "c.pdf"
+        p4 = tmp_path / "d.pdf"
+        p1.write_bytes(b"aa")
+        p2.write_bytes(b"b")
+        p3.write_bytes(b"cc")
+        p4.write_bytes(b"d")
+
+        results = list(client.convert_all([p1, p2, p3, p4], max_file_size=1))
+
+    assert submitted_names == ["b.pdf", "d.pdf"]
+    assert [result.input.file.name for result in results] == [
+        "a.pdf",
+        "b.pdf",
+        "c.pdf",
+        "d.pdf",
+    ]
+    assert [result.status for result in results] == [
+        ConversionStatus.SKIPPED,
+        ConversionStatus.SUCCESS,
+        ConversionStatus.SKIPPED,
+        ConversionStatus.SUCCESS,
+    ]
+    assert "max_file_size" in results[0].errors[0].error_message
+    assert "max_file_size" in results[2].errors[0].error_message
 
 
 @pytest.mark.parametrize("value", [0, -1, MAX_CONCURRENCY_LIMIT + 1])
