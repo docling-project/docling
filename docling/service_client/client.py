@@ -346,7 +346,7 @@ class DoclingServiceClient:
     def chunk(
         self,
         source: SourceType,
-        chunker: ChunkerKind,
+        chunker: ChunkerKind | HybridChunkerOptions | HierarchicalChunkerOptions,
         options: ConvertDocumentsRequestOptions | None = None,
     ) -> ChunkDocumentResponse:
         job = self.submit_chunk(source=source, chunker=chunker, options=options)
@@ -407,7 +407,7 @@ class DoclingServiceClient:
     def submit_chunk(
         self,
         source: SourceType,
-        chunker: ChunkerKind,
+        chunker: ChunkerKind | HybridChunkerOptions | HierarchicalChunkerOptions,
         options: ConvertDocumentsRequestOptions | None = None,
     ) -> ConversionJob[ChunkDocumentResponse]:
         resolved = self._resolve_options(
@@ -572,17 +572,20 @@ class DoclingServiceClient:
     def _submit_chunk_task(
         self,
         source: SourceType,
-        chunker: ChunkerKind,
+        chunker: ChunkerKind | HybridChunkerOptions | HierarchicalChunkerOptions,
         options: ConvertDocumentsRequestOptions,
     ) -> TaskStatusResponse:
+        chunking_options: HybridChunkerOptions | HierarchicalChunkerOptions
+        if isinstance(chunker, (HybridChunkerOptions, HierarchicalChunkerOptions)):
+            chunking_options = chunker
+        elif chunker == ChunkerKind.HYBRID:
+            chunking_options = HybridChunkerOptions()
+        else:
+            chunking_options = HierarchicalChunkerOptions()
+        chunker_kind_value = chunking_options.chunker.value
+
         if isinstance(source, str):
             self._validate_http_source(source)
-            chunking_options: HybridChunkerOptions | HierarchicalChunkerOptions
-            if chunker == ChunkerKind.HYBRID:
-                chunking_options = HybridChunkerOptions()
-            else:
-                chunking_options = HierarchicalChunkerOptions()
-
             payload = {
                 "convert_options": options.model_dump(mode="json", exclude_none=True),
                 "chunking_options": chunking_options.model_dump(
@@ -597,7 +600,7 @@ class DoclingServiceClient:
             }
             response = self._request_with_retry(
                 method="POST",
-                path=f"/v1/chunk/{chunker.value}/source/async",
+                path=f"/v1/chunk/{chunker_kind_value}/source/async",
                 json=payload,
             )
         else:
@@ -608,12 +611,7 @@ class DoclingServiceClient:
                     mode="json", exclude_none=True
                 ).items()
             }
-            chunk_model: HybridChunkerOptions | HierarchicalChunkerOptions
-            if chunker == ChunkerKind.HYBRID:
-                chunk_model = HybridChunkerOptions()
-            else:
-                chunk_model = HierarchicalChunkerOptions()
-            chunk_payload = chunk_model.model_dump(mode="json", exclude_none=True)
+            chunk_payload = chunking_options.model_dump(mode="json", exclude_none=True)
             chunk_payload.pop("chunker", None)
             data.update(
                 {f"chunking_{key}": value for key, value in chunk_payload.items()}
@@ -622,7 +620,7 @@ class DoclingServiceClient:
             data["target_type"] = "inbody"
             response = self._request_with_retry(
                 method="POST",
-                path=f"/v1/chunk/{chunker.value}/file/async",
+                path=f"/v1/chunk/{chunker_kind_value}/file/async",
                 data=data,
                 files=files,
             )

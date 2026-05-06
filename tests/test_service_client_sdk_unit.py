@@ -1297,3 +1297,104 @@ def test_page_range_json_serialization_is_warning_free() -> None:
         "PydanticSerializationUnexpectedValue" not in str(warning.message)
         for warning in caught
     )
+
+
+# ── submit_chunk: ChunkerKind and ChunkerOptions ──────────────────────────────
+
+
+def test_submit_chunk_with_chunker_kind_uses_defaults(tmp_path: Path) -> None:
+    """ChunkerKind.HYBRID still works (backward compat) and sends default options."""
+    from docling.service_client import ChunkerKind
+
+    captured: dict[str, object] = {}
+    sample = tmp_path / "sample.pdf"
+    sample.write_bytes(b"%PDF-1.4\n")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["path"] = request.url.path
+        captured["fields"] = dict(
+            (k, v) for k, v in request.headers.items() if k.startswith("content-")
+        )
+        return httpx.Response(
+            200, json=_status_response("task-chunk-1", "pending").model_dump(mode="json")
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.close()
+        client._http_client = httpx.Client(
+            transport=transport, timeout=client._http_client.timeout
+        )
+        job = client.submit_chunk(source=sample, chunker=ChunkerKind.HYBRID)
+
+    assert job.task_id == "task-chunk-1"
+    assert captured["path"] == "/v1/chunk/hybrid/file/async"
+
+
+def test_submit_chunk_with_hybrid_options_sends_custom_params(tmp_path: Path) -> None:
+    """HybridChunkerOptions with custom tokenizer/max_tokens/merge_peers are transmitted."""
+    from docling.datamodel.service.chunking import HybridChunkerOptions
+
+    captured: dict[str, object] = {}
+    sample = tmp_path / "sample.pdf"
+    sample.write_bytes(b"%PDF-1.4\n")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["path"] = request.url.path
+        captured["body"] = request.content
+        return httpx.Response(
+            200, json=_status_response("task-chunk-2", "pending").model_dump(mode="json")
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    chunker_opts = HybridChunkerOptions(
+        tokenizer="BAAI/bge-m3",
+        max_tokens=2500,
+        merge_peers=True,
+        include_raw_text=True,
+    )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.close()
+        client._http_client = httpx.Client(
+            transport=transport, timeout=client._http_client.timeout
+        )
+        job = client.submit_chunk(source=sample, chunker=chunker_opts)
+
+    assert job.task_id == "task-chunk-2"
+    assert captured["path"] == "/v1/chunk/hybrid/file/async"
+    body = captured["body"].decode("utf-8")  # type: ignore[union-attr]
+    assert "BAAI/bge-m3" in body
+    assert "2500" in body
+    assert "include_raw_text" in body
+
+
+def test_submit_chunk_with_hierarchical_options(tmp_path: Path) -> None:
+    """HierarchicalChunkerOptions routes to the hierarchical endpoint."""
+    from docling.datamodel.service.chunking import HierarchicalChunkerOptions
+
+    captured: dict[str, object] = {}
+    sample = tmp_path / "sample.pdf"
+    sample.write_bytes(b"%PDF-1.4\n")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["path"] = request.url.path
+        return httpx.Response(
+            200, json=_status_response("task-chunk-3", "pending").model_dump(mode="json")
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.close()
+        client._http_client = httpx.Client(
+            transport=transport, timeout=client._http_client.timeout
+        )
+        job = client.submit_chunk(
+            source=sample, chunker=HierarchicalChunkerOptions()
+        )
+
+    assert job.task_id == "task-chunk-3"
+    assert captured["path"] == "/v1/chunk/hierarchical/file/async"
