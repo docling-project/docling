@@ -65,6 +65,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         "wps": "http://schemas.microsoft.com/office/word/2010/wordprocessingShape",
         "w10": "urn:schemas-microsoft-com:office:word",
         "a14": "http://schemas.microsoft.com/office/drawing/2010/main",
+        "w14": "http://schemas.microsoft.com/office/word/2010/wordml",
     }
 
     @override
@@ -76,6 +77,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         }
         self.blip_xpath_expr = etree.XPath(
             ".//a:blip", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+        )
+        self.vml_imagedata_xpath_expr = etree.XPath(
+            ".//v:imagedata", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
         )
         # self.initialise(path_or_stream)
         # Word file:
@@ -263,6 +267,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             drawingml_els = element.findall(
                 ".//w:drawing", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
             )
+            vml_images = self.vml_imagedata_xpath_expr(element)
 
             # Check for textbox content - check multiple textbox formats
             # Only process if the element hasn't been processed before
@@ -348,6 +353,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 ):
                     te1 = self._handle_text_elements(element, doc)
                     added_elements.extend(te1)
+            # Check for VML images (legacy format, e.g., embedded Visio drawings)
+            elif vml_images:
+                vml_pics = self._handle_vml_pictures(vml_images, doc)
+                added_elements.extend(vml_pics)
+                # Check for Text after the VML Image
+                if (
+                    tag_name == "p"
+                    and element.find(
+                        ".//w:t", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                    )
+                    is not None
+                ):
+                    te2 = self._handle_text_elements(element, doc)
+                    added_elements.extend(te2)
             # Check for DrawingML elements
             elif drawingml_els:
                 if (
@@ -781,6 +800,87 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return paragraph_elements
 
+    def _has_checkbox(self, element: BaseOxmlElement) -> bool:
+        """Check if a paragraph element contains a checkbox.
+
+        Args:
+            element: The paragraph element to check for checkbox presence.
+
+        Returns:
+            True if the element contains a checkbox, False otherwise.
+        """
+        try:
+            checkboxes = element.findall(
+                f".//{{{self._BLIP_NAMESPACES['w14']}}}checkbox"
+            )
+            return len(checkboxes) > 0
+        except (AttributeError, TypeError):
+            return False
+
+    def _is_checkbox_checked(self, element: BaseOxmlElement) -> bool:
+        """Check if a checkbox in the paragraph is checked.
+
+        Args:
+            element: The paragraph element containing the checkbox.
+
+        Returns:
+            True if checked (w14:checked val="1"), False if unchecked
+                (val="0" or missing).
+        """
+        w14_ns = self._BLIP_NAMESPACES["w14"]
+        checkboxes = element.findall(f".//{{{w14_ns}}}checkbox")
+        if not checkboxes:
+            return False
+
+        checkbox = checkboxes[0]
+        checked_elem = checkbox.find(f".//{{{w14_ns}}}checked")
+
+        if checked_elem is not None:
+            val = checked_elem.get(f"{{{w14_ns}}}val")
+            return val == "1"
+
+        return False
+
+    def _get_checkbox_label(self, element: BaseOxmlElement) -> DocItemLabel | None:
+        """Get the appropriate checkbox label for a paragraph element.
+
+        Args:
+            element: The paragraph element to check for checkbox.
+
+        Returns:
+            DocItemLabel.CHECKBOX_SELECTED if checked, DocItemLabel.CHECKBOX_UNSELECTED
+                if unchecked, or None if no checkbox is present.
+        """
+        if not self._has_checkbox(element):
+            return None
+
+        if self._is_checkbox_checked(element):
+            return DocItemLabel.CHECKBOX_SELECTED
+        else:
+            return DocItemLabel.CHECKBOX_UNSELECTED
+
+    def _clean_checkbox_symbols(self, text: str) -> str:
+        """Remove checkbox symbols from text.
+
+        Removes common checkbox symbols like ☐, ☑, ☒ from the beginning of text.
+
+        Args:
+            text: The text string to clean.
+
+        Returns:
+            The text with checkbox symbols removed from the beginning.
+        """
+        # Common checkbox symbols in docx documents
+        checkbox_symbols = ["☐", "☑", "☒", "□", "■", "▪", "▫"]
+
+        text = text.strip()
+        for symbol in checkbox_symbols:
+            if text.startswith(symbol):
+                text = text[len(symbol) :].strip()
+                break
+
+        return text
+
     def _get_paragraph_position(self, paragraph_element):
         """Extract vertical position information from paragraph element."""
         # First try to directly get the index from w:p element that has an order-related attribute
@@ -1047,20 +1147,24 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # Insert equations into original text
         # This is done to preserve white space structure
-        output_text = text[:]
-        init_i = 0
-        for i_substr, substr in enumerate(texts_and_equations):
+        output_text = ""
+        text_pos = 0
+
+        for substr in texts_and_equations:
             if len(substr) == 0:
                 continue
-
-            if substr in output_text[init_i:]:
-                init_i += output_text[init_i:].find(substr) + len(substr)
+            if substr.startswith("<eq>"):
+                # This is an equation - insert it directly
+                output_text += substr
             else:
-                if i_substr > 0:
-                    output_text = output_text[:init_i] + substr + output_text[init_i:]
-                    init_i += len(substr)
+                # This is a text fragment - find it in original text
+                pos = text.find(substr, text_pos)
+                if pos >= 0:
+                    output_text += substr
+                    text_pos = pos + len(substr)
                 else:
-                    output_text = substr + output_text
+                    # Fallback: if not found, just append it
+                    output_text += substr
 
         return output_text, only_equations
 
@@ -1096,6 +1200,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Track the paragraph element ID for comment linking
         para_element_id = id(element)
         comment_ids = self._get_comment_ids_for_element(element)
+
+        # Check if this paragraph contains a checkbox
+        checkbox_label = self._get_checkbox_label(element)
 
         # Common styles for bullet and numbered lists.
         # "List Bullet", "List Number", "List Paragraph"
@@ -1216,36 +1323,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     elem_ref=elem_ref,
                 )
 
-        elif p_style_id in [
-            "Paragraph",
-            "Normal",
-            "Subtitle",
-            "Author",
-            "DefaultText",
-            "ListParagraph",
-            "ListBullet",
-            "Quote",
-        ]:
-            level = self._get_level()
-            parent = self._create_or_reuse_parent(
-                doc=doc,
-                prev_parent=self.parents.get(level - 1),
-                paragraph_elements=paragraph_elements,
-            )
-            for text, format, hyperlink in paragraph_elements:
-                t2 = doc.add_text(
-                    label=DocItemLabel.TEXT,
-                    parent=parent,
-                    text=text,
-                    formatting=format,
-                    hyperlink=hyperlink,
-                    content_layer=self.content_layer,
-                )
-                elem_ref.append(t2.get_ref())
-
         else:
-            # Text style names can, and will have, not only default values but user values too
-            # hence we treat all other labels as pure text
+            # Handle standard paragraph styles and any other text styles
+            # Text style names can have not only default values but user values too
             level = self._get_level()
             parent = self._create_or_reuse_parent(
                 doc=doc,
@@ -1253,15 +1333,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 paragraph_elements=paragraph_elements,
             )
             for text, format, hyperlink in paragraph_elements:
-                t3 = doc.add_text(
-                    label=DocItemLabel.TEXT,
+                # Clean checkbox symbols from text if this is a checkbox item
+                clean_text = (
+                    self._clean_checkbox_symbols(text) if checkbox_label else text
+                )
+                text_item = doc.add_text(
+                    label=checkbox_label if checkbox_label else DocItemLabel.TEXT,
                     parent=parent,
-                    text=text,
+                    text=clean_text,
                     formatting=format,
                     hyperlink=hyperlink,
                     content_layer=self.content_layer,
                 )
-                elem_ref.append(t3.get_ref())
+                elem_ref.append(text_item.get_ref())
 
         self._update_history(p_style_id, p_level, numid, ilevel)
 
@@ -1887,32 +1971,145 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # All checks passed: plain text only
         return False
 
+    def _get_image_from_relationship(
+        self, element: Any, rel_attr: str, image_type: str = "image"
+    ) -> bytes | None:
+        """Get image data from a relationship ID.
+
+        Args:
+            element: The XML element containing the relationship reference
+            rel_attr: The attribute name for the relationship ID
+            image_type: Type of image for warning messages
+
+        Returns:
+            Image data as bytes, or None if not found or external
+        """
+        image_data: bytes | None = None
+        rId = element.get(rel_attr)
+        if rId and rId in self.docx_obj.part.rels:
+            rel = self.docx_obj.part.rels[rId]
+            if rel.is_external:
+                warnings.warn(
+                    f"Skipping external {image_type} reference: {rel.target_ref}",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                return None
+            # Access the image part using the relationship ID
+            image_part = rel.target_part
+            image_data = image_part.blob  # Get the binary image data
+        return image_data
+
+    def _add_picture_to_doc(
+        self,
+        doc: DoclingDocument,
+        parent: NodeItem | None,
+        pil_image: Image.Image | None,
+    ) -> RefItem:
+        """Add a picture element to the document.
+
+        Args:
+            doc: The DoclingDocument being constructed
+            parent: Parent node for the picture
+            pil_image: PIL Image object, or None for placeholder
+
+        Returns:
+            Reference to the added picture element
+        """
+        if pil_image is not None:
+            p = doc.add_picture(
+                parent=parent,
+                image=ImageRef.from_pil(image=pil_image, dpi=72),
+                caption=None,
+                content_layer=self.content_layer,
+            )
+        else:
+            p = doc.add_picture(
+                parent=parent,
+                caption=None,
+                content_layer=self.content_layer,
+            )
+        return p.get_ref()
+
+    def _convert_elements_via_docx(
+        self, elements: Any | list[Any], element_tag: str | list[str] | None = None
+    ) -> Image.Image | None:
+        """Convert XML element(s) to image by rendering through DOCX->PDF->PNG.
+
+        This method creates a temporary DOCX with the specified element(s),
+        converts it to PDF using LibreOffice, then renders to PNG.
+
+        Args:
+            elements: Single XML element or list of elements to convert
+            element_tag: Tag name(s) to look for in parent hierarchy when processing a
+                single element. If None, elements are added directly without searching
+                for parent.
+
+        Returns:
+            PIL Image object, or None if conversion failed
+        """
+        # Initialize converter if needed
+        if (
+            self.docx_to_pdf_converter is None
+            and self.docx_to_pdf_converter_init is False
+        ):
+            self.docx_to_pdf_converter = get_docx_to_pdf_converter()
+            self.docx_to_pdf_converter_init = True
+
+        if self.docx_to_pdf_converter is None:
+            return None
+
+        try:
+            # Create a temporary document with just these elements
+            temp_doc = self.load_msword_file(self.path_or_stream, self.document_hash)
+            body = temp_doc._element.body
+            for child in list(body):
+                body.remove(child)
+
+            # Add elements to empty document
+            new_para = temp_doc.add_paragraph()
+            new_r = new_para.add_run()
+
+            # Handle list of elements (e.g., multiple DrawingML elements)
+            if isinstance(elements, list):
+                for elem in elements:
+                    new_r._r.append(deepcopy(elem))
+            else:
+                # Handle single element - find parent if element_tag specified
+                if element_tag is not None:
+                    if isinstance(element_tag, str):
+                        element_tag = [element_tag]
+
+                    parent_elem = elements
+                    while parent_elem is not None:
+                        tag = etree.QName(parent_elem).localname
+                        if tag in element_tag:
+                            new_r._r.append(deepcopy(parent_elem))
+                            break
+                        parent_elem = parent_elem.getparent()
+
+                    if parent_elem is None:
+                        return None
+                else:
+                    # Add element directly
+                    new_r._r.append(deepcopy(elements))
+
+            # Convert DOCX->PDF->PNG
+            pil_image = get_pil_from_dml_docx(
+                temp_doc, converter=self.docx_to_pdf_converter
+            )
+            return pil_image
+        except Exception as e:
+            _log.debug(f"Element conversion via DOCX failed: {e}")
+            return None
+
     def _handle_pictures(
         self, drawing_blip: Any, doc: DoclingDocument
     ) -> list[RefItem]:
-        def get_docx_image(image: Any) -> bytes | None:
-            image_data: bytes | None = None
-            rId = image.get(
-                "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
-            )
-            if rId in self.docx_obj.part.rels:
-                rel = self.docx_obj.part.rels[rId]
-                if rel.is_external:
-                    warnings.warn(
-                        f"Skipping external image reference: {rel.target_ref}",
-                        UserWarning,
-                        stacklevel=2,
-                    )
-                    return None
-                # Access the image part using the relationship ID
-                image_part = rel.target_part
-                image_data = image_part.blob  # Get the binary image data
-            return image_data
-
+        """Handle DrawingML pictures with blip elements."""
         elem_ref: list[RefItem] = []
         if drawing_blip:
             level = self._get_level()
-            # Open the BytesIO object with PIL to create an Image
             parent: NodeItem | None = (
                 self.parents[level - 1]
                 if len(drawing_blip) == 1
@@ -1923,71 +2120,123 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
             )
             for image in drawing_blip:
-                image_data: bytes | None = get_docx_image(image)
+                image_data = self._get_image_from_relationship(
+                    image,
+                    "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed",
+                    "image",
+                )
+                pil_image: Image.Image | None = None
+
                 if image_data is None:
                     _log.warning("Warning: image cannot be found")
-                    p1 = doc.add_picture(
-                        parent=parent,
-                        caption=None,
-                        content_layer=self.content_layer,
-                    )
-                    elem_ref.append(p1.get_ref())
                 else:
                     try:
                         image_bytes = BytesIO(image_data)
                         pil_image = Image.open(image_bytes)
-                        p2 = doc.add_picture(
-                            parent=parent,
-                            image=ImageRef.from_pil(image=pil_image, dpi=72),
-                            caption=None,
-                            content_layer=self.content_layer,
+                        # Try to ensure the image is usable by converting to PNG
+                        # This will fail for WMF/EMF files that PIL can't render
+                        test_bytes = BytesIO()
+                        pil_image.save(test_bytes, format="PNG")
+                        test_bytes.seek(0)
+                        pil_image = Image.open(test_bytes)
+                    except (UnidentifiedImageError, OSError) as e:
+                        _log.warning(f"Warning: image cannot be loaded by Pillow: {e}")
+                        pil_image = None
+
+                elem_ref.append(self._add_picture_to_doc(doc, parent, pil_image))
+        return elem_ref
+
+    def _handle_vml_pictures(
+        self, vml_imagedatas: Any, doc: DoclingDocument
+    ) -> list[RefItem]:
+        """Handle VML (Vector Markup Language) images.
+
+        VML images are legacy format images often used for embedded objects like Visio
+        drawings, charts, etc. They use v:imagedata elements instead of a:blip
+        elements.
+
+        For EMF/WMF formats that PIL cannot render, we use the same approach as
+        DrawingML: create a temporary DOCX with the VML element, convert to PDF via
+        LibreOffice, then render to PNG.
+
+        Args:
+            vml_imagedatas: List of v:imagedata elements
+            doc: The DoclingDocument being constructed
+
+        Returns:
+            List of RefItem references to the added picture elements
+        """
+        elem_ref: list[RefItem] = []
+        if vml_imagedatas:
+            level = self._get_level()
+            parent: NodeItem | None = (
+                self.parents[level - 1]
+                if len(vml_imagedatas) == 1
+                else doc.add_group(
+                    label=GroupLabel.PICTURE_AREA,
+                    parent=self.parents[level - 1],
+                    content_layer=self.content_layer,
+                )
+            )
+            for imagedata in vml_imagedatas:
+                image_data = self._get_image_from_relationship(
+                    imagedata,
+                    "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id",
+                    "VML image",
+                )
+                pil_image: Image.Image | None = None
+
+                if image_data is None:
+                    _log.warning("Warning: VML image cannot be found")
+                else:
+                    try:
+                        image_bytes = BytesIO(image_data)
+                        pil_image = Image.open(image_bytes)
+                        test_bytes = BytesIO()
+                        pil_image.save(test_bytes, format="PNG")
+                        test_bytes.seek(0)
+                        pil_image = Image.open(test_bytes)
+                    except (UnidentifiedImageError, OSError, Exception) as e:
+                        _log.debug(
+                            f"Direct PIL loading failed: {e}, trying DOCX conversion"
                         )
-                        elem_ref.append(p2.get_ref())
-                    except (UnidentifiedImageError, OSError):
-                        _log.warning("Warning: image cannot be loaded by Pillow")
-                        p3 = doc.add_picture(
-                            parent=parent,
-                            caption=None,
-                            content_layer=self.content_layer,
+                        pil_image = None
+
+                    if pil_image is None:
+                        pil_image = self._convert_elements_via_docx(
+                            imagedata, ["object", "pict"]
                         )
-                        elem_ref.append(p3.get_ref())
+                        if pil_image is None:
+                            _log.warning(
+                                "Warning: VML image cannot be loaded. "
+                                "Install LibreOffice for better VML/EMF/WMF support."
+                            )
+
+                elem_ref.append(self._add_picture_to_doc(doc, parent, pil_image))
         return elem_ref
 
     def _handle_drawingml(self, doc: DoclingDocument, drawingml_els: Any):
-        # 1) Make an empty copy of the original document
-        dml_doc = self.load_msword_file(self.path_or_stream, self.document_hash)
-        body = dml_doc._element.body
-        for child in list(body):
-            body.remove(child)
+        """Handle DrawingML elements by converting to image via DOCX->PDF->PNG.
 
-        # 2) Add DrawingML to empty document
-        new_para = dml_doc.add_paragraph()
-        new_r = new_para.add_run()
-        for dml in drawingml_els:
-            new_r._r.append(deepcopy(dml))
+        DrawingML elements without blips (e.g., charts, SmartArt) need to be
+        rendered through LibreOffice to extract as images.
 
-        # 3) Export DOCX->PDF->PNG and save it in DoclingDocument
+        Args:
+            doc: The DoclingDocument being constructed
+            drawingml_els: List of DrawingML elements to process
+        """
         level = self._get_level()
+        parent = self.parents[level - 1]
+
         try:
-            pil_image = get_pil_from_dml_docx(
-                dml_doc, converter=self.docx_to_pdf_converter
-            )
+            pil_image = self._convert_elements_via_docx(drawingml_els, element_tag=None)
             if pil_image is None:
                 raise UnidentifiedImageError
 
-            doc.add_picture(
-                parent=self.parents[level - 1],
-                image=ImageRef.from_pil(image=pil_image, dpi=72),
-                caption=None,
-                content_layer=self.content_layer,
-            )
+            self._add_picture_to_doc(doc, parent, pil_image)
         except (UnidentifiedImageError, OSError):
             _log.warning("Warning: DrawingML image cannot be loaded by Pillow")
-            doc.add_picture(
-                parent=self.parents[level - 1],
-                caption=None,
-                content_layer=self.content_layer,
-            )
+            self._add_picture_to_doc(doc, parent, None)
 
         return
 

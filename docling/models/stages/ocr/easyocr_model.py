@@ -1,4 +1,5 @@
 import logging
+import os
 import warnings
 import zipfile
 from collections.abc import Iterable
@@ -17,6 +18,7 @@ from docling.datamodel.pipeline_options import (
     OcrOptions,
 )
 from docling.datamodel.settings import settings
+from docling.exceptions import SecurityError
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
@@ -122,7 +124,13 @@ class EasyOcrModel(BaseOcrModel):
         for model_details in download_list:
             buf = download_url_with_progress(model_details["url"], progress=progress)
             with zipfile.ZipFile(buf, "r") as zip_ref:
-                zip_ref.extractall(local_dir)
+                for member in zip_ref.infolist():
+                    member_path = os.path.realpath(
+                        os.path.join(local_dir, member.filename)
+                    )
+                    if not member_path.startswith(os.path.realpath(local_dir) + os.sep):
+                        raise SecurityError(f"ZIP slip attempt: {member.filename}")
+                    zip_ref.extract(member, local_dir)
 
         return local_dir
 

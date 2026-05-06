@@ -1,0 +1,57 @@
+name: "Run PR Fast Checks"
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  UV_FROZEN: "1"
+
+jobs:
+  lint-and-type:
+    runs-on: ubuntu-latest
+    steps:
+      # Keep the worktree on the trusted base commit for dependency installation.
+      # The untrusted PR merge commit is fetched separately and only read by the checker.
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      # Build the merge result from the event's immutable base/head SHAs.
+      # GitHub's refs/pull/<n>/merge ref is mutable and can be regenerated on a
+      # newer base while an older pull_request_target run is still starting.
+      - name: Build PR merge tree
+        id: pr-merge
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git fetch --no-tags --depth=1 origin "pull/${PR_NUMBER}/head"
+          test "$(git rev-parse HEAD)" = "${PR_BASE_SHA}"
+          test "$(git rev-parse FETCH_HEAD)" = "${PR_HEAD_SHA}"
+          merge_tree="$(git merge-tree --write-tree --merge-base "${PR_BASE_SHA}" "${PR_BASE_SHA}" "${PR_HEAD_SHA}")"
+          echo "merge_tree=${merge_tree}" >> "${GITHUB_OUTPUT}"
+
+      - uses: ./.github/actions/setup-ubuntu-ci
+        with:
+          python_version: "3.12"
+          uv_sync_args: --frozen --only-group pr-fast-checks --no-install-project
+
+      - name: Run fast lint and typing checks
+        run: |
+          .venv/bin/python .github/scripts/run_pr_fast_checks.py \
+            --repo-root "$PWD" \
+            --base-ref HEAD \
+            --head-ref "${{ steps.pr-merge.outputs.merge_tree }}"

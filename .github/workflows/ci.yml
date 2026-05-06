@@ -2,16 +2,175 @@ name: "Run CI"
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
-  push:
-    branches:
-      - "**"
-      - "!main"
-      - "!gh-pages"
+    types: [opened, reopened, synchronize, ready_for_review, labeled, unlabeled]
+  workflow_dispatch:
+    inputs:
+      python_versions:
+        description: 'JSON array of Python versions to run. Leave empty for the full default matrix.'
+        required: false
+        default: ""
+        type: string
+      run_windows:
+        description: "Run the Windows smoke test lane."
+        required: false
+        default: false
+        type: boolean
+      run_macos:
+        description: "Run the macOS smoke test lane."
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  DEFAULT_PYTHON_VERSIONS: '["3.10"]'
+  FULL_PYTHON_VERSIONS: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      run_ci: ${{ steps.manual.outputs.run_ci || steps.labeled.outputs.run_ci || steps.filter.outputs.run_ci }}
+      full_ci: ${{ steps.manual.outputs.full_ci || steps.labeled.outputs.full_ci || steps.filter.outputs.full_matrix_override }}
+      default_python_versions: ${{ steps.python_versions.outputs.default_python_versions }}
+      full_python_versions: ${{ steps.python_versions.outputs.full_python_versions }}
+    steps:
+      - name: Set Python version selections
+        id: python_versions
+        run: |
+          echo "default_python_versions=${DEFAULT_PYTHON_VERSIONS}" >> "$GITHUB_OUTPUT"
+          echo "full_python_versions=${FULL_PYTHON_VERSIONS}" >> "$GITHUB_OUTPUT"
+
+      - name: Mark manual runs to execute CI
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        id: manual
+        run: |
+          echo "run_ci=true" >> "$GITHUB_OUTPUT"
+          echo "full_ci=true" >> "$GITHUB_OUTPUT"
+
+      - name: Mark explicitly labeled PR runs to execute CI
+        if: >-
+          ${{
+            github.event_name == 'pull_request' &&
+            contains(github.event.pull_request.labels.*.name, 'tests:full')
+          }}
+        id: labeled
+        run: |
+          echo "run_ci=true" >> "$GITHUB_OUTPUT"
+          echo "full_ci=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        if: >-
+          ${{
+            github.event_name != 'workflow_dispatch' &&
+            steps.labeled.outcome == 'skipped'
+          }}
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        if: >-
+          ${{
+            github.event_name != 'workflow_dispatch' &&
+            steps.labeled.outcome == 'skipped'
+          }}
+        id: filter
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        with:
+          filters: |
+            run_ci:
+              - ".github/workflows/**"
+              - ".github/scripts/**"
+              - ".github/actions/**"
+              - ".pre-commit-config.yaml"
+              - "pyproject.toml"
+              - "tach.toml"
+              - "uv.lock"
+              - "Dockerfile"
+              - "README.md"
+              - "LICENSE"
+              - "docling/**"
+              - "tests/**"
+              - "docs/examples/**"
+            full_matrix_override:
+              - ".github/workflows/**"
+              - ".github/scripts/**"
+              - ".github/actions/**"
+              - "tach.toml"
+              - "pyproject.toml"
+              - "uv.lock"
+
   code-checks:
-    if: ${{ github.event_name == 'push' || (github.event.pull_request.head.repo.full_name != 'docling-project/docling' && github.event.pull_request.head.repo.full_name != 'docling-project/docling') }}
+    needs: changes
+    if: ${{ needs.changes.outputs.run_ci == 'true' }}
+    permissions:
+      contents: read
+      pull-requests: read
     uses: ./.github/workflows/checks.yml
+    with:
+      run_lint: true
+      force_all_checks: ${{ needs.changes.outputs.full_ci == 'true' }}
+      run_package_compat: ${{ needs.changes.outputs.full_ci == 'true' }}
+      run_windows: ${{ github.event_name == 'workflow_dispatch' && inputs.run_windows }}
+      run_macos: ${{ github.event_name == 'workflow_dispatch' && inputs.run_macos }}
+      use_tach: ${{ github.event_name == 'pull_request' && needs.changes.outputs.full_ci != 'true' }}
+      tach_base_ref: >-
+        ${{
+          (
+            github.event_name == 'pull_request' &&
+            github.event.pull_request.base.sha
+          ) || ''
+        }}
+      python_versions: >-
+        ${{
+          (
+            github.event_name == 'workflow_dispatch' &&
+            (inputs.python_versions || needs.changes.outputs.full_python_versions)
+          ) ||
+          (
+            needs.changes.outputs.full_ci == 'true' &&
+            needs.changes.outputs.full_python_versions
+          ) ||
+          needs.changes.outputs.default_python_versions
+        }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  ci-status:
+    if: ${{ always() }}
+    needs:
+      - changes
+      - code-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Check CI result
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          CODE_CHECKS_RESULT: ${{ needs.code-checks.result }}
+        run: |
+          if [ "$CHANGES_RESULT" != "success" ]; then
+            echo "::error title=CI changes job failed::changes result was $CHANGES_RESULT"
+            exit 1
+          fi
+
+          case "$CODE_CHECKS_RESULT" in
+            success)
+              echo "CI checks passed."
+              ;;
+            skipped)
+              echo "CI checks are not required for this change set."
+              ;;
+            *)
+              echo "::error title=CI checks failed::code-checks result was $CODE_CHECKS_RESULT"
+              exit 1
+              ;;
+          esac

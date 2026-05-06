@@ -9,6 +9,8 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import RapidOcrOptions
 from docling.models.stages.ocr.rapid_ocr_model import RapidOcrModel
 
+pytestmark = pytest.mark.ml_ocr
+
 
 @pytest.mark.parametrize(
     ("backend", "det_name", "cls_name", "rec_name"),

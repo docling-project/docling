@@ -84,8 +84,10 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: BytesIO | Path,
-        options: XBRLBackendOptions = XBRLBackendOptions(),
+        options: XBRLBackendOptions | None = None,
     ) -> None:
+        if options is None:
+            options = XBRLBackendOptions()
         # Check if arelle is available before proceeding
         if not _XBRL_AVAILABLE:
             raise ImportError(

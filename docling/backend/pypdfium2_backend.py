@@ -404,8 +404,10 @@ class PyPdfiumDocumentBackend(ManagedPdfiumDocumentBackend):
         self,
         in_doc: "InputDocument",
         path_or_stream: Union[BytesIO, Path],
-        options: PdfBackendOptions = PdfBackendOptions(),
+        options: Optional[PdfBackendOptions] = None,
     ):
+        if options is None:
+            options = PdfBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
 
         password = (

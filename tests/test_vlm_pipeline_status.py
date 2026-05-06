@@ -22,6 +22,8 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VlmPipelineOptions
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
+pytestmark = pytest.mark.ml_vlm
+
 
 def _make_page(page_no: int, stop_reason: VlmStopReason) -> Page:
     """Create a Page with a VLM prediction using the given stop reason."""

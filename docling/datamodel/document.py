@@ -1,5 +1,4 @@
 import csv
-import importlib
 import json
 import logging
 import platform
@@ -61,7 +60,7 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
-from docling.datamodel.backend_options import BackendOptions
+from docling.datamodel.backend_options import BackendOptions, MetsGbsBackendOptions
 from docling.datamodel.base_models import (
     AssembledUnit,
     ConfidenceReport,
@@ -76,7 +75,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.settings import DocumentLimits
 from docling.utils.profiling import ProfilingItem
-from docling.utils.utils import create_file_hash
+from docling.utils.utils import create_file_hash, safe_version
 
 if TYPE_CHECKING:
     from docling.datamodel.base_models import BaseFormatOption
@@ -230,10 +229,11 @@ class DocumentFormat(str, Enum):
 
 
 class DoclingVersion(BaseModel):
-    docling_version: str = importlib.metadata.version("docling")
-    docling_core_version: str = importlib.metadata.version("docling-core")
-    docling_ibm_models_version: str = importlib.metadata.version("docling-ibm-models")
-    docling_parse_version: str = importlib.metadata.version("docling-parse")
+    docling_version: str = safe_version("docling")
+    docling_slim_version: str = safe_version("docling-slim")
+    docling_core_version: str = safe_version("docling-core")
+    docling_ibm_models_version: str = safe_version("docling-ibm-models")
+    docling_parse_version: str = safe_version("docling-parse")
     platform_str: str = platform.platform()
     py_impl_version: str = sys.implementation.cache_tag
     py_lang_version: str = platform.python_version()
@@ -750,19 +750,45 @@ class _DocumentConversionInput(BaseModel):
     def _detect_mets_gbs(
         obj: Union[Path, DocumentStream],
     ) -> Optional[Literal["application/mets+xml"]]:
+        # Use default limits for safe format detection
+        default_options = MetsGbsBackendOptions()
+        max_file_bytes = default_options.max_file_bytes
+        max_member_count = default_options.max_member_count
+
         content = obj if isinstance(obj, Path) else obj.stream
         tar: tarfile.TarFile
         member: tarfile.TarInfo
-        with tarfile.open(
-            name=content if isinstance(content, Path) else None,
-            fileobj=content if isinstance(content, BytesIO) else None,
-            mode="r:gz",
-        ) as tar:
-            for member in tar.getmembers():
-                if member.name.endswith(".xml"):
-                    file = tar.extractfile(member)
-                    if file is not None:
-                        content_str = file.read().decode(errors="ignore")
-                        if "http://www.loc.gov/METS/" in content_str:
-                            return "application/mets+xml"
+        member_count = 0
+
+        try:
+            with tarfile.open(
+                name=content if isinstance(content, Path) else None,
+                fileobj=content if isinstance(content, BytesIO) else None,
+                mode="r:gz",
+            ) as tar:
+                for member in tar.getmembers():
+                    member_count += 1
+                    if member_count > max_member_count:
+                        _log.warning(
+                            f"Archive exceeds member count limit ({max_member_count}) during format detection"
+                        )
+                        return None
+
+                    if member.name.endswith(".xml"):
+                        file = tar.extractfile(member)
+                        if file is not None:
+                            xml_content = file.read(max_file_bytes + 1)
+                            if len(xml_content) > max_file_bytes:
+                                _log.warning(
+                                    f"XML file {member.name} exceeds size limit ({max_file_bytes} bytes) during format detection"
+                                )
+                                continue
+
+                            content_str = xml_content.decode(errors="ignore")
+                            if "http://www.loc.gov/METS/" in content_str:
+                                return "application/mets+xml"
+        except Exception as e:
+            _log.warning(f"Error during METS-GBS format detection: {e}")
+            return None
+
         return None

@@ -1,0 +1,91 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "docling"
+version = "2.93.0"  # DO NOT EDIT, updated automatically
+description = "SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
+license = "MIT"
+keywords = [
+  "docling",
+  "convert",
+  "document",
+  "pdf",
+  "docx",
+  "html",
+  "markdown",
+  "layout model",
+  "segmentation",
+  "table structure",
+  "table former",
+]
+classifiers = [
+  "Operating System :: MacOS :: MacOS X",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: Microsoft :: Windows",
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+readme = "README.md"
+authors = [
+  { name = "Christoph Auer", email = "cau@zurich.ibm.com" },
+  { name = "Michele Dolfi", email = "dol@zurich.ibm.com" },
+  { name = "Maxim Lysak", email = "mly@zurich.ibm.com" },
+  { name = "Nikos Livathinos", email = "nli@zurich.ibm.com" },
+  { name = "Ahmed Nassar", email = "ahn@zurich.ibm.com" },
+  { name = "Panos Vagenas", email = "pva@zurich.ibm.com" },
+  { name = "Peter Staar", email = "taa@zurich.ibm.com" },
+]
+requires-python = '>=3.10,<4.0'
+
+# Meta-package: pulls in docling-slim with standard extras (includes CLI).
+# The `docling` Python module itself is provided by docling-slim.
+# CLI entry points are now defined in docling-slim's pyproject.toml.
+dependencies = [
+  'docling-slim[standard]==2.93.0',
+]
+
+[project.urls]
+homepage = "https://github.com/docling-project/docling"
+repository = "https://github.com/docling-project/docling"
+issues = "https://github.com/docling-project/docling/issues"
+changelog = "https://github.com/docling-project/docling/blob/main/CHANGELOG.md"
+
+[tool.uv.sources]
+# For local development: use workspace member
+docling-slim = { workspace = true }
+
+# Re-export slim extras with backwards-compatible names
+[project.optional-dependencies]
+easyocr = ['docling-slim[feat-ocr-easyocr]==2.93.0']
+tesserocr = ['docling-slim[feat-ocr-tesserocr]==2.93.0']
+ocrmac = ['docling-slim[feat-ocr-mac]==2.93.0']
+vlm = ['docling-slim[models-vlm-inline]==2.93.0']
+rapidocr = ['docling-slim[feat-ocr-rapidocr-onnx]==2.93.0']
+asr = ['docling-slim[format-audio]==2.93.0']
+htmlrender = ['docling-slim[format-html-render]==2.93.0']
+remote-serving = ['docling-slim[models-remote]==2.93.0']
+onnxruntime = ['docling-slim[models-onnxruntime]==2.93.0']
+xbrl = ['docling-slim[format-xml-xbrl]==2.93.0']
+
+# Dependency-only wheel: no Python modules shipped here. All source lives in
+# the docling-slim wheel (built from the repo root). This avoids the prior
+# bug where both wheels shipped the same `docling/` module and collided on
+# install.
+[tool.hatch.build.targets.wheel]
+bypass-selection = true
+
+[tool.hatch.build.targets.sdist]
+only-include = ["pyproject.toml", "README.md"]
+
+[tool.uv]
+package = true
