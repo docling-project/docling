@@ -100,6 +100,27 @@ def test_cli_explicit_pipeline_not_overridden(tmp_path):
     )  # Allow for processing failure
 
 
+def test_cli_convert_with_progress(tmp_path):
+    """Test that --progress flag prints conversion progress for a PDF."""
+    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
+    output = tmp_path / "out"
+    output.mkdir()
+    result = runner.invoke(app, [source, "--output", str(output), "--progress"])
+    assert result.exit_code == 0
+    assert "Converting" in result.output
+    assert "pages" in result.output
+
+
+def test_cli_convert_with_progress_html(tmp_path):
+    """Test that --progress flag prints conversion progress for a non-paginated format."""
+    source = "./tests/data/html/example_01.html"
+    output = tmp_path / "out"
+    output.mkdir()
+    result = runner.invoke(app, [source, "--output", str(output), "--progress"])
+    assert result.exit_code == 0
+    assert "Converting" in result.output
+
+
 def test_cli_audio_extensions_coverage():
     """Test that all audio extensions from FormatToExtensions are covered."""
     from docling.datamodel.base_models import FormatToExtensions, InputFormat
