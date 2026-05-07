@@ -18,6 +18,10 @@ _log = logging.getLogger(__name__)
 import fitz
 import math, bisect
 import uuid
+import shutil
+import subprocess
+import tempfile
+import unicodedata
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import (
     # TextLoader,                       # TXT
@@ -129,8 +133,129 @@ except ImportError:
 """Chunker implementation leveraging the document structure."""
 CONVERTIBLE_EXTENSIONS = ['.txt', '.json', '.md', '.docx', '.ppt', '.pptx']
 
-# 같은 facade 폴더 내 attachment_processor 의 PDF 변환 함수 재사용
-from attachment_processor import convert_to_pdf
+
+def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
+    """
+    PDF 변환을 시도한다. use_pdf_sdk=True면 PDF SDK, False면 LibreOffice.
+    실패해도 예외를 던지지 않고 None을 반환한다.
+    """
+    if use_pdf_sdk:
+        return _convert_to_pdf_sdk(file_path)
+    return _convert_to_pdf_libreoffice(file_path)
+
+
+def _convert_to_pdf_sdk(file_path: str) -> str | None:
+    try:
+        # 1. PDF_SDK_HOME 환경변수 (도커 환경) → 2. repo_root/pdf_sdk (로컬 실행)
+        pdf_sdk_home = os.environ.get(
+            "PDF_SDK_HOME",
+            str(Path(__file__).resolve().parent.parent.parent.parent / "pdf_sdk"),
+        )
+        binary = os.path.join(pdf_sdk_home, "pdfConverter")
+        fonts_dir = os.path.join(pdf_sdk_home, "fonts")
+        moduledata = os.path.join(pdf_sdk_home, "moduledata")
+        font_cache = os.path.join(pdf_sdk_home, "font_cache")
+        os.makedirs(font_cache, exist_ok=True)
+
+        in_path = Path(file_path).resolve()
+        out_dir = in_path.parent
+        pdf_path = in_path.with_suffix('.pdf')
+
+        with tempfile.TemporaryDirectory() as tmp:
+            # fontconfig conf 파일을 현재 SDK 경로 기준으로 패치 (원본은 건드리지 않음)
+            patched_conf = _patch_fontconfig(fonts_dir, font_cache, tmp)
+
+            env = os.environ.copy()
+            env["LD_LIBRARY_PATH"] = f"{moduledata}:{env.get('LD_LIBRARY_PATH', '')}"
+            env["FONTCONFIG_FILE"] = patched_conf
+            env["FONTCONFIG_PATH"] = fonts_dir
+            env.setdefault("LANG", "C.UTF-8")
+            env.setdefault("LC_ALL", "C.UTF-8")
+
+            cmd = [
+                binary,
+                "-i", str(in_path),
+                "-o", str(out_dir),
+                "-t", tmp,
+                "-f", fonts_dir,
+                "-e", "-1",
+                "-p", "1",
+            ]
+            proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+            if proc.returncode == 0 and pdf_path.exists():
+                return str(pdf_path)
+            _log.warning(f"[convert_to_pdf:sdk] stderr: {proc.stderr.strip()}")
+            return None
+    except Exception as e:
+        _log.error(f"[convert_to_pdf:sdk] error: {e}")
+        return None
+
+
+def _patch_fontconfig(fonts_dir: str, font_cache: str, tmp_dir: str) -> str:
+    """원본 fonts_gen.conf의 <dir>/<cachedir> 경로를 현재 SDK 위치 기준으로 치환한 임시 파일 경로 반환."""
+    import re
+    src = os.path.join(fonts_dir, "fonts_gen.conf")
+    dst = os.path.join(tmp_dir, "fonts.conf")
+    with open(src, "r", encoding="utf-8") as f:
+        conf = f.read()
+    conf = re.sub(r"<dir>[^<]*</dir>", f"<dir>{fonts_dir}</dir>", conf, count=1)
+    conf = re.sub(r"<cachedir>[^<]*</cachedir>", f"<cachedir>{font_cache}</cachedir>", conf, count=1)
+    with open(dst, "w", encoding="utf-8") as f:
+        f.write(conf)
+    return dst
+
+
+def _convert_to_pdf_libreoffice(file_path: str) -> str | None:
+    try:
+        in_path = Path(file_path).resolve()
+        out_dir = in_path.parent
+        pdf_path = in_path.with_suffix('.pdf')
+
+        env = os.environ.copy()
+        env.setdefault("LANG", "C.UTF-8")
+        env.setdefault("LC_ALL", "C.UTF-8")
+
+        ext = in_path.suffix.lower()
+        if ext in ('.ppt', '.pptx'):
+            convert_arg = "pdf:impress_pdf_Export"
+        elif ext in ('.doc', '.docx'):
+            convert_arg = "pdf:writer_pdf_Export"
+        elif ext in ('.xls', '.xlsx', '.csv'):
+            convert_arg = "pdf:calc_pdf_Export"
+        else:
+            convert_arg = "pdf"
+
+        try:
+            in_path.name.encode('ascii')
+            candidates = [in_path]
+            tmp_dir = None
+        except UnicodeEncodeError:
+            tmp_dir = Path(tempfile.mkdtemp())
+            ascii_name = unicodedata.normalize('NFKD', in_path.stem).encode('ascii', 'ignore').decode('ascii') or "file"
+            ascii_copy = tmp_dir / f"{ascii_name}{in_path.suffix}"
+            shutil.copy2(in_path, ascii_copy)
+            candidates = [ascii_copy, in_path]
+
+        for cand in candidates:
+            cmd = [
+                "soffice", "--headless",
+                "--convert-to", convert_arg,
+                "--outdir", str(out_dir),
+                str(cand)
+            ]
+            proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+            if proc.returncode == 0 and pdf_path.exists():
+                if tmp_dir:
+                    shutil.rmtree(tmp_dir, ignore_errors=True)
+                return str(pdf_path)
+            _log.warning(f"[convert_to_pdf:libreoffice] stderr: {proc.stderr.strip()}")
+
+        if tmp_dir:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+        return None
+    except Exception as e:
+        _log.error(f"[convert_to_pdf:libreoffice] error: {e}")
+        return None
 
 def _get_pdf_path(file_path: str) -> str:
     """

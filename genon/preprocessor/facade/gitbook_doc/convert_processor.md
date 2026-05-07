@@ -169,13 +169,15 @@ CONVERTIBLE_EXTENSIONS = ['.txt', '.json', '.md', '.docx', '.ppt', '.pptx']
 
 ## 5. 유틸리티 함수
 
-### 5.1 `convert_to_pdf()` (재사용)
+### 5.1 `convert_to_pdf()`
 
 ```python
-from attachment_processor import convert_to_pdf
+def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
 ```
 
-**구현 위치**: `attachment_processor.convert_to_pdf` 를 그대로 import 해서 사용. **자체 정의하지 않음** (코드 중복 제거 + 동작 일관성). 시그니처·동작·엔진 분기 정책 모두 attachment_processor 와 동일:
+**목적**: 다양한 문서 포맷을 PDF로 변환. `attachment_processor.convert_to_pdf()` 와 **동일한 시그니처/동작 정책으로 자체 정의**.
+
+> **왜 자체 정의?** Genos 웹 UI 환경은 facade 코드를 단일 파일(`preprocessor.py`)로 다루기 때문에, 다른 facade 모듈에서 `import` 하면 깨짐. `attachment_processor` / `convert_processor` / `intelligent_processor` 모두 같은 `convert_to_pdf` + 헬퍼 4종을 자체 정의.
 
 | `use_pdf_sdk` | 내부 호출 | 비고 |
 |---|---|---|
@@ -184,7 +186,7 @@ from attachment_processor import convert_to_pdf
 
 **SDK 경로 결정**: `PDF_SDK_HOME` 환경변수 → fallback `<repo_root>/pdf_sdk`.
 
-> 자세한 동작 흐름(SDK / LibreOffice 두 분기 다이어그램)은 [attachment_processor.md §4.1](attachment_processor.md#41-convert_to_pdf) 참고.
+> 자세한 동작 흐름(SDK / LibreOffice 두 분기 다이어그램)은 [attachment_processor.md §4.1](attachment_processor.md#41-convert_to_pdf) 참고. 셋 모두 동일.
 
 ---
 

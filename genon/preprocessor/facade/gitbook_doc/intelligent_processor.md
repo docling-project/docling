@@ -211,7 +211,7 @@ intelligent (max_tokens=0):
 | `fitz` (PyMuPDF) | ✅ (bbox 추출, 이미지 추출) | ❌ (OCR 메서드 내에서만 지역 import) |
 | LangChain 로더들 | ✅ (PPT 폴백용) | ❌ (불필요) |
 | `RecursiveCharacterTextSplitter` | ✅ (PPT 폴백용) | ❌ (불필요) |
-| `convert_to_pdf()` | ✅ (자체 정의) | ✅ (`attachment_processor` 에서 import 재사용 — `__call__` 진입부 자동 변환용) |
+| `convert_to_pdf()` | ✅ (자체 정의) | ✅ (자체 정의 — `__call__` 진입부 자동 변환용. Genos 단일 파일 환경 호환을 위해 attachment_processor 와 동일한 함수를 각자 보유) |
 | `ProvenanceItem`, `BoundingBox` | ❌ | ✅ (빈 문서 더미 삽입용) |
 
 > `intelligent_processor` 의 docling pipeline 자체는 PDF 입력을 가정하지만, `__call__` 진입부에서 `_is_pdf(file_path)` 매직 헤더 체크를 거쳐 비-PDF 입력은 `convert_to_pdf(file_path, use_pdf_sdk=...)` 로 PDF 변환 후 정상 흐름에 진입합니다. 따라서 사용자 입장에서는 다른 포맷(HWP, DOCX, PPT 등)도 그대로 넘길 수 있습니다.
