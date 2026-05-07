@@ -16,7 +16,7 @@ from email.utils import parsedate_to_datetime
 from enum import Enum
 from io import BytesIO
 from pathlib import Path, PurePath
-from typing import IO, Any, Literal, cast, overload
+from typing import IO, Any, Literal, TypeAlias, TypeVar, cast, overload
 from urllib.parse import urlencode, urlparse
 
 import httpx
@@ -56,7 +56,6 @@ from docling.datamodel.service.targets import InBodyTarget, ZipTarget
 from docling.datamodel.settings import DocumentLimits, PageRange
 from docling.service_client._scheduler import _run_bounded
 from docling.service_client.exceptions import (
-    BatchConversionError,
     ConversionError,
     ResultExpiredError,
     ResultNotReadyError,
@@ -75,10 +74,9 @@ from docling.service_client.watchers import (
     is_terminal_task_status,
 )
 
-SourceType = Path | str | DocumentStream
-VersionResponse = dict[str, Any]
-HealthResponse = HealthCheckResponse
+SourceType: TypeAlias = Path | str | DocumentStream
 logger = logging.getLogger(__name__)
+_T = TypeVar("_T")
 
 
 class ExperimentalWarning(UserWarning):
@@ -89,6 +87,8 @@ SUCCESS_CONVERSION_STATUSES: set[ConversionStatus] = {
     ConversionStatus.SUCCESS,
     ConversionStatus.PARTIAL_SUCCESS,
 }
+DEFAULT_MAX_CONCURRENCY = 8
+MAX_CONCURRENCY_LIMIT = 512
 SUBMIT_AND_RETRIEVE_MANY_MAX_IN_FLIGHT_WEBSOCKETS = 64
 HTTP_RETRY_BACKOFF_BASE_SECONDS = 1.0
 
@@ -153,7 +153,7 @@ class DoclingServiceClient:
         poll_server_wait: float = 5.0,
         poll_client_interval: float | None = None,
         job_timeout: float = 300.0,
-        max_concurrency: int = 0,
+        max_concurrency: int = DEFAULT_MAX_CONCURRENCY,
         http_retries: int = 3,
         http_connect_timeout: float = 10.0,
         http_read_timeout: float = 60.0,
@@ -173,7 +173,9 @@ class DoclingServiceClient:
             poll_server_wait if poll_client_interval is None else poll_client_interval
         )
         self._job_timeout = job_timeout
-        self._max_concurrency = max_concurrency
+        self._max_concurrency = self._validate_concurrency(
+            max_concurrency, name="max_concurrency"
+        )
         self._http_retries = http_retries
         self._http_connect_timeout = http_connect_timeout
         self._http_read_timeout = http_read_timeout
@@ -254,92 +256,37 @@ class DoclingServiceClient:
         max_file_size: int | None = None,
         page_range: PageRange | None = None,
         options: ConvertDocumentsRequestOptions | None = None,
-        max_concurrency: int = 0,
-        raises_on_error: bool = True,
+        max_concurrency: int | None = None,
     ) -> Iterator[ConversionResult]:
-        source_list = list(sources)
-        if not source_list:
-            return iter(())
-
         resolved = self._resolve_options(
             options=options,
             max_num_pages=max_num_pages,
             max_file_size=max_file_size,
             page_range=page_range,
         )
-        effective_cap = (
-            max_concurrency if max_concurrency > 0 else self._max_concurrency
-        )
-        in_flight = len(source_list) if effective_cap <= 0 else max(1, effective_cap)
+        effective_cap = self._effective_concurrency(max_concurrency)
         submit_options, _ = self._options_for_target_format(
             resolved.options, OutputFormat.JSON
         )
-        ordered_results, ordered_errors = self._run_convert_all_async(
-            source_list=source_list,
+        return self._iterate_convert_all_sync(
+            sources=sources,
             headers=headers,
             resolved=resolved,
             submit_options=submit_options,
-            in_flight=in_flight,
+            in_flight=effective_cap,
         )
-
-        failures: list[Exception] = []
-        if raises_on_error:
-            for idx, source in enumerate(source_list):
-                exc = ordered_errors[idx]
-                result = ordered_results[idx]
-                if exc is not None:
-                    failures.append(exc)
-                    continue
-                if result is None:
-                    failures.append(
-                        ConversionError(
-                            f"Conversion failed for source {self._source_name(source)}."
-                        )
-                    )
-                    continue
-                if result.status not in SUCCESS_CONVERSION_STATUSES:
-                    failures.append(ConversionError(self._failure_message(result)))
-
-            if failures:
-                raise BatchConversionError(
-                    "One or more conversions failed in convert_all().",
-                    failures=failures,
-                )
-
-            return iter([result for result in ordered_results if result is not None])
-
-        emitted: list[ConversionResult] = []
-        for idx, source in enumerate(source_list):
-            result = ordered_results[idx]
-            exc = ordered_errors[idx]
-            if result is not None:
-                emitted.append(result)
-                continue
-            error_message = str(exc) if exc is not None else "Unknown conversion error."
-            emitted.append(
-                self._build_failed_conversion_result(
-                    descriptor=self._describe_source(source),
-                    limits=resolved.limits,
-                    error_message=error_message,
-                    status=ConversionStatus.FAILURE,
-                )
-            )
-        return iter(emitted)
 
     def submit_and_retrieve_many(
         self,
         items: Iterable[ConversionItem],
-        max_in_flight: int = 8,
+        max_in_flight: int = DEFAULT_MAX_CONCURRENCY,
         ordered: bool = False,
     ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
-        item_list = list(items)
-        if not item_list:
-            return iter(())
-
-        effective_cap = len(item_list) if max_in_flight <= 0 else max(1, max_in_flight)
         return self._run_submit_and_retrieve_many_async(
-            item_list=item_list,
-            max_in_flight=effective_cap,
+            item_list=items,
+            max_in_flight=self._validate_concurrency(
+                max_in_flight, name="max_in_flight"
+            ),
             ordered=ordered,
         )
 
@@ -357,16 +304,7 @@ class DoclingServiceClient:
         self,
         source: SourceType,
         options: ConvertDocumentsRequestOptions | None = None,
-        target_format: None = None,
-        headers: dict[str, str] | None = None,
-    ) -> ConversionJob[ConversionResult]: ...
-
-    @overload
-    def submit(
-        self,
-        source: SourceType,
-        options: ConvertDocumentsRequestOptions | None = None,
-        target_format: Literal[OutputFormat.JSON] = OutputFormat.JSON,
+        target_format: None | Literal["json"] = None,
         headers: dict[str, str] | None = None,
     ) -> ConversionJob[ConversionResult]: ...
 
@@ -383,9 +321,14 @@ class DoclingServiceClient:
         self,
         source: SourceType,
         options: ConvertDocumentsRequestOptions | None = None,
-        target_format: OutputFormat | None = None,
+        target_format: OutputFormat | Literal["json"] | None = None,
         headers: dict[str, str] | None = None,
     ) -> ConversionJob[ConversionResult] | ConversionJob[RawServiceResult]:
+        normalized_target_format: OutputFormat | None = (
+            OutputFormat.JSON
+            if target_format == "json"
+            else cast(OutputFormat | None, target_format)
+        )
         resolved = self._resolve_options(
             options=options,
             max_num_pages=None,
@@ -393,7 +336,7 @@ class DoclingServiceClient:
             page_range=None,
         )
         submit_options, raw_result = self._options_for_target_format(
-            resolved.options, target_format
+            resolved.options, normalized_target_format
         )
         return self._submit_conversion_job(
             source=source,
@@ -437,13 +380,13 @@ class DoclingServiceClient:
             initial_status=initial_status,
         )
 
-    def health(self) -> HealthResponse:
+    def health(self) -> HealthCheckResponse:
         response = self._request_with_retry("GET", "/health", retries=0)
         if response.status_code != 200:
             self._raise_for_generic_http_error(response, "Health check request failed.")
         return HealthCheckResponse.model_validate_json(response.text)
 
-    def version(self) -> VersionResponse:
+    def version(self) -> dict[str, Any]:
         response = self._request_with_retry("GET", "/version", retries=0)
         if response.status_code != 200:
             self._raise_for_generic_http_error(response, "Version request failed.")
@@ -972,68 +915,68 @@ class DoclingServiceClient:
         mime = mimetypes.guess_type(filename)[0] or "application/octet-stream"
         return {"files": (filename, content, mime)}
 
-    def _run_convert_all_async(
+    def _iterate_convert_all_sync(
         self,
-        source_list: list[SourceType],
+        sources: Iterable[SourceType],
         headers: dict[str, str] | None,
         resolved: _ResolvedOptions,
         submit_options: ConvertDocumentsRequestOptions,
         in_flight: int,
-    ) -> tuple[list[ConversionResult | None], list[Exception | None]]:
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            return asyncio.run(
-                self._convert_all_async(
-                    source_list=source_list,
-                    headers=headers,
-                    resolved=resolved,
-                    submit_options=submit_options,
-                    in_flight=in_flight,
-                )
+    ) -> Iterator[ConversionResult]:
+        self._ensure_sync_bridge_allowed()
+        return self._iterate_async_generator_sync(
+            self._convert_all_async(
+                sources=sources,
+                headers=headers,
+                resolved=resolved,
+                submit_options=submit_options,
+                in_flight=in_flight,
             )
-        raise RuntimeError(
-            "convert_all cannot run inside an active asyncio loop. "
-            "Call it from synchronous code."
         )
 
     def _run_submit_and_retrieve_many_async(
         self,
-        item_list: list[ConversionItem],
+        item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
     ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            return self._iterate_submit_and_retrieve_many_sync(
-                item_list=item_list,
-                max_in_flight=max_in_flight,
-                ordered=ordered,
-            )
-        raise RuntimeError(
-            "submit_and_retrieve_many cannot run inside an active asyncio loop. "
-            "Call it from synchronous code."
-        )
-
-    def _iterate_submit_and_retrieve_many_sync(
-        self,
-        item_list: list[ConversionItem],
-        max_in_flight: int,
-        ordered: bool,
-    ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
-        async_iterator: AsyncGenerator[
-            tuple[ConversionItem, ConvertDocumentResponse | Exception], None
-        ] = self._submit_and_retrieve_many_async(
+        self._ensure_sync_bridge_allowed()
+        return self._iterate_submit_and_retrieve_many_sync(
             item_list=item_list,
             max_in_flight=max_in_flight,
             ordered=ordered,
         )
+
+    def _iterate_submit_and_retrieve_many_sync(
+        self,
+        item_list: Iterable[ConversionItem],
+        max_in_flight: int,
+        ordered: bool,
+    ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
+        return self._iterate_async_generator_sync(
+            self._submit_and_retrieve_many_async(
+                item_list=item_list,
+                max_in_flight=max_in_flight,
+                ordered=ordered,
+            )
+        )
+
+    def _ensure_sync_bridge_allowed(self) -> None:
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        raise RuntimeError(
+            "This method cannot run inside an active asyncio loop. "
+            "Call it from synchronous code."
+        )
+
+    def _iterate_async_generator_sync(
+        self, async_iterator: AsyncGenerator[_T, None]
+    ) -> Iterator[_T]:
         loop = asyncio.new_event_loop()
 
-        def iterator() -> Iterator[
-            tuple[ConversionItem, ConvertDocumentResponse | Exception]
-        ]:
+        def iterator() -> Iterator[_T]:
             try:
                 asyncio.set_event_loop(loop)
                 while True:
@@ -1053,6 +996,19 @@ class DoclingServiceClient:
         return iterator()
 
     @staticmethod
+    def _validate_concurrency(value: int, *, name: str) -> int:
+        if value < 1 or value > MAX_CONCURRENCY_LIMIT:
+            raise ValueError(
+                f"{name} must be between 1 and {MAX_CONCURRENCY_LIMIT}, got {value}."
+            )
+        return value
+
+    def _effective_concurrency(self, override: int | None) -> int:
+        if override is None:
+            return self._max_concurrency
+        return self._validate_concurrency(override, name="max_concurrency")
+
+    @staticmethod
     def _normalize_exception(exc: BaseException) -> Exception:
         if isinstance(exc, Exception):
             return exc
@@ -1060,28 +1016,55 @@ class DoclingServiceClient:
 
     async def _convert_all_async(
         self,
-        source_list: list[SourceType],
+        sources: Iterable[SourceType],
         headers: dict[str, str] | None,
         resolved: _ResolvedOptions,
         submit_options: ConvertDocumentsRequestOptions,
         in_flight: int,
-    ) -> tuple[list[ConversionResult | None], list[Exception | None]]:
-        ordered_results: list[ConversionResult | None] = [None] * len(source_list)
-        ordered_errors: list[Exception | None] = [None] * len(source_list)
-        if not source_list:
-            return ordered_results, ordered_errors
+    ) -> AsyncGenerator[ConversionResult, None]:
+        results: dict[int, ConversionResult] = {}
+        descriptors: dict[int, _SourceDescriptor] = {}
+        errors: dict[int, Exception] = {}
+        total = 0
 
-        items: list[ConversionItem] = []
-        for idx, source in enumerate(source_list):
-            descriptor = self._describe_source(source)
-            preflight = self._preflight_limits(
-                descriptor=descriptor, limits=resolved.limits
+        def result_for_index(idx: int) -> ConversionResult:
+            if idx in results:
+                return results[idx]
+
+            exc = errors.get(idx)
+            error_message = str(exc) if exc is not None else "Unknown conversion error."
+            result = self._build_failed_conversion_result(
+                descriptor=descriptors[idx],
+                limits=resolved.limits,
+                error_message=error_message,
+                status=ConversionStatus.FAILURE,
             )
-            if preflight is not None:
-                ordered_results[idx] = preflight
-                continue
-            items.append(
-                ConversionItem(
+            results[idx] = result
+            return result
+
+        def make_items() -> Iterator[ConversionItem]:
+            nonlocal total
+            for idx, source in enumerate(sources):
+                total = idx + 1
+                try:
+                    descriptor = self._describe_source(source)
+                except Exception as exc:
+                    errors[idx] = self._normalize_exception(exc)
+                    name = str(source) if isinstance(source, str) else source.name
+                    descriptors[idx] = _SourceDescriptor(
+                        source_name=name,
+                        input_format=self._guess_input_format(name),
+                        file_size=None,
+                    )
+                    continue
+                descriptors[idx] = descriptor
+                preflight = self._preflight_limits(
+                    descriptor=descriptor, limits=resolved.limits
+                )
+                if preflight is not None:
+                    results[idx] = preflight
+                    continue
+                yield ConversionItem(
                     source=source,
                     options=submit_options,
                     source_headers=headers,
@@ -1090,29 +1073,37 @@ class DoclingServiceClient:
                         descriptor=descriptor,
                     ),
                 )
-            )
 
+        next_output_index = 0
         async for item, outcome in self._submit_and_retrieve_many_async(
-            item_list=items,
+            item_list=make_items(),
             max_in_flight=in_flight,
             ordered=True,
         ):
             metadata = cast(_ConvertAllItemMetadata, item.metadata)
+            while next_output_index < metadata.source_index:
+                yield result_for_index(next_output_index)
+                next_output_index += 1
+
             if isinstance(outcome, BaseException):
-                ordered_errors[metadata.source_index] = self._normalize_exception(
-                    outcome
+                errors[metadata.source_index] = self._normalize_exception(outcome)
+                yield result_for_index(metadata.source_index)
+            else:
+                result = self._build_conversion_result(
+                    payload=outcome,
+                    descriptor=metadata.descriptor,
+                    limits=resolved.limits,
                 )
-                continue
-            ordered_results[metadata.source_index] = self._build_conversion_result(
-                payload=outcome,
-                descriptor=metadata.descriptor,
-                limits=resolved.limits,
-            )
-        return ordered_results, ordered_errors
+                results[metadata.source_index] = result
+                yield result
+            next_output_index += 1
+
+        for idx in range(next_output_index, total):
+            yield result_for_index(idx)
 
     async def _submit_and_retrieve_many_async(
         self,
-        item_list: list[ConversionItem],
+        item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
     ) -> AsyncGenerator[
@@ -1153,10 +1144,11 @@ class DoclingServiceClient:
                     async_client=async_client,
                 )
 
-            completed: list[
-                tuple[int, ConversionItem, ConvertDocumentResponse | Exception]
-            ] = []
-            async for idx, outcome in _run_bounded(
+            buffered_results: dict[
+                int, tuple[ConversionItem, ConvertDocumentResponse | Exception]
+            ] = {}
+            next_ordered_index = 0
+            async for idx, item, outcome in _run_bounded(
                 items=item_list,
                 process_one=process_one,
                 async_client=async_client,
@@ -1169,14 +1161,13 @@ class DoclingServiceClient:
                     normalized = outcome
 
                 if ordered:
-                    completed.append((idx, item_list[idx], normalized))
+                    buffered_results[idx] = (item, normalized)
+                    while next_ordered_index in buffered_results:
+                        yield buffered_results.pop(next_ordered_index)
+                        next_ordered_index += 1
                     continue
 
-                yield item_list[idx], normalized
-
-            if ordered:
-                for _, item, outcome in sorted(completed, key=lambda entry: entry[0]):
-                    yield item, outcome
+                yield item, normalized
 
     def _build_async_http_client(self) -> httpx.AsyncClient:
         timeout = httpx.Timeout(

@@ -1,16 +1,15 @@
 """Client SDK for interacting with docling-serve."""
 
 from docling.service_client.client import (
+    DEFAULT_MAX_CONCURRENCY,
+    MAX_CONCURRENCY_LIMIT,
     ChunkerKind,
     ConversionItem,
     DoclingServiceClient,
-    HealthResponse,
     RawServiceResult,
     StatusWatcherKind,
-    VersionResponse,
 )
 from docling.service_client.exceptions import (
-    BatchConversionError,
     ConversionError,
     DoclingServiceClientError,
     ResultExpiredError,
@@ -24,14 +23,14 @@ from docling.service_client.exceptions import (
 from docling.service_client.job import ConversionJob
 
 __all__ = [
-    "BatchConversionError",
+    "DEFAULT_MAX_CONCURRENCY",
+    "MAX_CONCURRENCY_LIMIT",
     "ChunkerKind",
     "ConversionError",
     "ConversionItem",
     "ConversionJob",
     "DoclingServiceClient",
     "DoclingServiceClientError",
-    "HealthResponse",
     "RawServiceResult",
     "ResultExpiredError",
     "ResultNotReadyError",
@@ -41,5 +40,4 @@ __all__ = [
     "TaskNotFoundError",
     "TaskTimeoutError",
     "UsageLimitExceededError",
-    "VersionResponse",
 ]
