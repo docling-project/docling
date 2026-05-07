@@ -657,16 +657,6 @@ def convert(  # noqa: C901
             help="Render TikZ diagrams into images using Tectonic.",
         ),
     ] = False,
-    no_tikz_engine_download: Annotated[
-        bool,
-        typer.Option(
-            "--no-tikz-engine-download",
-            help=(
-                "Disable automatic Tectonic download when TikZ rendering is enabled "
-                "and no local binary is available."
-            ),
-        ),
-    ] = False,
     tikz_shell_escape: Annotated[
         bool,
         typer.Option(
@@ -895,7 +885,6 @@ def convert(  # noqa: C901
                     pipeline_options=simple_format_option,
                     backend_options=LatexBackendOptions(
                         tikz_engine="tectonic",
-                        allow_tikz_engine_download=not no_tikz_engine_download,
                         tikz_engine_timeout=tikz_engine_timeout,
                         tikz_engine_allow_shell_escape=tikz_shell_escape,
                     )

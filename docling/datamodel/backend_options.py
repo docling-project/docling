@@ -199,13 +199,6 @@ class LatexBackendOptions(BaseBackendOptions):
             "Set to 'tectonic' to enable asynchronous image generation."
         ),
     )
-    allow_tikz_engine_download: bool = Field(
-        True,
-        description=(
-            "Allow the LaTeX backend to download the Tectonic binary when "
-            "TikZ rendering is enabled and no local binary is available."
-        ),
-    )
     tikz_engine_timeout: float = Field(
         60.0,
         description="The timeout in seconds for rendering a single TikZ diagram.",

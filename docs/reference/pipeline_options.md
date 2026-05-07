@@ -18,9 +18,6 @@ images using the Tectonic engine.
 
 - `tikz_engine`
   Set to `"tectonic"` to enable optional TikZ rendering.
-- `allow_tikz_engine_download`
-  Allows the LaTeX backend to download the Tectonic binary when TikZ rendering
-  is enabled and no local binary is available.
 - `tikz_engine_timeout`
   Sets the timeout, in seconds, for rendering a single TikZ diagram.
 - `tikz_engine_allow_shell_escape`
@@ -32,7 +29,6 @@ images using the Tectonic engine.
 The CLI exposes the same behavior with these flags:
 
 - `--tikz-engine` / `-T`
-- `--no-tikz-engine-download`
 - `--tikz-engine-timeout`
 - `--tikz-shell-escape`
 

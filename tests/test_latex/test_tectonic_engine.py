@@ -1,3 +1,4 @@
+import logging
 import subprocess
 from pathlib import Path
 
@@ -5,46 +6,27 @@ from docling.backend.latex.engines import tectonic
 from docling.backend.latex.engines.tectonic import TectonicEngine
 
 
-def test_tectonic_engine_downloads_with_curl(monkeypatch, tmp_path):
-    run_calls = []
-
-    monkeypatch.setattr(tectonic.shutil, "which", lambda _name: None)
-    monkeypatch.setattr(Path, "home", lambda: tmp_path)
-
-    def fake_run(*args, **kwargs):
-        run_calls.append((args, kwargs))
-        binary_path = tmp_path / ".cache" / "docling" / "tectonic" / "tectonic"
-        binary_path.write_text("", encoding="utf-8")
-        binary_path.chmod(0o755)
-        return None
-
-    monkeypatch.setattr(tectonic.subprocess, "run", fake_run)
+def test_tectonic_engine_uses_system_binary(monkeypatch):
+    monkeypatch.setattr(tectonic.shutil, "which", lambda _name: "/usr/bin/tectonic")
 
     engine = TectonicEngine()
 
     assert engine.is_available() is True
-    assert engine.binary_path.exists()
-    assert len(run_calls) == 1
-    assert run_calls[0][0][0].startswith("curl --proto '=https'")
-    assert run_calls[0][1]["shell"] is True
-    assert run_calls[0][1]["cwd"] == tmp_path / ".cache" / "docling" / "tectonic"
+    assert engine.binary_path == Path("/usr/bin/tectonic")
 
 
-def test_tectonic_engine_can_disable_download(monkeypatch, tmp_path):
-    run_calls = []
-
+def test_tectonic_engine_logs_install_hint_when_missing(monkeypatch, caplog, tmp_path):
     monkeypatch.setattr(tectonic.shutil, "which", lambda _name: None)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setattr(
-        tectonic.subprocess,
-        "run",
-        lambda *args, **kwargs: run_calls.append((args, kwargs)),
-    )
 
-    engine = TectonicEngine(allow_download=False)
+    with caplog.at_level(logging.WARNING):
+        engine = TectonicEngine()
 
     assert engine.is_available() is False
-    assert run_calls == []
+    assert any(
+        "Install Tectonic and make it available on PATH" in record.message
+        for record in caplog.records
+    )
 
 
 def test_tectonic_render_times_out(monkeypatch):

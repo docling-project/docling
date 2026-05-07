@@ -23,8 +23,7 @@ def _make_tikz_backend(
 ) -> LatexDocumentBackend:
     from docling.backend.latex.engines import tectonic
 
-    def fake_init(self, allow_download=True, timeout=60.0, allow_shell_escape=True):
-        self.allow_download = allow_download
+    def fake_init(self, timeout=60.0, allow_shell_escape=True):
         self.timeout = timeout
         self.allow_shell_escape = allow_shell_escape
         self._is_available = True
@@ -476,8 +475,7 @@ def test_latex_tikzpicture_file_backed_render_receives_source_root(
 
     captured = {}
 
-    def fake_init(self, allow_download=True, timeout=60.0, allow_shell_escape=True):
-        self.allow_download = allow_download
+    def fake_init(self, timeout=60.0, allow_shell_escape=True):
         self.timeout = timeout
         self.allow_shell_escape = allow_shell_escape
         self._is_available = True

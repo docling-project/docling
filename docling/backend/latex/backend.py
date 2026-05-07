@@ -3,7 +3,7 @@ import os
 import threading
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union, cast
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem
 from docling_core.types.doc.document import Formatting
@@ -29,6 +29,11 @@ from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    import concurrent.futures
+
+    from docling.backend.latex.engines.tectonic import TectonicEngine
+
 
 class LatexDocumentBackend(
     DeclarativeDocumentBackend,
@@ -47,10 +52,14 @@ class LatexDocumentBackend(
         if options is None:
             options = LatexBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
+        self.options = LatexBackendOptions.model_validate(self.options)
         self.labels: dict[str, bool] = {}
         self._custom_macros: dict[str, str] = {}
         self._custom_macro_num_args: dict[str, int] = {}
         self._input_stack: set[str] = set()
+        self._tectonic_engine: TectonicEngine | None = None
+        self._tikz_executor: concurrent.futures.ThreadPoolExecutor | None = None
+        self._tikz_futures: list[concurrent.futures.Future] = []
         self.latex_text = decode_latex_content(self.path_or_stream)
 
     def is_valid(self) -> bool:
@@ -122,7 +131,8 @@ class LatexDocumentBackend(
 
     def convert(self) -> DoclingDocument:
         doc = DoclingDocument(name=self.file.stem)
-        timeout: float | None = getattr(self.options, "parse_timeout", None)
+        opts = cast(LatexBackendOptions, self.options)
+        timeout = opts.parse_timeout
 
         if timeout is None:
             return self._do_parse_and_process(doc)

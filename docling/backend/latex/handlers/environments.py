@@ -1,11 +1,17 @@
 import logging
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, cast
 
 if TYPE_CHECKING:
+    from concurrent.futures import Future, ThreadPoolExecutor
     from typing import Any
 
+    from docling.backend.latex.engines.tectonic import TectonicEngine
+    from docling.datamodel.backend_options import (
+        BaseBackendOptions,
+        LatexBackendOptions,
+    )
 from docling_core.types.doc import CodeLanguageLabel
 from docling_core.types.doc.document import (
     CodeMetaField,
@@ -26,6 +32,12 @@ _TIKZ_END_PATTERN = re.compile(r"\\end\s*\{\s*tikzpicture\s*\}")
 
 class EnvironmentHandlerMixin:
     if TYPE_CHECKING:
+        options: "BaseBackendOptions"
+        latex_preamble: str
+        path_or_stream: "Any"
+        _tectonic_engine: "TectonicEngine | None"
+        _tikz_executor: "ThreadPoolExecutor | None"
+        _tikz_futures: list["Future[Any]"]
 
         def _process_nodes(
             self,
@@ -162,30 +174,15 @@ class EnvironmentHandlerMixin:
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
             return
 
-        opts = getattr(self, "options", None)
-        tikz_engine_option = getattr(opts, "tikz_engine", None) if opts else None
-        if tikz_engine_option == "tectonic":
+        opts = cast("LatexBackendOptions", self.options)
+        if opts.tikz_engine == "tectonic":
             try:
                 from docling.backend.latex.engines.tectonic import TectonicEngine
 
-                if not hasattr(self, "_tectonic_engine"):
-                    allow_download = (
-                        getattr(opts, "allow_tikz_engine_download", True)
-                        if opts
-                        else True
-                    )
-                    timeout = (
-                        getattr(opts, "tikz_engine_timeout", 60.0) if opts else 60.0
-                    )
-                    allow_shell_escape = (
-                        getattr(opts, "tikz_engine_allow_shell_escape", False)
-                        if opts
-                        else False
-                    )
+                if self._tectonic_engine is None:
                     self._tectonic_engine = TectonicEngine(
-                        allow_download=allow_download,
-                        timeout=timeout,
-                        allow_shell_escape=allow_shell_escape,
+                        timeout=opts.tikz_engine_timeout,
+                        allow_shell_escape=opts.tikz_engine_allow_shell_escape,
                     )
 
                 pic = doc.add_picture(parent=parent)
@@ -212,14 +209,12 @@ class EnvironmentHandlerMixin:
                         _log.warning(f"Async Tectonic rendering failed: {e}")
                         set_code_fallback()
 
-                preamble = getattr(self, "latex_preamble", "")
+                preamble = self.latex_preamble
                 source_root = None
-                path_or_stream = getattr(self, "path_or_stream", None)
-                if isinstance(path_or_stream, Path):
-                    source_root = path_or_stream.parent
-                executor = getattr(self, "_tikz_executor", None)
-                if executor:
-                    future = executor.submit(
+                if isinstance(self.path_or_stream, Path):
+                    source_root = self.path_or_stream.parent
+                if self._tikz_executor:
+                    future = self._tikz_executor.submit(
                         render_task,
                         self._tectonic_engine,
                         tikz_raw,
@@ -227,9 +222,7 @@ class EnvironmentHandlerMixin:
                         preamble,
                         source_root,
                     )
-                    futures_list = getattr(self, "_tikz_futures", None)
-                    if futures_list is not None:
-                        futures_list.append(future)
+                    self._tikz_futures.append(future)
                 else:
                     render_task(
                         self._tectonic_engine, tikz_raw, pic, preamble, source_root

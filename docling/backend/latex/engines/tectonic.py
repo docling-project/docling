@@ -53,13 +53,11 @@ class TectonicEngine(RenderEngine):
 
     def __init__(
         self,
-        allow_download: bool = True,
         timeout: float = 60.0,
         allow_shell_escape: bool = True,
     ):
         self.cache_dir = Path.home() / ".cache" / "docling" / "tectonic"
         self.binary_path = self.cache_dir / "tectonic"
-        self.allow_download = allow_download
         self.timeout = timeout
         self.allow_shell_escape = allow_shell_escape
         self._is_available = False
@@ -80,38 +78,13 @@ class TectonicEngine(RenderEngine):
             self._is_available = True
             return
 
-        if not self.allow_download:
-            _log.warning(
-                "Tectonic binary not found and automatic download is disabled; "
-                "TikZ rendering will fall back."
-            )
-            return
-
-        if self._download_binary():
-            self._is_available = True
-            return
-
-        _log.warning("Tectonic binary is unavailable; TikZ rendering will fall back.")
-
-    def _download_binary(self) -> bool:
-        try:
-            self.cache_dir.mkdir(parents=True, exist_ok=True)
-            _log.info("Downloading Tectonic binary using the official script...")
-            subprocess.run(
-                "curl --proto '=https' --tlsv1.2 -fsSL https://drop-sh.fullyjustified.net | sh",
-                shell=True,
-                cwd=self.cache_dir,
-                check=True,
-            )
-            if self.binary_path.exists():
-                self.binary_path.chmod(0o755)
-                _log.info("Tectonic successfully installed at %s", self.binary_path)
-                return True
-            _log.warning("Tectonic binary not found after extraction.")
-            return False
-        except Exception as e:
-            _log.warning("Failed to install Tectonic: %s", e)
-            return False
+        _log.warning(
+            "Tectonic binary not found. Install Tectonic and make it available on "
+            "PATH to enable TikZ rendering. See "
+            "https://tectonic-typesetting.github.io/en-US/index.html for installation "
+            "instructions. On MacOS and Linux based systems, an installation option is: "
+            "curl --proto '=https' --tlsv1.2 -fsSL https://drop-sh.fullyjustified.net | sh"
+        )
 
     @classmethod
     def _sanitize_preamble_for_tectonic(cls, preamble: str) -> str:
