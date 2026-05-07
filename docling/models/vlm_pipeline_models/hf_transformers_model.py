@@ -36,7 +36,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
         vlm_options: InlineVlmOptions,
     ):
@@ -101,7 +101,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                     f"  3. Or use a different model that exists in your artifacts_path"
                 )
 
-            self.param_quantization_config: Optional[BitsAndBytesConfig] = None
+            self.param_quantization_config: BitsAndBytesConfig | None = None
             if vlm_options.quantized:
                 self.param_quantization_config = BitsAndBytesConfig(
                     load_in_8bit=vlm_options.load_in_8bit,
@@ -376,6 +376,14 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         pad_token = self.processor.tokenizer.pad_token
         if pad_token:
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
+
+        # -- Strip stop strings and their partial prefixes from decoded output
+        if self.vlm_options.stop_strings:
+            from docling.utils.vlm_utils import strip_stop_strings
+
+            decoded_texts = strip_stop_strings(
+                decoded_texts, self.vlm_options.stop_strings
+            )
 
         # -- Optional logging
         num_tokens = None

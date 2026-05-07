@@ -166,7 +166,7 @@ class VlmEngineOutput(BaseModel):
     """
 
     text: str = Field(description="Generated text from the model")
-    stop_reason: Optional[str] = Field(
+    stop_reason: str | None = Field(
         default=None, description="Reason why generation stopped"
     )
     metadata: Dict[str, Any] = Field(
@@ -204,7 +204,7 @@ class BaseVlmEngine(ABC):
         """
         self.options = options
         self.model_config = model_config
-        self._initialized = False
+        self._initialized: bool = False
 
     @abstractmethod
     def initialize(self) -> None:

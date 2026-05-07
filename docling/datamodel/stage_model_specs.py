@@ -1259,6 +1259,8 @@ VLM_CONVERT_GLMOCR = StageModelPreset(
     model_spec=VlmModelSpec(
         name="GLM-OCR-0.9B",
         default_repo_id="zai-org/GLM-OCR",
+        # GLM-OCR supports three prompts: "Text Recognition:", "Formula Recognition:",
+        # "Table Recognition:". We use text-only for full-page document conversion.
         prompt="Text Recognition:",
         response_format=ResponseFormat.MARKDOWN,
         engine_overrides={
@@ -1272,12 +1274,23 @@ VLM_CONVERT_GLMOCR = StageModelPreset(
                     "torch_dtype": "bfloat16",
                 },
             ),
+            VlmEngineType.VLLM: EngineModelConfig(
+                extra_config={
+                    "enforce_eager": True,
+                },
+            ),
         },
         api_overrides={
             VlmEngineType.API: ApiModelConfig(
                 params={"model": "zai-org/GLM-OCR", "max_tokens": 4096}
             ),
             VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "glm-ocr", "max_tokens": 4096}
+            ),
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
+                params={"model": "glm-ocr", "max_tokens": 4096}
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
                 params={"model": "glm-ocr", "max_tokens": 4096}
             ),
         },
@@ -1497,4 +1510,209 @@ CODE_FORMULA_GRANITE_DOCLING = StageModelPreset(
     ),
     scale=2.0,
     default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+# -----------------------------------------------------------------------------
+# CHANDRA / DOTS VLM_CONVERT PRESETS
+# -----------------------------------------------------------------------------
+
+_CHANDRA_ALLOWED_TAGS = (
+    "['math', 'br', 'i', 'b', 'u', 'del', 'sup', 'sub', 'table', 'tr', 'td', "
+    "'p', 'th', 'div', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'ul', 'ol', 'li', "
+    "'input', 'a', 'span', 'img', 'hr', 'tbody', 'small', 'caption', 'strong', "
+    "'thead', 'big', 'code', 'chem']"
+)
+_CHANDRA_ALLOWED_ATTRS = (
+    "['class', 'colspan', 'rowspan', 'display', 'checked', 'type', 'border', "
+    "'value', 'style', 'href', 'alt', 'align', 'data-bbox', 'data-label']"
+)
+_CHANDRA_PROMPT_ENDING = (
+    f"Only use these tags {_CHANDRA_ALLOWED_TAGS}, "
+    f"and these attributes {_CHANDRA_ALLOWED_ATTRS}.\n\n"
+    "Guidelines:\n"
+    "* Inline math: Surround math with <math>...</math> tags. Math expressions "
+    "should be rendered in KaTeX-compatible LaTeX. Use display for block math.\n"
+    "* Tables: Use colspan and rowspan attributes to match table structure.\n"
+    "* Formatting: Maintain consistent formatting with the image, including spacing, "
+    "indentation, subscripts/superscripts, and special characters.\n"
+    "* Images: Include a description of any images in the alt attribute of an <img> tag. "
+    "Do not fill out the src property. Describe in detail inside the div tag. "
+    "Also convert charts to high fidelity data, and convert diagrams to mermaid.\n"
+    "* Forms: Mark checkboxes and radio buttons properly.\n"
+    "* Text: join lines together properly into paragraphs using <p>...</p> tags. "
+    "Use <br> tags for line breaks within paragraphs, but only when absolutely "
+    "necessary to maintain meaning.\n"
+    "* Chemistry: Use <chem>...</chem> tags for chemical formulas with reactive SMILES.\n"
+    "* Lists: Preserve indents and proper list markers.\n"
+    "* Use the simplest possible HTML structure that accurately represents the content "
+    "of the block.\n"
+    "* Make sure the text is accurate and easy for a human to read and interpret. "
+    "Reading order should be correct and natural."
+)
+_CHANDRA_OCR_LAYOUT_PROMPT = (
+    "OCR this image to HTML, arranged as layout blocks. Each layout block should be "
+    "a div with the data-bbox attribute representing the bounding box of the block in "
+    "x0 y0 x1 y1 format. Bboxes are normalized 0-1000. The data-label attribute is "
+    "the label for the block.\n\n"
+    "Use the following labels:\n"
+    "- Caption\n- Footnote\n- Equation-Block\n- List-Group\n- Page-Header\n"
+    "- Page-Footer\n- Image\n- Section-Header\n- Table\n- Text\n- Complex-Block\n"
+    "- Code-Block\n- Form\n- Table-Of-Contents\n- Figure\n- Chemical-Block\n"
+    "- Diagram\n- Bibliography\n- Blank-Page\n\n" + _CHANDRA_PROMPT_ENDING
+)
+
+VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
+    preset_id="chandra_ocr2",
+    name="Chandra-OCR-2",
+    description="Chandra OCR 2 model for document layout parsing with bounding boxes (5.3B parameters)",
+    model_spec=VlmModelSpec(
+        name="Chandra-OCR-2-5.3B",
+        default_repo_id="datalab-to/chandra-ocr-2",
+        prompt=_CHANDRA_OCR_LAYOUT_PROMPT,
+        response_format=ResponseFormat.CHANDRA_HTML,
+        max_new_tokens=12384,
+        trust_remote_code=True,
+        stop_strings=["<|im_end|>", "<|endoftext|>"],
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                },
+            ),
+            VlmEngineType.VLLM: EngineModelConfig(
+                extra_config={
+                    "enforce_eager": True,
+                },
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "datalab-to/chandra-ocr-2", "max_tokens": 12384}
+            ),
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
+                params={"model": "chandra-ocr-2", "max_tokens": 12384}
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "chandra-ocr-2", "max_tokens": 12384}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
+)
+
+VLM_CONVERT_DOTS_OCR = StageModelPreset(
+    preset_id="dots_ocr",
+    name="Dots-OCR",
+    description="dots.ocr model for multilingual document layout parsing with bounding boxes (3B parameters)",
+    model_spec=VlmModelSpec(
+        name="dots.ocr-3B",
+        default_repo_id="rednote-hilab/dots.ocr",
+        prompt=(
+            "Please output the layout information from the PDF image, including each layout "
+            "element's bbox, its category, and the corresponding text content within the bbox.\n\n"
+            "1. Bbox format: [x1, y1, x2, y2]\n\n"
+            "2. Layout Categories: The possible categories are ['Caption', 'Footnote', 'Formula', "
+            "'List-item', 'Page-footer', 'Page-header', 'Picture', 'Section-header', 'Table', "
+            "'Text', 'Title'].\n\n"
+            "3. Text Extraction & Formatting Rules:\n"
+            "    - Picture: For the 'Picture' category, the text field should be omitted.\n"
+            "    - Formula: Format its text as LaTeX.\n"
+            "    - Table: Format its text as HTML.\n"
+            "    - All Others (Text, Title, etc.): Format their text as Markdown.\n\n"
+            "4. Constraints:\n"
+            "    - The output text must be the original text from the image, with no translation.\n"
+            "    - All layout elements must be sorted according to human reading order.\n\n"
+            "5. Final Output: The entire output must be a single JSON object."
+        ),
+        response_format=ResponseFormat.DOTS_JSON,
+        max_new_tokens=24000,
+        trust_remote_code=True,
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_CAUSALLM,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                },
+            ),
+            VlmEngineType.VLLM: EngineModelConfig(
+                extra_config={
+                    "enforce_eager": True,
+                },
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "rednote-hilab/dots.ocr", "max_tokens": 24000}
+            ),
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
+                params={"model": "dots.ocr", "max_tokens": 24000}
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "dots.ocr", "max_tokens": 24000}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.VLLM,
+)
+
+VLM_CONVERT_DOTS_MOCR = StageModelPreset(
+    preset_id="dots_mocr",
+    name="Dots-MOCR",
+    description="dots.mocr multimodal OCR model for document layout parsing with bounding boxes (3B parameters)",
+    model_spec=VlmModelSpec(
+        name="dots.mocr-3B",
+        default_repo_id="rednote-hilab/dots.mocr",
+        prompt=(
+            "Please output the layout information from the PDF image, including each layout "
+            "element's bbox, its category, and the corresponding text content within the bbox.\n\n"
+            "1. Bbox format: [x1, y1, x2, y2]\n\n"
+            "2. Layout Categories: The possible categories are ['Caption', 'Footnote', 'Formula', "
+            "'List-item', 'Page-footer', 'Page-header', 'Picture', 'Section-header', 'Table', "
+            "'Text', 'Title'].\n\n"
+            "3. Text Extraction & Formatting Rules:\n"
+            "    - Picture: For the 'Picture' category, the text field should be omitted.\n"
+            "    - Formula: Format its text as LaTeX.\n"
+            "    - Table: Format its text as HTML.\n"
+            "    - All Others (Text, Title, etc.): Format their text as Markdown.\n\n"
+            "4. Constraints:\n"
+            "    - The output text must be the original text from the image, with no translation.\n"
+            "    - All layout elements must be sorted according to human reading order.\n\n"
+            "5. Final Output: The entire output must be a single JSON object."
+        ),
+        response_format=ResponseFormat.DOTS_JSON,
+        max_new_tokens=24000,
+        trust_remote_code=True,
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_CAUSALLM,
+                    "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                },
+            ),
+            VlmEngineType.VLLM: EngineModelConfig(
+                extra_config={
+                    "enforce_eager": True,
+                },
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={"model": "rednote-hilab/dots.mocr", "max_tokens": 24000}
+            ),
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
+                params={"model": "dots.mocr", "max_tokens": 24000}
+            ),
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "dots.mocr", "max_tokens": 24000}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.VLLM,
 )

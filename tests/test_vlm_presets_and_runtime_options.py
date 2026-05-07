@@ -540,6 +540,8 @@ class TestPresetEngineIntegration:
             ResponseFormat.MARKDOWN,
             ResponseFormat.DEEPSEEKOCR_MARKDOWN,
             ResponseFormat.PLAINTEXT,
+            ResponseFormat.CHANDRA_HTML,
+            ResponseFormat.DOTS_JSON,
         ]
 
         # Check VlmConvert presets

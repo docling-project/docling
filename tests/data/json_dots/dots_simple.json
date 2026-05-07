@@ -1,0 +1,10 @@
+[
+  {"bbox": [50, 30, 500, 80], "category": "Title", "text": "Introduction to Document Parsing"},
+  {"bbox": [50, 100, 500, 180], "category": "Text", "text": "This paper presents a novel approach to document understanding using vision-language models. The method leverages layout information to improve OCR accuracy."},
+  {"bbox": [50, 200, 500, 250], "category": "Section-header", "text": "1. Background"},
+  {"bbox": [50, 260, 500, 380], "category": "Text", "text": "Document parsing has traditionally relied on rule-based systems. Recent advances in deep learning have enabled end-to-end approaches that jointly perform layout analysis and text recognition."},
+  {"bbox": [50, 400, 300, 550], "category": "Table", "text": "<table><tr><th>Model</th><th>F1</th></tr><tr><td>Baseline</td><td>0.85</td></tr><tr><td>Ours</td><td>0.94</td></tr></table>"},
+  {"bbox": [320, 400, 500, 550], "category": "Picture"},
+  {"bbox": [50, 560, 500, 590], "category": "Caption", "text": "Figure 1: Architecture overview and comparison table."},
+  {"bbox": [50, 750, 500, 770], "category": "Page-footer", "text": "Page 1 of 12"}
+]

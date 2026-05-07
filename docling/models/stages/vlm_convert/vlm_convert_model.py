@@ -42,7 +42,7 @@ class VlmConvertModel(BasePageModel):
         self,
         enabled: bool,
         enable_remote_services: bool,
-        artifacts_path: Optional[Union[Path, str]],
+        artifacts_path: Union[Path, str] | None,
         options: VlmConvertOptions,
         accelerator_options: AcceleratorOptions,
     ):
@@ -151,8 +151,9 @@ class VlmConvertModel(BasePageModel):
                     VlmEngineInput(
                         image=img,
                         prompt=prompt,
-                        temperature=0.0,  # Use from options if needed
-                        max_new_tokens=4096,  # Use from options if needed
+                        temperature=0.0,
+                        max_new_tokens=self.options.model_spec.max_new_tokens,
+                        stop_strings=self.options.model_spec.stop_strings,
                     )
                     for img, prompt in zip(images, prompts)
                 ]
@@ -230,7 +231,8 @@ class VlmConvertModel(BasePageModel):
                 image=img,
                 prompt=p,
                 temperature=0.0,
-                max_new_tokens=4096,
+                max_new_tokens=self.options.model_spec.max_new_tokens,
+                stop_strings=self.options.model_spec.stop_strings,
             )
             for img, p in zip(images, prompts)
         ]

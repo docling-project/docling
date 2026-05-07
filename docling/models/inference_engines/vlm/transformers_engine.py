@@ -61,7 +61,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self,
         options: TransformersVlmEngineOptions,
         accelerator_options: AcceleratorOptions,
-        artifacts_path: Optional[Union[Path, str]],
+        artifacts_path: Union[Path, str] | None,
         model_config: Optional["EngineModelConfig"] = None,
     ):
         """Initialize the Transformers engine.
@@ -78,10 +78,10 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self.artifacts_path = artifacts_path
 
         # These will be set during initialization
-        self.device: Optional[str] = None
-        self.processor: Optional[ProcessorMixin] = None
-        self.vlm_model: Optional[PreTrainedModel] = None
-        self.generation_config: Optional[GenerationConfig] = None
+        self.device: str | None = None
+        self.processor: ProcessorMixin | None = None
+        self.vlm_model: PreTrainedModel | None = None
+        self.generation_config: GenerationConfig | None = None
 
         # Initialize immediately if model_config is provided
         if self.model_config is not None:
@@ -161,7 +161,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
 
         # Setup quantization if needed
-        quantization_config: Optional[BitsAndBytesConfig] = None
+        quantization_config: BitsAndBytesConfig | None = None
         if self.options.quantized:
             quantization_config = BitsAndBytesConfig(
                 load_in_8bit=self.options.load_in_8bit,
@@ -391,14 +391,14 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             if k in decoder_keys
         }
 
-        # Generate
-        gen_kwargs = {
-            **inputs,
-            "max_new_tokens": first_input.max_new_tokens,
-            "use_cache": self.options.use_kv_cache,
-            "generation_config": self.generation_config,
+        # Generate — filter processor-only keys that generate() doesn't accept
+        gen_kwargs = {k: v for k, v in inputs.items() if k != "mm_token_type_ids"}
+        gen_kwargs.update(
+            max_new_tokens=first_input.max_new_tokens,
+            use_cache=self.options.use_kv_cache,
+            generation_config=self.generation_config,
             **generation_config,
-        }
+        )
 
         if first_input.temperature > 0:
             gen_kwargs["do_sample"] = True
@@ -432,6 +432,12 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         pad_token = getattr(tokenizer, "pad_token", None)
         if pad_token:
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
+
+        # Strip stop strings and their partial prefixes from decoded output
+        if first_input.stop_strings:
+            from docling.utils.vlm_utils import strip_stop_strings
+
+            decoded_texts = strip_stop_strings(decoded_texts, first_input.stop_strings)
 
         # Create outputs
         outputs = []
