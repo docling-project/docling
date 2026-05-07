@@ -59,8 +59,14 @@ def documents() -> list[tuple[Path, DoclingDocument]]:
 
 
 def test_e2e_excel_conversions(documents) -> None:
+    _mod = pytest.importorskip(
+        "docling_core.transforms.serializer.markdown_excel",
+        reason="docling-core with MsExcelMarkdownDocSerializer not installed",
+    )
+    MsExcelMarkdownDocSerializer = _mod.MsExcelMarkdownDocSerializer
+
     for gt_path, doc in documents:
-        pred_md: str = doc.export_to_markdown()
+        pred_md: str = MsExcelMarkdownDocSerializer(doc=doc).serialize().text
         assert verify_export(pred_md, str(gt_path) + ".md"), "export to md"
 
         pred_itxt: str = doc._export_to_indented_text(
@@ -113,7 +119,7 @@ def test_chartsheet(documents) -> None:
     assert len(doc.pages) == 2
 
     # Chartseet content is for now ignored
-    assert doc.groups[1].name == "sheet: Duck Chart"
+    assert doc.groups[1].name == "Duck Chart"
     assert doc.pages[2].size.height == 0
     assert doc.pages[2].size.width == 0
 
@@ -249,7 +255,7 @@ def test_table_with_title():
     conv_result: ConversionResult = converter.convert(path)
     doc: DoclingDocument = conv_result.document
 
-    # With treat_singleton_as_text=True, the singleton title cell should be a TextItem
+    # With treat_singleton_as_text=True, the singleton title cell should be a TextItem.
     texts = list(doc.texts)
     tables = list(doc.tables)
 
@@ -269,6 +275,37 @@ def test_table_with_title():
     assert table.data.num_cols == 2, (
         f"Table should have 2 columns, got {table.data.num_cols}"
     )
+
+
+def test_sheet_names_as_headings(documents) -> None:
+    """Test that sheet names are rendered as headings in markdown export.
+
+    Sheet groups (``GroupLabel.SHEET``) carry the sheet name.
+    The ``MsExcelMarkdownDocSerializer`` renders each such group's name as a
+    level-2 Markdown heading before the group's tables.  No heading nodes are
+    injected into the document model by the backend.
+    Sheet4 in xlsx_01 is empty and intentionally has no heading.
+    """
+    _mod = pytest.importorskip(
+        "docling_core.transforms.serializer.markdown_excel",
+        reason="docling-core with MsExcelMarkdownDocSerializer not installed",
+    )
+    MsExcelMarkdownDocSerializer = _mod.MsExcelMarkdownDocSerializer
+
+    doc = next(item for path, item in documents if path.stem == "xlsx_01")
+
+    # No SectionHeaderItem nodes injected by the backend
+    headings = [t for t in doc.texts if t.label.value == "section_header"]
+    assert headings == [], (
+        f"Backend should not inject heading nodes; found: {[h.text for h in headings]}"
+    )
+
+    # Sheet names appear as ## headings via the custom serializer
+    non_empty_sheet_names = ["Sheet1", "Sheet2", "Sheet3"]
+    serializer = MsExcelMarkdownDocSerializer(doc=doc)
+    md = serializer.serialize().text
+    for name in non_empty_sheet_names:
+        assert f"## {name}" in md, f"Expected '## {name}' in markdown output"
 
 
 def test_bytesio_stream():

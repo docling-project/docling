@@ -37,8 +37,8 @@
         }
       ],
       "content_layer": "body",
-      "name": "sheet: SalesData",
-      "label": "section"
+      "name": "SalesData",
+      "label": "sheet"
     }
   ],
   "texts": [],

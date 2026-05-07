@@ -258,8 +258,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
                 self.parents[0] = doc.add_group(
                     parent=None,
-                    label=GroupLabel.SECTION,
-                    name=f"sheet: {name}",
+                    label=GroupLabel.SHEET,
+                    name=name,
                     content_layer=self._get_sheet_content_layer(sheet),
                 )
                 doc = self._convert_sheet(doc, sheet, page_no)

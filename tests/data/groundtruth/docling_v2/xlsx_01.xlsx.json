@@ -46,8 +46,8 @@
         }
       ],
       "content_layer": "body",
-      "name": "sheet: Sheet1",
-      "label": "section"
+      "name": "Sheet1",
+      "label": "sheet"
     },
     {
       "self_ref": "#/groups/1",
@@ -66,8 +66,8 @@
         }
       ],
       "content_layer": "body",
-      "name": "sheet: Sheet2",
-      "label": "section"
+      "name": "Sheet2",
+      "label": "sheet"
     },
     {
       "self_ref": "#/groups/2",
@@ -86,8 +86,8 @@
         }
       ],
       "content_layer": "body",
-      "name": "sheet: Sheet3",
-      "label": "section"
+      "name": "Sheet3",
+      "label": "sheet"
     },
     {
       "self_ref": "#/groups/3",
@@ -100,8 +100,8 @@
         }
       ],
       "content_layer": "invisible",
-      "name": "sheet: Sheet4",
-      "label": "section"
+      "name": "Sheet4",
+      "label": "sheet"
     }
   ],
   "texts": [],

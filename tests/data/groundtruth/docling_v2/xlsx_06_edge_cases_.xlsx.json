@@ -43,8 +43,8 @@
         }
       ],
       "content_layer": "body",
-      "name": "sheet: missing_header_head",
-      "label": "section"
+      "name": "missing_header_head",
+      "label": "sheet"
     },
     {
       "self_ref": "#/groups/1",
@@ -57,8 +57,8 @@
         }
       ],
       "content_layer": "body",
-      "name": "sheet: Attached_left",
-      "label": "section"
+      "name": "Attached_left",
+      "label": "sheet"
     },
     {
       "self_ref": "#/groups/2",
@@ -74,8 +74,8 @@
         }
       ],
       "content_layer": "body",
-      "name": "sheet: Diagonal",
-      "label": "section"
+      "name": "Diagonal",
+      "label": "sheet"
     }
   ],
   "texts": [],
