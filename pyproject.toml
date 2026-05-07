@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.92.0"  # DO NOT EDIT, updated automatically
+version = "2.93.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -244,17 +244,8 @@ all = [
 ]
 
 [dependency-groups]
-pr-fast-checks = [
-    "docling-core[chunking] (>=2.73.0,<3.0.0)",
-    "mypy~=1.10",
-    "pydantic (>=2.0.0,<3.0.0)",
-    "pydantic-settings (>=2.3.0,<3.0.0)",
-    "ruff==0.11.5",
-]
-dev = [
-  "pre-commit~=3.7",
+typecheck = [
   "mypy~=1.10",
-  "tach>=0.34.0,<1",
   "types-setuptools~=70.3",
   "pandas-stubs~=2.1",
   "types-openpyxl~=3.1",
@@ -262,6 +253,19 @@ dev = [
   "boto3-stubs~=1.37",
   "types-urllib3~=1.26",
   "types-tqdm~=4.67",
+  "types-defusedxml>=0.7.0.20250822,<0.8.0",
+]
+pr-fast-checks = [
+  { include-group = "typecheck" },
+  "docling-core[chunking] (>=2.73.0,<3.0.0)",
+  "pydantic (>=2.0.0,<3.0.0)",
+  "pydantic-settings (>=2.3.0,<3.0.0)",
+  "ruff==0.11.5",
+]
+dev = [
+  { include-group = "typecheck" },
+  "pre-commit~=3.7",
+  "tach>=0.34.0,<1",
   "coverage~=7.6",
   "pytest~=8.3",
   "pytest-cov>=6.1.1",
@@ -272,7 +276,6 @@ dev = [
   "ipywidgets~=8.1",
   "nbqa~=1.9",
   "python-semantic-release~=7.32",
-  "types-defusedxml>=0.7.0.20250822,<0.8.0",
 ]
 
 docs = [

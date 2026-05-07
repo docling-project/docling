@@ -28,15 +28,21 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Fetch PR merge commit
+      # Build the merge result from the event's immutable base/head SHAs.
+      # GitHub's refs/pull/<n>/merge ref is mutable and can be regenerated on a
+      # newer base while an older pull_request_target run is still starting.
+      - name: Build PR merge tree
+        id: pr-merge
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          git fetch --no-tags --depth=2 origin "pull/${PR_NUMBER}/merge"
-          test "$(git rev-parse FETCH_HEAD^1)" = "${PR_BASE_SHA}"
-          test "$(git rev-parse FETCH_HEAD^2)" = "${PR_HEAD_SHA}"
+          git fetch --no-tags --depth=1 origin "pull/${PR_NUMBER}/head"
+          test "$(git rev-parse HEAD)" = "${PR_BASE_SHA}"
+          test "$(git rev-parse FETCH_HEAD)" = "${PR_HEAD_SHA}"
+          merge_tree="$(git merge-tree --write-tree --merge-base "${PR_BASE_SHA}" "${PR_BASE_SHA}" "${PR_HEAD_SHA}")"
+          echo "merge_tree=${merge_tree}" >> "${GITHUB_OUTPUT}"
 
       - uses: ./.github/actions/setup-ubuntu-ci
         with:
@@ -48,4 +54,4 @@ jobs:
           .venv/bin/python .github/scripts/run_pr_fast_checks.py \
             --repo-root "$PWD" \
             --base-ref HEAD \
-            --head-ref FETCH_HEAD
+            --head-ref "${{ steps.pr-merge.outputs.merge_tree }}"

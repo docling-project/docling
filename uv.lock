@@ -1125,7 +1125,7 @@ wheels = [
 
 [[package]]
 name = "docling"
-version = "2.92.0"
+version = "2.93.0"
 source = { editable = "packages/docling" }
 dependencies = [
     { name = "docling-slim", extra = ["standard"] },
@@ -1275,7 +1275,7 @@ wheels = [
 
 [[package]]
 name = "docling-slim"
-version = "2.92.0"
+version = "2.93.0"
 source = { editable = "." }
 dependencies = [
     { name = "certifi" },
@@ -1538,11 +1538,30 @@ examples = [
     { name = "python-dotenv" },
 ]
 pr-fast-checks = [
+    { name = "boto3-stubs" },
     { name = "docling-core", extra = ["chunking"] },
     { name = "mypy" },
+    { name = "pandas-stubs" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "ruff" },
+    { name = "types-defusedxml" },
+    { name = "types-openpyxl" },
+    { name = "types-requests" },
+    { name = "types-setuptools" },
+    { name = "types-tqdm" },
+    { name = "types-urllib3" },
+]
+typecheck = [
+    { name = "boto3-stubs" },
+    { name = "mypy" },
+    { name = "pandas-stubs" },
+    { name = "types-defusedxml" },
+    { name = "types-openpyxl" },
+    { name = "types-requests" },
+    { name = "types-setuptools" },
+    { name = "types-tqdm" },
+    { name = "types-urllib3" },
 ]
 
 [package.metadata]
@@ -1659,11 +1678,30 @@ examples = [
     { name = "python-dotenv", specifier = "~=1.0" },
 ]
 pr-fast-checks = [
+    { name = "boto3-stubs", specifier = "~=1.37" },
     { name = "docling-core", extras = ["chunking"], specifier = ">=2.73.0,<3.0.0" },
     { name = "mypy", specifier = "~=1.10" },
+    { name = "pandas-stubs", specifier = "~=2.1" },
     { name = "pydantic", specifier = ">=2.0.0,<3.0.0" },
     { name = "pydantic-settings", specifier = ">=2.3.0,<3.0.0" },
     { name = "ruff", specifier = "==0.11.5" },
+    { name = "types-defusedxml", specifier = ">=0.7.0.20250822,<0.8.0" },
+    { name = "types-openpyxl", specifier = "~=3.1" },
+    { name = "types-requests", specifier = "~=2.31" },
+    { name = "types-setuptools", specifier = "~=70.3" },
+    { name = "types-tqdm", specifier = "~=4.67" },
+    { name = "types-urllib3", specifier = "~=1.26" },
+]
+typecheck = [
+    { name = "boto3-stubs", specifier = "~=1.37" },
+    { name = "mypy", specifier = "~=1.10" },
+    { name = "pandas-stubs", specifier = "~=2.1" },
+    { name = "types-defusedxml", specifier = ">=0.7.0.20250822,<0.8.0" },
+    { name = "types-openpyxl", specifier = "~=3.1" },
+    { name = "types-requests", specifier = "~=2.31" },
+    { name = "types-setuptools", specifier = "~=70.3" },
+    { name = "types-tqdm", specifier = "~=4.67" },
+    { name = "types-urllib3", specifier = "~=1.26" },
 ]
 
 [[package]]
