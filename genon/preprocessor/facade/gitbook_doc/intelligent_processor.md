@@ -152,7 +152,7 @@ PDF 파일 입력
 | 비교 항목 | attachment | convert | **intelligent** |
 |-----------|-----------|---------|-----------------|
 | **설계 목표** | 속도 중심 | 호환성 중심 | **품질 중심** |
-| **대상 포맷** | 다양 (PDF, HWP, 오디오, CSV 등) | 다양 (PPT, DOCX→PDF 변환) | **PDF 전용** |
+| **대상 포맷** | 다양 (PDF, HWP, 오디오, CSV 등) | 다양 (PPT, DOCX→PDF 변환) | **PDF 우선 (비-PDF는 PDF SDK로 자동 변환 후 처리)** |
 | **Docling 파이프라인** | SimplePipeline (경량) | 전체 PDF 파이프라인 | **전체 PDF 파이프라인** |
 | **청커** | HybridChunker (∞ 토큰) | GenosBucketChunker (2000 토큰) | **GenosBucketChunker (0 토큰=무제한)** |
 | **청킹 전략** | 레이아웃 병합 | 섹션+토큰 병합 | **순수 섹션 분할 (병합 없음)** |
@@ -161,7 +161,7 @@ PDF 파일 입력
 | **부록 연결** | 없음 | 없음 | **✅ 별지/별표 자동 매칭** |
 | **빈 문서 처리** | 예외 발생 | 예외 발생 | **더미 텍스트 삽입** |
 | **이미지 옵션** | 고정 | 고정 | **동적 (save_images, include_wmf)** |
-| **PDF 변환** | 일부 | convert_to_pdf() | **없음 (PDF 직접 입력)** |
+| **PDF 변환** | 일부 (`get_loader` 분기) | `convert_to_pdf()` | **`__call__` 진입부에서 비-PDF 자동 변환 (`auto_convert_to_pdf=True` 기본, False면 변환 생략)** |
 | **`authors` 필드** | ❌ | ✅ | ❌ |
 | **`appendix` 필드** | ❌ | ❌ | **✅** |
 | **LangChain 폴백** | ✅ 다양 | ✅ PPT용 | **❌ (Docling 전용)** |
@@ -211,10 +211,10 @@ intelligent (max_tokens=0):
 | `fitz` (PyMuPDF) | ✅ (bbox 추출, 이미지 추출) | ❌ (OCR 메서드 내에서만 지역 import) |
 | LangChain 로더들 | ✅ (PPT 폴백용) | ❌ (불필요) |
 | `RecursiveCharacterTextSplitter` | ✅ (PPT 폴백용) | ❌ (불필요) |
-| `convert_to_pdf()` | ✅ | ❌ (PDF만 입력) |
+| `convert_to_pdf()` | ✅ (자체 정의) | ✅ (`attachment_processor` 에서 import 재사용 — `__call__` 진입부 자동 변환용) |
 | `ProvenanceItem`, `BoundingBox` | ❌ | ✅ (빈 문서 더미 삽입용) |
 
-> `intelligent_processor`는 PDF 전용이므로 다른 포맷 지원을 위한 라이브러리가 대폭 줄어들었습니다.
+> `intelligent_processor` 의 docling pipeline 자체는 PDF 입력을 가정하지만, `__call__` 진입부에서 `_is_pdf(file_path)` 매직 헤더 체크를 거쳐 비-PDF 입력은 `convert_to_pdf(file_path, use_pdf_sdk=...)` 로 PDF 변환 후 정상 흐름에 진입합니다. 따라서 사용자 입장에서는 다른 포맷(HWP, DOCX, PPT 등)도 그대로 넘길 수 있습니다.
 
 ---
 
@@ -1222,7 +1222,10 @@ convert_processor.__call__():
               └── GenosBucketChunker(2000)
 
 intelligent_processor.__call__():
-└── [단일 경로]                            ◄── 분기 없음!
+├── [auto_convert_to_pdf=True (default) + 비-PDF 입력]
+│   └── convert_to_pdf(use_pdf_sdk=True/False) 후 변환된 PDF로 진입
+│   [auto_convert_to_pdf=False] → 변환 생략 (변경 전 동작; PDF 가정)
+└── [단일 경로]
      ├── Docling 로딩
      ├── 품질 검사 + OCR
      ├── Enrichment
@@ -1412,8 +1415,15 @@ __call__()
 | 카테고리 | 확장자 | 처리 경로 | 핵심 도구 | OCR | Enrichment | 부록 연결 |
 |----------|--------|-----------|-----------|-----|------------|-----------|
 | **PDF** | `.pdf` | Docling 전체 파이프라인 | Layout Detection + TableFormer | ✅ 선택적 | ✅ | ✅ |
+| **비-PDF** | `.hwp`, `.hwpx`, `.docx`, `.ppt`, `.pptx`, 이미지 등 | `__call__` 진입부에서 PDF SDK로 자동 변환 → 위 PDF 파이프라인 | PDF SDK(default) / LibreOffice + Docling | ✅ 선택적 | ✅ | ✅ |
 
-> `intelligent_processor`는 **PDF 전용**입니다. 다른 포맷(DOCX, PPT, HWP 등)을 처리하려면 사전에 PDF로 변환하는 구성을 전제로 합니다.
+> 입력 판별: `_is_pdf(file_path)` 가 매직 헤더(`%PDF-`)로 PDF 여부를 검사.
+>
+> **`auto_convert_to_pdf` (기본값 `True`)**:
+> - `True` (기본): 비-PDF 입력이면 `convert_to_pdf(file_path, use_pdf_sdk=kwargs.get('use_pdf_sdk', True))` 호출 후 변환된 PDF로 전환. 변환 실패 시 `GenosServiceException` 발생.
+> - `False`: 비-PDF 입력이어도 변환을 생략하고 그대로 docling 파이프라인 진입 (변경 전 동작 — PDF 입력을 가정).
+>
+> **`use_pdf_sdk` (기본값 `True`)**: 자동 변환 시 어떤 엔진을 쓸지 결정. `True`=PDF SDK, `False`=LibreOffice.
 
 ---
 

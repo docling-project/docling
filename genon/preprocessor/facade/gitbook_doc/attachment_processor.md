@@ -106,7 +106,7 @@ HWP/HWPX 파일은 변환 실패 시 단계적으로 폴백을 시도합니다.
                                    .hwpx → HwpxDocumentBackend
                                            │ 실패
                                            ▼
-                                ③ LibreOffice PDF 변환 ─────── 성공 ──► compose_vectors()
+                                ③ PDF 변환 (PDF SDK / LibreOffice) ── 성공 ──► compose_vectors()
                                            │ 실패
                                            ▼
                                         에러 반환
@@ -127,7 +127,7 @@ import pandas as pd
 import pydub          # 오디오 파일 처리 (분할, 포맷 변환)
 import requests       # HTTP 요청 (STT API 호출용)
 import shutil         # 파일/디렉토리 복사 및 삭제
-import subprocess     # 외부 프로세스 실행 (LibreOffice, hwp5html 등)
+import subprocess     # 외부 프로세스 실행 (PDF SDK 바이너리, LibreOffice 등)
 import sys
 import threading      # 멀티스레드 (오디오 STT 병렬 요청)
 import uuid           # 고유 임시 디렉토리명 생성
@@ -172,53 +172,65 @@ CONVERTIBLE_EXTENSIONS = ['.hwp', '.txt', '.json', '.md', '.ppt', '.pptx', '.doc
 ### 4.1 `convert_to_pdf()`
 
 ```python
-def convert_to_pdf(file_path: str) -> str | None:
+def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
 ```
 
-**목적**: [LibreOffice](https://www.libreoffice.org/)를 활용하여 다양한 문서 포맷을 PDF로 변환합니다.
+**목적**: 다양한 문서 포맷(PPT, DOCX, 이미지 등)을 PDF로 변환합니다. **두 엔진 중 선택 가능**:
 
-**동작 흐름**:
+| `use_pdf_sdk` | 내부 호출 | 비고 |
+|---|---|---|
+| `True` (기본값) | `_convert_to_pdf_sdk()` | PDF 변환 SDK (Linux 전용 바이너리, `pdf_sdk/pdfConverter`). HF private dataset에서 도커 빌드 시 자동 설치, 또는 `repo_root/pdf_sdk` 에 직접 다운로드. |
+| `False` | `_convert_to_pdf_libreoffice()` | LibreOffice (`soffice --headless`) 사용. SDK 미사용/장애 시 fallback 용도. |
+
+**SDK 경로 결정 우선순위** (`_convert_to_pdf_sdk` 내부):
+1. `PDF_SDK_HOME` 환경변수 (도커: `/app/pdf_sdk` 로 박혀있음)
+2. fallback: `<repo_root>/pdf_sdk` (로컬 실행 시)
+
+**동작 흐름 (use_pdf_sdk=True)**:
 
 ```
-입력 파일 (PPT, DOCX, DOC 등)
+입력 파일 (HWP/PPT/DOCX/이미지 등)
+        │
+        ▼
+ SDK 경로 / 폰트 디렉토리 / moduledata 결정
+        │
+        ▼
+ fontconfig conf 임시 패치 (현재 SDK 경로 기준 <dir>/<cachedir> 치환)
+        │
+        ▼
+ 환경변수 세팅 (LD_LIBRARY_PATH, FONTCONFIG_FILE/PATH, LANG=C.UTF-8)
+        │
+        ▼
+ pdfConverter -i <in> -o <out_dir> -t <tmp> -f <fonts> -e -1 -p 1 실행
+        │
+        ├── returncode==0 + PDF 존재 → 경로 반환
+        └── 그 외 → 경고 로그 후 None 반환
+```
+
+**동작 흐름 (use_pdf_sdk=False)**:
+
+```
+입력 파일
         │
         ▼
  확장자 판별 → 적절한 LibreOffice 필터 선택
-        │
         │  .ppt/.pptx → "pdf:impress_pdf_Export"
         │  .doc/.docx → "pdf:writer_pdf_Export"
         │  .xls/.xlsx/.csv → "pdf:calc_pdf_Export"
         │  기타 → "pdf"
-        │
         ▼
- 비ASCII 파일명 체크
-        │
-        ├── ASCII 파일명 → 그대로 사용
-        └── 비ASCII 파일명 → 임시 ASCII 파일명으로 복사본 생성
-                              (LibreOffice의 비ASCII 파일명 이슈 우회)
-        │
+ 비ASCII 파일명 체크 (필요 시 ASCII 복사본 생성)
         ▼
  soffice --headless --convert-to ... 실행
         │
         ├── 성공 → PDF 경로 반환
-        └── 실패 → None 반환 (예외를 던지지 않음!)
+        └── 실패 → None 반환
 ```
 
 **핵심 포인트**:
-- `--headless` 옵션으로 GUI 없이 변환 (서버 환경)
-- 실패해도 **예외를 던지지 않고** `None`을 반환하는 **방어적 설계**
-- `UTF-8` 로캘을 환경 변수로 보장하여 한글 파일명 문제 최소화
-
-```python
-    # 핵심 코드: LibreOffice 커맨드 실행
-    cmd = [
-        "soffice", "--headless",           # GUI 없이 실행
-        "--convert-to", convert_arg,       # 출력 포맷 지정
-        "--outdir", str(out_dir),          # 출력 디렉토리
-        str(cand)                          # 입력 파일
-    ]
-    proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
-```
+- 실패해도 **예외를 던지지 않고** `None` 반환 (방어적 설계, 양 엔진 동일)
+- 호출부는 `kwargs.get('use_pdf_sdk', True)` 패턴으로 엔진 선택 가능 (Genos 측 config로 제어)
+- `LANG=C.UTF-8` / `LC_ALL=C.UTF-8` 환경 변수로 한글 파일명 / 컨텐츠 처리 보장
 
 ---
 
@@ -943,13 +955,14 @@ async def __call__(self, request: Request, file_path: str, **kwargs: dict):
 파일 확장자에 따라 적절한 LangChain 로더를 반환합니다.
 
 ```python
-def get_loader(self, file_path: str):
+def get_loader(self, file_path: str, use_pdf_sdk: bool = True):
     ext = os.path.splitext(file_path)[-1].lower()
     real_type = self.get_real_file_type(file_path)  # 매직 바이트로 실제 타입 확인
 
     # 확장자와 실제 타입이 다르면 실제 타입 우선 (확장자 조작/오류 대응)
     if ext != real_type and real_type == 'pdf':
         return PyMuPDFLoader(file_path)
+    # 변환 분기에서는 convert_to_pdf(file_path, use_pdf_sdk=use_pdf_sdk) 호출
 ```
 
 **확장자-로더 매핑 총정리**:
@@ -957,8 +970,8 @@ def get_loader(self, file_path: str):
 | 확장자 | 로더 | 비고 |
 |--------|------|------|
 | `.pdf` | `PyMuPDFLoader` | 가장 빠른 PDF 텍스트 추출 |
-| `.doc` | `UnstructuredWordDocumentLoader` | LibreOffice로 PDF 변환 후 처리 |
-| `.ppt`, `.pptx` | `UnstructuredPowerPointLoader` | LibreOffice로 PDF 변환 후 처리 |
+| `.doc` | `UnstructuredWordDocumentLoader` | PDF 변환(SDK 기본 / LibreOffice fallback) 후 처리 |
+| `.ppt`, `.pptx` | `UnstructuredPowerPointLoader` | PDF 변환(SDK 기본 / LibreOffice fallback) 후 처리 |
 | `.jpg`, `.jpeg`, `.png` | `UnstructuredImageLoader` | OCR로 텍스트 추출 (한/영) |
 | `.txt`, `.json` | `TextLoader` (커스텀) | 인코딩 자동 감지 |
 | `.hwp`, `.hwpx` | `HwpProcessor` (섹션 8.2 참고) | HWP/HWPX 변환 → Docling 파싱 |
@@ -1154,8 +1167,8 @@ __call__()
 | **PDF** | `.pdf` | 직접 텍스트 추출 | PyMuPDF |
 | **한글** | `.hwp`, `.hwpx` | HWP/HWPX 변환 → Docling 구조 파싱 | HwpProcessor + HybridChunker |
 | **Word** | `.docx` | Docling 구조 파싱 | Docling + HybridChunker |
-| **Word 레거시** | `.doc` | LibreOffice → PDF 변환 | LangChain Unstructured |
-| **프레젠테이션** | `.ppt`, `.pptx` | LibreOffice → PDF 변환 | LangChain Unstructured |
+| **Word 레거시** | `.doc` | PDF 변환(SDK 기본 / LibreOffice fallback) | LangChain Unstructured |
+| **프레젠테이션** | `.ppt`, `.pptx` | PDF 변환(SDK 기본 / LibreOffice fallback) | LangChain Unstructured |
 | **스프레드시트** | `.csv` | pandas DataFrame 파싱 | pandas + DataFrameLoader |
 | **스프레드시트** | `.xlsx` | pandas DataFrame 파싱 (다중 시트) | pandas + openpyxl |
 | **이미지** | `.jpg`, `.jpeg`, `.png` | OCR 텍스트 추출 | Unstructured + Tesseract |

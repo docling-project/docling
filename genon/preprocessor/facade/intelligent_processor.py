@@ -14,6 +14,19 @@ from fastapi import Request
 
 _log = logging.getLogger(__name__)
 
+# 같은 facade 폴더 내 attachment_processor 의 PDF 변환 함수 재사용
+from attachment_processor import convert_to_pdf
+
+
+def _is_pdf(file_path: str) -> bool:
+    """파일이 PDF 매직 헤더로 시작하는지 확인 (확장자 무관)."""
+    try:
+        with open(file_path, "rb") as f:
+            return f.read(5) == b"%PDF-"
+    except Exception:
+        return False
+
+
 # docling imports
 
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
@@ -1565,6 +1578,17 @@ class DocumentProcessor:
 
         _log.info(f"file_path: {file_path}")
         _log.info(f"kwargs: {kwargs}")
+
+        # 입력이 PDF가 아닐 때 동작:
+        # - auto_convert_to_pdf=True (default): PDF SDK/LibreOffice 로 자동 변환 후 진입
+        # - auto_convert_to_pdf=False: 변환 없이 그대로 진행 (변경 전 동작; PDF 가정)
+        if kwargs.get('auto_convert_to_pdf', True) and not _is_pdf(file_path):
+            _log.info(f"[intelligent] Non-PDF input — auto-converting to PDF: {file_path}")
+            converted = convert_to_pdf(file_path, use_pdf_sdk=kwargs.get('use_pdf_sdk', True))
+            if not converted or not os.path.exists(converted):
+                raise GenosServiceException(1, f"PDF 변환 실패: {file_path}")
+            file_path = converted
+            _log.info(f"[intelligent] Converted PDF: {file_path}")
 
         document: DoclingDocument = self.load_documents(file_path, **kwargs)
 

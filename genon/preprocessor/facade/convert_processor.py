@@ -15,10 +15,6 @@ from fastapi import Request
 _log = logging.getLogger(__name__)
 
 # from utils import assert_cancelled
-import shutil
-import subprocess
-import tempfile
-import unicodedata
 import fitz
 import math, bisect
 import uuid
@@ -132,65 +128,9 @@ except ImportError:
 
 """Chunker implementation leveraging the document structure."""
 CONVERTIBLE_EXTENSIONS = ['.txt', '.json', '.md', '.docx', '.ppt', '.pptx']
-def convert_to_pdf(file_path: str) -> str | None:
-    """
-    LibreOffice로 PDF 변환을 시도한다.
-    실패해도 예외를 던지지 않고 None을 반환한다.
-    """
-    try:
-        in_path = Path(file_path).resolve()
-        out_dir = in_path.parent
-        pdf_path = in_path.with_suffix('.pdf')
 
-        # headless에서 UTF-8 locale 보장
-        env = os.environ.copy()
-        env.setdefault("LANG", "C.UTF-8")
-        env.setdefault("LC_ALL", "C.UTF-8")
-
-        # 확장자에 따라 필터(.ppt는 impress 필터)
-        ext = in_path.suffix.lower()
-        if ext in ('.ppt', '.pptx'):
-            convert_arg = "pdf:impress_pdf_Export"
-        elif ext in ('.doc', '.docx'):
-            convert_arg = "pdf:writer_pdf_Export"
-        else:
-            convert_arg = "pdf"
-
-        # 비ASCII 파일명 이슈 대비 임시 ASCII 파일명 복사본 시도
-        try:
-            in_path.name.encode('ascii')
-            candidates = [in_path]
-            tmp_dir = None
-        except UnicodeEncodeError:
-            tmp_dir = Path(tempfile.mkdtemp())
-            ascii_name = unicodedata.normalize('NFKD', in_path.stem).encode('ascii','ignore').decode('ascii') or "file"
-            ascii_copy = tmp_dir / f"{ascii_name}{in_path.suffix}"
-            shutil.copy2(in_path, ascii_copy)
-            candidates = [ascii_copy, in_path]
-
-        for cand in candidates:
-            cmd = [
-                "soffice", "--headless",
-                "--convert-to", convert_arg,
-                "--outdir", str(out_dir),
-                str(cand)
-            ]
-            proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
-            if proc.returncode == 0 and pdf_path.exists():
-                if tmp_dir:
-                    shutil.rmtree(tmp_dir, ignore_errors=True)
-                return str(pdf_path)
-            # 실패해도 계속 시도 (로그만 찍고 무시)
-            print(f"[convert_to_pdf] stderr: {proc.stderr.strip()}")
-            print(f"[convert_to_pdf] stdout: {proc.stdout.strip()}")
-
-        if tmp_dir: # ASCII 파일명 복사본 시도 후에도 실패하면 none 반환
-            shutil.rmtree(tmp_dir, ignore_errors=True)
-        return None
-
-    except Exception as e:
-        if pdf_path.exists():
-            return str(pdf_path)
+# 같은 facade 폴더 내 attachment_processor 의 PDF 변환 함수 재사용
+from attachment_processor import convert_to_pdf
 
 def _get_pdf_path(file_path: str) -> str:
     """
@@ -1245,18 +1185,18 @@ class DocumentProcessor:
     def load_documents(self, file_path: str, **kwargs: dict) -> DoclingDocument:
         return self.load_documents_with_docling(file_path, **kwargs)
 
-    def get_loader_langchain(self, file_path: str):
+    def get_loader_langchain(self, file_path: str, use_pdf_sdk: bool = True):
         """PPT 파일용 langchain 로더"""
         ext = os.path.splitext(file_path)[-1].lower()
         if ext == '.ppt':
-            convert_to_pdf(file_path)
+            convert_to_pdf(file_path, use_pdf_sdk=use_pdf_sdk)
             return UnstructuredPowerPointLoader(file_path)
         else:
             return UnstructuredFileLoader(file_path)
 
     def load_documents_langchain(self, file_path: str, **kwargs: dict):
         """langchain으로 문서 로드"""
-        loader = self.get_loader_langchain(file_path)
+        loader = self.get_loader_langchain(file_path, use_pdf_sdk=kwargs.get('use_pdf_sdk', True))
         documents = loader.load()
         return documents
 
@@ -1878,7 +1818,7 @@ class DocumentProcessor:
 
             # DOCX 파일만 PDF로 변환 (PPT는 위에서 처리됨)
             if ext in ['.docx','.pptx']:
-                convert_to_pdf(file_path)
+                convert_to_pdf(file_path, use_pdf_sdk=kwargs.get('use_pdf_sdk', True))
 
             output_path, output_file = os.path.split(file_path)
             filename, _ = os.path.splitext(output_file)

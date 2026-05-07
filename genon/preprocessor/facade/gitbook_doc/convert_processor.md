@@ -47,7 +47,7 @@
 
 | 특징 | 설명 |
 |------|------|
-| **PDF 표준화** | LibreOffice 엔진을 활용하여 PPT, DOCX 등 다양한 문서를 PDF 포맷으로 통일 |
+| **PDF 표준화** | PDF 변환 SDK(default) 또는 LibreOffice를 활용하여 PPT, DOCX 등 다양한 문서를 PDF 포맷으로 통일 (kwargs `use_pdf_sdk` 로 엔진 선택, 기본값 `True`) |
 | **시각적 정합성 유지** | 원본 문서의 폰트, 이미지 배치, 페이지 레이아웃을 그대로 보존 |
 | **하이브리드 추출** | 변환된 PDF 레이어에서 텍스트와 이미지 정보를 결합하여 안정적인 정보 획득 |
 | **Smart OCR** | GLYPH(인코딩 깨짐)가 감지된 영역만 선별적으로 OCR 수행 |
@@ -169,51 +169,22 @@ CONVERTIBLE_EXTENSIONS = ['.txt', '.json', '.md', '.docx', '.ppt', '.pptx']
 
 ## 5. 유틸리티 함수
 
-### 5.1 `convert_to_pdf()`
+### 5.1 `convert_to_pdf()` (재사용)
 
 ```python
-def convert_to_pdf(file_path: str) -> str | None:
+from attachment_processor import convert_to_pdf
 ```
 
-**목적**: LibreOffice를 활용하여 다양한 문서 포맷을 PDF로 변환합니다.
+**구현 위치**: `attachment_processor.convert_to_pdf` 를 그대로 import 해서 사용. **자체 정의하지 않음** (코드 중복 제거 + 동작 일관성). 시그니처·동작·엔진 분기 정책 모두 attachment_processor 와 동일:
 
-`attachment_processor`의 `convert_to_pdf()`와 거의 동일하지만 미세한 차이가 있습니다:
+| `use_pdf_sdk` | 내부 호출 | 비고 |
+|---|---|---|
+| `True` (기본값) | `_convert_to_pdf_sdk()` | PDF 변환 SDK (Linux 전용 바이너리). HF private dataset(`HeechanKim-Genon/pdf_sdk`)에서 도커 빌드 시 자동 설치, 또는 `repo_root/pdf_sdk` 에 직접 다운로드. |
+| `False` | `_convert_to_pdf_libreoffice()` | LibreOffice (`soffice --headless`) 사용. SDK 미사용/장애 시 fallback. |
 
-| 차이점 | attachment_processor | convert_processor |
-|--------|---------------------|-------------------|
-| 지원 필터 | `.xls/.xlsx/.csv` 포함 | `.xls/.xlsx/.csv` 미포함 |
-| 예외 처리 | `except`에서 `None` 반환 | `except`에서 PDF가 이미 존재하면 경로 반환 |
-| 로그 출력 | stderr만 | stderr + stdout |
+**SDK 경로 결정**: `PDF_SDK_HOME` 환경변수 → fallback `<repo_root>/pdf_sdk`.
 
-```python
-    except Exception as e:
-        if pdf_path.exists():
-            return str(pdf_path)    # 이미 PDF가 존재하면 그대로 반환
-```
-
-> **설계 의도**: 이전에 이미 변환된 PDF가 있을 경우 중복 변환을 방지합니다.
-
-**처리 흐름**: (`attachment_processor`와 동일)
-
-```
-입력 파일 (PPT, DOCX 등)
-    │
-    ▼
-확장자 판별 → 적절한 LibreOffice 필터 선택
-    │
-    ├── .ppt/.pptx → "pdf:impress_pdf_Export"
-    ├── .doc/.docx → "pdf:writer_pdf_Export"
-    └── 기타      → "pdf"
-    │
-    ▼
-비ASCII 파일명 체크 → 필요 시 임시 ASCII 복사본 생성
-    │
-    ▼
-soffice --headless --convert-to ... 실행
-    │
-    ├── 성공 → PDF 경로 반환
-    └── 실패 → None 반환
-```
+> 자세한 동작 흐름(SDK / LibreOffice 두 분기 다이어그램)은 [attachment_processor.md §4.1](attachment_processor.md#41-convert_to_pdf) 참고.
 
 ---
 
@@ -1552,9 +1523,9 @@ __call__()
 | 카테고리 | 확장자 | 처리 경로 | 핵심 도구 | OCR | Enrichment |
 |----------|--------|-----------|-----------|-----|------------|
 | **PDF** | `.pdf` | Docling 경로 | Docling + TableFormer + PaddleOCR | ✅ 선택적 | ✅ |
-| **Word** | `.docx` | Docling 경로 + PDF 변환 | Docling + LibreOffice | ❌ | ✅ |
-| **프레젠테이션** | `.pptx` | Docling 경로 + PDF 변환 | Docling + LibreOffice | ❌ | ✅ |
-| **프레젠테이션 (레거시)** | `.ppt` | LangChain 경로 | Unstructured + LibreOffice | ❌ | ❌ |
+| **Word** | `.docx` | Docling 경로 + PDF 변환 | Docling + PDF SDK / LibreOffice | ❌ | ✅ |
+| **프레젠테이션** | `.pptx` | Docling 경로 + PDF 변환 | Docling + PDF SDK / LibreOffice | ❌ | ✅ |
+| **프레젠테이션 (레거시)** | `.ppt` | LangChain 경로 | Unstructured + PDF SDK / LibreOffice | ❌ | ❌ |
 | **기타** | 그 외 | Docling 경로 시도 | Docling | 조건부 | ✅ |
 
 > **attachment_processor와의 포맷 지원 비교**:

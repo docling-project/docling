@@ -100,22 +100,87 @@ for n in ("fontTools", "fontTools.ttLib", "fontTools.ttLib.ttFont"):
 CONVERTIBLE_EXTENSIONS = ['.hwp', '.txt', '.json', '.md', '.ppt', '.pptx', '.docx']
 
 
-def convert_to_pdf(file_path: str) -> str | None:
+def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
     """
-    LibreOffice로 PDF 변환을 시도한다.
+    PDF 변환을 시도한다. use_pdf_sdk=True면 PDF SDK, False면 LibreOffice.
     실패해도 예외를 던지지 않고 None을 반환한다.
     """
+    if use_pdf_sdk:
+        return _convert_to_pdf_sdk(file_path)
+    return _convert_to_pdf_libreoffice(file_path)
+
+
+def _convert_to_pdf_sdk(file_path: str) -> str | None:
+    try:
+        # 1. PDF_SDK_HOME 환경변수 (도커 환경) → 2. repo_root/pdf_sdk (로컬 실행)
+        pdf_sdk_home = os.environ.get(
+            "PDF_SDK_HOME",
+            str(Path(__file__).resolve().parent.parent.parent.parent / "pdf_sdk"),
+        )
+        binary = os.path.join(pdf_sdk_home, "pdfConverter")
+        fonts_dir = os.path.join(pdf_sdk_home, "fonts")
+        moduledata = os.path.join(pdf_sdk_home, "moduledata")
+        font_cache = os.path.join(pdf_sdk_home, "font_cache")
+        os.makedirs(font_cache, exist_ok=True)
+
+        in_path = Path(file_path).resolve()
+        out_dir = in_path.parent
+        pdf_path = in_path.with_suffix('.pdf')
+
+        with tempfile.TemporaryDirectory() as tmp:
+            # fontconfig conf 파일을 현재 SDK 경로 기준으로 패치 (원본은 건드리지 않음)
+            patched_conf = _patch_fontconfig(fonts_dir, font_cache, tmp)
+
+            env = os.environ.copy()
+            env["LD_LIBRARY_PATH"] = f"{moduledata}:{env.get('LD_LIBRARY_PATH', '')}"
+            env["FONTCONFIG_FILE"] = patched_conf
+            env["FONTCONFIG_PATH"] = fonts_dir
+            env.setdefault("LANG", "C.UTF-8")
+            env.setdefault("LC_ALL", "C.UTF-8")
+
+            cmd = [
+                binary,
+                "-i", str(in_path),
+                "-o", str(out_dir),
+                "-t", tmp,
+                "-f", fonts_dir,
+                "-e", "-1",
+                "-p", "1",
+            ]
+            proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+            if proc.returncode == 0 and pdf_path.exists():
+                return str(pdf_path)
+            _log.warning(f"[convert_to_pdf:sdk] stderr: {proc.stderr.strip()}")
+            return None
+    except Exception as e:
+        _log.error(f"[convert_to_pdf:sdk] error: {e}")
+        return None
+
+
+def _patch_fontconfig(fonts_dir: str, font_cache: str, tmp_dir: str) -> str:
+    """원본 fonts_gen.conf의 <dir>/<cachedir> 경로를 현재 SDK 위치 기준으로 치환한 임시 파일 경로 반환."""
+    import re
+    src = os.path.join(fonts_dir, "fonts_gen.conf")
+    dst = os.path.join(tmp_dir, "fonts.conf")
+    with open(src, "r", encoding="utf-8") as f:
+        conf = f.read()
+    conf = re.sub(r"<dir>[^<]*</dir>", f"<dir>{fonts_dir}</dir>", conf, count=1)
+    conf = re.sub(r"<cachedir>[^<]*</cachedir>", f"<cachedir>{font_cache}</cachedir>", conf, count=1)
+    with open(dst, "w", encoding="utf-8") as f:
+        f.write(conf)
+    return dst
+
+
+def _convert_to_pdf_libreoffice(file_path: str) -> str | None:
     try:
         in_path = Path(file_path).resolve()
         out_dir = in_path.parent
         pdf_path = in_path.with_suffix('.pdf')
 
-        # headless에서 UTF-8 locale 보장
         env = os.environ.copy()
         env.setdefault("LANG", "C.UTF-8")
         env.setdefault("LC_ALL", "C.UTF-8")
 
-        # 확장자에 따라 필터(특히 .ppt는 impress 필터)
         ext = in_path.suffix.lower()
         if ext in ('.ppt', '.pptx'):
             convert_arg = "pdf:impress_pdf_Export"
@@ -126,7 +191,6 @@ def convert_to_pdf(file_path: str) -> str | None:
         else:
             convert_arg = "pdf"
 
-        # 비ASCII 파일명 이슈 대비 임시 ASCII 파일명 복사본 시도
         try:
             in_path.name.encode('ascii')
             candidates = [in_path]
@@ -147,19 +211,16 @@ def convert_to_pdf(file_path: str) -> str | None:
             ]
             proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
             if proc.returncode == 0 and pdf_path.exists():
-                # 성공
                 if tmp_dir:
                     shutil.rmtree(tmp_dir, ignore_errors=True)
                 return str(pdf_path)
-            # 실패해도 계속 시도 (로그만 찍고 무시)
-            _log.warning(f"[convert_to_pdf] stderr: {proc.stderr.strip()}")
+            _log.warning(f"[convert_to_pdf:libreoffice] stderr: {proc.stderr.strip()}")
 
         if tmp_dir:
             shutil.rmtree(tmp_dir, ignore_errors=True)
         return None
     except Exception as e:
-        # 어떤 에러든 삼키고 None 반환
-        _log.error(f"[convert_to_pdf] error: {e}")
+        _log.error(f"[convert_to_pdf:libreoffice] error: {e}")
         return None
 
 
@@ -1238,7 +1299,7 @@ class DocumentProcessor:
         self.hwp_processor = HwpProcessor()
         self.docx_processor = DocxProcessor()
 
-    def get_loader(self, file_path: str):
+    def get_loader(self, file_path: str, use_pdf_sdk: bool = True):
         ext = os.path.splitext(file_path)[-1].lower()
         real_type = self.get_real_file_type(file_path)
 
@@ -1251,13 +1312,13 @@ class DocumentProcessor:
         elif ext == '.pdf':
             return PyMuPDFLoader(file_path)
         elif ext == '.doc':
-            convert_to_pdf(file_path)
+            convert_to_pdf(file_path, use_pdf_sdk=use_pdf_sdk)
             return UnstructuredWordDocumentLoader(file_path)
         elif ext in ['.ppt', '.pptx']:
-            convert_to_pdf(file_path)
+            convert_to_pdf(file_path, use_pdf_sdk=use_pdf_sdk)
             return UnstructuredPowerPointLoader(file_path)
         elif ext in ['.jpg', '.jpeg', '.png']:
-            convert_to_pdf(file_path)
+            convert_to_pdf(file_path, use_pdf_sdk=use_pdf_sdk)
             # 한국어 OCR 지원을 위한 언어 설정
             return UnstructuredImageLoader(
                 file_path,
@@ -1318,7 +1379,7 @@ class DocumentProcessor:
         return pdf_path
 
     def load_documents(self, file_path: str, **kwargs: dict) -> list[Document]:
-        loader = self.get_loader(file_path)
+        loader = self.get_loader(file_path, use_pdf_sdk=kwargs.get('use_pdf_sdk', True))
         documents = loader.load()
 
         # 이미지 파일의 경우 텍스트 추출 안되었을 시 기본 텍스트 제공
@@ -1501,10 +1562,10 @@ class DocumentProcessor:
                 return await self.hwp_processor(request, file_path, **kwargs)
             except Exception as hwp_err:
                 # 모든 docling 백엔드 실패 시 LibreOffice PDF 변환으로 최종 폴백
-                _log.warning(f"[DocumentProcessor] HWP/HWPX 처리기 전체 실패, LibreOffice 폴백 시도: {hwp_err}")
-                converted = convert_to_pdf(file_path)
+                _log.warning(f"[DocumentProcessor] HWP/HWPX 처리기 전체 실패, PDF 변환 폴백 시도: {hwp_err}")
+                converted = convert_to_pdf(file_path, use_pdf_sdk=kwargs.get('use_pdf_sdk', True))
                 if converted:
-                    _log.info(f"[DocumentProcessor] LibreOffice PDF 변환 성공: {converted}")
+                    _log.info(f"[DocumentProcessor] PDF 변환 성공: {converted}")
                     documents: list[Document] = self.load_documents(converted, **kwargs)
                     chunks: list[Document] = self.split_documents(documents, **kwargs)
                     vectors: list[dict] = self.compose_vectors(converted, chunks, **kwargs)
