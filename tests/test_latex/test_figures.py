@@ -18,6 +18,34 @@ GENERATE = GEN_TEST_DATA
 LATEX_DATA_DIR = Path("./tests/data/latex/")
 
 
+def _make_tikz_backend(
+    latex_content: bytes, monkeypatch, render_impl
+) -> LatexDocumentBackend:
+    from docling.backend.latex.engines import tectonic
+
+    def fake_init(self, allow_download=True, timeout=60.0, allow_shell_escape=True):
+        self.allow_download = allow_download
+        self.timeout = timeout
+        self.allow_shell_escape = allow_shell_escape
+        self._is_available = True
+        self.binary_path = Path("/usr/bin/tectonic")
+
+    monkeypatch.setattr(tectonic.TectonicEngine, "__init__", fake_init)
+    monkeypatch.setattr(tectonic.TectonicEngine, "render", render_impl)
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    return LatexDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(latex_content),
+        options=LatexBackendOptions(tikz_engine="tectonic"),
+    )
+
+
 def test_latex_caption():
     """Test caption macro parsing via includegraphics"""
     latex_content = b"""
@@ -378,6 +406,108 @@ def test_latex_tikzpicture_fallback_preserves_text_label(monkeypatch):
     )
 
     assert captured["label"] == DocItemLabel.LIST_ITEM
+
+
+def test_latex_tikzpicture_tectonic_none_falls_back_to_code(monkeypatch):
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{tikzpicture}
+    \draw (0,0) -- (1,1);
+    \end{tikzpicture}
+    \end{document}
+    """
+
+    def fake_render(self, tikz_code, preamble="", source_root=None):
+        return None
+
+    backend = _make_tikz_backend(latex_content, monkeypatch, fake_render)
+    doc = backend.convert()
+
+    assert len(doc.pictures) >= 1
+    picture = doc.pictures[0]
+    assert picture.image is None
+    assert picture.meta is not None
+    assert picture.meta.code is not None
+    assert "\\begin{tikzpicture}" in picture.meta.code.text
+    assert picture.meta.code.language.name == "TIKZ"
+
+
+def test_latex_tikzpicture_tectonic_exception_falls_back_to_code(monkeypatch):
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{tikzpicture}
+    \draw (0,0) -- (1,1);
+    \end{tikzpicture}
+    \end{document}
+    """
+
+    def fake_render(self, tikz_code, preamble="", source_root=None):
+        raise RuntimeError("render failed")
+
+    backend = _make_tikz_backend(latex_content, monkeypatch, fake_render)
+    doc = backend.convert()
+
+    assert len(doc.pictures) >= 1
+    picture = doc.pictures[0]
+    assert picture.image is None
+    assert picture.meta is not None
+    assert picture.meta.code is not None
+    assert "\\draw (0,0) -- (1,1);" in picture.meta.code.text
+    assert picture.meta.code.language.name == "TIKZ"
+
+
+def test_latex_tikzpicture_file_backed_render_receives_source_root(
+    monkeypatch, tmp_path
+):
+    tex_file = tmp_path / "main.tex"
+    tex_file.write_text(
+        r"""
+    \documentclass{article}
+    \begin{document}
+    \begin{tikzpicture}
+    \draw (0,0) -- (1,1);
+    \end{tikzpicture}
+    \end{document}
+    """,
+        encoding="utf-8",
+    )
+
+    captured = {}
+
+    def fake_init(self, allow_download=True, timeout=60.0, allow_shell_escape=True):
+        self.allow_download = allow_download
+        self.timeout = timeout
+        self.allow_shell_escape = allow_shell_escape
+        self._is_available = True
+        self.binary_path = Path("/usr/bin/tectonic")
+
+    def fake_render(self, tikz_code, preamble="", source_root=None):
+        captured["source_root"] = source_root
+        return None
+
+    from docling.backend.latex.engines import tectonic
+
+    monkeypatch.setattr(tectonic.TectonicEngine, "__init__", fake_init)
+    monkeypatch.setattr(tectonic.TectonicEngine, "render", fake_render)
+
+    in_doc = InputDocument(
+        path_or_stream=tex_file,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="main.tex",
+    )
+    backend = LatexDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=tex_file,
+        options=LatexBackendOptions(tikz_engine="tectonic"),
+    )
+    doc = backend.convert()
+
+    assert captured["source_root"] == tmp_path
+    assert len(doc.pictures) >= 1
+    assert doc.pictures[0].meta is not None
 
 
 def test_latex_tikz_validate_depth_guard_and_arg_recursion():

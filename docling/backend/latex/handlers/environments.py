@@ -1,5 +1,6 @@
 import logging
 import re
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
@@ -160,6 +161,82 @@ class EnvironmentHandlerMixin:
             )
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
             return
+
+        opts = getattr(self, "options", None)
+        tikz_engine_option = getattr(opts, "tikz_engine", None) if opts else None
+        if tikz_engine_option == "tectonic":
+            try:
+                from docling.backend.latex.engines.tectonic import TectonicEngine
+
+                if not hasattr(self, "_tectonic_engine"):
+                    allow_download = (
+                        getattr(opts, "allow_tikz_engine_download", True)
+                        if opts
+                        else True
+                    )
+                    timeout = (
+                        getattr(opts, "tikz_engine_timeout", 60.0) if opts else 60.0
+                    )
+                    allow_shell_escape = (
+                        getattr(opts, "tikz_engine_allow_shell_escape", False)
+                        if opts
+                        else False
+                    )
+                    self._tectonic_engine = TectonicEngine(
+                        allow_download=allow_download,
+                        timeout=timeout,
+                        allow_shell_escape=allow_shell_escape,
+                    )
+
+                pic = doc.add_picture(parent=parent)
+
+                def render_task(engine, raw_tikz, picture_item, preamble, source_root):
+                    def set_code_fallback():
+                        picture_item.meta = PictureMeta(
+                            code=CodeMetaField(
+                                text=raw_tikz,
+                                language=CodeLanguageLabel.TIKZ,
+                            )
+                        )
+
+                    try:
+                        img_ref = engine.render(
+                            raw_tikz, preamble=preamble, source_root=source_root
+                        )
+                        if img_ref:
+                            picture_item.image = img_ref
+                        else:
+                            # Any Tectonic failure should degrade to raw TikZ.
+                            set_code_fallback()
+                    except Exception as e:
+                        _log.warning(f"Async Tectonic rendering failed: {e}")
+                        set_code_fallback()
+
+                preamble = getattr(self, "latex_preamble", "")
+                source_root = None
+                path_or_stream = getattr(self, "path_or_stream", None)
+                if isinstance(path_or_stream, Path):
+                    source_root = path_or_stream.parent
+                executor = getattr(self, "_tikz_executor", None)
+                if executor:
+                    future = executor.submit(
+                        render_task,
+                        self._tectonic_engine,
+                        tikz_raw,
+                        pic,
+                        preamble,
+                        source_root,
+                    )
+                    futures_list = getattr(self, "_tikz_futures", None)
+                    if futures_list is not None:
+                        futures_list.append(future)
+                else:
+                    render_task(
+                        self._tectonic_engine, tikz_raw, pic, preamble, source_root
+                    )
+                return
+            except Exception as e:
+                _log.warning(f"Failed to setup Tectonic async task: {e}")
 
         pic = doc.add_picture(parent=parent)
         pic.meta = PictureMeta(
