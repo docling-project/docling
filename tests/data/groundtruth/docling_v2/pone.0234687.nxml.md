@@ -42,18 +42,18 @@ Table 1 Descriptive characteristics of the herd.
 
 | Item                          | Unit      |   Average |
 |-------------------------------|-----------|-----------|
-| Milking cows                  | #         |     165   |
-| Milk production               | kg year-1 |    7015   |
-| Milk fat                      | %         |       4   |
+| Milking cows                  | #         |       165 |
+| Milk production               | kg year-1 |     7,015 |
+| Milk fat                      | %         |       4.0 |
 | Milk protein                  | %         |       3.3 |
-| Length of lactation           | days      |     305   |
-| Body weight                   | kg        |     553   |
-| Lactations per cow            | #         |       4   |
-| Replacement rate              | %         |      25   |
-| Cull rate                     | %         |      25   |
-| First artificial insemination | months    |      16   |
-| Weaned                        | days      |      60   |
-| Mortality                     | %         |       3   |
+| Length of lactation           | days      |       305 |
+| Body weight                   | kg        |       553 |
+| Lactations per cow            | #         |         4 |
+| Replacement rate              | %         |        25 |
+| Cull rate                     | %         |        25 |
+| First artificial insemination | months    |        16 |
+| Weaned                        | days      |        60 |
+| Mortality                     | %         |       3.0 |
 
 ### Data sources and livestock system description
 
@@ -119,33 +119,33 @@ Table 4 GHG emissions from On-farm feed production.
 
 | Item                                      | Corn silage   | Annual temperate pasture   | Annual tropical pasture   |   Perennial tropical pasture |
 |-------------------------------------------|---------------|----------------------------|---------------------------|------------------------------|
-| DM yield, kg ha-1                         | 16000         | 9500                       | 11000                     |                    9500      |
+| DM yield, kg ha-1                         | 16000         | 9500                       | 11000                     |                         9500 |
 | Direct N2O emissions to air               |               |                            |                           |                              |
-| N organic fertilizer, kg ha-1a            | 150           | 180                        | 225                       |                     225      |
-| N synthetic fertilizer                    | -             | 20                         | 25                        |                      25      |
-| N from residual DM, kg ha-1b              | 70            | 112                        | 129                       |                     112      |
-| Emission fator, kg N2O-N (kg N)-1c        | 0.002         | 0.002                      | 0.002                     |                       0.002  |
-| kg N2O ha-1 from direct emissions         | 0.69          | 0.98                       | 1.19                      |                       1.14   |
+| N organic fertilizer, kg ha-1a            | 150           | 180                        | 225                       |                          225 |
+| N synthetic fertilizer                    | -             | 20                         | 25                        |                           25 |
+| N from residual DM, kg ha-1b              | 70            | 112                        | 129                       |                          112 |
+| Emission fator, kg N2O-N (kg N)-1c        | 0.002         | 0.002                      | 0.002                     |                        0.002 |
+| kg N2O ha-1 from direct emissions         | 0.69          | 0.98                       | 1.19                      |                         1.14 |
 | Indirect N2O emissions to air             |               |                            |                           |                              |
-| kg NH3-N+NOx-N (kg organic N)-1b          | 0.2           | 0.2                        | 0.2                       |                       0.2    |
-| kg NH3-N+NOx-N (kg synthetic N)-1b        | 0.1           | 0.1                        | 0.1                       |                       0.1    |
-| kg N2O-N (kg NH3-N+NOx-N)-1b              | 0.01          | 0.01                       | 0.01                      |                       0.01   |
-| kg N2O ha-1 from NH3+NOx volatilized      | 0.47          | 0.60                       | 0.75                      |                       0.75   |
+| kg NH3-N+NOx-N (kg organic N)-1b          | 0.2           | 0.2                        | 0.2                       |                          0.2 |
+| kg NH3-N+NOx-N (kg synthetic N)-1b        | 0.1           | 0.1                        | 0.1                       |                          0.1 |
+| kg N2O-N (kg NH3-N+NOx-N)-1b              | 0.01          | 0.01                       | 0.01                      |                         0.01 |
+| kg N2O ha-1 from NH3+NOx volatilized      | 0.47          | 0.60                       | 0.75                      |                         0.75 |
 | Indirect N2O emissions to soil            |               |                            |                           |                              |
-| kg N losses by leaching (kg N)-1b         | 0.3           | 0.3                        | 0.3                       |                       0.3    |
+| kg N losses by leaching (kg N)-1b         | 0.3           | 0.3                        | 0.3                       |                          0.3 |
 | kg N2O-N (kg N leaching)-1                | 0.0075        | 0.0075                     | 0.0075                    |                       0.0075 |
-| kg N2O ha-1 from N losses by leaching     | 0.78          | 1.10                       | 1.34                      |                       1.28   |
-| kg N2O ha-1 (direct + indirect emissions) | 1.94          | 2.68                       | 3.28                      |                       3.16   |
-| kg CO2e ha-1 from N20 emissionsd          | 514           | 710                        | 869                       |                     838      |
-| kg CO2 ha-1 from lime+ureab               | 515           | 721                        | 882                       |                     852      |
-| kg CO2 ha-1 from diesel combustione       | 802           | 38                         | 23                        |                      12      |
-| kg CO2e from secondary sourcesf           | 516           | 205                        | 225                       |                     284      |
-| Total CO2e emitted, kg ha-1               | 1833          | 964                        | 1130                      |                    1148      |
-| Emission factor, kg CO2e (kg DM)-1g       | 0.115         | 0.145                      | 0.147                     |                       0.173  |
-| Carbon sequestered, kg ha-1h              | -             | -                          | -                         |                     570      |
-| Sequestered CO2-C, kg ha-1                | -             | -                          | -                         |                    1393      |
-| kg CO2e ha-1 (emitted—sequestered)        | 1833          | 964                        | 1130                      |                    -245      |
-| Emission factor, kg CO2e (kg DM)-1i       | 0.115         | 0.145                      | 0.147                     |                      -0.037  |
+| kg N2O ha-1 from N losses by leaching     | 0.78          | 1.10                       | 1.34                      |                         1.28 |
+| kg N2O ha-1 (direct + indirect emissions) | 1.94          | 2.68                       | 3.28                      |                         3.16 |
+| kg CO2e ha-1 from N20 emissionsd          | 514           | 710                        | 869                       |                          838 |
+| kg CO2 ha-1 from lime+ureab               | 515           | 721                        | 882                       |                          852 |
+| kg CO2 ha-1 from diesel combustione       | 802           | 38                         | 23                        |                           12 |
+| kg CO2e from secondary sourcesf           | 516           | 205                        | 225                       |                          284 |
+| Total CO2e emitted, kg ha-1               | 1833          | 964                        | 1130                      |                         1148 |
+| Emission factor, kg CO2e (kg DM)-1g       | 0.115         | 0.145                      | 0.147                     |                        0.173 |
+| Carbon sequestered, kg ha-1h              | -             | -                          | -                         |                          570 |
+| Sequestered CO2-C, kg ha-1                | -             | -                          | -                         |                         1393 |
+| kg CO2e ha-1 (emitted—sequestered)        | 1833          | 964                        | 1130                      |                         -245 |
+| Emission factor, kg CO2e (kg DM)-1i       | 0.115         | 0.145                      | 0.147                     |                       -0.037 |
 
 ### Animal husbandry
 
@@ -169,15 +169,15 @@ Table 5 Factors for major resource inputs in farm management.
 |------------------------------------------|----------|-------------------|--------------|
 | Production and transport of diesel       |    0.374 | kg CO2e L-1       | [41]         |
 | Emissions from diesel fuel combustion    |    2.637 | kg CO2e L-1       | [41]         |
-| Production of electricityb               |    0.73  | kg CO2e kWh-1     | [41]         |
+| Production of electricityb               |     0.73 | kg CO2e kWh-1     | [41]         |
 | Production of electricity (alternative)c |    0.205 | kg CO2e kWh-1     | [46]         |
-| Production of machinery                  |    3.54  | kg CO2e (kg mm)-1 | [42]         |
+| Production of machinery                  |     3.54 | kg CO2e (kg mm)-1 | [42]         |
 | Manure handling                          |          |                   |              |
-| Fuel for manure handling                 |    0.6   | L diesel tonne-1  | [42]         |
-| Machinery for manure handling            |    0.17  | kg mm kg-1        | [42]         |
+| Fuel for manure handling                 |    0.600 | L diesel tonne-1  | [42]         |
+| Machinery for manure handling            |     0.17 | kg mm kg-1        | [42]         |
 | Milking and confinement                  |          |                   |              |
-| Electricity for milking                  |    0.06  | kWh (kg milk)-1   | [47]         |
-| Electricity for lightingd                |   75     | kWh cow-1         | [47]         |
+| Electricity for milking                  |     0.06 | kWh (kg milk)-1   | [47]         |
+| Electricity for lightingd                |       75 | kWh cow-1         | [47]         |
 
 The amount of fuel use for manure handling were estimated taking into consideration the amount of manure produced per cow and the amounts of fuel required for manure handling (L diesel t-1) [42]. The amount of manure was estimated from OM excretions (kg cow-1), assuming that the manure has 8% ash on DM basis and 60% DM content. The OM excretions were calculated by NDOMI × days in confinement × proportion of daily time that animals stayed on confinement.
 

@@ -435,13 +435,13 @@
         "$ref": "#/texts/228"
       },
       {
-        "$ref": "#/texts/229"
-      },
-      {
         "$ref": "#/pictures/15"
       },
       {
         "$ref": "#/pictures/16"
+      },
+      {
+        "$ref": "#/texts/232"
       },
       {
         "$ref": "#/texts/233"
@@ -454,9 +454,6 @@
       },
       {
         "$ref": "#/texts/236"
-      },
-      {
-        "$ref": "#/texts/237"
       }
     ],
     "content_layer": "body",
@@ -6985,20 +6982,7 @@
             0,
             40
           ]
-        }
-      ],
-      "orig": "Protect columns by defining column masks",
-      "text": "Protect columns by defining column masks"
-    },
-    {
-      "self_ref": "#/texts/228",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
+        },
         {
           "page_no": 18,
           "bbox": {
@@ -7009,16 +6993,16 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            0,
-            464
+            41,
+            505
           ]
         }
       ],
-      "orig": "This IBM Redpaper publication provides information about the IBM i 7.2 feature of IBM DB2 for i Row and Column Access Control (RCAC). It offers a broad description of the function and advantages of controlling access to data in a comprehensive and transparent way. This publication helps you understand the capabilities of RCAC and provides examples of defining, creating, and implementing the row permissions and column masks in a relational database environment.",
-      "text": "This IBM Redpaper publication provides information about the IBM i 7.2 feature of IBM DB2 for i Row and Column Access Control (RCAC). It offers a broad description of the function and advantages of controlling access to data in a comprehensive and transparent way. This publication helps you understand the capabilities of RCAC and provides examples of defining, creating, and implementing the row permissions and column masks in a relational database environment."
+      "orig": "Protect columns by defining column masks This IBM Redpaper publication provides information about the IBM i 7.2 feature of IBM DB2 for i Row and Column Access Control (RCAC). It offers a broad description of the function and advantages of controlling access to data in a comprehensive and transparent way. This publication helps you understand the capabilities of RCAC and provides examples of defining, creating, and implementing the row permissions and column masks in a relational database environment.",
+      "text": "Protect columns by defining column masks This IBM Redpaper publication provides information about the IBM i 7.2 feature of IBM DB2 for i Row and Column Access Control (RCAC). It offers a broad description of the function and advantages of controlling access to data in a comprehensive and transparent way. This publication helps you understand the capabilities of RCAC and provides examples of defining, creating, and implementing the row permissions and column masks in a relational database environment."
     },
     {
-      "self_ref": "#/texts/229",
+      "self_ref": "#/texts/228",
       "parent": {
         "$ref": "#/body"
       },
@@ -7045,7 +7029,7 @@
       "text": "This paper is intended for database engineers, data-centric application developers, and security officers who want to design and implement RCAC as a part of their data control and governance policy. A solid background in IBM i object level security, DB2 for i relational database concepts, and SQL is assumed."
     },
     {
-      "self_ref": "#/texts/230",
+      "self_ref": "#/texts/229",
       "parent": {
         "$ref": "#/pictures/15"
       },
@@ -7072,7 +7056,7 @@
       "text": "\u00ae"
     },
     {
-      "self_ref": "#/texts/231",
+      "self_ref": "#/texts/230",
       "parent": {
         "$ref": "#/pictures/16"
       },
@@ -7099,7 +7083,7 @@
       "text": "Redpaper"
     },
     {
-      "self_ref": "#/texts/232",
+      "self_ref": "#/texts/231",
       "parent": {
         "$ref": "#/pictures/16"
       },
@@ -7126,7 +7110,7 @@
       "text": "\u2122"
     },
     {
-      "self_ref": "#/texts/233",
+      "self_ref": "#/texts/232",
       "parent": {
         "$ref": "#/body"
       },
@@ -7153,7 +7137,7 @@
       "text": "INTERNATIONAL TECHNICAL SUPPORT ORGANIZATION"
     },
     {
-      "self_ref": "#/texts/234",
+      "self_ref": "#/texts/233",
       "parent": {
         "$ref": "#/body"
       },
@@ -7181,7 +7165,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/235",
+      "self_ref": "#/texts/234",
       "parent": {
         "$ref": "#/body"
       },
@@ -7208,7 +7192,7 @@
       "text": "IBM Redbooks are developed by the IBM International Technical Support Organization. Experts from IBM, Customers and Partners from around the world create timely technical information based on realistic scenarios. Specific recommendations are provided to help you implement IT solutions more effectively in your environment."
     },
     {
-      "self_ref": "#/texts/236",
+      "self_ref": "#/texts/235",
       "parent": {
         "$ref": "#/body"
       },
@@ -7235,7 +7219,7 @@
       "text": "For more information: ibm.com /redbooks"
     },
     {
-      "self_ref": "#/texts/237",
+      "self_ref": "#/texts/236",
       "parent": {
         "$ref": "#/body"
       },
@@ -7323,10 +7307,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 16.79,
-            "t": 506.04,
+            "l": 16.78,
+            "t": 506.05,
             "r": 582.5,
-            "b": 14.09,
+            "b": 14.08,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7509,7 +7493,7 @@
           "bbox": {
             "l": 135.99,
             "t": 416.9,
-            "r": 547.18,
+            "r": 547.17,
             "b": 102.53,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -7980,7 +7964,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/230"
+          "$ref": "#/texts/229"
         }
       ],
       "content_layer": "body",
@@ -8013,10 +7997,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/231"
+          "$ref": "#/texts/230"
         },
         {
-          "$ref": "#/texts/232"
+          "$ref": "#/texts/231"
         }
       ],
       "content_layer": "body",
@@ -8996,7 +8980,7 @@
           {
             "bbox": {
               "l": 134.71,
-              "t": 456.71,
+              "t": 456.7,
               "r": 502.91,
               "b": 468.32,
               "coord_origin": "TOPLEFT"
@@ -9395,8 +9379,8 @@
           },
           {
             "bbox": {
-              "l": 135.85,
-              "t": 605.14,
+              "l": 135.84,
+              "t": 605.15,
               "r": 502.86,
               "b": 627.85,
               "coord_origin": "TOPLEFT"
@@ -9456,9 +9440,9 @@
           {
             "bbox": {
               "l": 534.38,
-              "t": 608.87,
+              "t": 608.89,
               "r": 547.1,
-              "b": 619.7,
+              "b": 619.72,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9515,7 +9499,7 @@
           },
           {
             "bbox": {
-              "l": 147.49,
+              "l": 147.5,
               "t": 640.81,
               "r": 502.86,
               "b": 652.87,
@@ -9576,9 +9560,9 @@
           {
             "bbox": {
               "l": 533.91,
-              "t": 650.39,
+              "t": 650.41,
               "r": 547.12,
-              "b": 661.17,
+              "b": 661.18,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -9636,7 +9620,7 @@
           {
             "bbox": {
               "l": 534.15,
-              "t": 665.39,
+              "t": 665.38,
               "r": 547.01,
               "b": 676.28,
               "coord_origin": "TOPLEFT"
@@ -9676,9 +9660,9 @@
           {
             "bbox": {
               "l": 534.03,
-              "t": 675.59,
+              "t": 675.6,
               "r": 546.99,
-              "b": 686.41,
+              "b": 686.43,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -10727,7 +10711,7 @@
             {
               "bbox": {
                 "l": 134.71,
-                "t": 456.71,
+                "t": 456.7,
                 "r": 502.91,
                 "b": 468.32,
                 "coord_origin": "TOPLEFT"
@@ -11188,8 +11172,8 @@
           [
             {
               "bbox": {
-                "l": 135.85,
-                "t": 605.14,
+                "l": 135.84,
+                "t": 605.15,
                 "r": 502.86,
                 "b": 627.85,
                 "coord_origin": "TOPLEFT"
@@ -11209,9 +11193,9 @@
             {
               "bbox": {
                 "l": 534.38,
-                "t": 608.87,
+                "t": 608.89,
                 "r": 547.1,
-                "b": 619.7,
+                "b": 619.72,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11272,7 +11256,7 @@
           [
             {
               "bbox": {
-                "l": 147.49,
+                "l": 147.5,
                 "t": 640.81,
                 "r": 502.86,
                 "b": 652.87,
@@ -11335,9 +11319,9 @@
             {
               "bbox": {
                 "l": 533.91,
-                "t": 650.39,
+                "t": 650.41,
                 "r": 547.12,
-                "b": 661.17,
+                "b": 661.18,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -11377,7 +11361,7 @@
             {
               "bbox": {
                 "l": 534.15,
-                "t": 665.39,
+                "t": 665.38,
                 "r": 547.01,
                 "b": 676.28,
                 "coord_origin": "TOPLEFT"
@@ -11419,9 +11403,9 @@
             {
               "bbox": {
                 "l": 534.03,
-                "t": 675.59,
+                "t": 675.6,
                 "r": 546.99,
-                "b": 686.41,
+                "b": 686.43,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -12197,7 +12181,7 @@
           "page_no": 8,
           "bbox": {
             "l": 135.76,
-            "t": 294.2,
+            "t": 294.19,
             "r": 549.47,
             "b": 201.84,
             "coord_origin": "BOTTOMLEFT"
