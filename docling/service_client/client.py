@@ -16,7 +16,7 @@ from email.utils import parsedate_to_datetime
 from enum import Enum
 from io import BytesIO
 from pathlib import Path, PurePath
-from typing import IO, Any, Literal, TypeVar, cast, overload
+from typing import IO, Any, Literal, TypeAlias, TypeVar, cast, overload
 from urllib.parse import urlencode, urlparse
 
 import httpx
@@ -74,9 +74,7 @@ from docling.service_client.watchers import (
     is_terminal_task_status,
 )
 
-SourceType = Path | str | DocumentStream
-VersionResponse = dict[str, Any]
-HealthResponse = HealthCheckResponse
+SourceType: TypeAlias = Path | str | DocumentStream
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
@@ -306,16 +304,7 @@ class DoclingServiceClient:
         self,
         source: SourceType,
         options: ConvertDocumentsRequestOptions | None = None,
-        target_format: None = None,
-        headers: dict[str, str] | None = None,
-    ) -> ConversionJob[ConversionResult]: ...
-
-    @overload
-    def submit(
-        self,
-        source: SourceType,
-        options: ConvertDocumentsRequestOptions | None = None,
-        target_format: Literal[OutputFormat.JSON] = OutputFormat.JSON,
+        target_format: None | Literal["json"] = None,
         headers: dict[str, str] | None = None,
     ) -> ConversionJob[ConversionResult]: ...
 
@@ -332,9 +321,14 @@ class DoclingServiceClient:
         self,
         source: SourceType,
         options: ConvertDocumentsRequestOptions | None = None,
-        target_format: OutputFormat | None = None,
+        target_format: OutputFormat | Literal["json"] | None = None,
         headers: dict[str, str] | None = None,
     ) -> ConversionJob[ConversionResult] | ConversionJob[RawServiceResult]:
+        normalized_target_format: OutputFormat | None = (
+            OutputFormat.JSON
+            if target_format == "json"
+            else cast(OutputFormat | None, target_format)
+        )
         resolved = self._resolve_options(
             options=options,
             max_num_pages=None,
@@ -342,7 +336,7 @@ class DoclingServiceClient:
             page_range=None,
         )
         submit_options, raw_result = self._options_for_target_format(
-            resolved.options, target_format
+            resolved.options, normalized_target_format
         )
         return self._submit_conversion_job(
             source=source,
@@ -386,13 +380,13 @@ class DoclingServiceClient:
             initial_status=initial_status,
         )
 
-    def health(self) -> HealthResponse:
+    def health(self) -> HealthCheckResponse:
         response = self._request_with_retry("GET", "/health", retries=0)
         if response.status_code != 200:
             self._raise_for_generic_http_error(response, "Health check request failed.")
         return HealthCheckResponse.model_validate_json(response.text)
 
-    def version(self) -> VersionResponse:
+    def version(self) -> dict[str, Any]:
         response = self._request_with_retry("GET", "/version", retries=0)
         if response.status_code != 200:
             self._raise_for_generic_http_error(response, "Version request failed.")

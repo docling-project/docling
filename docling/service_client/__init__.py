@@ -6,10 +6,8 @@ from docling.service_client.client import (
     ChunkerKind,
     ConversionItem,
     DoclingServiceClient,
-    HealthResponse,
     RawServiceResult,
     StatusWatcherKind,
-    VersionResponse,
 )
 from docling.service_client.exceptions import (
     ConversionError,
@@ -33,7 +31,6 @@ __all__ = [
     "ConversionJob",
     "DoclingServiceClient",
     "DoclingServiceClientError",
-    "HealthResponse",
     "RawServiceResult",
     "ResultExpiredError",
     "ResultNotReadyError",
@@ -43,5 +40,4 @@ __all__ = [
     "TaskNotFoundError",
     "TaskTimeoutError",
     "UsageLimitExceededError",
-    "VersionResponse",
 ]
