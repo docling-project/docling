@@ -57,10 +57,13 @@
         "$ref": "#/texts/17"
       },
       {
+        "$ref": "#/texts/18"
+      },
+      {
         "$ref": "#/pictures/1"
       },
       {
-        "$ref": "#/texts/25"
+        "$ref": "#/texts/26"
       }
     ],
     "content_layer": "body",
@@ -254,24 +257,10 @@
             0,
             122
           ]
-        },
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 320.99,
-            "t": 728.19,
-            "r": 560.52,
-            "b": 657.0,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            123,
-            493
-          ]
         }
       ],
-      "orig": "Boots self-locking nuts are made with three different spring styles and in various shapes and sizes. The wing type that is the most common ranges in size for No. 6 up to  1 / 4 inch, the Rol-top ranges from  1 / 4 inch to 1 / 6 inch, and the bellows type ranges in size from No. 8 up to 3 / 8 inch. Wing-type nuts are made of anodized aluminum alloy, cadmium-plated carbon steel, or stainless steel. The Rol-top nut is cadmium-plated steel, and the bellows type is made of aluminum alloy only.",
-      "text": "Boots self-locking nuts are made with three different spring styles and in various shapes and sizes. The wing type that is the most common ranges in size for No. 6 up to  1 / 4 inch, the Rol-top ranges from  1 / 4 inch to 1 / 6 inch, and the bellows type ranges in size from No. 8 up to 3 / 8 inch. Wing-type nuts are made of anodized aluminum alloy, cadmium-plated carbon steel, or stainless steel. The Rol-top nut is cadmium-plated steel, and the bellows type is made of aluminum alloy only."
+      "orig": "Boots self-locking nuts are made with three different spring styles and in various shapes and sizes. The wing type that is",
+      "text": "Boots self-locking nuts are made with three different spring styles and in various shapes and sizes. The wing type that is"
     },
     {
       "self_ref": "#/texts/7",
@@ -447,6 +436,33 @@
         {
           "page_no": 1,
           "bbox": {
+            "l": 320.99,
+            "t": 728.19,
+            "r": 560.52,
+            "b": 657.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            370
+          ]
+        }
+      ],
+      "orig": "the most common ranges in size for No. 6 up to  1 / 4 inch, the Rol-top ranges from  1 / 4 inch to 1 / 6 inch, and the bellows type ranges in size from No. 8 up to 3 / 8 inch. Wing-type nuts are made of anodized aluminum alloy, cadmium-plated carbon steel, or stainless steel. The Rol-top nut is cadmium-plated steel, and the bellows type is made of aluminum alloy only.",
+      "text": "the most common ranges in size for No. 6 up to  1 / 4 inch, the Rol-top ranges from  1 / 4 inch to 1 / 6 inch, and the bellows type ranges in size from No. 8 up to 3 / 8 inch. Wing-type nuts are made of anodized aluminum alloy, cadmium-plated carbon steel, or stainless steel. The Rol-top nut is cadmium-plated steel, and the bellows type is made of aluminum alloy only."
+    },
+    {
+      "self_ref": "#/texts/14",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
             "l": 321.0,
             "t": 652.97,
             "r": 326.0,
@@ -463,7 +479,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/14",
+      "self_ref": "#/texts/15",
       "parent": {
         "$ref": "#/body"
       },
@@ -491,7 +507,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/15",
+      "self_ref": "#/texts/16",
       "parent": {
         "$ref": "#/body"
       },
@@ -518,7 +534,7 @@
       "text": "The stainless steel self-locking nut may be spun on and off by hand as its locking action takes places only when the nut is seated against a solid surface and tightened. The nut consists of two parts: a case with a beveled locking shoulder and key and a thread insert with a locking shoulder and slotted keyway. Until the nut is tightened, it spins on the bolt  easily,  because  the  threaded  insert  is  the  proper  size for the bolt. However, when the nut is seated against a solid surface and tightened, the locking shoulder of the insert is pulled downward and wedged against the locking shoulder of the case. This action compresses the threaded insert and causes it to clench the bolt tightly. The cross-sectional view in Figure 7-27 shows how the key of the case fits into the slotted keyway of the insert so that when the case is turned, the threaded insert is turned with it. Note that the slot is wider than the key. This permits the slot to be narrowed and the insert to be compressed when the nut is tightened."
     },
     {
-      "self_ref": "#/texts/16",
+      "self_ref": "#/texts/17",
       "parent": {
         "$ref": "#/body"
       },
@@ -546,7 +562,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/17",
+      "self_ref": "#/texts/18",
       "parent": {
         "$ref": "#/body"
       },
@@ -573,7 +589,7 @@
       "text": "The elastic  stop  nut  is  a  standard  nut  with  the  height increased  to  accommodate  a  fiber  locking  collar.  This"
     },
     {
-      "self_ref": "#/texts/18",
+      "self_ref": "#/texts/19",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -600,7 +616,7 @@
       "text": "Figure 7-27. Stainless steel self-locking nut."
     },
     {
-      "self_ref": "#/texts/19",
+      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -627,7 +643,7 @@
       "text": "Tightened nut"
     },
     {
-      "self_ref": "#/texts/20",
+      "self_ref": "#/texts/21",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -654,7 +670,7 @@
       "text": "Untightened nut"
     },
     {
-      "self_ref": "#/texts/21",
+      "self_ref": "#/texts/22",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -681,7 +697,7 @@
       "text": "Nut case"
     },
     {
-      "self_ref": "#/texts/22",
+      "self_ref": "#/texts/23",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -708,7 +724,7 @@
       "text": "Threaded nut core"
     },
     {
-      "self_ref": "#/texts/23",
+      "self_ref": "#/texts/24",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -735,7 +751,7 @@
       "text": "Locking shoulder"
     },
     {
-      "self_ref": "#/texts/24",
+      "self_ref": "#/texts/25",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -762,7 +778,7 @@
       "text": "Keyway"
     },
     {
-      "self_ref": "#/texts/25",
+      "self_ref": "#/texts/26",
       "parent": {
         "$ref": "#/body"
       },
@@ -849,9 +865,6 @@
       },
       "children": [
         {
-          "$ref": "#/texts/18"
-        },
-        {
           "$ref": "#/texts/19"
         },
         {
@@ -868,6 +881,9 @@
         },
         {
           "$ref": "#/texts/24"
+        },
+        {
+          "$ref": "#/texts/25"
         }
       ],
       "content_layer": "body",
@@ -890,7 +906,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/18"
+          "$ref": "#/texts/19"
         }
       ],
       "references": [],
