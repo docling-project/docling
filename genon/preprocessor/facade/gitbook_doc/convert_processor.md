@@ -949,9 +949,10 @@ def split_documents(self, documents: DoclingDocument, **kwargs) -> List[DocChunk
         merge_peers=True
     )
     chunks = list(chunker.chunk(dl_doc=documents, **kwargs))
-    # 페이지별 청크 수 카운팅
+    # 페이지별 청크 수 카운팅 (prov 없는 청크는 건너뜀)
     for chunk in chunks:
-        self.page_chunk_counts[chunk.meta.doc_items[0].prov[0].page_no] += 1
+        if chunk.meta.doc_items[0].prov:
+            self.page_chunk_counts[chunk.meta.doc_items[0].prov[0].page_no] += 1
     return chunks
 ```
 

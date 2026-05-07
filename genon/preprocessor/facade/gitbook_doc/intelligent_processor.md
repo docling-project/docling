@@ -855,7 +855,8 @@ def split_documents(self, documents: DoclingDocument, **kwargs) -> List[DocChunk
     )
     chunks = list(chunker.chunk(dl_doc=documents, **kwargs))
     for chunk in chunks:
-        self.page_chunk_counts[chunk.meta.doc_items[0].prov[0].page_no] += 1
+        if chunk.meta.doc_items[0].prov:
+            self.page_chunk_counts[chunk.meta.doc_items[0].prov[0].page_no] += 1
     return chunks
 ```
 

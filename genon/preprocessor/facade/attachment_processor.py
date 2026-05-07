@@ -277,7 +277,7 @@ class GenOSVectorMetaBuilder:
                     'type': type_,
                     'ref': label
                 })
-        self.e_page = max([bbox['page'] for bbox in chunk_bboxes]) if chunk_bboxes else None
+        self.e_page = max([bbox['page'] for bbox in chunk_bboxes]) if chunk_bboxes else 0
         self.chunk_bboxes = json.dumps(chunk_bboxes)
         return self
 
@@ -287,7 +287,7 @@ class GenOSVectorMetaBuilder:
             self.media_files = ""
             return self
         for item in doc_items:
-            if isinstance(item, PictureItem):
+            if isinstance(item, PictureItem) and item.image:
                 path = str(item.image.uri)
                 name = path.rsplit("/", 1)[-1]
                 temp_list.append({'name': name, 'type': 'image', 'ref': item.self_ref})
@@ -982,7 +982,7 @@ class DocxProcessor:
     def get_media_files(self, doc_items: list):
         temp_list = []
         for item in doc_items:
-            if isinstance(item, PictureItem):
+            if isinstance(item, PictureItem) and item.image:
                 path = str(item.image.uri)
                 name = path.rsplit("/", 1)[-1]
                 temp_list.append({'path': path, 'name': name})
@@ -1001,7 +1001,8 @@ class DocxProcessor:
         chunker = HybridChunker(max_tokens=int(1e30), merge_peers=True)
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
         for chunk in chunks:
-            self.page_chunk_counts[chunk.meta.doc_items[0].prov[0].page_no] += 1
+            if chunk.meta.doc_items[0].prov:
+                self.page_chunk_counts[chunk.meta.doc_items[0].prov[0].page_no] += 1
         return chunks
 
     async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request,
@@ -1017,7 +1018,7 @@ class DocxProcessor:
         vectors = []
         upload_tasks = []
         for chunk_idx, chunk in enumerate(chunks):
-            chunk_page = chunk.meta.doc_items[0].prov[0].page_no
+            chunk_page = chunk.meta.doc_items[0].prov[0].page_no if chunk.meta.doc_items[0].prov else 0
             content = self.safe_join(chunk.meta.headings) + chunk.text
 
             if chunk_page != current_page:
@@ -1129,8 +1130,9 @@ class HwpProcessor:
         page_chunk_counts: dict[int, int] = defaultdict(int)
         for chunk in chunks:
             # 첫 번째 아이템의 출처(prov)를 기준으로 페이지 번호 획득
-            p_no = chunk.meta.doc_items[0].prov[0].page_no
-            page_chunk_counts[p_no] += 1
+            if chunk.meta.doc_items[0].prov:
+                p_no = chunk.meta.doc_items[0].prov[0].page_no
+                page_chunk_counts[p_no] += 1
         return chunks, page_chunk_counts
 
     async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], page_chunk_counts: dict[int, int], request: Any, **kwargs: dict) -> list[dict]:
@@ -1147,7 +1149,7 @@ class HwpProcessor:
         upload_tasks = []
 
         for chunk_idx, chunk in enumerate(chunks):
-            chunk_page = chunk.meta.doc_items[0].prov[0].page_no
+            chunk_page = chunk.meta.doc_items[0].prov[0].page_no if chunk.meta.doc_items[0].prov else 0
             content = self.safe_join(chunk.meta.headings) + chunk.text
 
             if chunk_page != current_page:
