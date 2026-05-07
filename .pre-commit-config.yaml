@@ -1,7 +1,22 @@
 fail_fast: true
+minimum_pre_commit_version: "3.7.0"
+default_stages: [pre-commit]
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        files: '^(docling|docs/examples|tests)/.*\.py$|^(\.pre-commit-config\.yaml|pyproject\.toml|tach\.toml)$'
+      - id: end-of-file-fixer
+        files: '^(docling|docs/examples|tests)/.*\.py$|^(\.pre-commit-config\.yaml|pyproject\.toml|tach\.toml)$'
+      - id: check-yaml
+        args: [--unsafe]
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=5120]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.5
+    rev: v0.15.12
     hooks:
       # Run the Ruff formatter.
       - id: ruff-format
@@ -15,18 +30,35 @@ repos:
         files: '^(docling|tests|docs/examples).*\.(py|ipynb)$'
   - repo: local
     hooks:
-      - id: mypy
-        name: MyPy
-        entry: uv run --no-sync mypy docling
-        pass_filenames: false
+      - id: ty
+        name: ty
+        entry: uv run --no-sync ty check
         language: system
-        files: '\.py$'
+        files: '^(docling|\.github/scripts)/.*\.py$'
       - id: tach
         name: Tach
         entry: uv run --no-sync tach check
         pass_filenames: false
         language: system
         files: '^docling/.*\.py$|^tach\.toml$'
+      - id: tach-module-coverage
+        name: Tach module coverage
+        entry: python3 scripts/check_tach_module_coverage.py
+        pass_filenames: false
+        language: system
+        files: '^docling/.*\.py$|^tach\.toml$|^scripts/check_tach_module_coverage\.py$'
+      - id: max-lines
+        name: Check max lines per file
+        entry: python3 scripts/check_max_lines.py
+        language: system
+        files: '\.(py|ts|tsx|js|jsx|rs|json|sql|md|txt|yaml|yml)$'
+        pass_filenames: true
+      - id: dprint
+        name: Dprint check
+        entry: uv run --no-sync dprint check
+        pass_filenames: false
+        language: system
+        files: '^(dprint\.json|tach\.toml)$'
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.8.3
     hooks:

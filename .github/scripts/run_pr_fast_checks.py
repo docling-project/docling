@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 RUFF_DIRECTORIES = ("docling", "tests", "docs/examples", ".github/scripts")
-MYPY_DIRECTORIES = ("docling", ".github/scripts")
+TY_DIRECTORIES = ("docling", ".github/scripts")
 TOOLING_SMOKE_TRIGGER_PATHS = (
     ".github/scripts/run_pr_fast_checks.py",
     ".github/workflows/pr-fast-checks.yml",
@@ -130,13 +130,13 @@ def is_python_or_notebook_file(path: str, directories: tuple[str, ...]) -> bool:
     )
 
 
-def is_mypy_target(path: str) -> bool:
+def is_ty_target(path: str) -> bool:
     if Path(path).suffix != ".py":
         return False
 
     return any(
         path == directory or path.startswith(f"{directory}/")
-        for directory in MYPY_DIRECTORIES
+        for directory in TY_DIRECTORIES
     )
 
 
@@ -169,7 +169,7 @@ def resolve_executable(repo_root: Path, executable_name: str) -> Path:
 
 def build_check_units(repo_root: Path) -> list[CheckUnit]:
     ruff_executable = resolve_executable(repo_root, "ruff")
-    mypy_executable = resolve_executable(repo_root, "mypy")
+    ty_executable = resolve_executable(repo_root, "ty")
     config_path = repo_root / "pyproject.toml"
 
     return [
@@ -197,14 +197,12 @@ def build_check_units(repo_root: Path) -> list[CheckUnit]:
             head_targets=[],
         ),
         CheckUnit(
-            name="mypy",
+            name="ty",
             command=[
-                str(mypy_executable),
-                "--config-file",
-                str(config_path),
-                "--follow-imports",
-                "skip",
-                "--ignore-missing-imports",
+                str(ty_executable),
+                "check",
+                "--project",
+                str(repo_root),
             ],
             base_targets=[],
             head_targets=[],
@@ -220,25 +218,25 @@ def collect_targets(
         for path in changed_paths
         if is_python_or_notebook_file(path, RUFF_DIRECTORIES)
     ]
-    mypy_targets = [path for path in changed_paths if is_mypy_target(path)]
+    ty_targets = [path for path in changed_paths if is_ty_target(path)]
 
     used_tooling_smoke_targets = (
         not ruff_targets
-        and not mypy_targets
+        and not ty_targets
         and any(path in TOOLING_SMOKE_TRIGGER_PATHS for path in changed_paths)
     )
     if used_tooling_smoke_targets:
         ruff_targets = [SMOKE_CHECK_TARGET]
-        mypy_targets = [SMOKE_CHECK_TARGET]
+        ty_targets = [SMOKE_CHECK_TARGET]
 
     existing_ruff_targets = filter_existing(repo_root, ruff_targets)
-    existing_mypy_targets = filter_existing(repo_root, mypy_targets)
+    existing_ty_targets = filter_existing(repo_root, ty_targets)
 
     return (
         ruff_targets,
-        mypy_targets,
+        ty_targets,
         existing_ruff_targets,
-        existing_mypy_targets,
+        existing_ty_targets,
         used_tooling_smoke_targets,
     )
 
@@ -247,17 +245,17 @@ def populate_targets(
     units: list[CheckUnit],
     *,
     ruff_targets: list[str],
-    mypy_targets: list[str],
+    ty_targets: list[str],
     existing_ruff_targets: list[str],
-    existing_mypy_targets: list[str],
+    existing_ty_targets: list[str],
 ) -> None:
     for unit in units:
         if unit.name.startswith("ruff"):
             unit.base_targets = existing_ruff_targets
             unit.head_targets = ruff_targets
         else:
-            unit.base_targets = existing_mypy_targets
-            unit.head_targets = mypy_targets
+            unit.base_targets = existing_ty_targets
+            unit.head_targets = ty_targets
 
 
 def render_target_list(paths: list[str]) -> str:
@@ -311,6 +309,8 @@ def log_result(result: CommandResult) -> None:
         f"[{result.label}] {result.unit_name} on {len(result.targets)} target(s) "
         f"finished in {result.duration_seconds:.2f}s with exit code {result.returncode}."
     )
+    if result.returncode == 0:
+        return
     if result.stdout:
         print(result.stdout)
     if result.stderr:
@@ -326,13 +326,13 @@ def main() -> int:
     changed_paths = get_changed_paths(repo_root, args.base_ref, args.head_ref)
     (
         ruff_targets,
-        mypy_targets,
+        ty_targets,
         existing_ruff_targets,
-        existing_mypy_targets,
+        existing_ty_targets,
         used_tooling_smoke_targets,
     ) = collect_targets(repo_root, changed_paths)
 
-    all_head_targets = sorted(set(ruff_targets).union(mypy_targets))
+    all_head_targets = sorted(set(ruff_targets).union(ty_targets))
 
     append_summary(summary_file, "## PR Fast Checks\n")
     append_summary(summary_file, "### Changed paths\n")
@@ -363,13 +363,13 @@ def main() -> int:
     populate_targets(
         units,
         ruff_targets=ruff_targets,
-        mypy_targets=mypy_targets,
+        ty_targets=ty_targets,
         existing_ruff_targets=existing_ruff_targets,
-        existing_mypy_targets=existing_mypy_targets,
+        existing_ty_targets=existing_ty_targets,
     )
 
     env = os.environ.copy()
-    env.setdefault("MYPY_FORCE_COLOR", "0")
+    env.setdefault("NO_COLOR", "1")
     env.setdefault("PYTHONUTF8", "1")
 
     base_results: dict[str, CommandResult | None] = {}

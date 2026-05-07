@@ -18,7 +18,7 @@ The latest versions of Docling are supported.
 
 ### Analysis
 
-- Use of [Ruff](https://docs.astral.sh/ruff/), [Mypy](https://mypy.readthedocs.io/) and [Pytest](https://docs.pytest.org/en/7.2.x/) for Python code linting (static and dynamic analysers) on pull requests and builds
+- Use of [Ruff](https://docs.astral.sh/ruff/), [ty](https://docs.astral.sh/ty/) and [Pytest](https://docs.pytest.org/en/7.2.x/) for Python code linting (static and dynamic analysers) on pull requests and builds
 - Use of GitHub Issues for bug reporting and tracking
 
 ## Reporting a Vulnerability

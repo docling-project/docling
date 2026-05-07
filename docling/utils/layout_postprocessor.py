@@ -658,7 +658,7 @@ class LayoutPostprocessor:
 
     def _sort_cells(self, cells: list[TextCell]) -> list[TextCell]:
         """Sort cells in native reading order."""
-        return sorted(cells, key=lambda c: (c.index))
+        return sorted(cells, key=lambda c: c.index)
 
     def _sort_clusters(
         self, clusters: list[Cluster], mode: str = "id"

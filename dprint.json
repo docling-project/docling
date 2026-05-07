@@ -1,0 +1,21 @@
+{
+  "includes": [
+    "dprint.json",
+    "tach.toml"
+  ],
+  "toml": {
+  },
+  "excludes": [
+    "**/*.lock",
+    "docs/reference/**",
+    "**/api.md",
+    "docs/index.md",
+    "tests/data/**",
+    "tests/data_scanned/**",
+    "docs/examples/data/**"
+  ],
+  "plugins": [
+    "https://plugins.dprint.dev/toml-0.7.0.wasm",
+    "https://plugins.dprint.dev/json-0.21.0.wasm"
+  ]
+}

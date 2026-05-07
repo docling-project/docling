@@ -1,0 +1,25 @@
+# Files over the 1000-line limit that are accepted for now.
+#
+# [silent] is for generated fixtures, snapshots, vendored data, or bulk data.
+# [warn] is for source/docs/test debt that should not block this initial guardrail.
+# Long test files are temporary exceptions; the real fix is to split and rework
+# those tests instead of growing this list.
+
+[silent]
+docs/examples/data/**
+tests/data/groundtruth/**
+tests/data/uspto/**
+tests/data_scanned/groundtruth/**
+tests/data/webp/groundtruth/**
+
+[warn]
+.plans/active/docling-slim.md
+CHANGELOG.md
+docling/backend/html_backend.py
+docling/backend/msword_backend.py
+docling/backend/xml/uspto_backend.py
+docling/datamodel/pipeline_options.py
+docling/datamodel/service/options.py
+docling/datamodel/stage_model_specs.py
+docling/service_client/client.py
+tests/test_service_client_sdk_unit.py

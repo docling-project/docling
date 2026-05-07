@@ -61,9 +61,9 @@ def test_collect_targets_limits_scope_to_supported_paths(tmp_path: Path) -> None
 
     (
         ruff_targets,
-        mypy_targets,
+        ty_targets,
         existing_ruff_targets,
-        existing_mypy_targets,
+        existing_ty_targets,
         used_tooling_smoke_targets,
     ) = fast_checks.collect_targets(tmp_path, changed_paths)
 
@@ -74,7 +74,7 @@ def test_collect_targets_limits_scope_to_supported_paths(tmp_path: Path) -> None
         "docs/examples/demo.ipynb",
         ".github/scripts/helper.py",
     ]
-    assert mypy_targets == [
+    assert ty_targets == [
         "docling/existing_module.py",
         "docling/new_module.py",
         ".github/scripts/helper.py",
@@ -85,7 +85,7 @@ def test_collect_targets_limits_scope_to_supported_paths(tmp_path: Path) -> None
         "docs/examples/demo.ipynb",
         ".github/scripts/helper.py",
     ]
-    assert existing_mypy_targets == [
+    assert existing_ty_targets == [
         "docling/existing_module.py",
         ".github/scripts/helper.py",
     ]
@@ -99,36 +99,36 @@ def test_collect_targets_uses_smoke_target_for_tooling_only_changes(
 
     (
         ruff_targets,
-        mypy_targets,
+        ty_targets,
         existing_ruff_targets,
-        existing_mypy_targets,
+        existing_ty_targets,
         used_tooling_smoke_targets,
     ) = fast_checks.collect_targets(tmp_path, ["pyproject.toml"])
 
     assert ruff_targets == [fast_checks.SMOKE_CHECK_TARGET]
-    assert mypy_targets == [fast_checks.SMOKE_CHECK_TARGET]
+    assert ty_targets == [fast_checks.SMOKE_CHECK_TARGET]
     assert existing_ruff_targets == [fast_checks.SMOKE_CHECK_TARGET]
-    assert existing_mypy_targets == [fast_checks.SMOKE_CHECK_TARGET]
+    assert existing_ty_targets == [fast_checks.SMOKE_CHECK_TARGET]
     assert used_tooling_smoke_targets is True
 
 
 def test_collect_targets_skips_unrelated_changes(tmp_path: Path) -> None:
     (
         ruff_targets,
-        mypy_targets,
+        ty_targets,
         existing_ruff_targets,
-        existing_mypy_targets,
+        existing_ty_targets,
         used_tooling_smoke_targets,
     ) = fast_checks.collect_targets(tmp_path, ["README.md"])
 
     assert ruff_targets == []
-    assert mypy_targets == []
+    assert ty_targets == []
     assert existing_ruff_targets == []
-    assert existing_mypy_targets == []
+    assert existing_ty_targets == []
     assert used_tooling_smoke_targets is False
 
 
-def test_build_check_units_uses_fast_mypy_flags(monkeypatch) -> None:
+def test_build_check_units_uses_ty_check(monkeypatch) -> None:
     monkeypatch.setattr(
         fast_checks,
         "resolve_executable",
@@ -136,15 +136,13 @@ def test_build_check_units_uses_fast_mypy_flags(monkeypatch) -> None:
     )
 
     units = fast_checks.build_check_units(Path("/tmp/repo"))
-    mypy_unit = next(unit for unit in units if unit.name == "mypy")
+    ty_unit = next(unit for unit in units if unit.name == "ty")
 
-    assert mypy_unit.command == [
-        "/tmp/mypy",
-        "--config-file",
-        "/tmp/repo/pyproject.toml",
-        "--follow-imports",
-        "skip",
-        "--ignore-missing-imports",
+    assert ty_unit.command == [
+        "/tmp/ty",
+        "check",
+        "--project",
+        "/tmp/repo",
     ]
 
 
@@ -195,9 +193,45 @@ def test_git_helpers_accept_synthetic_merge_tree(tmp_path: Path) -> None:
     assert (tmp_path / "tests/test_module.py").exists()
 
 
+def test_log_result_suppresses_success_output(capsys) -> None:
+    result = fast_checks.CommandResult(
+        unit_name="ty",
+        label="base",
+        targets=["docling/module.py"],
+        duration_seconds=1.0,
+        returncode=0,
+        stdout="allowed warning\n",
+        stderr="",
+    )
+
+    fast_checks.log_result(result)
+
+    captured = capsys.readouterr()
+    assert "exit code 0" in captured.out
+    assert "allowed warning" not in captured.out
+
+
+def test_log_result_prints_failure_output(capsys) -> None:
+    result = fast_checks.CommandResult(
+        unit_name="ty",
+        label="head",
+        targets=["docling/module.py"],
+        duration_seconds=1.0,
+        returncode=1,
+        stdout="type error\n",
+        stderr="",
+    )
+
+    fast_checks.log_result(result)
+
+    captured = capsys.readouterr()
+    assert "exit code 1" in captured.out
+    assert "type error" in captured.out
+
+
 def test_significant_regression_requires_same_successful_target_set() -> None:
     base = fast_checks.CommandResult(
-        unit_name="mypy",
+        unit_name="ty",
         label="base",
         targets=["docling/module.py"],
         duration_seconds=3.0,
@@ -206,7 +240,7 @@ def test_significant_regression_requires_same_successful_target_set() -> None:
         stderr="",
     )
     head = fast_checks.CommandResult(
-        unit_name="mypy",
+        unit_name="ty",
         label="head",
         targets=["docling/module.py"],
         duration_seconds=5.2,
@@ -215,7 +249,7 @@ def test_significant_regression_requires_same_successful_target_set() -> None:
         stderr="",
     )
     different_targets = fast_checks.CommandResult(
-        unit_name="mypy",
+        unit_name="ty",
         label="head",
         targets=["docling/other.py"],
         duration_seconds=5.2,
