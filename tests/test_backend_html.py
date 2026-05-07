@@ -1,4 +1,5 @@
 import base64
+import os
 import threading
 import time
 from io import BytesIO
@@ -22,6 +23,7 @@ from docling.datamodel.document import (
     SectionHeaderItem,
 )
 from docling.document_converter import DocumentConverter, HTMLFormatOption
+from docling.exceptions import OperationNotAllowed
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -64,7 +66,10 @@ def test_resolve_relative_path():
     assert html_doc._resolve_relative_path(relative_path) == expected_abs_loc
 
     absolute_path = "/absolute/path/to/file.html"
-    assert html_doc._resolve_relative_path(absolute_path) == absolute_path
+    with pytest.raises(
+        ValueError, match="Absolute paths are not allowed with local base_path"
+    ):
+        html_doc._resolve_relative_path(absolute_path)
 
     html_doc.base_path = "http://my_host.com"
     protocol_relative_url = "//example.com/file.html"
@@ -86,9 +91,16 @@ def test_resolve_relative_path():
     expected_abs_loc = "http://example.com/static/images/my_image.png"
     assert html_doc._resolve_relative_path(remote_relative_path) == expected_abs_loc
 
+    # when base_path is None, paths pass through unchanged
+    # (validation happens in _load_image_data for actual file access)
     html_doc.base_path = None
-    relative_path = "subdir/file.html"
-    assert html_doc._resolve_relative_path(relative_path) == relative_path
+
+    # Paths pass through _resolve_relative_path unchanged
+    assert html_doc._resolve_relative_path("subdir/file.html") == "subdir/file.html"
+
+    # Remote URLs also pass through
+    remote_url = "https://example.com/file.html"
+    assert html_doc._resolve_relative_path(remote_url) == remote_url
 
     # Fragment-only hrefs must pass through unchanged
     html_doc.base_path = "/local/path/to/file.html"
@@ -294,31 +306,37 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
             num_pic += 1
     assert num_pic == 1, "No embedded picture was found in the converted file"
 
-    # fetching image remotely
-    mock_resp = Mock()
-    mock_resp.status_code = 200
-    mock_resp.headers = {}
-    mock_resp.raise_for_status = Mock()
-    mock_resp.iter_content = Mock(return_value=[img_bytes])
-    mock_remote.return_value = mock_resp
-    source_location = "https://example.com/example_01.html"
+    # fetching image remotely - need to mock Session.get instead of requests.get
+    with patch(
+        "docling.backend.html_backend.requests.Session.get"
+    ) as mocked_session_get:
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.headers = {}
+        mock_resp.raise_for_status = Mock()
+        mock_resp.iter_content = Mock(return_value=[img_bytes])
+        mock_resp.is_redirect = False
+        mock_resp.is_permanent_redirect = False
+        mocked_session_get.return_value = mock_resp
+        source_location = "https://example.com/example_01.html"
 
-    backend_options = HTMLBackendOptions(
-        enable_remote_fetch=True, fetch_images=True, source_uri=source_location
-    )
-    converter = DocumentConverter(
-        allowed_formats=[InputFormat.HTML],
-        format_options={
-            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
-        },
-    )
-    res_remote = converter.convert(source)
-    mock_remote.assert_called_once_with(
-        "https://example.com/example_image_01.png",
-        stream=True,
-        headers={"Range": "bytes=0-20971519"},  # 20 MB - 1
-        timeout=(5, 30),
-    )
+        backend_options = HTMLBackendOptions(
+            enable_remote_fetch=True, fetch_images=True, source_uri=source_location
+        )
+        converter = DocumentConverter(
+            allowed_formats=[InputFormat.HTML],
+            format_options={
+                InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
+            },
+        )
+        res_remote = converter.convert(source)
+        # Verify the session.get was called
+        assert mocked_session_get.call_count == 1
+        call_args = mocked_session_get.call_args
+        assert call_args[0][0] == "https://example.com/example_image_01.png"
+        assert call_args[1]["stream"] is True
+        assert call_args[1]["headers"] == {"Range": "bytes=0-20971519"}
+        assert call_args[1]["timeout"] == (5, 30)
     assert res_remote.document
     num_pic = 0
     for element, _ in res_remote.document.iterate_items():
@@ -436,16 +454,20 @@ def test_fetch_remote_images(monkeypatch):
             InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
         },
     )
-    with patch("docling.backend.html_backend.requests.get") as mocked_get:
+    with patch(
+        "docling.backend.html_backend.requests.Session.get"
+    ) as mocked_session_get:
         # Mock the response to support the new streaming interface
         mock_resp = Mock()
         mock_resp.headers = {}
         mock_resp.raise_for_status = Mock()
         mock_resp.iter_content = Mock(return_value=[b"fake_image_data"])
-        mocked_get.return_value = mock_resp
+        mock_resp.is_redirect = False
+        mock_resp.is_permanent_redirect = False
+        mocked_session_get.return_value = mock_resp
 
         res = converter.convert(source)
-        mocked_get.assert_called_once()
+        mocked_session_get.assert_called_once()
     assert res.document
 
     # image fetching: all conditions apply, local fetching allowed
@@ -463,9 +485,8 @@ def test_fetch_remote_images(monkeypatch):
         pytest.warns(match="a bytes-like object is required"),
     ):
         res = converter.convert(source)
-        mocked_open.assert_called_once_with(
-            "tests/data/html/example_image_01.png", "rb"
-        )
+        expected_path = os.path.abspath("tests/data/html/example_image_01.png")
+        mocked_open.assert_called_once_with(expected_path, "rb")
         assert res.document
 
 
@@ -781,7 +802,9 @@ def test_load_image_data_enforces_size_limit(monkeypatch):
     )
 
     oversized_response = MockResponse(25 * 1024 * 1024)  # 25 MB, exceeds 20 MB limit
-    monkeypatch.setattr(requests, "get", lambda *args, **kwargs: oversized_response)
+    monkeypatch.setattr(
+        requests.Session, "get", lambda *args, **kwargs: oversized_response
+    )
 
     with pytest.raises(ValueError, match="Resource size exceeds limit"):
         backend._load_image_data("http://example.com/huge_image.png")
@@ -835,3 +858,120 @@ def test_anchor_fragment_links_with_source_uri():
         "[Example](https://example.com)" in md
         or "[Example](https://example.com/)" in md
     )
+
+
+def test_path_traversal_blocked_in_resolve_relative_path():
+    """Test that path traversal attempts are blocked."""
+    html_path = Path("./tests/data/html/example_01.html")
+    options = HTMLBackendOptions(enable_local_fetch=True, fetch_images=True)
+    in_doc = InputDocument(
+        path_or_stream=html_path,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    html_doc = HTMLDocumentBackend(
+        path_or_stream=html_path, in_doc=in_doc, options=options
+    )
+    html_doc.base_path = "/tmp/docs/report.html"
+
+    # Path traversal with ../ blocked
+    with pytest.raises(ValueError, match="Path traversal blocked"):
+        html_doc._resolve_relative_path("../../../../../../../etc/something")
+
+    with pytest.raises(ValueError, match="Path traversal blocked"):
+        html_doc._resolve_relative_path("subdir/../../../../../../etc/something")
+
+    # Valid relative paths work
+    result = html_doc._resolve_relative_path("images/photo.png")
+    assert "/tmp/docs/images/photo.png" in result
+    assert "etc" not in result
+
+    # Absolute paths blocked with local base_path
+    with pytest.raises(
+        ValueError, match="Absolute paths are not allowed with local base_path"
+    ):
+        html_doc._resolve_relative_path("/absolute/path/to/file.html")
+
+    # file:// URIs blocked
+    with pytest.raises(
+        ValueError, match="Absolute paths are not allowed with local base_path"
+    ):
+        html_doc._resolve_relative_path("file:///etc/something")
+
+    # Windows absolute paths blocked with local base_path (forward slashes)
+    with pytest.raises(
+        ValueError, match="Absolute paths are not allowed with local base_path"
+    ):
+        html_doc._resolve_relative_path("C:/Windows/System32/config/sam")
+
+    with pytest.raises(
+        ValueError, match="Absolute paths are not allowed with local base_path"
+    ):
+        html_doc._resolve_relative_path("D:/sensitive/data.txt")
+
+    # Windows absolute paths with backslashes (native Windows separator)
+    with pytest.raises(
+        ValueError, match="Absolute paths are not allowed with local base_path"
+    ):
+        html_doc._resolve_relative_path(r"C:\Windows\System32\config\sam")
+
+    with pytest.raises(
+        ValueError, match="Absolute paths are not allowed with local base_path"
+    ):
+        html_doc._resolve_relative_path(r"D:\Users\Foo\Documents\something.txt")
+
+    # Hypothetical single-letter URI schemes (c://, z://) should be rejected as URIs
+    with pytest.raises(ValueError, match="Invalid base_path format"):
+        html_doc.base_path = "c://example.com/path"
+        html_doc._resolve_relative_path("image.png")
+
+    # Reset base_path for remaining tests
+    html_doc.base_path = "/tmp/docs/report.html"
+
+    # Filesystem access blocked when base_path is None
+    html_doc.base_path = None
+
+    # Paths pass through unchanged for hyperlinks
+    assert (
+        html_doc._resolve_relative_path("../../../etc/something")
+        == "../../../etc/something"
+    )
+    assert html_doc._resolve_relative_path("/etc/something") == "/etc/something"
+    assert html_doc._resolve_relative_path("image.png") == "image.png"
+
+    # But file access is blocked
+    with pytest.raises(
+        OperationNotAllowed, match="Local file access requires base_path"
+    ):
+        html_doc._load_image_data("../../../etc/something")
+
+    with pytest.raises(
+        OperationNotAllowed, match="Local file access requires base_path"
+    ):
+        html_doc._load_image_data("/etc/something")
+
+    with pytest.raises(
+        OperationNotAllowed, match="Local file access requires base_path"
+    ):
+        html_doc._load_image_data("image.png")
+
+
+def test_valid_local_paths_still_work():
+    """Test that valid paths within the base directory still work."""
+    html_path = Path("./tests/data/html/example_01.html").resolve()
+    options = HTMLBackendOptions(enable_local_fetch=True, fetch_images=True)
+    in_doc = InputDocument(
+        path_or_stream=html_path,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    html_doc = HTMLDocumentBackend(
+        path_or_stream=html_path, in_doc=in_doc, options=options
+    )
+    html_doc.base_path = str(html_path)
+
+    resolved = html_doc._resolve_relative_path("example_image_01.png")
+    assert "tests/data/html" in resolved
+    assert "example_image_01.png" in resolved
