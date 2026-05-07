@@ -88,6 +88,7 @@ class ExperimentalWarning(UserWarning):
 SUCCESS_CONVERSION_STATUSES: set[ConversionStatus] = {
     ConversionStatus.SUCCESS,
     ConversionStatus.PARTIAL_SUCCESS,
+    ConversionStatus.PARTIAL_SUCCESS_TIMEOUT,
 }
 SUBMIT_AND_RETRIEVE_MANY_MAX_IN_FLIGHT_WEBSOCKETS = 64
 HTTP_RETRY_BACKOFF_BASE_SECONDS = 1.0

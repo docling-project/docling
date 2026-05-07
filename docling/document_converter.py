@@ -456,6 +456,7 @@ class DocumentConverter:
             if raises_on_error and conv_res.status not in {
                 ConversionStatus.SUCCESS,
                 ConversionStatus.PARTIAL_SUCCESS,
+                ConversionStatus.PARTIAL_SUCCESS_TIMEOUT,
             }:
                 error_details = ""
                 if conv_res.errors:
