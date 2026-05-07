@@ -73,4 +73,7 @@ class MinioConfig(BaseSettings):
 
 settings = Settings()
 msg_queue_config = MsgQueueConfig()
-minio_config = MinioConfig()
+# MinioConfig 는 사용 시점(util/minio_resource.download_resource_files)에서 인스턴스화한다.
+# 모듈 import 시점에 무조건 인스턴스화하면 MinIO 를 쓰지 않는 환경에서도
+# MINIO_* 환경변수 누락만으로 워커 boot 가 실패함. main.py:49 에서 PREPROCESSOR_ID
+# 가 있을 때만 MinIO 가 사용되므로, 검증도 그 흐름 안에서 일어나야 한다.
