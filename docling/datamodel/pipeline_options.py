@@ -57,6 +57,7 @@ from docling.datamodel.stage_model_specs import (
 )
 from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
 from docling.datamodel.vlm_model_specs import (
+    GRANITE_VISION_4_1_TRANSFORMERS,
     GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
     GRANITE_VISION_TRANSFORMERS as granite_vision_vlm_conversion_options,
     NU_EXTRACT_2B_TRANSFORMERS,
@@ -1458,6 +1459,10 @@ class VlmExtractionPipelineOptions(PipelineOptions):
     NuExtract-2B) to extract structured data fields from document images.
     Unlike `VlmPipelineOptions` which converts pages to document format,
     this pipeline targets extraction of specific entities or key-value pairs.
+
+    Supported models:
+        - ``NU_EXTRACT_2B_TRANSFORMERS`` (default): NuExtract-2.0-2B
+        - ``GRANITE_VISION_4_1_TRANSFORMERS``: Granite Vision 4.1-4B
     """
 
     vlm_options: Annotated[

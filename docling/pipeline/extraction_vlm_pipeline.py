@@ -20,6 +20,7 @@ from docling.datamodel.pipeline_options import (
     VlmExtractionPipelineOptions,
 )
 from docling.datamodel.settings import settings
+from docling.models.base_model import BaseVlmModel
 from docling.models.extraction.nuextract_transformers_model import (
     NuExtractTransformersModel,
 )
@@ -27,6 +28,8 @@ from docling.pipeline.base_extraction_pipeline import BaseExtractionPipeline
 from docling.utils.accelerator_utils import decide_device
 
 _log = logging.getLogger(__name__)
+
+_GRANITE_VISION_REPO_PREFIX = "ibm-granite/granite-vision"
 
 
 class ExtractionVlmPipeline(BaseExtractionPipeline):
@@ -37,12 +40,31 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         self.accelerator_options = pipeline_options.accelerator_options
         self.pipeline_options: VlmExtractionPipelineOptions
 
-        # Create VLM model instance
-        self.vlm_model = NuExtractTransformersModel(
+        # Create VLM model instance based on vlm_options
+        self.vlm_model: BaseVlmModel = self._create_vlm_model(pipeline_options)
+
+    def _create_vlm_model(
+        self, pipeline_options: VlmExtractionPipelineOptions
+    ) -> BaseVlmModel:
+        vlm_options = pipeline_options.vlm_options
+
+        if vlm_options.repo_id.startswith(_GRANITE_VISION_REPO_PREFIX):
+            from docling.models.extraction.granite_vision_extraction_model import (
+                GraniteVisionExtractionModel,
+            )
+
+            return GraniteVisionExtractionModel(
+                enabled=True,
+                artifacts_path=self.artifacts_path,
+                accelerator_options=self.accelerator_options,
+                vlm_options=vlm_options,
+            )
+
+        return NuExtractTransformersModel(
             enabled=True,
-            artifacts_path=self.artifacts_path,  # Will download automatically
+            artifacts_path=self.artifacts_path,
             accelerator_options=self.accelerator_options,
-            vlm_options=pipeline_options.vlm_options,
+            vlm_options=vlm_options,
         )
 
     def _extract_data(
