@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>HTML 테이블 샘플</title>
+</head>
+<body>
+
+<h1>테이블 파싱 테스트</h1>
+<p>HTML 백엔드의 테이블 파싱 기능을 검증하는 샘플 문서입니다.</p>
+
+<h2>1. 기본 테이블</h2>
+<p>단순한 행과 열로 구성된 기본 테이블입니다.</p>
+<table>
+  <caption>분기별 실적 요약</caption>
+  <thead>
+    <tr>
+      <th>항목</th>
+      <th>1분기</th>
+      <th>2분기</th>
+      <th>3분기</th>
+      <th>4분기</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>매출액</td>
+      <td>1,200만</td>
+      <td>1,350만</td>
+      <td>1,100만</td>
+      <td>1,500만</td>
+    </tr>
+    <tr>
+      <td>영업이익</td>
+      <td>240만</td>
+      <td>270만</td>
+      <td>198만</td>
+      <td>315만</td>
+    </tr>
+    <tr>
+      <td>순이익</td>
+      <td>180만</td>
+      <td>210만</td>
+      <td>150만</td>
+      <td>250만</td>
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr>
+      <td>합계</td>
+      <td>1,620만</td>
+      <td>1,830만</td>
+      <td>1,448만</td>
+      <td>2,065만</td>
+    </tr>
+  </tfoot>
+</table>
+
+<h2>2. colspan을 사용한 테이블</h2>
+<p>셀 병합(colspan)이 포함된 테이블입니다.</p>
+<table>
+  <thead>
+    <tr>
+      <th>구분</th>
+      <th colspan="2">상반기</th>
+      <th colspan="2">하반기</th>
+    </tr>
+    <tr>
+      <th></th>
+      <th>1분기</th>
+      <th>2분기</th>
+      <th>3분기</th>
+      <th>4분기</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>계획</td>
+      <td>1,000만</td>
+      <td>1,200만</td>
+      <td>1,100만</td>
+      <td>1,400만</td>
+    </tr>
+    <tr>
+      <td>실적</td>
+      <td>1,200만</td>
+      <td>1,350만</td>
+      <td>1,100만</td>
+      <td>1,500만</td>
+    </tr>
+    <tr>
+      <td>달성률</td>
+      <td colspan="2">112.5%</td>
+      <td colspan="2">107.1%</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>3. rowspan을 사용한 테이블</h2>
+<p>행 병합(rowspan)이 포함된 테이블입니다.</p>
+<table>
+  <thead>
+    <tr>
+      <th>카테고리</th>
+      <th>항목</th>
+      <th>수량</th>
+      <th>단가</th>
+      <th>금액</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="3">소프트웨어</td>
+      <td>OS 라이선스</td>
+      <td>10</td>
+      <td>50,000</td>
+      <td>500,000</td>
+    </tr>
+    <tr>
+      <td>오피스 제품군</td>
+      <td>10</td>
+      <td>30,000</td>
+      <td>300,000</td>
+    </tr>
+    <tr>
+      <td>보안 솔루션</td>
+      <td>10</td>
+      <td>20,000</td>
+      <td>200,000</td>
+    </tr>
+    <tr>
+      <td rowspan="2">하드웨어</td>
+      <td>노트북</td>
+      <td>5</td>
+      <td>1,200,000</td>
+      <td>6,000,000</td>
+    </tr>
+    <tr>
+      <td>모니터</td>
+      <td>5</td>
+      <td>400,000</td>
+      <td>2,000,000</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>4. colspan과 rowspan이 혼합된 테이블</h2>
+<p>복잡한 셀 병합이 혼합된 테이블입니다.</p>
+<table>
+  <thead>
+    <tr>
+      <th rowspan="2">팀</th>
+      <th colspan="3">KPI 항목</th>
+    </tr>
+    <tr>
+      <th>목표</th>
+      <th>실적</th>
+      <th>달성률</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>개발팀</td>
+      <td>100</td>
+      <td>95</td>
+      <td>95%</td>
+    </tr>
+    <tr>
+      <td>영업팀</td>
+      <td>200</td>
+      <td>220</td>
+      <td>110%</td>
+    </tr>
+    <tr>
+      <td>마케팅팀</td>
+      <td>150</td>
+      <td>140</td>
+      <td>93%</td>
+    </tr>
+    <tr>
+      <td>합계</td>
+      <td colspan="2">총 455 / 450</td>
+      <td>101%</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>5. 텍스트 혼합 테이블</h2>
+<p>셀 안에 링크와 포맷팅이 포함된 테이블입니다.</p>
+<table>
+  <thead>
+    <tr>
+      <th>기술</th>
+      <th>설명</th>
+      <th>상태</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Python</strong></td>
+      <td>범용 프로그래밍 언어. <a href="https://python.org">공식 사이트</a></td>
+      <td><em>안정</em></td>
+    </tr>
+    <tr>
+      <td><strong>JavaScript</strong></td>
+      <td>웹 프론트엔드 및 Node.js 백엔드용 언어</td>
+      <td><em>안정</em></td>
+    </tr>
+    <tr>
+      <td><strong>Rust</strong></td>
+      <td>메모리 안전성을 보장하는 시스템 프로그래밍 언어</td>
+      <td><em>성장</em></td>
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>

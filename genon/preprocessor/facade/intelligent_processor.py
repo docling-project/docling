@@ -956,14 +956,14 @@ class GenOSVectorMetaBuilder:
                              'b': bbox.b / size.height,
                              'coord_origin': bbox.coord_origin.value}
                 chunk_bboxes.append({'page': page_no, 'bbox': bbox_data, 'type': type_, 'ref': label})
-        self.e_page = max([bbox['page'] for bbox in chunk_bboxes]) if chunk_bboxes else None
+        self.e_page = max([bbox['page'] for bbox in chunk_bboxes]) if chunk_bboxes else 0
         self.chunk_bboxes = json.dumps(chunk_bboxes)
         return self
 
     def set_media_files(self, doc_items: list) -> "GenOSVectorMetaBuilder":
         temp_list = []
         for item in doc_items:
-            if isinstance(item, PictureItem):
+            if isinstance(item, PictureItem) and item.image:
                 path = str(item.image.uri)
                 name = path.rsplit("/", 1)[-1]
                 temp_list.append({'name': name, 'type': 'image', 'ref': item.self_ref})
@@ -1177,7 +1177,8 @@ class DocumentProcessor:
 
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
         for chunk in chunks:
-            self.page_chunk_counts[chunk.meta.doc_items[0].prov[0].page_no] += 1
+            if chunk.meta.doc_items[0].prov:
+                self.page_chunk_counts[chunk.meta.doc_items[0].prov[0].page_no] += 1
         return chunks
 
     def safe_join(self, iterable):
@@ -1287,7 +1288,7 @@ class DocumentProcessor:
         vectors = []
         upload_tasks = []
         for chunk_idx, chunk in enumerate(chunks):
-            chunk_page = chunk.meta.doc_items[0].prov[0].page_no
+            chunk_page = chunk.meta.doc_items[0].prov[0].page_no if chunk.meta.doc_items[0].prov else 0
             # header 앞에 헤더 마커 추가 (HEADER: )
             headers_text = "HEADER: " + ", ".join(chunk.meta.headings) + '\n' if chunk.meta.headings else ''
             content = headers_text + chunk.text

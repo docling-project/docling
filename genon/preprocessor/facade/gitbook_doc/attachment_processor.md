@@ -77,7 +77,7 @@
         │                                                               │
         └── 기타 (.pdf, .ppt,    ► get_loader() ──► LangChain Loader     │
             .doc, .jpg, .txt,                          │                │
-            .json, .md 등)                             ▼                ▼
+            .json, .md, .html 등)                      ▼                ▼
                                               RecursiveTextSplitter  HybridChunker
                                                        │                │
                                                        ▼                ▼
@@ -963,6 +963,7 @@ def get_loader(self, file_path: str):
 | `.txt`, `.json` | `TextLoader` (커스텀) | 인코딩 자동 감지 |
 | `.hwp`, `.hwpx` | `HwpProcessor` (섹션 8.2 참고) | HWP/HWPX 변환 → Docling 파싱 |
 | `.md` | `UnstructuredMarkdownLoader` | 마크다운 구조 파싱 |
+| `.html` | `UnstructuredFileLoader` | 범용 폴백 로더로 텍스트 추출 |
 | 기타 | `UnstructuredFileLoader` | 범용 폴백 로더 |
 
 #### `get_real_file_type()` — 파일 매직 바이트 검사
@@ -1161,6 +1162,7 @@ __call__()
 | **이미지** | `.jpg`, `.jpeg`, `.png` | OCR 텍스트 추출 | Unstructured + Tesseract |
 | **텍스트** | `.txt`, `.json` | 인코딩 감지 + 직접 읽기 | chardet |
 | **마크다운** | `.md` | 마크다운 구조 파싱 | Unstructured Markdown |
+| **HTML** | `.html` | 범용 텍스트 추출 (else 분기 → `UnstructuredFileLoader`) | Unstructured |
 | **오디오** | `.mp3`, `.wav`, `.m4a` | STT (Speech-to-Text) | pydub + Whisper API |
 | **기타** | 그 외 | 범용 텍스트 추출 시도 | UnstructuredFileLoader |
 

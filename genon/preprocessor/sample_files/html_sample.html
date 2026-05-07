@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>HTML 샘플 문서</title>
+</head>
+<body>
+
+<h1>문서 제목: HTML 파싱 테스트</h1>
+<p>이 문서는 HTML 백엔드의 기본 파싱 기능을 검증하기 위한 샘플입니다. 다양한 HTML 요소를 포함합니다.</p>
+
+<h2>1. 텍스트 포맷팅</h2>
+<p>일반 텍스트 단락입니다. 문장 안에 <strong>굵은 텍스트</strong>와 <em>기울임 텍스트</em>를 포함합니다.</p>
+<p><b>bold 태그</b>와 <i>italic 태그</i>도 지원합니다. <u>밑줄</u>과 <s>취소선</s>도 처리됩니다.</p>
+<p>인라인 코드: <code>print("Hello, World!")</code> 형태로 표시됩니다.</p>
+<p>위 첨자: H<sub>2</sub>O, 아래 첨자: E=mc<sup>2</sup></p>
+<p>하이퍼링크: <a href="https://example.com">예시 링크</a>입니다.</p>
+
+<h2>2. 헤딩 계층 구조</h2>
+<h3>2.1 소제목 수준 3</h3>
+<p>헤딩 3 아래의 내용입니다. HTML 백엔드는 h1부터 h6까지 계층 구조를 인식합니다.</p>
+
+<h4>2.1.1 소제목 수준 4</h4>
+<p>헤딩 4 아래의 내용입니다. 문서의 계층 구조가 올바르게 파싱되어야 합니다.</p>
+
+<h5>소제목 수준 5</h5>
+<p>헤딩 5 아래의 내용입니다.</p>
+
+<h6>소제목 수준 6</h6>
+<p>헤딩 6 아래의 내용으로, 가장 깊은 헤딩 수준입니다.</p>
+
+<h2>3. 코드 블록</h2>
+<p>pre 태그를 이용한 코드 블록 예시입니다:</p>
+<pre><code>def parse_html(content: str) -> dict:
+    """HTML 문서를 파싱하여 구조화된 데이터로 반환합니다."""
+    soup = BeautifulSoup(content, "html.parser")
+    return {
+        "title": soup.title.string if soup.title else "",
+        "headings": [h.get_text() for h in soup.find_all(["h1", "h2", "h3"])],
+    }
+</code></pre>
+
+<h2>4. 인용문</h2>
+<blockquote>
+  <p>이것은 인용문입니다. blockquote 태그 안의 텍스트는 별도의 블록으로 처리됩니다.</p>
+</blockquote>
+
+<h2>5. 단락 구조</h2>
+<p>첫 번째 단락입니다. 단락은 p 태그로 구분됩니다. 각 단락은 독립적인 텍스트 블록으로 파싱되어야 합니다.</p>
+
+<p>두 번째 단락입니다. HTML 백엔드는 단락 사이의 공백을 올바르게 처리해야 합니다. 이 단락에는 여러 문장이 포함되어 있습니다. 문장이 길어져도 하나의 단락 블록으로 유지되어야 합니다.</p>
+
+<p>세 번째 단락으로, 한국어 텍스트 처리를 검증합니다. 문서 처리 시 UTF-8 인코딩이 올바르게 유지되어야 하며, 특수 문자(예: &amp;, &lt;, &gt;, &quot;)도 올바르게 처리되어야 합니다.</p>
+
+<h2>6. 수평선 구분</h2>
+<p>수평선 아래 내용입니다.</p>
+<hr>
+<p>수평선 위 내용입니다.</p>
+
+<h2>7. 주소 및 footer</h2>
+<address>
+  작성자: HTML 파싱 테스트팀<br>
+  이메일: test@example.com<br>
+  날짜: 2024-01-01
+</address>
+
+<footer>
+  <p>문서 끝: 이 문서는 HTML 백엔드 파싱 테스트용입니다.</p>
+</footer>
+
+</body>
+</html>

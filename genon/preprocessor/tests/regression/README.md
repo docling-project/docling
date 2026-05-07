@@ -34,6 +34,7 @@ source .venv/bin/activate && pytest
 - `test_hwp_regression.py`: HWP 파일 regression 테스트
 - `test_hwpx_regression.py`: HWPX 파일 regression 테스트
 - `test_pptx_regression.py`: PPTX 파일 regression 테스트
+- `test_html_regression.py`: HTML 파일 regression 테스트
 - `baselines/`: 각 테스트 파일의 baseline 데이터 (JSON 형식)
 
 ### 파일 자동 검색
@@ -43,10 +44,11 @@ source .venv/bin/activate && pytest
 
 ## 체크 항목
 
-> ⚠️ **형식별 활성화 상태가 다릅니다.** HWP/HWPX는 아래 항목이 모두 활성화되어 있으며,
-> 나머지 형식(PDF/DOCX/MD/PPTX)은 현재 assert가 비활성화(주석 처리)된 상태입니다.
+> ⚠️ **형식별 활성화 상태가 다릅니다.**
+> - **활성화**: HWP, HWPX, HTML — assert가 모두 활성화되어 있습니다.
+> - **비활성화**: PDF, DOCX, MD, PPTX — assert가 주석 처리된 상태입니다.
 
-### HWP / HWPX (활성화)
+### HWP / HWPX / HTML (활성화)
 
 1. **Vector 개수** (`num_vectors`)
    - 문서 처리 결과(vectors)의 개수 일관성 확인
@@ -81,6 +83,42 @@ source .venv/bin/activate && pytest
 2. `sample_files/`에 CSV 파일 추가
 3. `pytest -m update_baseline`로 baseline 생성
 4. Baseline 검토 후 git commit
+
+## HTML 테스트 상세
+
+### 테스트 파일
+- `test_html_regression.py`: `sample_files/*.html` 파일을 자동 검색하여 테스트
+
+### 샘플 파일 구성 (`sample_files/`)
+
+| 파일명 | 커버하는 HTML 요소 |
+|--------|------------------|
+| `html_sample.html` | h1~h6 헤딩 계층, 단락, bold/italic/code/sub/sup 포맷팅, 하이퍼링크, 코드블록(`<pre>`), 인용문(`<blockquote>`), `<address>`, `<footer>` |
+| `html_tables.html` | 단순 테이블, `colspan`, `rowspan`, colspan+rowspan 혼합, `<caption>`, `<thead>`/`<tfoot>`, 셀 내 포맷팅 |
+| `html_lists.html` | `<ul>`, `<ol>`, `start` 속성, 3단계 중첩 리스트, ul+ol 혼합, 단락이 포함된 리스트 항목, `<dl>` 정의 목록 |
+
+### 활성화된 assert
+
+```python
+# 1. 벡터 수 정확 일치
+assert current_result["num_vectors"] == baseline["num_vectors"]
+
+# 2. 전체 문자 수 ±5% 이내
+char_ratio = char_diff / max(baseline["total_characters"], 1)
+assert char_ratio < 0.05
+
+# 3. 벡터별 텍스트 유사도 ≥ 85%
+similarity = difflib.SequenceMatcher(None, current_text, baseline_text).ratio()
+assert similarity > 0.85
+```
+
+### HTML 샘플 파일 추가 방법
+1. `sample_files/`에 `.html` 파일 추가 (코드 수정 불필요, 자동 감지)
+2. `pytest -m update_baseline -k test_update_html_baselines`로 baseline 생성
+3. Baseline JSON 검토 후 git commit
+
+### HTML baseline 파일명 규칙
+`baselines/html_{파일명}.json` (예: `html_html_sample.json`)
 
 ## 주의사항
 
