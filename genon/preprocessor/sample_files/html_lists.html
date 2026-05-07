@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>HTML 리스트 샘플</title>
+</head>
+<body>
+
+<h1>리스트 파싱 테스트</h1>
+<p>HTML 백엔드의 다양한 리스트 파싱 기능을 검증하는 샘플 문서입니다.</p>
+
+<h2>1. 순서 없는 리스트 (ul)</h2>
+<p>기본적인 bullet 리스트입니다.</p>
+<ul>
+  <li>첫 번째 항목</li>
+  <li>두 번째 항목</li>
+  <li>세 번째 항목</li>
+  <li>네 번째 항목</li>
+</ul>
+
+<h2>2. 순서 있는 리스트 (ol)</h2>
+<p>번호가 붙는 순서 리스트입니다.</p>
+<ol>
+  <li>문서 분석 단계</li>
+  <li>데이터 추출 단계</li>
+  <li>구조화 단계</li>
+  <li>검증 단계</li>
+  <li>저장 단계</li>
+</ol>
+
+<h2>3. start 속성이 있는 순서 리스트</h2>
+<p>특정 번호부터 시작하는 순서 리스트입니다.</p>
+<p>앞 단계에서 이어지는 목록:</p>
+<ol start="6">
+  <li>인덱싱 단계</li>
+  <li>검색 최적화 단계</li>
+  <li>배포 단계</li>
+</ol>
+
+<h2>4. 중첩 순서 없는 리스트</h2>
+<p>ul 안에 ul이 중첩된 리스트입니다.</p>
+<ul>
+  <li>프론트엔드 기술
+    <ul>
+      <li>HTML/CSS</li>
+      <li>JavaScript
+        <ul>
+          <li>React</li>
+          <li>Vue.js</li>
+          <li>Angular</li>
+        </ul>
+      </li>
+      <li>TypeScript</li>
+    </ul>
+  </li>
+  <li>백엔드 기술
+    <ul>
+      <li>Python
+        <ul>
+          <li>FastAPI</li>
+          <li>Django</li>
+        </ul>
+      </li>
+      <li>Go</li>
+      <li>Rust</li>
+    </ul>
+  </li>
+  <li>인프라
+    <ul>
+      <li>Docker</li>
+      <li>Kubernetes</li>
+    </ul>
+  </li>
+</ul>
+
+<h2>5. 중첩 순서 있는 리스트</h2>
+<p>ol 안에 ol이 중첩된 단계별 절차입니다.</p>
+<ol>
+  <li>프로젝트 초기화
+    <ol>
+      <li>요구사항 분석</li>
+      <li>기술 스택 선정</li>
+      <li>환경 구성</li>
+    </ol>
+  </li>
+  <li>개발 단계
+    <ol>
+      <li>핵심 기능 구현</li>
+      <li>테스트 작성</li>
+      <li>코드 리뷰</li>
+    </ol>
+  </li>
+  <li>배포 단계
+    <ol>
+      <li>스테이징 환경 배포</li>
+      <li>QA 검증</li>
+      <li>프로덕션 배포</li>
+    </ol>
+  </li>
+</ol>
+
+<h2>6. 혼합 중첩 리스트 (ul + ol)</h2>
+<p>순서 없는 리스트 안에 순서 있는 리스트가 혼합된 구조입니다.</p>
+<ul>
+  <li>문서 처리 파이프라인
+    <ol>
+      <li>입력 파일 로드</li>
+      <li>형식 감지</li>
+      <li>파싱 실행</li>
+    </ol>
+  </li>
+  <li>지원 파일 형식
+    <ul>
+      <li>PDF</li>
+      <li>DOCX</li>
+      <li>HTML</li>
+      <li>Markdown</li>
+    </ul>
+  </li>
+</ul>
+
+<h2>7. 포맷팅이 포함된 리스트</h2>
+<p>리스트 항목 안에 텍스트 포맷팅이 포함된 경우입니다.</p>
+<ul>
+  <li><strong>중요:</strong> 이 항목은 굵은 텍스트로 강조되었습니다.</li>
+  <li><em>참고:</em> 이 항목은 기울임체로 표시됩니다.</li>
+  <li>코드 예시: <code>import docling</code></li>
+  <li>링크가 포함된 항목: <a href="https://github.com/docling">GitHub 저장소</a>를 참고하세요.</li>
+  <li><strong>경고:</strong> <em>굵은 텍스트와 기울임체가 혼합</em>된 항목입니다.</li>
+</ul>
+
+<h2>8. 리스트와 단락 혼합</h2>
+<p>각 리스트 항목이 여러 문장으로 구성된 복합 구조입니다.</p>
+<ul>
+  <li>
+    <p>첫 번째 항목의 첫 번째 단락입니다. 항목 내에 단락이 포함될 수 있습니다.</p>
+    <p>첫 번째 항목의 두 번째 단락입니다. 이 구조는 복잡한 문서에서 자주 사용됩니다.</p>
+  </li>
+  <li>
+    <p>두 번째 항목입니다. 단일 단락으로만 구성된 항목입니다.</p>
+  </li>
+  <li>
+    <p>세 번째 항목의 설명입니다.</p>
+    <p>추가 정보가 담긴 단락입니다. 리스트 항목 내 단락은 올바르게 파싱되어야 합니다.</p>
+  </li>
+</ul>
+
+<h2>9. 정의 목록 (dl)</h2>
+<p>용어와 정의를 나타내는 dl 리스트입니다.</p>
+<dl>
+  <dt>HTML</dt>
+  <dd>HyperText Markup Language의 약자로, 웹 페이지의 구조를 정의하는 마크업 언어입니다.</dd>
+
+  <dt>CSS</dt>
+  <dd>Cascading Style Sheets의 약자로, HTML 요소의 스타일을 정의하는 언어입니다.</dd>
+
+  <dt>JavaScript</dt>
+  <dd>웹 브라우저에서 동적 기능을 구현하는 프로그래밍 언어입니다.</dd>
+</dl>
+
+</body>
+</html>
