@@ -33,16 +33,16 @@
         "$ref": "#/texts/4"
       },
       {
-        "$ref": "#/texts/5"
-      },
-      {
-        "$ref": "#/texts/6"
-      },
-      {
-        "$ref": "#/texts/7"
-      },
-      {
         "$ref": "#/pictures/0"
+      },
+      {
+        "$ref": "#/texts/309"
+      },
+      {
+        "$ref": "#/texts/310"
+      },
+      {
+        "$ref": "#/texts/311"
       },
       {
         "$ref": "#/texts/312"
@@ -72,7 +72,7 @@
         "$ref": "#/texts/320"
       },
       {
-        "$ref": "#/texts/321"
+        "$ref": "#/groups/0"
       },
       {
         "$ref": "#/texts/322"
@@ -81,7 +81,7 @@
         "$ref": "#/texts/323"
       },
       {
-        "$ref": "#/groups/0"
+        "$ref": "#/texts/324"
       },
       {
         "$ref": "#/texts/325"
@@ -90,16 +90,16 @@
         "$ref": "#/texts/326"
       },
       {
-        "$ref": "#/texts/327"
-      },
-      {
-        "$ref": "#/texts/328"
-      },
-      {
-        "$ref": "#/texts/329"
-      },
-      {
         "$ref": "#/groups/1"
+      },
+      {
+        "$ref": "#/texts/331"
+      },
+      {
+        "$ref": "#/texts/332"
+      },
+      {
+        "$ref": "#/groups/2"
       },
       {
         "$ref": "#/texts/334"
@@ -108,7 +108,7 @@
         "$ref": "#/texts/335"
       },
       {
-        "$ref": "#/groups/2"
+        "$ref": "#/texts/336"
       },
       {
         "$ref": "#/texts/337"
@@ -132,16 +132,16 @@
         "$ref": "#/texts/343"
       },
       {
-        "$ref": "#/texts/344"
-      },
-      {
-        "$ref": "#/texts/345"
-      },
-      {
-        "$ref": "#/texts/346"
-      },
-      {
         "$ref": "#/pictures/1"
+      },
+      {
+        "$ref": "#/texts/357"
+      },
+      {
+        "$ref": "#/texts/358"
+      },
+      {
+        "$ref": "#/texts/359"
       },
       {
         "$ref": "#/texts/360"
@@ -165,10 +165,10 @@
         "$ref": "#/texts/366"
       },
       {
-        "$ref": "#/texts/367"
+        "$ref": "#/tables/0"
       },
       {
-        "$ref": "#/texts/368"
+        "$ref": "#/pictures/2"
       },
       {
         "$ref": "#/texts/369"
@@ -177,10 +177,10 @@
         "$ref": "#/texts/370"
       },
       {
-        "$ref": "#/tables/0"
+        "$ref": "#/texts/371"
       },
       {
-        "$ref": "#/pictures/2"
+        "$ref": "#/texts/372"
       },
       {
         "$ref": "#/texts/373"
@@ -195,34 +195,34 @@
         "$ref": "#/texts/376"
       },
       {
-        "$ref": "#/texts/377"
-      },
-      {
-        "$ref": "#/texts/378"
-      },
-      {
-        "$ref": "#/texts/379"
-      },
-      {
-        "$ref": "#/texts/380"
-      },
-      {
-        "$ref": "#/texts/381"
-      },
-      {
-        "$ref": "#/texts/382"
-      },
-      {
         "$ref": "#/groups/3"
       },
       {
-        "$ref": "#/texts/389"
+        "$ref": "#/texts/383"
       },
       {
-        "$ref": "#/texts/390"
+        "$ref": "#/texts/384"
       },
       {
         "$ref": "#/pictures/3"
+      },
+      {
+        "$ref": "#/texts/395"
+      },
+      {
+        "$ref": "#/texts/396"
+      },
+      {
+        "$ref": "#/texts/397"
+      },
+      {
+        "$ref": "#/texts/398"
+      },
+      {
+        "$ref": "#/texts/399"
+      },
+      {
+        "$ref": "#/tables/1"
       },
       {
         "$ref": "#/texts/401"
@@ -231,28 +231,28 @@
         "$ref": "#/texts/402"
       },
       {
-        "$ref": "#/texts/403"
-      },
-      {
-        "$ref": "#/texts/404"
-      },
-      {
-        "$ref": "#/texts/405"
-      },
-      {
-        "$ref": "#/tables/1"
-      },
-      {
-        "$ref": "#/texts/407"
-      },
-      {
-        "$ref": "#/texts/408"
-      },
-      {
-        "$ref": "#/texts/409"
-      },
-      {
         "$ref": "#/pictures/4"
+      },
+      {
+        "$ref": "#/texts/424"
+      },
+      {
+        "$ref": "#/texts/425"
+      },
+      {
+        "$ref": "#/texts/426"
+      },
+      {
+        "$ref": "#/texts/427"
+      },
+      {
+        "$ref": "#/texts/428"
+      },
+      {
+        "$ref": "#/tables/2"
+      },
+      {
+        "$ref": "#/texts/430"
       },
       {
         "$ref": "#/texts/431"
@@ -264,7 +264,7 @@
         "$ref": "#/texts/433"
       },
       {
-        "$ref": "#/texts/434"
+        "$ref": "#/tables/3"
       },
       {
         "$ref": "#/texts/435"
@@ -273,10 +273,13 @@
         "$ref": "#/texts/436"
       },
       {
-        "$ref": "#/tables/2"
+        "$ref": "#/texts/437"
       },
       {
         "$ref": "#/texts/438"
+      },
+      {
+        "$ref": "#/tables/4"
       },
       {
         "$ref": "#/texts/439"
@@ -288,7 +291,7 @@
         "$ref": "#/texts/441"
       },
       {
-        "$ref": "#/tables/3"
+        "$ref": "#/texts/442"
       },
       {
         "$ref": "#/texts/443"
@@ -306,55 +309,19 @@
         "$ref": "#/texts/447"
       },
       {
-        "$ref": "#/texts/448"
-      },
-      {
-        "$ref": "#/texts/449"
-      },
-      {
-        "$ref": "#/tables/4"
-      },
-      {
-        "$ref": "#/texts/450"
-      },
-      {
-        "$ref": "#/texts/451"
-      },
-      {
-        "$ref": "#/texts/452"
-      },
-      {
-        "$ref": "#/texts/453"
-      },
-      {
-        "$ref": "#/texts/454"
-      },
-      {
-        "$ref": "#/texts/455"
-      },
-      {
-        "$ref": "#/texts/456"
-      },
-      {
-        "$ref": "#/texts/457"
-      },
-      {
-        "$ref": "#/texts/458"
-      },
-      {
         "$ref": "#/groups/4"
       },
       {
-        "$ref": "#/texts/472"
+        "$ref": "#/texts/461"
       },
       {
-        "$ref": "#/texts/473"
+        "$ref": "#/texts/462"
       },
       {
         "$ref": "#/pictures/5"
       },
       {
-        "$ref": "#/texts/497"
+        "$ref": "#/texts/486"
       },
       {
         "$ref": "#/groups/5"
@@ -372,7 +339,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/324"
+          "$ref": "#/texts/321"
         }
       ],
       "content_layer": "body",
@@ -386,16 +353,16 @@
       },
       "children": [
         {
+          "$ref": "#/texts/327"
+        },
+        {
+          "$ref": "#/texts/328"
+        },
+        {
+          "$ref": "#/texts/329"
+        },
+        {
           "$ref": "#/texts/330"
-        },
-        {
-          "$ref": "#/texts/331"
-        },
-        {
-          "$ref": "#/texts/332"
-        },
-        {
-          "$ref": "#/texts/333"
         }
       ],
       "content_layer": "body",
@@ -409,7 +376,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/336"
+          "$ref": "#/texts/333"
         }
       ],
       "content_layer": "body",
@@ -423,22 +390,22 @@
       },
       "children": [
         {
-          "$ref": "#/texts/383"
+          "$ref": "#/texts/377"
         },
         {
-          "$ref": "#/texts/384"
+          "$ref": "#/texts/378"
         },
         {
-          "$ref": "#/texts/385"
+          "$ref": "#/texts/379"
         },
         {
-          "$ref": "#/texts/386"
+          "$ref": "#/texts/380"
         },
         {
-          "$ref": "#/texts/387"
+          "$ref": "#/texts/381"
         },
         {
-          "$ref": "#/texts/388"
+          "$ref": "#/texts/382"
         }
       ],
       "content_layer": "body",
@@ -452,43 +419,43 @@
       },
       "children": [
         {
+          "$ref": "#/texts/448"
+        },
+        {
+          "$ref": "#/texts/449"
+        },
+        {
+          "$ref": "#/texts/450"
+        },
+        {
+          "$ref": "#/texts/451"
+        },
+        {
+          "$ref": "#/texts/452"
+        },
+        {
+          "$ref": "#/texts/453"
+        },
+        {
+          "$ref": "#/texts/454"
+        },
+        {
+          "$ref": "#/texts/455"
+        },
+        {
+          "$ref": "#/texts/456"
+        },
+        {
+          "$ref": "#/texts/457"
+        },
+        {
+          "$ref": "#/texts/458"
+        },
+        {
           "$ref": "#/texts/459"
         },
         {
           "$ref": "#/texts/460"
-        },
-        {
-          "$ref": "#/texts/461"
-        },
-        {
-          "$ref": "#/texts/462"
-        },
-        {
-          "$ref": "#/texts/463"
-        },
-        {
-          "$ref": "#/texts/464"
-        },
-        {
-          "$ref": "#/texts/465"
-        },
-        {
-          "$ref": "#/texts/466"
-        },
-        {
-          "$ref": "#/texts/467"
-        },
-        {
-          "$ref": "#/texts/468"
-        },
-        {
-          "$ref": "#/texts/469"
-        },
-        {
-          "$ref": "#/texts/470"
-        },
-        {
-          "$ref": "#/texts/471"
         }
       ],
       "content_layer": "body",
@@ -502,34 +469,34 @@
       },
       "children": [
         {
-          "$ref": "#/texts/498"
+          "$ref": "#/texts/487"
         },
         {
-          "$ref": "#/texts/499"
+          "$ref": "#/texts/488"
         },
         {
-          "$ref": "#/texts/500"
+          "$ref": "#/texts/489"
         },
         {
-          "$ref": "#/texts/501"
+          "$ref": "#/texts/490"
         },
         {
-          "$ref": "#/texts/502"
+          "$ref": "#/texts/491"
         },
         {
-          "$ref": "#/texts/503"
+          "$ref": "#/texts/492"
         },
         {
-          "$ref": "#/texts/504"
+          "$ref": "#/texts/493"
         },
         {
-          "$ref": "#/texts/505"
+          "$ref": "#/texts/494"
         },
         {
-          "$ref": "#/texts/506"
+          "$ref": "#/texts/495"
         },
         {
-          "$ref": "#/texts/507"
+          "$ref": "#/texts/496"
         }
       ],
       "content_layer": "body",
@@ -550,9 +517,9 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 18.34,
-            "t": 627.0,
-            "r": 36.34,
+            "l": 18.76,
+            "t": 573.64,
+            "r": 36.21,
             "b": 237.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -615,20 +582,7 @@
             0,
             73
           ]
-        }
-      ],
-      "orig": "Birgit Pfitzmann IBM Research Rueschlikon, Switzerland bpf@zurich.ibm.com",
-      "text": "Birgit Pfitzmann IBM Research Rueschlikon, Switzerland bpf@zurich.ibm.com"
-    },
-    {
-      "self_ref": "#/texts/3",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
+        },
         {
           "page_no": 1,
           "bbox": {
@@ -639,16 +593,16 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            0,
-            71
+            74,
+            145
           ]
         }
       ],
-      "orig": "Christoph Auer IBM Research Rueschlikon, Switzerland cau@zurich.ibm.com",
-      "text": "Christoph Auer IBM Research Rueschlikon, Switzerland cau@zurich.ibm.com"
+      "orig": "Birgit Pfitzmann IBM Research Rueschlikon, Switzerland bpf@zurich.ibm.com Christoph Auer IBM Research Rueschlikon, Switzerland cau@zurich.ibm.com",
+      "text": "Birgit Pfitzmann IBM Research Rueschlikon, Switzerland bpf@zurich.ibm.com Christoph Auer IBM Research Rueschlikon, Switzerland cau@zurich.ibm.com"
     },
     {
-      "self_ref": "#/texts/4",
+      "self_ref": "#/texts/3",
       "parent": {
         "$ref": "#/body"
       },
@@ -675,7 +629,7 @@
       "text": "Ahmed S. Nassar IBM Research"
     },
     {
-      "self_ref": "#/texts/5",
+      "self_ref": "#/texts/4",
       "parent": {
         "$ref": "#/body"
       },
@@ -696,20 +650,7 @@
             0,
             43
           ]
-        }
-      ],
-      "orig": "Rueschlikon, Switzerland ahn@zurich.ibm.com",
-      "text": "Rueschlikon, Switzerland ahn@zurich.ibm.com"
-    },
-    {
-      "self_ref": "#/texts/6",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
+        },
         {
           "page_no": 1,
           "bbox": {
@@ -720,23 +661,10 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            0,
-            70
+            44,
+            114
           ]
-        }
-      ],
-      "orig": "Michele Dolfi IBM Research Rueschlikon, Switzerland dol@zurich.ibm.com",
-      "text": "Michele Dolfi IBM Research Rueschlikon, Switzerland dol@zurich.ibm.com"
-    },
-    {
-      "self_ref": "#/texts/7",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
+        },
         {
           "page_no": 1,
           "bbox": {
@@ -747,8 +675,8 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            0,
-            49
+            115,
+            164
           ]
         },
         {
@@ -761,16 +689,16 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            50,
-            68
+            165,
+            183
           ]
         }
       ],
-      "orig": "Peter Staar IBM Research Rueschlikon, Switzerland taa@zurich.ibm.com",
-      "text": "Peter Staar IBM Research Rueschlikon, Switzerland taa@zurich.ibm.com"
+      "orig": "Rueschlikon, Switzerland ahn@zurich.ibm.com Michele Dolfi IBM Research Rueschlikon, Switzerland dol@zurich.ibm.com Peter Staar IBM Research Rueschlikon, Switzerland taa@zurich.ibm.com",
+      "text": "Rueschlikon, Switzerland ahn@zurich.ibm.com Michele Dolfi IBM Research Rueschlikon, Switzerland dol@zurich.ibm.com Peter Staar IBM Research Rueschlikon, Switzerland taa@zurich.ibm.com"
     },
     {
-      "self_ref": "#/texts/8",
+      "self_ref": "#/texts/5",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -797,7 +725,7 @@
       "text": "Figure 1: Four examples of complex page layouts across different document categories"
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/6",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -824,7 +752,7 @@
       "text": "13"
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -851,7 +779,7 @@
       "text": "USING THE VERTICAL TUBE -"
     },
     {
-      "self_ref": "#/texts/11",
+      "self_ref": "#/texts/8",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -878,7 +806,7 @@
       "text": "MODELS AY11230/11234"
     },
     {
-      "self_ref": "#/texts/12",
+      "self_ref": "#/texts/9",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -905,7 +833,7 @@
       "text": "1. The vertical tube can be used for"
     },
     {
-      "self_ref": "#/texts/13",
+      "self_ref": "#/texts/10",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -932,7 +860,7 @@
       "text": "instructional viewing or to photograph"
     },
     {
-      "self_ref": "#/texts/14",
+      "self_ref": "#/texts/11",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -959,7 +887,7 @@
       "text": "the image with a digital camera or a"
     },
     {
-      "self_ref": "#/texts/15",
+      "self_ref": "#/texts/12",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -986,7 +914,7 @@
       "text": "micro TV unit"
     },
     {
-      "self_ref": "#/texts/16",
+      "self_ref": "#/texts/13",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1013,7 +941,7 @@
       "text": "2. Loosen the retention screw, then rotate"
     },
     {
-      "self_ref": "#/texts/17",
+      "self_ref": "#/texts/14",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1040,7 +968,7 @@
       "text": "the adjustment ring to change the"
     },
     {
-      "self_ref": "#/texts/18",
+      "self_ref": "#/texts/15",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1067,7 +995,7 @@
       "text": "length of the vertical tube."
     },
     {
-      "self_ref": "#/texts/19",
+      "self_ref": "#/texts/16",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1094,7 +1022,7 @@
       "text": "3. Make sure that both the images in"
     },
     {
-      "self_ref": "#/texts/20",
+      "self_ref": "#/texts/17",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1121,7 +1049,7 @@
       "text": "OPERATION (cont.)"
     },
     {
-      "self_ref": "#/texts/21",
+      "self_ref": "#/texts/18",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1148,7 +1076,7 @@
       "text": "SELECTING OBJECTIVE"
     },
     {
-      "self_ref": "#/texts/22",
+      "self_ref": "#/texts/19",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1175,7 +1103,7 @@
       "text": "MAGNIFICATION"
     },
     {
-      "self_ref": "#/texts/23",
+      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1202,7 +1130,7 @@
       "text": "1. There are two objectives. The lower"
     },
     {
-      "self_ref": "#/texts/24",
+      "self_ref": "#/texts/21",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1229,7 +1157,7 @@
       "text": "magnification objective has a greater"
     },
     {
-      "self_ref": "#/texts/25",
+      "self_ref": "#/texts/22",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1256,7 +1184,7 @@
       "text": "depth of field and view."
     },
     {
-      "self_ref": "#/texts/26",
+      "self_ref": "#/texts/23",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1283,7 +1211,7 @@
       "text": "2. In order to observe the specimen"
     },
     {
-      "self_ref": "#/texts/27",
+      "self_ref": "#/texts/24",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1310,7 +1238,7 @@
       "text": "easily use the lower magnification"
     },
     {
-      "self_ref": "#/texts/28",
+      "self_ref": "#/texts/25",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1337,7 +1265,7 @@
       "text": "objective first. Then, by rotating the"
     },
     {
-      "self_ref": "#/texts/29",
+      "self_ref": "#/texts/26",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1364,7 +1292,7 @@
       "text": "case, the magnification can be"
     },
     {
-      "self_ref": "#/texts/30",
+      "self_ref": "#/texts/27",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1391,7 +1319,7 @@
       "text": "changed."
     },
     {
-      "self_ref": "#/texts/31",
+      "self_ref": "#/texts/28",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1418,7 +1346,7 @@
       "text": "CHANGING THE INTERPUPILLARY"
     },
     {
-      "self_ref": "#/texts/32",
+      "self_ref": "#/texts/29",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1445,7 +1373,7 @@
       "text": "DISTANCE"
     },
     {
-      "self_ref": "#/texts/33",
+      "self_ref": "#/texts/30",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1472,7 +1400,7 @@
       "text": "1. The distance between the observer's"
     },
     {
-      "self_ref": "#/texts/34",
+      "self_ref": "#/texts/31",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1499,7 +1427,7 @@
       "text": "pupils is the interpupil ary distance."
     },
     {
-      "self_ref": "#/texts/35",
+      "self_ref": "#/texts/32",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1526,7 +1454,7 @@
       "text": "2. To adjust the interpupil ary distance"
     },
     {
-      "self_ref": "#/texts/36",
+      "self_ref": "#/texts/33",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1553,7 +1481,7 @@
       "text": "rotate the prism caps until both eyes"
     },
     {
-      "self_ref": "#/texts/37",
+      "self_ref": "#/texts/34",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1580,7 +1508,7 @@
       "text": "coincide with the image in the"
     },
     {
-      "self_ref": "#/texts/38",
+      "self_ref": "#/texts/35",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1607,7 +1535,7 @@
       "text": "eyepiece."
     },
     {
-      "self_ref": "#/texts/39",
+      "self_ref": "#/texts/36",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1634,7 +1562,7 @@
       "text": "FOCUSING"
     },
     {
-      "self_ref": "#/texts/40",
+      "self_ref": "#/texts/37",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1661,7 +1589,7 @@
       "text": "1. Remove the lens protective cover."
     },
     {
-      "self_ref": "#/texts/41",
+      "self_ref": "#/texts/38",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1688,7 +1616,7 @@
       "text": "2. Place the specimen on the working"
     },
     {
-      "self_ref": "#/texts/42",
+      "self_ref": "#/texts/39",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1715,7 +1643,7 @@
       "text": "stage."
     },
     {
-      "self_ref": "#/texts/43",
+      "self_ref": "#/texts/40",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1742,7 +1670,7 @@
       "text": "3. Focus the specimen with the left eye"
     },
     {
-      "self_ref": "#/texts/44",
+      "self_ref": "#/texts/41",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1769,7 +1697,7 @@
       "text": "first while turning the focus knob until"
     },
     {
-      "self_ref": "#/texts/45",
+      "self_ref": "#/texts/42",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1796,7 +1724,7 @@
       "text": "the image appears clear and sharp."
     },
     {
-      "self_ref": "#/texts/46",
+      "self_ref": "#/texts/43",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1823,7 +1751,7 @@
       "text": "4. Rotate the right eyepiece ring until the"
     },
     {
-      "self_ref": "#/texts/47",
+      "self_ref": "#/texts/44",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1850,7 +1778,7 @@
       "text": "images in each eyepiece coincide and"
     },
     {
-      "self_ref": "#/texts/48",
+      "self_ref": "#/texts/45",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1877,7 +1805,7 @@
       "text": "are sharp and clear."
     },
     {
-      "self_ref": "#/texts/49",
+      "self_ref": "#/texts/46",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1904,7 +1832,7 @@
       "text": "CHANGING THE BULB"
     },
     {
-      "self_ref": "#/texts/50",
+      "self_ref": "#/texts/47",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1931,7 +1859,7 @@
       "text": "1. Disconnect the power cord."
     },
     {
-      "self_ref": "#/texts/51",
+      "self_ref": "#/texts/48",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1958,7 +1886,7 @@
       "text": "2. When the bulb is cool, remove the"
     },
     {
-      "self_ref": "#/texts/52",
+      "self_ref": "#/texts/49",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -1985,7 +1913,7 @@
       "text": "oblique il uminator cap and remove"
     },
     {
-      "self_ref": "#/texts/53",
+      "self_ref": "#/texts/50",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2012,7 +1940,7 @@
       "text": "the halogen bulb with cap."
     },
     {
-      "self_ref": "#/texts/54",
+      "self_ref": "#/texts/51",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2039,7 +1967,7 @@
       "text": "3. Replace with a new halogen bulb."
     },
     {
-      "self_ref": "#/texts/55",
+      "self_ref": "#/texts/52",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2066,7 +1994,7 @@
       "text": "4. Open the window in the base plate and"
     },
     {
-      "self_ref": "#/texts/56",
+      "self_ref": "#/texts/53",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2093,7 +2021,7 @@
       "text": "replace the halogen lamp or"
     },
     {
-      "self_ref": "#/texts/57",
+      "self_ref": "#/texts/54",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2120,7 +2048,7 @@
       "text": "fluorescent lamp of transmitted"
     },
     {
-      "self_ref": "#/texts/58",
+      "self_ref": "#/texts/55",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2147,7 +2075,7 @@
       "text": "il uminator."
     },
     {
-      "self_ref": "#/texts/59",
+      "self_ref": "#/texts/56",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2174,7 +2102,7 @@
       "text": "FOCUSING"
     },
     {
-      "self_ref": "#/texts/60",
+      "self_ref": "#/texts/57",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2201,7 +2129,7 @@
       "text": "1. Turn the focusing knob away or toward"
     },
     {
-      "self_ref": "#/texts/61",
+      "self_ref": "#/texts/58",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2228,7 +2156,7 @@
       "text": "you until a clear image is viewed."
     },
     {
-      "self_ref": "#/texts/62",
+      "self_ref": "#/texts/59",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2255,7 +2183,7 @@
       "text": "2. If the image is unclear, adjust the"
     },
     {
-      "self_ref": "#/texts/63",
+      "self_ref": "#/texts/60",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2282,7 +2210,7 @@
       "text": "height of the elevator up or down,"
     },
     {
-      "self_ref": "#/texts/64",
+      "self_ref": "#/texts/61",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2309,7 +2237,7 @@
       "text": "then turn the focusing knob again."
     },
     {
-      "self_ref": "#/texts/65",
+      "self_ref": "#/texts/62",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2336,7 +2264,7 @@
       "text": "ZOOM MAGNIFICATION"
     },
     {
-      "self_ref": "#/texts/66",
+      "self_ref": "#/texts/63",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2363,7 +2291,7 @@
       "text": "1. Turn the zoom magnification knob to"
     },
     {
-      "self_ref": "#/texts/67",
+      "self_ref": "#/texts/64",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2390,7 +2318,7 @@
       "text": "the desired magnification and field of"
     },
     {
-      "self_ref": "#/texts/68",
+      "self_ref": "#/texts/65",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2417,7 +2345,7 @@
       "text": "view."
     },
     {
-      "self_ref": "#/texts/69",
+      "self_ref": "#/texts/66",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2444,7 +2372,7 @@
       "text": "2. In most situations, it is recommended"
     },
     {
-      "self_ref": "#/texts/70",
+      "self_ref": "#/texts/67",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2471,7 +2399,7 @@
       "text": "that you focus at the lowest"
     },
     {
-      "self_ref": "#/texts/71",
+      "self_ref": "#/texts/68",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2498,7 +2426,7 @@
       "text": "magnification, then move to a higher"
     },
     {
-      "self_ref": "#/texts/72",
+      "self_ref": "#/texts/69",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2525,7 +2453,7 @@
       "text": "magnification and re-focus as"
     },
     {
-      "self_ref": "#/texts/73",
+      "self_ref": "#/texts/70",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2552,7 +2480,7 @@
       "text": "necessary."
     },
     {
-      "self_ref": "#/texts/74",
+      "self_ref": "#/texts/71",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2579,7 +2507,7 @@
       "text": "3. If the image is not clear to both eyes"
     },
     {
-      "self_ref": "#/texts/75",
+      "self_ref": "#/texts/72",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2606,7 +2534,7 @@
       "text": "at the same time, the diopter ring may"
     },
     {
-      "self_ref": "#/texts/76",
+      "self_ref": "#/texts/73",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2633,7 +2561,7 @@
       "text": "need adjustment."
     },
     {
-      "self_ref": "#/texts/77",
+      "self_ref": "#/texts/74",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2660,7 +2588,7 @@
       "text": "DIOPTER RING ADJUSTMENT"
     },
     {
-      "self_ref": "#/texts/78",
+      "self_ref": "#/texts/75",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2687,7 +2615,7 @@
       "text": "1. To adjust the eyepiece for viewing with"
     },
     {
-      "self_ref": "#/texts/79",
+      "self_ref": "#/texts/76",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2714,7 +2642,7 @@
       "text": "or without eyeglasses and for"
     },
     {
-      "self_ref": "#/texts/80",
+      "self_ref": "#/texts/77",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2741,7 +2669,7 @@
       "text": "differences in acuity between the right"
     },
     {
-      "self_ref": "#/texts/81",
+      "self_ref": "#/texts/78",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2768,7 +2696,7 @@
       "text": "and left eyes, fol ow the fol owing"
     },
     {
-      "self_ref": "#/texts/82",
+      "self_ref": "#/texts/79",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2795,7 +2723,7 @@
       "text": "steps:"
     },
     {
-      "self_ref": "#/texts/83",
+      "self_ref": "#/texts/80",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2822,7 +2750,7 @@
       "text": "a. Observe an image through the left"
     },
     {
-      "self_ref": "#/texts/84",
+      "self_ref": "#/texts/81",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2849,7 +2777,7 @@
       "text": "eyepiece and bring a specific point"
     },
     {
-      "self_ref": "#/texts/85",
+      "self_ref": "#/texts/82",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2876,7 +2804,7 @@
       "text": "into focus using the focus knob."
     },
     {
-      "self_ref": "#/texts/86",
+      "self_ref": "#/texts/83",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2903,7 +2831,7 @@
       "text": "b. By turning the diopter ring"
     },
     {
-      "self_ref": "#/texts/87",
+      "self_ref": "#/texts/84",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2930,7 +2858,7 @@
       "text": "adjustment for the left eyepiece,"
     },
     {
-      "self_ref": "#/texts/88",
+      "self_ref": "#/texts/85",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2957,7 +2885,7 @@
       "text": "bring the same point into sharp"
     },
     {
-      "self_ref": "#/texts/89",
+      "self_ref": "#/texts/86",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -2984,7 +2912,7 @@
       "text": "focus."
     },
     {
-      "self_ref": "#/texts/90",
+      "self_ref": "#/texts/87",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3011,7 +2939,7 @@
       "text": "c.Then bring the same point into"
     },
     {
-      "self_ref": "#/texts/91",
+      "self_ref": "#/texts/88",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3038,7 +2966,7 @@
       "text": "focus through the right eyepiece"
     },
     {
-      "self_ref": "#/texts/92",
+      "self_ref": "#/texts/89",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3065,7 +2993,7 @@
       "text": "by turning the right diopter ring."
     },
     {
-      "self_ref": "#/texts/93",
+      "self_ref": "#/texts/90",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3092,7 +3020,7 @@
       "text": "d.With more than one viewer, each"
     },
     {
-      "self_ref": "#/texts/94",
+      "self_ref": "#/texts/91",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3119,7 +3047,7 @@
       "text": "viewer should note their own"
     },
     {
-      "self_ref": "#/texts/95",
+      "self_ref": "#/texts/92",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3146,7 +3074,7 @@
       "text": "diopter ring position for the left"
     },
     {
-      "self_ref": "#/texts/96",
+      "self_ref": "#/texts/93",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3173,7 +3101,7 @@
       "text": "and right eyepieces, then before"
     },
     {
-      "self_ref": "#/texts/97",
+      "self_ref": "#/texts/94",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3200,7 +3128,7 @@
       "text": "viewing set the diopter ring"
     },
     {
-      "self_ref": "#/texts/98",
+      "self_ref": "#/texts/95",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3227,7 +3155,7 @@
       "text": "adjustments to that setting."
     },
     {
-      "self_ref": "#/texts/99",
+      "self_ref": "#/texts/96",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3254,7 +3182,7 @@
       "text": "CHANGING THE BULB"
     },
     {
-      "self_ref": "#/texts/100",
+      "self_ref": "#/texts/97",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3281,7 +3209,7 @@
       "text": "1. Disconnect the power cord from the"
     },
     {
-      "self_ref": "#/texts/101",
+      "self_ref": "#/texts/98",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3308,7 +3236,7 @@
       "text": "electrical outlet."
     },
     {
-      "self_ref": "#/texts/102",
+      "self_ref": "#/texts/99",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3335,7 +3263,7 @@
       "text": "2. When the bulb is cool, remove the"
     },
     {
-      "self_ref": "#/texts/103",
+      "self_ref": "#/texts/100",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3362,7 +3290,7 @@
       "text": "oblique il uminator cap and remove"
     },
     {
-      "self_ref": "#/texts/104",
+      "self_ref": "#/texts/101",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3389,7 +3317,7 @@
       "text": "the halogen bulb with cap."
     },
     {
-      "self_ref": "#/texts/105",
+      "self_ref": "#/texts/102",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3416,7 +3344,7 @@
       "text": "3. Replace with a new halogen bulb."
     },
     {
-      "self_ref": "#/texts/106",
+      "self_ref": "#/texts/103",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3443,7 +3371,7 @@
       "text": "4. Open the window in the base plate"
     },
     {
-      "self_ref": "#/texts/107",
+      "self_ref": "#/texts/104",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3470,7 +3398,7 @@
       "text": "and replace the halogen lamp or"
     },
     {
-      "self_ref": "#/texts/108",
+      "self_ref": "#/texts/105",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3497,7 +3425,7 @@
       "text": "fluorescent lamp of transmitted"
     },
     {
-      "self_ref": "#/texts/109",
+      "self_ref": "#/texts/106",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3524,7 +3452,7 @@
       "text": "il uminator."
     },
     {
-      "self_ref": "#/texts/110",
+      "self_ref": "#/texts/107",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3551,7 +3479,7 @@
       "text": "Model AY11230"
     },
     {
-      "self_ref": "#/texts/111",
+      "self_ref": "#/texts/108",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3578,7 +3506,7 @@
       "text": "Model AY11234"
     },
     {
-      "self_ref": "#/texts/112",
+      "self_ref": "#/texts/109",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3605,7 +3533,7 @@
       "text": "14"
     },
     {
-      "self_ref": "#/texts/113",
+      "self_ref": "#/texts/110",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3632,7 +3560,7 @@
       "text": "Objectives"
     },
     {
-      "self_ref": "#/texts/114",
+      "self_ref": "#/texts/111",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3659,7 +3587,7 @@
       "text": "Revolving Turret"
     },
     {
-      "self_ref": "#/texts/115",
+      "self_ref": "#/texts/112",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3686,7 +3614,7 @@
       "text": "Coarse"
     },
     {
-      "self_ref": "#/texts/116",
+      "self_ref": "#/texts/113",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3713,7 +3641,7 @@
       "text": "Adjustment"
     },
     {
-      "self_ref": "#/texts/117",
+      "self_ref": "#/texts/114",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3740,7 +3668,7 @@
       "text": "Knob"
     },
     {
-      "self_ref": "#/texts/118",
+      "self_ref": "#/texts/115",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3767,7 +3695,7 @@
       "text": "MODEL AY11236"
     },
     {
-      "self_ref": "#/texts/119",
+      "self_ref": "#/texts/116",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3794,7 +3722,7 @@
       "text": "MICROSCOPE USAGE"
     },
     {
-      "self_ref": "#/texts/120",
+      "self_ref": "#/texts/117",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3821,7 +3749,7 @@
       "text": "BARSKA Model AY11236 is a powerful fixed power compound"
     },
     {
-      "self_ref": "#/texts/121",
+      "self_ref": "#/texts/118",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3848,7 +3776,7 @@
       "text": "microscope designed for biological studies such as specimen"
     },
     {
-      "self_ref": "#/texts/122",
+      "self_ref": "#/texts/119",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3875,7 +3803,7 @@
       "text": "examination. It can also be used for examining bacteria and"
     },
     {
-      "self_ref": "#/texts/123",
+      "self_ref": "#/texts/120",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3902,7 +3830,7 @@
       "text": "for general clinical and medical studies and other scientific uses."
     },
     {
-      "self_ref": "#/texts/124",
+      "self_ref": "#/texts/121",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3929,7 +3857,7 @@
       "text": "CONSTRUCTION"
     },
     {
-      "self_ref": "#/texts/125",
+      "self_ref": "#/texts/122",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3956,7 +3884,7 @@
       "text": "BARSKA Model AY11236 is a fixed power compound microscope."
     },
     {
-      "self_ref": "#/texts/126",
+      "self_ref": "#/texts/123",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -3983,7 +3911,7 @@
       "text": "It is constructed with two optical paths at the same angle. It is"
     },
     {
-      "self_ref": "#/texts/127",
+      "self_ref": "#/texts/124",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4010,7 +3938,7 @@
       "text": "equipped with transmitted il umination. By using this instrument,"
     },
     {
-      "self_ref": "#/texts/128",
+      "self_ref": "#/texts/125",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4037,7 +3965,7 @@
       "text": "the user can observe specimens at magnification from 40x to"
     },
     {
-      "self_ref": "#/texts/129",
+      "self_ref": "#/texts/126",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4064,7 +3992,7 @@
       "text": "1000x by selecting the desired objective lens. Coarse and fine"
     },
     {
-      "self_ref": "#/texts/130",
+      "self_ref": "#/texts/127",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4091,7 +4019,7 @@
       "text": "focus adjustments provide accuracy and image detail. The rotating"
     },
     {
-      "self_ref": "#/texts/131",
+      "self_ref": "#/texts/128",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4118,7 +4046,7 @@
       "text": "head al ows the user to position the eyepieces for maximum"
     },
     {
-      "self_ref": "#/texts/132",
+      "self_ref": "#/texts/129",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4145,7 +4073,7 @@
       "text": "viewing comfort and easy access to al  adjustment knobs."
     },
     {
-      "self_ref": "#/texts/133",
+      "self_ref": "#/texts/130",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4172,7 +4100,7 @@
       "text": "Model AY11236"
     },
     {
-      "self_ref": "#/texts/134",
+      "self_ref": "#/texts/131",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4199,7 +4127,7 @@
       "text": "Fine"
     },
     {
-      "self_ref": "#/texts/135",
+      "self_ref": "#/texts/132",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4226,7 +4154,7 @@
       "text": "Adjustment"
     },
     {
-      "self_ref": "#/texts/136",
+      "self_ref": "#/texts/133",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4253,7 +4181,7 @@
       "text": "Knob"
     },
     {
-      "self_ref": "#/texts/137",
+      "self_ref": "#/texts/134",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4280,7 +4208,7 @@
       "text": "Stage"
     },
     {
-      "self_ref": "#/texts/138",
+      "self_ref": "#/texts/135",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4307,7 +4235,7 @@
       "text": "Condenser"
     },
     {
-      "self_ref": "#/texts/139",
+      "self_ref": "#/texts/136",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4334,7 +4262,7 @@
       "text": "Focusing"
     },
     {
-      "self_ref": "#/texts/140",
+      "self_ref": "#/texts/137",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4361,7 +4289,7 @@
       "text": "Knob"
     },
     {
-      "self_ref": "#/texts/141",
+      "self_ref": "#/texts/138",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4388,7 +4316,7 @@
       "text": "Eyepiece"
     },
     {
-      "self_ref": "#/texts/142",
+      "self_ref": "#/texts/139",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4415,7 +4343,7 @@
       "text": "Stand"
     },
     {
-      "self_ref": "#/texts/143",
+      "self_ref": "#/texts/140",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4442,7 +4370,7 @@
       "text": "Lamp"
     },
     {
-      "self_ref": "#/texts/144",
+      "self_ref": "#/texts/141",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4469,7 +4397,7 @@
       "text": "On/Of"
     },
     {
-      "self_ref": "#/texts/145",
+      "self_ref": "#/texts/142",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4496,7 +4424,7 @@
       "text": "Switch"
     },
     {
-      "self_ref": "#/texts/146",
+      "self_ref": "#/texts/143",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4523,7 +4451,7 @@
       "text": "Lamp"
     },
     {
-      "self_ref": "#/texts/147",
+      "self_ref": "#/texts/144",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4550,7 +4478,7 @@
       "text": "Power"
     },
     {
-      "self_ref": "#/texts/148",
+      "self_ref": "#/texts/145",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4577,7 +4505,7 @@
       "text": "Cord"
     },
     {
-      "self_ref": "#/texts/149",
+      "self_ref": "#/texts/146",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4604,7 +4532,7 @@
       "text": "Rotating Head"
     },
     {
-      "self_ref": "#/texts/150",
+      "self_ref": "#/texts/147",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4631,7 +4559,7 @@
       "text": "Stage Clip"
     },
     {
-      "self_ref": "#/texts/151",
+      "self_ref": "#/texts/148",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4658,7 +4586,7 @@
       "text": "Adjustment"
     },
     {
-      "self_ref": "#/texts/152",
+      "self_ref": "#/texts/149",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4685,7 +4613,7 @@
       "text": "Interpupil ary Slide Adjustment"
     },
     {
-      "self_ref": "#/texts/153",
+      "self_ref": "#/texts/150",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4712,7 +4640,7 @@
       "text": "Circling Minimums"
     },
     {
-      "self_ref": "#/texts/154",
+      "self_ref": "#/texts/151",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4739,7 +4667,7 @@
       "text": "7KHUH ZDV D FKDQJH WR WKH 7(536 FULWHULD LQ      WKDW D\u1087HFWV FLUFOLQJ DUHD GLPHQVLRQ E\\ H[SDQGLQJ WKH DUHDV WR SURYLGH"
     },
     {
-      "self_ref": "#/texts/155",
+      "self_ref": "#/texts/152",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4766,7 +4694,7 @@
       "text": "improved obstacle protection. To indicate that the new criteria had been applied to a given procedure, a"
     },
     {
-      "self_ref": "#/texts/156",
+      "self_ref": "#/texts/153",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4793,7 +4721,7 @@
       "text": "is placed on"
     },
     {
-      "self_ref": "#/texts/157",
+      "self_ref": "#/texts/154",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4820,7 +4748,7 @@
       "text": "the circling line of minimums. The new circling tables and explanatory information is located in the Legend of the TPP."
     },
     {
-      "self_ref": "#/texts/158",
+      "self_ref": "#/texts/155",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4847,7 +4775,7 @@
       "text": "7KH DSSURDFKHV XVLQJ VWDQGDUG FLUFOLQJ DSSURDFK DUHDV FDQ EH LGHQWL\u00bfHG E\\ WKH DEVHQFH RI WKH"
     },
     {
-      "self_ref": "#/texts/159",
+      "self_ref": "#/texts/156",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4874,7 +4802,7 @@
       "text": "on the circling line of"
     },
     {
-      "self_ref": "#/texts/160",
+      "self_ref": "#/texts/157",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4901,7 +4829,7 @@
       "text": "minima."
     },
     {
-      "self_ref": "#/texts/161",
+      "self_ref": "#/texts/158",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4928,7 +4856,7 @@
       "text": "$SSO\\ 6WDQGDUG &LUFOLQJ $SSURDFK 0DQHXYHULQJ 5DGLXV 7DEOH"
     },
     {
-      "self_ref": "#/texts/162",
+      "self_ref": "#/texts/159",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4955,7 +4883,7 @@
       "text": "$SSO\\ ([SDQGHG &LUFOLQJ $SSURDFK 0DQHXYHULQJ $LUVSDFH 5DGLXV"
     },
     {
-      "self_ref": "#/texts/163",
+      "self_ref": "#/texts/160",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -4982,7 +4910,7 @@
       "text": "Table"
     },
     {
-      "self_ref": "#/texts/164",
+      "self_ref": "#/texts/161",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5009,7 +4937,7 @@
       "text": "AIRPORT SKETCH"
     },
     {
-      "self_ref": "#/texts/165",
+      "self_ref": "#/texts/162",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5036,7 +4964,7 @@
       "text": "The airport sketch is a depiction of the airport with emphasis on runway pattern and related"
     },
     {
-      "self_ref": "#/texts/166",
+      "self_ref": "#/texts/163",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5063,7 +4991,7 @@
       "text": "information, positioned in either the lower left or lower right corner of the chart to aid pi-"
     },
     {
-      "self_ref": "#/texts/167",
+      "self_ref": "#/texts/164",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5090,7 +5018,7 @@
       "text": "lot recognition of the airport from the air and to provide some information to aid on ground"
     },
     {
-      "self_ref": "#/texts/168",
+      "self_ref": "#/texts/165",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5117,7 +5045,7 @@
       "text": "navigation of the airport. The runways are drawn to scale and oriented to true north. Runway"
     },
     {
-      "self_ref": "#/texts/169",
+      "self_ref": "#/texts/166",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5144,7 +5072,7 @@
       "text": "dimensions (length and width) are shown for al  active runways."
     },
     {
-      "self_ref": "#/texts/170",
+      "self_ref": "#/texts/167",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5171,7 +5099,7 @@
       "text": "Runway(s) are depicted based on what type and construction of the runway."
     },
     {
-      "self_ref": "#/texts/171",
+      "self_ref": "#/texts/168",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5198,7 +5126,7 @@
       "text": "Hard Surface"
     },
     {
-      "self_ref": "#/texts/172",
+      "self_ref": "#/texts/169",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5225,7 +5153,7 @@
       "text": "Other Than"
     },
     {
-      "self_ref": "#/texts/173",
+      "self_ref": "#/texts/170",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5252,7 +5180,7 @@
       "text": "Hard Surface"
     },
     {
-      "self_ref": "#/texts/174",
+      "self_ref": "#/texts/171",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5279,7 +5207,7 @@
       "text": "Metal Surface"
     },
     {
-      "self_ref": "#/texts/175",
+      "self_ref": "#/texts/172",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5306,7 +5234,7 @@
       "text": "Closed Runway"
     },
     {
-      "self_ref": "#/texts/176",
+      "self_ref": "#/texts/173",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5333,7 +5261,7 @@
       "text": "Under Construction"
     },
     {
-      "self_ref": "#/texts/177",
+      "self_ref": "#/texts/174",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5360,7 +5288,7 @@
       "text": "Stopways,"
     },
     {
-      "self_ref": "#/texts/178",
+      "self_ref": "#/texts/175",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5387,7 +5315,7 @@
       "text": "Taxiways, Park-"
     },
     {
-      "self_ref": "#/texts/179",
+      "self_ref": "#/texts/176",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5414,7 +5342,7 @@
       "text": "ing Areas"
     },
     {
-      "self_ref": "#/texts/180",
+      "self_ref": "#/texts/177",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5441,7 +5369,7 @@
       "text": "Displaced"
     },
     {
-      "self_ref": "#/texts/181",
+      "self_ref": "#/texts/178",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5468,7 +5396,7 @@
       "text": "Threshold"
     },
     {
-      "self_ref": "#/texts/182",
+      "self_ref": "#/texts/179",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5495,7 +5423,7 @@
       "text": "Closed"
     },
     {
-      "self_ref": "#/texts/183",
+      "self_ref": "#/texts/180",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5522,7 +5450,7 @@
       "text": "Pavement"
     },
     {
-      "self_ref": "#/texts/184",
+      "self_ref": "#/texts/181",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5549,7 +5477,7 @@
       "text": "Water Runway"
     },
     {
-      "self_ref": "#/texts/185",
+      "self_ref": "#/texts/182",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5576,7 +5504,7 @@
       "text": "Taxiways and aprons are shaded grey. Other runway features that may be shown are runway numbers, runway dimen-"
     },
     {
-      "self_ref": "#/texts/186",
+      "self_ref": "#/texts/183",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5603,7 +5531,7 @@
       "text": "sions, runway slope, arresting gear, and displaced threshold."
     },
     {
-      "self_ref": "#/texts/187",
+      "self_ref": "#/texts/184",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5630,7 +5558,7 @@
       "text": "2WKHU LQIRUPDWLRQ FRQFHUQLQJ OLJKWLQJ  \u00bfQDO DSSURDFK EHDULQJV  DLUSRUW EHDFRQ  REVWDFOHV  FRQWURO WRZHU  1$9$,'V  KHOL"
     },
     {
-      "self_ref": "#/texts/188",
+      "self_ref": "#/texts/185",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5657,7 +5585,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/189",
+      "self_ref": "#/texts/186",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5684,7 +5612,7 @@
       "text": "pads may also be shown."
     },
     {
-      "self_ref": "#/texts/190",
+      "self_ref": "#/texts/187",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5711,7 +5639,7 @@
       "text": "$LUSRUW (OHYDWLRQ DQG 7RXFKGRZQ =RQH (OHYDWLRQ"
     },
     {
-      "self_ref": "#/texts/191",
+      "self_ref": "#/texts/188",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5738,7 +5666,7 @@
       "text": "The airport elevation is shown enclosed within a box in the upper left corner of the sketch box and the touchdown zone"
     },
     {
-      "self_ref": "#/texts/192",
+      "self_ref": "#/texts/189",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5765,7 +5693,7 @@
       "text": "elevation (TDZE) is shown in the upper right corner of the sketch box. The airport elevation is the highest point of an"
     },
     {
-      "self_ref": "#/texts/193",
+      "self_ref": "#/texts/190",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5792,7 +5720,7 @@
       "text": "DLUSRUW\u00b6V XVDEOH UXQZD\\V PHDVXUHG LQ IHHW IURP PHDQ VHD OHYHO  7KH 7'=( LV WKH KLJKHVW HOHYDWLRQ LQ WKH \u00bfUVW       IHHW RI"
     },
     {
-      "self_ref": "#/texts/194",
+      "self_ref": "#/texts/191",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5819,7 +5747,7 @@
       "text": "the landing surface. Circling only approaches wil  not show a TDZE."
     },
     {
-      "self_ref": "#/texts/195",
+      "self_ref": "#/texts/192",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5846,7 +5774,7 @@
       "text": "114"
     },
     {
-      "self_ref": "#/texts/196",
+      "self_ref": "#/texts/193",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5873,7 +5801,7 @@
       "text": "FAA Chart Users' Guide - Terminal Procedures Publication (TPP) - Terms"
     },
     {
-      "self_ref": "#/texts/197",
+      "self_ref": "#/texts/194",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5900,7 +5828,7 @@
       "text": "AGL 2013 Financial Calendar"
     },
     {
-      "self_ref": "#/texts/198",
+      "self_ref": "#/texts/195",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5927,7 +5855,7 @@
       "text": "22 August 2012"
     },
     {
-      "self_ref": "#/texts/199",
+      "self_ref": "#/texts/196",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5954,7 +5882,7 @@
       "text": "2012 ful  year result and final dividend announced"
     },
     {
-      "self_ref": "#/texts/200",
+      "self_ref": "#/texts/197",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -5981,7 +5909,7 @@
       "text": "30 August 2012"
     },
     {
-      "self_ref": "#/texts/201",
+      "self_ref": "#/texts/198",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6008,7 +5936,7 @@
       "text": "Ex-dividend trading commences"
     },
     {
-      "self_ref": "#/texts/202",
+      "self_ref": "#/texts/199",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6035,7 +5963,7 @@
       "text": "5 September 2012"
     },
     {
-      "self_ref": "#/texts/203",
+      "self_ref": "#/texts/200",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6062,7 +5990,7 @@
       "text": "Record date for 2012 final dividend"
     },
     {
-      "self_ref": "#/texts/204",
+      "self_ref": "#/texts/201",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6089,7 +6017,7 @@
       "text": "27 September 2012"
     },
     {
-      "self_ref": "#/texts/205",
+      "self_ref": "#/texts/202",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6116,7 +6044,7 @@
       "text": "Final dividend payable"
     },
     {
-      "self_ref": "#/texts/206",
+      "self_ref": "#/texts/203",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6143,7 +6071,7 @@
       "text": "23 October 2012"
     },
     {
-      "self_ref": "#/texts/207",
+      "self_ref": "#/texts/204",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6170,7 +6098,7 @@
       "text": "Annual General Meeting"
     },
     {
-      "self_ref": "#/texts/208",
+      "self_ref": "#/texts/205",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6197,7 +6125,7 @@
       "text": "27 February 2013 1"
     },
     {
-      "self_ref": "#/texts/209",
+      "self_ref": "#/texts/206",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6224,7 +6152,7 @@
       "text": "2013 interim result and interim dividend announced"
     },
     {
-      "self_ref": "#/texts/210",
+      "self_ref": "#/texts/207",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6251,7 +6179,7 @@
       "text": "28 August 2013 1"
     },
     {
-      "self_ref": "#/texts/211",
+      "self_ref": "#/texts/208",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6278,7 +6206,7 @@
       "text": "2013 ful  year results and final dividend announced"
     },
     {
-      "self_ref": "#/texts/212",
+      "self_ref": "#/texts/209",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6305,7 +6233,7 @@
       "text": "1 Indicative dates only, subject to change/Board confirmation"
     },
     {
-      "self_ref": "#/texts/213",
+      "self_ref": "#/texts/210",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6332,7 +6260,7 @@
       "text": "AGL's Annual General Meeting wil  be held at the City Recital Hal , Angel Place, Sydney"
     },
     {
-      "self_ref": "#/texts/214",
+      "self_ref": "#/texts/211",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6359,7 +6287,7 @@
       "text": "commencing at 10.30am on Tuesday 23 October 2012."
     },
     {
-      "self_ref": "#/texts/215",
+      "self_ref": "#/texts/212",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6386,7 +6314,7 @@
       "text": "Yesterday"
     },
     {
-      "self_ref": "#/texts/216",
+      "self_ref": "#/texts/213",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6413,7 +6341,7 @@
       "text": "Established in Sydney in 1837, and then"
     },
     {
-      "self_ref": "#/texts/217",
+      "self_ref": "#/texts/214",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6440,7 +6368,7 @@
       "text": "known as The Australian Gas Light Company,"
     },
     {
-      "self_ref": "#/texts/218",
+      "self_ref": "#/texts/215",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6467,7 +6395,7 @@
       "text": "the AGL business has an established history"
     },
     {
-      "self_ref": "#/texts/219",
+      "self_ref": "#/texts/216",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6494,7 +6422,7 @@
       "text": "and reputation for serving the gas and"
     },
     {
-      "self_ref": "#/texts/220",
+      "self_ref": "#/texts/217",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6521,7 +6449,7 @@
       "text": "electricity needs of Australian households."
     },
     {
-      "self_ref": "#/texts/221",
+      "self_ref": "#/texts/218",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6548,7 +6476,7 @@
       "text": "In 1841, when AGL supplied the gas to light"
     },
     {
-      "self_ref": "#/texts/222",
+      "self_ref": "#/texts/219",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6575,7 +6503,7 @@
       "text": "the first public street lamp, it was reported"
     },
     {
-      "self_ref": "#/texts/223",
+      "self_ref": "#/texts/220",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6602,7 +6530,7 @@
       "text": "in the Sydney Gazette as a 'wonderful"
     },
     {
-      "self_ref": "#/texts/224",
+      "self_ref": "#/texts/221",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6629,7 +6557,7 @@
       "text": "achievement of scientific knowledge, assisted"
     },
     {
-      "self_ref": "#/texts/225",
+      "self_ref": "#/texts/222",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6656,7 +6584,7 @@
       "text": "by mechanical ingenuity.' Within two years,"
     },
     {
-      "self_ref": "#/texts/226",
+      "self_ref": "#/texts/223",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6683,7 +6611,7 @@
       "text": "165 gas lamps were lighting the City of Sydney."
     },
     {
-      "self_ref": "#/texts/227",
+      "self_ref": "#/texts/224",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6710,7 +6638,7 @@
       "text": "Looking back on"
     },
     {
-      "self_ref": "#/texts/228",
+      "self_ref": "#/texts/225",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6737,7 +6665,7 @@
       "text": "175"
     },
     {
-      "self_ref": "#/texts/229",
+      "self_ref": "#/texts/226",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6764,7 +6692,7 @@
       "text": "years of"
     },
     {
-      "self_ref": "#/texts/230",
+      "self_ref": "#/texts/227",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6791,7 +6719,7 @@
       "text": "looking"
     },
     {
-      "self_ref": "#/texts/231",
+      "self_ref": "#/texts/228",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6818,7 +6746,7 @@
       "text": "forward."
     },
     {
-      "self_ref": "#/texts/232",
+      "self_ref": "#/texts/229",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6845,7 +6773,7 @@
       "text": "AGL Energy Limited  ABN 74 115 061 375"
     },
     {
-      "self_ref": "#/texts/233",
+      "self_ref": "#/texts/230",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6872,7 +6800,7 @@
       "text": "29"
     },
     {
-      "self_ref": "#/texts/234",
+      "self_ref": "#/texts/231",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6899,7 +6827,7 @@
       "text": "signs, signals and road markings"
     },
     {
-      "self_ref": "#/texts/235",
+      "self_ref": "#/texts/232",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6926,7 +6854,7 @@
       "text": "3"
     },
     {
-      "self_ref": "#/texts/236",
+      "self_ref": "#/texts/233",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6953,7 +6881,7 @@
       "text": "In"
     },
     {
-      "self_ref": "#/texts/237",
+      "self_ref": "#/texts/234",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -6980,7 +6908,7 @@
       "text": "chapter 2, you and your vehicle"
     },
     {
-      "self_ref": "#/texts/238",
+      "self_ref": "#/texts/235",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7007,7 +6935,7 @@
       "text": ", you learned about"
     },
     {
-      "self_ref": "#/texts/239",
+      "self_ref": "#/texts/236",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7034,7 +6962,7 @@
       "text": "some of the controls in your vehicle. This chapter is a handy"
     },
     {
-      "self_ref": "#/texts/240",
+      "self_ref": "#/texts/237",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7061,7 +6989,7 @@
       "text": "reference section that gives examples of the most common"
     },
     {
-      "self_ref": "#/texts/241",
+      "self_ref": "#/texts/238",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7088,7 +7016,7 @@
       "text": "signs, signals and road markings that keep traffic organized"
     },
     {
-      "self_ref": "#/texts/242",
+      "self_ref": "#/texts/239",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7115,7 +7043,7 @@
       "text": "and flowing smoothly."
     },
     {
-      "self_ref": "#/texts/243",
+      "self_ref": "#/texts/240",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7142,7 +7070,7 @@
       "text": "Signs"
     },
     {
-      "self_ref": "#/texts/244",
+      "self_ref": "#/texts/241",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7169,7 +7097,7 @@
       "text": "There are three ways to read signs: by their shape, colour and"
     },
     {
-      "self_ref": "#/texts/245",
+      "self_ref": "#/texts/242",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7196,7 +7124,7 @@
       "text": "the messages printed on them. Understanding these three ways"
     },
     {
-      "self_ref": "#/texts/246",
+      "self_ref": "#/texts/243",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7223,7 +7151,7 @@
       "text": "of classifying signs wil  help you figure out the meaning of signs"
     },
     {
-      "self_ref": "#/texts/247",
+      "self_ref": "#/texts/244",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7250,7 +7178,7 @@
       "text": "that are new to you."
     },
     {
-      "self_ref": "#/texts/248",
+      "self_ref": "#/texts/245",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7277,7 +7205,7 @@
       "text": "Stop"
     },
     {
-      "self_ref": "#/texts/249",
+      "self_ref": "#/texts/246",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7304,7 +7232,7 @@
       "text": "Yield the right-of-way"
     },
     {
-      "self_ref": "#/texts/250",
+      "self_ref": "#/texts/247",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7331,7 +7259,7 @@
       "text": "Shows driving"
     },
     {
-      "self_ref": "#/texts/251",
+      "self_ref": "#/texts/248",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7358,7 +7286,7 @@
       "text": "regulations"
     },
     {
-      "self_ref": "#/texts/252",
+      "self_ref": "#/texts/249",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7385,7 +7313,7 @@
       "text": "Explains lane use"
     },
     {
-      "self_ref": "#/texts/253",
+      "self_ref": "#/texts/250",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7412,7 +7340,7 @@
       "text": "School zone signs"
     },
     {
-      "self_ref": "#/texts/254",
+      "self_ref": "#/texts/251",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7439,7 +7367,7 @@
       "text": "are fluorescent"
     },
     {
-      "self_ref": "#/texts/255",
+      "self_ref": "#/texts/252",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7466,7 +7394,7 @@
       "text": "yel ow-green"
     },
     {
-      "self_ref": "#/texts/256",
+      "self_ref": "#/texts/253",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7493,7 +7421,7 @@
       "text": "Tel s about motorist"
     },
     {
-      "self_ref": "#/texts/257",
+      "self_ref": "#/texts/254",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7520,7 +7448,7 @@
       "text": "services"
     },
     {
-      "self_ref": "#/texts/258",
+      "self_ref": "#/texts/255",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7547,7 +7475,7 @@
       "text": "Shows a permitted"
     },
     {
-      "self_ref": "#/texts/259",
+      "self_ref": "#/texts/256",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7574,7 +7502,7 @@
       "text": "action"
     },
     {
-      "self_ref": "#/texts/260",
+      "self_ref": "#/texts/257",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7601,7 +7529,7 @@
       "text": "Shows an action that"
     },
     {
-      "self_ref": "#/texts/261",
+      "self_ref": "#/texts/258",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7628,7 +7556,7 @@
       "text": "is not permitted"
     },
     {
-      "self_ref": "#/texts/262",
+      "self_ref": "#/texts/259",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7655,7 +7583,7 @@
       "text": "Warns of hazards"
     },
     {
-      "self_ref": "#/texts/263",
+      "self_ref": "#/texts/260",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7682,7 +7610,7 @@
       "text": "ahead"
     },
     {
-      "self_ref": "#/texts/264",
+      "self_ref": "#/texts/261",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7709,7 +7637,7 @@
       "text": "Warns of"
     },
     {
-      "self_ref": "#/texts/265",
+      "self_ref": "#/texts/262",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7736,7 +7664,7 @@
       "text": "construction zones"
     },
     {
-      "self_ref": "#/texts/266",
+      "self_ref": "#/texts/263",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7763,7 +7691,7 @@
       "text": "Railway crossing"
     },
     {
-      "self_ref": "#/texts/267",
+      "self_ref": "#/texts/264",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7790,7 +7718,7 @@
       "text": "Shows distance and"
     },
     {
-      "self_ref": "#/texts/268",
+      "self_ref": "#/texts/265",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7817,7 +7745,7 @@
       "text": "direction"
     },
     {
-      "self_ref": "#/texts/269",
+      "self_ref": "#/texts/266",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7844,7 +7772,7 @@
       "text": "\u2022  Signs"
     },
     {
-      "self_ref": "#/texts/270",
+      "self_ref": "#/texts/267",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7871,7 +7799,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/271",
+      "self_ref": "#/texts/268",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7898,7 +7826,7 @@
       "text": "regulatory signs"
     },
     {
-      "self_ref": "#/texts/272",
+      "self_ref": "#/texts/269",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7925,7 +7853,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/273",
+      "self_ref": "#/texts/270",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7952,7 +7880,7 @@
       "text": "school,"
     },
     {
-      "self_ref": "#/texts/274",
+      "self_ref": "#/texts/271",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -7979,7 +7907,7 @@
       "text": "playground and"
     },
     {
-      "self_ref": "#/texts/275",
+      "self_ref": "#/texts/272",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8006,7 +7934,7 @@
       "text": "crosswalk signs"
     },
     {
-      "self_ref": "#/texts/276",
+      "self_ref": "#/texts/273",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8033,7 +7961,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/277",
+      "self_ref": "#/texts/274",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8060,7 +7988,7 @@
       "text": "lane use signs"
     },
     {
-      "self_ref": "#/texts/278",
+      "self_ref": "#/texts/275",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8087,7 +8015,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/279",
+      "self_ref": "#/texts/276",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8114,7 +8042,7 @@
       "text": "turn control signs"
     },
     {
-      "self_ref": "#/texts/280",
+      "self_ref": "#/texts/277",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8141,7 +8069,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/281",
+      "self_ref": "#/texts/278",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8168,7 +8096,7 @@
       "text": "parking signs"
     },
     {
-      "self_ref": "#/texts/282",
+      "self_ref": "#/texts/279",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8195,7 +8123,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/283",
+      "self_ref": "#/texts/280",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8222,7 +8150,7 @@
       "text": "reserved lane"
     },
     {
-      "self_ref": "#/texts/284",
+      "self_ref": "#/texts/281",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8249,7 +8177,7 @@
       "text": "signs"
     },
     {
-      "self_ref": "#/texts/285",
+      "self_ref": "#/texts/282",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8276,7 +8204,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/286",
+      "self_ref": "#/texts/283",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8303,7 +8231,7 @@
       "text": "warning signs"
     },
     {
-      "self_ref": "#/texts/287",
+      "self_ref": "#/texts/284",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8330,7 +8258,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/288",
+      "self_ref": "#/texts/285",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8357,7 +8285,7 @@
       "text": "object markers"
     },
     {
-      "self_ref": "#/texts/289",
+      "self_ref": "#/texts/286",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8384,7 +8312,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/290",
+      "self_ref": "#/texts/287",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8411,7 +8339,7 @@
       "text": "construction"
     },
     {
-      "self_ref": "#/texts/291",
+      "self_ref": "#/texts/288",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8438,7 +8366,7 @@
       "text": "signs"
     },
     {
-      "self_ref": "#/texts/292",
+      "self_ref": "#/texts/289",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8465,7 +8393,7 @@
       "text": "- information and"
     },
     {
-      "self_ref": "#/texts/293",
+      "self_ref": "#/texts/290",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8492,7 +8420,7 @@
       "text": "destination signs"
     },
     {
-      "self_ref": "#/texts/294",
+      "self_ref": "#/texts/291",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8519,7 +8447,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/295",
+      "self_ref": "#/texts/292",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8546,7 +8474,7 @@
       "text": "railway signs"
     },
     {
-      "self_ref": "#/texts/296",
+      "self_ref": "#/texts/293",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8573,7 +8501,7 @@
       "text": "\u2022  Signals"
     },
     {
-      "self_ref": "#/texts/297",
+      "self_ref": "#/texts/294",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8600,7 +8528,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/298",
+      "self_ref": "#/texts/295",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8627,7 +8555,7 @@
       "text": "lane control"
     },
     {
-      "self_ref": "#/texts/299",
+      "self_ref": "#/texts/296",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8654,7 +8582,7 @@
       "text": "signals"
     },
     {
-      "self_ref": "#/texts/300",
+      "self_ref": "#/texts/297",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8681,7 +8609,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/301",
+      "self_ref": "#/texts/298",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8708,7 +8636,7 @@
       "text": "traffic lights"
     },
     {
-      "self_ref": "#/texts/302",
+      "self_ref": "#/texts/299",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8735,7 +8663,7 @@
       "text": "\u2022  Road markings"
     },
     {
-      "self_ref": "#/texts/303",
+      "self_ref": "#/texts/300",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8762,7 +8690,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/304",
+      "self_ref": "#/texts/301",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8789,7 +8717,7 @@
       "text": "yel ow lines"
     },
     {
-      "self_ref": "#/texts/305",
+      "self_ref": "#/texts/302",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8816,7 +8744,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/306",
+      "self_ref": "#/texts/303",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8843,7 +8771,7 @@
       "text": "white lines"
     },
     {
-      "self_ref": "#/texts/307",
+      "self_ref": "#/texts/304",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8870,7 +8798,7 @@
       "text": "-"
     },
     {
-      "self_ref": "#/texts/308",
+      "self_ref": "#/texts/305",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8897,7 +8825,7 @@
       "text": "reserved lane"
     },
     {
-      "self_ref": "#/texts/309",
+      "self_ref": "#/texts/306",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8924,7 +8852,7 @@
       "text": "markings"
     },
     {
-      "self_ref": "#/texts/310",
+      "self_ref": "#/texts/307",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8951,7 +8879,7 @@
       "text": "- other markings"
     },
     {
-      "self_ref": "#/texts/311",
+      "self_ref": "#/texts/308",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -8978,7 +8906,7 @@
       "text": "in this chapter"
     },
     {
-      "self_ref": "#/texts/312",
+      "self_ref": "#/texts/309",
       "parent": {
         "$ref": "#/body"
       },
@@ -9006,7 +8934,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/313",
+      "self_ref": "#/texts/310",
       "parent": {
         "$ref": "#/body"
       },
@@ -9033,7 +8961,7 @@
       "text": "PDF document conversion, layout segmentation, object-detection, data set, Machine Learning"
     },
     {
-      "self_ref": "#/texts/314",
+      "self_ref": "#/texts/311",
       "parent": {
         "$ref": "#/body"
       },
@@ -9061,7 +8989,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/315",
+      "self_ref": "#/texts/312",
       "parent": {
         "$ref": "#/body"
       },
@@ -9088,7 +9016,7 @@
       "text": "Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, and Peter Staar. 2022. DocLayNet: A Large Human-Annotated Dataset for DocumentLayout Analysis. In Proceedings of the 28th ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD '22), August 14-18, 2022, Washington, DC, USA. ACM, New York, NY, USA, 9 pages. https://doi.org/10.1145/ 3534678.3539043"
     },
     {
-      "self_ref": "#/texts/316",
+      "self_ref": "#/texts/313",
       "parent": {
         "$ref": "#/body"
       },
@@ -9116,7 +9044,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/317",
+      "self_ref": "#/texts/314",
       "parent": {
         "$ref": "#/body"
       },
@@ -9143,7 +9071,7 @@
       "text": "Accurate document layout analysis is a key requirement for highquality PDF document conversion. With the recent availability of public, large ground-truth datasets such as PubLayNet and DocBank, deep-learning models have proven to be very effective at layout detection and segmentation. While these datasets are of adequate size to train such models, they severely lack in layout variability since they are sourced from scientific article repositories such as PubMed and arXiv only. Consequently, the accuracy of the layout segmentation drops significantly when these models are applied on more challenging and diverse layouts. In this paper, we present DocLayNet , a new, publicly available, document-layout annotation dataset in COCO format. It contains 80863 manually annotated pages from diverse data sources to represent a wide variability in layouts. For each PDF page, the layout annotations provide labelled bounding-boxes with a choice of 11 distinct classes. DocLayNet also provides a subset of double- and triple-annotated pages to determine the inter-annotator agreement. In multiple experiments, we provide baseline accuracy scores (in mAP) for a set of popular object detection models. We also demonstrate that these models fall approximately 10% behind the inter-annotator agreement. Furthermore, we provide evidence that DocLayNet is of sufficient size. Lastly, we compare models trained on PubLayNet, DocBank and DocLayNet, showing that layout predictions of the DocLayNettrained models are more robust and thus the preferred choice for general-purpose document-layout analysis."
     },
     {
-      "self_ref": "#/texts/318",
+      "self_ref": "#/texts/315",
       "parent": {
         "$ref": "#/body"
       },
@@ -9171,7 +9099,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/319",
+      "self_ref": "#/texts/316",
       "parent": {
         "$ref": "#/body"
       },
@@ -9198,7 +9126,7 @@
       "text": "\u00b7 Informationsystems \u2192 Documentstructure ; \u00b7 Appliedcomputing \u2192 Document analysis ; \u00b7 Computing methodologies \u2192 Machine learning ; Computer vision ; Object detection ;"
     },
     {
-      "self_ref": "#/texts/320",
+      "self_ref": "#/texts/317",
       "parent": {
         "$ref": "#/body"
       },
@@ -9225,7 +9153,7 @@
       "text": "Permission to make digital or hard copies of part or all of this work for personal or classroom use is granted without fee provided that copies are not made or distributed for profit or commercial advantage and that copies bear this notice and the full citation on the first page. Copyrights for third-party components of this work must be honored. For all other uses, contact the owner/author(s)."
     },
     {
-      "self_ref": "#/texts/321",
+      "self_ref": "#/texts/318",
       "parent": {
         "$ref": "#/body"
       },
@@ -9252,7 +9180,7 @@
       "text": "KDD '22, August 14-18, 2022, Washington, DC, USA"
     },
     {
-      "self_ref": "#/texts/322",
+      "self_ref": "#/texts/319",
       "parent": {
         "$ref": "#/body"
       },
@@ -9279,7 +9207,7 @@
       "text": "\u00a9 2022 Copyright held by the owner/author(s)."
     },
     {
-      "self_ref": "#/texts/323",
+      "self_ref": "#/texts/320",
       "parent": {
         "$ref": "#/body"
       },
@@ -9306,7 +9234,7 @@
       "text": "ACM ISBN 978-1-4503-9385-0/22/08."
     },
     {
-      "self_ref": "#/texts/324",
+      "self_ref": "#/texts/321",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -9333,7 +9261,7 @@
       "text": "https://doi.org/10.1145/3534678.3539043"
     },
     {
-      "self_ref": "#/texts/325",
+      "self_ref": "#/texts/322",
       "parent": {
         "$ref": "#/body"
       },
@@ -9360,7 +9288,7 @@
       "text": "KDD '22, August 14-18, 2022, Washington, DC, USA Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, and Peter Staar"
     },
     {
-      "self_ref": "#/texts/326",
+      "self_ref": "#/texts/323",
       "parent": {
         "$ref": "#/body"
       },
@@ -9388,7 +9316,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/327",
+      "self_ref": "#/texts/324",
       "parent": {
         "$ref": "#/body"
       },
@@ -9415,7 +9343,7 @@
       "text": "Despite the substantial improvements achieved with machine-learning (ML) approaches and deep neural networks in recent years, document conversion remains a challenging problem, as demonstrated by the numerous public competitions held on this topic [1-4]. The challenge originates from the huge variability in PDF documents regarding layout, language and formats (scanned, programmatic or a combination of both). Engineering a single ML model that can be applied on all types of documents and provides high-quality layout segmentation remains to this day extremely challenging [5]. To highlight the variability in document layouts, we show a few example documents from the DocLayNet dataset in Figure 1."
     },
     {
-      "self_ref": "#/texts/328",
+      "self_ref": "#/texts/325",
       "parent": {
         "$ref": "#/body"
       },
@@ -9442,7 +9370,7 @@
       "text": "Akeyproblem in the process of document conversion is to understand the structure of a single document page, i.e. which segments of text should be grouped together in a unit. To train models for this task, there are currently two large datasets available to the community, PubLayNet [6] and DocBank [7]. They were introduced in 2019 and 2020 respectively and significantly accelerated the implementation of layout detection and segmentation models due to their sizes of 300K and 500K ground-truth pages. These sizes were achieved by leveraging an automation approach. The benefit of automated ground-truth generation is obvious: one can generate large ground-truth datasets at virtually no cost. However, the automation introduces a constraint on the variability in the dataset, because corresponding structured source data must be available. PubLayNet and DocBank were both generated from scientific document repositories (PubMed and arXiv), which provide XML or L A T E X sources. Those scientific documents present a limited variability in their layouts, because they are typeset in uniform templates provided by the publishers. Obviously, documents such as technical manuals, annual company reports, legal text, government tenders, etc. have very different and partially unique layouts. As a consequence, the layout predictions obtained from models trained on PubLayNet or DocBank is very reasonable when applied on scientific documents. However, for more artistic or free-style layouts, we see sub-par prediction quality from these models, which we demonstrate in Section 5."
     },
     {
-      "self_ref": "#/texts/329",
+      "self_ref": "#/texts/326",
       "parent": {
         "$ref": "#/body"
       },
@@ -9469,7 +9397,7 @@
       "text": "In this paper, we present the DocLayNet dataset. It provides pageby-page layout annotation ground-truth using bounding-boxes for 11 distinct class labels on 80863 unique document pages, of which a fraction carry double- or triple-annotations. DocLayNet is similar in spirit to PubLayNet and DocBank and will likewise be made available to the public 1 in order to stimulate the document-layout analysis community. It distinguishes itself in the following aspects:"
     },
     {
-      "self_ref": "#/texts/330",
+      "self_ref": "#/texts/327",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -9498,7 +9426,7 @@
       "marker": "(1)"
     },
     {
-      "self_ref": "#/texts/331",
+      "self_ref": "#/texts/328",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -9527,7 +9455,7 @@
       "marker": "(2)"
     },
     {
-      "self_ref": "#/texts/332",
+      "self_ref": "#/texts/329",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -9556,7 +9484,7 @@
       "marker": "(3)"
     },
     {
-      "self_ref": "#/texts/333",
+      "self_ref": "#/texts/330",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -9585,7 +9513,7 @@
       "marker": "(4)"
     },
     {
-      "self_ref": "#/texts/334",
+      "self_ref": "#/texts/331",
       "parent": {
         "$ref": "#/body"
       },
@@ -9613,7 +9541,7 @@
       "hyperlink": "https://developer.ibm.com/exchanges/data/all/doclaynet"
     },
     {
-      "self_ref": "#/texts/335",
+      "self_ref": "#/texts/332",
       "parent": {
         "$ref": "#/body"
       },
@@ -9640,7 +9568,7 @@
       "text": "This enables experimentation with annotation uncertainty and quality control analysis."
     },
     {
-      "self_ref": "#/texts/336",
+      "self_ref": "#/texts/333",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -9669,7 +9597,7 @@
       "marker": "(5)"
     },
     {
-      "self_ref": "#/texts/337",
+      "self_ref": "#/texts/334",
       "parent": {
         "$ref": "#/body"
       },
@@ -9696,7 +9624,7 @@
       "text": "All aspects outlined above are detailed in Section 3. In Section 4, we will elaborate on how we designed and executed this large-scale human annotation campaign. We will also share key insights and lessons learned that might prove helpful for other parties planning to set up annotation campaigns."
     },
     {
-      "self_ref": "#/texts/338",
+      "self_ref": "#/texts/335",
       "parent": {
         "$ref": "#/body"
       },
@@ -9723,7 +9651,7 @@
       "text": "In Section 5, we will present baseline accuracy numbers for a variety of object detection methods (Faster R-CNN, Mask R-CNN and YOLOv5) trained on DocLayNet. We further show how the model performance is impacted by varying the DocLayNet dataset size, reducing the label set and modifying the train/test-split. Last but not least, we compare the performance of models trained on PubLayNet, DocBank and DocLayNet and demonstrate that a model trained on DocLayNet provides overall more robust layout recovery."
     },
     {
-      "self_ref": "#/texts/339",
+      "self_ref": "#/texts/336",
       "parent": {
         "$ref": "#/body"
       },
@@ -9751,7 +9679,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/340",
+      "self_ref": "#/texts/337",
       "parent": {
         "$ref": "#/body"
       },
@@ -9778,7 +9706,7 @@
       "text": "While early approaches in document-layout analysis used rulebased algorithms and heuristics [8], the problem is lately addressed with deep learning methods. The most common approach is to leverage object detection models [9-15]. In the last decade, the accuracy and speed of these models has increased dramatically. Furthermore, most state-of-the-art object detection methods can be trained and applied with very little work, thanks to a standardisation effort of the ground-truth data format [16] and common deep-learning frameworks [17]. Reference data sets such as PubLayNet [6] and DocBank provide their data in the commonly accepted COCO format [16]."
     },
     {
-      "self_ref": "#/texts/341",
+      "self_ref": "#/texts/338",
       "parent": {
         "$ref": "#/body"
       },
@@ -9805,7 +9733,7 @@
       "text": "Lately, new types of ML models for document-layout analysis have emerged in the community [18-21]. These models do not approach the problem of layout analysis purely based on an image representation of the page, as computer vision methods do. Instead, they combine the text tokens and image representation of a page in order to obtain a segmentation. While the reported accuracies appear to be promising, a broadly accepted data format which links geometric and textual features has yet to establish."
     },
     {
-      "self_ref": "#/texts/342",
+      "self_ref": "#/texts/339",
       "parent": {
         "$ref": "#/body"
       },
@@ -9833,7 +9761,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/343",
+      "self_ref": "#/texts/340",
       "parent": {
         "$ref": "#/body"
       },
@@ -9860,7 +9788,7 @@
       "text": "DocLayNet contains 80863 PDF pages. Among these, 7059 carry two instances of human annotations, and 1591 carry three. This amounts to 91104 total annotation instances. The annotations provide layout information in the shape of labeled, rectangular boundingboxes. We define 11 distinct labels for layout features, namely Caption , Footnote , Formula , List-item , Page-footer , Page-header , Picture , Section-header , Table , Text , and Title . Our reasoning for picking this particular label set is detailed in Section 4."
     },
     {
-      "self_ref": "#/texts/344",
+      "self_ref": "#/texts/341",
       "parent": {
         "$ref": "#/body"
       },
@@ -9881,13 +9809,27 @@
             0,
             186
           ]
+        },
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 53.8,
+            "t": 509.77,
+            "r": 294.27,
+            "b": 425.25,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            187,
+            700
+          ]
         }
       ],
-      "orig": "In addition to open intellectual property constraints for the source documents, we required that the documents in DocLayNet adhere to a few conditions. Firstly, we kept scanned documents",
-      "text": "In addition to open intellectual property constraints for the source documents, we required that the documents in DocLayNet adhere to a few conditions. Firstly, we kept scanned documents"
+      "orig": "In addition to open intellectual property constraints for the source documents, we required that the documents in DocLayNet adhere to a few conditions. Firstly, we kept scanned documents to a minimum, since they introduce difficulties in annotation (see Section 4). As a second condition, we focussed on medium to large documents ( > 10 pages) with technical content, dense in complex tables, figures, plots and captions. Such documents carry a lot of information value, but are often hard to analyse with high accuracy due to their challenging layouts. Counterexamples of documents not included in the dataset are receipts, invoices, hand-written documents or photographs showing 'text in the wild\".",
+      "text": "In addition to open intellectual property constraints for the source documents, we required that the documents in DocLayNet adhere to a few conditions. Firstly, we kept scanned documents to a minimum, since they introduce difficulties in annotation (see Section 4). As a second condition, we focussed on medium to large documents ( > 10 pages) with technical content, dense in complex tables, figures, plots and captions. Such documents carry a lot of information value, but are often hard to analyse with high accuracy due to their challenging layouts. Counterexamples of documents not included in the dataset are receipts, invoices, hand-written documents or photographs showing 'text in the wild\"."
     },
     {
-      "self_ref": "#/texts/345",
+      "self_ref": "#/texts/342",
       "parent": {
         "$ref": "#/body"
       },
@@ -9914,7 +9856,7 @@
       "text": "DocLayNet: A Large Human-Annotated Dataset for Document-Layout Analysis"
     },
     {
-      "self_ref": "#/texts/346",
+      "self_ref": "#/texts/343",
       "parent": {
         "$ref": "#/body"
       },
@@ -9941,7 +9883,7 @@
       "text": "KDD '22, August 14-18, 2022, Washington, DC, USA"
     },
     {
-      "self_ref": "#/texts/347",
+      "self_ref": "#/texts/344",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -9968,7 +9910,7 @@
       "text": "Figure 2: Distribution of DocLayNet pages across document categories."
     },
     {
-      "self_ref": "#/texts/348",
+      "self_ref": "#/texts/345",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -9995,7 +9937,7 @@
       "text": "Patents"
     },
     {
-      "self_ref": "#/texts/349",
+      "self_ref": "#/texts/346",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -10022,7 +9964,7 @@
       "text": "8%"
     },
     {
-      "self_ref": "#/texts/350",
+      "self_ref": "#/texts/347",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -10049,7 +9991,7 @@
       "text": "Scientific"
     },
     {
-      "self_ref": "#/texts/351",
+      "self_ref": "#/texts/348",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -10076,7 +10018,7 @@
       "text": "17%"
     },
     {
-      "self_ref": "#/texts/352",
+      "self_ref": "#/texts/349",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -10103,7 +10045,7 @@
       "text": "Financial"
     },
     {
-      "self_ref": "#/texts/353",
+      "self_ref": "#/texts/350",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -10130,7 +10072,7 @@
       "text": "32%"
     },
     {
-      "self_ref": "#/texts/354",
+      "self_ref": "#/texts/351",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -10157,7 +10099,7 @@
       "text": "Tenders"
     },
     {
-      "self_ref": "#/texts/355",
+      "self_ref": "#/texts/352",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -10184,7 +10126,7 @@
       "text": "6%"
     },
     {
-      "self_ref": "#/texts/356",
+      "self_ref": "#/texts/353",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -10211,7 +10153,7 @@
       "text": "Laws"
     },
     {
-      "self_ref": "#/texts/357",
+      "self_ref": "#/texts/354",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -10238,7 +10180,7 @@
       "text": "16%"
     },
     {
-      "self_ref": "#/texts/358",
+      "self_ref": "#/texts/355",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -10265,7 +10207,7 @@
       "text": "Manuals"
     },
     {
-      "self_ref": "#/texts/359",
+      "self_ref": "#/texts/356",
       "parent": {
         "$ref": "#/pictures/1"
       },
@@ -10292,34 +10234,7 @@
       "text": "21%"
     },
     {
-      "self_ref": "#/texts/360",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 3,
-          "bbox": {
-            "l": 53.8,
-            "t": 509.77,
-            "r": 294.27,
-            "b": 425.25,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            513
-          ]
-        }
-      ],
-      "orig": "to a minimum, since they introduce difficulties in annotation (see Section 4). As a second condition, we focussed on medium to large documents ( > 10 pages) with technical content, dense in complex tables, figures, plots and captions. Such documents carry a lot of information value, but are often hard to analyse with high accuracy due to their challenging layouts. Counterexamples of documents not included in the dataset are receipts, invoices, hand-written documents or photographs showing 'text in the wild\".",
-      "text": "to a minimum, since they introduce difficulties in annotation (see Section 4). As a second condition, we focussed on medium to large documents ( > 10 pages) with technical content, dense in complex tables, figures, plots and captions. Such documents carry a lot of information value, but are often hard to analyse with high accuracy due to their challenging layouts. Counterexamples of documents not included in the dataset are receipts, invoices, hand-written documents or photographs showing 'text in the wild\"."
-    },
-    {
-      "self_ref": "#/texts/361",
+      "self_ref": "#/texts/357",
       "parent": {
         "$ref": "#/body"
       },
@@ -10346,7 +10261,7 @@
       "text": "The pages in DocLayNet can be grouped into six distinct categories, namely Financial Reports , Manuals , Scientific Articles , Laws & Regulations , Patents and Government Tenders . Each document category was sourced from various repositories. For example, Financial Reports contain both free-style format annual reports 2 which expose company-specific, artistic layouts as well as the more formal SEC filings. The two largest categories ( Financial Reports and Manuals ) contain a large amount of free-style layouts in order to obtain maximum variability. In the other four categories, we boosted the variability by mixing documents from independent providers, such as different government websites or publishers. In Figure 2, we show the document categories contained in DocLayNet with their respective sizes."
     },
     {
-      "self_ref": "#/texts/362",
+      "self_ref": "#/texts/358",
       "parent": {
         "$ref": "#/body"
       },
@@ -10373,7 +10288,7 @@
       "text": "We did not control the document selection with regard to language. The vast majority of documents contained in DocLayNet (close to 95%) are published in English language. However, DocLayNet also contains a number of documents in other languages such as German (2.5%), French (1.0%) and Japanese (1.0%). While the document language has negligible impact on the performance of computer vision methods such as object detection and segmentation models, it might prove challenging for layout analysis methods which exploit textual features."
     },
     {
-      "self_ref": "#/texts/363",
+      "self_ref": "#/texts/359",
       "parent": {
         "$ref": "#/body"
       },
@@ -10400,7 +10315,7 @@
       "text": "To ensure that future benchmarks in the document-layout analysis community can be easily compared, we have split up DocLayNet into pre-defined train-, test- and validation-sets. In this way, we can avoid spurious variations in the evaluation scores due to random splitting in train-, test- and validation-sets. We also ensured that less frequent labels are represented in train and test sets in equal proportions."
     },
     {
-      "self_ref": "#/texts/364",
+      "self_ref": "#/texts/360",
       "parent": {
         "$ref": "#/body"
       },
@@ -10427,7 +10342,7 @@
       "text": "2 e.g. AAPL from https://www.annualreports.com/"
     },
     {
-      "self_ref": "#/texts/365",
+      "self_ref": "#/texts/361",
       "parent": {
         "$ref": "#/body"
       },
@@ -10454,7 +10369,7 @@
       "text": "Table 1 shows the overall frequency and distribution of the labels among the different sets. Importantly, we ensure that subsets are only split on full-document boundaries. This avoids that pages of the same document are spread over train, test and validation set, which can give an undesired evaluation advantage to models and lead to overestimation of their prediction accuracy. We will show the impact of this decision in Section 5."
     },
     {
-      "self_ref": "#/texts/366",
+      "self_ref": "#/texts/362",
       "parent": {
         "$ref": "#/body"
       },
@@ -10481,7 +10396,7 @@
       "text": "In order to accommodate the different types of models currently in use by the community, we provide DocLayNet in an augmented COCO format [16]. This entails the standard COCO ground-truth file (in JSON format) with the associated page images (in PNG format, 1025 \u00d7 1025 pixels). Furthermore, custom fields have been added to each COCO record to specify document category, original document filename and page number. In addition, we also provide the original PDF pages, as well as sidecar files containing parsed PDF text and text-cell coordinates (in JSON). All additional files are linked to the primary page images by their matching filenames."
     },
     {
-      "self_ref": "#/texts/367",
+      "self_ref": "#/texts/363",
       "parent": {
         "$ref": "#/body"
       },
@@ -10508,7 +10423,7 @@
       "text": "Despite being cost-intense and far less scalable than automation, human annotation has several benefits over automated groundtruth generation. The first and most obvious reason to leverage human annotations is the freedom to annotate any type of document without requiring a programmatic source. For most PDF documents, the original source document is not available. The latter is not a hard constraint with human annotation, but it is for automated methods. A second reason to use human annotations is that the latter usually provide a more natural interpretation of the page layout. The human-interpreted layout can significantly deviate from the programmatic layout used in typesetting. For example, 'invisible' tables might be used solely for aligning text paragraphs on columns. Such typesetting tricks might be interpreted by automated methods incorrectly as an actual table, while the human annotation will interpret it correctly as Text or other styles. The same applies to multi-line text elements, when authors decided to space them as 'invisible' list elements without bullet symbols. A third reason to gather ground-truth through human annotation is to estimate a 'natural' upper bound on the segmentation accuracy. As we will show in Section 4, certain documents featuring complex layouts can have different but equally acceptable layout interpretations. This natural upper bound for segmentation accuracy can be found by annotating the same pages multiple times by different people and evaluating the inter-annotator agreement. Such a baseline consistency evaluation is very useful to define expectations for a good target accuracy in trained deep neural network models and avoid overfitting (see Table 1). On the flip side, achieving high annotation consistency proved to be a key challenge in human annotation, as we outline in Section 4."
     },
     {
-      "self_ref": "#/texts/368",
+      "self_ref": "#/texts/364",
       "parent": {
         "$ref": "#/body"
       },
@@ -10536,7 +10451,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/369",
+      "self_ref": "#/texts/365",
       "parent": {
         "$ref": "#/body"
       },
@@ -10557,13 +10472,27 @@
             0,
             457
           ]
+        },
+        {
+          "page_no": 4,
+          "bbox": {
+            "l": 53.47,
+            "t": 157.28,
+            "r": 294.05,
+            "b": 116.6,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            458,
+            689
+          ]
         }
       ],
-      "orig": "The annotation campaign was carried out in four phases. In phase one, we identified and prepared the data sources for annotation. In phase two, we determined the class labels and how annotations should be done on the documents in order to obtain maximum consistency. The latter was guided by a detailed requirement analysis and exhaustive experiments. In phase three, we trained the annotation staff and performed exams for quality assurance. In phase four,",
-      "text": "The annotation campaign was carried out in four phases. In phase one, we identified and prepared the data sources for annotation. In phase two, we determined the class labels and how annotations should be done on the documents in order to obtain maximum consistency. The latter was guided by a detailed requirement analysis and exhaustive experiments. In phase three, we trained the annotation staff and performed exams for quality assurance. In phase four,"
+      "orig": "The annotation campaign was carried out in four phases. In phase one, we identified and prepared the data sources for annotation. In phase two, we determined the class labels and how annotations should be done on the documents in order to obtain maximum consistency. The latter was guided by a detailed requirement analysis and exhaustive experiments. In phase three, we trained the annotation staff and performed exams for quality assurance. In phase four, we distributed the annotation workload and performed continuous quality controls. Phase one and two required a small team of experts only. For phases three and four, a group of 40 dedicated annotators were assembled and supervised.",
+      "text": "The annotation campaign was carried out in four phases. In phase one, we identified and prepared the data sources for annotation. In phase two, we determined the class labels and how annotations should be done on the documents in order to obtain maximum consistency. The latter was guided by a detailed requirement analysis and exhaustive experiments. In phase three, we trained the annotation staff and performed exams for quality assurance. In phase four, we distributed the annotation workload and performed continuous quality controls. Phase one and two required a small team of experts only. For phases three and four, a group of 40 dedicated annotators were assembled and supervised."
     },
     {
-      "self_ref": "#/texts/370",
+      "self_ref": "#/texts/366",
       "parent": {
         "$ref": "#/body"
       },
@@ -10590,7 +10519,7 @@
       "text": "KDD '22, August 14-18, 2022, Washington, DC, USA Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, and Peter Staar"
     },
     {
-      "self_ref": "#/texts/371",
+      "self_ref": "#/texts/367",
       "parent": {
         "$ref": "#/tables/0"
       },
@@ -10617,7 +10546,7 @@
       "text": "Table 1: DocLayNet dataset overview. Along with the frequency of each class label, we present the relative occurrence (as % of row 'Total') in the train, test and validation sets. The inter-annotator agreement is computed as the mAP@0.5-0.95 metric between pairwise annotations from the triple-annotated pages, from which we obtain accuracy ranges."
     },
     {
-      "self_ref": "#/texts/372",
+      "self_ref": "#/texts/368",
       "parent": {
         "$ref": "#/pictures/2"
       },
@@ -10644,34 +10573,7 @@
       "text": "Figure 3: Corpus Conversion Service annotation user interface. The PDF page is shown in the background, with overlaid text-cells (in darker shades). The annotation boxes can be drawn by dragging a rectangle over each segment with the respective label from the palette on the right."
     },
     {
-      "self_ref": "#/texts/373",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 4,
-          "bbox": {
-            "l": 53.47,
-            "t": 157.28,
-            "r": 294.05,
-            "b": 116.6,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            231
-          ]
-        }
-      ],
-      "orig": "we distributed the annotation workload and performed continuous quality controls. Phase one and two required a small team of experts only. For phases three and four, a group of 40 dedicated annotators were assembled and supervised.",
-      "text": "we distributed the annotation workload and performed continuous quality controls. Phase one and two required a small team of experts only. For phases three and four, a group of 40 dedicated annotators were assembled and supervised."
-    },
-    {
-      "self_ref": "#/texts/374",
+      "self_ref": "#/texts/369",
       "parent": {
         "$ref": "#/body"
       },
@@ -10712,7 +10614,7 @@
       "text": "Phase 1: Data selection and preparation. Our inclusion criteria for documents were described in Section 3. A large effort went into ensuring that all documents are free to use. The data sources include publication repositories such as arXiv 3 , government offices, company websites as well as data directory services for financial reports and patents. Scanned documents were excluded wherever possible because they can be rotated or skewed. This would not allow us to perform annotation with rectangular bounding-boxes and therefore complicate the annotation process."
     },
     {
-      "self_ref": "#/texts/375",
+      "self_ref": "#/texts/370",
       "parent": {
         "$ref": "#/body"
       },
@@ -10739,7 +10641,7 @@
       "text": "Preparation work included uploading and parsing the sourced PDF documents in the Corpus Conversion Service (CCS) [22], a cloud-native platform which provides a visual annotation interface and allows for dataset inspection and analysis. The annotation interface of CCS is shown in Figure 3. The desired balance of pages between the different document categories was achieved by selective subsampling of pages with certain desired properties. For example, we made sure to include the title page of each document and bias the remaining page selection to those with figures or tables. The latter was achieved by leveraging pre-trained object detection models from PubLayNet, which helped us estimate how many figures and tables a given page contains."
     },
     {
-      "self_ref": "#/texts/376",
+      "self_ref": "#/texts/371",
       "parent": {
         "$ref": "#/body"
       },
@@ -10760,13 +10662,27 @@
             0,
             1159
           ]
+        },
+        {
+          "page_no": 5,
+          "bbox": {
+            "l": 53.8,
+            "t": 704.21,
+            "r": 294.05,
+            "b": 685.4,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            1160,
+            1295
+          ]
         }
       ],
-      "orig": "Phase 2: Label selection and guideline. We reviewed the collected documents and identified the most common structural features they exhibit. This was achieved by identifying recurrent layout elements and lead us to the definition of 11 distinct class labels. These 11 class labels are Caption , Footnote , Formula , List-item , Pagefooter , Page-header , Picture , Section-header , Table , Text , and Title . Critical factors that were considered for the choice of these class labels were (1) the overall occurrence of the label, (2) the specificity of the label, (3) recognisability on a single page (i.e. no need for context from previous or next page) and (4) overall coverage of the page. Specificity ensures that the choice of label is not ambiguous, while coverage ensures that all meaningful items on a page can be annotated. We refrained from class labels that are very specific to a document category, such as Abstract in the Scientific Articles category. We also avoided class labels that are tightly linked to the semantics of the text. Labels such as Author and Affiliation , as seen in DocBank, are often only distinguishable by discriminating on",
-      "text": "Phase 2: Label selection and guideline. We reviewed the collected documents and identified the most common structural features they exhibit. This was achieved by identifying recurrent layout elements and lead us to the definition of 11 distinct class labels. These 11 class labels are Caption , Footnote , Formula , List-item , Pagefooter , Page-header , Picture , Section-header , Table , Text , and Title . Critical factors that were considered for the choice of these class labels were (1) the overall occurrence of the label, (2) the specificity of the label, (3) recognisability on a single page (i.e. no need for context from previous or next page) and (4) overall coverage of the page. Specificity ensures that the choice of label is not ambiguous, while coverage ensures that all meaningful items on a page can be annotated. We refrained from class labels that are very specific to a document category, such as Abstract in the Scientific Articles category. We also avoided class labels that are tightly linked to the semantics of the text. Labels such as Author and Affiliation , as seen in DocBank, are often only distinguishable by discriminating on"
+      "orig": "Phase 2: Label selection and guideline. We reviewed the collected documents and identified the most common structural features they exhibit. This was achieved by identifying recurrent layout elements and lead us to the definition of 11 distinct class labels. These 11 class labels are Caption , Footnote , Formula , List-item , Pagefooter , Page-header , Picture , Section-header , Table , Text , and Title . Critical factors that were considered for the choice of these class labels were (1) the overall occurrence of the label, (2) the specificity of the label, (3) recognisability on a single page (i.e. no need for context from previous or next page) and (4) overall coverage of the page. Specificity ensures that the choice of label is not ambiguous, while coverage ensures that all meaningful items on a page can be annotated. We refrained from class labels that are very specific to a document category, such as Abstract in the Scientific Articles category. We also avoided class labels that are tightly linked to the semantics of the text. Labels such as Author and Affiliation , as seen in DocBank, are often only distinguishable by discriminating on the textual content of an element, which goes beyond visual layout recognition, in particular outside the Scientific Articles category.",
+      "text": "Phase 2: Label selection and guideline. We reviewed the collected documents and identified the most common structural features they exhibit. This was achieved by identifying recurrent layout elements and lead us to the definition of 11 distinct class labels. These 11 class labels are Caption , Footnote , Formula , List-item , Pagefooter , Page-header , Picture , Section-header , Table , Text , and Title . Critical factors that were considered for the choice of these class labels were (1) the overall occurrence of the label, (2) the specificity of the label, (3) recognisability on a single page (i.e. no need for context from previous or next page) and (4) overall coverage of the page. Specificity ensures that the choice of label is not ambiguous, while coverage ensures that all meaningful items on a page can be annotated. We refrained from class labels that are very specific to a document category, such as Abstract in the Scientific Articles category. We also avoided class labels that are tightly linked to the semantics of the text. Labels such as Author and Affiliation , as seen in DocBank, are often only distinguishable by discriminating on the textual content of an element, which goes beyond visual layout recognition, in particular outside the Scientific Articles category."
     },
     {
-      "self_ref": "#/texts/377",
+      "self_ref": "#/texts/372",
       "parent": {
         "$ref": "#/body"
       },
@@ -10794,7 +10710,7 @@
       "hyperlink": "https://arxiv.org/"
     },
     {
-      "self_ref": "#/texts/378",
+      "self_ref": "#/texts/373",
       "parent": {
         "$ref": "#/body"
       },
@@ -10821,7 +10737,7 @@
       "text": "DocLayNet: A Large Human-Annotated Dataset for Document-Layout Analysis"
     },
     {
-      "self_ref": "#/texts/379",
+      "self_ref": "#/texts/374",
       "parent": {
         "$ref": "#/body"
       },
@@ -10848,34 +10764,7 @@
       "text": "KDD '22, August 14-18, 2022, Washington, DC, USA"
     },
     {
-      "self_ref": "#/texts/380",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 5,
-          "bbox": {
-            "l": 53.8,
-            "t": 704.21,
-            "r": 294.05,
-            "b": 685.4,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            135
-          ]
-        }
-      ],
-      "orig": "the textual content of an element, which goes beyond visual layout recognition, in particular outside the Scientific Articles category.",
-      "text": "the textual content of an element, which goes beyond visual layout recognition, in particular outside the Scientific Articles category."
-    },
-    {
-      "self_ref": "#/texts/381",
+      "self_ref": "#/texts/375",
       "parent": {
         "$ref": "#/body"
       },
@@ -10902,7 +10791,7 @@
       "text": "At first sight, the task of visual document-layout interpretation appears intuitive enough to obtain plausible annotations in most cases. However, during early trial-runs in the core team, we observed many cases in which annotators use different annotation styles, especially for documents with challenging layouts. For example, if a figure is presented with subfigures, one annotator might draw a single figure bounding-box, while another might annotate each subfigure separately. The same applies for lists, where one might annotate all list items in one block or each list item separately. In essence, we observed that challenging layouts would be annotated in different but plausible ways. To illustrate this, we show in Figure 4 multiple examples of plausible but inconsistent annotations on the same pages."
     },
     {
-      "self_ref": "#/texts/382",
+      "self_ref": "#/texts/376",
       "parent": {
         "$ref": "#/body"
       },
@@ -10929,7 +10818,7 @@
       "text": "Obviously, this inconsistency in annotations is not desirable for datasets which are intended to be used for model training. To minimise these inconsistencies, we created a detailed annotation guideline. While perfect consistency across 40 annotation staff members is clearly not possible to achieve, we saw a huge improvement in annotation consistency after the introduction of our annotation guideline. A few selected, non-trivial highlights of the guideline are:"
     },
     {
-      "self_ref": "#/texts/383",
+      "self_ref": "#/texts/377",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -10958,7 +10847,7 @@
       "marker": "(1)"
     },
     {
-      "self_ref": "#/texts/384",
+      "self_ref": "#/texts/378",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -10987,7 +10876,7 @@
       "marker": "(2)"
     },
     {
-      "self_ref": "#/texts/385",
+      "self_ref": "#/texts/379",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -11016,7 +10905,7 @@
       "marker": "(3)"
     },
     {
-      "self_ref": "#/texts/386",
+      "self_ref": "#/texts/380",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -11045,7 +10934,7 @@
       "marker": "(4)"
     },
     {
-      "self_ref": "#/texts/387",
+      "self_ref": "#/texts/381",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -11074,7 +10963,7 @@
       "marker": "(5)"
     },
     {
-      "self_ref": "#/texts/388",
+      "self_ref": "#/texts/382",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -11103,7 +10992,7 @@
       "marker": "(6)"
     },
     {
-      "self_ref": "#/texts/389",
+      "self_ref": "#/texts/383",
       "parent": {
         "$ref": "#/body"
       },
@@ -11130,7 +11019,7 @@
       "text": "The complete annotation guideline is over 100 pages long and a detailed description is obviously out of scope for this paper. Nevertheless, it will be made publicly available alongside with DocLayNet for future reference."
     },
     {
-      "self_ref": "#/texts/390",
+      "self_ref": "#/texts/384",
       "parent": {
         "$ref": "#/body"
       },
@@ -11157,7 +11046,7 @@
       "text": "Phase 3: Training. After a first trial with a small group of people, we realised that providing the annotation guideline and a set of random practice pages did not yield the desired quality level for layout annotation. Therefore we prepared a subset of pages with two different complexity levels, each with a practice and an exam part. 974 pages were reference-annotated by one proficient core team member. Annotation staff were then given the task to annotate the same subsets (blinded from the reference). By comparing the annotations of each staff member with the reference annotations, we could quantify how closely their annotations matched the reference. Only after passing two exam levels with high annotation quality, staff were admitted into the production phase. Practice iterations"
     },
     {
-      "self_ref": "#/texts/391",
+      "self_ref": "#/texts/385",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -11184,7 +11073,7 @@
       "text": "1ef23f5e6d7f10d393f9947e8208285dce9ae87250ac483ac4b4a59d51b4e037"
     },
     {
-      "self_ref": "#/texts/392",
+      "self_ref": "#/texts/386",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -11211,7 +11100,7 @@
       "text": "Compliant with guidelines"
     },
     {
-      "self_ref": "#/texts/393",
+      "self_ref": "#/texts/387",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -11238,7 +11127,7 @@
       "text": "Plausible but invalid alternative"
     },
     {
-      "self_ref": "#/texts/394",
+      "self_ref": "#/texts/388",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -11265,7 +11154,7 @@
       "text": "Borderline case: Two guideline-compliant alternatives"
     },
     {
-      "self_ref": "#/texts/395",
+      "self_ref": "#/texts/389",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -11292,7 +11181,7 @@
       "text": "03c31a2ee1ed1b583c28957f475ee545d144e1b5a264dc4dd068c8d2f6a64860"
     },
     {
-      "self_ref": "#/texts/396",
+      "self_ref": "#/texts/390",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -11319,7 +11208,7 @@
       "text": "1a5cd524f1844c1260c8e8c073e1f442423c264583212b0d0b6626fc780e6ed4"
     },
     {
-      "self_ref": "#/texts/397",
+      "self_ref": "#/texts/391",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -11346,7 +11235,7 @@
       "text": "A"
     },
     {
-      "self_ref": "#/texts/398",
+      "self_ref": "#/texts/392",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -11373,7 +11262,7 @@
       "text": "B"
     },
     {
-      "self_ref": "#/texts/399",
+      "self_ref": "#/texts/393",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -11400,7 +11289,7 @@
       "text": "C"
     },
     {
-      "self_ref": "#/texts/400",
+      "self_ref": "#/texts/394",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -11427,7 +11316,7 @@
       "text": "D"
     },
     {
-      "self_ref": "#/texts/401",
+      "self_ref": "#/texts/395",
       "parent": {
         "$ref": "#/body"
       },
@@ -11454,7 +11343,7 @@
       "text": "05237a14f2524e3f53c8454b074409d05078038a6a36b770fcc8ec7e540deae0"
     },
     {
-      "self_ref": "#/texts/402",
+      "self_ref": "#/texts/396",
       "parent": {
         "$ref": "#/body"
       },
@@ -11481,7 +11370,7 @@
       "text": "Figure 4: Examples of plausible annotation alternatives for the same page. Criteria in our annotation guideline can resolve cases A to C, while the case D remains ambiguous."
     },
     {
-      "self_ref": "#/texts/403",
+      "self_ref": "#/texts/397",
       "parent": {
         "$ref": "#/body"
       },
@@ -11508,7 +11397,7 @@
       "text": "were carried out over a timeframe of 12 weeks, after which 8 of the 40 initially allocated annotators did not pass the bar."
     },
     {
-      "self_ref": "#/texts/404",
+      "self_ref": "#/texts/398",
       "parent": {
         "$ref": "#/body"
       },
@@ -11529,13 +11418,27 @@
             0,
             987
           ]
+        },
+        {
+          "page_no": 6,
+          "bbox": {
+            "l": 53.53,
+            "t": 420.64,
+            "r": 295.56,
+            "b": 215.58,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            988,
+            2240
+          ]
         }
       ],
-      "orig": "Phase 4: Production annotation. The previously selected 80K pages were annotated with the defined 11 class labels by 32 annotators. This production phase took around three months to complete. All annotations were created online through CCS, which visualises the programmatic PDF text-cells as an overlay on the page. The page annotation are obtained by drawing rectangular bounding-boxes, as shown in Figure 3. With regard to the annotation practices, we implemented a few constraints and capabilities on the tooling level. First, we only allow non-overlapping, vertically oriented, rectangular boxes. For the large majority of documents, this constraint was sufficient and it speeds up the annotation considerably in comparison with arbitrary segmentation shapes. Second, annotator staff were not able to see each other's annotations. This was enforced by design to avoid any bias in the annotation, which could skew the numbers of the inter-annotator agreement (see Table 1). We wanted",
-      "text": "Phase 4: Production annotation. The previously selected 80K pages were annotated with the defined 11 class labels by 32 annotators. This production phase took around three months to complete. All annotations were created online through CCS, which visualises the programmatic PDF text-cells as an overlay on the page. The page annotation are obtained by drawing rectangular bounding-boxes, as shown in Figure 3. With regard to the annotation practices, we implemented a few constraints and capabilities on the tooling level. First, we only allow non-overlapping, vertically oriented, rectangular boxes. For the large majority of documents, this constraint was sufficient and it speeds up the annotation considerably in comparison with arbitrary segmentation shapes. Second, annotator staff were not able to see each other's annotations. This was enforced by design to avoid any bias in the annotation, which could skew the numbers of the inter-annotator agreement (see Table 1). We wanted"
+      "orig": "Phase 4: Production annotation. The previously selected 80K pages were annotated with the defined 11 class labels by 32 annotators. This production phase took around three months to complete. All annotations were created online through CCS, which visualises the programmatic PDF text-cells as an overlay on the page. The page annotation are obtained by drawing rectangular bounding-boxes, as shown in Figure 3. With regard to the annotation practices, we implemented a few constraints and capabilities on the tooling level. First, we only allow non-overlapping, vertically oriented, rectangular boxes. For the large majority of documents, this constraint was sufficient and it speeds up the annotation considerably in comparison with arbitrary segmentation shapes. Second, annotator staff were not able to see each other's annotations. This was enforced by design to avoid any bias in the annotation, which could skew the numbers of the inter-annotator agreement (see Table 1). We wanted to avoid this at any cost in order to have clear, unbiased baseline numbers for human document-layout annotation. Third, we introduced the feature of snapping boxes around text segments to obtain a pixel-accurate annotation and again reduce time and effort. The CCS annotation tool automatically shrinks every user-drawn box to the minimum bounding-box around the enclosed text-cells for all purely text-based segments, which excludes only Table and Picture . For the latter, we instructed annotation staff to minimise inclusion of surrounding whitespace while including all graphical lines. A downside of snapping boxes to enclosed text cells is that some wrongly parsed PDF pages cannot be annotated correctly and need to be skipped. Fourth, we established a way to flag pages as rejected for cases where no valid annotation according to the label guidelines could be achieved. Example cases for this would be PDF pages that render incorrectly or contain layouts that are impossible to capture with non-overlapping rectangles. Such rejected pages are not contained in the final dataset. With all these measures in place, experienced annotation staff managed to annotate a single page in a typical timeframe of 20s to 60s, depending on its complexity.",
+      "text": "Phase 4: Production annotation. The previously selected 80K pages were annotated with the defined 11 class labels by 32 annotators. This production phase took around three months to complete. All annotations were created online through CCS, which visualises the programmatic PDF text-cells as an overlay on the page. The page annotation are obtained by drawing rectangular bounding-boxes, as shown in Figure 3. With regard to the annotation practices, we implemented a few constraints and capabilities on the tooling level. First, we only allow non-overlapping, vertically oriented, rectangular boxes. For the large majority of documents, this constraint was sufficient and it speeds up the annotation considerably in comparison with arbitrary segmentation shapes. Second, annotator staff were not able to see each other's annotations. This was enforced by design to avoid any bias in the annotation, which could skew the numbers of the inter-annotator agreement (see Table 1). We wanted to avoid this at any cost in order to have clear, unbiased baseline numbers for human document-layout annotation. Third, we introduced the feature of snapping boxes around text segments to obtain a pixel-accurate annotation and again reduce time and effort. The CCS annotation tool automatically shrinks every user-drawn box to the minimum bounding-box around the enclosed text-cells for all purely text-based segments, which excludes only Table and Picture . For the latter, we instructed annotation staff to minimise inclusion of surrounding whitespace while including all graphical lines. A downside of snapping boxes to enclosed text cells is that some wrongly parsed PDF pages cannot be annotated correctly and need to be skipped. Fourth, we established a way to flag pages as rejected for cases where no valid annotation according to the label guidelines could be achieved. Example cases for this would be PDF pages that render incorrectly or contain layouts that are impossible to capture with non-overlapping rectangles. Such rejected pages are not contained in the final dataset. With all these measures in place, experienced annotation staff managed to annotate a single page in a typical timeframe of 20s to 60s, depending on its complexity."
     },
     {
-      "self_ref": "#/texts/405",
+      "self_ref": "#/texts/399",
       "parent": {
         "$ref": "#/body"
       },
@@ -11562,7 +11465,7 @@
       "text": "KDD '22, August 14-18, 2022, Washington, DC, USA Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, and Peter Staar"
     },
     {
-      "self_ref": "#/texts/406",
+      "self_ref": "#/texts/400",
       "parent": {
         "$ref": "#/tables/1"
       },
@@ -11589,34 +11492,7 @@
       "text": "Table 2: Prediction performance (mAP@0.5-0.95) of object detection networks on DocLayNet test set. The MRCNN (Mask R-CNN) and FRCNN (Faster R-CNN) models with ResNet-50 or ResNet-101 backbone were trained based on the network architectures from the detectron2 model zoo (Mask R-CNN R50, R101-FPN 3x, Faster R-CNN R101-FPN 3x), with default configurations. The YOLO implementation utilized was YOLOv5x6 [13]. All models were initialised using pre-trained weights from the COCO 2017 dataset."
     },
     {
-      "self_ref": "#/texts/407",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 6,
-          "bbox": {
-            "l": 53.53,
-            "t": 420.64,
-            "r": 295.56,
-            "b": 215.58,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1252
-          ]
-        }
-      ],
-      "orig": "to avoid this at any cost in order to have clear, unbiased baseline numbers for human document-layout annotation. Third, we introduced the feature of snapping boxes around text segments to obtain a pixel-accurate annotation and again reduce time and effort. The CCS annotation tool automatically shrinks every user-drawn box to the minimum bounding-box around the enclosed text-cells for all purely text-based segments, which excludes only Table and Picture . For the latter, we instructed annotation staff to minimise inclusion of surrounding whitespace while including all graphical lines. A downside of snapping boxes to enclosed text cells is that some wrongly parsed PDF pages cannot be annotated correctly and need to be skipped. Fourth, we established a way to flag pages as rejected for cases where no valid annotation according to the label guidelines could be achieved. Example cases for this would be PDF pages that render incorrectly or contain layouts that are impossible to capture with non-overlapping rectangles. Such rejected pages are not contained in the final dataset. With all these measures in place, experienced annotation staff managed to annotate a single page in a typical timeframe of 20s to 60s, depending on its complexity.",
-      "text": "to avoid this at any cost in order to have clear, unbiased baseline numbers for human document-layout annotation. Third, we introduced the feature of snapping boxes around text segments to obtain a pixel-accurate annotation and again reduce time and effort. The CCS annotation tool automatically shrinks every user-drawn box to the minimum bounding-box around the enclosed text-cells for all purely text-based segments, which excludes only Table and Picture . For the latter, we instructed annotation staff to minimise inclusion of surrounding whitespace while including all graphical lines. A downside of snapping boxes to enclosed text cells is that some wrongly parsed PDF pages cannot be annotated correctly and need to be skipped. Fourth, we established a way to flag pages as rejected for cases where no valid annotation according to the label guidelines could be achieved. Example cases for this would be PDF pages that render incorrectly or contain layouts that are impossible to capture with non-overlapping rectangles. Such rejected pages are not contained in the final dataset. With all these measures in place, experienced annotation staff managed to annotate a single page in a typical timeframe of 20s to 60s, depending on its complexity."
-    },
-    {
-      "self_ref": "#/texts/408",
+      "self_ref": "#/texts/401",
       "parent": {
         "$ref": "#/body"
       },
@@ -11644,7 +11520,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/409",
+      "self_ref": "#/texts/402",
       "parent": {
         "$ref": "#/body"
       },
@@ -11665,13 +11541,27 @@
             0,
             584
           ]
+        },
+        {
+          "page_no": 6,
+          "bbox": {
+            "l": 317.95,
+            "t": 407.56,
+            "r": 558.2,
+            "b": 388.8,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            585,
+            687
+          ]
         }
       ],
-      "orig": "The primary goal of DocLayNet is to obtain high-quality ML models capable of accurate document-layout analysis on a wide variety of challenging layouts. As discussed in Section 2, object detection models are currently the easiest to use, due to the standardisation of ground-truth data in COCO format [16] and the availability of general frameworks such as detectron2 [17]. Furthermore, baseline numbers in PubLayNet and DocBank were obtained using standard object detection models such as Mask R-CNN and Faster R-CNN. As such, we will relate to these object detection methods in this",
-      "text": "The primary goal of DocLayNet is to obtain high-quality ML models capable of accurate document-layout analysis on a wide variety of challenging layouts. As discussed in Section 2, object detection models are currently the easiest to use, due to the standardisation of ground-truth data in COCO format [16] and the availability of general frameworks such as detectron2 [17]. Furthermore, baseline numbers in PubLayNet and DocBank were obtained using standard object detection models such as Mask R-CNN and Faster R-CNN. As such, we will relate to these object detection methods in this"
+      "orig": "The primary goal of DocLayNet is to obtain high-quality ML models capable of accurate document-layout analysis on a wide variety of challenging layouts. As discussed in Section 2, object detection models are currently the easiest to use, due to the standardisation of ground-truth data in COCO format [16] and the availability of general frameworks such as detectron2 [17]. Furthermore, baseline numbers in PubLayNet and DocBank were obtained using standard object detection models such as Mask R-CNN and Faster R-CNN. As such, we will relate to these object detection methods in this paper and leave the detailed evaluation of more recent methods mentioned in Section 2 for future work.",
+      "text": "The primary goal of DocLayNet is to obtain high-quality ML models capable of accurate document-layout analysis on a wide variety of challenging layouts. As discussed in Section 2, object detection models are currently the easiest to use, due to the standardisation of ground-truth data in COCO format [16] and the availability of general frameworks such as detectron2 [17]. Furthermore, baseline numbers in PubLayNet and DocBank were obtained using standard object detection models such as Mask R-CNN and Faster R-CNN. As such, we will relate to these object detection methods in this paper and leave the detailed evaluation of more recent methods mentioned in Section 2 for future work."
     },
     {
-      "self_ref": "#/texts/410",
+      "self_ref": "#/texts/403",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -11698,7 +11588,7 @@
       "text": "Figure 5: Prediction performance (mAP@0.5-0.95) of a Mask R-CNNnetworkwithResNet50backbonetrainedonincreasing fractions of the DocLayNet dataset. The learning curve flattens around the 80% mark, indicating that increasing the size of the DocLayNet dataset with similar data will not yield significantly better predictions."
     },
     {
-      "self_ref": "#/texts/411",
+      "self_ref": "#/texts/404",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -11725,7 +11615,7 @@
       "text": "0"
     },
     {
-      "self_ref": "#/texts/412",
+      "self_ref": "#/texts/405",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -11752,7 +11642,7 @@
       "text": "20"
     },
     {
-      "self_ref": "#/texts/413",
+      "self_ref": "#/texts/406",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -11779,7 +11669,7 @@
       "text": "40"
     },
     {
-      "self_ref": "#/texts/414",
+      "self_ref": "#/texts/407",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -11806,7 +11696,7 @@
       "text": "60"
     },
     {
-      "self_ref": "#/texts/415",
+      "self_ref": "#/texts/408",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -11833,7 +11723,7 @@
       "text": "80"
     },
     {
-      "self_ref": "#/texts/416",
+      "self_ref": "#/texts/409",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -11860,7 +11750,7 @@
       "text": "100"
     },
     {
-      "self_ref": "#/texts/417",
+      "self_ref": "#/texts/410",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -11887,7 +11777,7 @@
       "text": "% of DocLayNet training set"
     },
     {
-      "self_ref": "#/texts/418",
+      "self_ref": "#/texts/411",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -11914,7 +11804,7 @@
       "text": "50"
     },
     {
-      "self_ref": "#/texts/419",
+      "self_ref": "#/texts/412",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -11941,7 +11831,7 @@
       "text": "55"
     },
     {
-      "self_ref": "#/texts/420",
+      "self_ref": "#/texts/413",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -11968,7 +11858,7 @@
       "text": "60"
     },
     {
-      "self_ref": "#/texts/421",
+      "self_ref": "#/texts/414",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -11995,7 +11885,7 @@
       "text": "65"
     },
     {
-      "self_ref": "#/texts/422",
+      "self_ref": "#/texts/415",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -12022,7 +11912,7 @@
       "text": "70"
     },
     {
-      "self_ref": "#/texts/423",
+      "self_ref": "#/texts/416",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -12049,7 +11939,7 @@
       "text": "mAP 0.50:0.95"
     },
     {
-      "self_ref": "#/texts/424",
+      "self_ref": "#/texts/417",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -12076,7 +11966,7 @@
       "text": "10 1"
     },
     {
-      "self_ref": "#/texts/425",
+      "self_ref": "#/texts/418",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -12103,7 +11993,7 @@
       "text": "10 2"
     },
     {
-      "self_ref": "#/texts/426",
+      "self_ref": "#/texts/419",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -12130,7 +12020,7 @@
       "text": "50"
     },
     {
-      "self_ref": "#/texts/427",
+      "self_ref": "#/texts/420",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -12157,7 +12047,7 @@
       "text": "55"
     },
     {
-      "self_ref": "#/texts/428",
+      "self_ref": "#/texts/421",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -12184,7 +12074,7 @@
       "text": "60"
     },
     {
-      "self_ref": "#/texts/429",
+      "self_ref": "#/texts/422",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -12211,7 +12101,7 @@
       "text": "65"
     },
     {
-      "self_ref": "#/texts/430",
+      "self_ref": "#/texts/423",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -12238,34 +12128,7 @@
       "text": "70"
     },
     {
-      "self_ref": "#/texts/431",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 6,
-          "bbox": {
-            "l": 317.95,
-            "t": 407.56,
-            "r": 558.2,
-            "b": 388.8,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            102
-          ]
-        }
-      ],
-      "orig": "paper and leave the detailed evaluation of more recent methods mentioned in Section 2 for future work.",
-      "text": "paper and leave the detailed evaluation of more recent methods mentioned in Section 2 for future work."
-    },
-    {
-      "self_ref": "#/texts/432",
+      "self_ref": "#/texts/424",
       "parent": {
         "$ref": "#/body"
       },
@@ -12292,7 +12155,7 @@
       "text": "In this section, we will present several aspects related to the performance of object detection models on DocLayNet. Similarly as in PubLayNet, we will evaluate the quality of their predictions using mean average precision (mAP) with 10 overlaps that range from 0.5 to 0.95 in steps of 0.05 (mAP@0.5-0.95). These scores are computed by leveraging the evaluation code provided by the COCO API [16]."
     },
     {
-      "self_ref": "#/texts/433",
+      "self_ref": "#/texts/425",
       "parent": {
         "$ref": "#/body"
       },
@@ -12320,7 +12183,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/434",
+      "self_ref": "#/texts/426",
       "parent": {
         "$ref": "#/body"
       },
@@ -12347,7 +12210,7 @@
       "text": "In Table 2, we present baseline experiments (given in mAP) on Mask R-CNN [12], Faster R-CNN [11], and YOLOv5 [13]. Both training and evaluation were performed on RGB images with dimensions of 1025 \u00d7 1025 pixels. For training, we only used one annotation in case of redundantly annotated pages. As one can observe, the variation in mAP between the models is rather low, but overall between 6 and 10% lower than the mAP computed from the pairwise human annotations on triple-annotated pages. This gives a good indication that the DocLayNet dataset poses a worthwhile challenge for the research community to close the gap between human recognition and ML approaches. It is interesting to see that Mask R-CNN and Faster R-CNN produce very comparable mAP scores, indicating that pixel-based image segmentation derived from bounding-boxes does not help to obtain better predictions. On the other hand, the more recent Yolov5x model does very well and even out-performs humans on selected labels such as Text , Table and Picture . This is not entirely surprising, as Text , Table and Picture are abundant and the most visually distinctive in a document."
     },
     {
-      "self_ref": "#/texts/435",
+      "self_ref": "#/texts/427",
       "parent": {
         "$ref": "#/body"
       },
@@ -12374,7 +12237,7 @@
       "text": "DocLayNet: A Large Human-Annotated Dataset for Document-Layout Analysis"
     },
     {
-      "self_ref": "#/texts/436",
+      "self_ref": "#/texts/428",
       "parent": {
         "$ref": "#/body"
       },
@@ -12401,7 +12264,7 @@
       "text": "KDD '22, August 14-18, 2022, Washington, DC, USA"
     },
     {
-      "self_ref": "#/texts/437",
+      "self_ref": "#/texts/429",
       "parent": {
         "$ref": "#/tables/2"
       },
@@ -12428,7 +12291,7 @@
       "text": "Table 3: Performance of a Mask R-CNN R50 network in mAP@0.5-0.95 scores trained on DocLayNet with different class label sets. The reduced label sets were obtained by either down-mapping or dropping labels."
     },
     {
-      "self_ref": "#/texts/438",
+      "self_ref": "#/texts/430",
       "parent": {
         "$ref": "#/body"
       },
@@ -12456,7 +12319,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/439",
+      "self_ref": "#/texts/431",
       "parent": {
         "$ref": "#/body"
       },
@@ -12483,7 +12346,7 @@
       "text": "One of the fundamental questions related to any dataset is if it is 'large enough'. To answer this question for DocLayNet, we performed a data ablation study in which we evaluated a Mask R-CNN model trained on increasing fractions of the DocLayNet dataset. As can be seen in Figure 5, the mAP score rises sharply in the beginning and eventually levels out. To estimate the error-bar on the metrics, we ran the training five times on the entire data-set. This resulted in a 1% error-bar, depicted by the shaded area in Figure 5. In the inset of Figure 5, we show the exact same data-points, but with a logarithmic scale on the x-axis. As is expected, the mAP score increases linearly as a function of the data-size in the inset. The curve ultimately flattens out between the 80% and 100% mark, with the 80% mark falling within the error-bars of the 100% mark. This provides a good indication that the model would not improve significantly by yet increasing the data size. Rather, it would probably benefit more from improved data consistency (as discussed in Section 3), data augmentation methods [23], or the addition of more document categories and styles."
     },
     {
-      "self_ref": "#/texts/440",
+      "self_ref": "#/texts/432",
       "parent": {
         "$ref": "#/body"
       },
@@ -12511,7 +12374,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/441",
+      "self_ref": "#/texts/433",
       "parent": {
         "$ref": "#/body"
       },
@@ -12532,13 +12395,27 @@
             0,
             910
           ]
+        },
+        {
+          "page_no": 7,
+          "bbox": {
+            "l": 317.69,
+            "t": 460.17,
+            "r": 559.58,
+            "b": 375.65,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            911,
+            1380
+          ]
         }
       ],
-      "orig": "The choice and number of labels can have a significant effect on the overall model performance. Since PubLayNet, DocBank and DocLayNet all have different label sets, it is of particular interest to understand and quantify this influence of the label set on the model performance. We investigate this by either down-mapping labels into more common ones (e.g. Caption \u2192 Text ) or excluding them from the annotations entirely. Furthermore, it must be stressed that all mappings and exclusions were performed on the data before model training. In Table 3, we present the mAP scores for a Mask R-CNN R50 network on different label sets. Where a label is down-mapped, we show its corresponding label, otherwise it was excluded. We present three different label sets, with 6, 5 and 4 different labels respectively. The set of 5 labels contains the same labels as PubLayNet. However, due to the different definition of",
-      "text": "The choice and number of labels can have a significant effect on the overall model performance. Since PubLayNet, DocBank and DocLayNet all have different label sets, it is of particular interest to understand and quantify this influence of the label set on the model performance. We investigate this by either down-mapping labels into more common ones (e.g. Caption \u2192 Text ) or excluding them from the annotations entirely. Furthermore, it must be stressed that all mappings and exclusions were performed on the data before model training. In Table 3, we present the mAP scores for a Mask R-CNN R50 network on different label sets. Where a label is down-mapped, we show its corresponding label, otherwise it was excluded. We present three different label sets, with 6, 5 and 4 different labels respectively. The set of 5 labels contains the same labels as PubLayNet. However, due to the different definition of"
+      "orig": "The choice and number of labels can have a significant effect on the overall model performance. Since PubLayNet, DocBank and DocLayNet all have different label sets, it is of particular interest to understand and quantify this influence of the label set on the model performance. We investigate this by either down-mapping labels into more common ones (e.g. Caption \u2192 Text ) or excluding them from the annotations entirely. Furthermore, it must be stressed that all mappings and exclusions were performed on the data before model training. In Table 3, we present the mAP scores for a Mask R-CNN R50 network on different label sets. Where a label is down-mapped, we show its corresponding label, otherwise it was excluded. We present three different label sets, with 6, 5 and 4 different labels respectively. The set of 5 labels contains the same labels as PubLayNet. However, due to the different definition of lists in PubLayNet (grouped list-items) versus DocLayNet (separate list-items), the label set of size 4 is the closest to PubLayNet, in the assumption that the List is down-mapped to Text in PubLayNet. The results in Table 3 show that the prediction accuracy on the remaining class labels does not change significantly when other classes are merged into them. The overall macro-average improves by around 5%, in particular when Page-footer and Page-header are excluded.",
+      "text": "The choice and number of labels can have a significant effect on the overall model performance. Since PubLayNet, DocBank and DocLayNet all have different label sets, it is of particular interest to understand and quantify this influence of the label set on the model performance. We investigate this by either down-mapping labels into more common ones (e.g. Caption \u2192 Text ) or excluding them from the annotations entirely. Furthermore, it must be stressed that all mappings and exclusions were performed on the data before model training. In Table 3, we present the mAP scores for a Mask R-CNN R50 network on different label sets. Where a label is down-mapped, we show its corresponding label, otherwise it was excluded. We present three different label sets, with 6, 5 and 4 different labels respectively. The set of 5 labels contains the same labels as PubLayNet. However, due to the different definition of lists in PubLayNet (grouped list-items) versus DocLayNet (separate list-items), the label set of size 4 is the closest to PubLayNet, in the assumption that the List is down-mapped to Text in PubLayNet. The results in Table 3 show that the prediction accuracy on the remaining class labels does not change significantly when other classes are merged into them. The overall macro-average improves by around 5%, in particular when Page-footer and Page-header are excluded."
     },
     {
-      "self_ref": "#/texts/442",
+      "self_ref": "#/texts/434",
       "parent": {
         "$ref": "#/tables/3"
       },
@@ -12565,34 +12442,7 @@
       "text": "Table 4: Performance of a Mask R-CNN R50 network with document-wise and page-wise split for different label sets. Naive page-wise split will result in /tildelow 10% point improvement."
     },
     {
-      "self_ref": "#/texts/443",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 7,
-          "bbox": {
-            "l": 317.69,
-            "t": 460.17,
-            "r": 559.58,
-            "b": 375.65,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            469
-          ]
-        }
-      ],
-      "orig": "lists in PubLayNet (grouped list-items) versus DocLayNet (separate list-items), the label set of size 4 is the closest to PubLayNet, in the assumption that the List is down-mapped to Text in PubLayNet. The results in Table 3 show that the prediction accuracy on the remaining class labels does not change significantly when other classes are merged into them. The overall macro-average improves by around 5%, in particular when Page-footer and Page-header are excluded.",
-      "text": "lists in PubLayNet (grouped list-items) versus DocLayNet (separate list-items), the label set of size 4 is the closest to PubLayNet, in the assumption that the List is down-mapped to Text in PubLayNet. The results in Table 3 show that the prediction accuracy on the remaining class labels does not change significantly when other classes are merged into them. The overall macro-average improves by around 5%, in particular when Page-footer and Page-header are excluded."
-    },
-    {
-      "self_ref": "#/texts/444",
+      "self_ref": "#/texts/435",
       "parent": {
         "$ref": "#/body"
       },
@@ -12620,7 +12470,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/445",
+      "self_ref": "#/texts/436",
       "parent": {
         "$ref": "#/body"
       },
@@ -12647,7 +12497,7 @@
       "text": "Many documents in DocLayNet have a unique styling. In order to avoid overfitting on a particular style, we have split the train-, test- and validation-sets of DocLayNet on document boundaries, i.e. every document contributes pages to only one set. To the best of our knowledge, this was not considered in PubLayNet or DocBank. To quantify how this affects model performance, we trained and evaluated a Mask R-CNN R50 model on a modified dataset version. Here, the train-, test- and validation-sets were obtained by a randomised draw over the individual pages. As can be seen in Table 4, the difference in model performance is surprisingly large: pagewise splitting gains \u02dc 10% in mAP over the document-wise splitting. Thus, random page-wise splitting of DocLayNet can easily lead to accidental overestimation of model performance and should be avoided."
     },
     {
-      "self_ref": "#/texts/446",
+      "self_ref": "#/texts/437",
       "parent": {
         "$ref": "#/body"
       },
@@ -12675,7 +12525,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/447",
+      "self_ref": "#/texts/438",
       "parent": {
         "$ref": "#/body"
       },
@@ -12696,20 +12546,7 @@
             0,
             521
           ]
-        }
-      ],
-      "orig": "Throughout this paper, we claim that DocLayNet's wider variety of document layouts leads to more robust layout detection models. In Table 5, we provide evidence for that. We trained models on each of the available datasets (PubLayNet, DocBank and DocLayNet) and evaluated them on the test sets of the other datasets. Due to the different label sets and annotation styles, a direct comparison is not possible. Hence, we focussed on the common labels among the datasets. Between PubLayNet and DocLayNet, these are Picture ,",
-      "text": "Throughout this paper, we claim that DocLayNet's wider variety of document layouts leads to more robust layout detection models. In Table 5, we provide evidence for that. We trained models on each of the available datasets (PubLayNet, DocBank and DocLayNet) and evaluated them on the test sets of the other datasets. Due to the different label sets and annotation styles, a direct comparison is not possible. Hence, we focussed on the common labels among the datasets. Between PubLayNet and DocLayNet, these are Picture ,"
-    },
-    {
-      "self_ref": "#/texts/448",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
+        },
         {
           "page_no": 8,
           "bbox": {
@@ -12720,23 +12557,10 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            0,
-            130
+            522,
+            652
           ]
-        }
-      ],
-      "orig": "KDD '22, August 14-18, 2022, Washington, DC, USA Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, and Peter Staar",
-      "text": "KDD '22, August 14-18, 2022, Washington, DC, USA Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, and Peter Staar"
-    },
-    {
-      "self_ref": "#/texts/449",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
+        },
         {
           "page_no": 8,
           "bbox": {
@@ -12747,16 +12571,16 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            0,
-            298
+            653,
+            951
           ]
         }
       ],
-      "orig": "Table 5: Prediction Performance (mAP@0.5-0.95) of a Mask R-CNN R50 network across the PubLayNet, DocBank & DocLayNet data-sets. By evaluating on common label classes of each dataset, we observe that the DocLayNet-trained model has much less pronounced variations in performance across all datasets.",
-      "text": "Table 5: Prediction Performance (mAP@0.5-0.95) of a Mask R-CNN R50 network across the PubLayNet, DocBank & DocLayNet data-sets. By evaluating on common label classes of each dataset, we observe that the DocLayNet-trained model has much less pronounced variations in performance across all datasets."
+      "orig": "Throughout this paper, we claim that DocLayNet's wider variety of document layouts leads to more robust layout detection models. In Table 5, we provide evidence for that. We trained models on each of the available datasets (PubLayNet, DocBank and DocLayNet) and evaluated them on the test sets of the other datasets. Due to the different label sets and annotation styles, a direct comparison is not possible. Hence, we focussed on the common labels among the datasets. Between PubLayNet and DocLayNet, these are Picture , KDD '22, August 14-18, 2022, Washington, DC, USA Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, and Peter Staar Table 5: Prediction Performance (mAP@0.5-0.95) of a Mask R-CNN R50 network across the PubLayNet, DocBank & DocLayNet data-sets. By evaluating on common label classes of each dataset, we observe that the DocLayNet-trained model has much less pronounced variations in performance across all datasets.",
+      "text": "Throughout this paper, we claim that DocLayNet's wider variety of document layouts leads to more robust layout detection models. In Table 5, we provide evidence for that. We trained models on each of the available datasets (PubLayNet, DocBank and DocLayNet) and evaluated them on the test sets of the other datasets. Due to the different label sets and annotation styles, a direct comparison is not possible. Hence, we focussed on the common labels among the datasets. Between PubLayNet and DocLayNet, these are Picture , KDD '22, August 14-18, 2022, Washington, DC, USA Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, and Peter Staar Table 5: Prediction Performance (mAP@0.5-0.95) of a Mask R-CNN R50 network across the PubLayNet, DocBank & DocLayNet data-sets. By evaluating on common label classes of each dataset, we observe that the DocLayNet-trained model has much less pronounced variations in performance across all datasets."
     },
     {
-      "self_ref": "#/texts/450",
+      "self_ref": "#/texts/439",
       "parent": {
         "$ref": "#/body"
       },
@@ -12783,7 +12607,7 @@
       "text": "Section-header , Table and Text . Before training, we either mapped or excluded DocLayNet's other labels as specified in table 3, and also PubLayNet's List to Text . Note that the different clustering of lists (by list-element vs. whole list objects) naturally decreases the mAP score for Text ."
     },
     {
-      "self_ref": "#/texts/451",
+      "self_ref": "#/texts/440",
       "parent": {
         "$ref": "#/body"
       },
@@ -12810,7 +12634,7 @@
       "text": "For comparison of DocBank with DocLayNet, we trained only on Picture and Table clusters of each dataset. We had to exclude Text because successive paragraphs are often grouped together into a single object in DocBank. This paragraph grouping is incompatible with the individual paragraphs of DocLayNet. As can be seen in Table 5, DocLayNet trained models yield better performance compared to the previous datasets. It is noteworthy that the models trained on PubLayNet and DocBank perform very well on their own test set, but have a much lower performance on the foreign datasets. While this also applies to DocLayNet, the difference is far less pronounced. Thus we conclude that DocLayNet trained models are overall more robust and will produce better results for challenging, unseen layouts."
     },
     {
-      "self_ref": "#/texts/452",
+      "self_ref": "#/texts/441",
       "parent": {
         "$ref": "#/body"
       },
@@ -12838,7 +12662,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/453",
+      "self_ref": "#/texts/442",
       "parent": {
         "$ref": "#/body"
       },
@@ -12865,7 +12689,7 @@
       "text": "To conclude this section, we illustrate the quality of layout predictions one can expect from DocLayNet-trained models by providing a selection of examples without any further post-processing applied. Figure 6 shows selected layout predictions on pages from the test-set of DocLayNet. Results look decent in general across document categories, however one can also observe mistakes such as overlapping clusters of different classes, or entirely missing boxes due to low confidence."
     },
     {
-      "self_ref": "#/texts/454",
+      "self_ref": "#/texts/443",
       "parent": {
         "$ref": "#/body"
       },
@@ -12893,7 +12717,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/455",
+      "self_ref": "#/texts/444",
       "parent": {
         "$ref": "#/body"
       },
@@ -12920,7 +12744,7 @@
       "text": "In this paper, we presented the DocLayNet dataset. It provides the document conversion and layout analysis research community a new and challenging dataset to improve and fine-tune novel ML methods on. In contrast to many other datasets, DocLayNet was created by human annotation in order to obtain reliable layout ground-truth on a wide variety of publication- and typesettingstyles. Including a large proportion of documents outside the scientific publishing domain adds significant value in this respect."
     },
     {
-      "self_ref": "#/texts/456",
+      "self_ref": "#/texts/445",
       "parent": {
         "$ref": "#/body"
       },
@@ -12947,7 +12771,7 @@
       "text": "From the dataset, we have derived on the one hand reference metrics for human performance on document-layout annotation (through double and triple annotations) and on the other hand evaluated the baseline performance of commonly used object detection methods. We also illustrated the impact of various dataset-related aspects on model performance through data-ablation experiments, both from a size and class-label perspective. Last but not least, we compared the accuracy of models trained on other public datasets and showed that DocLayNet trained models are more robust."
     },
     {
-      "self_ref": "#/texts/457",
+      "self_ref": "#/texts/446",
       "parent": {
         "$ref": "#/body"
       },
@@ -12974,7 +12798,7 @@
       "text": "To date, there is still a significant gap between human and ML accuracy on the layout interpretation task, and we hope that this work will inspire the research community to close that gap."
     },
     {
-      "self_ref": "#/texts/458",
+      "self_ref": "#/texts/447",
       "parent": {
         "$ref": "#/body"
       },
@@ -13002,7 +12826,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/459",
+      "self_ref": "#/texts/448",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -13031,7 +12855,7 @@
       "marker": "[1]"
     },
     {
-      "self_ref": "#/texts/460",
+      "self_ref": "#/texts/449",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -13060,7 +12884,7 @@
       "marker": "[2]"
     },
     {
-      "self_ref": "#/texts/461",
+      "self_ref": "#/texts/450",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -13089,7 +12913,7 @@
       "marker": "[3]"
     },
     {
-      "self_ref": "#/texts/462",
+      "self_ref": "#/texts/451",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -13118,7 +12942,7 @@
       "marker": "[4]"
     },
     {
-      "self_ref": "#/texts/463",
+      "self_ref": "#/texts/452",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -13147,7 +12971,7 @@
       "marker": "[5]"
     },
     {
-      "self_ref": "#/texts/464",
+      "self_ref": "#/texts/453",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -13176,7 +13000,7 @@
       "marker": "[6]"
     },
     {
-      "self_ref": "#/texts/465",
+      "self_ref": "#/texts/454",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -13205,7 +13029,7 @@
       "marker": "[7]"
     },
     {
-      "self_ref": "#/texts/466",
+      "self_ref": "#/texts/455",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -13234,7 +13058,7 @@
       "marker": "[8]"
     },
     {
-      "self_ref": "#/texts/467",
+      "self_ref": "#/texts/456",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -13263,7 +13087,7 @@
       "marker": "[9]"
     },
     {
-      "self_ref": "#/texts/468",
+      "self_ref": "#/texts/457",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -13292,7 +13116,7 @@
       "marker": "[10]"
     },
     {
-      "self_ref": "#/texts/469",
+      "self_ref": "#/texts/458",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -13321,7 +13145,7 @@
       "marker": "[11]"
     },
     {
-      "self_ref": "#/texts/470",
+      "self_ref": "#/texts/459",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -13350,7 +13174,7 @@
       "marker": "[12]"
     },
     {
-      "self_ref": "#/texts/471",
+      "self_ref": "#/texts/460",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -13379,7 +13203,7 @@
       "marker": "[13]"
     },
     {
-      "self_ref": "#/texts/472",
+      "self_ref": "#/texts/461",
       "parent": {
         "$ref": "#/body"
       },
@@ -13406,7 +13230,7 @@
       "text": "DocLayNet: A Large Human-Annotated Dataset for Document-Layout Analysis"
     },
     {
-      "self_ref": "#/texts/473",
+      "self_ref": "#/texts/462",
       "parent": {
         "$ref": "#/body"
       },
@@ -13433,7 +13257,7 @@
       "text": "KDD '22, August 14-18, 2022, Washington, DC, USA"
     },
     {
-      "self_ref": "#/texts/474",
+      "self_ref": "#/texts/463",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13460,7 +13284,7 @@
       "text": "Figure 6: Example layout predictions on selected pages from the DocLayNet test-set. (A, D) exhibit favourable results on coloured backgrounds. (B, C) show accurate list-item and paragraph differentiation despite densely-spaced lines. (E) demonstrates good table and figure distinction. (F) shows predictions on a Chinese patent with multiple overlaps, label confusion and missing boxes."
     },
     {
-      "self_ref": "#/texts/475",
+      "self_ref": "#/texts/464",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13487,7 +13311,7 @@
       "text": "4bed2a8aa51ac37058e79605821bbc426d032b0b6ca8bdf3409ed8508ccd8c67"
     },
     {
-      "self_ref": "#/texts/476",
+      "self_ref": "#/texts/465",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13514,7 +13338,7 @@
       "text": "2f2a06d08f5ad565d0f5e815f4ddf666365b2cff435cdaeb8850217e8a8efabf"
     },
     {
-      "self_ref": "#/texts/477",
+      "self_ref": "#/texts/466",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13541,7 +13365,7 @@
       "text": "7f2fd7293e04bf4f1756ae51f5779764933da1d1d2002e3915356050570fc75b"
     },
     {
-      "self_ref": "#/texts/478",
+      "self_ref": "#/texts/467",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13568,7 +13392,7 @@
       "text": "1b81cf65f47456ad4faa725d1eb09879bd633af16cfe2bf8cea661b87907bfac"
     },
     {
-      "self_ref": "#/texts/479",
+      "self_ref": "#/texts/468",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13595,7 +13419,7 @@
       "text": "b60da9d26f488cb133e47d101d35fda1bdca2671ade60764d1cd569590270327"
     },
     {
-      "self_ref": "#/texts/480",
+      "self_ref": "#/texts/469",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13622,7 +13446,7 @@
       "text": "2b7b8355a42ebef0cf91583aad9f30f7c9fa63c5b05911730ba15275c024965b"
     },
     {
-      "self_ref": "#/texts/481",
+      "self_ref": "#/texts/470",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13649,7 +13473,7 @@
       "text": "A"
     },
     {
-      "self_ref": "#/texts/482",
+      "self_ref": "#/texts/471",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13676,7 +13500,7 @@
       "text": "B"
     },
     {
-      "self_ref": "#/texts/483",
+      "self_ref": "#/texts/472",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13703,7 +13527,7 @@
       "text": "C"
     },
     {
-      "self_ref": "#/texts/484",
+      "self_ref": "#/texts/473",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13730,7 +13554,7 @@
       "text": "D"
     },
     {
-      "self_ref": "#/texts/485",
+      "self_ref": "#/texts/474",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13757,7 +13581,7 @@
       "text": "E"
     },
     {
-      "self_ref": "#/texts/486",
+      "self_ref": "#/texts/475",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13784,7 +13608,7 @@
       "text": "F"
     },
     {
-      "self_ref": "#/texts/487",
+      "self_ref": "#/texts/476",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13811,7 +13635,7 @@
       "text": "Text"
     },
     {
-      "self_ref": "#/texts/488",
+      "self_ref": "#/texts/477",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13838,7 +13662,7 @@
       "text": "Caption"
     },
     {
-      "self_ref": "#/texts/489",
+      "self_ref": "#/texts/478",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13865,7 +13689,7 @@
       "text": "List-Item"
     },
     {
-      "self_ref": "#/texts/490",
+      "self_ref": "#/texts/479",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13892,7 +13716,7 @@
       "text": "Formula"
     },
     {
-      "self_ref": "#/texts/491",
+      "self_ref": "#/texts/480",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13919,7 +13743,7 @@
       "text": "Table"
     },
     {
-      "self_ref": "#/texts/492",
+      "self_ref": "#/texts/481",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13946,7 +13770,7 @@
       "text": "Section-Header"
     },
     {
-      "self_ref": "#/texts/493",
+      "self_ref": "#/texts/482",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -13973,7 +13797,7 @@
       "text": "Picture"
     },
     {
-      "self_ref": "#/texts/494",
+      "self_ref": "#/texts/483",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -14000,7 +13824,7 @@
       "text": "Page-Header"
     },
     {
-      "self_ref": "#/texts/495",
+      "self_ref": "#/texts/484",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -14027,7 +13851,7 @@
       "text": "Page-Footer"
     },
     {
-      "self_ref": "#/texts/496",
+      "self_ref": "#/texts/485",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -14054,7 +13878,7 @@
       "text": "Title"
     },
     {
-      "self_ref": "#/texts/497",
+      "self_ref": "#/texts/486",
       "parent": {
         "$ref": "#/body"
       },
@@ -14081,7 +13905,7 @@
       "text": "Diaconu, Mai Thanh Minh, Marc, albinxavi, fatih, oleg, and wanghao yang. ultralytics/yolov5: v6.0 - yolov5n nano models, roboflow integration, tensorflow export, opencv dnn support, October 2021."
     },
     {
-      "self_ref": "#/texts/498",
+      "self_ref": "#/texts/487",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -14110,7 +13934,7 @@
       "marker": "[14]"
     },
     {
-      "self_ref": "#/texts/499",
+      "self_ref": "#/texts/488",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -14139,7 +13963,7 @@
       "marker": "[15]"
     },
     {
-      "self_ref": "#/texts/500",
+      "self_ref": "#/texts/489",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -14168,7 +13992,7 @@
       "marker": "[16]"
     },
     {
-      "self_ref": "#/texts/501",
+      "self_ref": "#/texts/490",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -14197,7 +14021,7 @@
       "marker": "[17]"
     },
     {
-      "self_ref": "#/texts/502",
+      "self_ref": "#/texts/491",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -14226,7 +14050,7 @@
       "marker": "[18]"
     },
     {
-      "self_ref": "#/texts/503",
+      "self_ref": "#/texts/492",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -14255,7 +14079,7 @@
       "marker": "[19]"
     },
     {
-      "self_ref": "#/texts/504",
+      "self_ref": "#/texts/493",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -14284,7 +14108,7 @@
       "marker": "[20]"
     },
     {
-      "self_ref": "#/texts/505",
+      "self_ref": "#/texts/494",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -14313,7 +14137,7 @@
       "marker": "[21]"
     },
     {
-      "self_ref": "#/texts/506",
+      "self_ref": "#/texts/495",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -14342,7 +14166,7 @@
       "marker": "[22]"
     },
     {
-      "self_ref": "#/texts/507",
+      "self_ref": "#/texts/496",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -14378,6 +14202,15 @@
         "$ref": "#/body"
       },
       "children": [
+        {
+          "$ref": "#/texts/5"
+        },
+        {
+          "$ref": "#/texts/6"
+        },
+        {
+          "$ref": "#/texts/7"
+        },
         {
           "$ref": "#/texts/8"
         },
@@ -15280,15 +15113,6 @@
         },
         {
           "$ref": "#/texts/308"
-        },
-        {
-          "$ref": "#/texts/309"
-        },
-        {
-          "$ref": "#/texts/310"
-        },
-        {
-          "$ref": "#/texts/311"
         }
       ],
       "content_layer": "body",
@@ -15299,8 +15123,8 @@
           "bbox": {
             "l": 322.78,
             "t": 543.26,
-            "r": 554.34,
-            "b": 266.09,
+            "r": 554.33,
+            "b": 266.08,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -15311,7 +15135,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/8"
+          "$ref": "#/texts/5"
         }
       ],
       "references": [],
@@ -15324,6 +15148,15 @@
         "$ref": "#/body"
       },
       "children": [
+        {
+          "$ref": "#/texts/344"
+        },
+        {
+          "$ref": "#/texts/345"
+        },
+        {
+          "$ref": "#/texts/346"
+        },
         {
           "$ref": "#/texts/347"
         },
@@ -15353,15 +15186,6 @@
         },
         {
           "$ref": "#/texts/356"
-        },
-        {
-          "$ref": "#/texts/357"
-        },
-        {
-          "$ref": "#/texts/358"
-        },
-        {
-          "$ref": "#/texts/359"
         }
       ],
       "content_layer": "body",
@@ -15370,10 +15194,10 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 87.63,
-            "t": 700.11,
-            "r": 262.94,
-            "b": 571.39,
+            "l": 87.64,
+            "t": 700.1,
+            "r": 262.95,
+            "b": 571.37,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -15384,7 +15208,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/347"
+          "$ref": "#/texts/344"
         }
       ],
       "references": [],
@@ -15398,7 +15222,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/372"
+          "$ref": "#/texts/368"
         }
       ],
       "content_layer": "body",
@@ -15408,9 +15232,9 @@
           "page_no": 4,
           "bbox": {
             "l": 52.52,
-            "t": 481.72,
-            "r": 295.6,
-            "b": 251.28,
+            "t": 481.73,
+            "r": 295.59,
+            "b": 251.27,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -15421,7 +15245,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/372"
+          "$ref": "#/texts/368"
         }
       ],
       "references": [],
@@ -15435,6 +15259,24 @@
       },
       "children": [
         {
+          "$ref": "#/texts/385"
+        },
+        {
+          "$ref": "#/texts/386"
+        },
+        {
+          "$ref": "#/texts/387"
+        },
+        {
+          "$ref": "#/texts/388"
+        },
+        {
+          "$ref": "#/texts/389"
+        },
+        {
+          "$ref": "#/texts/390"
+        },
+        {
           "$ref": "#/texts/391"
         },
         {
@@ -15445,24 +15287,6 @@
         },
         {
           "$ref": "#/texts/394"
-        },
-        {
-          "$ref": "#/texts/395"
-        },
-        {
-          "$ref": "#/texts/396"
-        },
-        {
-          "$ref": "#/texts/397"
-        },
-        {
-          "$ref": "#/texts/398"
-        },
-        {
-          "$ref": "#/texts/399"
-        },
-        {
-          "$ref": "#/texts/400"
         }
       ],
       "content_layer": "body",
@@ -15471,10 +15295,10 @@
         {
           "page_no": 5,
           "bbox": {
-            "l": 315.66,
-            "t": 708.16,
-            "r": 558.95,
-            "b": 332.93,
+            "l": 315.65,
+            "t": 708.09,
+            "r": 558.99,
+            "b": 332.96,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -15494,6 +15318,27 @@
         "$ref": "#/body"
       },
       "children": [
+        {
+          "$ref": "#/texts/403"
+        },
+        {
+          "$ref": "#/texts/404"
+        },
+        {
+          "$ref": "#/texts/405"
+        },
+        {
+          "$ref": "#/texts/406"
+        },
+        {
+          "$ref": "#/texts/407"
+        },
+        {
+          "$ref": "#/texts/408"
+        },
+        {
+          "$ref": "#/texts/409"
+        },
         {
           "$ref": "#/texts/410"
         },
@@ -15535,27 +15380,6 @@
         },
         {
           "$ref": "#/texts/423"
-        },
-        {
-          "$ref": "#/texts/424"
-        },
-        {
-          "$ref": "#/texts/425"
-        },
-        {
-          "$ref": "#/texts/426"
-        },
-        {
-          "$ref": "#/texts/427"
-        },
-        {
-          "$ref": "#/texts/428"
-        },
-        {
-          "$ref": "#/texts/429"
-        },
-        {
-          "$ref": "#/texts/430"
         }
       ],
       "content_layer": "body",
@@ -15564,10 +15388,10 @@
         {
           "page_no": 6,
           "bbox": {
-            "l": 322.08,
-            "t": 702.78,
+            "l": 322.09,
+            "t": 702.77,
             "r": 553.86,
-            "b": 531.03,
+            "b": 531.05,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -15578,7 +15402,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/410"
+          "$ref": "#/texts/403"
         }
       ],
       "references": [],
@@ -15591,6 +15415,39 @@
         "$ref": "#/body"
       },
       "children": [
+        {
+          "$ref": "#/texts/463"
+        },
+        {
+          "$ref": "#/texts/464"
+        },
+        {
+          "$ref": "#/texts/465"
+        },
+        {
+          "$ref": "#/texts/466"
+        },
+        {
+          "$ref": "#/texts/467"
+        },
+        {
+          "$ref": "#/texts/468"
+        },
+        {
+          "$ref": "#/texts/469"
+        },
+        {
+          "$ref": "#/texts/470"
+        },
+        {
+          "$ref": "#/texts/471"
+        },
+        {
+          "$ref": "#/texts/472"
+        },
+        {
+          "$ref": "#/texts/473"
+        },
         {
           "$ref": "#/texts/474"
         },
@@ -15626,39 +15483,6 @@
         },
         {
           "$ref": "#/texts/485"
-        },
-        {
-          "$ref": "#/texts/486"
-        },
-        {
-          "$ref": "#/texts/487"
-        },
-        {
-          "$ref": "#/texts/488"
-        },
-        {
-          "$ref": "#/texts/489"
-        },
-        {
-          "$ref": "#/texts/490"
-        },
-        {
-          "$ref": "#/texts/491"
-        },
-        {
-          "$ref": "#/texts/492"
-        },
-        {
-          "$ref": "#/texts/493"
-        },
-        {
-          "$ref": "#/texts/494"
-        },
-        {
-          "$ref": "#/texts/495"
-        },
-        {
-          "$ref": "#/texts/496"
         }
       ],
       "content_layer": "body",
@@ -15667,10 +15491,10 @@
         {
           "page_no": 9,
           "bbox": {
-            "l": 53.58,
-            "t": 707.21,
-            "r": 558.01,
-            "b": 343.49,
+            "l": 53.6,
+            "t": 707.19,
+            "r": 557.99,
+            "b": 343.5,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -15681,7 +15505,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/474"
+          "$ref": "#/texts/463"
         }
       ],
       "references": [],
@@ -15697,7 +15521,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/371"
+          "$ref": "#/texts/367"
         }
       ],
       "content_layer": "body",
@@ -15707,9 +15531,9 @@
           "page_no": 4,
           "bbox": {
             "l": 98.78,
-            "t": 654.61,
+            "t": 654.62,
             "r": 512.73,
-            "b": 498.0,
+            "b": 497.99,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -15720,7 +15544,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/371"
+          "$ref": "#/texts/367"
         }
       ],
       "references": [],
@@ -22276,7 +22100,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/406"
+          "$ref": "#/texts/400"
         }
       ],
       "content_layer": "body",
@@ -22288,7 +22112,7 @@
             "l": 61.68,
             "t": 596.7,
             "r": 285.67,
-            "b": 440.36,
+            "b": 440.37,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -22299,7 +22123,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/406"
+          "$ref": "#/texts/400"
         }
       ],
       "references": [],
@@ -25608,7 +25432,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/437"
+          "$ref": "#/texts/429"
         }
       ],
       "content_layer": "body",
@@ -25617,10 +25441,10 @@
         {
           "page_no": 7,
           "bbox": {
-            "l": 79.98,
+            "l": 79.97,
             "t": 641.61,
             "r": 267.64,
-            "b": 495.97,
+            "b": 495.96,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -25631,7 +25455,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/437"
+          "$ref": "#/texts/429"
         }
       ],
       "references": [],
@@ -28279,7 +28103,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/442"
+          "$ref": "#/texts/434"
         }
       ],
       "content_layer": "body",
@@ -28288,10 +28112,10 @@
         {
           "page_no": 7,
           "bbox": {
-            "l": 352.47,
+            "l": 352.48,
             "t": 641.49,
-            "r": 523.37,
-            "b": 485.13,
+            "r": 523.38,
+            "b": 485.12,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -28302,7 +28126,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/442"
+          "$ref": "#/texts/434"
         }
       ],
       "references": [],
@@ -30767,7 +30591,7 @@
           "page_no": 8,
           "bbox": {
             "l": 72.56,
-            "t": 619.85,
+            "t": 619.84,
             "r": 274.91,
             "b": 451.92,
             "coord_origin": "BOTTOMLEFT"

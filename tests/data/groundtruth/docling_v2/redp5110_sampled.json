@@ -435,13 +435,13 @@
         "$ref": "#/texts/228"
       },
       {
-        "$ref": "#/texts/229"
-      },
-      {
         "$ref": "#/pictures/15"
       },
       {
         "$ref": "#/pictures/16"
+      },
+      {
+        "$ref": "#/texts/232"
       },
       {
         "$ref": "#/texts/233"
@@ -454,9 +454,6 @@
       },
       {
         "$ref": "#/texts/236"
-      },
-      {
-        "$ref": "#/texts/237"
       }
     ],
     "content_layer": "body",
@@ -6985,20 +6982,7 @@
             0,
             40
           ]
-        }
-      ],
-      "orig": "Protect columns by defining column masks",
-      "text": "Protect columns by defining column masks"
-    },
-    {
-      "self_ref": "#/texts/228",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
+        },
         {
           "page_no": 18,
           "bbox": {
@@ -7009,16 +6993,16 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            0,
-            464
+            41,
+            505
           ]
         }
       ],
-      "orig": "This IBM Redpaper publication provides information about the IBM i 7.2 feature of IBM DB2 for i Row and Column Access Control (RCAC). It offers a broad description of the function and advantages of controlling access to data in a comprehensive and transparent way. This publication helps you understand the capabilities of RCAC and provides examples of defining, creating, and implementing the row permissions and column masks in a relational database environment.",
-      "text": "This IBM Redpaper publication provides information about the IBM i 7.2 feature of IBM DB2 for i Row and Column Access Control (RCAC). It offers a broad description of the function and advantages of controlling access to data in a comprehensive and transparent way. This publication helps you understand the capabilities of RCAC and provides examples of defining, creating, and implementing the row permissions and column masks in a relational database environment."
+      "orig": "Protect columns by defining column masks This IBM Redpaper publication provides information about the IBM i 7.2 feature of IBM DB2 for i Row and Column Access Control (RCAC). It offers a broad description of the function and advantages of controlling access to data in a comprehensive and transparent way. This publication helps you understand the capabilities of RCAC and provides examples of defining, creating, and implementing the row permissions and column masks in a relational database environment.",
+      "text": "Protect columns by defining column masks This IBM Redpaper publication provides information about the IBM i 7.2 feature of IBM DB2 for i Row and Column Access Control (RCAC). It offers a broad description of the function and advantages of controlling access to data in a comprehensive and transparent way. This publication helps you understand the capabilities of RCAC and provides examples of defining, creating, and implementing the row permissions and column masks in a relational database environment."
     },
     {
-      "self_ref": "#/texts/229",
+      "self_ref": "#/texts/228",
       "parent": {
         "$ref": "#/body"
       },
@@ -7045,7 +7029,7 @@
       "text": "This paper is intended for database engineers, data-centric application developers, and security officers who want to design and implement RCAC as a part of their data control and governance policy. A solid background in IBM i object level security, DB2 for i relational database concepts, and SQL is assumed."
     },
     {
-      "self_ref": "#/texts/230",
+      "self_ref": "#/texts/229",
       "parent": {
         "$ref": "#/pictures/15"
       },
@@ -7072,7 +7056,7 @@
       "text": "\u00ae"
     },
     {
-      "self_ref": "#/texts/231",
+      "self_ref": "#/texts/230",
       "parent": {
         "$ref": "#/pictures/16"
       },
@@ -7099,7 +7083,7 @@
       "text": "Redpaper"
     },
     {
-      "self_ref": "#/texts/232",
+      "self_ref": "#/texts/231",
       "parent": {
         "$ref": "#/pictures/16"
       },
@@ -7126,7 +7110,7 @@
       "text": "\u2122"
     },
     {
-      "self_ref": "#/texts/233",
+      "self_ref": "#/texts/232",
       "parent": {
         "$ref": "#/body"
       },
@@ -7153,7 +7137,7 @@
       "text": "INTERNATIONAL TECHNICAL SUPPORT ORGANIZATION"
     },
     {
-      "self_ref": "#/texts/234",
+      "self_ref": "#/texts/233",
       "parent": {
         "$ref": "#/body"
       },
@@ -7181,7 +7165,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/235",
+      "self_ref": "#/texts/234",
       "parent": {
         "$ref": "#/body"
       },
@@ -7208,7 +7192,7 @@
       "text": "IBM Redbooks are developed by the IBM International Technical Support Organization. Experts from IBM, Customers and Partners from around the world create timely technical information based on realistic scenarios. Specific recommendations are provided to help you implement IT solutions more effectively in your environment."
     },
     {
-      "self_ref": "#/texts/236",
+      "self_ref": "#/texts/235",
       "parent": {
         "$ref": "#/body"
       },
@@ -7235,7 +7219,7 @@
       "text": "For more information: ibm.com /redbooks"
     },
     {
-      "self_ref": "#/texts/237",
+      "self_ref": "#/texts/236",
       "parent": {
         "$ref": "#/body"
       },
@@ -7275,10 +7259,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 512.45,
-            "t": 767.07,
-            "r": 586.27,
-            "b": 736.61,
+            "l": 512.44,
+            "t": 767.08,
+            "r": 586.28,
+            "b": 736.6,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7323,10 +7307,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 16.79,
-            "t": 506.04,
+            "l": 16.52,
+            "t": 506.27,
             "r": 582.5,
-            "b": 14.09,
+            "b": 14.07,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7352,9 +7336,9 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 143.31,
-            "t": 521.79,
-            "r": 179.59,
+            "l": 143.32,
+            "t": 521.78,
+            "r": 179.6,
             "b": 506.41,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -7383,8 +7367,8 @@
           "bbox": {
             "l": 63.71,
             "t": 188.12,
-            "r": 259.27,
-            "b": 103.55,
+            "r": 259.26,
+            "b": 103.56,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7411,8 +7395,8 @@
           "page_no": 4,
           "bbox": {
             "l": 142.38,
-            "t": 417.14,
-            "r": 251.42,
+            "t": 417.15,
+            "r": 251.43,
             "b": 288.7,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -7440,8 +7424,8 @@
           "page_no": 4,
           "bbox": {
             "l": 145.26,
-            "t": 264.62,
-            "r": 252.11,
+            "t": 264.63,
+            "r": 252.1,
             "b": 156.66,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -7468,10 +7452,10 @@
         {
           "page_no": 5,
           "bbox": {
-            "l": 31.84,
+            "l": 31.82,
             "t": 721.69,
-            "r": 241.16,
-            "b": 553.01,
+            "r": 241.21,
+            "b": 553.0,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7509,8 +7493,8 @@
           "bbox": {
             "l": 135.99,
             "t": 416.9,
-            "r": 547.18,
-            "b": 102.53,
+            "r": 547.17,
+            "b": 102.55,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7682,7 +7666,7 @@
             "l": 135.7,
             "t": 684.75,
             "r": 546.7,
-            "b": 380.86,
+            "b": 380.87,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7754,8 +7738,8 @@
           "bbox": {
             "l": 135.56,
             "t": 408.92,
-            "r": 302.1,
-            "b": 198.94,
+            "r": 302.11,
+            "b": 198.93,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7841,9 +7825,9 @@
         {
           "page_no": 14,
           "bbox": {
-            "l": 135.49,
-            "t": 490.27,
-            "r": 550.18,
+            "l": 135.48,
+            "t": 490.25,
+            "r": 550.17,
             "b": 421.92,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -7878,10 +7862,10 @@
         {
           "page_no": 14,
           "bbox": {
-            "l": 63.1,
+            "l": 63.09,
             "t": 364.61,
-            "r": 531.12,
-            "b": 145.45,
+            "r": 531.13,
+            "b": 145.44,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -7915,8 +7899,8 @@
         {
           "page_no": 15,
           "bbox": {
-            "l": 135.51,
-            "t": 673.15,
+            "l": 135.49,
+            "t": 673.16,
             "r": 546.15,
             "b": 313.53,
             "coord_origin": "BOTTOMLEFT"
@@ -7954,7 +7938,7 @@
           "bbox": {
             "l": 63.61,
             "t": 238.53,
-            "r": 506.98,
+            "r": 506.97,
             "b": 127.55,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -7980,7 +7964,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/230"
+          "$ref": "#/texts/229"
         }
       ],
       "content_layer": "body",
@@ -7989,10 +7973,10 @@
         {
           "page_no": 18,
           "bbox": {
-            "l": 485.03,
+            "l": 485.02,
             "t": 766.92,
             "r": 566.19,
-            "b": 737.55,
+            "b": 737.56,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -8013,10 +7997,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/231"
+          "$ref": "#/texts/230"
         },
         {
-          "$ref": "#/texts/232"
+          "$ref": "#/texts/231"
         }
       ],
       "content_layer": "body",
@@ -8026,9 +8010,9 @@
           "page_no": 18,
           "bbox": {
             "l": 474.04,
-            "t": 712.8,
-            "r": 592.2,
-            "b": 602.57,
+            "t": 712.79,
+            "r": 592.19,
+            "b": 602.58,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -8057,9 +8041,9 @@
           "page_no": 2,
           "bbox": {
             "l": 135.68,
-            "t": 660.63,
+            "t": 660.66,
             "r": 547.89,
-            "b": 76.82,
+            "b": 76.78,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -11544,7 +11528,7 @@
             "l": 135.24,
             "t": 502.84,
             "r": 546.71,
-            "b": 349.29,
+            "b": 349.3,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -12196,9 +12180,9 @@
         {
           "page_no": 8,
           "bbox": {
-            "l": 135.76,
-            "t": 294.2,
-            "r": 549.47,
+            "l": 135.75,
+            "t": 294.21,
+            "r": 549.46,
             "b": 201.84,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -12461,7 +12445,7 @@
           "page_no": 9,
           "bbox": {
             "l": 63.19,
-            "t": 398.72,
+            "t": 398.71,
             "r": 548.14,
             "b": 69.63,
             "coord_origin": "BOTTOMLEFT"
@@ -15188,7 +15172,7 @@
           "page_no": 12,
           "bbox": {
             "l": 63.2,
-            "t": 688.84,
+            "t": 688.85,
             "r": 549.14,
             "b": 495.69,
             "coord_origin": "BOTTOMLEFT"

@@ -10,13 +10,11 @@ The spring keeps the locking and load-carrying sections such a distance apart th
 
 The spring, through the medium of the locking section, exerts a constant locking force on the bolt in the same direction as a force that would tighten the nut. In this nut, the load-carrying section has the thread strength of a standard nut of comparable size, while the locking section presses against the threads of the bolt and locks the nut firmly in position. Only a wrench applied to the nut loosens it. The nut can be removed and reused without impairing its efficiency.
 
-Boots self-locking nuts are made with three different spring styles and in various shapes and sizes. The wing type that is
+Boots self-locking nuts are made with three different spring styles and in various shapes and sizes. The wing type that is the most common ranges in size for No. 6 up to  1 / 4 inch, the Rol-top ranges from  1 / 4 inch to 1 / 6 inch, and the bellows type ranges in size from No. 8 up to 3 / 8 inch. Wing-type nuts are made of anodized aluminum alloy, cadmium-plated carbon steel, or stainless steel. The Rol-top nut is cadmium-plated steel, and the bellows type is made of aluminum alloy only.
 
 Figure 7-26. Self-locking nuts.
 
 <!-- image -->
-
-the most common ranges in size for No. 6 up to  1 / 4 inch, the Rol-top ranges from  1 / 4 inch to 1 / 6 inch, and the bellows type ranges in size from No. 8 up to 3 / 8 inch. Wing-type nuts are made of anodized aluminum alloy, cadmium-plated carbon steel, or stainless steel. The Rol-top nut is cadmium-plated steel, and the bellows type is made of aluminum alloy only.
 
 .
 

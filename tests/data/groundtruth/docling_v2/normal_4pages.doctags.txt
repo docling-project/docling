@@ -1,4 +1,4 @@
-<doctag><picture><loc_33><loc_0><loc_111><loc_52></picture>
+<doctag><picture><loc_33><loc_0><loc_111><loc_53></picture>
 <text><loc_50><loc_64><loc_150><loc_98>발행일 2020년 4월 2일 발행처 국회입법조사처 발행인 김하중 국회입법조사처장 www.nars.go.kr</text>
 <text><loc_403><loc_49><loc_447><loc_58>제1695호</text>
 <section_header_level_1><loc_337><loc_70><loc_432><loc_86>이슈와  논점</section_header_level_1>
