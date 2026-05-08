@@ -111,6 +111,8 @@ def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
 
 
 def _convert_to_pdf_sdk(file_path: str) -> str | None:
+    sdk_out_dir: Path | None = None
+    keep_out_dir = False  # 폴백 경로 리턴 시 임시 디렉토리 보존
     try:
         # 1. PDF_SDK_HOME 환경변수 (도커 환경) → 2. repo_root/pdf_sdk (로컬 실행)
         pdf_sdk_home = os.environ.get(
@@ -124,8 +126,19 @@ def _convert_to_pdf_sdk(file_path: str) -> str | None:
         os.makedirs(font_cache, exist_ok=True)
 
         in_path = Path(file_path).resolve()
-        out_dir = in_path.parent
-        pdf_path = in_path.with_suffix('.pdf')
+        # NFS 쓰기 권한 / 출력 파일명 추측 미스매치 회피를 위해 임시 디렉토리에 출력
+        sdk_out_dir = Path(tempfile.mkdtemp(prefix="pdfsdk_out_"))
+
+        _log.info(
+            f"[convert_to_pdf:sdk] preflight: "
+            f"binary_exists={os.path.exists(binary)} "
+            f"binary_x={os.access(binary, os.X_OK)} "
+            f"fonts_dir_exists={os.path.exists(fonts_dir)} "
+            f"moduledata_exists={os.path.exists(moduledata)} "
+            f"input_exists={in_path.exists()} "
+            f"input_size={in_path.stat().st_size if in_path.exists() else 'N/A'} "
+            f"sdk_out_dir={sdk_out_dir}"
+        )
 
         with tempfile.TemporaryDirectory() as tmp:
             # fontconfig conf 파일을 현재 SDK 경로 기준으로 패치 (원본은 건드리지 않음)
@@ -141,20 +154,53 @@ def _convert_to_pdf_sdk(file_path: str) -> str | None:
             cmd = [
                 binary,
                 "-i", str(in_path),
-                "-o", str(out_dir),
+                "-o", str(sdk_out_dir),
                 "-t", tmp,
                 "-f", fonts_dir,
                 "-e", "-1",
                 "-p", "1",
             ]
-            proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
-            if proc.returncode == 0 and pdf_path.exists():
-                return str(pdf_path)
-            _log.warning(f"[convert_to_pdf:sdk] stderr: {proc.stderr.strip()}")
+            _log.info(f"[convert_to_pdf:sdk] cmd: {cmd}")
+            proc = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=600)
+
+            produced = sorted(p for p in sdk_out_dir.glob("*") if p.is_file())
+            _log.info(
+                f"[convert_to_pdf:sdk] returncode={proc.returncode} "
+                f"produced_files={[p.name for p in produced]}"
+            )
+            _log.info(f"[convert_to_pdf:sdk] stdout={proc.stdout!r}")
+            _log.info(f"[convert_to_pdf:sdk] stderr={proc.stderr!r}")
+
+            pdf_files = [p for p in produced if p.suffix.lower() == ".pdf"]
+            if proc.returncode == 0 and pdf_files:
+                produced_pdf = pdf_files[0]
+                target_pdf = in_path.with_suffix('.pdf')
+                try:
+                    shutil.copy2(produced_pdf, target_pdf)
+                    _log.info(f"[convert_to_pdf:sdk] success → {target_pdf}")
+                    return str(target_pdf)
+                except OSError as e:
+                    _log.warning(
+                        f"[convert_to_pdf:sdk] target copy failed ({e}); "
+                        f"using temp path: {produced_pdf}"
+                    )
+                    keep_out_dir = True
+                    return str(produced_pdf)
+
+            _log.warning(
+                f"[convert_to_pdf:sdk] FAILED — "
+                f"returncode={proc.returncode}, produced={[p.name for p in produced]}"
+            )
             return None
-    except Exception as e:
-        _log.error(f"[convert_to_pdf:sdk] error: {e}")
+    except subprocess.TimeoutExpired as e:
+        _log.error(f"[convert_to_pdf:sdk] timeout after {e.timeout}s for {file_path}")
         return None
+    except Exception as e:
+        _log.error(f"[convert_to_pdf:sdk] error: {e}", exc_info=True)
+        return None
+    finally:
+        if sdk_out_dir is not None and sdk_out_dir.exists() and not keep_out_dir:
+            shutil.rmtree(sdk_out_dir, ignore_errors=True)
 
 
 def _patch_fontconfig(fonts_dir: str, font_cache: str, tmp_dir: str) -> str:
