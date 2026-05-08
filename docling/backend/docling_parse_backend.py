@@ -185,7 +185,7 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         image = image.resize(
             size=(
                 max(1, round(cropbox.width * scale)),
-                max(1, round(cropbox.height * scale))
+                max(1, round(cropbox.height * scale)),
             )
         )
 
