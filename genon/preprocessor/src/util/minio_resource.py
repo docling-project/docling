@@ -4,7 +4,7 @@ import time
 import errno
 import fcntl
 
-from common.settings import minio_config
+from common.settings import MinioConfig
 from common.logger import Logger
 
 logger = Logger.getLogger(__name__)
@@ -55,6 +55,8 @@ def download_resource_files(bucket_name: str, resource_id: int, path: str):
     with FileLock(lock_file, timeout_sec=3600):
         logger.info(f'Acquired lock: {lock_file} (pid={os.getpid()})')
 
+        # MinIO 환경변수는 사용 시점에만 검증한다 (모듈 import 시점이 아님).
+        minio_config = MinioConfig()
         minio_client = Minio(
             endpoint=minio_config.MINIO_ENDPOINT,
             access_key=minio_config.MINIO_ACCESS_KEY,

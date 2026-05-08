@@ -14,6 +14,147 @@ from fastapi import Request
 
 _log = logging.getLogger(__name__)
 
+# Genos 웹 UI 환경은 facade 코드를 단일 파일(preprocessor.py)로 처리하므로
+# 다른 facade 파일에서 import 가 깨진다. 따라서 convert_to_pdf 는
+# attachment_processor / convert_processor 와 동일하게 자체 정의한다.
+import shutil
+import subprocess
+import tempfile
+import unicodedata
+
+
+def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
+    """
+    PDF 변환을 시도한다. use_pdf_sdk=True면 PDF SDK, False면 LibreOffice.
+    실패해도 예외를 던지지 않고 None을 반환한다.
+    """
+    if use_pdf_sdk:
+        return _convert_to_pdf_sdk(file_path)
+    return _convert_to_pdf_libreoffice(file_path)
+
+
+def _convert_to_pdf_sdk(file_path: str) -> str | None:
+    try:
+        # 1. PDF_SDK_HOME 환경변수 (도커 환경) → 2. repo_root/pdf_sdk (로컬 실행)
+        pdf_sdk_home = os.environ.get(
+            "PDF_SDK_HOME",
+            str(Path(__file__).resolve().parent.parent.parent.parent / "pdf_sdk"),
+        )
+        binary = os.path.join(pdf_sdk_home, "pdfConverter")
+        fonts_dir = os.path.join(pdf_sdk_home, "fonts")
+        moduledata = os.path.join(pdf_sdk_home, "moduledata")
+        font_cache = os.path.join(pdf_sdk_home, "font_cache")
+        os.makedirs(font_cache, exist_ok=True)
+
+        in_path = Path(file_path).resolve()
+        out_dir = in_path.parent
+        pdf_path = in_path.with_suffix('.pdf')
+
+        with tempfile.TemporaryDirectory() as tmp:
+            patched_conf = _patch_fontconfig(fonts_dir, font_cache, tmp)
+
+            env = os.environ.copy()
+            env["LD_LIBRARY_PATH"] = f"{moduledata}:{env.get('LD_LIBRARY_PATH', '')}"
+            env["FONTCONFIG_FILE"] = patched_conf
+            env["FONTCONFIG_PATH"] = fonts_dir
+            env.setdefault("LANG", "C.UTF-8")
+            env.setdefault("LC_ALL", "C.UTF-8")
+
+            cmd = [
+                binary,
+                "-i", str(in_path),
+                "-o", str(out_dir),
+                "-t", tmp,
+                "-f", fonts_dir,
+                "-e", "-1",
+                "-p", "1",
+            ]
+            proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+            if proc.returncode == 0 and pdf_path.exists():
+                return str(pdf_path)
+            _log.warning(f"[convert_to_pdf:sdk] stderr: {proc.stderr.strip()}")
+            return None
+    except Exception as e:
+        _log.error(f"[convert_to_pdf:sdk] error: {e}")
+        return None
+
+
+def _patch_fontconfig(fonts_dir: str, font_cache: str, tmp_dir: str) -> str:
+    """원본 fonts_gen.conf의 <dir>/<cachedir> 경로를 현재 SDK 위치 기준으로 치환한 임시 파일 경로 반환."""
+    import re
+    src = os.path.join(fonts_dir, "fonts_gen.conf")
+    dst = os.path.join(tmp_dir, "fonts.conf")
+    with open(src, "r", encoding="utf-8") as f:
+        conf = f.read()
+    conf = re.sub(r"<dir>[^<]*</dir>", f"<dir>{fonts_dir}</dir>", conf, count=1)
+    conf = re.sub(r"<cachedir>[^<]*</cachedir>", f"<cachedir>{font_cache}</cachedir>", conf, count=1)
+    with open(dst, "w", encoding="utf-8") as f:
+        f.write(conf)
+    return dst
+
+
+def _convert_to_pdf_libreoffice(file_path: str) -> str | None:
+    try:
+        in_path = Path(file_path).resolve()
+        out_dir = in_path.parent
+        pdf_path = in_path.with_suffix('.pdf')
+
+        env = os.environ.copy()
+        env.setdefault("LANG", "C.UTF-8")
+        env.setdefault("LC_ALL", "C.UTF-8")
+
+        ext = in_path.suffix.lower()
+        if ext in ('.ppt', '.pptx'):
+            convert_arg = "pdf:impress_pdf_Export"
+        elif ext in ('.doc', '.docx'):
+            convert_arg = "pdf:writer_pdf_Export"
+        elif ext in ('.xls', '.xlsx', '.csv'):
+            convert_arg = "pdf:calc_pdf_Export"
+        else:
+            convert_arg = "pdf"
+
+        try:
+            in_path.name.encode('ascii')
+            candidates = [in_path]
+            tmp_dir = None
+        except UnicodeEncodeError:
+            tmp_dir = Path(tempfile.mkdtemp())
+            ascii_name = unicodedata.normalize('NFKD', in_path.stem).encode('ascii', 'ignore').decode('ascii') or "file"
+            ascii_copy = tmp_dir / f"{ascii_name}{in_path.suffix}"
+            shutil.copy2(in_path, ascii_copy)
+            candidates = [ascii_copy, in_path]
+
+        for cand in candidates:
+            cmd = [
+                "soffice", "--headless",
+                "--convert-to", convert_arg,
+                "--outdir", str(out_dir),
+                str(cand)
+            ]
+            proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+            if proc.returncode == 0 and pdf_path.exists():
+                if tmp_dir:
+                    shutil.rmtree(tmp_dir, ignore_errors=True)
+                return str(pdf_path)
+            _log.warning(f"[convert_to_pdf:libreoffice] stderr: {proc.stderr.strip()}")
+
+        if tmp_dir:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+        return None
+    except Exception as e:
+        _log.error(f"[convert_to_pdf:libreoffice] error: {e}")
+        return None
+
+
+def _is_pdf(file_path: str) -> bool:
+    """파일이 PDF 매직 헤더로 시작하는지 확인 (확장자 무관)."""
+    try:
+        with open(file_path, "rb") as f:
+            return f.read(5) == b"%PDF-"
+    except Exception:
+        return False
+
+
 # docling imports
 
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
@@ -1566,6 +1707,17 @@ class DocumentProcessor:
 
         _log.info(f"file_path: {file_path}")
         _log.info(f"kwargs: {kwargs}")
+
+        # 입력이 PDF가 아닐 때 동작:
+        # - auto_convert_to_pdf=True (default): PDF SDK/LibreOffice 로 자동 변환 후 진입
+        # - auto_convert_to_pdf=False: 변환 없이 그대로 진행 (변경 전 동작; PDF 가정)
+        if kwargs.get('auto_convert_to_pdf', True) and not _is_pdf(file_path):
+            _log.info(f"[intelligent] Non-PDF input — auto-converting to PDF: {file_path}")
+            converted = convert_to_pdf(file_path, use_pdf_sdk=kwargs.get('use_pdf_sdk', True))
+            if not converted or not os.path.exists(converted):
+                raise GenosServiceException(1, f"PDF 변환 실패: {file_path}")
+            file_path = converted
+            _log.info(f"[intelligent] Converted PDF: {file_path}")
 
         document: DoclingDocument = self.load_documents(file_path, **kwargs)
 
