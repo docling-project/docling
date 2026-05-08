@@ -12,7 +12,7 @@ from pathlib import Path
 
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
-from docling.datamodel.vlm_model_specs import GRANITEDOCLING_TRANSFORMERS
+from docling.datamodel.vlm_model_specs import GRANITEDOCLING_2STAGE_TRANSFORMERS
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.experimental.datamodel.threaded_layout_vlm_pipeline_options import (
     ThreadedLayoutVlmPipelineOptions,
@@ -31,7 +31,7 @@ def _parse_args():
     parser.add_argument(
         "--input-file",
         type=str,
-        default="tests/data/pdf/code_and_formula.pdf",
+        default="../../../tests/data/pdf/code_and_formula.pdf",
         help="Path to a PDF file",
     )
     parser.add_argument(
@@ -89,7 +89,7 @@ def demo_threaded_layout_vlm_pipeline(
 ):
     """Demonstrate the threaded layout+VLM pipeline."""
 
-    vlm_options = GRANITEDOCLING_TRANSFORMERS.model_copy()
+    vlm_options = GRANITEDOCLING_2STAGE_TRANSFORMERS.model_copy()
 
     if use_api_vlm:
         vlm_options = openai_compatible_vlm_options(

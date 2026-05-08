@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.92.0"  # DO NOT EDIT, updated automatically
+version = "2.93.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -244,16 +244,8 @@ all = [
 ]
 
 [dependency-groups]
-pr-fast-checks = [
-    "docling-core[chunking] (>=2.73.0,<3.0.0)",
-    "mypy~=1.10",
-    "pydantic (>=2.0.0,<3.0.0)",
-    "pydantic-settings (>=2.3.0,<3.0.0)",
-    "ruff==0.11.5",
-]
-dev = [
-  "pre-commit~=3.7",
-  "mypy~=1.10",
+typecheck = [
+  "ty==0.0.33",
   "types-setuptools~=70.3",
   "pandas-stubs~=2.1",
   "types-openpyxl~=3.1",
@@ -261,6 +253,20 @@ dev = [
   "boto3-stubs~=1.37",
   "types-urllib3~=1.26",
   "types-tqdm~=4.67",
+  "types-defusedxml>=0.7.0.20250822,<0.8.0",
+]
+pr-fast-checks = [
+  { include-group = "typecheck" },
+  "docling-core[chunking] (>=2.73.0,<3.0.0)",
+  "pydantic (>=2.0.0,<3.0.0)",
+  "pydantic-settings (>=2.3.0,<3.0.0)",
+  "ruff==0.15.12",
+]
+dev = [
+  { include-group = "typecheck" },
+  "dprint-py==0.53.1.0",
+  "prek>=0.3.10",
+  "tach>=0.34.0,<1",
   "coverage~=7.6",
   "pytest~=8.3",
   "pytest-cov>=6.1.1",
@@ -271,7 +277,6 @@ dev = [
   "ipywidgets~=8.1",
   "nbqa~=1.9",
   "python-semantic-release~=7.32",
-  "types-defusedxml>=0.7.0.20250822,<0.8.0",
 ]
 
 docs = [
@@ -317,6 +322,15 @@ packages = ["docling"]
 [tool.hatch.build.targets.sdist]
 only-include = ["docling", "pyproject.toml", "README.md", "LICENSE"]
 
+[tool.pytest.ini_options]
+markers = [
+  "ml_ocr: OCR tests that download or execute OCR model code.",
+  "ml_pdf_model: PDF conversion tests that download or execute document AI model code.",
+  "ml_vlm: VLM and picture-description tests that download or execute vision-language model code.",
+  "ml_asr: ASR tests that download or execute speech model code.",
+  "cross_platform: Lightweight smoke tests run on Windows and macOS workflow-dispatch lanes.",
+]
+
 [tool.ruff]
 target-version = "py310"
 line-length = 88
@@ -350,9 +364,11 @@ ignore = [
   "F811",   # "redefinition of the same function"
   "PL",     # Pylint
   "RUF012", # Mutable Class Attributes
+  "RUF059", # Unused unpacked variables
   "UP006",  # List vs list, etc
   "UP007",  # Option and Union
   "UP035",  # `typing.Set` is deprecated, use `set` instead"
+  "UP045",  # `Optional[T]` vs `T | None`
 ]
 
 [tool.ruff.lint.pep8-naming]
@@ -370,37 +386,41 @@ max-complexity = 30
 [tool.ruff.lint.isort]
 combine-as-imports = true
 
-[tool.mypy]
-pretty = true
-no_implicit_optional = true
-plugins = "pydantic.mypy"
-python_version = "3.10"
+[tool.ty.rules]
+all = "warn"
 
-[[tool.mypy.overrides]]
-module = [
-  "docling_parse.*",
-  "pypdfium2.*",
-  "networkx.*",
-  "scipy.*",
-  "filetype.*",
-  "tesserocr.*",
-  "docling_ibm_models.*",
-  "easyocr.*",
-  "ocrmac.*",
-  "onnxruntime.*",
-  "mlx_vlm.*",
-  "lxml.*",
-  "huggingface_hub.*",
-  "transformers.*",
-  "pylatexenc.*",
-  "vllm.*",
-  "qwen_vl_utils.*",
-  "arelle.*",
-  "websockets.*",
-  "torchvision.*",
-  "torchvision.transforms.*",
+[tool.ty.environment]
+python-version = "3.10"
+
+[tool.ty.src]
+include = ["docling", ".github/scripts"]
+
+[tool.ty.analysis]
+allowed-unresolved-imports = [
+  "arelle.**",
+  "docling_ibm_models.**",
+  "docling_parse.**",
+  "easyocr.**",
+  "filetype.**",
+  "huggingface_hub.**",
+  "lxml.**",
+  "mlx_vlm.**",
+  "networkx.**",
+  "ocrmac.**",
+  "onnxruntime.**",
+  "pylatexenc.**",
+  "pypdfium2.**",
+  "qwen_vl_utils.**",
+  "scipy.**",
+  "tesserocr.**",
+  "torchvision.**",
+  "transformers.**",
+  "vllm.**",
+  "websockets.**",
 ]
-ignore_missing_imports = true
+
+[tool.ty.terminal]
+output-format = "concise"
 
 [tool.semantic_release]
 # for default values check:

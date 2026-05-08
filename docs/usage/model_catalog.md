@@ -88,7 +88,7 @@ The following table shows all processing stages in Docling, their model families
       <td rowspan="3">Vision-Language Model<br/>(Granite Vision)</td>
       <td>
         <ul>
-          <li><code>granite-4.0-3b-vision</code></li>
+          <li><code>granite-vision-4.1-4b</code></li>
         </ul>
       </td>
     </tr>

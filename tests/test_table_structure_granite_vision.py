@@ -1,9 +1,13 @@
+import pytest
+
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import GraniteVisionTableStructureOptions
 from docling.models.stages.table_structure.table_structure_model_granite_vision import (
     GraniteVisionTableStructureModel,
     _parse_otsl_output,
 )
+
+pytestmark = pytest.mark.ml_vlm
 
 
 def test_options_kind():

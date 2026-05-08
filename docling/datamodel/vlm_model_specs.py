@@ -37,6 +37,7 @@ GRANITEDOCLING_TRANSFORMERS = InlineVlmOptions(
     stop_strings=["</doctag>", "<|end_of_text|>"],
 )
 
+
 GRANITEDOCLING_VLLM = GRANITEDOCLING_TRANSFORMERS.model_copy(deep=True)
 GRANITEDOCLING_VLLM.inference_framework = InferenceFramework.VLLM
 
@@ -71,6 +72,27 @@ GRANITEDOCLING_VLLM_API = ApiVlmOptions(
 GRANITEDOCLING_OLLAMA = GRANITEDOCLING_VLLM_API.model_copy(deep=True)
 GRANITEDOCLING_OLLAMA.url = AnyUrl("http://localhost:11434/v1/chat/completions")
 GRANITEDOCLING_OLLAMA.params["model"] = "ibm/granite-docling:258m"
+
+
+# Granite-Docling 2 stage
+GRANITEDOCLING_2STAGE_TRANSFORMERS = InlineVlmOptions(
+    repo_id="docling-project/granite-docling-2stage-258m",
+    prompt="Convert this page to docling.",  # gets augmented with layout objects
+    response_format=ResponseFormat.DOCTAGS,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+    supported_devices=[
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.XPU,
+    ],
+    extra_generation_config=dict(skip_special_tokens=False),
+    scale=2.0,
+    temperature=0.0,
+    max_new_tokens=8192,
+    stop_strings=["</doctag>", "<|end_of_text|>"],
+)
+
 
 # SmolDocling
 SMOLDOCLING_MLX = InlineVlmOptions(

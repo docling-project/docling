@@ -1,3 +1,5 @@
+# mypy: disable-error-code=import-untyped
+
 import base64
 import ipaddress
 import logging
@@ -1304,19 +1306,53 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         parsed = urlparse(value)
         return parsed.scheme in {"http", "https", "ftp", "s3", "gs"}
 
+    @staticmethod
+    def _is_local_path(value: str) -> bool:
+        """Check if value is a local filesystem path (not a URI)."""
+        parsed = urlparse(value)
+        return not parsed.netloc and (
+            not parsed.scheme
+            or (len(parsed.scheme) == 1 and parsed.scheme.isalpha())  # Windows case
+        )
+
+    def _is_absolute_path(self, loc: str) -> bool:
+        return Path(loc).is_absolute() or (  # Windows-specific absolute paths:
+            len((parsed_loc := urlparse(loc)).scheme) == 1
+            and parsed_loc.scheme.isalpha()
+            and not parsed_loc.netloc
+        )
+
     def _resolve_relative_path(self, loc: str) -> str:
+        loc = loc.strip()
+
+        # Strip file:// prefix for validation as local path
+        if loc.startswith(file_prefix := "file://"):
+            loc = loc[len(file_prefix) :]
+
         abs_loc = loc
 
         if self.base_path:
             if loc.startswith("//"):
-                # Protocol-relative URL - default to https
                 abs_loc = "https:" + loc
-            elif not loc.startswith(("http://", "https://", "data:", "file://", "#")):
-                if HTMLDocumentBackend._is_remote_url(self.base_path):  # remote fetch
+            elif not loc.startswith(("http://", "https://", "data:", "#")):
+                if HTMLDocumentBackend._is_remote_url(self.base_path):
                     abs_loc = urljoin(self.base_path, loc)
-                elif self.base_path:  # local fetch
-                    # For local files, resolve relative to the HTML file location
-                    abs_loc = str(Path(self.base_path).parent / loc)
+                elif HTMLDocumentBackend._is_local_path(self.base_path):
+                    if self._is_absolute_path(loc):
+                        raise ValueError(
+                            f"Absolute paths are not allowed with local base_path: '{loc}'"
+                        )
+
+                    base_dir = Path(self.base_path).parent.resolve()
+                    resolved_path = (base_dir / loc).resolve()
+
+                    if not resolved_path.is_relative_to(base_dir):
+                        raise ValueError(
+                            f"Path traversal blocked: '{loc}' resolves outside base directory"
+                        )
+                    abs_loc = str(resolved_path)
+                else:
+                    raise ValueError(f"Invalid base_path format: '{self.base_path}'")
 
         _log.debug(f"Resolved location {loc} to {abs_loc}")
         return abs_loc
@@ -1645,8 +1681,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     node.find(_BLOCK_TAGS)
                     or node.find("input")
                     or node.find(
-                        lambda item: isinstance(item, Tag)
-                        and self._is_custom_checkbox_tag(item)
+                        lambda item: (
+                            isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
+                        )
                     )
                 )
                 has_pending_form_fields = self._has_pending_form_field_in_subtree(node)
@@ -2202,8 +2239,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 custom_checkboxes_in_li = [
                     checkbox_tag
                     for checkbox_tag in li.find_all(
-                        lambda item: isinstance(item, Tag)
-                        and self._is_custom_checkbox_tag(item)
+                        lambda item: (
+                            isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
+                        )
                     )
                     if checkbox_tag.find_parent("li") is li
                 ]
@@ -2450,8 +2488,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if input_ref is not None:
                         added_refs.append(input_ref)
             for checkbox_tag in tag.find_all(
-                lambda item: isinstance(item, Tag)
-                and self._is_custom_checkbox_tag(item)
+                lambda item: (
+                    isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
+                )
             ):
                 if isinstance(checkbox_tag, Tag):
                     checkbox_ref = self._emit_custom_checkbox(checkbox_tag, doc)
@@ -2788,8 +2827,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return "fillable"
         if (
             value_tag.find(
-                lambda item: isinstance(item, Tag)
-                and HTMLDocumentBackend._is_checkbox_like_tag(item)
+                lambda item: (
+                    isinstance(item, Tag)
+                    and HTMLDocumentBackend._is_checkbox_like_tag(item)
+                )
             )
             is not None
         ):
@@ -3445,9 +3486,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return True
         if (
             tag.find(
-                lambda item: isinstance(item, Tag)
-                and item is not tag
-                and self._is_form_semantic_id(self._get_html_id(item))
+                lambda item: (
+                    isinstance(item, Tag)
+                    and item is not tag
+                    and self._is_form_semantic_id(self._get_html_id(item))
+                )
             )
             is not None
         ):
@@ -4289,7 +4332,28 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             max_size = self.options.max_remote_image_bytes
             headers = {"Range": f"bytes=0-{max_size - 1}"}
 
-            response = requests.get(
+            # Create session with redirect limit
+            session = requests.Session()
+            session.max_redirects = self.options.max_redirects
+
+            # Hook to validate each redirect target
+            def _check_redirect_safety(response, *args, **kwargs):
+                """Validate each redirect target before following it."""
+                if response.is_redirect or response.is_permanent_redirect:
+                    redirect_url = response.headers.get("location")
+                    if redirect_url:
+                        # Handle relative redirects
+                        if not redirect_url.startswith(("http://", "https://")):
+                            from urllib.parse import urljoin
+
+                            redirect_url = urljoin(response.url, redirect_url)
+
+                        # Validate the redirect target
+                        _validate_url_safety(redirect_url)
+
+            session.hooks["response"].append(_check_redirect_safety)
+
+            response = session.get(
                 src_loc, stream=True, headers=headers, timeout=(5, 30)
             )
             response.raise_for_status()
@@ -4319,14 +4383,18 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             return decoded_data
 
-        if src_loc.startswith("file://"):
-            src_loc = src_loc[7:]
-
         if not self.options.enable_local_fetch:
             raise OperationNotAllowed(
                 "Fetching local resources is only allowed when set explicitly. "
                 "Set options.enable_local_fetch=True."
             )
+
+        # Require base_path for directory confinement (validation done in _resolve_relative_path)
+        if not self.base_path:
+            raise OperationNotAllowed(
+                f"Local file access requires base_path for directory confinement: '{src_loc}'"
+            )
+
         if os.path.isfile(src_loc) and os.access(src_loc, os.R_OK):
             with open(src_loc, "rb") as f:
                 return f.read()

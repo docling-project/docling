@@ -26,6 +26,7 @@ from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
+pytestmark = pytest.mark.ml_vlm
 
 
 def get_md_deepseek_paths():

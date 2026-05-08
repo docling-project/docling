@@ -6,6 +6,8 @@ import pytest
 from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.document_converter import ConversionError, DocumentConverter
 
+pytestmark = pytest.mark.cross_platform
+
 
 def get_pdf_path():
     pdf_path = Path("./tests/data/pdf/2305.03393v1-pg9.pdf")

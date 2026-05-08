@@ -22,6 +22,8 @@ _TEST_FILES = [
 ]
 _SINGLE_FILE = "tests/data/pdf/2206.01062.pdf"
 
+pytestmark = pytest.mark.ml_pdf_model
+
 
 def _make_threaded_converter(**kwargs) -> DocumentConverter:
     return DocumentConverter(

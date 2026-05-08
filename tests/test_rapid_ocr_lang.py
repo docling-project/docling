@@ -3,10 +3,14 @@ from io import BytesIO
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
+import pytest
+
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import RapidOcrOptions
 from docling.models.stages.ocr.rapid_ocr_model import RapidOcrModel
 from docling.utils.model_downloader import download_models
+
+pytestmark = pytest.mark.ml_ocr
 
 
 def _install_fake_rapidocr(

@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import (
@@ -12,6 +14,8 @@ from tests.verify_utils import CONFID_PREC, COORD_PREC
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document
+
+pytestmark = pytest.mark.cross_platform
 
 
 def test_convert_valid():
@@ -133,3 +137,27 @@ Here is some content...
         "- This is an open access article under the terms of the Creative Commons Attribution License"
         in pred_md
     )
+
+
+def test_convert_list_item_codespan_only():
+    """
+    Regression test:
+    A list item that only contains an inline CodeSpan (no RawText) must not leave
+    a pending ListItem payload behind, otherwise later RawText will attach it to a
+    wrong parent and create a very deep tree (RecursionError in iterate/export).
+    """
+    converter = get_converter()
+    markdown = """# Title
+
+*   `raw_ops.Abort`
+*   `raw_ops.Abs`
+"""
+
+    conv_result: ConversionResult = converter.convert_string(
+        markdown, format=InputFormat.MD
+    )
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    pred_md = conv_result.document.export_to_markdown()
+    assert "- raw\\_ops.Abort" in pred_md
+    assert "- raw\\_ops.Abs" in pred_md
