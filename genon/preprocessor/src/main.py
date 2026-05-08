@@ -84,6 +84,39 @@ async def run(
     return make_success_response(data=data)
 
 
+@app.post('/parser')
+async def parse(
+        request: Request,
+        file_path: str = Body(..., embed=True),
+        params: dict = Body(default_factory=dict)
+):
+    if not getattr(processor, 'IS_PARSER', False):
+        return JSONResponse(
+            {'code': 1,
+             'errMsg': '현재 설치된 전처리기는 /parser API를 지원하지 않습니다.',
+             'data': None,
+             'error_code': 1,
+             'error_msg': '현재 설치된 전처리기는 /parser API를 지원하지 않습니다.'},
+            status_code=200)
+    pt = time.time()
+    try:
+        logger.info(f'[parser] Start: "{file_path}"')
+        data = await processor(request, file_path, **params)
+        logger.info(f'[parser] Success: "{file_path}"')
+    except GenosServiceException as e:
+        logger.error(f'[parser] Error: "{file_path}"\n{traceback.format_exc()}\n')
+        return JSONResponse(
+            {'code': 1, 'errMsg': e.error_msg, 'data': None,
+             'error_code': e.error_code, 'error_msg': e.error_msg},
+            status_code=200)
+    except Exception as e:
+        logger.error(f'[parser] Error: "{file_path}"\n{traceback.format_exc()}\n')
+        return make_failure_response(str(e))
+    finally:
+        logger.info(f'[parser] End: "{file_path}" ({time.time() - pt:.2f} seconds)')
+    return make_success_response(data=data)
+
+
 if __name__ == '__main__':
     import uvicorn
 

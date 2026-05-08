@@ -1,0 +1,16 @@
+intelligent:
+  ocr_endpoint: "http://192.168.73.172:48080/ocr"
+  layout_endpoint: "http://192.168.75.174:26001/v1/chat/completions"
+  layout_api_key: ""
+  enrichment_api_base_url: "https://genos.genon.ai/api/gateway/rep/serving/502/v1/chat/completions"
+  enrichment_api_key: "022653a3743849e299f19f19d323490b"
+
+attachment:
+  whisper_url: "http://192.168.74.164:30100/v1/audio/transcriptions"
+  whisper_model: "model"
+  whisper_language: "ko"
+  whisper_response_format: "json"
+  whisper_temperature: "0"
+  whisper_stream: "false"
+  whisper_timestamp_granularities: "word"
+  whisper_chunk_sec: 29
