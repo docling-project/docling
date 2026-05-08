@@ -1,6 +1,6 @@
 {
   "includes": [
-    "dprint.json",
+    ".github/dprint.json",
     "tach.toml"
   ],
   "toml": {

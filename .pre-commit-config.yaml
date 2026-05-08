@@ -55,10 +55,10 @@ repos:
         pass_filenames: true
       - id: dprint
         name: Dprint check
-        entry: uv run --no-sync dprint check
+        entry: uv run --no-sync dprint check --config .github/dprint.json --config-discovery=false
         pass_filenames: false
         language: system
-        files: '^(dprint\.json|tach\.toml)$'
+        files: '^(\.github/dprint\.json|tach\.toml)$'
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.8.3
     hooks:

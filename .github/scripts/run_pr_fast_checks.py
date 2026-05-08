@@ -14,7 +14,9 @@ TY_DIRECTORIES = ("docling", ".github/scripts")
 TOOLING_SMOKE_TRIGGER_PATHS = (
     ".github/scripts/run_pr_fast_checks.py",
     ".github/workflows/pr-fast-checks.yml",
+    ".github/dprint.json",
     ".pre-commit-config.yaml",
+    "Makefile",
     "pyproject.toml",
     "uv.lock",
 )

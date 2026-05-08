@@ -164,7 +164,7 @@ jobs:
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.cache/prek
-          key: prek|${{ env.PY }}|${{ hashFiles('.pre-commit-config.yaml', 'dprint.json') }}
+          key: prek|${{ env.PY }}|${{ hashFiles('.pre-commit-config.yaml', '.github/dprint.json') }}
           restore-keys: |
             prek|${{ env.PY }}|
 

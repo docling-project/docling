@@ -23,10 +23,10 @@ scripts/                 # project maintenance scripts
 ## Key commands
 
 ```bash
-just setup          # install CI-style dev environment
-just test           # run pytest
-just check          # run read-only local checks
-just validate       # run mutating hooks on the current changeset
+make setup          # install CI-style dev environment
+make test           # run pytest
+make check          # run read-only local checks
+make validate       # run mutating hooks on the current changeset
 ```
 
 ## Code standards
@@ -46,7 +46,7 @@ just validate       # run mutating hooks on the current changeset
 
 ## Before finishing
 
-Run `just validate` before considering a task complete. If hooks modify files,
-review the changes and rerun `just validate` until it passes cleanly. Also run
-the affected tests for the files or behavior you changed. Use `just check` when
+Run `make validate` before considering a task complete. If hooks modify files,
+review the changes and rerun `make validate` until it passes cleanly. Also run
+the affected tests for the files or behavior you changed. Use `make check` when
 you need a read-only verification pass.
