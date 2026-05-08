@@ -1,5 +1,6 @@
 """Test Nanonets-OCR2-3B VLM integration."""
 
+import os
 from pathlib import Path
 
 import pytest
