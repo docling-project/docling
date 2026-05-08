@@ -325,9 +325,7 @@ class DoclingServiceClient:
         headers: dict[str, str] | None = None,
     ) -> ConversionJob[ConversionResult] | ConversionJob[RawServiceResult]:
         normalized_target_format: OutputFormat | None = (
-            OutputFormat.JSON
-            if target_format == "json"
-            else cast(OutputFormat | None, target_format)
+            OutputFormat.JSON if target_format == "json" else target_format
         )
         resolved = self._resolve_options(
             options=options,
