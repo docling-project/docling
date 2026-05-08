@@ -23,7 +23,7 @@ from docling.models.inference_engines.vlm.transformers_runtime_adapters import (
 )
 
 pytestmark = pytest.mark.skipif(
-    os.getenv("CI"),
+    bool(os.getenv("CI")),
     reason="Skipping VLM unit tests in CI",
 )
 
