@@ -539,16 +539,14 @@ def test_custom_numbering_format_markers(tmp_path):
     text prefix/suffix and substitute %N with the counter value for level N.
     """
     from docx import Document
-    from docx.oxml.ns import qn
     from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
 
     doc = Document()
-    body = doc.element.body
 
     # Add numbering definitions with custom lvlText
     numbering_part = doc.part.numbering_part
     numbering = numbering_part.element
-    nsmap = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
 
     # Create abstractNum with lvlText="Proposal %1:" at level 0
     abstract_num = OxmlElement("w:abstractNum")
