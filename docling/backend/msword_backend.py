@@ -548,8 +548,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Skip when lvlText is a bare bullet symbol like "o" or "•".
         if lvl_text and re.search(r"%\d+", lvl_text):
             stripped = re.sub(r"%\d+", "", lvl_text)
-            stripped = stripped.strip(" .)()（）：:[]")
+            stripped = stripped.strip(" .)(:[]")
             if stripped:
+
                 def _replace(match):
                     lvl_idx = int(match.group(1)) - 1
                     counter = self.list_counters.get((numid, lvl_idx))
