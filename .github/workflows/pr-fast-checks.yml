@@ -46,7 +46,7 @@ jobs:
 
       - uses: ./.github/actions/setup-ubuntu-ci
         with:
-          python_version: "3.12"
+          python_version: "3.10"
           uv_sync_args: --frozen --only-group pr-fast-checks --no-install-project
 
       - name: Run fast lint and typing checks
