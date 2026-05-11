@@ -232,12 +232,13 @@ class TestLangchainToParseFormat:
 
 @pytest.mark.unit
 class TestDoclingToParseFormat:
-    def test_item_without_prov_is_skipped(self):
-        items = [_make_text_item(text="keep", has_prov=True), _make_text_item(has_prov=False)]
+    def test_item_without_prov_has_empty_coordinates(self):
+        items = [_make_text_item(text="keep", has_prov=True), _make_text_item(text="no-prov", has_prov=False)]
         doc = _make_mock_doc(items)
         result = DocumentProcessor._docling_to_parse_format(doc)
-        assert len(result["elements"]) == 1
-        assert result["elements"][0]["content"] == "keep"
+        assert len(result["elements"]) == 2
+        no_prov = next(e for e in result["elements"] if e["content"] == "no-prov")
+        assert no_prov["coordinates"] == []
 
     def test_element_ids_are_sequential(self):
         doc = _make_mock_doc([_make_text_item() for _ in range(3)])
