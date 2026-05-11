@@ -291,7 +291,7 @@ def test_call_routes_to_correct_method(dp, filename, expected_method):
         "_parse_tabular":  MagicMock(return_value={"data": []}),
         "_parse_hwp_hwpx": MagicMock(return_value=MagicMock()),
         "_parse_docx":     MagicMock(return_value=MagicMock()),
-        "_parse_pdf":      MagicMock(return_value=MagicMock()),
+        "_parse_docling":  MagicMock(return_value=MagicMock()),
         "_parse_other":    MagicMock(return_value=[]),
     }
     for name, mock in parse_mocks.items():

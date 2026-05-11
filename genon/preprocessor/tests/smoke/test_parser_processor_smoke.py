@@ -5,6 +5,7 @@ Calls DocumentProcessor.__call__ with real sample files and validates
 the output schema. Each parametrized case is skipped when no matching
 sample files are found in sample_files/.
 """
+import os
 from pathlib import Path
 
 import pytest
@@ -94,6 +95,10 @@ async def test_xlsx_smoke(dp, sample):
 # ─── PDF ──────────────────────────────────────────────────────────────────────
 
 @pytest.mark.smoke
+@pytest.mark.skipif(
+    not os.environ.get("GENOS_LAYOUT_AVAILABLE"),
+    reason="GENOS_LAYOUT_AVAILABLE not set; skipping PDF smoke test requiring internal layout endpoint",
+)
 @pytest.mark.parametrize("sample", _samples(".pdf"), ids=lambda p: p.name)
 @pytest.mark.asyncio
 async def test_pdf_smoke(dp, sample):
