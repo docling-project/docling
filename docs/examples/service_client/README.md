@@ -20,4 +20,7 @@ installed:
 python docs/examples/service_client/convert_compat.py
 python docs/examples/service_client/task_api.py
 python docs/examples/service_client/batch_and_chunk.py
+python docs/examples/service_client/convert_async.py
 ```
+
+`convert_async.py` shows the async client (`AsyncDoclingServiceClient`); the others use the synchronous client. Pick whichever matches your application's event-loop model.
