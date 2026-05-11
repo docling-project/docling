@@ -1076,6 +1076,7 @@ class GenOSVectorMeta(BaseModel):
     title: str = None
     created_date: int = None
     appendix: str = None ## !! appendix feature (2025-09-30, geonhee kim) !!
+    file_path: Optional[str] = None
 
 
 class GenOSVectorMetaBuilder:
@@ -1098,6 +1099,7 @@ class GenOSVectorMetaBuilder:
         self.title: Optional[str] = None
         self.created_date: Optional[int] = None
         self.appendix: Optional[str] = None # !! appendix feature (2025-09-30, geonhee kim) !!
+        self.file_path: Optional[str] = None
 
     def set_text(self, text: str) -> "GenOSVectorMetaBuilder":
         """텍스트와 관련된 데이터를 설정"""
@@ -1176,7 +1178,8 @@ class GenOSVectorMetaBuilder:
             media_files=self.media_files,
             title=self.title,
             created_date=self.created_date,
-            appendix=self.appendix or "" # !! appendix feature (2025-09-30, geonhee kim) !!
+            appendix=self.appendix or "", # !! appendix feature (2025-09-30, geonhee kim) !!
+            file_path=self.file_path,
         )
 
 
@@ -1429,7 +1432,7 @@ class DocumentProcessor:
         document = enrich_document(document, self.enrichment_options, **kwargs)
         return document
 
-    async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request, **kwargs: dict) -> \
+    async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request, converted_pdf_path: Optional[str] = None, **kwargs: dict) -> \
             list[dict]:
         title = ""
         created_date = 0
@@ -1469,6 +1472,9 @@ class DocumentProcessor:
             created_date=created_date,
             title=title
         )
+        # 비-PDF 입력이 변환된 경우 vector 의 file_path 를 변환 PDF 경로로 set.
+        if converted_pdf_path:
+            global_metadata['file_path'] = converted_pdf_path
 
         current_page = None
         chunk_index_on_page = 0
@@ -1757,6 +1763,7 @@ class DocumentProcessor:
         # 입력이 PDF가 아닐 때 동작:
         # - auto_convert_to_pdf=True (default): PDF SDK/LibreOffice 로 자동 변환 후 진입
         # - auto_convert_to_pdf=False: 변환 없이 그대로 진행 (변경 전 동작; PDF 가정)
+        converted_pdf_path: Optional[str] = None
         if kwargs.get('auto_convert_to_pdf', True) and not _is_pdf(file_path):
             _log.info(f"[intelligent] Non-PDF input — auto-converting to PDF: {file_path}")
             use_sdk = kwargs.get('use_pdf_sdk', True)
@@ -1767,6 +1774,7 @@ class DocumentProcessor:
             if not converted or not os.path.exists(converted):
                 raise GenosServiceException(1, f"PDF 변환 실패: {file_path}")
             file_path = converted
+            converted_pdf_path = converted
             _log.info(f"[intelligent] Converted PDF: {file_path}")
 
         document: DoclingDocument = self.load_documents(file_path, **kwargs)
@@ -1824,9 +1832,24 @@ class DocumentProcessor:
 
         vectors = []
         if len(chunks) >= 1:
-            vectors: list[dict] = await self.compose_vectors(document, chunks, file_path, request, **kwargs)
+            vectors: list[dict] = await self.compose_vectors(
+                document, chunks, file_path, request,
+                converted_pdf_path=converted_pdf_path,
+                **kwargs,
+            )
         else:
             raise GenosServiceException(1, f"chunk length is 0")
+
+        # 변환된 PDF 를 minio 에 업로드. object key 는 원본 파일명의 stem + ".pdf".
+        # (예: 원본 file_name='sample.hwp' → minio key='<doc_id>/sample.pdf')
+        # upload_files 가 업로드 후 로컬 파일을 os.remove 하므로 파싱이 모두 끝난 이 시점에 호출.
+        if converted_pdf_path and upload_files:
+            original_name = kwargs.get('file_name') or os.path.basename(converted_pdf_path)
+            pdf_object_name = os.path.splitext(original_name)[0] + '.pdf'
+            await upload_files(
+                [{'path': converted_pdf_path, 'name': pdf_object_name}],
+                request=request,
+            )
 
         """
         # 미디어 파일 업로드 방법
