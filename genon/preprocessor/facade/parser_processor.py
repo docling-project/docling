@@ -135,7 +135,14 @@ CONVERTIBLE_EXTENSIONS = ['.hwp', '.txt', '.json', '.md', '.ppt', '.pptx', '.doc
 
 def _load_config(config_path: str) -> dict:
     with open(config_path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f) or {}
+    if not isinstance(cfg, dict):
+        raise ValueError(f"Invalid config format: expected mapping, got {type(cfg).__name__}")
+    return cfg
+
+
+def _as_dict(value: Any) -> dict:
+    return value if isinstance(value, dict) else {}
 
 
 # ============================================================
@@ -519,12 +526,56 @@ TITLE:<document title>
 class IntelligentDocumentProcessor:
 
     def __init__(self, config: dict | None = None):
-        cfg = config or {}
-        ocr_ep = cfg.get("ocr_endpoint", "")
-        layout_ep = cfg.get("layout_endpoint", "")
-        layout_key = cfg.get("layout_api_key", "")
-        enrichment_url = cfg.get("enrichment_api_base_url", "")
-        enrichment_key = cfg.get("enrichment_api_key", "")
+        cfg = _as_dict(config)
+        ocr_cfg = _as_dict(cfg.get("ocr"))
+        layout_cfg = _as_dict(cfg.get("layout"))
+        enrichment_cfg = _as_dict(cfg.get("enrichment"))
+
+        ocr_ep = ocr_cfg.get("ocr_endpoint") or cfg.get("ocr_endpoint", "")
+        raw_ocr_mode = str(ocr_cfg.get("ocr_mode", cfg.get("ocr_mode", "auto"))).lower().strip()
+        if raw_ocr_mode not in {"auto", "force", "disable"}:
+            _log.warning(f"[IntelligentDocumentProcessor] Unknown ocr_mode '{raw_ocr_mode}', fallback to 'auto'")
+            raw_ocr_mode = "auto"
+        self.ocr_mode = raw_ocr_mode
+
+        layout_model_type_str = str(
+            layout_cfg.get("layout_model_type", cfg.get("layout_model_type", "genos_layout"))
+        ).lower().strip()
+        if layout_model_type_str == LayoutModelType.DOCLING_LAYOUT.value:
+            layout_model_type = LayoutModelType.DOCLING_LAYOUT
+        else:
+            if layout_model_type_str != LayoutModelType.GENOS_LAYOUT.value:
+                _log.warning(
+                    f"[IntelligentDocumentProcessor] Unknown layout_model_type '{layout_model_type_str}', "
+                    f"fallback to '{LayoutModelType.GENOS_LAYOUT.value}'"
+                )
+            layout_model_type = LayoutModelType.GENOS_LAYOUT
+
+        genos_layout_cfg = _as_dict(layout_cfg.get("genos_layout"))
+        layout_ep = genos_layout_cfg.get("endpoint") or cfg.get("layout_endpoint", "")
+        layout_key = genos_layout_cfg.get("api_key") or cfg.get("layout_api_key", "")
+        page_batch_size = genos_layout_cfg.get("page_batch_size", cfg.get("page_batch_size", 32))
+        try:
+            page_batch_size = int(page_batch_size)
+            if page_batch_size <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            _log.warning(
+                f"[IntelligentDocumentProcessor] Invalid page_batch_size '{page_batch_size}', fallback to 32"
+            )
+            page_batch_size = 32
+
+        enrichment_url = enrichment_cfg.get("api_url") or cfg.get("enrichment_api_base_url", "")
+        enrichment_key = enrichment_cfg.get("api_key") or cfg.get("enrichment_api_key", "")
+        enrichment_model = enrichment_cfg.get("model", cfg.get("enrichment_model", "model"))
+        do_toc = bool(enrichment_cfg.get("do_toc", cfg.get("do_toc", True)))
+        do_metadata = bool(enrichment_cfg.get("do_metadata", cfg.get("do_metadata", True)))
+
+        toc_cfg = _as_dict(enrichment_cfg.get("toc"))
+        toc_temperature = toc_cfg.get("temperature", cfg.get("toc_temperature", 0.0))
+        toc_top_p = toc_cfg.get("top_p", cfg.get("toc_top_p", 0.00001))
+        toc_seed = toc_cfg.get("seed", cfg.get("toc_seed", 33))
+        toc_max_tokens = toc_cfg.get("max_tokens", cfg.get("toc_max_tokens", 10000))
 
         self.ocr_endpoint = ocr_ep
         ocr_options = PaddleOcrOptions(
@@ -545,11 +596,11 @@ class IntelligentDocumentProcessor:
         self.pipe_line_options.ocr_options = ocr_options
         self.pipe_line_options.images_scale = 2
 
-        self.pipe_line_options.layout_options.layout_model_type = LayoutModelType.GENOS_LAYOUT
+        self.pipe_line_options.layout_options.layout_model_type = layout_model_type
         self.pipe_line_options.layout_options.genos_layout_options.endpoint = layout_ep
         self.pipe_line_options.layout_options.genos_layout_options.api_key = layout_key
 
-        docling_settings.perf.page_batch_size = 32
+        docling_settings.perf.page_batch_size = page_batch_size
 
         self.pipe_line_options.do_table_structure = True
         self.pipe_line_options.table_structure_options.do_cell_matching = True
@@ -568,20 +619,21 @@ class IntelligentDocumentProcessor:
         self._create_converters()
 
         self.enrichment_options = DataEnrichmentOptions(
-            do_toc_enrichment=True,
+            do_toc_enrichment=do_toc,
             toc_doc_type="law",
-            extract_metadata=True,
+            extract_metadata=do_metadata,
             toc_api_provider="custom",
+            metadata_api_provider="custom",
             toc_api_base_url=enrichment_url,
             metadata_api_base_url=enrichment_url,
             toc_api_key=enrichment_key,
             metadata_api_key=enrichment_key,
-            toc_model="model",
-            metadata_model="model",
-            toc_temperature=0.0,
-            toc_top_p=0.00001,
-            toc_seed=33,
-            toc_max_tokens=10000,
+            toc_model=enrichment_model,
+            metadata_model=enrichment_model,
+            toc_temperature=toc_temperature,
+            toc_top_p=toc_top_p,
+            toc_seed=toc_seed,
+            toc_max_tokens=toc_max_tokens,
             toc_system_prompt=_toc_system_prompt,
             toc_user_prompt=_toc_user_prompt,
         )
@@ -977,50 +1029,87 @@ class DocumentProcessor:
 
     def __init__(self, config_path: str | None = None):
         if config_path is None:
-            config_path = os.path.join(os.path.dirname(__file__), "config.yaml")
+            config_path = str((Path(__file__).resolve().parent / "../resource/config.yaml").resolve())
 
         cfg = _load_config(config_path)
-        intel_cfg = cfg["intelligent"]
-        attach_cfg = cfg["attachment"]
-
-        self._intel = IntelligentDocumentProcessor(intel_cfg)
+        self._intel = IntelligentDocumentProcessor(cfg)
 
         self._hwp = HwpDocumentLoader()
         self._docx = DocxDocumentLoader()
         self._generic = GenericDocumentLoader()
 
-        self._whisper_url = attach_cfg["whisper_url"]
+        # 신/구 설정 스키마 동시 지원
+        whisper_cfg = _as_dict(cfg.get("whisper"))
+        attach_cfg = _as_dict(cfg.get("attachment"))
+
+        self._whisper_url = whisper_cfg.get("url", attach_cfg.get("whisper_url", ""))
         self._whisper_req_data = {
-            "model": attach_cfg["whisper_model"],
-            "language": attach_cfg["whisper_language"],
-            "response_format": attach_cfg["whisper_response_format"],
-            "temperature": attach_cfg["whisper_temperature"],
-            "stream": attach_cfg["whisper_stream"],
-            "timestamp_granularities[]": attach_cfg["whisper_timestamp_granularities"],
+            "model": whisper_cfg.get("model", attach_cfg.get("whisper_model", "model")),
+            "language": whisper_cfg.get("language", attach_cfg.get("whisper_language", "ko")),
+            "response_format": whisper_cfg.get(
+                "response_format", attach_cfg.get("whisper_response_format", "json")
+            ),
+            "temperature": whisper_cfg.get("temperature", attach_cfg.get("whisper_temperature", "0")),
+            "stream": whisper_cfg.get("stream", attach_cfg.get("whisper_stream", "false")),
+            "timestamp_granularities[]": whisper_cfg.get(
+                "timestamp_granularities", attach_cfg.get("whisper_timestamp_granularities", "word")
+            ),
         }
-        self._whisper_chunk_sec = attach_cfg["whisper_chunk_sec"]
+        try:
+            self._whisper_chunk_sec = int(
+                whisper_cfg.get("chunk_sec", attach_cfg.get("whisper_chunk_sec", 29))
+            )
+        except (TypeError, ValueError):
+            _log.warning("[DocumentProcessor] Invalid whisper.chunk_sec value, fallback to 29")
+            self._whisper_chunk_sec = 29
+
+        output_cfg = _as_dict(cfg.get("output"))
+        self._output_format = self._normalize_output_format(output_cfg.get("format", "json"))
+        self._table_format = self._normalize_table_format(output_cfg.get("table_format", "html"))
+
+    @staticmethod
+    def _normalize_output_format(value: Any) -> str:
+        fmt = str(value).strip().lower()
+        if fmt not in {"json", "html", "markdown"}:
+            _log.warning(f"[DocumentProcessor] Invalid output.format '{value}', fallback to 'json'")
+            return "json"
+        return fmt
+
+    @staticmethod
+    def _normalize_table_format(value: Any) -> str:
+        fmt = str(value).strip().lower()
+        if fmt not in {"html", "markdown"}:
+            _log.warning(f"[DocumentProcessor] Invalid output.table_format '{value}', fallback to 'html'")
+            return "html"
+        return fmt
 
     # ------------------------------------------------------------------
     # 포맷별 파싱 메서드
     # ------------------------------------------------------------------
 
-    def _parse_pdf(self, file_path: str, **kwargs) -> DoclingDocument:
+    def _parse_docling(self, file_path: str, **kwargs) -> DoclingDocument:
         """
         intelligent_processor.__call__ 흐름 중 enrichment 까지만 실행.
         load → OCR 검사 → ocr_all_table_cells → enrichment
         """
-        document = self._intel.load_documents(file_path, **kwargs)
+        ocr_mode = getattr(self._intel, "ocr_mode", "auto")
 
-        if (not check_document(document, self._intel.enrichment_options)
-                or self._intel.check_glyphs(document)):
+        if ocr_mode == "force":
             document = self._intel.load_documents_with_docling_ocr(file_path, **kwargs)
+        else:
+            document = self._intel.load_documents(file_path, **kwargs)
+            if ocr_mode == "auto":
+                if (not check_document(document, self._intel.enrichment_options)
+                        or self._intel.check_glyphs(document)):
+                    document = self._intel.load_documents_with_docling_ocr(file_path, **kwargs)
 
-        document = self._intel.ocr_all_table_cells(document, file_path)
+        if ocr_mode != "disable" and self._intel.ocr_endpoint:
+            document = self._intel.ocr_all_table_cells(document, file_path)
 
-        output_path, output_file = os.path.split(file_path)
-        filename, _ = os.path.splitext(output_file)
-        artifacts_dir = Path(f"{output_path}/{filename}")
-        reference_path = None if artifacts_dir.is_absolute() else artifacts_dir.parent
+        # output_path, output_file = os.path.split(file_path)
+        # filename, _ = os.path.splitext(output_file)
+        # artifacts_dir = Path(f"{output_path}/{filename}")
+        # reference_path = None if artifacts_dir.is_absolute() else artifacts_dir.parent
 
         # document = document._with_pictures_refs(
         #     image_dir=artifacts_dir, page_no=None, reference_path=reference_path
@@ -1127,29 +1216,67 @@ class DocumentProcessor:
         return f"<p id='{element_id}' data-category='{label_value}'>{text}</p>"
 
     @staticmethod
-    def _docling_to_parse_format(doc: DoclingDocument) -> dict:
+    def _export_table_content(
+        item: TableItem, doc: DoclingDocument, table_format: str = "html"
+    ) -> str:
+        """TableItem을 지정한 포맷(html/markdown)으로 변환."""
+        try:
+            if table_format == "markdown":
+                text = item.export_to_markdown(doc=doc)
+            else:
+                text = item.export_to_html(doc=doc)
+            if text and text.strip():
+                return text
+        except Exception:
+            pass
+
+        try:
+            if item.data and item.data.table_cells:
+                parts = []
+                for cell in item.data.table_cells:
+                    value = getattr(cell, "text", "")
+                    if value and str(value).strip():
+                        parts.append(str(value).strip())
+                if parts:
+                    return " ".join(parts)
+        except Exception:
+            pass
+
+        return getattr(item, "text", "") or ""
+
+    @staticmethod
+    def _docling_to_parse_format(doc: DoclingDocument, table_format: str = "html") -> dict:
         """DoclingDocument → sample_result.json 호환 출력 포맷."""
         elements = []
         element_id = 0
+        default_page_no = 1
+        try:
+            if getattr(doc, "pages", None):
+                default_page_no = min(doc.pages.keys())
+        except Exception:
+            default_page_no = 1
 
         for item, _ in doc.iterate_items(
             included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
         ):
-            if not getattr(item, "prov", None):
-                continue
+            prov_list = getattr(item, "prov", None) or []
+            prov = prov_list[0] if len(prov_list) > 0 else None
 
-            prov = item.prov[0]
-            page_no = prov.page_no
+            page_no = getattr(prov, "page_no", None)
+            if not isinstance(page_no, int) or page_no <= 0:
+                page_no = default_page_no
 
-            try:
-                page_info = doc.pages.get(page_no)
-                if page_info is None or page_info.size is None:
-                    raise ValueError("no page size")
-                page_w = page_info.size.width
-                page_h = page_info.size.height
-                coordinates = DocumentProcessor._get_normalized_coords(prov.bbox, page_w, page_h)
-            except Exception:
-                coordinates = []
+            coordinates = []
+            if prov is not None:
+                try:
+                    page_info = doc.pages.get(page_no)
+                    if page_info is None or page_info.size is None:
+                        raise ValueError("no page size")
+                    page_w = page_info.size.width
+                    page_h = page_info.size.height
+                    coordinates = DocumentProcessor._get_normalized_coords(prov.bbox, page_w, page_h)
+                except Exception:
+                    coordinates = []
 
             label_value = item.label.value if hasattr(item.label, "value") else str(item.label)
             if label_value == "section_header":
@@ -1157,7 +1284,14 @@ class DocumentProcessor:
                 category = f"heading{level}"
 
             # html = DocumentProcessor._item_to_html(item, element_id, doc)
-            text = "" if isinstance(item, TableItem) else (getattr(item, "text", "") or "")
+            if isinstance(item, TableItem):
+                text = DocumentProcessor._export_table_content(
+                    item=item,
+                    doc=doc,
+                    table_format=table_format,
+                )
+            else:
+                text = getattr(item, "text", "") or ""
 
             elements.append({
                 "category": label_value,
@@ -1192,6 +1326,96 @@ class DocumentProcessor:
             except Exception:
                 # 최후 폴백: docling 기본 export
                 return doc.export_to_dict()
+
+    @staticmethod
+    def _replace_markdown_tables_with_html(doc: DoclingDocument, markdown_text: str) -> str:
+        """Markdown 문자열의 테이블 블록을 순차적으로 HTML 테이블로 치환."""
+        if not markdown_text:
+            return markdown_text
+
+        out = markdown_text
+        for item, _ in doc.iterate_items(
+            included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+        ):
+            if not isinstance(item, TableItem):
+                continue
+
+            try:
+                md_table_raw = item.export_to_markdown(doc=doc)
+                html_table = item.export_to_html(doc=doc)
+            except Exception:
+                continue
+
+            if not md_table_raw or not html_table:
+                continue
+
+            md_table = md_table_raw.strip()
+            if not md_table:
+                continue
+
+            idx = out.find(md_table)
+            if idx >= 0:
+                out = out[:idx] + html_table + out[idx + len(md_table):]
+            else:
+                idx_raw = out.find(md_table_raw)
+                if idx_raw >= 0:
+                    out = out[:idx_raw] + html_table + out[idx_raw + len(md_table_raw):]
+
+        return out
+
+    def _docling_to_content(self, doc: DoclingDocument) -> str:
+        """DoclingDocument를 output.format에 따라 content 문자열로 변환."""
+        output_format = getattr(self, "_output_format", "json")
+        table_format = getattr(self, "_table_format", "html")
+        layers = {ContentLayer.BODY, ContentLayer.FURNITURE}
+
+        if output_format == "html":
+            return doc.export_to_html(included_content_layers=layers)
+
+        if output_format == "markdown":
+            markdown_text = doc.export_to_markdown(included_content_layers=layers)
+            if table_format == "html":
+                return self._replace_markdown_tables_with_html(doc, markdown_text)
+            return markdown_text
+
+        return ""
+
+    @staticmethod
+    def _normalize_response(result: dict) -> dict:
+        """응답에 content / elements / usage 키가 항상 존재하도록 보장."""
+        result.setdefault("content", "")
+        result.setdefault("elements", [])
+        result.setdefault("usage", {"pages": 0})
+        return result
+
+    @staticmethod
+    def _content_response(content: str, pages: int = 0) -> dict:
+        """content 전용 출력 포맷."""
+        return {
+            "elements": [],
+            "usage": {"pages": pages},
+            "content": content,
+        }
+
+    def _build_docling_response(self, doc: DoclingDocument, clear_coordinates: bool = False) -> dict:
+        """Docling 경로의 최종 응답 생성."""
+        output_format = getattr(self, "_output_format", "json")
+        table_format = getattr(self, "_table_format", "html")
+
+        if output_format == "json":
+            result = self._docling_to_parse_format(doc, table_format=table_format)
+            if clear_coordinates:
+                for element in result.get("elements", []):
+                    element["coordinates"] = []
+            return result
+
+        try:
+            pages = max(1, int(doc.num_pages()))
+        except Exception:
+            pages = 0
+
+        content = self._docling_to_content(doc)
+        return self._content_response(content, pages=pages)
 
     @staticmethod
     def _audio_to_parse_format(text: str) -> dict:
@@ -1272,29 +1496,25 @@ class DocumentProcessor:
 
         if ext in (".wav", ".mp3", ".m4a"):
             text = self._parse_audio(file_path, **kwargs)
-            return self._audio_to_parse_format(text)
+            return self._normalize_response(self._audio_to_parse_format(text))
 
         if ext in (".csv", ".xlsx"):
             data_dict = self._parse_tabular(file_path)
-            return self._tabular_to_parse_format(data_dict)
+            return self._normalize_response(self._tabular_to_parse_format(data_dict))
 
         if ext in (".hwp", ".hwpx"):
             doc = self._parse_hwp_hwpx(file_path, **kwargs)
-            return self._docling_to_parse_format(doc)
+            return self._normalize_response(self._build_docling_response(doc))
 
         if ext == ".docx":
             doc = self._parse_docx(file_path, **kwargs)
-            result = self._docling_to_parse_format(doc)
-            for element in result["elements"]:
-                element["coordinates"] = []
-            return result
+            return self._normalize_response(self._build_docling_response(doc, clear_coordinates=True))
 
-        if ext == ".pdf":
-            doc = self._parse_pdf(file_path, **kwargs)
-            result = self._docling_to_parse_format(doc)
+        if ext in (".pdf", ".html", ".htm"):
+            doc = self._parse_docling(file_path, **kwargs)
             # result["docling_document"] = self._serialize_docling_document(doc)
-            return result
+            return self._normalize_response(self._build_docling_response(doc))
 
         # 기타 포맷: doc, ppt, pptx, txt, json, md, jpg, jpeg, png 등
         docs = self._parse_other(file_path, **kwargs)
-        return self._langchain_to_parse_format(docs)
+        return self._normalize_response(self._langchain_to_parse_format(docs))
