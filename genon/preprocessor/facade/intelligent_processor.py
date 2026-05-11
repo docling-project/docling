@@ -1840,12 +1840,14 @@ class DocumentProcessor:
         else:
             raise GenosServiceException(1, f"chunk length is 0")
 
-        # 변환된 PDF 를 minio 에 업로드 (시각화 fetch 대상). 원본 파일명 키 자리에 덮어씀.
+        # 변환된 PDF 를 minio 에 업로드. object key 는 원본 파일명의 stem + ".pdf".
+        # (예: 원본 file_name='sample.hwp' → minio key='<doc_id>/sample.pdf')
         # upload_files 가 업로드 후 로컬 파일을 os.remove 하므로 파싱이 모두 끝난 이 시점에 호출.
         if converted_pdf_path and upload_files:
             original_name = kwargs.get('file_name') or os.path.basename(converted_pdf_path)
+            pdf_object_name = os.path.splitext(original_name)[0] + '.pdf'
             await upload_files(
-                [{'path': converted_pdf_path, 'name': original_name}],
+                [{'path': converted_pdf_path, 'name': pdf_object_name}],
                 request=request,
             )
 
