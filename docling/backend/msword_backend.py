@@ -533,8 +533,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         placeholders and separators.  Falls back to the default '1.2.3.'
         pattern for plain numeric markers.
         """
-        import re
-
         lvl_element = self._get_level_element(numid, ilvl)
         namespaces = {"w": self._W_NS}
         lvl_text = None
