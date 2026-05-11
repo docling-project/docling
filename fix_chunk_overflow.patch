@@ -1,0 +1,19 @@
+--- a/docling/chunking/__init__.py
++++ b/docling/chunking/__init__.py
+@@ -10,6 +10,7 @@
+ from docling_core.transforms.chunker.hierarchical_chunker import (
+     DocChunk,
+     DocMeta,
+     HierarchicalChunker,
+ )
+ from docling_core.transforms.chunker.hybrid_chunker import HybridChunker
++from docling_core.types import DoclingDocument, TableData
+ 
+ 
+ __all__ = [
+@@ -12,4 +13,4 @@
+     HierarchicalChunker,
+     HybridChunker,
+-]
+\ No newline at end of file
++]
