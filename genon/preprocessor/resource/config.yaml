@@ -21,8 +21,13 @@ enrichment:
     seed: 33
     max_tokens: 10000
 
+output:
+  format: "json" # "json" (default), "html", "markdown"
+  table_format: "html" # "html" (default), "markdown"
+
+# whisper 설정, 음성인식 모델이 필요한 경우 설정.
 whisper:
-  url: "http://192.168.74.164:30100/v1/audio/transcriptions"
+  url: ""
   model: "model"
   language: "ko"
   response_format: "json"
@@ -30,7 +35,3 @@ whisper:
   stream: "false"
   timestamp_granularities: "word"
   chunk_sec: 29
-
-output:
-  format: "json" # "json" (default), "html", "markdown"
-  table_format: "html" # "html" (default), "markdown"
