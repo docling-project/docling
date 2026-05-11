@@ -33,7 +33,11 @@ def test_cli_convert(tmp_path):
 def test_export_documents_marks_empty_markdown_as_failure(tmp_path):
     from docling.cli.main import export_documents
     from docling.datamodel.base_models import ConversionStatus, InputFormat
-    from docling.datamodel.document import ConversionResult, InputDocument, _DummyBackend
+    from docling.datamodel.document import (
+        ConversionResult,
+        InputDocument,
+        _DummyBackend,
+    )
 
     input_path = tmp_path / "input.pdf"
     input_path.write_bytes(b"%PDF-1.4")
