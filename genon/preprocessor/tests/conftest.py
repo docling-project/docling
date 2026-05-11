@@ -46,3 +46,9 @@ def intelligent_processor():
 def attachment_processor():
     mod = pytest.importorskip("facade.attachment_processor")
     return mod.DocumentProcessor
+
+
+@pytest.fixture(scope="session")
+def parser_processor():
+    mod = pytest.importorskip("facade.parser_processor")
+    return mod.DocumentProcessor

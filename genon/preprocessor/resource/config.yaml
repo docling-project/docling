@@ -1,0 +1,37 @@
+ocr:
+  ocr_mode: "auto" # "auto"(default), "force", "disable"
+  ocr_endpoint: "http://192.168.73.172:48080/ocr"
+
+layout:
+  layout_model_type: "genos_layout" # "genos_layout"(default) or "docling_layout"
+  genos_layout:
+    endpoint: "http://192.168.75.174:26001/v1/chat/completions"
+    api_key: ""
+    page_batch_size: 32
+
+enrichment:
+  do_toc: true
+  do_metadata: true
+  api_url: "https://genos.genon.ai/api/gateway/rep/serving/750/v1/chat/completions"
+  api_key: "26e6a516de0847f59a3b9db8e418976e"
+  model: "model"
+  toc:
+    temperature: 0.0
+    top_p: 0.00001
+    seed: 33
+    max_tokens: 10000
+
+output:
+  format: "json" # "json" (default), "html", "markdown"
+  table_format: "html" # "html" (default), "markdown"
+
+# whisper 설정, 음성인식 모델이 필요한 경우 설정.
+whisper:
+  url: ""
+  model: "model"
+  language: "ko"
+  response_format: "json"
+  temperature: "0"
+  stream: "false"
+  timestamp_granularities: "word"
+  chunk_sec: 29
