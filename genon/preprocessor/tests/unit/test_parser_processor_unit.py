@@ -280,7 +280,7 @@ _MOCK_RESULT = {"elements": [], "usage": {"pages": 1}}
     ("a.hwp",  "_parse_hwp_hwpx"),
     ("a.hwpx", "_parse_hwp_hwpx"),
     ("a.docx", "_parse_docx"),
-    ("a.pdf",  "_parse_pdf"),
+    ("a.pdf",  "_parse_docling"),
     ("a.txt",  "_parse_other"),
     ("a.pptx", "_parse_other"),
 ])

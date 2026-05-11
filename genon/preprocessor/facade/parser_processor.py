@@ -1133,7 +1133,7 @@ class DocumentProcessor:
                     # 모든 백엔드 실패 시 LibreOffice → PDF → intelligent 경로
                     converted = convert_to_pdf(file_path)
                     if converted:
-                        return self._parse_pdf(converted, **kwargs)
+                        return self._parse_docling(converted, **kwargs)
                     raise sdk_err
             raise
 
@@ -1279,9 +1279,9 @@ class DocumentProcessor:
                     coordinates = []
 
             label_value = item.label.value if hasattr(item.label, "value") else str(item.label)
-            if label_value == "section_header":
-                level = max(1, min(getattr(item, "level", 1), 6))
-                category = f"heading{level}"
+            # if label_value == "section_header":
+            #     level = max(1, min(getattr(item, "level", 1), 6))
+            #     category = f"heading{level}"
 
             # html = DocumentProcessor._item_to_html(item, element_id, doc)
             if isinstance(item, TableItem):
