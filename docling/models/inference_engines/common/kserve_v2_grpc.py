@@ -6,6 +6,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Sequence, Tuple
+from urllib.parse import SplitResult, urlsplit
 
 import numpy as np
 
@@ -35,29 +36,35 @@ from docling.models.inference_engines.common.kserve_v2_utils import (
 _log = logging.getLogger(__name__)
 
 
-def _validate_host_port(host_port: str, original: str) -> None:
-    host, sep, port_text = host_port.rpartition(":")
-    if not sep or not host or not port_text:
-        raise ValueError(f"Invalid KServe gRPC URL, expected host:port: {original}")
+def _invalid_grpc_url(original: str) -> ValueError:
+    return ValueError(
+        "Invalid KServe gRPC URL. "
+        "Expected host:port, [ipv6]:port, dns:///host:port, or dns:///[ipv6]:port. "
+        f"Got: {original}"
+    )
+
+
+def _validate_grpc_host_port(parsed: SplitResult, original: str) -> None:
+    if parsed.hostname is None:
+        raise _invalid_grpc_url(original)
     try:
-        port = int(port_text)
+        port = parsed.port
     except ValueError as exc:
-        raise ValueError(
-            f"Invalid KServe gRPC URL, expected numeric port: {original}"
-        ) from exc
-    if not (1 <= port <= 65535):
-        raise ValueError(f"Invalid KServe gRPC URL, port out of range: {original}")
+        raise _invalid_grpc_url(original) from exc
+    if port is None:
+        raise _invalid_grpc_url(original)
 
 
 def _resolve_grpc_endpoint(*, base_url: str) -> str:
-    if base_url.startswith("dns:///"):
-        _validate_host_port(base_url[len("dns:///") :], base_url)
+    parsed_url = urlsplit(base_url)
+    if parsed_url.scheme == "dns":
+        host_port = parsed_url.path.removeprefix("/")
+        if not host_port:
+            raise _invalid_grpc_url(base_url)
+        _validate_grpc_host_port(urlsplit(f"//{host_port}"), base_url)
         return base_url
-    if "://" in base_url:
-        raise ValueError(
-            f"KServe gRPC URL must be plain host:port or dns:///host:port. Got: {base_url}"
-        )
-    _validate_host_port(base_url, base_url)
+
+    _validate_grpc_host_port(urlsplit(f"//{base_url}"), base_url)
     return base_url
 
 
