@@ -636,6 +636,7 @@ class GenOSVectorMeta(BaseModel):
     title: str = None              # 문서 제목
     created_date: int = None       # 작성일 (YYYYMMDD 정수)
     appendix: str = None           # ◄── 고유 필드: 매칭된 부록 파일명
+    file_path: Optional[str] = None  # ◄── 비-PDF 변환 시 변환된 PDF 의 로컬 경로
 ```
 
 **세 전처리기의 필드 비교**:
@@ -674,14 +675,16 @@ class GenOSVectorMetaBuilder:
         # ... (기본 필드들)
         self.title: Optional[str] = None
         self.created_date: Optional[int] = None
-        self.appendix: Optional[str] = None  # ◄── intelligent 전용
+        self.appendix: Optional[str] = None    # ◄── intelligent 전용
+        self.file_path: Optional[str] = None   # ◄── 변환된 PDF 경로 (비-PDF 입력 시)
 
     def build(self) -> GenOSVectorMeta:
         return GenOSVectorMeta(
             # ... (기본 필드들)
             title=self.title,
             created_date=self.created_date,
-            appendix=self.appendix or ""      # None이면 빈 문자열로 변환
+            appendix=self.appendix or "",     # None이면 빈 문자열로 변환
+            file_path=self.file_path,
         )
 ```
 
@@ -1027,8 +1030,11 @@ standalone_patterns = re.findall(
 ### 7.7 벡터 조립 — `compose_vectors()`
 
 ```python
-async def compose_vectors(self, document, chunks, file_path, request, **kwargs):
+async def compose_vectors(self, document, chunks, file_path, request,
+                          converted_pdf_path: Optional[str] = None, **kwargs):
 ```
+
+> **`converted_pdf_path`** : `__call__` 진입부에서 비-PDF 입력이 PDF 로 변환된 경우, 변환된 PDF 의 로컬 경로가 전달됨. 전달되면 각 vector 의 `file_path` 필드에 이 경로를 set 함 (변환 안 일어난 경우 None → `file_path` 미설정).
 
 `convert_processor`의 `compose_vectors()`와 유사하지만, **부록 매칭** 로직이 추가되고 **`authors` 추출이 없습니다**.
 
@@ -1195,11 +1201,24 @@ async def __call__(self, request: Request, file_path: str, **kwargs: dict):
         document.add_text(label=DocItemLabel.TEXT, text=".", prov=prov)
         chunks = self.split_documents(document, **kwargs)
 
-    # ⑥ 벡터 조립
+    # ⑥ 벡터 조립 (변환된 경우 converted_pdf_path 전달 → vector 메타의 file_path 에 반영)
     if len(chunks) >= 1:
-        vectors = await self.compose_vectors(document, chunks, file_path, request, **kwargs)
+        vectors = await self.compose_vectors(
+            document, chunks, file_path, request,
+            converted_pdf_path=converted_pdf_path, **kwargs,
+        )
     else:
         raise GenosServiceException(1, f"chunk length is 0")
+
+    # ⑦ 변환된 PDF 를 minio 에 업로드 (시각화 fetch 대상).
+    #    object key 는 원본 file_name 의 stem + ".pdf" (예: 'sample.hwp' → '<doc_id>/sample.pdf')
+    if converted_pdf_path and upload_files:
+        original_name = kwargs.get('file_name') or os.path.basename(converted_pdf_path)
+        pdf_object_name = os.path.splitext(original_name)[0] + '.pdf'
+        await upload_files(
+            [{'path': converted_pdf_path, 'name': pdf_object_name}],
+            request=request,
+        )
 
     return vectors
 ```
