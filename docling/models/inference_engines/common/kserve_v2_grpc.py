@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass
-from typing import Any, Dict, Mapping, Sequence, Tuple
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Mapping, Sequence, Tuple
 
 import numpy as np
 
@@ -35,32 +35,30 @@ from docling.models.inference_engines.common.kserve_v2_utils import (
 _log = logging.getLogger(__name__)
 
 
-def _resolve_grpc_endpoint(
-    *,
-    base_url: str,
-) -> str:
-    if "://" in base_url:
-        raise ValueError(f"KServe gRPC URL must be plain host:port. Got: {base_url}")
-
-    host, separator, port_text = base_url.rpartition(":")
-    if separator == "" or host == "" or port_text == "":
-        raise ValueError(
-            "Invalid KServe URL for gRPC transport. "
-            f"Expected plain host:port, got: {base_url}"
-        )
+def _validate_host_port(host_port: str, original: str) -> None:
+    host, sep, port_text = host_port.rpartition(":")
+    if not sep or not host or not port_text:
+        raise ValueError(f"Invalid KServe gRPC URL, expected host:port: {original}")
     try:
         port = int(port_text)
     except ValueError as exc:
         raise ValueError(
-            "Invalid KServe URL for gRPC transport. "
-            f"Expected plain host:port with numeric port, got: {base_url}"
+            f"Invalid KServe gRPC URL, expected numeric port: {original}"
         ) from exc
-    if port < 1 or port > 65535:
+    if not (1 <= port <= 65535):
+        raise ValueError(f"Invalid KServe gRPC URL, port out of range: {original}")
+
+
+def _resolve_grpc_endpoint(*, base_url: str) -> str:
+    if base_url.startswith("dns:///"):
+        _validate_host_port(base_url[len("dns:///") :], base_url)
+        return base_url
+    if "://" in base_url:
         raise ValueError(
-            "Invalid KServe URL for gRPC transport. "
-            f"Port must be in range 1..65535, got: {port}"
+            f"KServe gRPC URL must be plain host:port or dns:///host:port. Got: {base_url}"
         )
-    return f"{host}:{port}"
+    _validate_host_port(base_url, base_url)
+    return base_url
 
 
 def _to_grpc_metadata(metadata: Mapping[str, str]) -> Sequence[Tuple[str, str]]:
@@ -181,6 +179,7 @@ class KserveV2GrpcClient:
     use_tls: bool
     max_message_bytes: int
     use_binary_data: bool = True
+    grpc_channel_args: List[Tuple[str, Any]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if grpc is None or service_pb2 is None or service_pb2_grpc is None:
@@ -192,10 +191,18 @@ class KserveV2GrpcClient:
         endpoint = _resolve_grpc_endpoint(
             base_url=self.base_url,
         )
-        channel_options = [
+        channel_options: List[Tuple[str, Any]] = [
             ("grpc.max_send_message_length", self.max_message_bytes),
             ("grpc.max_receive_message_length", self.max_message_bytes),
         ]
+        channel_options.extend(self.grpc_channel_args)
+        # dns:/// URLs rely on gRPC's DNS resolver returning multiple A records (e.g. headless k8s
+        # services). Without a client-side lb policy, gRPC would pick just the first address.
+        # Auto-inject round_robin unless the caller already specified a policy.
+        if self.base_url.startswith("dns:///") and not any(
+            k == "grpc.lb_policy_name" for k, _ in channel_options
+        ):
+            channel_options.append(("grpc.lb_policy_name", "round_robin"))
         if self.use_tls:
             credentials = grpc.ssl_channel_credentials()
             self._channel = grpc.secure_channel(
