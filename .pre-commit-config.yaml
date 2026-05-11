@@ -1,5 +1,4 @@
 fail_fast: true
-minimum_pre_commit_version: "3.7.0"
 default_stages: [pre-commit]
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks

@@ -7,6 +7,7 @@ from PIL.Image import Image
 from pydantic import BaseModel
 
 from docling.backend.abstract_backend import PaginatedDocumentBackend
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import ConversionStatus, ErrorItem, VlmStopReason
 from docling.datamodel.document import InputDocument
@@ -27,6 +28,17 @@ from docling.pipeline.base_extraction_pipeline import BaseExtractionPipeline
 from docling.utils.accelerator_utils import decide_device
 
 _log = logging.getLogger(__name__)
+
+
+def _raise_if_unsupported_threaded_backend(
+    backend: PaginatedDocumentBackend, pipeline_name: str
+) -> None:
+    if isinstance(backend, ThreadedDoclingParseDocumentBackend):
+        raise RuntimeError(
+            f"{pipeline_name} does not support ThreadedDoclingParseDocumentBackend yet. "
+            "It still requires ordered/random page access via load_page() and cannot "
+            "consume iterator-only or out-of-order page delivery. Use StandardPdfPipeline instead."
+        )
 
 
 class ExtractionVlmPipeline(BaseExtractionPipeline):
@@ -51,6 +63,10 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         template: Optional[ExtractionTemplateType] = None,
     ) -> ExtractionResult:
         """Extract data using the VLM model."""
+        backend = ext_res.input._backend
+        if isinstance(backend, PdfDocumentBackend):
+            _raise_if_unsupported_threaded_backend(backend, self.__class__.__name__)
+
         try:
             # Get images from input document using the backend
             images = self._get_images_from_input(ext_res.input)

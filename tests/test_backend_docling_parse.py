@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,7 @@ from docling.backend.docling_parse_backend import (
     ThreadedDoclingParseDocumentBackend,
     ThreadedDoclingParsePageBackend,
 )
+from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import BoundingBox, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.datamodel.settings import DocumentLimits
@@ -183,12 +185,28 @@ class _FakeThreadedParser:
         return True
 
 
+class _FakePdfiumDocument:
+    def __init__(self, path_or_stream, password=None) -> None:
+        self.path_or_stream = path_or_stream
+        self.password = password
+
+    def __len__(self) -> int:
+        return 5
+
+    def close(self) -> None:
+        return None
+
+
 def test_threaded_backend_iterates_requested_pages_and_unloads(
     test_doc_path, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.setattr(
         "docling.backend.docling_parse_backend.DoclingThreadedPdfParser",
         _FakeThreadedParser,
+    )
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.pdfium.PdfDocument",
+        _FakePdfiumDocument,
     )
 
     in_doc = InputDocument(
@@ -213,12 +231,72 @@ def test_threaded_backend_iterates_requested_pages_and_unloads(
     assert parser.unload_calls == ["doc-key"]
 
 
-def test_threaded_backend_no_page_range_passes_none(
+def test_threaded_backend_open_ended_page_range_is_clipped_to_document(
     test_doc_path, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.setattr(
         "docling.backend.docling_parse_backend.DoclingThreadedPdfParser",
         _FakeThreadedParser,
+    )
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.pdfium.PdfDocument",
+        _FakePdfiumDocument,
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+        limits=DocumentLimits(page_range=(2, sys.maxsize)),
+    )
+
+    parser = _FakeThreadedParser.created
+    assert parser is not None
+    assert parser.load_calls == [[2, 3, 4, 5]]
+
+    in_doc._backend.unload()
+
+
+def test_threaded_backend_bounded_page_range_is_clipped_to_document(
+    test_doc_path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.DoclingThreadedPdfParser",
+        _FakeThreadedParser,
+    )
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.pdfium.PdfDocument",
+        _FakePdfiumDocument,
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+        limits=DocumentLimits(page_range=(2, 99)),
+    )
+
+    parser = _FakeThreadedParser.created
+    assert parser is not None
+    assert parser.load_calls == [list(range(2, 100))]
+
+    in_doc._backend.unload()
+
+
+def test_threaded_backend_no_page_range_passes_none_without_page_count_probe(
+    test_doc_path, monkeypatch: pytest.MonkeyPatch
+):
+    class _FailingPdfiumDocument:
+        def __init__(self, path_or_stream, password=None) -> None:
+            raise AssertionError("page count should not be probed for default ranges")
+
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.DoclingThreadedPdfParser",
+        _FakeThreadedParser,
+    )
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.pdfium.PdfDocument",
+        _FailingPdfiumDocument,
     )
 
     in_doc = InputDocument(
@@ -235,7 +313,38 @@ def test_threaded_backend_no_page_range_passes_none(
     in_doc._backend.unload()
 
 
-def test_threaded_backend_uses_accelerator_thread_count(
+def test_threaded_backend_uses_backend_option_thread_count(
+    test_doc_path, monkeypatch: pytest.MonkeyPatch
+):
+    class _FakeAcceleratorOptions:
+        def __init__(self) -> None:
+            self.num_threads = 7
+
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.DoclingThreadedPdfParser",
+        _FakeThreadedParser,
+    )
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.AcceleratorOptions",
+        _FakeAcceleratorOptions,
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+        backend_options=ThreadedDoclingParseBackendOptions(parser_threads=11),
+    )
+
+    parser = _FakeThreadedParser.created
+    assert parser is not None
+    assert parser.parser_config is not None
+    assert parser.parser_config.threads == 11
+
+    in_doc._backend.unload()
+
+
+def test_threaded_backend_uses_accelerator_thread_count_when_unset(
     test_doc_path, monkeypatch: pytest.MonkeyPatch
 ):
     class _FakeAcceleratorOptions:

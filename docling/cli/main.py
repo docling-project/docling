@@ -69,7 +69,10 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_TURBO_NATIVE,
     AsrModelType,
 )
-from docling.datamodel.backend_options import PdfBackendOptions
+from docling.datamodel.backend_options import (
+    PdfBackendOptions,
+    ThreadedDoclingParseBackendOptions,
+)
 from docling.datamodel.base_models import (
     ConversionStatus,
     FormatToExtensions,
@@ -755,12 +758,8 @@ def convert(  # noqa: C901
             ocr_options, TesseractOcrOptions | TesseractCliOcrOptions
         ):
             ocr_options.psm = psm
-
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
-
-        # pipeline_options: PaginatedPipelineOptions
         pipeline_options: PipelineOptions
-
         format_options: dict[InputFormat, FormatOption] = {}
         pdf_backend_options: PdfBackendOptions | None = PdfBackendOptions(
             password=pdf_password
@@ -784,9 +783,7 @@ def convert(  # noqa: C901
             if isinstance(
                 pipeline_options.table_structure_options, TableStructureOptions
             ):
-                pipeline_options.table_structure_options.do_cell_matching = (
-                    True  # do_cell_matching
-                )
+                pipeline_options.table_structure_options.do_cell_matching = True
                 pipeline_options.table_structure_options.mode = table_mode
 
             if _should_generate_export_images(
@@ -798,15 +795,15 @@ def convert(  # noqa: C901
                     True  # FIXME: to be deprecated in version 3
                 )
                 pipeline_options.images_scale = 2
-
-            # Normalize deprecated backend values
             pdf_backend = normalize_pdf_backend(pdf_backend)
-
             backend: Type[PdfDocumentBackend]
             if pdf_backend == PdfBackend.DOCLING_PARSE:
                 backend = DoclingParseDocumentBackend  # type: ignore
             elif pdf_backend == PdfBackend.THREADED_DOCLING_PARSE:
                 backend = ThreadedDoclingParseDocumentBackend  # type: ignore
+                pdf_backend_options = ThreadedDoclingParseBackendOptions(
+                    password=pdf_password, parser_threads=num_threads
+                )
             elif pdf_backend == PdfBackend.PYPDFIUM2:
                 backend = PyPdfiumDocumentBackend  # type: ignore
             else:
@@ -817,16 +814,12 @@ def convert(  # noqa: C901
                 backend=backend,  # pdf_backend
                 backend_options=pdf_backend_options,
             )
-
-            # METS GBS options
             mets_gbs_options = pipeline_options.model_copy()
             mets_gbs_options.do_ocr = False
             mets_gbs_format_option = PdfFormatOption(
                 pipeline_options=mets_gbs_options,
                 backend=MetsGbsDocumentBackend,
             )
-
-            # SimplePipeline options
             simple_format_option = ConvertPipelineOptions(
                 do_picture_description=enrich_picture_description,
                 do_picture_classification=enrich_picture_classes,
@@ -834,8 +827,6 @@ def convert(  # noqa: C901
             )
             if artifacts_path is not None:
                 simple_format_option.artifacts_path = artifacts_path
-
-            # Use image-native backend for IMAGE to avoid pypdfium2 locking
             image_format_option = PdfFormatOption(
                 pipeline_options=pipeline_options,
                 backend=ImageDocumentBackend,

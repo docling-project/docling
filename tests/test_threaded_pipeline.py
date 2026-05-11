@@ -1,6 +1,8 @@
 import time
 from pathlib import Path
 
+import pytest
+
 from docling.backend.docling_parse_backend import (
     DoclingParseDocumentBackend,
     ThreadedDoclingParseDocumentBackend,

@@ -131,6 +131,21 @@ class PdfBackendOptions(BaseBackendOptions):
     password: Optional[SecretStr] = None
 
 
+class ThreadedDoclingParseBackendOptions(PdfBackendOptions):
+    """Options specific to the threaded docling-parse backend."""
+
+    kind: Literal["threaded-docling-parse"] = Field(
+        "threaded-docling-parse", exclude=True, repr=False
+    )
+    parser_threads: Optional[PositiveInt] = Field(
+        None,
+        description=(
+            "Number of parser threads to use for the threaded docling-parse backend. "
+            "If unset, the backend falls back to global accelerator thread settings."
+        ),
+    )
+
+
 class MetsGbsBackendOptions(PdfBackendOptions):
     """Options specific to the METS-GBS document backend."""
 
@@ -219,6 +234,7 @@ BackendOptions = Annotated[
         HTMLBackendOptions,
         MarkdownBackendOptions,
         PdfBackendOptions,
+        ThreadedDoclingParseBackendOptions,
         MetsGbsBackendOptions,
         MsExcelBackendOptions,
         LatexBackendOptions,

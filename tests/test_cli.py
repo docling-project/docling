@@ -6,6 +6,7 @@ from docling_core.types.doc import ImageRefMode
 from typer.testing import CliRunner
 
 from docling.cli.main import _should_generate_export_images, app
+from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import InputFormat, OutputFormat
 from docling.datamodel.pipeline_options import PdfBackend
 from docling.document_converter import PdfFormatOption
@@ -131,6 +132,7 @@ def test_cli_accepts_threaded_docling_parse_backend(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     captured_backend: type[Any] | None = None
+    captured_backend_options: ThreadedDoclingParseBackendOptions | None = None
 
     class _FakeDocumentConverter:
         def __init__(
@@ -140,9 +142,14 @@ def test_cli_accepts_threaded_docling_parse_backend(
             format_options: dict[InputFormat, PdfFormatOption],
         ) -> None:
             nonlocal captured_backend
+            nonlocal captured_backend_options
             pdf_option = format_options[InputFormat.PDF]
             assert isinstance(pdf_option, PdfFormatOption)
             captured_backend = pdf_option.backend
+            assert isinstance(
+                pdf_option.backend_options, ThreadedDoclingParseBackendOptions
+            )
+            captured_backend_options = pdf_option.backend_options
 
         def convert_all(
             self,
@@ -166,9 +173,13 @@ def test_cli_accepts_threaded_docling_parse_backend(
             str(output),
             "--pdf-backend",
             PdfBackend.THREADED_DOCLING_PARSE.value,
+            "--num-threads",
+            "7",
         ],
     )
 
     assert result.exit_code == 0
     assert captured_backend is not None
     assert captured_backend.__name__ == "ThreadedDoclingParseDocumentBackend"
+    assert captured_backend_options is not None
+    assert captured_backend_options.parser_threads == 7

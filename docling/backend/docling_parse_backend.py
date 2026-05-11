@@ -1,5 +1,4 @@
 import logging
-import sys  # sys.maxsize used for page-range default detection
 from collections.abc import Iterable, Iterator
 from io import BytesIO
 from pathlib import Path
@@ -26,8 +25,12 @@ from docling.backend.managed_pdfium_backend import (
 )
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.backend_options import PdfBackendOptions
+from docling.datamodel.backend_options import (
+    PdfBackendOptions,
+    ThreadedDoclingParseBackendOptions,
+)
 from docling.datamodel.base_models import Size
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.utils.locks import pypdfium2_lock
 
 if TYPE_CHECKING:
@@ -316,6 +319,38 @@ def _make_threaded_render_config() -> RenderConfig:
     return config
 
 
+def _resolve_threaded_page_numbers(
+    path_or_stream: Union[BytesIO, Path],
+    password: Optional[str],
+    page_range: tuple[int, int],
+) -> list[int] | None:
+    start_page, end_page = page_range
+
+    if page_range == DEFAULT_PAGE_RANGE:
+        return None
+
+    with pypdfium2_lock:
+        pdoc = pdfium.PdfDocument(path_or_stream, password=password)
+        try:
+            page_count = len(pdoc)
+        finally:
+            pdoc.close()
+
+    clipped_end_page = min(end_page, page_count)
+    if start_page > clipped_end_page:
+        return []
+
+    return list(range(start_page, clipped_end_page + 1))
+
+
+def _resolve_threaded_parser_threads(options: PdfBackendOptions) -> int:
+    if isinstance(options, ThreadedDoclingParseBackendOptions):
+        if options.parser_threads is not None:
+            return options.parser_threads
+
+    return AcceleratorOptions().num_threads
+
+
 class ThreadedDoclingParsePageBackend(PdfPageBackend):
     def __init__(self, result: PageParseResult):
         self._result = result
@@ -407,16 +442,16 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         password = (
             self.options.password.get_secret_value() if self.options.password else None
         )
-        start_page, end_page = in_doc.limits.page_range
-        requested_page_numbers = (
-            None if end_page == sys.maxsize else list(range(start_page, end_page + 1))
+        requested_page_numbers = _resolve_threaded_page_numbers(
+            self.path_or_stream,
+            password,
+            in_doc.limits.page_range,
         )
 
-        parser_threads = AcceleratorOptions().num_threads
         self.parser = DoclingThreadedPdfParser(
             parser_config=ThreadedPdfParserConfig(
                 loglevel="fatal",
-                threads=parser_threads,
+                threads=_resolve_threaded_parser_threads(self.options),
                 render_config=_make_threaded_render_config(),
             ),
             decode_config=_make_threaded_decode_config(),
