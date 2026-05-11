@@ -30,6 +30,53 @@ def test_cli_convert(tmp_path):
     assert converted.exists()
 
 
+def test_export_documents_marks_empty_markdown_as_failure(tmp_path):
+    from docling.cli.main import export_documents
+    from docling.datamodel.base_models import ConversionStatus, InputFormat
+    from docling.datamodel.document import ConversionResult, InputDocument, _DummyBackend
+
+    input_path = tmp_path / "input.pdf"
+    input_path.write_bytes(b"%PDF-1.4")
+
+    input_doc = InputDocument(
+        path_or_stream=input_path,
+        format=InputFormat.PDF,
+        backend=_DummyBackend,
+    )
+
+    conv_res = ConversionResult(input=input_doc)
+    conv_res.status = ConversionStatus.SUCCESS
+
+    class DummyDocument:
+        def save_as_markdown(self, *, filename, image_mode):
+            Path(filename).write_text("")
+
+    conv_res.document = DummyDocument()
+
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+
+    export_documents(
+        [conv_res],
+        output_dir=output_dir,
+        export_json=False,
+        export_yaml=False,
+        export_html=False,
+        export_html_split_page=False,
+        show_layout=False,
+        export_md=True,
+        export_txt=False,
+        export_doctags=False,
+        export_vtt=False,
+        print_timings=False,
+        export_timings=False,
+        image_export_mode=ImageRefMode.PLACEHOLDER,
+    )
+
+    assert conv_res.status == ConversionStatus.FAILURE
+    assert conv_res.errors
+
+
 @pytest.mark.parametrize(
     ("image_export_mode", "to_formats", "expected"),
     [

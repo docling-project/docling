@@ -69,6 +69,8 @@ from docling.datamodel.asr_model_specs import (
 from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import (
     ConversionStatus,
+    DoclingComponentType,
+    ErrorItem,
     FormatToExtensions,
     InputFormat,
     OutputFormat,
@@ -238,9 +240,15 @@ def export_documents(
     success_count = 0
     failure_count = 0
 
+    def _is_empty_output(path: Path) -> bool:
+        try:
+            return not path.exists() or path.stat().st_size == 0
+        except OSError:
+            return True
+
     for conv_res in conv_results:
-        if conv_res.status == ConversionStatus.SUCCESS:
-            success_count += 1
+        doc_failed = conv_res.status != ConversionStatus.SUCCESS
+        if not doc_failed:
             doc_filename = conv_res.input.file.stem
 
             # Export JSON format:
@@ -310,6 +318,21 @@ def export_documents(
                 conv_res.document.save_as_markdown(
                     filename=fname, image_mode=image_export_mode
                 )
+                if _is_empty_output(fname):
+                    error_message = (
+                        "Markdown export produced empty output for "
+                        f"{conv_res.input.file.name}"
+                    )
+                    _log.error(error_message)
+                    conv_res.errors.append(
+                        ErrorItem(
+                            component_type=DoclingComponentType.DOC_ASSEMBLER,
+                            module_name="export_documents",
+                            error_message=error_message,
+                        )
+                    )
+                    conv_res.status = ConversionStatus.FAILURE
+                    doc_failed = True
 
             # Export Document Tags format:
             if export_doctags:
@@ -367,7 +390,7 @@ def export_documents(
                     r = TimingsT.dump_json(conv_res.timings, indent=2)
                     fp.write(r)
 
-        else:
+        if doc_failed:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
             if _log.isEnabledFor(logging.INFO):
                 for err in conv_res.errors:
@@ -376,6 +399,8 @@ def export_documents(
                         f"Module: {err.module_name}, Message: {err.error_message}"
                     )
             failure_count += 1
+        else:
+            success_count += 1
 
     _log.info(
         f"Processed {success_count + failure_count} docs, of which {failure_count} failed"
