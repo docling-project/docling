@@ -347,6 +347,228 @@ class TestCheckGlyphText:
     def test_none_returns_false(self, intel):
         assert intel.check_glyph_text(None) is False
 
+
+# ─── _normalize_output_format ────────────────────────────────────────────────
+
+@pytest.mark.unit
+class TestNormalizeOutputFormat:
+    def test_json_returns_json(self):
+        assert DocumentProcessor._normalize_output_format("json") == "json"
+
+    def test_html_returns_html(self):
+        assert DocumentProcessor._normalize_output_format("html") == "html"
+
+    def test_markdown_returns_markdown(self):
+        assert DocumentProcessor._normalize_output_format("markdown") == "markdown"
+
+    def test_uppercase_is_normalized(self):
+        assert DocumentProcessor._normalize_output_format("JSON") == "json"
+        assert DocumentProcessor._normalize_output_format("HTML") == "html"
+        assert DocumentProcessor._normalize_output_format("Markdown") == "markdown"
+
+    def test_whitespace_is_stripped(self):
+        assert DocumentProcessor._normalize_output_format("  json  ") == "json"
+
+    def test_invalid_value_falls_back_to_json(self):
+        assert DocumentProcessor._normalize_output_format("xml") == "json"
+
+    def test_empty_string_falls_back_to_json(self):
+        assert DocumentProcessor._normalize_output_format("") == "json"
+
+
+# ─── _normalize_table_format ─────────────────────────────────────────────────
+
+@pytest.mark.unit
+class TestNormalizeTableFormat:
+    def test_html_returns_html(self):
+        assert DocumentProcessor._normalize_table_format("html") == "html"
+
+    def test_markdown_returns_markdown(self):
+        assert DocumentProcessor._normalize_table_format("markdown") == "markdown"
+
+    def test_uppercase_is_normalized(self):
+        assert DocumentProcessor._normalize_table_format("HTML") == "html"
+        assert DocumentProcessor._normalize_table_format("MARKDOWN") == "markdown"
+
+    def test_whitespace_is_stripped(self):
+        assert DocumentProcessor._normalize_table_format("  html  ") == "html"
+
+    def test_invalid_value_falls_back_to_html(self):
+        assert DocumentProcessor._normalize_table_format("text") == "html"
+
+    def test_empty_string_falls_back_to_html(self):
+        assert DocumentProcessor._normalize_table_format("") == "html"
+
+
+# ─── _export_table_content ───────────────────────────────────────────────────
+
+def _make_table_item(export_html="<table></table>", export_markdown="| a |", text="fallback"):
+    item = MagicMock()
+    item.export_to_html.return_value = export_html
+    item.export_to_markdown.return_value = export_markdown
+    item.text = text
+    item.data = MagicMock()
+    item.data.table_cells = []
+    return item
+
+
+@pytest.mark.unit
+class TestExportTableContent:
+    def test_html_format_calls_export_to_html(self):
+        item = _make_table_item()
+        doc = MagicMock()
+        result = DocumentProcessor._export_table_content(item, doc, table_format="html")
+        item.export_to_html.assert_called_once_with(doc=doc)
+        assert result == "<table></table>"
+
+    def test_markdown_format_calls_export_to_markdown(self):
+        item = _make_table_item()
+        doc = MagicMock()
+        result = DocumentProcessor._export_table_content(item, doc, table_format="markdown")
+        item.export_to_markdown.assert_called_once_with(doc=doc)
+        assert result == "| a |"
+
+    def test_default_format_is_html(self):
+        item = _make_table_item()
+        doc = MagicMock()
+        DocumentProcessor._export_table_content(item, doc)
+        item.export_to_html.assert_called_once()
+
+    def test_empty_export_falls_back_to_cell_text(self):
+        item = _make_table_item(export_html="   ")
+        cell = MagicMock()
+        cell.text = "cell value"
+        item.data.table_cells = [cell]
+        doc = MagicMock()
+        result = DocumentProcessor._export_table_content(item, doc, table_format="html")
+        assert result == "cell value"
+
+    def test_export_exception_falls_back_to_cell_text(self):
+        item = MagicMock()
+        item.export_to_html.side_effect = RuntimeError("export failed")
+        cell = MagicMock()
+        cell.text = "rescued"
+        item.data.table_cells = [cell]
+        item.text = ""
+        doc = MagicMock()
+        result = DocumentProcessor._export_table_content(item, doc, table_format="html")
+        assert result == "rescued"
+
+    def test_all_fallbacks_fail_returns_item_text(self):
+        item = MagicMock()
+        item.export_to_html.side_effect = RuntimeError
+        item.data.table_cells = []
+        item.text = "last resort"
+        doc = MagicMock()
+        result = DocumentProcessor._export_table_content(item, doc, table_format="html")
+        assert result == "last resort"
+
+
+# ─── _docling_to_content ─────────────────────────────────────────────────────
+
+def _make_proc_with_format(output_format: str, table_format: str):
+    proc = object.__new__(DocumentProcessor)
+    proc._output_format = output_format
+    proc._table_format = table_format
+    return proc
+
+
+@pytest.mark.unit
+class TestDoclingToContent:
+    def test_html_format_calls_export_to_html(self):
+        proc = _make_proc_with_format("html", "html")
+        doc = MagicMock()
+        doc.export_to_html.return_value = "<html>content</html>"
+        result = proc._docling_to_content(doc)
+        doc.export_to_html.assert_called_once()
+        assert result == "<html>content</html>"
+
+    def test_markdown_format_with_markdown_table_calls_export_to_markdown(self):
+        proc = _make_proc_with_format("markdown", "markdown")
+        doc = MagicMock()
+        doc.export_to_markdown.return_value = "# heading\n| a | b |"
+        result = proc._docling_to_content(doc)
+        doc.export_to_markdown.assert_called_once()
+        assert result == "# heading\n| a | b |"
+
+    def test_markdown_format_with_html_table_uses_replace(self):
+        proc = _make_proc_with_format("markdown", "html")
+        doc = MagicMock()
+        doc.export_to_markdown.return_value = "# heading\n| a | b |"
+        doc.iterate_items.return_value = []
+        result = proc._docling_to_content(doc)
+        doc.export_to_markdown.assert_called_once()
+        assert isinstance(result, str)
+
+    def test_json_format_returns_empty_string(self):
+        proc = _make_proc_with_format("json", "html")
+        doc = MagicMock()
+        result = proc._docling_to_content(doc)
+        assert result == ""
+        doc.export_to_html.assert_not_called()
+        doc.export_to_markdown.assert_not_called()
+
+
+# ─── _build_docling_response ─────────────────────────────────────────────────
+
+def _make_parse_format_result():
+    return {
+        "elements": [
+            {"category": "paragraph", "content": "text",
+             "coordinates": [{"x": 0.1, "y": 0.2}], "id": 0, "page": 1}
+        ],
+        "usage": {"pages": 1},
+    }
+
+
+@pytest.mark.unit
+class TestBuildDoclingResponse:
+    def test_json_format_returns_elements_structure(self):
+        proc = _make_proc_with_format("json", "html")
+        doc = MagicMock()
+        with patch.object(DocumentProcessor, "_docling_to_parse_format",
+                          side_effect=lambda *a, **kw: _make_parse_format_result()):
+            result = proc._build_docling_response(doc)
+        assert "elements" in result
+        assert "usage" in result
+        assert "content" not in result
+
+    def test_html_format_returns_content_structure(self):
+        proc = _make_proc_with_format("html", "html")
+        doc = MagicMock()
+        doc.num_pages.return_value = 2
+        with patch.object(DocumentProcessor, "_docling_to_content", return_value="<html/>"):
+            result = proc._build_docling_response(doc)
+        assert result["content"] == "<html/>"
+        assert result["elements"] == []
+        assert result["usage"]["pages"] == 2
+
+    def test_markdown_format_returns_content_structure(self):
+        proc = _make_proc_with_format("markdown", "markdown")
+        doc = MagicMock()
+        doc.num_pages.return_value = 1
+        with patch.object(DocumentProcessor, "_docling_to_content", return_value="# title"):
+            result = proc._build_docling_response(doc)
+        assert result["content"] == "# title"
+        assert result["elements"] == []
+
+    def test_json_format_clear_coordinates_empties_coords(self):
+        proc = _make_proc_with_format("json", "html")
+        doc = MagicMock()
+        with patch.object(DocumentProcessor, "_docling_to_parse_format",
+                          side_effect=lambda *a, **kw: _make_parse_format_result()):
+            result = proc._build_docling_response(doc, clear_coordinates=True)
+        for element in result["elements"]:
+            assert element["coordinates"] == []
+
+    def test_json_format_without_clear_coordinates_keeps_coords(self):
+        proc = _make_proc_with_format("json", "html")
+        doc = MagicMock()
+        with patch.object(DocumentProcessor, "_docling_to_parse_format",
+                          side_effect=lambda *a, **kw: _make_parse_format_result()):
+            result = proc._build_docling_response(doc, clear_coordinates=False)
+        assert result["elements"][0]["coordinates"] != []
+
     def test_glyph_with_suffix_variants_detected(self, intel):
         assert intel.check_glyph_text("GLYPHXYZ") is True
 
