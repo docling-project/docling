@@ -4,7 +4,7 @@ import pytest
 from docling_core.types.doc import ImageRefMode
 from typer.testing import CliRunner
 
-from docling.cli.export_utils import _should_generate_export_images
+from docling.cli.export_utils import _should_generate_export_images, _split_list
 from docling.cli.main import app
 from docling.datamodel.base_models import OutputFormat
 
@@ -169,6 +169,11 @@ def test_image_export_policy_covers_all_output_formats():
 
     assert image_export_formats.isdisjoint(non_image_export_formats)
     assert image_export_formats | non_image_export_formats == set(OutputFormat)
+
+
+def test_split_list_handles_none_and_delimiters():
+    assert _split_list(None) is None
+    assert _split_list("a,b;c") == ["a", "b", "c"]
 
 
 def test_cli_audio_auto_detection(tmp_path):
