@@ -12,12 +12,12 @@ from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from pathlib import Path
 from typing import Any, Optional
 
+from docling_core.types.doc.base import BoundingBox, CoordOrigin
+from docling_core.types.doc.document import ImageRef, TableItem
 from PIL import Image
 from pydantic import BaseModel as PydanticBaseModel
 from tqdm import tqdm
 
-from docling_core.types.doc.base import BoundingBox, CoordOrigin
-from docling_core.types.doc.document import ImageRef, TableItem
 from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.document_converter import DocumentConverter, HTMLFormatOption
@@ -195,7 +195,9 @@ def _extract_seed_key_from_html_name(stem: str) -> Optional[str]:
     return tail if tail else None
 
 
-def _build_seed_index(seed_image_path: Path) -> tuple[dict[str, list[Path]], list[tuple[str, Path]]]:
+def _build_seed_index(
+    seed_image_path: Path,
+) -> tuple[dict[str, list[Path]], list[tuple[str, Path]]]:
     by_stem: dict[str, list[Path]] = {}
     entries: list[tuple[str, Path]] = []
     for png_path in _iter_png_files(seed_image_path):
@@ -337,7 +339,7 @@ def _find_autofit_render_width_for_table_cells(
     current_width = initial_width
     max_width = max(
         initial_width + TABLE_OVERFLOW_MIN_WIDTH_STEP,
-        int(round(initial_width * TABLE_OVERFLOW_MAX_WIDTH_MULTIPLIER)),
+        round(initial_width * TABLE_OVERFLOW_MAX_WIDTH_MULTIPLIER),
     )
 
     attempts = 0
@@ -379,7 +381,10 @@ def _find_autofit_render_width_for_table_cells(
                         "has_overflow": False,
                     }
 
-                if attempts >= TABLE_OVERFLOW_MAX_ATTEMPTS or current_width >= max_width:
+                if (
+                    attempts >= TABLE_OVERFLOW_MAX_ATTEMPTS
+                    or current_width >= max_width
+                ):
                     return {
                         "render_page_width": None,
                         "attempts": attempts,
@@ -393,7 +398,7 @@ def _find_autofit_render_width_for_table_cells(
 
                 next_width = max(
                     current_width + TABLE_OVERFLOW_MIN_WIDTH_STEP,
-                    int(round(current_width * 1.2)),
+                    round(current_width * 1.2),
                 )
                 next_width = min(max_width, next_width)
                 if next_width <= current_width:
@@ -416,8 +421,8 @@ def _find_autofit_render_width_for_table_cells(
 def _average_size(sizes: list[tuple[int, int]]) -> Optional[tuple[int, int]]:
     if not sizes:
         return None
-    avg_width = max(1, int(round(sum(width for width, _ in sizes) / len(sizes))))
-    avg_height = max(1, int(round(sum(height for _, height in sizes) / len(sizes))))
+    avg_width = max(1, round(sum(width for width, _ in sizes) / len(sizes)))
+    avg_height = max(1, round(sum(height for _, height in sizes) / len(sizes)))
     return avg_width, avg_height
 
 
@@ -515,7 +520,9 @@ def _shift_bbox_for_crop_in_place(
         b=shifted_b,
         coord_origin=CoordOrigin.TOPLEFT,
     )
-    shifted_original = shifted_top_left.to_bottom_left_origin(page_height=new_page_height)
+    shifted_original = shifted_top_left.to_bottom_left_origin(
+        page_height=new_page_height
+    )
     bbox.l = shifted_original.l
     bbox.r = shifted_original.r
     bbox.t = shifted_original.t
@@ -523,7 +530,9 @@ def _shift_bbox_for_crop_in_place(
     bbox.coord_origin = shifted_original.coord_origin
 
 
-def _collect_table_bboxes_top_left(doc: Any, page_no: int, page_height: float) -> list[BoundingBox]:
+def _collect_table_bboxes_top_left(
+    doc: Any, page_no: int, page_height: float
+) -> list[BoundingBox]:
     boxes: list[BoundingBox] = []
     try:
         iterator = doc.iterate_items(page_no=page_no)
@@ -535,7 +544,9 @@ def _collect_table_bboxes_top_left(doc: Any, page_no: int, page_height: float) -
             continue
 
         for prov in getattr(item, "prov", []) or []:
-            if getattr(prov, "page_no", None) == page_no and getattr(prov, "bbox", None):
+            if getattr(prov, "page_no", None) == page_no and getattr(
+                prov, "bbox", None
+            ):
                 boxes.append(prov.bbox.to_top_left_origin(page_height=page_height))
 
         table_data = getattr(item, "data", None)
@@ -578,11 +589,15 @@ def _table_bbox_from_fit_result(table_bounds: Any) -> Optional[BoundingBox]:
 def _compute_randomized_crop_box(
     table_bbox: BoundingBox, page_width: int, page_height: int
 ) -> tuple[int, int, int, int]:
-    table_w = max(1, int(math.ceil(table_bbox.r - table_bbox.l)))
-    table_h = max(1, int(math.ceil(table_bbox.b - table_bbox.t)))
+    table_w = max(1, math.ceil(table_bbox.r - table_bbox.l))
+    table_h = max(1, math.ceil(table_bbox.b - table_bbox.t))
 
-    max_pad_x = min(TABLE_EXTRACT_MAX_PAD_PX, int(round(table_w * TABLE_EXTRACT_MAX_PAD_RATIO)))
-    max_pad_y = min(TABLE_EXTRACT_MAX_PAD_PX, int(round(table_h * TABLE_EXTRACT_MAX_PAD_RATIO)))
+    max_pad_x = min(
+        TABLE_EXTRACT_MAX_PAD_PX, round(table_w * TABLE_EXTRACT_MAX_PAD_RATIO)
+    )
+    max_pad_y = min(
+        TABLE_EXTRACT_MAX_PAD_PX, round(table_h * TABLE_EXTRACT_MAX_PAD_RATIO)
+    )
     max_pad_x = max(TABLE_EXTRACT_MIN_PAD_PX, max_pad_x)
     max_pad_y = max(TABLE_EXTRACT_MIN_PAD_PX, max_pad_y)
     min_pad_x = min(TABLE_EXTRACT_MIN_PAD_PX, max_pad_x)
@@ -598,10 +613,10 @@ def _compute_randomized_crop_box(
     if pad_top == pad_bottom and max_pad_y > min_pad_y:
         pad_bottom = min(max_pad_y, pad_bottom + 1)
 
-    crop_left = max(0, int(math.floor(table_bbox.l)) - pad_left)
-    crop_top = max(0, int(math.floor(table_bbox.t)) - pad_top)
-    crop_right = min(page_width, int(math.ceil(table_bbox.r)) + pad_right)
-    crop_bottom = min(page_height, int(math.ceil(table_bbox.b)) + pad_bottom)
+    crop_left = max(0, math.floor(table_bbox.l) - pad_left)
+    crop_top = max(0, math.floor(table_bbox.t) - pad_top)
+    crop_right = min(page_width, math.ceil(table_bbox.r) + pad_right)
+    crop_bottom = min(page_height, math.ceil(table_bbox.b) + pad_bottom)
 
     if crop_right <= crop_left:
         crop_right = min(page_width, crop_left + 1)
@@ -679,10 +694,10 @@ def _apply_table_extract_crop(
         page_width=page_width,
         page_height=page_height,
     )
-    required_left = max(0, int(math.floor(table_bbox_for_crop.l)))
-    required_top = max(0, int(math.floor(table_bbox_for_crop.t)))
-    required_right = min(page_width, int(math.ceil(table_bbox_for_crop.r)))
-    required_bottom = min(page_height, int(math.ceil(table_bbox_for_crop.b)))
+    required_left = max(0, math.floor(table_bbox_for_crop.l))
+    required_top = max(0, math.floor(table_bbox_for_crop.t))
+    required_right = min(page_width, math.ceil(table_bbox_for_crop.r))
+    required_bottom = min(page_height, math.ceil(table_bbox_for_crop.b))
     if (
         crop_left > required_left
         or crop_top > required_top
@@ -737,7 +752,9 @@ def _get_worker_converter(
         render_page_height=render_page_height,
     )
     converter = DocumentConverter(
-        format_options={InputFormat.HTML: HTMLFormatOption(backend_options=html_options)}
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(backend_options=html_options)
+        }
     )
     _WORKER_CONVERTERS[cache_key] = converter
     return converter
@@ -765,7 +782,9 @@ def _convert_one(
                 "skipped": True,
             }
 
-        html_for_conversion, temp_html_path = _prepare_html_without_head_title(input_path)
+        html_for_conversion, temp_html_path = _prepare_html_without_head_title(
+            input_path
+        )
         fit_result = _find_autofit_render_width_for_table_cells(
             html_path=html_for_conversion,
             render_page_width=render_page_width,
@@ -847,7 +866,9 @@ def _convert_one(
             "auto_fit_applied": bool(fit_result.get("auto_fit_applied", False)),
             "table_cell_count": int(fit_result.get("table_cell_count", 0)),
             "overflow_cell_count": int(fit_result.get("overflow_cell_count", 0)),
-            "table_extract_applied": bool(table_extract_result and table_extract_result.get("applied")),
+            "table_extract_applied": bool(
+                table_extract_result and table_extract_result.get("applied")
+            ),
             "table_extract_reason": (
                 str(table_extract_result.get("reason"))
                 if table_extract_result and not table_extract_result.get("applied")
@@ -881,7 +902,7 @@ def _convert_one(
                 )
 
 
-def main() -> None:
+def main() -> None:  # noqa: C901
     parser = argparse.ArgumentParser(
         description=(
             "Render HTML samples into Docling JSON + PNG while matching render width "
@@ -1001,8 +1022,13 @@ def main() -> None:
         ) as pbar:
             file_index = 0
 
-            def _handle_done_future(future: Any, input_path: Path, is_fallback: bool) -> None:
-                nonlocal success_count, fallback_success_count, table_overflow_skipped_count
+            def _handle_done_future(
+                future: Any, input_path: Path, is_fallback: bool
+            ) -> None:
+                nonlocal \
+                    success_count, \
+                    fallback_success_count, \
+                    table_overflow_skipped_count
                 nonlocal table_extract_applied_count, table_extract_failed_skipped_count
                 nonlocal first_result_announced
                 pbar.update(1)
@@ -1024,7 +1050,9 @@ def main() -> None:
 
                 if result.get("ok"):
                     if result.get("skipped"):
-                        skip_reason = str(result.get("skip_reason", "already_converted"))
+                        skip_reason = str(
+                            result.get("skip_reason", "already_converted")
+                        )
                         if skip_reason == "table_cell_overflow":
                             table_overflow_skipped_count += 1
                             if len(table_overflow_skipped_files) < 200:
@@ -1139,7 +1167,9 @@ def main() -> None:
                     base_root = out_dir / f"part{part_no}"
                 else:
                     base_root = out_dir
-                mirrored_root = base_root / rel_dir if rel_dir != Path(".") else base_root
+                mirrored_root = (
+                    base_root / rel_dir if rel_dir != Path(".") else base_root
+                )
                 if same_output_folder:
                     json_path = mirrored_root / f"{input_path.stem}.json"
                     png_path = mirrored_root / f"{input_path.stem}.png"
@@ -1233,7 +1263,9 @@ def main() -> None:
                     )
                     for done_future in done:
                         done_input_path, done_is_fallback = futures.pop(done_future)
-                        _handle_done_future(done_future, done_input_path, done_is_fallback)
+                        _handle_done_future(
+                            done_future, done_input_path, done_is_fallback
+                        )
 
             while futures:
                 done, _ = wait(
@@ -1321,7 +1353,9 @@ def main() -> None:
                     )
                     for done_future in done:
                         done_input_path, done_is_fallback = futures.pop(done_future)
-                        _handle_done_future(done_future, done_input_path, done_is_fallback)
+                        _handle_done_future(
+                            done_future, done_input_path, done_is_fallback
+                        )
 
     print(
         f"Scanned {scanned_count} files. "
@@ -1356,7 +1390,9 @@ def main() -> None:
         )
         for skipped_file in table_extract_failed_skipped_files[:50]:
             print(f" - {skipped_file}")
-    print(f"Skipped due to persistent table cell overflow: {table_overflow_skipped_count}")
+    print(
+        f"Skipped due to persistent table cell overflow: {table_overflow_skipped_count}"
+    )
     if failed_files:
         print(f"Failed files: {len(failed_files)}")
         for failed_path in failed_files:
