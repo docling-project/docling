@@ -44,6 +44,11 @@ from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.cli.export_utils import (
+    _is_empty_output,
+    _should_generate_export_images,
+    _split_list,
+)
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
     WHISPER_BASE,
@@ -240,12 +245,6 @@ def export_documents(
     success_count = 0
     failure_count = 0
 
-    def _is_empty_output(path: Path) -> bool:
-        try:
-            return not path.exists() or path.stat().st_size == 0
-        except OSError:
-            return True
-
     for conv_res in conv_results:
         doc_failed = conv_res.status != ConversionStatus.SUCCESS
         if not doc_failed:
@@ -404,31 +403,6 @@ def export_documents(
 
     _log.info(
         f"Processed {success_count + failure_count} docs, of which {failure_count} failed"
-    )
-
-
-def _split_list(raw: str | None) -> list[str] | None:
-    if raw is None:
-        return None
-    return re.split(r"[;,]", raw)
-
-
-_OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING = frozenset(
-    {
-        OutputFormat.TEXT,
-        OutputFormat.DOCTAGS,
-        OutputFormat.VTT,
-    }
-)
-
-
-def _should_generate_export_images(
-    image_export_mode: ImageRefMode,
-    to_formats: list[OutputFormat],
-) -> bool:
-    return image_export_mode != ImageRefMode.PLACEHOLDER and any(
-        to_format not in _OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING
-        for to_format in to_formats
     )
 
 

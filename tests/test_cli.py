@@ -4,7 +4,8 @@ import pytest
 from docling_core.types.doc import ImageRefMode
 from typer.testing import CliRunner
 
-from docling.cli.main import _should_generate_export_images, app
+from docling.cli.export_utils import _should_generate_export_images
+from docling.cli.main import app
 from docling.datamodel.base_models import OutputFormat
 
 runner = CliRunner()
