@@ -94,6 +94,8 @@ def test_client_rejects_invalid_default_max_concurrency(value: int) -> None:
     [
         f"{TEST_BASE_URL}/v1",
         f"{TEST_BASE_URL}/v1/",
+        "http://proxy.example.com/docling/v1",
+        "http://proxy.example.com/a/b/v1/",
     ],
 )
 def test_base_url_rejects_v1_path(url: str) -> None:

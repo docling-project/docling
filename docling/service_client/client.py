@@ -1624,11 +1624,11 @@ class DoclingServiceClient:
             raise ValueError(
                 "Client URL must not include query or fragment components."
             )
-        if parsed.path.rstrip("/") == "/v1":
+        path = parsed.path.rstrip("/")
+        if path.endswith("/v1"):
             raise ValueError(
                 "Client URL must be the service base URL, not include /v1."
             )
-        path = parsed.path.rstrip("/")
         return f"{parsed.scheme}://{parsed.netloc}{path}"
 
     def _build_extension_to_format_map(self) -> dict[str, InputFormat]:

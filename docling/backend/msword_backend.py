@@ -527,7 +527,38 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.list_counters[key] = 0
 
     def _build_enum_marker(self, numid: int, ilvl: int) -> str:
-        """Build full hierarchical marker like '1.2.3.'"""
+        """Build enumeration marker from the lvlText template (e.g. 'Proposal %1:').
+
+        Uses lvlText when it contains a text prefix/suffix beyond simple
+        placeholders and separators.  Falls back to the default '1.2.3.'
+        pattern for plain numeric markers.
+        """
+        lvl_element = self._get_level_element(numid, ilvl)
+        namespaces = {"w": self._W_NS}
+        lvl_text = None
+        if lvl_element is not None:
+            lt = lvl_element.find(".//w:lvlText", namespaces=namespaces)
+            if lt is not None:
+                lvl_text = lt.get(self.XML_KEY)
+
+        # Use lvlText as template only when it contains %N placeholders
+        # alongside non-trivial text (e.g. "Proposal %1:", "Table %1").
+        # Skip when lvlText is a bare bullet symbol like "o" or "•".
+        if lvl_text and re.search(r"%\d+", lvl_text):
+            stripped = re.sub(r"%\d+", "", lvl_text)
+            stripped = stripped.strip(" .)(:[]")
+            if stripped:
+
+                def _replace(match):
+                    lvl_idx = int(match.group(1)) - 1
+                    counter = self.list_counters.get((numid, lvl_idx))
+                    if counter is None:
+                        counter = self._get_start_value(numid, lvl_idx)
+                    return str(counter)
+
+                return re.sub(r"%(\d+)", _replace, lvl_text)
+
+        # Fallback: default hierarchical '1.2.3.' pattern
         parts = []
         for lvl in range(ilvl + 1):
             counter = self.list_counters.get((numid, lvl))

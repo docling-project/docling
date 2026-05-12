@@ -20,8 +20,8 @@ from docling.datamodel.pipeline_options import (
     VlmExtractionPipelineOptions,
 )
 from docling.datamodel.settings import settings
-from docling.models.extraction.nuextract_transformers_model import (
-    NuExtractTransformersModel,
+from docling.models.extraction.transformers_extraction_model import (
+    TransformersExtractionModel,
 )
 from docling.pipeline.base_extraction_pipeline import BaseExtractionPipeline
 from docling.utils.accelerator_utils import decide_device
@@ -33,16 +33,15 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
     def __init__(self, pipeline_options: VlmExtractionPipelineOptions):
         super().__init__(pipeline_options)
 
-        # Initialize VLM model with default options
         self.accelerator_options = pipeline_options.accelerator_options
         self.pipeline_options: VlmExtractionPipelineOptions
 
-        # Create VLM model instance
-        self.vlm_model = NuExtractTransformersModel(
+        self.vlm_model = TransformersExtractionModel(
             enabled=True,
-            artifacts_path=self.artifacts_path,  # Will download automatically
+            artifacts_path=self.artifacts_path,
             accelerator_options=self.accelerator_options,
             vlm_options=pipeline_options.vlm_options,
+            prompt_style=pipeline_options.extraction_prompt_style,
         )
 
     def _extract_data(
