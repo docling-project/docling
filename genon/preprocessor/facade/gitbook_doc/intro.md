@@ -1,5 +1,5 @@
 # Genos 전처리기 (Genos Doc Parser)
-- Genos는 문서의 활용 목적과 요구 사항에 따라 최적화된 3가지 유형의 전처리 파이프라인을 제공합니다.
+- Genos는 문서의 활용 목적과 요구 사항에 따라 최적화된 4가지 유형의 전처리 파이프라인을 제공합니다.
 - 용법: Genos 웹 UI에서 **관리 > 리소스 > 전처리기 > 전처리기 생성**으로 이동하여, 아래 전처리기 파일 중 하나의 코드를 **전처리 코드(facade)** 영역에 그대로 복붙하면 됩니다.
 
   ![전처리기 등록 방법](./images/pre_register_guide.jpg)
@@ -8,9 +8,10 @@
   |---|---|
   | 첨부용 (채팅 실시간) | `preprocessor/facade/attachment_processor.py` |
   | 변환용 (PDF 표준화) | `preprocessor/facade/convert_processor.py` |
+  | 파싱용 (Element 구조화 API) | `preprocessor/facade/parser_processor.py` |
   | 적재용 지능형 (RAG 고품질) | `preprocessor/facade/intelligent_processor.py` |
 
-## 1. 첨부용 전처리기 (Attachment Processor) 
+## 1. 첨부용 전처리기 (Attachment Processor)
 사용자가 채팅 중 첨부로 업로드하는 파일을 실시간으로 분석하기 위한 경량화 전처리기입니다. 복잡한 구조 분석 과정을 생략하고, **텍스트 추출(Text Extraction)**에 집중하여 즉각적인 응답 속도를 보장합니다.
 
 - **"속도 중심: 다양한 포맷의 텍스트 즉시 추출"**
@@ -33,7 +34,19 @@
   * **시각적 정합성 유지**: 원본 문서의 폰트, 이미지 배치, 페이지 레이아웃을 그대로 보존
   * **하이브리드 추출**: 변환된 PDF 레이어에서 텍스트와 이미지 정보를 결합하여 안정적인 정보 획득
 
-## 2. 적재용 지능형 전처리기 (Intelligent Processor)
+## 2. 파싱용 전처리기 (Parser Processor)
+문서를 파싱하여 **element 단위 구조화 결과**를 반환하는 API 지향 전처리기입니다. 청킹이나 벡터 결합 없이, 원문 구조를 최대한 보존한 파싱 결과가 필요할 때 적합합니다.
+
+**"구조 중심: Element 단위 파싱 결과 반환"**
+- 설명: [parser_processor.md](parser_processor.md)
+- 위치: [preprocessor/facade/parser_processor.py](https://github.com/genonai/doc_parser/blob/develop/genon/preprocessor/facade/parser_processor.py)
+- 특징
+  * **Element 기반 출력**: `title`, `paragraph`, `table`, `picture` 등 문서 구조를 `elements` 배열로 반환
+  * **다양한 포맷 처리**: PDF/HTML/HWP(HWPX)/DOCX/CSV/XLSX/오디오 및 기타 문서 포맷 파싱 지원
+  * **출력 포맷 제어**: `config.yaml`의 `output.format`(`json`/`html`/`markdown`)과 `table_format`으로 응답 형태 제어
+  * **Gateway 호출 표준화**: `/preprocessor/{id}/healthcheck`, `/preprocessor/{id}/run` 엔드포인트로 외부 시스템 연동 용이
+
+## 3. 적재용 지능형 전처리기 (Intelligent Processor)
 RAG(검색 증강 생성) 시스템의 지식 베이스 구축을 위해 설계된 고성능 전처리기입니다. 단순 텍스트 추출을 넘어, **딥러닝 기반의 Layout 분석**을 통해 문서의 논리적 구조를 정확하게 파악합니다.
 
 **"품질 중심: AI 기반 레이아웃 분석 및 고품질 데이터 적재"**
