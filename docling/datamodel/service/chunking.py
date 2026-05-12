@@ -49,7 +49,7 @@ class BaseChunkerOptions(BaseModel):
             ),
         ),
     ] = "![IMAGE]"
-    
+
     include_raw_text: Annotated[
         bool,
         Field(
