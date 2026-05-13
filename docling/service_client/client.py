@@ -1387,12 +1387,14 @@ class DoclingServiceClient:
         max_retries: int,
     ) -> tuple[httpx.Response | None, float]:
         """Return (response, 0.0) to yield, (None, delay) to retry after delay, or raise."""
-        if response.status_code == 500:
+        if response.status_code in {500, 502}:
             return self._retry_with_exponential_backoff(
                 response=response,
                 attempt=attempt,
                 max_retries=max_retries,
-                error_message="Service returned HTTP 500 after retries.",
+                error_message=(
+                    f"Service returned HTTP {response.status_code} after retries."
+                ),
             )
         if response.status_code in {429, 503}:
             return self._retry_with_retry_after_header(

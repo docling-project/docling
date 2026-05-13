@@ -1498,6 +1498,31 @@ def test_500_retries_with_exponential_backoff(
     assert sleep_calls == [1.0, 2.0, 4.0]
 
 
+def test_502_retries_with_exponential_backoff(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleep_calls: list[float] = []
+    monkeypatch.setattr(client_module.time, "sleep", lambda s: sleep_calls.append(s))
+
+    call_count = 0
+
+    def fake_request(**kw: object) -> httpx.Response:
+        nonlocal call_count
+        call_count += 1
+        if call_count < 4:
+            return httpx.Response(502, json={"detail": "bad gateway"})
+        return httpx.Response(200, json={})
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.request = fake_request  # type: ignore[method-assign]
+        response = client._request_with_retry(
+            method="POST", path="/v1/convert/source/async", retries=3
+        )
+
+    assert response.status_code == 200
+    assert sleep_calls == [1.0, 2.0, 4.0]
+
+
 def test_503_after_all_retries_raises_service_unavailable_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1581,6 +1606,39 @@ async def test_429_with_retry_after_header_retries_async(
 
     assert response.status_code == 200
     assert sleep_calls == [5.0]
+
+
+@pytest.mark.anyio
+async def test_502_retries_with_exponential_backoff_async(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleep_calls: list[float] = []
+
+    async def fake_sleep(s: float) -> None:
+        sleep_calls.append(s)
+
+    monkeypatch.setattr(client_module.asyncio, "sleep", fake_sleep)
+
+    call_count = 0
+
+    class FakeAsyncClient:
+        async def request(self, **kw: object) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            if call_count < 4:
+                return httpx.Response(502, json={"detail": "bad gateway"})
+            return httpx.Response(200, json={})
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        response = await client._request_with_retry_async(
+            async_client=FakeAsyncClient(),  # type: ignore[arg-type]
+            method="POST",
+            path="/v1/convert/source/async",
+            retries=3,
+        )
+
+    assert response.status_code == 200
+    assert sleep_calls == [1.0, 2.0, 4.0]
 
 
 # --- Path-prefix URL tests ---
