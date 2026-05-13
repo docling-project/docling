@@ -57,7 +57,7 @@ async def test_hwpx_regression(hwpx_file, basic_processor):
         )
 
     dp = basic_processor()
-    vectors = await dp(None, str(hwpx_file))
+    vectors = await dp(None, str(hwpx_file), chunker_type="hybrid")
     current = _summarize(vectors)
 
     with open(baseline_path, "r", encoding="utf-8") as f:
@@ -99,10 +99,78 @@ async def test_update_hwpx_baselines(basic_processor):
 
     for hwpx_file in HWPX_FILES:
         dp = basic_processor()
-        vectors = await dp(None, str(hwpx_file))
+        vectors = await dp(None, str(hwpx_file), chunker_type="hybrid")
         result = _summarize(vectors)
 
         out = BASELINE_DIR / f"hwpx_{hwpx_file.stem}.json"
+        with open(out, "w", encoding="utf-8") as f:
+            json.dump(result, f, indent=2, ensure_ascii=False)
+        print(f"✓ Updated baseline: {out}")
+
+    if not HWPX_FILES:
+        print("⚠ No HWPX files found in sample_files directory")
+
+
+# ---- Recursive Chunker (이슈 #183 / #80) -----------------------------------
+# 기본 HybridChunker 결과와 별도로, chunker_type='recursive' 결과를 baseline화한다.
+# 구현 전까지는 baseline 파일이 없으므로 regression test는 자동 skip된다.
+
+@pytest.mark.regression
+@pytest.mark.skipif(len(HWPX_FILES) == 0, reason="no .hwpx samples found")
+@pytest.mark.parametrize("hwpx_file", HWPX_FILES, ids=lambda f: f.stem)
+@pytest.mark.asyncio
+async def test_hwpx_regression_recursive(hwpx_file, basic_processor):
+    """HWPX RecursiveCharacterTextSplitter 결과를 baseline과 비교합니다."""
+    baseline_path = BASELINE_DIR / f"hwpx_recursive_{hwpx_file.stem}.json"
+
+    if not baseline_path.exists():
+        pytest.skip(
+            f"recursive baseline not yet generated for {hwpx_file.name}. "
+            f"Run: pytest -m update_baseline -k test_update_hwpx_baselines_recursive"
+        )
+
+    dp = basic_processor()
+    vectors = await dp(None, str(hwpx_file), chunker_type="recursive")
+    current = _summarize(vectors)
+
+    with open(baseline_path, "r", encoding="utf-8") as f:
+        baseline = json.load(f)
+
+    assert current["num_vectors"] == baseline["num_vectors"], (
+        f"[{hwpx_file.name}] vector count: "
+        f"{current['num_vectors']} != {baseline['num_vectors']}"
+    )
+
+    base_chars = max(baseline["total_characters"], 1)
+    char_ratio = abs(current["total_characters"] - base_chars) / base_chars
+    assert char_ratio < 0.05, (
+        f"[{hwpx_file.name}] char count drift {char_ratio:.1%} "
+        f"({current['total_characters']} vs {base_chars})"
+    )
+
+    for i, (cur_v, base_v) in enumerate(
+        zip(current["vectors"], baseline["vectors"])
+    ):
+        sim = difflib.SequenceMatcher(
+            None, cur_v.get("text", ""), base_v.get("text", "")
+        ).ratio()
+        assert sim >= 0.85, (
+            f"[{hwpx_file.name}] vector[{i}] text similarity {sim:.2%} < 85%"
+        )
+
+
+@pytest.mark.update_baseline
+@pytest.mark.asyncio
+async def test_update_hwpx_baselines_recursive(basic_processor):
+    """RecursiveCharacterTextSplitter 결과의 HWPX baseline 데이터를 (재)생성합니다."""
+    BASELINE_DIR.mkdir(parents=True, exist_ok=True)
+
+    for hwpx_file in HWPX_FILES:
+        dp = basic_processor()
+        vectors = await dp(None, str(hwpx_file), chunker_type="recursive")
+        result = _summarize(vectors)
+
+        out = BASELINE_DIR / f"hwpx_recursive_{hwpx_file.stem}.json"
         with open(out, "w", encoding="utf-8") as f:
             json.dump(result, f, indent=2, ensure_ascii=False)
         print(f"✓ Updated baseline: {out}")

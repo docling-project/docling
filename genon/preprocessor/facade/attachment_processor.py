@@ -1064,6 +1064,103 @@ class HybridChunker(BaseChunker):
         return iter(res)
 
 
+# --- 이슈 #183 / #80 -------------------------------------------------------
+# DoclingDocument를 markdown으로 export한 뒤 RecursiveCharacterTextSplitter로 분할.
+# 페이지 정보는 export_to_markdown(page_break_placeholder=...)로 삽입한 마커를
+# 청크별로 카운트해 복원한다. 한 청크가 여러 페이지에 걸칠 수 있다.
+_RECURSIVE_PAGE_BREAK = "<!-- PB -->"
+_RECURSIVE_CHUNK_SIZE_CAP = 60000  # 임베딩 입력 한도(~128K 토큰)의 절반 안전 마진
+
+
+def _resolve_recursive_tokenizer(tokenizer_id=None):
+    if tokenizer_id is None:
+        local = Path("/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2")
+        tokenizer_id = local if local.exists() else "sentence-transformers/all-MiniLM-L6-v2"
+    return AutoTokenizer.from_pretrained(tokenizer_id)
+
+
+def _split_with_recursive_chunker(
+    document: DoclingDocument,
+    chunk_size=None,
+    chunk_overlap=None,
+    tokenizer_id=None,
+) -> List[dict]:
+    """Markdown export + RecursiveCharacterTextSplitter로 docling 문서를 분할.
+
+    1) char 단위로 1차 분할 (chunk_size 기본 1000, DocumentProcessor 흐름과 동일).
+    2) 한 청크가 60,000 토큰을 초과하면 토큰 단위로 강제 재분할 — 임베딩 한도 절대 상한 (이슈 #183).
+
+    Returns: list of dict {text, page_no, pages, doc_items}
+    """
+    md_full = document.export_to_markdown(page_break_placeholder=_RECURSIVE_PAGE_BREAK)
+    if not md_full:
+        return []
+
+    cs = max(int(chunk_size), 1) if chunk_size is not None else 1000
+    co = max(int(chunk_overlap), 0) if chunk_overlap is not None else 100
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=cs,
+        chunk_overlap=co,
+    )
+    raw_chunks = splitter.split_text(md_full)
+
+    # 60K 토큰 절대 상한 — 어떤 chunk_size 설정에서도 초과 청크는 토큰 단위로 강제 재분할
+    tokenizer = _resolve_recursive_tokenizer(tokenizer_id)
+    token_splitter = RecursiveCharacterTextSplitter.from_huggingface_tokenizer(
+        tokenizer,
+        chunk_size=_RECURSIVE_CHUNK_SIZE_CAP,
+        chunk_overlap=0,
+    )
+    safe_chunks: list[str] = []
+    for raw in raw_chunks:
+        if len(tokenizer.tokenize(raw)) <= _RECURSIVE_CHUNK_SIZE_CAP:
+            safe_chunks.append(raw)
+        else:
+            safe_chunks.extend(token_splitter.split_text(raw))
+    raw_chunks = safe_chunks
+
+    # 페이지별 doc_items 캐시 (반복 조회 방지)
+    page_items_cache: dict[int, list] = {}
+
+    def _items_for_page(p: int):
+        if p not in page_items_cache:
+            page_items_cache[p] = [
+                it for it, _ in document.iterate_items(page_no=p)
+                if isinstance(it, DocItem)
+            ]
+        return page_items_cache[p]
+
+    results: list[dict] = []
+    cursor = 0
+    search_backoff = max(co * 4, 200)
+    for raw in raw_chunks:
+        pos = md_full.find(raw, max(0, cursor - search_backoff))
+        if pos < 0:
+            pos = cursor
+        end_pos = pos + len(raw)
+
+        start_page = md_full[:pos].count(_RECURSIVE_PAGE_BREAK) + 1
+        end_page = md_full[:end_pos].count(_RECURSIVE_PAGE_BREAK) + 1
+
+        text = raw.replace(_RECURSIVE_PAGE_BREAK, "").strip()
+        cursor = end_pos
+        if not text:
+            continue
+
+        doc_items: list = []
+        for p in range(start_page, end_page + 1):
+            doc_items.extend(_items_for_page(p))
+
+        results.append({
+            "text": text,
+            "page_no": start_page,
+            "pages": list(range(start_page, end_page + 1)),
+            "doc_items": doc_items,
+        })
+
+    return results
+
+
 class DocxProcessor:
     def __init__(self):
         self.page_chunk_counts = defaultdict(int)
@@ -1104,16 +1201,36 @@ class DocxProcessor:
         conv_result: ConversionResult = self.converter.convert(file_path, raises_on_error=True)
         return conv_result.document
 
-    def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
+    def split_documents(self, document: DoclingDocument, **kwargs: dict):
+        """chunker_type에 따라 HybridChunker 또는 RecursiveCharacterTextSplitter로 분할.
+
+        반환 형식이 chunker_type에 따라 다르다 (DocChunk 리스트 또는 dict 리스트).
+        compose_vectors가 동일한 chunker_type 분기로 처리한다.
+        """
+        chunker_type = kwargs.get("chunker_type", "recursive")
+
+        if chunker_type == "recursive":
+            chunks = _split_with_recursive_chunker(
+                document,
+                chunk_size=kwargs.get("chunk_size"),
+                chunk_overlap=kwargs.get("chunk_overlap"),
+            )
+            for ch in chunks:
+                self.page_chunk_counts[ch["page_no"]] += 1
+            return chunks
+
+        # hybrid
         chunker = HybridChunker(max_tokens=int(1e30), merge_peers=True)
-        chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
+        chunks: List[DocChunk] = list(chunker.chunk(dl_doc=document, **kwargs))
         for chunk in chunks:
             if chunk.meta.doc_items[0].prov:
                 self.page_chunk_counts[chunk.meta.doc_items[0].prov[0].page_no] += 1
         return chunks
 
-    async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request,
+    async def compose_vectors(self, document: DoclingDocument, chunks, file_path: str, request: Request,
                               **kwargs: dict) -> list[dict]:
+        chunker_type = kwargs.get("chunker_type", "recursive")
+
         global_metadata = dict(
             n_chunk_of_doc=len(chunks),
             n_page=document.num_pages(),
@@ -1125,8 +1242,14 @@ class DocxProcessor:
         vectors = []
         upload_tasks = []
         for chunk_idx, chunk in enumerate(chunks):
-            chunk_page = chunk.meta.doc_items[0].prov[0].page_no if chunk.meta.doc_items[0].prov else 0
-            content = self.safe_join(chunk.meta.headings) + chunk.text
+            if chunker_type == "recursive":
+                chunk_page = chunk["page_no"]
+                content = chunk["text"]
+                doc_items = chunk["doc_items"]
+            else:
+                chunk_page = chunk.meta.doc_items[0].prov[0].page_no if chunk.meta.doc_items[0].prov else 0
+                content = self.safe_join(chunk.meta.headings) + chunk.text
+                doc_items = chunk.meta.doc_items
 
             if chunk_page != current_page:
                 current_page = chunk_page
@@ -1137,14 +1260,14 @@ class DocxProcessor:
                       .set_page_info(chunk_page, chunk_index_on_page, self.page_chunk_counts[chunk_page])
                       .set_chunk_index(chunk_idx)
                       .set_global_metadata(**global_metadata)
-                      .set_chunk_bboxes(chunk.meta.doc_items, document)
-                      .set_media_files(chunk.meta.doc_items)
+                      .set_chunk_bboxes(doc_items, document)
+                      .set_media_files(doc_items)
                       ).build()
             vectors.append(vector)
 
             chunk_index_on_page += 1
             if upload_files:
-                file_list = self.get_media_files(chunk.meta.doc_items)
+                file_list = self.get_media_files(doc_items)
                 upload_tasks.append(asyncio.create_task(
                     upload_files(file_list, request=request)
                 ))
@@ -1159,15 +1282,10 @@ class DocxProcessor:
         artifacts_dir, reference_path = self.get_paths(file_path)
         document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
 
-        chunks: list[DocChunk] = self.split_documents(document, **kwargs)
-
-        vectors = []
-        if len(chunks) >= 1:
-            vectors: list[dict] = await self.compose_vectors(document, chunks, file_path, request, **kwargs)
-        else:
-            raise GenosServiceException(1, f"chunk length is 0")
-
-        return vectors
+        chunks = self.split_documents(document, **kwargs)
+        if len(chunks) == 0:
+            raise GenosServiceException(1, "chunk length is 0")
+        return await self.compose_vectors(document, chunks, file_path, request, **kwargs)
 
 
 class HwpProcessor:
@@ -1227,23 +1345,38 @@ class HwpProcessor:
         conv_result: ConversionResult = converter.convert(Path(file_path).resolve(), raises_on_error=True)
         return conv_result.document
 
-    def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> tuple[List[DocChunk], dict[int, int]]:
-        """HybridChunker를 사용하여 문서 분할 및 페이지별 청크 수 집계"""
-        # HybridChunker는 상단에 임포트되어 있어야 함
-        chunker = HybridChunker(max_tokens=int(1e30), merge_peers=True, include_headings=False)
-        chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
+    def split_documents(self, document: DoclingDocument, **kwargs: dict):
+        """chunker_type에 따라 HybridChunker 또는 RecursiveCharacterTextSplitter로 분할.
 
-        # 요청 단위 로컬 변수로 관리 (동시 요청 간 공유 상태 방지)
+        반환: (chunks, page_chunk_counts). chunks 형식은 chunker_type에 따라 다르다
+        (DocChunk 리스트 또는 dict 리스트). compose_vectors가 동일한 chunker_type 분기로 처리한다.
+        """
+        chunker_type = kwargs.get("chunker_type", "recursive")
         page_chunk_counts: dict[int, int] = defaultdict(int)
+
+        if chunker_type == "recursive":
+            chunks = _split_with_recursive_chunker(
+                document,
+                chunk_size=kwargs.get("chunk_size"),
+                chunk_overlap=kwargs.get("chunk_overlap"),
+            )
+            for ch in chunks:
+                page_chunk_counts[ch["page_no"]] += 1
+            return chunks, page_chunk_counts
+
+        # hybrid
+        chunker = HybridChunker(max_tokens=int(1e30), merge_peers=True, include_headings=False)
+        chunks: List[DocChunk] = list(chunker.chunk(dl_doc=document, **kwargs))
         for chunk in chunks:
-            # 첫 번째 아이템의 출처(prov)를 기준으로 페이지 번호 획득
             if chunk.meta.doc_items[0].prov:
-                p_no = chunk.meta.doc_items[0].prov[0].page_no
-                page_chunk_counts[p_no] += 1
+                page_chunk_counts[chunk.meta.doc_items[0].prov[0].page_no] += 1
         return chunks, page_chunk_counts
 
-    async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], page_chunk_counts: dict[int, int], request: Any, **kwargs: dict) -> list[dict]:
+    async def compose_vectors(self, document: DoclingDocument, chunks, page_chunk_counts: dict[int, int],
+                              request: Any, **kwargs: dict) -> list[dict]:
         """빌더를 사용하여 최종 GenOSVectorMeta 리스트 생성"""
+        chunker_type = kwargs.get("chunker_type", "recursive")
+
         global_metadata = dict(
             n_chunk_of_doc=len(chunks),
             n_page=document.num_pages(),
@@ -1256,35 +1389,36 @@ class HwpProcessor:
         upload_tasks = []
 
         for chunk_idx, chunk in enumerate(chunks):
-            chunk_page = chunk.meta.doc_items[0].prov[0].page_no if chunk.meta.doc_items[0].prov else 0
-            content = self.safe_join(chunk.meta.headings) + chunk.text
+            if chunker_type == "recursive":
+                chunk_page = chunk["page_no"]
+                content = chunk["text"]
+                doc_items = chunk["doc_items"]
+            else:
+                chunk_page = chunk.meta.doc_items[0].prov[0].page_no if chunk.meta.doc_items[0].prov else 0
+                content = self.safe_join(chunk.meta.headings) + chunk.text
+                doc_items = chunk.meta.doc_items
 
             if chunk_page != current_page:
                 current_page = chunk_page
                 chunk_index_on_page = 0
 
-            # [빌더 적용] GenOSVectorMetaBuilder를 통한 데이터 조립
             builder = GenOSVectorMetaBuilder()
             vector_obj = (builder
                       .set_text(content)
                       .set_page_info(chunk_page, chunk_index_on_page, page_chunk_counts[chunk_page])
                       .set_chunk_index(chunk_idx)
                       .set_global_metadata(**global_metadata)
-                      .set_chunk_bboxes(chunk.meta.doc_items, document)
-                      .set_media_files(chunk.meta.doc_items)
+                      .set_chunk_bboxes(doc_items, document)
+                      .set_media_files(doc_items)
                       ).build()
-            
-            # Pydantic 모델을 리스트에 추가
             vectors.append(vector_obj)
-
             chunk_index_on_page += 1
-            
 
         if upload_tasks:
             await asyncio.gather(*upload_tasks)
-            
+
         return vectors
-    
+
     async def __call__(self, request: Any, file_path: str, **kwargs: dict):
         """외부에서 호출되는 통합 프로세서 입구"""
         ext = os.path.splitext(file_path)[-1].lower()
@@ -1317,15 +1451,11 @@ class HwpProcessor:
             reference_path=reference_path
         )
 
-        # 3. 청킹
+        # 3. 청킹 + 4. 벡터화
         chunks, page_chunk_counts = self.split_documents(document, **kwargs)
-
-        # 4. 벡터화 (빌더 활용)
-        if len(chunks) >= 1:
-            vectors = await self.compose_vectors(document, chunks, page_chunk_counts, request, **kwargs)
-            return vectors
-        else:
+        if len(chunks) == 0:
             raise GenosServiceException(1, "chunk length is 0")
+        return await self.compose_vectors(document, chunks, page_chunk_counts, request, **kwargs)
 
 class GenosServiceException(Exception):
     """GenOS 와의 의존성 부분 제거를 위해 추가"""
