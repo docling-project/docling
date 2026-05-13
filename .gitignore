@@ -459,3 +459,6 @@ build-script/hf_private_token.env
 # debug
 debug/
 samples/
+
+# Local settings for Claude
+.claude/settings.local.json

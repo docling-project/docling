@@ -12,7 +12,7 @@
 │   │   ├── configs # gunicorn, supervisor 설정
 │   │   ├── docker # 도커파일 위치
 │   │   ├── env # 개발 시 설정 파일들
-│   │   ├── facade # facade 코드 
+│   │   ├── facade # facade 코드
 │   │   │   ├── evaluation
 │   │   │   │   └── test_files
 │   │   │   │       ├── annotated
@@ -37,7 +37,7 @@
 │   │       │   └── baselines
 │   │       ├── smoke
 │   │       └── unit
-│   ├── serving # ocr 및 
+│   ├── serving # ocr 및
 │   │   └── paddle
 │   │       ├── config # ocr, vl paddlex 실행 파일
 │   │       ├── docker
@@ -164,3 +164,37 @@ cd ${SDK} && ./convtext \
 kubectl apply -f doc-parser-ocr-deployment.yaml
 ```
 5. 노드 포트로 배포시는 [doc-parser-ocr-deployment-node-port.yaml](serving/paddle/k8s-manifest/doc-parser-ocr-deployment-node-port.yaml)
+
+## dots mocr vllm 서빙
+
+1. 모델 다운로드
+
+```shell
+pip install huggingface_hub
+
+huggingface-cli download rednote-hilab/dots.mocr \
+  --local-dir ./dots-mocr
+```
+
+- huggingface: https://huggingface.co/rednote-hilab/dots.mocr
+
+2. Genos 모델서빙 기능으로 서빙생성
+- 주요 옵션은 아래 서빙명령어 참고
+
+* 참고
+
+- 내부 별도서버에 서비스 했던 vllm 서빙명령어
+
+```shell
+CUDA_VISIBLE_DEVICES=0 vllm serve rednote-hilab/dots.mocr \
+ --host 0.0.0.0 \
+ --port 26001 \
+ --tensor-parallel-size 1 \
+ --dtype bfloat16 \
+ --gpu-memory-utilization 0.9 \
+ --max-model-len 20000 \
+ --max-num-seqs 32 \
+ --chat-template-content-format string \
+ --served-model-name dots-mocr \
+ --trust-remote-code
+```

@@ -9,7 +9,7 @@
 
 1. [개요](#개요)
 2. [API 엔드포인트](#api-엔드포인트)
-3. [config.yaml 설정](#configyaml-설정)
+3. [parser_processor_config.yaml 설정](#parser_processor_configyaml-설정)
 4. [지원 파일 형식 및 전제조건](#지원-파일-형식-및-전제조건)
 5. [API 요청 파라미터](#api-요청-파라미터)
 6. [출력 데이터 구조](#출력-데이터-구조)
@@ -28,7 +28,7 @@
 - HWP/HWPX는 전용 SDK 백엔드 사용, 실패 시 단계별 폴백 적용
 - 오디오는 Whisper API를 통한 음성 전사
 - CSV/XLSX는 표 구조 그대로 반환
-- 출력 형식은 `config.yaml`의 `output.format`으로 제어 (`json` / `html` / `markdown`)
+- 출력 형식은 `parser_processor_config.yaml`의 `output.format`으로 제어 (`json` / `html` / `markdown`)
 
 ---
 
@@ -91,9 +91,16 @@ Content-Type: application/json
 
 ---
 
-## config.yaml 설정
+## parser_processor_config.yaml 설정
 
-`DocumentProcessor`는 초기화 시 `config.yaml`을 읽습니다. Genos 전처리기의 resource 탭에 config.yaml을 등록 후 전처리기를 재배포하면 적용이 됩니다.
+`파싱용 전처리기`는 `parser_processor_config.yaml` 파일을 읽어서 전처리기 수행에 필요한 정보를 설정합니다.
+`parser_processor_config.yaml` 파일은 Genos 전처리기의 `resource` 탭에 등록됩니다.
+
+Genos에서 전처리기를 배포할 때 `parser_processor_config.yaml`파일도 함께 배포되어 전처리기 컨테이너에 적용됩니다. 따라서 `parser_processor_config.yaml`파일의 내용이 수정된 경우에는 전처리기를 재배포해야만 수정된 내용이 적용됩니다.
+
+> **전처리기 최초 등록시 아래의 config 수정가이드를 참고해서 수정해 주세요.**
+
+### config 스키마
 
 아래는 전체 설정 스키마입니다.
 
@@ -102,12 +109,14 @@ Content-Type: application/json
 # OCR 설정 (PDF 파이프라인에서 사용)
 # ───────────────────────────────────────────────
 ocr:
-  ocr_endpoint: "http://<ocr-server>/ocr"
   # OCR 모드: auto | force | disable
   #   auto    — 문서 품질 자동 감지 후 필요 시 OCR 수행 (기본값)
   #   force   — 항상 OCR 수행
   #   disable — OCR 수행 안 함
   ocr_mode: "auto"
+
+  # <OCR_ENDPOINT>
+  ocr_endpoint: "http://<OCR_ENDPOINT>/ocr"
 
 # ───────────────────────────────────────────────
 # 레이아웃 모델 설정
@@ -116,19 +125,24 @@ layout:
   # 레이아웃 모델 종류: genos_layout | docling_layout
   layout_model_type: "genos_layout"
   genos_layout:
-    endpoint: "http://<layout-server>/v1/chat/completions"
-    api_key: ""
-    page_batch_size: 32       # 배치당 처리 페이지 수 (기본값: 32)
+    # <LAYOUT_SERVING_ID>: Genos에 등록한 layout 모델서빙 ID로 변경 필요
+    # <LAYOUT_API_KEY>: Genos, layout 모델서빙에서 발급받은 인증키로 변경 필요
+    endpoint: "http://llmops-gateway-api-service:8080/rep/serving/<LAYOUT_SERVING_ID>/v1/chat/completions"
+    api_key: "<LAYOUT_API_KEY>"
+    page_batch_size: 32
 
 # ───────────────────────────────────────────────
 # Enrichment (TOC 추출 / 메타데이터 추출)
 # ───────────────────────────────────────────────
 enrichment:
-  api_url: "http://<llm-server>/v1/chat/completions"
-  api_key: ""
+  do_toc: true
+  do_metadata: true
+
+  # <ENRICHMENT_SERVING_ID>: Genos에 등록한 enrichment 모델서빙 ID로 변경 필요
+  # <ENRICHMENT_API_KEY>: Genos, enrichment 모델서빙에서 발급받은 인증키로 변경 필요
+  api_url: "http://llmops-gateway-api-service:8080/rep/serving/<ENRICHMENT_SERVING_ID>/v1/chat/completions"
+  api_key: "<ENRICHMENT_API_KEY>"
   model: "model"
-  do_toc: true               # 목차(TOC) 추출 여부
-  do_metadata: true          # 메타데이터 추출 여부 (작성일)
   toc:
     temperature: 0.0
     top_p: 0.00001
@@ -152,17 +166,35 @@ output:
 
 | 섹션 | 키 | 기본값 | 설명 |
 |------|----|--------|------|
-| `ocr` | `ocr_endpoint` | `""` | PaddleOCR 서버 URL |
 | `ocr` | `ocr_mode` | `"auto"` | OCR 수행 정책. `auto` / `force` / `disable` |
-| `layout` | `layout_model_type` | `"genos_layout"` | 레이아웃 모델 선택 |
+| `ocr` | `ocr_endpoint` | `""` | PaddleOCR 서버 URL |
+| `layout` | `layout_model_type` | `"genos_layout"` | 레이아웃 모델 선택. `genos_layout` / `docling_layout` (유효하지 않으면 `genos_layout`) |
 | `layout.genos_layout` | `endpoint` | `""` | Genos Layout API URL |
 | `layout.genos_layout` | `api_key` | `""` | API 인증 키 |
 | `layout.genos_layout` | `page_batch_size` | `32` | 배치당 처리 페이지 수. 양의 정수, 유효하지 않으면 32로 대체 |
-| `enrichment` | `api_url` | `""` | LLM API URL (TOC·메타데이터 추출용) |
-| `enrichment` | `do_toc` | `true` | 목차 추출 활성화 여부 |
+| `enrichment` | `do_toc` | `true` | 목차(TOC) 추출 활성화 여부 |
 | `enrichment` | `do_metadata` | `true` | 메타데이터 추출 활성화 여부 |
+| `enrichment` | `api_url` | `""` | LLM API URL (TOC/메타데이터 추출용) |
+| `enrichment` | `api_key` | `""` | LLM API 인증 키 |
+| `enrichment` | `model` | `"model"` | TOC/메타데이터 추출에 사용할 모델명 |
+| `enrichment.toc` | `temperature` | `0.0` | TOC 생성 temperature |
+| `enrichment.toc` | `top_p` | `0.00001` | TOC 생성 top-p |
+| `enrichment.toc` | `seed` | `33` | TOC 생성 seed |
+| `enrichment.toc` | `max_tokens` | `10000` | TOC 생성 최대 토큰 수 |
 | `output` | `format` | `"json"` | 응답 포맷. `json` / `html` / `markdown`. 유효하지 않으면 `json`으로 대체 |
 | `output` | `table_format` | `"html"` | 표 변환 포맷. `html` / `markdown`. 유효하지 않으면 `html`로 대체 |
+
+### 파싱용 전처리기 최초 등록시 config 수정가이드
+
+아래 설정은 사이트환경에 맞게 수정이 필요합니다.
+- ocr
+  - endpoint: `<OCR_ENDPOINT>` 는 ocr server 를 서비스 하는 주소로 변경해야 합니다.
+- layout.genos_layout
+  - endpoint: `<LAYOUT_SERVING_ID>` 는 Genos에 등록한 layout 모델서빙 ID 로 변경해야 합니다.
+  - api_key: `<LAYOUT_API_KEY>`는 Genos layout 모델서빙에서 발급받은 인증키로 변경해야 합니다.
+- enrichment
+  - api_url: `<ENRICHMENT_SERVING_ID>`는 Genos에 등록한 enrichment 모델서빙 ID로 변경해야 합니다.
+  - api_key: `<ENRICHMENT_API_KEY>`는 Genos enrichment 모델서빙에서 발급받은 인증키로 변경해야 합니다.
 
 ---
 
@@ -185,7 +217,7 @@ output:
 **처리 클래스:** `IntelligentDocumentProcessor`
 
 **전제조건:**
-- **Layout 모델 서버:** `config.yaml`의 `layout.genos_layout.endpoint` 로 접근 가능한 vLLM 호환 서버가 실행 중이어야 함
+- **Layout 모델 서버:** `parser_processor_config.yaml`의 `layout.genos_layout.endpoint` 로 접근 가능한 vLLM 호환 서버가 실행 중이어야 함
 - **OCR 서버:** `ocr_mode`가 `disable`이 아닌 경우 `ocr.ocr_endpoint`에 PaddleOCR 서버가 실행 중이어야 함 (단, `ocr_mode=auto`이면 OCR 품질 감지 후 필요할 때만 접근)
 - **Enrichment LLM:** `enrichment.do_toc=true` 또는 `do_metadata=true`인 경우 `enrichment.api_url`에 LLM API가 실행 중이어야 함
 - **Python 패키지:** `docling`, `docling-core`, `pymupdf`
@@ -225,7 +257,7 @@ GenosHwpDocumentBackend  →  HwpDocumentBackend/HwpxDocumentBackend  →  Libre
 **처리 클래스:** `AudioLoader`
 
 **전제조건:**
-- **Whisper API 서버:** `config.yaml`의 `whisper.url`에 OpenAI Whisper 호환 API가 실행 중이어야 함
+- **Whisper API 서버:** `parser_processor_config.yaml`의 `whisper.url`에 OpenAI Whisper 호환 API가 실행 중이어야 함
 - **Python 패키지:** `pydub`
 - **ffmpeg / ffprobe:** pydub의 오디오 디코딩에 필요. 시스템에 설치되어 있어야 함
 - 오디오 파일은 `chunk_sec`(기본 29초) 단위로 분할 후 병렬 전사
@@ -347,7 +379,7 @@ GenosHwpDocumentBackend  →  HwpDocumentBackend/HwpxDocumentBackend  →  Libre
 
 ### `output.format: html` 또는 `markdown`
 
-Docling 경로(PDF, HTML, HWP, HWPX, DOCX)에서 `config.yaml`의 `output.format`을 `html` 또는 `markdown`으로 설정하면, 전체 문서를 하나의 문자열로 직렬화하여 `content`에 담고 `elements`는 `[]`로 반환됩니다.
+Docling 경로(PDF, HTML, HWP, HWPX, DOCX)에서 `parser_processor_config.yaml`의 `output.format`을 `html` 또는 `markdown`으로 설정하면, 전체 문서를 하나의 문자열로 직렬화하여 `content`에 담고 `elements`는 `[]`로 반환됩니다.
 
 ```json
 {
@@ -485,11 +517,11 @@ Docling 파이프라인(PDF/HTML/HWP/HWPX/DOCX) 출력 기준:
 
 | 상황 | 오류 메시지 예시 | 조치 |
 |------|-----------------|------|
-| Layout 서버 미응답 | Connection refused to `<endpoint>` | `config.yaml`의 `layout.genos_layout.endpoint` 확인 |
-| OCR 서버 미응답 | `OCR HTTP 502` | `config.yaml`의 `ocr.ocr_endpoint` 및 서버 상태 확인 |
-| Enrichment LLM 오류 | LLM API timeout | `config.yaml`의 `enrichment.api_url` 확인 |
+| Layout 서버 미응답 | Connection refused to `<endpoint>` | `parser_processor_config.yaml`의 `layout.genos_layout.endpoint` 확인 |
+| OCR 서버 미응답 | `OCR HTTP 502` | `parser_processor_config.yaml`의 `ocr.ocr_endpoint` 및 서버 상태 확인 |
+| Enrichment LLM 오류 | LLM API timeout | `parser_processor_config.yaml`의 `enrichment.api_url` 확인 |
 | HWP SDK 실패 | `HWP SDK 실패: ...` | 로그 확인 후 `use_hwp_sdk=false` 파라미터로 재시도 |
-| Whisper 미설정 | Connection error | `config.yaml`의 `whisper.url` 설정 확인 |
+| Whisper 미설정 | Connection error | `parser_processor_config.yaml`의 `whisper.url` 설정 확인 |
 | `soffice` 미설치 | `FileNotFoundError: soffice` | LibreOffice 설치 후 PATH 등록 |
 | 파일 없음 | `FileNotFoundError` | `file_path` 경로 및 파일 존재 여부 확인 |
 
@@ -541,10 +573,10 @@ if result["code"] == 0:
         print(f"[Page {element['page']}][{element['category']}] {str(element['content'])[:80]}")
 ```
 
-### HTML 포맷으로 출력 (`config.yaml: output.format: html`)
+### HTML 포맷으로 출력 (`parser_processor_config.yaml: output.format: html`)
 
 ```python
-# config.yaml에 output.format: html 설정 후
+# parser_processor_config.yaml에 output.format: html 설정 후
 response = requests.post(
     f"{BASE_URL}/preprocessor/{PREPROCESSOR_ID}/run",
     headers={"Authorization": f"Bearer {AUTH_KEY}"},

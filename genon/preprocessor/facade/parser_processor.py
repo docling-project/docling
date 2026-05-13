@@ -145,6 +145,16 @@ def _as_dict(value: Any) -> dict:
     return value if isinstance(value, dict) else {}
 
 
+def _resolve_default_parser_config_path() -> str:
+    base_dir = Path(__file__).resolve().parent
+    local_config = (base_dir / "../resource_dev/parser_processor_config.yaml").resolve()
+    default_config = (base_dir / "../resource/parser_processor_config.yaml").resolve()
+
+    if local_config.exists():
+        return str(local_config)
+    return str(default_config)
+
+
 # ============================================================
 # 헬퍼 함수 (from attachment_processor.py)
 # ============================================================
@@ -810,23 +820,6 @@ class IntelligentDocumentProcessor:
 
         return document
 
-    def setup_logging(self, level_num: int):
-        def get_level_name(level_num: int) -> str:
-            level_map = {5: "DEBUG", 4: "INFO", 3: "WARNING", 2: "ERROR", 1: "CRITICAL", 0: "NOLOG"}
-            return level_map.get(level_num, "INFO")
-        level_name = get_level_name(level_num)
-        print(f"Setting log level to: {level_name}")
-        if level_name == "NOLOG" or not hasattr(logging, level_name):
-            logging.disable(logging.CRITICAL)
-            return
-        level = getattr(logging, level_name.upper())
-        logging.basicConfig(
-            level=level,
-            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-            handlers=[logging.StreamHandler()]
-        )
-        logging.getLogger().setLevel(level)
-
 
 # ============================================================
 # HwpDocumentLoader — HWP/HWPX 전용 (from attachment_processor.py)
@@ -1029,7 +1022,7 @@ class DocumentProcessor:
 
     def __init__(self, config_path: str | None = None):
         if config_path is None:
-            config_path = str((Path(__file__).resolve().parent / "../resource/config.yaml").resolve())
+            config_path = _resolve_default_parser_config_path()
 
         cfg = _load_config(config_path)
         self._intel = IntelligentDocumentProcessor(cfg)
@@ -1486,11 +1479,31 @@ class DocumentProcessor:
             "usage": {"pages": num_pages},
         }
 
+
+    def setup_logging(self, level_num: int):
+        def get_level_name(level_num: int) -> str:
+            level_map = {5: "DEBUG", 4: "INFO", 3: "WARNING", 2: "ERROR", 1: "CRITICAL", 0: "NOLOG"}
+            return level_map.get(level_num, "INFO")
+        level_name = get_level_name(level_num)
+        print(f"Setting log level to: {level_name}")
+        if level_name == "NOLOG" or not hasattr(logging, level_name):
+            logging.disable(logging.CRITICAL)
+            return
+        level = getattr(logging, level_name.upper())
+        logging.basicConfig(
+            level=level,
+            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            handlers=[logging.StreamHandler()]
+        )
+        logging.getLogger().setLevel(level)
+
     # ------------------------------------------------------------------
     # 메인 진입점
     # ------------------------------------------------------------------
 
     async def __call__(self, request: Request, file_path: str, **kwargs) -> dict:
+        self.setup_logging(kwargs.get('log_level', 4))
+
         ext = os.path.splitext(file_path)[-1].lower()
         _log.info(f"[DocumentProcessor] file_path={file_path}, ext={ext}")
 
