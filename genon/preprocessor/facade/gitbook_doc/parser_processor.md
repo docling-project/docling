@@ -115,7 +115,7 @@ ocr:
   #   disable — OCR 수행 안 함
   ocr_mode: "auto"
 
-  # <OCR_ENDPOINT>
+  # <OCR_ENDPOINT>: PaddleOCR 서버 주소로 변경 필요
   ocr_endpoint: "http://<OCR_ENDPOINT>/ocr"
 
 # ───────────────────────────────────────────────
