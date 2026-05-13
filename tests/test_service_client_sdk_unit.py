@@ -1538,6 +1538,77 @@ def test_503_after_all_retries_raises_service_unavailable_error(
             )
 
 
+def test_get_transport_error_retries_with_exponential_backoff(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleep_calls: list[float] = []
+    monkeypatch.setattr(client_module.time, "sleep", lambda s: sleep_calls.append(s))
+
+    call_count = 0
+
+    def fake_request(**kw: object) -> httpx.Response:
+        nonlocal call_count
+        call_count += 1
+        if call_count < 3:
+            raise httpx.ConnectTimeout("connect timed out")
+        return httpx.Response(200, json={})
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.request = fake_request  # type: ignore[method-assign]
+        response = client._request_with_retry(method="GET", path="/v1/result/task-123")
+
+    assert response.status_code == 200
+    assert sleep_calls == [1.0, 2.0]
+
+
+def test_post_transport_error_does_not_retry() -> None:
+    call_count = 0
+
+    def fake_request(**kw: object) -> httpx.Response:
+        nonlocal call_count
+        call_count += 1
+        raise httpx.ConnectTimeout("connect timed out")
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.request = fake_request  # type: ignore[method-assign]
+        with pytest.raises(
+            ServiceUnavailableError,
+            match="Service transport request failed",
+        ):
+            client._request_with_retry(
+                method="POST", path="/v1/convert/source/async", retries=3
+            )
+
+    assert call_count == 1
+
+
+def test_get_transport_error_after_all_retries_raises_service_unavailable_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleep_calls: list[float] = []
+    monkeypatch.setattr(client_module.time, "sleep", lambda s: sleep_calls.append(s))
+
+    call_count = 0
+
+    def fake_request(**kw: object) -> httpx.Response:
+        nonlocal call_count
+        call_count += 1
+        raise httpx.ConnectTimeout("connect timed out")
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.request = fake_request  # type: ignore[method-assign]
+        with pytest.raises(
+            ServiceUnavailableError,
+            match="Service transport request failed after retries",
+        ):
+            client._request_with_retry(
+                method="GET", path="/v1/result/task-123", retries=2
+            )
+
+    assert call_count == 3
+    assert sleep_calls == [1.0, 2.0]
+
+
 @pytest.mark.anyio
 async def test_503_with_retry_after_header_retries_async(
     monkeypatch: pytest.MonkeyPatch,
@@ -1639,6 +1710,63 @@ async def test_502_retries_with_exponential_backoff_async(
 
     assert response.status_code == 200
     assert sleep_calls == [1.0, 2.0, 4.0]
+
+
+@pytest.mark.anyio
+async def test_get_transport_error_retries_async(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleep_calls: list[float] = []
+
+    async def fake_sleep(s: float) -> None:
+        sleep_calls.append(s)
+
+    monkeypatch.setattr(client_module.asyncio, "sleep", fake_sleep)
+
+    call_count = 0
+
+    class FakeAsyncClient:
+        async def request(self, **kw: object) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            if call_count < 3:
+                raise httpx.ConnectTimeout("connect timed out")
+            return httpx.Response(200, json={})
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        response = await client._request_with_retry_async(
+            async_client=FakeAsyncClient(),  # type: ignore[arg-type]
+            method="GET",
+            path="/v1/result/task-123",
+        )
+
+    assert response.status_code == 200
+    assert sleep_calls == [1.0, 2.0]
+
+
+@pytest.mark.anyio
+async def test_post_transport_error_does_not_retry_async() -> None:
+    call_count = 0
+
+    class FakeAsyncClient:
+        async def request(self, **kw: object) -> httpx.Response:
+            nonlocal call_count
+            call_count += 1
+            raise httpx.ConnectTimeout("connect timed out")
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        with pytest.raises(
+            ServiceUnavailableError,
+            match="Service transport request failed",
+        ):
+            await client._request_with_retry_async(
+                async_client=FakeAsyncClient(),  # type: ignore[arg-type]
+                method="POST",
+                path="/v1/convert/source/async",
+                retries=3,
+            )
+
+    assert call_count == 1
 
 
 # --- Path-prefix URL tests ---
