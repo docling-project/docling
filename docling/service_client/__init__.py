@@ -1,5 +1,6 @@
 """Client SDK for interacting with docling-serve."""
 
+from docling.service_client._async_client import AsyncDoclingServiceClient
 from docling.service_client.client import (
     DEFAULT_MAX_CONCURRENCY,
     MAX_CONCURRENCY_LIMIT,
@@ -20,11 +21,13 @@ from docling.service_client.exceptions import (
     TaskTimeoutError,
     UsageLimitExceededError,
 )
-from docling.service_client.job import ConversionJob
+from docling.service_client.job import AsyncConversionJob, ConversionJob
 
 __all__ = [
     "DEFAULT_MAX_CONCURRENCY",
     "MAX_CONCURRENCY_LIMIT",
+    "AsyncConversionJob",
+    "AsyncDoclingServiceClient",
     "ChunkerKind",
     "ConversionError",
     "ConversionItem",

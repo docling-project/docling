@@ -34,10 +34,6 @@ from docling.datamodel.base_models import (
     OutputFormat,
 )
 from docling.datamodel.document import AssembledUnit, ConversionResult, InputDocument
-from docling.datamodel.service.chunking import (
-    HierarchicalChunkerOptions,
-    HybridChunkerOptions,
-)
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
@@ -141,6 +137,408 @@ class ChunkerKind(str, Enum):
     HIERARCHICAL = "hierarchical"
 
 
+# ---------------------------------------------------------------------------
+# Module-level extension map — built once from the static FormatToExtensions
+# ---------------------------------------------------------------------------
+
+_EXTENSION_TO_FORMAT: dict[str, InputFormat] = {}
+for _fmt, _exts in FormatToExtensions.items():
+    for _ext in _exts:
+        _EXTENSION_TO_FORMAT.setdefault(_ext.lower(), _fmt)
+
+# ---------------------------------------------------------------------------
+# Pure helper functions — no instance state; imported by _async_client.py too
+# ---------------------------------------------------------------------------
+
+
+def _exponential_backoff_delay(attempt: int) -> float:
+    return HTTP_RETRY_BACKOFF_BASE_SECONDS * (2**attempt)
+
+
+def _retry_after_delay_seconds(response: httpx.Response) -> float | None:
+    retry_after_header = response.headers.get("Retry-After")
+    if retry_after_header is None:
+        return None
+    try:
+        return max(0.0, float(retry_after_header))
+    except ValueError:
+        pass
+    try:
+        retry_at = parsedate_to_datetime(retry_after_header)
+    except (TypeError, ValueError, IndexError, OverflowError):
+        return None
+    now = datetime.now(tz=retry_at.tzinfo or timezone.utc)
+    return max(0.0, (retry_at - now).total_seconds())
+
+
+def _http_error_detail(response: httpx.Response) -> str | None:
+    try:
+        detail = response.json().get("detail")
+    except Exception:
+        return None
+    return detail if isinstance(detail, str) else None
+
+
+def _parse_usage_limit_exceeded_response(
+    response: httpx.Response,
+) -> UsageLimitExceededResponse | None:
+    try:
+        return UsageLimitExceededResponse.model_validate_json(response.text)
+    except (ValidationError, ValueError):
+        return None
+
+
+def _raise_for_generic_http_error(response: httpx.Response, message: str) -> None:
+    if response.status_code == 402:
+        usage_limit = _parse_usage_limit_exceeded_response(response)
+        raise UsageLimitExceededError(
+            message,
+            status_code=response.status_code,
+            detail=None if usage_limit is None else usage_limit.message,
+            current_usage=(
+                None if usage_limit is None else usage_limit.details.currentUsage
+            ),
+            limit=None if usage_limit is None else usage_limit.details.limit,
+        )
+    detail = _http_error_detail(response)
+    if 400 <= response.status_code < 500:
+        raise ServiceError(message, status_code=response.status_code, detail=detail)
+    raise ServiceUnavailableError(
+        message,
+        status_code=response.status_code,
+        detail=detail,
+    )
+
+
+def _raise_for_result_404(
+    task_id: str,
+    response: httpx.Response,
+    last_status: TaskStatusResponse | None,
+) -> None:
+    detail = _http_error_detail(response)
+    if detail == "Task not found.":
+        raise TaskNotFoundError(f"Task {task_id} was not found.")
+    if detail is not None and detail.startswith("Task result not found"):
+        if last_status is not None and is_terminal_task_status(last_status):
+            if last_status.task_status == "failure":
+                message = last_status.error_message or f"Task {task_id} failed."
+                raise ConversionError(message)
+            raise ResultExpiredError(f"Result for task {task_id} has expired.")
+        raise ResultNotReadyError(f"Result for task {task_id} is not ready.")
+    raise ServiceError(
+        "Unexpected result lookup error.",
+        status_code=response.status_code,
+        detail=detail,
+    )
+
+
+def _retry_with_exponential_backoff(
+    response: httpx.Response,
+    attempt: int,
+    max_retries: int,
+    error_message: str,
+) -> tuple[httpx.Response | None, float]:
+    if attempt < max_retries:
+        return None, _exponential_backoff_delay(attempt)
+    raise ServiceUnavailableError(
+        error_message,
+        status_code=response.status_code,
+        detail=_http_error_detail(response),
+    )
+
+
+def _retry_with_retry_after_header(
+    response: httpx.Response,
+    attempt: int,
+    max_retries: int,
+) -> tuple[httpx.Response | None, float]:
+    retry_after_delay = _retry_after_delay_seconds(response)
+    if retry_after_delay is None:
+        return response, 0.0
+    if attempt < max_retries:
+        return None, retry_after_delay
+    raise ServiceUnavailableError(
+        f"Service returned HTTP {response.status_code} after retries.",
+        status_code=response.status_code,
+        detail=_http_error_detail(response),
+    )
+
+
+def _check_retry(
+    response: httpx.Response,
+    attempt: int,
+    max_retries: int,
+) -> tuple[httpx.Response | None, float]:
+    """Return (response, 0.0) to yield, (None, delay) to retry after delay, or raise."""
+    if response.status_code in {500, 502}:
+        return _retry_with_exponential_backoff(
+            response=response,
+            attempt=attempt,
+            max_retries=max_retries,
+            error_message=f"Service returned HTTP {response.status_code} after retries.",
+        )
+    if response.status_code in {429, 503}:
+        return _retry_with_retry_after_header(
+            response=response,
+            attempt=attempt,
+            max_retries=max_retries,
+        )
+    return response, 0.0
+
+
+def _transport_retry_delay(
+    *,
+    method: str,
+    exc: httpx.HTTPError,
+    attempt: int,
+    max_retries: int,
+) -> float | None:
+    method_name = method.upper()
+    if (
+        not isinstance(exc, httpx.TransportError)
+        or method_name not in TRANSPORT_RETRYABLE_HTTP_METHODS
+    ):
+        return None
+    if attempt < max_retries:
+        return _exponential_backoff_delay(attempt)
+    raise ServiceUnavailableError(
+        "Service transport request failed after retries.",
+        detail=str(exc),
+    ) from exc
+
+
+def _validate_http_source(source: str) -> None:
+    parsed = urlparse(source)
+    if parsed.scheme not in {"http", "https"}:
+        raise ValueError("String sources must be HTTP or HTTPS URLs.")
+
+
+def _guess_input_format(name: str) -> InputFormat:
+    lowered = name.lower()
+    extension = (
+        "tar.gz" if lowered.endswith(".tar.gz") else Path(name).suffix[1:].lower()
+    )
+    return _EXTENSION_TO_FORMAT.get(extension, InputFormat.PDF)
+
+
+def _describe_source(source: SourceType) -> _SourceDescriptor:
+    if isinstance(source, Path):
+        return _SourceDescriptor(
+            source_name=source.name,
+            input_format=_guess_input_format(source.name),
+            file_size=source.stat().st_size,
+        )
+    if isinstance(source, DocumentStream):
+        return _SourceDescriptor(
+            source_name=source.name,
+            input_format=_guess_input_format(source.name),
+            file_size=len(source.stream.getbuffer()),
+        )
+    parsed = urlparse(source)
+    filename = Path(parsed.path).name if parsed.path else "document"
+    return _SourceDescriptor(
+        source_name=filename,
+        input_format=_guess_input_format(filename),
+        file_size=None,
+    )
+
+
+def _source_name(source: SourceType) -> str:
+    return _describe_source(source).source_name
+
+
+def _filename_from_headers(headers: httpx.Headers) -> str | None:
+    disposition = headers.get("content-disposition")
+    if disposition is None:
+        return None
+    match = re.search(r'filename="?(?P<name>[^";]+)"?', disposition)
+    if match is None:
+        return None
+    return match.group("name")
+
+
+def _decode_raw_result(response: httpx.Response) -> RawServiceResult:
+    content_type = response.headers.get("content-type", "application/octet-stream")
+    filename = _filename_from_headers(response.headers)
+    return RawServiceResult(
+        content=response.content,
+        content_type=content_type,
+        filename=filename,
+    )
+
+
+def _build_input_document(
+    source_name: str,
+    input_format: InputFormat,
+    file_size: int | None,
+    limits: DocumentLimits,
+) -> InputDocument:
+    # Build a lightweight InputDocument for compatibility results without
+    # invoking expensive parsing backends.
+    input_doc = InputDocument(
+        path_or_stream=BytesIO(b"x"),
+        format=input_format,
+        backend=NoOpBackend,
+        filename=source_name,
+        limits=limits,
+    )
+    input_doc.file = PurePath(source_name)
+    input_doc.document_hash = source_name
+    input_doc.filesize = file_size
+    input_doc.page_count = 0
+    return input_doc
+
+
+def _build_conversion_result(
+    payload: ConvertDocumentResponse,
+    descriptor: _SourceDescriptor,
+    limits: DocumentLimits,
+) -> ConversionResult:
+    source_name = payload.document.filename or descriptor.source_name
+    input_doc = _build_input_document(
+        source_name=source_name,
+        input_format=descriptor.input_format,
+        file_size=descriptor.file_size,
+        limits=limits,
+    )
+    document = payload.document.json_content
+    if document is None:
+        document = DoclingDocument(name=Path(source_name).stem)
+    return ConversionResult(
+        input=input_doc,
+        assembled=AssembledUnit(),
+        status=payload.status,
+        errors=payload.errors,
+        timings=payload.timings,
+        document=document,
+    )
+
+
+def _build_failed_conversion_result(
+    descriptor: _SourceDescriptor,
+    limits: DocumentLimits,
+    error_message: str,
+    status: ConversionStatus,
+) -> ConversionResult:
+    input_doc = _build_input_document(
+        source_name=descriptor.source_name,
+        input_format=descriptor.input_format,
+        file_size=descriptor.file_size,
+        limits=limits,
+    )
+    error = ErrorItem(
+        component_type=DoclingComponentType.USER_INPUT,
+        module_name="docling.service_client",
+        error_message=error_message,
+    )
+    return ConversionResult(
+        input=input_doc,
+        assembled=AssembledUnit(),
+        status=status,
+        errors=[error],
+        document=DoclingDocument(name=Path(descriptor.source_name).stem),
+    )
+
+
+def _preflight_limits(
+    descriptor: _SourceDescriptor,
+    limits: DocumentLimits,
+) -> ConversionResult | None:
+    if limits.max_file_size >= sys.maxsize:
+        return None
+    size = descriptor.file_size
+    if size is None or size <= limits.max_file_size:
+        return None
+    message = (
+        f"Input size {size} exceeds max_file_size limit {limits.max_file_size} bytes."
+    )
+    return _build_failed_conversion_result(
+        descriptor=descriptor,
+        limits=limits,
+        error_message=message,
+        status=ConversionStatus.SKIPPED,
+    )
+
+
+def _options_for_target_format(
+    options: ConvertDocumentsRequestOptions,
+    target_format: OutputFormat | None,
+) -> tuple[ConvertDocumentsRequestOptions, bool]:
+    if target_format is None or target_format == OutputFormat.JSON:
+        formats = list(options.to_formats)
+        if OutputFormat.JSON not in formats:
+            formats.append(OutputFormat.JSON)
+        return options.model_copy(update={"to_formats": formats}, deep=True), False
+    return options.model_copy(update={"to_formats": [target_format]}, deep=True), True
+
+
+def _resolve_options(
+    default_options: ConvertDocumentsRequestOptions,
+    options: ConvertDocumentsRequestOptions | None,
+    max_num_pages: int | None,
+    max_file_size: int | None,
+    page_range: PageRange | None,
+) -> _ResolvedOptions:
+    merged = default_options.model_copy(deep=True)
+    if options is not None and options.model_fields_set:
+        # Only override fields explicitly set by the caller, preserving client defaults
+        # for everything else. Using model_fields_set (vs exclude_none) means callers
+        # can explicitly set a field to None to clear a client default.
+        explicit = {
+            field: getattr(options, field) for field in options.model_fields_set
+        }
+        merged = merged.model_copy(update=explicit, deep=True)
+
+    effective_range = merged.page_range if page_range is None else page_range
+    if max_num_pages is not None:
+        effective_range = (
+            effective_range[0],
+            min(effective_range[1], max_num_pages),
+        )
+    merged.page_range = effective_range
+
+    limits = DocumentLimits(
+        max_num_pages=sys.maxsize if max_num_pages is None else max_num_pages,
+        max_file_size=sys.maxsize if max_file_size is None else max_file_size,
+        page_range=effective_range,
+    )
+    return _ResolvedOptions(options=merged, limits=limits)
+
+
+def _validate_concurrency(value: int, *, name: str) -> int:
+    if value < 1 or value > MAX_CONCURRENCY_LIMIT:
+        raise ValueError(
+            f"{name} must be between 1 and {MAX_CONCURRENCY_LIMIT}, got {value}."
+        )
+    return value
+
+
+def _normalize_base_url(url: str) -> str:
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError("Client URL must be an absolute http(s) base URL.")
+    if parsed.query or parsed.fragment:
+        raise ValueError("Client URL must not include query or fragment components.")
+    path = parsed.path.rstrip("/")
+    if path.endswith("/v1"):
+        raise ValueError("Client URL must be the service base URL, not include /v1.")
+    return f"{parsed.scheme}://{parsed.netloc}{path}"
+
+
+def _build_ws_status_url(base_url: str, api_key: str, task_id: str) -> str:
+    parsed = urlparse(base_url)
+    ws_scheme = "wss" if parsed.scheme == "https" else "ws"
+    ws_url = f"{ws_scheme}://{parsed.netloc}{parsed.path}/v1/status/ws/{task_id}"
+    if not api_key:
+        return ws_url
+    return f"{ws_url}?{urlencode({'api_key': api_key})}"
+
+
+# ---------------------------------------------------------------------------
+# DoclingServiceClient
+# ---------------------------------------------------------------------------
+
+
 class DoclingServiceClient:
     """Client for docling-serve compatibility and task APIs."""
 
@@ -159,9 +557,8 @@ class DoclingServiceClient:
         http_connect_timeout: float = 10.0,
         http_read_timeout: float = 60.0,
     ) -> None:
-        self._base_url = self._normalize_base_url(url)
+        self._base_url = _normalize_base_url(url)
         self._api_key = api_key
-        self._extension_to_format = self._build_extension_to_format_map()
         self._default_options = (
             options.model_copy(deep=True)
             if options is not None
@@ -174,7 +571,7 @@ class DoclingServiceClient:
             poll_server_wait if poll_client_interval is None else poll_client_interval
         )
         self._job_timeout = job_timeout
-        self._max_concurrency = self._validate_concurrency(
+        self._max_concurrency = _validate_concurrency(
             max_concurrency, name="max_concurrency"
         )
         self._http_retries = http_retries
@@ -234,7 +631,8 @@ class DoclingServiceClient:
         options: ConvertDocumentsRequestOptions | None = None,
         raises_on_error: bool = True,
     ) -> ConversionResult:
-        resolved = self._resolve_options(
+        resolved = _resolve_options(
+            self._default_options,
             options=options,
             max_num_pages=max_num_pages,
             max_file_size=max_file_size,
@@ -259,14 +657,15 @@ class DoclingServiceClient:
         options: ConvertDocumentsRequestOptions | None = None,
         max_concurrency: int | None = None,
     ) -> Iterator[ConversionResult]:
-        resolved = self._resolve_options(
+        resolved = _resolve_options(
+            self._default_options,
             options=options,
             max_num_pages=max_num_pages,
             max_file_size=max_file_size,
             page_range=page_range,
         )
         effective_cap = self._effective_concurrency(max_concurrency)
-        submit_options, _ = self._options_for_target_format(
+        submit_options, _ = _options_for_target_format(
             resolved.options, OutputFormat.JSON
         )
         return self._iterate_convert_all_sync(
@@ -283,11 +682,9 @@ class DoclingServiceClient:
         max_in_flight: int = DEFAULT_MAX_CONCURRENCY,
         ordered: bool = False,
     ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
-        return self._run_submit_and_retrieve_many_async(
+        return self._run_submit_and_retrieve_many_sync(
             item_list=items,
-            max_in_flight=self._validate_concurrency(
-                max_in_flight, name="max_in_flight"
-            ),
+            max_in_flight=_validate_concurrency(max_in_flight, name="max_in_flight"),
             ordered=ordered,
         )
 
@@ -330,13 +727,14 @@ class DoclingServiceClient:
             if target_format == "json"
             else cast(OutputFormat | None, target_format)
         )
-        resolved = self._resolve_options(
+        resolved = _resolve_options(
+            self._default_options,
             options=options,
             max_num_pages=None,
             max_file_size=None,
             page_range=None,
         )
-        submit_options, raw_result = self._options_for_target_format(
+        submit_options, raw_result = _options_for_target_format(
             resolved.options, normalized_target_format
         )
         return self._submit_conversion_job(
@@ -354,7 +752,8 @@ class DoclingServiceClient:
         chunker: ChunkerKind,
         options: ConvertDocumentsRequestOptions | None = None,
     ) -> ConversionJob[ChunkDocumentResponse]:
-        resolved = self._resolve_options(
+        resolved = _resolve_options(
+            self._default_options,
             options=options,
             max_num_pages=None,
             max_file_size=None,
@@ -384,13 +783,13 @@ class DoclingServiceClient:
     def health(self) -> HealthCheckResponse:
         response = self._request_with_retry("GET", "/health", retries=0)
         if response.status_code != 200:
-            self._raise_for_generic_http_error(response, "Health check request failed.")
+            _raise_for_generic_http_error(response, "Health check request failed.")
         return HealthCheckResponse.model_validate_json(response.text)
 
     def version(self) -> dict[str, Any]:
         response = self._request_with_retry("GET", "/version", retries=0)
         if response.status_code != 200:
-            self._raise_for_generic_http_error(response, "Version request failed.")
+            _raise_for_generic_http_error(response, "Version request failed.")
         return response.json()
 
     def _convert_single(
@@ -399,14 +798,12 @@ class DoclingServiceClient:
         headers: dict[str, str] | None,
         resolved: _ResolvedOptions,
     ) -> ConversionResult:
-        descriptor = self._describe_source(source)
-        preflight = self._preflight_limits(
-            descriptor=descriptor, limits=resolved.limits
-        )
+        descriptor = _describe_source(source)
+        preflight = _preflight_limits(descriptor=descriptor, limits=resolved.limits)
         if preflight is not None:
             return preflight
 
-        submit_options, _ = self._options_for_target_format(
+        submit_options, _ = _options_for_target_format(
             resolved.options, OutputFormat.JSON
         )
         job = cast(
@@ -420,8 +817,7 @@ class DoclingServiceClient:
                 descriptor=descriptor,
             ),
         )
-        result = job.result(timeout=self._job_timeout)
-        return result
+        return job.result(timeout=self._job_timeout)
 
     def _submit_conversion_job(
         self,
@@ -433,7 +829,7 @@ class DoclingServiceClient:
         descriptor: _SourceDescriptor | None = None,
         request_headers: dict[str, str] | None = None,
     ) -> ConversionJob[ConversionResult] | ConversionJob[RawServiceResult]:
-        descriptor = descriptor or self._describe_source(source)
+        descriptor = descriptor or _describe_source(source)
         initial_status = self._submit_convert_task(
             source=source,
             source_headers=source_headers,
@@ -468,11 +864,11 @@ class DoclingServiceClient:
         raw_result: bool,
         request_headers: dict[str, str] | None = None,
     ) -> TaskStatusResponse:
-        source_name = self._source_name(source)
+        source_name = _source_name(source)
         logger.info("Submitting convert task for source=%s", source_name)
         target = ZipTarget() if raw_result else InBodyTarget()
         if isinstance(source, str):
-            self._validate_http_source(source)
+            _validate_http_source(source)
             request = ConvertDocumentsRequest(
                 options=options,
                 sources=[
@@ -502,7 +898,7 @@ class DoclingServiceClient:
             )
 
         if response.status_code != 200:
-            self._raise_for_generic_http_error(response, "Task submission failed.")
+            _raise_for_generic_http_error(response, "Task submission failed.")
         status = TaskStatusResponse.model_validate_json(response.text)
         logger.info(
             "Submitted convert task for source=%s task_id=%s status=%s position=%s",
@@ -519,8 +915,13 @@ class DoclingServiceClient:
         chunker: ChunkerKind,
         options: ConvertDocumentsRequestOptions,
     ) -> TaskStatusResponse:
+        from docling.datamodel.service.chunking import (
+            HierarchicalChunkerOptions,
+            HybridChunkerOptions,
+        )
+
         if isinstance(source, str):
-            self._validate_http_source(source)
+            _validate_http_source(source)
             chunking_options: HybridChunkerOptions | HierarchicalChunkerOptions
             if chunker == ChunkerKind.HYBRID:
                 chunking_options = HybridChunkerOptions()
@@ -572,9 +973,7 @@ class DoclingServiceClient:
             )
 
         if response.status_code != 200:
-            self._raise_for_generic_http_error(
-                response, "Chunk task submission failed."
-            )
+            _raise_for_generic_http_error(response, "Chunk task submission failed.")
         return TaskStatusResponse.model_validate_json(response.text)
 
     def _poll_task_status(self, task_id: str, wait: float) -> TaskStatusResponse:
@@ -586,9 +985,7 @@ class DoclingServiceClient:
         if response.status_code == 404:
             raise TaskNotFoundError(f"Task {task_id} was not found.")
         if response.status_code != 200:
-            self._raise_for_generic_http_error(
-                response, f"Polling task {task_id} failed."
-            )
+            _raise_for_generic_http_error(response, f"Polling task {task_id} failed.")
         return TaskStatusResponse.model_validate_json(response.text)
 
     def _watch_task_updates(
@@ -626,20 +1023,18 @@ class DoclingServiceClient:
                 path=f"/v1/result/{task_id}",
             )
             if response.status_code == 404:
-                self._raise_for_result_404(
-                    task_id=task_id, response=response, last_status=last_status
-                )
+                _raise_for_result_404(task_id, response, last_status)
             if response.status_code != 200:
-                self._raise_for_generic_http_error(
+                _raise_for_generic_http_error(
                     response, f"Fetching result for task {task_id} failed."
                 )
-            return self._decode_raw_result(response)
+            return _decode_raw_result(response)
 
         payload = self._fetch_convert_result_payload(
             task_id=task_id,
             last_status=last_status,
         )
-        return self._build_conversion_result(
+        return _build_conversion_result(
             payload=payload, descriptor=descriptor, limits=limits
         )
 
@@ -655,11 +1050,9 @@ class DoclingServiceClient:
             path=f"/v1/result/{task_id}",
         )
         if response.status_code == 404:
-            self._raise_for_result_404(
-                task_id=task_id, response=response, last_status=last_status
-            )
+            _raise_for_result_404(task_id, response, last_status)
         if response.status_code != 200:
-            self._raise_for_generic_http_error(response, error_message)
+            _raise_for_generic_http_error(response, error_message)
         return response
 
     def _fetch_convert_result_payload(
@@ -686,203 +1079,6 @@ class DoclingServiceClient:
         )
         return ChunkDocumentResponse.model_validate_json(response.text)
 
-    def _resolve_options(
-        self,
-        options: ConvertDocumentsRequestOptions | None,
-        max_num_pages: int | None,
-        max_file_size: int | None,
-        page_range: PageRange | None,
-    ) -> _ResolvedOptions:
-        merged = self._default_options.model_copy(deep=True)
-        if options is not None and options.model_fields_set:
-            # Only override fields explicitly set by the caller, preserving client defaults
-            # for everything else. Using model_fields_set (vs exclude_none) means callers
-            # can explicitly set a field to None to clear a client default.
-            explicit = {
-                field: getattr(options, field) for field in options.model_fields_set
-            }
-            merged = merged.model_copy(update=explicit, deep=True)
-
-        effective_range = merged.page_range if page_range is None else page_range
-        if max_num_pages is not None:
-            effective_range = (
-                effective_range[0],
-                min(effective_range[1], max_num_pages),
-            )
-        merged.page_range = effective_range
-
-        limits = DocumentLimits(
-            max_num_pages=sys.maxsize if max_num_pages is None else max_num_pages,
-            max_file_size=sys.maxsize if max_file_size is None else max_file_size,
-            page_range=effective_range,
-        )
-        return _ResolvedOptions(options=merged, limits=limits)
-
-    def _options_for_target_format(
-        self,
-        options: ConvertDocumentsRequestOptions,
-        target_format: OutputFormat | None,
-    ) -> tuple[ConvertDocumentsRequestOptions, bool]:
-        if target_format is None or target_format == OutputFormat.JSON:
-            formats = list(options.to_formats)
-            if OutputFormat.JSON not in formats:
-                formats.append(OutputFormat.JSON)
-            return options.model_copy(update={"to_formats": formats}, deep=True), False
-        return options.model_copy(
-            update={"to_formats": [target_format]}, deep=True
-        ), True
-
-    def _preflight_limits(
-        self,
-        descriptor: _SourceDescriptor,
-        limits: DocumentLimits,
-    ) -> ConversionResult | None:
-        if limits.max_file_size >= sys.maxsize:
-            return None
-
-        size = descriptor.file_size
-        if size is None or size <= limits.max_file_size:
-            return None
-
-        message = f"Input size {size} exceeds max_file_size limit {limits.max_file_size} bytes."
-        return self._build_failed_conversion_result(
-            descriptor=descriptor,
-            limits=limits,
-            error_message=message,
-            status=ConversionStatus.SKIPPED,
-        )
-
-    def _build_conversion_result(
-        self,
-        payload: ConvertDocumentResponse,
-        descriptor: _SourceDescriptor,
-        limits: DocumentLimits,
-    ) -> ConversionResult:
-        source_name = payload.document.filename or descriptor.source_name
-        input_doc = self._build_input_document(
-            source_name=source_name,
-            input_format=descriptor.input_format,
-            file_size=descriptor.file_size,
-            limits=limits,
-        )
-        document = payload.document.json_content
-        if document is None:
-            document = DoclingDocument(name=Path(source_name).stem)
-
-        return ConversionResult(
-            input=input_doc,
-            assembled=AssembledUnit(),
-            status=payload.status,
-            errors=payload.errors,
-            timings=payload.timings,
-            document=document,
-        )
-
-    def _build_failed_conversion_result(
-        self,
-        descriptor: _SourceDescriptor,
-        limits: DocumentLimits,
-        error_message: str,
-        status: ConversionStatus,
-    ) -> ConversionResult:
-        input_doc = self._build_input_document(
-            source_name=descriptor.source_name,
-            input_format=descriptor.input_format,
-            file_size=descriptor.file_size,
-            limits=limits,
-        )
-        error = ErrorItem(
-            component_type=DoclingComponentType.USER_INPUT,
-            module_name="docling.service_client",
-            error_message=error_message,
-        )
-        return ConversionResult(
-            input=input_doc,
-            assembled=AssembledUnit(),
-            status=status,
-            errors=[error],
-            document=DoclingDocument(name=Path(descriptor.source_name).stem),
-        )
-
-    def _build_input_document(
-        self,
-        source_name: str,
-        input_format: InputFormat,
-        file_size: int | None,
-        limits: DocumentLimits,
-    ) -> InputDocument:
-        # Build a lightweight InputDocument for compatibility results without
-        # invoking expensive parsing backends.
-        input_doc = InputDocument(
-            path_or_stream=BytesIO(b"x"),
-            format=input_format,
-            backend=NoOpBackend,
-            filename=source_name,
-            limits=limits,
-        )
-        input_doc.file = PurePath(source_name)
-        input_doc.document_hash = source_name
-        input_doc.filesize = file_size
-        input_doc.page_count = 0
-        return input_doc
-
-    def _decode_raw_result(self, response: httpx.Response) -> RawServiceResult:
-        content_type = response.headers.get("content-type", "application/octet-stream")
-        filename = self._filename_from_headers(response.headers)
-        return RawServiceResult(
-            content=response.content,
-            content_type=content_type,
-            filename=filename,
-        )
-
-    def _filename_from_headers(self, headers: httpx.Headers) -> str | None:
-        disposition = headers.get("content-disposition")
-        if disposition is None:
-            return None
-        match = re.search(r'filename="?(?P<name>[^";]+)"?', disposition)
-        if match is None:
-            return None
-        return match.group("name")
-
-    def _describe_source(self, source: SourceType) -> _SourceDescriptor:
-        if isinstance(source, Path):
-            return _SourceDescriptor(
-                source_name=source.name,
-                input_format=self._guess_input_format(source.name),
-                file_size=source.stat().st_size,
-            )
-        if isinstance(source, DocumentStream):
-            return _SourceDescriptor(
-                source_name=source.name,
-                input_format=self._guess_input_format(source.name),
-                file_size=len(source.stream.getbuffer()),
-            )
-
-        parsed = urlparse(source)
-        filename = Path(parsed.path).name if parsed.path else "document"
-        return _SourceDescriptor(
-            source_name=filename,
-            input_format=self._guess_input_format(filename),
-            file_size=None,
-        )
-
-    def _source_name(self, source: SourceType) -> str:
-        return self._describe_source(source).source_name
-
-    def _guess_input_format(self, name: str) -> InputFormat:
-        lowered = name.lower()
-        extension = (
-            "tar.gz" if lowered.endswith(".tar.gz") else Path(name).suffix[1:].lower()
-        )
-        if extension in self._extension_to_format:
-            return self._extension_to_format[extension]
-        return InputFormat.PDF
-
-    def _validate_http_source(self, source: str) -> None:
-        parsed = urlparse(source)
-        if parsed.scheme not in {"http", "https"}:
-            raise ValueError("String sources must be HTTP or HTTPS URLs.")
-
     def _source_to_upload_files(
         self,
         source: Path | DocumentStream,
@@ -891,24 +1087,6 @@ class DoclingServiceClient:
         if isinstance(source, Path):
             filename = source.name
             content: IO[bytes] = source.open("rb")
-        else:
-            filename = source.name
-            source.stream.seek(0)
-            content = source.stream
-        mime = mimetypes.guess_type(filename)[0] or "application/octet-stream"
-        return {"files": (filename, content, mime)}
-
-    async def _source_to_upload_files_async(
-        self,
-        source: Path | DocumentStream,
-    ) -> dict[str, tuple[str, IO[bytes] | bytes, str]]:
-        """Build multipart files dict for an async upload.
-        Path sources are read in a thread to avoid blocking the event loop.
-        DocumentStream data is already in memory — passed directly.
-        """
-        if isinstance(source, Path):
-            filename = source.name
-            content: IO[bytes] | bytes = await asyncio.to_thread(source.read_bytes)
         else:
             filename = source.name
             source.stream.seek(0)
@@ -935,7 +1113,7 @@ class DoclingServiceClient:
             )
         )
 
-    def _run_submit_and_retrieve_many_async(
+    def _run_submit_and_retrieve_many_sync(
         self,
         item_list: Iterable[ConversionItem],
         max_in_flight: int,
@@ -954,13 +1132,16 @@ class DoclingServiceClient:
         max_in_flight: int,
         ordered: bool,
     ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
-        return self._iterate_async_generator_sync(
-            self._submit_and_retrieve_many_async(
-                item_list=item_list,
-                max_in_flight=max_in_flight,
-                ordered=ordered,
-            )
-        )
+        async def _run() -> AsyncGenerator[
+            tuple[ConversionItem, ConvertDocumentResponse | Exception], None
+        ]:
+            async with self._build_async_service_client() as async_client:
+                async for result in async_client.submit_and_retrieve_many(
+                    item_list, max_in_flight=max_in_flight, ordered=ordered
+                ):
+                    yield result
+
+        return self._iterate_async_generator_sync(_run())
 
     def _ensure_sync_bridge_allowed(self) -> None:
         try:
@@ -996,18 +1177,10 @@ class DoclingServiceClient:
 
         return iterator()
 
-    @staticmethod
-    def _validate_concurrency(value: int, *, name: str) -> int:
-        if value < 1 or value > MAX_CONCURRENCY_LIMIT:
-            raise ValueError(
-                f"{name} must be between 1 and {MAX_CONCURRENCY_LIMIT}, got {value}."
-            )
-        return value
-
     def _effective_concurrency(self, override: int | None) -> int:
         if override is None:
             return self._max_concurrency
-        return self._validate_concurrency(override, name="max_concurrency")
+        return _validate_concurrency(override, name="max_concurrency")
 
     @staticmethod
     def _normalize_exception(exc: BaseException) -> Exception:
@@ -1031,10 +1204,9 @@ class DoclingServiceClient:
         def result_for_index(idx: int) -> ConversionResult:
             if idx in results:
                 return results[idx]
-
             exc = errors.get(idx)
             error_message = str(exc) if exc is not None else "Unknown conversion error."
-            result = self._build_failed_conversion_result(
+            result = _build_failed_conversion_result(
                 descriptor=descriptors[idx],
                 limits=resolved.limits,
                 error_message=error_message,
@@ -1048,18 +1220,18 @@ class DoclingServiceClient:
             for idx, source in enumerate(sources):
                 total = idx + 1
                 try:
-                    descriptor = self._describe_source(source)
+                    descriptor = _describe_source(source)
                 except Exception as exc:
                     errors[idx] = self._normalize_exception(exc)
                     name = str(source) if isinstance(source, str) else source.name
                     descriptors[idx] = _SourceDescriptor(
                         source_name=name,
-                        input_format=self._guess_input_format(name),
+                        input_format=_guess_input_format(name),
                         file_size=None,
                     )
                     continue
                 descriptors[idx] = descriptor
-                preflight = self._preflight_limits(
+                preflight = _preflight_limits(
                     descriptor=descriptor, limits=resolved.limits
                 )
                 if preflight is not None:
@@ -1076,408 +1248,47 @@ class DoclingServiceClient:
                 )
 
         next_output_index = 0
-        async for item, outcome in self._submit_and_retrieve_many_async(
-            item_list=make_items(),
-            max_in_flight=in_flight,
-            ordered=True,
-        ):
-            metadata = cast(_ConvertAllItemMetadata, item.metadata)
-            while next_output_index < metadata.source_index:
-                yield result_for_index(next_output_index)
-                next_output_index += 1
+        async with self._build_async_service_client() as async_client:
+            async for item, outcome in async_client.submit_and_retrieve_many(
+                make_items(), max_in_flight=in_flight, ordered=True
+            ):
+                metadata = cast(_ConvertAllItemMetadata, item.metadata)
+                while next_output_index < metadata.source_index:
+                    yield result_for_index(next_output_index)
+                    next_output_index += 1
 
-            if isinstance(outcome, BaseException):
-                errors[metadata.source_index] = self._normalize_exception(outcome)
-                yield result_for_index(metadata.source_index)
-            else:
-                result = self._build_conversion_result(
-                    payload=outcome,
-                    descriptor=metadata.descriptor,
-                    limits=resolved.limits,
-                )
-                results[metadata.source_index] = result
-                yield result
-            next_output_index += 1
+                if isinstance(outcome, BaseException):
+                    errors[metadata.source_index] = self._normalize_exception(outcome)
+                    yield result_for_index(metadata.source_index)
+                else:
+                    result = _build_conversion_result(
+                        payload=outcome,
+                        descriptor=metadata.descriptor,
+                        limits=resolved.limits,
+                    )
+                    results[metadata.source_index] = result
+                    yield result
+                next_output_index += 1
 
         for idx in range(next_output_index, total):
             yield result_for_index(idx)
 
-    async def _submit_and_retrieve_many_async(
-        self,
-        item_list: Iterable[ConversionItem],
-        max_in_flight: int,
-        ordered: bool,
-    ) -> AsyncGenerator[
-        tuple[ConversionItem, ConvertDocumentResponse | Exception], None
-    ]:
-        async with self._build_async_http_client() as async_client:
+    def _build_async_service_client(self) -> Any:
+        from docling.service_client._async_client import AsyncDoclingServiceClient
 
-            async def process_one(
-                _idx: int,
-                item: ConversionItem,
-                async_client: httpx.AsyncClient,
-            ) -> ConvertDocumentResponse:
-                resolved = self._resolve_options(
-                    options=item.options,
-                    max_num_pages=None,
-                    max_file_size=None,
-                    page_range=None,
-                )
-                submit_options, _ = self._options_for_target_format(
-                    resolved.options, OutputFormat.JSON
-                )
-                initial_status = await self._submit_convert_task_async(
-                    source=item.source,
-                    source_headers=item.source_headers,
-                    options=submit_options,
-                    async_client=async_client,
-                    request_headers=item.headers,
-                )
-                terminal_status = await self._wait_for_terminal_status_for_submit_and_retrieve_many_async(
-                    task_id=initial_status.task_id,
-                    timeout=self._job_timeout,
-                    async_client=async_client,
-                    max_in_flight=max_in_flight,
-                )
-                return await self._fetch_convert_result_payload_async(
-                    task_id=initial_status.task_id,
-                    last_status=terminal_status,
-                    async_client=async_client,
-                )
-
-            buffered_results: dict[
-                int, tuple[ConversionItem, ConvertDocumentResponse | Exception]
-            ] = {}
-            next_ordered_index = 0
-            async for idx, item, outcome in _run_bounded(
-                items=item_list,
-                process_one=process_one,
-                async_client=async_client,
-                max_in_flight=max_in_flight,
-            ):
-                normalized: ConvertDocumentResponse | Exception
-                if isinstance(outcome, BaseException):
-                    normalized = self._normalize_exception(outcome)
-                else:
-                    normalized = outcome
-
-                if ordered:
-                    buffered_results[idx] = (item, normalized)
-                    while next_ordered_index in buffered_results:
-                        yield buffered_results.pop(next_ordered_index)
-                        next_ordered_index += 1
-                    continue
-
-                yield item, normalized
-
-    def _build_async_http_client(self) -> httpx.AsyncClient:
-        timeout = httpx.Timeout(
-            connect=self._http_connect_timeout,
-            read=self._http_read_timeout,
-            write=self._http_read_timeout,
-            pool=self._http_read_timeout,
+        return AsyncDoclingServiceClient(
+            url=self._base_url,
+            api_key=self._api_key,
+            options=self._default_options,
+            status_watcher=self._status_watcher_kind,
+            ws_fallback_to_poll=self._ws_fallback_to_poll,
+            poll_server_wait=self._poll_server_wait,
+            poll_client_interval=self._poll_client_interval,
+            job_timeout=self._job_timeout,
+            http_retries=self._http_retries,
+            http_connect_timeout=self._http_connect_timeout,
+            http_read_timeout=self._http_read_timeout,
         )
-        headers: dict[str, str] = {}
-        if self._api_key:
-            headers["X-Api-Key"] = self._api_key
-        return httpx.AsyncClient(timeout=timeout, headers=headers)
-
-    async def _submit_convert_task_async(
-        self,
-        source: SourceType,
-        source_headers: dict[str, str] | None,
-        options: ConvertDocumentsRequestOptions,
-        async_client: httpx.AsyncClient,
-        request_headers: dict[str, str] | None = None,
-    ) -> TaskStatusResponse:
-        source_name = self._source_name(source)
-        logger.info("Submitting convert task for source=%s", source_name)
-        if isinstance(source, str):
-            self._validate_http_source(source)
-            request = ConvertDocumentsRequest(
-                options=options,
-                sources=[
-                    HttpSourceRequest(
-                        url=source,
-                        headers={} if source_headers is None else source_headers,
-                    )
-                ],
-                target=InBodyTarget(),
-            )
-            response = await self._request_with_retry_async(
-                async_client=async_client,
-                method="POST",
-                path="/v1/convert/source/async",
-                json=request.model_dump(mode="json"),
-                headers=request_headers,
-            )
-        else:
-            files = await self._source_to_upload_files_async(source)
-            data = options.model_dump(mode="json", exclude_none=True)
-            data["target_type"] = "inbody"
-            response = await self._request_with_retry_async(
-                async_client=async_client,
-                method="POST",
-                path="/v1/convert/file/async",
-                data=data,
-                files=files,
-                headers=request_headers,
-            )
-
-        if response.status_code != 200:
-            self._raise_for_generic_http_error(response, "Task submission failed.")
-        status = TaskStatusResponse.model_validate_json(response.text)
-        logger.info(
-            "Submitted convert task for source=%s task_id=%s status=%s position=%s",
-            source_name,
-            status.task_id,
-            status.task_status,
-            status.task_position,
-        )
-        return status
-
-    async def _poll_task_status_async(
-        self,
-        task_id: str,
-        wait: float,
-        async_client: httpx.AsyncClient,
-    ) -> TaskStatusResponse:
-        response = await self._request_with_retry_async(
-            async_client=async_client,
-            method="GET",
-            path=f"/v1/status/poll/{task_id}",
-            params={"wait": wait},
-        )
-        if response.status_code == 404:
-            raise TaskNotFoundError(f"Task {task_id} was not found.")
-        if response.status_code != 200:
-            self._raise_for_generic_http_error(
-                response, f"Polling task {task_id} failed."
-            )
-        return TaskStatusResponse.model_validate_json(response.text)
-
-    async def _wait_for_terminal_status_async(
-        self,
-        task_id: str,
-        timeout: float,
-        async_client: httpx.AsyncClient,
-    ) -> TaskStatusResponse:
-        deadline = time.monotonic() + timeout
-        while True:
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                raise TaskTimeoutError(
-                    f"Timed out waiting for task {task_id} after {timeout:.2f}s."
-                )
-            wait = min(self._poll_server_wait, remaining)
-            logger.info("Polling status for task_id=%s wait=%.2fs", task_id, wait)
-            poll_started = time.monotonic()
-            update = await self._poll_task_status_async(
-                task_id=task_id,
-                wait=wait,
-                async_client=async_client,
-            )
-            logger.info(
-                "Received status for task_id=%s status=%s position=%s",
-                task_id,
-                update.task_status,
-                update.task_position,
-            )
-            if is_terminal_task_status(update):
-                return update
-
-            # Keep a minimum client-side poll cadence when server-side wait is ignored.
-            sleep_for = _poll_sleep_duration(
-                poll_started=poll_started,
-                poll_interval=self._poll_client_interval,
-                deadline=deadline,
-            )
-            if sleep_for > 0:
-                await asyncio.sleep(sleep_for)
-
-    def _submit_and_retrieve_many_uses_websocket_wait(
-        self,
-        max_in_flight: int,
-    ) -> bool:
-        return (
-            self._status_watcher_kind == StatusWatcherKind.WEBSOCKET
-            and max_in_flight <= SUBMIT_AND_RETRIEVE_MANY_MAX_IN_FLIGHT_WEBSOCKETS
-        )
-
-    async def _wait_for_terminal_status_for_submit_and_retrieve_many_async(
-        self,
-        task_id: str,
-        timeout: float,
-        async_client: httpx.AsyncClient,
-        max_in_flight: int,
-    ) -> TaskStatusResponse:
-        if self._submit_and_retrieve_many_uses_websocket_wait(
-            max_in_flight=max_in_flight
-        ):
-            return await asyncio.to_thread(
-                self._ws_watcher.wait_for_terminal,
-                task_id,
-                timeout,
-            )
-        return await self._wait_for_terminal_status_async(
-            task_id=task_id,
-            timeout=timeout,
-            async_client=async_client,
-        )
-
-    async def _fetch_convert_result_async(
-        self,
-        task_id: str,
-        descriptor: _SourceDescriptor,
-        limits: DocumentLimits,
-        last_status: TaskStatusResponse | None,
-        async_client: httpx.AsyncClient,
-    ) -> ConversionResult:
-        payload = await self._fetch_convert_result_payload_async(
-            task_id=task_id,
-            last_status=last_status,
-            async_client=async_client,
-        )
-        return self._build_conversion_result(
-            payload=payload,
-            descriptor=descriptor,
-            limits=limits,
-        )
-
-    async def _fetch_convert_result_payload_async(
-        self,
-        task_id: str,
-        last_status: TaskStatusResponse | None,
-        async_client: httpx.AsyncClient,
-    ) -> ConvertDocumentResponse:
-        response = await self._fetch_result_response_async(
-            async_client=async_client,
-            task_id=task_id,
-            last_status=last_status,
-            error_message=f"Fetching result for task {task_id} failed.",
-        )
-        return ConvertDocumentResponse.model_validate_json(response.text)
-
-    async def _fetch_result_response_async(
-        self,
-        async_client: httpx.AsyncClient,
-        task_id: str,
-        last_status: TaskStatusResponse | None,
-        *,
-        error_message: str,
-    ) -> httpx.Response:
-        response = await self._request_with_retry_async(
-            async_client=async_client,
-            method="GET",
-            path=f"/v1/result/{task_id}",
-        )
-        if response.status_code == 404:
-            self._raise_for_result_404(
-                task_id=task_id,
-                response=response,
-                last_status=last_status,
-            )
-        if response.status_code != 200:
-            self._raise_for_generic_http_error(response, error_message)
-        return response
-
-    def _check_retry(
-        self,
-        response: httpx.Response,
-        attempt: int,
-        max_retries: int,
-    ) -> tuple[httpx.Response | None, float]:
-        """Return (response, 0.0) to yield, (None, delay) to retry after delay, or raise."""
-        if response.status_code in {500, 502}:
-            return self._retry_with_exponential_backoff(
-                response=response,
-                attempt=attempt,
-                max_retries=max_retries,
-                error_message=(
-                    f"Service returned HTTP {response.status_code} after retries."
-                ),
-            )
-        if response.status_code in {429, 503}:
-            return self._retry_with_retry_after_header(
-                response=response,
-                attempt=attempt,
-                max_retries=max_retries,
-            )
-        return response, 0.0
-
-    def _retry_with_exponential_backoff(
-        self,
-        response: httpx.Response,
-        attempt: int,
-        max_retries: int,
-        error_message: str,
-    ) -> tuple[httpx.Response | None, float]:
-        if attempt < max_retries:
-            return None, self._exponential_backoff_delay(attempt)
-        raise ServiceUnavailableError(
-            error_message,
-            status_code=response.status_code,
-            detail=self._http_error_detail(response),
-        )
-
-    def _retry_with_retry_after_header(
-        self,
-        response: httpx.Response,
-        attempt: int,
-        max_retries: int,
-    ) -> tuple[httpx.Response | None, float]:
-        retry_after_delay = self._retry_after_delay_seconds(response)
-        if retry_after_delay is None:
-            return response, 0.0
-        if attempt < max_retries:
-            return None, retry_after_delay
-        raise ServiceUnavailableError(
-            f"Service returned HTTP {response.status_code} after retries.",
-            status_code=response.status_code,
-            detail=self._http_error_detail(response),
-        )
-
-    def _exponential_backoff_delay(self, attempt: int) -> float:
-        return HTTP_RETRY_BACKOFF_BASE_SECONDS * (2**attempt)
-
-    def _transport_retry_delay(
-        self,
-        *,
-        method: str,
-        exc: httpx.HTTPError,
-        attempt: int,
-        max_retries: int,
-    ) -> float | None:
-        method_name = method.upper()
-        if (
-            not isinstance(exc, httpx.TransportError)
-            or method_name not in TRANSPORT_RETRYABLE_HTTP_METHODS
-        ):
-            return None
-        if attempt < max_retries:
-            return self._exponential_backoff_delay(attempt)
-        raise ServiceUnavailableError(
-            "Service transport request failed after retries.",
-            detail=str(exc),
-        ) from exc
-
-    def _retry_after_delay_seconds(self, response: httpx.Response) -> float | None:
-        retry_after_header = response.headers.get("Retry-After")
-        if retry_after_header is None:
-            return None
-
-        try:
-            return max(0.0, float(retry_after_header))
-        except ValueError:
-            pass
-
-        try:
-            retry_at = parsedate_to_datetime(retry_after_header)
-        except (TypeError, ValueError, IndexError, OverflowError):
-            return None
-
-        now = datetime.now(tz=retry_at.tzinfo or timezone.utc)
-        return max(0.0, (retry_at - now).total_seconds())
 
     def _request_with_retry(
         self,
@@ -1505,7 +1316,7 @@ class DoclingServiceClient:
                     headers=headers,
                 )
             except httpx.HTTPError as exc:
-                delay = self._transport_retry_delay(
+                delay = _transport_retry_delay(
                     method=method_name,
                     exc=exc,
                     attempt=attempt,
@@ -1518,125 +1329,13 @@ class DoclingServiceClient:
                     "Service transport request failed.",
                     detail=str(exc),
                 ) from exc
-            result, delay = self._check_retry(response, attempt, max_retries)
+            result, delay = _check_retry(response, attempt, max_retries)
             if result is not None:
                 return result
             if delay > 0:
                 time.sleep(delay)
 
         raise ServiceUnavailableError("Service request failed after retry loop.")
-
-    async def _request_with_retry_async(
-        self,
-        async_client: httpx.AsyncClient,
-        method: str,
-        path: str,
-        json: Any | None = None,
-        data: Any | None = None,
-        files: Any | None = None,
-        params: dict[str, Any] | None = None,
-        headers: dict[str, str] | None = None,
-        retries: int | None = None,
-    ) -> httpx.Response:
-        url = self._url(path)
-        method_name = method.upper()
-        max_retries = self._http_retries if retries is None else retries
-        for attempt in range(max_retries + 1):
-            try:
-                response = await async_client.request(
-                    method=method_name,
-                    url=url,
-                    json=json,
-                    data=data,
-                    files=files,
-                    params=params,
-                    headers=headers,
-                )
-            except httpx.HTTPError as exc:
-                delay = self._transport_retry_delay(
-                    method=method_name,
-                    exc=exc,
-                    attempt=attempt,
-                    max_retries=max_retries,
-                )
-                if delay is not None:
-                    await asyncio.sleep(delay)
-                    continue
-                raise ServiceUnavailableError(
-                    "Service transport request failed.",
-                    detail=str(exc),
-                ) from exc
-            result, delay = self._check_retry(response, attempt, max_retries)
-            if result is not None:
-                return result
-            if delay > 0:
-                await asyncio.sleep(delay)
-
-        raise ServiceUnavailableError("Service request failed after retry loop.")
-
-    def _raise_for_result_404(
-        self,
-        task_id: str,
-        response: httpx.Response,
-        last_status: TaskStatusResponse | None,
-    ) -> None:
-        detail = self._http_error_detail(response)
-        if detail == "Task not found.":
-            raise TaskNotFoundError(f"Task {task_id} was not found.")
-        if detail is not None and detail.startswith("Task result not found"):
-            if last_status is not None and is_terminal_task_status(last_status):
-                if last_status.task_status == "failure":
-                    message = last_status.error_message or f"Task {task_id} failed."
-                    raise ConversionError(message)
-                raise ResultExpiredError(f"Result for task {task_id} has expired.")
-            raise ResultNotReadyError(f"Result for task {task_id} is not ready.")
-        raise ServiceError(
-            "Unexpected result lookup error.",
-            status_code=response.status_code,
-            detail=detail,
-        )
-
-    def _raise_for_generic_http_error(
-        self,
-        response: httpx.Response,
-        message: str,
-    ) -> None:
-        if response.status_code == 402:
-            usage_limit = self._parse_usage_limit_exceeded_response(response)
-            raise UsageLimitExceededError(
-                message,
-                status_code=response.status_code,
-                detail=None if usage_limit is None else usage_limit.message,
-                current_usage=(
-                    None if usage_limit is None else usage_limit.details.currentUsage
-                ),
-                limit=None if usage_limit is None else usage_limit.details.limit,
-            )
-
-        detail = self._http_error_detail(response)
-        if 400 <= response.status_code < 500:
-            raise ServiceError(message, status_code=response.status_code, detail=detail)
-        raise ServiceUnavailableError(
-            message,
-            status_code=response.status_code,
-            detail=detail,
-        )
-
-    def _parse_usage_limit_exceeded_response(
-        self,
-        response: httpx.Response,
-    ) -> UsageLimitExceededResponse | None:
-        try:
-            return UsageLimitExceededResponse.model_validate_json(response.text)
-        except (ValidationError, ValueError):
-            return None
-
-    def _http_error_detail(self, response: httpx.Response) -> str | None:
-        try:
-            detail = response.json().get("detail")
-        except Exception:
-            return None
-        return detail if isinstance(detail, str) else None
 
     def _failure_message(self, result: ConversionResult) -> str:
         if result.errors:
@@ -1653,31 +1352,4 @@ class DoclingServiceClient:
         return f"{self._base_url}/{path}"
 
     def _build_ws_status_url(self, task_id: str) -> str:
-        parsed = urlparse(self._base_url)
-        ws_scheme = "wss" if parsed.scheme == "https" else "ws"
-        ws_url = f"{ws_scheme}://{parsed.netloc}{parsed.path}/v1/status/ws/{task_id}"
-        if not self._api_key:
-            return ws_url
-        return f"{ws_url}?{urlencode({'api_key': self._api_key})}"
-
-    def _normalize_base_url(self, url: str) -> str:
-        parsed = urlparse(url)
-        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-            raise ValueError("Client URL must be an absolute http(s) base URL.")
-        if parsed.query or parsed.fragment:
-            raise ValueError(
-                "Client URL must not include query or fragment components."
-            )
-        path = parsed.path.rstrip("/")
-        if path.endswith("/v1"):
-            raise ValueError(
-                "Client URL must be the service base URL, not include /v1."
-            )
-        return f"{parsed.scheme}://{parsed.netloc}{path}"
-
-    def _build_extension_to_format_map(self) -> dict[str, InputFormat]:
-        extension_to_format: dict[str, InputFormat] = {}
-        for input_format, extensions in FormatToExtensions.items():
-            for extension in extensions:
-                extension_to_format.setdefault(extension.lower(), input_format)
-        return extension_to_format
+        return _build_ws_status_url(self._base_url, self._api_key, task_id)
