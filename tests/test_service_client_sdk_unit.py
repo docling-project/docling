@@ -315,6 +315,142 @@ def test_websocket_watcher_treats_clean_close_on_next_as_end_of_stream(
     assert [update.task_status for update in updates] == ["pending", "pending"]
 
 
+def test_websocket_watcher_reconnects_after_connection_drop(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeConnectionClosedError(Exception):
+        pass
+
+    class FakeConnectionClosedOK(Exception):
+        pass
+
+    connection_calls: list[int] = []
+
+    class FirstConnection:
+        def __init__(self) -> None:
+            self._consumed = False
+
+        def __enter__(self) -> "FirstConnection":
+            return self
+
+        def recv(self, timeout: float | None = None) -> str:
+            if self._consumed:
+                raise FakeConnectionClosedError("connection reset")
+            self._consumed = True
+            return WebsocketMessage(
+                message=MessageKind.CONNECTION,
+                task=_status_response("task-1", "pending"),
+            ).model_dump_json()
+
+        def send(self, message: str) -> None:
+            pass
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+    class SecondConnection:
+        def __init__(self) -> None:
+            self._messages = iter(
+                [
+                    WebsocketMessage(
+                        message=MessageKind.CONNECTION,
+                        task=_status_response("task-1", "pending"),
+                    ).model_dump_json(),
+                    WebsocketMessage(
+                        message=MessageKind.UPDATE,
+                        task=_status_response("task-1", "success"),
+                    ).model_dump_json(),
+                ]
+            )
+
+        def recv(self, timeout: float | None = None) -> str:
+            return next(self._messages)
+
+        def send(self, message: str) -> None:
+            pass
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def __enter__(self) -> "SecondConnection":
+            return self
+
+    connections = iter([FirstConnection(), SecondConnection()])
+
+    def fake_connect(*args, **kwargs):
+        connection_calls.append(1)
+        return next(connections)
+
+    monkeypatch.setattr(
+        watchers_module, "ConnectionClosedError", FakeConnectionClosedError
+    )
+    monkeypatch.setattr(watchers_module, "ConnectionClosedOK", FakeConnectionClosedOK)
+    monkeypatch.setattr(watchers_module, "connect", fake_connect)
+    monkeypatch.setattr(watchers_module.time, "sleep", lambda _: None)
+
+    watcher = watchers_module.WebSocketWatcher(
+        ws_url_for_task=lambda task_id: f"ws://example.invalid/{task_id}",
+        poll_fallback=None,
+        fallback_to_poll=False,
+        connect_timeout=1.0,
+        default_timeout=10.0,
+    )
+
+    updates = list(watcher.iter_updates(task_id="task-1"))
+
+    assert len(connection_calls) == 2
+    assert [u.task_status for u in updates] == ["pending", "pending", "success"]
+
+
+def test_websocket_watcher_raises_after_max_reconnect_attempts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeConnectionClosedError(Exception):
+        pass
+
+    class FakeConnectionClosedOK(Exception):
+        pass
+
+    connection_calls: list[int] = []
+
+    class DroppingConnection:
+        def __enter__(self) -> "DroppingConnection":
+            return self
+
+        def recv(self, timeout: float | None = None) -> str:
+            raise FakeConnectionClosedError("connection reset")
+
+        def send(self, message: str) -> None:
+            pass
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+    def fake_connect(*args, **kwargs):
+        connection_calls.append(1)
+        return DroppingConnection()
+
+    monkeypatch.setattr(
+        watchers_module, "ConnectionClosedError", FakeConnectionClosedError
+    )
+    monkeypatch.setattr(watchers_module, "ConnectionClosedOK", FakeConnectionClosedOK)
+    monkeypatch.setattr(watchers_module, "connect", fake_connect)
+    monkeypatch.setattr(watchers_module.time, "sleep", lambda _: None)
+
+    watcher = watchers_module.WebSocketWatcher(
+        ws_url_for_task=lambda task_id: f"ws://example.invalid/{task_id}",
+        poll_fallback=None,
+        fallback_to_poll=False,
+        connect_timeout=1.0,
+        default_timeout=10.0,
+    )
+
+    with pytest.raises(watchers_module.ServiceUnavailableError):
+        list(watcher.iter_updates(task_id="task-1"))
+
+    assert len(connection_calls) == watchers_module.WS_MAX_RECONNECT_ATTEMPTS + 1
+
+
 @pytest.mark.anyio
 async def test_async_wait_for_terminal_enforces_minimum_client_cadence(
     monkeypatch: pytest.MonkeyPatch,
