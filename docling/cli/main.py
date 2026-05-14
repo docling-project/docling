@@ -649,31 +649,6 @@ def convert(  # noqa: C901
             help="If enabled, it saves the profiling summaries to json.",
         ),
     ] = False,
-    tikz_engine: Annotated[
-        bool,
-        typer.Option(
-            "--tikz-engine",
-            "-T",
-            help="Render TikZ diagrams into images using Tectonic.",
-        ),
-    ] = False,
-    tikz_shell_escape: Annotated[
-        bool,
-        typer.Option(
-            "--tikz-shell-escape",
-            help=(
-                "Enable shell escape for Tectonic TikZ rendering. "
-                "Needed for some diagrams, but less safe for untrusted LaTeX."
-            ),
-        ),
-    ] = False,
-    tikz_engine_timeout: Annotated[
-        float,
-        typer.Option(
-            "--tikz-engine-timeout",
-            help="The timeout in seconds for rendering a single TikZ diagram.",
-        ),
-    ] = 60.0,
 ):
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
@@ -883,13 +858,7 @@ def convert(  # noqa: C901
                 ),
                 InputFormat.LATEX: LatexFormatOption(
                     pipeline_options=simple_format_option,
-                    backend_options=LatexBackendOptions(
-                        tikz_engine="tectonic",
-                        tikz_engine_timeout=tikz_engine_timeout,
-                        tikz_engine_allow_shell_escape=tikz_shell_escape,
-                    )
-                    if tikz_engine
-                    else LatexBackendOptions(),
+                    backend_options=LatexBackendOptions(),
                 ),
             }
 
