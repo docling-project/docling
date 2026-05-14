@@ -1,8 +1,16 @@
 """
     이 코드는 예시이며, 실제로는 DB의 값을 가져와서 사용한다.
     이 코드를 최초에 DB에 넣어야 한다.
+
+    [!!DEPRECATED!!]
+    이 기본 전처리기(preprocessor.py)는 더 이상 권장되지 않습니다.
+    대신 facade 디렉토리의 아래 전처리기 중 하나를 사용해 주세요:
+        - facade/attachment_processor.py
+        - facade/intelligent_processor.py
+        - facade/convert_processor.py
 """
 
+import logging
 import subprocess
 import os
 import shutil
@@ -11,6 +19,17 @@ import fitz
 import uuid
 
 from collections import defaultdict
+
+_log = logging.getLogger(__name__)
+
+_DEPRECATED_MSG = (
+    "[DEPRECATED] 기본 전처리기(preprocessor.py)는 더 이상 권장되지 않습니다. "
+    "facade/attachment_processor.py, facade/intelligent_processor.py, "
+    "facade/convert_processor.py 중 하나를 사용해 주세요."
+)
+
+_log.warning(_DEPRECATED_MSG)
+
 from datetime import datetime
 from fastapi import Request
 from pydantic import BaseModel
@@ -110,6 +129,7 @@ class HwpLoader:
         os.makedirs(self.output_dir, exist_ok=True)
 
     def load(self):
+        _log.warning(_DEPRECATED_MSG)
         try:
             subprocess.run(['hwp5html', self.file_path, '--output', self.output_dir], check=True, timeout=600)
 
@@ -135,6 +155,7 @@ class TextLoader:
         os.makedirs(self.output_dir, exist_ok=True)
 
     def load(self):
+        _log.warning(_DEPRECATED_MSG)
         try:
             with open(self.file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -338,6 +359,7 @@ class DocumentProcessor:
         return vectors
 
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
+        _log.warning(_DEPRECATED_MSG)
         documents: list[Document] = self.load_documents(file_path, **kwargs)
         await assert_cancelled(request)
 
