@@ -595,7 +595,7 @@ def convert(  # noqa: C901
     debug_visualize_layout: Annotated[
         bool,
         typer.Option(
-            ..., help="Enable debug output which visualizes the layour clusters"
+            ..., help="Enable debug output which visualizes the layout clusters"
         ),
     ] = False,
     debug_visualize_tables: Annotated[
