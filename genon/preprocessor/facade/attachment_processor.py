@@ -1087,7 +1087,7 @@ def _split_with_recursive_chunker(
 ) -> List[dict]:
     """Markdown export + RecursiveCharacterTextSplitter로 docling 문서를 분할.
 
-    1) char 단위로 1차 분할 (chunk_size 기본 1000, DocumentProcessor 흐름과 동일).
+    1) char 단위로 1차 분할 (chunk_size 기본 8192).
     2) 한 청크가 60,000 토큰을 초과하면 토큰 단위로 강제 재분할 — 임베딩 한도 절대 상한 (이슈 #183).
 
     Returns: list of dict {text, page_no, pages, doc_items}
@@ -1096,7 +1096,7 @@ def _split_with_recursive_chunker(
     if not md_full:
         return []
 
-    cs = max(int(chunk_size), 1) if chunk_size is not None else 1000
+    cs = max(int(chunk_size), 1) if chunk_size is not None else 8192
     co = max(int(chunk_overlap), 0) if chunk_overlap is not None else 100
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=cs,

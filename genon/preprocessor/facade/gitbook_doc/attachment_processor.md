@@ -775,8 +775,7 @@ document.export_to_markdown(page_break_placeholder="<!-- PB -->")
     │
     ▼
 RecursiveCharacterTextSplitter (char 단위)
-    │  → chunk_size 1000자 / chunk_overlap 100자 (기본)
-    │  → DocumentProcessor.split_documents 기존 흐름과 동일한 기본값
+    │  → chunk_size 8192자 / chunk_overlap 100자 (기본)
     │
     ▼
 60K 토큰 절대 상한 후처리
@@ -792,14 +791,16 @@ RecursiveCharacterTextSplitter (char 단위)
 list[dict] {text, page_no, pages, doc_items}
 ```
 
-**chunk_size 정책 (DocumentProcessor 흐름과 일관성 유지)**:
+**chunk_size 정책**:
 
 | 호출 형태 | chunk_size 단위 | chunk_size 기본 | chunk_overlap 기본 |
 |---|---|---|---|
-| `dp(..., chunker_type="recursive")` | **char** | 1000 | 100 |
+| `dp(..., chunker_type="recursive")` | **char** | 8192 | 100 |
 | `dp(..., chunker_type="recursive", chunk_size=2000)` | **char** | 2000 | 100 |
 
-**60K 토큰 절대 상한**: 어떤 `chunk_size`가 와도 한 청크가 60,000 토큰(임베딩 입력 한도의 절반 안전 마진)을 초과하면 자동으로 토큰 단위 splitter로 재분할됩니다. 기본 1000자 청크에서는 한국어 기준 약 1500 토큰 정도라 트리거되지 않지만, 사용자가 큰 `chunk_size`를 명시했을 때의 안전망 역할입니다.
+단위는 `DocumentProcessor.split_documents`(PDF/MD/TXT 등)의 char 기반 흐름과 동일. 기본값은 RAG 컨텍스트에 적합한 8192자(한국어 기준 약 12K~16K 토큰)로 설정했다.
+
+**60K 토큰 절대 상한**: 어떤 `chunk_size`가 와도 한 청크가 60,000 토큰(임베딩 입력 한도의 절반 안전 마진)을 초과하면 자동으로 토큰 단위 splitter로 재분할됩니다. 기본 8192자 청크에서는 한국어 기준 약 12K~16K 토큰 정도라 트리거되지 않지만, 사용자가 더 큰 `chunk_size`를 명시했을 때의 안전망 역할입니다.
 
 **페이지 정보 복원**:
 
