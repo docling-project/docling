@@ -165,6 +165,10 @@ kubectl apply -f doc-parser-ocr-deployment.yaml
 ```
 5. 노드 포트로 배포시는 [doc-parser-ocr-deployment-node-port.yaml](serving/paddle/k8s-manifest/doc-parser-ocr-deployment-node-port.yaml)
 
+## paddle-ocr B300 (Blackwell) 빌드 및 배포
+
+B300 (compute capability `sm_100`) GPU 환경 대응을 위한 별도 빌드 경로. 기존 cu126 이미지와는 파일 세트가 완전히 분리되어 있다. 빌드 / 배포 / smoke test 절차는 [serving/paddle/README-B300.md](serving/paddle/README-B300.md) 참고.
+
 ## dots mocr vllm 서빙
 
 1. 모델 다운로드
