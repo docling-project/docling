@@ -7,7 +7,11 @@ from docling.datamodel.base_models import OutputFormat
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
-from docling.service_client import DoclingServiceClient, RawServiceResult
+from docling.service_client import (
+    AsyncDoclingServiceClient,
+    DoclingServiceClient,
+    RawServiceResult,
+)
 
 SERVICE_URL_ENV = "DOCLING_SERVICE_URL"
 SERVICE_API_KEY_ENV = "DOCLING_SERVICE_API_KEY"
@@ -177,3 +181,150 @@ def test_submit_accepts_custom_request_headers(
         result = job.result(timeout=300.0)
 
     assert result.status.value in {"success", "partial_success"}
+
+
+# ---------------------------------------------------------------------------
+# Async integration tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_async_convert_with_polling_watcher(
+    live_service_url: str, service_api_key: str | None
+) -> None:
+    source = FIXTURES_DIR / "2206.01062.pdf"
+    assert source.exists()
+
+    async with AsyncDoclingServiceClient(
+        url=live_service_url,
+        api_key=service_api_key,
+        status_watcher="polling",
+        poll_server_wait=0.2,
+        job_timeout=300.0,
+        options=_json_options(),
+    ) as client:
+        health = await client.health()
+        assert health.status == "ok"
+
+        version = await client.version()
+        assert isinstance(version, dict)
+
+        job = await client.submit(source=source, target_format=OutputFormat.JSON)
+        result = await job.result(timeout=300.0)
+        assert result.status.value in {"success", "partial_success"}
+        assert result.document.name == "2206.01062"
+
+
+@pytest.mark.anyio
+async def test_async_submit_non_json_returns_raw_payload(
+    live_service_url: str, service_api_key: str | None
+) -> None:
+    source = FIXTURES_DIR / "2206.01062.pdf"
+    assert source.exists()
+
+    options = ConvertDocumentsRequestOptions(
+        do_ocr=False,
+        do_table_structure=False,
+        include_images=False,
+        to_formats=[OutputFormat.MARKDOWN],
+        abort_on_error=False,
+    )
+    async with AsyncDoclingServiceClient(
+        url=live_service_url,
+        api_key=service_api_key,
+        status_watcher="polling",
+        poll_server_wait=0.2,
+        job_timeout=300.0,
+    ) as client:
+        job = await client.submit(
+            source=source, options=options, target_format=OutputFormat.MARKDOWN
+        )
+        raw_result = await job.result(timeout=300.0)
+
+    assert isinstance(raw_result, RawServiceResult)
+    assert len(raw_result.content) > 0
+    assert "zip" in raw_result.content_type
+
+
+@pytest.mark.anyio
+async def test_async_websocket_watcher_end_to_end(
+    live_service_url: str, service_api_key: str | None
+) -> None:
+    source = FIXTURES_DIR / "2206.01062.pdf"
+    assert source.exists()
+
+    async with AsyncDoclingServiceClient(
+        url=live_service_url,
+        api_key=service_api_key,
+        status_watcher="websocket",
+        ws_fallback_to_poll=True,
+        poll_server_wait=0.2,
+        job_timeout=300.0,
+    ) as client:
+        job = await client.submit(source=source, options=_json_options())
+        result = await job.result(timeout=300.0)
+
+    assert result.status.value in {"success", "partial_success"}
+    assert result.document.name == "2206.01062"
+
+
+@pytest.mark.anyio
+async def test_async_submit_accepts_custom_request_headers(
+    live_service_url: str, service_api_key: str | None
+) -> None:
+    source = FIXTURES_DIR / "2206.01062.pdf"
+    assert source.exists()
+
+    async with AsyncDoclingServiceClient(
+        url=live_service_url,
+        api_key=service_api_key,
+        status_watcher="polling",
+        poll_server_wait=0.2,
+        job_timeout=300.0,
+    ) as client:
+        job = await client.submit(
+            source=source,
+            options=_json_options(),
+            headers={"X-Tenant-Id": "tenant-async-integration"},
+        )
+        result = await job.result(timeout=300.0)
+
+    assert result.status.value in {"success", "partial_success"}
+
+
+@pytest.mark.anyio
+async def test_async_submit_and_retrieve_many_preserves_per_item_results(
+    live_service_url: str, service_api_key: str | None, tmp_path: Path
+) -> None:
+    source = FIXTURES_DIR / "2206.01062.pdf"
+    assert source.exists()
+    source_a = tmp_path / "async-order-a.pdf"
+    source_b = tmp_path / "async-order-b.pdf"
+    source_a.write_bytes(source.read_bytes())
+    source_b.write_bytes(source.read_bytes())
+
+    from docling.service_client import ConversionItem
+
+    items = [
+        ConversionItem(source=source_a, options=_json_options()),
+        ConversionItem(source=source_b, options=_json_options()),
+    ]
+
+    async with AsyncDoclingServiceClient(
+        url=live_service_url,
+        api_key=service_api_key,
+        status_watcher="polling",
+        poll_server_wait=0.2,
+        job_timeout=300.0,
+    ) as client:
+        pairs = [
+            pair
+            async for pair in client.submit_and_retrieve_many(
+                items=items, max_in_flight=2
+            )
+        ]
+
+    assert len(pairs) == 2
+    for item, result_or_exc in pairs:
+        assert not isinstance(result_or_exc, Exception)
+        assert result_or_exc.status.value in {"success", "partial_success"}

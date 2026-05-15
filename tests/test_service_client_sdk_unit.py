@@ -1773,3 +1773,643 @@ def test_page_range_json_serialization_is_warning_free() -> None:
         "PydanticSerializationUnexpectedValue" not in str(warning.message)
         for warning in caught
     )
+
+
+# ---------------------------------------------------------------------------
+# AsyncDoclingServiceClient — unit tests
+# ---------------------------------------------------------------------------
+
+from contextlib import asynccontextmanager  # noqa: E402 (needed at module level)
+
+from docling.service_client._async_client import AsyncDoclingServiceClient  # noqa: E402
+from docling.service_client.client import StatusWatcherKind  # noqa: E402
+from docling.service_client.job import (  # noqa: E402
+    AsyncConversionJob,
+    _AsyncJobHandlers,
+)
+
+
+@asynccontextmanager
+async def _make_async_http_client(handler, **kwargs):
+    """Open an AsyncDoclingServiceClient whose HTTP client is replaced by a fake."""
+    async with AsyncDoclingServiceClient(url=TEST_BASE_URL, **kwargs) as client:
+
+        class _FakeHttp:
+            async def request(self, method, url, **kw):
+                return handler(method, url, **kw)
+
+            async def aclose(self) -> None:
+                pass
+
+        client._async_client = _FakeHttp()  # type: ignore[assignment]
+        yield client
+
+
+@asynccontextmanager
+async def _make_async_sam_client(submit_fn, wait_fn, fetch_fn):
+    """Open an AsyncDoclingServiceClient with patched submit/wait/fetch for SAM tests."""
+    async with AsyncDoclingServiceClient(
+        url=TEST_BASE_URL,
+        status_watcher=StatusWatcherKind.POLLING,
+    ) as client:
+
+        class _FakeHttp:
+            async def request(self, *a, **kw):
+                raise AssertionError("unexpected HTTP call in SAM test")
+
+            async def aclose(self) -> None:
+                pass
+
+        client._async_client = _FakeHttp()  # type: ignore[assignment]
+        client._submit_convert_task = submit_fn  # type: ignore[method-assign]
+        assert client._polling_watcher is not None
+        client._polling_watcher.wait_for_terminal = wait_fn  # type: ignore[method-assign]
+        client._fetch_convert_result_payload = fetch_fn  # type: ignore[method-assign]
+        yield client
+
+
+# --- constructor ---
+
+
+@pytest.mark.parametrize("value", [0, -1, MAX_CONCURRENCY_LIMIT + 1])
+def test_async_client_rejects_invalid_default_max_concurrency(value: int) -> None:
+    with pytest.raises(
+        ValueError,
+        match=f"max_concurrency must be between 1 and {MAX_CONCURRENCY_LIMIT}, got {value}.",
+    ):
+        AsyncDoclingServiceClient(url=TEST_BASE_URL, max_concurrency=value)
+
+
+def test_async_client_constructor_matches_sync_defaults() -> None:
+    """Verify AsyncDoclingServiceClient has the same default signature as DoclingServiceClient."""
+    import inspect
+
+    from docling.service_client.client import DEFAULT_MAX_CONCURRENCY
+
+    sync_sig = inspect.signature(DoclingServiceClient.__init__)
+    async_sig = inspect.signature(AsyncDoclingServiceClient.__init__)
+
+    shared_params = [
+        "url",
+        "api_key",
+        "options",
+        "status_watcher",
+        "ws_fallback_to_poll",
+        "poll_server_wait",
+        "poll_client_interval",
+        "job_timeout",
+        "max_concurrency",
+        "http_retries",
+        "http_connect_timeout",
+        "http_read_timeout",
+    ]
+    for name in shared_params:
+        assert name in sync_sig.parameters, f"sync missing {name}"
+        assert name in async_sig.parameters, f"async missing {name}"
+        s_default = sync_sig.parameters[name].default
+        a_default = async_sig.parameters[name].default
+        assert s_default == a_default, (
+            f"default mismatch for {name!r}: sync={s_default!r} async={a_default!r}"
+        )
+
+
+# --- AsyncConversionJob lifecycle ---
+
+
+@pytest.mark.anyio
+async def test_async_conversion_job_poll_updates_state() -> None:
+    seen_waits: list[float] = []
+
+    async def fake_poll(task_id: str, wait: float) -> TaskStatusResponse:
+        seen_waits.append(wait)
+        return _status_response(task_id=task_id, status="success")
+
+    async def fake_fetch(task_id: str, last: TaskStatusResponse | None) -> str:
+        return "result"
+
+    job: AsyncConversionJob[str] = AsyncConversionJob(
+        task_id="task-1",
+        submitted_at=datetime.now(timezone.utc),
+        handlers=_AsyncJobHandlers(
+            poll=fake_poll,
+            watch=lambda tid, t: (x async for x in []),
+            wait=lambda tid, t: fake_poll(tid, 0.0),
+            fetch_result=fake_fetch,
+        ),
+    )
+
+    assert not job.done
+    status = await job.poll(wait=3.7)
+    assert status.task_status == "success"
+    assert seen_waits == [3.7]
+    assert job.done
+
+
+@pytest.mark.anyio
+async def test_async_conversion_job_watch_streams_updates() -> None:
+    emitted = ["pending", "success"]
+    idx = 0
+
+    async def fake_poll(task_id: str, wait: float) -> TaskStatusResponse:
+        nonlocal idx
+        s = emitted[idx]
+        idx += 1
+        return _status_response(task_id=task_id, status=s)
+
+    async def gen(task_id: str, timeout: float | None):
+        for s in emitted:
+            yield _status_response(task_id=task_id, status=s)
+
+    async def fake_fetch(task_id: str, last: TaskStatusResponse | None) -> str:
+        return "done"
+
+    job: AsyncConversionJob[str] = AsyncConversionJob(
+        task_id="task-1",
+        submitted_at=datetime.now(timezone.utc),
+        handlers=_AsyncJobHandlers(
+            poll=fake_poll,
+            watch=gen,
+            wait=lambda tid, t: fake_poll(tid, 0.0),
+            fetch_result=fake_fetch,
+        ),
+    )
+
+    updates = [u async for u in job.watch()]
+    assert [u.task_status for u in updates] == ["pending", "success"]
+    assert job.done
+
+
+@pytest.mark.anyio
+async def test_async_conversion_job_result_waits_and_fetches() -> None:
+    waited: list[str] = []
+    fetched: list[str] = []
+
+    async def fake_wait(task_id: str, timeout: float | None) -> TaskStatusResponse:
+        waited.append(task_id)
+        return _status_response(task_id=task_id, status="success")
+
+    async def fake_fetch(task_id: str, last: TaskStatusResponse | None) -> str:
+        fetched.append(task_id)
+        return "the-result"
+
+    job: AsyncConversionJob[str] = AsyncConversionJob(
+        task_id="task-1",
+        submitted_at=datetime.now(timezone.utc),
+        handlers=_AsyncJobHandlers(
+            poll=lambda tid, w: fake_wait(tid, None),
+            watch=lambda tid, t: (x async for x in []),
+            wait=fake_wait,
+            fetch_result=fake_fetch,
+        ),
+    )
+
+    result = await job.result(timeout=10.0)
+    assert result == "the-result"
+    assert waited == ["task-1"]
+    assert fetched == ["task-1"]
+
+
+@pytest.mark.anyio
+async def test_async_conversion_job_result_skips_wait_when_already_done() -> None:
+    wait_count = [0]
+
+    async def fake_wait(task_id: str, timeout: float | None) -> TaskStatusResponse:
+        wait_count[0] += 1
+        return _status_response(task_id=task_id, status="success")
+
+    async def fake_fetch(task_id: str, last: TaskStatusResponse | None) -> str:
+        return "done"
+
+    initial = _status_response("task-1", "success")
+    job: AsyncConversionJob[str] = AsyncConversionJob(
+        task_id="task-1",
+        submitted_at=datetime.now(timezone.utc),
+        handlers=_AsyncJobHandlers(
+            poll=lambda tid, w: fake_wait(tid, None),
+            watch=lambda tid, t: (x async for x in []),
+            wait=fake_wait,
+            fetch_result=fake_fetch,
+        ),
+        initial_status=initial,
+    )
+
+    assert job.done
+    await job.result()
+    assert wait_count[0] == 0
+
+
+# --- submit ---
+
+
+@pytest.mark.anyio
+async def test_async_submit_url_source_posts_correct_endpoint() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(method: str, url: str, **kw: object) -> httpx.Response:
+        captured["method"] = method
+        captured["url"] = url
+        return httpx.Response(
+            200, json=_status_response("task-1", "pending").model_dump(mode="json")
+        )
+
+    async with _make_async_http_client(handler) as client:
+        job = await client.submit(source="https://example.org/sample.pdf")
+
+    assert captured["method"] == "POST"
+    assert "/v1/convert/source/async" in str(captured["url"])
+    assert job.task_id == "task-1"
+
+
+@pytest.mark.anyio
+async def test_async_submit_file_source_posts_correct_endpoint(
+    tmp_path: Path,
+) -> None:
+    captured: dict[str, object] = {}
+    sample = tmp_path / "sample.pdf"
+    sample.write_bytes(b"%PDF-1.4\n")
+
+    def handler(method: str, url: str, **kw: object) -> httpx.Response:
+        captured["method"] = method
+        captured["url"] = url
+        return httpx.Response(
+            200, json=_status_response("task-2", "pending").model_dump(mode="json")
+        )
+
+    async with _make_async_http_client(handler) as client:
+        job = await client.submit(source=sample)
+
+    assert captured["method"] == "POST"
+    assert "/v1/convert/file/async" in str(captured["url"])
+    assert job.task_id == "task-2"
+
+
+@pytest.mark.anyio
+async def test_async_submit_forwards_request_headers() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(method: str, url: str, **kw: object) -> httpx.Response:
+        captured["headers"] = kw.get("headers")
+        return httpx.Response(
+            200, json=_status_response("task-1", "pending").model_dump(mode="json")
+        )
+
+    async with _make_async_http_client(handler, api_key="base-key") as client:
+        job = await client.submit(
+            source="https://example.org/sample.pdf",
+            headers={"X-Tenant-Id": "tenant-a"},
+        )
+
+    assert captured["headers"] == {"X-Tenant-Id": "tenant-a"}
+    assert job.task_id == "task-1"
+
+
+@pytest.mark.anyio
+async def test_async_submit_non_json_target_format_uses_zip_target(
+    tmp_path: Path,
+) -> None:
+    from docling.datamodel.base_models import OutputFormat
+
+    calls: list[str] = []
+
+    def handler(method: str, url: str, **kw: object) -> httpx.Response:
+        calls.append(url)
+        data = kw.get("data") or {}
+        assert data.get("target_type") == "zip", (
+            f"expected zip, got {data.get('target_type')}"
+        )
+        return httpx.Response(
+            200, json=_status_response("task-raw", "pending").model_dump(mode="json")
+        )
+
+    sample = tmp_path / "sample.pdf"
+    sample.write_bytes(b"%PDF-1.4\n")
+
+    async with _make_async_http_client(handler) as client:
+        job = await client.submit(
+            source=sample,
+            target_format=OutputFormat.MARKDOWN,
+        )
+
+    assert job.task_id == "task-raw"
+
+
+# --- submit_chunk ---
+
+
+@pytest.mark.anyio
+async def test_async_submit_chunk_url_source_posts_correct_endpoint() -> None:
+    from docling.service_client.client import ChunkerKind
+
+    captured: dict[str, object] = {}
+
+    def handler(method: str, url: str, **kw: object) -> httpx.Response:
+        captured["url"] = url
+        return httpx.Response(
+            200, json=_status_response("chunk-1", "pending").model_dump(mode="json")
+        )
+
+    async with _make_async_http_client(handler) as client:
+        job = await client.submit_chunk(
+            source="https://example.org/doc.pdf",
+            chunker=ChunkerKind.HYBRID,
+        )
+
+    assert "/v1/chunk/hybrid/source/async" in str(captured["url"])
+    assert job.task_id == "chunk-1"
+
+
+# --- health / version ---
+
+
+@pytest.mark.anyio
+async def test_async_health_returns_parsed_response() -> None:
+    def handler(method: str, url: str, **kw: object) -> httpx.Response:
+        return httpx.Response(200, json={"status": "ok"})
+
+    async with _make_async_http_client(handler) as client:
+        result = await client.health()
+
+    assert result.status == "ok"
+
+
+@pytest.mark.anyio
+async def test_async_version_returns_dict() -> None:
+    def handler(method: str, url: str, **kw: object) -> httpx.Response:
+        return httpx.Response(200, json={"version": "1.2.3", "api_version": "v1"})
+
+    async with _make_async_http_client(handler) as client:
+        result = await client.version()
+
+    assert result["version"] == "1.2.3"
+
+
+# --- async WebSocket watcher fallback ---
+
+
+@pytest.mark.anyio
+async def test_async_websocket_watcher_falls_back_to_polling_on_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def _noop_sleep(s: float) -> None:
+        pass
+
+    monkeypatch.setattr(watchers_module.asyncio, "sleep", _noop_sleep)
+    monkeypatch.setattr(
+        watchers_module,
+        "async_ws_connect",
+        lambda *a, **kw: _raise_os_error_ctx(),
+    )
+
+    async def fake_poll(task_id: str, wait: float) -> TaskStatusResponse:
+        return _status_response(task_id=task_id, status="success")
+
+    fallback = AsyncPollingWatcher(
+        poll_status=fake_poll,
+        poll_server_wait=5.0,
+        poll_client_interval=None,
+        default_timeout=30.0,
+    )
+    watcher = watchers_module.AsyncWebSocketWatcher(
+        ws_url_for_task=lambda tid: f"ws://fake/{tid}",
+        poll_fallback=fallback,
+        fallback_to_poll=True,
+        connect_timeout=0.1,
+        default_timeout=30.0,
+    )
+
+    updates = [u async for u in watcher.iter_updates("task-1")]
+    assert [u.task_status for u in updates] == ["success"]
+
+
+class _raise_os_error_ctx:
+    """Async context manager that raises OSError on enter, simulating a broken WS."""
+
+    async def __aenter__(self):
+        raise OSError("connection refused")
+
+    async def __aexit__(self, *a):
+        pass
+
+
+# --- usage limit exceeded (async) ---
+
+
+@pytest.mark.anyio
+async def test_async_402_usage_limit_exceeded_raises_explicit_exception() -> None:
+    payload = {
+        "error": "usage_limit_exceeded",
+        "message": "Your page limit has been exceeded.",
+        "details": {"currentUsage": 100, "limit": 50},
+    }
+
+    def handler(method: str, url: str, **kw: object) -> httpx.Response:
+        return httpx.Response(402, json=payload)
+
+    async with _make_async_http_client(handler) as client:
+        with pytest.raises(UsageLimitExceededError) as exc_info:
+            await client.submit(source="https://example.org/doc.pdf")
+
+    assert exc_info.value.status_code == 402
+    assert exc_info.value.current_usage == 100
+    assert exc_info.value.limit == 50
+
+
+# --- submit_and_retrieve_many (direct async client) ---
+
+
+@pytest.mark.anyio
+async def test_async_submit_and_retrieve_many_forwards_per_item_request_headers(
+    tmp_path: Path,
+) -> None:
+    seen_headers: list[dict[str, str] | None] = []
+
+    async def fake_submit(
+        source, source_headers, options, raw_result, request_headers=None
+    ):
+        seen_headers.append(request_headers)
+        return _status_response(f"task-{Path(source).name}", "pending")
+
+    async def fake_wait(task_id: str, timeout: float | None) -> TaskStatusResponse:
+        return _status_response(task_id, "success")
+
+    async def fake_fetch(task_id: str, last_status: TaskStatusResponse | None):
+        return _convert_payload(task_id.removeprefix("task-"))
+
+    p1 = tmp_path / "a.pdf"
+    p2 = tmp_path / "b.pdf"
+    p1.write_bytes(b"%PDF-1.4\n")
+    p2.write_bytes(b"%PDF-1.4\n")
+
+    async with _make_async_sam_client(fake_submit, fake_wait, fake_fetch) as client:
+        results = [
+            r
+            async for r in client.submit_and_retrieve_many(
+                [
+                    ConversionItem(source=p1, headers={"X-Tenant-Id": "tenant-a"}),
+                    ConversionItem(source=p2, headers={"X-Tenant-Id": "tenant-b"}),
+                ],
+                max_in_flight=2,
+            )
+        ]
+
+    assert len(results) == 2
+    assert set(map(str, seen_headers)) == {
+        str({"X-Tenant-Id": "tenant-a"}),
+        str({"X-Tenant-Id": "tenant-b"}),
+    }
+
+
+@pytest.mark.anyio
+async def test_async_submit_and_retrieve_many_forwards_per_item_source_headers() -> (
+    None
+):
+    seen_source_headers: list[dict[str, str] | None] = []
+
+    async def fake_submit(
+        source, source_headers, options, raw_result, request_headers=None
+    ):
+        seen_source_headers.append(source_headers)
+        return _status_response(f"task-{Path(source).name}", "pending")
+
+    async def fake_wait(task_id: str, timeout: float | None) -> TaskStatusResponse:
+        return _status_response(task_id, "success")
+
+    async def fake_fetch(task_id: str, last_status: TaskStatusResponse | None):
+        return _convert_payload(task_id.removeprefix("task-"))
+
+    async with _make_async_sam_client(fake_submit, fake_wait, fake_fetch) as client:
+        results = [
+            r
+            async for r in client.submit_and_retrieve_many(
+                [
+                    ConversionItem(
+                        source="https://example.org/a.pdf",
+                        source_headers={"Authorization": "Bearer a"},
+                    ),
+                    ConversionItem(
+                        source="https://example.org/b.pdf",
+                        source_headers={"Authorization": "Bearer b"},
+                    ),
+                ],
+                max_in_flight=2,
+            )
+        ]
+
+    assert len(results) == 2
+    assert set(map(str, seen_source_headers)) == {
+        str({"Authorization": "Bearer a"}),
+        str({"Authorization": "Bearer b"}),
+    }
+
+
+@pytest.mark.anyio
+async def test_async_submit_and_retrieve_many_isolates_failures_per_item(
+    tmp_path: Path,
+) -> None:
+    async def fake_submit(
+        source, source_headers, options, raw_result, request_headers=None
+    ):
+        if Path(source).name == "bad.pdf":
+            raise ValueError("submit failed")
+        return _status_response(f"task-{Path(source).name}", "pending")
+
+    async def fake_wait(task_id: str, timeout: float | None) -> TaskStatusResponse:
+        return _status_response(task_id, "success")
+
+    async def fake_fetch(task_id: str, last_status: TaskStatusResponse | None):
+        return _convert_payload(task_id.removeprefix("task-"))
+
+    good = tmp_path / "good.pdf"
+    bad = tmp_path / "bad.pdf"
+    good.write_bytes(b"%PDF-1.4\n")
+    bad.write_bytes(b"%PDF-1.4\n")
+
+    async with _make_async_sam_client(fake_submit, fake_wait, fake_fetch) as client:
+        outcomes = sorted(
+            [
+                r
+                async for r in client.submit_and_retrieve_many(
+                    [ConversionItem(source=bad), ConversionItem(source=good)],
+                    max_in_flight=2,
+                )
+            ],
+            key=lambda entry: Path(entry[0].source).name,
+        )
+
+    assert isinstance(outcomes[0][1], Exception)
+    assert str(outcomes[0][1]) == "submit failed"
+    assert getattr(outcomes[1][1], "status") == ConversionStatus.SUCCESS
+
+
+@pytest.mark.anyio
+async def test_async_submit_and_retrieve_many_respects_max_in_flight(
+    tmp_path: Path,
+) -> None:
+    state = {"active": 0, "max_seen": 0, "submitted": 0}
+    release = asyncio.Event()
+
+    async def fake_submit(
+        source, source_headers, options, raw_result, request_headers=None
+    ):
+        state["active"] += 1
+        state["submitted"] += 1
+        state["max_seen"] = max(state["max_seen"], state["active"])
+        if state["submitted"] >= 2:
+            release.set()
+        return _status_response(f"task-{Path(source).name}", "pending")
+
+    async def fake_wait(task_id: str, timeout: float | None) -> TaskStatusResponse:
+        if task_id in {"task-a.pdf", "task-b.pdf"}:
+            await release.wait()
+        return _status_response(task_id, "success")
+
+    async def fake_fetch(task_id: str, last_status: TaskStatusResponse | None):
+        state["active"] -= 1
+        return _convert_payload(task_id.removeprefix("task-"))
+
+    paths = []
+    for name in ["a.pdf", "b.pdf", "c.pdf"]:
+        path = tmp_path / name
+        path.write_bytes(b"%PDF-1.4\n")
+        paths.append(path)
+
+    async with _make_async_sam_client(fake_submit, fake_wait, fake_fetch) as client:
+        results = [
+            r
+            async for r in client.submit_and_retrieve_many(
+                [ConversionItem(source=p) for p in paths],
+                max_in_flight=2,
+            )
+        ]
+
+    assert len(results) == 3
+    assert state["max_seen"] == 2
+
+
+@pytest.mark.parametrize("value", [0, -1, MAX_CONCURRENCY_LIMIT + 1])
+@pytest.mark.anyio
+async def test_async_submit_and_retrieve_many_rejects_invalid_max_in_flight(
+    tmp_path: Path, value: int
+) -> None:
+    source = tmp_path / "a.pdf"
+    source.write_bytes(b"%PDF-1.4\n")
+
+    async with AsyncDoclingServiceClient(url=TEST_BASE_URL) as client:
+
+        class _FakeHttp:
+            async def request(self, *a, **kw):
+                raise AssertionError("should not be called")
+
+            async def aclose(self) -> None:
+                pass
+
+        client._async_client = _FakeHttp()  # type: ignore[assignment]
+        with pytest.raises(
+            ValueError,
+            match=f"max_in_flight must be between 1 and {MAX_CONCURRENCY_LIMIT}, got {value}.",
+        ):
+            async for _ in client.submit_and_retrieve_many(
+                [ConversionItem(source=source)],
+                max_in_flight=value,
+            ):
+                pass
