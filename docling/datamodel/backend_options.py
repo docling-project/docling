@@ -1,6 +1,7 @@
 from pathlib import Path, PurePath
 from typing import Annotated, Literal, Optional, Union
 
+from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, BaseModel, Field, PositiveInt, SecretStr, conint
 
 
@@ -89,6 +90,15 @@ class HTMLBackendOptions(BaseBackendOptions):
     )
     infer_furniture: bool = Field(
         True, description="Infer all the content before the first header as furniture."
+    )
+    default_content_layer: Optional[ContentLayer] = Field(
+        None,
+        description=(
+            "Override the default content layer for all content. "
+            "When set, all content is assigned to this layer (e.g. BODY) "
+            "instead of using the 'infer_furniture' logic. "
+            "Set to ContentLayer.BODY to force all content into the body layer."
+        ),
     )
     max_image_data_base64_bytes: PositiveInt = Field(
         20 * 1024 * 1024,  # 20 MB
