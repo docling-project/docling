@@ -1207,6 +1207,8 @@ class DocxProcessor:
         반환 형식이 chunker_type에 따라 다르다 (DocChunk 리스트 또는 dict 리스트).
         compose_vectors가 동일한 chunker_type 분기로 처리한다.
         """
+        # 같은 DocxProcessor 인스턴스가 여러 요청에서 재사용되므로 매 호출마다 초기화
+        self.page_chunk_counts = defaultdict(int)
         chunker_type = kwargs.get("chunker_type", "recursive")
 
         if chunker_type == "recursive":
@@ -1365,7 +1367,7 @@ class HwpProcessor:
             return chunks, page_chunk_counts
 
         # hybrid
-        chunker = HybridChunker(max_tokens=int(1e30), merge_peers=True, include_headings=False)
+        chunker = HybridChunker(max_tokens=int(1e30), merge_peers=True)
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=document, **kwargs))
         for chunk in chunks:
             if chunk.meta.doc_items[0].prov:
