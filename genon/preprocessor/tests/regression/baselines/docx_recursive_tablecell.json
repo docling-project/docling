@@ -1,0 +1,27 @@
+{
+  "num_vectors": 1,
+  "vectors": [
+    {
+      "text": "- Hello world1\n- Hello2\n\nSome text before\n\n| Tab1   | Tab2   | Tab3   |\n|--------|--------|--------|\n| A      | B      | C      |\n| D      | E      | F      |\n\nSome text after",
+      "n_char": 175,
+      "n_word": 33,
+      "n_line": 11,
+      "i_page": 1,
+      "e_page": 1,
+      "i_chunk_on_page": 0,
+      "n_chunk_of_page": 1,
+      "i_chunk_on_doc": 0,
+      "n_chunk_of_doc": 1,
+      "n_page": 1,
+      "reg_date": "2026-05-15T06:51:08Z",
+      "chunk_bboxes": "[{\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"list_item\", \"ref\": \"#/texts/0\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"list_item\", \"ref\": \"#/texts/1\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/2\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/3\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0035629453681710215, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"table\", \"ref\": \"#/tables/0\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/4\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/5\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/6\"}]",
+      "media_files": "[]"
+    }
+  ],
+  "label_distribution": {
+    "list_item": 2,
+    "paragraph": 5,
+    "table": 1
+  },
+  "total_characters": 175
+}

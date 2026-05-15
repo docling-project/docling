@@ -44,11 +44,12 @@ source .venv/bin/activate && pytest
 
 ## 체크 항목
 
-> ⚠️ **형식별 활성화 상태가 다릅니다.**
-> - **활성화**: HWP, HWPX, HTML — assert가 모두 활성화되어 있습니다.
-> - **비활성화**: PDF, DOCX, MD, PPTX — assert가 주석 처리된 상태입니다.
+> ⚠️ **형식·chunker별 활성화 상태가 다릅니다.**
+> - **활성화 (strict)**: HWP/HWPX/HTML (hybrid chunker) — assert 전부 활성, 정확 일치 정책
+> - **활성화 (완화)**: HWP/HWPX (recursive chunker, 이슈 #80 / #183) — 의존성 미세 버전 차이로 결과 가변이라 검증 완화
+> - **비활성화**: PDF, DOCX, MD, PPTX — assert 주석 처리
 
-### HWP / HWPX / HTML (활성화)
+### HWP / HWPX / HTML (hybrid chunker, 활성화 strict)
 
 1. **Vector 개수** (`num_vectors`)
    - 문서 처리 결과(vectors)의 개수 일관성 확인
@@ -61,6 +62,16 @@ source .venv/bin/activate && pytest
 3. **텍스트 유사도** (각 vector별)
    - 각 vector의 텍스트 내용 유사도 확인
    - 최소 유사도: 85% 이상 (difflib.SequenceMatcher 사용)
+
+### HWP / HWPX (recursive chunker, sanity check만)
+
+`test_hwp_regression_recursive`, `test_hwpx_regression_recursive`에 한정. recursive 분기는 `RecursiveCharacterTextSplitter` + 토크나이저 후처리 단계에서 의존성(`transformers`, `langchain-text-splitters`, `docling-core` 등) 미세 버전 차이에 따라 `export_to_markdown` 직렬화 결과 길이, 분할 청크 수, 청크 경계 위치까지 모두 가변적이다 (CI 관찰: char total이 베이스 대비 ~40%까지 벌어짐). baseline 환경(amd64 emulation)과 CI 환경(ubuntu-latest) 불일치 때문에 strict 비교가 의미가 없어 다음만 검증:
+
+1. **Vectors 생성 여부** — `num_vectors >= 1` 만 확인
+2. ~~전체 텍스트 글자 수~~ — 검증 제거 (환경별 직렬화 길이 차이가 너무 큼)
+3. ~~텍스트 유사도~~ — 검증 제거 (청크 경계 어긋남으로 vector[i] 매칭 의미 없음)
+
+> **Follow-up**: 현재 baseline은 amd64 emulation 환경에서 생성한 값. 추후 CI(ubuntu-latest) 환경에서 baseline을 재생성하면 strict 정책 복귀 가능. workflow_dispatch로 `update_baseline` 자동 실행하는 방안 검토.
 
 ### PDF / DOCX / MD / PPTX (비활성화)
 

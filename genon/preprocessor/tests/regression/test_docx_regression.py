@@ -16,7 +16,7 @@ async def run_docx_test(docx_path, baseline_path, basic_processor):
         pytest.fail(f"Baseline not found: {baseline_path}. Run with -m 'update_baseline' to create.")
 
     # 문서 처리 - __call__ 사용
-    vectors = await dp(None, str(docx_path))
+    vectors = await dp(None, str(docx_path), chunker_type="hybrid")
 
     # 현재 결과 생성
     current_result = {
@@ -81,7 +81,7 @@ async def create_docx_baseline(docx_path, baseline_path, basic_processor):
     dp = basic_processor()
 
     # 문서 처리 - __call__ 사용
-    vectors = await dp(None, str(docx_path))
+    vectors = await dp(None, str(docx_path), chunker_type="hybrid")
 
     # Baseline 생성
     result = {
@@ -140,6 +140,129 @@ async def test_update_docx_baselines(basic_processor):
     for docx_file in DOCX_FILES:
         baseline_path = baseline_dir / f"docx_{docx_file.stem}.json"
         await create_docx_baseline(docx_file, baseline_path, basic_processor)
+
+    if not DOCX_FILES:
+        print("⚠ No DOCX files found in sample_files directory")
+
+
+# ---- Recursive Chunker (이슈 #183 / #80) -----------------------------------
+# 기본 HybridChunker 결과와 별도로, chunker_type='recursive' 결과를 baseline화한다.
+# 구현 전까지는 baseline 파일이 없으므로 regression test는 자동 skip된다.
+
+async def run_docx_test_recursive(docx_path, baseline_path, basic_processor):
+    """DOCX 파일에 대한 recursive chunker regression test 실행"""
+    dp = basic_processor()
+
+    if not baseline_path.exists():
+        pytest.skip(
+            f"recursive baseline not yet generated for {docx_path.name}. "
+            f"Run: pytest -m update_baseline -k test_update_docx_baselines_recursive"
+        )
+
+    vectors = await dp(None, str(docx_path), chunker_type="recursive")
+
+    current_result = {
+        "num_vectors": len(vectors),
+        "vectors": [],
+        "label_distribution": {},
+        "total_characters": 0,
+    }
+
+    label_counts = Counter()
+    for vector in vectors:
+        if hasattr(vector, "model_dump"):
+            vector_data = vector.model_dump()
+        else:
+            vector_data = vector if isinstance(vector, dict) else vars(vector)
+
+        current_result["vectors"].append(vector_data)
+        current_result["total_characters"] += vector_data.get(
+            "n_char", len(vector_data.get("text", ""))
+        )
+
+        if "chunk_bboxes" in vector_data:
+            try:
+                bboxes = json.loads(vector_data["chunk_bboxes"])
+                for bbox in bboxes:
+                    if "type" in bbox:
+                        label_counts[bbox["type"]] += 1
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+    current_result["label_distribution"] = dict(label_counts)
+
+    with open(baseline_path, "r", encoding="utf-8") as f:
+        baseline = json.load(f)
+
+    # DOCX는 기존 테스트와 동일하게 assert 비활성 상태로 두되,
+    # 향후 활성화를 위한 비교 코드는 갖춰둔다.
+    # assert current_result["num_vectors"] == baseline["num_vectors"], \
+    #     f"[{docx_path.name}] Vector count mismatch: {current_result['num_vectors']} != {baseline['num_vectors']}"
+
+
+async def create_docx_baseline_recursive(docx_path, baseline_path, basic_processor):
+    """DOCX 파일에 대한 recursive baseline 생성"""
+    dp = basic_processor()
+    vectors = await dp(None, str(docx_path), chunker_type="recursive")
+
+    result = {
+        "num_vectors": len(vectors),
+        "vectors": [],
+        "label_distribution": {},
+        "total_characters": 0,
+    }
+
+    label_counts = Counter()
+    for vector in vectors:
+        if hasattr(vector, "model_dump"):
+            vector_data = vector.model_dump()
+        else:
+            vector_data = vector if isinstance(vector, dict) else vars(vector)
+
+        result["vectors"].append(vector_data)
+        result["total_characters"] += vector_data.get(
+            "n_char", len(vector_data.get("text", ""))
+        )
+
+        if "chunk_bboxes" in vector_data:
+            try:
+                bboxes = json.loads(vector_data["chunk_bboxes"])
+                for bbox in bboxes:
+                    if "type" in bbox:
+                        label_counts[bbox["type"]] += 1
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+    result["label_distribution"] = dict(label_counts)
+
+    baseline_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(baseline_path, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
+
+    print(f"✓ Updated baseline: {baseline_path}")
+
+
+@pytest.mark.regression
+@pytest.mark.parametrize("docx_file", DOCX_FILES, ids=lambda f: f.stem)
+@pytest.mark.asyncio
+async def test_docx_regression_recursive(docx_file, basic_processor):
+    """DOCX RecursiveCharacterTextSplitter 결과를 baseline과 비교합니다."""
+    baseline_path = (
+        Path(__file__).parent / "baselines" / f"docx_recursive_{docx_file.stem}.json"
+    )
+    await run_docx_test_recursive(docx_file, baseline_path, basic_processor)
+
+
+@pytest.mark.update_baseline
+@pytest.mark.asyncio
+async def test_update_docx_baselines_recursive(basic_processor):
+    """RecursiveCharacterTextSplitter 결과의 DOCX baseline 데이터를 업데이트합니다."""
+    baseline_dir = Path(__file__).parent / "baselines"
+    baseline_dir.mkdir(parents=True, exist_ok=True)
+
+    for docx_file in DOCX_FILES:
+        baseline_path = baseline_dir / f"docx_recursive_{docx_file.stem}.json"
+        await create_docx_baseline_recursive(docx_file, baseline_path, basic_processor)
 
     if not DOCX_FILES:
         print("⚠ No DOCX files found in sample_files directory")

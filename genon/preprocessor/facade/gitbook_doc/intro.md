@@ -21,6 +21,7 @@
   * **Native 텍스트 추출**: HWP, HWPX, DOCX, XLSX 등 원본 파일의 텍스트를 파싱하여 추출 속도 극대화
   * **멀티미디어 지원**: 오디오 파일(MP3, WAV, M4A)의 음성을 텍스트로 변환(STT)하여 처리
   * **데이터 변환**: CSV, Excel 등의 정형 데이터를 LLM이 이해하기 쉬운 텍스트/JSON 형태로 신속 변환
+  * **청커 선택**: HWP/HWPX/DOCX 청킹 방식을 `chunker_type` kwargs로 선택 (`recursive`(기본) / `hybrid`). `recursive`는 docling 문서를 markdown으로 export 후 `RecursiveCharacterTextSplitter`로 분할하며, 임베딩 입력 한도(60,000 토큰)를 절대 상한으로 강제
 
 ## 1A. 변환용 전처리기 (Convert Processor)
 문서의 시각적 형태(Layout)를 유지해야 하거나, 텍스트 추출이 까다로운 레거시 포맷을 처리하기 위한 전처리기입니다. 모든 문서를 **PDF로 우선 변환(Rendering)**하여 포맷의 파편화를 해결합니다.
