@@ -8,18 +8,19 @@ layout:
   layout_model_type: "genos_layout" # "genos_layout"(default) or "docling_layout"
   genos_layout:
     # <LAYOUT_SERVING_ID>: Genos에 등록한 layout 모델서빙 ID로 변경 필요
-    # <LAYOUT_API_KEY>: Genos, layout 모델서빙에서 발급받은 인증키로 변경 필요
+    # api_key는 k8s 내부 통신 기반 모델 호출 시 불필요.
     endpoint: "http://llmops-gateway-api-service:8080/rep/serving/<LAYOUT_SERVING_ID>/v1/chat/completions"
-    api_key: "<LAYOUT_API_KEY>"
+    api_key: ""
     page_batch_size: 32
 
 enrichment:
   do_toc: true
   do_metadata: true
+
   # <ENRICHMENT_SERVING_ID>: Genos에 등록한 enrichment 모델서빙 ID로 변경 필요
-  # <ENRICHMENT_API_KEY>: Genos, enrichment 모델서빙에서 발급받은 인증키로 변경 필요
+  # api_key는 k8s 내부 통신 기반 모델 호출 시 불필요.
   api_url: "http://llmops-gateway-api-service:8080/rep/serving/<ENRICHMENT_SERVING_ID>/v1/chat/completions"
-  api_key: "<ENRICHMENT_API_KEY>"
+  api_key: ""
   model: "model"
   toc:
     temperature: 0.0

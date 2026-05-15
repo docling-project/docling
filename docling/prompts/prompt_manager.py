@@ -221,10 +221,9 @@ class PromptManager:
 
         try:
             # 요청 헤더 구성
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_config['api_key']}"
-            }
+            headers = {"Content-Type": "application/json"}
+            if "api_key" in api_config:
+                headers["Authorization"] = f"Bearer {api_config['api_key']}"
 
             # 요청 본문 구성
             payload = {
