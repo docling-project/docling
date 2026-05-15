@@ -10,26 +10,15 @@
         - facade/convert_processor.py
 """
 
-import logging
 import subprocess
 import os
 import shutil
 import json
 import fitz
 import uuid
+import warnings
 
 from collections import defaultdict
-
-_log = logging.getLogger(__name__)
-
-_DEPRECATED_MSG = (
-    "[DEPRECATED] 기본 전처리기(preprocessor.py)는 더 이상 권장되지 않습니다. "
-    "facade/attachment_processor.py, facade/intelligent_processor.py, "
-    "facade/convert_processor.py 중 하나를 사용해 주세요."
-)
-
-_log.warning(_DEPRECATED_MSG)
-
 from datetime import datetime
 from fastapi import Request
 from pydantic import BaseModel
@@ -49,6 +38,14 @@ from weasyprint import HTML
 
 from genos_utils import upload_files, merge_overlapping_bboxes
 import platform
+
+_DEPRECATED_MSG = (
+    "[DEPRECATED] 기본 전처리기(preprocessor.py)는 더 이상 권장되지 않습니다. "
+    "facade/attachment_processor.py, facade/intelligent_processor.py, "
+    "facade/convert_processor.py 중 하나를 사용해 주세요."
+)
+
+warnings.warn(_DEPRECATED_MSG, DeprecationWarning, stacklevel=2)
 
 # pdf 변환 대상 확장자
 CONVERTIBLE_EXTENSIONS = ['.hwp', '.txt', '.json', '.md']
@@ -129,7 +126,7 @@ class HwpLoader:
         os.makedirs(self.output_dir, exist_ok=True)
 
     def load(self):
-        _log.warning(_DEPRECATED_MSG)
+        warnings.warn(_DEPRECATED_MSG, DeprecationWarning, stacklevel=2)
         try:
             subprocess.run(['hwp5html', self.file_path, '--output', self.output_dir], check=True, timeout=600)
 
@@ -155,7 +152,7 @@ class TextLoader:
         os.makedirs(self.output_dir, exist_ok=True)
 
     def load(self):
-        _log.warning(_DEPRECATED_MSG)
+        warnings.warn(_DEPRECATED_MSG, DeprecationWarning, stacklevel=2)
         try:
             with open(self.file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -359,7 +356,7 @@ class DocumentProcessor:
         return vectors
 
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
-        _log.warning(_DEPRECATED_MSG)
+        warnings.warn(_DEPRECATED_MSG, DeprecationWarning, stacklevel=2)
         documents: list[Document] = self.load_documents(file_path, **kwargs)
         await assert_cancelled(request)
 
