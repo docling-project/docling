@@ -409,11 +409,11 @@ def _should_generate_export_images(
 
 @app.command(no_args_is_help=True)
 def convert(  # noqa: C901
-    input_sources: Annotated[
+    sources: Annotated[
         list[str],
         typer.Argument(
             ...,
-            metavar="source",
+            metavar="SOURCE",
             help="PDF files to convert. Can be local file / directory paths or URL.",
         ),
     ],
@@ -595,7 +595,7 @@ def convert(  # noqa: C901
     debug_visualize_layout: Annotated[
         bool,
         typer.Option(
-            ..., help="Enable debug output which visualizes the layour clusters"
+            ..., help="Enable debug output which visualizes the layout clusters"
         ),
     ] = False,
     debug_visualize_tables: Annotated[
@@ -678,7 +678,7 @@ def convert(  # noqa: C901
 
     with tempfile.TemporaryDirectory() as tempdir:
         input_doc_paths: list[Path] = []
-        for src in input_sources:
+        for src in sources:
             try:
                 # check if we can fetch some remote url
                 source = resolve_source_to_path(
