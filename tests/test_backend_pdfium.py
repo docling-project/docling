@@ -109,3 +109,19 @@ def test_merge_row():
         cell.text
         == "The journey of the word processor—from clunky typewriters to AI-powered platforms—"
     )
+
+
+def test_word_cells(test_doc_path):
+    doc_backend = _get_backend(test_doc_path)
+    page_backend: PyPdfiumPageBackend = doc_backend.load_page(0)
+
+    seg_page = page_backend.get_segmented_page()
+    assert seg_page is not None
+    assert seg_page.has_words is True
+    assert len(seg_page.word_cells) > 0
+    # Word cells should be more numerous than textline cells
+    assert len(seg_page.word_cells) > len(seg_page.textline_cells)
+    # Each word cell should have non-empty text and a bounding rect
+    for cell in seg_page.word_cells[:20]:
+        assert cell.text.strip(), f"Empty word cell at index {cell.index}"
+        assert cell.rect is not None
