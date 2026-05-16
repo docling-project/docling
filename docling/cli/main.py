@@ -183,7 +183,15 @@ def logo_callback(value: bool):
 def version_callback(value: bool):
     if value:
         v = DoclingVersion()
-        print(f"Docling version: {v.docling_version}")
+        # When only `docling-slim` is installed (without the `docling`
+        # meta-package), `safe_version("docling")` resolves to "unknown";
+        # fall back to the slim distribution version in that case.
+        docling_ver = (
+            v.docling_version
+            if v.docling_version != "unknown"
+            else v.docling_slim_version
+        )
+        print(f"Docling version: {docling_ver}")
         print(f"Docling Core version: {v.docling_core_version}")
         print(f"Docling IBM Models version: {v.docling_ibm_models_version}")
         print(f"Docling Parse version: {v.docling_parse_version}")
