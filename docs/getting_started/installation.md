@@ -93,6 +93,9 @@ doc_converter = DocumentConverter(
 )
 ```
 
+To avoid OCR on PDF pages that already contain a usable text layer, set
+`pipeline_options.ocr_options.skip_text_layer_pages = True`.
+
 ??? "Tesseract installation"
 
     [Tesseract](https://github.com/tesseract-ocr/tesseract) is a popular OCR engine which is available
