@@ -14,6 +14,7 @@ from pathlib import Path, PurePath
 from typing import (
     TYPE_CHECKING,
     Annotated,
+    Any,
     Literal,
     Optional,
     Type,
@@ -237,6 +238,10 @@ class DoclingVersion(BaseModel):
     platform_str: str = platform.platform()
     py_impl_version: str = sys.implementation.cache_tag
     py_lang_version: str = platform.python_version()
+
+    def model_post_init(self, __context: Any) -> None:
+        if self.docling_version == "unknown":
+            self.docling_version = self.docling_slim_version
 
 
 class ConversionAssets(BaseModel):
