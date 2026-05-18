@@ -115,6 +115,36 @@ def test_genos_hwp_backend_decode_latex_b64_with_embedded_newlines():
 
 
 @pytest.mark.unit
+def test_genos_hwp_backend_decode_latex_b64_rejects_malformed_inputs(caplog):
+    """손상된 입력은 garbage를 뱉지 않고 None + 경고 로그로 명시적 실패해야 한다.
+
+    validate=False + errors="replace"로 관대하게 처리하면 깨진 base64나 깨진 UTF-8이
+    조용히 통과되어 사일런트 버그가 되므로, strict 모드로 검증한다는 계약을 고정.
+    """
+    import base64
+    import logging
+    from docling.backend.genos_hwp_backend import GenosHwpDocumentBackend
+
+    # 빈 입력 → None (경고 없음)
+    assert GenosHwpDocumentBackend._decode_latex_b64("") is None
+    assert GenosHwpDocumentBackend._decode_latex_b64(None) is None  # type: ignore[arg-type]
+
+    # 1) base64 알파벳에 없는 문자가 섞인 입력
+    with caplog.at_level(logging.WARNING, logger="docling.backend.genos_hwp_backend"):
+        caplog.clear()
+        assert GenosHwpDocumentBackend._decode_latex_b64("not_valid_base64!!!@@@") is None
+        assert any("디코드 실패" in r.message for r in caplog.records)
+
+    # 2) base64로는 디코드되지만 결과 바이트가 UTF-8이 아닌 경우
+    # 0xFF, 0xFE 같은 단독 바이트는 UTF-8 시퀀스의 시작이 될 수 없다.
+    invalid_utf8_b64 = base64.b64encode(b"\xff\xfe\xfd").decode("ascii")
+    with caplog.at_level(logging.WARNING, logger="docling.backend.genos_hwp_backend"):
+        caplog.clear()
+        assert GenosHwpDocumentBackend._decode_latex_b64(invalid_utf8_b64) is None
+        assert any("디코드 실패" in r.message for r in caplog.records)
+
+
+@pytest.mark.unit
 def test_genos_hwp_backend_normalize_sdk_json_escapes_latex_attr_quotes():
     """SDK 결과 JSON 안에 임베드된 <latex value="..."/> 의 inner "가 \"로 escape되고
     base64 안의 공백/줄바꿈이 제거되어, json.JSONDecoder가 outer 문자열을

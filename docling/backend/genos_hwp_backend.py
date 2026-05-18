@@ -1,4 +1,5 @@
 import base64
+import binascii
 import json
 import logging
 import os
@@ -531,15 +532,16 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
     def _decode_latex_b64(raw: str) -> Optional[str]:
         """SDK가 emit하는 base64 인코딩된 LaTeX 문자열을 디코드한다.
         긴 값은 SDK가 중간에 줄바꿈/공백을 끼울 수 있어 전처리 후 디코드한다.
-        실패 시 None 반환.
+        손상된 입력을 조용히 통과시키지 않도록 strict 모드로 검증하며,
+        실패 시 경고 로그를 남기고 None 반환.
         """
         if not raw:
             return None
-        # 공백/줄바꿈/HTML 잔여물 제거
+        # 공백/줄바꿈/HTML 잔여물 제거 (정상 SDK 출력의 line-wrap 흡수)
         cleaned = re.sub(r"\s+", "", raw)
         try:
-            decoded = base64.b64decode(cleaned, validate=False).decode("utf-8", errors="replace").strip()
-        except Exception as e:
+            decoded = base64.b64decode(cleaned, validate=True).decode("utf-8").strip()
+        except (binascii.Error, UnicodeDecodeError) as e:
             _log.warning(f"latex base64 디코드 실패: {e}; raw[:60]={raw[:60]!r}")
             return None
         return decoded or None
