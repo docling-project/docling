@@ -1,3 +1,5 @@
+import base64
+import binascii
 import json
 import logging
 import os
@@ -19,7 +21,7 @@ try:
 except ImportError:
     WAND_AVAILABLE = False
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 from docling_core.types.doc import (
     DocItemLabel, DoclingDocument, DocumentOrigin, GroupLabel,
     ImageRef, NodeItem, ProvenanceItem, TableCell, TableData,
@@ -255,20 +257,36 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                     f"페이지 정보 로드 실패: {self.source_path.name}"
                 ) from e
 
-            # 6. SDK 결과를 hwp_data에 저장 (읽기 로직 단순화)
+            # 6. SDK 결과를 hwp_data에 저장
+            # SDK 출력은 두 가지 비정상 케이스가 있어 일반 line-by-line json.loads로는 깨진다:
+            #   (a) 긴 base64 value(latex 등)에 줄바꿈이 끼어 한 record가 여러 물리 줄에 걸침
+            #   (b) 표 셀 HTML 안에 <latex value="..."/>를 임베드하면서 inner "를 escape 안 함
+            #       → outer JSON 문자열이 그 지점에서 조기 종료되어 파싱 실패
+            # 정규화로 (b)를 보정한 뒤, (a)는 JSONDecoder.raw_decode 기반 stream 파싱으로 처리.
             hwp_data = []
             try:
                 with open(json_out, "r", encoding="utf-8") as f:
-                    for line in f:
-                        clean_line = line.strip()
-                        if not clean_line:
-                            continue
-                        try:
-                            batch = json.loads(clean_line, strict=False)
-                            hwp_data.append(batch) # SDK 결과는 항상 리스트이므로 바로 append
-                        except json.JSONDecodeError as e:
-                            _log.warning(f"파싱 실패 (스킵): {e}")
-                            continue
+                    text = f.read()
+                text = self._normalize_sdk_json_text(text)
+                decoder = json.JSONDecoder(strict=False)
+                pos = 0
+                n = len(text)
+                while pos < n:
+                    while pos < n and text[pos] in " \r\n\t":
+                        pos += 1
+                    if pos >= n:
+                        break
+                    try:
+                        batch, end = decoder.raw_decode(text, pos)
+                    except json.JSONDecodeError as e:
+                        _log.warning(f"파싱 실패 (스킵): pos={pos} err={e}")
+                        next_nl = text.find("\n", pos)
+                        if next_nl == -1:
+                            break
+                        pos = next_nl + 1
+                        continue
+                    hwp_data.append(batch)
+                    pos = end
             except OSError as e:
                 raise HwpConversionError(
                     f"SDK 결과 파일 읽기 실패: {json_out}"
@@ -327,6 +345,15 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                     # 이미지 핸들러 호출
                     self._handle_image(item, doc, page_no, parent=self.active_main_parent)
 
+                # 2-2. 수식(LaTeX) 처리
+                # SDK는 latex를 자체 batch에 단독으로 또는 텍스트 사이에 끼워서 emit할 수 있다.
+                # 이미지와 동일한 패턴으로, 누적된 텍스트를 먼저 flush한 뒤 FORMULA 노드로 추가한다.
+                elif i_type == "latex":
+                    if texts_in_batch:
+                        self._handle_paragraph(texts_in_batch, doc, page_no, parent=self.active_main_parent)
+                        texts_in_batch = []
+                    self._handle_latex(item, doc, page_no, parent=self.active_main_parent)
+
                 # 2-3. 텍스트 수집
                 elif i_type == "text":
                     texts_in_batch.append(item)
@@ -338,6 +365,15 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
     def _handle_table(self, html_content: str, doc: DoclingDocument, page_no: int, parent: Any):
         """HTML 테이블을 분석하여 구조화된 Table 객체를 지정된 parent(body)에 추가합니다."""
         soup = BeautifulSoup(html_content, "html.parser")
+        # SDK가 표 셀 HTML 안에 <latex value="<base64>"/> 형태로 임베드한 수식을
+        # TableCell.text가 단순 문자열이라 별도 FORMULA 노드로 못 박는다.
+        # 대신 셀 텍스트 추출 전에 <math>{decoded latex}</math> 텍스트 노드로 치환하여
+        # chandra OCR prompt의 inline 수식 컨벤션(<math>...</math>, KaTeX-compatible
+        # LaTeX 본문)과 정합을 맞춘다.
+        for latex_tag in soup.find_all("latex"):
+            decoded = self._decode_latex_b64(latex_tag.get("value", ""))
+            replacement = f"<math>{decoded}</math>" if decoded else ""
+            latex_tag.replace_with(NavigableString(replacement))
         table_tag = soup.find("table")
         if not table_tag:
             return
@@ -474,6 +510,60 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                 caption=None,
                 prov=prov,
             )
+
+    # HWP SDK의 비정상 출력 보정용. 외부에서도 단위 테스트하기 좋게 staticmethod.
+    # 패턴: <latex value="<base64, 줄바꿈/공백 가능>"/>  (속성값 안의 "가 escape 없이 등장)
+    # JSON 문자열 안에 들어오면 outer string이 그 시점에서 종료된 것으로 파싱돼 record 손실.
+    # base64 charset(A-Z, a-z, 0-9, +, /, =)과 공백만 허용하여 다른 HTML 속성을 오인하지 않도록 한다.
+    _LATEX_ATTR_PATTERN = re.compile(
+        r'<latex\s+value="([A-Za-z0-9+/=\s]*?)"\s*/?>',
+        flags=re.DOTALL,
+    )
+
+    @classmethod
+    def _normalize_sdk_json_text(cls, text: str) -> str:
+        """SDK 결과 JSON에서 임베드된 <latex value="..."/> 속성의 inner "를 escape하고
+        base64 안의 공백/줄바꿈을 제거하여 JSON 파서가 outer 문자열을 끝까지 읽을 수 있도록 한다.
+        """
+        def _repl(m: "re.Match[str]") -> str:
+            b64 = re.sub(r"\s+", "", m.group(1))
+            return f'<latex value=\\"{b64}\\"/>'
+        return cls._LATEX_ATTR_PATTERN.sub(_repl, text)
+
+    @staticmethod
+    def _decode_latex_b64(raw: str) -> Optional[str]:
+        """SDK가 emit하는 base64 인코딩된 LaTeX 문자열을 디코드한다.
+        긴 값은 SDK가 중간에 줄바꿈/공백을 끼울 수 있어 전처리 후 디코드한다.
+        손상된 입력을 조용히 통과시키지 않도록 strict 모드로 검증하며,
+        실패 시 경고 로그를 남기고 None 반환.
+        """
+        if not raw:
+            return None
+        # 공백/줄바꿈/HTML 잔여물 제거 (정상 SDK 출력의 line-wrap 흡수)
+        cleaned = re.sub(r"\s+", "", raw)
+        try:
+            decoded = base64.b64decode(cleaned, validate=True).decode("utf-8").strip()
+        except (binascii.Error, UnicodeDecodeError) as e:
+            _log.warning(f"latex base64 디코드 실패: {e}; raw[:60]={raw[:60]!r}")
+            return None
+        return decoded or None
+
+    def _handle_latex(self, item: Dict, doc: DoclingDocument, page_no: int, parent: Any):
+        """SDK의 latex 아이템을 base64 디코드 후 FORMULA 노드로 추가한다."""
+        latex = self._decode_latex_b64(item.get("value", ""))
+        if not latex:
+            return
+        prov = ProvenanceItem(
+            page_no=page_no,
+            bbox=BoundingBox(l=0, t=0, r=1, b=1, coord_origin=CoordOrigin.BOTTOMLEFT),
+            charspan=(0, len(latex))
+        )
+        doc.add_text(
+            label=DocItemLabel.FORMULA,
+            text=latex,
+            parent=parent,
+            prov=prov,
+        )
 
     def _handle_paragraph(self, paragraph_items: List[Dict], doc: DoclingDocument, page_no: int, parent: Any):
         """TOC(목차) 감지 로직이 추가된 버전입니다. 넘겨받은 parent에 텍스트를 추가합니다."""

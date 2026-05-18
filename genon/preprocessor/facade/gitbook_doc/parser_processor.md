@@ -234,6 +234,8 @@ output:
 - 모든 백엔드 실패 시 LibreOffice로 PDF 변환 후 PDF 경로로 재처리
 - **Python 패키지:** `docling`(hwp 백엔드 포함)
 
+**수식(LaTeX) 추출 (이슈 #195):** 신규 HWP SDK가 수식 추출 기능을 지원합니다. `GenosHwpDocumentBackend`는 SDK가 emit하는 base64 인코딩 LaTeX를 디코드하여 docling의 `DocItemLabel.FORMULA` 노드로 변환하며, 표 셀 HTML 내부에 임베드된 `<latex>` 태그는 셀 텍스트에 `<math>{decoded}</math>`로 인라인 치환합니다 (chandra OCR prompt 컨벤션 정합). 별도 파라미터 없이 기본 동작입니다. 자세한 처리 흐름은 [`attachment_processor.md` §8.2](attachment_processor.md#82-hwpprocessor) 참고.
+
 **폴백 순서:**
 ```
 GenosHwpDocumentBackend  →  HwpDocumentBackend/HwpxDocumentBackend  →  LibreOffice PDF 변환 → PDF 경로로 재처리
