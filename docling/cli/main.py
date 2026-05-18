@@ -694,6 +694,8 @@ def convert(  # noqa: C901
                 try:
                     local_path = TypeAdapter(Path).validate_python(src)
                     if local_path.exists() and local_path.is_dir():
+                        # Use a set to track unique paths and avoid duplicates
+                        seen_paths: set[Path] = set()
                         for fmt in from_formats:
                             for ext in FormatToExtensions[fmt]:
                                 for path in local_path.glob(f"**/*.{ext}"):
@@ -702,7 +704,9 @@ def convert(  # noqa: C901
                                             f"Ignoring temporary Word file: {path}"
                                         )
                                         continue
-                                    input_doc_paths.append(path)
+                                    if path not in seen_paths:
+                                        seen_paths.add(path)
+                                        input_doc_paths.append(path)
 
                                 for path in local_path.glob(f"**/*.{ext.upper()}"):
                                     if path.name.startswith("~$") and ext == "docx":
@@ -710,7 +714,9 @@ def convert(  # noqa: C901
                                             f"Ignoring temporary Word file: {path}"
                                         )
                                         continue
-                                    input_doc_paths.append(path)
+                                    if path not in seen_paths:
+                                        seen_paths.add(path)
+                                        input_doc_paths.append(path)
                     elif local_path.exists():
                         if not local_path.name.startswith("~$") and ext == "docx":
                             _log.info(f"Ignoring temporary Word file: {path}")
