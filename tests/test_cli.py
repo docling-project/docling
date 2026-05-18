@@ -119,10 +119,10 @@ def test_export_documents_marks_stat_errors_as_failure(tmp_path, monkeypatch):
 
     original_stat = Path.stat
 
-    def _raise_for_markdown(self):
+    def _raise_for_markdown(self, *, follow_symlinks=True):
         if self.name == "input.md":
             raise OSError("stat failed")
-        return original_stat(self)
+        return original_stat(self, follow_symlinks=follow_symlinks)
 
     monkeypatch.setattr(Path, "stat", _raise_for_markdown)
 
