@@ -190,7 +190,8 @@ def logo_callback(value: bool):
 def version_callback(value: bool):
     if value:
         v = DoclingVersion()
-        print(f"Docling version: {v.docling_version}")
+        docling_version = v.docling_version if v.docling_version != "unknown" else v.docling_slim_version
+        print(f"Docling version: {docling_version}")
         print(f"Docling Core version: {v.docling_core_version}")
         print(f"Docling IBM Models version: {v.docling_ibm_models_version}")
         print(f"Docling Parse version: {v.docling_parse_version}")
