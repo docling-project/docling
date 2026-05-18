@@ -994,6 +994,21 @@ async def __call__(self, request, file_path, **kwargs):
 | 페이지 카운트 관리 | `self.page_chunk_counts` (인스턴스 상태) | `page_chunk_counts` (요청 단위 로컬 변수) |
 | 나머지 로직 | 동일 | 동일 |
 
+#### 수식(LaTeX) 추출 (이슈 #195)
+
+신규 HWP SDK가 수식 추출 기능을 지원하면서, `GenosHwpDocumentBackend`도 SDK가 emit하는 수식을 docling의 `DocItemLabel.FORMULA` 노드로 변환하도록 확장되었습니다. 사용자 입장에서는 별도 옵션 없이 기본 동작으로 활성화되며, 청크 출력에서는 docling 표준 직렬화 규칙에 따라 block 수식은 `$$...$$`로, 표 셀 내부의 inline 수식은 `$...$`로 나타납니다.
+
+SDK는 두 가지 형태로 수식을 emit하며, 백엔드는 각각을 다음과 같이 처리합니다:
+
+| SDK 출력 형태 | 등장 위치 | 백엔드 처리 |
+|---------------|----------|-------------|
+| `{"item": "latex", "value": "<base64>", ...}` 단독 batch | 본문/리스트 등 paragraph 흐름 | base64 디코드 후 `DoclingDocument`에 `DocItemLabel.FORMULA` 노드로 추가 |
+| `<latex value="<base64>"/>` HTML 태그 | 표 셀 HTML(`{"item":"table"}`) 내부 | `TableCell.text`가 단순 문자열이라 별도 노드로 못 박기에, BeautifulSoup로 태그를 찾아 디코드 후 `$<decoded>$`로 셀 텍스트에 치환 |
+
+SDK 출력에는 두 가지 비정상 패턴이 있어 백엔드가 정규화/stream 파싱으로 대응합니다 (이 두 가지를 처리하지 않으면 record 일부가 손실됨):
+- **base64 줄바꿈**: 긴 latex value를 SDK가 RFC 4648 line-wrap으로 출력하여 한 record가 여러 물리 줄에 걸침 → `JSONDecoder.raw_decode` 기반 stream 파싱으로 처리
+- **표 셀 내 임베드 `<latex value="..."/>`의 inner `"` 미escape**: outer JSON 문자열이 그 지점에서 조기 종료되어 파싱 실패 → 정규식 정규화로 inner `"`를 `\"`로 escape
+
 ---
 
 ### 8.3 `DocumentProcessor` (메인 엔트리포인트)
