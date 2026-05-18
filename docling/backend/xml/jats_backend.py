@@ -214,6 +214,75 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         return text
 
+    @staticmethod
+    def _normalize_whitespace(text: str | None) -> str:
+        return " ".join(text.split()) if text else ""
+
+    @staticmethod
+    def _get_node_text(node: etree._Element) -> str:
+        return JatsDocumentBackend._normalize_whitespace(" ".join(node.itertext()))
+
+    @staticmethod
+    def _parse_structured_name(name_node: etree._Element) -> str:
+        name_parts: list[str] = []
+        for tag_name in ["prefix", "given-names", "surname", "suffix"]:
+            for part_node in name_node.xpath(tag_name):
+                part_text = JatsDocumentBackend._get_node_text(part_node)
+                if part_text:
+                    name_parts.append(part_text)
+
+        if name_parts:
+            return JatsDocumentBackend._normalize_whitespace(" ".join(name_parts))
+
+        return JatsDocumentBackend._get_node_text(name_node)
+
+    @staticmethod
+    def _parse_name_alternatives(node: etree._Element) -> str:
+        for tag_name in ["name", "string-name", "collab-name", "collab"]:
+            for name_node in node.xpath(tag_name):
+                if tag_name == "name":
+                    name = JatsDocumentBackend._parse_structured_name(name_node)
+                else:
+                    name = JatsDocumentBackend._get_node_text(name_node)
+                if name:
+                    return name
+
+        return ""
+
+    @staticmethod
+    def _parse_contrib_name(author_node: etree._Element) -> str:
+        for name_node in author_node.xpath("name"):
+            name = JatsDocumentBackend._parse_structured_name(name_node)
+            if name:
+                return name
+
+        for name_node in author_node.xpath("string-name"):
+            name = JatsDocumentBackend._get_node_text(name_node)
+            if name:
+                return name
+
+        for alternatives_node in author_node.xpath("name-alternatives"):
+            name = JatsDocumentBackend._parse_name_alternatives(alternatives_node)
+            if name:
+                return name
+
+        for tag_name in ["collab-name", "collab"]:
+            for name_node in author_node.xpath(tag_name):
+                name = JatsDocumentBackend._get_node_text(name_node)
+                if name:
+                    return name
+
+        for tag_name in ["collab-name-alternatives", "collab-alternatives"]:
+            for alternatives_node in author_node.xpath(tag_name):
+                name = JatsDocumentBackend._parse_name_alternatives(alternatives_node)
+                if name:
+                    return name
+
+        if author_node.xpath("anonymous"):
+            return "Anonymous"
+
+        return ""
+
     def _find_metadata(self) -> etree._Element | None:
         meta_names: list[str] = ["article-meta", "book-part-meta"]
         meta: etree._Element | None = None
@@ -282,11 +351,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     author["affiliation_names"].append(affiliation_ids_names[id])
 
             # Name
-            author["name"] = (
-                author_node.xpath("name/given-names")[0].text
-                + " "
-                + author_node.xpath("name/surname")[0].text
-            )
+            author["name"] = JatsDocumentBackend._parse_contrib_name(author_node)
+            if not author["name"]:
+                continue
 
             authors.append(author)
 

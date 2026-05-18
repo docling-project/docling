@@ -1,8 +1,9 @@
 import logging
+import os
 import threading
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union, cast
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem
 from docling_core.types.doc.document import Formatting
@@ -28,6 +29,11 @@ from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    import concurrent.futures
+
+    from docling.backend.latex.engines.tectonic import TectonicEngine
+
 
 class LatexDocumentBackend(
     DeclarativeDocumentBackend,
@@ -46,10 +52,14 @@ class LatexDocumentBackend(
         if options is None:
             options = LatexBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
+        self.options = LatexBackendOptions.model_validate(self.options)
         self.labels: dict[str, bool] = {}
         self._custom_macros: dict[str, str] = {}
         self._custom_macro_num_args: dict[str, int] = {}
         self._input_stack: set[str] = set()
+        self._tectonic_engine: TectonicEngine | None = None
+        self._tikz_executor: concurrent.futures.ThreadPoolExecutor | None = None
+        self._tikz_futures: list[concurrent.futures.Future] = []
         self.latex_text = decode_latex_content(self.path_or_stream)
 
     def is_valid(self) -> bool:
@@ -67,7 +77,23 @@ class LatexDocumentBackend(
         return {InputFormat.LATEX}
 
     def _do_parse_and_process(self, doc: DoclingDocument) -> DoclingDocument:
+        import concurrent.futures
+        import re
+
         preprocessed_text = self._preprocess_custom_macros(self.latex_text)
+
+        # Extract preamble: everything before \begin{document}
+        preamble_match = re.search(
+            r"^(.*?)\\begin\{document\}", preprocessed_text, re.DOTALL
+        )
+        if preamble_match:
+            raw_preamble = preamble_match.group(1)
+            # Remove the original \documentclass declaration
+            self.latex_preamble = re.sub(
+                r"\\documentclass(?:\[[^\]]*\])?\s*\{[^}]*\}", "", raw_preamble
+            )
+        else:
+            self.latex_preamble = ""
 
         walker = LatexWalker(preprocessed_text, tolerant_parsing=True)
 
@@ -77,6 +103,10 @@ class LatexDocumentBackend(
             _log.warning(f"LaTeX parsing failed: {e}. Using fallback text extraction.")
             doc.add_text(label=DocItemLabel.TEXT, text=self.latex_text)
             return doc
+
+        workers = max(1, (os.cpu_count() or 2) - 1)
+        self._tikz_executor = concurrent.futures.ThreadPoolExecutor(max_workers=workers)
+        self._tikz_futures = []  # type: ignore
 
         try:
             self._extract_custom_macros(nodes)
@@ -89,14 +119,20 @@ class LatexDocumentBackend(
             else:
                 self._process_nodes(nodes, doc)
 
+            if self._tikz_futures:
+                concurrent.futures.wait(self._tikz_futures)
+
         except Exception as e:
             _log.error(f"Error processing LaTeX nodes: {e}")
+        finally:
+            self._tikz_executor.shutdown(wait=False)
 
         return doc
 
     def convert(self) -> DoclingDocument:
         doc = DoclingDocument(name=self.file.stem)
-        timeout: float | None = getattr(self.options, "parse_timeout", None)
+        opts = cast(LatexBackendOptions, self.options)
+        timeout = opts.parse_timeout
 
         if timeout is None:
             return self._do_parse_and_process(doc)

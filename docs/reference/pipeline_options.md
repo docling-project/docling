@@ -7,6 +7,39 @@ can be enabled with `do_xyz = True`.
 
 This is an automatic generated API reference of the all the pipeline options available in Docling.
 
+## LaTeX TikZ Rendering
+
+Docling's LaTeX backend can optionally render `tikzpicture` environments into
+images using the Tectonic engine.
+
+### Backend options
+
+`LatexBackendOptions` supports the following TikZ-related options:
+
+- `tikz_engine`
+  Set to `"tectonic"` to enable optional TikZ rendering.
+- `tikz_engine_timeout`
+  Sets the timeout, in seconds, for rendering a single TikZ diagram.
+- `tikz_engine_allow_shell_escape`
+  Defaults to `False`. Enable this only when required by the input document,
+  since shell escape is less safe for untrusted LaTeX sources.
+
+### CLI flags
+
+The CLI exposes the same behavior with these flags:
+
+- `--tikz-engine` / `-T`
+- `--tikz-engine-timeout`
+- `--tikz-shell-escape`
+
+### Fallback behavior
+
+- When Tectonic compilation succeeds, the TikZ diagram is rasterized and stored
+  as an image.
+- When compilation fails, times out, produces no PDF, or rasterization fails,
+  Docling preserves the original TikZ source as fallback code metadata instead
+  of dropping the figure.
+
 
 ::: docling.datamodel.pipeline_options
     handler: python

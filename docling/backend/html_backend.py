@@ -1,3 +1,5 @@
+# mypy: disable-error-code=import-untyped
+
 import base64
 import ipaddress
 import logging
@@ -1679,8 +1681,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     node.find(_BLOCK_TAGS)
                     or node.find("input")
                     or node.find(
-                        lambda item: isinstance(item, Tag)
-                        and self._is_custom_checkbox_tag(item)
+                        lambda item: (
+                            isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
+                        )
                     )
                 )
                 has_pending_form_fields = self._has_pending_form_field_in_subtree(node)
@@ -2236,8 +2239,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 custom_checkboxes_in_li = [
                     checkbox_tag
                     for checkbox_tag in li.find_all(
-                        lambda item: isinstance(item, Tag)
-                        and self._is_custom_checkbox_tag(item)
+                        lambda item: (
+                            isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
+                        )
                     )
                     if checkbox_tag.find_parent("li") is li
                 ]
@@ -2484,8 +2488,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if input_ref is not None:
                         added_refs.append(input_ref)
             for checkbox_tag in tag.find_all(
-                lambda item: isinstance(item, Tag)
-                and self._is_custom_checkbox_tag(item)
+                lambda item: (
+                    isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
+                )
             ):
                 if isinstance(checkbox_tag, Tag):
                     checkbox_ref = self._emit_custom_checkbox(checkbox_tag, doc)
@@ -2822,8 +2827,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return "fillable"
         if (
             value_tag.find(
-                lambda item: isinstance(item, Tag)
-                and HTMLDocumentBackend._is_checkbox_like_tag(item)
+                lambda item: (
+                    isinstance(item, Tag)
+                    and HTMLDocumentBackend._is_checkbox_like_tag(item)
+                )
             )
             is not None
         ):
@@ -3479,9 +3486,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return True
         if (
             tag.find(
-                lambda item: isinstance(item, Tag)
-                and item is not tag
-                and self._is_form_semantic_id(self._get_html_id(item))
+                lambda item: (
+                    isinstance(item, Tag)
+                    and item is not tag
+                    and self._is_form_semantic_id(self._get_html_id(item))
+                )
             )
             is not None
         ):

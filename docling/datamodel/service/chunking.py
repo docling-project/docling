@@ -29,6 +29,27 @@ class BaseChunkerOptions(BaseModel):
         ),
     ] = False
 
+    use_markdown_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "Enable image serialization and image references inside chunks. "
+                "Also adds a `has_image` field to chunk metadata to make image-containing "
+                "chunks easier to identify."
+            ),
+        ),
+    ] = False
+
+    image_placeholder: Annotated[
+        str,
+        Field(
+            description=(
+                "Placeholder text used inside chunks to reference an image when "
+                "markdown image serialization is disabled."
+            ),
+        ),
+    ] = "![IMAGE]"
+
     include_raw_text: Annotated[
         bool,
         Field(

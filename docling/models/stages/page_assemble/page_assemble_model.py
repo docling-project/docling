@@ -141,8 +141,10 @@ class PageAssembleModel(BasePageModel):
         # captured trailing space is re-emitted so that real word boundaries are
         # preserved (e.g. "Ĳ is" → "IJ is", "hello\uf0a0 world" → "hello world").
         sanitized_text = _LIGATURE_RE.sub(
-            lambda m: _LIGATURE_MAP[m.group(1)]
-            + ("" if "\ufb00" <= m.group(1) <= "\ufb06" else (m.group(2) or "")),
+            lambda m: (
+                _LIGATURE_MAP[m.group(1)]
+                + ("" if "\ufb00" <= m.group(1) <= "\ufb06" else (m.group(2) or ""))
+            ),
             sanitized_text,
         )
 

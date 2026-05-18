@@ -26,6 +26,7 @@ from docling.datamodel.chart_extraction_options import (
     ChartExtractionModelKind,
     ChartExtractionModelOptions,
 )
+from docling.datamodel.extraction_options import ExtractionPromptStyle
 from docling.datamodel.kserve_v2_options import KserveV2OptionsMixin
 from docling.datamodel.layout_model_specs import (
     DOCLING_LAYOUT_EGRET_LARGE,
@@ -57,6 +58,7 @@ from docling.datamodel.stage_model_specs import (
 )
 from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
 from docling.datamodel.vlm_model_specs import (
+    GRANITE_VISION_4_1_TRANSFORMERS,
     GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
     GRANITE_VISION_TRANSFORMERS as granite_vision_vlm_conversion_options,
     NU_EXTRACT_2B_TRANSFORMERS,
@@ -1458,6 +1460,10 @@ class VlmExtractionPipelineOptions(PipelineOptions):
     NuExtract-2B) to extract structured data fields from document images.
     Unlike `VlmPipelineOptions` which converts pages to document format,
     this pipeline targets extraction of specific entities or key-value pairs.
+
+    Supported models:
+        - ``NU_EXTRACT_2B_TRANSFORMERS`` (default) with ``ExtractionPromptStyle.NUEXTRACT``
+        - ``GRANITE_VISION_4_1_TRANSFORMERS`` with ``ExtractionPromptStyle.GRANITE_VISION``
     """
 
     vlm_options: Annotated[
@@ -1469,6 +1475,16 @@ class VlmExtractionPipelineOptions(PipelineOptions):
             )
         ),
     ] = NU_EXTRACT_2B_TRANSFORMERS
+
+    extraction_prompt_style: Annotated[
+        "ExtractionPromptStyle",
+        Field(
+            description=(
+                "Prompt style to use for extraction. Determines how the template "
+                "is formatted and passed to the model."
+            )
+        ),
+    ] = ExtractionPromptStyle.NUEXTRACT
 
 
 class PdfPipelineOptions(PaginatedPipelineOptions):
