@@ -367,10 +367,12 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         soup = BeautifulSoup(html_content, "html.parser")
         # SDK가 표 셀 HTML 안에 <latex value="<base64>"/> 형태로 임베드한 수식을
         # TableCell.text가 단순 문자열이라 별도 FORMULA 노드로 못 박는다.
-        # 대신 셀 텍스트 추출 전에 $<decoded latex>$ 텍스트 노드로 치환한다.
+        # 대신 셀 텍스트 추출 전에 <math>{decoded latex}</math> 텍스트 노드로 치환하여
+        # chandra OCR prompt의 inline 수식 컨벤션(<math>...</math>, KaTeX-compatible
+        # LaTeX 본문)과 정합을 맞춘다.
         for latex_tag in soup.find_all("latex"):
             decoded = self._decode_latex_b64(latex_tag.get("value", ""))
-            replacement = f"${decoded}$" if decoded else ""
+            replacement = f"<math>{decoded}</math>" if decoded else ""
             latex_tag.replace_with(NavigableString(replacement))
         table_tag = soup.find("table")
         if not table_tag:

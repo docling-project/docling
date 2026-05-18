@@ -196,7 +196,10 @@ def test_genos_hwp_backend_handle_latex_creates_formula_node():
 
 @pytest.mark.unit
 def test_genos_hwp_backend_handle_table_substitutes_embedded_latex():
-    """표 셀 HTML 안의 <latex value="..."/> 가 $<decoded>$로 치환되어 cell text에 포함된다."""
+    """표 셀 HTML 안의 <latex value="..."/> 가 <math>{decoded}</math>로 치환되어 cell text에 포함된다.
+
+    chandra OCR prompt의 inline 수식 컨벤션(<math>...</math>, KaTeX-compatible LaTeX 본문)에 정합.
+    """
     backend = _make_backend_no_io()
     doc = _make_doc()
     backend.active_main_parent = doc.body
@@ -218,7 +221,7 @@ def test_genos_hwp_backend_handle_table_substitutes_embedded_latex():
         c for c in added[0].data.table_cells if "T연도" in c.text
     ]
     assert len(cell_with_latex) == 1
-    assert "$\\bar y_{T}$" in cell_with_latex[0].text
+    assert "<math>\\bar y_{T}</math>" in cell_with_latex[0].text
 
 
 @pytest.mark.unit
