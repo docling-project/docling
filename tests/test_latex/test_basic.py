@@ -209,7 +209,7 @@ def test_e2e_latex_conversions(latex_paths):
         conv_result: ConversionResult = converter.convert(latex_path)
         doc: DoclingDocument = conv_result.document
 
-        pred_md: str = doc.export_to_markdown()
+        pred_md: str = doc.export_to_markdown(compact_tables=True)
         assert verify_export(pred_md, str(gt_path) + ".md", generate=GENERATE), (
             f"Markdown export mismatch for {latex_path}"
         )

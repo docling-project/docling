@@ -42,7 +42,7 @@ def test_e2e_pptx_conversions():
 
         doc: DoclingDocument = conv_result.document
 
-        pred_md: str = doc.export_to_markdown()
+        pred_md: str = doc.export_to_markdown(compact_tables=True)
         assert verify_export(pred_md, str(gt_path) + ".md", GENERATE), "export to md"
 
         pred_itxt: str = doc._export_to_indented_text(

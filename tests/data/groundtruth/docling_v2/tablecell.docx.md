@@ -3,9 +3,9 @@
 
 Some text before
 
-| Tab1   | Tab2   | Tab3   |
-|--------|--------|--------|
-| A      | B      | C      |
-| D      | E      | F      |
+| Tab1 | Tab2 | Tab3 |
+| - | - | - |
+| A | B | C |
+| D | E | F |
 
 Some text after

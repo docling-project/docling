@@ -60,7 +60,7 @@ def documents() -> list[tuple[Path, DoclingDocument]]:
 
 def test_e2e_excel_conversions(documents) -> None:
     for gt_path, doc in documents:
-        pred_md: str = doc.export_to_markdown()
+        pred_md: str = doc.export_to_markdown(compact_tables=True)
         assert verify_export(pred_md, str(gt_path) + ".md"), "export to md"
 
         pred_itxt: str = doc._export_to_indented_text(

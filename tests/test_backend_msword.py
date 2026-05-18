@@ -94,7 +94,7 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument
             print(f"Skipping {docx_path} because no Libreoffice is installed.")
             continue
 
-        pred_md: str = doc.export_to_markdown()
+        pred_md: str = doc.export_to_markdown(compact_tables=True)
         assert verify_export(pred_md, str(docx_path) + ".md", generate=GENERATE), (
             f"export to markdown failed on {docx_path}"
         )
