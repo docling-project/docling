@@ -66,7 +66,7 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_TURBO_NATIVE,
     AsrModelType,
 )
-from docling.datamodel.backend_options import PdfBackendOptions
+from docling.datamodel.backend_options import LatexBackendOptions, PdfBackendOptions
 from docling.datamodel.base_models import (
     ConversionStatus,
     FormatToExtensions,
@@ -857,7 +857,8 @@ def convert(  # noqa: C901
                     pipeline_options=simple_format_option
                 ),
                 InputFormat.LATEX: LatexFormatOption(
-                    pipeline_options=simple_format_option
+                    pipeline_options=simple_format_option,
+                    backend_options=LatexBackendOptions(),
                 ),
             }
 

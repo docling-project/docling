@@ -1,10 +1,17 @@
 import logging
 import re
-from typing import TYPE_CHECKING, Optional
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional, cast
 
 if TYPE_CHECKING:
+    from concurrent.futures import Future, ThreadPoolExecutor
     from typing import Any
 
+    from docling.backend.latex.engines.tectonic import TectonicEngine
+    from docling.datamodel.backend_options import (
+        BaseBackendOptions,
+        LatexBackendOptions,
+    )
 from docling_core.types.doc import CodeLanguageLabel
 from docling_core.types.doc.document import (
     CodeMetaField,
@@ -25,6 +32,12 @@ _TIKZ_END_PATTERN = re.compile(r"\\end\s*\{\s*tikzpicture\s*\}")
 
 class EnvironmentHandlerMixin:
     if TYPE_CHECKING:
+        options: "BaseBackendOptions"
+        latex_preamble: str
+        path_or_stream: "Any"
+        _tectonic_engine: "TectonicEngine | None"
+        _tikz_executor: "ThreadPoolExecutor | None"
+        _tikz_futures: list["Future[Any]"]
 
         def _process_nodes(
             self,
@@ -160,6 +173,63 @@ class EnvironmentHandlerMixin:
             )
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
             return
+
+        opts = cast("LatexBackendOptions", self.options)
+        if opts.tikz_engine == "tectonic":
+            try:
+                from docling.backend.latex.engines.tectonic import TectonicEngine
+
+                if self._tectonic_engine is None:
+                    self._tectonic_engine = TectonicEngine(
+                        timeout=opts.tikz_engine_timeout,
+                        allow_shell_escape=opts.tikz_engine_allow_shell_escape,
+                    )
+
+                pic = doc.add_picture(parent=parent)
+
+                def render_task(engine, raw_tikz, picture_item, preamble, source_root):
+                    def set_code_fallback():
+                        picture_item.meta = PictureMeta(
+                            code=CodeMetaField(
+                                text=raw_tikz,
+                                language=CodeLanguageLabel.TIKZ,
+                            )
+                        )
+
+                    try:
+                        img_ref = engine.render(
+                            raw_tikz, preamble=preamble, source_root=source_root
+                        )
+                        if img_ref:
+                            picture_item.image = img_ref
+                        else:
+                            # Any Tectonic failure should degrade to raw TikZ.
+                            set_code_fallback()
+                    except Exception as e:
+                        _log.warning(f"Async Tectonic rendering failed: {e}")
+                        set_code_fallback()
+
+                preamble = self.latex_preamble
+                source_root = None
+                if isinstance(self.path_or_stream, Path):
+                    source_root = self.path_or_stream.parent
+                if self._tikz_executor:
+                    future = self._tikz_executor.submit(
+                        render_task,
+                        self._tectonic_engine,
+                        tikz_raw,
+                        pic,
+                        preamble,
+                        source_root,
+                    )
+                    self._tikz_futures.append(future)
+                else:
+                    render_task(
+                        self._tectonic_engine, tikz_raw, pic, preamble, source_root
+                    )
+                return
+            except Exception as e:
+                _log.warning(f"Failed to setup Tectonic async task: {e}")
 
         pic = doc.add_picture(parent=parent)
         pic.meta = PictureMeta(

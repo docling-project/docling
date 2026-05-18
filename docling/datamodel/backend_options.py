@@ -192,6 +192,25 @@ class LatexBackendOptions(BaseBackendOptions):
             "Set to None to disable the timeout. Defaults to 30 s."
         ),
     )
+    tikz_engine: Optional[Literal["tectonic"]] = Field(
+        None,
+        description=(
+            "The engine to use for rendering Tikz diagrams into images. "
+            "Set to 'tectonic' to enable asynchronous image generation."
+        ),
+    )
+    tikz_engine_timeout: float = Field(
+        60.0,
+        description="The timeout in seconds for rendering a single TikZ diagram.",
+    )
+    tikz_engine_allow_shell_escape: bool = Field(
+        False,
+        description=(
+            "Allow Tectonic TikZ rendering to enable shell escape during "
+            "compilation. Disabled by default for safer rendering of untrusted "
+            "LaTeX."
+        ),
+    )
 
 
 class XBRLBackendOptions(BaseBackendOptions):
