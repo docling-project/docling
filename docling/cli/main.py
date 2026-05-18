@@ -44,6 +44,11 @@ from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.cli.export_utils import (
+    _is_empty_output,
+    _should_generate_export_images,
+    _split_list,
+)
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
     WHISPER_BASE,
@@ -69,6 +74,8 @@ from docling.datamodel.asr_model_specs import (
 from docling.datamodel.backend_options import LatexBackendOptions, PdfBackendOptions
 from docling.datamodel.base_models import (
     ConversionStatus,
+    DoclingComponentType,
+    ErrorItem,
     FormatToExtensions,
     InputFormat,
     OutputFormat,
@@ -239,8 +246,8 @@ def export_documents(
     failure_count = 0
 
     for conv_res in conv_results:
-        if conv_res.status == ConversionStatus.SUCCESS:
-            success_count += 1
+        doc_failed = conv_res.status != ConversionStatus.SUCCESS
+        if not doc_failed:
             doc_filename = conv_res.input.file.stem
 
             # Export JSON format:
@@ -310,6 +317,21 @@ def export_documents(
                 conv_res.document.save_as_markdown(
                     filename=fname, image_mode=image_export_mode
                 )
+                if _is_empty_output(fname):
+                    error_message = (
+                        "Markdown export produced empty output for "
+                        f"{conv_res.input.file.name}"
+                    )
+                    _log.error(error_message)
+                    conv_res.errors.append(
+                        ErrorItem(
+                            component_type=DoclingComponentType.DOC_ASSEMBLER,
+                            module_name="export_documents",
+                            error_message=error_message,
+                        )
+                    )
+                    conv_res.status = ConversionStatus.FAILURE
+                    doc_failed = True
 
             # Export Document Tags format:
             if export_doctags:
@@ -367,7 +389,7 @@ def export_documents(
                     r = TimingsT.dump_json(conv_res.timings, indent=2)
                     fp.write(r)
 
-        else:
+        if doc_failed:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
             if _log.isEnabledFor(logging.INFO):
                 for err in conv_res.errors:
@@ -376,40 +398,17 @@ def export_documents(
                         f"Module: {err.module_name}, Message: {err.error_message}"
                     )
             failure_count += 1
+        else:
+            success_count += 1
 
     _log.info(
         f"Processed {success_count + failure_count} docs, of which {failure_count} failed"
     )
 
 
-def _split_list(raw: str | None) -> list[str] | None:
-    if raw is None:
-        return None
-    return re.split(r"[;,]", raw)
-
-
-_OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING = frozenset(
-    {
-        OutputFormat.TEXT,
-        OutputFormat.DOCTAGS,
-        OutputFormat.VTT,
-    }
-)
-
-
-def _should_generate_export_images(
-    image_export_mode: ImageRefMode,
-    to_formats: list[OutputFormat],
-) -> bool:
-    return image_export_mode != ImageRefMode.PLACEHOLDER and any(
-        to_format not in _OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING
-        for to_format in to_formats
-    )
-
-
 @app.command(no_args_is_help=True)
 def convert(  # noqa: C901
-    input_sources: Annotated[
+    source: Annotated[
         list[str],
         typer.Argument(
             ...,
@@ -420,7 +419,7 @@ def convert(  # noqa: C901
     from_formats: list[InputFormat] = typer.Option(
         None,
         "--from",
-        help="Specify input formats to convert from. Defaults to all formats.",
+        help="Input formats to accept. Defaults to all supported formats.",
     ),
     to_formats: list[OutputFormat] = typer.Option(
         None, "--to", help="Specify output formats. Defaults to Markdown."
@@ -595,7 +594,7 @@ def convert(  # noqa: C901
     debug_visualize_layout: Annotated[
         bool,
         typer.Option(
-            ..., help="Enable debug output which visualizes the layour clusters"
+            ..., help="Enable debug output which visualizes the layout clusters"
         ),
     ] = False,
     debug_visualize_tables: Annotated[
@@ -678,13 +677,13 @@ def convert(  # noqa: C901
 
     with tempfile.TemporaryDirectory() as tempdir:
         input_doc_paths: list[Path] = []
-        for src in input_sources:
+        for src in source:
             try:
                 # check if we can fetch some remote url
-                source = resolve_source_to_path(
+                resolved_source = resolve_source_to_path(
                     source=src, headers=parsed_headers, workdir=Path(tempdir)
                 )
-                input_doc_paths.append(source)
+                input_doc_paths.append(resolved_source)
             except FileNotFoundError:
                 err_console.print(
                     f"[red]Error: The input file {src} does not exist.[/red]"
@@ -695,6 +694,8 @@ def convert(  # noqa: C901
                 try:
                     local_path = TypeAdapter(Path).validate_python(src)
                     if local_path.exists() and local_path.is_dir():
+                        # Use a set to track unique paths and avoid duplicates
+                        seen_paths: set[Path] = set()
                         for fmt in from_formats:
                             for ext in FormatToExtensions[fmt]:
                                 for path in local_path.glob(f"**/*.{ext}"):
@@ -703,7 +704,9 @@ def convert(  # noqa: C901
                                             f"Ignoring temporary Word file: {path}"
                                         )
                                         continue
-                                    input_doc_paths.append(path)
+                                    if path not in seen_paths:
+                                        seen_paths.add(path)
+                                        input_doc_paths.append(path)
 
                                 for path in local_path.glob(f"**/*.{ext.upper()}"):
                                     if path.name.startswith("~$") and ext == "docx":
@@ -711,7 +714,9 @@ def convert(  # noqa: C901
                                             f"Ignoring temporary Word file: {path}"
                                         )
                                         continue
-                                    input_doc_paths.append(path)
+                                    if path not in seen_paths:
+                                        seen_paths.add(path)
+                                        input_doc_paths.append(path)
                     elif local_path.exists():
                         if not local_path.name.startswith("~$") and ext == "docx":
                             _log.info(f"Ignoring temporary Word file: {path}")

@@ -1,7 +1,7 @@
 """Common KServe v2 API configuration options mixin."""
 
 import warnings
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from pydantic import AliasChoices, BaseModel, Field, model_validator
 
@@ -19,7 +19,8 @@ class KserveV2OptionsMixin(BaseModel):
         description=(
             "Endpoint URL for KServe v2 transport. "
             "For transport='http', use http(s)://host[:port] or plain host:port. "
-            "For transport='grpc', use plain host:port."
+            "For transport='grpc', use plain host:port or dns:///host:port "
+            "(dns:/// enables gRPC-native DNS load balancing, e.g. round_robin over headless k8s services)."
         ),
     )
 
@@ -69,6 +70,15 @@ class KserveV2OptionsMixin(BaseModel):
         default=64 * 1024 * 1024,
         ge=1,
         description="Max send/receive gRPC message size in bytes.",
+    )
+
+    grpc_channel_args: List[Tuple[str, Any]] = Field(
+        default_factory=list,
+        description=(
+            "Extra gRPC channel args forwarded to the underlying channel. "
+            "Use e.g. [('grpc.lb_policy_name', 'round_robin')] together with "
+            "a dns:/// URL for client-side load balancing across k8s headless service endpoints."
+        ),
     )
 
     use_binary_data: bool = Field(

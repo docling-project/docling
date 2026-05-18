@@ -129,6 +129,7 @@ class ApiKserveV2ImageClassificationEngine(HfImageClassificationEngineBase):
                 use_tls=self.options.grpc_use_tls,
                 max_message_bytes=self.options.grpc_max_message_bytes,
                 use_binary_data=self.options.use_binary_data,
+                grpc_channel_args=list(self.options.grpc_channel_args),
             )
         self._input_name, self._output_name = self._resolve_tensor_names()
 
