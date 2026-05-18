@@ -7,6 +7,7 @@ from docling.backend.pypdfium2_backend import (
     PyPdfiumDocumentBackend,
     PyPdfiumPageBackend,
 )
+from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.datamodel.pipeline_options import PdfPipelineOptions
@@ -20,11 +21,12 @@ def test_doc_path():
     return Path("./tests/data/pdf/2206.01062.pdf")
 
 
-def _get_backend(pdf_doc):
+def _get_backend(pdf_doc, options: PdfBackendOptions = None):
     in_doc = InputDocument(
         path_or_stream=pdf_doc,
         format=InputFormat.PDF,
         backend=PyPdfiumDocumentBackend,
+        backend_options=options,
     )
 
     doc_backend = in_doc._backend
@@ -112,7 +114,8 @@ def test_merge_row():
 
 
 def test_word_cells(test_doc_path):
-    doc_backend = _get_backend(test_doc_path)
+    options = PdfBackendOptions(create_word_cells=True)
+    doc_backend = _get_backend(test_doc_path, options=options)
     page_backend: PyPdfiumPageBackend = doc_backend.load_page(0)
 
     seg_page = page_backend.get_segmented_page()
@@ -125,3 +128,13 @@ def test_word_cells(test_doc_path):
     for cell in seg_page.word_cells[:20]:
         assert cell.text.strip(), f"Empty word cell at index {cell.index}"
         assert cell.rect is not None
+
+
+def test_word_cells_disabled_by_default(test_doc_path):
+    doc_backend = _get_backend(test_doc_path)
+    page_backend: PyPdfiumPageBackend = doc_backend.load_page(0)
+
+    seg_page = page_backend.get_segmented_page()
+    assert seg_page is not None
+    assert seg_page.has_words is False
+    assert len(seg_page.word_cells) == 0

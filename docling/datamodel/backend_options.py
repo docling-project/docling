@@ -129,6 +129,14 @@ class PdfBackendOptions(BaseBackendOptions):
 
     kind: Literal["pdf"] = Field("pdf", exclude=True, repr=False)
     password: Optional[SecretStr] = None
+    create_word_cells: bool = Field(
+        False,
+        description=(
+            "Whether to compute word-level bounding boxes in addition to "
+            "text-line cells. Disabled by default because it requires an extra "
+            "pass over every page's text fragments."
+        ),
+    )
 
 
 class MetsGbsBackendOptions(PdfBackendOptions):

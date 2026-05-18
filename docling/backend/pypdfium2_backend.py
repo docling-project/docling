@@ -114,10 +114,12 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         pdfium_doc: pdfium.PdfDocument,
         document_hash: str,
         page_no: int,
+        create_word_cells: bool = False,
     ):
         super().__init__()
         # Note: lock applied by the caller
         self.valid = True  # No better way to tell from pypdfium.
+        self.create_word_cells = create_word_cells
         self._ppage: pdfium.PdfPage | None = None
         try:
             self._ppage = pdfium_doc[page_no]
@@ -348,7 +350,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             return None
 
         text_cells = self._compute_text_cells()
-        word_cells = self._compute_word_cells()
+        word_cells = self._compute_word_cells() if self.create_word_cells else []
         dimension = get_pdf_page_geometry(self._require_page())
 
         return SegmentedPdfPage(
@@ -356,7 +358,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             textline_cells=text_cells,
             char_cells=[],
             word_cells=word_cells,
-            has_textlines=len(text_cells) > 0,
+            has_lines=len(text_cells) > 0,
             has_words=len(word_cells) > 0,
             has_chars=False,
         )
@@ -444,7 +446,12 @@ class PyPdfiumDocumentBackend(ManagedPdfiumDocumentBackend):
 
     def load_page(self, page_no: int) -> PyPdfiumPageBackend:
         with pypdfium2_lock:
-            return PyPdfiumPageBackend(self._pdoc, self.document_hash, page_no)
+            return PyPdfiumPageBackend(
+                self._pdoc,
+                self.document_hash,
+                page_no,
+                create_word_cells=self.options.create_word_cells,
+            )
 
     def is_valid(self) -> bool:
         return self.page_count() > 0
