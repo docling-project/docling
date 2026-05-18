@@ -126,9 +126,9 @@ layout:
   layout_model_type: "genos_layout"
   genos_layout:
     # <LAYOUT_SERVING_ID>: Genos에 등록한 layout 모델서빙 ID로 변경 필요
-    # <LAYOUT_API_KEY>: Genos, layout 모델서빙에서 발급받은 인증키로 변경 필요
+    # api_key는 k8s 내부 통신 기반 모델 호출 시 불필요.
     endpoint: "http://llmops-gateway-api-service:8080/rep/serving/<LAYOUT_SERVING_ID>/v1/chat/completions"
-    api_key: "<LAYOUT_API_KEY>"
+    api_key: ""
     page_batch_size: 32
 
 # ───────────────────────────────────────────────
@@ -139,9 +139,9 @@ enrichment:
   do_metadata: true
 
   # <ENRICHMENT_SERVING_ID>: Genos에 등록한 enrichment 모델서빙 ID로 변경 필요
-  # <ENRICHMENT_API_KEY>: Genos, enrichment 모델서빙에서 발급받은 인증키로 변경 필요
+  # api_key는 k8s 내부 통신 기반 모델 호출 시 불필요.
   api_url: "http://llmops-gateway-api-service:8080/rep/serving/<ENRICHMENT_SERVING_ID>/v1/chat/completions"
-  api_key: "<ENRICHMENT_API_KEY>"
+  api_key: ""
   model: "model"
   toc:
     temperature: 0.0
@@ -191,10 +191,8 @@ output:
   - endpoint: `<OCR_ENDPOINT>` 는 ocr server 를 서비스 하는 주소로 변경해야 합니다.
 - layout.genos_layout
   - endpoint: `<LAYOUT_SERVING_ID>` 는 Genos에 등록한 layout 모델서빙 ID 로 변경해야 합니다.
-  - api_key: `<LAYOUT_API_KEY>`는 Genos layout 모델서빙에서 발급받은 인증키로 변경해야 합니다.
 - enrichment
   - api_url: `<ENRICHMENT_SERVING_ID>`는 Genos에 등록한 enrichment 모델서빙 ID로 변경해야 합니다.
-  - api_key: `<ENRICHMENT_API_KEY>`는 Genos enrichment 모델서빙에서 발급받은 인증키로 변경해야 합니다.
 
 ---
 

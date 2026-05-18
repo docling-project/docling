@@ -221,10 +221,9 @@ class PromptManager:
 
         try:
             # 요청 헤더 구성
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_config['api_key']}"
-            }
+            headers = {"Content-Type": "application/json"}
+            if api_config.get("api_key"):
+                headers["Authorization"] = f"Bearer {api_config['api_key']}"
 
             # 요청 본문 구성
             payload = {
@@ -383,10 +382,10 @@ class PromptManager:
         if api_config is None:
             return None
 
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_config['api_key']}"
-        }
+        headers = {"Content-Type": "application/json"}
+        if api_config.get("api_key"):
+            headers["Authorization"] = f"Bearer {api_config['api_key']}"
+
         base_url = api_config.get("api_base_url", api_config.get("base_url"))
         api_url = base_url if base_url.endswith("/chat/completions") else f"{base_url}/chat/completions"
 
