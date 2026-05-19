@@ -22,8 +22,8 @@ def test_convert_email_backend_from_path():
     markdown = doc.export_to_markdown()
 
     assert "Simple Email" in markdown
-    assert "From: Alice Example <alice@example.com>" in markdown
-    assert "To: Bob Example <bob@example.com>" in markdown
+    assert "From: Alice Example &lt;alice@example.com&gt;" in markdown
+    assert "To: Bob Example &lt;bob@example.com&gt;" in markdown
     assert "Hello Bob," in markdown
     assert "This is a simple email body." in markdown
     assert backend._extract_attachments() == []
