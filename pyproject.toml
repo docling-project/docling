@@ -141,6 +141,10 @@ format-latex = [
   'pylatexenc>=2.10,<3.0',
 ]
 
+format-email = [
+  'mail-parser>=4.1.4,<5.0.0',
+]
+
 format-xml-xbrl = [
   'arelle-release>=2.38.17,<3.0.0',
 ]
@@ -236,7 +240,7 @@ cli = [
 # CONVENIENCE BUNDLES
 # ============================================================================
 standard = [
-  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-latex,feat-chunking,extract-core,service-client,cli]',
+  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-latex,format-email,feat-chunking,extract-core,service-client,cli]',
 ]
 
 all = [

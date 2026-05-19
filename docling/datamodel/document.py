@@ -676,6 +676,8 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.VTT][0]
         elif ext in FormatToExtensions[InputFormat.LATEX]:
             mime = FormatToMimeType[InputFormat.LATEX][0]
+        elif ext in FormatToExtensions[InputFormat.EMAIL]:
+            mime = FormatToMimeType[InputFormat.EMAIL][0]
         return mime
 
     @staticmethod

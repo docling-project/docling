@@ -21,6 +21,7 @@ from docling.backend.abstract_backend import (
 from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.email_backend import EmailDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
@@ -170,6 +171,11 @@ class LatexFormatOption(FormatOption):
     backend_options: Optional[LatexBackendOptions] = None
 
 
+class EmailFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = EmailDocumentBackend
+
+
 def _get_default_option(format: InputFormat) -> FormatOption:
     format_to_default_options = {
         InputFormat.CSV: CsvFormatOption(),
@@ -195,6 +201,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
             pipeline_cls=SimplePipeline, backend=WebVTTDocumentBackend
         ),
         InputFormat.LATEX: LatexFormatOption(),
+        InputFormat.EMAIL: EmailFormatOption(),
     }
     if (options := format_to_default_options.get(format)) is not None:
         return options
