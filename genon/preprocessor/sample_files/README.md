@@ -19,3 +19,18 @@
 
 - 기본적으로 `sample.pdf`를 찾습니다
 - 다른 파일명을 사용하려면 `test.py`의 `file_path` 변수를 수정하세요
+
+## HWP → PDF 회귀 검증 자산 (이슈 #199)
+
+본 폴더에 `*.hwp` / `*.hwpx` 파일을 추가하면 `tests/regression/test_hwp_to_pdf_regression.py` 가 가용한 모든 backend (pdf_sdk / rhwp / libreoffice) 로 자동 변환·검증한다. 별도 등록 절차 없음.
+
+검증 범위 확대를 위해 다음 유형의 HWP 샘플을 추가 권장:
+
+- 표 (병합 셀 / 중첩 표 포함)
+- 이미지 / 그림 (PNG / WMF / EMF 혼재)
+- 다단 (2단·3단)
+- 머리말·꼬리말
+- 각주·미주
+- 폼·필드
+
+각 자산은 `<유형>_<설명>.hwp` 패턴 권장 (예: `table_merged_cells.hwp`, `image_wmf.hwpx`).
