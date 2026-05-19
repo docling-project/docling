@@ -45,16 +45,23 @@ def test_pdf_sdk_available_false_when_not_executable(monkeypatch, tmp_path):
 
 
 @pytest.mark.unit
-def test_rhwp_available_uses_env_override(monkeypatch, make_executable):
-    binary = make_executable("rhwp")
-    monkeypatch.setenv("RHWP_BIN", str(binary))
-    assert availability.rhwp_binary() == binary
+def test_rhwp_available_when_url_set(monkeypatch):
+    monkeypatch.setenv("RHWP_PDF_API_URL", "http://rhwp-pdf-api:7878")
+    assert availability.rhwp_pdf_api_url() == "http://rhwp-pdf-api:7878"
     assert availability.rhwp_available() is True
 
 
 @pytest.mark.unit
-def test_rhwp_available_false_when_missing(monkeypatch, tmp_path):
-    monkeypatch.setenv("RHWP_BIN", str(tmp_path / "no_such_rhwp"))
+def test_rhwp_available_false_when_url_missing(monkeypatch):
+    monkeypatch.delenv("RHWP_PDF_API_URL", raising=False)
+    assert availability.rhwp_pdf_api_url() is None
+    assert availability.rhwp_available() is False
+
+
+@pytest.mark.unit
+def test_rhwp_available_false_for_empty_or_whitespace(monkeypatch):
+    monkeypatch.setenv("RHWP_PDF_API_URL", "   ")
+    assert availability.rhwp_pdf_api_url() is None
     assert availability.rhwp_available() is False
 
 

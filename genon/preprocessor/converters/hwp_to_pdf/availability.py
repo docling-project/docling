@@ -20,8 +20,13 @@ def pdf_sdk_binary() -> Path:
     return pdf_sdk_home() / "pdfConverter"
 
 
-def rhwp_binary() -> Path:
-    return Path(os.environ.get("RHWP_BIN", "/usr/local/bin/rhwp"))
+def rhwp_pdf_api_url() -> str | None:
+    """genos-rhwp 서버의 base URL (예: http://rhwp-pdf-api:7878).
+
+    None / 빈 문자열이면 backend 미사용으로 간주.
+    """
+    raw = os.environ.get("RHWP_PDF_API_URL", "").strip()
+    return raw or None
 
 
 def pdf_sdk_available() -> bool:
@@ -30,8 +35,12 @@ def pdf_sdk_available() -> bool:
 
 
 def rhwp_available() -> bool:
-    p = rhwp_binary()
-    return p.exists() and os.access(p, os.X_OK)
+    """rhwp 가용성 = HTTP endpoint URL 설정 여부.
+
+    실제 health check 는 별도 단계에서 수행 (이슈 #199 — genos 가 운영하는
+    rhwp-pdf-api Deployment/Service 를 client 로 호출하는 패턴).
+    """
+    return rhwp_pdf_api_url() is not None
 
 
 def libreoffice_available() -> bool:

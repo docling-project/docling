@@ -1,117 +1,137 @@
-"""RhwpConverter 단위 테스트."""
+"""RhwpConverter HTTP client 단위 테스트 (이슈 #199)."""
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
-from genon.preprocessor.converters.hwp_to_pdf import rhwp as rhwp_mod
-from genon.preprocessor.converters.hwp_to_pdf.rhwp import RhwpConverter
+from genon.preprocessor.converters.hwp_to_pdf import availability, rhwp as rhwp_mod
+from genon.preprocessor.converters.hwp_to_pdf.rhwp import (
+    CONVERT_PATH,
+    RhwpConverter,
+)
+
+ENDPOINT = "http://rhwp-pdf-api:7878"
+FAKE_PDF = b"%PDF-1.4\n%fake\n"
 
 
 @pytest.fixture
-def rhwp_bin(monkeypatch, tmp_path):
-    """rhwp_binary 와 rhwp_available 를 동시에 모킹해 가용으로 둠."""
-    fake = tmp_path / "rhwp"
-    fake.write_text("#!/bin/sh\nexit 0\n")
-    fake.chmod(0o755)
-    monkeypatch.setattr(rhwp_mod, "rhwp_binary", lambda: fake)
-    monkeypatch.setattr(rhwp_mod, "rhwp_available", lambda: True)
-    return fake
+def hwp_input(tmp_path: Path) -> Path:
+    p = tmp_path / "doc.hwp"
+    p.write_bytes(b"HWP-BYTES")
+    return p
+
+
+@pytest.fixture
+def url_set(monkeypatch):
+    monkeypatch.setenv("RHWP_PDF_API_URL", ENDPOINT)
 
 
 @pytest.mark.unit
-def test_is_available_uses_availability_module(monkeypatch):
-    monkeypatch.setattr(rhwp_mod, "rhwp_available", lambda: True)
+def test_is_available_reflects_env(monkeypatch):
+    monkeypatch.delenv("RHWP_PDF_API_URL", raising=False)
+    assert RhwpConverter().is_available() is False
+    monkeypatch.setenv("RHWP_PDF_API_URL", ENDPOINT)
     assert RhwpConverter().is_available() is True
 
-    monkeypatch.setattr(rhwp_mod, "rhwp_available", lambda: False)
+
+@pytest.mark.unit
+def test_is_available_false_for_empty_or_whitespace(monkeypatch):
+    monkeypatch.setenv("RHWP_PDF_API_URL", "   ")
     assert RhwpConverter().is_available() is False
 
 
 @pytest.mark.unit
-def test_convert_invokes_export_pdf_subcommand(rhwp_bin, tmp_path):
-    in_file = tmp_path / "doc.hwp"
-    in_file.write_bytes(b"\x00")  # dummy
-    out_file = tmp_path / "doc.pdf"
+def test_convert_posts_hwp_bytes_and_writes_pdf(url_set, hwp_input):
+    captured = {}
 
-    def fake_run(cmd, **kwargs):
-        Path(cmd[cmd.index("-o") + 1]).write_bytes(b"%PDF-1.4 stub")
-        proc = MagicMock()
-        proc.returncode = 0
-        proc.stdout = ""
-        proc.stderr = ""
-        return proc
+    def fake_post(url, data, headers, timeout):
+        captured["url"] = url
+        captured["data"] = data
+        captured["headers"] = headers
+        captured["timeout"] = timeout
+        return MagicMock(status_code=200, content=FAKE_PDF, text="")
 
-    with patch.object(subprocess, "run", side_effect=fake_run) as run_mock:
-        result = RhwpConverter().convert(str(in_file))
+    with patch.object(requests, "post", side_effect=fake_post):
+        result = RhwpConverter().convert(str(hwp_input))
 
-    assert result == str(out_file)
-    call_args = run_mock.call_args.args[0]
-    assert call_args[0] == str(rhwp_bin)
-    assert call_args[1] == "export-pdf"
-    assert call_args[2] == str(in_file)
-    assert "-o" in call_args
+    assert result == str(hwp_input.with_suffix(".pdf"))
+    assert Path(result).read_bytes() == FAKE_PDF
+    assert captured["url"] == ENDPOINT + CONVERT_PATH
+    assert captured["data"] == b"HWP-BYTES"
+    assert captured["headers"] == {"Content-Type": "application/octet-stream"}
 
 
 @pytest.mark.unit
-def test_convert_returns_none_on_nonzero_returncode(rhwp_bin, tmp_path):
-    in_file = tmp_path / "doc.hwp"
-    in_file.write_bytes(b"\x00")
-
-    proc = MagicMock(returncode=1, stdout="", stderr="parse error")
-    with patch.object(subprocess, "run", return_value=proc):
-        assert RhwpConverter().convert(str(in_file)) is None
-
-
-@pytest.mark.unit
-def test_convert_returns_none_when_output_missing(rhwp_bin, tmp_path):
-    in_file = tmp_path / "doc.hwp"
-    in_file.write_bytes(b"\x00")
-
-    # rc=0 이지만 output 파일 미생성
-    proc = MagicMock(returncode=0, stdout="", stderr="")
-    with patch.object(subprocess, "run", return_value=proc):
-        assert RhwpConverter().convert(str(in_file)) is None
-
-
-@pytest.mark.unit
-def test_convert_returns_none_when_output_empty(rhwp_bin, tmp_path):
-    in_file = tmp_path / "doc.hwp"
-    in_file.write_bytes(b"\x00")
-    out_file = tmp_path / "doc.pdf"
-    out_file.write_bytes(b"")  # 0 byte
-
-    proc = MagicMock(returncode=0, stdout="", stderr="")
-    with patch.object(subprocess, "run", return_value=proc):
-        assert RhwpConverter().convert(str(in_file)) is None
-
-
-@pytest.mark.unit
-def test_convert_handles_timeout(rhwp_bin, tmp_path):
-    in_file = tmp_path / "doc.hwp"
-    in_file.write_bytes(b"\x00")
-
-    with patch.object(subprocess, "run", side_effect=subprocess.TimeoutExpired(cmd="rhwp", timeout=1)):
-        assert RhwpConverter().convert(str(in_file)) is None
-
-
-@pytest.mark.unit
-def test_convert_honors_timeout_env(rhwp_bin, tmp_path, monkeypatch):
-    in_file = tmp_path / "doc.hwp"
-    in_file.write_bytes(b"\x00")
-    monkeypatch.setenv("HWP_TO_PDF_TIMEOUT_SEC", "12")
-
+def test_convert_strips_trailing_slash_in_url(monkeypatch, hwp_input):
+    monkeypatch.setenv("RHWP_PDF_API_URL", ENDPOINT + "/")
     seen = {}
 
-    def fake_run(cmd, **kwargs):
-        seen["timeout"] = kwargs.get("timeout")
-        proc = MagicMock(returncode=1, stdout="", stderr="")
-        return proc
+    def fake_post(url, **_):
+        seen["url"] = url
+        return MagicMock(status_code=200, content=FAKE_PDF, text="")
 
-    with patch.object(subprocess, "run", side_effect=fake_run):
-        RhwpConverter().convert(str(in_file))
+    with patch.object(requests, "post", side_effect=fake_post):
+        RhwpConverter().convert(str(hwp_input))
+    assert seen["url"] == ENDPOINT + CONVERT_PATH
 
-    assert seen["timeout"] == 12
+
+@pytest.mark.unit
+def test_convert_returns_none_without_url(monkeypatch, hwp_input):
+    monkeypatch.delenv("RHWP_PDF_API_URL", raising=False)
+    assert RhwpConverter().convert(str(hwp_input)) is None
+
+
+@pytest.mark.unit
+def test_convert_returns_none_on_non_200(url_set, hwp_input):
+    resp = MagicMock(status_code=500, content=b"server error", text="boom")
+    with patch.object(requests, "post", return_value=resp):
+        assert RhwpConverter().convert(str(hwp_input)) is None
+
+
+@pytest.mark.unit
+def test_convert_returns_none_on_non_pdf_body(url_set, hwp_input):
+    resp = MagicMock(status_code=200, content=b"not a pdf", text="")
+    with patch.object(requests, "post", return_value=resp):
+        assert RhwpConverter().convert(str(hwp_input)) is None
+
+
+@pytest.mark.unit
+def test_convert_returns_none_on_empty_body(url_set, hwp_input):
+    resp = MagicMock(status_code=200, content=b"", text="")
+    with patch.object(requests, "post", return_value=resp):
+        assert RhwpConverter().convert(str(hwp_input)) is None
+
+
+@pytest.mark.unit
+def test_convert_handles_timeout(url_set, hwp_input):
+    with patch.object(requests, "post", side_effect=requests.Timeout()):
+        assert RhwpConverter().convert(str(hwp_input)) is None
+
+
+@pytest.mark.unit
+def test_convert_handles_connection_error(url_set, hwp_input):
+    with patch.object(requests, "post", side_effect=requests.ConnectionError("refused")):
+        assert RhwpConverter().convert(str(hwp_input)) is None
+
+
+@pytest.mark.unit
+def test_convert_returns_none_when_input_missing(url_set, tmp_path):
+    nonexistent = tmp_path / "missing.hwp"
+    assert RhwpConverter().convert(str(nonexistent)) is None
+
+
+@pytest.mark.unit
+def test_convert_honors_timeout_env(url_set, hwp_input, monkeypatch):
+    monkeypatch.setenv("HWP_TO_PDF_TIMEOUT_SEC", "12")
+    seen = {}
+
+    def fake_post(url, data, headers, timeout):
+        seen["timeout"] = timeout
+        return MagicMock(status_code=200, content=FAKE_PDF, text="")
+
+    with patch.object(requests, "post", side_effect=fake_post):
+        RhwpConverter().convert(str(hwp_input))
+    assert seen["timeout"] == 12.0

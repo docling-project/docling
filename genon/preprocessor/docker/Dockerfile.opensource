@@ -3,6 +3,10 @@
 # 오픈소스 빌드 — 유료 PDF SDK 미포함.
 # HWP → PDF 변환은 rhwp ↔ LibreOffice 양방향 fallback (chain 우선순위는 config 로 결정).
 # 사용자 명시 요구: 본 이미지에는 PDF SDK 다운로드 단계가 일절 없어야 함 (이슈 #199).
+#
+# rhwp 는 외부 HTTP API (genos-rhwp 의 serve-pdf, k8s 별도 Deployment) 를 호출하는
+# 방식이므로 본 이미지에는 바이너리를 포함하지 않는다. RHWP_PDF_API_URL 환경변수로
+# endpoint 를 주입한다 (OCR / VLM endpoint 와 동일한 패턴).
 
 ############################
 # 0) 공통 ARG/ENV
@@ -16,8 +20,6 @@ ARG UID=1000
 ARG GID=1000
 ARG UNAME=genos
 ARG GNAME=genos
-ARG RHWP_GIT_URL="https://github.com/genonai/genos-rhwp.git"
-ARG RHWP_GIT_REF="main"
 
 ############################
 # 1) Base (APT + LibreOffice)
@@ -158,26 +160,6 @@ RUN --mount=type=cache,target=${HF_HOME} \
     chmod +x /app/hwp_sdk/convtext
 
 ############################
-# 4-1c) rhwp 바이너리 (오픈소스/엔터프라이즈 공통)
-#
-# 오픈소스 빌드에서는 PDF SDK 가 없으므로 rhwp 가 HWP → PDF 변환의 1순위.
-# 실패 시 chain 이 LibreOffice 로 자동 fallback.
-############################
-FROM rust:latest AS rhwp_builder
-ARG RHWP_GIT_URL
-ARG RHWP_GIT_REF
-WORKDIR /src
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    git clone --depth 1 --branch "${RHWP_GIT_REF}" "${RHWP_GIT_URL}" /src
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/src/target \
-    cargo build --release --bin rhwp \
- && cp /src/target/release/rhwp /usr/local/bin/rhwp
-RUN if [ -d /src/ttfs ]; then mkdir -p /opt/rhwp && cp -r /src/ttfs /opt/rhwp/ttfs; else mkdir -p /opt/rhwp; fi
-
-############################
 # 4-2) 추가 폰트 아티팩트
 ############################
 FROM builder AS font_artifacts
@@ -275,8 +257,7 @@ ENV UV_PROJECT_ENVIRONMENT=${APP_VENV} \
     LC_ALL=ko_KR.UTF-8 \
     LC_CTYPE=ko_KR.UTF-8 \
     DOCLING_ARTIFACTS_PATH=/models \
-    RHWP_BIN=/usr/local/bin/rhwp \
-    RHWP_ASSETS=/opt/rhwp \
+    RHWP_PDF_API_URL="" \
     DOC_PARSER_BUILD_VARIANT=opensource
 
 WORKDIR /app
@@ -287,11 +268,10 @@ COPY ./genon/preprocessor/src /app/src
 # 🔴 HWP sdk (무료 자산이라 오픈소스 빌드에도 포함)
 COPY --from=sdk_artifacts /app/hwp_sdk /app/hwp_sdk
 
-# 🔴 rhwp 바이너리 (오픈소스/엔터프라이즈 공통)
-COPY --from=rhwp_builder /usr/local/bin/rhwp /usr/local/bin/rhwp
-COPY --from=rhwp_builder /opt/rhwp /opt/rhwp
-
-# NOTE: PDF SDK COPY 라인 없음 — 이게 오픈소스 빌드의 본질적 차이.
+# NOTE: 본 이미지에는 다음 두 항목이 의도적으로 포함되지 않음.
+#  - PDF SDK (유료): 오픈소스 빌드의 본질적 차이.
+#  - rhwp 바이너리: genos-rhwp 의 serve-pdf 가 별도 k8s Deployment 로 운영되므로
+#    RHWP_PDF_API_URL 로 endpoint 만 주입받아 HTTP 호출 (OCR endpoint 패턴 동일).
 
 # 추가 폰트 설치
 COPY --from=font_artifacts /app/extra_fonts /usr/share/fonts/additional
