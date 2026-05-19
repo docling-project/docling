@@ -26,10 +26,14 @@ _AVAILABILITY: dict[BackendName, "callable[[], bool]"] = {
 }
 
 
-def _coerce_name(value: str | None) -> BackendName | None:
-    if not value:
+def _coerce_name(value) -> BackendName | None:
+    if value is None:
         return None
-    v = value.strip().lower()
+    # Enum 인스턴스(HwpToPdfBackend 등)도 받을 수 있도록 .value 추출
+    raw = getattr(value, "value", value)
+    if not isinstance(raw, str) or not raw:
+        return None
+    v = raw.strip().lower()
     if v in BACKEND_NAMES:
         return v  # type: ignore[return-value]
     _log.warning("[hwp_to_pdf] unknown backend name ignored: %r", value)
@@ -56,18 +60,24 @@ def _auto_default_order() -> list[BackendName]:
 
 
 def _resolve_order(
-    primary: BackendName | None,
-    order: Iterable[BackendName] | None,
+    primary,
+    order,
 ) -> list[BackendName]:
+    # Enum/래퍼 등을 사전에 string BackendName 으로 정규화 (None 은 None 그대로)
+    primary_n = _coerce_name(primary) if primary is not None else None
+    order_n: list[BackendName] | None = None
+    if order is not None:
+        order_n = [n for n in (_coerce_name(b) for b in order) if n is not None]
+
     env_order = _parse_env_order(os.environ.get("HWP_TO_PDF_ORDER"))
     env_primary = _coerce_name(os.environ.get("HWP_TO_PDF_PRIMARY"))
 
-    if order is not None:
-        chosen = list(order)
+    if order_n:
+        chosen = list(order_n)
     elif env_order:
         chosen = env_order
-    elif primary is not None:
-        chosen = [primary] + [b for b in _auto_default_order() if b != primary]
+    elif primary_n is not None:
+        chosen = [primary_n] + [b for b in _auto_default_order() if b != primary_n]
     elif env_primary is not None:
         chosen = [env_primary] + [b for b in _auto_default_order() if b != env_primary]
     else:
