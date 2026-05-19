@@ -279,8 +279,12 @@ ENV UV_PROJECT_ENVIRONMENT=${APP_VENV} \
     LC_CTYPE=ko_KR.UTF-8 \
     DOCLING_ARTIFACTS_PATH=/models \
     PDF_SDK_HOME=/app/pdf_sdk \
-    RHWP_PDF_API_URL="" \
     DOC_PARSER_BUILD_VARIANT=enterprise
+
+# TODO(#199): 운영 endpoint 확정 후 deploy manifest 의 env 로 override 할 placeholder.
+# k8s/rhwp-pdf-api.yaml (genonai/genos-rhwp 레포) 의 Service 이름 + ClusterIP 포트 기반 기본값.
+# 같은 namespace 가 아니면 FQDN (http://rhwp-pdf-api.<ns>.svc.cluster.local:7878) 로 교체.
+ENV RHWP_PDF_API_URL=http://rhwp-pdf-api:7878
 
 WORKDIR /app
 COPY ./genon/preprocessor/configs /app/configs
