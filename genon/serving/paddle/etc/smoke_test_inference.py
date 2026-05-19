@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -71,18 +72,22 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    print(f"[smoke] paddle device check ...", flush=True)
+    print("[smoke] paddle device check ...", flush=True)
     device = _assert_gpu()
     print(f"[smoke] paddle device = {device}", flush=True)
 
     if args.image:
         image_path = Path(args.image)
     else:
-        image_path = Path("/tmp/ocr_smoke_sample.png")
+        tmp = tempfile.NamedTemporaryFile(
+            prefix="ocr_smoke_", suffix=".png", delete=False
+        )
+        tmp.close()
+        image_path = Path(tmp.name)
         _make_sample_image(image_path)
         print(f"[smoke] synthetic sample image written to {image_path}", flush=True)
 
-    print(f"[smoke] running OCR pipeline ...", flush=True)
+    print("[smoke] running OCR pipeline ...", flush=True)
     items = _run_pipeline(image_path)
 
     payload = {"device": device, "image": str(image_path), "items": items}

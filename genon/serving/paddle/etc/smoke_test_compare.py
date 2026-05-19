@@ -14,6 +14,7 @@ import argparse
 import json
 import re
 import sys
+from collections import Counter, defaultdict
 from pathlib import Path
 
 _WS = re.compile(r"\s+")
@@ -23,11 +24,14 @@ def _norm(text: str) -> str:
     return _WS.sub("", text).strip().lower()
 
 
-def _index_by_text(items: list[dict]) -> dict[str, float]:
-    out: dict[str, float] = {}
+def _index_by_text(items: list[dict]) -> dict[str, list[float]]:
+    # 같은 텍스트가 중복 인식될 수 있으므로 score 를 리스트로 모은다 (마지막 값으로 덮어쓰면 drift 누락 가능).
+    out: dict[str, list[float]] = defaultdict(list)
     for it in items:
-        out[_norm(it.get("text", ""))] = float(it.get("score", 0.0))
-    return out
+        out[_norm(it.get("text", ""))].append(float(it.get("score", 0.0)))
+    for scores in out.values():
+        scores.sort()
+    return dict(out)
 
 
 def main() -> int:
@@ -43,19 +47,23 @@ def main() -> int:
     b_items = _index_by_text(baseline.get("items", []))
     c_items = _index_by_text(current.get("items", []))
 
-    missing = sorted(set(b_items) - set(c_items))
-    added = sorted(set(c_items) - set(b_items))
+    b_count = Counter({k: len(v) for k, v in b_items.items()})
+    c_count = Counter({k: len(v) for k, v in c_items.items()})
+    missing = sorted((b_count - c_count).elements())
+    added = sorted((c_count - b_count).elements())
 
     diffs: list[tuple[str, float, float]] = []
     for key in sorted(set(b_items) & set(c_items)):
-        delta = abs(b_items[key] - c_items[key])
-        if delta > args.score_tol:
-            diffs.append((key, b_items[key], c_items[key]))
+        for b, c in zip(b_items[key], c_items[key]):
+            if abs(b - c) > args.score_tol:
+                diffs.append((key, b, c))
 
     ok = not missing and not added and not diffs
 
-    print(f"[compare] baseline items: {len(b_items)}")
-    print(f"[compare] current items : {len(c_items)}")
+    b_total = sum(len(v) for v in b_items.values())
+    c_total = sum(len(v) for v in c_items.values())
+    print(f"[compare] baseline items: total={b_total} unique={len(b_items)}")
+    print(f"[compare] current items : total={c_total} unique={len(c_items)}")
     if missing:
         print(f"[compare] MISSING in current ({len(missing)}):")
         for k in missing:

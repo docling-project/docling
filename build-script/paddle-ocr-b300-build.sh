@@ -16,6 +16,10 @@ source "$CONF_FILE"
 
 CONTEXT="${CONTEXT:-$BASE_DIR}"
 DOCKERFILE="${DOCKERFILE:-genon/serving/paddle/docker/Dockerfile-b300}"
+# 상대 경로로 들어왔으면 cwd 가 아니라 repo root (BASE_DIR) 기준으로 정규화한다.
+# (README 안내대로 `cd build-script` 후 실행해도 빌드가 깨지지 않게 하기 위함)
+[[ "$CONTEXT" != /* ]] && CONTEXT="${BASE_DIR}/${CONTEXT}"
+[[ "$DOCKERFILE" != /* ]] && DOCKERFILE="${BASE_DIR}/${DOCKERFILE}"
 IMAGE_NAME="${IMAGE_NAME:-doc-parser-ocr-b300}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 REGISTRY="${REGISTRY:-}"

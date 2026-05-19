@@ -113,7 +113,7 @@ COPY --from=models /models /models
 COPY --from=deps ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
 RUN ln -sf ${OCR_DIR}/config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf && \
-    chmod +x ${OCR_DIR}/etc/smoke_test.sh || true
+    chmod +x ${OCR_DIR}/etc/smoke_test.sh
 
 EXPOSE 8080
 
