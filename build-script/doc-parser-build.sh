@@ -26,6 +26,7 @@ fi
 DOCKER_REGISTRY="${DOCKER_REGISTRY:-localhost:5000}"
 IMAGE_NAME="${IMAGE_NAME:-doc-parser-preprocessor}"
 IMAGE_VERSION="${IMAGE_VERSION:-latest}"
+BUILD_VARIANT="${BUILD_VARIANT:-}"
 DOCKERFILE_PATH="${DOCKERFILE_PATH:-genon/preprocessor/docker/Dockerfile}"
 APP_UID="${APP_UID:-1000}"
 APP_GID="${APP_GID:-1000}"
@@ -34,10 +35,28 @@ APP_GNAME="${APP_GNAME:-genos}"
 APP_NLTK_PACKAGES="${APP_NLTK_PACKAGES:-all}"
 export HF_TOKEN="${HF_TOKEN:-}"
 
+# BUILD_VARIANT 가 명시되었으면 그에 맞는 Dockerfile / 이미지 태그 suffix 로 자동 분기
+# (이슈 #199 — 오픈소스/엔터프라이즈 두 빌드 산출물 분리)
+IMAGE_TAG_SUFFIX=""
+case "${BUILD_VARIANT}" in
+  opensource|enterprise)
+    DOCKERFILE_PATH="genon/preprocessor/docker/Dockerfile.${BUILD_VARIANT}"
+    IMAGE_TAG_SUFFIX="-${BUILD_VARIANT}"
+    ;;
+  "")
+    # 미지정 — 기존 동작 보존 (legacy Dockerfile 또는 DOCKERFILE_PATH 명시값 사용)
+    ;;
+  *)
+    echo "[ERROR] BUILD_VARIANT 는 opensource 또는 enterprise 만 허용됩니다 (현재: '${BUILD_VARIANT}')."
+    exit 1
+    ;;
+esac
+
 # 최종 이미지 태그
-IMAGE_TAG="${DOCKER_REGISTRY}/mnc/${IMAGE_NAME}:${IMAGE_VERSION}"
+IMAGE_TAG="${DOCKER_REGISTRY}/mnc/${IMAGE_NAME}:${IMAGE_VERSION}${IMAGE_TAG_SUFFIX}"
 
 echo "[INFO] ROOT_DIR        = ${ROOT_DIR}"
+echo "[INFO] BUILD_VARIANT   = ${BUILD_VARIANT:-<legacy>}"
 echo "[INFO] DOCKERFILE_PATH = ${DOCKERFILE_PATH}"
 echo "[INFO] IMAGE_TAG       = ${IMAGE_TAG}"
 echo "[INFO] UID:GID         = ${APP_UID}:${APP_GID} (${APP_UNAME}:${APP_GNAME})"
