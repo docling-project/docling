@@ -14,7 +14,7 @@ Under the hood, Docling uses [Whisper Turbo](https://github.com/openai/whisper) 
 For video files, Docling extracts the audio track automatically before transcription. You don't need to run FFmpeg manually.
 
 !!! note "ffmpeg required"
-    Some audio formats (M4A, AAC, OGG, FLAC) and all video formats require `ffmpeg` to be installed and available on your `PATH`. Install it with your system package manager — e.g. `brew install ffmpeg` on macOS or `apt-get install ffmpeg` on Debian-based Linux.
+    Whisper audio decoding requires the `ffmpeg` executable to be installed and available on your `PATH`. This applies to common audio formats such as MP3, WAV, M4A, AAC, OGG, and FLAC, and to video files whose audio track is extracted before transcription. Install it with your system package manager — e.g. `brew install ffmpeg` on macOS, `apt-get install ffmpeg` on Debian-based Linux, or `winget install ffmpeg` on Windows.
 
 ## Installation
 
