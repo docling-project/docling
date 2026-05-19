@@ -753,6 +753,11 @@ def convert(  # noqa: C901
 
     if verbose == 0:
         logging.basicConfig(level=logging.WARNING, format=log_format)
+        # Keep per-file progress visible at default verbosity so users running
+        # long-running conversions (e.g. directories of audio files) can see
+        # which input is currently in flight.
+        logging.getLogger("docling.pipeline.base_pipeline").setLevel(logging.INFO)
+        logging.getLogger("docling.document_converter").setLevel(logging.INFO)
     elif verbose == 1:
         logging.basicConfig(level=logging.INFO, format=log_format)
     else:
