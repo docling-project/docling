@@ -1,0 +1,124 @@
+# syntax=docker/dockerfile:1.7
+#
+# B300 (NVIDIA Blackwell) 대응 PaddleOCR 이미지.
+# 기존 cu126 Dockerfile과 분리된 빌드 경로로 운용한다.
+#
+# 차이점:
+#   - PaddlePaddle GPU wheel 인덱스를 cu129 채널로 교체
+#   - pyproject-b300.toml / uv-b300.lock 사용 (cu129 wheel 해시로 잠긴 lock)
+#   - 빌드 단계에는 GPU smoke test 가 포함되어 있지 않다.
+#     컨테이너 기동 후 etc/smoke_test.sh 를 별도 실행해야 한다 (README-B300.md 참고).
+
+########################################
+# 0) 공통 ARG
+########################################
+ARG PY_VER=3.10
+ARG DEBIAN_DIST=bookworm
+
+# B300 (Blackwell) 대응을 위한 cu129 Paddle wheel 인덱스.
+ARG PADDLE_EXTRA_INDEX_URL="https://www.paddlepaddle.org.cn/packages/stable/cu129/"
+
+ARG APP_DIR=/app
+ARG OCR_DIR=${APP_DIR}
+
+########################################
+# 1) Base (OS + uv + supervisor)
+########################################
+FROM python:${PY_VER}-slim-${DEBIAN_DIST} AS base
+
+ARG APP_DIR
+ENV APP_DIR=${APP_DIR}
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        tini \
+        supervisor \
+        curl \
+        ca-certificates \
+        git \
+        build-essential \
+        unzip \
+        libgl1 \
+        libglib2.0-0 \
+        libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+RUN mkdir -p ${APP_DIR}
+WORKDIR ${APP_DIR}
+
+########################################
+# 2) deps (pyproject-b300 → venv 만들기)
+########################################
+FROM base AS deps
+
+ARG APP_DIR
+ENV APP_DIR=${APP_DIR:-/app}
+ARG PADDLE_EXTRA_INDEX_URL
+ENV PADDLE_EXTRA_INDEX_URL=${PADDLE_EXTRA_INDEX_URL}
+
+WORKDIR ${APP_DIR}
+
+# B300 전용 pyproject / uv.lock 를 표준 파일명으로 복사해 uv가 인식하게 한다.
+COPY genon/serving/paddle/pyproject-b300.toml ${APP_DIR}/pyproject.toml
+COPY genon/serving/paddle/README.md           ${APP_DIR}/README.md
+COPY genon/serving/paddle/uv-b300.lock        ${APP_DIR}/uv.lock
+
+RUN uv venv ${APP_DIR}/.venv
+ENV VIRTUAL_ENV=${APP_DIR}/.venv
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
+
+# lock 파일이 cu129 wheel 로 이미 잠겨 있으므로 --frozen 으로 재현성을 강제한다.
+RUN --mount=type=cache,target=/root/.cache/uv \
+    UV_EXTRA_INDEX_URL="${PADDLE_EXTRA_INDEX_URL}" \
+    uv sync --frozen --index-strategy unsafe-best-match --python ${VIRTUAL_ENV}/bin/python
+
+########################################
+# 3) models
+########################################
+FROM deps AS models
+
+ARG APP_DIR
+ENV APP_DIR=${APP_DIR}
+ENV MODEL_DIR=/models
+
+COPY genon/serving/paddle/resources/paddleocr_model.zip /tmp/paddleocr_model.zip
+
+RUN mkdir -p ${MODEL_DIR}/paddleocr_model && \
+    unzip -q -o /tmp/paddleocr_model.zip -d ${MODEL_DIR} && \
+    rm -f /tmp/paddleocr_model.zip
+
+########################################
+# 4) runtime
+########################################
+FROM base AS runtime
+
+ARG APP_DIR=/app
+ARG OCR_DIR=${APP_DIR}
+ENV VIRTUAL_ENV=${APP_DIR}/.venv
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
+
+WORKDIR ${APP_DIR}
+
+COPY genon/serving/paddle ${OCR_DIR}
+
+COPY --from=models /models /models
+COPY --from=deps ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+
+RUN ln -sf ${OCR_DIR}/config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf && \
+    chmod +x ${OCR_DIR}/etc/smoke_test.sh
+
+EXPOSE 8080
+
+# GPU 가 없는 빌드 머신에서도 통과해야 하므로 paddle import 헬스체크만 빌드 단계에서 수행.
+# (sm_100 커널 검증은 실제 B300 노드에서 etc/smoke_test.sh 로 진행한다.)
+RUN python -c "import paddle; print('paddle ok:', paddle.__version__)"
+
+CMD ["supervisord", "-n"]

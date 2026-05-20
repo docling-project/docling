@@ -1,0 +1,21 @@
+[project]
+name = "doc-parser-ocr-b300"
+version = "1.0.0"
+requires-python = ">=3.9,<4.0"
+description = "PaddleX OCR serving (B300 / Blackwell / CUDA 12.9 build)"
+
+dependencies = [
+    "paddlepaddle-gpu==3.2.0",
+    "paddlex==3.3.6",
+    "paddlex[serving,ocr]",
+    "uvicorn>=0.21,<0.22",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+package = false
+index-url = "https://pypi.org/simple"
+extra-index-url = ["https://www.paddlepaddle.org.cn/packages/stable/cu129/"]

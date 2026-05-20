@@ -1,0 +1,43 @@
+# B300 PaddleOCR 이미지의 컨테이너 내부 smoke test 실행용 Job.
+# Deployment 와 동일한 이미지를 사용하지만, command 를 smoke_test.sh 로 덮어 일회성 실행한다.
+# README-B300.md 의 "smoke test" 섹션 참고.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: doc-parser-ocr-b300-smoke
+  namespace: llmops
+  labels:
+    app: doc-parser-ocr-b300
+    role: smoke-test
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app: doc-parser-ocr-b300
+        role: smoke-test
+    spec:
+      restartPolicy: Never
+      serviceAccountName: llmops
+      containers:
+        - name: smoke
+          image: mncregistry:30500/doc-parser-ocr-b300:0.0.0
+          imagePullPolicy: Always
+          # supervisord 가 백그라운드에서 server 를 띄우는 동안 smoke_test 가 health/inference 를 수행한다.
+          command: ["/bin/bash", "-lc"]
+          args:
+            - |
+              set -e
+              /usr/bin/supervisord -n -c /etc/supervisor/conf.d/supervisord.conf &
+              SUP_PID=$!
+              bash /app/etc/smoke_test.sh
+              kill ${SUP_PID} || true
+          env:
+            - name: TZ
+              value: Asia/Seoul
+            - name: HEALTH_TIMEOUT_SEC
+              value: "180"
+          resources:
+            limits:
+              nvidia.com/gpu: 1
