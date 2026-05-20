@@ -33,6 +33,11 @@ from docling.backend.msexcel_backend import MsExcelDocumentBackend
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.backend.noop_backend import NoOpBackend
+from docling.backend.opendocument_backend import (
+    OdpDocumentBackend,
+    OdsDocumentBackend,
+    OdtDocumentBackend,
+)
 from docling.backend.webvtt_backend import WebVTTDocumentBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
@@ -113,6 +118,21 @@ class WordFormatOption(FormatOption):
 class PowerpointFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = MsPowerpointDocumentBackend
+
+
+class OdtFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = OdtDocumentBackend
+
+
+class OdsFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = OdsDocumentBackend
+
+
+class OdpFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = OdpDocumentBackend
 
 
 class MarkdownFormatOption(FormatOption):
@@ -210,6 +230,9 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.XLSX: ExcelFormatOption(),
         InputFormat.DOCX: WordFormatOption(),
         InputFormat.PPTX: PowerpointFormatOption(),
+        InputFormat.ODT: OdtFormatOption(),
+        InputFormat.ODS: OdsFormatOption(),
+        InputFormat.ODP: OdpFormatOption(),
         InputFormat.MD: MarkdownFormatOption(),
         InputFormat.ASCIIDOC: AsciiDocFormatOption(),
         InputFormat.HTML: HTMLFormatOption(),

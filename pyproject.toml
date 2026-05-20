@@ -122,6 +122,11 @@ format-office = [
   'docling-slim[format-docx,format-pptx,format-xlsx]',
 ]
 
+# --- OpenDocument Formats (ODT, ODS, ODP) ---
+format-opendocument = [
+  'odfdo>=3.22.0,<4.0.0',
+]
+
 # --- Web Formats (web = html + markdown) ---
 format-html = [
   'beautifulsoup4>=4.12.3,<5.0.0',

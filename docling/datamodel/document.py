@@ -573,13 +573,17 @@ class _DocumentConversionInput(BaseModel):
         try:
             with zipfile.ZipFile(source) as zf:
                 names = set(zf.namelist())
-            mime_root = "application/vnd.openxmlformats-officedocument"
-            if "word/document.xml" in names:
-                return mime_root + ".wordprocessingml.document"
-            elif "xl/workbook.xml" in names:
-                return mime_root + ".spreadsheetml.sheet"
-            elif "ppt/presentation.xml" in names:
-                return mime_root + ".presentationml.presentation"
+                mime_root = "application/vnd.openxmlformats-officedocument"
+                if "word/document.xml" in names:
+                    return mime_root + ".wordprocessingml.document"
+                elif "xl/workbook.xml" in names:
+                    return mime_root + ".spreadsheetml.sheet"
+                elif "ppt/presentation.xml" in names:
+                    return mime_root + ".presentationml.presentation"
+                if "mimetype" in names:
+                    odf_mime = zf.read("mimetype").decode("ascii", errors="ignore")
+                    if odf_mime.startswith("application/vnd.oasis.opendocument."):
+                        return odf_mime.strip()
         except (zipfile.BadZipFile, OSError):
             pass
         finally:
@@ -672,6 +676,12 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.PPTX][0]
         elif ext in FormatToExtensions[InputFormat.XLSX]:
             mime = FormatToMimeType[InputFormat.XLSX][0]
+        elif ext in FormatToExtensions[InputFormat.ODT]:
+            mime = FormatToMimeType[InputFormat.ODT][0]
+        elif ext in FormatToExtensions[InputFormat.ODS]:
+            mime = FormatToMimeType[InputFormat.ODS][0]
+        elif ext in FormatToExtensions[InputFormat.ODP]:
+            mime = FormatToMimeType[InputFormat.ODP][0]
         elif ext in FormatToExtensions[InputFormat.VTT]:
             mime = FormatToMimeType[InputFormat.VTT][0]
         elif ext in FormatToExtensions[InputFormat.LATEX]:
