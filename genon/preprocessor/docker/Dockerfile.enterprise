@@ -150,15 +150,15 @@ FROM builder AS sdk_artifacts
 ARG APP_VENV
 
 RUN --mount=type=cache,target=${HF_HOME} \
-    --mount=type=secret,id=HF_TOKEN \
+    --mount=type=secret,id=HWP_SDK_TOKEN \
     echo "[INFO] Downloading HWP SDK from Private HF Repo..."; \
-    HF_TOKEN_VAL=$(cat /run/secrets/HF_TOKEN) && \
+    HWP_SDK_TOKEN_VAL=$(cat /run/secrets/HWP_SDK_TOKEN) && \
     mkdir -p /app/hwp_sdk && \
     huggingface-cli download HeechanKim-Genon/hwp_sdk \
       --repo-type dataset \
       --local-dir /app/hwp_sdk \
       --local-dir-use-symlinks False \
-      --token "${HF_TOKEN_VAL}" && \
+      --token "${HWP_SDK_TOKEN_VAL}" && \
     chmod +x /app/hwp_sdk/convtext
 
 ############################
@@ -168,15 +168,15 @@ FROM builder AS pdf_sdk_artifacts
 ARG APP_VENV
 
 RUN --mount=type=cache,target=${HF_HOME} \
-    --mount=type=secret,id=HF_TOKEN \
+    --mount=type=secret,id=PDF_SDK_TOKEN \
     echo "[INFO] Downloading PDF SDK from Private HF Repo..."; \
-    HF_TOKEN_VAL=$(cat /run/secrets/HF_TOKEN) && \
+    PDF_SDK_TOKEN_VAL=$(cat /run/secrets/PDF_SDK_TOKEN) && \
     mkdir -p /app/pdf_sdk && \
     huggingface-cli download HeechanKim-Genon/pdf_sdk \
       --repo-type dataset \
       --local-dir /app/pdf_sdk \
       --local-dir-use-symlinks False \
-      --token "${HF_TOKEN_VAL}" && \
+      --token "${PDF_SDK_TOKEN_VAL}" && \
     chmod +x /app/pdf_sdk/pdfConverter && \
     sed -i 's|<dir>[^<]*</dir>|<dir>/app/pdf_sdk/fonts</dir>|' /app/pdf_sdk/fonts/fonts_gen.conf && \
     sed -i 's|<cachedir>[^<]*</cachedir>|<cachedir>/app/pdf_sdk/font_cache</cachedir>|' /app/pdf_sdk/fonts/fonts_gen.conf && \

@@ -52,18 +52,28 @@
 
 ## 전처리기 빌드 및 등록
 
-1. `HF_TOKEN` 설정 (HWP SDK · PDF SDK를 private 레포에서 다운로드하기 위한 토큰)
-   - 동일한 토큰으로 두 SDK 모두 다운로드됨 (`HeechanKim-Genon/hwp_sdk`, `HeechanKim-Genon/pdf_sdk`)
-   - 토큰 값은 [제논 내부 드라이브](https://drive.google.com/file/d/1m8aom4_zo3ZuQ-HdHHpkRsVOJakN-Lt5/view?usp=sharing)에서 확인
-   - `doc_parser/` (레포 최상위 경로) 에서 아래 명령어 한 번 실행 (이후 재실행 불필요, Git에 커밋되지 않음):
+1. `HWP_SDK_TOKEN` 설정 (HWP SDK private 레포 다운로드용 — **두 variant 모두 필수**)
+   - HWP SDK 자산만 받는 fine-grained read 토큰. 대상 레포: [`HeechanKim-Genon/hwp_sdk`](https://huggingface.co/datasets/HeechanKim-Genon/hwp_sdk)
+   - HuggingFace 에서 신규 발급 절차:
+     1. [Hugging Face → Settings → Access Tokens](https://huggingface.co/settings/tokens) 에서 **New token → Fine-grained** 선택
+     2. **Repository permissions** 섹션 → **Add repository** → `HeechanKim-Genon/hwp_sdk` 추가 → **Read access to contents** 만 체크
+     3. 그 외 dataset/model 권한은 모두 비워둠 (`pdf_sdk` 등 다른 레포에는 접근 불가하도록)
+     4. **Create token** 후 한 번만 보여주는 값을 복사
+   - `doc_parser/` (레포 최상위 경로) 에서 아래 명령어 실행 (이후 재실행 불필요, Git에 커밋되지 않음):
      ```shell
-     echo "HF_TOKEN=hf_your_token_here" > build-script/hf_private_token.env
+     echo "HWP_SDK_TOKEN=hf_xxx_your_hwp_sdk_token_here" >> build-script/hf_private_token.env
      ```
-   - `doc-parser-build.config`에 직접 입력하거나 push하지 말 것 (토큰은 반드시 `hf_private_token.env` 파일에만)
+   - `doc-parser-build.config` 에 직접 입력하거나 push 하지 말 것 (토큰은 반드시 `hf_private_token.env` 파일에만)
 
 2. `BUILD_VARIANT` 선택 - 무료용(**`opensource`**) / 유료용(**`enterprise`**) 버전 선택
-   - **`opensource`** — LibreOffice + rhwp(외부 HTTP API 호출) 만 포함. PDF SDK 자산이 이미지에 일절 들어가지 않음 (다운로드 단계 자체가 없음). 회사 내부 PDF SDK 라이선스가 없는 환경/외부 배포용.
-   - **`enterprise`** — 위 + 유료 PDF SDK 포함 (HF_TOKEN 으로 다운로드). HWP → PDF 변환 chain 이 `pdf_sdk → rhwp → libreoffice` 순으로 동작.
+   - **`opensource`** — LibreOffice + rhwp(외부 HTTP API 호출) 만 포함. PDF SDK 자산이 이미지에 일절 들어가지 않음 (다운로드 단계 자체가 없음). 회사 내부 PDF SDK 라이선스가 없는 환경/외부 배포용. **`HWP_SDK_TOKEN` 만 있으면 됨**.
+   - **`enterprise`** — 위 + 유료 PDF SDK 포함. HWP → PDF 변환 chain 이 `pdf_sdk → rhwp → libreoffice` 순으로 동작. **`HWP_SDK_TOKEN` 에 더해 `PDF_SDK_TOKEN` 도 필수**.
+     - `PDF_SDK_TOKEN` — PDF SDK private 레포 다운로드용 fine-grained read 토큰. 대상 레포: [`HeechanKim-Genon/pdf_sdk`](https://huggingface.co/datasets/HeechanKim-Genon/pdf_sdk)
+     - 발급 절차는 1번과 동일하되 **Repository permissions** 의 추가 레포를 `HeechanKim-Genon/pdf_sdk` 로 설정 (그 외 레포 권한은 비워두어 `hwp_sdk` 등 다른 레포에는 접근 불가하도록)
+     - `hf_private_token.env` 에 한 줄 더 추가:
+       ```shell
+       echo "PDF_SDK_TOKEN=hf_yyy_your_pdf_sdk_token_here" >> build-script/hf_private_token.env
+       ```
    - 둘 중 하나를 반드시 명시해야 한다. 비워둔 채 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단된다 (의도치 않게 유료 SDK 가 포함될 위험을 막기 위한 안전장치).
    - [`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `BUILD_VARIANT=` 라인을 위 둘 중 하나로 설정:
      ```bash
@@ -75,7 +85,7 @@
 
 3. build-script 디렉토리 이동
 
-4. [doc-parser-build.config](../build-script/doc-parser-build.config) 기타 변경 사항 반영 (1번을 수행했다면 `HF_TOKEN`값은 직접 입력하지 말 것)
+4. [doc-parser-build.config](../build-script/doc-parser-build.config) 기타 변경 사항 반영 (1·2번을 수행했다면 `HWP_SDK_TOKEN` / `PDF_SDK_TOKEN` 값은 직접 입력하지 말 것)
 
 5. 실행 [doc-parser-build.sh](../build-script/doc-parser-build.sh)
 
@@ -98,23 +108,26 @@ gunzip -c doc-parser-preprocessor.tar.gz | docker load
 
 > 아래 명령어들은 **레포가 위치한 호스트 머신의 터미널**에서 실행한다 (도커 컨테이너 안 셸이 아님). 컨테이너 안에서 macOS 절대경로로 받으면 컨테이너 내부 가상 경로에 저장돼 호스트에 반영되지 않으니 주의. 만약 컨테이너 안에서 받고 싶다면 cwd를 마운트된 repo root(예: `/app/docparser_work_187/doc_parser`)로 옮긴 뒤 상대경로(`./hwp_sdk`, `./pdf_sdk`)로 받아야 한다.
 
-1. HuggingFace 인증 (위 빌드 단계 1번과 동일한 토큰)
+1. HuggingFace 인증 (위 빌드 단계 1번/2번에서 발급한 두 fine-grained 토큰 사용)
    ```shell
-   export HF_TOKEN=hf_your_token_here
+   export HWP_SDK_TOKEN=hf_xxx_your_hwp_sdk_token_here
+   export PDF_SDK_TOKEN=hf_yyy_your_pdf_sdk_token_here   # PDF SDK 도 받을 경우만
    ```
-2. 레포 최상위(`doc_parser/`) 경로에서 두 SDK 다운로드
+2. 레포 최상위(`doc_parser/`) 경로에서 두 SDK 다운로드 (각 레포에 대응되는 토큰 사용)
    ```shell
    # HWP SDK
    huggingface-cli download HeechanKim-Genon/hwp_sdk \
      --repo-type dataset \
      --local-dir ./hwp_sdk \
-     --local-dir-use-symlinks False
+     --local-dir-use-symlinks False \
+     --token "${HWP_SDK_TOKEN}"
    chmod +x ./hwp_sdk/convtext
 
    # PDF SDK
    huggingface-cli download HeechanKim-Genon/pdf_sdk \
      --repo-type dataset \
      --local-dir ./pdf_sdk \
+     --token "${PDF_SDK_TOKEN}" \
      --local-dir-use-symlinks False
    chmod +x ./pdf_sdk/pdfConverter
    ```

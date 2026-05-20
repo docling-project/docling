@@ -5,7 +5,7 @@
 | 파일 | 용도 | 포함 |
 |---|---|---|
 | `Dockerfile.opensource` | 오픈소스 배포용 | LibreOffice (PDF SDK / rhwp 바이너리 **미포함**) |
-| `Dockerfile.enterprise` | 유료 (PDF SDK 보유) 환경용 | 위 + PDF SDK (`HF_TOKEN` 필요) |
+| `Dockerfile.enterprise` | 유료 (PDF SDK 보유) 환경용 | 위 + PDF SDK (`PDF_SDK_TOKEN` 추가 필요) |
 
 > 기존 단일 `Dockerfile` 은 PDF SDK 다운로드 단계가 그대로 포함돼 있어 의도치 않게 유료 변형으로 빌드될 위험이 있었기 때문에 본 PR에서 삭제했다. 신규 빌드는 반드시 위 두 variant 중 하나로 진행한다 — `BUILD_VARIANT` 를 비워두고 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단된다.
 
@@ -42,7 +42,7 @@ BUILD_VARIANT=enterprise bash build-script/doc-parser-build.sh
 
 이미지 태그는 자동으로 `:${IMAGE_VERSION}-${BUILD_VARIANT}` 형태가 된다 (예: `:1.3.6.3-enterprise`).
 
-`HF_TOKEN` 은 두 variant 모두 HWP SDK 다운로드용으로 여전히 필요하다 (HWP SDK 는 무료 자산이지만 현재 HF private dataset 에 호스팅됨).
+토큰은 SDK 별로 fine-grained 분리되어 있다 (이슈 #199). `HWP_SDK_TOKEN` 은 두 variant 모두 필수 (HWP SDK 가 무료 자산이지만 현재 HF private dataset 에 호스팅됨), `PDF_SDK_TOKEN` 은 enterprise 일 때만 필수. 발급 방법은 [`../../README.md` 의 "전처리기 빌드 및 등록" 1번 / 2번 항목](../../README.md#전처리기-빌드-및-등록) 참고.
 
 ## rhwp PDF API (외부 서비스)
 
