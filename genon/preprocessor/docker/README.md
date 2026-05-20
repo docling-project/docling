@@ -50,6 +50,8 @@ BUILD_VARIANT= bash build-script/doc-parser-build.sh
 
 [`genonai/genos-rhwp`](https://github.com/genonai/genos-rhwp) 의 `Dockerfile.pdf-api` + `k8s/rhwp-pdf-api.yaml` 로 별도 Deployment + ClusterIP Service `rhwp-pdf-api:7878` 가 클러스터에 배포된다 (OCR / VLM endpoint 와 동일한 운영 패턴).
 
+> 회사 클러스터에 아직 떠 있지 않다면 [`facade/README.md` 의 §HWP → PDF 변환용 rhwp-pdf-api 배포](../facade/README.md#-hwp--pdf-변환용-rhwp-pdf-api-배포-이슈-199) 를 step-by-step 으로 따라간다. 빌드 시 만나는 두 가지 누락(`Cargo.lock`, `saved/`) 우회 방법 + curl 검증까지 포함.
+
 doc_parser 컨테이너는 `RHWP_PDF_API_URL` 환경변수로 base URL 만 주입받아 다음 endpoint 로 HTTP 호출한다:
 
 - `POST {RHWP_PDF_API_URL}/api/convert/hwp-to-pdf`
