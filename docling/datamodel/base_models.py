@@ -68,6 +68,9 @@ class InputFormat(str, Enum):
     MD = "md"
     CSV = "csv"
     XLSX = "xlsx"
+    ODT = "odt"
+    ODS = "ods"
+    ODP = "odp"
     XML_USPTO = "xml_uspto"
     XML_JATS = "xml_jats"
     XML_XBRL = "xml_xbrl"
@@ -101,6 +104,9 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
     InputFormat.XLSX: ["xlsx", "xlsm"],
+    InputFormat.ODT: ["odt", "ott"],
+    InputFormat.ODS: ["ods", "ots"],
+    InputFormat.ODP: ["odp", "otp"],
     InputFormat.XML_USPTO: ["xml", "txt"],
     InputFormat.METS_GBS: ["tar.gz"],
     InputFormat.JSON_DOCLING: ["json"],
@@ -136,6 +142,18 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.CSV: ["text/csv"],
     InputFormat.XLSX: [
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    ],
+    InputFormat.ODT: [
+        "application/vnd.oasis.opendocument.text",
+        "application/vnd.oasis.opendocument.text-template",
+    ],
+    InputFormat.ODS: [
+        "application/vnd.oasis.opendocument.spreadsheet",
+        "application/vnd.oasis.opendocument.spreadsheet-template",
+    ],
+    InputFormat.ODP: [
+        "application/vnd.oasis.opendocument.presentation",
+        "application/vnd.oasis.opendocument.presentation-template",
     ],
     InputFormat.XML_USPTO: ["application/xml", "text/plain"],
     InputFormat.METS_GBS: ["application/mets+xml"],

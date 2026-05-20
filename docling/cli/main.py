@@ -107,6 +107,9 @@ from docling.document_converter import (
     HTMLFormatOption,
     LatexFormatOption,
     MarkdownFormatOption,
+    OdpFormatOption,
+    OdsFormatOption,
+    OdtFormatOption,
     PdfFormatOption,
     PowerpointFormatOption,
     WordFormatOption,
@@ -860,6 +863,9 @@ def convert(  # noqa: C901
                 InputFormat.XLSX: ExcelFormatOption(
                     pipeline_options=simple_format_option
                 ),
+                InputFormat.ODT: OdtFormatOption(pipeline_options=simple_format_option),
+                InputFormat.ODP: OdpFormatOption(pipeline_options=simple_format_option),
+                InputFormat.ODS: OdsFormatOption(pipeline_options=simple_format_option),
                 InputFormat.HTML: HTMLFormatOption(
                     pipeline_options=simple_format_option
                 ),
