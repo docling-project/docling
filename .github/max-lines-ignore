@@ -23,5 +23,4 @@ docling/datamodel/service/options.py
 docling/datamodel/stage_model_specs.py
 docling/service_client/client.py
 tests/test_service_client_sdk_unit.py
-tests/test_backend_html.py
 docling/cli/main.py
