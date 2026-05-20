@@ -53,3 +53,36 @@ def test_email_document_converter():
     markdown = result.document.export_to_markdown()
     assert "Simple Email" in markdown
     assert "This is a simple email body." in markdown
+
+
+def test_email_with_attachment_excludes_encoded_content():
+    """Test that base64-encoded attachment content is not included in the converted document."""
+    in_path = Path("tests/data/email/with_attachment.eml")
+    in_doc = InputDocument(
+        path_or_stream=in_path,
+        format=InputFormat.EMAIL,
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=in_path)
+
+    assert backend.is_valid()
+
+    doc = backend.convert()
+    markdown = doc.export_to_markdown()
+
+    # Verify email metadata and body are present
+    assert "Email with Attachment" in markdown
+    assert "From: Alice Example &lt;alice@example.com&gt;" in markdown
+    assert "To: Bob Example &lt;bob@example.com&gt;" in markdown
+    assert "This email contains an attachment." in markdown
+
+    # Verify base64-encoded attachment content is NOT in the document
+    assert (
+        "VGhpcyBpcyBhIHRlc3QgYXR0YWNobWVudCBmaWxlLgpJdCBjb250YWlucyBzb21lIGR1bW15IGNv"
+        not in markdown
+    )
+    assert "bnRlbnQuCg==" not in markdown
+
+    # Verify decoded attachment content is also NOT in the document
+    assert "This is a test attachment file." not in markdown
+    assert "It contains some dummy content." not in markdown
