@@ -268,6 +268,10 @@ WORKDIR /app
 COPY ./genon/preprocessor/configs /app/configs
 COPY ./genon/preprocessor/env /app/env
 COPY ./genon/preprocessor/src /app/src
+# HWP → PDF chain 모듈 (이슈 #199). PYTHONPATH=/app 기준 namespace package 로
+# import 되도록 genon/preprocessor 트리 그대로 복사
+# (facade 의 `from genon.preprocessor.converters.hwp_to_pdf import ...` 가 풀림).
+COPY ./genon/preprocessor/converters /app/genon/preprocessor/converters
 
 # 🔴 HWP sdk (무료 자산이라 오픈소스 빌드에도 포함)
 COPY --from=sdk_artifacts /app/hwp_sdk /app/hwp_sdk
