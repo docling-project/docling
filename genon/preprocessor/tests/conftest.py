@@ -3,8 +3,17 @@ pytest에서 자동 로드되는 공통 설정 파일.
 여기 정의된 픽스처들은 다른 테스트에서 import 없이 바로 사용 가능.
 """
 
+import sys
 from pathlib import Path
 import pytest
+
+# repo root 를 sys.path 에 prepend.
+# pyproject.toml(rootdir=genon/preprocessor) 의 pythonpath 가 "src" 만이라
+# `genon.preprocessor.*` 같은 절대 import 가 CI 에서 해석되지 않는 문제를 회피.
+# (이슈 #199 — converters/hwp_to_pdf 모듈은 src/ 밖에 있어 src 만으로는 import 불가.)
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 
 # 프로젝트 루트 경로 반환
