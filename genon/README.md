@@ -60,12 +60,30 @@
      echo "HF_TOKEN=hf_your_token_here" > build-script/hf_private_token.env
      ```
    - `doc-parser-build.config`에 직접 입력하거나 push하지 말 것 (토큰은 반드시 `hf_private_token.env` 파일에만)
-2. build-script 디렉토리 이동
-3. [doc-parser-build.config](../build-script/doc-parser-build.config) 기타 변경 사항 반영 (1번을 수행했다면 `HF_TOKEN`값은 직접 입력하지 말 것)
-4. 실행 [doc-parser-build.sh](../build-script/doc-parser-build.sh)
-5. [register.config](preprocessor/scripts/register.config) 변경 사항 있을 시 변경 필요
-6. 실행 [register_image.sh](preprocessor/scripts/register_image.sh) : push와 디비에 등록해준다.
-7. 사이트 배포 시
+
+2. `BUILD_VARIANT` 선택 (이슈 #199 — 오픈소스 / 엔터프라이즈 두 빌드 산출물 분리)
+   - **`opensource`** — LibreOffice + rhwp(외부 HTTP API 호출) 만 포함. PDF SDK 자산이 이미지에 일절 들어가지 않음 (다운로드 단계 자체가 없음). 회사 내부 PDF SDK 라이선스가 없는 환경/외부 배포용.
+   - **`enterprise`** — 위 + 유료 PDF SDK 포함 (HF_TOKEN 으로 다운로드). HWP → PDF 변환 chain 이 `pdf_sdk → rhwp → libreoffice` 순으로 동작.
+   - **`<비워둠>`** — 레거시 단일 `Dockerfile` 사용. 기존 운영 호환용. 신규 빌드에는 권장하지 않음.
+   - [`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `BUILD_VARIANT=` 라인을 위 셋 중 하나로 설정:
+     ```bash
+     # build-script/doc-parser-build.config
+     BUILD_VARIANT=enterprise   # 또는 opensource
+     ```
+   - 빌드 시 `DOCKERFILE_PATH` 가 자동으로 `genon/preprocessor/docker/Dockerfile.${BUILD_VARIANT}` 로 결정되고, 이미지 태그에도 `-${BUILD_VARIANT}` suffix 가 붙는다 (예: `:1.3.6.3-enterprise`).
+   - 두 variant 의 런타임 동작 차이 / chain 우선순위는 [`preprocessor/docker/README.md`](preprocessor/docker/README.md) 참고.
+
+3. build-script 디렉토리 이동
+
+4. [doc-parser-build.config](../build-script/doc-parser-build.config) 기타 변경 사항 반영 (1번을 수행했다면 `HF_TOKEN`값은 직접 입력하지 말 것)
+
+5. 실행 [doc-parser-build.sh](../build-script/doc-parser-build.sh)
+
+6. [register.config](preprocessor/scripts/register.config) 변경 사항 있을 시 변경 필요
+
+7. 실행 [register_image.sh](preprocessor/scripts/register_image.sh) : push와 디비에 등록해준다.
+
+8. 사이트 배포 시
 ```shell
 1. 이미지 저장
 docker save mncregistry:30500/mnc/doc-parser-preprocessor:latest | gzip > doc-parser-preprocessor.tar.gz
