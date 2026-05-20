@@ -175,18 +175,18 @@ CONVERTIBLE_EXTENSIONS = ['.txt', '.json', '.md', '.docx', '.ppt', '.pptx']
 def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
 ```
 
-**목적**: 다양한 문서 포맷을 PDF로 변환. `attachment_processor.convert_to_pdf()` 와 **동일한 시그니처/동작 정책으로 자체 정의**.
+**목적**: 다양한 문서 포맷을 PDF로 변환. 시그니처는 `attachment_processor.convert_to_pdf()` / `intelligent_processor.convert_to_pdf()` 와 **동일**하며, 셋 모두 동일한 한 줄 wrapper로 `genon.preprocessor.converters.hwp_to_pdf.convert_hwp_to_pdf()` 에 위임 (이슈 #199).
 
-> **왜 자체 정의?** Genos 웹 UI 환경은 facade 코드를 단일 파일(`preprocessor.py`)로 다루기 때문에, 다른 facade 모듈에서 `import` 하면 깨짐. `attachment_processor` / `convert_processor` / `intelligent_processor` 모두 같은 `convert_to_pdf` + 헬퍼 4종을 자체 정의.
+> **왜 세 모듈에 같은 wrapper가 있나?** Genos 웹 UI 환경은 facade 코드를 단일 파일로 다루기 때문에, 다른 facade 모듈에서 `import` 하면 깨짐. 그래서 세 facade 모두 같은 시그니처의 wrapper 함수를 자체적으로 둠. 실제 변환 로직은 `converters/hwp_to_pdf/` 모듈 한 곳에만 존재.
 
-| `use_pdf_sdk` | 내부 호출 | 비고 |
+| `use_pdf_sdk` | 위임되는 backend | 비고 |
 |---|---|---|
-| `True` (기본값) | `_convert_to_pdf_sdk()` | PDF 변환 SDK (Linux 전용 바이너리). HF private dataset(`HeechanKim-Genon/pdf_sdk`)에서 도커 빌드 시 자동 설치, 또는 `repo_root/pdf_sdk` 에 직접 다운로드. |
-| `False` | `_convert_to_pdf_libreoffice()` | LibreOffice (`soffice --headless`) 사용. SDK 미사용/장애 시 fallback. |
+| `True` (기본값) | `pdf_sdk` (`PdfSdkConverter`) | PDF 변환 SDK (Linux 전용 바이너리). 엔터프라이즈 빌드에만 자산 포함. |
+| `False` | `libreoffice` (`LibreOfficeConverter`) | LibreOffice (`soffice --headless`) 사용. 오픈소스 빌드의 기본 fallback. |
 
-**SDK 경로 결정**: `PDF_SDK_HOME` 환경변수 → fallback `<repo_root>/pdf_sdk`.
+`disable_fallback=True` 로 호출되어 단일 backend만 시도하므로 기존 동작이 그대로 보존됩니다.
 
-> 자세한 동작 흐름(SDK / LibreOffice 두 분기 다이어그램)은 [attachment_processor.md §4.1](attachment_processor.md#41-convert_to_pdf) 참고. 셋 모두 동일.
+> 자세한 backend별 동작 흐름은 [attachment_processor.md §4.1](attachment_processor.md#41-convert_to_pdf) 참고. 그리고 `genon/preprocessor/converters/hwp_to_pdf/{pdf_sdk,libreoffice}.py` 본체에 실제 구현.
 
 ---
 

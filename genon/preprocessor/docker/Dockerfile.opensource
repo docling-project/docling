@@ -1,0 +1,303 @@
+# syntax=docker/dockerfile:1.7
+#
+# 오픈소스 빌드 — 유료 PDF SDK 미포함.
+# HWP → PDF 변환은 rhwp ↔ LibreOffice 양방향 fallback (chain 우선순위는 config 로 결정).
+# 사용자 명시 요구: 본 이미지에는 PDF SDK 다운로드 단계가 일절 없어야 함 (이슈 #199).
+#
+# rhwp 는 외부 HTTP API (genos-rhwp 의 serve-pdf, k8s 별도 Deployment) 를 호출하는
+# 방식이므로 본 이미지에는 바이너리를 포함하지 않는다. RHWP_PDF_API_URL 환경변수로
+# endpoint 를 주입한다 (OCR / VLM endpoint 와 동일한 패턴).
+
+############################
+# 0) 공통 ARG/ENV
+############################
+ARG PY_VER=3.12.12
+ARG DEBIAN_DIST=trixie
+ARG H2ORESTART_URL="https://github.com/ebandal/H2Orestart/releases/latest/download/H2Orestart.oxt"
+ARG APP_VENV=/app/.venv
+ARG NLTK_PACKAGES=all
+ARG UID=1000
+ARG GID=1000
+ARG UNAME=genos
+ARG GNAME=genos
+
+############################
+# 1) Base (APT + LibreOffice)
+############################
+FROM python:${PY_VER}-slim-${DEBIAN_DIST} AS base
+ENV DEBIAN_FRONTEND=noninteractive \
+    PIP_NO_CACHE_DIR=1 \
+    HOME=/app \
+    XDG_CACHE_HOME=/app/.cache \
+    XDG_CONFIG_HOME=/app/.config \
+    XDG_DATA_HOME=/app/.local/share \
+    XDG_RUNTIME_DIR=/tmp/xdg \
+    TMPDIR=/app/tmp \
+    HF_HOME=/app/.cache/huggingface \
+    NLTK_DATA=/app/nltk_data
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    echo "deb http://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/sid.list && \
+    printf "Package: python3.13 python3.13-minimal libpython3.13 libpython3.13-minimal libpython3.13-stdlib\nPin: release a=sid\nPin-Priority: 990\n\nPackage: *\nPin: release a=sid\nPin-Priority: 100\n" > /etc/apt/preferences.d/pin-python3.13 && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+      net-tools \
+      curl \
+      wget \
+      fontconfig \
+      procps \
+      supervisor \
+      vim \
+      libmagic1 \
+      libmagic-dev \
+      libpango-1.0-0 \
+      libpangocairo-1.0-0 \
+      libcairo2 \
+      libgdk-pixbuf-xlib-2.0-0 \
+      libffi-dev \
+      libgl1 \
+      libreoffice \
+      ffmpeg \
+      unzip \
+      openjdk-21-jre-headless  \
+      ca-certificates-java  \
+      libreoffice-java-common \
+      libreoffice-writer \
+      libreoffice-impress \
+      libreoffice-l10n-ko \
+      fonts-dejavu \
+      fonts-noto-cjk \
+      fonts-noto-cjk-extra \
+      fonts-nanum \
+      imagemagick \
+      poppler-utils \
+      tesseract-ocr \
+      tesseract-ocr-eng \
+      tesseract-ocr-kor \
+      sudo \
+    && apt-get install -y --no-install-recommends --only-upgrade \
+      imagemagick \
+      imagemagick-7.q16 \
+      libmagickcore-7.q16-10 \
+      libmagickwand-7.q16-10 \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /app/.cache/huggingface /app/.cache/fontconfig /app/.config /app/.local/share /app/.fontconfig /app/nltk_data /app/tmp /tmp/xdg
+RUN sed -i 's/# \(ko_KR.UTF-8\)/\1/' /etc/locale.gen \
+    && locale-gen \
+    && fc-cache -f -v || true
+
+############################
+# 2) LibreOffice 확장 (공통)
+############################
+FROM base AS loext
+ARG H2ORESTART_URL
+COPY ./genon/preprocessor/resources /app
+RUN --mount=type=cache,target=/opt/h2o_cache \
+    set -eux; \
+    mkdir -p /opt/h2orestart /usr/lib/libreoffice/share/extensions/h2orestart; \
+    if [ ! -f /opt/h2o_cache/H2Orestart.oxt ]; then \
+      wget -O /opt/h2o_cache/H2Orestart.oxt "${H2ORESTART_URL}"; \
+    fi; \
+    cp /opt/h2o_cache/H2Orestart.oxt /opt/h2orestart/H2Orestart.oxt; \
+    unzip -q -o /opt/h2orestart/H2Orestart.oxt -d /usr/lib/libreoffice/share/extensions/h2orestart; \
+    soffice --headless --nologo --nodefault --nofirststartwizard --terminate_after_init
+RUN set -eux; \
+    mkdir -p /usr/share/fonts && \
+    tar zxf /app/HCRBatang.ttf.tar.gz -C /usr/share/fonts/ && \
+    fc-cache -f -v && rm /app/HCRBatang.ttf.tar.gz
+
+############################
+# 3) Builder (앱 venv만)
+############################
+FROM loext AS builder
+ARG APP_VENV
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+ENV UV_VIRTUALENVS_CREATE=1 \
+    UV_VIRTUALENVS_IN_PROJECT=0 \
+    UV_NO_INTERACTION=1 \
+    UV_PYTHON=/usr/local/bin/python \
+    UV_PROJECT_ENVIRONMENT=${APP_VENV} \
+    APP_VENV=${APP_VENV} \
+    PATH="${APP_VENV}/bin:${PATH}" \
+    HOME=/app \
+    XDG_CACHE_HOME=/app/.cache \
+    XDG_CONFIG_HOME=/app/.config \
+    XDG_DATA_HOME=/app/.local/share \
+    XDG_RUNTIME_DIR=/tmp/xdg \
+    TMPDIR=/app/tmp \
+    HF_HOME=/app/.cache/huggingface \
+    NLTK_DATA=/app/nltk_data
+
+COPY docling /app/docling
+COPY pyproject.toml /app/pyproject.toml
+COPY genon/preprocessor/pyproject.toml /app/genon/preprocessor/pyproject.toml
+COPY genon/preprocessor/uv.lock /app/genon/preprocessor/uv.lock
+
+WORKDIR /app/genon/preprocessor
+
+RUN uv venv ${APP_VENV}
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen || \
+    uv sync
+
+############################
+# 4-1) HWP SDK 아티팩트 (오픈소스/엔터프라이즈 공통 — HWP SDK는 무료)
+############################
+FROM builder AS sdk_artifacts
+ARG APP_VENV
+
+RUN --mount=type=cache,target=${HF_HOME} \
+    --mount=type=secret,id=HWP_SDK_TOKEN \
+    echo "[INFO] Downloading HWP SDK from Private HF Repo..."; \
+    HWP_SDK_TOKEN_VAL=$(cat /run/secrets/HWP_SDK_TOKEN) && \
+    mkdir -p /app/hwp_sdk && \
+    huggingface-cli download HeechanKim-Genon/hwp_sdk \
+      --repo-type dataset \
+      --local-dir /app/hwp_sdk \
+      --local-dir-use-symlinks False \
+      --token "${HWP_SDK_TOKEN_VAL}" && \
+    chmod +x /app/hwp_sdk/convtext
+
+############################
+# 4-2) 추가 폰트 아티팩트
+############################
+FROM builder AS font_artifacts
+
+RUN --mount=type=cache,target=${HF_HOME} \
+    echo "[INFO] Downloading extra fonts from HF (public)..." && \
+    mkdir -p /app/extra_fonts && \
+    huggingface-cli download HeechanKim-Genon/additional_fonts \
+      --repo-type dataset \
+      --local-dir /app/extra_fonts \
+      --local-dir-use-symlinks False
+
+############################
+# 4-3) 모델 아티팩트
+############################
+FROM builder AS models_artifacts
+ARG APP_VENV
+ARG NLTK_PACKAGES
+ARG DOCLING_MODELS_VER=2.41
+ARG HF_MODELS_VER=2.41
+ARG EASYOCR_VER=2.41
+
+ENV PATH="${APP_VENV}/bin:${PATH}" \
+    HOME=/app \
+    XDG_CACHE_HOME=/app/.cache \
+    XDG_CONFIG_HOME=/app/.config \
+    XDG_DATA_HOME=/app/.local/share \
+    XDG_RUNTIME_DIR=/tmp/xdg \
+    TMPDIR=/app/tmp \
+    HF_HOME=/app/.cache/huggingface \
+    NLTK_DATA=/app/nltk_data
+
+RUN --mount=type=cache,target=/root/.cache/models \
+    echo "Docling models ver: ${DOCLING_MODELS_VER}"; \
+    if [ ! -d /models ] || [ -z "$(ls -A /models)" ]; then \
+        docling-tools models download -o /models; \
+    else \
+        echo "[INFO] /models already present, skip"; \
+    fi
+
+RUN --mount=type=cache,target=${HF_HOME} \
+    echo "HF models ver: ${HF_MODELS_VER}"; \
+    mkdir -p /models/doc_parser_models; \
+    huggingface-cli download mncai/doc_parser_models --local-dir /models/doc_parser_models && \
+    huggingface-cli download mncai/doc_parser_models --include "sentence-transformers-all-MiniLM-L6-v2/*" --local-dir /models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2
+
+RUN --mount=type=cache,target=/root/.cache/nltk \
+    python - <<'PY'
+import os
+import nltk
+
+target = os.environ.get("NLTK_DATA", "/app/nltk_data")
+os.makedirs(target, exist_ok=True)
+
+packages = os.environ.get("NLTK_PACKAGES", "all")
+if packages == "all":
+    nltk.download("all", download_dir=target)
+else:
+    for pkg in [p.strip() for p in packages.split(",") if p.strip()]:
+        nltk.download(pkg, download_dir=target)
+PY
+
+RUN --mount=type=cache,target=/root/.cache/easyocr_korean \
+    echo "EasyOCR ver: ${EASYOCR_VER}"; \
+    mkdir -p /models/EasyOcr && \
+    if [ ! -f /models/EasyOcr/korean_g2.zip ]; then \
+      curl -L -o /root/.cache/easyocr_korean/korean_g2.zip "https://github.com/JaidedAI/EasyOCR/releases/download/v1.3/korean_g2.zip"; \
+      unzip -q -o /root/.cache/easyocr_korean/korean_g2.zip -d /models/EasyOcr; \
+    fi
+
+############################
+# 5) Runtime (오픈소스)
+#
+# PDF_SDK_HOME 환경변수 미설정 → PdfSdkConverter.is_available() == False
+# → chain 에서 자동 제외. 운영상 PDF SDK 가용성 체크가 실패해도 graceful.
+############################
+FROM loext AS runtime
+ARG APP_VENV
+ARG UID
+ARG GID
+ARG UNAME
+ARG GNAME
+ENV UV_PROJECT_ENVIRONMENT=${APP_VENV} \
+    PATH="${APP_VENV}/bin:${PATH}" \
+    HOME=/app \
+    XDG_CACHE_HOME=/app/.cache \
+    XDG_CONFIG_HOME=/app/.config \
+    XDG_DATA_HOME=/app/.local/share \
+    XDG_RUNTIME_DIR=/tmp/xdg \
+    TMPDIR=/app/tmp \
+    JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 \
+    HF_HOME=/app/.cache/huggingface \
+    NLTK_DATA=/app/nltk_data \
+    LANG=ko_KR.UTF-8 \
+    LC_ALL=ko_KR.UTF-8 \
+    LC_CTYPE=ko_KR.UTF-8 \
+    DOCLING_ARTIFACTS_PATH=/models \
+    DOC_PARSER_BUILD_VARIANT=opensource
+
+# TODO(#199): 운영 endpoint 확정 후 deploy manifest 의 env 로 override 할 placeholder.
+# k8s/rhwp-pdf-api.yaml (genonai/genos-rhwp 레포) 의 Service 이름 + ClusterIP 포트 기반 기본값.
+# 같은 namespace 가 아니면 FQDN (http://rhwp-pdf-api.<ns>.svc.cluster.local:7878) 로 교체.
+ENV RHWP_PDF_API_URL=http://rhwp-pdf-api:7878
+
+WORKDIR /app
+COPY ./genon/preprocessor/configs /app/configs
+COPY ./genon/preprocessor/env /app/env
+COPY ./genon/preprocessor/src /app/src
+
+# 🔴 HWP sdk (무료 자산이라 오픈소스 빌드에도 포함)
+COPY --from=sdk_artifacts /app/hwp_sdk /app/hwp_sdk
+
+# NOTE: 본 이미지에는 다음 두 항목이 의도적으로 포함되지 않음.
+#  - PDF SDK (유료): 오픈소스 빌드의 본질적 차이.
+#  - rhwp 바이너리: genos-rhwp 의 serve-pdf 가 별도 k8s Deployment 로 운영되므로
+#    RHWP_PDF_API_URL 로 endpoint 만 주입받아 HTTP 호출 (OCR endpoint 패턴 동일).
+
+# 추가 폰트 설치
+COPY --from=font_artifacts /app/extra_fonts /usr/share/fonts/additional
+RUN fc-cache -f -v
+
+# ✅ 공통 venv 위치만 복사
+COPY --from=builder ${APP_VENV} ${APP_VENV}
+
+# 🔴 [매우 중요] 경로 문제 해결을 위한 링크 (USER 설정 이전에 수행)
+RUN ln -s /app/hwp_sdk /app/.venv/lib/python3.12/site-packages/hwp_sdk
+
+# ✅ 모델/자료
+COPY --from=models_artifacts /app/nltk_data /app/nltk_data
+COPY --from=models_artifacts /models /models
+
+RUN ln -sf /app/configs/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
+RUN getent group "${GID}" || groupadd -g "${GID}" "${GNAME}" && \
+    getent passwd "${UID}" || useradd -m -u "${UID}" -g "${GID}" -s /bin/bash "${UNAME}" && \
+    UNAME_ACTUAL="$(getent passwd "${UID}" | cut -d: -f1)" && \
+    usermod -aG sudo "${UNAME_ACTUAL}" && \
+    echo "${UNAME_ACTUAL} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    mkdir -p /app/.cache/huggingface /app/.config/libreoffice /app/.cache/libreoffice /app/.local/share /app/tmp /tmp/xdg && \
+    chown -R "${UID}:${GID}" /app /run /var/log /etc/supervisor /models /app/nltk_data /app/.cache /app/.config /app/.local /tmp/xdg
+USER ${UID}:${GID}
+CMD ["supervisord", "-n"]

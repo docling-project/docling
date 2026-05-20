@@ -1,4 +1,11 @@
 # syntax=docker/dockerfile:1.7
+#
+# 엔터프라이즈 빌드 — 유료 PDF SDK 포함.
+# HWP → PDF 변환 우선순위: pdf_sdk → rhwp → libreoffice (자동 fallback).
+#
+# rhwp 는 외부 HTTP API (genos-rhwp 의 serve-pdf, k8s 별도 Deployment) 를 호출하는
+# 방식이므로 본 이미지에는 바이너리를 포함하지 않는다. RHWP_PDF_API_URL 환경변수로
+# endpoint 를 주입한다 (OCR / VLM endpoint 와 동일한 패턴). 이슈 #199.
 
 ############################
 # 0) 공통 ARG/ENV
@@ -137,42 +144,40 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync
 
 ############################
-# 4-1) HWP SDK 아티팩트
+# 4-1) HWP SDK 아티팩트 (오픈소스/엔터프라이즈 공통 — HWP SDK는 무료)
 ############################
 FROM builder AS sdk_artifacts
 ARG APP_VENV
 
 RUN --mount=type=cache,target=${HF_HOME} \
-    --mount=type=secret,id=HF_TOKEN \
+    --mount=type=secret,id=HWP_SDK_TOKEN \
     echo "[INFO] Downloading HWP SDK from Private HF Repo..."; \
-    # /run/secrets/HF_TOKEN 경로에서 값을 읽어옴
-    HF_TOKEN_VAL=$(cat /run/secrets/HF_TOKEN) && \
+    HWP_SDK_TOKEN_VAL=$(cat /run/secrets/HWP_SDK_TOKEN) && \
     mkdir -p /app/hwp_sdk && \
     huggingface-cli download HeechanKim-Genon/hwp_sdk \
       --repo-type dataset \
       --local-dir /app/hwp_sdk \
       --local-dir-use-symlinks False \
-      --token "${HF_TOKEN_VAL}" && \
+      --token "${HWP_SDK_TOKEN_VAL}" && \
     chmod +x /app/hwp_sdk/convtext
 
 ############################
-# 4-1b) PDF SDK 아티팩트
+# 4-1b) PDF SDK 아티팩트 (엔터프라이즈 전용)
 ############################
 FROM builder AS pdf_sdk_artifacts
 ARG APP_VENV
 
 RUN --mount=type=cache,target=${HF_HOME} \
-    --mount=type=secret,id=HF_TOKEN \
+    --mount=type=secret,id=PDF_SDK_TOKEN \
     echo "[INFO] Downloading PDF SDK from Private HF Repo..."; \
-    HF_TOKEN_VAL=$(cat /run/secrets/HF_TOKEN) && \
+    PDF_SDK_TOKEN_VAL=$(cat /run/secrets/PDF_SDK_TOKEN) && \
     mkdir -p /app/pdf_sdk && \
     huggingface-cli download HeechanKim-Genon/pdf_sdk \
       --repo-type dataset \
       --local-dir /app/pdf_sdk \
       --local-dir-use-symlinks False \
-      --token "${HF_TOKEN_VAL}" && \
+      --token "${PDF_SDK_TOKEN_VAL}" && \
     chmod +x /app/pdf_sdk/pdfConverter && \
-    # fontconfig conf 파일 안의 경로를 컨테이너 경로로 치환 (HF에 어떤 경로로 올렸든 보정)
     sed -i 's|<dir>[^<]*</dir>|<dir>/app/pdf_sdk/fonts</dir>|' /app/pdf_sdk/fonts/fonts_gen.conf && \
     sed -i 's|<cachedir>[^<]*</cachedir>|<cachedir>/app/pdf_sdk/font_cache</cachedir>|' /app/pdf_sdk/fonts/fonts_gen.conf && \
     echo "/app/pdf_sdk/fonts" > /app/pdf_sdk/fonts/_fonts_path && \
@@ -201,7 +206,6 @@ ARG DOCLING_MODELS_VER=2.41
 ARG HF_MODELS_VER=2.41
 ARG EASYOCR_VER=2.41
 
-# 👉 여기서도 APP_VENV 그대로 씀
 ENV PATH="${APP_VENV}/bin:${PATH}" \
     HOME=/app \
     XDG_CACHE_HOME=/app/.cache \
@@ -251,7 +255,7 @@ RUN --mount=type=cache,target=/root/.cache/easyocr_korean \
     fi
 
 ############################
-# 5) Runtime
+# 5) Runtime (엔터프라이즈)
 ############################
 FROM loext AS runtime
 ARG APP_VENV
@@ -274,18 +278,28 @@ ENV UV_PROJECT_ENVIRONMENT=${APP_VENV} \
     LC_ALL=ko_KR.UTF-8 \
     LC_CTYPE=ko_KR.UTF-8 \
     DOCLING_ARTIFACTS_PATH=/models \
-    PDF_SDK_HOME=/app/pdf_sdk
+    PDF_SDK_HOME=/app/pdf_sdk \
+    DOC_PARSER_BUILD_VARIANT=enterprise
+
+# TODO(#199): 운영 endpoint 확정 후 deploy manifest 의 env 로 override 할 placeholder.
+# k8s/rhwp-pdf-api.yaml (genonai/genos-rhwp 레포) 의 Service 이름 + ClusterIP 포트 기반 기본값.
+# 같은 namespace 가 아니면 FQDN (http://rhwp-pdf-api.<ns>.svc.cluster.local:7878) 로 교체.
+ENV RHWP_PDF_API_URL=http://rhwp-pdf-api:7878
 
 WORKDIR /app
 COPY ./genon/preprocessor/configs /app/configs
 COPY ./genon/preprocessor/env /app/env
 COPY ./genon/preprocessor/src /app/src
 
-# 🔴 HWP sdk 다운로드
+# 🔴 HWP sdk
 COPY --from=sdk_artifacts /app/hwp_sdk /app/hwp_sdk
 
-# 🔴 PDF SDK 다운로드
+# 🔴 PDF SDK (엔터프라이즈 전용)
 COPY --from=pdf_sdk_artifacts /app/pdf_sdk /app/pdf_sdk
+
+# NOTE: rhwp 바이너리는 이미지에 포함하지 않음.
+# 별도 운영되는 rhwp-pdf-api Service 의 endpoint 를 RHWP_PDF_API_URL 로 주입받아
+# HTTP 호출하는 방식 (OCR / VLM endpoint 와 동일 패턴). 이슈 #199.
 
 # 추가 폰트 설치
 COPY --from=font_artifacts /app/extra_fonts /usr/share/fonts/additional
