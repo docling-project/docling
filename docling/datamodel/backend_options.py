@@ -84,6 +84,18 @@ class HTMLBackendOptions(BaseBackendOptions):
             "will use it to resolve relative paths in the HTML document."
         ),
     )
+    headers: Annotated[
+        dict[str, str] | None,
+        Field(
+            description=(
+                "HTTP headers to include when fetching remote images. Use for "
+                "authentication (e.g., API keys, bearer tokens) or custom headers "
+                "required by image servers."
+            ),
+            examples=[{"Authorization": "Bearer TOKEN"}, {"X-API-Key": "your-api-key"}],
+            repr=False,
+        ),
+    ] = None
     add_title: bool = Field(
         True, description="Add the HTML title tag as furniture in the DoclingDocument."
     )
