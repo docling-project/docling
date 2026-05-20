@@ -7,7 +7,7 @@
 | `Dockerfile.opensource` | 오픈소스 배포용 | LibreOffice (PDF SDK / rhwp 바이너리 **미포함**) |
 | `Dockerfile.enterprise` | 유료 (PDF SDK 보유) 환경용 | 위 + PDF SDK (`HF_TOKEN` 필요) |
 
-> 기존 단일 `Dockerfile` 도 레포에 남아있지만 신규 빌드 흐름에서는 사용하지 않는다 — PDF SDK 다운로드 단계가 그대로 포함돼 있어 의도치 않게 유료 변형으로 빌드될 수 있어서다. `BUILD_VARIANT` 를 비워두고 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단된다.
+> 기존 단일 `Dockerfile` 은 PDF SDK 다운로드 단계가 그대로 포함돼 있어 의도치 않게 유료 변형으로 빌드될 위험이 있었기 때문에 본 PR에서 삭제했다. 신규 빌드는 반드시 위 두 variant 중 하나로 진행한다 — `BUILD_VARIANT` 를 비워두고 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단된다.
 
 ## HWP → PDF 변환 chain (런타임 동작)
 
