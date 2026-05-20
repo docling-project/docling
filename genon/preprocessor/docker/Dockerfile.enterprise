@@ -19,6 +19,10 @@ ARG UID=1000
 ARG GID=1000
 ARG UNAME=genos
 ARG GNAME=genos
+# 이슈 #210 — gpu | cpu. CPU 빌드 시 builder 단계에서 torch 를 CPU wheel 로
+# 재설치하고 nvidia-* / triton 패키지를 제거하여 이미지를 경량화한다.
+ARG HW_VARIANT=gpu
+ARG TORCH_CPU_INDEX_URL=https://download.pytorch.org/whl/cpu
 
 ############################
 # 1) Base (APT + LibreOffice)
@@ -142,6 +146,38 @@ RUN uv venv ${APP_VENV}
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen || \
     uv sync
+
+# 이슈 #210 — CPU 빌드 시 GPU 용 torch / nvidia / triton 을 제거하고 CPU wheel 재설치
+ARG HW_VARIANT
+ARG TORCH_CPU_INDEX_URL
+RUN --mount=type=cache,target=/root/.cache/uv \
+    if [ "${HW_VARIANT}" = "cpu" ]; then \
+      echo "[INFO] HW_VARIANT=cpu — reinstalling torch/torchvision as CPU wheels" && \
+      uv pip install --reinstall \
+        --index-url "${TORCH_CPU_INDEX_URL}" \
+        --extra-index-url "https://pypi.org/simple" \
+        torch torchvision && \
+      uv pip uninstall \
+        nvidia-cublas-cu12 \
+        nvidia-cuda-cupti-cu12 \
+        nvidia-cuda-nvrtc-cu12 \
+        nvidia-cuda-runtime-cu12 \
+        nvidia-cudnn-cu12 \
+        nvidia-cufft-cu12 \
+        nvidia-cufile-cu12 \
+        nvidia-curand-cu12 \
+        nvidia-cusolver-cu12 \
+        nvidia-cusparse-cu12 \
+        nvidia-cusparselt-cu12 \
+        nvidia-nccl-cu12 \
+        nvidia-nvjitlink-cu12 \
+        nvidia-nvshmem-cu12 \
+        nvidia-nvtx-cu12 \
+        triton \
+      || true; \
+    else \
+      echo "[INFO] HW_VARIANT=${HW_VARIANT} — keeping GPU torch as-is"; \
+    fi
 
 ############################
 # 4-1) HWP SDK 아티팩트 (오픈소스/엔터프라이즈 공통 — HWP SDK는 무료)
