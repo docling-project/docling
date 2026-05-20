@@ -1153,7 +1153,7 @@ provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "asr", "
 
 [[package]]
 name = "docling-core"
-version = "2.75.0"
+version = "2.77.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "defusedxml" },
@@ -1170,9 +1170,9 @@ dependencies = [
     { name = "typer" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c3/39/179e119794e65e2376ce3d2224693b0e25705a5f1b26bbccaf404c4ce902/docling_core-2.75.0.tar.gz", hash = "sha256:7961be3c3f58855324b081fce9e1231b892da7c61d6babbaf3d49c28387eb782", size = 320615, upload-time = "2026-05-12T14:55:04.153Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5c/5b/2c57066e2900b815d177e73d19e78a7766a3e4da3e5762df48b83493a135/docling_core-2.77.1.tar.gz", hash = "sha256:d93c7cdc0de4bbf36ef74fb4c3c3d49bb8420ff27201f3b66908672326835b47", size = 328061, upload-time = "2026-05-26T15:23:24.967Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ef/33/f40d2faebda5bd40cd4e2803b710dd7e26dde5150d5395379c2269fc04e8/docling_core-2.75.0-py3-none-any.whl", hash = "sha256:60f7bc4025f6511ba82eeb0aa677e756e9d3bf069d6f207c6ef2fb8be3176f32", size = 279045, upload-time = "2026-05-12T14:55:02.371Z" },
+    { url = "https://files.pythonhosted.org/packages/f0/ed/00dc4f21b9b47a6e89e026f0aeaa4d5aab03fe8135867aeeff66bd153fe8/docling_core-2.77.1-py3-none-any.whl", hash = "sha256:4e38df7143e2ecfe69ecf05278e8e25063a9ec1b6d0b5e28e3b8f1db7cc5ed72", size = 283903, upload-time = "2026-05-26T15:23:23.272Z" },
 ]
 
 [package.optional-dependencies]
@@ -1546,7 +1546,7 @@ requires-dist = [
     { name = "beautifulsoup4", marker = "extra == 'format-html'", specifier = ">=4.12.3,<5.0.0" },
     { name = "certifi", specifier = ">=2024.7.4" },
     { name = "defusedxml", marker = "extra == 'models-local'", specifier = ">=0.7.1,<0.8.0" },
-    { name = "docling-core", specifier = ">=2.73.0,<3.0.0" },
+    { name = "docling-core", specifier = ">=2.77.1,<3.0.0" },
     { name = "docling-core", extras = ["chunking"], marker = "extra == 'feat-chunking'", specifier = ">=2.73.0,<3.0.0" },
     { name = "docling-ibm-models", marker = "extra == 'models-local'", specifier = ">=3.13.0,<4" },
     { name = "docling-parse", marker = "extra == 'format-pdf-docling'", specifier = ">=5.3.2,<6.0.0" },
