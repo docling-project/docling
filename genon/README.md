@@ -53,13 +53,9 @@
 ## 전처리기 빌드 및 등록
 
 1. `HWP_SDK_TOKEN` 설정 (HWP SDK private 레포 다운로드용 — **두 variant 모두 필수**)
-   - HWP SDK 자산만 받는 fine-grained read 토큰. 대상 레포: [`HeechanKim-Genon/hwp_sdk`](https://huggingface.co/datasets/HeechanKim-Genon/hwp_sdk)
-   - HuggingFace 에서 신규 발급 절차:
-     1. [Hugging Face → Settings → Access Tokens](https://huggingface.co/settings/tokens) 에서 **New token → Fine-grained** 선택
-     2. **Repository permissions** 섹션 → **Add repository** → `HeechanKim-Genon/hwp_sdk` 추가 → **Read access to contents** 만 체크
-     3. 그 외 dataset/model 권한은 모두 비워둠 (`pdf_sdk` 등 다른 레포에는 접근 불가하도록)
-     4. **Create token** 후 한 번만 보여주는 값을 복사
-   - `doc_parser/` (레포 최상위 경로) 에서 아래 명령어 실행 (이후 재실행 불필요, Git에 커밋되지 않음):
+   - 대상 레포: [`HeechanKim-Genon/hwp_sdk`](https://huggingface.co/datasets/HeechanKim-Genon/hwp_sdk) — 이 레포 전용 read 토큰
+   - 토큰 값은 [제논 내부 드라이브 (HWP_SDK_TOKEN)](https://drive.google.com/file/d/1e7hIsYaLAVFBwWoe1Oi5OcODWXxuMI_r/view?usp=sharing) 에서 확인
+   - `doc_parser/` (레포 최상위 경로) 에서 아래 명령어 실행 (이후 재실행 불필요, Git 미추적):
      ```shell
      echo "HWP_SDK_TOKEN=hf_xxx_your_hwp_sdk_token_here" >> build-script/hf_private_token.env
      ```
@@ -68,8 +64,8 @@
 2. `BUILD_VARIANT` 선택 - 무료용(**`opensource`**) / 유료용(**`enterprise`**) 버전 선택
    - **`opensource`** — LibreOffice + rhwp(외부 HTTP API 호출) 만 포함. PDF SDK 자산이 이미지에 일절 들어가지 않음 (다운로드 단계 자체가 없음). 회사 내부 PDF SDK 라이선스가 없는 환경/외부 배포용. **`HWP_SDK_TOKEN` 만 있으면 됨**.
    - **`enterprise`** — 위 + 유료 PDF SDK 포함. HWP → PDF 변환 chain 이 `pdf_sdk → rhwp → libreoffice` 순으로 동작. **`HWP_SDK_TOKEN` 에 더해 `PDF_SDK_TOKEN` 도 필수**.
-     - `PDF_SDK_TOKEN` — PDF SDK private 레포 다운로드용 fine-grained read 토큰. 대상 레포: [`HeechanKim-Genon/pdf_sdk`](https://huggingface.co/datasets/HeechanKim-Genon/pdf_sdk)
-     - 발급 절차는 1번과 동일하되 **Repository permissions** 의 추가 레포를 `HeechanKim-Genon/pdf_sdk` 로 설정 (그 외 레포 권한은 비워두어 `hwp_sdk` 등 다른 레포에는 접근 불가하도록)
+     - `PDF_SDK_TOKEN` — 대상 레포 [`HeechanKim-Genon/pdf_sdk`](https://huggingface.co/datasets/HeechanKim-Genon/pdf_sdk) 전용 read 토큰
+     - 토큰 값은 [제논 내부 드라이브 (PDF_SDK_TOKEN)](https://drive.google.com/file/d/1jF9UXUq91dIw6NRP3hz5CpdVokBDwPF6/view?usp=sharing) 에서 확인
      - `hf_private_token.env` 에 한 줄 더 추가:
        ```shell
        echo "PDF_SDK_TOKEN=hf_yyy_your_pdf_sdk_token_here" >> build-script/hf_private_token.env

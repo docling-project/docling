@@ -42,7 +42,7 @@ BUILD_VARIANT=enterprise bash build-script/doc-parser-build.sh
 
 이미지 태그는 자동으로 `:${IMAGE_VERSION}-${BUILD_VARIANT}` 형태가 된다 (예: `:1.3.6.3-enterprise`).
 
-토큰은 SDK 별로 fine-grained 분리되어 있다 (이슈 #199). `HWP_SDK_TOKEN` 은 두 variant 모두 필수 (HWP SDK 가 무료 자산이지만 현재 HF private dataset 에 호스팅됨), `PDF_SDK_TOKEN` 은 enterprise 일 때만 필수. 발급 방법은 [`../../README.md` 의 "전처리기 빌드 및 등록" 1번 / 2번 항목](../../README.md#전처리기-빌드-및-등록) 참고.
+토큰은 SDK 별로 fine-grained 분리되어 있다 (이슈 #199). `HWP_SDK_TOKEN` 은 두 variant 모두 필수 (HWP SDK 가 무료 자산이지만 현재 HF private dataset 에 호스팅됨), `PDF_SDK_TOKEN` 은 enterprise 일 때만 필수. 두 토큰 값은 [`../../README.md` 의 "전처리기 빌드 및 등록" 1번 / 2번 항목](../../README.md#전처리기-빌드-및-등록) 에 안내된 내부 드라이브 링크에서 확인한다.
 
 ## rhwp PDF API (외부 서비스)
 
