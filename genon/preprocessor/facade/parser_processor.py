@@ -163,12 +163,65 @@ def convert_to_pdf(file_path: str) -> str | None:
     """
     LibreOffice로 PDF 변환을 시도한다.
     실패해도 예외를 던지지 않고 None을 반환한다.
-
-    내부 구현은 `genon.preprocessor.converters.hwp_to_pdf` 모듈에 통합되어 있다.
-    기존 호출 동작 보존을 위해 단일 backend만 시도하도록 `disable_fallback=True` 사용.
     """
-    from genon.preprocessor.converters.hwp_to_pdf import convert_hwp_to_pdf
-    return convert_hwp_to_pdf(file_path, primary="libreoffice", disable_fallback=True)
+    try:
+        in_path = Path(file_path).resolve()
+        out_dir = in_path.parent
+        pdf_path = in_path.with_suffix('.pdf')
+
+        env = os.environ.copy()
+        env.setdefault("LANG", "C.UTF-8")
+        env.setdefault("LC_ALL", "C.UTF-8")
+
+        ext = in_path.suffix.lower()
+        if ext in ('.ppt', '.pptx'):
+            convert_arg = "pdf:impress_pdf_Export"
+        elif ext in ('.doc', '.docx'):
+            convert_arg = "pdf:writer_pdf_Export"
+        elif ext in ('.xls', '.xlsx', '.csv'):
+            convert_arg = "pdf:calc_pdf_Export"
+        else:
+            convert_arg = "pdf"
+
+        try:
+            in_path.name.encode('ascii')
+            candidates = [in_path]
+            tmp_dir = None
+        except UnicodeEncodeError:
+            tmp_dir = Path(tempfile.mkdtemp())
+            ascii_name = unicodedata.normalize('NFKD', in_path.stem).encode('ascii', 'ignore').decode('ascii') or "file"
+            ascii_copy = tmp_dir / f"{ascii_name}{in_path.suffix}"
+            shutil.copy2(in_path, ascii_copy)
+            candidates = [ascii_copy, in_path]
+
+        for cand in candidates:
+            cmd = [
+                "soffice", "--headless",
+                "--convert-to", convert_arg,
+                "--outdir", str(out_dir),
+                str(cand)
+            ]
+            proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+            if proc.returncode == 0 and pdf_path.exists():
+                if tmp_dir:
+                    shutil.rmtree(tmp_dir, ignore_errors=True)
+                return str(pdf_path)
+            _log.warning(f"[convert_to_pdf] stderr: {proc.stderr.strip()}")
+
+        if tmp_dir:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+        return None
+    except Exception as e:
+        _log.error(f"[convert_to_pdf] error: {e}")
+        return None
+
+
+def _get_pdf_path(file_path: str) -> str:
+    """다양한 파일 확장자를 PDF 확장자로 변경하는 공통 함수"""
+    p = Path(file_path)
+    if p.suffix.lower() in CONVERTIBLE_EXTENSIONS:
+        return str(p.with_suffix('.pdf'))
+    return file_path
 
 def install_packages(packages):
     for package in packages:

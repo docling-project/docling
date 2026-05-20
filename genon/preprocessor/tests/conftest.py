@@ -7,13 +7,16 @@ import sys
 from pathlib import Path
 import pytest
 
-# repo root 를 sys.path 에 prepend.
+# 이슈 #199 — pytest sys.path 보강.
 # pyproject.toml(rootdir=genon/preprocessor) 의 pythonpath 가 "src" 만이라
-# `genon.preprocessor.*` 같은 절대 import 가 CI 에서 해석되지 않는 문제를 회피.
-# (이슈 #199 — converters/hwp_to_pdf 모듈은 src/ 밖에 있어 src 만으로는 import 불가.)
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
+# 로컬/일부 CI 환경에서 다음 두 가지 절대 import 가 깨질 수 있어 두 경로를 prepend:
+#   - `genon.preprocessor.converters.hwp_to_pdf.*` (신규 모듈, src/ 밖)  → repo root 필요
+#   - `facade.*`                                        (기존 facade 모듈) → genon/preprocessor 필요
+_PREPROC = Path(__file__).resolve().parents[1]   # genon/preprocessor
+_REPO_ROOT = Path(__file__).resolve().parents[3]  # repo root
+for _p in (_PREPROC, _REPO_ROOT):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 
 # 프로젝트 루트 경로 반환
