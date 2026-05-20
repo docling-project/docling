@@ -72,7 +72,7 @@
        ```shell
        echo "PDF_SDK_TOKEN=hf_yyy_your_pdf_sdk_token_here" >> build-script/hf_private_token.env
        ```
-   - 무료용/유료용 버전에 따른 안내 적용후, [`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `BUILD_VARIANT=` 라인을 둘 중 하나로 설정 해야한다:
+   - **`opensource`**/**`enterprise`** 버전에 따른 안내 적용후, [`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `BUILD_VARIANT=` 라인을 둘 중 하나로 설정 해야한다:
      ```bash
      # build-script/doc-parser-build.config
      BUILD_VARIANT=opensource   # 또는 enterprise
@@ -253,17 +253,31 @@ kubectl get svc rhwp-pdf-api
 
 ### 4. doc_parser 측 endpoint 주입
 
-같은 namespace 면 추가 설정 없음 — Dockerfile 의 `RHWP_PDF_API_URL=http://rhwp-pdf-api:7878` placeholder 가 그대로 동작한다.
+placeholder 가 박혀 있는 좌표 (양쪽 Dockerfile 동일 값):
+- [`preprocessor/docker/Dockerfile.opensource:265`](preprocessor/docker/Dockerfile.opensource#L265) — `ENV RHWP_PDF_API_URL=http://rhwp-pdf-api:7878`
+- [`preprocessor/docker/Dockerfile.enterprise:287`](preprocessor/docker/Dockerfile.enterprise#L287) — 같은 줄
 
-다른 namespace 면 doc_parser 의 deploy 매니페스트에서 FQDN 으로 override:
+**같은 namespace** 면 추가 설정 없음 — 위 placeholder 가 그대로 동작한다. 컨테이너 안에서 한 번 확인:
 
-```yaml
-env:
-  - name: RHWP_PDF_API_URL
-    value: http://rhwp-pdf-api.<rhwp-namespace>.svc.cluster.local:7878
+```shell
+kubectl exec -it deploy/doc-parser-preprocessor -- printenv RHWP_PDF_API_URL
+# 출력: http://rhwp-pdf-api:7878
 ```
 
-런타임에 같은 이름의 env 변수를 새로 주입하면 chain config 가 자동으로 반영한다 ([preprocessor/converters/hwp_to_pdf/availability.py](preprocessor/converters/hwp_to_pdf/availability.py) 의 `rhwp_pdf_api_url()` 참고).
+**다른 namespace** 면 doc_parser preprocessor 의 deploy 매니페스트에서 FQDN 으로 override. 본 레포에는 preprocessor 의 k8s deploy yaml 이 포함되지 않으므로 (운영팀 GenOS UI / `register_image.sh` 디비 등록 흐름으로 관리), 운영팀에 다음 env 추가를 요청하거나 GenOS 환경변수 설정 화면에서 직접 추가:
+
+```yaml
+spec:
+  template:
+    spec:
+      containers:
+        - name: doc-parser-preprocessor
+          env:
+            - name: RHWP_PDF_API_URL
+              value: http://rhwp-pdf-api.<rhwp-namespace>.svc.cluster.local:7878
+```
+
+런타임에 같은 이름의 env 변수를 새로 주입하면 chain config 가 자동으로 반영한다 ([preprocessor/converters/hwp_to_pdf/availability.py](preprocessor/converters/hwp_to_pdf/availability.py) 의 `rhwp_pdf_api_url()` 참고). 주입 후 `printenv` 로 한 번 더 확인.
 
 ### 5. 동작 검증
 
