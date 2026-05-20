@@ -61,11 +61,11 @@
      ```
    - `doc-parser-build.config`에 직접 입력하거나 push하지 말 것 (토큰은 반드시 `hf_private_token.env` 파일에만)
 
-2. `BUILD_VARIANT` 선택 (이슈 #199 — 오픈소스 / 엔터프라이즈 두 빌드 산출물 분리)
+2. `BUILD_VARIANT` 선택 - 무료용(**`opensource`**) / 유료용(**`enterprise`**) 버전 선택
    - **`opensource`** — LibreOffice + rhwp(외부 HTTP API 호출) 만 포함. PDF SDK 자산이 이미지에 일절 들어가지 않음 (다운로드 단계 자체가 없음). 회사 내부 PDF SDK 라이선스가 없는 환경/외부 배포용.
    - **`enterprise`** — 위 + 유료 PDF SDK 포함 (HF_TOKEN 으로 다운로드). HWP → PDF 변환 chain 이 `pdf_sdk → rhwp → libreoffice` 순으로 동작.
-   - **`<비워둠>`** — 레거시 단일 `Dockerfile` 사용. 기존 운영 호환용. 신규 빌드에는 권장하지 않음.
-   - [`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `BUILD_VARIANT=` 라인을 위 셋 중 하나로 설정:
+   - 둘 중 하나를 반드시 명시해야 한다. 비워둔 채 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단된다 (의도치 않게 유료 SDK 가 포함될 위험을 막기 위한 안전장치).
+   - [`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `BUILD_VARIANT=` 라인을 위 둘 중 하나로 설정:
      ```bash
      # build-script/doc-parser-build.config
      BUILD_VARIANT=enterprise   # 또는 opensource

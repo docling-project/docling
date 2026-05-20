@@ -35,16 +35,20 @@ APP_GNAME="${APP_GNAME:-genos}"
 APP_NLTK_PACKAGES="${APP_NLTK_PACKAGES:-all}"
 export HF_TOKEN="${HF_TOKEN:-}"
 
-# BUILD_VARIANT 가 명시되었으면 그에 맞는 Dockerfile / 이미지 태그 suffix 로 자동 분기
-# (이슈 #199 — 오픈소스/엔터프라이즈 두 빌드 산출물 분리)
-IMAGE_TAG_SUFFIX=""
+# BUILD_VARIANT 분기 (이슈 #199 — 오픈소스/엔터프라이즈 두 빌드 산출물 분리)
+# opensource / enterprise 둘 중 하나는 반드시 명시되어야 한다.
+# 비워둔 채 빌드를 돌리면 의도치 않게 유료 SDK 가 포함될 위험이 있어 명시적 에러 처리.
 case "${BUILD_VARIANT}" in
   opensource|enterprise)
     DOCKERFILE_PATH="genon/preprocessor/docker/Dockerfile.${BUILD_VARIANT}"
     IMAGE_TAG_SUFFIX="-${BUILD_VARIANT}"
     ;;
   "")
-    # 미지정 — 기존 동작 보존 (legacy Dockerfile 또는 DOCKERFILE_PATH 명시값 사용)
+    echo "[ERROR] BUILD_VARIANT 가 비어 있습니다."
+    echo "        build-script/doc-parser-build.config 에서 다음 중 하나로 명시하세요:"
+    echo "          BUILD_VARIANT=opensource   # 오픈소스 (LibreOffice + rhwp HTTP)"
+    echo "          BUILD_VARIANT=enterprise   # 엔터프라이즈 (위 + 유료 PDF SDK)"
+    exit 1
     ;;
   *)
     echo "[ERROR] BUILD_VARIANT 는 opensource 또는 enterprise 만 허용됩니다 (현재: '${BUILD_VARIANT}')."
@@ -56,7 +60,7 @@ esac
 IMAGE_TAG="${DOCKER_REGISTRY}/mnc/${IMAGE_NAME}:${IMAGE_VERSION}${IMAGE_TAG_SUFFIX}"
 
 echo "[INFO] ROOT_DIR        = ${ROOT_DIR}"
-echo "[INFO] BUILD_VARIANT   = ${BUILD_VARIANT:-<legacy>}"
+echo "[INFO] BUILD_VARIANT   = ${BUILD_VARIANT}"
 echo "[INFO] DOCKERFILE_PATH = ${DOCKERFILE_PATH}"
 echo "[INFO] IMAGE_TAG       = ${IMAGE_TAG}"
 echo "[INFO] UID:GID         = ${APP_UID}:${APP_GID} (${APP_UNAME}:${APP_GNAME})"

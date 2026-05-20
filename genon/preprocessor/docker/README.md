@@ -6,7 +6,8 @@
 |---|---|---|
 | `Dockerfile.opensource` | 오픈소스 배포용 | LibreOffice (PDF SDK / rhwp 바이너리 **미포함**) |
 | `Dockerfile.enterprise` | 유료 (PDF SDK 보유) 환경용 | 위 + PDF SDK (`HF_TOKEN` 필요) |
-| `Dockerfile` | 레거시 단일 빌드 | 기존 운영용 — 점진 마이그레이션 동안 유지 |
+
+> 기존 단일 `Dockerfile` 도 레포에 남아있지만 신규 빌드 흐름에서는 사용하지 않는다 — PDF SDK 다운로드 단계가 그대로 포함돼 있어 의도치 않게 유료 변형으로 빌드될 수 있어서다. `BUILD_VARIANT` 를 비워두고 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단된다.
 
 ## HWP → PDF 변환 chain (런타임 동작)
 
@@ -37,12 +38,9 @@ BUILD_VARIANT=opensource bash build-script/doc-parser-build.sh
 
 # 엔터프라이즈 빌드
 BUILD_VARIANT=enterprise bash build-script/doc-parser-build.sh
-
-# 레거시 (기존 그대로)
-BUILD_VARIANT= bash build-script/doc-parser-build.sh
 ```
 
-이미지 태그는 자동으로 `:${IMAGE_VERSION}-${BUILD_VARIANT}` 형태가 된다 (variant 미지정 시 suffix 없음).
+이미지 태그는 자동으로 `:${IMAGE_VERSION}-${BUILD_VARIANT}` 형태가 된다 (예: `:1.3.6.3-enterprise`).
 
 `HF_TOKEN` 은 두 variant 모두 HWP SDK 다운로드용으로 여전히 필요하다 (HWP SDK 는 무료 자산이지만 현재 HF private dataset 에 호스팅됨).
 
