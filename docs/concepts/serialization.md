@@ -34,6 +34,32 @@ The respective `DoclingDocument` export methods (e.g. `export_to_markdown()`) ar
 provided as user shorthands — internally directly instantiating and delegating to
 respective serializers.
 
+### Markdown image options
+
+The Markdown export supports two image-related options:
+
+- `image_mode` (`ImageRefMode`): `PLACEHOLDER`, `EMBEDDED`, or `REFERENCED`
+- `image_alt_mode` (`ImageAltTextMode`): `STATIC`, `CAPTION`, or `DESCRIPTION`
+
+Example command line:
+
+```sh
+docling --image-alt-mode=caption FILE
+```
+
+Example code:
+
+```py
+from docling_core.transforms.serializer.markdown import ImageAltTextMode
+from docling_core.types.doc import ImageRefMode
+
+doc.save_as_markdown(
+    "output.md",
+    image_mode=ImageRefMode.EMBEDDED,
+    image_alt_mode=ImageAltTextMode.CAPTION,
+)
+```
+
 ## Examples
 
 For an example showcasing how to use serializers, see
