@@ -93,6 +93,8 @@
      - 최종 이미지 태그는 `${IMAGE_VERSION}-${BUILD_VARIANT}-${HW_VARIANT}` 형태가 된다 (예: `:1.3.6.3-opensource-cpu`).
    - `BUILD_VARIANT` × `HW_VARIANT` 조합으로 최대 4종(`opensource-gpu` / `opensource-cpu` / `enterprise-gpu` / `enterprise-cpu`)의 이미지를 만들 수 있다.
 
+> **정리** — 위 2번 (`BUILD_VARIANT`) × 3번 (`HW_VARIANT`) 의 조합으로 **총 4종의 Dockerfile(이미지)** 가 만들어진다. 운영 환경에 맞는 1개를 골라서 빌드하면 된다.
+
 4. build-script 디렉토리 이동
 
 5. [doc-parser-build.config](../build-script/doc-parser-build.config) 기타 변경 사항 반영 (1·2번을 수행했다면 `HWP_SDK_TOKEN` / `PDF_SDK_TOKEN` 값은 직접 입력하지 말 것)
