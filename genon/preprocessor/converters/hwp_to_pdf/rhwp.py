@@ -14,6 +14,25 @@ _log = logging.getLogger(__name__)
 DEFAULT_TIMEOUT_SEC = 600
 
 
+def _resolve_timeout() -> int:
+    """HWP_TO_PDF_TIMEOUT_SEC 파싱. 오타/비양수면 기본값으로 fallback (warn)."""
+    raw = os.environ.get("HWP_TO_PDF_TIMEOUT_SEC")
+    if not raw:
+        return DEFAULT_TIMEOUT_SEC
+    try:
+        val = int(raw)
+        if val <= 0:
+            raise ValueError("timeout must be > 0")
+        return val
+    except ValueError:
+        _log.warning(
+            "[hwp_to_pdf:rhwp] invalid HWP_TO_PDF_TIMEOUT_SEC=%r; using default=%s",
+            raw,
+            DEFAULT_TIMEOUT_SEC,
+        )
+        return DEFAULT_TIMEOUT_SEC
+
+
 class RhwpConverter:
     """genos-rhwp 의 `rhwp` 바이너리를 컨테이너 안에서 subprocess 로 호출하는 client.
 
@@ -46,7 +65,7 @@ class RhwpConverter:
             env.setdefault("LC_ALL", "C.UTF-8")
 
             cmd = [binary, "export-pdf", str(in_path), "-o", str(out_path)]
-            timeout = int(os.environ.get("HWP_TO_PDF_TIMEOUT_SEC", DEFAULT_TIMEOUT_SEC))
+            timeout = _resolve_timeout()
 
             _log.info(f"[hwp_to_pdf:rhwp] cmd: {cmd}")
             proc = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=timeout)

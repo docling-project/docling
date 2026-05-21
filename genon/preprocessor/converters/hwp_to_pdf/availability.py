@@ -24,8 +24,12 @@ def rhwp_binary() -> Path:
     """rhwp 바이너리 경로. 이미지 빌드 시 multi-stage 로 /usr/local/bin/rhwp 에 설치.
 
     RHWP_BIN 환경변수로 override 가능 (로컬 dev 시 다른 위치 빌드).
+    빈/공백 값은 unset 으로 취급해 기본 경로를 쓴다.
     """
-    return Path(os.environ.get("RHWP_BIN", "/usr/local/bin/rhwp"))
+    env = os.environ.get("RHWP_BIN")
+    if env and env.strip():
+        return Path(env.strip())
+    return Path("/usr/local/bin/rhwp")
 
 
 def pdf_sdk_available() -> bool:
@@ -41,7 +45,7 @@ def rhwp_available() -> bool:
     실행권한 없으면 chain 에서 자동 제외.
     """
     p = rhwp_binary()
-    return p.exists() and os.access(p, os.X_OK)
+    return p.is_file() and os.access(p, os.X_OK)
 
 
 def libreoffice_available() -> bool:
