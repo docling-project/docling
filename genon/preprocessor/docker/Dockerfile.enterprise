@@ -156,11 +156,11 @@ ARG TORCH_CPU_INDEX_URL
 RUN --mount=type=cache,target=/root/.cache/uv \
     if [ "${HW_VARIANT}" = "cpu" ]; then \
       echo "[INFO] HW_VARIANT=cpu — reinstalling torch/torchvision as CPU wheels" && \
-      uv pip install \
+      uv pip install --python /app/.venv/bin/python \
         --reinstall-package torch --reinstall-package torchvision \
         --index-url "${TORCH_CPU_INDEX_URL}" \
         torch torchvision && \
-      uv pip uninstall \
+      uv pip uninstall --python /app/.venv/bin/python \
         nvidia-cublas-cu12 \
         nvidia-cuda-cupti-cu12 \
         nvidia-cuda-nvrtc-cu12 \
