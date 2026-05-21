@@ -52,6 +52,8 @@
 
 ## 전처리기 빌드 및 등록
 
+### A. 토큰 / 변수 설정 (1~3번)
+
 1. `HWP_SDK_TOKEN` 설정 (HWP SDK private 레포 다운로드용 — **두 variant 모두 필수**)
    - 대상 레포: [`HeechanKim-Genon/hwp_sdk`](https://huggingface.co/datasets/HeechanKim-Genon/hwp_sdk) — 이 레포 전용 read 토큰
    - 토큰 값은 [제논 내부 드라이브 (HWP_SDK_TOKEN)](https://docs.google.com/document/d/1c2kHPus5QxFN0jhfH37EDFORd6pt2rermkINfDFlQbs/edit?usp=drive_link) 에서 확인
@@ -68,11 +70,13 @@
      - `PDF_SDK_TOKEN` — 대상 레포 [`HeechanKim-Genon/pdf_sdk`](https://huggingface.co/datasets/HeechanKim-Genon/pdf_sdk) 전용 read 토큰
      - 토큰 값은 [제논 내부 드라이브 (PDF_SDK_TOKEN)](https://docs.google.com/document/d/1amoktYvYYk74m81u2hxlBn7ljzoe-apNB56doNRZmhQ/edit?usp=drive_link) 에서 확인. 
        - 1번 과정에서 사용된 [(HWP_SDK_TOKEN)](https://docs.google.com/document/d/1c2kHPus5QxFN0jhfH37EDFORd6pt2rermkINfDFlQbs/edit?usp=drive_link) 이랑은 다른 값임.
+     - `doc_parser/` (레포 최상위 경로) 에서 아래 명령어 실행 (이후 재실행 불필요, Git 미추적):
        - `hf_xxx_your_hwp_sdk_token_here` 부분을 위 드라이브에 적힌 토큰 값으로 교체후 아래 명령어 실행.
        ```shell
        echo "PDF_SDK_TOKEN=hf_yyy_your_pdf_sdk_token_here" >> build-script/hf_private_token.env
        ```
-   - **`opensource`**/**`enterprise`** 버전에 따른 안내 적용후, [`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `BUILD_VARIANT=` 라인을 둘 중 하나로 설정 해야한다:
+   - **`opensource`**/**`enterprise`** 버전에 따른 안내 적용후, build-script 디렉토리 이동 
+   - [`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `BUILD_VARIANT=` 라인을 둘 중 하나로 설정 해야한다:
      ```bash
      # build-script/doc-parser-build.config
      BUILD_VARIANT=opensource   # 또는 enterprise
@@ -95,25 +99,24 @@
 
 > **정리** — 위 2번 (`BUILD_VARIANT`) × 3번 (`HW_VARIANT`) 의 조합으로 **총 4종의 Dockerfile(이미지)** 가 만들어진다. 운영 환경에 맞는 1개를 골라서 빌드하면 된다.
 
-4. build-script 디렉토리 이동
+### B. 이미지 빌드 (4~5번)
 
-5. [doc-parser-build.config](../build-script/doc-parser-build.config) 기타 변경 사항 반영 (1·2번을 수행했다면 `HWP_SDK_TOKEN` / `PDF_SDK_TOKEN` 값은 직접 입력하지 말 것)
+4. [doc-parser-build.config](../build-script/doc-parser-build.config) 기타 변경 사항 반영 (1·2번을 수행했다면 `HWP_SDK_TOKEN` / `PDF_SDK_TOKEN` 값은 직접 입력하지 말 것)
 
-6. 실행 [doc-parser-build.sh](../build-script/doc-parser-build.sh)
+5. 실행 [doc-parser-build.sh](../build-script/doc-parser-build.sh)
    - `SMOKE_TEST=true`(기본값) 면 빌드 직후 컨테이너를 띄워 `SMOKE_TEST_FILE`(기본 `pdf_sample.pdf`) 한 건을 파싱하고 torch 의 CUDA 포함 여부가 `HW_VARIANT` 와 일치하는지 검증한다. 실패하면 빌드도 실패한다.
 
-7. [register.config](preprocessor/scripts/register.config) 변경 사항 있을 시 변경 필요
+### C. 레지스트리 등록 (6~7번)
 
-8. 실행 [register_image.sh](preprocessor/scripts/register_image.sh) : push와 디비에 등록해준다.
-   - `BUILD_VARIANT` / `HW_VARIANT` 환경변수를 주면 베이스 `IMAGE_TAG` 에 자동으로 suffix 가 붙는다 (빌드 태그와 동일 규칙). 4종을 등록하려면 각 조합으로 실행:
-     ```shell
-     BUILD_VARIANT=opensource HW_VARIANT=gpu bash genon/preprocessor/scripts/register_image.sh
-     BUILD_VARIANT=opensource HW_VARIANT=cpu bash genon/preprocessor/scripts/register_image.sh
-     BUILD_VARIANT=enterprise HW_VARIANT=gpu bash genon/preprocessor/scripts/register_image.sh
-     BUILD_VARIANT=enterprise HW_VARIANT=cpu bash genon/preprocessor/scripts/register_image.sh
-     ```
+6. [register.config](preprocessor/scripts/register.config) 변경 사항 있을 시 변경 필요
 
-9. 사이트 배포 시 (조합별로 동일하게 진행 — 아래는 opensource-cpu 예시)
+7. 실행 [register_image.sh](preprocessor/scripts/register_image.sh) : push와 디비에 등록해준다.
+   - `BUILD_VARIANT` / `HW_VARIANT` 환경변수를 주면 베이스 `IMAGE_TAG` 에 자동으로 suffix 가 붙는다 (빌드 태그와 동일 규칙).
+   - 스크립트가 interactive prompt(Registry / Image / Tag / MySQL 사용자명 / Redis FLUSHALL) 를 띄우므로 등록할 조합마다 한 번씩 직접 실행해야 한다 (한 번에 batch 자동화 불가).
+
+### D. 사이트 배포 (8번)
+
+8. 사이트 배포 시 (조합별로 동일하게 진행 — 아래는 opensource-cpu 예시)
 ```shell
 # 1. 이미지 저장
 docker save mncregistry:30500/mnc/doc-parser-preprocessor:1.3.6.3-opensource-cpu | gzip > doc-parser-preprocessor-opensource-cpu.tar.gz
