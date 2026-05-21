@@ -108,16 +108,10 @@
 
 ### C. 레지스트리 등록 (6~7번)
 
-6. [register.config](preprocessor/scripts/register.config) 변경 사항 있을 시 변경 필요
+6. [register.config](preprocessor/scripts/register.config) 설정 — `IMAGE_VERSION` / `BUILD_VARIANT` / `HW_VARIANT` 세 값은 **`doc-parser-build.config` 와 동일한 값**으로 둔다. `register_image.sh` 가 `${IMAGE_VERSION}-${BUILD_VARIANT}-${HW_VARIANT}` 로 자동 조합해 빌드 태그와 일치시킨다.
 
 7. 실행 [register_image.sh](preprocessor/scripts/register_image.sh) : push와 디비에 등록해준다.
-   - `BUILD_VARIANT` / `HW_VARIANT` 환경변수를 함께 주면 베이스 `IMAGE_TAG` 에 자동으로 `-${BUILD_VARIANT}-${HW_VARIANT}` suffix 가 붙는다 (빌드 태그와 동일 규칙). 예:
-     ```shell
-     # opensource + cpu 조합 등록 (실제 등록할 조합으로 교체해서 실행)
-     BUILD_VARIANT=opensource HW_VARIANT=cpu bash genon/preprocessor/scripts/register_image.sh
-     ```
-   - 스크립트는 실행 시 interactive prompt(Registry / Image / Tag / MySQL 사용자명 / Redis FLUSHALL)를 띄운다. 각 prompt 의 default 값(`[...]` 안의 값) 이 위 env 로 박힌 태그라서 그대로 Enter 만 쳐도 진행 가능.
-   - 등록할 조합이 여러 개면 위 명령을 조합 수만큼(`BUILD_VARIANT` / `HW_VARIANT` 값만 바꿔서) 한 번씩 직접 실행한다 (한 번에 batch 자동화 불가).
+   - 다른 조합을 등록하려면 `register.config` 의 세 값을 그 조합으로 바꾸고 다시 실행 (interactive prompt 가 있어 한 번에 batch 자동화 불가).
 
 ### D. 사이트 배포 (8번)
 
