@@ -1,3 +1,4 @@
+# 첨부용 전처리기 v.2.1.0 (2026-05-11 Release)
 from __future__ import annotations
 
 from collections import defaultdict
