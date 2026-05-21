@@ -189,6 +189,7 @@ def test_text_after_image_anchors(documents):
         and found_text_after_anchor_4
     )
 
+
 def test_text_with_drawingml_without_libreoffice(docx_paths, monkeypatch):
     """Test that text is extracted from paragraphs with DrawingML images even without LibreOffice."""
     monkeypatch.setattr(
@@ -214,7 +215,6 @@ def test_text_with_drawingml_without_libreoffice(docx_paths, monkeypatch):
     assert "This is test 1" in all_text or "This is test 2" in all_text, (
         "Expected text from paragraphs with images to be extracted"
     )
-
 
 
 def test_is_rich_table_cell(docx_paths):
