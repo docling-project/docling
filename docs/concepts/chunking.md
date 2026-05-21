@@ -112,6 +112,17 @@ detected document element, by default only merging together list items (can be o
 via param `merge_list_items`). It also takes care of attaching all relevant document
 metadata, including headers and captions.
 
+## Chunk Expansion (Use Cases)
+
+When processing complex documents, isolated chunks might sometimes be too small to retain their semantic meaning (for example, a single cell within a large table). To prevent downstream AI models from receiving fragmented and contextless data, Docling provides expansion mechanisms.
+
+Chunk expansion allows a narrowly segmented chunk to encompass its cohesive structural surroundings. This is primarily achieved through the `contextualize()` method provided by the `BaseChunker` interface, which returns a metadata-enriched serialization of the chunk.
+
+The expansion mechanisms are applied across the native chunkers to directly improve Retrieval-Augmented Generation (RAG) pipelines:
+
+- **`HybridChunker`**: Maintains context for large tables by repeating table headers across multiple chunks using the `repeat_table_header` parameter.
+- **`LineBasedTokenChunker`**: Supports adding structural prefixes (like headers) to chunks and manages token limits smartly via the `omit_prefix_on_overflow` parameter.
+- **`HierarchicalChunker`**: Automatically expands the chunk's context by attaching all relevant document metadata, including parent headers and captions.
 
 ## Usage Examples
 
