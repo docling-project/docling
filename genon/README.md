@@ -85,7 +85,7 @@
      - 빌드 시 `DOCKERFILE_PATH` 가 자동으로 `genon/preprocessor/docker/Dockerfile.${BUILD_VARIANT}` 로 결정된다.
      - 두 variant 의 런타임 동작 차이 / chain 우선순위는 [`preprocessor/docker/README.md`](preprocessor/docker/README.md) 참고.
 
-3. `HW_VARIANT` 선택 - GPU(**`gpu`**) / CPU(**`cpu`**) 빌드 선택 (이슈 #210)
+3. `HW_VARIANT` 선택 - GPU(**`gpu`**) / CPU(**`cpu`**) 빌드 선택
    - **`gpu`** — `uv.lock` 기준 그대로. torch CUDA wheel + nvidia-* / triton 포함. GPU 가속 환경용.
    - **`cpu`** — builder 단계에서 torch / torchvision 을 CPU wheel(`https://download.pytorch.org/whl/cpu`)로 재설치하고 nvidia-* / triton 패키지를 제거한 경량 이미지. GPU 없는 환경용.
    - [`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `HW_VARIANT=` 라인을 둘 중 하나로 설정:
@@ -111,8 +111,13 @@
 6. [register.config](preprocessor/scripts/register.config) 변경 사항 있을 시 변경 필요
 
 7. 실행 [register_image.sh](preprocessor/scripts/register_image.sh) : push와 디비에 등록해준다.
-   - `BUILD_VARIANT` / `HW_VARIANT` 환경변수를 주면 베이스 `IMAGE_TAG` 에 자동으로 suffix 가 붙는다 (빌드 태그와 동일 규칙).
-   - 스크립트가 interactive prompt(Registry / Image / Tag / MySQL 사용자명 / Redis FLUSHALL) 를 띄우므로 등록할 조합마다 한 번씩 직접 실행해야 한다 (한 번에 batch 자동화 불가).
+   - `BUILD_VARIANT` / `HW_VARIANT` 환경변수를 함께 주면 베이스 `IMAGE_TAG` 에 자동으로 `-${BUILD_VARIANT}-${HW_VARIANT}` suffix 가 붙는다 (빌드 태그와 동일 규칙). 예:
+     ```shell
+     # opensource + cpu 조합 등록 (실제 등록할 조합으로 교체해서 실행)
+     BUILD_VARIANT=opensource HW_VARIANT=cpu bash genon/preprocessor/scripts/register_image.sh
+     ```
+   - 스크립트는 실행 시 interactive prompt(Registry / Image / Tag / MySQL 사용자명 / Redis FLUSHALL)를 띄운다. 각 prompt 의 default 값(`[...]` 안의 값) 이 위 env 로 박힌 태그라서 그대로 Enter 만 쳐도 진행 가능.
+   - 등록할 조합이 여러 개면 위 명령을 조합 수만큼(`BUILD_VARIANT` / `HW_VARIANT` 값만 바꿔서) 한 번씩 직접 실행한다 (한 번에 batch 자동화 불가).
 
 ### D. 사이트 배포 (8번)
 
