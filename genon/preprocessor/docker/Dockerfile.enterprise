@@ -159,7 +159,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
       uv pip install --python /app/.venv/bin/python \
         --reinstall-package torch --reinstall-package torchvision \
         --index-url "${TORCH_CPU_INDEX_URL}" \
-        torch torchvision && \
+        torch==2.9.0 torchvision==0.24.0 && \
       uv pip uninstall --python /app/.venv/bin/python \
         nvidia-cublas-cu12 \
         nvidia-cuda-cupti-cu12 \
