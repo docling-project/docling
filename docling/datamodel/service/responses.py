@@ -1,9 +1,10 @@
 import enum
 import warnings
+from datetime import datetime
 from typing import Annotated, Literal, Optional
 
 from docling_core.types.doc.document import DoclingDocument
-from pydantic import BaseModel, Field
+from pydantic import AnyUrl, BaseModel, Field
 
 from docling.datamodel.base_models import ConversionStatus, ErrorItem
 from docling.datamodel.service.tasks import TaskProcessingMeta, TaskType
@@ -17,6 +18,15 @@ class ExportDocumentResponse(BaseModel):
     html_content: Optional[str] = None
     text_content: Optional[str] = None
     doctags_content: Optional[str] = None
+
+
+class DocumentResultItem(BaseModel):
+    """Canonical internal document-level result. Not a wire model."""
+
+    document: ExportDocumentResponse
+    status: ConversionStatus
+    errors: list[ErrorItem] = []
+    timings: dict[str, ProfilingItem] = {}
 
 
 class ExportResult(BaseModel):
@@ -40,6 +50,27 @@ class RemoteTargetResult(BaseModel):
     """No content, the result has been pushed to a remote target."""
 
     kind: Literal["RemoteTargetResult"] = "RemoteTargetResult"
+
+
+class ArtifactRef(BaseModel):
+    artifact_type: Literal[
+        "json", "html", "markdown", "text", "doctags", "resource_bundle"
+    ]
+    mime_type: str
+    uri: AnyUrl
+    url_expires_at: datetime | None = None
+
+
+class DocumentArtifactItem(BaseModel):
+    """Per-document result item for PresignedUrlTarget responses."""
+
+    source_index: int
+    source_uri: str
+    filename: str
+    status: ConversionStatus
+    errors: list[ErrorItem] = []
+    timings: dict[str, ProfilingItem] = {}
+    artifacts: list[ArtifactRef] = []
 
 
 class ChunkedDocumentResultItem(BaseModel):
@@ -91,8 +122,19 @@ class ChunkedDocumentResult(BaseModel):
     chunking_info: Optional[dict] = None
 
 
+class PresignedArtifactResult(BaseModel):
+    """Internal DoclingTaskResult.result union member for PresignedUrlTarget."""
+
+    kind: Literal["PresignedArtifactResult"] = "PresignedArtifactResult"
+    documents: list[DocumentArtifactItem]
+
+
 ResultType = Annotated[
-    ExportResult | ZipArchiveResult | RemoteTargetResult | ChunkedDocumentResult,
+    ExportResult
+    | ZipArchiveResult
+    | RemoteTargetResult
+    | ChunkedDocumentResult
+    | PresignedArtifactResult,
     Field(discriminator="kind"),
 ]
 
@@ -136,7 +178,47 @@ class ConvertDocumentResponse(BaseModel):
     timings: dict[str, ProfilingItem] = {}
 
 
+def _to_export_result(item: DocumentResultItem) -> ExportResult:
+    return ExportResult(
+        content=item.document,
+        status=item.status,
+        errors=item.errors,
+        timings=item.timings,
+    )
+
+
+def _to_convert_document_response(
+    item: DocumentResultItem, processing_time: float
+) -> "ConvertDocumentResponse":
+    return ConvertDocumentResponse(
+        document=item.document,
+        status=item.status,
+        errors=item.errors,
+        processing_time=processing_time,
+        timings=item.timings,
+    )
+
+
 class PresignedUrlConvertDocumentResponse(BaseModel):
+    """Deprecated counts-only presigned response model."""
+
+    processing_time: float
+    num_converted: int
+    num_succeeded: int
+    num_failed: int
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "PresignedUrlConvertDocumentResponse is deprecated and will be removed "
+            "in a future version. Use PresignedUrlConvertResponse instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
+
+
+class PresignedUrlConvertResponse(BaseModel):
+    documents: list[DocumentArtifactItem]
     processing_time: float
     num_converted: int
     num_succeeded: int

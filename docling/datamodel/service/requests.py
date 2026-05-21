@@ -2,7 +2,7 @@ import enum
 from functools import cache
 from typing import Annotated, Generic, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import AnyHttpUrl, BaseModel, Field, field_validator
 from typing_extensions import TypeVar
 
 from docling.datamodel.service.callbacks import CallbackSpec
@@ -13,6 +13,7 @@ from docling.datamodel.service.options import ConvertDocumentsOptions
 from docling.datamodel.service.sources import FileSource, HttpSource, S3Coordinates
 from docling.datamodel.service.targets import (
     InBodyTarget,
+    PresignedUrlTarget,
     PutTarget,
     S3Target,
     ZipTarget,
@@ -29,6 +30,20 @@ class HttpSourceRequest(HttpSource):
     kind: Literal["http"] = "http"
 
 
+class RegularHttpSourceRequest(HttpSourceRequest):
+    """HTTP source model for the regular convert endpoints only."""
+
+    @field_validator("url")
+    @classmethod
+    def reject_zip_url(cls, value: AnyHttpUrl) -> AnyHttpUrl:
+        path = str(value).lower().split("?", maxsplit=1)[0]
+        if path.endswith(".zip"):
+            raise ValueError(
+                "ZIP URLs are not accepted on the regular convert endpoint"
+            )
+        return value
+
+
 class S3SourceRequest(S3Coordinates):
     kind: Literal["s3"] = "s3"
 
@@ -36,6 +51,7 @@ class S3SourceRequest(S3Coordinates):
 ## Multipart targets
 class TargetName(str, enum.Enum):
     INBODY = InBodyTarget().kind
+    PRESIGNED_URL = PresignedUrlTarget().kind
     ZIP = ZipTarget().kind
 
 
@@ -44,8 +60,12 @@ SourceRequestItem = Annotated[
     FileSourceRequest | HttpSourceRequest | S3SourceRequest, Field(discriminator="kind")
 ]
 
+RegularSourceRequestItem = Annotated[
+    FileSourceRequest | RegularHttpSourceRequest, Field(discriminator="kind")
+]
+
 TargetRequest = Annotated[
-    InBodyTarget | ZipTarget | S3Target | PutTarget,
+    InBodyTarget | ZipTarget | S3Target | PutTarget | PresignedUrlTarget,
     Field(discriminator="kind"),
 ]
 
@@ -54,6 +74,13 @@ TargetRequest = Annotated[
 class ConvertDocumentsRequest(BaseModel):
     options: ConvertDocumentsOptions = ConvertDocumentsOptions()
     sources: list[SourceRequestItem]
+    target: TargetRequest = InBodyTarget()
+    callbacks: list[CallbackSpec] = []
+
+
+class RegularConvertSourcesRequest(BaseModel):
+    options: ConvertDocumentsOptions = ConvertDocumentsOptions()
+    sources: list[RegularSourceRequestItem]
     target: TargetRequest = InBodyTarget()
     callbacks: list[CallbackSpec] = []
 
