@@ -65,7 +65,10 @@
    - `doc-parser-build.config` 에 직접 입력하거나 push 하지 말 것 (토큰은 반드시 위 명령어를 통해 `hf_private_token.env` 파일에만 존재해야함)
 
 2. `BUILD_VARIANT` 선택 - 무료용(**`opensource`**) / 유료용(**`enterprise`**) 버전 선택
-   - **`opensource`** — LibreOffice + rhwp(외부 HTTP API 호출) 만 포함. PDF SDK 자산이 이미지에 일절 들어가지 않음 (다운로드 단계 자체가 없음). 회사 내부 PDF SDK 라이선스가 없는 환경/외부 배포용. **1번 과정인 `HWP_SDK_TOKEN` 만 있으면 됨**.
+
+   > **주의 (배포 대상 확인 필수):** `enterprise` 빌드는 유료 PDF SDK 가 포함되므로 **라이선스가 제공된 지정 사이트에만** 배포해야함. 그 외 사이트에는 **기본적으로 `opensource` 로 배포**할 것. 배포 전, 각 사이트 담당자는 해당 사이트가 enterprise 제공 대상에 해당하는지 반드시 확인한 뒤 진행해야함.
+
+   - **`opensource`** — LibreOffice + rhwp(컨테이너 내 바이너리) 만 포함. PDF SDK 자산이 이미지에 일절 들어가지 않음 (다운로드 단계 자체가 없음). 회사 내부 PDF SDK 라이선스가 없는 환경/외부 배포용. **1번 과정인 `HWP_SDK_TOKEN` 만 있으면 됨**.
    - **`enterprise`** — 위 + 유료 PDF SDK 포함. HWP → PDF 변환 chain 이 `pdf_sdk → rhwp → libreoffice` 순으로 동작. **`HWP_SDK_TOKEN` 에 더해 `PDF_SDK_TOKEN` 도 필수**.
      - `PDF_SDK_TOKEN` — 대상 레포 [`HeechanKim-Genon/pdf_sdk`](https://huggingface.co/datasets/HeechanKim-Genon/pdf_sdk) 전용 read 토큰
      - 토큰 값은 [제논 내부 드라이브 (PDF_SDK_TOKEN)](https://docs.google.com/document/d/1amoktYvYYk74m81u2hxlBn7ljzoe-apNB56doNRZmhQ/edit?usp=drive_link) 에서 확인. 
@@ -94,7 +97,7 @@
      HW_VARIANT=gpu   # 또는 cpu
      ```
      - 비워둔 채 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단된다.
-     - 최종 이미지 태그는 `${IMAGE_VERSION}-${BUILD_VARIANT}-${HW_VARIANT}` 형태가 된다 (예: `:1.3.6.3-opensource-cpu`).
+     - 최종 이미지 태그는 `${IMAGE_VERSION}-${BUILD_VARIANT}-${HW_VARIANT}` 형태가 된다 (예: `:2.1.5-opensource-cpu`).
    - `BUILD_VARIANT` × `HW_VARIANT` 조합으로 최대 4종(`opensource-gpu` / `opensource-cpu` / `enterprise-gpu` / `enterprise-cpu`)의 이미지를 만들 수 있다.
 
 > **정리** — 위 2번 (`BUILD_VARIANT`) × 3번 (`HW_VARIANT`) 의 조합으로 **총 4종의 Dockerfile(이미지)** 가 만들어진다. 운영 환경에 맞는 1개를 골라서 빌드하면 된다.
@@ -118,7 +121,7 @@
 8. 사이트 배포 시 (조합별로 동일하게 진행 — 아래는 opensource-cpu 예시)
 ```shell
 # 1. 이미지 저장
-docker save mncregistry:30500/mnc/doc-parser-preprocessor:1.3.6.3-opensource-cpu | gzip > doc-parser-preprocessor-opensource-cpu.tar.gz
+docker save mncregistry:30500/mnc/doc-parser-preprocessor:2.1.5-opensource-cpu | gzip > doc-parser-preprocessor-opensource-cpu.tar.gz
 # 2. 사이트에서 이미지 복원
 gunzip -c doc-parser-preprocessor-opensource-cpu.tar.gz | docker load
 # 3. 해당 조합으로 register_image.sh 실행 (BUILD_VARIANT / HW_VARIANT 지정)
