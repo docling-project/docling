@@ -3,9 +3,9 @@ from pydantic import TypeAdapter, ValidationError
 
 from docling.datamodel.base_models import ConversionStatus
 from docling.datamodel.service.requests import (
+    AnyHttpSourceRequest,
+    ConvertSourcesRequest,
     HttpSourceRequest,
-    RegularConvertSourcesRequest,
-    RegularHttpSourceRequest,
     TargetRequest,
 )
 from docling.datamodel.service.responses import (
@@ -23,20 +23,20 @@ from docling.datamodel.service.responses import (
 from docling.datamodel.service.targets import PresignedUrlTarget
 
 
-def test_regular_http_source_request_rejects_zip_urls() -> None:
+def test_http_source_request_rejects_zip_urls() -> None:
     with pytest.raises(ValidationError, match="ZIP URLs are not accepted"):
-        RegularHttpSourceRequest(url="https://example.com/report.zip")
+        HttpSourceRequest(url="https://example.com/report.zip")
 
 
-def test_shared_http_source_request_allows_zip_urls() -> None:
-    request = HttpSourceRequest(url="https://example.com/report.zip")
+def test_any_http_source_request_allows_zip_urls() -> None:
+    request = AnyHttpSourceRequest(url="https://example.com/report.zip")
 
     assert str(request.url) == "https://example.com/report.zip"
 
 
-def test_regular_convert_sources_request_rejects_s3_sources() -> None:
+def test_convert_sources_request_rejects_s3_sources() -> None:
     with pytest.raises(ValidationError):
-        RegularConvertSourcesRequest.model_validate(
+        ConvertSourcesRequest.model_validate(
             {
                 "sources": [
                     {

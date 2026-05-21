@@ -147,17 +147,6 @@ class DoclingTaskResult(BaseModel):
     num_failed: int
 
 
-class ConvertDocumentResult(DoclingTaskResult):
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "ConvertDocumentResult is deprecated and will be removed in a future version. "
-            "Use DoclingTaskResult instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__(*args, **kwargs)
-
-
 class HealthCheckResponse(BaseModel):
     status: str = "ok"
 

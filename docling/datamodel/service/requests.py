@@ -26,21 +26,19 @@ class FileSourceRequest(FileSource):
     kind: Literal["file"] = "file"
 
 
-class HttpSourceRequest(HttpSource):
+class AnyHttpSourceRequest(HttpSource):
     kind: Literal["http"] = "http"
 
 
-class RegularHttpSourceRequest(HttpSourceRequest):
-    """HTTP source model for the regular convert endpoints only."""
+class HttpSourceRequest(AnyHttpSourceRequest):
+    """HTTP source for convert endpoints — rejects ZIP URLs."""
 
     @field_validator("url")
     @classmethod
     def reject_zip_url(cls, value: AnyHttpUrl) -> AnyHttpUrl:
         path = str(value).lower().split("?", maxsplit=1)[0]
         if path.endswith(".zip"):
-            raise ValueError(
-                "ZIP URLs are not accepted on the regular convert endpoint"
-            )
+            raise ValueError("ZIP URLs are not accepted on the convert endpoint")
         return value
 
 
@@ -56,12 +54,13 @@ class TargetName(str, enum.Enum):
 
 
 ## Aliases
-SourceRequestItem = Annotated[
-    FileSourceRequest | HttpSourceRequest | S3SourceRequest, Field(discriminator="kind")
+BatchSourceRequestItem = Annotated[
+    FileSourceRequest | AnyHttpSourceRequest | S3SourceRequest,
+    Field(discriminator="kind"),
 ]
 
-RegularSourceRequestItem = Annotated[
-    FileSourceRequest | RegularHttpSourceRequest, Field(discriminator="kind")
+SourceRequestItem = Annotated[
+    FileSourceRequest | HttpSourceRequest, Field(discriminator="kind")
 ]
 
 TargetRequest = Annotated[
@@ -71,19 +70,22 @@ TargetRequest = Annotated[
 
 
 ## Complete Source request
-class ConvertDocumentsRequest(BaseModel):
+class BatchConvertSourcesRequest(BaseModel):
+    options: ConvertDocumentsOptions = ConvertDocumentsOptions()
+    sources: list[BatchSourceRequestItem]
+    target: TargetRequest = InBodyTarget()
+    callbacks: list[CallbackSpec] = []
+
+
+class ConvertSourcesRequest(BaseModel):
     options: ConvertDocumentsOptions = ConvertDocumentsOptions()
     sources: list[SourceRequestItem]
     target: TargetRequest = InBodyTarget()
     callbacks: list[CallbackSpec] = []
 
 
-class RegularConvertSourcesRequest(BaseModel):
-    options: ConvertDocumentsOptions = ConvertDocumentsOptions()
-    sources: list[RegularSourceRequestItem]
-    target: TargetRequest = InBodyTarget()
-    callbacks: list[CallbackSpec] = []
-
+## Deprecated aliases — will be removed in a future release
+ConvertDocumentsRequest = BatchConvertSourcesRequest
 
 ## Source chunking requests
 
