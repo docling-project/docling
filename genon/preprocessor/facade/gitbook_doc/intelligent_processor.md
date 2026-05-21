@@ -65,9 +65,15 @@
 
 ### GPU 필요 여부 (운영 노트)
 
-기본 config 는 layout 분석 / OCR 을 **외부 API endpoint 로 호출**하도록 되어 있어, preprocessor 컨테이너 자체에는 GPU 가 사실상 필요하지 않습니다. GenOS UI 의 GPU 할당량을 **0** 으로 두어도 정상 동작합니다.
+기본 config 에서는 **layout 분석 / OCR 을 외부 API endpoint 로 호출**하기 때문에 preprocessor 컨테이너의 GPU 의존도가 낮습니다.
 
-반대로 config 를 수정해 내재 모델을 직접 쓰도록 바꾸면 GPU 할당이 필요합니다. 이 경우 GenOS UI 의 GPU 할당량을 **1 이상**으로 지정해 주세요.
+- **layout** — `LayoutModelType.GENOS_LAYOUT` + `genos_layout_options.endpoint` 로 별도 vLLM 서빙(DotsOCR) 호출. 내재 layout 모델 미사용.
+- **OCR** — `ocr_endpoint` 로 별도 OCR 서빙(PaddleOCR) 호출. 내재 OCR 모델 미사용.
+- **TableFormer** (`do_table_structure=True`) — 내재 모델이지만 `AcceleratorDevice` 가 cuda 미발견 시 CPU 로 fallback.
+
+즉 이 기본 config 그대로면 GenOS UI 의 GPU 할당량을 **0** 으로 두어도 정상 동작합니다 (TableFormer 는 CPU fallback, 임베딩 같은 가벼운 로컬 모델도 CPU).
+
+반대로 코드에서 `LayoutModelType` / `ocr_options` 등을 수정해 **내재 layout · OCR 모델을 직접 쓰거나, TableFormer 추론을 GPU 로 가속하려면 GPU 할당이 필요**합니다 (docling 의 `AcceleratorDevice.AUTO` 가 cuda 를 잡습니다). 이 경우 GenOS UI 에서 GPU 할당량을 **1 이상**으로 지정해 주세요.
 
 ---
 
