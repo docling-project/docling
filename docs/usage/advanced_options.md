@@ -160,6 +160,32 @@ converter = DocumentConverter()
 result = converter.convert(source)
 ```
 
+## Track conversion progress
+
+You can receive progress events during conversion by passing a callback to `DocumentConverter`.
+The callback is invoked with structured events for document start/complete, pipeline phase
+transitions, and individual page completions:
+
+```python
+from docling.datamodel.progress_event import ProgressEvent
+from docling.document_converter import DocumentConverter
+
+def on_progress(event: ProgressEvent):
+    print(event.event_type, event.document_name)
+
+converter = DocumentConverter(progress_callback=on_progress)
+result = converter.convert(source="https://arxiv.org/pdf/2408.09869")
+```
+
+When no callback is provided (the default), no progress events are emitted and there is zero
+overhead.
+
+Or using the CLI:
+
+```sh
+docling --progress FILE
+```
+
 ## Limit resource usage
 
 You can limit the CPU threads used by Docling by setting the environment variable `OMP_NUM_THREADS` accordingly. The default setting is using 4 CPU threads.

@@ -46,6 +46,11 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import ThreadedPdfPipelineOptions
+from docling.datamodel.progress_event import (
+    PageProgressEvent,
+    ProgressEvent,
+    ProgressEventType,
+)
 from docling.datamodel.settings import settings
 from docling.models.factories import (
     get_layout_factory,
@@ -72,6 +77,27 @@ from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
+
+
+class _ThreadSafeProgressCallback:
+    """Thread-safe wrapper around a user-provided progress callback.
+
+    Used by ``_build_document`` for PAGE_COMPLETE events emitted from worker
+    threads.  Phase-level events are emitted on the main thread by
+    ``BasePipeline.execute`` via ``_emit_progress`` and do not need this wrapper.
+    """
+
+    def __init__(self, callback: Callable[[ProgressEvent], None]) -> None:
+        self._callback = callback
+        self._lock = threading.Lock()
+
+    def __call__(self, event: ProgressEvent) -> None:
+        with self._lock:
+            try:
+                self._callback(event)
+            except Exception:
+                _log.debug("Progress callback raised an exception", exc_info=True)
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Helper data structures
@@ -625,7 +651,11 @@ class StandardPdfPipeline(ConvertPipeline):
         )
 
     # --------------------------------------------------------------------- build
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+    def _build_document(
+        self,
+        conv_res: ConversionResult,
+        progress_callback: Callable[[ProgressEvent], None] | None = None,
+    ) -> ConversionResult:
         """Stream-build the document while interleaving producer and consumer work.
 
         Note: If a worker thread gets stuck in a blocking call (model inference or PDF backend
@@ -650,6 +680,11 @@ class StandardPdfPipeline(ConvertPipeline):
             return conv_res
 
         total_pages: int = len(pages)
+        safe_cb: _ThreadSafeProgressCallback | None = (
+            _ThreadSafeProgressCallback(progress_callback)
+            if progress_callback is not None
+            else None
+        )
         ctx: RunContext = self._create_run_ctx()
         for st in ctx.stages:
             st.start()
@@ -713,6 +748,16 @@ class StandardPdfPipeline(ConvertPipeline):
                     else:
                         assert itm.payload is not None
                         proc.pages.append(itm.payload)
+
+                    if safe_cb is not None:
+                        safe_cb(
+                            PageProgressEvent(
+                                event_type=ProgressEventType.PAGE_COMPLETE,
+                                document_name=conv_res.input.file.name,
+                                page_no=itm.page_no,
+                                total_pages=total_pages,
+                            )
+                        )
 
                 # 3) failure safety - downstream closed early
                 if not out_batch and ctx.output_queue.closed:
