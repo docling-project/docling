@@ -223,7 +223,6 @@ def _get_pdf_path(file_path: str) -> str:
         return str(p.with_suffix('.pdf'))
     return file_path
 
-
 def install_packages(packages):
     for package in packages:
         try:

@@ -179,62 +179,26 @@ CONVERTIBLE_EXTENSIONS = ['.hwp', '.txt', '.json', '.md', '.ppt', '.pptx', '.doc
 def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
 ```
 
-**목적**: 다양한 문서 포맷(PPT, DOCX, 이미지 등)을 PDF로 변환합니다. **두 엔진 중 선택 가능**:
+**목적**: 다양한 문서 포맷(PPT, DOCX, 이미지 등)을 PDF로 변환합니다. 시그니처와 동작 정책(실패 시 예외 없이 `None` 반환)은 보존하면서, 실제 변환 로직은 `genon.preprocessor.converters.hwp_to_pdf` 모듈로 일원화되어 있습니다 (이슈 #199).
 
-| `use_pdf_sdk` | 내부 호출 | 비고 |
+| `use_pdf_sdk` | 위임되는 backend | 비고 |
 |---|---|---|
-| `True` (기본값) | `_convert_to_pdf_sdk()` | PDF 변환 SDK (Linux 전용 바이너리, `pdf_sdk/pdfConverter`). HF private dataset에서 도커 빌드 시 자동 설치, 또는 `repo_root/pdf_sdk` 에 직접 다운로드. |
-| `False` | `_convert_to_pdf_libreoffice()` | LibreOffice (`soffice --headless`) 사용. SDK 미사용/장애 시 fallback 용도. |
+| `True` (기본값) | `pdf_sdk` (`PdfSdkConverter`) | PDF 변환 SDK (Linux 전용 바이너리, `pdf_sdk/pdfConverter`). 엔터프라이즈 빌드에만 자산이 포함됨. |
+| `False` | `libreoffice` (`LibreOfficeConverter`) | LibreOffice (`soffice --headless`) 사용. 오픈소스 빌드의 기본 fallback. |
 
-**SDK 경로 결정 우선순위** (`_convert_to_pdf_sdk` 내부):
-1. `PDF_SDK_HOME` 환경변수 (도커: `/app/pdf_sdk` 로 박혀있음)
-2. fallback: `<repo_root>/pdf_sdk` (로컬 실행 시)
+호출부에서는 `convert_hwp_to_pdf(file_path, primary=..., disable_fallback=True)` 형태로 단일 backend만 시도하도록 위임되어 기존 동작이 보존됩니다.
 
-**동작 흐름 (use_pdf_sdk=True)**:
+**Backend 경로/가용성 결정**:
+- `PDF_SDK_HOME` 환경변수 (도커: `/app/pdf_sdk`) → fallback `<repo_root>/pdf_sdk`. 바이너리 실행권한이 있을 때만 활성.
+- LibreOffice는 `shutil.which("soffice")` 로 판정.
 
-```
-입력 파일 (HWP/PPT/DOCX/이미지 등)
-        │
-        ▼
- SDK 경로 / 폰트 디렉토리 / moduledata 결정
-        │
-        ▼
- fontconfig conf 임시 패치 (현재 SDK 경로 기준 <dir>/<cachedir> 치환)
-        │
-        ▼
- 환경변수 세팅 (LD_LIBRARY_PATH, FONTCONFIG_FILE/PATH, LANG=C.UTF-8)
-        │
-        ▼
- pdfConverter -i <in> -o <out_dir> -t <tmp> -f <fonts> -e -1 -p 1 실행
-        │
-        ├── returncode==0 + PDF 존재 → 경로 반환
-        └── 그 외 → 경고 로그 후 None 반환
-```
-
-**동작 흐름 (use_pdf_sdk=False)**:
-
-```
-입력 파일
-        │
-        ▼
- 확장자 판별 → 적절한 LibreOffice 필터 선택
-        │  .ppt/.pptx → "pdf:impress_pdf_Export"
-        │  .doc/.docx → "pdf:writer_pdf_Export"
-        │  .xls/.xlsx/.csv → "pdf:calc_pdf_Export"
-        │  기타 → "pdf"
-        ▼
- 비ASCII 파일명 체크 (필요 시 ASCII 복사본 생성)
-        ▼
- soffice --headless --convert-to ... 실행
-        │
-        ├── 성공 → PDF 경로 반환
-        └── 실패 → None 반환
-```
+자세한 backend별 동작 흐름(fontconfig 패치, subprocess 인자, 한글 파일명 ASCII 복사 등)은 `genon/preprocessor/converters/hwp_to_pdf/{pdf_sdk,libreoffice}.py` 본체를 참고합니다.
 
 **핵심 포인트**:
-- 실패해도 **예외를 던지지 않고** `None` 반환 (방어적 설계, 양 엔진 동일)
-- 호출부는 `kwargs.get('use_pdf_sdk', True)` 패턴으로 엔진 선택 가능 (Genos 측 config로 제어)
-- `LANG=C.UTF-8` / `LC_ALL=C.UTF-8` 환경 변수로 한글 파일명 / 컨텐츠 처리 보장
+- 실패해도 **예외를 던지지 않고** `None` 반환 (방어적 설계, 양 엔진 동일).
+- 호출부는 `kwargs.get('use_pdf_sdk', True)` 패턴 그대로 사용 가능 (Genos 측 config로 제어).
+- `LANG=C.UTF-8` / `LC_ALL=C.UTF-8` 환경 변수로 한글 파일명 / 컨텐츠 처리 보장.
+- chain 기반 fallback(rhwp 추가, 다중 backend 자동 전환)이 필요한 신규 호출처는 `convert_hwp_to_pdf()` 를 직접 사용.
 
 ---
 

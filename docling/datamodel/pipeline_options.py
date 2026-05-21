@@ -306,6 +306,14 @@ class OcrEngine(str, Enum):
     RAPIDOCR = "rapidocr"
 
 
+class HwpToPdfBackend(str, Enum):
+    """HWP → PDF 변환 백엔드 식별자 (이슈 #199)."""
+
+    PDF_SDK = "pdf_sdk"
+    RHWP = "rhwp"
+    LIBREOFFICE = "libreoffice"
+
+
 class PipelineOptions(BaseModel):
     """Base pipeline options."""
 
@@ -319,6 +327,20 @@ class PipelineOptions(BaseModel):
     save_images: bool = True
     include_wmf: bool = False
     dump_sdk_output: bool = False
+
+    # HWP → PDF 변환 backend 선택 (이슈 #199).
+    # 미지정 시 환경의 availability 기반으로 자동 chain 구성됨.
+    # 환경변수 (HWP_TO_PDF_PRIMARY / HWP_TO_PDF_ORDER / HWP_TO_PDF_DISABLE_FALLBACK) 도
+    # 동일 의미로 동작하며, env 와 본 옵션 중 명시적으로 지정된 쪽이 우선이다.
+    hwp_to_pdf_primary: Optional[HwpToPdfBackend] = None
+    hwp_to_pdf_order: Optional[List[HwpToPdfBackend]] = None
+    hwp_to_pdf_disable_fallback: bool = False
+
+    # genos-rhwp 의 serve-pdf HTTP API base URL (예: http://rhwp-pdf-api:7878).
+    # OCR/LLM 외부 endpoint 와 동일한 패턴으로 클러스터에 별도 Deployment+Service 로 운영됨
+    # (k8s/rhwp-pdf-api.yaml). 미지정 시 rhwp backend 가 chain 에서 제외된다.
+    # 환경변수 `RHWP_PDF_API_URL` 로도 동일 의미로 주입 가능.
+    rhwp_pdf_api_url: Optional[str] = None
 
 
 class PaginatedPipelineOptions(PipelineOptions):

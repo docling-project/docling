@@ -1,4 +1,12 @@
 # syntax=docker/dockerfile:1.7
+#
+# 오픈소스 빌드 — 유료 PDF SDK 미포함.
+# HWP → PDF 변환은 rhwp ↔ LibreOffice 양방향 fallback (chain 우선순위는 config 로 결정).
+# 사용자 명시 요구: 본 이미지에는 PDF SDK 다운로드 단계가 일절 없어야 함 (이슈 #199).
+#
+# rhwp 는 외부 HTTP API (genos-rhwp 의 serve-pdf, k8s 별도 Deployment) 를 호출하는
+# 방식이므로 본 이미지에는 바이너리를 포함하지 않는다. RHWP_PDF_API_URL 환경변수로
+# endpoint 를 주입한다 (OCR / VLM endpoint 와 동일한 패턴).
 
 ############################
 # 0) 공통 ARG/ENV
@@ -12,6 +20,10 @@ ARG UID=1000
 ARG GID=1000
 ARG UNAME=genos
 ARG GNAME=genos
+# 이슈 #210 — gpu | cpu. CPU 빌드 시 builder 단계에서 torch 를 CPU wheel 로
+# 재설치하고 nvidia-* / triton 패키지를 제거하여 이미지를 경량화한다.
+ARG HW_VARIANT=gpu
+ARG TORCH_CPU_INDEX_URL=https://download.pytorch.org/whl/cpu
 
 ############################
 # 1) Base (APT + LibreOffice)
@@ -120,7 +132,6 @@ ENV UV_VIRTUALENVS_CREATE=1 \
     HF_HOME=/app/.cache/huggingface \
     NLTK_DATA=/app/nltk_data
 
-# 앱 관련 pyproject만
 COPY docling /app/docling
 COPY pyproject.toml /app/pyproject.toml
 COPY genon/preprocessor/pyproject.toml /app/genon/preprocessor/pyproject.toml
@@ -128,55 +139,61 @@ COPY genon/preprocessor/uv.lock /app/genon/preprocessor/uv.lock
 
 WORKDIR /app/genon/preprocessor
 
-# ✅ 공통 위치에 venv 생성
 RUN uv venv ${APP_VENV}
 
-# ✅ 그 venv에 설치
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen || \
     uv sync
 
+# 이슈 #210 — CPU 빌드 시 GPU 용 torch / nvidia / triton 을 제거하고 CPU wheel 재설치
+ARG HW_VARIANT
+ARG TORCH_CPU_INDEX_URL
+RUN --mount=type=cache,target=/root/.cache/uv \
+    if [ "${HW_VARIANT}" = "cpu" ]; then \
+      echo "[INFO] HW_VARIANT=cpu — reinstalling torch/torchvision as CPU wheels" && \
+      uv pip install --reinstall \
+        --index-url "${TORCH_CPU_INDEX_URL}" \
+        --extra-index-url "https://pypi.org/simple" \
+        torch torchvision && \
+      uv pip uninstall \
+        nvidia-cublas-cu12 \
+        nvidia-cuda-cupti-cu12 \
+        nvidia-cuda-nvrtc-cu12 \
+        nvidia-cuda-runtime-cu12 \
+        nvidia-cudnn-cu12 \
+        nvidia-cufft-cu12 \
+        nvidia-cufile-cu12 \
+        nvidia-curand-cu12 \
+        nvidia-cusolver-cu12 \
+        nvidia-cusparse-cu12 \
+        nvidia-cusparselt-cu12 \
+        nvidia-nccl-cu12 \
+        nvidia-nvjitlink-cu12 \
+        nvidia-nvshmem-cu12 \
+        nvidia-nvtx-cu12 \
+        triton \
+      || true; \
+    else \
+      echo "[INFO] HW_VARIANT=${HW_VARIANT} — keeping GPU torch as-is"; \
+    fi
+
 ############################
-# 4-1) HWP SDK 아티팩트
+# 4-1) HWP SDK 아티팩트 (오픈소스/엔터프라이즈 공통 — HWP SDK는 무료)
 ############################
 FROM builder AS sdk_artifacts
 ARG APP_VENV
 
 RUN --mount=type=cache,target=${HF_HOME} \
-    --mount=type=secret,id=HF_TOKEN \
+    --mount=type=secret,id=HWP_SDK_TOKEN \
     echo "[INFO] Downloading HWP SDK from Private HF Repo..."; \
-    # /run/secrets/HF_TOKEN 경로에서 값을 읽어옴
-    HF_TOKEN_VAL=$(cat /run/secrets/HF_TOKEN) && \
+    HWP_SDK_TOKEN_VAL=$(cat /run/secrets/HWP_SDK_TOKEN) && \
     mkdir -p /app/hwp_sdk && \
     huggingface-cli download HeechanKim-Genon/hwp_sdk \
       --repo-type dataset \
       --local-dir /app/hwp_sdk \
       --local-dir-use-symlinks False \
-      --token "${HF_TOKEN_VAL}" && \
+      --token "${HWP_SDK_TOKEN_VAL}" && \
     chmod +x /app/hwp_sdk/convtext
-
-############################
-# 4-1b) PDF SDK 아티팩트
-############################
-FROM builder AS pdf_sdk_artifacts
-ARG APP_VENV
-
-RUN --mount=type=cache,target=${HF_HOME} \
-    --mount=type=secret,id=HF_TOKEN \
-    echo "[INFO] Downloading PDF SDK from Private HF Repo..."; \
-    HF_TOKEN_VAL=$(cat /run/secrets/HF_TOKEN) && \
-    mkdir -p /app/pdf_sdk && \
-    huggingface-cli download HeechanKim-Genon/pdf_sdk \
-      --repo-type dataset \
-      --local-dir /app/pdf_sdk \
-      --local-dir-use-symlinks False \
-      --token "${HF_TOKEN_VAL}" && \
-    chmod +x /app/pdf_sdk/pdfConverter && \
-    # fontconfig conf 파일 안의 경로를 컨테이너 경로로 치환 (HF에 어떤 경로로 올렸든 보정)
-    sed -i 's|<dir>[^<]*</dir>|<dir>/app/pdf_sdk/fonts</dir>|' /app/pdf_sdk/fonts/fonts_gen.conf && \
-    sed -i 's|<cachedir>[^<]*</cachedir>|<cachedir>/app/pdf_sdk/font_cache</cachedir>|' /app/pdf_sdk/fonts/fonts_gen.conf && \
-    echo "/app/pdf_sdk/fonts" > /app/pdf_sdk/fonts/_fonts_path && \
-    mkdir -p /app/pdf_sdk/font_cache
 
 ############################
 # 4-2) 추가 폰트 아티팩트
@@ -201,7 +218,6 @@ ARG DOCLING_MODELS_VER=2.41
 ARG HF_MODELS_VER=2.41
 ARG EASYOCR_VER=2.41
 
-# 👉 여기서도 APP_VENV 그대로 씀
 ENV PATH="${APP_VENV}/bin:${PATH}" \
     HOME=/app \
     XDG_CACHE_HOME=/app/.cache \
@@ -251,7 +267,10 @@ RUN --mount=type=cache,target=/root/.cache/easyocr_korean \
     fi
 
 ############################
-# 5) Runtime
+# 5) Runtime (오픈소스)
+#
+# PDF_SDK_HOME 환경변수 미설정 → PdfSdkConverter.is_available() == False
+# → chain 에서 자동 제외. 운영상 PDF SDK 가용성 체크가 실패해도 graceful.
 ############################
 FROM loext AS runtime
 ARG APP_VENV
@@ -274,18 +293,29 @@ ENV UV_PROJECT_ENVIRONMENT=${APP_VENV} \
     LC_ALL=ko_KR.UTF-8 \
     LC_CTYPE=ko_KR.UTF-8 \
     DOCLING_ARTIFACTS_PATH=/models \
-    PDF_SDK_HOME=/app/pdf_sdk
+    DOC_PARSER_BUILD_VARIANT=opensource
+
+# TODO(#199): 운영 endpoint 확정 후 deploy manifest 의 env 로 override 할 placeholder.
+# k8s/rhwp-pdf-api.yaml (genonai/genos-rhwp 레포) 의 Service 이름 + ClusterIP 포트 기반 기본값.
+# 같은 namespace 가 아니면 FQDN (http://rhwp-pdf-api.<ns>.svc.cluster.local:7878) 로 교체.
+ENV RHWP_PDF_API_URL=http://rhwp-pdf-api:7878
 
 WORKDIR /app
 COPY ./genon/preprocessor/configs /app/configs
 COPY ./genon/preprocessor/env /app/env
 COPY ./genon/preprocessor/src /app/src
+# HWP → PDF chain 모듈 (이슈 #199). PYTHONPATH=/app 기준 namespace package 로
+# import 되도록 genon/preprocessor 트리 그대로 복사
+# (facade 의 `from genon.preprocessor.converters.hwp_to_pdf import ...` 가 풀림).
+COPY ./genon/preprocessor/converters /app/genon/preprocessor/converters
 
-# 🔴 HWP sdk 다운로드
+# 🔴 HWP sdk (무료 자산이라 오픈소스 빌드에도 포함)
 COPY --from=sdk_artifacts /app/hwp_sdk /app/hwp_sdk
 
-# 🔴 PDF SDK 다운로드
-COPY --from=pdf_sdk_artifacts /app/pdf_sdk /app/pdf_sdk
+# NOTE: 본 이미지에는 다음 두 항목이 의도적으로 포함되지 않음.
+#  - PDF SDK (유료): 오픈소스 빌드의 본질적 차이.
+#  - rhwp 바이너리: genos-rhwp 의 serve-pdf 가 별도 k8s Deployment 로 운영되므로
+#    RHWP_PDF_API_URL 로 endpoint 만 주입받아 HTTP 호출 (OCR endpoint 패턴 동일).
 
 # 추가 폰트 설치
 COPY --from=font_artifacts /app/extra_fonts /usr/share/fonts/additional
