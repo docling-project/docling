@@ -189,6 +189,33 @@ def test_text_after_image_anchors(documents):
         and found_text_after_anchor_4
     )
 
+def test_text_with_drawingml_without_libreoffice(docx_paths, monkeypatch):
+    """Test that text is extracted from paragraphs with DrawingML images even without LibreOffice."""
+    monkeypatch.setattr(
+        msword_backend_module, "get_docx_to_pdf_converter", lambda: None
+    )
+
+    # Use word_image_anchors.docx which contains images with text
+    name = "word_image_anchors.docx"
+    path = next(item for item in docx_paths if item.name == name)
+
+    converter = get_converter()
+    conv_result = converter.convert(path)
+    doc = conv_result.document
+
+    text_items = [item for item, _ in doc.iterate_items() if isinstance(item, TextItem)]
+    assert len(text_items) > 0, (
+        "Expected text items to be extracted even without LibreOffice"
+    )
+
+    all_text = " ".join(item.text for item in text_items)
+    assert len(all_text) > 0, "Expected non-empty text content"
+
+    assert "This is test 1" in all_text or "This is test 2" in all_text, (
+        "Expected text from paragraphs with images to be extracted"
+    )
+
+
 
 def test_is_rich_table_cell(docx_paths):
     """Test the function is_rich_table_cell."""

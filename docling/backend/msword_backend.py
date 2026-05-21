@@ -385,6 +385,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                                 "LibreOffice binary in PATH or specify its path with DOCLING_LIBREOFFICE_CMD."
                             )
                             self.display_drawingml_warning = False
+                    # Even if we can't convert DrawingML images, we should still process any text in the paragraph
+                    if (
+                        tag_name == "p"
+                        and element.find(
+                            ".//w:t", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                        )
+                        is not None
+                    ):
+                        te = self._handle_text_elements(element, doc)
+                        added_elements.extend(te)
                 else:
                     self._handle_drawingml(doc=doc, drawingml_els=drawingml_els)
             # Check for the sdt containers, like table of contents
