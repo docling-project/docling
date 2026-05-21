@@ -336,12 +336,6 @@ class PipelineOptions(BaseModel):
     hwp_to_pdf_order: Optional[List[HwpToPdfBackend]] = None
     hwp_to_pdf_disable_fallback: bool = False
 
-    # genos-rhwp 의 serve-pdf HTTP API base URL (예: http://rhwp-pdf-api:7878).
-    # OCR/LLM 외부 endpoint 와 동일한 패턴으로 클러스터에 별도 Deployment+Service 로 운영됨
-    # (k8s/rhwp-pdf-api.yaml). 미지정 시 rhwp backend 가 chain 에서 제외된다.
-    # 환경변수 `RHWP_PDF_API_URL` 로도 동일 의미로 주입 가능.
-    rhwp_pdf_api_url: Optional[str] = None
-
 
 class PaginatedPipelineOptions(PipelineOptions):
     artifacts_path: Optional[Union[Path, str]] = None

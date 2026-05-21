@@ -203,16 +203,6 @@ cd ${SDK} && ./convtext \
 
 → `${OUT}/output.json` 에 파싱된 텍스트/구조, `${OUT}/images/` 에 추출 이미지.
 
-## HWP → PDF 변환용 rhwp-pdf-api 배포 (이슈 #199)
-
-doc_parser 의 HWP → PDF 변환 backend 중 `rhwp` 는 OCR / VLM 과 동일하게 **별도 HTTP 서비스**로 호출된다. 호출 client 코드는 [preprocessor/converters/hwp_to_pdf/rhwp.py](preprocessor/converters/hwp_to_pdf/rhwp.py) 에 이미 들어있고, 서버 측 자산(Dockerfile / k8s 매니페스트)은 [genonai/genos-rhwp](https://github.com/genonai/genos-rhwp) 레포에 있다.
-
-회사 클러스터에 아직 떠 있지 않다면 직접 배포가 필요하다. **자세한 step-by-step (클론 → Dockerfile 패치 → 빌드/push → k8s apply → endpoint 주입 → 검증 → 트러블슈팅) 은 별도 가이드를 따라간다**:
-
-[`serving/rhwp/README.md`](serving/rhwp/README.md)
-
-이미 클러스터에 떠 있다면 doc_parser preprocessor 의 deploy 매니페스트에 `RHWP_PDF_API_URL` env 만 주입하면 chain 이 자동 활성된다 (같은 namespace 면 `http://rhwp-pdf-api:7878` placeholder 그대로 동작).
-
 ## paddle-ocr 빌드 및 배포
 
 1. build-script 디렉토리 이동
