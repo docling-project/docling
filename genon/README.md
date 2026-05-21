@@ -78,26 +78,46 @@
      BUILD_VARIANT=opensource   # 또는 enterprise
      ```
      - 비워둔 채 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단된다 (의도치 않게 **`enterprise`** 가 배포될 위험을 막기 위한 안전장치).
-     - 빌드 시 `DOCKERFILE_PATH` 가 자동으로 `genon/preprocessor/docker/Dockerfile.${BUILD_VARIANT}` 로 결정되고, 이미지 태그에도 `-${BUILD_VARIANT}` suffix 가 붙는다 (예: `:1.3.6.3-enterprise`).
+     - 빌드 시 `DOCKERFILE_PATH` 가 자동으로 `genon/preprocessor/docker/Dockerfile.${BUILD_VARIANT}` 로 결정된다.
      - 두 variant 의 런타임 동작 차이 / chain 우선순위는 [`preprocessor/docker/README.md`](preprocessor/docker/README.md) 참고.
 
-3. build-script 디렉토리 이동
+3. `HW_VARIANT` 선택 - GPU(**`gpu`**) / CPU(**`cpu`**) 빌드 선택 (이슈 #210)
+   - **`gpu`** — `uv.lock` 기준 그대로. torch CUDA wheel + nvidia-* / triton 포함. GPU 가속 환경용.
+   - **`cpu`** — builder 단계에서 torch / torchvision 을 CPU wheel(`https://download.pytorch.org/whl/cpu`)로 재설치하고 nvidia-* / triton 패키지를 제거한 경량 이미지. GPU 없는 환경용.
+   - [`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `HW_VARIANT=` 라인을 둘 중 하나로 설정:
+     ```bash
+     # build-script/doc-parser-build.config
+     HW_VARIANT=gpu   # 또는 cpu
+     ```
+     - 비워둔 채 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단된다.
+     - 최종 이미지 태그는 `${IMAGE_VERSION}-${BUILD_VARIANT}-${HW_VARIANT}` 형태가 된다 (예: `:1.3.6.3-opensource-cpu`).
+   - `BUILD_VARIANT` × `HW_VARIANT` 조합으로 최대 4종(`opensource-gpu` / `opensource-cpu` / `enterprise-gpu` / `enterprise-cpu`)의 이미지를 만들 수 있다.
 
-4. [doc-parser-build.config](../build-script/doc-parser-build.config) 기타 변경 사항 반영 (1·2번을 수행했다면 `HWP_SDK_TOKEN` / `PDF_SDK_TOKEN` 값은 직접 입력하지 말 것)
+4. build-script 디렉토리 이동
 
-5. 실행 [doc-parser-build.sh](../build-script/doc-parser-build.sh)
+5. [doc-parser-build.config](../build-script/doc-parser-build.config) 기타 변경 사항 반영 (1·2번을 수행했다면 `HWP_SDK_TOKEN` / `PDF_SDK_TOKEN` 값은 직접 입력하지 말 것)
 
-6. [register.config](preprocessor/scripts/register.config) 변경 사항 있을 시 변경 필요
+6. 실행 [doc-parser-build.sh](../build-script/doc-parser-build.sh)
+   - `SMOKE_TEST=true`(기본값) 면 빌드 직후 컨테이너를 띄워 `SMOKE_TEST_FILE`(기본 `pdf_sample.pdf`) 한 건을 파싱하고 torch 의 CUDA 포함 여부가 `HW_VARIANT` 와 일치하는지 검증한다. 실패하면 빌드도 실패한다.
 
-7. 실행 [register_image.sh](preprocessor/scripts/register_image.sh) : push와 디비에 등록해준다.
+7. [register.config](preprocessor/scripts/register.config) 변경 사항 있을 시 변경 필요
 
-8. 사이트 배포 시
+8. 실행 [register_image.sh](preprocessor/scripts/register_image.sh) : push와 디비에 등록해준다.
+   - `BUILD_VARIANT` / `HW_VARIANT` 환경변수를 주면 베이스 `IMAGE_TAG` 에 자동으로 suffix 가 붙는다 (빌드 태그와 동일 규칙). 4종을 등록하려면 각 조합으로 실행:
+     ```shell
+     BUILD_VARIANT=opensource HW_VARIANT=gpu bash genon/preprocessor/scripts/register_image.sh
+     BUILD_VARIANT=opensource HW_VARIANT=cpu bash genon/preprocessor/scripts/register_image.sh
+     BUILD_VARIANT=enterprise HW_VARIANT=gpu bash genon/preprocessor/scripts/register_image.sh
+     BUILD_VARIANT=enterprise HW_VARIANT=cpu bash genon/preprocessor/scripts/register_image.sh
+     ```
+
+9. 사이트 배포 시 (조합별로 동일하게 진행 — 아래는 opensource-cpu 예시)
 ```shell
-1. 이미지 저장
-docker save mncregistry:30500/mnc/doc-parser-preprocessor:latest | gzip > doc-parser-preprocessor.tar.gz
-2. 사이트에서 이미지 복원
-gunzip -c doc-parser-preprocessor.tar.gz | docker load
-3. register_image.sh 파일 실행
+# 1. 이미지 저장
+docker save mncregistry:30500/mnc/doc-parser-preprocessor:1.3.6.3-opensource-cpu | gzip > doc-parser-preprocessor-opensource-cpu.tar.gz
+# 2. 사이트에서 이미지 복원
+gunzip -c doc-parser-preprocessor-opensource-cpu.tar.gz | docker load
+# 3. 해당 조합으로 register_image.sh 실행 (BUILD_VARIANT / HW_VARIANT 지정)
 ```
 
 ## 로컬 테스트 (도커 빌드 없이 test.py 실행)

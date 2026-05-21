@@ -9,6 +9,17 @@
 
 > 기존 단일 `Dockerfile` 은 PDF SDK 다운로드 단계가 그대로 포함돼 있어 의도치 않게 유료 변형으로 빌드될 위험이 있었기 때문에 본 PR에서 삭제했다. 신규 빌드는 반드시 위 두 variant 중 하나로 진행한다 — `BUILD_VARIANT` 를 비워두고 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단된다.
 
+## GPU / CPU 분기 (이슈 [#210](https://github.com/genonai/doc_parser/issues/210))
+
+위 두 Dockerfile 은 각각 `HW_VARIANT` 빌드 인자(`gpu` | `cpu`)로 다시 갈린다. 같은 Dockerfile 이 builder 단계에서 분기 처리한다.
+
+| `HW_VARIANT` | torch | 용도 |
+|---|---|---|
+| `gpu` | `uv.lock` 기준 CUDA wheel + nvidia-* / triton 포함 | GPU 가속 환경 |
+| `cpu` | CPU wheel 재설치 + nvidia-* / triton 제거 (경량) | GPU 없는 환경 |
+
+`BUILD_VARIANT` × `HW_VARIANT` 조합으로 최대 4종 이미지가 만들어진다. 최종 태그는 `:${IMAGE_VERSION}-${BUILD_VARIANT}-${HW_VARIANT}` (예: `:1.3.6.3-opensource-cpu`). `HW_VARIANT` 도 비워두면 `doc-parser-build.sh` 가 에러로 중단된다.
+
 ## HWP → PDF 변환 chain (런타임 동작)
 
 `genon.preprocessor.converters.hwp_to_pdf.build_chain()` 이 가용한 backend 만 자동 등록한다.
@@ -33,14 +44,17 @@ env override (운영 시 일시 변경 가능):
 ## 빌드 방법
 
 ```bash
-# 오픈소스 빌드
-BUILD_VARIANT=opensource bash build-script/doc-parser-build.sh
-
-# 엔터프라이즈 빌드
-BUILD_VARIANT=enterprise bash build-script/doc-parser-build.sh
+# 오픈소스 / GPU
+BUILD_VARIANT=opensource HW_VARIANT=gpu bash build-script/doc-parser-build.sh
+# 오픈소스 / CPU
+BUILD_VARIANT=opensource HW_VARIANT=cpu bash build-script/doc-parser-build.sh
+# 엔터프라이즈 / GPU
+BUILD_VARIANT=enterprise HW_VARIANT=gpu bash build-script/doc-parser-build.sh
+# 엔터프라이즈 / CPU
+BUILD_VARIANT=enterprise HW_VARIANT=cpu bash build-script/doc-parser-build.sh
 ```
 
-이미지 태그는 자동으로 `:${IMAGE_VERSION}-${BUILD_VARIANT}` 형태가 된다 (예: `:1.3.6.3-enterprise`).
+이미지 태그는 자동으로 `:${IMAGE_VERSION}-${BUILD_VARIANT}-${HW_VARIANT}` 형태가 된다 (예: `:1.3.6.3-enterprise-gpu`). `BUILD_VARIANT` / `HW_VARIANT` 는 `build-script/doc-parser-build.config` 에 적어두고 실행해도 된다.
 
 토큰은 SDK 별로 fine-grained 분리되어 있다 (이슈 #199). `HWP_SDK_TOKEN` 은 두 variant 모두 필수 (HWP SDK 가 무료 자산이지만 현재 HF private dataset 에 호스팅됨), `PDF_SDK_TOKEN` 은 enterprise 일 때만 필수. 두 토큰 값은 [`../../README.md` 의 "전처리기 빌드 및 등록" 1번 / 2번 항목](../../README.md#전처리기-빌드-및-등록) 에 안내된 내부 드라이브 링크에서 확인한다.
 

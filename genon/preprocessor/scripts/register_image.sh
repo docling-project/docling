@@ -30,9 +30,25 @@ ok "설정 로드 완료"
 : "${K8S_NAMESPACE:?}"
 : "${MARIADB_POD:?}"
 
+# ── 환경변수 BUILD_VARIANT / HW_VARIANT 받으면 IMAGE_TAG 에 자동 suffix
+#    (build-script/doc-parser-build.sh 와 동일한 컨벤션: VERSION-BUILD_VARIANT-HW_VARIANT)
+# ─────────────────────────────────────────────────────────────
+if [[ -n "${BUILD_VARIANT:-}" || -n "${HW_VARIANT:-}" ]]; then
+  case "${BUILD_VARIANT:-}" in
+    opensource|enterprise) ;;
+    *) fail "BUILD_VARIANT 가 명시되지 않았거나 잘못된 값입니다 (opensource | enterprise 만 허용). 현재: '${BUILD_VARIANT:-}'"; exit 1 ;;
+  esac
+  case "${HW_VARIANT:-}" in
+    gpu|cpu) ;;
+    *) fail "HW_VARIANT 가 명시되지 않았거나 잘못된 값입니다 (gpu | cpu 만 허용). 현재: '${HW_VARIANT:-}'"; exit 1 ;;
+  esac
+  IMAGE_TAG="${IMAGE_TAG}-${BUILD_VARIANT}-${HW_VARIANT}"
+  echo "[INFO] BUILD_VARIANT=${BUILD_VARIANT}, HW_VARIANT=${HW_VARIANT} → IMAGE_TAG=${IMAGE_TAG}"
+fi
+
 # ── 기본값 + 사용자 입력 (Enter=기본값 유지) ────────────────
 echo ""
-echo "※ Enter 를 누르면 config 기본값을 사용합니다."
+echo "※ Enter 를 누르면 config 기본값(또는 환경변수로 조합된 값)을 사용합니다."
 read -rp "Registry [${REGISTRY_NAME:-}]: " _REG
 read -rp "Image    [${IMAGE_NAME:-}]: " _IMG
 read -rp "Tag      [${IMAGE_TAG:-}]: " _TAG
