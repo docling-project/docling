@@ -146,10 +146,12 @@ if [[ "${SMOKE_TEST}" == "true" ]]; then
       -v "${SAMPLE_HOST_PATH}:/app/sample_files/${SMOKE_TEST_FILE}:ro" \
       --entrypoint /bin/bash \
       "${IMAGE_TAG}" \
-      -lc '
+      -c '
         set -euo pipefail
         cd /app/src
-        python - <<"PY"
+        # venv python 절대경로로 호출 (로그인 셸 /etc/profile 이 PATH 를 덮어쓰면
+        # `python` 이 시스템 python 으로 가서 venv 의 torch 를 못 찾는 문제 회피)
+        /app/.venv/bin/python - <<"PY"
 import os, warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 

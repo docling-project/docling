@@ -20,13 +20,16 @@ def pdf_sdk_binary() -> Path:
     return pdf_sdk_home() / "pdfConverter"
 
 
-def rhwp_pdf_api_url() -> str | None:
-    """genos-rhwp 서버의 base URL (예: http://rhwp-pdf-api:7878).
+def rhwp_binary() -> Path:
+    """rhwp 바이너리 경로. 이미지 빌드 시 multi-stage 로 /usr/local/bin/rhwp 에 설치.
 
-    None / 빈 문자열이면 backend 미사용으로 간주.
+    RHWP_BIN 환경변수로 override 가능 (로컬 dev 시 다른 위치 빌드).
+    빈/공백 값은 unset 으로 취급해 기본 경로를 쓴다.
     """
-    raw = os.environ.get("RHWP_PDF_API_URL", "").strip()
-    return raw or None
+    env = os.environ.get("RHWP_BIN")
+    if env and env.strip():
+        return Path(env.strip())
+    return Path("/usr/local/bin/rhwp")
 
 
 def pdf_sdk_available() -> bool:
@@ -35,12 +38,14 @@ def pdf_sdk_available() -> bool:
 
 
 def rhwp_available() -> bool:
-    """rhwp 가용성 = HTTP endpoint URL 설정 여부.
+    """rhwp 가용성 = 바이너리 존재 + 실행 권한.
 
-    실제 health check 는 별도 단계에서 수행 (이슈 #199 — genos 가 운영하는
-    rhwp-pdf-api Deployment/Service 를 client 로 호출하는 패턴).
+    이미지 빌드 시 Dockerfile 의 rhwp_builder stage 에서 cargo build 한 결과를
+    runtime stage 로 COPY. 미설치(opensource/enterprise 가 아닌 환경 등)거나
+    실행권한 없으면 chain 에서 자동 제외.
     """
-    return rhwp_pdf_api_url() is not None
+    p = rhwp_binary()
+    return p.is_file() and os.access(p, os.X_OK)
 
 
 def libreoffice_available() -> bool:
