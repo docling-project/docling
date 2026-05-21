@@ -1,0 +1,87 @@
+name: Update facade version comment on release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to stamp (e.g. 2.1.0)'
+        required: true
+      published_at:
+        description: 'Published date in YYYY-MM-DD (defaults to today UTC if empty)'
+        required: false
+
+jobs:
+  bump-version-comment:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Resolve tag and date
+        id: meta
+        env:
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+          EVENT_PUBLISHED_AT: ${{ github.event.release.published_at }}
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_DATE: ${{ inputs.published_at }}
+        run: |
+          TAG="${EVENT_TAG:-$INPUT_TAG}"
+          RAW_DATE="${EVENT_PUBLISHED_AT:-$INPUT_DATE}"
+          if [ -z "$RAW_DATE" ]; then
+            DATE="$(date -u +%Y-%m-%d)"
+          else
+            DATE="${RAW_DATE%%T*}"
+          fi
+          if [ -z "$TAG" ]; then
+            echo "::error::Could not resolve release tag"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+          echo "Resolved: $TAG ($DATE)"
+
+      - name: Update version comment in facade scripts
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          DATE: ${{ steps.meta.outputs.date }}
+        run: |
+          update_file() {
+            local path="$1"
+            local label="$2"
+            local header="# ${label} v.${TAG} (${DATE} Release)"
+            if head -n 1 "$path" | grep -qE '^# .* v\..* Release\)$'; then
+              awk -v h="$header" 'NR==1{print h; next} {print}' "$path" > "$path.tmp"
+            else
+              awk -v h="$header" 'NR==1{print h; print $0; next} {print}' "$path" > "$path.tmp"
+            fi
+            mv "$path.tmp" "$path"
+            echo "--- $path ---"
+            head -n 1 "$path"
+          }
+
+          update_file genon/preprocessor/facade/attachment_processor.py  "첨부용 전처리기"
+          update_file genon/preprocessor/facade/convert_processor.py     "변환용 전처리기"
+          update_file genon/preprocessor/facade/intelligent_processor.py "적재용(지능형) 전처리기"
+
+      - name: Commit and push
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            genon/preprocessor/facade/attachment_processor.py \
+            genon/preprocessor/facade/convert_processor.py \
+            genon/preprocessor/facade/intelligent_processor.py
+          if git diff --cached --quiet; then
+            echo "No changes — facade version comments already up to date."
+            exit 0
+          fi
+          git commit -m "chore(facade): stamp release ${TAG} version comment"
+          git push origin develop
