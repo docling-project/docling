@@ -80,7 +80,7 @@ class BatchConvertSourcesRequest(BaseModel):
 class ConvertSourcesRequest(BaseModel):
     options: ConvertDocumentsOptions = ConvertDocumentsOptions()
     sources: list[SourceRequestItem]
-    target: TargetRequest = InBodyTarget()
+    target: TargetRequest = PresignedUrlTarget()
     callbacks: list[CallbackSpec] = []
 
 
