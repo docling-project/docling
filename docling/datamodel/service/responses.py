@@ -188,10 +188,6 @@ class ConvertDocumentResponse(BaseModel):
     timings: dict[str, ProfilingItem] = {}
 
 
-def _to_export_result(item: DocumentResultItem) -> ExportResult:
-    return item
-
-
 def _to_convert_document_response(
     item: DocumentResultItem, processing_time: float
 ) -> "ConvertDocumentResponse":

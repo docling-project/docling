@@ -18,7 +18,6 @@ from docling.datamodel.service.responses import (
     ExportResult,
     PresignedArtifactResult,
     _to_convert_document_response,
-    _to_export_result,
 )
 from docling.datamodel.service.targets import PresignedUrlTarget
 
@@ -63,11 +62,9 @@ def test_document_result_item_maps_to_existing_wire_models() -> None:
         status=ConversionStatus.SUCCESS,
     )
 
-    export_result = _to_export_result(item)
     convert_response = _to_convert_document_response(item, processing_time=1.25)
 
-    assert export_result is item
-    assert export_result.model_dump(mode="json") == ExportResult(
+    assert item.model_dump(mode="json") == ExportResult(
         content=item.document,
         status=item.status,
         errors=item.errors,
