@@ -1145,44 +1145,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             elif tb_drawingml_els:
                 self._handle_drawingml(doc=doc, drawingml_els=tb_drawingml_els)
 
-            elem_ref.extend(self._handle_text_elements(p, doc))
-
         # Restore original parent
         self.parents[level] = original_parent
         return elem_ref
-
-    def _clean_omml_latex(self, latex_str: str) -> str:
-        """Fix common OMML to LaTeX translation quirks, handling Word's hidden spaces."""
-        import re
-
-        # 1. Nuke any variation of texttimes (handles hidden spaces perfectly)
-        latex_str = re.sub(
-            r"\\text\{\s*\\texttimes\s*\}|\\texttimes", r" \\times ", latex_str
-        )
-
-        # 2. Force all floating brackets into proper subscripts (e.g., \tau {max} -> \tau_{max})
-        def fix_subs(m):
-            cmd = m.group(1)
-            if cmd in [
-                "\\frac",
-                "\\text",
-                "\\mathrm",
-                "\\mathbf",
-                "\\sqrt",
-                "\\hat",
-                "\\tilde",
-            ]:
-                return m.group(0)
-            return f"{cmd}_{{{m.group(2)}}}"
-
-        latex_str = re.sub(
-            r"([a-zA-Z0-9]|\\[a-zA-Z]+)\s*\{([^{}]+)\}", fix_subs, latex_str
-        )
-
-        # 3. THE FINAL KILL-SWITCH: Remove spaces before ANY underscores
-        latex_str = re.sub(r"\s+_", "_", latex_str)
-
-        return latex_str
 
     def _handle_equations_in_text(self, element, text):
         only_texts = []
@@ -1203,8 +1168,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # processing nested oMath descendants of an already-converted node.
             for child in element:
                 if "oMath" in child.tag and "oMathPara" not in child.tag:
-                    raw_latex = str(oMath2Latex(child)).strip()
-                    latex_equation = self._clean_omml_latex(raw_latex)
+                    latex_equation = str(oMath2Latex(child)).strip()
                     if len(latex_equation) > 0:
                         only_equations.append(
                             self.equation_bookends.format(EQ=latex_equation)
@@ -1230,8 +1194,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         only_texts.append(subt.text)
                         texts_and_equations.append(subt.text)
                 elif "oMath" in subt.tag and "oMathPara" not in subt.tag:
-                    raw_latex = str(oMath2Latex(subt)).strip()
-                    latex_equation = self._clean_omml_latex(raw_latex)
+                    latex_equation = str(oMath2Latex(subt)).strip()
                     if len(latex_equation) > 0:
                         only_equations.append(
                             self.equation_bookends.format(EQ=latex_equation)
