@@ -80,6 +80,61 @@ def test_parse_rowspan():
     assert tall[0].end_row_offset_idx == 2
 
 
+def test_parse_multiple_rowspan():
+    """Multiple ucel produces rowspan=2 on the corresponding fcel above it."""
+    text = (
+        "<fcel>Regular</fcel><fcel>Merged</fcel><fcel>Merged</fcel><nl>"
+        "<fcel>Regular</fcel><ucel><ucel><nl>"
+    )
+    _otsl_seq, cells, num_rows, num_cols = _parse_otsl_output(text)
+
+    assert num_cols == 3
+    assert num_rows == 2
+    assert len(cells) == 4
+    for cell in cells:
+        if cell.text == "Merged":
+            assert cell.row_span == 2
+            assert cell.col_span == 1
+            assert cell.start_row_offset_idx == 0
+            assert cell.end_row_offset_idx == 2
+            assert cell.start_col_offset_idx + 1 == cell.end_col_offset_idx
+        else:
+            assert cell.text == "Regular"
+            assert cell.row_span == 1
+            assert cell.col_span == 1
+            assert cell.start_row_offset_idx + 1 == cell.end_row_offset_idx
+            assert cell.start_col_offset_idx + 1 == cell.end_col_offset_idx
+
+
+def test_parse_xcel():
+    """xcel is merged with adjacent ucel and lcel."""
+    text = (
+        "<fcel>Regular</fcel><fcel>Regular</fcel><fcel>Regular</fcel><fcel>Regular</fcel><nl>"
+        "<fcel>Regular</fcel><fcel>Merged</fcel><lcel><fcel>Regular</fcel><nl>"
+        "<fcel>Regular</fcel><ucel><xcel><fcel>Regular</fcel><nl>"
+        "<fcel>Regular</fcel><fcel>Regular</fcel><fcel>Regular</fcel><fcel>Regular</fcel><nl>"
+    )
+    _otsl_seq, cells, num_rows, num_cols = _parse_otsl_output(text)
+
+    assert num_cols == 4
+    assert num_rows == 4
+    assert len(cells) == 13
+    for cell in cells:
+        if cell.text == "Merged":
+            assert cell.row_span == 2
+            assert cell.col_span == 2
+            assert cell.start_col_offset_idx == 1
+            assert cell.end_col_offset_idx == 3
+            assert cell.start_row_offset_idx == 1
+            assert cell.end_row_offset_idx == 3
+        else:
+            assert cell.text == "Regular"
+            assert cell.row_span == 1
+            assert cell.col_span == 1
+            assert cell.start_row_offset_idx + 1 == cell.end_row_offset_idx
+            assert cell.start_col_offset_idx + 1 == cell.end_col_offset_idx
+
+
 def test_parse_row_header():
     """rhed token produces row_header=True."""
     text = "<rhed>Section</rhed><fcel>Data</fcel><nl>"

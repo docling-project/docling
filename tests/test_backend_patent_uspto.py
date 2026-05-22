@@ -29,7 +29,7 @@ def _generate_groundtruth(doc: DoclingDocument, file_stem: str) -> None:
         coord_precision=COORD_PREC,
         confid_precision=CONFID_PREC,
     )
-    doc.save_as_markdown(GT_PATH / f"{file_stem}.md")
+    doc.save_as_markdown(GT_PATH / f"{file_stem}.md", compact_tables=True)
 
 
 @pytest.fixture(scope="module")
@@ -116,7 +116,7 @@ def test_patent_groundtruth(patents, groundtruth):
             continue
         md_name = path.stem + ".md"
         if md_name in gt_names:
-            pred_md = doc.export_to_markdown()
+            pred_md = doc.export_to_markdown(compact_tables=True)
             assert pred_md == gt_names[md_name], (
                 f"Markdown file mismatch against groundtruth {md_name}"
             )

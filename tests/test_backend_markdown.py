@@ -46,7 +46,7 @@ def test_convert_valid():
         assert backend.is_valid()
 
         act_doc = backend.convert()
-        act_data = act_doc.export_to_markdown()
+        act_data = act_doc.export_to_markdown(compact_tables=True)
 
         if in_path.stem in json_filter:
             assert verify_document(act_doc, json_gt_path, GEN_TEST_DATA), (
@@ -102,7 +102,7 @@ def test_e2e_md_conversions():
 
         doc: DoclingDocument = conv_result.document
 
-        pred_md: str = doc.export_to_markdown()
+        pred_md: str = doc.export_to_markdown(compact_tables=True)
         assert true_md == pred_md
 
         conv_result_: ConversionResult = converter.convert_string(
@@ -111,7 +111,7 @@ def test_e2e_md_conversions():
 
         doc_: DoclingDocument = conv_result_.document
 
-        pred_md_: str = doc_.export_to_markdown()
+        pred_md_: str = doc_.export_to_markdown(compact_tables=True)
         assert true_md == pred_md_
 
 

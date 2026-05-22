@@ -385,6 +385,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                                 "LibreOffice binary in PATH or specify its path with DOCLING_LIBREOFFICE_CMD."
                             )
                             self.display_drawingml_warning = False
+                    # Even if we can't convert DrawingML images, we should still process any text in the paragraph
+                    if (
+                        tag_name == "p"
+                        and element.find(
+                            ".//w:t", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                        )
+                        is not None
+                    ):
+                        te = self._handle_text_elements(element, doc)
+                        added_elements.extend(te)
                 else:
                     self._handle_drawingml(doc=doc, drawingml_els=drawingml_els)
             # Check for the sdt containers, like table of contents
@@ -527,7 +537,38 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.list_counters[key] = 0
 
     def _build_enum_marker(self, numid: int, ilvl: int) -> str:
-        """Build full hierarchical marker like '1.2.3.'"""
+        """Build enumeration marker from the lvlText template (e.g. 'Proposal %1:').
+
+        Uses lvlText when it contains a text prefix/suffix beyond simple
+        placeholders and separators.  Falls back to the default '1.2.3.'
+        pattern for plain numeric markers.
+        """
+        lvl_element = self._get_level_element(numid, ilvl)
+        namespaces = {"w": self._W_NS}
+        lvl_text = None
+        if lvl_element is not None:
+            lt = lvl_element.find(".//w:lvlText", namespaces=namespaces)
+            if lt is not None:
+                lvl_text = lt.get(self.XML_KEY)
+
+        # Use lvlText as template only when it contains %N placeholders
+        # alongside non-trivial text (e.g. "Proposal %1:", "Table %1").
+        # Skip when lvlText is a bare bullet symbol like "o" or "•".
+        if lvl_text and re.search(r"%\d+", lvl_text):
+            stripped = re.sub(r"%\d+", "", lvl_text)
+            stripped = stripped.strip(" .)(:[]")
+            if stripped:
+
+                def _replace(match):
+                    lvl_idx = int(match.group(1)) - 1
+                    counter = self.list_counters.get((numid, lvl_idx))
+                    if counter is None:
+                        counter = self._get_start_value(numid, lvl_idx)
+                    return str(counter)
+
+                return re.sub(r"%(\d+)", _replace, lvl_text)
+
+        # Fallback: default hierarchical '1.2.3.' pattern
         parts = []
         for lvl in range(ilvl + 1):
             counter = self.list_counters.get((numid, lvl))

@@ -35,6 +35,10 @@ make validate       # run mutating hooks on the current changeset
 - Use `uv add` or project-local dependency patterns when dependencies change.
 - Add focused tests for behavior changes; regenerate reference data only when
   conversion outputs intentionally change.
+- Prefer structured models over loose dictionaries for durable schema-like data. Use Pydantic models or dataclasses when data crosses module boundaries, is serialized, or represents a stable contract. Exceptions may apply for internal datatypes and trivial data structures.
+- Prefer `pathlib.Path` for path-handling code. Use `Path` operations instead of `os.path` in new or edited code unless an API explicitly requires string paths.
+- Avoid `hasattr(...)`, broad `getattr(...)`, and similar attribute-probing patterns. These usually hide interface uncertainty. If such a check is genuinely required for compatibility with a documented third-party API, keep it narrowly scoped and explain in a comment.
+- Do not add trivial or self-validating tests. Tests should verify meaningful application behavior, regressions, or integration boundaries, not restate assumptions about well-established library functionality or implementation details introduced only to validate the agent’s own code changes. Avoid mock-heavy tests unless mocking is the clearest way to exercise a real contract or failure mode.
 
 ## When making changes
 

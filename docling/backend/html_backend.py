@@ -1,5 +1,3 @@
-# mypy: disable-error-code=import-untyped
-
 import base64
 import ipaddress
 import logging
@@ -4331,6 +4329,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             max_size = self.options.max_remote_image_bytes
             headers = {"Range": f"bytes=0-{max_size - 1}"}
+
+            # Merge custom headers from options if provided
+            if self.options.headers:
+                headers.update(self.options.headers)
 
             # Create session with redirect limit
             session = requests.Session()

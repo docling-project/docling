@@ -84,6 +84,18 @@ class HTMLBackendOptions(BaseBackendOptions):
             "will use it to resolve relative paths in the HTML document."
         ),
     )
+    headers: Annotated[
+        dict[str, str] | None,
+        Field(
+            description=(
+                "HTTP headers to include when fetching remote images. Use for "
+                "authentication (e.g., API keys, bearer tokens) or custom headers "
+                "required by image servers."
+            ),
+            examples=[{"Authorization": "Bearer TOKEN"}, {"X-API-Key": "your-api-key"}],
+            repr=False,
+        ),
+    ] = None
     add_title: bool = Field(
         True, description="Add the HTML title tag as furniture in the DoclingDocument."
     )
@@ -205,6 +217,25 @@ class LatexBackendOptions(BaseBackendOptions):
         description=(
             "Maximum time allowed for parsing a LaTeX document. "
             "Set to None to disable the timeout. Defaults to 30 s."
+        ),
+    )
+    tikz_engine: Optional[Literal["tectonic"]] = Field(
+        None,
+        description=(
+            "The engine to use for rendering Tikz diagrams into images. "
+            "Set to 'tectonic' to enable asynchronous image generation."
+        ),
+    )
+    tikz_engine_timeout: float = Field(
+        60.0,
+        description="The timeout in seconds for rendering a single TikZ diagram.",
+    )
+    tikz_engine_allow_shell_escape: bool = Field(
+        False,
+        description=(
+            "Allow Tectonic TikZ rendering to enable shell escape during "
+            "compilation. Disabled by default for safer rendering of untrusted "
+            "LaTeX."
         ),
     )
 

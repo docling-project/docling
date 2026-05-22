@@ -485,7 +485,7 @@ def verify_conversion_result_v2(
         _TestPagesMeta.from_page(page) for page in doc_pred_pages
     ]
     doc_pred: DoclingDocument = doc_result.document
-    doc_pred_md = doc_result.document.export_to_markdown()
+    doc_pred_md = doc_result.document.export_to_markdown(compact_tables=True)
     doc_pred_dt = doc_result.document.export_to_doctags()
 
     engine_suffix = "" if ocr_engine is None else f".{ocr_engine}"

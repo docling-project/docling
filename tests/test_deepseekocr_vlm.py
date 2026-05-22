@@ -73,7 +73,7 @@ def test_e2e_deepseekocr_parsing():
         doc: DoclingDocument = mock_parsing(annotated_content, md_path.name)
 
         # Export to markdown
-        pred_md: str = doc.export_to_markdown()
+        pred_md: str = doc.export_to_markdown(compact_tables=True)
         assert verify_export(pred_md, str(gt_path) + ".md", GENERATE), "export to md"
 
         # Export to indented text

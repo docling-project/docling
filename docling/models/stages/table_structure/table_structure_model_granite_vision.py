@@ -23,8 +23,6 @@ _log = logging.getLogger(__name__)
 
 # OTSL tokens that represent content-bearing cells (produce a TableCell)
 _CONTENT_TOKENS = {"fcel", "ecel", "ched", "rhed", "srow"}
-# OTSL tokens that are span-extensions (no separate TableCell, affect span of predecessor)
-_SPAN_TOKENS = {"lcel", "ucel", "xcel"}
 
 # Regex to extract (tag_name, inner_text) from VLM OTSL output.
 # Handles two OTSL serialisation styles:
@@ -108,7 +106,7 @@ def _parse_otsl_output(
             # Detect colspan: count consecutive span-extension tokens to the right
             colspan = 1
             for c in range(col_idx + 1, num_cols):
-                if grid[row_idx][c][0] in _SPAN_TOKENS:
+                if grid[row_idx][c][0] in {"lcel", "xcel"}:
                     colspan += 1
                 else:
                     break
@@ -116,7 +114,7 @@ def _parse_otsl_output(
             # Detect rowspan: count consecutive span-extension tokens below
             rowspan = 1
             for r in range(row_idx + 1, num_rows):
-                if grid[r][col_idx][0] in _SPAN_TOKENS:
+                if grid[r][col_idx][0] in {"ucel", "xcel"}:
                     rowspan += 1
                 else:
                     break

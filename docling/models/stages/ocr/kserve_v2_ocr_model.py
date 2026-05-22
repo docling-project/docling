@@ -101,6 +101,7 @@ class KserveV2OcrModel(BaseOcrModel):
                 use_tls=self.options.grpc_use_tls,
                 max_message_bytes=self.options.grpc_max_message_bytes,
                 use_binary_data=self.options.use_binary_data,
+                grpc_channel_args=list(self.options.grpc_channel_args),
             )
 
         _log.info(

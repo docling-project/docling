@@ -74,10 +74,10 @@ Order items:
 
 Itemized list of products ordered with quantities.
 
-| Nr.   | Item Description   |   Quantity |
-|-------|--------------------|------------|
-| I     | Coffee             |          1 |
-| II    | Lunch              |          2 |
-| III   | Cake               |          1 |
+| Nr. | Item Description | Quantity |
+| - | - | - |
+| I | Coffee | 1 |
+| II | Lunch | 2 |
+| III | Cake | 1 |
 
 Docling Restaurant 2026

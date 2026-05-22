@@ -1,7 +1,7 @@
 Before tha table
 
-| A    | B    |
-|------|------|
+| A | B |
+| - | - |
 | 1... | 2... |
 
 After the table

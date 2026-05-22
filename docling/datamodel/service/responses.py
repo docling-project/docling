@@ -167,7 +167,7 @@ class ChunkDocumentResponse(BaseModel):
 class TaskStatusResponse(BaseModel):
     task_id: str
     task_type: TaskType
-    task_status: str
+    task_status: ConversionStatus
     task_position: Optional[int] = None
     task_meta: Optional[TaskProcessingMeta] = None
     error_message: Optional[str] = None

@@ -91,6 +91,7 @@ DEFAULT_MAX_CONCURRENCY = 8
 MAX_CONCURRENCY_LIMIT = 512
 SUBMIT_AND_RETRIEVE_MANY_MAX_IN_FLIGHT_WEBSOCKETS = 64
 HTTP_RETRY_BACKOFF_BASE_SECONDS = 1.0
+TRANSPORT_RETRYABLE_HTTP_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -1387,12 +1388,14 @@ class DoclingServiceClient:
         max_retries: int,
     ) -> tuple[httpx.Response | None, float]:
         """Return (response, 0.0) to yield, (None, delay) to retry after delay, or raise."""
-        if response.status_code == 500:
+        if response.status_code in {500, 502}:
             return self._retry_with_exponential_backoff(
                 response=response,
                 attempt=attempt,
                 max_retries=max_retries,
-                error_message="Service returned HTTP 500 after retries.",
+                error_message=(
+                    f"Service returned HTTP {response.status_code} after retries."
+                ),
             )
         if response.status_code in {429, 503}:
             return self._retry_with_retry_after_header(
@@ -1437,6 +1440,27 @@ class DoclingServiceClient:
     def _exponential_backoff_delay(self, attempt: int) -> float:
         return HTTP_RETRY_BACKOFF_BASE_SECONDS * (2**attempt)
 
+    def _transport_retry_delay(
+        self,
+        *,
+        method: str,
+        exc: httpx.HTTPError,
+        attempt: int,
+        max_retries: int,
+    ) -> float | None:
+        method_name = method.upper()
+        if (
+            not isinstance(exc, httpx.TransportError)
+            or method_name not in TRANSPORT_RETRYABLE_HTTP_METHODS
+        ):
+            return None
+        if attempt < max_retries:
+            return self._exponential_backoff_delay(attempt)
+        raise ServiceUnavailableError(
+            "Service transport request failed after retries.",
+            detail=str(exc),
+        ) from exc
+
     def _retry_after_delay_seconds(self, response: httpx.Response) -> float | None:
         retry_after_header = response.headers.get("Retry-After")
         if retry_after_header is None:
@@ -1467,11 +1491,12 @@ class DoclingServiceClient:
         retries: int | None = None,
     ) -> httpx.Response:
         url = self._url(path)
+        method_name = method.upper()
         max_retries = self._http_retries if retries is None else retries
         for attempt in range(max_retries + 1):
             try:
                 response = self._http_client.request(
-                    method=method,
+                    method=method_name,
                     url=url,
                     json=json,
                     data=data,
@@ -1480,6 +1505,15 @@ class DoclingServiceClient:
                     headers=headers,
                 )
             except httpx.HTTPError as exc:
+                delay = self._transport_retry_delay(
+                    method=method_name,
+                    exc=exc,
+                    attempt=attempt,
+                    max_retries=max_retries,
+                )
+                if delay is not None:
+                    time.sleep(delay)
+                    continue
                 raise ServiceUnavailableError(
                     "Service transport request failed.",
                     detail=str(exc),
@@ -1505,11 +1539,12 @@ class DoclingServiceClient:
         retries: int | None = None,
     ) -> httpx.Response:
         url = self._url(path)
+        method_name = method.upper()
         max_retries = self._http_retries if retries is None else retries
         for attempt in range(max_retries + 1):
             try:
                 response = await async_client.request(
-                    method=method,
+                    method=method_name,
                     url=url,
                     json=json,
                     data=data,
@@ -1518,6 +1553,15 @@ class DoclingServiceClient:
                     headers=headers,
                 )
             except httpx.HTTPError as exc:
+                delay = self._transport_retry_delay(
+                    method=method_name,
+                    exc=exc,
+                    attempt=attempt,
+                    max_retries=max_retries,
+                )
+                if delay is not None:
+                    await asyncio.sleep(delay)
+                    continue
                 raise ServiceUnavailableError(
                     "Service transport request failed.",
                     detail=str(exc),

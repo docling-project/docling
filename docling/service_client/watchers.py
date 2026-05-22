@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 import time
 from collections.abc import Callable, Iterator
 from typing import Protocol
 
-from websockets.exceptions import ConnectionClosedOK
+from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 from websockets.sync.client import connect
 
 from docling.datamodel.service.responses import (
@@ -20,7 +21,11 @@ from docling.service_client.exceptions import (
     TaskTimeoutError,
 )
 
+_logger = logging.getLogger(__name__)
+
 TERMINAL_TASK_STATUSES: set[str] = {"success", "failure"}
+WS_MAX_RECONNECT_ATTEMPTS = 3
+WS_RECONNECT_BACKOFF_BASE_SECONDS = 1.0
 
 
 def is_terminal_task_status(status: TaskStatusResponse) -> bool:
@@ -159,63 +164,82 @@ class WebSocketWatcher:
     ) -> Iterator[TaskStatusResponse]:
         ws_url = self._ws_url_for_task(task_id)
         deadline = time.monotonic() + timeout
-        try:
-            with connect(
-                ws_url,
-                open_timeout=self._connect_timeout,
-                close_timeout=self._connect_timeout,
-                additional_headers=self._additional_headers,
-            ) as websocket:
-                while True:
-                    remaining = deadline - time.monotonic()
-                    if remaining <= 0:
-                        raise TaskTimeoutError(
-                            f"Timed out waiting for task {task_id} after {timeout:.2f}s."
-                        )
 
-                    raw_message = websocket.recv(timeout=remaining)
-                    envelope = WebsocketMessage.model_validate_json(raw_message)
+        for attempt in range(WS_MAX_RECONNECT_ATTEMPTS + 1):
+            try:
+                yield from self._iter_ws_connection(ws_url, task_id, deadline, timeout)
+                return
+            except (ConnectionClosedError, OSError) as exc:
+                remaining = deadline - time.monotonic()
+                if attempt >= WS_MAX_RECONNECT_ATTEMPTS or remaining <= 0:
+                    raise ServiceUnavailableError(
+                        "WebSocket status stream is unavailable.", detail=str(exc)
+                    ) from exc
+                delay = min(WS_RECONNECT_BACKOFF_BASE_SECONDS * (2**attempt), remaining)
+                _logger.warning(
+                    "WebSocket connection dropped for task %s: %s — reconnecting in %.1fs",
+                    task_id,
+                    exc,
+                    delay,
+                )
+                time.sleep(delay)
+            except (TaskTimeoutError, TaskNotFoundError, ServiceUnavailableError):
+                raise
+            except Exception as exc:
+                raise ServiceUnavailableError(
+                    "WebSocket status stream is unavailable.", detail=str(exc)
+                ) from exc
 
-                    if envelope.error:
-                        if envelope.error == "Task not found.":
-                            raise TaskNotFoundError(f"Task {task_id} was not found.")
-                        raise ServiceUnavailableError(
-                            "WebSocket status stream failed.",
-                            detail=envelope.error,
-                        )
+    def _iter_ws_connection(
+        self, ws_url: str, task_id: str, deadline: float, timeout: float
+    ) -> Iterator[TaskStatusResponse]:
+        with connect(
+            ws_url,
+            open_timeout=self._connect_timeout,
+            close_timeout=self._connect_timeout,
+            additional_headers=self._additional_headers,
+        ) as websocket:
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TaskTimeoutError(
+                        f"Timed out waiting for task {task_id} after {timeout:.2f}s."
+                    )
 
-                    if envelope.task is None:
-                        continue
+                raw_message = websocket.recv(timeout=remaining)
+                envelope = WebsocketMessage.model_validate_json(raw_message)
 
-                    yield envelope.task
-                    if is_terminal_task_status(envelope.task):
+                if envelope.error:
+                    if envelope.error == "Task not found.":
+                        raise TaskNotFoundError(f"Task {task_id} was not found.")
+                    raise ServiceUnavailableError(
+                        "WebSocket status stream failed.",
+                        detail=envelope.error,
+                    )
+
+                if envelope.task is None:
+                    continue
+
+                yield envelope.task
+                if is_terminal_task_status(envelope.task):
+                    return
+
+                # Only send "next" for UPDATE messages.  The server sends
+                # CONNECTION once before the update loop begins; sending
+                # "next" in response to it would queue an extra token that
+                # the server later consumes as a request for a post-terminal
+                # UPDATE, causing a send-after-close RuntimeError.
+                if envelope.message == MessageKind.UPDATE:
+                    try:
+                        websocket.send("next")
+                    except ConnectionClosedOK:
+                        # The current server contract mixes request/response
+                        # "next" handshakes with async notifier-driven closes.
+                        # Under that contract, the socket may close cleanly
+                        # after an UPDATE but before the client can ask for
+                        # the next one. Treat that as normal end-of-stream.
+                        #
+                        # Once the server websocket contract is simplified to
+                        # a pure push stream, remove the "next" handshake
+                        # entirely instead of keeping this special case.
                         return
-
-                    # Only send "next" for UPDATE messages.  The server sends
-                    # CONNECTION once before the update loop begins; sending
-                    # "next" in response to it would queue an extra token that
-                    # the server later consumes as a request for a post-terminal
-                    # UPDATE, causing a send-after-close RuntimeError.
-                    if envelope.message == MessageKind.UPDATE:
-                        try:
-                            websocket.send("next")
-                        except ConnectionClosedOK:
-                            # The current server contract mixes request/response
-                            # "next" handshakes with async notifier-driven closes.
-                            # Under that contract, the socket may close cleanly
-                            # after an UPDATE but before the client can ask for
-                            # the next one. Treat that as normal end-of-stream.
-                            #
-                            # Once the server websocket contract is simplified to
-                            # a pure push stream, remove the "next" handshake
-                            # entirely instead of keeping this special case.
-                            return
-
-        except TaskTimeoutError:
-            raise
-        except TaskNotFoundError:
-            raise
-        except Exception as exc:
-            raise ServiceUnavailableError(
-                "WebSocket status stream is unavailable.", detail=str(exc)
-            ) from exc
