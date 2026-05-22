@@ -12,10 +12,12 @@ from docling.backend.docling_parse_backend import (
     ThreadedDoclingParseDocumentBackend,
     ThreadedDoclingParsePageBackend,
 )
+from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import BoundingBox, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.datamodel.settings import DocumentLimits
+from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 
 
 @pytest.fixture
@@ -118,6 +120,50 @@ def test_iter_pages_default_contract(test_doc_path):
         doc_backend.unload()
 
     assert page_numbers == [1, 2, 3]
+
+
+def test_standard_pipeline_default_backend_loads_only_requested_page_range(
+    test_doc_path,
+):
+    loaded_pages: list[int] = []
+
+    class CountingDoclingParseDocumentBackend(DoclingParseDocumentBackend):
+        def load_page(
+            self,
+            page_no: int,
+            create_words: bool = True,
+            create_textlines: bool = True,
+        ) -> DoclingParsePageBackend:
+            loaded_pages.append(page_no + 1)
+            return super().load_page(
+                page_no,
+                create_words=create_words,
+                create_textlines=create_textlines,
+            )
+
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.PDF,
+        backend=CountingDoclingParseDocumentBackend,
+        limits=DocumentLimits(page_range=(2, 2)),
+    )
+    doc_backend = in_doc._backend
+    assert isinstance(doc_backend, PdfDocumentBackend)
+    pipeline = StandardPdfPipeline.__new__(StandardPdfPipeline)
+    page_backends = []
+
+    try:
+        page_backends = list(
+            pipeline._iter_requested_page_backends(doc_backend, expected_page_nos=[2])
+        )
+
+        assert [page_backend.page_no for page_backend in page_backends] == [2]
+        assert loaded_pages == [2]
+        assert doc_backend.supports_random_page_access is True
+    finally:
+        for page_backend in page_backends:
+            page_backend.unload()
+        doc_backend.unload()
 
 
 class _FakeThreadedResult:
@@ -278,9 +324,45 @@ def test_threaded_backend_bounded_page_range_is_clipped_to_document(
 
     parser = _FakeThreadedParser.created
     assert parser is not None
-    assert parser.load_calls == [list(range(2, 100))]
+    assert parser.load_calls == [[2, 3, 4, 5]]
 
     in_doc._backend.unload()
+
+
+def test_standard_pipeline_threaded_backend_loads_only_requested_page_range(
+    test_doc_path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.DoclingThreadedPdfParser",
+        _FakeThreadedParser,
+    )
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.pdfium.PdfDocument",
+        _FakePdfiumDocument,
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+        limits=DocumentLimits(page_range=(2, 2)),
+    )
+    doc_backend = in_doc._backend
+    assert isinstance(doc_backend, PdfDocumentBackend)
+    pipeline = StandardPdfPipeline.__new__(StandardPdfPipeline)
+
+    try:
+        page_backends = list(
+            pipeline._iter_requested_page_backends(doc_backend, expected_page_nos=[2])
+        )
+
+        parser = _FakeThreadedParser.created
+        assert parser is not None
+        assert parser.load_calls == [[2]]
+        assert [page_backend.page_no for page_backend in page_backends] == [2]
+        assert doc_backend.supports_random_page_access is False
+    finally:
+        doc_backend.unload()
 
 
 def test_threaded_backend_no_page_range_passes_none_without_page_count_probe(
@@ -372,6 +454,36 @@ def test_threaded_backend_uses_accelerator_thread_count_when_unset(
     assert parser.parser_config.threads == 7
 
     in_doc._backend.unload()
+
+
+def test_threaded_backend_creates_fresh_default_options_per_instance(
+    test_doc_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.DoclingThreadedPdfParser",
+        _FakeThreadedParser,
+    )
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.pdfium.PdfDocument",
+        _FakePdfiumDocument,
+    )
+
+    first_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+    )
+    second_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+    )
+
+    try:
+        assert first_doc._backend.options is not second_doc._backend.options
+    finally:
+        first_doc._backend.unload()
+        second_doc._backend.unload()
 
 
 def test_threaded_page_backend_delegates_image_access() -> None:

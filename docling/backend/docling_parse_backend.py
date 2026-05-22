@@ -302,23 +302,6 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
             self._pdoc = None
 
 
-def _make_threaded_decode_config() -> DecodePageConfig:
-    config = DecodePageConfig()
-    config.keep_char_cells = True
-    config.keep_shapes = False
-    config.keep_bitmaps = True
-    config.create_word_cells = True
-    config.create_line_cells = True
-    config.enforce_same_font = True
-    return config
-
-
-def _make_threaded_render_config() -> RenderConfig:
-    config = RenderConfig()
-    config.scale = 1.0
-    return config
-
-
 def _resolve_threaded_page_numbers(
     path_or_stream: Union[BytesIO, Path],
     password: Optional[str],
@@ -341,14 +324,6 @@ def _resolve_threaded_page_numbers(
         return []
 
     return list(range(start_page, clipped_end_page + 1))
-
-
-def _resolve_threaded_parser_threads(options: PdfBackendOptions) -> int:
-    if isinstance(options, ThreadedDoclingParseBackendOptions):
-        if options.parser_threads is not None:
-            return options.parser_threads
-
-    return AcceleratorOptions().num_threads
 
 
 class ThreadedDoclingParsePageBackend(PdfPageBackend):
@@ -405,14 +380,13 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
         if segmented_page is None:
             return []
 
-        area_threshold = 0
         page_height = self.get_size().height
         cropboxes: list[BoundingBox] = []
         for image_resource in segmented_page.bitmap_resources:
             cropbox = image_resource.rect.to_bounding_box().to_top_left_origin(
                 page_height
             )
-            if cropbox.area() > area_threshold:
+            if cropbox.area() > 0:
                 cropboxes.append(cropbox.scaled(scale=scale))
         return cropboxes
 
@@ -429,12 +403,16 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
 
 
 class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
+    supports_random_page_access = False
+
     def __init__(
         self,
         in_doc: "InputDocument",
         path_or_stream: Union[BytesIO, Path],
-        options: PdfBackendOptions = PdfBackendOptions(),
+        options: Optional[PdfBackendOptions] = None,
     ):
+        if options is None:
+            options = PdfBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
         self.options: PdfBackendOptions
         self._closed = False
@@ -448,13 +426,29 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             in_doc.limits.page_range,
         )
 
+        parser_threads = (
+            self.options.parser_threads
+            if isinstance(self.options, ThreadedDoclingParseBackendOptions)
+            and self.options.parser_threads is not None
+            else AcceleratorOptions().num_threads
+        )
+        render_config = RenderConfig()
+        render_config.scale = 1.0
+        decode_config = DecodePageConfig()
+        decode_config.keep_char_cells = True
+        decode_config.keep_shapes = False
+        decode_config.keep_bitmaps = True
+        decode_config.create_word_cells = True
+        decode_config.create_line_cells = True
+        decode_config.enforce_same_font = True
+
         self.parser = DoclingThreadedPdfParser(
             parser_config=ThreadedPdfParserConfig(
                 loglevel="fatal",
-                threads=_resolve_threaded_parser_threads(self.options),
-                render_config=_make_threaded_render_config(),
+                threads=parser_threads,
+                render_config=render_config,
             ),
-            decode_config=_make_threaded_decode_config(),
+            decode_config=decode_config,
         )
         self.doc_key = self.parser.load(
             self.path_or_stream,

@@ -23,7 +23,7 @@ import warnings
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Optional, Sequence, Tuple, cast
+from typing import Any, Callable, Iterable, Sequence, cast
 
 import numpy as np
 from docling_core.types.doc import (
@@ -36,7 +36,7 @@ from docling_core.types.doc import (
 )
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
-from docling.backend.pdf_backend import PdfDocumentBackend
+from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
 from docling.datamodel.base_models import (
     AssembledUnit,
     ConversionStatus,
@@ -94,8 +94,8 @@ class ThreadedItem:
 class ProcessingResult:
     """Aggregated outcome of a pipeline run."""
 
-    pages: List[Page] = field(default_factory=list)
-    failed_pages: List[Tuple[int, Exception]] = field(default_factory=list)
+    pages: list[Page] = field(default_factory=list)
+    failed_pages: list[tuple[int, Exception]] = field(default_factory=list)
     total_expected: int = 0
 
     @property
@@ -150,7 +150,7 @@ class ThreadedQueue:
             return True
 
     # ------------------------------------------------------------ get_batch()
-    def get_batch(self, size: int, timeout: float | None = None) -> List[ThreadedItem]:
+    def get_batch(self, size: int, timeout: float | None = None) -> list[ThreadedItem]:
         """Return up to *size* items.  Blocks until ≥1 item present or queue closed/timeout."""
         with self._not_empty:
             start = time.monotonic()
@@ -162,7 +162,7 @@ class ThreadedQueue:
                     self._not_empty.wait(remaining)
                 else:
                     self._not_empty.wait()
-            batch: List[ThreadedItem] = []
+            batch: list[ThreadedItem] = []
             while self._items and len(batch) < size:
                 batch.append(self._items.popleft())
             if batch:
@@ -229,7 +229,7 @@ class ThreadedPipelineStage:
         self._running = False
         self.input_queue.close()
         if self._thread is not None:
-            # Give thread 2s to finish naturally before abandoning
+            # Give thread 15s to finish naturally before abandoning
             self._thread.join(timeout=15.0)
             if self._thread.is_alive():
                 _log.warning(
@@ -289,7 +289,7 @@ class ThreadedPipelineStage:
                     result.extend(items)
                     continue
 
-                pages: List[Page] = [payload for _, payload in pages_with_payloads]
+                pages: list[Page] = [payload for _, payload in pages_with_payloads]
                 if _log.isEnabledFor(logging.DEBUG):
                     _t_start = time.time()
                     _t_mono = time.monotonic()
@@ -638,6 +638,28 @@ class StandardPdfPipeline(ConvertPipeline):
         )
 
     # --------------------------------------------------------------------- build
+    def _iter_requested_page_backends(
+        self, backend: PdfDocumentBackend, expected_page_nos: list[int]
+    ) -> Iterable[PdfPageBackend]:
+        if backend.supports_random_page_access:
+            for page_no in expected_page_nos:
+                yield backend.load_page(page_no - 1)
+            return
+
+        expected_page_no_set = set(expected_page_nos)
+        for page_backend in backend.iter_pages():
+            if page_backend.page_no in expected_page_no_set:
+                yield page_backend
+
+    def _get_expected_page_nos(self, conv_res: ConversionResult) -> list[int]:
+        start_page, end_page = conv_res.input.limits.page_range
+        return list(
+            range(
+                max(1, start_page),
+                min(conv_res.input.page_count, end_page) + 1,
+            )
+        )
+
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         """Stream-build the document with a dedicated producer thread.
 
@@ -651,13 +673,7 @@ class StandardPdfPipeline(ConvertPipeline):
         assert isinstance(conv_res.input._backend, PdfDocumentBackend)
         backend = conv_res.input._backend
 
-        start_page, end_page = conv_res.input.limits.page_range
-        expected_page_nos = list(
-            range(
-                max(1, start_page),
-                min(conv_res.input.page_count, end_page) + 1,
-            )
-        )
+        expected_page_nos = self._get_expected_page_nos(conv_res)
         if not expected_page_nos:
             conv_res.status = ConversionStatus.FAILURE
             return conv_res
@@ -687,7 +703,9 @@ class StandardPdfPipeline(ConvertPipeline):
 
         def _produce_pages() -> None:
             try:
-                for page_backend in backend.iter_pages():
+                for page_backend in self._iter_requested_page_backends(
+                    backend, expected_page_nos
+                ):
                     page = page_by_no.get(page_backend.page_no)
                     if page is None:
                         continue
@@ -927,11 +945,15 @@ class StandardPdfPipeline(ConvertPipeline):
 
             # Add failed pages to DoclingDocument.pages to preserve page numbering
             # This ensures page break markers are generated for skipped/failed pages
-            self._add_failed_pages_to_document(conv_res)
+            self._add_failed_pages_to_document(
+                conv_res, expected_page_nos=self._get_expected_page_nos(conv_res)
+            )
 
         return conv_res
 
-    def _add_failed_pages_to_document(self, conv_res: ConversionResult) -> None:
+    def _add_failed_pages_to_document(
+        self, conv_res: ConversionResult, expected_page_nos: list[int]
+    ) -> None:
         """Add failed/skipped pages to DoclingDocument.pages.
 
         This ensures that page break markers are correctly generated for documents
@@ -944,18 +966,9 @@ class StandardPdfPipeline(ConvertPipeline):
         if conv_res.document is None:
             return
 
-        # Determine which pages were expected to be processed
-        start_page, end_page = conv_res.input.limits.page_range
-        expected_page_nos = set(
-            range(
-                max(1, start_page),
-                min(conv_res.input.page_count, end_page) + 1,
-            )
-        )
-
         # Find pages that are missing from the document
         existing_page_nos = set(conv_res.document.pages.keys())
-        missing_page_nos = expected_page_nos - existing_page_nos
+        missing_page_nos = set(expected_page_nos) - existing_page_nos
 
         if not missing_page_nos:
             return

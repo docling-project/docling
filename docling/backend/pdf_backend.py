@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Set, Union
+from typing import ClassVar, Optional, Set, Union
 
 from docling_core.types.doc import BoundingBox, Size
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
@@ -56,6 +56,8 @@ class PdfPageBackend(ABC):
 
 
 class PdfDocumentBackend(PaginatedDocumentBackend):
+    supports_random_page_access: ClassVar[bool] = True
+
     def __init__(
         self,
         in_doc: InputDocument,
