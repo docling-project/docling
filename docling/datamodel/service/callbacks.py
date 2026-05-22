@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 
 from pydantic import AnyUrl, BaseModel, Field
 
-from docling.datamodel.base_models import ConversionStatus
+from docling.datamodel.base_models import ConversionStatus, InputFormat
 
 
 class CallbackSpec(BaseModel):
@@ -53,7 +53,11 @@ class DocumentCompletedItem(BaseModel):
 
     source: str
     status: ConversionStatus
+    document_type: InputFormat | None = None
     num_pages: int | None = None
+    num_characters: int | None = None
+    num_tables: int | None = None
+    num_pictures: int | None = None
     processing_time: float | None = None  # in seconds
     doc_hash: str | None = None
     error: str | None = None
