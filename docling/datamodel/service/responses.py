@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Annotated, Literal, Optional
 
 from docling_core.types.doc.document import DoclingDocument
-from pydantic import AnyUrl, BaseModel, Field
+from pydantic import AliasChoices, AnyUrl, BaseModel, ConfigDict, Field
 
 from docling.datamodel.base_models import ConversionStatus, ErrorItem
 from docling.datamodel.service.tasks import TaskProcessingMeta, TaskType
@@ -21,22 +21,39 @@ class ExportDocumentResponse(BaseModel):
 
 
 class DocumentResultItem(BaseModel):
-    """Canonical internal document-level result. Not a wire model."""
+    """Canonical document-level result with legacy ExportResult wire compatibility."""
 
-    document: ExportDocumentResponse
-    status: ConversionStatus
-    errors: list[ErrorItem] = []
-    timings: dict[str, ProfilingItem] = {}
-
-
-class ExportResult(BaseModel):
-    """Container of all exported content."""
+    model_config = ConfigDict(populate_by_name=True, serialize_by_alias=True)
 
     kind: Literal["ExportResult"] = "ExportResult"
-    content: ExportDocumentResponse
+    document: ExportDocumentResponse = Field(
+        validation_alias=AliasChoices("document", "content"),
+        serialization_alias="content",
+    )
     status: ConversionStatus
     errors: list[ErrorItem] = []
     timings: dict[str, ProfilingItem] = {}
+
+    @property
+    def content(self) -> ExportDocumentResponse:
+        warnings.warn(
+            "DocumentResultItem.content is deprecated; use .document instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.document
+
+    @content.setter
+    def content(self, value: ExportDocumentResponse) -> None:
+        warnings.warn(
+            "DocumentResultItem.content is deprecated; use .document instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self.document = value
+
+
+ExportResult = DocumentResultItem
 
 
 class ZipArchiveResult(BaseModel):
@@ -160,20 +177,19 @@ class ClearResponse(BaseModel):
 
 
 class ConvertDocumentResponse(BaseModel):
+    """Single-document inline response with task-level timing flattened in."""
+
     document: ExportDocumentResponse
     status: ConversionStatus
     errors: list[ErrorItem] = []
+    # Inline convert responses have no outer DoclingTaskResult envelope, so the
+    # task-level elapsed time is flattened onto this response model.
     processing_time: float
     timings: dict[str, ProfilingItem] = {}
 
 
 def _to_export_result(item: DocumentResultItem) -> ExportResult:
-    return ExportResult(
-        content=item.document,
-        status=item.status,
-        errors=item.errors,
-        timings=item.timings,
-    )
+    return item
 
 
 def _to_convert_document_response(
@@ -189,21 +205,12 @@ def _to_convert_document_response(
 
 
 class PresignedUrlConvertDocumentResponse(BaseModel):
-    """Deprecated counts-only presigned response model."""
+    """Counts-only response model for remote targets without per-document artifacts."""
 
     processing_time: float
     num_converted: int
     num_succeeded: int
     num_failed: int
-
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "PresignedUrlConvertDocumentResponse is deprecated and will be removed "
-            "in a future version. Use PresignedUrlConvertResponse instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__(*args, **kwargs)
 
 
 class PresignedUrlConvertResponse(BaseModel):

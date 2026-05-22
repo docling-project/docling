@@ -66,6 +66,7 @@ def test_document_result_item_maps_to_existing_wire_models() -> None:
     export_result = _to_export_result(item)
     convert_response = _to_convert_document_response(item, processing_time=1.25)
 
+    assert export_result is item
     assert export_result.model_dump(mode="json") == ExportResult(
         content=item.document,
         status=item.status,
@@ -79,6 +80,31 @@ def test_document_result_item_maps_to_existing_wire_models() -> None:
         processing_time=1.25,
         timings=item.timings,
     ).model_dump(mode="json")
+
+
+def test_document_result_item_accepts_legacy_content_field() -> None:
+    item = DocumentResultItem.model_validate(
+        {
+            "kind": "ExportResult",
+            "content": {"filename": "example.pdf", "md_content": "# hello"},
+            "status": ConversionStatus.SUCCESS,
+        }
+    )
+
+    assert item.document.filename == "example.pdf"
+    assert item.model_dump(mode="json")["content"]["filename"] == "example.pdf"
+
+
+def test_document_result_item_content_property_warns() -> None:
+    item = DocumentResultItem(
+        document=ExportDocumentResponse(filename="example.pdf"),
+        status=ConversionStatus.SUCCESS,
+    )
+
+    with pytest.warns(DeprecationWarning, match="use \\.document instead"):
+        content = item.content
+
+    assert content.filename == "example.pdf"
 
 
 def test_docling_task_result_accepts_presigned_artifact_results() -> None:
