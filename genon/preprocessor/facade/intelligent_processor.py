@@ -1686,12 +1686,17 @@ class DocumentProcessor:
 
         # 변환된 PDF 를 minio 에 업로드. object key 는 원본 파일명의 stem + ".pdf".
         # (예: 원본 file_name='sample.hwp' → minio key='<doc_id>/sample.pdf')
-        # upload_files 가 업로드 후 로컬 파일을 os.remove 하므로 파싱이 모두 끝난 이 시점에 호출.
+        # upload_files 가 finally 에서 org_path 를 os.remove 하는데, 변환 PDF 의
+        # NFS 원본은 GenOS UI 의 PDF preview 가 직접 참조하므로 보존 필요.
+        # → 임시 사본을 만들어 그것만 업로드시키고 NFS 원본은 그대로 둔다.
         if converted_pdf_path and upload_files:
             original_name = kwargs.get('file_name') or os.path.basename(converted_pdf_path)
             pdf_object_name = os.path.splitext(original_name)[0] + '.pdf'
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as _tmp:
+                shutil.copy(converted_pdf_path, _tmp.name)
+                _tmp_upload_path = _tmp.name
             await upload_files(
-                [{'path': converted_pdf_path, 'name': pdf_object_name}],
+                [{'path': _tmp_upload_path, 'name': pdf_object_name}],
                 request=request,
             )
 
