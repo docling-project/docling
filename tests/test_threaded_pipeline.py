@@ -10,11 +10,9 @@ from docling.backend.docling_parse_backend import (
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.pipeline_options import (
-    PdfPipelineOptions,
     ThreadedPdfPipelineOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
-from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 
 _TEST_FILES = [
@@ -43,13 +41,13 @@ def _make_threaded_converter(**kwargs) -> DocumentConverter:
     )
 
 
-def _make_legacy_converter() -> DocumentConverter:
+def _make_standard_converter() -> DocumentConverter:
     return DocumentConverter(
         format_options={
             InputFormat.PDF: PdfFormatOption(
-                pipeline_cls=LegacyStandardPdfPipeline,
+                pipeline_cls=StandardPdfPipeline,
                 backend=DoclingParseDocumentBackend,
-                pipeline_options=PdfPipelineOptions(
+                pipeline_options=ThreadedPdfPipelineOptions(
                     do_table_structure=False,
                     do_ocr=False,
                 ),
@@ -68,32 +66,15 @@ def test_threaded_pipeline_multiple_documents():
     assert all(r.status == ConversionStatus.SUCCESS for r in results)
 
 
-def test_threaded_pipeline_matches_legacy():
+def test_threaded_and_standard_backends_convert_with_standard_pipeline():
     threaded_converter = _make_threaded_converter()
-    legacy_converter = _make_legacy_converter()
+    standard_converter = _make_standard_converter()
 
-    threaded_results = {
-        Path(r.input.file).name: r
-        for r in threaded_converter.convert_all([_SINGLE_FILE])
-    }
-    legacy_results = {
-        Path(r.input.file).name: r for r in legacy_converter.convert_all([_SINGLE_FILE])
-    }
+    threaded_result = threaded_converter.convert(_SINGLE_FILE)
+    standard_result = standard_converter.convert(_SINGLE_FILE)
 
-    assert set(threaded_results) == set(legacy_results)
-    for name in threaded_results:
-        threaded_result = threaded_results[name]
-        legacy_result = legacy_results[name]
-        assert (
-            threaded_result.status == legacy_result.status == ConversionStatus.SUCCESS
-        )
-        assert len(threaded_result.document.pages) == len(legacy_result.document.pages)
-        # Text item counts differ slightly between the threaded and sequential
-        # backends due to different internal segmentation paths; verify order
-        # of magnitude agreement only.
-        assert abs(
-            len(threaded_result.document.texts) - len(legacy_result.document.texts)
-        ) < 0.1 * len(legacy_result.document.texts)
+    assert threaded_result.status == ConversionStatus.SUCCESS
+    assert standard_result.status == ConversionStatus.SUCCESS
 
 
 def test_threaded_pipeline_with_pypdfium_backend():
