@@ -791,3 +791,36 @@ def test_checkbox_labels_in_tables(documents):
     ]
 
     assert len(found_food_checkboxes) > 0, "No checkboxes found in table cells"
+
+
+def test_text_after_drawingml_images(documents):
+    """Text in paragraphs containing DrawingML images was being omitted during conversion, both with and without LibreOffice."""
+    name = "drawingml.docx"
+
+    doc_found = False
+    for path, doc in documents:
+        if path.name == name:
+            doc_found = True
+
+            text_items = [
+                item for item, _ in doc.iterate_items() if isinstance(item, TextItem)
+            ]
+
+            assert len(text_items) > 0, (
+                f"No text items found in {name}. "
+                "Text after DrawingML images should be preserved even without LibreOffice."
+            )
+
+            # Log the text items found for debugging
+            _log.info(f"Found {len(text_items)} text items in {name}")
+            for idx, item in enumerate(text_items[:5]):  # Log first 5 items
+                _log.info(f"  Text item {idx}: {item.text[:50]}...")
+
+            break
+
+    if not doc_found:
+        _log.warning(
+            f"Test document '{name}' not found in test set. "
+            "Skipping DrawingML text extraction test."
+        )
+        pytest.skip(f"Test document '{name}' not available")

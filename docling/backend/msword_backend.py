@@ -378,15 +378,25 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 if self.docx_to_pdf_converter is None:
                     if self.display_drawingml_warning:
-                        if self.docx_to_pdf_converter is None:
-                            _log.warning(
-                                "Found DrawingML elements in document, but no DOCX to PDF converters. "
-                                "If you want these exported, make sure you have "
-                                "LibreOffice binary in PATH or specify its path with DOCLING_LIBREOFFICE_CMD."
-                            )
-                            self.display_drawingml_warning = False
+                        _log.warning(
+                            "Found DrawingML elements in document, but no DOCX to PDF converters. "
+                            "If you want these exported, make sure you have "
+                            "LibreOffice binary in PATH or specify its path with DOCLING_LIBREOFFICE_CMD."
+                        )
+                        self.display_drawingml_warning = False
                 else:
                     self._handle_drawingml(doc=doc, drawingml_els=drawingml_els)
+
+                # Always process text in paragraph
+                if (
+                    tag_name == "p"
+                    and element.find(
+                        ".//w:t", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                    )
+                    is not None
+                ):
+                    te = self._handle_text_elements(element, doc)
+                    added_elements.extend(te)
             # Check for the sdt containers, like table of contents
             elif tag_name == "sdt":
                 sdt_content = element.find(
