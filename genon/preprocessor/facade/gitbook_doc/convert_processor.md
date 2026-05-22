@@ -179,14 +179,16 @@ def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
 
 > **왜 세 모듈에 같은 wrapper가 있나?** Genos 웹 UI 환경은 facade 코드를 단일 파일로 다루기 때문에, 다른 facade 모듈에서 `import` 하면 깨짐. 그래서 세 facade 모두 같은 시그니처의 wrapper 함수를 자체적으로 둠. 실제 변환 로직은 `converters/hwp_to_pdf/` 모듈 한 곳에만 존재.
 
-| `use_pdf_sdk` | 위임되는 backend | 비고 |
+**변환 chain** (입력 확장자 + `use_pdf_sdk` 로 결정. 앞 backend 실패 시 다음으로 자동 fallback):
+
+| 입력 | `use_pdf_sdk=True` (엔터프라이즈) | `use_pdf_sdk=False` (오픈소스) |
 |---|---|---|
-| `True` (기본값) | `pdf_sdk` (`PdfSdkConverter`) | PDF 변환 SDK (Linux 전용 바이너리). 엔터프라이즈 빌드에만 자산 포함. |
-| `False` | `libreoffice` (`LibreOfficeConverter`) | LibreOffice (`soffice --headless`) 사용. 오픈소스 빌드의 기본 fallback. |
+| `.hwp` / `.hwpx` | `pdf_sdk → libreoffice → rhwp` | `libreoffice → rhwp` |
+| 그 외 (`.docx`/`.pptx` 등) | `pdf_sdk → libreoffice` | `libreoffice` |
 
-`disable_fallback=True` 로 호출되어 단일 backend만 시도하므로 기존 동작이 그대로 보존됩니다.
+`convert_hwp_to_pdf(file_path, order=[...])` 로 위임되며, chain 의 backend 를 순서대로 시도하다 첫 성공에서 종료합니다. `rhwp` 는 HWP/HWPX 전용 + 표/글상자 텍스트 누락 이슈(upstream rhwp #816 등)로 현재는 최후순위 fallback.
 
-> 자세한 backend별 동작 흐름은 [attachment_processor.md §4.1](attachment_processor.md#41-convert_to_pdf) 참고. 그리고 `genon/preprocessor/converters/hwp_to_pdf/{pdf_sdk,libreoffice}.py` 본체에 실제 구현.
+> 자세한 backend별 동작 흐름은 [attachment_processor.md §4.1](attachment_processor.md#41-convert_to_pdf) 참고. 그리고 `genon/preprocessor/converters/hwp_to_pdf/{pdf_sdk,libreoffice,rhwp}.py` 본체에 실제 구현.
 
 ---
 

@@ -106,22 +106,24 @@ def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
     PDF 변환을 시도한다. 실패해도 예외를 던지지 않고 None을 반환한다.
 
     chain (HWP/HWPX 입력):
-      use_pdf_sdk=True  → pdf_sdk → rhwp → libreoffice
-      use_pdf_sdk=False → rhwp → libreoffice
+      use_pdf_sdk=True  → pdf_sdk → libreoffice → rhwp
+      use_pdf_sdk=False → libreoffice → rhwp
     chain (그 외 입력, 예: docx/pptx):
       use_pdf_sdk=True  → pdf_sdk → libreoffice
       use_pdf_sdk=False → libreoffice
 
-    rhwp 는 HWP/HWPX 전용이라 비-HWP 입력에는 chain 에 들어가지 않음.
+    rhwp 는 HWP/HWPX 전용이라 비-HWP 입력에는 chain 에 들어가지 않으며, 표/글상자
+    텍스트 누락 이슈(upstream rhwp #816 등) 가 남아있어 현재는 최후순위 fallback
+    으로만 둔다. (upstream 에서 표 렌더 안정화되면 우선순위 상향 검토)
     내부 구현은 `genon.preprocessor.converters.hwp_to_pdf` 모듈에 통합되어 있다.
     """
     from genon.preprocessor.converters.hwp_to_pdf import convert_hwp_to_pdf
     ext = os.path.splitext(file_path)[1].lower()
     is_hwp = ext in (".hwp", ".hwpx")
     if use_pdf_sdk:
-        order = ["pdf_sdk", "rhwp", "libreoffice"] if is_hwp else ["pdf_sdk", "libreoffice"]
+        order = ["pdf_sdk", "libreoffice", "rhwp"] if is_hwp else ["pdf_sdk", "libreoffice"]
     else:
-        order = ["rhwp", "libreoffice"] if is_hwp else ["libreoffice"]
+        order = ["libreoffice", "rhwp"] if is_hwp else ["libreoffice"]
     return convert_hwp_to_pdf(file_path, order=order)
 
 
