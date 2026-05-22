@@ -297,6 +297,8 @@ def test_cli_accepts_threaded_docling_parse_backend(
             PdfBackend.THREADED_DOCLING_PARSE.value,
             "--num-threads",
             "7",
+            "--release-native-memory-every-n-pages",
+            "64",
         ],
     )
 
@@ -305,3 +307,4 @@ def test_cli_accepts_threaded_docling_parse_backend(
     assert captured_backend.__name__ == "ThreadedDoclingParseDocumentBackend"
     assert captured_backend_options is not None
     assert captured_backend_options.parser_threads == 7
+    assert captured_backend_options.release_native_memory_every_n_pages == 64

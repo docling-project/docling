@@ -310,6 +310,7 @@ members = ["packages/docling"]
 
 [tool.uv.sources]
 docling = { workspace = true }
+docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "fe1e36c1d381a0b973b34bd4e722c54151f13b9f" }
 # docling-parse = { path = "../docling-parse", editable = true }
 
 [tool.uv]

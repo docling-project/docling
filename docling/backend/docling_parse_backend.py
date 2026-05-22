@@ -441,6 +441,12 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         decode_config.create_word_cells = True
         decode_config.create_line_cells = True
         decode_config.enforce_same_font = True
+        if isinstance(self.options, ThreadedDoclingParseBackendOptions):
+            decode_config.release_native_memory_every_n_pages = (
+                self.options.release_native_memory_every_n_pages
+            )
+        else:
+            decode_config.release_native_memory_every_n_pages = 128
 
         self.parser = DoclingThreadedPdfParser(
             parser_config=ThreadedPdfParserConfig(

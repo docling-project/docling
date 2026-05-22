@@ -422,6 +422,37 @@ def test_threaded_backend_uses_backend_option_thread_count(
     assert parser is not None
     assert parser.parser_config is not None
     assert parser.parser_config.threads == 11
+    assert parser.decode_config is not None
+    assert parser.decode_config.release_native_memory_every_n_pages == 128
+
+    in_doc._backend.unload()
+
+
+def test_threaded_backend_uses_backend_option_native_memory_release_interval(
+    test_doc_path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.DoclingThreadedPdfParser",
+        _FakeThreadedParser,
+    )
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.pdfium.PdfDocument",
+        _FakePdfiumDocument,
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+        backend_options=ThreadedDoclingParseBackendOptions(
+            release_native_memory_every_n_pages=64
+        ),
+    )
+
+    parser = _FakeThreadedParser.created
+    assert parser is not None
+    assert parser.decode_config is not None
+    assert parser.decode_config.release_native_memory_every_n_pages == 64
 
     in_doc._backend.unload()
 

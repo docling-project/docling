@@ -630,6 +630,16 @@ def convert(  # noqa: C901
         ),
     ] = None,
     num_threads: Annotated[int, typer.Option(..., help="Number of threads")] = 4,
+    release_native_memory_every_n_pages: Annotated[
+        int,
+        typer.Option(
+            ...,
+            help=(
+                "Release native parser memory after every N decoded pages when "
+                "using the threaded docling-parse backend."
+            ),
+        ),
+    ] = 128,
     device: Annotated[
         AcceleratorDevice, typer.Option(..., help="Accelerator device")
     ] = AcceleratorDevice.AUTO,
@@ -813,7 +823,11 @@ def convert(  # noqa: C901
             elif pdf_backend == PdfBackend.THREADED_DOCLING_PARSE:
                 backend = ThreadedDoclingParseDocumentBackend  # type: ignore
                 pdf_backend_options = ThreadedDoclingParseBackendOptions(
-                    password=pdf_password, parser_threads=num_threads
+                    password=pdf_password,
+                    parser_threads=num_threads,
+                    release_native_memory_every_n_pages=(
+                        release_native_memory_every_n_pages
+                    ),
                 )
             elif pdf_backend == PdfBackend.PYPDFIUM2:
                 backend = PyPdfiumDocumentBackend  # type: ignore

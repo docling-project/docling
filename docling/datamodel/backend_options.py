@@ -156,6 +156,13 @@ class ThreadedDoclingParseBackendOptions(PdfBackendOptions):
             "If unset, the backend falls back to global accelerator thread settings."
         ),
     )
+    release_native_memory_every_n_pages: PositiveInt = Field(
+        128,
+        description=(
+            "Release native parser memory after every N decoded pages in the "
+            "threaded docling-parse backend."
+        ),
+    )
 
 
 class MetsGbsBackendOptions(PdfBackendOptions):
