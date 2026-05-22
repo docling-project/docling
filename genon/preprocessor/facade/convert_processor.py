@@ -146,9 +146,9 @@ def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
       use_pdf_sdk=True  → pdf_sdk → libreoffice
       use_pdf_sdk=False → libreoffice
 
-    rhwp 는 HWP/HWPX 전용이라 비-HWP 입력에는 chain 에 들어가지 않으며, 표/글상자
-    텍스트 누락 이슈(upstream rhwp #816 등) 가 남아있어 현재는 최후순위 fallback
-    으로만 둔다. (upstream 에서 표 렌더 안정화되면 우선순위 상향 검토)
+    rhwp 는 HWP/HWPX 전용이라 비-HWP 입력에는 chain 에 들어가지 않는다. 또한 도입
+    초기 단계라 안정성 검증 전까지는 최후순위 fallback 으로만 두며, 검증 후
+    우선순위 상향을 검토한다.
     내부 구현은 `genon.preprocessor.converters.hwp_to_pdf` 모듈에 통합되어 있다.
     """
     from genon.preprocessor.converters.hwp_to_pdf import convert_hwp_to_pdf

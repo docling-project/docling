@@ -186,7 +186,7 @@ def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
 | `.hwp` / `.hwpx` | `pdf_sdk → libreoffice → rhwp` | `libreoffice → rhwp` |
 | 그 외 (`.docx`/`.pptx` 등) | `pdf_sdk → libreoffice` | `libreoffice` |
 
-`convert_hwp_to_pdf(file_path, order=[...])` 로 위임되며, chain 의 backend 를 순서대로 시도하다 첫 성공에서 종료합니다. `rhwp` 는 HWP/HWPX 전용 + 표/글상자 텍스트 누락 이슈(upstream rhwp #816 등)로 현재는 최후순위 fallback.
+`convert_hwp_to_pdf(file_path, order=[...])` 로 위임되며, chain 의 backend 를 순서대로 시도하다 첫 성공에서 종료합니다. `rhwp` 는 HWP/HWPX 전용이며 도입 초기 단계라 현재는 최후순위 fallback.
 
 > 자세한 backend별 동작 흐름은 [attachment_processor.md §4.1](attachment_processor.md#41-convert_to_pdf) 참고. 그리고 `genon/preprocessor/converters/hwp_to_pdf/{pdf_sdk,libreoffice,rhwp}.py` 본체에 실제 구현.
 

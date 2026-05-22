@@ -189,7 +189,7 @@ def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
 | 그 외 (`.docx`/`.pptx`/이미지 등) | `pdf_sdk → libreoffice` | `libreoffice` |
 
 - 내부적으로 `convert_hwp_to_pdf(file_path, order=[...])` 로 위임되며, chain 의 backend 가 순서대로 시도되다 첫 성공에서 종료됩니다.
-- `rhwp` 는 HWP/HWPX 전용이라 비-HWP 입력 chain 에는 포함되지 않습니다. 또한 표/글상자 텍스트 누락 이슈(upstream rhwp #816 등)가 남아있어 현재는 **최후순위 fallback** 으로만 둡니다 (upstream 표 렌더 안정화 시 우선순위 상향 검토).
+- `rhwp` 는 HWP/HWPX 전용이라 비-HWP 입력 chain 에는 포함되지 않습니다. 또한 도입 초기 단계라 안정성 검증 전까지는 **최후순위 fallback** 으로만 둡니다 (검증 후 우선순위 상향 검토).
 
 **Backend 경로/가용성 결정**:
 - `pdf_sdk`: `PDF_SDK_HOME` (도커 `/app/pdf_sdk`) → fallback `<repo_root>/pdf_sdk`. 바이너리 실행권한 있을 때만 활성. 엔터프라이즈 빌드에만 자산 포함.
