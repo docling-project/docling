@@ -49,6 +49,7 @@ repos:
       - id: max-lines
         name: Check max lines per file
         entry: python3 scripts/check_max_lines.py
+        args: [--max-lines=1500]
         language: system
         files: '\.(py|ts|tsx|js|jsx|rs|json|sql|md|txt|yaml|yml)$'
         pass_filenames: true
