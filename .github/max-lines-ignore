@@ -27,4 +27,3 @@ docling/service_client/client.py
 tests/test_service_client_sdk_unit.py
 docling/cli/main.py
 tests/test_backend_html.py
-tests/test_asr.py
