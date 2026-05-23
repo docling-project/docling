@@ -456,6 +456,18 @@ class _WhisperS2TModel:
             self.model_identifier = asr_options.repo_id
             _log.info(f"loading _WhisperS2TModel({self.model_identifier})")
 
+            # CTranslate2 does not support float16 or bfloat16 for CPU
+            # inference. Coerce to float32 when running on CPU so that the
+            # explicit *_S2T presets (which default to float16 for CUDA
+            # performance) do not fail at model load on CPU-only installs.
+            compute_type = asr_options.compute_type
+            if self.device == "cpu" and compute_type in ("float16", "bfloat16"):
+                _log.warning(
+                    f"compute_type='{compute_type}' is not supported by "
+                    f"CTranslate2 on CPU; falling back to 'float32'."
+                )
+                compute_type = "float32"
+
             # Build ASR options for whisper_s2t
             asr_opts = {
                 "beam_size": asr_options.beam_size,
@@ -466,7 +478,7 @@ class _WhisperS2TModel:
             model_kwargs = {
                 "device": self.device,
                 "device_index": self.device_index,
-                "compute_type": asr_options.compute_type,
+                "compute_type": compute_type,
                 "cpu_threads": asr_options.cpu_threads,
                 "num_workers": asr_options.num_workers,
                 "asr_options": asr_opts,
