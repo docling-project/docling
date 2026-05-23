@@ -933,6 +933,141 @@ class TestWhisperS2TModel:
                 )
                 mock_whisper_s2t.load_model.reset_mock()
 
+    def test_whisper_s2t_cpu_coerces_float16_compute_type(self):
+        """Regression test: compute_type='float16' must be coerced to 'float32'
+        when running on CPU (CTranslate2 does not support float16 on CPU)."""
+        mock_whisper_s2t = Mock()
+        mock_whisper_s2t.load_model.return_value = Mock()
+
+        with patch.dict("sys.modules", {"whisper_s2t": mock_whisper_s2t}):
+            asr_options = InlineAsrWhisperS2TOptions(
+                repo_id="tiny",
+                inference_framework=InferenceAsrFramework.WHISPER_S2T,
+                language="en",
+                task="transcribe",
+                compute_type="float16",
+            )
+            _WhisperS2TModel(
+                enabled=True,
+                artifacts_path=None,
+                accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+                asr_options=asr_options,
+            )
+
+        call_kwargs = mock_whisper_s2t.load_model.call_args.kwargs
+        assert call_kwargs.get("compute_type") == "float32", (
+            f"compute_type='float16' on CPU should be coerced to 'float32', "
+            f"got {call_kwargs.get('compute_type')!r}"
+        )
+
+    def test_whisper_s2t_cpu_coerces_bfloat16_compute_type(self):
+        """Regression test: compute_type='bfloat16' must also be coerced to
+        'float32' when running on CPU (CTranslate2 supports float32/int8/
+        int8_float32 on CPU only)."""
+        mock_whisper_s2t = Mock()
+        mock_whisper_s2t.load_model.return_value = Mock()
+
+        with patch.dict("sys.modules", {"whisper_s2t": mock_whisper_s2t}):
+            asr_options = InlineAsrWhisperS2TOptions(
+                repo_id="tiny",
+                inference_framework=InferenceAsrFramework.WHISPER_S2T,
+                language="en",
+                task="transcribe",
+                compute_type="bfloat16",
+            )
+            _WhisperS2TModel(
+                enabled=True,
+                artifacts_path=None,
+                accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+                asr_options=asr_options,
+            )
+
+        call_kwargs = mock_whisper_s2t.load_model.call_args.kwargs
+        assert call_kwargs.get("compute_type") == "float32", (
+            f"compute_type='bfloat16' on CPU should be coerced to 'float32', "
+            f"got {call_kwargs.get('compute_type')!r}"
+        )
+
+    def test_whisper_s2t_cpu_preserves_cpu_compatible_compute_types(self):
+        """Regression test: compute_type values already supported by CTranslate2
+        on CPU (float32, int8, int8_float32) must be passed through unchanged."""
+        mock_whisper_s2t = Mock()
+        mock_whisper_s2t.load_model.return_value = Mock()
+
+        with patch.dict("sys.modules", {"whisper_s2t": mock_whisper_s2t}):
+            for compute_type in ("float32", "int8", "int8_float32"):
+                asr_options = InlineAsrWhisperS2TOptions(
+                    repo_id="tiny",
+                    inference_framework=InferenceAsrFramework.WHISPER_S2T,
+                    language="en",
+                    task="transcribe",
+                    compute_type=compute_type,
+                )
+                _WhisperS2TModel(
+                    enabled=True,
+                    artifacts_path=None,
+                    accelerator_options=AcceleratorOptions(
+                        device=AcceleratorDevice.CPU
+                    ),
+                    asr_options=asr_options,
+                )
+
+                call_kwargs = mock_whisper_s2t.load_model.call_args.kwargs
+                assert call_kwargs.get("compute_type") == compute_type, (
+                    f"compute_type={compute_type!r} on CPU should pass through "
+                    f"unchanged, got {call_kwargs.get('compute_type')!r}"
+                )
+                mock_whisper_s2t.load_model.reset_mock()
+
+    def test_whisper_s2t_run_zero_duration_segment_does_not_fail(self, tmp_path):
+        """Regression test for the S2T zero-duration handling regression: a
+        segment with non-empty text and start_time == end_time must not abort
+        the whole conversion. This matches native/MLX behavior via the shared
+        _process_conversation() helper."""
+        from docling.backend.noop_backend import NoOpBackend
+        from docling.datamodel.base_models import ConversionStatus, InputFormat
+        from docling.datamodel.document import ConversionResult, InputDocument
+
+        audio_path = tmp_path / "test.wav"
+        audio_path.write_bytes(b"RIFF....WAVE")
+        input_doc = InputDocument(
+            path_or_stream=audio_path, format=InputFormat.AUDIO, backend=NoOpBackend
+        )
+        conv_res = ConversionResult(input=input_doc)
+
+        mock_whisper_s2t = Mock()
+        mock_model_instance = Mock()
+        mock_whisper_s2t.load_model.return_value = mock_model_instance
+        # Single zero-duration segment with non-empty text.
+        mock_model_instance.transcribe_with_vad.return_value = [
+            [{"start_time": 1.0, "end_time": 1.0, "text": "zero duration text"}]
+        ]
+
+        with patch.dict("sys.modules", {"whisper_s2t": mock_whisper_s2t}):
+            asr_options = InlineAsrWhisperS2TOptions(
+                repo_id="tiny",
+                inference_framework=InferenceAsrFramework.WHISPER_S2T,
+                language="en",
+                task="transcribe",
+            )
+            model = _WhisperS2TModel(
+                enabled=True,
+                artifacts_path=None,
+                accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+                asr_options=asr_options,
+            )
+
+            out = model.run(conv_res)
+            assert out.status == ConversionStatus.SUCCESS, (
+                f"Conversion must not fail on zero-duration segment, "
+                f"got status={out.status}"
+            )
+            assert out.document is not None
+            assert len(out.document.texts) == 1, (
+                "Zero-duration segment text must be preserved after normalization"
+            )
+            assert out.document.texts[0].text == "zero duration text"
+
 
 class TestWhisperS2TPipelineIntegration:
     """Test AsrPipeline integration with WhisperS2T backend."""
