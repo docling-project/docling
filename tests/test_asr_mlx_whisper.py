@@ -361,4 +361,3 @@ class TestMlxWhisperIntegration:
         pipeline = AsrPipeline(pipeline_options)
         assert isinstance(pipeline._model, _MlxWhisperModel)
         assert pipeline._model.model_path == "mlx-community/whisper-tiny-mlx"
-
