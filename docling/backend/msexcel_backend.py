@@ -218,6 +218,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         if self.is_valid():
             doc = self._convert_workbook(doc)
+            self._add_comments(doc)
         else:
             raise RuntimeError(
                 f"Cannot convert doc with {self.document_hash} because the backend failed to init."
@@ -707,6 +708,42 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 bottom = max(bottom, bbox.b) if bottom != -1 else bbox.b
 
         return (right - left, bottom - top)
+
+    def _add_comments(self, doc: DoclingDocument) -> None:
+        """Add cell comments from all worksheets to the NOTES content layer."""
+        if not self.workbook:
+            return
+
+        for sheet_name in self.workbook.sheetnames:
+            sheet = self.workbook[sheet_name]
+            if isinstance(sheet, Chartsheet):
+                continue
+            for row in sheet.iter_rows():
+                for cell in row:
+                    if cell.comment is None:
+                        continue
+                    author = cell.comment.author or ""
+                    raw_text = (
+                        str(cell.comment.text).strip() if cell.comment.text else ""
+                    )
+                    if not raw_text:
+                        continue
+                    full_text = (
+                        f"[author: {author}]: {raw_text}" if author else raw_text
+                    )
+                    comment_group = doc.add_group(
+                        label=GroupLabel.COMMENT_SECTION,
+                        name=f"comment-{sheet_name}-{cell.coordinate}",
+                        content_layer=ContentLayer.NOTES,
+                    )
+                    doc.add_comment(
+                        text=full_text,
+                        targets=None,
+                        parent=comment_group,
+                    )
+                    _log.debug(
+                        f"Added comment at {sheet_name}!{cell.coordinate} by '{author}'"
+                    )
 
     @staticmethod
     def _get_sheet_content_layer(sheet: Worksheet) -> Optional[ContentLayer]:

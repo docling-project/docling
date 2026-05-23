@@ -57,6 +57,40 @@ def test_e2e_pptx_conversions():
         )
 
 
+def test_comments_extraction() -> None:
+    """Test that slide comments are extracted into the NOTES content layer."""
+    from docling_core.types.doc import GroupItem
+
+    converter = get_converter()
+    path = Path("./tests/data/pptx/powerpoint_comments.pptx")
+    doc: DoclingDocument = converter.convert(path).document
+
+    comment_groups = [
+        g
+        for g in doc.groups
+        if isinstance(g, GroupItem) and g.name.startswith("comment-")
+    ]
+    assert len(comment_groups) >= 1, (
+        f"Expected ≥1 comment group, got {len(comment_groups)}"
+    )
+
+    comment_texts = [
+        t.text
+        for t in doc.texts
+        if hasattr(t, "content_layer") and t.content_layer == "notes"
+    ]
+    assert any("John Reviewer" in t for t in comment_texts), (
+        "Expected 'John Reviewer' in comment texts"
+    )
+    assert any("sample reviewer comment" in t for t in comment_texts), (
+        "Expected comment body text content"
+    )
+    for group in comment_groups:
+        assert group.content_layer == "notes", (
+            "Comments should be in NOTES content layer"
+        )
+
+
 def test_pptx_unrecognized_shape_type():
     """PPTX with a <p:sp> that has no geometry should not crash.
 
