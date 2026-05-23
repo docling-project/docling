@@ -526,29 +526,7 @@ class _WhisperS2TModel:
 
         try:
             conversation = self.transcribe(audio_path)
-
-            origin = DocumentOrigin(
-                filename=conv_res.input.file.name or "audio.wav",
-                mimetype="audio/x-wav",
-                binary_hash=conv_res.input.document_hash,
-            )
-            conv_res.document = DoclingDocument(
-                name=conv_res.input.file.stem or "audio.wav", origin=origin
-            )
-
-            for citem in conversation:
-                track: TrackSource = TrackSource(
-                    start_time=citem.start_time,
-                    end_time=citem.end_time,
-                    voice=citem.speaker,
-                )
-                conv_res.document.add_text(
-                    label=DocItemLabel.TEXT,
-                    text=citem.text,
-                    content_layer=ContentLayer.BODY,
-                    source=track,
-                )
-
+            _process_conversation(conversation, conv_res)
             conv_res.status = ConversionStatus.SUCCESS
             return conv_res
 
