@@ -396,7 +396,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     is not None
                 ):
                     te = self._handle_text_elements(element, doc)
-                    te = [t for t in te if hasattr(t, 'text') and t.text and t.text.strip()]
+                    te = [
+                        t
+                        for t in te
+                        if hasattr(t, "text") and t.text and t.text.strip()
+                    ]
                     added_elements.extend(te)
             # Check for the sdt containers, like table of contents
             elif tag_name == "sdt":
