@@ -46,10 +46,12 @@ def _append_memory_values(
 
 def load_points(
     metrics_file: Path,
-) -> tuple[list[int], dict[str, list[float]], dict[str, list[float]]]:
+) -> tuple[list[int], dict[str, list[float]], dict[str, list[float]], list[int]]:
     total_pages: list[int] = []
     loaded_metrics = _empty_series()
     after_metrics = _empty_series()
+    doc_boundaries: list[int] = []
+    previous_pdf: str | None = None
 
     with metrics_file.open(encoding="utf-8") as fp:
         for line in fp:
@@ -62,6 +64,15 @@ def load_points(
             if event == "loaded":
                 memory_loaded = payload.get("memory_loaded_mb")
                 if isinstance(memory_loaded, dict):
+                    pdf_name = payload.get("pdf")
+                    if (
+                        isinstance(pdf_name, str)
+                        and previous_pdf is not None
+                        and pdf_name != previous_pdf
+                    ):
+                        doc_boundaries.append(total_page_no)
+                    if isinstance(pdf_name, str):
+                        previous_pdf = pdf_name
                     total_pages.append(total_page_no)
                     _append_memory_values(loaded_metrics, memory_loaded)
             elif event == "after_unload":
@@ -69,7 +80,7 @@ def load_points(
                 if isinstance(memory_after, dict):
                     _append_memory_values(after_metrics, memory_after)
 
-    return total_pages, loaded_metrics, after_metrics
+    return total_pages, loaded_metrics, after_metrics, doc_boundaries
 
 
 def main() -> None:
@@ -84,7 +95,9 @@ def main() -> None:
             "Plotting requires matplotlib. Install it in the environment first."
         ) from exc
 
-    total_pages, loaded_metrics, after_metrics = load_points(args.metrics_file)
+    total_pages, loaded_metrics, after_metrics, doc_boundaries = load_points(
+        args.metrics_file
+    )
     if not total_pages:
         raise SystemExit(f"No plotable data found in {args.metrics_file}")
 
@@ -111,6 +124,14 @@ def main() -> None:
                 series,
                 label=key.replace("_mb", "").upper(),
                 linewidth=1.5,
+            )
+        for boundary in doc_boundaries:
+            ax.axvline(
+                boundary,
+                color="black",
+                linestyle="--",
+                linewidth=1.0,
+                alpha=0.8,
             )
         ax.set_ylabel("Memory (MiB)")
         ax.set_title(title)
