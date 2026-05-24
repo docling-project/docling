@@ -419,7 +419,24 @@ class LayoutPostprocessor:
             if cluster.id not in wrappers_to_remove
         ]
 
-        return special_clusters
+        # Drop PICTURE clusters that are substantially covered by a TABLE cluster.
+        # Both can appear in special_clusters when the layout model fires both labels
+        # on the same region (common with borderless/raster tables).
+        table_clusters = [c for c in special_clusters if c.label == DocItemLabel.TABLE]
+        pictures_to_remove: set[int] = set()
+        for picture in special_clusters:
+            if picture.label != DocItemLabel.PICTURE:
+                continue
+            for table in table_clusters:
+                if picture.bbox.intersection_over_self(table.bbox) > 0.5:
+                    pictures_to_remove.add(picture.id)
+                    break
+
+        return [
+            cluster
+            for cluster in special_clusters
+            if cluster.id not in pictures_to_remove
+        ]
 
     def _should_prefer_cluster(
         self, candidate: Cluster, other: Cluster, params: dict
