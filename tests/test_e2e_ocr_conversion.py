@@ -107,13 +107,19 @@ def test_e2e_conversions():
     not os.getenv("UPSTAGE_API_KEY"),
     reason="UPSTAGE_API_KEY not set — Upstage OCR requires live API access",
 )
-def test_e2e_upstage_conversion():
+@pytest.mark.parametrize(
+    "pdf_path",
+    [
+        Path("./tests/data_scanned/ocr_test.pdf"),
+        Path("./tests/data_scanned/sample_01.pdf"),
+    ],
+)
+def test_e2e_upstage_conversion(pdf_path: Path):
     """Live e2e for UpstageOcrModel.
 
     Skipped by default in CI (no API key). To run locally:
         UPSTAGE_API_KEY=<key> pytest tests/test_e2e_ocr_conversion.py::test_e2e_upstage_conversion
     """
-    pdf_path = Path("./tests/data_scanned/ocr_test.pdf")
     ocr_options = UpstageOcrOptions(api_key=os.environ["UPSTAGE_API_KEY"])
     converter = get_converter(ocr_options=ocr_options)
     print(f"converting {pdf_path} with upstage")
