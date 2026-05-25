@@ -74,6 +74,7 @@ from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     PipelineOptions,
     TableFormerMode,
+    UpstageOcrOptions,
 )
 from docling.datamodel.settings import settings as docling_settings
 from docling.document_converter import (
@@ -586,12 +587,11 @@ class IntelligentDocumentProcessor:
         toc_seed = toc_cfg.get("seed", cfg.get("toc_seed", 33))
         toc_max_tokens = toc_cfg.get("max_tokens", cfg.get("toc_max_tokens", 10000))
 
-        self.ocr_endpoint = ocr_ep
-        ocr_options = PaddleOcrOptions(
-            force_full_page_ocr=False,
-            lang=['korean'],
-            ocr_endpoint=ocr_ep,
-            text_score=0.3)
+        ocr_options = self._build_ocr_options(ocr_cfg, paddle_endpoint=ocr_ep)
+        if isinstance(ocr_options, UpstageOcrOptions):
+            self.ocr_endpoint = ocr_options.api_endpoint
+        else:
+            self.ocr_endpoint = ocr_ep
 
         self.page_chunk_counts = defaultdict(int)
         device = AcceleratorDevice.AUTO
@@ -645,6 +645,45 @@ class IntelligentDocumentProcessor:
             toc_max_tokens=toc_max_tokens,
             toc_system_prompt=_toc_system_prompt,
             toc_user_prompt=_toc_user_prompt,
+        )
+
+    @staticmethod
+    def _build_ocr_options(ocr_cfg: dict, paddle_endpoint: str):
+        """Build OcrOptions based on ocr.engine key in yaml.
+
+        Returns PaddleOcrOptions or UpstageOcrOptions. Default engine is "paddle".
+        For "upstage", api_key falls back to UPSTAGE_API_KEY env var when empty.
+        Unknown engine values fall back to "paddle" with a warning.
+        """
+        ocr_cfg = ocr_cfg if isinstance(ocr_cfg, dict) else {}
+        ocr_engine = str(ocr_cfg.get("engine", "paddle")).lower().strip()
+        if ocr_engine not in {"paddle", "upstage"}:
+            _log.warning(
+                f"[IntelligentDocumentProcessor] Unknown ocr.engine '{ocr_engine}', fallback to 'paddle'"
+            )
+            ocr_engine = "paddle"
+
+        if ocr_engine == "upstage":
+            upstage_cfg = _as_dict(ocr_cfg.get("upstage"))
+            upstage_api_key = upstage_cfg.get("api_key", "") or os.getenv("UPSTAGE_API_KEY", "")
+            return UpstageOcrOptions(
+                force_full_page_ocr=False,
+                lang=upstage_cfg.get("lang", ["ko", "en"]),
+                api_endpoint=upstage_cfg.get(
+                    "api_endpoint",
+                    "https://api.upstage.ai/v1/document-digitization",
+                ),
+                api_key=upstage_api_key,
+                model=upstage_cfg.get("model", "ocr"),
+                timeout=int(upstage_cfg.get("timeout", 60)),
+                text_score=float(upstage_cfg.get("text_score", 0.5)),
+            )
+
+        return PaddleOcrOptions(
+            force_full_page_ocr=False,
+            lang=['korean'],
+            ocr_endpoint=paddle_endpoint,
+            text_score=0.3,
         )
 
     def _create_converters(self):

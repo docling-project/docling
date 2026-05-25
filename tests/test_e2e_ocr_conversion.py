@@ -1,6 +1,9 @@
+import os
 import sys
 from pathlib import Path
 from typing import List, Tuple
+
+import pytest
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
@@ -17,6 +20,7 @@ from docling.datamodel.pipeline_options import (
     RapidOcrOptions,
     TesseractCliOcrOptions,
     TesseractOcrOptions,
+    UpstageOcrOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
@@ -97,3 +101,28 @@ def test_e2e_conversions():
                 generate=GENERATE_V2,
                 fuzzy=True,
             )
+
+
+@pytest.mark.skipif(
+    not os.getenv("UPSTAGE_API_KEY"),
+    reason="UPSTAGE_API_KEY not set — Upstage OCR requires live API access",
+)
+def test_e2e_upstage_conversion():
+    """Live e2e for UpstageOcrModel.
+
+    Skipped by default in CI (no API key). To run locally:
+        UPSTAGE_API_KEY=<key> pytest tests/test_e2e_ocr_conversion.py::test_e2e_upstage_conversion
+    """
+    pdf_path = Path("./tests/data_scanned/ocr_test.pdf")
+    ocr_options = UpstageOcrOptions(api_key=os.environ["UPSTAGE_API_KEY"])
+    converter = get_converter(ocr_options=ocr_options)
+    print(f"converting {pdf_path} with upstage")
+
+    doc_result: ConversionResult = converter.convert(pdf_path)
+
+    verify_conversion_result_v2(
+        input_path=pdf_path,
+        doc_result=doc_result,
+        generate=GENERATE_V2,
+        fuzzy=True,
+    )
