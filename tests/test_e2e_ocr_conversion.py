@@ -126,9 +126,12 @@ def test_e2e_upstage_conversion(pdf_path: Path):
 
     doc_result: ConversionResult = converter.convert(pdf_path)
 
+    # ocr_engine="upstage" 로 baseline 파일에 .upstage 접미사가 붙어
+    # 다른 OCR 엔진의 baseline 과 섞이지 않는다.
     verify_conversion_result_v2(
         input_path=pdf_path,
         doc_result=doc_result,
         generate=GENERATE_V2,
+        ocr_engine="upstage",
         fuzzy=True,
     )

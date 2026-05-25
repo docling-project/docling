@@ -116,8 +116,8 @@ def upstage_model(monkeypatch):
     return model
 
 
-def _ocr_rect(l=0.0, t=0.0, r=786.0, b=256.0):
-    return BoundingBox(l=l, t=t, r=r, b=b)
+def _ocr_rect(left=0.0, top=0.0, right=786.0, bottom=256.0):
+    return BoundingBox(l=left, t=top, r=right, b=bottom)
 
 
 def test_extract_cells_full_response(upstage_model):
@@ -194,7 +194,7 @@ def test_scale_defensive_when_response_is_half_size(upstage_model):
 def test_ocr_rect_offset_applied(upstage_model):
     """부분 crop 의 경우 vertex 좌표에 ocr_rect 의 left/top 오프셋이 더해져야 한다."""
     cells = upstage_model._extract_cells(
-        SAMPLE_RESPONSE, _ocr_rect(l=100.0, t=200.0, r=886.0, b=456.0), (786, 256)
+        SAMPLE_RESPONSE, _ocr_rect(left=100.0, top=200.0, right=886.0, bottom=456.0), (786, 256)
     )
     rect = cells[0].rect  # "Print"
     xs = [rect.r_x0, rect.r_x1, rect.r_x2, rect.r_x3]
@@ -401,17 +401,31 @@ def test_live_extract_cells_produces_text_cells(live_upstage_model, live_upstage
 
 @pytest.mark.skipif(not os.getenv("UPSTAGE_API_KEY"), reason=_LIVE_REASON)
 def test_live_topleft_origin_word_order(live_upstage_model, live_upstage_response):
-    """다단어 입력 ("hello world") 의 첫 단어가 둘째 단어보다 왼쪽에 위치해야 한다 —
+    """다단어 입력 ("hello world") 의 'hello' 가 'world' 보다 왼쪽에 위치해야 한다 —
     좌표계 origin 가정 (TOPLEFT, x 가 왼→오 증가) 확인."""
     img, resp = live_upstage_response
     ocr_rect = BoundingBox(l=0.0, t=0.0, r=float(img.width), b=float(img.height))
     cells = live_upstage_model._extract_cells(resp, ocr_rect, img.size)
 
-    if len(cells) < 2:
-        pytest.skip("단어가 2개 미만 감지 — 좌표 순서 검증 불가")
-    first_min_x = min(cells[0].rect.r_x0, cells[0].rect.r_x1, cells[0].rect.r_x2, cells[0].rect.r_x3)
-    second_min_x = min(cells[1].rect.r_x0, cells[1].rect.r_x1, cells[1].rect.r_x2, cells[1].rect.r_x3)
-    assert first_min_x < second_min_x, (
-        f"첫 단어 ({cells[0].text!r}) 가 둘째 단어 ({cells[1].text!r}) 보다 오른쪽 — "
-        f"x 좌표계 가정 깨짐"
+    # cells 배열은 Upstage 응답의 words 순서를 그대로 따르므로, 좌→우 순서를
+    # 보장할 수 없다. text 로 직접 찾아서 위치 비교.
+    def _min_x(cell):
+        return min(cell.rect.r_x0, cell.rect.r_x1, cell.rect.r_x2, cell.rect.r_x3)
+
+    def _find(text_prefix):
+        for c in cells:
+            if c.text.lower().startswith(text_prefix):
+                return c
+        return None
+
+    hello = _find("hello")
+    world = _find("world")
+    if hello is None or world is None:
+        pytest.skip(
+            f"'hello' / 'world' 모두 감지되지 않음 — 좌표 순서 검증 불가 "
+            f"(감지된 단어: {[c.text for c in cells]})"
+        )
+    assert _min_x(hello) < _min_x(world), (
+        f"'hello' (min_x={_min_x(hello)}) 가 'world' (min_x={_min_x(world)}) 보다 "
+        f"오른쪽 — x 좌표계 가정 깨짐"
     )

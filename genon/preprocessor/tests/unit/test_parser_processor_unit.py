@@ -718,3 +718,48 @@ class TestBuildOcrOptions:
             paddle_endpoint="",
         )
         assert isinstance(opts, UpstageOcrOptions)
+
+    # ── yaml 의 잘못된 값으로 startup 이 깨지지 않는지 (#178 CodeRabbit) ─────
+
+    def test_upstage_invalid_timeout_falls_back_to_default(self):
+        from docling.datamodel.pipeline_options import UpstageOcrOptions
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {"engine": "upstage", "upstage": {"api_key": "k", "timeout": "not-a-number"}},
+            paddle_endpoint="",
+        )
+        assert isinstance(opts, UpstageOcrOptions)
+        assert opts.timeout == 60
+
+    def test_upstage_empty_timeout_falls_back_to_default(self):
+        from docling.datamodel.pipeline_options import UpstageOcrOptions
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {"engine": "upstage", "upstage": {"api_key": "k", "timeout": ""}},
+            paddle_endpoint="",
+        )
+        assert opts.timeout == 60
+
+    def test_upstage_zero_timeout_falls_back_to_default(self):
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {"engine": "upstage", "upstage": {"api_key": "k", "timeout": 0}},
+            paddle_endpoint="",
+        )
+        # 0 / 음수 timeout 도 의미 없으므로 default 로 복구
+        assert opts.timeout == 60
+
+    def test_upstage_invalid_text_score_falls_back_to_default(self):
+        from docling.datamodel.pipeline_options import UpstageOcrOptions
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {"engine": "upstage", "upstage": {"api_key": "k", "text_score": "bad"}},
+            paddle_endpoint="",
+        )
+        assert isinstance(opts, UpstageOcrOptions)
+        assert opts.text_score == 0.5
+
+    def test_upstage_numeric_string_timeout_accepted(self):
+        # int("60") 처럼 numeric-string 은 정상 변환되어야 한다
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {"engine": "upstage", "upstage": {"api_key": "k", "timeout": "120", "text_score": "0.7"}},
+            paddle_endpoint="",
+        )
+        assert opts.timeout == 120
+        assert opts.text_score == 0.7

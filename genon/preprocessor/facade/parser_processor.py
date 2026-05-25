@@ -666,6 +666,30 @@ class IntelligentDocumentProcessor:
         if ocr_engine == "upstage":
             upstage_cfg = _as_dict(ocr_cfg.get("upstage"))
             upstage_api_key = upstage_cfg.get("api_key", "") or os.getenv("UPSTAGE_API_KEY", "")
+
+            # yaml 의 잘못된 값 (예: timeout: "60s") 으로 startup 이 깨지지 않도록
+            # 변환 실패 시 default 로 fallback + warning. 페이지 batch size 등 다른
+            # 정수 파싱 패턴과 동일.
+            raw_timeout = upstage_cfg.get("timeout", 60)
+            try:
+                upstage_timeout = int(raw_timeout)
+                if upstage_timeout <= 0:
+                    raise ValueError
+            except (TypeError, ValueError):
+                _log.warning(
+                    f"[IntelligentDocumentProcessor] Invalid ocr.upstage.timeout '{raw_timeout}', fallback to 60"
+                )
+                upstage_timeout = 60
+
+            raw_text_score = upstage_cfg.get("text_score", 0.5)
+            try:
+                upstage_text_score = float(raw_text_score)
+            except (TypeError, ValueError):
+                _log.warning(
+                    f"[IntelligentDocumentProcessor] Invalid ocr.upstage.text_score '{raw_text_score}', fallback to 0.5"
+                )
+                upstage_text_score = 0.5
+
             return UpstageOcrOptions(
                 force_full_page_ocr=False,
                 lang=upstage_cfg.get("lang", ["ko", "en"]),
@@ -675,8 +699,8 @@ class IntelligentDocumentProcessor:
                 ),
                 api_key=upstage_api_key,
                 model=upstage_cfg.get("model", "ocr"),
-                timeout=int(upstage_cfg.get("timeout", 60)),
-                text_score=float(upstage_cfg.get("text_score", 0.5)),
+                timeout=upstage_timeout,
+                text_score=upstage_text_score,
             )
 
         return PaddleOcrOptions(

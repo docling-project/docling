@@ -5,7 +5,6 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Optional, Type
 
-import numpy as np
 import requests
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
@@ -80,7 +79,10 @@ class UpstageOcrModel(BaseOcrModel):
 
                         try:
                             result = self._call_upstage(high_res_image)
-                        except Exception as e:
+                        except (requests.RequestException, RuntimeError) as e:
+                            # 네트워크 장애 / 4xx-5xx HTTP / JSON decode 실패만 skip.
+                            # _extract_cells 안의 버그 (KeyError, TypeError 등) 는
+                            # 그대로 전파해서 가려지지 않도록 한다.
                             _log.warning(f"Upstage OCR call failed: {e}")
                             continue
 
