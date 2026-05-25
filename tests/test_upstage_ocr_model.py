@@ -304,3 +304,114 @@ def test_call_upstage_raises_on_http_error(upstage_model):
     with patch("docling.models.upstage_ocr_model.requests.post", return_value=fake_response):
         with pytest.raises(RuntimeError, match="Upstage OCR HTTP 502"):
             upstage_model._call_upstage(img)
+
+
+# ─── Live API tests — schema 회귀 방어 ──────────────────────────────────────
+#
+# 위 mock 기반 테스트는 Upstage 가 응답 schema (pages[].words[].boundingBox.
+# vertices 등) 를 바꾸거나 우리가 schema 를 잘못 가정한 경우를 잡지 못한다.
+# 아래 테스트는 실제 Upstage API 와 통신해 응답 구조 가정이 유효한지 검증한다.
+# UPSTAGE_API_KEY 환경변수가 있을 때만 실행 (CI 에서는 자동 skip).
+
+_LIVE_REASON = "UPSTAGE_API_KEY not set — live Upstage API required"
+
+
+def _make_text_image(text: str = "hello world", size=(400, 120)):
+    """간단한 PIL 이미지 (흰 배경 + 검은 텍스트) 생성."""
+    from PIL import Image, ImageDraw, ImageFont
+
+    img = Image.new("RGB", size, "white")
+    draw = ImageDraw.Draw(img)
+    try:
+        font = ImageFont.load_default(size=48)
+    except TypeError:
+        font = ImageFont.load_default()
+    draw.text((20, 30), text, fill="black", font=font)
+    return img
+
+
+@pytest.fixture(scope="module")
+def live_upstage_model():
+    api_key = os.getenv("UPSTAGE_API_KEY")
+    if not api_key:
+        pytest.skip(_LIVE_REASON)
+    accel = MagicMock()
+    accel.num_threads = 4
+    accel.device = "cpu"
+    return UpstageOcrModel(
+        enabled=True,
+        artifacts_path=None,
+        options=UpstageOcrOptions(api_key=api_key),
+        accelerator_options=accel,
+    )
+
+
+@pytest.fixture(scope="module")
+def live_upstage_response(live_upstage_model):
+    """Upstage 에 단 1회만 호출해서 응답을 module 내 모든 live 테스트가 공유한다.
+    (rate limit 회피)"""
+    img = _make_text_image("hello world")
+    resp = live_upstage_model._call_upstage(img)
+    return img, resp
+
+
+@pytest.mark.skipif(not os.getenv("UPSTAGE_API_KEY"), reason=_LIVE_REASON)
+def test_live_response_schema_matches_assumptions(live_upstage_response):
+    """Upstage 응답이 우리 코드가 가정한 schema 를 그대로 따르는지 검증."""
+    _img, resp = live_upstage_response
+
+    assert isinstance(resp, dict), f"응답이 dict 가 아님: {type(resp)}"
+    assert "pages" in resp, f"응답에 'pages' 키 없음: {list(resp.keys())}"
+    pages = resp["pages"]
+    assert isinstance(pages, list) and len(pages) >= 1, "pages 가 비어있음"
+
+    page = pages[0]
+    assert "width" in page and "height" in page, "page width/height 없음 (스케일 방어 동작 안 함)"
+    assert "words" in page, "page.words 없음"
+    assert isinstance(page["words"], list)
+    assert len(page["words"]) > 0, "OCR 단어가 하나도 감지되지 않음 — 인식 실패 또는 schema 변경"
+
+    word = page["words"][0]
+    assert "text" in word, "word.text 없음"
+    assert "confidence" in word, "word.confidence 없음"
+    assert "boundingBox" in word, "word.boundingBox 없음"
+    bbox = word["boundingBox"]
+    assert "vertices" in bbox, "boundingBox.vertices 없음"
+    verts = bbox["vertices"]
+    assert isinstance(verts, list) and len(verts) == 4, f"vertices 가 4점이 아님: len={len(verts)}"
+    for v in verts:
+        assert "x" in v and "y" in v, f"vertex 에 x/y 없음: {v}"
+
+
+@pytest.mark.skipif(not os.getenv("UPSTAGE_API_KEY"), reason=_LIVE_REASON)
+def test_live_extract_cells_produces_text_cells(live_upstage_model, live_upstage_response):
+    """실제 응답으로 _extract_cells 가 TextCell 을 생성하는지 (TOPLEFT 좌표계 유지)."""
+    img, resp = live_upstage_response
+    ocr_rect = BoundingBox(l=0.0, t=0.0, r=float(img.width), b=float(img.height))
+    cells = live_upstage_model._extract_cells(resp, ocr_rect, img.size)
+
+    assert len(cells) > 0, "실제 응답으로 TextCell 이 하나도 생성되지 않음"
+    rect = cells[0].rect
+    xs = [rect.r_x0, rect.r_x1, rect.r_x2, rect.r_x3]
+    ys = [rect.r_y0, rect.r_y1, rect.r_y2, rect.r_y3]
+    assert 0 <= min(xs) and max(xs) <= img.width, f"x 좌표가 이미지 밖: {xs}"
+    assert 0 <= min(ys) and max(ys) <= img.height, f"y 좌표가 이미지 밖: {ys}"
+    assert all(c.from_ocr for c in cells)
+
+
+@pytest.mark.skipif(not os.getenv("UPSTAGE_API_KEY"), reason=_LIVE_REASON)
+def test_live_topleft_origin_word_order(live_upstage_model, live_upstage_response):
+    """다단어 입력 ("hello world") 의 첫 단어가 둘째 단어보다 왼쪽에 위치해야 한다 —
+    좌표계 origin 가정 (TOPLEFT, x 가 왼→오 증가) 확인."""
+    img, resp = live_upstage_response
+    ocr_rect = BoundingBox(l=0.0, t=0.0, r=float(img.width), b=float(img.height))
+    cells = live_upstage_model._extract_cells(resp, ocr_rect, img.size)
+
+    if len(cells) < 2:
+        pytest.skip("단어가 2개 미만 감지 — 좌표 순서 검증 불가")
+    first_min_x = min(cells[0].rect.r_x0, cells[0].rect.r_x1, cells[0].rect.r_x2, cells[0].rect.r_x3)
+    second_min_x = min(cells[1].rect.r_x0, cells[1].rect.r_x1, cells[1].rect.r_x2, cells[1].rect.r_x3)
+    assert first_min_x < second_min_x, (
+        f"첫 단어 ({cells[0].text!r}) 가 둘째 단어 ({cells[1].text!r}) 보다 오른쪽 — "
+        f"x 좌표계 가정 깨짐"
+    )
