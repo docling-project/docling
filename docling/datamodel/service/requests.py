@@ -55,7 +55,7 @@ class TargetName(str, enum.Enum):
 
 ## Aliases
 BatchSourceRequestItem = Annotated[
-    FileSourceRequest | AnyHttpSourceRequest | S3SourceRequest,
+    AnyHttpSourceRequest | S3SourceRequest,
     Field(discriminator="kind"),
 ]
 
@@ -68,12 +68,17 @@ TargetRequest = Annotated[
     Field(discriminator="kind"),
 ]
 
+BatchTargetRequest = Annotated[
+    S3Target | PresignedUrlTarget,
+    Field(discriminator="kind"),
+]
+
 
 ## Complete Source request
 class BatchConvertSourcesRequest(BaseModel):
     options: ConvertDocumentsOptions = ConvertDocumentsOptions()
-    sources: list[BatchSourceRequestItem]
-    target: TargetRequest = InBodyTarget()
+    sources: list[BatchSourceRequestItem] = Field(min_length=1)
+    target: BatchTargetRequest
     callbacks: list[CallbackSpec] = []
 
 
@@ -85,7 +90,7 @@ class ConvertSourcesRequest(BaseModel):
 
 
 ## Deprecated aliases — will be removed in a future release
-ConvertDocumentsRequest = BatchConvertSourcesRequest
+ConvertDocumentsRequest = ConvertSourcesRequest
 
 ## Source chunking requests
 

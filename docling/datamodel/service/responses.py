@@ -161,6 +161,7 @@ class DoclingTaskResult(BaseModel):
     processing_time: float
     num_converted: int
     num_succeeded: int
+    num_partial_success: int = 0
     num_failed: int
 
 
@@ -188,24 +189,13 @@ class ConvertDocumentResponse(BaseModel):
     timings: dict[str, ProfilingItem] = {}
 
 
-def _to_convert_document_response(
-    item: DocumentResultItem, processing_time: float
-) -> "ConvertDocumentResponse":
-    return ConvertDocumentResponse(
-        document=item.document,
-        status=item.status,
-        errors=item.errors,
-        processing_time=processing_time,
-        timings=item.timings,
-    )
-
-
 class PresignedUrlConvertDocumentResponse(BaseModel):
     """Counts-only response model for remote targets without per-document artifacts."""
 
     processing_time: float
     num_converted: int
     num_succeeded: int
+    num_partial_success: int = 0
     num_failed: int
 
 
@@ -214,6 +204,7 @@ class PresignedUrlConvertResponse(BaseModel):
     processing_time: float
     num_converted: int
     num_succeeded: int
+    num_partial_success: int = 0
     num_failed: int
 
 

@@ -42,6 +42,7 @@ class ProgressUpdateProcessed(BaseProgress):
 
     num_processed: int
     num_succeeded: int
+    num_partial_success: int = 0
     num_failed: int
 
     docs_succeeded: list[SucceededDocsItem]
