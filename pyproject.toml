@@ -98,7 +98,7 @@ format-pdf-pypdfium2 = [
 
 format-pdf-docling = [
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
-  'docling-parse>=6.0.0,<7.0.0',
+  'docling-parse>=6.1.0,<7.0.0',
 ]
 
 format-pdf = [
@@ -277,6 +277,7 @@ dev = [
   "ipywidgets~=8.1",
   "nbqa~=1.9",
   "python-semantic-release~=7.32",
+  "matplotlib>=3.10.9",
 ]
 
 docs = [
@@ -310,7 +311,7 @@ members = ["packages/docling"]
 
 [tool.uv.sources]
 docling = { workspace = true }
-docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "fe1e36c1d381a0b973b34bd4e722c54151f13b9f" }
+# docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "18e96bae3d771492cc88149336e4489bf2efa2ed" }
 # docling-parse = { path = "../docling-parse", editable = true }
 
 [tool.uv]
