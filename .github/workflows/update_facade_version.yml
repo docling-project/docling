@@ -15,13 +15,19 @@ on:
 jobs:
   bump-version-comment:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
+      - name: Mint GitHub App token (ruleset bypass)
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.RELEASE_BOT_APP_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_APP_PRIVATE_KEY }}
+
       - uses: actions/checkout@v5
         with:
           ref: develop
           fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Resolve tag and date
         id: meta
@@ -72,9 +78,10 @@ jobs:
       - name: Commit and push
         env:
           TAG: ${{ steps.meta.outputs.tag }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${APP_SLUG}[bot]@users.noreply.github.com"
           git add \
             genon/preprocessor/facade/attachment_processor.py \
             genon/preprocessor/facade/convert_processor.py \

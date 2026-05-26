@@ -26,7 +26,7 @@ ARG HW_VARIANT=gpu
 ARG TORCH_CPU_INDEX_URL=https://download.pytorch.org/whl/cpu
 # 이슈 #199 후속 — rhwp 바이너리를 컨테이너에 직접 빌드해 넣기 위한 git ref
 ARG RHWP_GIT_URL=https://github.com/genonai/genos-rhwp.git
-ARG RHWP_GIT_REF=main
+ARG RHWP_GIT_REF=genos/main
 
 ############################
 # 1) Base (APT + LibreOffice)

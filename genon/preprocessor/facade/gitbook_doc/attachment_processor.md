@@ -110,7 +110,7 @@ HWP/HWPX 파일은 변환 실패 시 단계적으로 폴백을 시도합니다.
                                    .hwpx → HwpxDocumentBackend
                                            │ 실패
                                            ▼
-                                ③ PDF 변환 (PDF SDK / LibreOffice) ── 성공 ──► compose_vectors()
+                                ③ PDF 변환 (HWP: PDF SDK→LibreOffice→rhwp) ─ 성공 ──► compose_vectors()
                                            │ 실패
                                            ▼
                                         에러 반환
@@ -181,24 +181,27 @@ def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
 
 **목적**: 다양한 문서 포맷(PPT, DOCX, 이미지 등)을 PDF로 변환합니다. 시그니처와 동작 정책(실패 시 예외 없이 `None` 반환)은 보존하면서, 실제 변환 로직은 `genon.preprocessor.converters.hwp_to_pdf` 모듈로 일원화되어 있습니다 (이슈 #199).
 
-| `use_pdf_sdk` | 위임되는 backend | 비고 |
-|---|---|---|
-| `True` (기본값) | `pdf_sdk` (`PdfSdkConverter`) | PDF 변환 SDK (Linux 전용 바이너리, `pdf_sdk/pdfConverter`). 엔터프라이즈 빌드에만 자산이 포함됨. |
-| `False` | `libreoffice` (`LibreOfficeConverter`) | LibreOffice (`soffice --headless`) 사용. 오픈소스 빌드의 기본 fallback. |
+**변환 chain** (입력 확장자 + `use_pdf_sdk` 로 결정. 앞 backend 실패 시 다음으로 자동 fallback):
 
-호출부에서는 `convert_hwp_to_pdf(file_path, primary=..., disable_fallback=True)` 형태로 단일 backend만 시도하도록 위임되어 기존 동작이 보존됩니다.
+| 입력 | `use_pdf_sdk=True` (엔터프라이즈) | `use_pdf_sdk=False` (오픈소스) |
+|---|---|---|
+| `.hwp` / `.hwpx` | `pdf_sdk → libreoffice → rhwp` | `libreoffice → rhwp` |
+| 그 외 (`.docx`/`.pptx`/이미지 등) | `pdf_sdk → libreoffice` | `libreoffice` |
+
+- 내부적으로 `convert_hwp_to_pdf(file_path, order=[...])` 로 위임되며, chain 의 backend 가 순서대로 시도되다 첫 성공에서 종료됩니다.
+- `rhwp` 는 HWP/HWPX 전용이라 비-HWP 입력 chain 에는 포함되지 않습니다. 또한 도입 초기 단계라 안정성 검증 전까지는 **최후순위 fallback** 으로만 둡니다 (검증 후 우선순위 상향 검토).
 
 **Backend 경로/가용성 결정**:
-- `PDF_SDK_HOME` 환경변수 (도커: `/app/pdf_sdk`) → fallback `<repo_root>/pdf_sdk`. 바이너리 실행권한이 있을 때만 활성.
-- LibreOffice는 `shutil.which("soffice")` 로 판정.
+- `pdf_sdk`: `PDF_SDK_HOME` (도커 `/app/pdf_sdk`) → fallback `<repo_root>/pdf_sdk`. 바이너리 실행권한 있을 때만 활성. 엔터프라이즈 빌드에만 자산 포함.
+- `libreoffice`: `shutil.which("soffice")` 로 판정.
+- `rhwp`: `RHWP_BIN` (기본 `/usr/local/bin/rhwp`) 바이너리 존재 + 실행권한으로 판정.
 
-자세한 backend별 동작 흐름(fontconfig 패치, subprocess 인자, 한글 파일명 ASCII 복사 등)은 `genon/preprocessor/converters/hwp_to_pdf/{pdf_sdk,libreoffice}.py` 본체를 참고합니다.
+자세한 backend별 동작 흐름(fontconfig 패치, subprocess 인자, 한글 파일명 ASCII 복사 등)은 `genon/preprocessor/converters/hwp_to_pdf/{pdf_sdk,libreoffice,rhwp}.py` 본체를 참고합니다.
 
 **핵심 포인트**:
-- 실패해도 **예외를 던지지 않고** `None` 반환 (방어적 설계, 양 엔진 동일).
+- 실패해도 **예외를 던지지 않고** `None` 반환 (방어적 설계, 모든 backend 동일).
 - 호출부는 `kwargs.get('use_pdf_sdk', True)` 패턴 그대로 사용 가능 (Genos 측 config로 제어).
 - `LANG=C.UTF-8` / `LC_ALL=C.UTF-8` 환경 변수로 한글 파일명 / 컨텐츠 처리 보장.
-- chain 기반 fallback(rhwp 추가, 다중 backend 자동 전환)이 필요한 신규 호출처는 `convert_hwp_to_pdf()` 를 직접 사용.
 
 ---
 

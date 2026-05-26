@@ -1,4 +1,4 @@
-# 적재용(지능형) 전처리기 v.2.1.0 (2026-05-11 Release)
+# 적재용(지능형) 전처리기 v.2.1.5 (2026-05-21 Release)
 from __future__ import annotations
 
 import json
@@ -26,15 +26,28 @@ import unicodedata
 
 def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
     """
-    PDF 변환을 시도한다. use_pdf_sdk=True면 PDF SDK, False면 LibreOffice.
-    실패해도 예외를 던지지 않고 None을 반환한다.
+    PDF 변환을 시도한다. 실패해도 예외를 던지지 않고 None을 반환한다.
 
+    chain (HWP/HWPX 입력):
+      use_pdf_sdk=True  → pdf_sdk → libreoffice → rhwp
+      use_pdf_sdk=False → libreoffice → rhwp
+    chain (그 외 입력, 예: docx/pptx):
+      use_pdf_sdk=True  → pdf_sdk → libreoffice
+      use_pdf_sdk=False → libreoffice
+
+    rhwp 는 HWP/HWPX 전용이라 비-HWP 입력에는 chain 에 들어가지 않는다. 또한 도입
+    초기 단계라 안정성 검증 전까지는 최후순위 fallback 으로만 두며, 검증 후
+    우선순위 상향을 검토한다.
     내부 구현은 `genon.preprocessor.converters.hwp_to_pdf` 모듈에 통합되어 있다.
-    기존 호출 동작 보존을 위해 단일 backend만 시도하도록 `disable_fallback=True` 사용.
     """
     from genon.preprocessor.converters.hwp_to_pdf import convert_hwp_to_pdf
-    primary = "pdf_sdk" if use_pdf_sdk else "libreoffice"
-    return convert_hwp_to_pdf(file_path, primary=primary, disable_fallback=True)
+    ext = os.path.splitext(file_path)[1].lower()
+    is_hwp = ext in (".hwp", ".hwpx")
+    if use_pdf_sdk:
+        order = ["pdf_sdk", "libreoffice", "rhwp"] if is_hwp else ["pdf_sdk", "libreoffice"]
+    else:
+        order = ["libreoffice", "rhwp"] if is_hwp else ["libreoffice"]
+    return convert_hwp_to_pdf(file_path, order=order)
 
 def _is_pdf(file_path: str) -> bool:
     """파일이 PDF 매직 헤더로 시작하는지 확인 (확장자 무관)."""
@@ -1686,12 +1699,17 @@ class DocumentProcessor:
 
         # 변환된 PDF 를 minio 에 업로드. object key 는 원본 파일명의 stem + ".pdf".
         # (예: 원본 file_name='sample.hwp' → minio key='<doc_id>/sample.pdf')
-        # upload_files 가 업로드 후 로컬 파일을 os.remove 하므로 파싱이 모두 끝난 이 시점에 호출.
+        # upload_files 가 finally 에서 org_path 를 os.remove 하는데, 변환 PDF 의
+        # NFS 원본은 GenOS UI 의 PDF preview 가 직접 참조하므로 보존 필요.
+        # → 임시 사본을 만들어 그것만 업로드시키고 NFS 원본은 그대로 둔다.
         if converted_pdf_path and upload_files:
             original_name = kwargs.get('file_name') or os.path.basename(converted_pdf_path)
             pdf_object_name = os.path.splitext(original_name)[0] + '.pdf'
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as _tmp:
+                shutil.copy(converted_pdf_path, _tmp.name)
+                _tmp_upload_path = _tmp.name
             await upload_files(
-                [{'path': converted_pdf_path, 'name': pdf_object_name}],
+                [{'path': _tmp_upload_path, 'name': pdf_object_name}],
                 request=request,
             )
 
