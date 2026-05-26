@@ -179,6 +179,24 @@ class PaddleOcrOptions(OcrOptions):
     timeout: int = 60  # seconds
 
 
+class UpstageOcrOptions(OcrOptions):
+    """Options for the Upstage Document Digitization OCR API."""
+
+    kind: ClassVar[Literal["upstage"]] = "upstage"
+
+    lang: List[str] = ["ko", "en"]
+
+    api_endpoint: str = "https://api.upstage.ai/v1/document-digitization"
+    model: str = "ocr"
+    api_key: str = ""
+    timeout: int = 60  # seconds
+    text_score: float = 0.5
+
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+
 class EasyOcrOptions(OcrOptions):
     """Options for the EasyOCR engine."""
 

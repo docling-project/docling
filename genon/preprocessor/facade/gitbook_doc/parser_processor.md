@@ -115,8 +115,22 @@ ocr:
   #   disable — OCR 수행 안 함
   ocr_mode: "auto"
 
+  # OCR 엔진 선택: paddle | upstage
+  # docker image 재빌드 없이 yaml 만으로 전환 가능
+  engine: "paddle"
+
+  # engine: "paddle" 일 때만 사용
   # <OCR_ENDPOINT>: PaddleOCR 서버 주소로 변경 필요
   ocr_endpoint: "http://<OCR_ENDPOINT>/ocr"
+
+  # engine: "upstage" 일 때만 사용 (Upstage Document Digitization REST API)
+  upstage:
+    api_endpoint: "https://api.upstage.ai/v1/document-digitization"
+    # api_key 가 비어있으면 UPSTAGE_API_KEY 환경변수에서 fallback (시크릿 운영용)
+    api_key: ""
+    model: "ocr"
+    timeout: 60
+    text_score: 0.5
 
 # ───────────────────────────────────────────────
 # 레이아웃 모델 설정
@@ -167,7 +181,13 @@ output:
 | 섹션 | 키 | 기본값 | 설명 |
 |------|----|--------|------|
 | `ocr` | `ocr_mode` | `"auto"` | OCR 수행 정책. `auto` / `force` / `disable` |
-| `ocr` | `ocr_endpoint` | `""` | PaddleOCR 서버 URL |
+| `ocr` | `engine` | `"paddle"` | OCR 엔진 선택. `paddle` / `upstage` (유효하지 않으면 `paddle`) |
+| `ocr` | `ocr_endpoint` | `""` | PaddleOCR 서버 URL (engine=paddle 일 때만 사용) |
+| `ocr.upstage` | `api_endpoint` | `"https://api.upstage.ai/v1/document-digitization"` | Upstage OCR API URL |
+| `ocr.upstage` | `api_key` | `""` | Upstage API 키. 비어있으면 `UPSTAGE_API_KEY` 환경변수 사용 |
+| `ocr.upstage` | `model` | `"ocr"` | Upstage 모델명 |
+| `ocr.upstage` | `timeout` | `60` | HTTP 타임아웃 (초) |
+| `ocr.upstage` | `text_score` | `0.5` | word confidence 필터링 임계값 |
 | `layout` | `layout_model_type` | `"genos_layout"` | 레이아웃 모델 선택. `genos_layout` / `docling_layout` (유효하지 않으면 `genos_layout`) |
 | `layout.genos_layout` | `endpoint` | `""` | Genos Layout API URL |
 | `layout.genos_layout` | `api_key` | `""` | API 인증 키 |

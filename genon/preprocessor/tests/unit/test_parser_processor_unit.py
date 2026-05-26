@@ -635,3 +635,131 @@ class TestGetRealFileType:
         f = tmp_path / "test.docx"
         f.write_bytes(b"PK\x03\x04 zip content")
         assert loader.get_real_file_type(str(f)) == ".docx"
+
+
+# ─── IntelligentDocumentProcessor._build_ocr_options (yaml → ocr_options) ────
+
+@pytest.mark.unit
+class TestBuildOcrOptions:
+    """yaml 의 ocr.engine 키에 따라 PaddleOcrOptions / UpstageOcrOptions 가 선택되는지 검증."""
+
+    @pytest.fixture(autouse=True)
+    def _clean_env(self, monkeypatch):
+        monkeypatch.delenv("UPSTAGE_API_KEY", raising=False)
+
+    def test_default_engine_is_paddle(self):
+        from docling.datamodel.pipeline_options import PaddleOcrOptions
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {}, paddle_endpoint="http://paddle.example/ocr"
+        )
+        assert isinstance(opts, PaddleOcrOptions)
+        assert opts.ocr_endpoint == "http://paddle.example/ocr"
+
+    def test_explicit_paddle_engine(self):
+        from docling.datamodel.pipeline_options import PaddleOcrOptions
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {"engine": "paddle"}, paddle_endpoint="http://paddle.example/ocr"
+        )
+        assert isinstance(opts, PaddleOcrOptions)
+
+    def test_upstage_engine_uses_yaml_values(self):
+        from docling.datamodel.pipeline_options import UpstageOcrOptions
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {
+                "engine": "upstage",
+                "upstage": {
+                    "api_endpoint": "https://custom.upstage.example/ocr",
+                    "api_key": "yaml-key",
+                    "model": "ocr",
+                    "timeout": 30,
+                    "text_score": 0.6,
+                    "lang": ["ko"],
+                },
+            },
+            paddle_endpoint="",
+        )
+        assert isinstance(opts, UpstageOcrOptions)
+        assert opts.api_endpoint == "https://custom.upstage.example/ocr"
+        assert opts.api_key == "yaml-key"
+        assert opts.model == "ocr"
+        assert opts.timeout == 30
+        assert opts.text_score == 0.6
+        assert opts.lang == ["ko"]
+
+    def test_upstage_engine_api_key_falls_back_to_env(self, monkeypatch):
+        from docling.datamodel.pipeline_options import UpstageOcrOptions
+        monkeypatch.setenv("UPSTAGE_API_KEY", "env-secret")
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {"engine": "upstage", "upstage": {"api_key": ""}},
+            paddle_endpoint="",
+        )
+        assert isinstance(opts, UpstageOcrOptions)
+        assert opts.api_key == "env-secret"
+
+    def test_upstage_yaml_key_takes_precedence_over_env(self, monkeypatch):
+        monkeypatch.setenv("UPSTAGE_API_KEY", "env-secret")
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {"engine": "upstage", "upstage": {"api_key": "yaml-secret"}},
+            paddle_endpoint="",
+        )
+        assert opts.api_key == "yaml-secret"
+
+    def test_unknown_engine_falls_back_to_paddle(self):
+        from docling.datamodel.pipeline_options import PaddleOcrOptions
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {"engine": "bogus"}, paddle_endpoint="http://x/ocr"
+        )
+        assert isinstance(opts, PaddleOcrOptions)
+
+    def test_engine_case_insensitive(self):
+        from docling.datamodel.pipeline_options import UpstageOcrOptions
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {"engine": "UPSTAGE", "upstage": {"api_key": "k"}},
+            paddle_endpoint="",
+        )
+        assert isinstance(opts, UpstageOcrOptions)
+
+    # ── yaml 의 잘못된 값으로 startup 이 깨지지 않는지 (#178 CodeRabbit) ─────
+
+    def test_upstage_invalid_timeout_falls_back_to_default(self):
+        from docling.datamodel.pipeline_options import UpstageOcrOptions
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {"engine": "upstage", "upstage": {"api_key": "k", "timeout": "not-a-number"}},
+            paddle_endpoint="",
+        )
+        assert isinstance(opts, UpstageOcrOptions)
+        assert opts.timeout == 60
+
+    def test_upstage_empty_timeout_falls_back_to_default(self):
+        from docling.datamodel.pipeline_options import UpstageOcrOptions
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {"engine": "upstage", "upstage": {"api_key": "k", "timeout": ""}},
+            paddle_endpoint="",
+        )
+        assert opts.timeout == 60
+
+    def test_upstage_zero_timeout_falls_back_to_default(self):
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {"engine": "upstage", "upstage": {"api_key": "k", "timeout": 0}},
+            paddle_endpoint="",
+        )
+        # 0 / 음수 timeout 도 의미 없으므로 default 로 복구
+        assert opts.timeout == 60
+
+    def test_upstage_invalid_text_score_falls_back_to_default(self):
+        from docling.datamodel.pipeline_options import UpstageOcrOptions
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {"engine": "upstage", "upstage": {"api_key": "k", "text_score": "bad"}},
+            paddle_endpoint="",
+        )
+        assert isinstance(opts, UpstageOcrOptions)
+        assert opts.text_score == 0.5
+
+    def test_upstage_numeric_string_timeout_accepted(self):
+        # int("60") 처럼 numeric-string 은 정상 변환되어야 한다
+        opts = IntelligentDocumentProcessor._build_ocr_options(
+            {"engine": "upstage", "upstage": {"api_key": "k", "timeout": "120", "text_score": "0.7"}},
+            paddle_endpoint="",
+        )
+        assert opts.timeout == 120
+        assert opts.text_score == 0.7

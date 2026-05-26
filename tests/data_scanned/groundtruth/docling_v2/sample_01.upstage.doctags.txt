@@ -1,0 +1,57 @@
+<doctag><unordered_list><list_item><loc_48><loc_50><loc_452><loc_75>□ (적용사례) 자기신용위험의 적용사례로 회사채 스프레드를 적용 하거나, CDS 프리미엄을 자기신용위험으로 고려</list_item>
+</unordered_list>
+<text><loc_69><loc_80><loc_426><loc_89>* 단, 직접적인 보험부채 공정가치 적용사례는 기준서상 포함되지 않음</text>
+<section_header_level_1><loc_129><loc_95><loc_370><loc_105>< IFRS13(공정가치) 기준서 중 적용사례 ></section_header_level_1>
+<section_header_level_1><loc_63><loc_110><loc_129><loc_119>※ 구조화사채</section_header_level_1>
+<text><loc_63><loc_120><loc_443><loc_159>(1) 기대현금흐름에 불이행위험이 이미 반영되어 있지 않다면 , 20X7 년 1 월 1 일의 국채 곡선을 이용한 무위험이자율에 국채에 대한 현재 시장의 관측할 수 있는 AA 회사채 스프레드를 가산하여 기업의 고유한 신용위험을 조정 ( 할증 또는 할 인 ) 한 할인 ( 신용위험을 조정한 무위험이자율 ) 로 기대현금흐름을 할인한다 .</text>
+<section_header_level_1><loc_63><loc_164><loc_186><loc_173>※ 가치평가기법 ( 파생상품 )</section_header_level_1>
+<text><loc_63><loc_175><loc_443><loc_193>유의적이지만 관측가능하지 않은 투입변수를 사용하는 공정가치 측정치에 대한 양적 정보 ( 공정가치 서열체계의 수준 3)</text>
+<text><loc_63><loc_197><loc_156><loc_205>파생상품 : 신용 계약</text>
+<text><loc_63><loc_207><loc_317><loc_215>가치평가기법 : 옵션 모형 관측가능하지 않은 투입변수</text>
+<text><loc_63><loc_218><loc_158><loc_225>연환산 신용 변동성</text>
+<text><loc_158><loc_217><loc_209><loc_225>: 10%~20%</text>
+<text><loc_63><loc_228><loc_163><loc_235>거래상대방 신용위험</text>
+<text><loc_163><loc_227><loc_219><loc_235>: 0.5%~3.5%</text>
+<text><loc_63><loc_236><loc_197><loc_245>자기 신용위험 (5) : 0.3%~2.0%</text>
+<text><loc_63><loc_249><loc_438><loc_288>(5) 시장참여자가 계약의 가격을 결정할 때 사용할 것이라고 기업이 결정한 것으 로서 가치평가분석에 사용되는 신용부도스왑 스프레드의 범위를 나타낸다 . ( 주 : 다른 형식이 더 적절하다고 판단하지 않는다면 부채에 대해서도 이와 유사 한 표로 표시될 것이다 .)</text>
+<unordered_list><list_item><loc_55><loc_303><loc_446><loc_324>※ (관련 논문) 공정가치 측정 시 거래상대방의 신용위험(CVA) 또는 자기 신용위험(DVA) 에 대한 조정액 을 감안하여 평가</list_item>
+</unordered_list>
+<section_header_level_1><loc_56><loc_328><loc_446><loc_338>< Understanding CVA, DVA, and FVA : Examples of Interest Rate Swap Valuation ></section_header_level_1>
+<text><loc_64><loc_342><loc_432><loc_359>√ CVA(Credit Valuation Adjustment) : 거래상대방의 신용위험에 대한 조정액 DVA (Debt Valuation Adjustment) : 자기신용위험에 대한 조정액</text>
+<text><loc_129><loc_363><loc_373><loc_371>부채의 공정가치 = ( 무위험 부채 공정가치 -DVA)</text>
+<text><loc_161><loc_372><loc_167><loc_377>T</text>
+<text><loc_155><loc_377><loc_171><loc_392>2</text>
+<text><loc_179><loc_378><loc_234><loc_386>(Expected</text>
+<text><loc_236><loc_379><loc_291><loc_386>Exposuret</text>
+<text><loc_291><loc_378><loc_295><loc_386>)</text>
+<text><loc_302><loc_379><loc_308><loc_382>*</text>
+<text><loc_311><loc_378><loc_383><loc_386>(1-Recovery</text>
+<text><loc_385><loc_379><loc_418><loc_386>Rate,)</text>
+<text><loc_170><loc_394><loc_413><loc_405>* (Default Probability,) * (Discount Factort )</text>
+<section_header_level_1><loc_56><loc_424><loc_441><loc_447>⇒ 보험부채 에 대한 공정가치 평가시 적용할 자기신용위험 산출방법 마련 필요</section_header_level_1>
+<text><loc_79><loc_378><loc_139><loc_385>CVA(DVA)</text>
+<page_footer><loc_238><loc_469><loc_262><loc_475>- 9 -</page_footer>
+<page_break>
+<section_header_level_1><loc_55><loc_55><loc_384><loc_65>5 기존 국내외 공정가치법 적용 할인율 산출방법</section_header_level_1>
+<unordered_list><list_item><loc_48><loc_84><loc_459><loc_109> (PD+CoD 방법) 솔벤시Ⅱ와 K-ICS에서 변동성조정(VA) 산출시 포트폴리오의 수익률에서 신용스프레드를 제거할 때 적용한 방법</list_item>
+</unordered_list>
+<unordered_list><list_item><loc_54><loc_121><loc_459><loc_145>◦ 회사채 잔존만기 ･ 신용등급별 부도(PD) 및 신용등급 하락(CoD)에 따른 예상손실을 반영하여 산출</list_item>
+</unordered_list>
+<section_header_level_1><loc_168><loc_155><loc_331><loc_165>< PD+CoD 방법 산출 개요 ></section_header_level_1>
+<text><loc_151><loc_174><loc_357><loc_182>신용위험스프레드  max       </text>
+<text><loc_77><loc_186><loc_429><loc_205>PD : 부도시 예상손실을 반영한 신용위험스프레드(Probability of Defa u lt) CoD : 신용등급 하 락 시 비용을 반영한 신용위험스프레드(Co s t of Do wng ra d e)</text>
+<unordered_list><list_item><loc_54><loc_220><loc_459><loc_260>◦ 신용위험스프레드(PD ･ CoD)는 잔존만기(1~20년) ･ 신용등급별(AAA~BBB)로 현금흐름을 산출하고, 아래 두 현금흐름의 현재가치를 일치 시키는 스프레드로 적용</list_item>
+</unordered_list>
+<unordered_list><list_item><loc_68><loc_271><loc_459><loc_295>① 부도 ･ 신용등급 하락에 따른 자산가치 예상손실을 경과기간별로 반영한 현금흐름을 무위험수익률(국고채수익률)로 할인한 현재가치</list_item>
+</unordered_list>
+<unordered_list><list_item><loc_68><loc_306><loc_459><loc_331>② 부도 ･ 신용등급 하락이 없다고 가정한 경과기간별 현금흐름을 ´ 무위험수익률+스프레드 ´ 로 할인한 현재가치</list_item>
+</unordered_list>
+<text><loc_100><loc_345><loc_330><loc_372>예상손실$_{}$          </text>
+<text><loc_146><loc_339><loc_424><loc_359>     ≠         $_{}$   × $_{}$     def            $_{}$   × $_{}$       </text>
+<text><loc_156><loc_362><loc_381><loc_371> $_{}$      $_{}$      $_{}$    </text>
+<text><loc_81><loc_375><loc_402><loc_385>(단,     $_{}$   : 신용등급이 X인 M 년 만기 자산의 m 시점 시장가치,</text>
+<text><loc_85><loc_387><loc_443><loc_396>$_{}$ : 신용등급이 X에서 Y 로 강등할 전이 확률,       : 부도시 회수율)</text>
+<unordered_list><list_item><loc_54><loc_409><loc_452><loc_448>◦ 현금흐름 산출시 평균누적부도율 및 신용등급변화표는 신용 평가사의 데이터(민평평균)를 적용하며, 회수율은 55%$^{*}$를 적용 * 부도시 회수율(55%)은 은행권의 바젤Ⅲ 기준을 준용</list_item>
+</unordered_list>
+<page_footer><loc_236><loc_469><loc_264><loc_475>- 10 -</page_footer>
+</doctag>
