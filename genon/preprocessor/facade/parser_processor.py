@@ -84,6 +84,7 @@ from docling.document_converter import (
     WordFormatOption,
 )
 from docling.pipeline.simple_pipeline import SimplePipeline
+from docling.prompts.prompt_manager import LLMApiError
 from docling.utils.document_enrichment import check_document, enrich_document
 from docling_core.types import DoclingDocument
 from docling_core.types.doc import (
@@ -780,8 +781,12 @@ class IntelligentDocumentProcessor:
         return self.load_documents_with_docling(file_path, **kwargs)
 
     def enrichment(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
-        document = enrich_document(document, self.enrichment_options, **kwargs)
-        return document
+        try:
+            document = enrich_document(document, self.enrichment_options, **kwargs)
+            return document
+        except LLMApiError as e:
+            # Preserve provider error payload as-is for load status error message.
+            raise GenosServiceException("1", e.raw_error_message) from e
 
     def check_glyph_text(self, text: str, threshold: int = 1) -> bool:
         if not text:

@@ -1,6 +1,21 @@
 ocr:
   ocr_mode: "auto" # "auto"(default), "force", "disable"
+
+  # OCR 엔진 선택. "paddle"(default) | "upstage"
+  # docker image 재빌드 없이 yaml 만으로 전환 가능
+  engine: "paddle"
+
+  # engine: "paddle" 일 때만 사용
   ocr_endpoint: "http://192.168.73.172:48080/ocr"
+
+  # engine: "upstage" 일 때만 사용
+  upstage:
+    api_endpoint: "https://api.upstage.ai/v1/document-digitization"
+    # api_key 가 비어있으면 UPSTAGE_API_KEY 환경변수에서 fallback (시크릿 운영용)
+    api_key: ""
+    model: "ocr"
+    timeout: 60
+    text_score: 0.5
 
 layout:
   layout_model_type: "genos_layout" # "genos_layout"(default) or "docling_layout"

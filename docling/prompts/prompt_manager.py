@@ -7,6 +7,24 @@ from typing import Dict, Any, List, Optional
 
 _log = logging.getLogger(__name__)
 
+
+class LLMApiError(Exception):
+    """OpenAI-compatible provider call error with raw response payload."""
+
+    def __init__(
+        self,
+        raw_error_message: str,
+        *,
+        status_code: Optional[int] = None,
+        category: Optional[str] = None,
+        prompt_type: Optional[str] = None,
+    ) -> None:
+        self.raw_error_message = raw_error_message
+        self.status_code = status_code
+        self.category = category
+        self.prompt_type = prompt_type
+        super().__init__(raw_error_message)
+
 class PromptManager:
     """프롬프트 및 API 설정 관리 클래스"""
 
@@ -203,7 +221,15 @@ class PromptManager:
 
         return model_config
 
-    def call_ai_model(self, category: str, prompt_type: str, custom_system: Optional[str] = None, custom_user: Optional[str] = None, **kwargs) -> Optional[str]:
+    def call_ai_model(
+        self,
+        category: str,
+        prompt_type: str,
+        custom_system: Optional[str] = None,
+        custom_user: Optional[str] = None,
+        raise_on_error: bool = False,
+        **kwargs,
+    ) -> Optional[str]:
         """AI 모델을 직접 requests.post로 호출하여 결과 반환"""
         # 메시지 구성
         messages = self.get_messages(category, prompt_type, custom_system, custom_user, **kwargs)
@@ -274,9 +300,22 @@ class PromptManager:
 
         except requests.exceptions.RequestException as e:
             _log.error(f"API 요청 실패 ({category}.{prompt_type}): {e}")
+            status_code = None
+            raw_error_message = None
             if hasattr(e, 'response') and e.response is not None:
+                status_code = e.response.status_code
                 _log.error(f"응답 상태: {e.response.status_code}")
                 _log.error(f"응답 내용: {e.response.text}")
+                raw_error_message = e.response.text
+            if raise_on_error:
+                if not raw_error_message:
+                    raw_error_message = str(e)
+                raise LLMApiError(
+                    raw_error_message,
+                    status_code=status_code,
+                    category=category,
+                    prompt_type=prompt_type,
+                ) from e
             return None
         except json.JSONDecodeError as e:
             _log.error(f"JSON 응답 파싱 실패 ({category}.{prompt_type}): {e}")

@@ -14,6 +14,7 @@ from docling_core.types.doc.document import (
     GraphData, GraphCell, GraphCellLabel, ListItem
 )
 from docling.prompts import PromptManager
+from docling.prompts.prompt_manager import LLMApiError
 from docling.datamodel.pipeline_options import DataEnrichmentOptions
 
 from collections import Counter
@@ -185,6 +186,7 @@ class DocumentEnrichmentUtils:
                 prompt_type="korean_document",
                 custom_system=custom_system,
                 custom_user=custom_user,
+                raise_on_error=True,
                 raw_text=raw_text
             )
 
@@ -199,6 +201,8 @@ class DocumentEnrichmentUtils:
                 _log.warning("TOC 생성 실패")
                 return 0
 
+        except LLMApiError:
+            raise
         except Exception as e:
             _log.error(f"TOC 추출 중 오류 발생: {str(e)}")
             return 0
@@ -341,6 +345,7 @@ class DocumentEnrichmentUtils:
                 prompt_type="law_document",
                 custom_system=custom_system,
                 custom_user=custom_user,
+                raise_on_error=True,
                 raw_text=raw_text
             )
 
@@ -375,6 +380,8 @@ class DocumentEnrichmentUtils:
                 _log.warning("TOC 생성 실패")
                 return 0
 
+        except LLMApiError:
+            raise
         except Exception as e:
             _log.error(f"TOC 추출 중 오류 발생: {str(e)}")
             return 0
@@ -438,6 +445,8 @@ class DocumentEnrichmentUtils:
             else:
                 return False
 
+        except LLMApiError:
+            raise
         except Exception as e:
             _log.error(f"메타데이터 추출 중 오류 발생: {str(e)}")
             return False
@@ -1029,6 +1038,7 @@ class DocumentEnrichmentUtils:
                 prompt_type="korean_financial",
                 custom_system=custom_system,
                 custom_user=custom_user,
+                raise_on_error=True,
                 document_content=document_content
             )
 
@@ -1052,6 +1062,8 @@ class DocumentEnrichmentUtils:
                 except:
                     return {"작성일": None, "작성자": []}
 
+        except LLMApiError:
+            raise
         except Exception as e:
             _log.error(f"메타데이터 추출 중 오류 발생: {str(e)}")
             return {"작성일": None, "작성자": []}
@@ -1090,6 +1102,7 @@ class DocumentEnrichmentUtils:
                 prompt_type="korean_financial_date",
                 custom_system=custom_system,
                 custom_user=custom_user,
+                raise_on_error=True,
                 document_content=document_content
             )
 
@@ -1111,6 +1124,8 @@ class DocumentEnrichmentUtils:
                 except:
                     return {"작성일": None, "작성자": []}
 
+        except LLMApiError:
+            raise
         except Exception as e:
             _log.error(f"메타데이터 추출 중 오류 발생: {str(e)}")
             return {"작성일": None, "작성자": []}
@@ -1156,6 +1171,8 @@ def enrich_document(document: DoclingDocument, enrichment_options: DataEnrichmen
 
         return enriched_doc
 
+    except LLMApiError:
+        raise
     except Exception as e:
         _log.error(f"Document enrichment 중 오류 발생: {str(e)}")
         # 실패 시 원본 반환

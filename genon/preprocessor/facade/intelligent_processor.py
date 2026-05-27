@@ -84,6 +84,7 @@ from docling.document_converter import (
     FormatOption
 )
 from docling.datamodel.pipeline_options import DataEnrichmentOptions
+from docling.prompts.prompt_manager import LLMApiError
 from docling.utils.document_enrichment import enrich_document, check_document
 from docling.datamodel.document import ConversionResult
 from docling_core.transforms.chunker import (
@@ -1284,10 +1285,13 @@ class DocumentProcessor:
         return 0
 
     def enrichment(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
-
-        # 새로운 enriched result 받기
-        document = enrich_document(document, self.enrichment_options, **kwargs)
-        return document
+        try:
+            # 새로운 enriched result 받기
+            document = enrich_document(document, self.enrichment_options, **kwargs)
+            return document
+        except LLMApiError as e:
+            # Preserve provider error payload as-is for load status error message.
+            raise GenosServiceException("1", e.raw_error_message) from e
 
     async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request, converted_pdf_path: Optional[str] = None, **kwargs: dict) -> \
             list[dict]:
