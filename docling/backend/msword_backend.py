@@ -1069,6 +1069,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         textbox_elements: list,
         doc: DoclingDocument,
     ) -> list[RefItem]:
+        valid_textbox_elements = []
+        for tb in textbox_elements:
+            # Convert ancestor tags to strings to reliably catch any 'Fallback' namespaces
+            ancestor_tags = [str(anc.tag) for anc in tb.iterancestors()]
+            if not any("Fallback" in tag for tag in ancestor_tags):
+                valid_textbox_elements.append(tb)
+        textbox_elements = valid_textbox_elements
         elem_ref: list[RefItem] = []
         """Process textbox content and add it to the document structure."""
         level = self._get_level()
@@ -1112,20 +1119,23 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for p, position in all_paragraphs:
             # Create paragraph object to get text content
             paragraph = Paragraph(p, self.docx_obj)
-            text_content = paragraph.text
+            text_content = paragraph.text.strip()
 
-            # Create a unique identifier based on content and position
-            paragraph_id = (text_content, position)
+            pos_bucket = (
+                round(position, -1) if isinstance(position, (int, float)) else position
+            )
+            paragraph_id = (text_content, pos_bucket)
 
-            # Skip if this paragraph (same content and position) was already processed
-            if paragraph_id in processed_paragraphs:
+            # Skip if this text is identical and in the exact same physical region
+            if text_content and paragraph_id in processed_paragraphs:
                 _log.debug(
-                    f"Skipping duplicate paragraph: content='{text_content[:50]}...', position={position}"
+                    f"Skipping stacked duplicate paragraph: content='{text_content[:50]}...', pos={pos_bucket}"
                 )
                 continue
 
-            # Mark this paragraph as processed
-            processed_paragraphs.add(paragraph_id)
+            # Mark this text/region as processed
+            if text_content:
+                processed_paragraphs.add(paragraph_id)
 
             elem_ref.extend(self._handle_text_elements(p, doc))
 
