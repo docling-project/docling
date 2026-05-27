@@ -72,9 +72,7 @@ def test_cli_convert(tmp_path):
 def test_cli_html_fetches_local_images_per_input(tmp_path):
     first_png = _png_bytes((255, 0, 0))
     second_png = _png_bytes((0, 0, 255))
-    first = _write_html_image_case(
-        tmp_path / "first", "first.html", "First", first_png
-    )
+    first = _write_html_image_case(tmp_path / "first", "first.html", "First", first_png)
     second = _write_html_image_case(
         tmp_path / "second", "second.html", "Second", second_png
     )
@@ -210,7 +208,10 @@ def test_cli_html_image_headers_require_remote_fetch(tmp_path):
     )
 
     assert result.exit_code != 0
-    assert "--html-image-headers requires --html-image-fetch remote or all" in result.output
+    assert (
+        "--html-image-headers requires --html-image-fetch remote or all"
+        in result.output
+    )
 
 
 def test_export_documents_marks_empty_markdown_as_failure(tmp_path):
