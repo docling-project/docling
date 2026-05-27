@@ -16,10 +16,12 @@ from langchain_core.documents import Document
 
 from facade.parser_processor import (
     DocumentProcessor,
+    GenosServiceException,
     GenericDocumentLoader,
     IntelligentDocumentProcessor,
     TabularLoader,
 )
+from docling.prompts.prompt_manager import LLMApiError
 
 
 # ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -347,6 +349,22 @@ class TestCheckGlyphText:
 
     def test_none_returns_false(self, intel):
         assert intel.check_glyph_text(None) is False
+
+
+@pytest.mark.unit
+def test_enrichment_provider_error_is_rethrown_as_genos_exception(intel):
+    raw_error = """{"object":"error","message":"This model's maximum context length is 16384 tokens.","type":"BadRequestError","param":null,"code":400}"""
+    intel.enrichment_options = MagicMock()
+    dummy_doc = MagicMock()
+
+    with patch(
+        "facade.parser_processor.enrich_document",
+        side_effect=LLMApiError(raw_error, status_code=400),
+    ):
+        with pytest.raises(GenosServiceException) as exc_info:
+            intel.enrichment(dummy_doc)
+
+    assert exc_info.value.error_msg == raw_error
 
 
 # ─── _normalize_output_format ────────────────────────────────────────────────

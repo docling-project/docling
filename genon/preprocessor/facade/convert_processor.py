@@ -63,6 +63,7 @@ from docling.document_converter import (
     WordFormatOption
 )
 from docling.datamodel.pipeline_options import DataEnrichmentOptions
+from docling.prompts.prompt_manager import LLMApiError
 from docling.utils.document_enrichment import enrich_document, check_document
 from docling.datamodel.document import ConversionResult
 from docling_core.transforms.chunker import (
@@ -1155,6 +1156,12 @@ class DocumentProcessor:
             toc_top_p=0.00001,
             toc_seed=33,
             toc_max_tokens=10000,
+            toc_precheck_enabled=False,
+            toc_max_context_tokens=128000,
+            toc_completion_reserved_tokens=12000,
+            metadata_precheck_enabled=False,
+            metadata_max_context_tokens=128000,
+            metadata_completion_reserved_tokens=12000,
 
             toc_system_prompt=toc_system_prompt,
             toc_user_prompt=toc_user_prompt,
@@ -1383,10 +1390,13 @@ class DocumentProcessor:
         return []
 
     def enrichment(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
-
-        # 새로운 enriched result 받기
-        document = enrich_document(document, self.enrichment_options, **kwargs)
-        return document
+        try:
+            # 새로운 enriched result 받기
+            document = enrich_document(document, self.enrichment_options, **kwargs)
+            return document
+        except LLMApiError as e:
+            # Preserve provider error payload as-is for load status error message.
+            raise GenosServiceException("1", e.raw_error_message) from e
 
     async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request, **kwargs: dict) -> \
             list[dict]:

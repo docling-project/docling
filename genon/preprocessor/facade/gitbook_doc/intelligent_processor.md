@@ -936,13 +936,18 @@ def check_glyphs(self, document: DoclingDocument) -> bool:
 
 ```python
 def enrichment(self, document: DoclingDocument, **kwargs) -> DoclingDocument:
-    document = enrich_document(document, self.enrichment_options, **kwargs)
-    return document
+    try:
+        document = enrich_document(document, self.enrichment_options, **kwargs)
+        return document
+    except LLMApiError as e:
+        raise GenosServiceException("1", e.raw_error_message) from e
 ```
 
 `convert_processor`와 동일합니다. LLM(Mistral-Small-3.1-24B)을 활용하여:
 - **계층적 목차(TOC)** 자동 생성
 - **작성일** 등 문서 메타데이터 추출
+
+> **토큰 초과 예외**: `toc_precheck_enabled=True`이고 입력 토큰 추정치가 `toc_max_context_tokens - toc_completion_reserved_tokens`를 초과하면 `LLMApiError`가 발생하며, `GenosServiceException("1", <JSON 페이로드>)`로 변환되어 상위로 전파됩니다.
 
 ---
 
@@ -1277,6 +1282,20 @@ class GenosServiceException(Exception):
 ```
 
 세 전처리기 모두 동일합니다.
+
+### Enrichment 토큰 초과 (`LLMApiError`)
+
+`toc_precheck_enabled=True` 상태에서 입력 토큰 추정치가 한도를 초과하면 `LLMApiError`가 `GenosServiceException`으로 변환됩니다. `errMsg` 필드에 담기는 JSON:
+
+| 필드 | 값 |
+|------|-----|
+| `object` | `"error"` |
+| `type` | `"BadRequestError"` |
+| `param` | `"prompt"` |
+| `code` | `400` |
+| `message` | `"프롬프트 입력 토큰 (N) 초과 하였습니다. (128000 - reserved 12000)."` |
+
+조치: 문서 크기를 줄이거나 `toc_precheck_enabled=False`로 비활성화.
 
 ### `assert_cancelled()`
 
