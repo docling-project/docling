@@ -157,6 +157,13 @@ enrichment:
   api_url: "http://llmops-gateway-api-service:8080/rep/serving/<ENRICHMENT_SERVING_ID>/v1/chat/completions"
   api_key: ""
   model: "model"
+  precheck:
+    # true 로 설정하면 LLM 호출 전 입력 토큰을 추정하여 초과 시 즉시 400 에러 반환
+    enabled: false
+    # 모델 전체 컨텍스트 한도 (입력 + 출력 합산)
+    max_context_tokens: 128000
+    # 출력용 예약 토큰 수. 허용 입력 = max_context_tokens - completion_reserved_tokens
+    completion_reserved_tokens: 12000
   toc:
     temperature: 0.0
     top_p: 0.00001
@@ -197,6 +204,9 @@ output:
 | `enrichment` | `api_url` | `""` | LLM API URL (TOC/메타데이터 추출용) |
 | `enrichment` | `api_key` | `""` | LLM API 인증 키 |
 | `enrichment` | `model` | `"model"` | TOC/메타데이터 추출에 사용할 모델명 |
+| `enrichment.precheck` | `enabled` | `false` | 사전 토큰 검사 활성화 여부. `true`이면 LLM 호출 전 토큰을 추정하여 초과 시 즉시 에러 반환 |
+| `enrichment.precheck` | `max_context_tokens` | `128000` | 모델 전체 컨텍스트 한도 (입력 + 출력 합산) |
+| `enrichment.precheck` | `completion_reserved_tokens` | `12000` | 출력용 예약 토큰 수. 실제 허용 입력 = `max_context_tokens` − `completion_reserved_tokens` |
 | `enrichment.toc` | `temperature` | `0.0` | TOC 생성 temperature |
 | `enrichment.toc` | `top_p` | `0.00001` | TOC 생성 top-p |
 | `enrichment.toc` | `seed` | `33` | TOC 생성 seed |
@@ -498,6 +508,7 @@ Docling 파이프라인(PDF/HTML/HWP/HWPX/DOCX) 출력 기준:
 | 레이아웃 서버 연결 오류 | `layout.genos_layout.endpoint` 미응답 | 예외 발생, 처리 중단 |
 | OCR 서버 연결 오류 | `ocr.ocr_endpoint` 미응답 | `ocr_all_table_cells`에서 예외를 캐치하고 OCR 없이 진행 |
 | Enrichment LLM 연결 오류 | `enrichment.api_url` 미응답 | enrichment 단계에서 예외 발생 |
+| Enrichment 입력 토큰 초과 | `precheck.enabled: true` 상태에서 추정 토큰 수가 `max_context_tokens - completion_reserved_tokens` 초과 | LLM 호출 없이 즉시 `GenosServiceException` 발생. `errMsg`에 JSON 페이로드 포함 (아래 참고) |
 
 #### HWP / HWPX
 
@@ -540,10 +551,27 @@ Docling 파이프라인(PDF/HTML/HWP/HWPX/DOCX) 출력 기준:
 | Layout 서버 미응답 | Connection refused to `<endpoint>` | `parser_processor_config.yaml`의 `layout.genos_layout.endpoint` 확인 |
 | OCR 서버 미응답 | `OCR HTTP 502` | `parser_processor_config.yaml`의 `ocr.ocr_endpoint` 및 서버 상태 확인 |
 | Enrichment LLM 오류 | LLM API timeout | `parser_processor_config.yaml`의 `enrichment.api_url` 확인 |
+| Enrichment 입력 토큰 초과 | `프롬프트 입력 토큰 (N) 초과 하였습니다. (128000 - reserved 12000).` | 문서 크기를 줄이거나 `precheck.max_context_tokens` 값 조정. 비활성화는 `precheck.enabled: false` |
 | HWP SDK 실패 | `HWP SDK 실패: ...` | 로그 확인 후 `use_hwp_sdk=false` 파라미터로 재시도 |
 | Whisper 미설정 | Connection error | `parser_processor_config.yaml`의 `whisper.url` 설정 확인 |
 | `soffice` 미설치 | `FileNotFoundError: soffice` | LibreOffice 설치 후 PATH 등록 |
 | 파일 없음 | `FileNotFoundError` | `file_path` 경로 및 파일 존재 여부 확인 |
+
+#### Enrichment 토큰 초과 에러 페이로드
+
+`precheck.enabled: true` 상태에서 입력 토큰이 허용치를 초과하면, `GenosServiceException.errMsg`에 아래 JSON이 문자열로 담겨 반환됩니다.
+
+```json
+{
+  "object": "error",
+  "message": "프롬프트 입력 토큰 (169000) 초과 하였습니다. (128000 - reserved 12000).",
+  "type": "BadRequestError",
+  "param": "prompt",
+  "code": 400
+}
+```
+
+> 이 에러는 LLM을 호출하지 않고 로컬에서 생성됩니다. DB 적재 상태란에는 위 JSON 문자열이 에러 메시지로 저장됩니다.
 
 ---
 

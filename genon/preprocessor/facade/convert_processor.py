@@ -1156,6 +1156,12 @@ class DocumentProcessor:
             toc_top_p=0.00001,
             toc_seed=33,
             toc_max_tokens=10000,
+            toc_precheck_enabled=False,
+            toc_max_context_tokens=128000,
+            toc_completion_reserved_tokens=12000,
+            metadata_precheck_enabled=False,
+            metadata_max_context_tokens=128000,
+            metadata_completion_reserved_tokens=12000,
 
             toc_system_prompt=toc_system_prompt,
             toc_user_prompt=toc_user_prompt,

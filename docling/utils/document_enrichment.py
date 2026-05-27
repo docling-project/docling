@@ -106,7 +106,10 @@ class DocumentEnrichmentUtils:
         if (self.enrichment_options.toc_api_provider or
             self.enrichment_options.toc_api_key or
             self.enrichment_options.toc_api_base_url or
-            self.enrichment_options.toc_model):
+            self.enrichment_options.toc_model or
+            self.enrichment_options.toc_precheck_enabled is not None or
+            self.enrichment_options.toc_max_context_tokens is not None or
+            self.enrichment_options.toc_completion_reserved_tokens is not None):
 
             toc_config = {}
             toc_config["provider"] = self.enrichment_options.toc_api_provider or "openrouter"
@@ -125,6 +128,14 @@ class DocumentEnrichmentUtils:
                 toc_config["seed"] = self.enrichment_options.toc_seed
             if self.enrichment_options.toc_max_tokens is not None:
                 toc_config["max_tokens"] = self.enrichment_options.toc_max_tokens
+            if self.enrichment_options.toc_precheck_enabled is not None:
+                toc_config["precheck_enabled"] = self.enrichment_options.toc_precheck_enabled
+            if self.enrichment_options.toc_max_context_tokens is not None:
+                toc_config["max_context_tokens"] = self.enrichment_options.toc_max_context_tokens
+            if self.enrichment_options.toc_completion_reserved_tokens is not None:
+                toc_config["completion_reserved_tokens"] = (
+                    self.enrichment_options.toc_completion_reserved_tokens
+                )
 
             custom_api_configs["toc_extraction"] = toc_config
 
@@ -132,7 +143,10 @@ class DocumentEnrichmentUtils:
         if (self.enrichment_options.metadata_api_provider or
             self.enrichment_options.metadata_api_key or
             self.enrichment_options.metadata_api_base_url or
-            self.enrichment_options.metadata_model):
+            self.enrichment_options.metadata_model or
+            self.enrichment_options.metadata_precheck_enabled is not None or
+            self.enrichment_options.metadata_max_context_tokens is not None or
+            self.enrichment_options.metadata_completion_reserved_tokens is not None):
 
             metadata_config = {}
             metadata_config["provider"] = self.enrichment_options.metadata_api_provider or "openrouter"
@@ -151,6 +165,16 @@ class DocumentEnrichmentUtils:
                 metadata_config["seed"] = self.enrichment_options.metadata_seed
             if self.enrichment_options.metadata_max_tokens is not None:
                 metadata_config["max_tokens"] = self.enrichment_options.metadata_max_tokens
+            if self.enrichment_options.metadata_precheck_enabled is not None:
+                metadata_config["precheck_enabled"] = self.enrichment_options.metadata_precheck_enabled
+            if self.enrichment_options.metadata_max_context_tokens is not None:
+                metadata_config["max_context_tokens"] = (
+                    self.enrichment_options.metadata_max_context_tokens
+                )
+            if self.enrichment_options.metadata_completion_reserved_tokens is not None:
+                metadata_config["completion_reserved_tokens"] = (
+                    self.enrichment_options.metadata_completion_reserved_tokens
+                )
 
             custom_api_configs["metadata_extraction"] = metadata_config
             custom_api_configs["document_checking"] = metadata_config # 문서 품질 검사도 같은 설정 사용

@@ -588,6 +588,87 @@ class IntelligentDocumentProcessor:
         toc_seed = toc_cfg.get("seed", cfg.get("toc_seed", 33))
         toc_max_tokens = toc_cfg.get("max_tokens", cfg.get("toc_max_tokens", 10000))
 
+        def _parse_optional_bool(value: Any) -> Optional[bool]:
+            if value is None:
+                return None
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, (int, float)):
+                return bool(value)
+            if isinstance(value, str):
+                text = value.strip().lower()
+                if text in {"1", "true", "yes", "y", "on"}:
+                    return True
+                if text in {"0", "false", "no", "n", "off"}:
+                    return False
+            _log.warning(
+                f"[IntelligentDocumentProcessor] Invalid precheck bool value '{value}', fallback to None"
+            )
+            return None
+
+        def _parse_optional_int(value: Any) -> Optional[int]:
+            if value is None or value == "":
+                return None
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                _log.warning(
+                    f"[IntelligentDocumentProcessor] Invalid precheck int value '{value}', fallback to None"
+                )
+                return None
+
+        precheck_cfg = _as_dict(enrichment_cfg.get("precheck"))
+        toc_precheck_cfg = _as_dict(precheck_cfg.get("toc"))
+        metadata_precheck_cfg = _as_dict(precheck_cfg.get("metadata"))
+
+        toc_precheck_enabled = _parse_optional_bool(
+            toc_precheck_cfg.get(
+                "enabled",
+                precheck_cfg.get("enabled", cfg.get("toc_precheck_enabled")),
+            )
+        )
+        metadata_precheck_enabled = _parse_optional_bool(
+            metadata_precheck_cfg.get(
+                "enabled",
+                precheck_cfg.get("enabled", cfg.get("metadata_precheck_enabled")),
+            )
+        )
+
+        common_max_context_tokens = _parse_optional_int(
+            precheck_cfg.get(
+                "max_context_tokens",
+                precheck_cfg.get("max_context", cfg.get("enrichment_max_context_tokens")),
+            )
+        )
+        common_reserved_tokens = _parse_optional_int(
+            precheck_cfg.get(
+                "completion_reserved_tokens",
+                cfg.get("enrichment_completion_reserved_tokens"),
+            )
+        )
+
+        toc_max_context_tokens = _parse_optional_int(
+            toc_precheck_cfg.get(
+                "max_context_tokens",
+                toc_precheck_cfg.get("max_context", common_max_context_tokens),
+            )
+        )
+        metadata_max_context_tokens = _parse_optional_int(
+            metadata_precheck_cfg.get(
+                "max_context_tokens",
+                metadata_precheck_cfg.get("max_context", common_max_context_tokens),
+            )
+        )
+        toc_completion_reserved_tokens = _parse_optional_int(
+            toc_precheck_cfg.get("completion_reserved_tokens", common_reserved_tokens)
+        )
+        metadata_completion_reserved_tokens = _parse_optional_int(
+            metadata_precheck_cfg.get(
+                "completion_reserved_tokens",
+                common_reserved_tokens,
+            )
+        )
+
         ocr_options = self._build_ocr_options(ocr_cfg, paddle_endpoint=ocr_ep)
         if isinstance(ocr_options, UpstageOcrOptions):
             self.ocr_endpoint = ocr_options.api_endpoint
@@ -644,6 +725,12 @@ class IntelligentDocumentProcessor:
             toc_top_p=toc_top_p,
             toc_seed=toc_seed,
             toc_max_tokens=toc_max_tokens,
+            toc_precheck_enabled=toc_precheck_enabled,
+            toc_max_context_tokens=toc_max_context_tokens,
+            toc_completion_reserved_tokens=toc_completion_reserved_tokens,
+            metadata_precheck_enabled=metadata_precheck_enabled,
+            metadata_max_context_tokens=metadata_max_context_tokens,
+            metadata_completion_reserved_tokens=metadata_completion_reserved_tokens,
             toc_system_prompt=_toc_system_prompt,
             toc_user_prompt=_toc_user_prompt,
         )

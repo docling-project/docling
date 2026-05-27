@@ -36,6 +36,12 @@ enrichment:
   api_url: "http://llmops-gateway-api-service:8080/rep/serving/<ENRICHMENT_SERVING_ID>/v1/chat/completions"
   api_key: ""
   model: "model"
+  precheck:
+    enabled: false
+    # 입력+출력 전체 context limit
+    max_context_tokens: 128000
+    # completion 영역으로 예약할 토큰 수 (max_context - reserved 를 prompt 허용치로 사용)
+    completion_reserved_tokens: 12000
   toc:
     temperature: 0.0
     top_p: 0.00001

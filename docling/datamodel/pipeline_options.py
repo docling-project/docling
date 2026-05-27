@@ -477,6 +477,10 @@ class DataEnrichmentOptions(BaseModel):
     toc_top_p: Optional[float] = None
     toc_seed: Optional[int] = None
     toc_max_tokens: Optional[int] = None
+    # Preflight prompt-token guard options (TOC)
+    toc_precheck_enabled: Optional[bool] = None
+    toc_max_context_tokens: Optional[int] = None
+    toc_completion_reserved_tokens: Optional[int] = None
 
     # Metadata extraction options
     extract_metadata: bool = False
@@ -493,3 +497,7 @@ class DataEnrichmentOptions(BaseModel):
     metadata_top_p: Optional[float] = None
     metadata_seed: Optional[int] = None
     metadata_max_tokens: Optional[int] = None
+    # Preflight prompt-token guard options (Metadata)
+    metadata_precheck_enabled: Optional[bool] = None
+    metadata_max_context_tokens: Optional[int] = None
+    metadata_completion_reserved_tokens: Optional[int] = None

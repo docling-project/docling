@@ -15,7 +15,6 @@ def test_prompt_precheck_blocks_before_api_call():
                 "api_base_url": "http://dummy.local/v1/chat/completions",
                 "model": "dummy-model",
                 "precheck_enabled": True,
-                "tokenizer_name": "Qwen/Qwen2.5-7B-Instruct",
                 "max_context_tokens": 128000,
                 "completion_reserved_tokens": 12000,
             }
@@ -24,7 +23,7 @@ def test_prompt_precheck_blocks_before_api_call():
 
     with patch.object(
         PromptManager,
-        "_estimate_prompt_tokens_with_chat_template",
+        "_rough_token_count",
         return_value=169000,
     ), patch("docling.prompts.prompt_manager.requests.post") as post_mock:
         with pytest.raises(LLMApiError) as exc_info:
