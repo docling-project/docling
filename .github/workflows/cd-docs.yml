@@ -11,4 +11,9 @@ jobs:
     with:
       deploy: true
     permissions:
-      contents: write
+      # Required by actions/deploy-pages — the official GitHub Pages
+      # deployment action. Reusable workflows inherit permissions from the
+      # caller, so they must be declared here, not inside docs.yml.
+      contents: read
+      pages: write
+      id-token: write
