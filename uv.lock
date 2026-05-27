@@ -1386,7 +1386,7 @@ wheels = [
 [[package]]
 name = "docling-parse"
 version = "6.1.0"
-source = { git = "https://github.com/docling-project/docling-parse?rev=cau%2Fcontrol-bitmap-materialization#f64a72db893e131fe0c7c4f746461296d830e335" }
+source = { git = "https://github.com/docling-project/docling-parse?rev=cau%2Fcontrol-bitmap-materialization#17be2e694eaa06aad6bc76dc1a131023895d4860" }
 dependencies = [
     { name = "docling-core" },
     { name = "pillow" },
