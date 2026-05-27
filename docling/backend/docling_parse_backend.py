@@ -39,6 +39,31 @@ if TYPE_CHECKING:
 _log = logging.getLogger(__name__)
 
 
+def _make_docling_parse_decode_config(
+    *,
+    create_words: bool,
+    create_textlines: bool,
+    release_native_memory_every_n_pages: int | None = None,
+) -> DecodePageConfig:
+    config = DecodePageConfig()
+    config.keep_char_cells = (
+        True  # we need to set this to True, otherwhise we have no lines
+    )
+    config.keep_shapes = False
+    config.keep_bitmaps = (
+        True  # we need to set this to True, otherwhise OCR will not work
+    )
+    config.create_word_cells = create_words
+    config.create_line_cells = create_textlines
+    config.enforce_same_font = True
+    config.materialize_bitmap_bytes = False
+
+    if release_native_memory_every_n_pages is not None:
+        config.release_native_memory_every_n_pages = release_native_memory_every_n_pages
+
+    return config
+
+
 class DoclingParsePageBackend(ManagedPdfiumPageBackend):
     def __init__(
         self,
@@ -85,17 +110,10 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         # should not need to keep the char's, but it seems no lines
         # get created if we dont keep the chars. Updated version of
         # docling-parse >v5.3.0 should fix this.
-        config = DecodePageConfig()
-        config.keep_char_cells = (
-            True  # we need to set this to True, otherwhise we have no lines
+        config = _make_docling_parse_decode_config(
+            create_words=self._create_words,
+            create_textlines=self._create_textlines,
         )
-        config.keep_shapes = False  # we dont need this, self._keep_lines
-        config.keep_bitmaps = (
-            True  # we need to set this to True, otherwhise OCR will not work
-        )
-        config.create_word_cells = self._create_words
-        config.create_line_cells = self._create_textlines
-        config.enforce_same_font = True
 
         assert self._dp_doc is not None
         seg_page = self._dp_doc.get_page(self._page_no + 1, config=config)
@@ -434,19 +452,16 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         )
         render_config = RenderConfig()
         render_config.scale = 1.0
-        decode_config = DecodePageConfig()
-        decode_config.keep_char_cells = True
-        decode_config.keep_shapes = False
-        decode_config.keep_bitmaps = True
-        decode_config.create_word_cells = True
-        decode_config.create_line_cells = True
-        decode_config.enforce_same_font = True
-        if isinstance(self.options, ThreadedDoclingParseBackendOptions):
-            decode_config.release_native_memory_every_n_pages = (
-                self.options.release_native_memory_every_n_pages
-            )
-        else:
-            decode_config.release_native_memory_every_n_pages = 128
+        native_memory_release_interval = (
+            self.options.release_native_memory_every_n_pages
+            if isinstance(self.options, ThreadedDoclingParseBackendOptions)
+            else 128
+        )
+        decode_config = _make_docling_parse_decode_config(
+            create_words=True,
+            create_textlines=True,
+            release_native_memory_every_n_pages=native_memory_release_interval,
+        )
 
         self.parser = DoclingThreadedPdfParser(
             parser_config=ThreadedPdfParserConfig(

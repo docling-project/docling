@@ -13,10 +13,7 @@ from typing import Any
 
 import psutil
 
-from docling.backend.docling_parse_backend import (
-    ThreadedDoclingParseDocumentBackend,
-    ThreadedDoclingParsePageBackend,
-)
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
@@ -26,11 +23,6 @@ _log = logging.getLogger(__name__)
 
 
 _PROC = psutil.Process(os.getpid())
-
-
-def _rss_mb() -> float:
-    """Return current process RSS in MiB."""
-    return _PROC.memory_info().rss / (1024 * 1024)
 
 
 def _memory_metrics_mb() -> dict[str, float]:
@@ -75,6 +67,15 @@ def parse_args() -> argparse.Namespace:
         "--revision",
         default=None,
         help="Optional Hugging Face dataset revision, branch, or commit.",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=("throughput", "memory"),
+        default="throughput",
+        help=(
+            "Run either a throughput measurement or a memory profiling run. "
+            "Memory mode writes the JSONL file consumed by plot_memory_metrics.py."
+        ),
     )
     parser.add_argument(
         "-o",
@@ -135,9 +136,25 @@ def parse_args() -> argparse.Namespace:
         "--metrics-file",
         type=Path,
         default=Path("memory-metrics.jsonl"),
-        help="JSONL file to write one structured metrics record per page.",
+        help=(
+            "JSONL file for memory mode. This remains compatible with "
+            "plot_memory_metrics.py."
+        ),
+    )
+    parser.add_argument(
+        "--report-file",
+        type=Path,
+        default=None,
+        help=(
+            "Optional JSON summary report path. Defaults to "
+            "'iterate-pdf-pages-<mode>-report.json'."
+        ),
     )
     return parser.parse_args()
+
+
+def _default_report_file(mode: str) -> Path:
+    return Path(f"iterate-pdf-pages-{mode}-report.json")
 
 
 def _make_backend_options(
@@ -205,7 +222,7 @@ def _load_cache(cache_file: Path) -> dict[str, dict]:
     if not cache_file.is_file():
         return {}
     try:
-        return json.loads(cache_file.read_text())
+        return json.loads(cache_file.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as e:
         _log.warning("Ignoring unreadable cache %s: %s", cache_file, e)
         return {}
@@ -214,7 +231,10 @@ def _load_cache(cache_file: Path) -> dict[str, dict]:
 def _save_cache(cache_file: Path, cache: dict[str, dict]) -> None:
     try:
         cache_file.parent.mkdir(parents=True, exist_ok=True)
-        cache_file.write_text(json.dumps(cache, indent=2, sort_keys=True))
+        cache_file.write_text(
+            json.dumps(cache, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
     except OSError as e:
         _log.warning("Failed to write cache %s: %s", cache_file, e)
 
@@ -230,6 +250,17 @@ def _append_metrics(metrics_file: Path | None, payload: dict[str, Any]) -> None:
             fp.write("\n")
     except OSError as e:
         _log.warning("Failed to append metrics to %s: %s", metrics_file, e)
+
+
+def _write_report(report_file: Path, payload: dict[str, Any]) -> None:
+    try:
+        report_file.parent.mkdir(parents=True, exist_ok=True)
+        report_file.write_text(
+            json.dumps(payload, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+    except OSError as e:
+        _log.warning("Failed to write report %s: %s", report_file, e)
 
 
 def collect_pdfs_by_page_count(
@@ -294,16 +325,17 @@ def process_pdf(
     processed_pages: int,
     target_total_pages: int,
     max_pages: int | None,
+    mode: str,
     metrics_file: Path | None,
     run_start_time: float,
-) -> int:
+) -> tuple[int, int]:
     _log.info("Processing %s", pdf_path.name)
 
     limits: DocumentLimits | None = None
     if max_pages is not None:
         remaining_pages = max_pages - processed_pages
         if remaining_pages <= 0:
-            return processed_pages
+            return processed_pages, 0
         limits = DocumentLimits(page_range=(1, remaining_pages))
 
     in_doc = InputDocument(
@@ -321,7 +353,7 @@ def process_pdf(
     try:
         if not doc_backend.is_valid():
             _log.warning("Skipping invalid document: %s", pdf_path.name)
-            return
+            return processed_pages, 0
 
         pdf_out_dir: Path | None = None
         if output_dir is not None:
@@ -333,54 +365,71 @@ def process_pdf(
         _log.info("  %d page(s)", num_pages)
 
         for page_backend in doc_backend.iter_pages():
-            memory_before = _memory_metrics_mb()
-            rss_before = memory_before["rss_mb"]
             page_no = page_backend.page_no
             processed_pages += 1
             page_success = False
+            memory_before: dict[str, float] | None = None
+            rss_before: float | None = None
             try:
+                if mode == "memory":
+                    memory_before = _memory_metrics_mb()
+                    rss_before = memory_before["rss_mb"]
+
                 text_cells = list(page_backend.get_text_cells())
                 page_image = page_backend.get_page_image(scale=scale)
-                memory_loaded = _memory_metrics_mb()
-                rss_loaded = memory_loaded["rss_mb"]
                 page_success = True
 
-                _log.info(
-                    "  page %d/%d: %d text cell(s), image size=%s, "
-                    "total page %d/%d, "
-                    "RSS before=%.1f MiB, loaded=%.1f MiB (+%.1f)",
-                    page_no,
-                    num_pages,
-                    len(text_cells),
-                    page_image.size,
-                    processed_pages,
-                    target_total_pages,
-                    rss_before,
-                    rss_loaded,
-                    rss_loaded - rss_before,
-                )
-                _append_metrics(
-                    metrics_file,
-                    {
-                        "doc_page_count": num_pages,
-                        "elapsed_seconds": time.monotonic() - run_start_time,
-                        "event": "loaded",
-                        "image_height": page_image.size[1],
-                        "image_width": page_image.size[0],
-                        "page_no": page_no,
-                        "pdf": pdf_path.name,
-                        "pdf_path": str(pdf_path),
-                        "memory_before_mb": memory_before,
-                        "memory_loaded_mb": memory_loaded,
-                        "rss_before_mb": rss_before,
-                        "rss_loaded_delta_mb": rss_loaded - rss_before,
-                        "rss_loaded_mb": rss_loaded,
-                        "success": True,
-                        "target_total_pages": target_total_pages,
-                        "text_cell_count": len(text_cells),
-                        "total_page_no": processed_pages,
-                    },
-                )
+                if mode == "memory":
+                    assert memory_before is not None
+                    assert rss_before is not None
+                    memory_loaded = _memory_metrics_mb()
+                    rss_loaded = memory_loaded["rss_mb"]
+                    _log.info(
+                        "  page %d/%d: %d text cell(s), image size=%s, "
+                        "total page %d/%d, "
+                        "RSS before=%.1f MiB, loaded=%.1f MiB (+%.1f)",
+                        page_no,
+                        num_pages,
+                        len(text_cells),
+                        page_image.size,
+                        processed_pages,
+                        target_total_pages,
+                        rss_before,
+                        rss_loaded,
+                        rss_loaded - rss_before,
+                    )
+                    _append_metrics(
+                        metrics_file,
+                        {
+                            "doc_page_count": num_pages,
+                            "elapsed_seconds": time.monotonic() - run_start_time,
+                            "event": "loaded",
+                            "image_height": page_image.size[1],
+                            "image_width": page_image.size[0],
+                            "page_no": page_no,
+                            "pdf": pdf_path.name,
+                            "pdf_path": str(pdf_path),
+                            "memory_before_mb": memory_before,
+                            "memory_loaded_mb": memory_loaded,
+                            "rss_before_mb": rss_before,
+                            "rss_loaded_delta_mb": rss_loaded - rss_before,
+                            "rss_loaded_mb": rss_loaded,
+                            "success": True,
+                            "target_total_pages": target_total_pages,
+                            "text_cell_count": len(text_cells),
+                            "total_page_no": processed_pages,
+                        },
+                    )
+                else:
+                    _log.info(
+                        "  page %d/%d: %d text cell(s), image size=%s, total page %d/%d",
+                        page_no,
+                        num_pages,
+                        len(text_cells),
+                        page_image.size,
+                        processed_pages,
+                        target_total_pages,
+                    )
 
                 """
                 if pdf_out_dir is not None:
@@ -393,42 +442,47 @@ def process_pdf(
                 """
             except Exception:
                 failed_pages += 1
-                _log.exception("  page %d/%d: failed to parse/render", page_no, num_pages)
+                _log.exception(
+                    "  page %d/%d: failed to parse/render", page_no, num_pages
+                )
             finally:
                 page_backend.unload()
-                del page_backend
-                gc.collect()
-                memory_after = _memory_metrics_mb()
-                rss_after = memory_after["rss_mb"]
-                _append_metrics(
-                    metrics_file,
-                    {
-                        "doc_page_count": num_pages,
-                        "elapsed_seconds": time.monotonic() - run_start_time,
-                        "event": "after_unload",
-                        "page_no": page_no,
-                        "pdf": pdf_path.name,
-                        "pdf_path": str(pdf_path),
-                        "memory_after_mb": memory_after,
-                        "memory_before_mb": memory_before,
-                        "rss_after_delta_mb": rss_after - rss_before,
-                        "rss_after_mb": rss_after,
-                        "rss_before_mb": rss_before,
-                        "success": page_success,
-                        "target_total_pages": target_total_pages,
-                        "total_page_no": processed_pages,
-                    },
-                )
-                _log.info(
-                    "  page %d/%d: total page %d/%d, RSS after unload=%.1f MiB "
-                    "(delta vs before=%+.1f)",
-                    page_no,
-                    num_pages,
-                    processed_pages,
-                    target_total_pages,
-                    rss_after,
-                    rss_after - rss_before,
-                )
+                if mode == "memory":
+                    del page_backend
+                    gc.collect()
+                    assert memory_before is not None
+                    assert rss_before is not None
+                    memory_after = _memory_metrics_mb()
+                    rss_after = memory_after["rss_mb"]
+                    _append_metrics(
+                        metrics_file,
+                        {
+                            "doc_page_count": num_pages,
+                            "elapsed_seconds": time.monotonic() - run_start_time,
+                            "event": "after_unload",
+                            "page_no": page_no,
+                            "pdf": pdf_path.name,
+                            "pdf_path": str(pdf_path),
+                            "memory_after_mb": memory_after,
+                            "memory_before_mb": memory_before,
+                            "rss_after_delta_mb": rss_after - rss_before,
+                            "rss_after_mb": rss_after,
+                            "rss_before_mb": rss_before,
+                            "success": page_success,
+                            "target_total_pages": target_total_pages,
+                            "total_page_no": processed_pages,
+                        },
+                    )
+                    _log.info(
+                        "  page %d/%d: total page %d/%d, RSS after unload=%.1f MiB "
+                        "(delta vs before=%+.1f)",
+                        page_no,
+                        num_pages,
+                        processed_pages,
+                        target_total_pages,
+                        rss_after,
+                        rss_after - rss_before,
+                    )
 
         if failed_pages:
             _log.warning(
@@ -437,7 +491,7 @@ def process_pdf(
                 failed_pages,
                 num_pages,
             )
-        return processed_pages
+        return processed_pages, failed_pages
     finally:
         doc_backend.unload()
 
@@ -456,10 +510,14 @@ def main() -> None:
 
     if args.output_dir is not None:
         args.output_dir.mkdir(parents=True, exist_ok=True)
-    if args.metrics_file is not None:
-        args.metrics_file.parent.mkdir(parents=True, exist_ok=True)
-        args.metrics_file.write_text("", encoding="utf-8")
-        _log.info("Writing per-page metrics to %s", args.metrics_file)
+
+    metrics_file: Path | None = args.metrics_file if args.mode == "memory" else None
+    if metrics_file is not None:
+        metrics_file.parent.mkdir(parents=True, exist_ok=True)
+        metrics_file.write_text("", encoding="utf-8")
+        _log.info("Writing per-page metrics to %s", metrics_file)
+
+    report_file = args.report_file or _default_report_file(args.mode)
 
     pdfs = sorted(input_dir.glob(args.glob))
     if not pdfs:
@@ -467,6 +525,7 @@ def main() -> None:
         return
 
     _log.info("Found %d PDF file(s) in %s", len(pdfs), input_dir)
+    _log.info("Running in %s mode", args.mode)
 
     if args.no_cache:
         cache_file: Path | None = None
@@ -496,6 +555,7 @@ def main() -> None:
         _log.info("  %5d pages  %s", page_count, pdf_path.name)
 
     processed_pages = 0
+    failed_pages = 0
     for pdf_path, _ in ordered:
         if args.max_pages is not None and processed_pages >= args.max_pages:
             _log.info(
@@ -505,7 +565,7 @@ def main() -> None:
             )
             break
         try:
-            processed_pages = process_pdf(
+            processed_pages, pdf_failed_pages = process_pdf(
                 pdf_path,
                 args.output_dir,
                 args.scale,
@@ -514,11 +574,46 @@ def main() -> None:
                 processed_pages=processed_pages,
                 target_total_pages=target_total_pages,
                 max_pages=args.max_pages,
-                metrics_file=args.metrics_file,
+                mode=args.mode,
+                metrics_file=metrics_file,
                 run_start_time=run_start_time,
             )
+            failed_pages += pdf_failed_pages
         except Exception:
             _log.exception("Failed to process %s", pdf_path.name)
+
+    elapsed_seconds = time.monotonic() - run_start_time
+    report = {
+        "elapsed_seconds": elapsed_seconds,
+        "failed_pages": failed_pages,
+        "glob": args.glob,
+        "input_dir": str(input_dir),
+        "max_pages": args.max_pages,
+        "metrics_file": str(metrics_file) if metrics_file is not None else None,
+        "mode": args.mode,
+        "output_dir": str(args.output_dir) if args.output_dir is not None else None,
+        "pages_per_second": (
+            processed_pages / elapsed_seconds if elapsed_seconds > 0.0 else 0.0
+        ),
+        "parser_threads": args.parser_threads,
+        "processed_pages": processed_pages,
+        "release_native_memory_every_n_pages": args.release_native_memory_every_n_pages,
+        "repo_id": args.repo_id,
+        "report_file": str(report_file),
+        "revision": args.revision,
+        "scale": args.scale,
+        "target_total_pages": target_total_pages,
+        "total_available_pages": total_available_pages,
+    }
+    _write_report(report_file, report)
+    _log.info(
+        "Processed %d/%d page(s) in %.2fs (%.2f pages/s). Report: %s",
+        processed_pages,
+        target_total_pages,
+        elapsed_seconds,
+        report["pages_per_second"],
+        report_file,
+    )
 
 
 if __name__ == "__main__":

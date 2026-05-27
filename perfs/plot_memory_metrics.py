@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-
 MEMORY_KEYS = ("rss_mb", "uss_mb", "pss_mb")
 
 

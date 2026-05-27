@@ -6,6 +6,7 @@ import pytest
 from docling_core.types.doc import CoordOrigin
 from PIL import Image, ImageDraw, ImageStat
 
+import docling.backend.docling_parse_backend as docling_parse_backend_module
 from docling.backend.docling_parse_backend import (
     DoclingParseDocumentBackend,
     DoclingParsePageBackend,
@@ -423,6 +424,7 @@ def test_threaded_backend_uses_backend_option_thread_count(
     assert parser.parser_config is not None
     assert parser.parser_config.threads == 11
     assert parser.decode_config is not None
+    assert parser.decode_config.materialize_bitmap_bytes is False
     assert parser.decode_config.release_native_memory_every_n_pages == 128
 
     in_doc._backend.unload()
@@ -452,6 +454,7 @@ def test_threaded_backend_uses_backend_option_native_memory_release_interval(
     parser = _FakeThreadedParser.created
     assert parser is not None
     assert parser.decode_config is not None
+    assert parser.decode_config.materialize_bitmap_bytes is False
     assert parser.decode_config.release_native_memory_every_n_pages == 64
 
     in_doc._backend.unload()
@@ -481,6 +484,7 @@ def test_threaded_backend_allows_disabling_native_memory_release(
     parser = _FakeThreadedParser.created
     assert parser is not None
     assert parser.decode_config is not None
+    assert parser.decode_config.materialize_bitmap_bytes is False
     assert parser.decode_config.release_native_memory_every_n_pages == 0
 
     in_doc._backend.unload()
@@ -512,8 +516,55 @@ def test_threaded_backend_uses_accelerator_thread_count_when_unset(
     assert parser is not None
     assert parser.parser_config is not None
     assert parser.parser_config.threads == 7
+    assert parser.decode_config is not None
+    assert parser.decode_config.materialize_bitmap_bytes is False
 
     in_doc._backend.unload()
+
+
+def test_non_threaded_page_backend_disables_bitmap_materialization() -> None:
+    captured_config: Any | None = None
+
+    class _FakeCell:
+        def to_top_left_origin(self, _page_height: float) -> "_FakeCell":
+            return self
+
+    class _FakeDimension:
+        height = 200.0
+
+    class _FakeSegmentedPage:
+        dimension = _FakeDimension()
+        textline_cells = [_FakeCell()]
+        char_cells = [_FakeCell()]
+        word_cells = [_FakeCell()]
+
+    class _FakePdfDocument:
+        def get_page(self, _page_no: int, config: Any) -> _FakeSegmentedPage:
+            nonlocal captured_config
+            captured_config = config
+            return _FakeSegmentedPage()
+
+        def unload_pages(self, _page_range: tuple[int, int]) -> None:
+            return None
+
+    class _FakePdfPage:
+        def close(self) -> None:
+            return None
+
+    page_backend = DoclingParsePageBackend(
+        dp_doc=_FakePdfDocument(),
+        page_obj=_FakePdfPage(),
+        page_no=0,
+    )
+
+    try:
+        cells = list(page_backend.get_text_cells())
+    finally:
+        page_backend.unload()
+
+    assert len(cells) == 1
+    assert captured_config is not None
+    assert captured_config.materialize_bitmap_bytes is False
 
 
 def test_threaded_backend_creates_fresh_default_options_per_instance(
@@ -560,6 +611,31 @@ def test_threaded_page_backend_delegates_image_access() -> None:
     assert image.size == (60, 40)
     assert result.scales == [2.0]
     assert result.cropboxes == [cropbox]
+
+
+def test_threaded_page_backend_disables_bitmap_materialization() -> None:
+    class _FakeCell:
+        def to_top_left_origin(self, _page_height: float) -> "_FakeCell":
+            return self
+
+    class _FakeDimension:
+        height = 200.0
+
+    class _FakeSegmentedPage:
+        dimension = _FakeDimension()
+        textline_cells = [_FakeCell()]
+        char_cells = [_FakeCell()]
+        word_cells = [_FakeCell()]
+        bitmap_resources: list[Any] = []
+
+    result = _FakeThreadedResult(page_number=4)
+    result.get_page = lambda: _FakeSegmentedPage()
+
+    page_backend = ThreadedDoclingParsePageBackend(result)
+
+    cells = list(page_backend.get_text_cells())
+
+    assert len(cells) == 1
 
 
 def _create_black_square_pdf(path: Path) -> None:
