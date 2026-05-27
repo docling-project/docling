@@ -280,12 +280,20 @@ dev = [
 ]
 
 docs = [
-  "mkdocs-material~=9.5",
-  "mkdocs-jupyter>=0.25,<0.26",
-  "mkdocs-click~=0.8",
+  "zensical>=0.0.40,<0.1",
   "mkdocs-redirects~=1.2",
   "mkdocstrings[python]~=0.27",
   "griffe-pydantic~=1.1",
+  # pymdown-extensions was previously a transitive dep of mkdocs-material;
+  # mkdocs.yml's markdown_extensions list still relies on pymdownx.* and on
+  # pymdownx.slugs.slugify, so pin it directly now that material is removed.
+  "pymdown-extensions~=10.0",
+  # Used by scripts/render_notebooks.py to convert example notebooks and
+  # jupytext percent-format .py scripts to markdown at docs build time. Zensical
+  # has no mkdocs-jupyter equivalent on its roadmap, so the example pages are
+  # pre-rendered into docs/_generated/examples before build.
+  "nbconvert~=7.16",
+  "jupytext~=1.16",
 ]
 
 examples = [
