@@ -30,20 +30,40 @@ ok "설정 로드 완료"
 : "${K8S_NAMESPACE:?}"
 : "${MARIADB_POD:?}"
 
-# ── IMAGE_TAG 조합 (register.config 의 세 값 기반) ──────────────────────────
-#    IMAGE_TAG = ${IMAGE_VERSION}-${BUILD_VARIANT}-${HW_VARIANT}
+# ── IMAGE_TAG 조합 (register.config 의 세 값 기반, 이슈 #236) ──────────────────
+#    기본 조합(cpu + standard) → ${IMAGE_VERSION}                       (접미사 생략)
+#    그 외 조합               → ${IMAGE_VERSION}-${HW_VARIANT}-${BUILD_VARIANT}
 #    build-script/doc-parser-build.sh 와 동일한 태그 컨벤션.
 : "${IMAGE_VERSION:?IMAGE_VERSION 가 register.config 에 설정되지 않았습니다}"
 case "${BUILD_VARIANT:-}" in
-  opensource|enterprise) ;;
-  *) fail "BUILD_VARIANT 가 register.config 에 잘못 지정되었습니다 (opensource | enterprise 만 허용). 현재: '${BUILD_VARIANT:-}'"; exit 1 ;;
+  standard|pro) ;;
+  *) fail "BUILD_VARIANT 가 register.config 에 잘못 지정되었습니다 (standard | pro 만 허용). 현재: '${BUILD_VARIANT:-}'"; exit 1 ;;
 esac
 case "${HW_VARIANT:-}" in
   gpu|cpu) ;;
   *) fail "HW_VARIANT 가 register.config 에 잘못 지정되었습니다 (gpu | cpu 만 허용). 현재: '${HW_VARIANT:-}'"; exit 1 ;;
 esac
-IMAGE_TAG="${IMAGE_VERSION}-${BUILD_VARIANT}-${HW_VARIANT}"
-echo "[INFO] IMAGE_TAG = ${IMAGE_VERSION}-${BUILD_VARIANT}-${HW_VARIANT} → ${IMAGE_TAG}"
+if [[ "${HW_VARIANT}" == "cpu" && "${BUILD_VARIANT}" == "standard" ]]; then
+  IMAGE_TAG="${IMAGE_VERSION}"
+else
+  IMAGE_TAG="${IMAGE_VERSION}-${HW_VARIANT}-${BUILD_VARIANT}"
+fi
+echo "[INFO] IMAGE_TAG = ${IMAGE_TAG} (version=${IMAGE_VERSION}, hw=${HW_VARIANT}, variant=${BUILD_VARIANT})"
+
+# 이슈 #236 — pro 이미지는 레지스트리/DB 에 올라가면 사내 공유되므로 한 번 더 확인받는다.
+#   (standard 는 추가 확인 없이 진행)
+if [[ "${BUILD_VARIANT}" == "pro" ]]; then
+  echo ""
+  echo "⚠️  BUILD_VARIANT=pro 이미지를 레지스트리(${REGISTRY_NAME:-})와 DB(llmops)에 등록하려 합니다."
+  echo "    여기에 올라가면 사내에서 공유되어, Synap 유료 SDK 가 포함된 이미지를 누구나 받을 수 있게 됩니다."
+  echo "    pro 는 원칙적으로 공유 레지스트리에 올리지 않고 AI Search 팀 경유로 배포합니다."
+  read -rp "그래도 정말 진행할까요? (y/N): " _PRO_OK
+  if [[ ! "${_PRO_OK:-N}" =~ ^[Yy]$ ]]; then
+    echo "중단합니다 (pro 등록 취소)."
+    exit 0
+  fi
+  echo "사용자 확인됨 — pro 등록을 계속합니다."
+fi
 
 # ── 기본값 + 사용자 입력 (Enter=기본값 유지) ────────────────
 echo ""

@@ -1,12 +1,11 @@
 # syntax=docker/dockerfile:1.7
 #
-# 오픈소스 빌드 — 유료 PDF SDK 미포함.
-# HWP → PDF 변환은 rhwp ↔ LibreOffice 양방향 fallback (chain 우선순위는 config 로 결정).
-# 사용자 명시 요구: 본 이미지에는 PDF SDK 다운로드 단계가 일절 없어야 함 (이슈 #199).
+# pro 빌드 — 유료 PDF SDK(Synap) 포함.
+# HWP → PDF 변환 우선순위: pdf_sdk → rhwp → libreoffice (자동 fallback).
 #
 # rhwp 는 컨테이너 내부에 Rust 바이너리 형태로 포함된다 (multi-stage rhwp_builder).
 # Python 측은 subprocess 로 `/usr/local/bin/rhwp export-pdf` 를 호출 — 외부 서비스/
-# 네트워크 의존 없음.
+# 네트워크 의존 없음. 이슈 #199.
 
 ############################
 # 0) 공통 ARG/ENV
@@ -135,6 +134,7 @@ ENV UV_VIRTUALENVS_CREATE=1 \
     HF_HOME=/app/.cache/huggingface \
     NLTK_DATA=/app/nltk_data
 
+# 앱 관련 pyproject만
 COPY docling /app/docling
 COPY pyproject.toml /app/pyproject.toml
 COPY genon/preprocessor/pyproject.toml /app/genon/preprocessor/pyproject.toml
@@ -142,8 +142,10 @@ COPY genon/preprocessor/uv.lock /app/genon/preprocessor/uv.lock
 
 WORKDIR /app/genon/preprocessor
 
+# ✅ 공통 위치에 venv 생성
 RUN uv venv ${APP_VENV}
 
+# ✅ 그 venv에 설치
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen || \
     uv sync
@@ -197,6 +199,28 @@ RUN --mount=type=cache,target=${HF_HOME} \
       --local-dir-use-symlinks False \
       --token "${HWP_SDK_TOKEN_VAL}" && \
     chmod +x /app/hwp_sdk/convtext
+
+############################
+# 4-1b) PDF SDK 아티팩트 (엔터프라이즈 전용)
+############################
+FROM builder AS pdf_sdk_artifacts
+ARG APP_VENV
+
+RUN --mount=type=cache,target=${HF_HOME} \
+    --mount=type=secret,id=PDF_SDK_TOKEN \
+    echo "[INFO] Downloading PDF SDK from Private HF Repo..."; \
+    PDF_SDK_TOKEN_VAL=$(cat /run/secrets/PDF_SDK_TOKEN) && \
+    mkdir -p /app/pdf_sdk && \
+    huggingface-cli download HeechanKim-Genon/pdf_sdk \
+      --repo-type dataset \
+      --local-dir /app/pdf_sdk \
+      --local-dir-use-symlinks False \
+      --token "${PDF_SDK_TOKEN_VAL}" && \
+    chmod +x /app/pdf_sdk/pdfConverter && \
+    sed -i 's|<dir>[^<]*</dir>|<dir>/app/pdf_sdk/fonts</dir>|' /app/pdf_sdk/fonts/fonts_gen.conf && \
+    sed -i 's|<cachedir>[^<]*</cachedir>|<cachedir>/app/pdf_sdk/font_cache</cachedir>|' /app/pdf_sdk/fonts/fonts_gen.conf && \
+    echo "/app/pdf_sdk/fonts" > /app/pdf_sdk/fonts/_fonts_path && \
+    mkdir -p /app/pdf_sdk/font_cache
 
 ############################
 # 4-2) 추가 폰트 아티팩트
@@ -290,10 +314,7 @@ RUN --mount=type=cache,target=/root/.cache/easyocr_korean \
     fi
 
 ############################
-# 5) Runtime (오픈소스)
-#
-# PDF_SDK_HOME 환경변수 미설정 → PdfSdkConverter.is_available() == False
-# → chain 에서 자동 제외. 운영상 PDF SDK 가용성 체크가 실패해도 graceful.
+# 5) Runtime (엔터프라이즈)
 ############################
 FROM loext AS runtime
 ARG APP_VENV
@@ -316,7 +337,8 @@ ENV UV_PROJECT_ENVIRONMENT=${APP_VENV} \
     LC_ALL=ko_KR.UTF-8 \
     LC_CTYPE=ko_KR.UTF-8 \
     DOCLING_ARTIFACTS_PATH=/models \
-    DOC_PARSER_BUILD_VARIANT=opensource \
+    PDF_SDK_HOME=/app/pdf_sdk \
+    DOC_PARSER_BUILD_VARIANT=pro \
     RHWP_BIN=/usr/local/bin/rhwp
 
 WORKDIR /app
@@ -328,13 +350,14 @@ COPY ./genon/preprocessor/src /app/src
 # (facade 의 `from genon.preprocessor.converters.hwp_to_pdf import ...` 가 풀림).
 COPY ./genon/preprocessor/converters /app/genon/preprocessor/converters
 
-# 🔴 HWP sdk (무료 자산이라 오픈소스 빌드에도 포함)
+# 🔴 HWP sdk
 COPY --from=sdk_artifacts /app/hwp_sdk /app/hwp_sdk
+
+# 🔴 PDF SDK (엔터프라이즈 전용)
+COPY --from=pdf_sdk_artifacts /app/pdf_sdk /app/pdf_sdk
 
 # 🔴 rhwp 바이너리 (이슈 #199 후속 — 컨테이너 내 바이너리, subprocess 호출)
 COPY --from=rhwp_builder /usr/local/bin/rhwp /usr/local/bin/rhwp
-
-# NOTE: PDF SDK 는 오픈소스 빌드의 본질적 차이로 의도적으로 포함하지 않음 (유료).
 
 # 추가 폰트 설치
 COPY --from=font_artifacts /app/extra_fonts /usr/share/fonts/additional
