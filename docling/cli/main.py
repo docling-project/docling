@@ -472,6 +472,11 @@ def convert(  # noqa: C901
         "--headers",
         help="Specify http request headers used when fetching url input sources in the form of a JSON string",
     ),
+    html_image_headers: str = typer.Option(
+        None,
+        "--html-image-headers",
+        help="Specify http request headers used when fetching HTML image resources in the form of a JSON string",
+    ),
     image_export_mode: Annotated[
         ImageRefMode,
         typer.Option(
@@ -732,6 +737,11 @@ def convert(  # noqa: C901
         headers_t = TypeAdapter(dict[str, str])
         parsed_headers = headers_t.validate_json(headers)
 
+    parsed_html_image_headers: dict[str, str] | None = None
+    if html_image_headers is not None:
+        headers_t = TypeAdapter(dict[str, str])
+        parsed_html_image_headers = headers_t.validate_json(html_image_headers)
+
     if profiling or save_profiling:
         settings.debug.profile_pipeline_timings = True
 
@@ -895,7 +905,7 @@ def convert(  # noqa: C901
                 fetch_images=html_fetch_images,
                 enable_local_fetch=html_enable_local_fetch,
                 enable_remote_fetch=html_enable_remote_fetch,
-                headers=parsed_headers,
+                headers=parsed_html_image_headers,
             )
 
             # Use image-native backend for IMAGE to avoid pypdfium2 locking
