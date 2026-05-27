@@ -75,14 +75,40 @@ def test_cli_html_fetches_local_images_per_input(tmp_path):
             str(output),
             "--image-export-mode",
             "embedded",
-            "--html-fetch-images",
-            "--html-enable-local-fetch",
+            "--html-image-fetch",
+            "local",
         ],
     )
 
     assert result.exit_code == 0
     _assert_markdown_embeds_png(output / "first.md")
     _assert_markdown_embeds_png(output / "second.md")
+
+
+def test_cli_html_directory_matches_mixed_case_extensions(tmp_path):
+    source_dir = tmp_path / "source"
+    _write_html_image_case(source_dir, "Case.HtMl", "Mixed case")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source_dir),
+            "--from",
+            "html",
+            "--to",
+            "md",
+            "--output",
+            str(output),
+            "--image-export-mode",
+            "embedded",
+            "--html-image-fetch",
+            "local",
+        ],
+    )
+
+    assert result.exit_code == 0
+    _assert_markdown_embeds_png(output / "Case.md")
 
 
 def test_cli_html_fetches_remote_images_with_separate_headers(tmp_path, monkeypatch):
@@ -134,8 +160,8 @@ def test_cli_html_fetches_remote_images_with_separate_headers(tmp_path, monkeypa
             '{"Authorization": "Bearer source-token"}',
             "--html-image-headers",
             '{"X-Image-Token": "image-token"}',
-            "--html-fetch-images",
-            "--html-enable-remote-fetch",
+            "--html-image-fetch",
+            "remote",
         ],
     )
 
@@ -147,6 +173,26 @@ def test_cli_html_fetches_remote_images_with_separate_headers(tmp_path, monkeypa
     assert "Authorization" not in image_call["headers"]
     assert "authorization" not in image_call["headers"]
     assert image_call["headers"]["X-Image-Token"] == "image-token"
+
+
+def test_cli_html_image_headers_require_remote_fetch(tmp_path):
+    source = _write_html_image_case(tmp_path / "source", "index.html", "Local")
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "html",
+            "--to",
+            "md",
+            "--html-image-headers",
+            '{"Authorization": "Bearer token"}',
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "--html-image-headers requires --html-image-fetch remote or all" in result.output
 
 
 def test_export_documents_marks_empty_markdown_as_failure(tmp_path):

@@ -6,6 +6,7 @@ import tempfile
 import time
 import warnings
 from collections.abc import Iterable
+from enum import Enum
 from pathlib import Path
 from typing import Annotated, Type
 from urllib.parse import urlparse
@@ -135,9 +136,34 @@ console = Console()
 err_console = Console(stderr=True)
 
 
+class HtmlImageFetchMode(str, Enum):
+    NONE = "none"
+    LOCAL = "local"
+    REMOTE = "remote"
+    ALL = "all"
+
+
 def _is_http_url(source: str) -> bool:
     parsed = urlparse(source)
     return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def _name_matches_format(name: str, format: InputFormat) -> bool:
+    name_lower = name.lower()
+    return any(
+        name_lower.endswith(f".{extension.lower()}")
+        for extension in FormatToExtensions[format]
+    )
+
+
+def _is_html_source(source: str, from_formats: list[InputFormat]) -> bool:
+    if InputFormat.HTML not in from_formats:
+        return False
+    if len(from_formats) == 1:
+        return True
+
+    source_name = urlparse(source).path if _is_http_url(source) else source
+    return _name_matches_format(source_name, InputFormat.HTML)
 
 
 def _is_temporary_word_file(path: Path) -> bool:
@@ -148,16 +174,17 @@ def _iter_input_paths_from_directory(
     local_path: Path, from_formats: list[InputFormat]
 ) -> Iterable[Path]:
     seen_paths: set[Path] = set()
-    for fmt in from_formats:
-        for ext in FormatToExtensions[fmt]:
-            for pattern in (f"**/*.{ext}", f"**/*.{ext.upper()}"):
-                for path in local_path.glob(pattern):
-                    if _is_temporary_word_file(path):
-                        _log.info(f"Ignoring temporary Word file: {path}")
-                        continue
-                    if path not in seen_paths:
-                        seen_paths.add(path)
-                        yield path
+    for path in sorted(local_path.rglob("*")):
+        if not path.is_file() or not any(
+            _name_matches_format(path.name, fmt) for fmt in from_formats
+        ):
+            continue
+        if _is_temporary_word_file(path):
+            _log.info(f"Ignoring temporary Word file: {path}")
+            continue
+        if path not in seen_paths:
+            seen_paths.add(path)
+            yield path
 
 
 ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
@@ -484,30 +511,14 @@ def convert(  # noqa: C901
             help="Image export mode for image-capable document outputs (JSON, YAML, HTML, HTML split-page, and Markdown). Text, DocTags, and WebVTT outputs do not export images. With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document.",
         ),
     ] = ImageRefMode.EMBEDDED,
-    html_fetch_images: Annotated[
-        bool,
+    html_image_fetch: Annotated[
+        HtmlImageFetchMode,
         typer.Option(
             ...,
-            "--html-fetch-images",
-            help="Fetch image resources referenced by HTML inputs.",
+            "--html-image-fetch",
+            help="Fetch image resources referenced by HTML inputs. Choose none, local, remote, or all.",
         ),
-    ] = False,
-    html_enable_local_fetch: Annotated[
-        bool,
-        typer.Option(
-            ...,
-            "--html-enable-local-fetch",
-            help="Allow HTML image fetching from local paths.",
-        ),
-    ] = False,
-    html_enable_remote_fetch: Annotated[
-        bool,
-        typer.Option(
-            ...,
-            "--html-enable-remote-fetch",
-            help="Allow HTML image fetching from remote URLs.",
-        ),
-    ] = False,
+    ] = HtmlImageFetchMode.NONE,
     pipeline: Annotated[
         ProcessingPipeline,
         typer.Option(..., help="Choose the pipeline to process PDF or image files."),
@@ -742,6 +753,21 @@ def convert(  # noqa: C901
         headers_t = TypeAdapter(dict[str, str])
         parsed_html_image_headers = headers_t.validate_json(html_image_headers)
 
+    html_fetch_images = html_image_fetch != HtmlImageFetchMode.NONE
+    html_enable_local_fetch = html_image_fetch in {
+        HtmlImageFetchMode.LOCAL,
+        HtmlImageFetchMode.ALL,
+    }
+    html_enable_remote_fetch = html_image_fetch in {
+        HtmlImageFetchMode.REMOTE,
+        HtmlImageFetchMode.ALL,
+    }
+    if parsed_html_image_headers is not None and not html_enable_remote_fetch:
+        err_console.print(
+            "[red]Error: --html-image-headers requires --html-image-fetch remote or all.[/red]"
+        )
+        raise typer.Abort()
+
     if profiling or save_profiling:
         settings.debug.profile_pipeline_timings = True
 
@@ -749,7 +775,7 @@ def convert(  # noqa: C901
         input_doc_paths: list[Path | str] = []
         for src in source:
             try:
-                if _is_http_url(src):
+                if _is_http_url(src) and _is_html_source(src, from_formats):
                     input_doc_paths.append(src)
                     continue
 
@@ -761,8 +787,13 @@ def convert(  # noqa: C901
                         )
                     elif _is_temporary_word_file(local_path):
                         _log.info(f"Ignoring temporary Word file: {local_path}")
-                    else:
+                    elif _is_html_source(src, from_formats):
                         input_doc_paths.append(local_path)
+                    else:
+                        resolved_source = resolve_source_to_path(
+                            source=src, headers=parsed_headers, workdir=Path(tempdir)
+                        )
+                        input_doc_paths.append(resolved_source)
                     continue
 
                 # check if we can fetch some remote url
