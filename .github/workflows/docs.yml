@@ -3,7 +3,7 @@ on:
         inputs:
             deploy:
                 type: boolean
-                description: "If true, the docs will be deployed."
+                description: "If true, upload the build as a Pages artifact for a follow-on deploy job in the caller."
                 default: false
             python_version:
                 type: string
@@ -13,6 +13,10 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   UV_FROZEN: "1"
+
+# This reusable workflow only builds the docs. The actual GitHub Pages
+# deployment lives in cd-docs.yml so the build path (called by ci-docs.yml
+# from PRs) doesn't need to request pages/id-token permissions it never uses.
 
 jobs:
     build:
@@ -34,20 +38,3 @@ jobs:
           uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
           with:
             path: ./site
-
-    deploy:
-        if: inputs.deploy
-        needs: build
-        runs-on: ubuntu-latest
-        environment:
-            name: github-pages
-            url: ${{ steps.deployment.outputs.page_url }}
-        permissions:
-            pages: write
-            id-token: write
-        steps:
-        - name: Configure Pages
-          uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-        - name: Deploy to GitHub Pages
-          id: deployment
-          uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
