@@ -4,6 +4,7 @@ from pathlib import Path
 import asyncio
 import sys
 import pytest
+from unittest.mock import patch
 
 
 DOCX_SAMPLES = sorted(
@@ -49,10 +50,12 @@ def test_no_adjacent_duplicate_lines_in_vectors_for_docx_samples(sample_path: Pa
 
     dp = DocumentProcessor()
 
-    async def _run():
-        return await dp(_DummyRequest(), str(sample_path))
+    # unit 테스트에서는 외부 LLM(enrichment) 호출을 차단한다.
+    with patch.object(DocumentProcessor, "enrichment", side_effect=lambda doc, **kwargs: doc):
+        async def _run():
+            return await dp(_DummyRequest(), str(sample_path))
 
-    vectors = asyncio.run(_run())
+        vectors = asyncio.run(_run())
 
     assert isinstance(vectors, list)
     assert len(vectors) >= 1
