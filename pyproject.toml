@@ -311,7 +311,7 @@ members = ["packages/docling"]
 
 [tool.uv.sources]
 docling = { workspace = true }
-# docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "18e96bae3d771492cc88149336e4489bf2efa2ed" }
+docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "cau/control-bitmap-materialization" }
 # docling-parse = { path = "../docling-parse", editable = true }
 
 [tool.uv]

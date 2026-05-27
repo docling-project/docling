@@ -91,7 +91,7 @@ def parse_args() -> argparse.Namespace:
         "-s",
         "--scale",
         type=float,
-        default=1.5,
+        default=1,
         help="Scale factor for rendered page images (default: 1.5).",
     )
     parser.add_argument(
