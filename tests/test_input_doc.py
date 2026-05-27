@@ -123,7 +123,7 @@ def test_html_fetch_images_sets_source_uri_per_input(tmp_path):
     second = tmp_path / "second.html"
     first.write_text("<html><body>First</body></html>")
     second.write_text("<html><body>Second</body></html>")
-    backend_options = HTMLBackendOptions(fetch_images=True, enable_local_fetch=True)
+    backend_options = HTMLBackendOptions(enable_local_fetch=True)
     conversion_input = _DocumentConversionInput(path_or_stream_iterator=[first, second])
 
     docs = list(

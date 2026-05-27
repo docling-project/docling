@@ -79,6 +79,11 @@ class FormatOption(BaseFormatOption):
     pipeline_cls: Type[BasePipeline]
     backend_options: Optional[BackendOptions] = None
 
+    def backend_options_for_input(
+        self, source: Path | str | DocumentStream
+    ) -> BackendOptions | None:
+        return self.backend_options
+
     @model_validator(mode="after")
     def set_optional_field_default(self) -> Self:
         if self.pipeline_options is None:
@@ -122,6 +127,21 @@ class HTMLFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = HTMLDocumentBackend
     backend_options: Optional[HTMLBackendOptions] = None
+
+    def backend_options_for_input(
+        self, source: Path | str | DocumentStream
+    ) -> HTMLBackendOptions | None:
+        options = self.backend_options
+        if (
+            options is None
+            or options.source_uri is not None
+            or isinstance(source, DocumentStream)
+        ):
+            return options
+
+        return HTMLBackendOptions.model_validate(
+            {**options.model_dump(), "source_uri": source}
+        )
 
 
 class PatentUsptoFormatOption(FormatOption):

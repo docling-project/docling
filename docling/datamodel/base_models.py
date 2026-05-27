@@ -33,6 +33,7 @@ from pydantic import (
 
 if TYPE_CHECKING:
     from docling.backend.pdf_backend import PdfPageBackend
+    from docling.datamodel.backend_options import BackendOptions
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.datamodel.pipeline_options import PipelineOptions
@@ -45,6 +46,11 @@ class BaseFormatOption(BaseModel):
     backend: Type[AbstractDocumentBackend]
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def backend_options_for_input(
+        self, source: Path | str | DocumentStream
+    ) -> "BackendOptions | None":
+        return None
 
 
 class ConversionStatus(str, Enum):

@@ -18,7 +18,6 @@ from typing import (
     Optional,
     Type,
     Union,
-    cast,
 )
 
 import filetype
@@ -62,7 +61,6 @@ from docling.backend.abstract_backend import (
 )
 from docling.datamodel.backend_options import (
     BackendOptions,
-    HTMLBackendOptions,
     MetsGbsBackendOptions,
 )
 from docling.datamodel.base_models import (
@@ -83,7 +81,6 @@ from docling.utils.utils import create_file_hash, safe_version
 
 if TYPE_CHECKING:
     from docling.datamodel.base_models import BaseFormatOption
-    from docling.document_converter import FormatOption
 
 _log = logging.getLogger(__name__)
 
@@ -469,13 +466,7 @@ class _DocumentConversionInput(BaseModel):
             else:
                 options = format_options[format]
                 backend = options.backend
-                if "backend_options" in options.model_fields_set:
-                    backend_options = cast("FormatOption", options).backend_options
-                    backend_options = self._with_input_source_uri(
-                        backend_options=backend_options,
-                        format=format,
-                        item=item,
-                    )
+                backend_options = options.backend_options_for_input(item)
 
             path_or_stream: Union[BytesIO, Path]
             if isinstance(obj, Path):
@@ -493,30 +484,6 @@ class _DocumentConversionInput(BaseModel):
                 backend=backend,
                 backend_options=backend_options,
             )
-
-    @staticmethod
-    def _with_input_source_uri(
-        backend_options: Optional[BackendOptions],
-        format: Optional[InputFormat],
-        item: Union[Path, str, DocumentStream],
-    ) -> Optional[BackendOptions]:
-        if (
-            format != InputFormat.HTML
-            or not isinstance(backend_options, HTMLBackendOptions)
-            or not backend_options.fetch_images
-            or backend_options.source_uri is not None
-            or isinstance(item, DocumentStream)
-        ):
-            return backend_options
-
-        if isinstance(item, Path):
-            source_uri: str | PurePath = item
-        else:
-            source_uri = item
-
-        return HTMLBackendOptions.model_validate(
-            {**backend_options.model_dump(), "source_uri": source_uri}
-        )
 
     def _guess_format(self, obj: Union[Path, DocumentStream]) -> Optional[InputFormat]:
         content = b""  # empty binary blob

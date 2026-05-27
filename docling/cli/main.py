@@ -901,12 +901,19 @@ def convert(  # noqa: C901
             if artifacts_path is not None:
                 simple_format_option.artifacts_path = artifacts_path
 
-            html_backend_options = HTMLBackendOptions(
-                fetch_images=html_fetch_images,
-                enable_local_fetch=html_enable_local_fetch,
-                enable_remote_fetch=html_enable_remote_fetch,
-                headers=parsed_html_image_headers,
-            )
+            html_backend_options: HTMLBackendOptions | None = None
+            if (
+                html_fetch_images
+                or html_enable_local_fetch
+                or html_enable_remote_fetch
+                or parsed_html_image_headers is not None
+            ):
+                html_backend_options = HTMLBackendOptions(
+                    fetch_images=html_fetch_images,
+                    enable_local_fetch=html_enable_local_fetch,
+                    enable_remote_fetch=html_enable_remote_fetch,
+                    headers=parsed_html_image_headers,
+                )
 
             # Use image-native backend for IMAGE to avoid pypdfium2 locking
             image_format_option = PdfFormatOption(
