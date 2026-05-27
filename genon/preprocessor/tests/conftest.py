@@ -64,3 +64,23 @@ def attachment_processor():
 def parser_processor():
     mod = pytest.importorskip("facade.parser_processor")
     return mod.DocumentProcessor
+
+
+@pytest.fixture(autouse=True)
+def _stub_vlm_for_unit_tests(request, monkeypatch):
+    """unit 테스트에서는 외부 VLM 호출을 기본 차단한다."""
+    if request.node.get_closest_marker("unit") is None:
+        return
+
+    try:
+        import facade.parser_processor as parser_mod
+    except Exception:
+        # parser_processor를 사용하지 않는 unit 테스트도 있으므로 조용히 패스
+        return
+
+    monkeypatch.setattr(
+        parser_mod,
+        "api_image_request",
+        lambda *args, **kwargs: "",
+        raising=False,
+    )

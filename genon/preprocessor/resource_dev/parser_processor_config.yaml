@@ -42,6 +42,35 @@ enrichment:
     seed: 33
     max_tokens: 10000
 
+  # facade 후처리 기반 이미지 설명 생성 (문맥 포함)
+  image_description:
+    enabled: false
+    # 필요 시만 지정 (미지정 시 enrichment.api_url 상속)
+    api_url: ""
+    # 필요 시만 지정 (미지정 시 enrichment.api_key 상속)
+    api_key: ""
+    # 필요 시만 지정 (미지정 시 enrichment.model 상속)
+    model: "model"
+    before_items: 3
+    after_items: 2
+    max_context_chars: 1500
+    prompt_template: |
+      문서의 일부 이미지를 설명해줘. 아래 문맥을 참고해서 핵심 정보를 2~4문장으로 간결하게 작성해줘.
+
+      [앞 문맥]
+      {before_context}
+
+      [캡션]
+      {caption}
+
+      [뒤 문맥]
+      {after_context}
+
+      요구사항:
+      1) 추측은 최소화하고 이미지에서 확인 가능한 사실 중심으로 작성
+      2) 문서 문맥과의 연결점을 포함
+      3) 한국어로 작성
+
 output:
   format: "json" # "json" (default), "html", "markdown"
   table_format: "html" # "html" (default), "markdown"
