@@ -94,3 +94,15 @@ def test_assign_cells_to_clusters_matches_exhaustive_selection() -> None:
     assert {
         cluster.id: [cell.index for cell in cluster.cells] for cluster in assigned
     } == _reference_assignments(clusters, cells)
+
+
+def test_assign_cells_to_clusters_indexes_passed_clusters() -> None:
+    cells = [_text_cell(0, BoundingBox(l=10, t=10, r=30, b=30))]
+    stale_clusters = [_cluster(0, BoundingBox(l=300, t=300, r=360, b=360))]
+    page = _PageStub(cells)
+    postprocessor = LayoutPostprocessor(page, stale_clusters, LayoutOptions())
+    current_clusters = [_cluster(0, BoundingBox(l=0, t=0, r=100, b=100))]
+
+    assigned = postprocessor._assign_cells_to_clusters(current_clusters)
+
+    assert [cell.index for cell in assigned[0].cells] == [0]

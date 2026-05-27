@@ -1,3 +1,4 @@
+import torch
 from docling_core.types.doc import BoundingBox
 from docling_core.types.doc.page import BoundingRectangle, TextCell
 
@@ -58,3 +59,35 @@ def test_match_texts_matches_exhaustive_selection():
         text_cells,
         0.3,
     )
+
+
+def test_match_texts_handles_unordered_bbox_coordinates() -> None:
+    text_cells = [
+        _text_cell(0, BoundingBox(l=5, t=5, r=25, b=20), "A"),
+    ]
+    model = object.__new__(TableStructureModelV2)
+
+    assert model._match_texts(
+        [BoundingBox(l=25, t=20, r=5, b=5)],
+        text_cells,
+        0.3,
+    ) == ["A"]
+
+
+def test_build_table_cells_orders_model_bbox_coordinates() -> None:
+    model = object.__new__(TableStructureModelV2)
+
+    cell_data, num_rows, num_cols = model._build_table_cells(
+        ["fcel"],
+        torch.tensor([[0.75, 0.5, 0.25, 0.0]]),
+        [100, 200, 200, 300],
+    )
+
+    assert cell_data[0]["bbox"] == {
+        "l": 125.0,
+        "t": 200.0,
+        "r": 175.0,
+        "b": 250.0,
+    }
+    assert num_rows == 1
+    assert num_cols == 1

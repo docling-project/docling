@@ -12,7 +12,6 @@ from docling_core.types.doc.page import (
     TextCell,
 )
 from PIL import Image, ImageDraw
-from rtree import index
 from transformers import AutoTokenizer
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
@@ -20,6 +19,11 @@ from docling.datamodel.base_models import Cluster, Page, Table, TableStructurePr
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import TableStructureV2Options
 from docling.datamodel.settings import settings
+from docling.datamodel.spatial import (
+    BoundingBoxSpatialIndex,
+    has_positive_area,
+    ordered_bounding_box,
+)
 from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
@@ -198,24 +202,23 @@ class TableStructureModelV2(BaseTableStructureModel):
         if not text_cells:
             return [""] * len(bboxes)
 
-        p = index.Property()
-        p.dimension = 2
-        spatial_index = index.Index(properties=p)
+        spatial_index = BoundingBoxSpatialIndex()
         cell_bboxes: list[BoundingBox] = []
 
         for cell_idx, tc in enumerate(text_cells):
             tc_bbox = tc.rect.to_bounding_box()
             cell_bboxes.append(tc_bbox)
-            if tc_bbox.area() > 0:
-                spatial_index.insert(cell_idx, tc_bbox.as_tuple())
+            if has_positive_area(tc_bbox):
+                spatial_index.insert(cell_idx, tc_bbox)
 
         matched_texts: list[str] = []
         for bbox in bboxes:
+            ordered_bbox = ordered_bounding_box(bbox)
             overlapping = []
-            for cell_idx in sorted(spatial_index.intersection(bbox.as_tuple())):
+            for cell_idx in sorted(spatial_index.intersection(ordered_bbox)):
                 tc_bbox = cell_bboxes[cell_idx]
-                if tc_bbox.get_intersection_bbox(bbox) is not None:
-                    if tc_bbox.intersection_over_self(bbox) > textcell_overlap:
+                if tc_bbox.get_intersection_bbox(ordered_bbox) is not None:
+                    if tc_bbox.intersection_over_self(ordered_bbox) > textcell_overlap:
                         overlapping.append(text_cells[cell_idx].text.strip())
             matched_texts.append(" ".join(overlapping))
 
@@ -298,12 +301,15 @@ class TableStructureModelV2(BaseTableStructureModel):
                 cell_bbox = None
                 if bbox_idx < bboxes.shape[0]:
                     bbox = bboxes[bbox_idx].tolist()
-                    cell_bbox = {
-                        "l": t_x1 + bbox[0] * t_w,
-                        "t": t_y1 + bbox[1] * t_h,
-                        "r": t_x1 + bbox[2] * t_w,
-                        "b": t_y1 + bbox[3] * t_h,
-                    }
+                    raw_cell_bbox = BoundingBox(
+                        l=t_x1 + bbox[0] * t_w,
+                        t=t_y1 + bbox[1] * t_h,
+                        r=t_x1 + bbox[2] * t_w,
+                        b=t_y1 + bbox[3] * t_h,
+                    )
+                    cell_bbox = ordered_bounding_box(raw_cell_bbox).model_dump(
+                        exclude={"coord_origin"}
+                    )
                     bbox_idx += 1
 
                 # Detect colspan (lcel to the right)

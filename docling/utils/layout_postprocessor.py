@@ -5,12 +5,17 @@ from collections import defaultdict
 
 from docling_core.types.doc import DocItemLabel, Size
 from docling_core.types.doc.page import TextCell
-from rtree import index
 
 from docling.datamodel.base_models import BoundingBox, Cluster, Page
 from docling.datamodel.pipeline_options import (
     LayoutObjectDetectionOptions,
     LayoutOptions,
+)
+from docling.datamodel.spatial import (
+    BoundingBoxSpatialIndex,
+    has_positive_area,
+    ordered_bounding_box,
+    ordered_bounds,
 )
 
 _log = logging.getLogger(__name__)
@@ -53,9 +58,7 @@ class SpatialClusterIndex:
     """Efficient spatial indexing for clusters using R-tree and interval trees."""
 
     def __init__(self, clusters: list[Cluster]):
-        p = index.Property()
-        p.dimension = 2
-        self.spatial_index = index.Index(properties=p)
+        self.spatial_index = BoundingBoxSpatialIndex()
         self.x_intervals = IntervalTree()
         self.y_intervals = IntervalTree()
         self.clusters_by_id: dict[int, Cluster] = {}
@@ -65,24 +68,26 @@ class SpatialClusterIndex:
 
     def add_cluster(self, cluster: Cluster):
         bbox = cluster.bbox
-        self.spatial_index.insert(cluster.id, bbox.as_tuple())
-        self.x_intervals.insert(bbox.l, bbox.r, cluster.id)
-        self.y_intervals.insert(bbox.t, bbox.b, cluster.id)
+        left, top, right, bottom = ordered_bounds(bbox)
+        self.spatial_index.insert(cluster.id, bbox)
+        self.x_intervals.insert(left, right, cluster.id)
+        self.y_intervals.insert(top, bottom, cluster.id)
         self.clusters_by_id[cluster.id] = cluster
 
     def remove_cluster(self, cluster: Cluster):
-        self.spatial_index.delete(cluster.id, cluster.bbox.as_tuple())
+        self.spatial_index.delete(cluster.id, cluster.bbox)
         del self.clusters_by_id[cluster.id]
 
     def find_candidates(self, bbox: BoundingBox) -> set[int]:
         """Find potential overlapping cluster IDs using all indexes."""
-        spatial = set(self.spatial_index.intersection(bbox.as_tuple()))
+        left, top, right, bottom = ordered_bounds(bbox)
+        spatial = set(self.spatial_index.intersection(bbox))
         x_candidates = self.x_intervals.find_containing(
-            bbox.l
-        ) | self.x_intervals.find_containing(bbox.r)
+            left
+        ) | self.x_intervals.find_containing(right)
         y_candidates = self.y_intervals.find_containing(
-            bbox.t
-        ) | self.y_intervals.find_containing(bbox.b)
+            top
+        ) | self.y_intervals.find_containing(bottom)
         return spatial.union(x_candidates).union(y_candidates)
 
     def check_overlap(
@@ -93,7 +98,9 @@ class SpatialClusterIndex:
         containment_threshold: float,
     ) -> bool:
         """Check if two bboxes overlap sufficiently."""
-        if bbox1.area() <= 0 or bbox2.area() <= 0:
+        bbox1 = ordered_bounding_box(bbox1)
+        bbox2 = ordered_bounding_box(bbox2)
+        if not has_positive_area(bbox1) or not has_positive_area(bbox2):
             return False
 
         iou = bbox1.intersection_over_union(bbox2)
@@ -128,7 +135,7 @@ class IntervalTree:
         self.intervals: list[Interval] = []  # Sorted by min_val
 
     def insert(self, min_val: float, max_val: float, id: int):
-        interval = Interval(min_val, max_val, id)
+        interval = Interval(min(min_val, max_val), max(min_val, max_val), id)
         bisect.insort(self.intervals, interval)
 
     def find_containing(self, point: float) -> set[int]:
@@ -597,6 +604,7 @@ class LayoutPostprocessor:
         cluster_by_id = {cluster.id: cluster for cluster in clusters}
         cluster_ids = set(cluster_by_id)
         cluster_order = {cluster.id: order for order, cluster in enumerate(clusters)}
+        cluster_index = SpatialClusterIndex(clusters)
 
         for cell in self.cells:
             if not cell.text.strip():
@@ -608,12 +616,14 @@ class LayoutPostprocessor:
 
             best_overlap = min_overlap
             best_cluster = None
-            candidate_ids = self.regular_index.find_candidates(cell_bbox) & cluster_ids
+            candidate_ids = cluster_index.find_candidates(cell_bbox) & cluster_ids
 
             for cluster_id in sorted(candidate_ids, key=cluster_order.__getitem__):
                 cluster = cluster_by_id[cluster_id]
 
-                overlap_ratio = cell_bbox.intersection_over_self(cluster.bbox)
+                overlap_ratio = cell_bbox.intersection_over_self(
+                    ordered_bounding_box(cluster.bbox)
+                )
                 if overlap_ratio > best_overlap:
                     best_overlap = overlap_ratio
                     best_cluster = cluster
