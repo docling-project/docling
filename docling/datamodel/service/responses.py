@@ -70,6 +70,7 @@ class RemoteTargetResult(BaseModel):
 
 
 class ArtifactRef(BaseModel):
+    # TODO: add "doclang" once batch artifact typing supports it end-to-end.
     artifact_type: Literal[
         "json", "html", "markdown", "text", "doctags", "resource_bundle"
     ]
@@ -146,6 +147,18 @@ class PresignedArtifactResult(BaseModel):
     documents: list[DocumentArtifactItem]
 
 
+class ConvertedOutcomeCountsMixin(BaseModel):
+    num_converted: int
+    num_succeeded: int
+    num_partially_succeeded: int = Field(
+        validation_alias=AliasChoices(
+            "num_partially_succeeded",
+            "num_partial_success",
+        )
+    )
+    num_failed: int
+
+
 ResultType = Annotated[
     ExportResult
     | ZipArchiveResult
@@ -156,13 +169,9 @@ ResultType = Annotated[
 ]
 
 
-class DoclingTaskResult(BaseModel):
+class DoclingTaskResult(ConvertedOutcomeCountsMixin):
     result: ResultType
     processing_time: float
-    num_converted: int
-    num_succeeded: int
-    num_partial_success: int = 0
-    num_failed: int
 
 
 class HealthCheckResponse(BaseModel):
@@ -189,23 +198,14 @@ class ConvertDocumentResponse(BaseModel):
     timings: dict[str, ProfilingItem] = {}
 
 
-class PresignedUrlConvertDocumentResponse(BaseModel):
+class PresignedUrlConvertDocumentResponse(ConvertedOutcomeCountsMixin):
     """Counts-only response model for remote targets without per-document artifacts."""
 
     processing_time: float
-    num_converted: int
-    num_succeeded: int
-    num_partial_success: int = 0
-    num_failed: int
 
 
-class PresignedUrlConvertResponse(BaseModel):
+class PresignedUrlConvertResponse(PresignedUrlConvertDocumentResponse):
     documents: list[DocumentArtifactItem]
-    processing_time: float
-    num_converted: int
-    num_succeeded: int
-    num_partial_success: int = 0
-    num_failed: int
 
 
 class ConvertDocumentErrorResponse(BaseModel):
