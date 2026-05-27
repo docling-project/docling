@@ -118,7 +118,7 @@ def test_in_doc_with_backend_options():
         )
 
 
-def test_html_fetch_images_sets_source_uri_per_input(tmp_path):
+def test_html_backend_options_set_source_uri_per_input(tmp_path):
     first = tmp_path / "first.html"
     second = tmp_path / "second.html"
     first.write_text("<html><body>First</body></html>")

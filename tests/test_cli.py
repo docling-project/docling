@@ -1,8 +1,10 @@
 import base64
+from io import BytesIO
 from pathlib import Path
 
 import pytest
 from docling_core.types.doc import ImageRefMode
+from PIL import Image
 from typer.testing import CliRunner
 
 from docling.cli.export_utils import _should_generate_export_images, _split_list
@@ -16,9 +18,17 @@ PNG_BYTES = base64.b64decode(
 )
 
 
-def _write_html_image_case(root: Path, filename: str, text: str) -> Path:
+def _png_bytes(color: tuple[int, int, int]) -> bytes:
+    buffer = BytesIO()
+    Image.new("RGB", (1, 1), color=color).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def _write_html_image_case(
+    root: Path, filename: str, text: str, image_bytes: bytes = PNG_BYTES
+) -> Path:
     root.mkdir()
-    (root / "pixel.png").write_bytes(PNG_BYTES)
+    (root / "pixel.png").write_bytes(image_bytes)
     html_path = root / filename
     html_path.write_text(
         f"<html><body><p>{text}</p><img src='pixel.png'></body></html>"
@@ -26,10 +36,12 @@ def _write_html_image_case(root: Path, filename: str, text: str) -> Path:
     return html_path
 
 
-def _assert_markdown_embeds_png(path: Path) -> None:
+def _assert_markdown_embeds_png(path: Path, image_bytes: bytes | None = None) -> None:
     content = path.read_text()
     assert "data:image/png;base64" in content
     assert "Image not available" not in content
+    if image_bytes is not None:
+        assert base64.b64encode(image_bytes).decode() in content
 
 
 def test_cli_help():
@@ -58,8 +70,14 @@ def test_cli_convert(tmp_path):
 
 
 def test_cli_html_fetches_local_images_per_input(tmp_path):
-    first = _write_html_image_case(tmp_path / "first", "first.html", "First")
-    second = _write_html_image_case(tmp_path / "second", "second.html", "Second")
+    first_png = _png_bytes((255, 0, 0))
+    second_png = _png_bytes((0, 0, 255))
+    first = _write_html_image_case(
+        tmp_path / "first", "first.html", "First", first_png
+    )
+    second = _write_html_image_case(
+        tmp_path / "second", "second.html", "Second", second_png
+    )
     output = tmp_path / "out"
 
     result = runner.invoke(
@@ -81,8 +99,8 @@ def test_cli_html_fetches_local_images_per_input(tmp_path):
     )
 
     assert result.exit_code == 0
-    _assert_markdown_embeds_png(output / "first.md")
-    _assert_markdown_embeds_png(output / "second.md")
+    _assert_markdown_embeds_png(output / "first.md", first_png)
+    _assert_markdown_embeds_png(output / "second.md", second_png)
 
 
 def test_cli_html_directory_matches_mixed_case_extensions(tmp_path):
