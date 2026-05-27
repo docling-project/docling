@@ -23,7 +23,7 @@ item-0 at level 0: unspecified: group _root_
         item-22 at level 4: text: is the Pythagorean theorem.
   item-23 at level 1: text: If instead, I want an equation by line, I can do this:
   item-24 at level 1: text: 
-  item-25 at level 1: formula: a^{2}+b^{2}=c^{2} \text{ \texttimes } 23
+  item-25 at level 1: formula: a^{2}+b^{2}=c^{2}  \times  23
   item-26 at level 1: text: And that is an equation by itself. Cheers!
   item-27 at level 1: text: 
   item-28 at level 1: text: This is another equation:
@@ -75,11 +75,11 @@ item-0 at level 0: unspecified: group _root_
   item-74 at level 1: text: 
   item-75 at level 1: text: Operators used with limits:
   item-76 at level 1: text: 
-  item-77 at level 1: formula: \operatorname{argmax}_{ \epsilon ... ed_{n}{\left(1+\frac{1}{n}\right)}^{n}
+  item-77 at level 1: formula: \operatorname_{argmax}_{ \epsilo ... ed_{n}{\left(1+\frac{1}{n}\right)}^{n}
   item-78 at level 1: text: 
   item-79 at level 1: text: 
   item-80 at level 1: text: Equations with the OMML group character object:
   item-81 at level 1: text: 
-  item-82 at level 1: formula: P_{ x}=\underbrace{S \cdot T \cd ... y+z)}_{group\ with\ underbraces}+e^{x}
-  item-83 at level 1: formula: Q_{ y}=\overset{group\ with\ ove ...  \cdot T \cdot S \cdot (x+y+z)}}+e^{y}
+  item-82 at level 1: formula: P_{ x}=\underbrace_{S \cdot T \c ... y+z)}_{group\ with\ underbraces}+e^{x}
+  item-83 at level 1: formula: Q_{ y}=\overset_{group\ with\ ov ...  \cdot T \cdot S \cdot (x+y+z)}}+e^{y}
   item-84 at level 1: text: 
