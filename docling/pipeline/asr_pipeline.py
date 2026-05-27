@@ -47,47 +47,12 @@ this epsilon value is added to the start_time to create a valid time range.
 This prevents validation issues with Docling data models.
 """
 
-FFMPEG_EXECUTABLE: Final[str] = "ffmpeg"
-MISSING_FFMPEG_ERROR_MESSAGE: Final[str] = (
-    "FFmpeg is required to process audio with the Whisper ASR backend, but the "
-    "`ffmpeg` executable was not found on PATH. Install FFmpeg with your system "
-    "package manager and ensure `ffmpeg` is available on PATH before converting "
-    "audio files."
+MISSING_FFMPEG_MESSAGE: Final[str] = (
+    "FFmpeg is required for audio processing but was not found on PATH. "
+    "Install it with your system package manager (e.g., 'brew install ffmpeg' "
+    "on macOS, 'apt-get install ffmpeg' on Linux, 'winget install ffmpeg' on "
+    "Windows)."
 )
-
-
-class _MissingFfmpegError(RuntimeError):
-    pass
-
-
-def _ensure_ffmpeg_available() -> None:
-    if shutil.which(FFMPEG_EXECUTABLE) is None:
-        raise _MissingFfmpegError(MISSING_FFMPEG_ERROR_MESSAGE)
-
-
-def _is_missing_ffmpeg_error(exc: BaseException) -> bool:
-    if isinstance(exc, _MissingFfmpegError):
-        return True
-
-    if not isinstance(exc, FileNotFoundError):
-        return False
-
-    filename = getattr(exc, "filename", None)
-    if filename is not None:
-        return Path(filename).name.lower() in {FFMPEG_EXECUTABLE, "ffmpeg.exe"}
-
-    return FFMPEG_EXECUTABLE in str(exc).lower()
-
-
-def _record_asr_error(conv_res: ConversionResult, error_message: str) -> None:
-    conv_res.errors.append(
-        ErrorItem(
-            component_type=DoclingComponentType.PIPELINE,
-            module_name="AsrPipeline",
-            error_message=error_message,
-        )
-    )
-    conv_res.status = ConversionStatus.FAILURE
 
 
 def _process_conversation(
@@ -275,17 +240,23 @@ class _NativeWhisperModel:
             )
 
         try:
-            _ensure_ffmpeg_available()
+            if shutil.which("ffmpeg") is None:
+                _log.error(MISSING_FFMPEG_MESSAGE)
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name="AsrPipeline",
+                        error_message=MISSING_FFMPEG_MESSAGE,
+                    )
+                )
+                conv_res.status = ConversionStatus.FAILURE
+                return conv_res
+
             conversation = self.transcribe(audio_path)
             _process_conversation(conversation, conv_res)
             return conv_res
 
         except Exception as exc:
-            if _is_missing_ffmpeg_error(exc):
-                _log.error(MISSING_FFMPEG_ERROR_MESSAGE)
-                _record_asr_error(conv_res, MISSING_FFMPEG_ERROR_MESSAGE)
-                return conv_res
-
             _log.error(f"Audio transcription has an error: {exc}")
             conv_res.status = ConversionStatus.FAILURE
             return conv_res
@@ -374,18 +345,24 @@ class _MlxWhisperModel:
         audio_path: Path = Path(conv_res.input.file).resolve()
 
         try:
-            _ensure_ffmpeg_available()
+            if shutil.which("ffmpeg") is None:
+                _log.error(MISSING_FFMPEG_MESSAGE)
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name="AsrPipeline",
+                        error_message=MISSING_FFMPEG_MESSAGE,
+                    )
+                )
+                conv_res.status = ConversionStatus.FAILURE
+                return conv_res
+
             conversation = self.transcribe(audio_path)
             _process_conversation(conversation, conv_res)
             conv_res.status = ConversionStatus.SUCCESS
             return conv_res
 
         except Exception as exc:
-            if _is_missing_ffmpeg_error(exc):
-                _log.error(MISSING_FFMPEG_ERROR_MESSAGE)
-                _record_asr_error(conv_res, MISSING_FFMPEG_ERROR_MESSAGE)
-                return conv_res
-
             _log.error(f"MLX Audio transcription has an error: {exc}")
 
         conv_res.status = ConversionStatus.FAILURE
