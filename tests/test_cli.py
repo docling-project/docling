@@ -1,3 +1,4 @@
+import base64
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,26 @@ from docling.cli.main import app
 from docling.datamodel.base_models import OutputFormat
 
 runner = CliRunner()
+
+PNG_BYTES = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
+)
+
+
+def _write_html_image_case(root: Path, filename: str, text: str) -> Path:
+    root.mkdir()
+    (root / "pixel.png").write_bytes(PNG_BYTES)
+    html_path = root / filename
+    html_path.write_text(
+        f"<html><body><p>{text}</p><img src='pixel.png'></body></html>"
+    )
+    return html_path
+
+
+def _assert_markdown_embeds_png(path: Path) -> None:
+    content = path.read_text()
+    assert "data:image/png;base64" in content
+    assert "Image not available" not in content
 
 
 def test_cli_help():
@@ -34,6 +55,92 @@ def test_cli_convert(tmp_path):
     assert result.exit_code == 0
     converted = output / f"{Path(source).stem}.md"
     assert converted.exists()
+
+
+def test_cli_html_fetches_local_images_per_input(tmp_path):
+    first = _write_html_image_case(tmp_path / "first", "first.html", "First")
+    second = _write_html_image_case(tmp_path / "second", "second.html", "Second")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(first),
+            str(second),
+            "--from",
+            "html",
+            "--to",
+            "md",
+            "--output",
+            str(output),
+            "--image-export-mode",
+            "embedded",
+            "--html-fetch-images",
+            "--html-enable-local-fetch",
+        ],
+    )
+
+    assert result.exit_code == 0
+    _assert_markdown_embeds_png(output / "first.md")
+    _assert_markdown_embeds_png(output / "second.md")
+
+
+def test_cli_html_fetches_remote_images_with_headers(tmp_path, monkeypatch):
+    source_url = "https://example.com/docs/page.html"
+    image_url = "https://example.com/docs/pixel.png"
+    output = tmp_path / "out"
+    calls: list[tuple[str, dict]] = []
+
+    class FakeResponse:
+        def __init__(self, url: str, content: bytes):
+            self.url = url
+            self.content = content
+            self.headers: dict[str, str] = {}
+            self.is_redirect = False
+            self.is_permanent_redirect = False
+
+        def raise_for_status(self):
+            return None
+
+        def iter_content(self, chunk_size: int):
+            yield self.content
+
+    def fake_get(self, url: str, **kwargs):
+        calls.append((url, kwargs))
+        if url == source_url:
+            return FakeResponse(
+                url,
+                b"<html><body><p>Remote</p><img src='pixel.png'></body></html>",
+            )
+        if url == image_url:
+            return FakeResponse(url, PNG_BYTES)
+        raise AssertionError(f"Unexpected URL fetched: {url}")
+
+    monkeypatch.setattr("requests.Session.get", fake_get)
+
+    result = runner.invoke(
+        app,
+        [
+            source_url,
+            "--from",
+            "html",
+            "--to",
+            "md",
+            "--output",
+            str(output),
+            "--image-export-mode",
+            "embedded",
+            "--headers",
+            '{"Authorization": "Bearer token"}',
+            "--html-fetch-images",
+            "--html-enable-remote-fetch",
+        ],
+    )
+
+    assert result.exit_code == 0
+    _assert_markdown_embeds_png(output / "page.md")
+    image_call = next(kwargs for url, kwargs in calls if url == image_url)
+    assert image_call["headers"]["Authorization"] == "Bearer token"
 
 
 def test_export_documents_marks_empty_markdown_as_failure(tmp_path):

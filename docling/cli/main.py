@@ -8,6 +8,7 @@ import warnings
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Annotated, Type
+from urllib.parse import urlparse
 
 # Check for CLI dependencies
 try:
@@ -71,7 +72,11 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_TURBO_NATIVE,
     AsrModelType,
 )
-from docling.datamodel.backend_options import LatexBackendOptions, PdfBackendOptions
+from docling.datamodel.backend_options import (
+    HTMLBackendOptions,
+    LatexBackendOptions,
+    PdfBackendOptions,
+)
 from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
@@ -128,6 +133,32 @@ _log = logging.getLogger(__name__)
 
 console = Console()
 err_console = Console(stderr=True)
+
+
+def _is_http_url(source: str) -> bool:
+    parsed = urlparse(source)
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def _is_temporary_word_file(path: Path) -> bool:
+    return path.name.startswith("~$") and path.suffix.lower() == ".docx"
+
+
+def _iter_input_paths_from_directory(
+    local_path: Path, from_formats: list[InputFormat]
+) -> Iterable[Path]:
+    seen_paths: set[Path] = set()
+    for fmt in from_formats:
+        for ext in FormatToExtensions[fmt]:
+            for pattern in (f"**/*.{ext}", f"**/*.{ext.upper()}"):
+                for path in local_path.glob(pattern):
+                    if _is_temporary_word_file(path):
+                        _log.info(f"Ignoring temporary Word file: {path}")
+                        continue
+                    if path not in seen_paths:
+                        seen_paths.add(path)
+                        yield path
+
 
 ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
 ocr_engines_enum_internal = ocr_factory_internal.get_enum()
@@ -448,6 +479,30 @@ def convert(  # noqa: C901
             help="Image export mode for image-capable document outputs (JSON, YAML, HTML, HTML split-page, and Markdown). Text, DocTags, and WebVTT outputs do not export images. With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document.",
         ),
     ] = ImageRefMode.EMBEDDED,
+    html_fetch_images: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            "--html-fetch-images",
+            help="Fetch image resources referenced by HTML inputs.",
+        ),
+    ] = False,
+    html_enable_local_fetch: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            "--html-enable-local-fetch",
+            help="Allow HTML image fetching from local paths.",
+        ),
+    ] = False,
+    html_enable_remote_fetch: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            "--html-enable-remote-fetch",
+            help="Allow HTML image fetching from remote URLs.",
+        ),
+    ] = False,
     pipeline: Annotated[
         ProcessingPipeline,
         typer.Option(..., help="Choose the pipeline to process PDF or image files."),
@@ -681,9 +736,25 @@ def convert(  # noqa: C901
         settings.debug.profile_pipeline_timings = True
 
     with tempfile.TemporaryDirectory() as tempdir:
-        input_doc_paths: list[Path] = []
+        input_doc_paths: list[Path | str] = []
         for src in source:
             try:
+                if _is_http_url(src):
+                    input_doc_paths.append(src)
+                    continue
+
+                local_path = TypeAdapter(Path).validate_python(src)
+                if local_path.exists():
+                    if local_path.is_dir():
+                        input_doc_paths.extend(
+                            _iter_input_paths_from_directory(local_path, from_formats)
+                        )
+                    elif _is_temporary_word_file(local_path):
+                        _log.info(f"Ignoring temporary Word file: {local_path}")
+                    else:
+                        input_doc_paths.append(local_path)
+                    continue
+
                 # check if we can fetch some remote url
                 resolved_source = resolve_source_to_path(
                     source=src, headers=parsed_headers, workdir=Path(tempdir)
@@ -699,34 +770,14 @@ def convert(  # noqa: C901
                 try:
                     local_path = TypeAdapter(Path).validate_python(src)
                     if local_path.exists() and local_path.is_dir():
-                        # Use a set to track unique paths and avoid duplicates
-                        seen_paths: set[Path] = set()
-                        for fmt in from_formats:
-                            for ext in FormatToExtensions[fmt]:
-                                for path in local_path.glob(f"**/*.{ext}"):
-                                    if path.name.startswith("~$") and ext == "docx":
-                                        _log.info(
-                                            f"Ignoring temporary Word file: {path}"
-                                        )
-                                        continue
-                                    if path not in seen_paths:
-                                        seen_paths.add(path)
-                                        input_doc_paths.append(path)
-
-                                for path in local_path.glob(f"**/*.{ext.upper()}"):
-                                    if path.name.startswith("~$") and ext == "docx":
-                                        _log.info(
-                                            f"Ignoring temporary Word file: {path}"
-                                        )
-                                        continue
-                                    if path not in seen_paths:
-                                        seen_paths.add(path)
-                                        input_doc_paths.append(path)
+                        input_doc_paths.extend(
+                            _iter_input_paths_from_directory(local_path, from_formats)
+                        )
                     elif local_path.exists():
-                        if not local_path.name.startswith("~$") and ext == "docx":
-                            _log.info(f"Ignoring temporary Word file: {path}")
-                            continue
-                        input_doc_paths.append(local_path)
+                        if _is_temporary_word_file(local_path):
+                            _log.info(f"Ignoring temporary Word file: {local_path}")
+                        else:
+                            input_doc_paths.append(local_path)
                     else:
                         err_console.print(
                             f"[red]Error: The input file {src} does not exist.[/red]"
@@ -840,6 +891,13 @@ def convert(  # noqa: C901
             if artifacts_path is not None:
                 simple_format_option.artifacts_path = artifacts_path
 
+            html_backend_options = HTMLBackendOptions(
+                fetch_images=html_fetch_images,
+                enable_local_fetch=html_enable_local_fetch,
+                enable_remote_fetch=html_enable_remote_fetch,
+                headers=parsed_headers,
+            )
+
             # Use image-native backend for IMAGE to avoid pypdfium2 locking
             image_format_option = PdfFormatOption(
                 pipeline_options=pipeline_options,
@@ -861,7 +919,8 @@ def convert(  # noqa: C901
                     pipeline_options=simple_format_option
                 ),
                 InputFormat.HTML: HTMLFormatOption(
-                    pipeline_options=simple_format_option
+                    pipeline_options=simple_format_option,
+                    backend_options=html_backend_options,
                 ),
                 InputFormat.MD: MarkdownFormatOption(
                     pipeline_options=simple_format_option

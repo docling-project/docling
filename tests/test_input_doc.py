@@ -14,7 +14,11 @@ from docling.datamodel.backend_options import (
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument, _DocumentConversionInput
 from docling.datamodel.settings import DocumentLimits
-from docling.document_converter import ImageFormatOption, PdfFormatOption
+from docling.document_converter import (
+    HTMLFormatOption,
+    ImageFormatOption,
+    PdfFormatOption,
+)
 
 
 def test_in_doc_from_valid_path():
@@ -112,6 +116,32 @@ def test_in_doc_with_backend_options():
             backend=HTMLDocumentBackend,
             backend_options=BaseBackendOptions(),
         )
+
+
+def test_html_fetch_images_sets_source_uri_per_input(tmp_path):
+    first = tmp_path / "first.html"
+    second = tmp_path / "second.html"
+    first.write_text("<html><body>First</body></html>")
+    second.write_text("<html><body>Second</body></html>")
+    backend_options = HTMLBackendOptions(fetch_images=True, enable_local_fetch=True)
+    conversion_input = _DocumentConversionInput(path_or_stream_iterator=[first, second])
+
+    docs = list(
+        conversion_input.docs(
+            {
+                InputFormat.HTML: HTMLFormatOption(
+                    backend_options=backend_options,
+                )
+            }
+        )
+    )
+
+    assert len(docs) == 2
+    assert isinstance(docs[0].backend_options, HTMLBackendOptions)
+    assert isinstance(docs[1].backend_options, HTMLBackendOptions)
+    assert docs[0].backend_options.source_uri == first
+    assert docs[1].backend_options.source_uri == second
+    assert backend_options.source_uri is None
 
 
 def test_guess_format(tmp_path):

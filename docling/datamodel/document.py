@@ -60,7 +60,11 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
-from docling.datamodel.backend_options import BackendOptions, MetsGbsBackendOptions
+from docling.datamodel.backend_options import (
+    BackendOptions,
+    HTMLBackendOptions,
+    MetsGbsBackendOptions,
+)
 from docling.datamodel.base_models import (
     AssembledUnit,
     ConfidenceReport,
@@ -467,6 +471,11 @@ class _DocumentConversionInput(BaseModel):
                 backend = options.backend
                 if "backend_options" in options.model_fields_set:
                     backend_options = cast("FormatOption", options).backend_options
+                    backend_options = self._with_input_source_uri(
+                        backend_options=backend_options,
+                        format=format,
+                        item=item,
+                    )
 
             path_or_stream: Union[BytesIO, Path]
             if isinstance(obj, Path):
@@ -484,6 +493,30 @@ class _DocumentConversionInput(BaseModel):
                 backend=backend,
                 backend_options=backend_options,
             )
+
+    @staticmethod
+    def _with_input_source_uri(
+        backend_options: Optional[BackendOptions],
+        format: Optional[InputFormat],
+        item: Union[Path, str, DocumentStream],
+    ) -> Optional[BackendOptions]:
+        if (
+            format != InputFormat.HTML
+            or not isinstance(backend_options, HTMLBackendOptions)
+            or not backend_options.fetch_images
+            or backend_options.source_uri is not None
+            or isinstance(item, DocumentStream)
+        ):
+            return backend_options
+
+        if isinstance(item, Path):
+            source_uri: str | PurePath = item
+        else:
+            source_uri = item
+
+        return HTMLBackendOptions.model_validate(
+            {**backend_options.model_dump(), "source_uri": source_uri}
+        )
 
     def _guess_format(self, obj: Union[Path, DocumentStream]) -> Optional[InputFormat]:
         content = b""  # empty binary blob
