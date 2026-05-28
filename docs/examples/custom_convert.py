@@ -46,8 +46,8 @@ from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     TableStructureOptions,
 )
-from docling.service_client import DoclingServiceClient
 from docling.datamodel.service.options import ConvertDocumentsOptions
+from docling.service_client import DoclingServiceClient
 
 _log = logging.getLogger(__name__)
 
@@ -173,13 +173,10 @@ def main():
     ###########################################################################
 
     start_time = time.time()
-    
+
     with DoclingServiceClient(url=SERVE_URL) as client:
-        conv_result = client.convert(
-            source=str(input_doc_path),
-            options=options
-        )
-    
+        conv_result = client.convert(source=str(input_doc_path), options=options)
+
     end_time = time.time() - start_time
 
     _log.info(f"Document converted in {end_time:.2f} seconds.")

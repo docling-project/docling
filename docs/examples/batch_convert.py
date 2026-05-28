@@ -40,8 +40,8 @@ from docling_core.types.doc.base import ImageRefMode
 from docling.datamodel.base_models import ConversionStatus
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import PdfPipelineOptions
-from docling.service_client import DoclingServiceClient
 from docling.datamodel.service.options import ConvertDocumentsOptions
+from docling.service_client import DoclingServiceClient
 
 _log = logging.getLogger(__name__)
 
@@ -171,7 +171,7 @@ def main():
     pipeline_options.generate_page_images = True
 
     SERVE_URL = "http://localhost:5001"
-    
+
     options = ConvertDocumentsOptions(
         do_ocr=pipeline_options.do_ocr,
         ocr_lang=pipeline_options.ocr_options.lang if pipeline_options.do_ocr else None,
@@ -186,20 +186,17 @@ def main():
     with DoclingServiceClient(url=SERVE_URL) as client:
         for input_doc_url in input_doc_urls:
             try:
-                conv_result = client.convert(
-                    source=input_doc_url,
-                    options=options
-                )
+                conv_result = client.convert(source=input_doc_url, options=options)
                 conv_results.append(conv_result)
             except Exception as e:
                 _log.error(f"Failed to convert {input_doc_url}: {e}")
                 failure_count += 1
-    
+
     # Write outputs to ./scratch and log a summary.
     _success_count, _partial_success_count, export_failure_count = export_documents(
         conv_results, output_dir=Path("scratch")
     )
-    
+
     # Add conversion failures to the total failure count
     total_failures = failure_count + export_failure_count
 

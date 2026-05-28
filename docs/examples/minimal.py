@@ -10,7 +10,7 @@
 #
 # Notes
 # - The converter auto-detects supported formats (PDF, DOCX, HTML, PPTX, images, etc.).
-# - For batch processing or saving outputs to files, see `docs/examples/batch_convert.py`. 
+# - For batch processing or saving outputs to files, see `docs/examples/batch_convert.py`.
 #
 # How to run
 # - Use the default sample URL: `python docs/examples/minimal.py`
@@ -20,11 +20,9 @@
 from docling.service_client import DoclingServiceClient
 
 # Replace SERVE_URL with your hosted URL if it's different
-SERVE_URL="http://localhost:5001"
+SERVE_URL = "http://localhost:5001"
 
 with DoclingServiceClient(url=SERVE_URL) as client:
-    result = client.convert(
-        source="https://arxiv.org/pdf/2408.09869"
-    )
+    result = client.convert(source="https://arxiv.org/pdf/2408.09869")
 
 print(result.document.export_to_markdown())
