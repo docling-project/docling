@@ -114,9 +114,8 @@
      | gpu + standard | `:2.1.5-gpu-standard` |
      | cpu + pro | `:2.1.5-cpu-pro` |
      | gpu + pro | `:2.1.5-gpu-pro` |
-
-> **정리** — 위 2번 (`BUILD_VARIANT`) × 3번 (`HW_VARIANT`) 의 조합으로 **총 4종의 Dockerfile(이미지)** 가 만들어진다. 운영 환경에 맞는 1개를 골라서 빌드하면 된다. `pro` 는 직접 빌드하지 말고 AI Search 팀에 빌드 요청.
-
+    > **정리** — 위 2번 (`BUILD_VARIANT`) × 3번 (`HW_VARIANT`) 의 조합으로 **총 4종의 Dockerfile(이미지)** 가 만들어진다. 운영 환경에 맞는 1개를 골라서 빌드하면 된다. `pro` 는 직접 빌드하지 말고 AI Search 팀에 빌드 요청.
+    
    **(진행 순서)**
 
    - **[1번]** [`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `HW_VARIANT=` 라인을 둘 중 하나로 설정:
