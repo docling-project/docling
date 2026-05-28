@@ -1,13 +1,13 @@
 # preprocessor Dockerfiles
 
-이슈 [#199](https://github.com/genonai/doc_parser/issues/199) 에 따라 두 variant 로 분리됨 (명칭은 이슈 [#236](https://github.com/genonai/doc_parser/issues/236) 에서 `standard`/`pro` 로 변경).
+PDF SDK의 사용 여부에 따라 `standard` 또는 `pro`로 분리됨. 
 
 | 파일 | 용도 | 포함 |
 |---|---|---|
-| `Dockerfile.standard` | 기본 배포용 | LibreOffice + rhwp 바이너리 (PDF SDK 미포함) |
-| `Dockerfile.pro` | 유료 PDF SDK(Synap) 보유 환경용 | 위 + PDF SDK (`PDF_SDK_TOKEN` 추가 필요, AI Search 팀 발급) |
+| `Dockerfile.standard` | 기본 배포용 | LibreOffice + rhwp (PDF SDK 미포함) |
+| `Dockerfile.pro` | 유료 PDF SDK(Synap) 보유 환경용 | 기본형(LibreOffice + rhwp) + PDF SDK (`PDF_SDK_TOKEN` 추가 필요, AI Search 팀 발급) |
 
-> 기존 단일 `Dockerfile` 은 PDF SDK 다운로드 단계가 그대로 포함돼 있어 의도치 않게 유료 변형으로 빌드될 위험이 있었기 때문에 본 PR에서 삭제했다. 신규 빌드는 반드시 위 두 variant 중 하나로 진행한다 — `BUILD_VARIANT` 를 비워두고 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단된다.
+> 기존의 단일 `Dockerfile` 은 PDF SDK 다운로드 단계가 그대로 포함돼 있어, 의도치 않게 유료 변형으로 빌드될 위험이 있었기 때문에 본 PR에서 삭제함. 신규 빌드는 반드시 위 두 variant 중 하나로 진행한다 — `doc-parser-build.sh`에서 `BUILD_VARIANT` 를 비워두고 실행하면 즉시 에러로 중단된다.
 
 ## GPU / CPU 분기 (이슈 [#210](https://github.com/genonai/doc_parser/issues/210))
 
