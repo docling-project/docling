@@ -2,13 +2,13 @@
 # Customize PDF conversion by toggling OCR/backends and pipeline options.
 #
 # What this example does
-# - Shows several alternative configurations for the Docling PDF pipeline.
+# - Shows several alternative configurations for the Docling Serve PDF pipeline.
 # - Lets you try OCR engines (EasyOCR, Tesseract, system OCR) or no OCR.
 # - Converts a single sample PDF and exports results to `scratch/`.
 #
 # Prerequisites
-# - Install Docling and its optional OCR backends per the docs.
-# - Ensure you can import `docling` from your Python environment.
+# - Install Docling Serve and the docling optional OCR backends per the docs.
+# - Ensure you can import `docling.service_client` from your Python environment.
 #
 # How to run
 # - From the repository root, run: `python docs/examples/custom_convert.py`.
@@ -24,8 +24,10 @@
 #   - `from docling.datamodel.pipeline_options import TesseractOcrOptions, TesseractCliOcrOptions, OcrMacOptions`
 #
 # Input document
-# - Defaults to a single PDF from `tests/data/pdf/` in the repo.
-# - If you don't have the test data, update `input_doc_path` to a local PDF.
+# - Defaults to a sample PDF
+# - Update `input_doc_path` to a desired file URL
+# - All input sources must start with `http://` or `https://`.
+#
 #
 # Notes
 # - EasyOCR language: adjust `pipeline_options.ocr_options.lang` (e.g., ["en"], ["es"], ["en", "de"]).
@@ -40,12 +42,12 @@ import time
 from pathlib import Path
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
-from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     TableStructureOptions,
 )
-from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.service_client import DoclingServiceClient
+from docling.datamodel.service.options import ConvertDocumentsOptions
 
 _log = logging.getLogger(__name__)
 
@@ -53,8 +55,8 @@ _log = logging.getLogger(__name__)
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/2206.01062.pdf"
+    input_doc_path = "https://arxiv.org/pdf/2408.09869"
+    SERVE_URL = "http://localhost:5001"
 
     ###########################################################################
 
@@ -68,12 +70,9 @@ def main():
     # pipeline_options.do_table_structure = True
     # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=False)
 
-    # doc_converter = DocumentConverter(
-    #     format_options={
-    #         InputFormat.PDF: PdfFormatOption(
-    #             pipeline_options=pipeline_options, backend=PyPdfiumDocumentBackend
-    #         )
-    #     }
+    # options = ConvertDocumentsOptions(
+    #     do_ocr=pipeline_options.do_ocr,
+    #     ocr_lang=pipeline_options.ocr_options.lang if pipeline_options.do_ocr else None,
     # )
 
     # PyPdfium with EasyOCR
@@ -83,12 +82,9 @@ def main():
     # pipeline_options.do_table_structure = True
     # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=True)
 
-    # doc_converter = DocumentConverter(
-    #     format_options={
-    #         InputFormat.PDF: PdfFormatOption(
-    #             pipeline_options=pipeline_options, backend=PyPdfiumDocumentBackend
-    #         )
-    #     }
+    # options = ConvertDocumentsOptions(
+    #     do_ocr=pipeline_options.do_ocr,
+    #     ocr_lang=pipeline_options.ocr_options.lang if pipeline_options.do_ocr else None,
     # )
 
     # Docling Parse without EasyOCR
@@ -98,10 +94,9 @@ def main():
     # pipeline_options.do_table_structure = True
     # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=True)
 
-    # doc_converter = DocumentConverter(
-    #     format_options={
-    #         InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
-    #     }
+    # options = ConvertDocumentsOptions(
+    #     do_ocr=pipeline_options.do_ocr,
+    #     ocr_lang=pipeline_options.ocr_options.lang if pipeline_options.do_ocr else None,
     # )
 
     # Docling Parse with EasyOCR (default)
@@ -119,10 +114,9 @@ def main():
         num_threads=4, device=AcceleratorDevice.AUTO
     )
 
-    doc_converter = DocumentConverter(
-        format_options={
-            InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
-        }
+    options = ConvertDocumentsOptions(
+        do_ocr=pipeline_options.do_ocr,
+        ocr_lang=pipeline_options.ocr_options.lang if pipeline_options.do_ocr else None,
     )
 
     # Docling Parse with EasyOCR (CPU only)
@@ -133,10 +127,9 @@ def main():
     # pipeline_options.do_table_structure = True
     # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=True)
 
-    # doc_converter = DocumentConverter(
-    #     format_options={
-    #         InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
-    #     }
+    # options = ConvertDocumentsOptions(
+    #     do_ocr=pipeline_options.do_ocr,
+    #     ocr_lang=pipeline_options.ocr_options.lang if pipeline_options.do_ocr else None,
     # )
 
     # Docling Parse with Tesseract
@@ -147,10 +140,9 @@ def main():
     # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=True)
     # pipeline_options.ocr_options = TesseractOcrOptions()
 
-    # doc_converter = DocumentConverter(
-    #     format_options={
-    #         InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
-    #     }
+    # options = ConvertDocumentsOptions(
+    #     do_ocr=pipeline_options.do_ocr,
+    #     ocr_lang=pipeline_options.ocr_options.lang if pipeline_options.do_ocr else None,
     # )
 
     # Docling Parse with Tesseract CLI
@@ -161,10 +153,9 @@ def main():
     # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=True)
     # pipeline_options.ocr_options = TesseractCliOcrOptions()
 
-    # doc_converter = DocumentConverter(
-    #     format_options={
-    #         InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
-    #     }
+    # options = ConvertDocumentsOptions(
+    #     do_ocr=pipeline_options.do_ocr,
+    #     ocr_lang=pipeline_options.ocr_options.lang if pipeline_options.do_ocr else None,
     # )
 
     # Docling Parse with ocrmac (macOS only)
@@ -175,16 +166,20 @@ def main():
     # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=True)
     # pipeline_options.ocr_options = OcrMacOptions()
 
-    # doc_converter = DocumentConverter(
-    #     format_options={
-    #         InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
-    #     }
+    # options = ConvertDocumentsOptions(
+    #     do_ocr=pipeline_options.do_ocr,
+    #     ocr_lang=pipeline_options.ocr_options.lang if pipeline_options.do_ocr else None,
     # )
-
     ###########################################################################
 
     start_time = time.time()
-    conv_result = doc_converter.convert(input_doc_path)
+    
+    with DoclingServiceClient(url=SERVE_URL) as client:
+        conv_result = client.convert(
+            source=str(input_doc_path),
+            options=options
+        )
+    
     end_time = time.time() - start_time
 
     _log.info(f"Document converted in {end_time:.2f} seconds.")
@@ -192,7 +187,7 @@ def main():
     ## Export results
     output_dir = Path("scratch")
     output_dir.mkdir(parents=True, exist_ok=True)
-    doc_filename = conv_result.input.file.stem
+    doc_filename = Path(input_doc_path).stem
 
     # Export Docling document JSON format:
     with (output_dir / f"{doc_filename}.json").open("w", encoding="utf-8") as fp:
@@ -213,3 +208,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Made with Bob
