@@ -1,14 +1,25 @@
 import shutil
 import sys
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 
+from docling.backend.noop_backend import NoOpBackend
 from docling.datamodel import asr_model_specs
+from docling.datamodel.accelerator_options import (
+    AcceleratorDevice,
+    AcceleratorOptions,
+)
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import AsrPipelineOptions
+from docling.datamodel.pipeline_options_asr_model import (
+    InferenceAsrFramework,
+    InlineAsrMlxWhisperOptions,
+    InlineAsrNativeWhisperOptions,
+)
 from docling.document_converter import AudioFormatOption, DocumentConverter
 from docling.pipeline.asr_pipeline import AsrPipeline
 
@@ -103,8 +114,6 @@ def test_has_text_and_determine_status_helpers():
 
     # Create an empty ConversionResult with proper InputDocument
     doc_path = Path("./tests/data/audio/sample_10s.mp3")
-    from docling.backend.noop_backend import NoOpBackend
-    from docling.datamodel.base_models import InputFormat
 
     input_doc = InputDocument(
         path_or_stream=doc_path,
@@ -137,12 +146,6 @@ def test_has_text_and_determine_status_helpers():
 
 
 def test_is_backend_supported_noop_backend():
-    from pathlib import Path
-
-    from docling.backend.noop_backend import NoOpBackend
-    from docling.datamodel.base_models import InputFormat
-    from docling.datamodel.document import InputDocument
-
     class _Dummy:
         pass
 
@@ -161,15 +164,6 @@ def test_is_backend_supported_noop_backend():
 
 def test_native_and_mlx_transcribe_language_handling(monkeypatch, tmp_path):
     """Cover language None/empty handling in model.transcribe wrappers."""
-    from docling.datamodel.accelerator_options import (
-        AcceleratorDevice,
-        AcceleratorOptions,
-    )
-    from docling.datamodel.pipeline_options_asr_model import (
-        InferenceAsrFramework,
-        InlineAsrMlxWhisperOptions,
-        InlineAsrNativeWhisperOptions,
-    )
     from docling.pipeline.asr_pipeline import _MlxWhisperModel, _NativeWhisperModel
 
     # Native
@@ -213,14 +207,6 @@ def test_native_and_mlx_transcribe_language_handling(monkeypatch, tmp_path):
 
 def test_native_init_with_artifacts_path_and_device_logging(tmp_path):
     """Cover _NativeWhisperModel init path with artifacts_path passed."""
-    from docling.datamodel.accelerator_options import (
-        AcceleratorDevice,
-        AcceleratorOptions,
-    )
-    from docling.datamodel.pipeline_options_asr_model import (
-        InferenceAsrFramework,
-        InlineAsrNativeWhisperOptions,
-    )
     from docling.pipeline.asr_pipeline import _NativeWhisperModel
 
     opts = InlineAsrNativeWhisperOptions(
@@ -245,18 +231,6 @@ def test_native_init_with_artifacts_path_and_device_logging(tmp_path):
 
 def test_native_run_success_with_bytesio_builds_document(tmp_path):
     """Cover _NativeWhisperModel.run with BytesIO input and success path."""
-    from io import BytesIO
-
-    from docling.backend.noop_backend import NoOpBackend
-    from docling.datamodel.accelerator_options import (
-        AcceleratorDevice,
-        AcceleratorOptions,
-    )
-    from docling.datamodel.document import ConversionResult, InputDocument
-    from docling.datamodel.pipeline_options_asr_model import (
-        InferenceAsrFramework,
-        InlineAsrNativeWhisperOptions,
-    )
     from docling.pipeline.asr_pipeline import _NativeWhisperModel
 
     # Prepare InputDocument with BytesIO
@@ -306,16 +280,6 @@ def test_native_run_success_with_bytesio_builds_document(tmp_path):
 
 def test_native_run_failure_sets_status(tmp_path):
     """Cover _NativeWhisperModel.run failure path when transcribe raises."""
-    from docling.backend.noop_backend import NoOpBackend
-    from docling.datamodel.accelerator_options import (
-        AcceleratorDevice,
-        AcceleratorOptions,
-    )
-    from docling.datamodel.document import ConversionResult, InputDocument
-    from docling.datamodel.pipeline_options_asr_model import (
-        InferenceAsrFramework,
-        InlineAsrNativeWhisperOptions,
-    )
     from docling.pipeline.asr_pipeline import _NativeWhisperModel
 
     # Create a real file so backend initializes
@@ -350,16 +314,6 @@ def test_native_run_failure_sets_status(tmp_path):
 def test_native_whisper_reports_missing_ffmpeg_before_transcription(
     monkeypatch, tmp_path: Path
 ) -> None:
-    from docling.backend.noop_backend import NoOpBackend
-    from docling.datamodel.accelerator_options import (
-        AcceleratorDevice,
-        AcceleratorOptions,
-    )
-    from docling.datamodel.document import ConversionResult, InputDocument
-    from docling.datamodel.pipeline_options_asr_model import (
-        InferenceAsrFramework,
-        InlineAsrNativeWhisperOptions,
-    )
     from docling.pipeline.asr_pipeline import _NativeWhisperModel
 
     audio_path = tmp_path / "sample.mp3"
@@ -407,16 +361,6 @@ def test_native_whisper_reports_missing_ffmpeg_before_transcription(
 def test_mlx_whisper_reports_missing_ffmpeg_before_transcription(
     monkeypatch, tmp_path: Path
 ) -> None:
-    from docling.backend.noop_backend import NoOpBackend
-    from docling.datamodel.accelerator_options import (
-        AcceleratorDevice,
-        AcceleratorOptions,
-    )
-    from docling.datamodel.document import ConversionResult, InputDocument
-    from docling.datamodel.pipeline_options_asr_model import (
-        InferenceAsrFramework,
-        InlineAsrMlxWhisperOptions,
-    )
     from docling.pipeline.asr_pipeline import _MlxWhisperModel
 
     audio_path = tmp_path / "sample.mp3"
@@ -460,16 +404,6 @@ def test_mlx_whisper_reports_missing_ffmpeg_before_transcription(
 
 def test_mlx_run_success_and_failure(tmp_path):
     """Cover _MlxWhisperModel.run success and failure paths."""
-    from docling.backend.noop_backend import NoOpBackend
-    from docling.datamodel.accelerator_options import (
-        AcceleratorDevice,
-        AcceleratorOptions,
-    )
-    from docling.datamodel.document import ConversionResult, InputDocument
-    from docling.datamodel.pipeline_options_asr_model import (
-        InferenceAsrFramework,
-        InlineAsrMlxWhisperOptions,
-    )
     from docling.pipeline.asr_pipeline import _MlxWhisperModel
 
     # Success path
@@ -520,16 +454,6 @@ def test_mlx_run_success_and_failure(tmp_path):
 
 def test_native_whisper_handles_zero_duration_timestamps(tmp_path):
     """Tests that _NativeWhisperModel correctly adjusts zero-duration segments."""
-    from docling.backend.noop_backend import NoOpBackend
-    from docling.datamodel.accelerator_options import (
-        AcceleratorDevice,
-        AcceleratorOptions,
-    )
-    from docling.datamodel.document import ConversionResult, InputDocument
-    from docling.datamodel.pipeline_options_asr_model import (
-        InferenceAsrFramework,
-        InlineAsrNativeWhisperOptions,
-    )
     from docling.pipeline.asr_pipeline import _NativeWhisperModel
 
     # Create a real file so backend initializes
@@ -582,16 +506,6 @@ def test_native_whisper_handles_zero_duration_timestamps(tmp_path):
 
 def test_mlx_whisper_handles_zero_duration_timestamps(tmp_path):
     """Tests that _MlxWhisperModel correctly adjusts zero-duration segments."""
-    from docling.backend.noop_backend import NoOpBackend
-    from docling.datamodel.accelerator_options import (
-        AcceleratorDevice,
-        AcceleratorOptions,
-    )
-    from docling.datamodel.document import ConversionResult, InputDocument
-    from docling.datamodel.pipeline_options_asr_model import (
-        InferenceAsrFramework,
-        InlineAsrMlxWhisperOptions,
-    )
     from docling.pipeline.asr_pipeline import _MlxWhisperModel
 
     # Create a real file so backend initializes
@@ -634,19 +548,6 @@ def test_mlx_whisper_handles_zero_duration_timestamps(tmp_path):
 
 def test_native_whisper_skips_empty_zero_duration(tmp_path):
     """Tests that _NativeWhisperModel skips empty zero-duration segments."""
-    from unittest.mock import Mock, patch
-
-    from docling.backend.noop_backend import NoOpBackend
-    from docling.datamodel.accelerator_options import (
-        AcceleratorDevice,
-        AcceleratorOptions,
-    )
-    from docling.datamodel.base_models import InputFormat
-    from docling.datamodel.document import ConversionResult, InputDocument
-    from docling.datamodel.pipeline_options_asr_model import (
-        InferenceAsrFramework,
-        InlineAsrNativeWhisperOptions,
-    )
     from docling.pipeline.asr_pipeline import _NativeWhisperModel
 
     audio_path = tmp_path / "test.wav"
