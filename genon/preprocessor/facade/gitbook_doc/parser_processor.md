@@ -179,6 +179,8 @@ enrichment:
     api_key: ""
     # 필요 시만 지정 (미지정 시 enrichment.model 상속)
     model: "model"
+    # 이미지 설명 요청 병렬 수 (기본 4)
+    concurrency: 4
     before_items: 3
     after_items: 2
     max_context_chars: 1500
@@ -236,6 +238,7 @@ output:
 | `enrichment.image_description` | `api_url` | `""` | 이미지 설명 VLM API URL. 비어 있으면 `enrichment.api_url` 상속 |
 | `enrichment.image_description` | `api_key` | `""` | 이미지 설명 VLM API 키. 비어 있으면 `enrichment.api_key` 상속 |
 | `enrichment.image_description` | `model` | `"model"` | 이미지 설명에 사용할 모델명. 비어 있으면 `enrichment.model` 상속 |
+| `enrichment.image_description` | `concurrency` | `16` | 이미지 설명 VLM 요청 병렬 처리 수 (`ThreadPoolExecutor`의 `max_workers`) |
 | `enrichment.image_description` | `before_items` | `3` | 이미지 앞 문맥으로 넣을 텍스트 item 수 |
 | `enrichment.image_description` | `after_items` | `2` | 이미지 뒤 문맥으로 넣을 텍스트 item 수 |
 | `enrichment.image_description` | `max_context_chars` | `1500` | 프롬프트 전체 최대 문자 수 (초과 시 절단) |

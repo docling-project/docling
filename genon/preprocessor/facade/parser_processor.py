@@ -26,6 +26,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import unicodedata
 import uuid
 import warnings
@@ -556,8 +557,8 @@ class ImageDescriptionOptions:
     api_url: str = ""
     api_key: str = ""
     model: str = "model"
-    timeout: float = 20.0
-    concurrency: int = 1
+    timeout: float = 360.0
+    concurrency: int = 16
     before_items: int = 3
     after_items: int = 2
     max_context_chars: int = 1500
@@ -634,9 +635,9 @@ class ImageDescriptionOptions:
         )
         same_page_first = _parse_optional_bool(image_desc_cfg.get("same_page_first"), "same_page_first")
 
-        timeout = 20.0 if timeout is None or timeout <= 0 else timeout
+        timeout = 360.0 if timeout is None or timeout <= 0 else timeout
         if concurrency is None or concurrency <= 0:
-            concurrency = 1
+            concurrency = 4
         if before_items is None or before_items < 0:
             before_items = 3
         if after_items is None or after_items < 0:
@@ -690,7 +691,7 @@ class ImageDescriptionOptions:
             api_key=str(getattr(processor, "image_description_api_key", "") or "").strip(),
             model=str(getattr(processor, "image_description_model", "model") or "model").strip(),
             timeout=_safe_float(getattr(processor, "image_description_timeout", 20.0), 20.0, 0.00001),
-            concurrency=_safe_int(getattr(processor, "image_description_concurrency", 1), 1, 1),
+            concurrency=_safe_int(getattr(processor, "image_description_concurrency", 4), 4, 1),
             before_items=_safe_int(getattr(processor, "image_description_before_items", 3), 3, 0),
             after_items=_safe_int(getattr(processor, "image_description_after_items", 2), 2, 0),
             max_context_chars=_safe_int(
@@ -899,6 +900,8 @@ class FacadeImageDescriptionEnricher:
         if not self.options.enabled:
             return document
 
+        stage_started_at = time.perf_counter()
+
         if not self.options.api_url:
             _log.warning(
                 "[FacadeImageDescriptionEnricher] enabled=true but api_url is empty; skip"
@@ -914,7 +917,7 @@ class FacadeImageDescriptionEnricher:
         if not items:
             return document
 
-        targets: list[tuple[PictureItem, str]] = []
+        targets: list[tuple[int, PictureItem, str]] = []
         for idx, item in enumerate(items):
             if not isinstance(item, PictureItem):
                 continue
@@ -956,19 +959,52 @@ class FacadeImageDescriptionEnricher:
                 after_context=after_context,
                 caption=caption,
             )
-            targets.append((item, prompt))
+            picture_seq = len(targets) + 1
+            targets.append((picture_seq, item, prompt))
 
         if not targets:
+            elapsed = time.perf_counter() - stage_started_at
+            _log.info(
+                f"[FacadeImageDescriptionEnricher] no picture target for image description; "
+                f"elapsed={elapsed:.3f}s"
+            )
             return document
 
-        def _annotate_target(target: tuple[PictureItem, str]) -> None:
-            pic, prompt = target
+        total_targets = len(targets)
+        _log.info(
+            f"[FacadeImageDescriptionEnricher] image description start: "
+            f"targets={total_targets}, concurrency={self.options.concurrency}"
+        )
+
+        stats_lock = threading.Lock()
+        success_count = 0
+        failed_count = 0
+        skipped_count = 0
+
+        def _annotate_target(target: tuple[int, PictureItem, str]) -> None:
+            nonlocal success_count, failed_count, skipped_count
+            seq, pic, prompt = target
+            picture_started_at = time.perf_counter()
+            page_no = self._get_item_page_no(pic, default_page_no=1)
             try:
                 annotation = self._annotate_single_picture(document, pic, prompt)
             except Exception as exc:
-                _log.warning(f"[FacadeImageDescriptionEnricher] image description failed: {exc}")
+                elapsed = time.perf_counter() - picture_started_at
+                with stats_lock:
+                    failed_count += 1
+                _log.warning(
+                    f"[FacadeImageDescriptionEnricher] image description failed: "
+                    f"seq={seq}, page={page_no}, elapsed={elapsed:.3f}s, error={exc}"
+                )
                 return
             if annotation is None:
+                elapsed = time.perf_counter() - picture_started_at
+                with stats_lock:
+                    skipped_count += 1
+                _log.debug(
+                    f"[FacadeImageDescriptionEnricher] image description empty: "
+                    f"seq={seq}, page={page_no}, elapsed={elapsed:.3f}s"
+                )
                 return
             pic.annotations = [
                 ann
@@ -979,9 +1015,23 @@ class FacadeImageDescriptionEnricher:
                 )
             ]
             pic.annotations.append(annotation)
+            elapsed = time.perf_counter() - picture_started_at
+            with stats_lock:
+                success_count += 1
+            _log.debug(
+                f"[FacadeImageDescriptionEnricher] image description done: "
+                f"seq={seq}, page={page_no}, elapsed={elapsed:.3f}s"
+            )
 
         with ThreadPoolExecutor(max_workers=self.options.concurrency) as executor:
             list(executor.map(_annotate_target, targets))
+
+        total_elapsed = time.perf_counter() - stage_started_at
+        _log.info(
+            f"[FacadeImageDescriptionEnricher] image description done: "
+            f"targets={total_targets}, success={success_count}, skipped={skipped_count}, "
+            f"failed={failed_count}, elapsed={total_elapsed:.3f}s"
+        )
 
         return document
 

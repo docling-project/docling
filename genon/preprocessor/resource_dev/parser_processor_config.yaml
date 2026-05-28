@@ -44,13 +44,12 @@ enrichment:
 
   # facade 후처리 기반 이미지 설명 생성 (문맥 포함)
   image_description:
-    enabled: false
-    # 필요 시만 지정 (미지정 시 enrichment.api_url 상속)
-    api_url: ""
-    # 필요 시만 지정 (미지정 시 enrichment.api_key 상속)
-    api_key: ""
-    # 필요 시만 지정 (미지정 시 enrichment.model 상속)
+    enabled: true
+    api_url: "https://genos.genon.ai/api/gateway/rep/serving/750/v1/chat/completions"
+    api_key: "26e6a516de0847f59a3b9db8e418976e"
     model: "model"
+    # 이미지 설명 요청 병렬 수 (기본 16, 문서 내 이미지가 많을 때 처리속도에 영향)
+    concurrency: 16
     before_items: 3
     after_items: 2
     max_context_chars: 1500

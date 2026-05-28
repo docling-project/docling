@@ -50,13 +50,14 @@ enrichment:
 
   # facade 후처리 기반 이미지 설명 생성 (문맥 포함)
   image_description:
-    enabled: false
-    # 필요 시만 지정 (미지정 시 enrichment.api_url 상속)
-    api_url: ""
-    # 필요 시만 지정 (미지정 시 enrichment.api_key 상속)
+    enabled: true
+    # <IMAGE_DESCRIPTION_SERVING_ID>: Genos에 등록한 이미지 설명 모델서빙 ID로 변경 필요
+    # api_key는 k8s 내부 통신 기반 모델 호출 시 불필요.
+    api_url: "http://llmops-gateway-api-service:8080/rep/serving/<IMAGE_DESCRIPTION_SERVING_ID>/v1/chat/completions"
     api_key: ""
-    # 필요 시만 지정 (미지정 시 enrichment.model 상속)
     model: "model"
+    # 이미지 설명 요청 병렬 수 (기본 16)
+    concurrency: 16
     before_items: 3
     after_items: 2
     max_context_chars: 1500
