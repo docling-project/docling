@@ -1069,15 +1069,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         textbox_elements: list,
         doc: DoclingDocument,
     ) -> list[RefItem]:
-        valid_textbox_elements = []
-        for tb in textbox_elements:
-            # Convert ancestor tags to strings to reliably catch any 'Fallback' namespaces
-            ancestor_tags = [str(anc.tag) for anc in tb.iterancestors()]
-            if not any("Fallback" in tag for tag in ancestor_tags):
-                valid_textbox_elements.append(tb)
-        textbox_elements = valid_textbox_elements
-        elem_ref: list[RefItem] = []
         """Process textbox content and add it to the document structure."""
+        elem_ref: list[RefItem] = []
         level = self._get_level()
         # Create a textbox group to contain all text from the textbox
         textbox_group = doc.add_group(
@@ -1112,7 +1105,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Add the sorted paragraphs to our processing list
             all_paragraphs.extend(sorted_container_paragraphs)
 
-        # Track processed paragraphs to avoid duplicates (same content and position)
+        # Track processed paragraphs to avoid duplicates
         processed_paragraphs = set()
 
         # Process all the paragraphs
@@ -1121,20 +1114,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             paragraph = Paragraph(p, self.docx_obj)
             text_content = paragraph.text.strip()
 
-            pos_bucket = (
-                round(position, -1) if isinstance(position, (int, float)) else position
-            )
-            paragraph_id = (text_content, pos_bucket)
-
-            # Skip if this text is identical and in the exact same physical region
-            if text_content and paragraph_id in processed_paragraphs:
-                _log.debug(
-                    f"Skipping stacked duplicate paragraph: content='{text_content[:50]}...', pos={pos_bucket}"
-                )
-                continue
-
-            # Mark this text/region as processed
             if text_content:
+                # Deduplicate AlternateContent by exact text natively
+                if text_content in processed_paragraphs:
+                    continue
+                processed_paragraphs.add(text_content)
+            else:
+                # Preserve empty regions (images) based on position
+                paragraph_id = (text_content, position)
+                if paragraph_id in processed_paragraphs:
+                    continue
                 processed_paragraphs.add(paragraph_id)
 
             elem_ref.extend(self._handle_text_elements(p, doc))
