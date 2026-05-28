@@ -193,7 +193,9 @@ markdown_extensions:
       slugify: !!python/object/apply:pymdownx.slugs.slugify
         kwds:
           case: lower
-  - pymdownx.emoji
+  - pymdownx.emoji:
+      emoji_index: !!python/name:zensical.extensions.emoji.twemoji 
+      emoji_generator: !!python/name:zensical.extensions.emoji.to_svg
   - admonition
   - pymdownx.details
   - attr_list
