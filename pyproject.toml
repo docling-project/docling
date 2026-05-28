@@ -98,7 +98,7 @@ format-pdf-pypdfium2 = [
 
 format-pdf-docling = [
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
-  'docling-parse>=6.1.0,<7.0.0',
+  'docling-parse>=6.2.0,<7.0.0',
 ]
 
 format-pdf = [
@@ -311,7 +311,7 @@ members = ["packages/docling"]
 
 [tool.uv.sources]
 docling = { workspace = true }
-docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "cau/control-bitmap-materialization" }
+# docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "cau/control-bitmap-materialization" }
 # docling-parse = { path = "../docling-parse", editable = true }
 
 [tool.uv]
