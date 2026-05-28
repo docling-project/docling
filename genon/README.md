@@ -70,7 +70,7 @@
 
 2. `BUILD_VARIANT` 값 선택 - 기본(**`standard`**) / 유료 PDF SDK 포함(**`pro`**) 버전 선택
 
-   > **주의 (배포 정책):** `pro` 빌드는 유료 PDF SDK가 포함된다. 운영계 Genos 도커 레지스트리에는 **`standard` 이미지만** 올린다. 일반 사이트 배포는 **기본적으로 `standard`** 로 진행하며, 특정 사이트에 `pro`(유료 PDF SDK) 버전을 들고가야 하는 경우에는 **직접 빌드하지 말고 AI Search 팀에 문의해 직접 빌드를 요청**한다 (PDF SDK 토큰/라이선스는 AI Search 팀이 관리, 비공개).
+   > **주의 (배포 정책):** `pro` 빌드는 유료 PDF SDK가 포함된다. 운영계 Genos 도커 레지스트리에는 **`standard` 이미지만** 올린다. 일반 사이트 배포는 **기본적으로 `standard`** 로 진행하며, 특정 사이트에 `pro`(유료 PDF SDK) 버전을 들고가야 하는 요청이 생길 경우엔, **AI Search 팀 내부에서 자체적으로 빌드후, 이미지를 전달**한다 (PDF SDK 토큰/라이선스는 AI Search 팀이 관리, 비공개).
 
    **(배경 설명)**
    - PDF SDK란? → `타문서(HWP,docx 등) → PDF`를 고품질로 변환하기 위한 유료용 SDK. 이 SDK의 유무에 따라 `standard` 또는 `pro` 버전으로 구분됨. 
@@ -114,8 +114,8 @@
      | gpu + standard | `:2.1.5-gpu-standard` |
      | cpu + pro | `:2.1.5-cpu-pro` |
      | gpu + pro | `:2.1.5-gpu-pro` |
-    > **정리** — 위 2번 (`BUILD_VARIANT`) × 3번 (`HW_VARIANT`) 의 조합으로 **총 4종의 Dockerfile(이미지)** 가 만들어진다. 운영 환경에 맞는 1개를 골라서 빌드하면 된다. `pro` 는 직접 빌드하지 말고 AI Search 팀에 빌드 요청.
-    
+    > **정리** — 위 2번 (`BUILD_VARIANT`) × 3번 (`HW_VARIANT`) 의 조합으로 **총 4종의 Dockerfile(이미지)** 가 만들어진다. 운영 환경에 맞는 1개를 골라서 빌드하면 된다. `pro` 는 빌드를 위해 AI Search 팀에서 관리하는 `PDF_SDK_TOKEN` 값이 필요함.
+
    **(진행 순서)**
 
    - **[1번]** [`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `HW_VARIANT=` 라인을 둘 중 하나로 설정:
@@ -162,9 +162,9 @@ gunzip -c doc-parser-preprocessor-2.1.5.tar.gz | docker load
 1. HuggingFace 인증 (위 빌드 단계 1번/2번에서 발급한 fine-grained 토큰 사용)
    ```shell
    export HWP_SDK_TOKEN=hf_xxx_your_hwp_sdk_token_here
-   export PDF_SDK_TOKEN=hf_yyy_your_pdf_sdk_token_here   # PDF SDK 도 받을 경우만 (비공개, AI Search 팀 발급)
+   export PDF_SDK_TOKEN=hf_yyy_your_pdf_sdk_token_here   #(비공개 토큰, AI Search 팀 관리)
    ```
-   - `PDF_SDK_TOKEN` 은 공개 값이 아니다. PDF SDK(Synap) 로컬 테스트가 필요하면 AI Search 팀에 문의해 토큰을 발급받는다.
+   - `PDF_SDK_TOKEN` 은 공개 값이 아님(AI Search 팀 내부에서 private 하게 관리).
 2. 레포 최상위(`doc_parser/`) 경로에서 두 SDK 다운로드 (각 레포에 대응되는 토큰 사용)
    ```shell
    # HWP SDK
