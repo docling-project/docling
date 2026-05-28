@@ -395,12 +395,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     )
                     is not None
                 ):
-                    te = self._handle_text_elements(element, doc)
-                    te = [
-                        t
-                        for t in te
-                        if hasattr(t, "text") and t.text and t.text.strip()
-                    ]
+                    te = self._handle_text_elements(element, doc, skip_empty_text=True)
                     added_elements.extend(te)
             # Check for the sdt containers, like table of contents
             elif tag_name == "sdt":
@@ -1231,6 +1226,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self,
         element: BaseOxmlElement,
         doc: DoclingDocument,
+        skip_empty_text: bool = False,
     ) -> list[RefItem]:
         elem_ref: list[RefItem] = []
         paragraph = Paragraph(element, self.docx_obj)
@@ -1383,6 +1379,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 clean_text = (
                     self._clean_checkbox_symbols(text) if checkbox_label else text
                 )
+
+                # Skip empty text items
+                if skip_empty_text and (not clean_text or not clean_text.strip()):
+                    continue
+
                 text_item = doc.add_text(
                     label=checkbox_label if checkbox_label else DocItemLabel.TEXT,
                     parent=parent,
