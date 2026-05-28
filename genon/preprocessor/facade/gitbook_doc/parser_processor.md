@@ -170,6 +170,29 @@ enrichment:
     seed: 33
     max_tokens: 10000
 
+  # facade 후처리 기반 이미지 설명 생성 (문맥 포함)
+  image_description:
+    enabled: false
+    # 필요 시만 지정 (미지정 시 enrichment.api_url 상속)
+    api_url: ""
+    # 필요 시만 지정 (미지정 시 enrichment.api_key 상속)
+    api_key: ""
+    # 필요 시만 지정 (미지정 시 enrichment.model 상속)
+    model: "model"
+    # 이미지 설명 요청 병렬 수 (기본 4)
+    concurrency: 4
+    before_items: 3
+    after_items: 2
+    max_context_chars: 1500
+    prompt_template: |
+      문서의 일부 이미지를 설명해줘. 아래 문맥을 참고해서 핵심 정보를 2~4문장으로 간결하게 작성해줘.
+      [앞 문맥]
+      {before_context}
+      [캡션]
+      {caption}
+      [뒤 문맥]
+      {after_context}
+
 # ───────────────────────────────────────────────
 # 출력 형식
 # ───────────────────────────────────────────────
@@ -211,6 +234,15 @@ output:
 | `enrichment.toc` | `top_p` | `0.00001` | TOC 생성 top-p |
 | `enrichment.toc` | `seed` | `33` | TOC 생성 seed |
 | `enrichment.toc` | `max_tokens` | `10000` | TOC 생성 최대 토큰 수 |
+| `enrichment.image_description` | `enabled` | `false` | facade 이미지 설명 enrichment 활성화 여부 |
+| `enrichment.image_description` | `api_url` | `""` | 이미지 설명 VLM API URL. 비어 있으면 `enrichment.api_url` 상속 |
+| `enrichment.image_description` | `api_key` | `""` | 이미지 설명 VLM API 키. 비어 있으면 `enrichment.api_key` 상속 |
+| `enrichment.image_description` | `model` | `"model"` | 이미지 설명에 사용할 모델명. 비어 있으면 `enrichment.model` 상속 |
+| `enrichment.image_description` | `concurrency` | `16` | 이미지 설명 VLM 요청 병렬 처리 수 (`ThreadPoolExecutor`의 `max_workers`) |
+| `enrichment.image_description` | `before_items` | `3` | 이미지 앞 문맥으로 넣을 텍스트 item 수 |
+| `enrichment.image_description` | `after_items` | `2` | 이미지 뒤 문맥으로 넣을 텍스트 item 수 |
+| `enrichment.image_description` | `max_context_chars` | `1500` | 프롬프트 전체 최대 문자 수 (초과 시 절단) |
+| `enrichment.image_description` | `prompt_template` | 내장 기본 프롬프트 | 이미지 설명 요청 프롬프트 템플릿 (`{before_context}`, `{caption}`, `{after_context}` 치환) |
 | `output` | `format` | `"json"` | 응답 포맷. `json` / `html` / `markdown`. 유효하지 않으면 `json`으로 대체 |
 | `output` | `table_format` | `"html"` | 표 변환 포맷. `html` / `markdown`. 유효하지 않으면 `html`로 대체 |
 
@@ -223,6 +255,7 @@ output:
   - endpoint: `<LAYOUT_SERVING_ID>` 는 Genos에 등록한 layout 모델서빙 ID 로 변경해야 합니다.
 - enrichment
   - api_url: `<ENRICHMENT_SERVING_ID>`는 Genos에 등록한 enrichment 모델서빙 ID로 변경해야 합니다.
+  - image_description.api_url: 별도 VLM endpoint 사용 시 변경해야 합니다. 비워두면 `enrichment.api_url` 상속
 
 ---
 
@@ -248,6 +281,7 @@ output:
 - **Layout 모델 서버:** `parser_processor_config.yaml`의 `layout.genos_layout.endpoint` 로 접근 가능한 vLLM 호환 서버가 실행 중이어야 함
 - **OCR 서버:** `ocr_mode`가 `disable`이 아닌 경우 `ocr.ocr_endpoint`에 PaddleOCR 서버가 실행 중이어야 함 (단, `ocr_mode=auto`이면 OCR 품질 감지 후 필요할 때만 접근)
 - **Enrichment LLM:** `enrichment.do_toc=true` 또는 `do_metadata=true`인 경우 `enrichment.api_url`에 LLM API가 실행 중이어야 함
+- **Image Description VLM(선택):** `enrichment.image_description.enabled=true`인 경우 `image_description.api_url`(또는 상속된 `enrichment.api_url`)에 이미지+텍스트 입력 가능한 VLM API가 실행 중이어야 함
 - **Python 패키지:** `docling`, `docling-core`, `pymupdf`
 
 ---
@@ -339,6 +373,8 @@ GenosHwpDocumentBackend  →  HwpDocumentBackend/HwpxDocumentBackend  →  Libre
 | `use_hwp_sdk` | `bool` | `true` | `true`: GenosHwpDocumentBackend 사용. `false`: 내장 백엔드(HwpDocumentBackend/HwpxDocumentBackend) 강제 사용 |
 | `dump_sdk_output` | `bool` | `false` | HWP SDK 내부 출력 덤프 여부 (`use_hwp_sdk=true`일 때만 유효) |
 
+> 이미지 설명 문맥 추출(`enrichment.image_description.*`)은 현재 `parser_processor_config.yaml` 설정값으로 제어합니다.
+
 ---
 
 ## 출력 데이터 구조
@@ -372,8 +408,8 @@ GenosHwpDocumentBackend  →  HwpDocumentBackend/HwpxDocumentBackend  →  Libre
 {
   "id": 0,
   "page": 1,
-  "category": "paragraph",
-  "content": "텍스트 내용 또는 HTML 테이블",
+  "category": "picture",
+  "content": "문맥 기반 이미지 설명",
   "coordinates": [
     {"x": 0.1, "y": 0.1},
     {"x": 0.9, "y": 0.1},
@@ -400,7 +436,7 @@ GenosHwpDocumentBackend  →  HwpDocumentBackend/HwpxDocumentBackend  →  Libre
 | `paragraph` | 본문 텍스트 문자열 | `"이 문서는 ..."` |
 | `list_item` | 목록 항목 텍스트 문자열 | `"• 항목 내용"` |
 | `table` | HTML 또는 Markdown 형식의 표 (`output.table_format` 설정에 따라 결정) | `"<table>...</table>"` |
-| `picture` | 빈 문자열 `""` (이미지 자체는 별도 파일로 저장) | `""` |
+| `picture` | 기본은 빈 문자열 `""` (이미지 자체는 별도 파일로 저장). 이미지 설명 활성화 시 `content`에 설명 텍스트가 포함됨 | `"이미지 설명 텍스트"` |
 | `caption` | 그림/표 캡션 텍스트 | `"그림 1. 시스템 구조도"` |
 | `footnote` | 각주 텍스트 | `"1) 출처: ..."` |
 | `page_header` | 페이지 상단 반복 텍스트 | `"2025 연간 보고서"` |
@@ -434,7 +470,7 @@ Docling 파이프라인(PDF/HTML/HWP/HWPX/DOCX) 출력 기준:
 | `paragraph` | 일반 단락 | |
 | `list_item` | 목록 항목 | |
 | `table` | 표 | `output.table_format`에 따라 HTML 또는 Markdown |
-| `picture` | 이미지 | `content`는 빈 문자열 |
+| `picture` | 이미지 | 기본 `content`는 빈 문자열, 옵션 활성화 시 `content`에 설명 텍스트가 포함됨 |
 | `caption` | 그림/표 캡션 | |
 | `footnote` | 각주 | |
 | `page_header` | 페이지 헤더 | |
