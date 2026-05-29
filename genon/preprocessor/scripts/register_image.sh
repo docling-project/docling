@@ -50,19 +50,42 @@ else
 fi
 echo "[INFO] IMAGE_TAG = ${IMAGE_TAG} (version=${IMAGE_VERSION}, hw=${HW_VARIANT}, variant=${BUILD_VARIANT})"
 
-# 이슈 #236 — pro 이미지는 레지스트리/DB 에 올라가면 사내 공유되므로 한 번 더 확인받는다.
-#   (standard 는 추가 확인 없이 진행)
+# pro 이미지는 등록 대상 환경에 따라 허용/차단이 달라진다 (standard 는 추가 확인 없이 진행).
+#   [1] 제논 사내 운영계 GenOS  → 사내 누구나 접근 가능 → 절대 등록 불가
+#   [2] 사전 허가받은 외부 사이트 GenOS → 해당 사이트 전용이므로 허용
 if [[ "${BUILD_VARIANT}" == "pro" ]]; then
   echo ""
-  echo "⚠️  BUILD_VARIANT=pro 이미지를 레지스트리(${REGISTRY_NAME:-})와 DB(llmops)에 등록하려 합니다."
-  echo "    여기에 올라가면 사내에서 공유되어, Synap 유료 SDK 가 포함된 이미지를 누구나 받을 수 있게 됩니다."
-  echo "    pro 는 원칙적으로 공유 레지스트리에 올리지 않고 AI Search 팀 경유로 배포합니다."
-  read -rp "그래도 정말 진행할까요? (y/N): " _PRO_OK
-  if [[ ! "${_PRO_OK:-N}" =~ ^[Yy]$ ]]; then
-    echo "중단합니다 (pro 등록 취소)."
-    exit 0
-  fi
-  echo "사용자 확인됨 — pro 등록을 계속합니다."
+  echo "⚠️  BUILD_VARIANT=pro 이미지 등록 시도 — 어느 환경에 등록하려는지 먼저 확인합니다."
+  echo ""
+  echo "  [1] 제논 회사 사내 운영계 GenOS (사내 모두가 접근 가능)"
+  echo "  [2] 사전 허가받은 외부 사이트의 GenOS 환경"
+  echo ""
+  read -rp "어느 쪽입니까? (1/2): " _PRO_SCENARIO
+  case "${_PRO_SCENARIO:-}" in
+    1)
+      echo ""
+      echo "❌ 사내 운영계 GenOS 에는 pro 이미지를 등록할 수 없습니다."
+      echo "   사내 모두가 접근 가능한 환경에 Synap 유료 SDK 포함 이미지가 노출되면 안 됩니다."
+      echo "   (사이트 배포 목적이라면 AI Search 팀에서 이미지 전달 후, 사이트의 GenOS 에서만 등록하세요.)"
+      echo "중단합니다 (pro 등록 차단)."
+      exit 0
+      ;;
+    2)
+      echo ""
+      echo "⚠️  pro 이미지는 라이선스 사전 허가를 받은 사이트에만 배포 가능합니다."
+      echo "   해당 사이트에 대해 사전 허가가 이미 완료된 상태인지 다시 한 번 확인해주세요."
+      read -rp "사전 허가가 완료된 사이트가 맞으면 진행합니다. 진행할까요? (y/N): " _PRO_OK
+      if [[ ! "${_PRO_OK:-N}" =~ ^[Yy]$ ]]; then
+        echo "중단합니다 (pro 등록 취소)."
+        exit 0
+      fi
+      echo "사용자 확인됨 — pro 등록을 계속합니다."
+      ;;
+    *)
+      echo "❌ 알 수 없는 응답: '${_PRO_SCENARIO:-}'. 1 또는 2 로만 답해야 합니다. 중단합니다."
+      exit 1
+      ;;
+  esac
 fi
 
 # ── 기본값 + 사용자 입력 (Enter=기본값 유지) ────────────────
