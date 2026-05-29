@@ -108,6 +108,13 @@ from docling_core.types.doc.base import CoordOrigin
 from docling_core.types.doc.document import CodeItem, ContentLayer, ListItem
 
 try:
+    from genon.preprocessor.facade.enrichment.custom_fields_enricher import CustomFieldsEnricher
+except ImportError:
+    CustomFieldsEnricher = None  # type: ignore[assignment,misc]
+
+from genon.preprocessor.facade.enrichment.enrichment_config import EnrichmentConfig
+
+try:
     import chardet
 except ImportError:
     raise RuntimeError("Module 'chardet' not imported. Run `pip install chardet`.")
@@ -150,6 +157,41 @@ def _load_config(config_path: str) -> dict:
 
 def _as_dict(value: Any) -> dict:
     return value if isinstance(value, dict) else {}
+
+
+def _parse_optional_bool(value: Any, key: str = "") -> Optional[bool]:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        text = value.strip().lower()
+        if text in {"1", "true", "yes", "y", "on"}:
+            return True
+        if text in {"0", "false", "no", "n", "off"}:
+            return False
+    if key:
+        _log.warning(
+            f"[ImageDescriptionOptions] Invalid bool value for '{key}': {value!r}. Fallback to default."
+        )
+    return None
+
+
+def _parse_optional_int(value: Any, key: str = "") -> Optional[int]:
+    if value is None or value == "":
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        if key:
+            _log.warning(
+                f"[ImageDescriptionOptions] Invalid int value for '{key}': {value!r}. Fallback to default."
+            )
+        return None
+
+
 
 
 def _resolve_default_parser_config_path() -> str:
@@ -581,35 +623,6 @@ class ImageDescriptionOptions:
     ) -> "ImageDescriptionOptions":
         image_desc_cfg = _as_dict(image_desc_cfg)
 
-        def _parse_optional_bool(value: Any, key: str) -> Optional[bool]:
-            if value is None:
-                return None
-            if isinstance(value, bool):
-                return value
-            if isinstance(value, (int, float)):
-                return bool(value)
-            if isinstance(value, str):
-                text = value.strip().lower()
-                if text in {"1", "true", "yes", "y", "on"}:
-                    return True
-                if text in {"0", "false", "no", "n", "off"}:
-                    return False
-            _log.warning(
-                f"[ImageDescriptionOptions] Invalid bool value for '{key}': {value!r}. Fallback to default."
-            )
-            return None
-
-        def _parse_optional_int(value: Any, key: str) -> Optional[int]:
-            if value is None or value == "":
-                return None
-            try:
-                return int(value)
-            except (TypeError, ValueError):
-                _log.warning(
-                    f"[ImageDescriptionOptions] Invalid int value for '{key}': {value!r}. Fallback to default."
-                )
-                return None
-
         def _parse_optional_float(value: Any, key: str) -> Optional[float]:
             if value is None or value == "":
                 return None
@@ -647,7 +660,7 @@ class ImageDescriptionOptions:
 
         return cls(
             enabled=False if enabled is None else enabled,
-            api_url=str(image_desc_cfg.get("api_url") or fallback_api_url or "").strip(),
+            api_url=str(image_desc_cfg.get("api_url") or image_desc_cfg.get("url") or fallback_api_url or "").strip(),
             api_key=str(image_desc_cfg.get("api_key") or fallback_api_key or "").strip(),
             model=str(image_desc_cfg.get("model") or fallback_model or "model").strip(),
             timeout=timeout,
@@ -845,10 +858,11 @@ class FacadeImageDescriptionEnricher:
         safe_after = after_context or "-"
         safe_caption = caption or "-"
         try:
-            prompt = self.options.prompt_template.format(
-                before_context=safe_before,
-                after_context=safe_after,
-                caption=safe_caption,
+            prompt = (
+                self.options.prompt_template
+                .replace("{{before_context}}", safe_before)
+                .replace("{{after_context}}", safe_after)
+                .replace("{{caption}}", safe_caption)
             )
         except Exception as exc:
             _log.warning(
@@ -1043,11 +1057,12 @@ class FacadeImageDescriptionEnricher:
 
 class IntelligentDocumentProcessor:
 
-    def __init__(self, config: dict | None = None):
+    def __init__(self, config: dict | None = None, config_path: str | None = None):
         cfg = _as_dict(config)
+        self._config_dir = Path(config_path).resolve().parent if config_path else Path.cwd()
         ocr_cfg = _as_dict(cfg.get("ocr"))
         layout_cfg = _as_dict(cfg.get("layout"))
-        enrichment_cfg = _as_dict(cfg.get("enrichment"))
+        ec = EnrichmentConfig.from_raw(cfg.get("enrichment"), self._config_dir, parent_cfg=cfg)
 
         ocr_ep = ocr_cfg.get("ocr_endpoint") or cfg.get("ocr_endpoint", "")
         raw_ocr_mode = str(ocr_cfg.get("ocr_mode", cfg.get("ocr_mode", "auto"))).lower().strip()
@@ -1082,100 +1097,6 @@ class IntelligentDocumentProcessor:
                 f"[IntelligentDocumentProcessor] Invalid page_batch_size '{page_batch_size}', fallback to 32"
             )
             page_batch_size = 32
-
-        enrichment_url = enrichment_cfg.get("api_url") or cfg.get("enrichment_api_base_url", "")
-        enrichment_key = enrichment_cfg.get("api_key") or cfg.get("enrichment_api_key", "")
-        enrichment_model = enrichment_cfg.get("model", cfg.get("enrichment_model", "model"))
-        do_toc = bool(enrichment_cfg.get("do_toc", cfg.get("do_toc", True)))
-        do_metadata = bool(enrichment_cfg.get("do_metadata", cfg.get("do_metadata", True)))
-        image_desc_cfg = _as_dict(enrichment_cfg.get("image_description"))
-
-        toc_cfg = _as_dict(enrichment_cfg.get("toc"))
-        toc_temperature = toc_cfg.get("temperature", cfg.get("toc_temperature", 0.0))
-        toc_top_p = toc_cfg.get("top_p", cfg.get("toc_top_p", 0.00001))
-        toc_seed = toc_cfg.get("seed", cfg.get("toc_seed", 33))
-        toc_max_tokens = toc_cfg.get("max_tokens", cfg.get("toc_max_tokens", 10000))
-
-        def _parse_optional_bool(value: Any) -> Optional[bool]:
-            if value is None:
-                return None
-            if isinstance(value, bool):
-                return value
-            if isinstance(value, (int, float)):
-                return bool(value)
-            if isinstance(value, str):
-                text = value.strip().lower()
-                if text in {"1", "true", "yes", "y", "on"}:
-                    return True
-                if text in {"0", "false", "no", "n", "off"}:
-                    return False
-            _log.warning(
-                f"[IntelligentDocumentProcessor] Invalid precheck bool value '{value}', fallback to None"
-            )
-            return None
-
-        def _parse_optional_int(value: Any) -> Optional[int]:
-            if value is None or value == "":
-                return None
-            try:
-                return int(value)
-            except (TypeError, ValueError):
-                _log.warning(
-                    f"[IntelligentDocumentProcessor] Invalid precheck int value '{value}', fallback to None"
-                )
-                return None
-
-        precheck_cfg = _as_dict(enrichment_cfg.get("precheck"))
-        toc_precheck_cfg = _as_dict(precheck_cfg.get("toc"))
-        metadata_precheck_cfg = _as_dict(precheck_cfg.get("metadata"))
-
-        toc_precheck_enabled = _parse_optional_bool(
-            toc_precheck_cfg.get(
-                "enabled",
-                precheck_cfg.get("enabled", cfg.get("toc_precheck_enabled")),
-            )
-        )
-        metadata_precheck_enabled = _parse_optional_bool(
-            metadata_precheck_cfg.get(
-                "enabled",
-                precheck_cfg.get("enabled", cfg.get("metadata_precheck_enabled")),
-            )
-        )
-
-        common_max_context_tokens = _parse_optional_int(
-            precheck_cfg.get(
-                "max_context_tokens",
-                precheck_cfg.get("max_context", cfg.get("enrichment_max_context_tokens")),
-            )
-        )
-        common_reserved_tokens = _parse_optional_int(
-            precheck_cfg.get(
-                "completion_reserved_tokens",
-                cfg.get("enrichment_completion_reserved_tokens"),
-            )
-        )
-
-        toc_max_context_tokens = _parse_optional_int(
-            toc_precheck_cfg.get(
-                "max_context_tokens",
-                toc_precheck_cfg.get("max_context", common_max_context_tokens),
-            )
-        )
-        metadata_max_context_tokens = _parse_optional_int(
-            metadata_precheck_cfg.get(
-                "max_context_tokens",
-                metadata_precheck_cfg.get("max_context", common_max_context_tokens),
-            )
-        )
-        toc_completion_reserved_tokens = _parse_optional_int(
-            toc_precheck_cfg.get("completion_reserved_tokens", common_reserved_tokens)
-        )
-        metadata_completion_reserved_tokens = _parse_optional_int(
-            metadata_precheck_cfg.get(
-                "completion_reserved_tokens",
-                common_reserved_tokens,
-            )
-        )
 
         ocr_options = self._build_ocr_options(ocr_cfg, paddle_endpoint=ocr_ep)
         if isinstance(ocr_options, UpstageOcrOptions):
@@ -1217,37 +1138,41 @@ class IntelligentDocumentProcessor:
 
         self._create_converters()
         self.image_description_options = ImageDescriptionOptions.from_config(
-            image_desc_cfg=image_desc_cfg,
-            fallback_api_url=enrichment_url,
-            fallback_api_key=enrichment_key,
-            fallback_model=enrichment_model,
+            image_desc_cfg=ec.image_description_cfg,
+            fallback_api_url=ec.api_url,
+            fallback_api_key=ec.api_key,
+            fallback_model=ec.model,
         )
         self.image_description_enricher = FacadeImageDescriptionEnricher(
             self.image_description_options
         )
+        self.custom_fields_enrichers: "list[CustomFieldsEnricher]" = (
+            [CustomFieldsEnricher(**c) for c in ec.custom_fields_cfgs]
+            if CustomFieldsEnricher is not None else []
+        )
 
         self.enrichment_options = DataEnrichmentOptions(
-            do_toc_enrichment=do_toc,
+            do_toc_enrichment=ec.toc.do_toc,
             toc_doc_type="law",
-            extract_metadata=do_metadata,
+            extract_metadata=ec.metadata.do_metadata,
             toc_api_provider="custom",
             metadata_api_provider="custom",
-            toc_api_base_url=enrichment_url,
-            metadata_api_base_url=enrichment_url,
-            toc_api_key=enrichment_key,
-            metadata_api_key=enrichment_key,
-            toc_model=enrichment_model,
-            metadata_model=enrichment_model,
-            toc_temperature=toc_temperature,
-            toc_top_p=toc_top_p,
-            toc_seed=toc_seed,
-            toc_max_tokens=toc_max_tokens,
-            toc_precheck_enabled=toc_precheck_enabled,
-            toc_max_context_tokens=toc_max_context_tokens,
-            toc_completion_reserved_tokens=toc_completion_reserved_tokens,
-            metadata_precheck_enabled=metadata_precheck_enabled,
-            metadata_max_context_tokens=metadata_max_context_tokens,
-            metadata_completion_reserved_tokens=metadata_completion_reserved_tokens,
+            toc_api_base_url=ec.toc.url,
+            metadata_api_base_url=ec.metadata.url,
+            toc_api_key=ec.toc.api_key,
+            metadata_api_key=ec.metadata.api_key,
+            toc_model=ec.toc.model,
+            metadata_model=ec.metadata.model,
+            toc_temperature=ec.toc.temperature,
+            toc_top_p=ec.toc.top_p,
+            toc_seed=ec.toc.seed,
+            toc_max_tokens=ec.toc.max_tokens,
+            toc_precheck_enabled=ec.toc.precheck_enabled,
+            toc_max_context_tokens=ec.toc.precheck_max_context_tokens,
+            toc_completion_reserved_tokens=ec.toc.precheck_completion_reserved_tokens,
+            metadata_precheck_enabled=ec.metadata.precheck_enabled,
+            metadata_max_context_tokens=ec.metadata.precheck_max_context_tokens,
+            metadata_completion_reserved_tokens=ec.metadata.precheck_completion_reserved_tokens,
             toc_system_prompt=_toc_system_prompt,
             toc_user_prompt=_toc_user_prompt,
         )
@@ -1404,6 +1329,11 @@ class IntelligentDocumentProcessor:
     def enrich_image_descriptions(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
         enricher = self._get_or_create_image_description_enricher()
         return enricher.enrich(document, **kwargs)
+
+    async def enrich_custom_fields(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        for enricher in self.custom_fields_enrichers:
+            document = await enricher.enrich(document, **kwargs)
+        return document
 
     def check_glyph_text(self, text: str, threshold: int = 1) -> bool:
         if not text:
@@ -1709,7 +1639,7 @@ class DocumentProcessor:
             config_path = _resolve_default_parser_config_path()
 
         cfg = _load_config(config_path)
-        self._intel = IntelligentDocumentProcessor(cfg)
+        self._intel = IntelligentDocumentProcessor(cfg, config_path=config_path)
 
         self._hwp = HwpDocumentLoader()
         self._docx = DocxDocumentLoader()
@@ -1846,13 +1776,17 @@ class DocumentProcessor:
     def _parse_other(self, file_path: str, **kwargs) -> list:
         return self._generic.load_documents(file_path, **kwargs)
 
-    def _apply_docling_post_enrichment(self, document: DoclingDocument, **kwargs) -> DoclingDocument:
+    async def _apply_docling_post_enrichment(self, document: DoclingDocument, **kwargs) -> DoclingDocument:
         """Facade 후처리 enrichment 훅."""
         try:
-            return self._intel.enrich_image_descriptions(document, **kwargs)
+            document = self._intel.enrich_image_descriptions(document, **kwargs)
         except Exception as exc:
             _log.warning(f"[DocumentProcessor] facade image enrichment skipped: {exc}")
-            return document
+        try:
+            document = await self._intel.enrich_custom_fields(document, **kwargs)
+        except Exception as exc:
+            _log.warning(f"[DocumentProcessor] custom_fields enrichment skipped: {exc}")
+        return document
 
     # ------------------------------------------------------------------
     # 직렬화 헬퍼
@@ -2216,21 +2150,31 @@ class DocumentProcessor:
             data_dict = self._parse_tabular(file_path)
             return self._normalize_response(self._tabular_to_parse_format(data_dict))
 
+        enrichment_context: dict = {}
+
         if ext in (".hwp", ".hwpx"):
             doc = self._parse_hwp_hwpx(file_path, **kwargs)
-            doc = self._apply_docling_post_enrichment(doc, **kwargs)
-            return self._normalize_response(self._build_docling_response(doc))
+            doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
+            result = self._build_docling_response(doc)
+            if enrichment_context.get("custom_metadata"):
+                result["custom_metadata"] = enrichment_context["custom_metadata"]
+            return self._normalize_response(result)
 
         if ext == ".docx":
             doc = self._parse_docx(file_path, **kwargs)
-            doc = self._apply_docling_post_enrichment(doc, **kwargs)
-            return self._normalize_response(self._build_docling_response(doc, clear_coordinates=True))
+            doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
+            result = self._build_docling_response(doc, clear_coordinates=True)
+            if enrichment_context.get("custom_metadata"):
+                result["custom_metadata"] = enrichment_context["custom_metadata"]
+            return self._normalize_response(result)
 
         if ext in (".pdf", ".html", ".htm"):
-            doc = self._parse_docling(file_path, **kwargs)
-            doc = self._apply_docling_post_enrichment(doc, **kwargs)
-            # result["docling_document"] = self._serialize_docling_document(doc)
-            return self._normalize_response(self._build_docling_response(doc))
+            doc = self._parse_docling(file_path, _enrichment_context=enrichment_context, **kwargs)
+            doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
+            result = self._build_docling_response(doc)
+            if enrichment_context.get("custom_metadata"):
+                result["custom_metadata"] = enrichment_context["custom_metadata"]
+            return self._normalize_response(result)
 
         # 기타 포맷: doc, ppt, pptx, txt, json, md, jpg, jpeg, png 등
         docs = self._parse_other(file_path, **kwargs)

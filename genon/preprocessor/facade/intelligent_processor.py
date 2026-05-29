@@ -131,6 +131,11 @@ from pydantic import BaseModel, ConfigDict, PositiveInt, TypeAdapter, model_vali
 from typing_extensions import Self
 
 try:
+    from genon.preprocessor.facade.enrichment.custom_fields_enricher import CustomFieldsEnricher as _CustomFieldsEnricher
+except ImportError:
+    _CustomFieldsEnricher = None  # type: ignore[assignment,misc]
+
+try:
     import semchunk
     from transformers import AutoTokenizer, PreTrainedTokenizerBase
 except ImportError:
@@ -1148,6 +1153,7 @@ class DocumentProcessor:
             toc_system_prompt=toc_system_prompt,
             toc_user_prompt=toc_user_prompt,
         )
+        self.custom_fields_enrichers: "list[_CustomFieldsEnricher]" = []
 
     def _create_converters(self):
         """컨버터들을 생성하는 헬퍼 메서드"""
@@ -1299,6 +1305,11 @@ class DocumentProcessor:
             # Preserve provider error payload as-is for load status error message.
             raise GenosServiceException("1", e.raw_error_message) from e
 
+    async def enrich_custom_fields(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        for enricher in self.custom_fields_enrichers:
+            document = await enricher.enrich(document, **kwargs)
+        return document
+
     async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request, converted_pdf_path: Optional[str] = None, **kwargs: dict) -> \
             list[dict]:
         title = ""
@@ -1332,12 +1343,14 @@ class DocumentProcessor:
         else:
             appendix_list = []
 
+        custom_metadata = kwargs.get("_enrichment_context", {}).get("custom_metadata", {}) if isinstance(kwargs.get("_enrichment_context"), dict) else {}
         global_metadata = dict(
             n_chunk_of_doc=len(chunks),
             n_page=document.num_pages(),
             reg_date=datetime.now().isoformat(timespec='seconds') + 'Z',
             created_date=created_date,
-            title=title
+            title=title,
+            **custom_metadata,
         )
         # 비-PDF 입력이 변환된 경우 vector 의 file_path 를 변환 PDF 경로로 set.
         if converted_pdf_path:
@@ -1664,6 +1677,11 @@ class DocumentProcessor:
         document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
 
         document = self.enrichment(document, **kwargs)
+
+        enrichment_context = kwargs.get("_enrichment_context", {})
+        if not isinstance(enrichment_context, dict):
+            enrichment_context = {}
+        document = await self.enrich_custom_fields(document, _enrichment_context=enrichment_context, **kwargs)
 
         has_text_items = False
         for item, _ in document.iterate_items():
