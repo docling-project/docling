@@ -9,6 +9,7 @@ from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
 from docling.datamodel.service.responses import TaskStatusResponse
+from docling.datamodel.service.targets import InBodyTarget, ZipTarget
 from docling.service_client import ConversionJob, DoclingServiceClient, RawServiceResult
 
 SERVICE_URL_ENV = "DOCLING_SERVICE_URL"
@@ -46,7 +47,7 @@ def run_json_task_flow_with_watch() -> None:
         job: ConversionJob[ConversionResult] = client.submit(
             source=SAMPLE_SOURCE,
             options=create_conversion_options(),
-            target_format=OutputFormat.JSON,
+            target=InBodyTarget(),
         )
         print("submit() returns ConversionJob[ConversionResult]")
         print("job fields:", "task_id,", "status,", "queue_position,", "submitted_at")
@@ -91,7 +92,8 @@ def run_markdown_task_flow_without_watch() -> None:
         job: ConversionJob[RawServiceResult] = client.submit(
             source=SAMPLE_SOURCE,
             options=create_conversion_options(),
-            target_format=OutputFormat.MARKDOWN,
+            output_formats=[OutputFormat.MARKDOWN],
+            target=ZipTarget(),
         )
         print("submit() returns ConversionJob[RawServiceResult] for MARKDOWN target")
         raw_result: RawServiceResult = job.result(timeout=300.0)
