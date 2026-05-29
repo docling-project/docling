@@ -136,8 +136,26 @@ try:
     from genon.preprocessor.facade.enrichment.custom_fields_enricher import CustomFieldsEnricher as _CustomFieldsEnricher
 except ImportError:
     _CustomFieldsEnricher = None  # type: ignore[assignment,misc]
+try:
+    from genon.preprocessor.facade.enrichment.metadata_enricher import MetadataEnricher as _MetadataEnricher
+except ImportError:
+    _MetadataEnricher = None  # type: ignore[assignment,misc]
+try:
+    from genon.preprocessor.facade.parser_processor import (
+        ImageDescriptionOptions,
+        FacadeImageDescriptionEnricher,
+    )
+except ImportError:
+    ImageDescriptionOptions = None  # type: ignore[assignment,misc]
+    FacadeImageDescriptionEnricher = None  # type: ignore[assignment,misc]
 
 from genon.preprocessor.facade.enrichment.enrichment_config import EnrichmentConfig
+from genon.preprocessor.facade.enrichment.field_transforms import (
+    DEFAULT_METADATA_FIELD_TRANSFORMS,
+    apply_field_transforms,
+    extract_metadata_from_document,
+    serialize_metadata_value_for_output,
+)
 
 try:
     import semchunk
@@ -478,10 +496,25 @@ class GenosBucketChunker(BaseChunker):
                 if item.text not in text_parts:
                     text_parts.append(item.text)
             elif isinstance(item, PictureItem):
-                text_parts.append("")  # 이미지는 빈 텍스트
+                picture_text = self._extract_picture_annotation_text(item)
+                if picture_text and picture_text not in text_parts:
+                    text_parts.append(picture_text)
 
         result_text = self.delim.join(text_parts)
         return result_text
+
+    @staticmethod
+    def _extract_picture_annotation_text(item: PictureItem) -> str:
+        """PictureItem annotation의 텍스트를 단일 문자열로 추출."""
+        texts: list[str] = []
+        for annotation in getattr(item, "annotations", []) or []:
+            text = str(getattr(annotation, "text", "") or "").strip()
+            if text:
+                texts.append(text)
+        if not texts:
+            return ""
+        # 동일 annotation 중복 주입 방지
+        return "\n".join(dict.fromkeys(texts))
 
     def _extract_table_text(self, table_item: TableItem, dl_doc: DoclingDocument, **kwargs) -> str:
         """테이블에서 텍스트를 추출하는 일반화된 메서드"""
@@ -1038,6 +1071,7 @@ class GenOSVectorMetaBuilder:
         self.created_date: Optional[int] = None
         self.appendix: Optional[str] = None # !! appendix feature (2025-09-30, geonhee kim) !!
         self.file_path: Optional[str] = None
+        self.extra_metadata: dict[str, Any] = {}
 
     def set_text(self, text: str) -> "GenOSVectorMetaBuilder":
         """텍스트와 관련된 데이터를 설정"""
@@ -1066,6 +1100,8 @@ class GenOSVectorMetaBuilder:
         for key, value in global_metadata.items():
             if hasattr(self, key):
                 setattr(self, key, value)
+            else:
+                self.extra_metadata[key] = value
         return self
 
     def set_chunk_bboxes(self, doc_items: list, document: DoclingDocument) -> "GenOSVectorMetaBuilder":
@@ -1099,26 +1135,28 @@ class GenOSVectorMetaBuilder:
 
     def build(self) -> GenOSVectorMeta:
         """설정된 데이터를 사용해 최종적으로 GenOSVectorMeta 객체 생성"""
-        return GenOSVectorMeta(
-            text=self.text,
-            n_char=self.n_char,
-            n_word=self.n_word,
-            n_line=self.n_line,
-            i_page=self.i_page,
-            e_page=self.e_page,
-            i_chunk_on_page=self.i_chunk_on_page,
-            n_chunk_of_page=self.n_chunk_of_page,
-            i_chunk_on_doc=self.i_chunk_on_doc,
-            n_chunk_of_doc=self.n_chunk_of_doc,
-            n_page=self.n_page,
-            reg_date=self.reg_date,
-            chunk_bboxes=self.chunk_bboxes,
-            media_files=self.media_files,
-            title=self.title,
-            created_date=self.created_date,
-            appendix=self.appendix or "", # !! appendix feature (2025-09-30, geonhee kim) !!
-            file_path=self.file_path,
-        )
+        payload = {
+            "text": self.text,
+            "n_char": self.n_char,
+            "n_word": self.n_word,
+            "n_line": self.n_line,
+            "i_page": self.i_page,
+            "e_page": self.e_page,
+            "i_chunk_on_page": self.i_chunk_on_page,
+            "n_chunk_of_page": self.n_chunk_of_page,
+            "i_chunk_on_doc": self.i_chunk_on_doc,
+            "n_chunk_of_doc": self.n_chunk_of_doc,
+            "n_page": self.n_page,
+            "reg_date": self.reg_date,
+            "chunk_bboxes": self.chunk_bboxes,
+            "media_files": self.media_files,
+            "title": self.title,
+            "created_date": self.created_date,
+            "appendix": self.appendix or "", # !! appendix feature (2025-09-30, geonhee kim) !!
+            "file_path": self.file_path,
+            **self.extra_metadata,
+        }
+        return GenOSVectorMeta.model_validate(payload)
 
 
 class DocumentProcessor:
@@ -1256,12 +1294,59 @@ class DocumentProcessor:
         # 기본 컨버터들 생성
         self._create_converters()
 
+        self.image_description_options = (
+            ImageDescriptionOptions.from_config(
+                image_desc_cfg=ec.image_description_cfg,
+                fallback_api_url=ec.api_url,
+                fallback_api_key=ec.api_key,
+                fallback_model=ec.model,
+            )
+            if ImageDescriptionOptions is not None
+            else None
+        )
+        self.image_description_enricher = (
+            FacadeImageDescriptionEnricher(self.image_description_options)
+            if (
+                self.image_description_options is not None
+                and FacadeImageDescriptionEnricher is not None
+            )
+            else None
+        )
+        self.custom_fields_enrichers: list = (
+            [_CustomFieldsEnricher(**c) for c in ec.custom_fields_cfgs]
+            if _CustomFieldsEnricher is not None
+            else []
+        )
+        self.metadata_enricher = (
+            _MetadataEnricher(
+                url=ec.metadata.url,
+                api_key=ec.metadata.api_key,
+                model=ec.metadata.model,
+                system_prompt=ec.metadata.system_prompt,
+                user_prompt=ec.metadata.user_prompt,
+                output_fields=ec.metadata.output_fields,
+                parser=ec.metadata.parser,
+                pages=ec.metadata.pages,
+                max_tokens=ec.metadata.max_tokens,
+                temperature=ec.metadata.temperature,
+                timeout=ec.metadata.timeout,
+                config_dir=self._config_dir,
+            )
+            if _MetadataEnricher is not None and ec.metadata.do_metadata and ec.metadata.system_prompt
+            else None
+        )
+        # 추출 메타데이터 → typed 벡터 필드 매핑(설정 기반). 설정이 비어있으면
+        # 기존 created_date 동작을 그대로 재현한다(하위 호환).
+        self._metadata_field_transforms = (
+            ec.metadata.field_transforms or DEFAULT_METADATA_FIELD_TRANSFORMS
+        )
+
         # enrichment 옵션 설정 (yaml 의 enrichment 섹션을 EnrichmentConfig 로 파싱)
-        # docling 내장 enrichment(DataEnrichmentOptions) 만 사용 — facade enricher 미사용.
         self.enrichment_options = DataEnrichmentOptions(
             do_toc_enrichment=ec.toc.do_toc,
             toc_doc_type=ec.toc.doc_type,
-            extract_metadata=ec.metadata.do_metadata,
+            # 커스텀 MetadataEnricher가 있으면 docling 내장 metadata 추출을 비활성화한다.
+            extract_metadata=ec.metadata.do_metadata and self.metadata_enricher is None,
             toc_api_provider="custom",
             metadata_api_provider="custom",
             toc_api_base_url=ec.toc.url,
@@ -1283,7 +1368,6 @@ class DocumentProcessor:
             toc_system_prompt=ec.toc.system_prompt,
             toc_user_prompt=ec.toc.user_prompt,
         )
-        self.custom_fields_enrichers: "list[_CustomFieldsEnricher]" = []
 
     @staticmethod
     def _build_ocr_options(ocr_cfg: dict, paddle_endpoint: str):
@@ -1447,56 +1531,6 @@ class DocumentProcessor:
             return ''
         return ''.join(map(str, iterable)) + '\n'
 
-    def parse_created_date(self, date_text: str) -> Optional[int]:
-        """
-        작성일 텍스트를 파싱하여 YYYYMMDD 형식의 정수로 변환
-
-        Args:
-            date_text: 작성일 텍스트 (YYYY-MM 또는 YYYY-MM-DD 형식)
-
-        Returns:
-            YYYYMMDD 형식의 정수, 파싱 실패시 None
-        """
-        if not date_text or not isinstance(date_text, str) or date_text == "None":
-            return 0
-
-        # 공백 제거 및 정리
-        date_text = date_text.strip()
-
-        # YYYY-MM-DD 형식 매칭
-        match_full = re.match(r'^(\d{4})-(\d{1,2})-(\d{1,2})$', date_text)
-        if match_full:
-            year, month, day = match_full.groups()
-            try:
-                # 유효한 날짜인지 검증
-                datetime(int(year), int(month), int(day))
-                return int(f"{year}{month.zfill(2)}{day.zfill(2)}")
-            except ValueError:
-                pass
-
-        # YYYY-MM 형식 매칭 (일자는 01로 설정)
-        match_month = re.match(r'^(\d{4})-(\d{1,2})$', date_text)
-        if match_month:
-            year, month = match_month.groups()
-            try:
-                # 유효한 월인지 검증
-                datetime(int(year), int(month), 1)
-                return int(f"{year}{month.zfill(2)}01")
-            except ValueError:
-                pass
-
-        # YYYY 형식 매칭 (월일은 0101로 설정)
-        match_year = re.match(r'^(\d{4})$', date_text)
-        if match_year:
-            year = match_year.group(1)
-            try:
-                datetime(int(year), 1, 1)
-                return int(f"{year}0101")
-            except ValueError:
-                pass
-
-        return 0
-
     def enrichment(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
         try:
             # 새로운 enriched result 받기
@@ -1506,6 +1540,29 @@ class DocumentProcessor:
             # Preserve provider error payload as-is for load status error message.
             raise GenosServiceException("1", e.raw_error_message) from e
 
+    def _get_or_create_image_description_enricher(self):
+        enricher = getattr(self, "image_description_enricher", None)
+        if enricher is None:
+            if ImageDescriptionOptions is None or FacadeImageDescriptionEnricher is None:
+                return None
+            # 테스트 등에서 __init__ 우회 시 legacy attribute 기반으로 재구성
+            legacy_options = ImageDescriptionOptions.from_legacy_processor(self)
+            enricher = FacadeImageDescriptionEnricher(legacy_options)
+            self.image_description_enricher = enricher
+        return enricher
+
+    def enrich_image_descriptions(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        enricher = self._get_or_create_image_description_enricher()
+        if enricher is None:
+            return document
+        return enricher.enrich(document, **kwargs)
+
+    async def enrich_metadata(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        enricher = getattr(self, "metadata_enricher", None)
+        if enricher is not None:
+            document = await enricher.enrich(document, **kwargs)
+        return document
+
     async def enrich_custom_fields(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
         for enricher in self.custom_fields_enrichers:
             document = await enricher.enrich(document, **kwargs)
@@ -1514,19 +1571,18 @@ class DocumentProcessor:
     async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request, converted_pdf_path: Optional[str] = None, **kwargs: dict) -> \
             list[dict]:
         title = ""
-        created_date = 0
-        try:
-            if (document.key_value_items and
-                len(document.key_value_items) > 0 and
-                hasattr(document.key_value_items[0], 'graph') and
-                hasattr(document.key_value_items[0].graph, 'cells') and
-                len(document.key_value_items[0].graph.cells) > 1):
-
-                # 작성일 추출 (cells[1])
-                date_text = document.key_value_items[0].graph.cells[1].text
-                created_date = self.parse_created_date(date_text)
-        except (AttributeError, IndexError) as e:
-            pass
+        enrichment_context = kwargs.get("_enrichment_context")
+        context_metadata = (
+            dict(enrichment_context.get("metadata", {}))
+            if isinstance(enrichment_context, dict) and isinstance(enrichment_context.get("metadata"), dict)
+            else {}
+        )
+        document_metadata = extract_metadata_from_document(document)
+        merged_metadata = dict(document_metadata)
+        merged_metadata.update(context_metadata)
+        # 설정 기반 typed 필드 변환 (created_date 등). source/target 키는 passthrough 에서 제외.
+        typed_values, consumed_keys = apply_field_transforms(
+            self._metadata_field_transforms, merged_metadata, document)
 
         for item, _ in document.iterate_items():
             if hasattr(item, 'label'):
@@ -1544,15 +1600,29 @@ class DocumentProcessor:
         else:
             appendix_list = []
 
-        custom_metadata = kwargs.get("_enrichment_context", {}).get("metadata", {}) if isinstance(kwargs.get("_enrichment_context"), dict) else {}
+        passthrough_metadata = dict(merged_metadata)
+        # GenOSVectorMeta 스키마 예약 필드 + transform 이 소비한 source/target 키는 passthrough 제외.
+        reserved_keys = {
+            "text", "n_char", "n_word", "n_line", "e_page", "i_page",
+            "i_chunk_on_page", "n_chunk_of_page", "i_chunk_on_doc", "n_chunk_of_doc",
+            "n_page", "reg_date", "chunk_bboxes", "media_files", "title",
+            "created_date", "appendix", "file_path", "metadata",
+        } | consumed_keys
+        for reserved_key in reserved_keys:
+            passthrough_metadata.pop(reserved_key, None)
+        passthrough_metadata = {
+            key: serialize_metadata_value_for_output(value)
+            for key, value in passthrough_metadata.items()
+        }
+
         global_metadata = dict(
             n_chunk_of_doc=len(chunks),
             n_page=document.num_pages(),
             reg_date=datetime.now().isoformat(timespec='seconds') + 'Z',
-            created_date=created_date,
             title=title,
-            **custom_metadata,
         )
+        global_metadata.update(typed_values)  # 설정 기반 typed 필드 (created_date 등)
+        global_metadata.update(passthrough_metadata)
         # 비-PDF 입력이 변환된 경우 vector 의 file_path 를 변환 PDF 경로로 set.
         if converted_pdf_path:
             global_metadata['file_path'] = converted_pdf_path
@@ -1887,7 +1957,20 @@ class DocumentProcessor:
         enrichment_context = kwargs.get("_enrichment_context", {})
         if not isinstance(enrichment_context, dict):
             enrichment_context = {}
-        document = await self.enrich_custom_fields(document, _enrichment_context=enrichment_context, **kwargs)
+        enrichment_kwargs = dict(kwargs)
+        enrichment_kwargs["_enrichment_context"] = enrichment_context
+        try:
+            document = self.enrich_image_descriptions(document, **enrichment_kwargs)
+        except Exception as exc:
+            _log.warning(f"[DocumentProcessor] facade image enrichment skipped: {exc}")
+        try:
+            document = await self.enrich_metadata(document, **enrichment_kwargs)
+        except Exception as exc:
+            _log.warning(f"[DocumentProcessor] metadata enrichment skipped: {exc}")
+        try:
+            document = await self.enrich_custom_fields(document, **enrichment_kwargs)
+        except Exception as exc:
+            _log.warning(f"[DocumentProcessor] custom_fields enrichment skipped: {exc}")
 
         has_text_items = False
         for item, _ in document.iterate_items():
@@ -1926,7 +2009,7 @@ class DocumentProcessor:
             vectors: list[dict] = await self.compose_vectors(
                 document, chunks, file_path, request,
                 converted_pdf_path=converted_pdf_path,
-                **kwargs,
+                **enrichment_kwargs,
             )
         else:
             raise GenosServiceException(1, f"chunk length is 0")

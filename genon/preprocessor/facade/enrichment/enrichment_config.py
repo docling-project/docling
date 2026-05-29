@@ -101,12 +101,15 @@ class _MetadataConfig:
     temperature: float = 0.0
     timeout: int = 3600
     pages: Optional[list] = None
+    field_transforms: list = None
 
     def __post_init__(self):
         if self.parser is None:
             self.parser = {}
         if self.output_fields is None:
             self.output_fields = []
+        if self.field_transforms is None:
+            self.field_transforms = []
 
 
 # ── Main dataclass ────────────────────────────────────────────────────────────
@@ -259,6 +262,7 @@ class EnrichmentConfig:
                 temperature=float(metadata_opts.get("temperature", 0.0)),
                 timeout=int(metadata_opts.get("timeout", 3600)),
                 pages=meta_pages,
+                field_transforms=list(metadata_opts.get("field_transforms") or []),
             ),
             image_description_cfg=image_desc_cfg,
             custom_fields_cfgs=custom_fields_cfgs,
@@ -389,6 +393,7 @@ class EnrichmentConfig:
                 temperature=float(meta_cfg.get("temperature", 0.0)),
                 timeout=int(meta_cfg.get("timeout", 3600)),
                 pages=meta_pages_d,
+                field_transforms=list(meta_cfg.get("field_transforms") or []),
             ),
             image_description_cfg=_as_dict(cfg.get("image_description")),
             custom_fields_cfgs=cf_list,

@@ -55,10 +55,9 @@ pdf_pipeline:
 enrichment:
   - toc:
       enable: true
-      doc_type: "law"  # 목차 추출 도메인 힌트 (예: law, finance, general). 기본 "law"
       # 동작 보존: 기존 하드코딩 값(서빙 502)을 그대로 사용
-      url: "https://genos.genon.ai:3443/api/gateway/rep/serving/502/v1/chat/completions"
-      api_key: "022653a3743849e299f19f19d323490b"
+      url: "https://genos.genon.ai/api/gateway/rep/serving/750/v1/chat/completions"
+      api_key: "26e6a516de0847f59a3b9db8e418976e"
       model: "model"
       temperature: 0.0
       top_p: 0.00001
@@ -137,16 +136,29 @@ enrichment:
   - metadata:
       enable: true
       # 동작 보존: 기존 하드코딩 값(서빙 502)을 그대로 사용
-      # (docling 내장 metadata 추출만 사용 — 아래 system/user_prompt·output_fields·parser·pages 는 미사용)
-      url: "https://genos.genon.ai:3443/api/gateway/rep/serving/502/v1/chat/completions"
-      api_key: "022653a3743849e299f19f19d323490b"
+      # system_prompt 가 설정되면 facade custom metadata enricher를 사용하고,
+      # 비어있으면 docling 내장 metadata 추출 경로를 사용한다.
+      url: "https://genos.genon.ai/api/gateway/rep/serving/750/v1/chat/completions"
+      api_key: "26e6a516de0847f59a3b9db8e418976e"
       model: "model"
       max_tokens: 10000
       temperature: 0.0
       timeout: 3600
       pages: [1,4]  # null = 첫 4페이지 (docling 기존 동작과 동일)
       # output_fields: 프롬프트의 JSON 키와 일치해야 함
-      output_fields: [작성일, 작성자]
+      output_fields: [created_date, authors]
+      # field_transforms: 추출 키 → 벡터 메타 필드 + 타입 변환 매핑 (선언적).
+      #   - source : 출력에서 찾을 후보 키. 문자열 1개 또는 list(순서대로 탐색).
+      #   - target : 벡터 메타 필드명 (생략 시 source 첫 키).
+      #   - type   : 값 변환기. 현재 지원: date_int (날짜 텍스트 → YYYYMMDD 정수).
+      #   - fallback: (옵션) 추출 실패 시 보조 추출. 현재 지원: doc_text_scan (본문 휴리스틱).
+      # 생략하면 아래 기본값(created_date 동작)이 그대로 적용된다(하위 호환).
+      # 프롬프트가 바뀌어 키 이름이 달라지면 source 만 수정하면 된다.
+      # field_transforms:
+      #   - source: [created_date, 작성일]
+      #     target: created_date
+      #     type: date_int
+      #     fallback: doc_text_scan
       parser:
         type: json
         # extract_pattern: '<date>(.*?)</date>'
@@ -170,10 +182,10 @@ enrichment:
         출력 형식은 반드시 아래와 같이 맞춰주세요 (JSON 형식):
 
         {
-          "작성일": "YYYY-MM-DD",
-          "작성자": [
-            {"이름": "조용범", "소속": "채권시장팀", "직책": "과장", "전화": "4751"},
-            {"이름": "임인혁", "소속": "주식시장팀", "직책": "과장", "전화": "4672"}
+          "created_date": "YYYY-MM-DD",
+          "authors": [
+            {"name": "조용범", "affiliation": "채권시장팀", "position": "과장", "phone": "4751"},
+            {"name": "임인혁", "affiliation": "주식시장팀", "position": "과장", "phone": "4672"}
           ]
         }
       precheck:
@@ -181,8 +193,8 @@ enrichment:
         max_context_tokens: 128000
         completion_reserved_tokens: 12000
 
-  # NOTE: image_description / custom_fields 는 이 프로세서에서 미사용(facade enricher 미구성).
-  #       EnrichmentConfig 가 파싱하더라도 __init__ 이 사용하지 않으므로 enable:false 로 명시.
+  # NOTE: image_description / custom_fields 는 facade 후처리 enricher로 동작한다.
+  #       필요 시 enable 값을 조정해서 사용.
   - image_description:
       enable: false
       url: "https://genos.genon.ai/api/gateway/rep/serving/750/v1/chat/completions"
@@ -213,7 +225,7 @@ enrichment:
   # ── 커스텀 LLM enricher ────────────────────────────────────────────────────
   # 복수 항목 허용: 각각 독립 LLM 호출, 결과는 metadata 병합
   - custom_fields:
-      enable: false  # (미사용) 이 프로세서는 custom_fields_enrichers=[] 고정
+      enable: false
       url: "https://genos.genon.ai/api/gateway/rep/serving/750/v1/chat/completions"
       api_key: "26e6a516de0847f59a3b9db8e418976e"
       model: "model"
@@ -243,5 +255,5 @@ enrichment:
         {{raw_text}}
         </document>         # json(default) | python
   - custom_fields:
-      enable: false  # (미사용) 이 프로세서는 custom_fields_enrichers=[] 고정
+      enable: false
       config_file: custom_field_authors.yaml   # resource_path 자동 = 이 yaml 파일 디렉토리
