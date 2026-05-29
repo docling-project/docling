@@ -1343,7 +1343,7 @@ class DocumentProcessor:
         else:
             appendix_list = []
 
-        custom_metadata = kwargs.get("_enrichment_context", {}).get("custom_metadata", {}) if isinstance(kwargs.get("_enrichment_context"), dict) else {}
+        custom_metadata = kwargs.get("_enrichment_context", {}).get("metadata", {}) if isinstance(kwargs.get("_enrichment_context"), dict) else {}
         global_metadata = dict(
             n_chunk_of_doc=len(chunks),
             n_page=document.num_pages(),

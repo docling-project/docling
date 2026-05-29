@@ -1,0 +1,53 @@
+# CustomFieldsEnricher 외부 config 예시 — 작성자(authors) 추출
+#
+# 사용법 (intelligent_config_shkim.yaml):
+#   - custom_fields:
+#       config_file: authors_fields.yaml   # resource_path 불필요 (자동 해석)
+#
+# 이 파일은 intelligent_config_shkim.yaml과 동일한 폴더에 위치해야 함.
+# 인라인에서 null이 아닌 값을 지정하면 이 파일의 값보다 우선 적용됨.
+
+# ── LLM 연결 ────────────────────────────────────────────────────────────────
+url: https://genos.genon.ai/api/gateway/rep/serving/750/v1/chat/completions
+api_key: "26e6a516de0847f59a3b9db8e418976e"
+model: model
+
+# ── LLM 생성 파라미터 ────────────────────────────────────────────────────────
+max_tokens: 800
+temperature: 0.0
+timeout: 60
+
+# ── 입력 페이지 범위 ─────────────────────────────────────────────────────────
+# null 또는 미지정 → 전체 문서
+pages: [1]
+
+# ── 외부 파서 (선택) ─────────────────────────────────────────────────────────
+# parser.file 경로는 이 yaml 파일이 위치한 디렉토리 기준으로 해석됨
+# parser:
+#   type: python
+#   file: custom_field_authors.py
+#   callable: parse
+
+# ── 프롬프트 ─────────────────────────────────────────────────────────────────
+system_prompt: |
+  너는 문서 정보추출 전문가다. 반드시 JSON 객체만 반환한다.
+  작성자가 여러 명이면 authors 배열에 모두 포함한다.
+  값이 없으면 null 또는 빈 배열([])을 반환한다.
+
+user_prompt: |
+  아래 문서에서 작성자(authors) 정보를 추출하라.
+
+  각 작성자는 다음 두 가지 정보를 포함한다:
+  - name: 작성자 이름
+  - affiliation: 소속 기관 또는 부서 (없으면 null)
+
+  반드시 아래 JSON 포맷으로만 반환하라:
+  {"authors2": [{"name": "이름", "affiliation": "소속"}]}
+
+  <document>
+  {{raw_text}}
+  </document>
+
+# ── 출력 필드 ─────────────────────────────────────────────────────────────────
+output_fields:
+  - authors2

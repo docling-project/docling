@@ -112,6 +112,11 @@ try:
 except ImportError:
     CustomFieldsEnricher = None  # type: ignore[assignment,misc]
 
+try:
+    from genon.preprocessor.facade.enrichment.metadata_enricher import MetadataEnricher
+except ImportError:
+    MetadataEnricher = None  # type: ignore[assignment,misc]
+
 from genon.preprocessor.facade.enrichment.enrichment_config import EnrichmentConfig
 
 try:
@@ -1151,10 +1156,32 @@ class IntelligentDocumentProcessor:
             if CustomFieldsEnricher is not None else []
         )
 
+        # yaml에 system_prompt가 지정된 경우 커스텀 MetadataEnricher를 사용한다.
+        # 지정되지 않은 경우 docling 내장 enricher가 동작한다 (하위 호환).
+        self.metadata_enricher: "Optional[MetadataEnricher]" = (
+            MetadataEnricher(
+                url=ec.metadata.url,
+                api_key=ec.metadata.api_key,
+                model=ec.metadata.model,
+                system_prompt=ec.metadata.system_prompt,
+                user_prompt=ec.metadata.user_prompt,
+                output_fields=ec.metadata.output_fields,
+                parser=ec.metadata.parser,
+                pages=ec.metadata.pages,
+                max_tokens=ec.metadata.max_tokens,
+                temperature=ec.metadata.temperature,
+                timeout=ec.metadata.timeout,
+                config_dir=self._config_dir,
+            )
+            if MetadataEnricher is not None and ec.metadata.do_metadata and ec.metadata.system_prompt
+            else None
+        )
+
         self.enrichment_options = DataEnrichmentOptions(
             do_toc_enrichment=ec.toc.do_toc,
             toc_doc_type="law",
-            extract_metadata=ec.metadata.do_metadata,
+            # 커스텀 MetadataEnricher가 있으면 docling 내장 비활성화
+            extract_metadata=ec.metadata.do_metadata and self.metadata_enricher is None,
             toc_api_provider="custom",
             metadata_api_provider="custom",
             toc_api_base_url=ec.toc.url,
@@ -1173,8 +1200,8 @@ class IntelligentDocumentProcessor:
             metadata_precheck_enabled=ec.metadata.precheck_enabled,
             metadata_max_context_tokens=ec.metadata.precheck_max_context_tokens,
             metadata_completion_reserved_tokens=ec.metadata.precheck_completion_reserved_tokens,
-            toc_system_prompt=_toc_system_prompt,
-            toc_user_prompt=_toc_user_prompt,
+            toc_system_prompt=ec.toc.system_prompt or _toc_system_prompt,
+            toc_user_prompt=ec.toc.user_prompt or _toc_user_prompt,
         )
 
     @staticmethod
@@ -1329,6 +1356,12 @@ class IntelligentDocumentProcessor:
     def enrich_image_descriptions(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
         enricher = self._get_or_create_image_description_enricher()
         return enricher.enrich(document, **kwargs)
+
+    async def enrich_metadata(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        enricher = getattr(self, "metadata_enricher", None)
+        if enricher is not None:
+            document = await enricher.enrich(document, **kwargs)
+        return document
 
     async def enrich_custom_fields(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
         for enricher in self.custom_fields_enrichers:
@@ -1783,6 +1816,10 @@ class DocumentProcessor:
         except Exception as exc:
             _log.warning(f"[DocumentProcessor] facade image enrichment skipped: {exc}")
         try:
+            document = await self._intel.enrich_metadata(document, **kwargs)
+        except Exception as exc:
+            _log.warning(f"[DocumentProcessor] metadata enrichment skipped: {exc}")
+        try:
             document = await self._intel.enrich_custom_fields(document, **kwargs)
         except Exception as exc:
             _log.warning(f"[DocumentProcessor] custom_fields enrichment skipped: {exc}")
@@ -2156,24 +2193,24 @@ class DocumentProcessor:
             doc = self._parse_hwp_hwpx(file_path, **kwargs)
             doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
             result = self._build_docling_response(doc)
-            if enrichment_context.get("custom_metadata"):
-                result["custom_metadata"] = enrichment_context["custom_metadata"]
+            if enrichment_context.get("metadata"):
+                result["metadata"] = enrichment_context["metadata"]
             return self._normalize_response(result)
 
         if ext == ".docx":
             doc = self._parse_docx(file_path, **kwargs)
             doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
             result = self._build_docling_response(doc, clear_coordinates=True)
-            if enrichment_context.get("custom_metadata"):
-                result["custom_metadata"] = enrichment_context["custom_metadata"]
+            if enrichment_context.get("metadata"):
+                result["metadata"] = enrichment_context["metadata"]
             return self._normalize_response(result)
 
         if ext in (".pdf", ".html", ".htm"):
             doc = self._parse_docling(file_path, _enrichment_context=enrichment_context, **kwargs)
             doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
             result = self._build_docling_response(doc)
-            if enrichment_context.get("custom_metadata"):
-                result["custom_metadata"] = enrichment_context["custom_metadata"]
+            if enrichment_context.get("metadata"):
+                result["metadata"] = enrichment_context["metadata"]
             return self._normalize_response(result)
 
         # 기타 포맷: doc, ppt, pptx, txt, json, md, jpg, jpeg, png 등

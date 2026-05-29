@@ -176,11 +176,25 @@ class PromptManager:
         config = self.get_prompt_config(category, prompt_type)
         return config.get("user") if config else None
 
+    @staticmethod
+    def _normalize_raw_text_placeholder(template: str, **kwargs: Any) -> str:
+        """`{{raw_text}}`를 `{raw_text}`의 별칭으로 허용한다.
+
+        - `raw_text`가 실제로 주입되는 경우에만 정규화한다.
+        - 이미 `{raw_text}`가 포함된 템플릿은 건드리지 않는다.
+        - JSON 예시 표현용 `{{ ... }}` 는 그대로 보존한다.
+        """
+        has_single_placeholder = "{raw_text}" in template.replace("{{raw_text}}", "")
+        if "raw_text" in kwargs and not has_single_placeholder and "{{raw_text}}" in template:
+            return template.replace("{{raw_text}}", "{raw_text}")
+        return template
+
     def format_user_prompt(self, category: str, prompt_type: str, custom_user: Optional[str] = None, **kwargs) -> Optional[str]:
         """사용자 프롬프트 템플릿에 변수를 삽입하여 완성된 프롬프트 반환"""
         template = self.get_user_prompt_template(category, prompt_type, custom_user)
         if template is None:
             return None
+        template = self._normalize_raw_text_placeholder(template, **kwargs)
 
         try:
             return template.format(**kwargs)
@@ -507,6 +521,7 @@ class PromptManager:
         user_template = self.get_user_prompt_template(category, prompt_type, custom_user)
         if system_prompt is None or user_template is None:
             return None
+        user_template = self._normalize_raw_text_placeholder(user_template, raw_text=raw_text)
 
         # {raw_text} 플레이스홀더가 없다면 안전하게 붙여준다.
         if "{raw_text}" not in user_template:

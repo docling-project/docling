@@ -79,6 +79,8 @@ class _TocConfig:
     precheck_enabled: Optional[bool]
     precheck_max_context_tokens: Optional[int]
     precheck_completion_reserved_tokens: Optional[int]
+    system_prompt: Optional[str] = None
+    user_prompt: Optional[str] = None
 
 
 @dataclass
@@ -90,6 +92,20 @@ class _MetadataConfig:
     precheck_enabled: Optional[bool]
     precheck_max_context_tokens: Optional[int]
     precheck_completion_reserved_tokens: Optional[int]
+    system_prompt: Optional[str] = None
+    user_prompt: Optional[str] = None
+    parser: dict = None
+    output_fields: list = None
+    max_tokens: int = 10000
+    temperature: float = 0.0
+    timeout: int = 3600
+    pages: Optional[list] = None
+
+    def __post_init__(self):
+        if self.parser is None:
+            self.parser = {}
+        if self.output_fields is None:
+            self.output_fields = []
 
 
 # ── Main dataclass ────────────────────────────────────────────────────────────
@@ -170,6 +186,8 @@ class EnrichmentConfig:
                     metadata_enabled = True
                     metadata_precheck = opts.pop("precheck", {})
                     metadata_opts = opts
+                else:
+                    metadata_opts = {}
             elif category == "image_description":
                 if enabled:
                     opts.setdefault("enabled", True)
@@ -178,9 +196,26 @@ class EnrichmentConfig:
                     image_desc_cfg = {"enabled": False}
             elif category == "custom_fields":
                 if enabled and opts:
-                    if "config_file" in opts and "resource_path" not in opts:
+                    if "resource_path" not in opts:
                         opts["resource_path"] = str(config_dir)
                     custom_fields_cfgs.append(opts)
+
+        toc_system_prompt = toc_opts.get("system_prompt") or None
+        toc_user_prompt = toc_opts.get("user_prompt") or None
+        if isinstance(toc_system_prompt, str):
+            toc_system_prompt = toc_system_prompt.strip() or None
+        if isinstance(toc_user_prompt, str):
+            toc_user_prompt = toc_user_prompt.strip() or None
+
+        meta_system_prompt = metadata_opts.get("system_prompt") or None
+        meta_user_prompt = metadata_opts.get("user_prompt") or None
+        if isinstance(meta_system_prompt, str):
+            meta_system_prompt = meta_system_prompt.strip() or None
+        if isinstance(meta_user_prompt, str):
+            meta_user_prompt = meta_user_prompt.strip() or None
+        meta_pages = metadata_opts.get("pages")
+        if not isinstance(meta_pages, list) or not meta_pages:
+            meta_pages = None
 
         return cls(
             toc=_TocConfig(
@@ -199,6 +234,8 @@ class EnrichmentConfig:
                 precheck_completion_reserved_tokens=_parse_optional_int(
                     toc_precheck.get("completion_reserved_tokens")
                 ),
+                system_prompt=toc_system_prompt,
+                user_prompt=toc_user_prompt,
             ),
             metadata=_MetadataConfig(
                 do_metadata=metadata_enabled,
@@ -212,6 +249,14 @@ class EnrichmentConfig:
                 precheck_completion_reserved_tokens=_parse_optional_int(
                     metadata_precheck.get("completion_reserved_tokens")
                 ),
+                system_prompt=meta_system_prompt,
+                user_prompt=meta_user_prompt,
+                parser=dict(metadata_opts.get("parser") or {}),
+                output_fields=list(metadata_opts.get("output_fields") or []),
+                max_tokens=int(metadata_opts.get("max_tokens", 10000)),
+                temperature=float(metadata_opts.get("temperature", 0.0)),
+                timeout=int(metadata_opts.get("timeout", 3600)),
+                pages=meta_pages,
             ),
             image_description_cfg=image_desc_cfg,
             custom_fields_cfgs=custom_fields_cfgs,
@@ -262,8 +307,25 @@ class EnrichmentConfig:
         else:
             cf_list = []
         for _cf in cf_list:
-            if "config_file" in _cf and "resource_path" not in _cf:
+            if "resource_path" not in _cf:
                 _cf["resource_path"] = str(config_dir)
+
+        toc_sp = toc_cfg.get("system_prompt") or None
+        toc_up = toc_cfg.get("user_prompt") or None
+        if isinstance(toc_sp, str):
+            toc_sp = toc_sp.strip() or None
+        if isinstance(toc_up, str):
+            toc_up = toc_up.strip() or None
+
+        meta_sp = meta_cfg.get("system_prompt") or None
+        meta_up = meta_cfg.get("user_prompt") or None
+        if isinstance(meta_sp, str):
+            meta_sp = meta_sp.strip() or None
+        if isinstance(meta_up, str):
+            meta_up = meta_up.strip() or None
+        meta_pages_d = meta_cfg.get("pages")
+        if not isinstance(meta_pages_d, list) or not meta_pages_d:
+            meta_pages_d = None
 
         return cls(
             toc=_TocConfig(
@@ -290,6 +352,8 @@ class EnrichmentConfig:
                 precheck_completion_reserved_tokens=_parse_optional_int(
                     toc_precheck_cfg.get("completion_reserved_tokens", common_reserved_tokens)
                 ),
+                system_prompt=toc_sp,
+                user_prompt=toc_up,
             ),
             metadata=_MetadataConfig(
                 do_metadata=bool(cfg.get("do_metadata", parent_cfg.get("do_metadata", True))),
@@ -314,6 +378,14 @@ class EnrichmentConfig:
                         common_reserved_tokens,
                     )
                 ),
+                system_prompt=meta_sp,
+                user_prompt=meta_up,
+                parser=dict(meta_cfg.get("parser") or {}),
+                output_fields=list(meta_cfg.get("output_fields") or []),
+                max_tokens=int(meta_cfg.get("max_tokens", 10000)),
+                temperature=float(meta_cfg.get("temperature", 0.0)),
+                timeout=int(meta_cfg.get("timeout", 3600)),
+                pages=meta_pages_d,
             ),
             image_description_cfg=_as_dict(cfg.get("image_description")),
             custom_fields_cfgs=cf_list,

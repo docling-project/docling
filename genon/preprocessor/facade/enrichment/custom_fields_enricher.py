@@ -283,6 +283,6 @@ class CustomFieldsEnricher(BaseEnricher):
 
         context = kwargs.get("_enrichment_context")
         if isinstance(context, dict):
-            context.setdefault("custom_metadata", {}).update(normalized)
+            context.setdefault("metadata", {}).update(normalized)
 
         return document
