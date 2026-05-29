@@ -81,6 +81,7 @@ class _TocConfig:
     precheck_completion_reserved_tokens: Optional[int]
     system_prompt: Optional[str] = None
     user_prompt: Optional[str] = None
+    doc_type: str = "law"
 
 
 @dataclass
@@ -236,6 +237,7 @@ class EnrichmentConfig:
                 ),
                 system_prompt=toc_system_prompt,
                 user_prompt=toc_user_prompt,
+                doc_type=str(toc_opts.get("doc_type", "law") or "law"),
             ),
             metadata=_MetadataConfig(
                 do_metadata=metadata_enabled,
@@ -354,6 +356,7 @@ class EnrichmentConfig:
                 ),
                 system_prompt=toc_sp,
                 user_prompt=toc_up,
+                doc_type=str(toc_cfg.get("doc_type", parent_cfg.get("toc_doc_type", "law")) or "law"),
             ),
             metadata=_MetadataConfig(
                 do_metadata=bool(cfg.get("do_metadata", parent_cfg.get("do_metadata", True))),

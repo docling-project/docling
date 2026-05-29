@@ -8,6 +8,20 @@ ocr:
   # engine: "paddle" 일 때만 사용
   ocr_endpoint: "http://192.168.73.172:48080/ocr"
 
+  # 글리프 깨진 테이블 셀 재OCR 시 HTTP timeout(초). 기본 60
+  table_cell_ocr_timeout: 60
+
+  # engine: "paddle" 일 때만 사용. text_score 미지정 시 0.3 기본
+  paddle:
+    text_score: 0.3
+
+  # 글리프 깨짐 기반 auto-OCR 재트리거 임계값
+  # table_cell_threshold: 셀 텍스트에 GLYPH 토큰이 N개 이상이면 재OCR(>= 비교, 기본 1)
+  # document_threshold: 문서 텍스트 아이템 GLYPH 토큰이 N개 초과면 OCR 경로 재시도(> 비교, 기본 10)
+  glyph_detection:
+    table_cell_threshold: 1
+    document_threshold: 10
+
   # engine: "upstage" 일 때만 사용
   upstage:
     api_endpoint: "https://api.upstage.ai/v1/document-digitization"
@@ -23,6 +37,16 @@ layout:
     endpoint: "http://192.168.75.174:26001/v1/chat/completions"
     api_key: ""
     page_batch_size: 32
+
+# ── PDF 파이프라인 ─────────────────────────────────────────────────────────────
+# docling PDF 파싱 성능/품질 노브. 키 생략 시 아래 기본값과 동일하게 동작.
+pdf_pipeline:
+  num_threads: 8                     # accelerator 스레드 수 (호스트 CPU에 맞게 조정)
+  device: "auto"                     # "auto"(default) | "cpu" | "cuda" | "mps"
+  images_scale: 2                    # 페이지/그림 이미지 렌더 배율 (품질↔메모리)
+  generate_page_images: true         # false 로 두면 메모리 절감
+  generate_picture_images: true      # false 로 두면 이미지 설명 enrichment 가 비활성화됨
+  table_structure_mode: "accurate"   # "accurate"(default, 품질) | "fast"(속도)
 
 # ── enrichment ────────────────────────────────────────────────────────────────
 # 각 항목은 {이름: {옵션}} 형식의 list.
@@ -229,3 +253,4 @@ whisper:
   stream: "false"
   timestamp_granularities: "word"
   chunk_sec: 29
+  chunk_overlap_ms: 300  # 청크 간 겹침(ms). 전사 경계 품질 노브. 기본 300

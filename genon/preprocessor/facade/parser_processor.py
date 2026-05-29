@@ -1,18 +1,3 @@
-"""
-parser_processor.py — 자체 완결형 파서 파사드.
-
-intelligent_processor.py 와 attachment_processor.py 에서 파싱에 필요한 코드만
-복사하여 단일 파일로 구성. 청킹/벡터 조합은 수행하지 않는다.
-
-포맷별 처리 경로:
-  .pdf              → IntelligentDocumentProcessor (load → OCR검사 → enrichment)
-  .hwp / .hwpx      → HwpDocumentLoader.load_documents()
-  .docx             → DocxDocumentLoader.load_documents()
-  .wav/.mp3/.m4a    → AudioLoader.transcribe_audio()
-  .csv / .xlsx      → TabularLoader.data_dict
-  기타              → GenericDocumentLoader.load_documents()  (LangChain Document 목록)
-"""
-
 from __future__ import annotations
 
 import base64
@@ -197,6 +182,21 @@ def _parse_optional_int(value: Any, key: str = "") -> Optional[int]:
         return None
 
 
+
+
+# pdf_pipeline.device / pdf_pipeline.table_structure_mode 의 yaml 문자열 → docling enum 매핑.
+# 키가 없거나 알 수 없는 값이면 호출부에서 경고 + 기본값으로 폴백한다 (startup 견고성).
+_ACCELERATOR_DEVICE_MAP = {
+    "auto": AcceleratorDevice.AUTO,
+    "cpu": AcceleratorDevice.CPU,
+    "cuda": AcceleratorDevice.CUDA,
+    "mps": AcceleratorDevice.MPS,
+}
+
+_TABLE_FORMER_MODE_MAP = {
+    "accurate": TableFormerMode.ACCURATE,
+    "fast": TableFormerMode.FAST,
+}
 
 
 def _resolve_default_parser_config_path() -> str:
@@ -471,10 +471,11 @@ class TabularLoader:
 
 class AudioLoader:
     def __init__(self, file_path: str, req_url: str, req_data: dict,
-                 chunk_sec: int = 29, tmp_path: str = '.'):
+                 chunk_sec: int = 29, tmp_path: str = '.', chunk_overlap_ms: int = 300):
         self.file_path = file_path
         self.tmp_path = tmp_path
         self.chunk_sec = chunk_sec
+        self.chunk_overlap_ms = chunk_overlap_ms
         self.req_url = req_url
         self.req_data = req_data
 
@@ -484,7 +485,7 @@ class AudioLoader:
         n_chunks = math.ceil(len(audio) / chunk_len)
         for i in range(n_chunks):
             start_ms = i * chunk_len
-            overlap_start_ms = start_ms - 300 if start_ms > 0 else start_ms
+            overlap_start_ms = start_ms - self.chunk_overlap_ms if start_ms > 0 else start_ms
             end_ms = start_ms + chunk_len
             audio_chunk = audio[overlap_start_ms:end_ms]
             audio_chunk.export(os.path.join(self.tmp_path, "tmp_{}.wav".format(str(i))), format="wav")
@@ -506,79 +507,6 @@ class AudioLoader:
             t.join()
         transcribed_text_chunks.sort(key=lambda x: x['file_name'])
         return "[AUDIO]" + ' '.join([t['text'] for t in transcribed_text_chunks])
-
-
-# ============================================================
-# Enrichment 프롬프트 (from intelligent_processor.py)
-# ============================================================
-
-_toc_system_prompt = """You are an expert at generating table of contents (목차) from Korean documents. You specialize in regulatory documents, terms of service, contracts, and mixed-format documents that combine formal regulatory structures with general section headers.
-""".strip()
-
-_toc_user_prompt = """
-Here is the Korean document you need to analyze:
-
-<document>
-{raw_text}
-</document>
-
-Your task is to extract and organize all structural elements from this document into a hierarchical table of contents. Korean documents often have mixed structures where some sections follow formal regulatory patterns (제x장/절/관/조) while others use general section numbering and headers.
-
-## Analysis Process
-
-Before generating the final table of contents, work through the document systematically in `<analysis>` tags. It's OK for this section to be quite long. Follow these steps:
-
-1. **Document Title Extraction**: Quote the main document title exactly as it appears at the beginning of the document.
-
-2. **Structural Marker Identification**: Scan through the document and quote all the key structural markers you find, such as:
-   - Formal regulatory patterns: 제x장, 제x절, 제x관, 제x조
-   - General section patterns: numbered headers (1., 2., etc.), lettered headers (가., 나., etc.)
-   - Special sections: 부칙, 별지, 별표, etc.
-
-3. **Systematic Section Extraction**: Work through the document from beginning to end, extracting each structural element in order:
-   - For each main section, quote the exact title as it appears
-   - For each subsection, quote the exact title and note which main section it belongs under
-   - For each article/item, quote the exact title and note its parent section
-   - Include any appendices, attachments, and addenda
-
-4. **Hierarchy Building**: For each extracted element, explicitly note:
-   - What level it should be at (main section, subsection, sub-subsection, etc.)
-   - What its parent section is (if any)
-   - What numbering it should receive in the final TOC (1., 1.1., 1.1.1., etc.)
-
-5. **Structure Verification**: Review your extracted elements to ensure:
-   - All structural elements are captured in document order
-   - The hierarchy makes logical sense
-   - No elements are duplicated or missed
-
-## Output Requirements
-
-After your analysis, generate the table of contents with this exact format:
-
-```
-<toc>
-TITLE:<document title>
-1. <first main section title>
-1.1. <first subsection title>
-1.1.1. <first sub-subsection title>
-1.2. <second subsection title>
-2. <second main section title>
-2.1. <subsection under second main section>
-3. <third main section title>
-</toc>
-```
-
-## Formatting Guidelines
-
-- Start with `TITLE:` followed by the document title
-- Use hierarchical decimal numbering (1, 1.1, 1.1.1, etc.)
-- Follow each number with a space and the original title exactly as it appears
-- Maintain the document's logical hierarchy
-- Include appendices, attachments, and addenda as separate top-level items
-- Extract titles exactly as they appear - do not include explanatory content
-- Handle both formal regulatory structures and general section headers
-- Wrap the entire table of contents in `<toc></toc>` tags
-""".strip()
 
 
 # ============================================================
@@ -1067,9 +995,33 @@ class IntelligentDocumentProcessor:
         self._config_dir = Path(config_path).resolve().parent if config_path else Path.cwd()
         ocr_cfg = _as_dict(cfg.get("ocr"))
         layout_cfg = _as_dict(cfg.get("layout"))
+        pdf_cfg = _as_dict(cfg.get("pdf_pipeline"))
         ec = EnrichmentConfig.from_raw(cfg.get("enrichment"), self._config_dir, parent_cfg=cfg)
 
         ocr_ep = ocr_cfg.get("ocr_endpoint") or cfg.get("ocr_endpoint", "")
+
+        # 테이블 셀 재OCR HTTP timeout (ocr_all_table_cells). 잘못된 값은 60 으로 폴백.
+        table_cell_ocr_timeout = _parse_optional_int(
+            ocr_cfg.get("table_cell_ocr_timeout"), "ocr.table_cell_ocr_timeout"
+        )
+        self._table_cell_ocr_timeout = (
+            table_cell_ocr_timeout if table_cell_ocr_timeout and table_cell_ocr_timeout > 0 else 60
+        )
+
+        # 글리프 기반 auto-OCR 재트리거 임계값.
+        glyph_cfg = _as_dict(ocr_cfg.get("glyph_detection"))
+        glyph_cell_th = _parse_optional_int(
+            glyph_cfg.get("table_cell_threshold"), "ocr.glyph_detection.table_cell_threshold"
+        )
+        self._glyph_table_cell_threshold = (
+            glyph_cell_th if glyph_cell_th and glyph_cell_th > 0 else 1
+        )
+        glyph_doc_th = _parse_optional_int(
+            glyph_cfg.get("document_threshold"), "ocr.glyph_detection.document_threshold"
+        )
+        self._glyph_document_threshold = (
+            glyph_doc_th if glyph_doc_th and glyph_doc_th > 0 else 10
+        )
         raw_ocr_mode = str(ocr_cfg.get("ocr_mode", cfg.get("ocr_mode", "auto"))).lower().strip()
         if raw_ocr_mode not in {"auto", "force", "disable"}:
             _log.warning(f"[IntelligentDocumentProcessor] Unknown ocr_mode '{raw_ocr_mode}', fallback to 'auto'")
@@ -1110,16 +1062,50 @@ class IntelligentDocumentProcessor:
             self.ocr_endpoint = ocr_ep
 
         self.page_chunk_counts = defaultdict(int)
-        device = AcceleratorDevice.AUTO
-        num_threads = 8
+
+        device_str = str(pdf_cfg.get("device", "auto")).lower().strip()
+        device = _ACCELERATOR_DEVICE_MAP.get(device_str)
+        if device is None:
+            _log.warning(
+                f"[IntelligentDocumentProcessor] Unknown pdf_pipeline.device '{device_str}', fallback to 'auto'"
+            )
+            device = AcceleratorDevice.AUTO
+
+        num_threads = _parse_optional_int(pdf_cfg.get("num_threads"), "pdf_pipeline.num_threads")
+        if num_threads is None or num_threads <= 0:
+            num_threads = 8
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
 
+        images_scale = _parse_optional_int(pdf_cfg.get("images_scale"), "pdf_pipeline.images_scale")
+        if images_scale is None or images_scale <= 0:
+            images_scale = 2
+
+        generate_page_images = _parse_optional_bool(
+            pdf_cfg.get("generate_page_images"), "pdf_pipeline.generate_page_images"
+        )
+        generate_picture_images = _parse_optional_bool(
+            pdf_cfg.get("generate_picture_images"), "pdf_pipeline.generate_picture_images"
+        )
+
+        table_mode_str = str(pdf_cfg.get("table_structure_mode", "accurate")).lower().strip()
+        table_structure_mode = _TABLE_FORMER_MODE_MAP.get(table_mode_str)
+        if table_structure_mode is None:
+            _log.warning(
+                f"[IntelligentDocumentProcessor] Unknown pdf_pipeline.table_structure_mode "
+                f"'{table_mode_str}', fallback to 'accurate'"
+            )
+            table_structure_mode = TableFormerMode.ACCURATE
+
         self.pipe_line_options = PdfPipelineOptions()
-        self.pipe_line_options.generate_page_images = True
-        self.pipe_line_options.generate_picture_images = True
+        self.pipe_line_options.generate_page_images = (
+            True if generate_page_images is None else generate_page_images
+        )
+        self.pipe_line_options.generate_picture_images = (
+            True if generate_picture_images is None else generate_picture_images
+        )
         self.pipe_line_options.do_ocr = False
         self.pipe_line_options.ocr_options = ocr_options
-        self.pipe_line_options.images_scale = 2
+        self.pipe_line_options.images_scale = images_scale
 
         self.pipe_line_options.layout_options.layout_model_type = layout_model_type
         self.pipe_line_options.layout_options.genos_layout_options.endpoint = layout_ep
@@ -1129,7 +1115,7 @@ class IntelligentDocumentProcessor:
 
         self.pipe_line_options.do_table_structure = True
         self.pipe_line_options.table_structure_options.do_cell_matching = True
-        self.pipe_line_options.table_structure_options.mode = TableFormerMode.ACCURATE
+        self.pipe_line_options.table_structure_options.mode = table_structure_mode
         self.pipe_line_options.accelerator_options = accelerator_options
 
         self.simple_pipeline_options = PipelineOptions()
@@ -1179,7 +1165,7 @@ class IntelligentDocumentProcessor:
 
         self.enrichment_options = DataEnrichmentOptions(
             do_toc_enrichment=ec.toc.do_toc,
-            toc_doc_type="law",
+            toc_doc_type=ec.toc.doc_type,
             # 커스텀 MetadataEnricher가 있으면 docling 내장 비활성화
             extract_metadata=ec.metadata.do_metadata and self.metadata_enricher is None,
             toc_api_provider="custom",
@@ -1200,8 +1186,8 @@ class IntelligentDocumentProcessor:
             metadata_precheck_enabled=ec.metadata.precheck_enabled,
             metadata_max_context_tokens=ec.metadata.precheck_max_context_tokens,
             metadata_completion_reserved_tokens=ec.metadata.precheck_completion_reserved_tokens,
-            toc_system_prompt=ec.toc.system_prompt or _toc_system_prompt,
-            toc_user_prompt=ec.toc.user_prompt or _toc_user_prompt,
+            toc_system_prompt=ec.toc.system_prompt,
+            toc_user_prompt=ec.toc.user_prompt,
         )
 
     @staticmethod
@@ -1260,11 +1246,32 @@ class IntelligentDocumentProcessor:
                 text_score=upstage_text_score,
             )
 
+        paddle_cfg = _as_dict(ocr_cfg.get("paddle"))
+
+        raw_lang = paddle_cfg.get("lang", ["korean"])
+        if isinstance(raw_lang, list) and raw_lang:
+            paddle_lang = raw_lang
+        else:
+            if raw_lang not in (None, [], ["korean"]):
+                _log.warning(
+                    f"[IntelligentDocumentProcessor] Invalid ocr.paddle.lang '{raw_lang}', fallback to ['korean']"
+                )
+            paddle_lang = ["korean"]
+
+        raw_text_score = paddle_cfg.get("text_score", 0.3)
+        try:
+            paddle_text_score = float(raw_text_score)
+        except (TypeError, ValueError):
+            _log.warning(
+                f"[IntelligentDocumentProcessor] Invalid ocr.paddle.text_score '{raw_text_score}', fallback to 0.3"
+            )
+            paddle_text_score = 0.3
+
         return PaddleOcrOptions(
             force_full_page_ocr=False,
-            lang=['korean'],
+            lang=paddle_lang,
             ocr_endpoint=paddle_endpoint,
-            text_score=0.3,
+            text_score=paddle_text_score,
         )
 
     def _create_converters(self):
@@ -1380,7 +1387,7 @@ class IntelligentDocumentProcessor:
         for item, level in document.iterate_items():
             if isinstance(item, TextItem) and hasattr(item, 'prov') and item.prov:
                 matches = re.findall(r'GLYPH\w*', item.text)
-                if len(matches) > 10:
+                if len(matches) > self._glyph_document_threshold:
                     return True
         return False
 
@@ -1423,7 +1430,7 @@ class IntelligentDocumentProcessor:
 
                 b_ocr = False
                 for cell_idx, cell in enumerate(table_item.data.table_cells):
-                    if self.check_glyph_text(cell.text, threshold=1):
+                    if self.check_glyph_text(cell.text, threshold=self._glyph_table_cell_threshold):
                         b_ocr = True
                         break
 
@@ -1453,7 +1460,7 @@ class IntelligentDocumentProcessor:
                     pix = page.get_pixmap(matrix=mat, clip=cell_bbox)
                     img_data = pix.tobytes("png")
 
-                    result = post_ocr_bytes(img_data, timeout=60)
+                    result = post_ocr_bytes(img_data, timeout=self._table_cell_ocr_timeout)
                     rec_texts, rec_scores, rec_boxes = extract_ocr_fields(result)
 
                     cell.text = ""
@@ -1703,6 +1710,14 @@ class DocumentProcessor:
             _log.warning("[DocumentProcessor] Invalid whisper.chunk_sec value, fallback to 29")
             self._whisper_chunk_sec = 29
 
+        try:
+            self._whisper_chunk_overlap_ms = int(
+                whisper_cfg.get("chunk_overlap_ms", attach_cfg.get("whisper_chunk_overlap_ms", 300))
+            )
+        except (TypeError, ValueError):
+            _log.warning("[DocumentProcessor] Invalid whisper.chunk_overlap_ms value, fallback to 300")
+            self._whisper_chunk_overlap_ms = 300
+
         output_cfg = _as_dict(cfg.get("output"))
         self._output_format = self._normalize_output_format(output_cfg.get("format", "json"))
         self._table_format = self._normalize_table_format(output_cfg.get("table_format", "html"))
@@ -1791,6 +1806,7 @@ class DocumentProcessor:
                 req_url=self._whisper_url,
                 req_data=self._whisper_req_data,
                 chunk_sec=self._whisper_chunk_sec,
+                chunk_overlap_ms=self._whisper_chunk_overlap_ms,
                 tmp_path=tmp_path,
             )
             audio_chunks = loader.split_file_as_chunks()
