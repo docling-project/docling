@@ -19,6 +19,7 @@ The goal was to add a new `MLX` engine type to Docling's pluggable object-detect
 | `docling/datamodel/stage_model_specs.py` | Added `layout_heron_mlx` preset and MLX support in `from_preset()` |
 | `docling/datamodel/pipeline_options.py` | Registered the new preset |
 | `docling/models/stages/layout/layout_object_detection_model.py` | Fixed label mapping to handle hyphens and spaces in model label names |
+| `docling/cli/main.py` | Added `--layout-preset` CLI flag for selecting layout model presets |
 | `pyproject.toml` | Added `models-layout-mlx` optional dependency group |
 
 ### Architecture
@@ -101,6 +102,14 @@ uv pip install 'mlx-vlm @ git+https://github.com/Blaizzy/mlx-vlm.git@main'
 ```
 
 ### Usage
+
+**CLI (recommended):**
+
+```bash
+docling document.pdf --layout-preset layout_heron_mlx --to md --output /tmp/output
+```
+
+**Python API:**
 
 ```python
 from docling.document_converter import DocumentConverter, PdfFormatOption, InputFormat
