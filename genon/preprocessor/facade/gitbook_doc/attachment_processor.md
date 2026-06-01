@@ -1,60 +1,292 @@
+# 첨부용 전처리기 매뉴얼
 
+채팅 중 첨부 파일을 실시간으로 분석하기 위한 속도 중심 경량 전처리기입니다.
 
-# `attachment_processor.py` 코드 상세 설명서
+> **이 문서의 핵심**: 전처리기의 동작은 코드 수정이 아니라 **`attachment_processor_config.yaml` 옵션으로 제어**합니다. 대부분의 튜닝은 이 설정 파일만 편집하면 됩니다. 코드 내부는 [부록](#부록-코드-내부-상세)에서 보조 참고용으로 다룹니다.
 
 ---
 
-## 📌 목차
+## 목차
 
 1. [개요](#1-개요)
-2. [전체 아키텍처](#2-전체-아키텍처)
-3. [임포트 및 초기 설정](#3-임포트-및-초기-설정)
-4. [유틸리티 함수](#4-유틸리티-함수)
-   - 4.1 [`convert_to_pdf()`](#41-convert_to_pdf)
-   - 4.2 [`_get_pdf_path()`](#42-_get_pdf_path)
-   - 4.3 [`install_packages()`](#43-install_packages)
-5. [데이터 모델](#5-데이터-모델)
-   - 5.1 [`GenOSVectorMeta`](#51-genosvectormeta)
-   - 5.2 [`GenOSVectorMetaBuilder`](#52-genosvectormetabuilder)
-6. [파일 로더 (Loader) 클래스들](#6-파일-로더-loader-클래스들)
-   - 6.1 [`TextLoader`](#61-textloader)
-   - 6.2 [`TabularLoader`](#62-tabularloader)
-   - 6.3 [`AudioLoader`](#63-audioloader)
-7. [청킹(Chunking) 클래스들](#7-청킹chunking-클래스들)
-   - 7.1 [`HierarchicalChunker`](#71-hierarchicalchunker)
-   - 7.2 [`HybridChunker`](#72-hybridchunker)
-   - 7.3 [`_split_with_recursive_chunker` (Recursive 분기)](#73-_split_with_recursive_chunker-recursive-분기)
-8. [문서 프로세서 (Processor) 클래스들](#8-문서-프로세서-processor-클래스들)
-   - 8.1 [`DocxProcessor`](#81-docxprocessor)
-   - 8.2 [`HwpProcessor`](#82-hwpprocessor)
-   - 8.3 [`DocumentProcessor` (메인 엔트리포인트)](#83-documentprocessor-메인-엔트리포인트)
-9. [예외 클래스](#9-예외-클래스)
-10. [실행 흐름 요약](#10-실행-흐름-요약)
-11. [지원 파일 포맷 총정리](#11-지원-파일-포맷-총정리)
+2. [빠른 시작](#2-빠른-시작)
+3. [설정 (attachment_processor_config.yaml)](#3-설정-attachment_processor_configyaml)
+   - 3.1 [전체 스키마](#31-전체-스키마)
+   - 3.2 [섹션별 상세](#32-섹션별-상세)
+   - 3.3 [런타임 kwargs override](#33-런타임-kwargs-override)
+   - 3.4 [자주 쓰는 튜닝 시나리오](#34-자주-쓰는-튜닝-시나리오)
+4. [처리 동작 개요 (보조)](#4-처리-동작-개요-보조)
+   - 4.1 [convert_to_pdf() — PDF 변환](#41-convert_to_pdf--pdf-변환)
+   - 4.2 [HWP 폴백 체인](#42-hwp-폴백-체인)
+   - 4.3 [주요 클래스 요약](#43-주요-클래스-요약)
+5. [출력 데이터 구조](#5-출력-데이터-구조)
+6. [예외 / 트러블슈팅](#6-예외--트러블슈팅)
+- [부록: 코드 내부 상세](#부록-코드-내부-상세)
 
 ---
 
 ## 1. 개요
 
-`attachment_processor.py`는 **첨부용 전처리기(Attachment Processor)** 입니다. 사용자가 채팅 중 첨부로 업로드하는 파일을 **실시간**으로 분석하기 위한 **경량화 전처리기**로, 복잡한 레이아웃 분석(Layout Detection) 과정을 생략하고 **텍스트 추출(Text Extraction)** 에 집중하여 즉각적인 응답 속도를 보장합니다.
+첨부용 전처리기는 사용자가 채팅 중 업로드하는 파일을 **실시간**으로 분석합니다. AI 기반 레이아웃 분석(Layout Detection)을 생략하고 **텍스트 추출**에 집중하여 즉각적인 응답 속도를 보장합니다.
 
-### 핵심 설계 철학
+### 설계 철학
 
 ```
 "속도 중심: 다양한 포맷의 텍스트 즉시 추출"
 ```
 
+### 대상 포맷
+
+PDF, HWP/HWPX, DOCX/DOC, PPT/PPTX, CSV/XLSX, 이미지(JPG/PNG), 텍스트(TXT/JSON/MD), HTML, 오디오(MP3/WAV/M4A).
+
+### 핵심 특징
+
 | 특징 | 설명 |
 |------|------|
-| **Native 텍스트 추출** | HWP, HWPX, DOCX, XLSX 등 원본 파일의 텍스트를 직접 파싱 |
+| **Native 텍스트 추출** | HWP, HWPX, DOCX 등 원본 파일의 텍스트를 직접 파싱 |
 | **멀티미디어 지원** | MP3, WAV, M4A 등 오디오 파일의 음성→텍스트 변환(STT) |
-| **데이터 변환** | CSV, Excel 등의 정형 데이터를 LLM이 이해하기 쉬운 형태로 변환 |
+| **데이터 변환** | CSV, Excel 등 정형 데이터를 LLM이 이해하기 쉬운 형태로 변환 |
+| **설정 기반 제어** | 청킹/SDK/STT 등 동작을 config yaml로 조정 (코드 수정 불필요) |
+
+> 고품질 구조 분석이 필요하면 `intelligent_processor`, PDF 표준화가 필요하면 `convert_processor`를 사용하세요. 첨부용에는 enrichment/layout/OCR 파이프라인이 없습니다.
 
 ---
 
-## 2. 전체 아키텍처
+## 2. 빠른 시작
 
-아래 다이어그램은 파일이 입력되었을 때 확장자에 따라 어떤 경로로 처리되는지를 보여줍니다.
+### 등록 흐름
+
+1. **Genos UI**: 전처리기 facade(`attachment_processor.py`)를 등록합니다.
+2. **resource**: 같은 위치에 `attachment_processor_config.yaml`을 등록합니다.
+3. 전처리기는 무인자(`DocumentProcessor()`)로 생성되며, 생성 시 config yaml을 읽어 동작 기본값을 구성합니다.
+
+### config 로딩 우선순위
+
+`DocumentProcessor()`가 무인자로 생성될 때 설정 파일을 다음 우선순위로 찾습니다.
+
+```
+1순위) resource_dev/attachment_processor_config.yaml   (있으면 우선 사용 — 개발/사이트 오버라이드)
+2순위) resource/attachment_processor_config.yaml       (공개 기본본)
+3순위) 내장 기본값                                       (파일 없음/형식 오류 시, 경고 로그 후 동작)
+```
+
+파일이 없거나 형식이 잘못돼도 예외를 던지지 않고 경고 로그를 남긴 뒤 내장 기본값으로 동작합니다.
+
+### 기본값 사용 vs 사이트별 변경
+
+- **기본값 그대로 사용 가능**: 청킹 크기, SDK 사용 여부, OCR 언어 등 대부분의 항목은 기본값으로 일반 문서를 처리할 수 있습니다.
+- **사이트별로 반드시 바꿔야 하는 항목**: `whisper.url` 의 `<WHISPER_ENDPOINT>` 는 placeholder이므로, 오디오 STT를 사용하려면 실제 음성인식 서버 주소로 변경해야 합니다.
+
+---
+
+## 3. 설정 (attachment_processor_config.yaml)
+
+전처리기 동작을 제어하는 중심 파일입니다. 아래 스키마와 표를 기준으로 옵션을 조정합니다.
+
+### 3.1 전체 스키마
+
+```yaml
+# attachment_processor 기본 설정
+# DocumentProcessor() 무인자 호출 시 이 파일을 우선 로드한다.
+
+defaults:
+  # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
+  log_level: 4
+
+  # hwp/docx 분기 기본 청커: "recursive" | "hybrid"
+  chunker_type: "recursive"
+
+  # 입력 포맷 자동 PDF 변환 엔진 선택
+  use_pdf_sdk: true
+
+  # hwp/hwpx 처리 시 기본 SDK 백엔드 사용 여부
+  use_hwp_sdk: true
+
+  # use_hwp_sdk=true 일 때만 유효한 SDK 출력 덤프
+  dump_sdk_output: false
+
+  # hwp/hwpx 처리 시 이미지 저장 여부
+  save_images: true
+
+chunking:
+  # pdf/txt/md/ppt 등 일반 텍스트 splitter 기본값
+  generic:
+    chunk_size: 1000
+    chunk_overlap: 100
+
+  # hwp/hwpx/docx + recursive 분기 기본값
+  recursive:
+    chunk_size: 8192
+    chunk_overlap: 100
+    # 임베딩 입력 안정성을 위한 토큰 절대 상한
+    token_chunk_size_cap: 60000
+    # 비우면 로컬 경로(/models/...) 우선, 없으면 HF ID fallback
+    tokenizer_id: ""
+
+  # hwp/hwpx/docx + hybrid 분기 기본값
+  hybrid:
+    tokenizer_id: ""
+    max_tokens: 10000000
+    merge_peers: true
+
+loaders:
+  image:
+    # 이미지 OCR 언어
+    ocr_languages: ["kor", "eng"]
+
+  tabular:
+    # CSV 인코딩 감지 시 샘플링 바이트 수
+    encoding_detect_sample_bytes: 10000
+
+# 음성 파일(.wav/.mp3/.m4a) 처리 기본값
+# <WHISPER_ENDPOINT>: 음성인식 모델 서버 주소로 변경 필요
+whisper:
+  url: "http://<WHISPER_ENDPOINT>/v1/audio/transcriptions"
+  model: "model"
+  language: "ko"
+  response_format: "json"
+  temperature: "0"
+  stream: "false"
+  timestamp_granularities: "word"
+  chunk_sec: 29
+  chunk_overlap_ms: 300
+  # 끝에 / 를 주면 디렉터리로 간주해 내부에 파일명 기준 하위 폴더 생성
+  tmp_dir_prefix: "./tmp_audios_"
+```
+
+### 3.2 섹션별 상세
+
+모든 기본값과 동작은 코드(`DocumentProcessor.__init__`)에서 검증되었습니다. 값이 누락되거나 무효하면 표의 기본값으로 폴백합니다.
+
+#### defaults
+
+| 키 | 기본값 | 설명 |
+|----|--------|------|
+| `log_level` | `4` (INFO) | 로깅 레벨. 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG |
+| `chunker_type` | `"recursive"` | hwp/hwpx/docx 분기의 기본 청커. `recursive` 또는 `hybrid`. 그 외 값은 `recursive`로 폴백 |
+| `use_pdf_sdk` | `true` | 입력 포맷 자동 PDF 변환 시 SDK 엔진 사용 여부 (PPT/DOC/이미지/HWP 폴백 변환에 영향) |
+| `use_hwp_sdk` | `true` | hwp/hwpx 처리 시 기본 SDK 백엔드(`GenosHwpDocumentBackend`) 사용 여부 |
+| `dump_sdk_output` | `false` | SDK 원본 출력 덤프 여부. `use_hwp_sdk=true` 일 때만 유효 |
+| `save_images` | `true` | hwp/hwpx 처리 시 추출 이미지 저장 여부 |
+
+#### chunking.generic (pdf/txt/md/ppt 등 일반 splitter)
+
+| 키 | 기본값 | 설명 |
+|----|--------|------|
+| `chunk_size` | `1000` | 일반 텍스트 분할 청크 크기(문자 단위). 0 이하면 1000으로 폴백 |
+| `chunk_overlap` | `100` | 청크 간 오버랩(문자 단위). 음수면 100으로 폴백 |
+
+#### chunking.recursive (hwp/hwpx/docx + recursive 분기, 기본 청커)
+
+| 키 | 기본값 | 설명 |
+|----|--------|------|
+| `chunk_size` | `8192` | 청크 크기(문자 단위). 한국어 기준 약 12K~16K 토큰. 0 이하면 8192로 폴백 |
+| `chunk_overlap` | `100` | 청크 간 오버랩(문자 단위). 음수면 100으로 폴백 |
+| `token_chunk_size_cap` | `60000` | 토큰 절대 상한. 어떤 chunk_size에서도 한 청크가 이 값을 초과하면 토큰 단위로 강제 재분할 (임베딩 입력 한도 ~128K 토큰의 절반 안전 마진) |
+| `tokenizer_id` | `""` | 비우면 로컬 경로(`/models/...sentence-transformers-all-MiniLM-L6-v2`) 우선, 없으면 HF ID로 fallback |
+
+#### chunking.hybrid (hwp/hwpx/docx + hybrid 분기)
+
+| 키 | 기본값 | 설명 |
+|----|--------|------|
+| `tokenizer_id` | `""` | 비우면 로컬 경로 우선, 없으면 HF ID로 fallback |
+| `max_tokens` | `10000000` | 청크당 최대 토큰. 기본값은 사실상 토큰 제한 없음 → hybrid를 레이아웃 기반 병합 도구로만 사용. 0 이하/누락 시 코드 fallback(`1e30`) |
+| `merge_peers` | `true` | 같은 제목/캡션을 가진 작은 청크를 토큰 제한 내에서 병합 |
+
+#### loaders.image
+
+| 키 | 기본값 | 설명 |
+|----|--------|------|
+| `ocr_languages` | `["kor", "eng"]` | 이미지(JPG/PNG) OCR 언어 목록. 비거나 무효하면 `["kor","eng"]`로 폴백 |
+
+#### loaders.tabular
+
+| 키 | 기본값 | 설명 |
+|----|--------|------|
+| `encoding_detect_sample_bytes` | `10000` | CSV 인코딩 감지 시 chardet에 넘길 샘플 바이트 수. 0 이하면 10000으로 폴백 |
+
+#### whisper (오디오 STT)
+
+| 키 | 기본값 | 설명 |
+|----|--------|------|
+| `url` | `"http://<WHISPER_ENDPOINT>/v1/audio/transcriptions"` | STT 서버 엔드포인트. **placeholder이므로 사이트별로 실제 주소로 변경 필요** |
+| `model` | `"model"` | STT 요청 모델명 |
+| `language` | `"ko"` | 전사 언어 |
+| `response_format` | `"json"` | 응답 포맷 |
+| `temperature` | `"0"` | 디코딩 temperature |
+| `stream` | `"false"` | 스트리밍 여부 |
+| `timestamp_granularities` | `"word"` | 타임스탬프 단위 (요청 시 `timestamp_granularities[]`로 전달) |
+| `chunk_sec` | `29` | 오디오 분할 단위(초). 0 이하면 29로 폴백 |
+| `chunk_overlap_ms` | `300` | 청크 간 오버랩(ms). 단어 잘림 방지. 음수면 300으로 폴백 |
+| `tmp_dir_prefix` | `"./tmp_audios_"` | 임시 분할 파일 저장 prefix. 끝에 `/`를 주면 디렉터리로 간주해 파일명 기준 하위 폴더 생성 |
+
+#### chunker_type: recursive vs hybrid
+
+- **recursive (기본)**: `DoclingDocument`를 markdown으로 export한 뒤 `RecursiveCharacterTextSplitter`로 **문자 단위** 분할합니다. 단락/헤딩/표 경계의 줄바꿈이 보존되어 문장 중간에서 잘리는 현상이 적고, 페이지 단위 정확도를 가집니다. 대부분의 경우 권장됩니다.
+- **hybrid**: 레이아웃 계층 구조를 유지하며 **토큰 수 기반**으로 청크를 조절합니다. 기본 `max_tokens=10000000`은 사실상 토큰 제한이 없는 수준이라, 이 전처리기에서는 주로 레이아웃 기반 병합 도구로 동작합니다. 청크 단위 bbox 정확도가 필요할 때 사용합니다.
+- **60K 토큰 cap**: recursive 분기에서는 chunk_size와 무관하게 한 청크가 `token_chunk_size_cap`(기본 60000) 토큰을 넘으면 토큰 단위로 강제 재분할됩니다. 기본 8192자 청크에서는 보통 트리거되지 않으며, 큰 chunk_size를 지정했을 때의 안전망입니다.
+
+### 3.3 런타임 kwargs override
+
+config yaml의 기본값은 `DocumentProcessor.__init__`에서 `self._default_kwargs`로 로드됩니다. 호출 시 `params`(kwargs)로 동일 항목을 넘기면 **해당 호출에 한해 기본값을 덮어씁니다**. 병합 규칙은 `_merge_runtime_kwargs`로, **런타임 값 중 `None`이 아닌 것만** 기본값을 덮어씁니다.
+
+자주 쓰는 override kwargs:
+
+| kwargs | 대응 config | 비고 |
+|--------|-------------|------|
+| `log_level` | `defaults.log_level` | |
+| `chunker_type` | `defaults.chunker_type` | |
+| `use_pdf_sdk` | `defaults.use_pdf_sdk` | |
+| `use_hwp_sdk` | `defaults.use_hwp_sdk` | |
+| `chunk_size` | generic/recursive 분기의 chunk_size를 직접 지정 | 미지정 시 분기별 config 기본값 사용 |
+| `chunk_overlap` | generic/recursive 분기의 chunk_overlap | 미지정 시 분기별 config 기본값 사용 |
+
+> `chunk_size`/`chunk_overlap`은 일반 분기(PDF/TXT 등)와 recursive 분기 모두에서 우선 적용되고, 미지정 시 각각 `chunking.generic.*` 또는 `chunking.recursive.*` 기본값으로 폴백합니다.
+
+### 3.4 자주 쓰는 튜닝 시나리오
+
+**① 청크 크기 조정** — 더 작은 청크로 검색 정밀도를 높이고 싶을 때:
+
+```yaml
+chunking:
+  recursive:
+    chunk_size: 2000
+    chunk_overlap: 200
+```
+
+**② hybrid 청커 사용** — 청크 단위 bbox 정확도가 필요할 때:
+
+```yaml
+defaults:
+  chunker_type: "hybrid"
+chunking:
+  hybrid:
+    max_tokens: 1000     # 실제 토큰 제한을 두려면 작은 값 지정
+    merge_peers: true
+```
+
+**③ whisper STT 서버 지정** — 오디오 처리를 활성화할 때:
+
+```yaml
+whisper:
+  url: "http://10.0.0.5:30100/v1/audio/transcriptions"
+  language: "ko"
+```
+
+**④ HWP SDK 비활성화** — 엔터프라이즈 SDK 없이 레거시 백엔드로 처리할 때:
+
+```yaml
+defaults:
+  use_hwp_sdk: false
+```
+
+---
+
+## 4. 처리 동작 개요 (보조)
+
+설정만으로 충분한 경우 이 섹션은 건너뛰어도 됩니다. 동작 원리를 이해하고 싶을 때 참고하세요.
+
+### 확장자별 분기 아키텍처
 
 ```
 사용자가 파일 업로드
@@ -62,1198 +294,165 @@
         ▼
  ┌──────────────────┐
  │ DocumentProcessor│  ◄── 메인 엔트리포인트 (__call__)
- │   (라우터 역할)   │
+ │   (라우터 역할)   │      진입 시 _merge_runtime_kwargs로 config+kwargs 병합
  └──────┬───────────┘
-        │
         │  확장자(ext)에 따라 분기
         │
-        ├── .wav/.mp3/.m4a ──────► AudioLoader ──► STT(Whisper) ──► GenOSVectorMeta
+        ├── .wav/.mp3/.m4a ──────► AudioLoader ──► STT(whisper.*) ──► GenOSVectorMeta
         │
         ├── .csv/.xlsx ──────────► TabularLoader ──► DataFrame 파싱 ──► GenOSVectorMeta
         │
-        ├── .hwp/.hwpx ─────────► HwpProcessor ──┬──► RecursiveCharacterTextSplitter  (chunker_type='recursive', 기본)
-        │                         (폴백 체인은       │
-        │                          아래 2-1 참고)    └──► HybridChunker                  (chunker_type='hybrid')
+        ├── .hwp/.hwpx ─────────► HwpProcessor ──┬──► recursive (기본)
+        │                         (폴백 체인 4.2)  └──► hybrid (chunker_type='hybrid')
         │
-        ├── .docx ───────────────► DocxProcessor ──┬──► RecursiveCharacterTextSplitter  (chunker_type='recursive', 기본)
-        │                                          │
-        │                                          └──► HybridChunker                   (chunker_type='hybrid')
+        ├── .docx ───────────────► DocxProcessor ──┬──► recursive (기본)
+        │                                          └──► hybrid
         │
         └── 기타 (.pdf, .ppt,    ► get_loader() ──► LangChain Loader
             .doc, .jpg, .txt,                          │
             .json, .md, .html 등)                      ▼
-                                              RecursiveCharacterTextSplitter
-                                                       │                │
-                                                       ▼                ▼
-                                                compose_vectors()   compose_vectors()
-                                                       │                │
-                                                       ▼                ▼
+                                       RecursiveCharacterTextSplitter (generic)
+                                                       │
+                                                       ▼
                                               ┌─────────────────────────────┐
-                                              │  List[GenOSVectorMeta]      │
-                                              │  (최종 출력: 청크별 메타데이터)    │
+                                              │  List[GenOSVectorMeta]       │
                                               └─────────────────────────────┘
 ```
 
----
+<a id="41-convert"></a>
+### 4.1 convert_to_pdf() — PDF 변환
 
-## 2-1. HwpProcessor 폴백 체인
+PPT/DOC/이미지/HWP 등을 PDF로 변환합니다. 실패해도 예외 없이 `None`을 반환하는 방어적 설계이며, 실제 변환 로직은 `genon.preprocessor.converters.hwp_to_pdf` 모듈로 일원화되어 있습니다. 변환 chain은 입력 확장자와 `use_pdf_sdk`(config `defaults.use_pdf_sdk`)로 결정되며, 앞 backend 실패 시 다음으로 자동 fallback합니다.
 
-HWP/HWPX 파일은 변환 실패 시 단계적으로 폴백을 시도합니다.
+| 입력 | `use_pdf_sdk=true` | `use_pdf_sdk=false` |
+|------|--------------------|---------------------|
+| `.hwp` / `.hwpx` | `pdf_sdk → libreoffice → rhwp` | `libreoffice → rhwp` |
+| 그 외 (`.docx`/`.pptx`/이미지 등) | `pdf_sdk → libreoffice` | `libreoffice` |
+
+- `rhwp`는 HWP/HWPX 전용이라 비-HWP chain에는 포함되지 않으며, 안정성 검증 전까지 최후순위 fallback으로만 둡니다.
+- backend별 가용성: `pdf_sdk`(엔터프라이즈 자산, 실행권한 시 활성), `libreoffice`(`soffice` 존재 여부), `rhwp`(`RHWP_BIN` 바이너리).
+
+### 4.2 HWP 폴백 체인
+
+HWP/HWPX 파일은 변환 실패 시 단계적으로 폴백합니다.
 
 ```
 .hwp / .hwpx 입력
         │
-        ├─[use_hwp_sdk=True]──► ① GenosHwpDocumentBackend ──── 성공 ──► HybridChunker
+        ├─[use_hwp_sdk=true]──► ① GenosHwpDocumentBackend ──── 성공 ──► 청킹(recursive/hybrid)
         │                                   │ 실패
         │                                   ▼
-        └─[use_hwp_sdk=False]─► ② .hwp  → HwpDocumentBackend ─ 성공 ──► HybridChunker
+        └─[use_hwp_sdk=false]─► ② .hwp  → HwpDocumentBackend ─ 성공 ──► 청킹(recursive/hybrid)
                                    .hwpx → HwpxDocumentBackend
-                                           │ 실패
+                                           │ 실패 (전체 docling 백엔드 실패)
                                            ▼
-                                ③ PDF 변환 (HWP: PDF SDK→LibreOffice→rhwp) ─ 성공 ──► compose_vectors()
+                                ③ PDF 변환 (HWP: pdf_sdk→libreoffice→rhwp) ─ 성공 ──► 일반 분기 처리
                                            │ 실패
                                            ▼
                                         에러 반환
 ```
 
----
+<a id="82-hwpprocessor"></a>
+### 4.3 주요 클래스 요약
 
-## 3. 임포트 및 초기 설정
-
-```python
-from collections import defaultdict
-import asyncio
-import fitz          # PyMuPDF: PDF 파일을 읽고 조작하는 라이브러리
-import json
-import math
-import os
-import pandas as pd
-import pydub          # 오디오 파일 처리 (분할, 포맷 변환)
-import requests       # HTTP 요청 (STT API 호출용)
-import shutil         # 파일/디렉토리 복사 및 삭제
-import subprocess     # 외부 프로세스 실행 (PDF SDK 바이너리, LibreOffice 등)
-import sys
-import threading      # 멀티스레드 (오디오 STT 병렬 요청)
-import uuid           # 고유 임시 디렉토리명 생성
-import warnings
-from datetime import datetime
-import logging
-```
-
-### 주요 외부 라이브러리 그룹
-
-| 그룹 | 라이브러리 | 용도                                                     |
-|------|-----------|--------------------------------------------------------|
-| **문서 로딩** | `langchain_community.document_loaders` | PDF, DOCX, PPT, 이미지, 마크다운 등을 로드                        |
-| **텍스트 분할** | `langchain_text_splitters.RecursiveCharacterTextSplitter` | 문서를 적절한 크기의 청크로 분할                                     |
-| **Docling** | `docling`, `docling_core` | HWPX, DOCX 문서를 바로 읽어들여 구조적으로 파싱하여 `DoclingDocument` 생성 |
-| **토크나이저** | `transformers.AutoTokenizer`, `semchunk` | 토큰 수 기반 청킹 및 시맨틱 분할                                    |
-| **PDF 생성** | `weasyprint.HTML` | HTML → PDF 변환                                          |
-| **인코딩 탐지** | `chardet` | 텍스트 파일의 인코딩 자동 감지                                      |
-
-### 로깅 초기 설정
-
-```python
-for n in ("fontTools", "fontTools.ttLib", "fontTools.ttLib.ttFont"):
-    lg = logging.getLogger(n)
-    lg.setLevel(logging.CRITICAL)
-    lg.propagate = False
-    logging.getLogger().setLevel(logging.WARNING)
-```
-> **역할**: `fontTools` 라이브러리가 PDF 처리 시 과도하게 출력하는 디버그 로그를 억제합니다. 사용자에게 불필요한 로그 노이즈를 줄여 핵심 정보만 보이게 합니다.
-
-### PDF 변환 대상 확장자 상수
-
-```python
-CONVERTIBLE_EXTENSIONS = ['.hwp', '.txt', '.json', '.md', '.ppt', '.pptx', '.docx']
-```
-> **역할**: `_get_pdf_path()` 함수에서 파일 경로의 확장자를 `.pdf`로 바꿀 때 사용되는 대상 확장자 목록입니다.
+| 클래스/함수 | 역할 | config 연관 |
+|-------------|------|-------------|
+| `DocumentProcessor` | 메인 엔트리포인트. config 로딩 + 확장자 라우팅 + generic 분기 처리 | 전체 |
+| `HwpProcessor` | hwp/hwpx 통합 처리 (SDK 백엔드 + 폴백) | `defaults.use_hwp_sdk/dump_sdk_output/save_images`, `chunking.recursive/hybrid` |
+| `DocxProcessor` | docx Docling 파싱 + 청킹 | `chunking.recursive/hybrid` |
+| `AudioLoader` | 오디오 분할 + Whisper STT 병렬 호출 | `whisper.*` |
+| `TabularLoader` | CSV/XLSX → DataFrame 파싱, `[DA]` 마커 부착 | `loaders.tabular.encoding_detect_sample_bytes` |
+| `TextLoader` | txt/json/md 인코딩 자동 감지 로드 | — |
+| `HierarchicalChunker` / `HybridChunker` | 레이아웃 기반/토큰 기반 청킹 | `chunking.hybrid.*` |
+| `_split_with_recursive_chunker` | recursive 분기 헬퍼 (markdown export + 문자 분할) | `chunking.recursive.*` |
 
 ---
 
-## 4. 유틸리티 함수
+## 5. 출력 데이터 구조
 
-### 4.1 `convert_to_pdf()`
+모든 처리 경로는 청크당 하나의 `GenOSVectorMeta` 객체를 생성하며, 결과는 `List[GenOSVectorMeta]`입니다. 이 객체가 벡터 DB에 저장됩니다.
 
-```python
-def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
-```
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `text` | str | 청크의 실제 텍스트 내용 |
+| `n_char` | int | 텍스트의 문자 수 |
+| `n_word` | int | 텍스트의 단어 수 |
+| `n_line` | int | 텍스트의 줄 수 |
+| `i_page` | int | 청크가 시작하는 페이지 번호 |
+| `e_page` | int | 청크가 끝나는 페이지 번호 |
+| `i_chunk_on_page` | int | 해당 페이지 내 청크 순서 (0부터) |
+| `n_chunk_of_page` | int | 해당 페이지의 전체 청크 수 |
+| `i_chunk_on_doc` | int | 문서 전체에서의 청크 순서 (0부터) |
+| `n_chunk_of_doc` | int | 문서 전체의 청크 수 |
+| `n_page` | int | 문서의 전체 페이지 수 |
+| `reg_date` | str | 처리 일시 (ISO 8601) |
+| `chunk_bboxes` | str | 청크 위치 정보 (정규화된 bbox, JSON 문자열) |
+| `media_files` | str | 연관 미디어 파일 정보 (JSON 문자열) |
 
-**목적**: 다양한 문서 포맷(PPT, DOCX, 이미지 등)을 PDF로 변환합니다. 시그니처와 동작 정책(실패 시 예외 없이 `None` 반환)은 보존하면서, 실제 변환 로직은 `genon.preprocessor.converters.hwp_to_pdf` 모듈로 일원화되어 있습니다 (이슈 #199).
-
-**변환 chain** (입력 확장자 + `use_pdf_sdk` 로 결정. 앞 backend 실패 시 다음으로 자동 fallback):
-
-| 입력 | `use_pdf_sdk=True` (엔터프라이즈) | `use_pdf_sdk=False` (오픈소스) |
-|---|---|---|
-| `.hwp` / `.hwpx` | `pdf_sdk → libreoffice → rhwp` | `libreoffice → rhwp` |
-| 그 외 (`.docx`/`.pptx`/이미지 등) | `pdf_sdk → libreoffice` | `libreoffice` |
-
-- 내부적으로 `convert_hwp_to_pdf(file_path, order=[...])` 로 위임되며, chain 의 backend 가 순서대로 시도되다 첫 성공에서 종료됩니다.
-- `rhwp` 는 HWP/HWPX 전용이라 비-HWP 입력 chain 에는 포함되지 않습니다. 또한 도입 초기 단계라 안정성 검증 전까지는 **최후순위 fallback** 으로만 둡니다 (검증 후 우선순위 상향 검토).
-
-**Backend 경로/가용성 결정**:
-- `pdf_sdk`: `PDF_SDK_HOME` (도커 `/app/pdf_sdk`) → fallback `<repo_root>/pdf_sdk`. 바이너리 실행권한 있을 때만 활성. 엔터프라이즈 빌드에만 자산 포함.
-- `libreoffice`: `shutil.which("soffice")` 로 판정.
-- `rhwp`: `RHWP_BIN` (기본 `/usr/local/bin/rhwp`) 바이너리 존재 + 실행권한으로 판정.
-
-자세한 backend별 동작 흐름(fontconfig 패치, subprocess 인자, 한글 파일명 ASCII 복사 등)은 `genon/preprocessor/converters/hwp_to_pdf/{pdf_sdk,libreoffice,rhwp}.py` 본체를 참고합니다.
-
-**핵심 포인트**:
-- 실패해도 **예외를 던지지 않고** `None` 반환 (방어적 설계, 모든 backend 동일).
-- 호출부는 `kwargs.get('use_pdf_sdk', True)` 패턴 그대로 사용 가능 (Genos 측 config로 제어).
-- `LANG=C.UTF-8` / `LC_ALL=C.UTF-8` 환경 변수로 한글 파일명 / 컨텐츠 처리 보장.
+> `extra = 'allow'`로 정의되어 추가 필드도 허용됩니다. 일반 분기(PDF/TXT 등)와 CSV/오디오 경로는 bbox/media 추출을 생략(속도 우선)하며, `chunk_bboxes`/`media_files`는 빈 값/플레이스홀더로 채워집니다. HWP/DOCX 경로는 doc_items 기반으로 실제 bbox/media를 채웁니다.
 
 ---
 
-### 4.2 `_get_pdf_path()`
+## 6. 예외 / 트러블슈팅
 
-```python
-def _get_pdf_path(file_path: str) -> str:
-```
-
-**목적**: 파일 경로에서 확장자를 `.pdf`로 단순 치환합니다.
-
-```python
-# 예시:
-# "/data/report.hwp"  → "/data/report.pdf"
-# "/data/notes.txt"   → "/data/notes.pdf"
-# "/data/data.pptx"   → "/data/data.pdf"
-```
-
-> **주의**: 이 함수는 실제로 파일을 변환하지 않습니다. 단지 **경로 문자열만 변환**합니다. 실제 변환은 `convert_to_pdf()`가 담당합니다.
+| 증상 | 원인 | 대응 |
+|------|------|------|
+| `chunk length is 0` (`GenosServiceException`) | HWP/DOCX에서 추출된 청크가 0개 | 원본 파일이 비었거나 파싱 실패. 다른 백엔드(`use_hwp_sdk` 변경)나 PDF 폴백 확인 |
+| 오디오 전사 결과 비어있음 | `whisper.url`이 placeholder(`<WHISPER_ENDPOINT>`) | config에서 실제 STT 서버 주소로 변경 |
+| HWP 변환 실패 후 에러 | SDK/레거시 백엔드/PDF 변환 모두 실패 | `use_hwp_sdk`, `use_pdf_sdk` 조정. LibreOffice(`soffice`) 설치 확인 |
+| 청크가 비정상적으로 큼 | chunk_size를 매우 크게 지정 | `token_chunk_size_cap`(기본 60000) 안전망 동작 확인. chunk_size 축소 |
+| 한글 텍스트 깨짐 (CSV/TXT) | 인코딩 감지 실패 | TXT는 다단 인코딩 폴백 사용. CSV는 `encoding_detect_sample_bytes` 증대 |
+| 로그가 너무 많음/적음 | `log_level` 설정 | config `defaults.log_level` 조정 (4=INFO 기본) |
+| config가 적용 안 됨 | `resource_dev` 파일이 우선 로드됨 | 로딩 우선순위([2장](#2-빠른-시작)) 확인. 의도치 않은 `resource_dev` 파일 제거 |
 
 ---
 
-### 4.3 `install_packages()`
+## 부록: 코드 내부 상세
 
-```python
-def install_packages(packages):
-```
+> 보조 참고용입니다. 일상적인 운영/튜닝에는 [3장 설정](#3-설정-attachment_processor_configyaml)만으로 충분합니다. 아래는 고급 사용자를 위한 내부 동작 요약입니다.
 
-**목적**: 런타임에 필요한 Python 패키지가 설치되어 있는지 확인하고, 없으면 자동으로 `pip install`을 실행합니다.
+### A. 설정 로딩 (`DocumentProcessor.__init__`)
 
-```python
-# 사용 예시:
-install_packages(['openpyxl', 'chardet'])
-# → openpyxl이 없으면: pip install openpyxl 실행
-# → chardet이 없으면: pip install chardet 실행
-```
+생성 시 `_resolve_default_attachment_config_path()`로 config 경로를 결정(`resource_dev` → `resource`)한 뒤 `_load_config()`로 읽습니다. 각 섹션(`defaults`/`chunking`/`loaders`/`whisper`)은 `_parse_optional_bool/_parse_optional_int` 등으로 검증되어 `self._default_kwargs`에 평탄화됩니다. `chunk_size`/`overlap`은 분기별로 `generic_*`/`recursive_*` prefix로 저장됩니다. 무효 값은 표의 기본값으로 폴백하고 경고 로그를 남깁니다.
 
----
+### B. 라우팅 (`DocumentProcessor.__call__`)
 
-## 5. 데이터 모델
+`_merge_runtime_kwargs(kwargs)`로 config 기본값과 런타임 kwargs를 병합(None 아닌 값만 override)한 뒤 `setup_logging(log_level)`을 호출합니다. 이후 확장자로 분기합니다.
 
-### 5.1 `GenOSVectorMeta`
+- 오디오: `whisper_tmp_dir_prefix`로 임시 폴더 생성 → `AudioLoader` → 처리 후 임시 폴더 삭제
+- 정형: `tabular_encoding_detect_sample_bytes`를 넘겨 `TabularLoader` 호출
+- hwp/hwpx: `HwpProcessor` 호출, 실패 시 `convert_to_pdf` 후 일반 분기로 최종 폴백
+- docx: `DocxProcessor` 호출
+- 기타: `get_loader` → `split_documents`(generic) → `compose_vectors`
 
-```python
-class GenOSVectorMeta(BaseModel):
-    class Config:
-        extra = 'allow'    # 정의되지 않은 추가 필드도 허용
+### C. 로더 선택 (`get_loader` / `get_real_file_type`)
 
-    text: str | None = None                 # 청크의 실제 텍스트 내용
-    n_char: int | None = None               # 텍스트의 문자 수
-    n_word: int | None = None               # 텍스트의 단어 수
-    n_line: int | None = None               # 텍스트의 줄 수
-    i_page: int | None = None               # 청크가 시작하는 페이지 번호
-    e_page: int | None = None               # 청크가 끝나는 페이지 번호
-    i_chunk_on_page: int | None = None      # 해당 페이지 내에서의 청크 순서 (0부터)
-    n_chunk_of_page: int | None = None      # 해당 페이지의 전체 청크 수
-    i_chunk_on_doc: int | None = None       # 문서 전체에서의 청크 순서 (0부터)
-    n_chunk_of_doc: int | None = None       # 문서 전체의 청크 수
-    n_page: int | None = None               # 문서의 전체 페이지 수
-    reg_date: str | None = None             # 처리 일시 (ISO 8601 형식)
-    chunk_bboxes: str | None = None         # 청크의 위치 정보 (JSON 문자열)
-    media_files: str | None = None          # 연관된 미디어 파일 정보 (JSON 문자열)
-```
-
-**역할**: 전처리 결과의 **최종 출력 단위(=벡터 메타데이터)** 입니다. 하나의 청크(chunk)가 하나의 `GenOSVectorMeta` 객체로 변환되며, 이 객체가 벡터 DB에 저장됩니다.
-
-**필드 시각화**:
-
-```
-┌──────────────────────────────────────────────────┐
-│ 문서 전체 (n_page=5, n_chunk_of_doc=12)            │
-│                                                  │
-│  ┌──────────── 페이지 1 ───────────────┐           │
-│  │  ┌─────────────────────┐          │           │
-│  │  │ 청크 0               │ i_page=1 │           │
-│  │  │ i_chunk_on_page=0   │          │           │
-│  │  │ i_chunk_on_doc=0    │          │           │
-│  │  │ text="제1조 목적..."  │          │           │
-│  │  │ n_char=245          │          │           │
-│  │  └─────────────────────┘          │           │
-│  │  ┌─────────────────────┐          │           │
-│  │  │ 청크 1               │          │           │
-│  │  │ i_chunk_on_page=1   │          │           │
-│  │  │ i_chunk_on_doc=1    │ n_chunk_ │           │
-│  │  │ text="제2조 범위..."  │ of_page=2│           │
-│  │  └─────────────────────┘          │           │
-│  └───────────────────────────────────┘           │
-│                                                  │
-│  ┌──────────── 페이지 2 ───────────────┐           │
-│  │  ...                              │           │
-│  └───────────────────────────────────┘           │
-└──────────────────────────────────────────────────┘
-```
-
----
-
-### 5.2 `GenOSVectorMetaBuilder`
-
-```python
-class GenOSVectorMetaBuilder:
-```
-
-**역할**: `GenOSVectorMeta` 객체를 단계별로 조립하는 **빌더 패턴(Builder Pattern)** 구현체입니다. 복잡한 메타데이터를 실수 없이 조합할 수 있게 메서드 체이닝을 지원합니다.
-
-**사용 예시 (코드에서 실제로 사용되는 패턴)**:
-
-```python
-vector = (GenOSVectorMetaBuilder()
-          .set_text(content)                                    # ① 텍스트 설정
-          .set_page_info(page, chunk_idx_on_page, total)        # ② 페이지 정보 설정
-          .set_chunk_index(chunk_idx)                            # ③ 청크 인덱스 설정
-          .set_global_metadata(**global_metadata)                # ④ 전역 메타데이터 병합
-          .set_chunk_bboxes(doc_items, document)                 # ⑤ 위치 좌표 설정
-          .set_media_files(doc_items)                            # ⑥ 미디어 파일 설정
-          ).build()                                              # ⑦ 최종 객체 생성
-```
-
-**주요 메서드 설명**:
-
-| 메서드 | 역할 |
-|--------|------|
-| `set_text(text)` | 텍스트를 설정하고, 동시에 `n_char`, `n_word`, `n_line`을 자동 계산 |
-| `set_page_info(...)` | 페이지 번호, 페이지 내 청크 순서, 페이지 내 전체 청크 수 설정 |
-| `set_chunk_index(idx)` | 문서 전체에서의 청크 순서 설정 |
-| `set_global_metadata(**kw)` | `n_chunk_of_doc`, `n_page`, `reg_date` 등 문서 공통 정보 일괄 설정 |
-| `set_chunk_bboxes(items, doc)` | 청크를 구성하는 문서 요소들의 **바운딩 박스(bbox)** 좌표를 정규화(0~1)하여 JSON으로 저장 |
-| `set_media_files(items)` | 청크에 포함된 이미지 등 미디어 파일 정보를 JSON으로 저장 |
-| `build()` | 모든 설정을 종합하여 `GenOSVectorMeta` 객체 반환 |
-
-**`set_chunk_bboxes` 상세 설명**:
-
-```python
-def set_chunk_bboxes(self, doc_items: list, document: DoclingDocument):
-    # 각 문서 요소(doc_item)의 위치 정보(prov)를 순회
-    for item in doc_items:
-        for prov in item.prov:
-            size = document.pages.get(prov.page_no).size  # 페이지 크기 가져오기
-            bbox = prov.bbox                               # 원본 좌표
-            bbox_data = {
-                'l': bbox.l / size.width,    # 왼쪽 (0~1로 정규화)
-                't': bbox.t / size.height,   # 위쪽
-                'r': bbox.r / size.width,    # 오른쪽
-                'b': bbox.b / size.height,   # 아래쪽
-                'coord_origin': bbox.coord_origin.value
-            }
-```
-
-> 좌표를 0~1 범위로 정규화하는 이유는, 화면에 표시할 때 페이지 크기에 관계없이 동일한 비율로 하이라이트할 수 있게 하기 위함입니다.
-
----
-
-## 6. 파일 로더 (Loader) 클래스들
-
-각 파일 포맷별로 텍스트를 추출하는 전용 로더입니다.
-
-> **변경 사항**: 기존의 `HwpLoader` (hwp5html → PDF 경로) 는 제거되었습니다. HWP 처리는 이제 [섹션 8.2의 `HwpProcessor`](#82-hwpprocessor)가 담당하며, hwp_sdk(`convtext`)를 통해 .hwp와 .hwpx를 통합 처리합니다.
-
-### 6.1 `TextLoader`
-
-```python
-class TextLoader:
-    def __init__(self, file_path: str):
-```
-
-**목적**: `.txt`, `.json`, `.md` 등 순수 텍스트 파일을 로드합니다. **인코딩 자동 감지**가 핵심 기능입니다.
-
-**인코딩 감지 흐름**:
-
-```
-파일 바이너리 읽기
-    │
-    ▼
-chardet로 인코딩 자동 감지
-    │
-    ▼
-시도 순서로 디코딩:
-    1. chardet이 감지한 인코딩
-    2. UTF-8
-    3. CP949 (한글 Windows)
-    4. EUC-KR (한글 레거시)
-    5. ISO-8859-1
-    6. Latin-1
-    │
-    ├── 디코딩 성공 → 텍스트 획득
-    └── 모두 실패 → UTF-8 + errors='replace' (깨진 문자는 ?로 대체)
-```
-
-**PDF 변환 분기**:
-
-```python
-    # WeasyPrint가 사용 가능한 경우
-    if HTML:
-        # 텍스트를 HTML로 감싸고 PDF로 변환
-        html = f"<html><meta charset='utf-8'><body><pre>{content}</pre></body></html>"
-        HTML(html_path).write_pdf(pdf_path)
-        loader = PyMuPDFLoader(pdf_path)
-        return loader.load()
-
-    # WeasyPrint 불가 시 Document 직접 반환 (PDF 변환 없이)
-    return [Document(page_content=content, metadata={'source': self.file_path, 'page': 0})]
-```
-
-> **설계 의도**: WeasyPrint가 설치되어 있으면 PDF를 통해 페이지 정보까지 추출하고, 없으면 텍스트만이라도 반환하는 **그레이스풀 폴백(graceful fallback)** 설계입니다.
-
----
-
-### 6.2 `TabularLoader`
-
-```python
-class TabularLoader:
-    def __init__(self, file_path: str, ext: str):
-```
-
-**목적**: CSV, XLSX 등 정형 데이터(테이블) 파일을 LLM이 이해할 수 있는 형태로 변환합니다.
-
-**처리 흐름 (CSV 예시)**:
-
-```
-.csv 파일
-    │
-    ▼
-chardet로 인코딩 감지 → pandas.read_csv()
-    │
-    ▼
-check_sql_dtypes()로 각 컬럼의 데이터 타입 분석
-    │  INT, FLOAT, BOOLEAN, DATE, VARCHAR 등
-    │
-    ▼
-LangChain DataFrameLoader로 Document 변환
-    │  (첫 번째 컬럼을 page_content로 사용)
-    │
-    ▼
-process_data_rows()로 최종 데이터 구조 생성
-    │
-    ▼
-data_dict = {
-    "data": [{
-        "sheet_name": "table_1",
-        "data_rows": [...],        # 각 행의 데이터
-        "data_types": [...]        # 각 컬럼의 SQL 데이터 타입
-    }]
-}
-```
-
-**`check_sql_dtypes()` 메서드 상세**:
-
-이 메서드는 DataFrame의 각 컬럼 타입을 SQL 호환 타입으로 매핑합니다:
-
-```python
-# 타입 매핑 예시:
-# pandas int64    → 'BIGINT'
-# pandas int32    → 'INT'
-# pandas float64  → 'FLOAT'
-# pandas bool     → 'BOOLEAN'
-# pandas object   → 'VARCHAR(최대길이+10)'
-```
-
-**`return_vectormeta_format()` 메서드**:
-
-```python
-def return_vectormeta_format(self):
-    text = "[DA] " + str(self.data_dict)
-    # "[DA]" 토큰은 이 데이터가 "Data Analysis"용임을 LLM에게 알리는 마커
-```
-
-> **`[DA]` 접두어의 의미**: LLM이 이 청크를 받았을 때, 일반 텍스트가 아니라 **정형 데이터**라는 것을 인식하고 적절한 분석 방식(표 분석, 통계 등)으로 처리하도록 유도합니다.
-
-**XLSX 처리 시 다중 시트 지원**:
-
-```python
-def load_xlsx_documents(self, file_path: str):
-    dfs = pd.read_excel(file_path, sheet_name=None)  # 모든 시트를 dict로 로드
-    for sheet_name, df in dfs.items():
-        # 각 시트를 독립적으로 처리하여 data_dict["data"]에 추가
-```
-
----
-
-### 6.3 `AudioLoader`
-
-```python
-class AudioLoader:
-    def __init__(self,
-                 file_path: str,       # 오디오 파일 경로
-                 req_url: str,         # Whisper STT API URL
-                 req_data: dict,       # API 요청 파라미터
-                 chunk_sec: int = 29,  # 오디오 분할 단위 (초)
-                 tmp_path: str = '.',  # 임시 파일 저장 경로
-                 ):
-```
-
-**목적**: 오디오 파일(MP3, WAV, M4A)을 텍스트로 변환합니다 (Speech-to-Text).
-
-**처리 흐름**:
-
-```
-오디오 파일 (예: 5분짜리 MP3)
-    │
-    ▼
-split_file_as_chunks()
-    │  29초 단위로 분할 (Whisper 모델의 입력 제한 대응)
-    │  각 청크 앞에 0.3초 오버랩 추가 (문맥 연결 보장)
-    │
-    │  tmp_0.wav (0~29초)
-    │  tmp_1.wav (28.7~58초)     ← 0.3초 오버랩
-    │  tmp_2.wav (57.7~87초)
-    │  ...
-    │
-    ▼
-transcribe_audio()
-    │  각 청크를 Whisper API에 병렬 전송 (멀티스레드)
-    │
-    │  Thread 0 → POST /v1/audio/transcriptions (tmp_0.wav)
-    │  Thread 1 → POST /v1/audio/transcriptions (tmp_1.wav)
-    │  Thread 2 → POST /v1/audio/transcriptions (tmp_2.wav)
-    │
-    ▼
-파일명 기준 정렬 → 텍스트 병합
-    │
-    ▼
-"[AUDIO] 안녕하세요 오늘 회의를 시작하겠습니다..."
-```
-
-**오버랩 설계의 이유**:
-
-```python
-overlap_start_ms = start_ms - 300 if start_ms > 0 else start_ms
-```
-
-> 오디오를 단순히 29초 단위로 자르면 단어가 중간에 잘릴 수 있습니다. 0.3초(300ms)의 오버랩을 두어 경계 부분의 단어가 완전히 인식되도록 합니다.
-
-**병렬 처리 구현**:
-
-```python
-# 멀티스레드로 STT 요청을 동시에 보내 총 처리 시간 단축
-threads = [threading.Thread(target=_send_request, args=(f,)) for f in file_path_lst]
-for t in threads: t.start()   # 모든 스레드 시작
-for t in threads: t.join()    # 모든 스레드 완료 대기
-```
-
-**`[AUDIO]` 접두어**: `[DA]`와 마찬가지로, LLM에게 이 텍스트가 음성 전사(transcription) 결과임을 알리는 마커입니다.
-
----
-
-## 7. 청킹(Chunking) 클래스들
-
-HWP, HWPX와 DOCX 파일 처리 시 사용되는 고급 청킹 로직입니다. `Genos 지능형 전처리기` 의 `DoclingDocument` 구조를 기반으로 동작합니다.
-
-### 7.1 `HierarchicalChunker`
-
-```python
-class HierarchicalChunker(BaseChunker):
-```
-
-**목적**: 문서의 논리적 계층 구조(제목-본문-표-그림)를 유지하면서 청크를 생성합니다.
-
-**핵심 개념 — `heading_by_level` 딕셔너리**:
-
-```python
-heading_by_level: dict[LevelNumber, str] = {}
-```
-
-이 딕셔너리는 현재 문서 탐색 위치의 **제목 컨텍스트**를 추적합니다:
-
-```
-문서 구조:                        heading_by_level 상태:
-─────────                        ─────────────────────
-제1장 총칙                        {0: "제1장 총칙"}
-  제1절 목적                      {0: "제1장 총칙", 1: "제1절 목적"}
-    제1조 이 법은...               {0: "제1장 총칙", 1: "제1절 목적"}
-  제2절 범위                      {0: "제1장 총칙", 1: "제2절 범위"}
-    ↑ level 1이 바뀌면 이전 level 1("제1절 목적")은 삭제됨
-제2장 권리                        {0: "제2장 권리"}
-    ↑ level 0이 바뀌면 하위 레벨 모두 삭제됨
-```
-
-**문서 요소별 처리 방식**:
-
-```python
-def chunk(self, dl_doc: DLDocument, **kwargs: Any) -> Iterator[BaseChunk]:
-    for item, level in dl_doc.iterate_items():
-        # ── 리스트 아이템 병합 ──
-        if isinstance(item, ListItem):
-            list_items.append(item)   # 연속된 리스트 아이템을 모아둠
-            continue                  # 아직 yield하지 않음
-
-        # ── 섹션 헤더 ──
-        elif isinstance(item, SectionHeaderItem):
-            heading_by_level[level] = item.text
-            text = ''.join(heading_by_level.values())  # 누적된 제목 연결
-            yield DocChunk(text=text, ...)
-
-        # ── 일반 텍스트 ──
-        elif isinstance(item, TextItem):
-            text = item.text
-            yield DocChunk(text=text, ...)
-
-        # ── 표 ──
-        elif isinstance(item, TableItem):
-            text = item.export_to_markdown(dl_doc)  # 마크다운 표로 변환
-            yield DocChunk(text=text, ...)
-
-        # ── 그림 ──
-        elif isinstance(item, PictureItem):
-            text = ''.join(heading_by_level.values())  # 제목 컨텍스트만
-            yield DocChunk(text=text, ...)
-```
-
-**리스트 아이템 병합 로직**:
-
-```
-원본 문서:                          병합 결과 (하나의 청크):
-─────────                          ─────────────────────
-• 사과                              "사과\n배\n포도"
-• 배
-• 포도
-```
-
-연속된 리스트 아이템을 하나의 청크로 병합하여, 불필요하게 많은 소규모 청크가 생성되는 것을 방지합니다.
-
----
-
-### 7.2 `HybridChunker`
-
-```python
-class HybridChunker(BaseChunker):
-```
-
-**목적**: `HierarchicalChunker`의 결과를 받아, **토큰 수 기반**으로 청크 크기를 조절합니다. 레이아웃 구조 + 토큰 제한을 **하이브리드**로 결합합니다.
-
-**처리 파이프라인**:
-
-```
-DoclingDocument
-    │
-    ▼
-HierarchicalChunker.chunk()
-    │  → 문서 구조 기반 초기 청크 생성
-    │
-    ▼
-_split_by_doc_items()
-    │  → max_tokens 초과 청크를 doc_item 단위로 분할
-    │
-    ▼
-_split_using_plain_text()
-    │  → 그래도 초과하면 semchunk로 텍스트 레벨 분할
-    │
-    ▼
-_merge_chunks_with_matching_metadata() (merge_peers=True일 때)
-    │  → 같은 제목/캡션을 가진 작은 청크들을 다시 병합
-    │
-    ▼
-최종 청크 리스트
-```
-
-**토큰 카운팅**:
-
-```python
-@model_validator(mode="after")
-def _patch_tokenizer_and_max_tokens(self) -> Self:
-    self._tokenizer = (
-        self.tokenizer
-        if isinstance(self.tokenizer, PreTrainedTokenizerBase)
-        else AutoTokenizer.from_pretrained(self.tokenizer)
-        # 기본값: "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
-    )
-```
-
-> 토크나이저를 사용하여 텍스트의 정확한 토큰 수를 계산합니다. 단순 문자 수가 아닌 토큰 수로 제한하므로, 벡터 모델의 입력 제한에 정확히 맞출 수 있습니다.
-
-**`_split_by_doc_items()` — 슬라이딩 윈도우 분할**:
-
-```
-[아이템A, 아이템B, 아이템C, 아이템D, 아이템E]
-  window_start=0                    max_tokens=500
-  │
-  ├─ window_end=0: A만 → 200토큰 → OK, 확장 시도
-  ├─ window_end=1: A+B → 380토큰 → OK, 확장 시도
-  ├─ window_end=2: A+B+C → 520토큰 → 초과!
-  │  → A+B를 하나의 청크로 확정 (380토큰)
-  │  → window_start=2 (C부터 새 윈도우)
-  ├─ window_end=2: C만 → 140토큰 → OK, 확장 시도
-  └─ ...
-```
-
-**`_split_using_plain_text()` — 시맨틱 텍스트 분할**:
-
-```python
-sem_chunker = semchunk.chunkerify(self._tokenizer, chunk_size=available_length)
-segments = sem_chunker.chunk(text)
-# semchunk는 문장/문단 경계를 존중하면서 텍스트를 분할합니다
-```
-
-> 단일 아이템이 `max_tokens`를 초과하는 경우(예: 매우 긴 본문 단락), `semchunk` 라이브러리를 사용하여 의미적 경계(문장, 문단)를 고려한 분할을 수행합니다.
-
-**`_merge_chunks_with_matching_metadata()` — 동일 메타데이터 청크 병합**:
-
-```
-병합 전:                              병합 후:
-─────────                            ──────────
-청크1: heading="제1절", text="가"     청크1: heading="제1절", text="가\n나"
-청크2: heading="제1절", text="나"     청크2: heading="제2절", text="다"
-청크3: heading="제2절", text="다"
-```
-
-> 같은 제목(heading)과 캡션(caption)을 가진 작은 청크들을 토큰 제한 내에서 하나로 합칩니다. 이는 검색 시 문맥이 분절되는 것을 방지합니다.
-
-**이 코드에서의 특수한 사용 방식**:
-
-```python
-chunker = HybridChunker(max_tokens=int(1e30), merge_peers=True)
-```
-
-> `max_tokens=int(1e30)` (약 10억)으로 설정되어 있어, 실질적으로 **토큰 제한이 없습니다**. 즉, 이 첨부용 전처리기에서는 HybridChunker를 사실상 **레이아웃 기반 병합 도구**로만 사용하고 있으며, 토큰 수에 의한 분할은 발생하지 않습니다. 이는 속도 우선의 설계 철학에 부합합니다.
-
----
-
-### 7.3 `_split_with_recursive_chunker` (Recursive 분기)
-
-```python
-def _split_with_recursive_chunker(document, chunk_size=None, chunk_overlap=None, tokenizer_id=None) -> List[dict]:
-```
-
-**목적**: HWP/HWPX/DOCX 분기에서 `chunker_type='recursive'`(기본값)일 때 사용되는 헬퍼. `DoclingDocument`를 markdown으로 export한 뒤 `RecursiveCharacterTextSplitter`로 분할하고, 청크별 페이지 정보를 복원합니다 (이슈 #183 / #80).
-
-**왜 도입했나**:
-
-`HybridChunker`로 청크를 만들면 `chunk.text`가 노드 단위 raw text라 줄바꿈(`\n\n`/`\n`)이 충분히 들어가지 않습니다. 이 결과를 일반 `RecursiveCharacterTextSplitter`에 넣으면 separator 우선순위(`["\n\n", "\n", " ", ""]`)가 깨져, **문장 중간/조사 사이에서 잘리는 현상**이 발생합니다. `document.export_to_markdown()`은 단락마다 `\n\n`, 헤딩/리스트/표 사이에 명확한 줄바꿈을 자동으로 삽입해 이 문제를 해결합니다.
-
-**처리 흐름**:
-
-```
-DoclingDocument
-    │
-    ▼
-document.export_to_markdown(page_break_placeholder="<!-- PB -->")
-    │  → 단일 markdown 문자열. 페이지 경계마다 placeholder 삽입
-    │
-    ▼
-RecursiveCharacterTextSplitter (char 단위)
-    │  → chunk_size 8192자 / chunk_overlap 100자 (기본)
-    │
-    ▼
-60K 토큰 절대 상한 후처리
-    │  → 각 청크 토큰 수 측정 (MiniLM 토크나이저)
-    │  → 60,000 토큰 초과 청크만 token splitter로 재분할
-    │
-    ▼
-청크별 페이지 매핑 복원
-    │  → 원본 markdown에서 chunk의 위치를 찾고, 그 전까지의 placeholder 수로 page_no 계산
-    │  → 청크 텍스트에서는 placeholder 제거
-    │
-    ▼
-list[dict] {text, page_no, pages, doc_items}
-```
-
-**chunk_size 정책**:
-
-| 호출 형태 | chunk_size 단위 | chunk_size 기본 | chunk_overlap 기본 |
-|---|---|---|---|
-| `dp(..., chunker_type="recursive")` | **char** | 8192 | 100 |
-| `dp(..., chunker_type="recursive", chunk_size=2000)` | **char** | 2000 | 100 |
-
-단위는 `DocumentProcessor.split_documents`(PDF/MD/TXT 등)의 char 기반 흐름과 동일. 기본값은 RAG 컨텍스트에 적합한 8192자(한국어 기준 약 12K~16K 토큰)로 설정했다.
-
-**60K 토큰 절대 상한**: 어떤 `chunk_size`가 와도 한 청크가 60,000 토큰(임베딩 입력 한도의 절반 안전 마진)을 초과하면 자동으로 토큰 단위 splitter로 재분할됩니다. 기본 8192자 청크에서는 한국어 기준 약 12K~16K 토큰 정도라 트리거되지 않지만, 사용자가 더 큰 `chunk_size`를 명시했을 때의 안전망 역할입니다.
-
-**페이지 정보 복원**:
-
-```python
-PB = "<!-- PB -->"
-md_full = document.export_to_markdown(page_break_placeholder=PB)
-# md_full = "page1 content...<!-- PB -->page2 content...<!-- PB -->page3 content..."
-
-# 청크를 만든 후, 원본에서의 위치로 페이지 번호 역산
-pos = md_full.find(raw_chunk, ...)
-start_page = md_full[:pos].count(PB) + 1
-```
-
-> 한 청크가 여러 페이지에 걸칠 수 있으며, `doc_items`는 그 청크가 걸친 모든 페이지의 doc_item들을 합쳐 부착합니다. 이는 페이지 단위 정확도 (HybridChunker는 청크 단위 정확도) — bbox/media는 약간 거칠지만 페이지 수준에서는 정확합니다.
-
----
-
-## 8. 문서 프로세서 (Processor) 클래스들
-
-### 8.1 `DocxProcessor`
-
-```python
-class DocxProcessor:
-```
-
-**목적**: `.docx` (Microsoft Word) 파일을 Docling 엔진으로 파싱하여 구조화된 청크를 생성합니다.
-
-**Docling 변환기 설정**:
-
-```python
-self.converter = DocumentConverter(
-    format_options={
-        InputFormat.DOCX: WordFormatOption(
-            pipeline_cls=SimplePipeline,                    # 경량 파이프라인 사용
-            backend=GenosMsWordDocumentBackend              # Genos 커스텀 백엔드
-        ),
-    }
-)
-```
-
-> `SimplePipeline`은 AI 기반 레이아웃 분석을 생략하는 경량 파이프라인입니다. 속도 우선의 첨부 전처리기 철학에 맞게, 단순 파싱만 수행합니다.
-
-**처리 흐름**:
-
-```python
-async def __call__(self, request: Request, file_path: str, **kwargs: dict):
-    # 1단계: Docling으로 문서 구조 파싱
-    document: DoclingDocument = self.load_documents(file_path)
-
-    # 2단계: 이미지 참조 경로 설정
-    artifacts_dir, reference_path = self.get_paths(file_path)
-    document = document._with_pictures_refs(...)
-
-    # 3단계: 청킹 (chunker_type kwargs로 분기: 'recursive' 기본 / 'hybrid')
-    chunks = self.split_documents(document, **kwargs)
-
-    # 4단계: GenOSVectorMeta로 조립 (동일한 chunker_type 분기로 처리)
-    return await self.compose_vectors(document, chunks, file_path, request, **kwargs)
-```
-
-**`split_documents()` chunker_type 분기**:
-
-```python
-def split_documents(self, document, **kwargs):
-    chunker_type = kwargs.get("chunker_type", "recursive")
-    if chunker_type == "recursive":
-        # 이슈 #183 / #80: markdown export + RecursiveCharacterTextSplitter
-        chunks = _split_with_recursive_chunker(
-            document,
-            chunk_size=kwargs.get("chunk_size"),
-            chunk_overlap=kwargs.get("chunk_overlap"),
-        )
-        # → List[dict] {text, page_no, pages, doc_items}
-        return chunks
-    # hybrid (기존)
-    chunker = HybridChunker(max_tokens=int(1e30), merge_peers=True)
-    chunks: List[DocChunk] = list(chunker.chunk(dl_doc=document, **kwargs))
-    return chunks
-```
-
-**`compose_vectors()` 상세** (DocxProcessor / HwpProcessor 공통 구조):
-
-```python
-async def compose_vectors(self, document, chunks, [page_chunk_counts,] file_path, request, **kwargs):
-    chunker_type = kwargs.get("chunker_type", "recursive")
-    # 전역 메타데이터 (모든 청크에 공통)
-    global_metadata = dict(n_chunk_of_doc=len(chunks), n_page=document.num_pages(), ...)
-
-    for chunk_idx, chunk in enumerate(chunks):
-        # ── chunker_type별 데이터 추출 ──
-        if chunker_type == "recursive":
-            chunk_page = chunk["page_no"]
-            content = chunk["text"]                              # markdown 이미 포함
-            doc_items = chunk["doc_items"]                       # 페이지 단위 doc_items
-        else:  # hybrid
-            chunk_page = chunk.meta.doc_items[0].prov[0].page_no
-            content = self.safe_join(chunk.meta.headings) + chunk.text  # heading prepend
-            doc_items = chunk.meta.doc_items                            # 청크 단위 doc_items
-
-        # 빌더 패턴으로 GenOSVectorMeta 조립
-        vector = (GenOSVectorMetaBuilder()
-                  .set_text(content)
-                  .set_page_info(chunk_page, ...)
-                  .set_chunk_index(chunk_idx)
-                  .set_global_metadata(**global_metadata)
-                  .set_chunk_bboxes(doc_items, document)
-                  .set_media_files(doc_items)
-                  ).build()
-        vectors.append(vector)
-
-        # 이미지 파일이 있으면 비동기로 업로드 (DocxProcessor 한정)
-        if upload_files:
-            file_list = self.get_media_files(doc_items)
-            upload_tasks.append(asyncio.create_task(upload_files(file_list, request=request)))
-
-    if upload_tasks:
-        await asyncio.gather(*upload_tasks)
-```
-
-> 두 분기에서 청크의 데이터 표현이 다르기 때문에 (`dict` vs `DocChunk`) for 루프 안에서 분기합니다. recursive 분기에서는 markdown export 결과가 이미 heading/단락 구조를 가지므로 heading prepend가 필요 없습니다.
-
-**`safe_join()` 헬퍼**:
-
-```python
-def safe_join(self, iterable):
-    if not isinstance(iterable, (list, tuple, set)):
-        return ''                                    # None이면 빈 문자열
-    return ''.join(map(str, iterable)) + '\n'        # 리스트면 합쳐서 반환
-```
-
-> 제목(heading) 리스트를 안전하게 하나의 문자열로 합칩니다. `None`이 들어와도 에러 없이 처리됩니다.
-
----
-
-### 8.2 `HwpProcessor`
-
-```python
-class HwpProcessor:
-```
-
-**목적**: `.hwp`(바이너리 한글)과 `.hwpx`(XML 한글) 파일을 **hwp_sdk**(`convtext`)를 통해 통합 처리합니다.
-
-기존에는 `.hwp`는 `HwpLoader`(hwp5html → PDF)로, `.hwpx`는 `HwpxProcessor`(순수 XML 파싱)로 각각 처리했습니다. 이번 업데이트에서 두 클래스를 하나로 통합하고, 백엔드를 `GenosHwpDocumentBackend`로 교체했습니다.
-
-**변환기 설정**:
-
-```python
-self.converter = DocumentConverter(
-    format_options={
-        # .hwp(바이너리)도 HwpxFormatOption의 틀을 빌려 SDK 백엔드로 연결
-        InputFormat.HWP: HwpxFormatOption(
-            pipeline_options=self.pipeline_options,
-            backend=GenosHwpDocumentBackend
-        ),
-        # .hwpx(XML)도 동일한 SDK 백엔드로 처리
-        InputFormat.XML_HWPX: HwpxFormatOption(
-            pipeline_options=self.pipeline_options,
-            backend=GenosHwpDocumentBackend
-        )
-    }
-)
-```
-
-**처리 흐름**:
-
-```python
-async def __call__(self, request, file_path, **kwargs):
-    # 1단계: SDK 백엔드로 문서 변환 (.hwp / .hwpx 모두 동일 경로, 실패 시 폴백)
-    document: DoclingDocument = self.load_documents(file_path, **kwargs)
-
-    # 2단계: 이미지 참조 경로 설정
-    artifacts_dir, reference_path = self.get_paths(file_path)
-    document = document._with_pictures_refs(...)
-
-    # 3단계: 청킹 (chunker_type kwargs로 분기: 'recursive' 기본 / 'hybrid')
-    chunks, page_chunk_counts = self.split_documents(document, **kwargs)
-
-    # 4단계: GenOSVectorMetaBuilder로 벡터 조립 (동일한 chunker_type 분기로 처리)
-    return await self.compose_vectors(document, chunks, page_chunk_counts, request, **kwargs)
-```
-
-> `split_documents` / `compose_vectors`는 `kwargs.get("chunker_type", "recursive")`을 보고 내부에서 분기합니다. recursive 분기는 [7.3 `_split_with_recursive_chunker`](#73-_split_with_recursive_chunker-recursive-분기)를, hybrid 분기는 [7.2 `HybridChunker`](#72-hybridchunker)를 사용합니다.
-
-| 비교 항목 | DocxProcessor | HwpProcessor |
-|-----------|--------------|--------------|
-| 입력 포맷 | `InputFormat.DOCX` | `InputFormat.HWP` + `InputFormat.XML_HWPX` |
-| 포맷 옵션 | `WordFormatOption` | `HwpxFormatOption` |
-| 백엔드 | `GenosMsWordDocumentBackend` | `GenosHwpDocumentBackend` (hwp_sdk) |
-| 청킹 (기본: recursive) | `_split_with_recursive_chunker` | `_split_with_recursive_chunker` |
-| 청킹 (옵션: hybrid) | `HybridChunker(merge_peers=True)` | `HybridChunker(merge_peers=True, include_headings=False)` |
-| 페이지 카운트 관리 | `self.page_chunk_counts` (인스턴스 상태) | `page_chunk_counts` (요청 단위 로컬 변수) |
-| 나머지 로직 | 동일 | 동일 |
-
-#### 수식(LaTeX) 추출 (이슈 #195)
-
-신규 HWP SDK가 수식 추출 기능을 지원하면서, `GenosHwpDocumentBackend`도 SDK가 emit하는 수식을 docling의 `DocItemLabel.FORMULA` 노드로 변환하도록 확장되었습니다. 사용자 입장에서는 별도 옵션 없이 기본 동작으로 활성화되며, 청크 출력에서는 docling 표준 직렬화 규칙에 따라 block 수식은 `$$...$$`로, 표 셀 내부의 inline 수식은 `<math>...</math>`로 나타납니다. (인라인 표기는 chandra OCR prompt의 수식 컨벤션과 정합 — KaTeX-compatible LaTeX 본문을 `<math>` 태그로 wrap.)
-
-SDK는 두 가지 형태로 수식을 emit하며, 백엔드는 각각을 다음과 같이 처리합니다:
-
-| SDK 출력 형태 | 등장 위치 | 백엔드 처리 |
-|---------------|----------|-------------|
-| `{"item": "latex", "value": "<base64>", ...}` 단독 batch | 본문/리스트 등 paragraph 흐름 | base64 디코드 후 `DoclingDocument`에 `DocItemLabel.FORMULA` 노드로 추가 |
-| `<latex value="<base64>"/>` HTML 태그 | 표 셀 HTML(`{"item":"table"}`) 내부 | `TableCell.text`가 단순 문자열이라 별도 노드로 못 박기에, BeautifulSoup로 태그를 찾아 디코드 후 `<math>{decoded}</math>`로 셀 텍스트에 치환 (chandra 컨벤션 정합) |
-
-SDK 출력에는 두 가지 비정상 패턴이 있어 백엔드가 정규화/stream 파싱으로 대응합니다 (이 두 가지를 처리하지 않으면 record 일부가 손실됨):
-- **base64 줄바꿈**: 긴 latex value를 SDK가 RFC 4648 line-wrap으로 출력하여 한 record가 여러 물리 줄에 걸침 → `JSONDecoder.raw_decode` 기반 stream 파싱으로 처리
-- **표 셀 내 임베드 `<latex value="..."/>`의 inner `"` 미escape**: outer JSON 문자열이 그 지점에서 조기 종료되어 파싱 실패 → 정규식 정규화로 inner `"`를 `\"`로 escape
-
----
-
-### 8.3 `DocumentProcessor` (메인 엔트리포인트)
-
-```python
-class DocumentProcessor:
-```
-
-**목적**: 모든 파일 포맷을 통합 관리하는 **메인 컨트롤러**입니다. 파일 확장자에 따라 적절한 로더/프로세서를 선택하여 처리합니다.
-
-#### `__call__()` — 실행 진입점
-
-```python
-async def __call__(self, request: Request, file_path: str, **kwargs: dict):
-```
-
-**확장자별 분기 로직**:
-
-```python
-    ext = os.path.splitext(file_path)[-1].lower()
-
-    if ext in ('.wav', '.mp3', '.m4a'):
-        # ── 오디오 파일 ──
-        loader = AudioLoader(...)
-        vectors = loader.return_vectormeta_format()
-        return vectors
-
-    elif ext in ('.csv', '.xlsx'):
-        # ── 정형 데이터 ──
-        loader = TabularLoader(file_path, ext)
-        vectors = loader.return_vectormeta_format()
-        return vectors
-
-    elif ext in ('.hwp', '.hwpx'):
-        # ── 한글(HWP/HWPX) ── hwp_sdk 기반 통합 프로세서에 위임
-        return await self.hwp_processor(request, file_path, **kwargs)
-
-    elif ext == '.docx':
-        # ── Word(DOCX) ── Docling 기반 프로세서에 위임
-        return await self.docx_processor(request, file_path, **kwargs)
-
-    else:
-        # ── 기타 모든 포맷 (PDF, PPT, DOC, 이미지, TXT 등) ──
-        documents = self.load_documents(file_path)
-        chunks = self.split_documents(documents)
-        vectors = self.compose_vectors(file_path, chunks)
-        return vectors
-```
-
-#### `get_loader()` — 로더 선택기
-
-파일 확장자에 따라 적절한 LangChain 로더를 반환합니다.
-
-```python
-def get_loader(self, file_path: str, use_pdf_sdk: bool = True):
-    ext = os.path.splitext(file_path)[-1].lower()
-    real_type = self.get_real_file_type(file_path)  # 매직 바이트로 실제 타입 확인
-
-    # 확장자와 실제 타입이 다르면 실제 타입 우선 (확장자 조작/오류 대응)
-    if ext != real_type and real_type == 'pdf':
-        return PyMuPDFLoader(file_path)
-    # 변환 분기에서는 convert_to_pdf(file_path, use_pdf_sdk=use_pdf_sdk) 호출
-```
-
-**확장자-로더 매핑 총정리**:
+`get_real_file_type`가 매직 바이트(`%PDF-`, `\x89PNG`, `\xff\xd8\xff`)로 실제 타입을 판정해, 확장자가 조작/손실된 경우에도 올바른 로더를 선택합니다.
 
 | 확장자 | 로더 | 비고 |
 |--------|------|------|
-| `.pdf` | `PyMuPDFLoader` | 가장 빠른 PDF 텍스트 추출 |
-| `.doc` | `UnstructuredWordDocumentLoader` | PDF 변환(SDK 기본 / LibreOffice fallback) 후 처리 |
-| `.ppt`, `.pptx` | `UnstructuredPowerPointLoader` | PDF 변환(SDK 기본 / LibreOffice fallback) 후 처리 |
-| `.jpg`, `.jpeg`, `.png` | `UnstructuredImageLoader` | OCR로 텍스트 추출 (한/영) |
-| `.txt`, `.json` | `TextLoader` (커스텀) | 인코딩 자동 감지 |
-| `.hwp`, `.hwpx` | `HwpProcessor` (섹션 8.2 참고) | HWP/HWPX 변환 → Docling 파싱 |
-| `.md` | `UnstructuredMarkdownLoader` | 마크다운 구조 파싱 |
-| `.html` | `UnstructuredFileLoader` | 범용 폴백 로더로 텍스트 추출 |
-| 기타 | `UnstructuredFileLoader` | 범용 폴백 로더 |
+| `.pdf` | `PyMuPDFLoader` | 빠른 텍스트 추출 |
+| `.doc` | `UnstructuredWordDocumentLoader` | PDF 변환 후 처리 |
+| `.ppt`/`.pptx` | `UnstructuredPowerPointLoader` | PDF 변환 후 처리 |
+| `.jpg`/`.jpeg`/`.png` | `UnstructuredImageLoader` | OCR (`loaders.image.ocr_languages`) |
+| `.txt`/`.json` | `TextLoader` | 인코딩 자동 감지 |
+| `.md` | `TextLoader`(우선) / `UnstructuredMarkdownLoader` | |
+| 기타/`.html` | `UnstructuredFileLoader` | 범용 폴백 |
 
-#### `get_real_file_type()` — 파일 매직 바이트 검사
+### D. 청킹 내부
 
-```python
-def get_real_file_type(self, file_path: str) -> str:
-    with open(file_path, 'rb') as f:
-        header = f.read(8)         # 파일의 처음 8바이트 읽기
-    if header.startswith(b'%PDF-'):      # PDF 매직 바이트
-        return 'pdf'
-    elif header.startswith(b'\x89PNG'):   # PNG 매직 바이트
-        return 'png'
-    elif header.startswith(b'\xff\xd8\xff'):  # JPEG 매직 바이트
-        return 'jpg'
-    return os.path.splitext(file_path)[-1].lower()  # 판단 불가 시 확장자 사용
-```
+- **recursive (`_split_with_recursive_chunker`)**: `export_to_markdown(page_break_placeholder="<!-- PB -->")`로 단일 markdown 생성 → `RecursiveCharacterTextSplitter`(문자 단위) → 60K 토큰 cap 후처리 → placeholder 카운트로 페이지 매핑 복원. 반환은 `list[dict]{text, page_no, pages, doc_items}`. 한 청크가 여러 페이지에 걸칠 수 있어 페이지 단위 정확도를 가집니다.
+- **hybrid (`HybridChunker`)**: `HierarchicalChunker`로 레이아웃 청크 생성 → `_split_by_doc_items`(슬라이딩 윈도우) → `_split_using_plain_text`(semchunk) → `merge_peers=true`면 동일 메타데이터 청크 병합. 청크 단위 bbox 정확도.
+- 두 분기는 `compose_vectors`에서 `chunker_type`으로 다시 분기해 처리됩니다 (recursive=dict, hybrid=DocChunk).
 
-> **왜 필요한가?**: 사용자가 확장자를 잘못 지정하거나(예: PDF 파일인데 `.txt`로 저장), 시스템에서 확장자가 손실된 경우에도 올바른 로더를 선택할 수 있게 합니다.
+### E. 출력 조립 (`GenOSVectorMetaBuilder`)
 
-#### `split_documents()` — 텍스트 분할
+빌더 패턴으로 메타데이터를 조립합니다: `set_text`(n_char/word/line 자동 계산) → `set_page_info` → `set_chunk_index` → `set_global_metadata` → `set_chunk_bboxes`(0~1 정규화 좌표) → `set_media_files` → `build`. 일반 분기(`DocumentProcessor.compose_vectors`)는 빌더 대신 dict를 직접 구성하며 bbox/media를 생략합니다.
 
-```python
-def split_documents(self, documents, **kwargs: dict) -> list[Document]:
-    chunk_size = kwargs.get('chunk_size', 1000)      # 기본 1000자
-    chunk_overlap = kwargs.get('chunk_overlap', 100)  # 기본 100자 오버랩
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-    )
-```
+### F. HWP 수식(LaTeX) 추출
 
-**`RecursiveCharacterTextSplitter` 동작 원리**:
-
-```
-입력 텍스트 (3000자):
-─────────────────────────────────────────────────────────────
-
-chunk_size=1000, chunk_overlap=100 이면:
-
-청크 1: [0 ─────────────── 1000]
-청크 2:              [900 ─────────────── 1900]     ← 100자 오버랩
-청크 3:                            [1800 ─────────────── 2800]
-청크 4:                                          [2700 ──── 3000]
-
-"Recursive"의 의미: 분할 구분자를 단계적으로 시도
-  1순위: "\n\n" (빈 줄, 문단 경계)
-  2순위: "\n" (줄 바꿈)
-  3순위: " " (공백)
-  4순위: "" (글자 단위)
-```
-
-#### `compose_vectors()` — 벡터 메타데이터 조립
-
-이 메서드는 `HwpProcessor`/`DocxProcessor`와 달리 빌더 패턴을 사용하지 않고, 딕셔너리를 직접 구성합니다:
-
-```python
-def compose_vectors(self, file_path, chunks, **kwargs):
-    # ...
-
-    for chunk_idx, chunk in enumerate(chunks):
-        page = chunk.metadata.get('page', 1)
-        if ext not in ['.hwpx', '.docx']:
-            page += 1    # LangChain 로더는 페이지를 0부터, 
-                         # Docling은 1부터 시작하므로 보정
-
-        vectors.append(GenOSVectorMeta.model_validate({
-            'text': text,
-            'n_char': len(text),
-            'n_word': len(text.split()),
-            'n_line': len(text.splitlines()),
-            'i_page': page,
-            'e_page': page,
-            'i_chunk_on_page': chunk_index_on_page,
-            'n_chunk_of_page': self.page_chunk_counts[page],
-            'i_chunk_on_doc': chunk_idx,
-            **global_metadata
-        }))
-```
-
-> **첨부용 전처리기의 특징**: 주석에서도 언급되듯이, bbox(바운딩 박스) 정보 추출은 생략됩니다. 이는 속도를 위한 의도적 생략입니다.
-
-#### `setup_logging()` — 로깅 레벨 설정
-
-```python
-def setup_logging(self, level_num: int):
-    # 레벨 매핑:
-    # 5 → DEBUG   (가장 상세)
-    # 4 → INFO    (기본값)
-    # 3 → WARNING
-    # 2 → ERROR
-    # 1 → CRITICAL
-    # 0 → NOLOG   (모든 로그 비활성화)
-```
+`GenosHwpDocumentBackend`는 SDK가 emit하는 수식을 `DocItemLabel.FORMULA` 노드로 변환합니다(별도 옵션 불필요). block 수식은 `$$...$$`, 표 셀 내 inline 수식은 `<math>...</math>`로 출력됩니다. SDK 출력의 base64 줄바꿈은 stream 파싱으로, 표 셀 임베드 `<latex value="..."/>`의 미escape `"`는 정규식 정규화로 대응합니다.
 
 ---
 
-## 9. 예외 클래스
-
-```python
-class GenosServiceException(Exception):
-    def __init__(self, error_code: str, error_msg: Optional[str] = None, 
-                 msg_params: Optional[dict] = None) -> None:
-        self.code = 1
-        self.error_code = error_code
-        self.error_msg = error_msg or "GenOS Service Exception"
-        self.msg_params = msg_params or {}
-```
-
-**목적**: GenOS 플랫폼과의 의존성을 제거하기 위한 독립적 예외 클래스입니다. 원래 GenOS 프레임워크에 내장된 예외를 대체합니다.
-
-**사용 위치**:
-- `DocxProcessor.__call__()`: 청크가 0개일 때 발생
-- `HwpProcessor.__call__()`: 청크가 0개일 때 발생
-
-```python
-if len(chunks) >= 1:
-    vectors = await self.compose_vectors(...)
-else:
-    raise GenosServiceException(1, f"chunk length is 0")
-```
-
----
-
-## 10. 실행 흐름 요약
-
-### 사용 방법 (Genos facade에 통합 시)
-
-```python
-# 1. DocumentProcessor 인스턴스 생성
-processor = DocumentProcessor()
-
-# 2. 파일 처리 호출 (비동기)
-vectors = await processor(
-    request=request,           # FastAPI Request 객체
-    file_path="/path/to/file.pdf",
-    chunk_size=1000,           # 선택: 청크 크기 (기본값 1000)
-    chunk_overlap=100,         # 선택: 청크 오버랩 (기본값 100)
-    log_level=4,               # 선택: 로그 레벨 (기본값 4=INFO)
-)
-
-# 3. 결과: List[GenOSVectorMeta]
-for v in vectors:
-    print(v.text)              # 청크 텍스트
-    print(v.i_page)            # 페이지 번호
-    print(v.i_chunk_on_doc)    # 문서 내 청크 순서
-```
-
-### 전체 처리 흐름 (PDF 파일 예시)
-
-```
-processor(request, "/data/report.pdf")
-    │
-    ▼
-__call__()
-    │  ext = '.pdf' → else 분기
-    │
-    ├── load_documents("/data/report.pdf")
-    │   │
-    │   ├── get_loader() → PyMuPDFLoader 선택
-    │   └── loader.load() → List[Document]
-    │       [
-    │         Document(page_content="1페이지 텍스트...", metadata={'page': 0}),
-    │         Document(page_content="2페이지 텍스트...", metadata={'page': 1}),
-    │         ...
-    │       ]
-    │
-    ├── split_documents(documents, chunk_size=1000)
-    │   │
-    │   └── RecursiveCharacterTextSplitter로 분할
-    │       → List[Document] (청크 단위)
-    │
-    └── compose_vectors("/data/report.pdf", chunks)
-        │
-        └── 각 청크를 GenOSVectorMeta로 변환
-            [
-              GenOSVectorMeta(text="제1조...", i_page=1, i_chunk_on_doc=0, ...),
-              GenOSVectorMeta(text="제2조...", i_page=1, i_chunk_on_doc=1, ...),
-              GenOSVectorMeta(text="제3조...", i_page=2, i_chunk_on_doc=2, ...),
-              ...
-            ]
-```
-
----
-
-## 11. 지원 파일 포맷 총정리
-
-| 카테고리 | 확장자 | 처리 경로 | 핵심 도구 |
-|----------|--------|-----------|-----------|
-| **PDF** | `.pdf` | 직접 텍스트 추출 | PyMuPDF |
-| **한글** | `.hwp`, `.hwpx` | HWP/HWPX 변환 → Docling 구조 파싱 | HwpProcessor + RecursiveCharacterTextSplitter(기본) / HybridChunker(옵션) |
-| **Word** | `.docx` | Docling 구조 파싱 | Docling + RecursiveCharacterTextSplitter(기본) / HybridChunker(옵션) |
-| **Word 레거시** | `.doc` | PDF 변환(SDK 기본 / LibreOffice fallback) | LangChain Unstructured |
-| **프레젠테이션** | `.ppt`, `.pptx` | PDF 변환(SDK 기본 / LibreOffice fallback) | LangChain Unstructured |
-| **스프레드시트** | `.csv` | pandas DataFrame 파싱 | pandas + DataFrameLoader |
-| **스프레드시트** | `.xlsx` | pandas DataFrame 파싱 (다중 시트) | pandas + openpyxl |
-| **이미지** | `.jpg`, `.jpeg`, `.png` | OCR 텍스트 추출 | Unstructured + Tesseract |
-| **텍스트** | `.txt`, `.json` | 인코딩 감지 + 직접 읽기 | chardet |
-| **마크다운** | `.md` | 마크다운 구조 파싱 | Unstructured Markdown |
-| **HTML** | `.html` | 범용 텍스트 추출 (else 분기 → `UnstructuredFileLoader`) | Unstructured |
-| **오디오** | `.mp3`, `.wav`, `.m4a` | STT (Speech-to-Text) | pydub + Whisper API |
-| **기타** | 그 외 | 범용 텍스트 추출 시도 | UnstructuredFileLoader |
-
----
-
-> **참고**: 이 전처리기는 **속도를 최우선**으로 설계되어, AI 기반 레이아웃 분석(Layout Detection)이나 TableFormer 같은 고급 기능은 포함하지 않습니다. 고품질 구조 분석이 필요한 경우 `intelligent_processor.py`를, PDF 표준화가 필요한 경우 `convert_processor.py`를 사용하세요.
+> **참고**: 이 전처리기는 속도를 최우선으로 설계되어 AI 기반 레이아웃 분석이나 TableFormer 같은 고급 기능은 포함하지 않습니다. 고품질 구조 분석은 `intelligent_processor`, PDF 표준화는 `convert_processor`를 사용하세요.

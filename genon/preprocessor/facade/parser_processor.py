@@ -1045,6 +1045,12 @@ class IntelligentDocumentProcessor:
         layout_ep = genos_layout_cfg.get("endpoint") or cfg.get("layout_endpoint", "")
         layout_key = genos_layout_cfg.get("api_key") or cfg.get("layout_api_key", "")
         page_batch_size = genos_layout_cfg.get("page_batch_size", cfg.get("page_batch_size", 32))
+        max_completion_tokens = _parse_optional_int(
+            genos_layout_cfg.get("max_completion_tokens"),
+            "layout.genos_layout.max_completion_tokens",
+        )
+        if max_completion_tokens is None or max_completion_tokens <= 0:
+            max_completion_tokens = 16384
         try:
             page_batch_size = int(page_batch_size)
             if page_batch_size <= 0:
@@ -1110,6 +1116,7 @@ class IntelligentDocumentProcessor:
         self.pipe_line_options.layout_options.layout_model_type = layout_model_type
         self.pipe_line_options.layout_options.genos_layout_options.endpoint = layout_ep
         self.pipe_line_options.layout_options.genos_layout_options.api_key = layout_key
+        self.pipe_line_options.layout_options.genos_layout_options.max_completion_tokens = max_completion_tokens
 
         docling_settings.perf.page_batch_size = page_batch_size
 

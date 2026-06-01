@@ -268,7 +268,7 @@ def _get_pdf_path(file_path: str) -> str:
     return pdf_path
 
 
-class GenosBucketChunker(BaseChunker):
+class GenosSmartChunker(BaseChunker):
     """토큰 제한을 고려하여 섹션별 청크를 분할하고 병합하는 청커 (v2)"""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -1274,6 +1274,14 @@ class DocumentProcessor:
             page_batch_size = 32
         settings.perf.page_batch_size = page_batch_size
 
+        max_completion_tokens = _parse_optional_int(
+            _as_dict(layout_cfg.get("genos_layout")).get("max_completion_tokens"),
+            "layout.genos_layout.max_completion_tokens",
+        )
+        if max_completion_tokens is None or max_completion_tokens <= 0:
+            max_completion_tokens = 16384
+        self.pipe_line_options.layout_options.genos_layout_options.max_completion_tokens = max_completion_tokens
+
         self.pipe_line_options.do_table_structure = True
         self.pipe_line_options.table_structure_options.do_cell_matching = True
         self.pipe_line_options.table_structure_options.mode = table_structure_mode
@@ -1527,7 +1535,7 @@ class DocumentProcessor:
         return chunks
 
     def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
-        chunker: GenosBucketChunker = GenosBucketChunker(
+        chunker: GenosSmartChunker = GenosSmartChunker(
             max_tokens = kwargs.get('max_chunk_size', 0),
             merge_peers = True
         )

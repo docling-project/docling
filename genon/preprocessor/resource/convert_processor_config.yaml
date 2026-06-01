@@ -38,6 +38,7 @@ layout:
     endpoint: "http://llmops-gateway-api-service:8080/rep/serving/<LAYOUT_SERVING_ID>/v1/chat/completions"
     api_key: ""
     page_batch_size: 32
+    max_completion_tokens: 16384
 
 # PDF 파이프라인 (docling PDF 파싱 성능/품질 노브)
 pdf_pipeline:

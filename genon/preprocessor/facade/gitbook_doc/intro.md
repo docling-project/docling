@@ -23,7 +23,7 @@
   * **데이터 변환**: CSV, Excel 등의 정형 데이터를 LLM이 이해하기 쉬운 텍스트/JSON 형태로 신속 변환
   * **청커 선택**: HWP/HWPX/DOCX 청킹 방식을 `chunker_type` kwargs로 선택 (`recursive`(기본) / `hybrid`). `recursive`는 docling 문서를 markdown으로 export 후 `RecursiveCharacterTextSplitter`로 분할하며, 임베딩 입력 한도(60,000 토큰)를 절대 상한으로 강제
 
-## 1A. 변환용 전처리기 (Convert Processor)
+## 2. 변환용 전처리기 (Convert Processor)
 문서의 시각적 형태(Layout)를 유지해야 하거나, 텍스트 추출이 까다로운 레거시 포맷을 처리하기 위한 전처리기입니다. 모든 문서를 **PDF로 우선 변환(Rendering)**하여 포맷의 파편화를 해결합니다.
 첨부용 전처리기 대용으로 쓸 수 있도록 고안된 첨부 전처리기의 변형 전처리기 입니다.
 
@@ -35,7 +35,7 @@
   * **시각적 정합성 유지**: 원본 문서의 폰트, 이미지 배치, 페이지 레이아웃을 그대로 보존
   * **하이브리드 추출**: 변환된 PDF 레이어에서 텍스트와 이미지 정보를 결합하여 안정적인 정보 획득
 
-## 2. 파싱용 전처리기 (Parser Processor)
+## 3. 파싱용 전처리기 (Parser Processor)
 문서를 파싱하여 **element 단위 구조화 결과**를 반환하는 API 지향 전처리기입니다. 청킹이나 벡터 결합 없이, 원문 구조를 최대한 보존한 파싱 결과가 필요할 때 적합합니다.
 
 **"구조 중심: Element 단위 파싱 결과 반환"**
@@ -47,7 +47,7 @@
   * **출력 포맷 제어**: `config.yaml`의 `output.format`(`json`/`html`/`markdown`)과 `table_format`으로 응답 형태 제어
   * **Gateway 호출 표준화**: `/preprocessor/{id}/healthcheck`, `/preprocessor/{id}/run` 엔드포인트로 외부 시스템 연동 용이
 
-## 3. 적재용 지능형 전처리기 (Intelligent Processor)
+## 4. 적재용 지능형 전처리기 (Intelligent Processor)
 RAG(검색 증강 생성) 시스템의 지식 베이스 구축을 위해 설계된 고성능 전처리기입니다. 단순 텍스트 추출을 넘어, **딥러닝 기반의 Layout 분석**을 통해 문서의 논리적 구조를 정확하게 파악합니다.
 
 **"품질 중심: AI 기반 레이아웃 분석 및 고품질 데이터 적재"**

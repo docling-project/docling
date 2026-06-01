@@ -156,6 +156,7 @@ layout:
     endpoint: "http://llmops-gateway-api-service:8080/rep/serving/<LAYOUT_SERVING_ID>/v1/chat/completions"
     api_key: ""
     page_batch_size: 32
+    max_completion_tokens: 16384
 
 # ───────────────────────────────────────────────
 # PDF 파이프라인 (docling PDF 파싱 성능/품질 노브)
@@ -319,6 +320,7 @@ whisper:
 | `layout.genos_layout` | `endpoint` | `""` | Genos Layout API URL |
 | `layout.genos_layout` | `api_key` | `""` | API 인증 키 |
 | `layout.genos_layout` | `page_batch_size` | `32` | 배치당 처리 페이지 수. 양의 정수, 유효하지 않으면 32로 대체 |
+| `layout.genos_layout` | `max_completion_tokens` | `16384` | Layout LLM 최대 생성 토큰. 양의 정수, 유효하지 않거나 0 이하이면 16384로 대체 |
 | `pdf_pipeline` | `num_threads` | `8` | accelerator 스레드 수. 양의 정수, 유효하지 않으면 8 |
 | `pdf_pipeline` | `device` | `"auto"` | accelerator 디바이스. `auto` / `cpu` / `cuda` / `mps` (유효하지 않으면 `auto`) |
 | `pdf_pipeline` | `images_scale` | `2` | 페이지/그림 이미지 렌더 배율. 양의 정수, 유효하지 않으면 2 |
@@ -388,10 +390,40 @@ whisper:
 - `pages`로 지정한 페이지(미지정 시 첫 4페이지)의 텍스트를 추출하고 `<!-- image -->` 태그를 제거한 뒤 `user_prompt`의 `{{raw_text}}`에 주입하여 LLM을 1회 호출합니다.
 - 응답은 `parser.type`(`json` 기본값 / `python`)으로 파싱하며, `output_fields`로 지정한 키만 추출합니다 (비어 있으면 파싱 결과 전체).
 - 추출 결과는 docling `KeyValueItem`으로 문서에 저장되고, enrichment 컨텍스트의 `metadata`에도 병합됩니다.
-- **`field_transforms`(선택):** 추출된 메타데이터 키를 typed 벡터 필드로 변환하는 선언형 매핑 목록입니다. 각 항목은 `source`(후보 키, 문자열 또는 목록) → `target`(벡터 필드) → `type`(값 변환기) / `fallback`(보조 추출)로 구성됩니다.
-  - 지원 `type`: `date_int` — 날짜 텍스트/정수를 `YYYYMMDD` 정수로 변환 (`YYYY-MM-DD`, `YYYY년 MM월 DD일`, `YYYY-MM`, `YYYY` 등 인식, 실패 시 `0`)
-  - 지원 `fallback`: `doc_text_scan` — 변환값이 비어 있으면 문서 본문에서 `기준일`/`작성일`/`최초 작성일`/`보고자료` 등 키워드 주변 날짜를 휴리스틱으로 추출
-  - `field_transforms` 미지정 시 `created_date`(`source: [created_date, 작성일]`, `type: date_int`, `fallback: doc_text_scan`) 기본 변환이 적용되어 기존 동작을 보존합니다.
+- **`field_transforms`(선택):** 추출 결과의 키를 벡터 메타 필드로 매핑·변환하는 선언형 목록입니다.
+
+`output_fields` 로 추출한 키 이름은 프롬프트가 정하기 나름이고(`created_date`, `작성일`, `doc_date` …) 값도 문자열이라, 검색에 쓰이는 최종 벡터 메타 필드와 이름·타입이 다를 수 있습니다. `field_transforms` 는 **"추출 결과의 어떤 키를 → 어떤 벡터 필드에 → 어떤 변환을 거쳐 넣을지"** 를 YAML 로 선언하는 다리 역할입니다. 프롬프트를 바꿔 추출 키 이름이 달라져도 `source` 만 고치면 되고, 코드 수정 없이 설정만으로 매핑을 바꿀 수 있습니다.
+
+```yaml
+metadata:
+  field_transforms:
+    - source: [created_date, 작성일]   # 추출 결과에서 순서대로 탐색할 후보 키
+      target: created_date            # 값을 넣을 벡터 메타 필드 (생략 시 source 첫 키)
+      type: date_int                  # 값 변환기: 날짜 텍스트 → YYYYMMDD 정수
+      fallback: doc_text_scan         # 추출이 비면 본문에서 보조 추출
+```
+
+각 항목(spec)의 필드:
+
+| 필드 | 필수 | 의미 |
+|------|------|------|
+| `source` | ✅ | 추출 결과에서 찾을 후보 키. 문자열 1개 또는 목록(목록이면 순서대로 탐색해 **첫 비어있지 않은 값** 사용) |
+| `target` | 선택 | 값을 넣을 벡터 메타 필드명. 생략 시 `source` 첫 키 |
+| `type` | 선택 | 값 변환기. 현재 지원: `date_int` — 날짜 텍스트/정수를 `YYYYMMDD` 정수로 변환(`YYYY-MM-DD`, `YYYY년 MM월 DD일`, `YYYY-MM`(일자 `01`), `YYYY`(`0101`) 인식, 실패 시 `0`). 생략 시 값을 그대로 사용 |
+| `fallback` | 선택 | 추출값이 비었을 때 쓸 보조 추출. 현재 지원: `doc_text_scan` — 본문에서 `기준일`/`작성일`/`최초 작성일`/`보고자료` 키워드 주변 날짜를 휴리스틱 탐색 |
+
+**동작 흐름** (각 spec 마다): ① `source` 후보 키를 순서대로 보며 첫 비어있지 않은 값 선택 → ② `type` 변환기 적용 → ③ 값이 비면 `fallback` 으로 본문에서 보조 추출 → ④ 결과를 `target` 에 주입(사용한 키는 passthrough 제외) → ⑤ 변환 대상이 아닌 나머지 추출 키는 그대로 벡터 메타에 통과(passthrough), 중첩 객체는 JSON 문자열로 직렬화.
+
+**입력 → 출력 예시** (위 기본 설정 기준)
+
+```text
+추출 결과:  { "created_date": "2025-01-15", "department": "IT" }
+→ 벡터 메타: created_date = 20250115 (date_int 변환),  department = "IT" (passthrough)
+```
+
+- **키 이름 변경**: 프롬프트가 `doc_date` 로 추출하면 `source: [doc_date]` 로만 바꿔도 `created_date` 가 동일하게 채워집니다.
+- **fallback**: 추출이 비고 본문에 `"보고자료 2024-01-15 기준"` 이 있으면 `created_date: 20240115` 로 보강됩니다.
+- `field_transforms` 미지정 시 위 `created_date` 기본 변환(`DEFAULT_METADATA_FIELD_TRANSFORMS`)이 적용되어 기존 동작을 보존합니다. 신규 변환기/보조추출은 `field_transforms.py` 의 `VALUE_TRANSFORMS`/`FALLBACK_STRATEGIES` 에 등록하면 YAML 에서 바로 사용할 수 있습니다.
 
 #### 커스텀 필드 enricher
 

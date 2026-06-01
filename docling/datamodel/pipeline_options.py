@@ -391,7 +391,7 @@ class GenosLayoutOptions(BaseModel):
     endpoint: str = None
     api_key: str = ""
     model: str = "dots-mocr"
-    max_completion_tokens: int = 6000
+    max_completion_tokens: int = 16384
     timeout: int = 3600
     retry_count: int = 2  # Number of retries on abnormal VLM responses
 
