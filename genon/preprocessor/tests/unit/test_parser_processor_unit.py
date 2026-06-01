@@ -44,6 +44,7 @@ def dp():
     proc._whisper_url = ""
     proc._whisper_req_data = {}
     proc._whisper_chunk_sec = 29
+    proc._log_level = 4  # __call__ 이 setup_logging 에서 참조 (정상 __init__ 우회 보강)
     return proc
 
 
