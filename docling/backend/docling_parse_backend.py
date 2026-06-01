@@ -10,6 +10,7 @@ from docling_core.types.doc.page import SegmentedPdfPage, TextCell
 from docling_parse.pdf_parser import (
     DoclingPdfParser,
     DoclingThreadedPdfParser,
+    PageMaterializationConfig,
     PageParseResult,
     PdfDocument,
     RenderConfig,
@@ -54,13 +55,16 @@ def _make_docling_parse_decode_config(
     config.create_word_cells = create_words
     config.create_line_cells = create_textlines
     config.enforce_same_font = True
-    config.materialize_bitmap_bytes = (
-        False  # don't need bitmap images, only rectangles.
-    )
 
     if release_native_memory_every_n_pages is not None:
         config.release_native_memory_every_n_pages = release_native_memory_every_n_pages
 
+    return config
+
+
+def _make_docling_parse_page_materialization_config() -> PageMaterializationConfig:
+    config = PageMaterializationConfig()
+    config.materialize_bitmap_bytes = False  # don't need bitmap images, only rectangles.
     return config
 
 
@@ -116,7 +120,12 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         )
 
         assert self._dp_doc is not None
-        seg_page = self._dp_doc.get_page(self._page_no + 1, config=config)
+        materialization_config = _make_docling_parse_page_materialization_config()
+        seg_page = self._dp_doc.get_page(
+            self._page_no + 1,
+            config=config,
+            materialization_config=materialization_config,
+        )
 
         # In Docling, all TextCell instances are expected with top-left origin.
         [
@@ -462,12 +471,14 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             create_textlines=True,
             release_native_memory_every_n_pages=native_memory_release_interval,
         )
+        materialization_config = _make_docling_parse_page_materialization_config()
 
         self.parser = DoclingThreadedPdfParser(
             parser_config=ThreadedPdfParserConfig(
                 loglevel="fatal",
                 threads=parser_threads,
                 render_config=render_config,
+                page_materialization_config=materialization_config,
             ),
             decode_config=decode_config,
         )

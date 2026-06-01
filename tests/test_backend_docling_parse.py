@@ -423,8 +423,12 @@ def test_threaded_backend_uses_backend_option_thread_count(
     assert parser is not None
     assert parser.parser_config is not None
     assert parser.parser_config.threads == 11
+    assert parser.parser_config.page_materialization_config is not None
+    assert (
+        parser.parser_config.page_materialization_config.materialize_bitmap_bytes
+        is False
+    )
     assert parser.decode_config is not None
-    assert parser.decode_config.materialize_bitmap_bytes is False
     assert parser.decode_config.release_native_memory_every_n_pages == 128
 
     in_doc._backend.unload()
@@ -453,8 +457,13 @@ def test_threaded_backend_uses_backend_option_native_memory_release_interval(
 
     parser = _FakeThreadedParser.created
     assert parser is not None
+    assert parser.parser_config is not None
+    assert parser.parser_config.page_materialization_config is not None
+    assert (
+        parser.parser_config.page_materialization_config.materialize_bitmap_bytes
+        is False
+    )
     assert parser.decode_config is not None
-    assert parser.decode_config.materialize_bitmap_bytes is False
     assert parser.decode_config.release_native_memory_every_n_pages == 64
 
     in_doc._backend.unload()
@@ -483,8 +492,13 @@ def test_threaded_backend_allows_disabling_native_memory_release(
 
     parser = _FakeThreadedParser.created
     assert parser is not None
+    assert parser.parser_config is not None
+    assert parser.parser_config.page_materialization_config is not None
+    assert (
+        parser.parser_config.page_materialization_config.materialize_bitmap_bytes
+        is False
+    )
     assert parser.decode_config is not None
-    assert parser.decode_config.materialize_bitmap_bytes is False
     assert parser.decode_config.release_native_memory_every_n_pages == 0
 
     in_doc._backend.unload()
@@ -516,14 +530,19 @@ def test_threaded_backend_uses_accelerator_thread_count_when_unset(
     assert parser is not None
     assert parser.parser_config is not None
     assert parser.parser_config.threads == 7
+    assert parser.parser_config.page_materialization_config is not None
+    assert (
+        parser.parser_config.page_materialization_config.materialize_bitmap_bytes
+        is False
+    )
     assert parser.decode_config is not None
-    assert parser.decode_config.materialize_bitmap_bytes is False
 
     in_doc._backend.unload()
 
 
-def test_non_threaded_page_backend_disables_bitmap_materialization() -> None:
+def test_non_threaded_page_backend_disables_bitmap_byte_materialization() -> None:
     captured_config: Any | None = None
+    captured_materialization_config: Any | None = None
 
     class _FakeCell:
         def to_top_left_origin(self, _page_height: float) -> "_FakeCell":
@@ -539,9 +558,16 @@ def test_non_threaded_page_backend_disables_bitmap_materialization() -> None:
         word_cells = [_FakeCell()]
 
     class _FakePdfDocument:
-        def get_page(self, _page_no: int, config: Any) -> _FakeSegmentedPage:
-            nonlocal captured_config
+        def get_page(
+            self,
+            _page_no: int,
+            *,
+            config: Any,
+            materialization_config: Any,
+        ) -> _FakeSegmentedPage:
+            nonlocal captured_config, captured_materialization_config
             captured_config = config
+            captured_materialization_config = materialization_config
             return _FakeSegmentedPage()
 
         def unload_pages(self, _page_range: tuple[int, int]) -> None:
@@ -564,7 +590,8 @@ def test_non_threaded_page_backend_disables_bitmap_materialization() -> None:
 
     assert len(cells) == 1
     assert captured_config is not None
-    assert captured_config.materialize_bitmap_bytes is False
+    assert captured_materialization_config is not None
+    assert captured_materialization_config.materialize_bitmap_bytes is False
 
 
 def test_threaded_backend_creates_fresh_default_options_per_instance(

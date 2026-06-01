@@ -319,6 +319,7 @@ members = ["packages/docling"]
 
 [tool.uv.sources]
 docling = { workspace = true }
+docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "cb21775fdff07282f8264e08114ba4fb983b0a7d" }
 
 [tool.uv]
 package = true
