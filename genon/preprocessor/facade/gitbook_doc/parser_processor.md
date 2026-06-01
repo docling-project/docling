@@ -126,15 +126,13 @@ ocr:
   # docker image 재빌드 없이 yaml 만으로 전환 가능
   engine: "paddle"
 
-  # engine: "paddle" 일 때만 사용
-  # <OCR_ENDPOINT>: PaddleOCR 서버 주소로 변경 필요
-  ocr_endpoint: "http://<OCR_ENDPOINT>/ocr"
-
   # 글리프 깨진 테이블 셀 재OCR 시 HTTP timeout(초)
   table_cell_ocr_timeout: 60
 
   # engine: "paddle" 일 때만 사용
   paddle:
+    # <OCR_ENDPOINT>: PaddleOCR 서버 주소로 변경 필요
+    ocr_endpoint: "http://<OCR_ENDPOINT>/ocr"
     text_score: 0.3
 
   # 글리프 깨짐 기반 auto-OCR 재트리거 임계값
@@ -314,8 +312,8 @@ whisper:
 | `defaults` | `log_level` | `4` (INFO) | 로깅 레벨. `5`=DEBUG / `4`=INFO / `3`=WARNING / `2`=ERROR / `1`=CRITICAL / `0`=NOLOG(전체 비활성화). 누락/오류 시 4 폴백. 실행 시 `params.log_level` 이 주어지면 그 값이 우선 |
 | `ocr` | `ocr_mode` | `"auto"` | OCR 수행 정책. `auto`(휴리스틱 감지 후 필요 시 재OCR) / `force` / `disable`. 유효하지 않으면 `auto` |
 | `ocr` | `engine` | `"paddle"` | OCR 엔진 선택. `paddle` / `upstage` (유효하지 않으면 `paddle`) |
-| `ocr` | `ocr_endpoint` | `""` | PaddleOCR 서버 URL (engine=paddle 일 때만 사용) |
 | `ocr` | `table_cell_ocr_timeout` | `60` | 글리프 깨진 테이블 셀 재OCR 시 HTTP 타임아웃(초). 양의 정수, 유효하지 않으면 60 |
+| `ocr.paddle` | `ocr_endpoint` | `""` | PaddleOCR 서버 URL (engine=paddle 일 때만 사용). 구버전 `ocr.ocr_endpoint`(상위) 위치도 호환 인식 |
 | `ocr.paddle` | `text_score` | `0.3` | PaddleOCR word confidence 필터링 임계값 |
 | `ocr.glyph_detection` | `table_cell_threshold` | `1` | 셀 GLYPH 토큰 N개 이상이면 셀 재OCR. 양의 정수, 유효하지 않으면 1 |
 | `ocr.glyph_detection` | `document_threshold` | `10` | 문서 GLYPH 토큰 N개 초과면 OCR 경로 재시도. 양의 정수, 유효하지 않으면 10 |
@@ -444,7 +442,7 @@ metadata:
 ### 파싱용 전처리기 최초 등록시 config 수정가이드
 
 아래 설정은 사이트환경에 맞게 수정이 필요합니다.
-- `ocr.ocr_endpoint`
+- `ocr.paddle.ocr_endpoint`
   - `<OCR_ENDPOINT>` 는 PaddleOCR server 를 서비스 하는 주소로 변경해야 합니다.
 - `layout.genos_layout.endpoint`
   - `<LAYOUT_SERVING_ID>` 는 Genos에 등록한 layout 모델서빙 ID 로 변경해야 합니다.
@@ -476,7 +474,7 @@ metadata:
 
 **전제조건:**
 - **Layout 모델 서버:** `parser_processor_config.yaml`의 `layout.genos_layout.endpoint` 로 접근 가능한 vLLM 호환 서버가 실행 중이어야 함
-- **OCR 서버:** `ocr_mode`가 `disable`이 아닌 경우 `ocr.ocr_endpoint`에 PaddleOCR 서버가 실행 중이어야 함 (단, `ocr_mode=auto`이면 글리프 깨짐 등 휴리스틱 감지 후 필요할 때만 접근)
+- **OCR 서버:** `ocr_mode`가 `disable`이 아닌 경우 `ocr.paddle.ocr_endpoint`에 PaddleOCR 서버가 실행 중이어야 함 (단, `ocr_mode=auto`이면 글리프 깨짐 등 휴리스틱 감지 후 필요할 때만 접근)
 - **Enrichment LLM:** `enrichment`의 `toc` 또는 `metadata` 항목이 활성화된 경우 해당 항목의 `url`에 LLM API가 실행 중이어야 함
 - **Image Description VLM(선택):** `enrichment`의 `image_description` 항목이 활성화된 경우 해당 항목의 `url`에 이미지+텍스트 입력 가능한 VLM API가 실행 중이어야 함
 - **Python 패키지:** `docling`, `docling-core`, `pymupdf`
@@ -739,7 +737,7 @@ Docling 파이프라인(PDF/HTML/HWP/HWPX/DOCX) 출력 기준:
 |------|------|------|
 | `converter.convert()` 실패 | 파일 손상, 백엔드 오류 | `second_converter`로 재시도 (동일 설정, 다른 인스턴스) |
 | 레이아웃 서버 연결 오류 | `layout.genos_layout.endpoint` 미응답 | 예외 발생, 처리 중단 |
-| OCR 서버 연결 오류 | `ocr.ocr_endpoint` 미응답 | `ocr_all_table_cells`에서 예외를 캐치하고 OCR 없이 진행 |
+| OCR 서버 연결 오류 | `ocr.paddle.ocr_endpoint` 미응답 | `ocr_all_table_cells`에서 예외를 캐치하고 OCR 없이 진행 |
 | Enrichment LLM 연결 오류 | `enrichment` 항목의 `url` 미응답 | enrichment 단계에서 예외 발생 |
 | Enrichment 입력 토큰 초과 | `precheck.enabled: true` 상태에서 추정 토큰 수가 `max_context_tokens - completion_reserved_tokens` 초과 | LLM 호출 없이 즉시 `GenosServiceException` 발생. `errMsg`에 JSON 페이로드 포함 (아래 참고) |
 
@@ -782,7 +780,7 @@ Docling 파이프라인(PDF/HTML/HWP/HWPX/DOCX) 출력 기준:
 | 상황 | 오류 메시지 예시 | 조치 |
 |------|-----------------|------|
 | Layout 서버 미응답 | Connection refused to `<endpoint>` | `parser_processor_config.yaml`의 `layout.genos_layout.endpoint` 확인 |
-| OCR 서버 미응답 | `OCR HTTP 502` | `parser_processor_config.yaml`의 `ocr.ocr_endpoint` 및 서버 상태 확인 |
+| OCR 서버 미응답 | `OCR HTTP 502` | `parser_processor_config.yaml`의 `ocr.paddle.ocr_endpoint` 및 서버 상태 확인 |
 | Enrichment LLM 오류 | LLM API timeout | `parser_processor_config.yaml`의 `enrichment` 항목 `url` 확인 |
 | Enrichment 입력 토큰 초과 | `프롬프트 입력 토큰 (N) 초과 하였습니다. (128000 - reserved 12000).` | 문서 크기를 줄이거나 해당 항목 `precheck.max_context_tokens` 값 조정. 비활성화는 `precheck.enabled: false` |
 | HWP SDK 실패 | `HWP SDK 실패: ...` | 로그 확인 후 `use_hwp_sdk=false` 파라미터로 재시도 |

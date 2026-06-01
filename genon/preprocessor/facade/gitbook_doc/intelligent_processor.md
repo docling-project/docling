@@ -96,7 +96,7 @@ RAG 지식베이스 구축을 위한 **품질 최우선** 전처리기입니다.
 기본 config 에서는 **layout 분석 / OCR 을 외부 API endpoint 로 호출**하므로 preprocessor 컨테이너의 GPU 의존도가 낮습니다.
 
 - **layout** — `layout_model_type: genos_layout` + `genos_layout.endpoint` 로 별도 서빙(예: DotsOCR) 호출. 내재 layout 모델 미사용.
-- **OCR** — `ocr.ocr_endpoint` 로 별도 OCR 서빙(PaddleOCR) 호출. 내재 OCR 모델 미사용.
+- **OCR** — `ocr.paddle.ocr_endpoint` 로 별도 OCR 서빙(PaddleOCR) 호출. 내재 OCR 모델 미사용.
 - **TableFormer** (`do_table_structure=True`) — 내재 모델이지만 `device` 가 cuda 미발견 시 CPU 로 fallback.
 
 즉 기본 config 그대로면 GenOS UI 의 GPU 할당량을 **0** 으로 두어도 정상 동작합니다(TableFormer 는 CPU fallback). 반대로 `layout_model_type: docling_layout` 으로 내재 layout 모델을 쓰거나 TableFormer 추론을 GPU 가속(`pdf_pipeline.device: cuda`)하려면 GenOS UI 에서 GPU 할당량을 **1 이상**으로 지정합니다.
@@ -125,7 +125,7 @@ RAG 지식베이스 구축을 위한 **품질 최우선** 전처리기입니다.
 
 | 항목 | YAML 키 | placeholder |
 |------|---------|-------------|
-| OCR 서버 | `ocr.ocr_endpoint` | `<OCR_ENDPOINT>` |
+| OCR 서버 | `ocr.paddle.ocr_endpoint` | `<OCR_ENDPOINT>` |
 | 레이아웃 서빙 | `layout.genos_layout.endpoint` | `<LAYOUT_SERVING_ID>` |
 | Enrichment 서빙(toc/metadata) | `enrichment[].url` | `<ENRICHMENT_SERVING_ID>` |
 | 이미지 설명 서빙 | `image_description.url` | `<IMAGE_DESCRIPTION_SERVING_ID>` |
@@ -146,9 +146,9 @@ defaults:
 ocr:
   ocr_mode: "auto"            # "auto"(default) | "force" | "disable"
   engine: "paddle"            # "paddle"(default) | "upstage"
-  ocr_endpoint: "http://<OCR_ENDPOINT>/ocr"   # engine=paddle 일 때만 사용
   table_cell_ocr_timeout: 60  # 글리프 깨진 셀 재OCR HTTP timeout(초)
   paddle:
+    ocr_endpoint: "http://<OCR_ENDPOINT>/ocr"   # engine=paddle 일 때만 사용
     text_score: 0.3
   glyph_detection:
     table_cell_threshold: 1   # 셀 GLYPH 토큰 N개 이상이면 재OCR
@@ -245,7 +245,7 @@ enrichment:
 |----|------|--------|
 | `ocr.ocr_mode` | `auto`=글리프 휴리스틱 기반 재OCR / `force`=무조건 전체 OCR / `disable`=OCR 안 함 | `auto` |
 | `ocr.engine` | OCR 엔진 (`paddle` \| `upstage`). 알 수 없는 값은 `paddle` 폴백 | `paddle` |
-| `ocr.ocr_endpoint` | PaddleOCR 서버 주소 (`<OCR_ENDPOINT>` 치환). engine=paddle 일 때만 사용 | — |
+| `ocr.paddle.ocr_endpoint` | PaddleOCR 서버 주소 (`<OCR_ENDPOINT>` 치환). engine=paddle 일 때만 사용. 구버전 `ocr.ocr_endpoint`(상위) 위치도 호환 인식 | — |
 | `ocr.table_cell_ocr_timeout` | 글리프 깨진 테이블 셀 재OCR HTTP timeout(초) | 60 |
 | `ocr.paddle.text_score` | PaddleOCR 텍스트 신뢰도 임계값 | 0.3 |
 | `ocr.glyph_detection.table_cell_threshold` | 셀 GLYPH 토큰 N개 **이상**이면 재OCR (`>=`) | 1 |
@@ -421,7 +421,7 @@ chunker = GenosSmartChunker(max_tokens=0, merge_peers=True)  # ← 0 → 512/102
 
 | placeholder | 위치 | 설명 |
 |-------------|------|------|
-| `<OCR_ENDPOINT>` | `ocr.ocr_endpoint` | PaddleOCR 서버 주소 (engine=paddle) |
+| `<OCR_ENDPOINT>` | `ocr.paddle.ocr_endpoint` | PaddleOCR 서버 주소 (engine=paddle) |
 | `<LAYOUT_SERVING_ID>` | `layout.genos_layout.endpoint` | Genos 등록 layout 모델 서빙 ID |
 | `<ENRICHMENT_SERVING_ID>` | `enrichment[].toc.url`, `enrichment[].metadata.url` | TOC/메타데이터 LLM 서빙 ID |
 | `<IMAGE_DESCRIPTION_SERVING_ID>` | `enrichment[].image_description.url` | 이미지 설명 LLM 서빙 ID |

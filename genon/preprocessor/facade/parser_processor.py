@@ -998,7 +998,14 @@ class IntelligentDocumentProcessor:
         pdf_cfg = _as_dict(cfg.get("pdf_pipeline"))
         ec = EnrichmentConfig.from_raw(cfg.get("enrichment"), self._config_dir, parent_cfg=cfg)
 
-        ocr_ep = ocr_cfg.get("ocr_endpoint") or cfg.get("ocr_endpoint", "")
+        # OCR 엔드포인트는 ocr.paddle.ocr_endpoint 가 정식 위치.
+        # 구버전 호환: ocr.ocr_endpoint(상위) / 최상위 ocr_endpoint 도 폴백으로 인식.
+        paddle_cfg = _as_dict(ocr_cfg.get("paddle"))
+        ocr_ep = (
+            paddle_cfg.get("ocr_endpoint")
+            or ocr_cfg.get("ocr_endpoint")
+            or cfg.get("ocr_endpoint", "")
+        )
 
         # 테이블 셀 재OCR HTTP timeout (ocr_all_table_cells). 잘못된 값은 60 으로 폴백.
         table_cell_ocr_timeout = _parse_optional_int(

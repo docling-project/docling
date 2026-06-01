@@ -1184,7 +1184,14 @@ class DocumentProcessor:
         pdf_cfg = _as_dict(cfg.get("pdf_pipeline"))
         ec = EnrichmentConfig.from_raw(cfg.get("enrichment"), self._config_dir, parent_cfg=cfg)
 
-        ocr_ep = ocr_cfg.get("ocr_endpoint") or cfg.get("ocr_endpoint", "http://192.168.73.172:48080/ocr")
+        # OCR 엔드포인트는 ocr.paddle.ocr_endpoint 가 정식 위치.
+        # 구버전 호환: ocr.ocr_endpoint(상위) / 최상위 ocr_endpoint 도 폴백으로 인식.
+        paddle_cfg = _as_dict(ocr_cfg.get("paddle"))
+        ocr_ep = (
+            paddle_cfg.get("ocr_endpoint")
+            or ocr_cfg.get("ocr_endpoint")
+            or cfg.get("ocr_endpoint", "http://192.168.73.172:48080/ocr")
+        )
 
         # OCR 수행 모드. "auto"(default)=휴리스틱 기반 재OCR / "force"=무조건 전체 OCR / "disable"=OCR 안 함
         # (PDF 입력에만 적용. DOCX/기타 포맷은 ocr_mode 무관)

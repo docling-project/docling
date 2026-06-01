@@ -8,14 +8,13 @@ ocr:
   # OCR 엔진 선택. "paddle"(default) | "upstage"
   engine: "paddle"
 
-  # engine: "paddle" 일 때만 사용
-  # <OCR_ENDPOINT>: PaddleOCR 서버 주소로 변경 필요
-  ocr_endpoint: "http://<OCR_ENDPOINT>/ocr"
-
   # 글리프 깨진 테이블 셀 재OCR 시 HTTP timeout(초)
   table_cell_ocr_timeout: 60
 
   paddle:
+    # engine: "paddle" 일 때만 사용
+    # <OCR_ENDPOINT>: PaddleOCR 서버 주소로 변경 필요
+    ocr_endpoint: "http://<OCR_ENDPOINT>/ocr"
     text_score: 0.3
 
   # 글리프 깨짐 기반 auto-OCR 재트리거 임계값
