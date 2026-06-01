@@ -1290,6 +1290,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and self._prev_numid() is not None
             and p_style_id not in ["Title", "Heading"]
         ):  # Close list
+            # Preserve the document's real list grouping: when a docx file
+            # inserts a blank paragraph (purely for visual spacing) between
+            # two ordered paragraphs that share the same ``numId``, closing
+            # the list here would split a single logical ``<w:num>`` list
+            # into multiple independent ``ListGroup``\\ s. Swallow such
+            # "blank, no-numId" paragraphs without refreshing ``history`` or
+            # closing the list so adjacent ordered paragraphs that share a
+            # ``numId`` stay in the same ``ListGroup``.
+            if not text:
+                return elem_ref
             if self.level_at_new_list:
                 for key in range(len(self.parents)):
                     if key >= self.level_at_new_list:
