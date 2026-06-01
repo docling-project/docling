@@ -3,12 +3,14 @@ ThreadedDoclingParseDocumentBackend, and extract text cells and page images for
 every page."""
 
 import argparse
+import contextlib
 import gc
 import json
 import logging
 import os
 import sys
 import time
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -240,8 +242,8 @@ def _make_display_decode_config(
     release_native_memory_every_n_pages: int,
 ) -> DecodePageConfig:
     config = DecodePageConfig()
-    config.keep_char_cells = False
-    config.keep_shapes = False
+    config.keep_char_cells = True
+    config.keep_shapes = True
     config.keep_bitmaps = True
     config.create_word_cells = True
     config.create_line_cells = True
@@ -270,6 +272,11 @@ def _log_docling_parse_config(
         release_native_memory_every_n_pages=release_native_memory_every_n_pages,
     )
     materialization_config = PageMaterializationConfig()
+    materialization_config.materialize_char_cells = False
+    materialization_config.materialize_word_cells = True
+    materialization_config.materialize_line_cells = True
+    materialization_config.materialize_shapes = False
+    materialization_config.materialize_bitmaps = True
     materialization_config.materialize_bitmap_bytes = False
     render_config = RenderConfig()
     render_config.scale = scale
@@ -364,6 +371,33 @@ def _log_docling_parse_config(
     )
 
 
+@contextlib.contextmanager
+def _suppress_huggingface_output() -> Iterator[None]:
+    from huggingface_hub.utils import (
+        are_progress_bars_disabled,
+        disable_progress_bars,
+        enable_progress_bars,
+    )
+
+    progress_bars_were_disabled = are_progress_bars_disabled()
+    previous_levels = {
+        logger_name: logging.getLogger(logger_name).level
+        for logger_name in ("huggingface_hub", "httpx")
+    }
+
+    disable_progress_bars()
+    for logger_name in previous_levels:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
+
+    try:
+        yield
+    finally:
+        if not progress_bars_were_disabled:
+            enable_progress_bars()
+        for logger_name, level in previous_levels.items():
+            logging.getLogger(logger_name).setLevel(level)
+
+
 def _resolve_input_dir(args: argparse.Namespace) -> Path:
     if args.input_dir is not None:
         return args.input_dir
@@ -376,14 +410,15 @@ def _resolve_input_dir(args: argparse.Namespace) -> Path:
         ) from exc
 
     assert args.repo_id is not None
-    snapshot_dir = Path(
-        snapshot_download(
-            repo_id=args.repo_id,
-            repo_type="dataset",
-            revision=args.revision,
-            allow_patterns="pdf/**",
+    with _suppress_huggingface_output():
+        snapshot_dir = Path(
+            snapshot_download(
+                repo_id=args.repo_id,
+                repo_type="dataset",
+                revision=args.revision,
+                allow_patterns="pdf/**",
+            )
         )
-    )
     pdf_dir = snapshot_dir / "pdf"
     if not pdf_dir.is_dir():
         raise SystemExit(

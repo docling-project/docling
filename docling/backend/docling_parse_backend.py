@@ -47,8 +47,8 @@ def _make_docling_parse_decode_config(
     release_native_memory_every_n_pages: int | None = None,
 ) -> DecodePageConfig:
     config = DecodePageConfig()
-    config.keep_char_cells = False
-    config.keep_shapes = False
+    config.keep_char_cells = True
+    config.keep_shapes = True
     config.keep_bitmaps = (
         True  # we need to set this to True, otherwhise OCR will not work
     )
@@ -64,7 +64,14 @@ def _make_docling_parse_decode_config(
 
 def _make_docling_parse_page_materialization_config() -> PageMaterializationConfig:
     config = PageMaterializationConfig()
-    config.materialize_bitmap_bytes = False  # don't need bitmap images, only rectangles.
+    config.materialize_char_cells = False
+    config.materialize_word_cells = True
+    config.materialize_line_cells = True
+    config.materialize_shapes = False
+    config.materialize_bitmaps = True
+    config.materialize_bitmap_bytes = (
+        False  # don't need bitmap images, only rectangles.
+    )
     return config
 
 

@@ -425,10 +425,24 @@ def test_threaded_backend_uses_backend_option_thread_count(
     assert parser.parser_config.threads == 11
     assert parser.parser_config.page_materialization_config is not None
     assert (
+        parser.parser_config.page_materialization_config.materialize_char_cells is False
+    )
+    assert (
+        parser.parser_config.page_materialization_config.materialize_word_cells is True
+    )
+    assert (
+        parser.parser_config.page_materialization_config.materialize_line_cells is True
+    )
+    assert parser.parser_config.page_materialization_config.materialize_shapes is False
+    assert parser.parser_config.page_materialization_config.materialize_bitmaps is True
+    assert (
         parser.parser_config.page_materialization_config.materialize_bitmap_bytes
         is False
     )
     assert parser.decode_config is not None
+    assert parser.decode_config.keep_char_cells is True
+    assert parser.decode_config.keep_shapes is True
+    assert parser.decode_config.keep_bitmaps is True
     assert parser.decode_config.release_native_memory_every_n_pages == 128
 
     in_doc._backend.unload()
