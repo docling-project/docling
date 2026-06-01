@@ -1175,6 +1175,12 @@ class DocumentProcessor:
         cfg = _load_config(config_path)
         self._config_dir = Path(config_path).resolve().parent
 
+        defaults_cfg = _as_dict(cfg.get("defaults"))
+        log_level = _parse_optional_int(defaults_cfg.get("log_level"), "defaults.log_level")
+        if log_level is None:
+            log_level = 4
+        self._log_level = log_level
+
         ocr_cfg = _as_dict(cfg.get("ocr"))
         layout_cfg = _as_dict(cfg.get("layout"))
         pdf_cfg = _as_dict(cfg.get("pdf_pipeline"))
@@ -1914,7 +1920,8 @@ class DocumentProcessor:
         logging.getLogger().setLevel(level)
 
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
-        self.setup_logging(kwargs.get('log_level', 4))
+        runtime_level = kwargs.get('log_level')
+        self.setup_logging(runtime_level if runtime_level is not None else self._log_level)
 
         _log.info(f"file_path: {file_path}")
         _log.info(f"kwargs: {kwargs}")

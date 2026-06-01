@@ -1,3 +1,7 @@
+defaults:
+  # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
+  log_level: 4
+
 ocr:
   # OCR 수행 모드. "auto"(default)=휴리스틱 기반 재OCR / "force"=무조건 전체 OCR / "disable"=OCR 안 함
   # (PDF 입력에만 적용. DOCX/기타 포맷은 ocr_mode 무관)

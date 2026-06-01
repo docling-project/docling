@@ -1688,6 +1688,12 @@ class DocumentProcessor:
         cfg = _load_config(config_path)
         self._intel = IntelligentDocumentProcessor(cfg, config_path=config_path)
 
+        defaults_cfg = _as_dict(cfg.get("defaults"))
+        log_level = _parse_optional_int(defaults_cfg.get("log_level"), "defaults.log_level")
+        if log_level is None:
+            log_level = 4
+        self._log_level = log_level
+
         self._hwp = HwpDocumentLoader()
         self._docx = DocxDocumentLoader()
         self._generic = GenericDocumentLoader()
@@ -2197,7 +2203,8 @@ class DocumentProcessor:
     # ------------------------------------------------------------------
 
     async def __call__(self, request: Request, file_path: str, **kwargs) -> dict:
-        self.setup_logging(kwargs.get('log_level', 4))
+        runtime_level = kwargs.get('log_level')
+        self.setup_logging(runtime_level if runtime_level is not None else self._log_level)
 
         ext = os.path.splitext(file_path)[-1].lower()
         _log.info(f"[DocumentProcessor] file_path={file_path}, ext={ext}")

@@ -1,3 +1,7 @@
+defaults:
+  # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
+  log_level: 4
+
 ocr:
   ocr_mode: "auto" # "auto"(default), "force", "disable"
 

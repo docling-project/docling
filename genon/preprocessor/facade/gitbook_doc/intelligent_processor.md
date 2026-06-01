@@ -134,11 +134,15 @@ RAG 지식베이스 구축을 위한 **품질 최우선** 전처리기입니다.
 
 ## 3. 설정 (`intelligent_processor_config.yaml`)
 
-이 전처리기 운영의 **중심**입니다. `__init__()` 이 시작 시 이 YAML 을 읽어(`_load_config` → `yaml.safe_load`) 각 섹션(`ocr` / `layout` / `pdf_pipeline` / `enrichment`)을 파싱하고 파이프라인을 구성합니다. 잘못된 값(타입 오류, 알 수 없는 enum 등)은 경고 로그 후 안전한 기본값으로 폴백합니다.
+이 전처리기 운영의 **중심**입니다. `__init__()` 이 시작 시 이 YAML 을 읽어(`_load_config` → `yaml.safe_load`) 각 섹션(`defaults` / `ocr` / `layout` / `pdf_pipeline` / `enrichment`)을 파싱하고 파이프라인을 구성합니다. 잘못된 값(타입 오류, 알 수 없는 enum 등)은 경고 로그 후 안전한 기본값으로 폴백합니다.
 
 ### 3.1 전체 스키마
 
 ```yaml
+defaults:
+  # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
+  log_level: 4
+
 ocr:
   ocr_mode: "auto"            # "auto"(default) | "force" | "disable"
   engine: "paddle"            # "paddle"(default) | "upstage"
@@ -222,6 +226,16 @@ enrichment:
 ```
 
 > 위는 캐노니컬 스키마를 그대로 반영한 것입니다(프롬프트 본문은 `...` 로 축약). `output` / `whisper` 섹션은 [§3.6](#36-출력--whisper-설정) 참조.
+
+#### defaults 설정
+
+`defaults` 섹션은 전처리기 공통 기본값을 담습니다. 현재는 로깅 레벨만 노출됩니다. `__init__` 이 이 값을 읽어 `self._log_level` 로 보관하고, 매 실행마다 `setup_logging()` 에 적용합니다.
+
+| 키 | 의미 | 기본값 |
+|----|------|--------|
+| `defaults.log_level` | 로깅 레벨. `5`=DEBUG / `4`=INFO / `3`=WARNING / `2`=ERROR / `1`=CRITICAL / `0`=NOLOG(전체 비활성화). 누락/오류 시 4 폴백 | `4` (INFO) |
+
+> 실행 시 `params` 로 `log_level` 을 전달하면 그 값이 이 config 기본값보다 **우선**합니다. `params` 에 값이 없을 때만 `defaults.log_level` 이 적용됩니다. (`0`=NOLOG 도 정상 적용되도록 None 여부로 판별합니다.)
 
 ### 3.2 OCR 설정
 
