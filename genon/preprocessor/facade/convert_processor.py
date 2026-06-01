@@ -1046,9 +1046,9 @@ class GenOSVectorMeta(BaseModel):
     reg_date: str = None
     chunk_bboxes: str = None
     media_files: str = None
-    created_date: int = None  # YYYYMMDD 형식의 정수
-    authors: str = None      # 팀 리스트
-    title: str = None         # 문서 제목
+    created_date: Optional[int] = None  # YYYYMMDD 형식의 정수
+    authors: Optional[str] = None      # 팀 리스트
+    title: Optional[str] = None         # 문서 제목
 
 class GenOSVectorMetaBuilder:
     def __init__(self):
@@ -1097,7 +1097,7 @@ class GenOSVectorMetaBuilder:
     def set_global_metadata(self, **global_metadata) -> "GenOSVectorMetaBuilder":
         """글로벌 메타데이터 병합"""
         for key, value in global_metadata.items():
-            if hasattr(self, key):
+            if key in self.__dict__ and key != "extra_metadata":
                 setattr(self, key, value)
             else:
                 self.extra_metadata[key] = value

@@ -793,9 +793,9 @@ class FacadeImageDescriptionEnricher:
         try:
             prompt = (
                 self.options.prompt_template
-                .replace("{{before_context}}", safe_before)
-                .replace("{{after_context}}", safe_after)
-                .replace("{{caption}}", safe_caption)
+                .replace("{before_context}", safe_before)
+                .replace("{after_context}", safe_after)
+                .replace("{caption}", safe_caption)
             )
         except Exception as exc:
             _log.warning(
