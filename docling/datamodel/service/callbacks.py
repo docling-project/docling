@@ -1,7 +1,7 @@
 import enum
 from typing import Annotated, Literal
 
-from pydantic import AliasChoices, AnyUrl, BaseModel, Field
+from pydantic import AnyUrl, BaseModel, Field
 
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 
@@ -39,12 +39,7 @@ class ProgressUpdateProcessed(BaseProgress):
 
     num_processed: int
     num_succeeded: int
-    num_partially_succeeded: int = Field(
-        validation_alias=AliasChoices(
-            "num_partially_succeeded",
-            "num_partial_success",
-        )
-    )
+    num_partially_succeeded: int
     num_failed: int
 
     docs: list[ProcessedDocsItem]

@@ -116,6 +116,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         page_no: int,
     ):
         super().__init__()
+        self._page_no = page_no
         # Note: lock applied by the caller
         self.valid = True  # No better way to tell from pypdfium.
         self._ppage: pdfium.PdfPage | None = None
@@ -131,6 +132,10 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
     def is_valid(self) -> bool:
         return self.valid
+
+    @property
+    def page_no(self) -> int:
+        return self._page_no + 1
 
     def _require_page(self) -> pdfium.PdfPage:
         assert self._ppage is not None, "Page backend was unloaded."

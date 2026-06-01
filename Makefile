@@ -1,4 +1,4 @@
-.PHONY: help setup hooks-install check check-all validate validate-all fix typecheck tach dprint-check dprint-fix test
+.PHONY: help setup hooks-install check check-all validate validate-all fix typecheck tach dprint-check dprint-fix test docs-render docs-build docs-serve docs-clean
 
 help: ## Show available targets.
 	@awk 'BEGIN {FS = ":.*##"; print "Available targets:"} /^[a-zA-Z0-9_.-]+:.*##/ {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -57,3 +57,16 @@ dprint-fix: ## Run dprint formatter.
 
 test: ## Run the default test suite.
 	uv run pytest -v
+
+docs-render: ## Pre-render notebooks and CLI reference for the docs site.
+	uv run --no-sync python scripts/render_notebooks.py
+	uv run --no-sync python scripts/render_cli_reference.py
+
+docs-build: docs-render ## Build the static docs site with Zensical.
+	uv run --no-sync zensical build
+
+docs-serve: docs-render ## Serve the docs locally with Zensical (live reload).
+	uv run --no-sync zensical serve
+
+docs-clean: ## Remove generated docs artifacts.
+	rm -rf docs/_generated site docs/reference/cli.md

@@ -150,12 +150,7 @@ class PresignedArtifactResult(BaseModel):
 class ConvertedOutcomeCountsMixin(BaseModel):
     num_converted: int
     num_succeeded: int
-    num_partially_succeeded: int = Field(
-        validation_alias=AliasChoices(
-            "num_partially_succeeded",
-            "num_partial_success",
-        )
-    )
+    num_partially_succeeded: int
     num_failed: int
 
 
