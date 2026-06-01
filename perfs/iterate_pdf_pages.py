@@ -844,7 +844,6 @@ def main() -> None:
         cache_file,
         args.threads[0],
         args.release_native_memory_every_n_pages,
-        verbose=args.mode == "memory",
     )
     total_available_pages = sum(page_count for _, page_count in ordered)
     target_total_pages = (
@@ -860,11 +859,6 @@ def main() -> None:
         release_native_memory_every_n_pages=args.release_native_memory_every_n_pages,
         scale=args.scale,
     )
-
-    if args.mode == "memory":
-        _log.info("Processing order (by descending page count):")
-        for pdf_path, page_count in ordered:
-            _log.info("  %5d pages  %s", page_count, pdf_path.name)
 
     runs: list[dict[str, Any]] = []
     multiple_thread_counts = len(args.threads) > 1
