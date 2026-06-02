@@ -38,7 +38,7 @@ class RhwpConverter:
 
     이미지 빌드 시 Rust multi-stage 로 `genonai/genos-rhwp` 를 `cargo build --release
     --bin rhwp` 후 `/usr/local/bin/rhwp` 에 설치한다 (Dockerfile.standard /
-    Dockerfile.pro 의 `rhwp_builder` stage). 런타임에 외부 서비스/네트워크
+    Dockerfile.synap 의 `rhwp_builder` stage). 런타임에 외부 서비스/네트워크
     의존 없이 동작한다.
 
     CLI:

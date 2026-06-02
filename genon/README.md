@@ -68,22 +68,22 @@
      ```
      - `doc-parser-build.config` 에 직접 입력하거나 push 하지 말 것 (토큰은 반드시 위 명령어를 통해 `hf_private_token.env` 파일에만 존재해야함)
 
-2. `BUILD_VARIANT` 값 선택 - 기본(**`standard`**) / 유료 PDF SDK 포함(**`pro`**) 버전 선택
+2. `BUILD_VARIANT` 값 선택 - 기본(**`standard`**) / 유료 PDF SDK 포함(**`synap`**) 버전 선택
 
-   > **주의 (배포 정책):** `pro` 빌드는 유료 PDF SDK가 포함된다. 운영계 Genos 도커 레지스트리에는 **`standard` 이미지만** 올린다. 일반 사이트 배포는 **기본적으로 `standard`** 로 진행하며, 특정 사이트에 `pro`(유료 PDF SDK) 버전을 들고가야 하는 요청이 생길 경우엔, **AI Search 팀 내부에서 자체적으로 빌드후, 이미지를 전달**한다 (PDF SDK 토큰/라이선스는 AI Search 팀이 관리, 비공개).
+   > **주의 (배포 정책):** `synap` 빌드는 유료 PDF SDK가 포함된다. 운영계 Genos 도커 레지스트리에는 **`standard` 이미지만** 올린다. 일반 사이트 배포는 **기본적으로 `standard`** 로 진행하며, 특정 사이트에 `synap`(유료 PDF SDK) 버전을 들고가야 하는 요청이 생길 경우엔, **AI Search 팀 내부에서 자체적으로 빌드후, 이미지를 전달**한다 (PDF SDK 토큰/라이선스는 AI Search 팀이 관리, 비공개).
 
    **(배경 설명)**
-   - PDF SDK란? → `타문서(HWP,docx 등) → PDF`를 고품질로 변환하기 위한 유료용 SDK. 이 SDK의 유무에 따라 `standard` 또는 `pro` 버전으로 구분됨. 
+   - PDF SDK란? → `타문서(HWP,docx 등) → PDF`를 고품질로 변환하기 위한 유료용 SDK. 이 SDK의 유무에 따라 `standard` 또는 `synap` 버전으로 구분됨. 
    - **`standard`** — 기본 버전. 
      - 오픈소스(LibreOffice + rhwp)만 사용하여 PDF로 변환. PDF SDK 자산이 이미지에 일절 들어가지 않음 (다운로드 단계 자체가 없음). 
      - 사내 운영계 GenOS 환경/일반적인 외부 사이트 배포용. **`HWP_SDK_TOKEN` 외에 별도의 추가 토큰값 필요 없음**.
-   - **`pro`** — 오픈소스(LibreOffice + rhwp) + 유료 PDF SDK 포함 버전.
+   - **`synap`** — 오픈소스(LibreOffice + rhwp) + 유료 PDF SDK 포함 버전.
      - PDF로의 문서 변환시, `pdf_sdk → rhwp(hwp/hwpx 전용) → libreoffice` 순서로 fallback 동작(=변환 실패시 후순위 로직 사용). 
      - `PDF SDK`는 **전처리기 빌드시 자동 설치되며, `PDF_SDK_TOKEN`값이 사전에 필수로 적용되어야함(`HWP_SDK_TOKEN`과 별개 값)**. 
 
    **(진행 순서)**
 
-    - **[0번(pro의 경우만)]** **토큰을 발급후**, `doc_parser/` (레포 최상위 경로) 에서 아래 명령어를 실행한다 (이후 재실행 불필요, Git 미추적). 발급받은 값으로 `hf_yyy_...` 부분을 교체후 실행:
+    - **[0번(synap의 경우만)]** **토큰을 발급후**, `doc_parser/` (레포 최상위 경로) 에서 아래 명령어를 실행한다 (이후 재실행 불필요, Git 미추적). 발급받은 값으로 `hf_yyy_...` 부분을 교체후 실행:
        ```shell
        echo "PDF_SDK_TOKEN=hf_yyy_your_pdf_sdk_token_here" >> build-script/hf_private_token.env
        ```
@@ -92,9 +92,9 @@
    - **[2번]**[`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `BUILD_VARIANT=` 을 둘 중 하나로 설정:
      ```bash
      # build-script/doc-parser-build.config
-     BUILD_VARIANT=standard   # 또는 pro
+     BUILD_VARIANT=standard   # 또는 synap
      ```
-     - **비워둔 채 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단**된다 (의도치 않게 **`pro`** 가 배포될 위험을 막기 위한 안전장치).
+     - **비워둔 채 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단**된다 (의도치 않게 **`synap`** 가 배포될 위험을 막기 위한 안전장치).
      - 빌드 시 `DOCKERFILE_PATH` 가 자동으로 `genon/preprocessor/docker/Dockerfile.${BUILD_VARIANT}` 로 결정된다.
      - 두 variant 의 런타임 동작 차이 / chain 우선순위는 [`preprocessor/docker/README.md`](preprocessor/docker/README.md) 참고.
 
@@ -106,15 +106,15 @@
    - **`cpu`** — builder 단계에서 torch / torchvision 을 CPU wheel(`https://download.pytorch.org/whl/cpu`)로 재설치하고 nvidia-* / triton 패키지를 제거한 경량 이미지. GPU 없는 환경용.
     - 최종 이미지명 태그 규칙:
        - **기본 조합(`cpu` + `standard`)** 은 가장 기본 산출물이라 접미사 없이 `:${IMAGE_VERSION}` (예: `:2.1.5`).
-       - 그 외 조합은 hw 먼저·variant 나중 순서로 `:${IMAGE_VERSION}-${HW_VARIANT}-${BUILD_VARIANT}` (예: `:2.1.5-gpu-pro`).
+       - 그 외 조합은 hw 먼저·variant 나중 순서로 `:${IMAGE_VERSION}-${HW_VARIANT}-${BUILD_VARIANT}` (예: `:2.1.5-gpu-synap`).
    - `BUILD_VARIANT` × `HW_VARIANT` 조합으로 최대 4종의 이미지를 만들 수 있다:
      | 조합 | 태그 예시 |
      |---|---|
      | cpu + standard (기본) | `:2.1.5` |
      | gpu + standard | `:2.1.5-gpu-standard` |
-     | cpu + pro | `:2.1.5-cpu-pro` |
-     | gpu + pro | `:2.1.5-gpu-pro` |
-    > **정리** — 위 2번 (`BUILD_VARIANT`) × 3번 (`HW_VARIANT`) 의 조합으로 **총 4종의 Dockerfile(이미지)** 가 만들어진다. 운영 환경에 맞는 1개를 골라서 빌드하면 된다. `pro` 는 빌드를 위해 AI Search 팀에서 관리하는 `PDF_SDK_TOKEN` 값이 필요함.
+     | cpu + synap | `:2.1.5-cpu-synap` |
+     | gpu + synap | `:2.1.5-gpu-synap` |
+    > **정리** — 위 2번 (`BUILD_VARIANT`) × 3번 (`HW_VARIANT`) 의 조합으로 **총 4종의 Dockerfile(이미지)** 가 만들어진다. 운영 환경에 맞는 1개를 골라서 빌드하면 된다. `synap` 는 빌드를 위해 AI Search 팀에서 관리하는 `PDF_SDK_TOKEN` 값이 필요함.
 
    **(진행 순서)**
 
@@ -149,9 +149,7 @@ docker save mncregistry:30500/mnc/doc-parser-preprocessor:2.1.5 | gzip > doc-par
 gunzip -c doc-parser-preprocessor-2.1.5.tar.gz | docker load
 # 3. 해당 조합으로 register_image.sh 실행 (BUILD_VARIANT / HW_VARIANT 지정)
 ```
-   - `gpu`/`pro` 등 다른 조합이면 태그가 `:2.1.5-gpu-pro` 처럼 붙으니 파일명/명령어를 그에 맞게 바꾼다.
-
-> **배포 기록대장:** 사이트에 이미지를 배포할 때마다 배포 일자 · 사이트 · 이미지 태그 · 배포자를 **배포 기록대장**에 남긴다. **[2026 전처리기 사이트 배포 기록대장](https://docs.google.com/spreadsheets/d/1N3PdBQ_rJK7ly5DhpQn6rX02kXFnVFah_sygSy5xKNM/edit?usp=sharing)**.
+   - `gpu`/`synap` 등 다른 조합이면 태그가 `:2.1.5-gpu-synap` 처럼 붙으니 파일명/명령어를 그에 맞게 바꾼다.
 
 ## 로컬 테스트 (도커 빌드 없이 test.py 실행)
 

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 #
-# pro 빌드 — 유료 PDF SDK(Synap) 포함.
+# synap 빌드 — 유료 PDF SDK(Synap) 포함.
 # HWP → PDF 변환 우선순위: pdf_sdk → rhwp → libreoffice (자동 fallback).
 #
 # rhwp 는 컨테이너 내부에 Rust 바이너리 형태로 포함된다 (multi-stage rhwp_builder).
@@ -338,7 +338,7 @@ ENV UV_PROJECT_ENVIRONMENT=${APP_VENV} \
     LC_CTYPE=ko_KR.UTF-8 \
     DOCLING_ARTIFACTS_PATH=/models \
     PDF_SDK_HOME=/app/pdf_sdk \
-    DOC_PARSER_BUILD_VARIANT=pro \
+    DOC_PARSER_BUILD_VARIANT=synap \
     RHWP_BIN=/usr/local/bin/rhwp
 
 WORKDIR /app
