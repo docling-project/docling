@@ -41,7 +41,7 @@ def rhwp_available() -> bool:
     """rhwp 가용성 = 바이너리 존재 + 실행 권한.
 
     이미지 빌드 시 Dockerfile 의 rhwp_builder stage 에서 cargo build 한 결과를
-    runtime stage 로 COPY. 미설치(opensource/enterprise 가 아닌 환경 등)거나
+    runtime stage 로 COPY. 미설치(standard/synap 가 아닌 환경 등)거나
     실행권한 없으면 chain 에서 자동 제외.
     """
     p = rhwp_binary()

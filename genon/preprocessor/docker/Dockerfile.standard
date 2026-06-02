@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 #
-# 오픈소스 빌드 — 유료 PDF SDK 미포함.
+# standard 빌드 (기본) — 유료 PDF SDK 미포함.
 # HWP → PDF 변환은 rhwp ↔ LibreOffice 양방향 fallback (chain 우선순위는 config 로 결정).
 # 사용자 명시 요구: 본 이미지에는 PDF SDK 다운로드 단계가 일절 없어야 함 (이슈 #199).
 #
@@ -350,7 +350,7 @@ ENV UV_PROJECT_ENVIRONMENT=${APP_VENV} \
     LC_ALL=ko_KR.UTF-8 \
     LC_CTYPE=ko_KR.UTF-8 \
     DOCLING_ARTIFACTS_PATH=/models \
-    DOC_PARSER_BUILD_VARIANT=opensource \
+    DOC_PARSER_BUILD_VARIANT=standard \
     RHWP_BIN=/usr/local/bin/rhwp
 
 WORKDIR /app

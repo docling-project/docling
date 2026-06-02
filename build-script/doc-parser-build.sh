@@ -39,22 +39,22 @@ SMOKE_TEST_FILE="${SMOKE_TEST_FILE:-pdf_sample.pdf}"
 export HWP_SDK_TOKEN="${HWP_SDK_TOKEN:-}"
 export PDF_SDK_TOKEN="${PDF_SDK_TOKEN:-}"
 
-# BUILD_VARIANT 분기 (이슈 #199 — 오픈소스/엔터프라이즈 두 빌드 산출물 분리)
-# opensource / enterprise 둘 중 하나는 반드시 명시되어야 한다.
+# BUILD_VARIANT 분기 (이슈 #199, #236 — standard/synap 두 빌드 산출물 분리)
+# standard / synap 둘 중 하나는 반드시 명시되어야 한다.
 # 비워둔 채 빌드를 돌리면 의도치 않게 유료 SDK 가 포함될 위험이 있어 명시적 에러 처리.
 case "${BUILD_VARIANT}" in
-  opensource|enterprise)
+  standard|synap)
     DOCKERFILE_PATH="genon/preprocessor/docker/Dockerfile.${BUILD_VARIANT}"
     ;;
   "")
     echo "[ERROR] BUILD_VARIANT 가 비어 있습니다."
     echo "        build-script/doc-parser-build.config 에서 다음 중 하나로 명시하세요:"
-    echo "          BUILD_VARIANT=opensource   # 오픈소스 (LibreOffice + rhwp HTTP)"
-    echo "          BUILD_VARIANT=enterprise   # 엔터프라이즈 (위 + 유료 PDF SDK)"
+    echo "          BUILD_VARIANT=standard   # 기본 (LibreOffice + rhwp, PDF SDK 미포함)"
+    echo "          BUILD_VARIANT=synap        # 위 + 유료 PDF SDK(Synap)"
     exit 1
     ;;
   *)
-    echo "[ERROR] BUILD_VARIANT 는 opensource 또는 enterprise 만 허용됩니다 (현재: '${BUILD_VARIANT}')."
+    echo "[ERROR] BUILD_VARIANT 는 standard 또는 synap 만 허용됩니다 (현재: '${BUILD_VARIANT}')."
     exit 1
     ;;
 esac
@@ -77,8 +77,15 @@ case "${HW_VARIANT}" in
     ;;
 esac
 
-# 최종 이미지 태그 (예: ...:1.3.6.3-opensource-gpu)
-IMAGE_TAG="${DOCKER_REGISTRY}/mnc/${IMAGE_NAME}:${IMAGE_VERSION}-${BUILD_VARIANT}-${HW_VARIANT}"
+# 최종 이미지 태그 (이슈 #236)
+# 기본 조합(cpu + standard)은 가장 기본 산출물이므로 접미사 없이 ${IMAGE_VERSION} 만 사용.
+# 그 외 조합은 hw 먼저, variant 나중 순서로 접미사: ${IMAGE_VERSION}-${HW_VARIANT}-${BUILD_VARIANT}
+#   예) gpu+synap → :1.3.6.3-gpu-synap / cpu+standard → :1.3.6.3
+if [[ "${HW_VARIANT}" == "cpu" && "${BUILD_VARIANT}" == "standard" ]]; then
+  IMAGE_TAG="${DOCKER_REGISTRY}/mnc/${IMAGE_NAME}:${IMAGE_VERSION}"
+else
+  IMAGE_TAG="${DOCKER_REGISTRY}/mnc/${IMAGE_NAME}:${IMAGE_VERSION}-${HW_VARIANT}-${BUILD_VARIANT}"
+fi
 
 echo "[INFO] ROOT_DIR        = ${ROOT_DIR}"
 echo "[INFO] BUILD_VARIANT   = ${BUILD_VARIANT}"
@@ -91,7 +98,7 @@ echo "[INFO] SMOKE_TEST      = ${SMOKE_TEST} (file: ${SMOKE_TEST_FILE})"
 
 # HuggingFace 토큰 존재 여부 확인 (이슈 #199 — SDK 별 fine-grained 토큰 분리)
 # HWP_SDK_TOKEN  : HeechanKim-Genon/hwp_sdk 전용 read 토큰 (두 variant 모두 필수)
-# PDF_SDK_TOKEN  : HeechanKim-Genon/pdf_sdk 전용 read 토큰 (enterprise 일 때만 필수)
+# PDF_SDK_TOKEN  : HeechanKim-Genon/pdf_sdk 전용 read 토큰 (synap 일 때만 필수)
 if [[ -z "${HWP_SDK_TOKEN}" ]]; then
   echo "[ERROR] HWP_SDK_TOKEN 이 설정되지 않았습니다. HeechanKim-Genon/hwp_sdk 다운로드에 필요합니다."
   echo "[ERROR] build-script/hf_private_token.env 또는 환경변수에 HWP_SDK_TOKEN 을 설정하세요."
@@ -99,8 +106,8 @@ if [[ -z "${HWP_SDK_TOKEN}" ]]; then
 fi
 echo "[INFO] HWP_SDK_TOKEN 감지됨."
 
-if [[ "${BUILD_VARIANT}" == "enterprise" && -z "${PDF_SDK_TOKEN}" ]]; then
-  echo "[ERROR] enterprise 빌드는 PDF_SDK_TOKEN 도 필요합니다 (HeechanKim-Genon/pdf_sdk 다운로드용)."
+if [[ "${BUILD_VARIANT}" == "synap" && -z "${PDF_SDK_TOKEN}" ]]; then
+  echo "[ERROR] synap 빌드는 PDF_SDK_TOKEN 도 필요합니다 (HeechanKim-Genon/pdf_sdk 다운로드용)."
   echo "[ERROR] build-script/hf_private_token.env 또는 환경변수에 PDF_SDK_TOKEN 을 설정하세요."
   exit 1
 fi
@@ -109,7 +116,7 @@ if [[ -n "${PDF_SDK_TOKEN}" ]]; then
 fi
 
 # BuildKit secret mount: 두 토큰을 각자 다른 secret id 로 노출.
-# opensource Dockerfile 은 HWP_SDK_TOKEN 만 사용 → PDF_SDK_TOKEN 마운트는 무해.
+# standard Dockerfile 은 HWP_SDK_TOKEN 만 사용 → PDF_SDK_TOKEN 마운트는 무해.
 SECRET_ARGS=(--secret id=HWP_SDK_TOKEN,env=HWP_SDK_TOKEN)
 if [[ -n "${PDF_SDK_TOKEN}" ]]; then
   SECRET_ARGS+=(--secret id=PDF_SDK_TOKEN,env=PDF_SDK_TOKEN)
@@ -182,7 +189,12 @@ PY
 fi
 
 # 푸시 여부 플래그
-if [[ "${PUSH_IMAGE:-false}" == "true" ]]; then
+# 이슈 #236 — synap 이미지는 공유 레지스트리(Genos)에 올리지 않는다. 빌드만 하고 push 스킵.
+#   (Synap 유료 SDK 가 공유 레지스트리로 새어나가는 것을 막기 위함. synap 배포는 AI Search 팀 경유)
+if [[ "${BUILD_VARIANT}" == "synap" ]]; then
+  echo "[INFO] BUILD_VARIANT=synap — 공유 레지스트리 push 를 건너뜁니다 (이미지 빌드만 수행)."
+  echo "[INFO] synap 이미지 배포가 필요하면 AI Search 팀에 문의하세요."
+elif [[ "${PUSH_IMAGE:-false}" == "true" ]]; then
   echo "[INFO] Pushing ${IMAGE_TAG} ..."
   docker push "${IMAGE_TAG}"
   echo "[INFO] Push done"

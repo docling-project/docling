@@ -54,78 +54,102 @@
 
 ### A. 토큰 / 변수 설정 (1~3번)
 
-1. `HWP_SDK_TOKEN` 설정 (HWP SDK private 레포 다운로드용 — **두 variant 모두 필수**)
-   - 대상 레포: [`HeechanKim-Genon/hwp_sdk`](https://huggingface.co/datasets/HeechanKim-Genon/hwp_sdk) — 이 레포 전용 read 토큰
-   - 토큰 값은 [제논 내부 드라이브 (HWP_SDK_TOKEN)](https://docs.google.com/document/d/1c2kHPus5QxFN0jhfH37EDFORd6pt2rermkINfDFlQbs/edit?usp=drive_link) 에서 확인
-   - `doc_parser/` (레포 최상위 경로) 에서 아래 명령어 실행 (이후 재실행 불필요, Git 미추적):
-     - `hf_xxx_your_hwp_sdk_token_here` 부분을 위 드라이브에 적힌 토큰 값으로 교체후 아래 명령어 실행.
+1. `HWP_SDK_TOKEN` 값 설정 (HWP SDK private 레포 다운로드용)
+
+   **(배경 설명)**
+   - HWP SDK란? → HWP를 고품질로 파싱하기 위한 전용 SDK. 사전에 사내 private 토큰 발급후 적용을 완료해야만, 전처리기 빌드시 같이 다운로드 및 설치 진행됨(다운로드 불가시 전처리기 빌드 실패).
+
+   **(진행 순서)**
+   - **[1번]** 토큰 값을 [제논 내부 드라이브 (HWP_SDK_TOKEN)](https://docs.google.com/document/d/1c2kHPus5QxFN0jhfH37EDFORd6pt2rermkINfDFlQbs/edit?usp=drive_link) 에서 확인한다.
+   - **[2번]** 확인한 토큰 값으로, `doc_parser/` (레포 최상위 경로) 에서 아래 명령어 실행 (이후 재실행 불필요, Git 미추적):
+     - `hf_xxx_your_hwp_sdk_token_here` 부분을 해당 토큰 값으로 교체후 다음 명령어 실행.
      ```shell
      echo "HWP_SDK_TOKEN=hf_xxx_your_hwp_sdk_token_here" >> build-script/hf_private_token.env
      ```
-   - `doc-parser-build.config` 에 직접 입력하거나 push 하지 말 것 (토큰은 반드시 위 명령어를 통해 `hf_private_token.env` 파일에만 존재해야함)
+     - `doc-parser-build.config` 에 직접 입력하거나 push 하지 말 것 (토큰은 반드시 위 명령어를 통해 `hf_private_token.env` 파일에만 존재해야함)
 
-2. `BUILD_VARIANT` 선택 - 무료용(**`opensource`**) / 유료용(**`enterprise`**) 버전 선택
+2. `BUILD_VARIANT` 값 선택 - 기본(**`standard`**) / 유료 PDF SDK 포함(**`synap`**) 버전 선택
 
-   > **주의 (배포 대상 확인 필수):** `enterprise` 빌드는 유료 PDF SDK 가 포함되므로 **라이선스가 제공된 지정 사이트에만** 배포해야함. 그 외 사이트에는 **기본적으로 `opensource` 로 배포**할 것. 배포 전, 각 사이트 담당자는 해당 사이트가 enterprise 제공 대상에 해당하는지 반드시 확인한 뒤 진행해야함.
+   > **주의 (배포 정책):** `synap` 빌드는 유료 PDF SDK가 포함된다. 운영계 Genos 도커 레지스트리에는 **`standard` 이미지만** 올린다. 일반 사이트 배포는 **기본적으로 `standard`** 로 진행하며, 특정 사이트에 `synap`(유료 PDF SDK) 버전을 들고가야 하는 요청이 생길 경우엔, **AI Search 팀 내부에서 자체적으로 빌드후, 이미지를 전달**한다 (PDF SDK 토큰/라이선스는 AI Search 팀이 관리, 비공개).
 
-   - **`opensource`** — LibreOffice + rhwp(컨테이너 내 바이너리) 만 포함. PDF SDK 자산이 이미지에 일절 들어가지 않음 (다운로드 단계 자체가 없음). 회사 내부 PDF SDK 라이선스가 없는 환경/외부 배포용. **1번 과정인 `HWP_SDK_TOKEN` 만 있으면 됨**.
-   - **`enterprise`** — 위 + 유료 PDF SDK 포함. HWP → PDF 변환 chain 이 `pdf_sdk → rhwp → libreoffice` 순으로 동작. **`HWP_SDK_TOKEN` 에 더해 `PDF_SDK_TOKEN` 도 필수**.
-     - `PDF_SDK_TOKEN` — 대상 레포 [`HeechanKim-Genon/pdf_sdk`](https://huggingface.co/datasets/HeechanKim-Genon/pdf_sdk) 전용 read 토큰
-     - 토큰 값은 [제논 내부 드라이브 (PDF_SDK_TOKEN)](https://docs.google.com/document/d/1amoktYvYYk74m81u2hxlBn7ljzoe-apNB56doNRZmhQ/edit?usp=drive_link) 에서 확인. 
-       - 1번 과정에서 사용된 [(HWP_SDK_TOKEN)](https://docs.google.com/document/d/1c2kHPus5QxFN0jhfH37EDFORd6pt2rermkINfDFlQbs/edit?usp=drive_link) 이랑은 다른 값임.
-     - `doc_parser/` (레포 최상위 경로) 에서 아래 명령어 실행 (이후 재실행 불필요, Git 미추적):
-       - `hf_xxx_your_hwp_sdk_token_here` 부분을 위 드라이브에 적힌 토큰 값으로 교체후 아래 명령어 실행.
+   **(배경 설명)**
+   - PDF SDK란? → `타문서(HWP,docx 등) → PDF`를 고품질로 변환하기 위한 유료용 SDK. 이 SDK의 유무에 따라 `standard` 또는 `synap` 버전으로 구분됨. 
+   - **`standard`** — 기본 버전. 
+     - 오픈소스(LibreOffice + rhwp)만 사용하여 PDF로 변환. PDF SDK 자산이 이미지에 일절 들어가지 않음 (다운로드 단계 자체가 없음). 
+     - 사내 운영계 GenOS 환경/일반적인 외부 사이트 배포용. **`HWP_SDK_TOKEN` 외에 별도의 추가 토큰값 필요 없음**.
+   - **`synap`** — 오픈소스(LibreOffice + rhwp) + 유료 PDF SDK 포함 버전.
+     - PDF로의 문서 변환시, `pdf_sdk → rhwp(hwp/hwpx 전용) → libreoffice` 순서로 fallback 동작(=변환 실패시 후순위 로직 사용). 
+     - `PDF SDK`는 **전처리기 빌드시 자동 설치되며, `PDF_SDK_TOKEN`값이 사전에 필수로 적용되어야함(`HWP_SDK_TOKEN`과 별개 값)**. 
+
+   **(진행 순서)**
+
+    - **[0번(synap의 경우만)]** **토큰을 발급후**, `doc_parser/` (레포 최상위 경로) 에서 아래 명령어를 실행한다 (이후 재실행 불필요, Git 미추적). 발급받은 값으로 `hf_yyy_...` 부분을 교체후 실행:
        ```shell
        echo "PDF_SDK_TOKEN=hf_yyy_your_pdf_sdk_token_here" >> build-script/hf_private_token.env
        ```
-   - **`opensource`**/**`enterprise`** 버전에 따른 안내 적용후, build-script 디렉토리 이동 
-   - [`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `BUILD_VARIANT=` 라인을 둘 중 하나로 설정 해야한다:
+       - `doc-parser-build.config` 에 직접 입력하거나 push 하지 말 것 (토큰은 반드시 위 명령어를 통해 `hf_private_token.env` 파일에만 존재해야함)
+   - **[1번]** build-script 디렉토리 이동
+   - **[2번]**[`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `BUILD_VARIANT=` 을 둘 중 하나로 설정:
      ```bash
      # build-script/doc-parser-build.config
-     BUILD_VARIANT=opensource   # 또는 enterprise
+     BUILD_VARIANT=standard   # 또는 synap
      ```
-     - 비워둔 채 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단된다 (의도치 않게 **`enterprise`** 가 배포될 위험을 막기 위한 안전장치).
+     - **비워둔 채 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단**된다 (의도치 않게 **`synap`** 가 배포될 위험을 막기 위한 안전장치).
      - 빌드 시 `DOCKERFILE_PATH` 가 자동으로 `genon/preprocessor/docker/Dockerfile.${BUILD_VARIANT}` 로 결정된다.
      - 두 variant 의 런타임 동작 차이 / chain 우선순위는 [`preprocessor/docker/README.md`](preprocessor/docker/README.md) 참고.
 
-3. `HW_VARIANT` 선택 - GPU(**`gpu`**) / CPU(**`cpu`**) 빌드 선택
+3. `HW_VARIANT` 값 선택 - GPU(**`gpu`**) / CPU(**`cpu`**) 빌드 선택
+
+   **(배경 설명)**
+
    - **`gpu`** — `uv.lock` 기준 그대로. torch CUDA wheel + nvidia-* / triton 포함. GPU 가속 환경용.
    - **`cpu`** — builder 단계에서 torch / torchvision 을 CPU wheel(`https://download.pytorch.org/whl/cpu`)로 재설치하고 nvidia-* / triton 패키지를 제거한 경량 이미지. GPU 없는 환경용.
-   - [`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `HW_VARIANT=` 라인을 둘 중 하나로 설정:
+    - 최종 이미지명 태그 규칙:
+       - **기본 조합(`cpu` + `standard`)** 은 가장 기본 산출물이라 접미사 없이 `:${IMAGE_VERSION}` (예: `:2.1.5`).
+       - 그 외 조합은 hw 먼저·variant 나중 순서로 `:${IMAGE_VERSION}-${HW_VARIANT}-${BUILD_VARIANT}` (예: `:2.1.5-gpu-synap`).
+   - `BUILD_VARIANT` × `HW_VARIANT` 조합으로 최대 4종의 이미지를 만들 수 있다:
+     | 조합 | 태그 예시 |
+     |---|---|
+     | cpu + standard (기본) | `:2.1.5` |
+     | gpu + standard | `:2.1.5-gpu-standard` |
+     | cpu + synap | `:2.1.5-cpu-synap` |
+     | gpu + synap | `:2.1.5-gpu-synap` |
+    > **정리** — 위 2번 (`BUILD_VARIANT`) × 3번 (`HW_VARIANT`) 의 조합으로 **총 4종의 Dockerfile(이미지)** 가 만들어진다. 운영 환경에 맞는 1개를 골라서 빌드하면 된다. `synap` 는 빌드를 위해 AI Search 팀에서 관리하는 `PDF_SDK_TOKEN` 값이 필요함.
+
+   **(진행 순서)**
+
+   - **[1번]** [`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 `HW_VARIANT=` 라인을 둘 중 하나로 설정:
      ```bash
      # build-script/doc-parser-build.config
      HW_VARIANT=gpu   # 또는 cpu
      ```
      - 비워둔 채 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단된다.
-     - 최종 이미지 태그는 `${IMAGE_VERSION}-${BUILD_VARIANT}-${HW_VARIANT}` 형태가 된다 (예: `:2.1.5-opensource-cpu`).
-   - `BUILD_VARIANT` × `HW_VARIANT` 조합으로 최대 4종(`opensource-gpu` / `opensource-cpu` / `enterprise-gpu` / `enterprise-cpu`)의 이미지를 만들 수 있다.
-
-> **정리** — 위 2번 (`BUILD_VARIANT`) × 3번 (`HW_VARIANT`) 의 조합으로 **총 4종의 Dockerfile(이미지)** 가 만들어진다. 운영 환경에 맞는 1개를 골라서 빌드하면 된다.
 
 ### B. 이미지 빌드 (4~5번)
 
-4. [doc-parser-build.config](../build-script/doc-parser-build.config) 기타 변경 사항 반영 (1·2번을 수행했다면 `HWP_SDK_TOKEN` / `PDF_SDK_TOKEN` 값은 직접 입력하지 말 것)
+4. [doc-parser-build.config](../build-script/doc-parser-build.config) 에 기타 변경 사항 반영 (1·2번을 수행했다면 `HWP_SDK_TOKEN` / `PDF_SDK_TOKEN` 값은 직접 입력하지 말 것)
 
 5. 실행 [doc-parser-build.sh](../build-script/doc-parser-build.sh)
    - `SMOKE_TEST=true`(기본값) 면 빌드 직후 컨테이너를 띄워 `SMOKE_TEST_FILE`(기본 `pdf_sample.pdf`) 한 건을 파싱하고 torch 의 CUDA 포함 여부가 `HW_VARIANT` 와 일치하는지 검증한다. 실패하면 빌드도 실패한다.
 
 ### C. 레지스트리 등록 (6~7번)
 
-6. [register.config](preprocessor/scripts/register.config) 설정 — `IMAGE_VERSION` / `BUILD_VARIANT` / `HW_VARIANT` 세 값은 **`doc-parser-build.config` 와 동일한 값**으로 둔다. `register_image.sh` 가 `${IMAGE_VERSION}-${BUILD_VARIANT}-${HW_VARIANT}` 로 자동 조합해 빌드 태그와 일치시킨다.
+6. [register.config](preprocessor/scripts/register.config) 설정 — `IMAGE_VERSION` / `BUILD_VARIANT` / `HW_VARIANT` 세 값은 **`doc-parser-build.config` 와 동일한 값**으로 둔다. `register_image.sh` 가 빌드와 동일한 태그 규칙으로 자동 조합한다 (기본 조합 `cpu`+`standard` 는 `${IMAGE_VERSION}`, 그 외는 `${IMAGE_VERSION}-${HW_VARIANT}-${BUILD_VARIANT}`).
 
 7. 실행 [register_image.sh](preprocessor/scripts/register_image.sh) : push와 디비에 등록해준다.
    - 다른 조합을 등록하려면 `register.config` 의 세 값을 그 조합으로 바꾸고 다시 실행 (interactive prompt 가 있어 한 번에 batch 자동화 불가).
 
 ### D. 사이트 배포 (8번)
 
-8. 사이트 배포 시 (조합별로 동일하게 진행 — 아래는 opensource-cpu 예시)
+8. 사이트 배포 시 (조합별로 동일하게 진행 — 아래는 기본 조합인 `cpu`+`standard` 예시. 기본 조합일때는 태그 접미사가 없는 점에 주의)
 ```shell
 # 1. 이미지 저장
-docker save mncregistry:30500/mnc/doc-parser-preprocessor:2.1.5-opensource-cpu | gzip > doc-parser-preprocessor-opensource-cpu.tar.gz
+docker save mncregistry:30500/mnc/doc-parser-preprocessor:2.1.5 | gzip > doc-parser-preprocessor-2.1.5.tar.gz
 # 2. 사이트에서 이미지 복원
-gunzip -c doc-parser-preprocessor-opensource-cpu.tar.gz | docker load
+gunzip -c doc-parser-preprocessor-2.1.5.tar.gz | docker load
 # 3. 해당 조합으로 register_image.sh 실행 (BUILD_VARIANT / HW_VARIANT 지정)
 ```
+   - `gpu`/`synap` 등 다른 조합이면 태그가 `:2.1.5-gpu-synap` 처럼 붙으니 파일명/명령어를 그에 맞게 바꾼다.
 
 ## 로컬 테스트 (도커 빌드 없이 test.py 실행)
 
@@ -133,11 +157,12 @@ gunzip -c doc-parser-preprocessor-opensource-cpu.tar.gz | docker load
 
 > 아래 명령어들은 **레포가 위치한 호스트 머신의 터미널**에서 실행한다 (도커 컨테이너 안 셸이 아님). 컨테이너 안에서 macOS 절대경로로 받으면 컨테이너 내부 가상 경로에 저장돼 호스트에 반영되지 않으니 주의. 만약 컨테이너 안에서 받고 싶다면 cwd를 마운트된 repo root(예: `/app/docparser_work_187/doc_parser`)로 옮긴 뒤 상대경로(`./hwp_sdk`, `./pdf_sdk`)로 받아야 한다.
 
-1. HuggingFace 인증 (위 빌드 단계 1번/2번에서 발급한 두 fine-grained 토큰 사용)
+1. HuggingFace 인증 (위 빌드 단계 1번/2번에서 발급한 fine-grained 토큰 사용)
    ```shell
    export HWP_SDK_TOKEN=hf_xxx_your_hwp_sdk_token_here
-   export PDF_SDK_TOKEN=hf_yyy_your_pdf_sdk_token_here   # PDF SDK 도 받을 경우만
+   export PDF_SDK_TOKEN=hf_yyy_your_pdf_sdk_token_here   #(비공개 토큰, AI Search 팀 관리)
    ```
+   - `PDF_SDK_TOKEN` 은 공개 값이 아님(AI Search 팀 내부에서 private 하게 관리).
 2. 레포 최상위(`doc_parser/`) 경로에서 두 SDK 다운로드 (각 레포에 대응되는 토큰 사용)
    ```shell
    # HWP SDK
