@@ -294,13 +294,22 @@ class DoclingServiceClient:
         items: Iterable[ConversionItem],
         max_in_flight: int = DEFAULT_MAX_CONCURRENCY,
         ordered: bool = False,
-    ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
+        *,
+        target: InBodyTarget | PresignedUrlTarget | None = None,
+    ) -> Iterator[
+        tuple[
+            ConversionItem,
+            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+        ]
+    ]:
+        effective_target = InBodyTarget() if target is None else target
         return self._run_submit_and_retrieve_many_async(
             item_list=items,
             max_in_flight=self._validate_concurrency(
                 max_in_flight, name="max_in_flight"
             ),
             ordered=ordered,
+            target=effective_target,
         )
 
     def submit_and_retrieve_many(
@@ -308,7 +317,14 @@ class DoclingServiceClient:
         items: Iterable[ConversionItem],
         max_in_flight: int = DEFAULT_MAX_CONCURRENCY,
         ordered: bool = False,
-    ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
+        *,
+        target: InBodyTarget | PresignedUrlTarget | None = None,
+    ) -> Iterator[
+        tuple[
+            ConversionItem,
+            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+        ]
+    ]:
         warnings.warn(
             "submit_and_retrieve_many() is deprecated; use submit_and_retrieve_each().",
             DeprecationWarning,
@@ -318,6 +334,7 @@ class DoclingServiceClient:
             items=items,
             max_in_flight=max_in_flight,
             ordered=ordered,
+            target=target,
         )
 
     def chunk(
@@ -1129,12 +1146,19 @@ class DoclingServiceClient:
         item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
-    ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
+        target: InBodyTarget | PresignedUrlTarget = InBodyTarget(),
+    ) -> Iterator[
+        tuple[
+            ConversionItem,
+            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+        ]
+    ]:
         self._ensure_sync_bridge_allowed()
         return self._iterate_submit_and_retrieve_many_sync(
             item_list=item_list,
             max_in_flight=max_in_flight,
             ordered=ordered,
+            target=target,
         )
 
     def _iterate_submit_and_retrieve_many_sync(
@@ -1142,12 +1166,19 @@ class DoclingServiceClient:
         item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
-    ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
+        target: InBodyTarget | PresignedUrlTarget = InBodyTarget(),
+    ) -> Iterator[
+        tuple[
+            ConversionItem,
+            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+        ]
+    ]:
         return self._iterate_async_generator_sync(
             self._submit_and_retrieve_many_async(
                 item_list=item_list,
                 max_in_flight=max_in_flight,
                 ordered=ordered,
+                target=target,
             )
         )
 
@@ -1272,6 +1303,7 @@ class DoclingServiceClient:
             item_list=make_items(),
             max_in_flight=in_flight,
             ordered=True,
+            target=InBodyTarget(),
         ):
             metadata = item.metadata
             if not isinstance(metadata, _ConvertAllItemMetadata):
@@ -1303,8 +1335,13 @@ class DoclingServiceClient:
         item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
+        target: InBodyTarget | PresignedUrlTarget = InBodyTarget(),
     ) -> AsyncGenerator[
-        tuple[ConversionItem, ConvertDocumentResponse | Exception], None
+        tuple[
+            ConversionItem,
+            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+        ],
+        None,
     ]:
         async with self._build_async_http_client() as async_client:
 
@@ -1312,7 +1349,7 @@ class DoclingServiceClient:
                 _idx: int,
                 item: ConversionItem,
                 async_client: httpx.AsyncClient,
-            ) -> ConvertDocumentResponse:
+            ) -> ConvertDocumentResponse | PresignedUrlConvertResponse:
                 resolved = self._resolve_options(
                     options=item.options,
                     max_num_pages=None,
@@ -1322,12 +1359,12 @@ class DoclingServiceClient:
                 submit_options = self._options_for_output_formats(
                     resolved.options,
                     output_formats=None,
-                    target=InBodyTarget(),
+                    target=target,
                 )
                 initial_status = await self._submit_convert_task_async(
                     source=item.source,
                     options=submit_options,
-                    target=InBodyTarget(),
+                    target=target,
                     async_client=async_client,
                     request_headers=item.headers,
                 )
@@ -1337,6 +1374,12 @@ class DoclingServiceClient:
                     async_client=async_client,
                     max_in_flight=max_in_flight,
                 )
+                if isinstance(target, PresignedUrlTarget):
+                    return await self._fetch_presigned_result_async(
+                        task_id=initial_status.task_id,
+                        last_status=terminal_status,
+                        async_client=async_client,
+                    )
                 return await self._fetch_convert_result_payload_async(
                     task_id=initial_status.task_id,
                     last_status=terminal_status,
@@ -1344,7 +1387,11 @@ class DoclingServiceClient:
                 )
 
             buffered_results: dict[
-                int, tuple[ConversionItem, ConvertDocumentResponse | Exception]
+                int,
+                tuple[
+                    ConversionItem,
+                    ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+                ],
             ] = {}
             next_ordered_index = 0
             async for idx, item, outcome in _run_bounded(
@@ -1353,7 +1400,9 @@ class DoclingServiceClient:
                 async_client=async_client,
                 max_in_flight=max_in_flight,
             ):
-                normalized: ConvertDocumentResponse | Exception
+                normalized: (
+                    ConvertDocumentResponse | PresignedUrlConvertResponse | Exception
+                )
                 if isinstance(outcome, BaseException):
                     normalized = self._normalize_exception(outcome)
                 else:
@@ -1550,6 +1599,20 @@ class DoclingServiceClient:
             error_message=f"Fetching result for task {task_id} failed.",
         )
         return ConvertDocumentResponse.model_validate_json(response.text)
+
+    async def _fetch_presigned_result_async(
+        self,
+        task_id: str,
+        last_status: TaskStatusResponse | None,
+        async_client: httpx.AsyncClient,
+    ) -> PresignedUrlConvertResponse:
+        response = await self._fetch_result_response_async(
+            async_client=async_client,
+            task_id=task_id,
+            last_status=last_status,
+            error_message=f"Fetching result for task {task_id} failed.",
+        )
+        return PresignedUrlConvertResponse.model_validate_json(response.text)
 
     async def _fetch_result_response_async(
         self,
