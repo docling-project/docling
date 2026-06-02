@@ -260,4 +260,5 @@ class VlmConvertModel(BasePageModel):
             try:
                 self.engine.cleanup()
             except Exception as e:
-                _log.warning(f"Error cleaning up engine: {e}")
+                if _log is not None:
+                    _log.warning(f"Error cleaning up engine: {e}")
