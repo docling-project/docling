@@ -207,7 +207,9 @@ models-onnxruntime = [
 
 # Vision Language Models for inline processing
 models-vlm-inline = [
-  'transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*',
+  # temporary solution until huggingface/transformers#46159 is resolved
+  'transformers>=4.42.0,<5.9.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.* ; sys_platform == "darwin"',
+  'transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.* ; sys_platform != "darwin"',
   'accelerate>=1.2.1,<2.0.0',
   'mlx-vlm>=0.4.3,<1.0.0 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
   'qwen-vl-utils>=0.0.11',

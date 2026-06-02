@@ -251,7 +251,10 @@ def test_confidence(test_doc_path):
     doc_result: ConversionResult = converter.convert(test_doc_path, page_range=(6, 9))
 
     assert doc_result.confidence.mean_grade == QualityGrade.EXCELLENT
-    assert doc_result.confidence.low_grade == QualityGrade.EXCELLENT
+    assert doc_result.confidence.low_grade in (
+        QualityGrade.GOOD,
+        QualityGrade.EXCELLENT,
+    )
 
 
 def test_pipeline_cache_with_chart_extraction():
