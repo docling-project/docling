@@ -1,18 +1,3 @@
-"""
-parser_processor.py — 자체 완결형 파서 파사드.
-
-intelligent_processor.py 와 attachment_processor.py 에서 파싱에 필요한 코드만
-복사하여 단일 파일로 구성. 청킹/벡터 조합은 수행하지 않는다.
-
-포맷별 처리 경로:
-  .pdf              → IntelligentDocumentProcessor (load → OCR검사 → enrichment)
-  .hwp / .hwpx      → HwpDocumentLoader.load_documents()
-  .docx             → DocxDocumentLoader.load_documents()
-  .wav/.mp3/.m4a    → AudioLoader.transcribe_audio()
-  .csv / .xlsx      → TabularLoader.data_dict
-  기타              → GenericDocumentLoader.load_documents()  (LangChain Document 목록)
-"""
-
 from __future__ import annotations
 
 import base64
@@ -26,10 +11,13 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import unicodedata
 import uuid
 import warnings
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field
 from datetime import datetime
 from glob import glob
 from pathlib import Path
@@ -84,10 +72,13 @@ from docling.document_converter import (
     WordFormatOption,
 )
 from docling.pipeline.simple_pipeline import SimplePipeline
+from docling.prompts.prompt_manager import LLMApiError
+from docling.utils.api_image_request import api_image_request
 from docling.utils.document_enrichment import check_document, enrich_document
 from docling_core.types import DoclingDocument
 from docling_core.types.doc import (
     BoundingBox,
+    DescriptionAnnotation,
     DocItem,
     DocItemLabel,
     DoclingDocument,
@@ -100,6 +91,18 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.base import CoordOrigin
 from docling_core.types.doc.document import CodeItem, ContentLayer, ListItem
+
+try:
+    from genon.preprocessor.facade.enrichment.custom_fields_enricher import CustomFieldsEnricher
+except ImportError:
+    CustomFieldsEnricher = None  # type: ignore[assignment,misc]
+
+try:
+    from genon.preprocessor.facade.enrichment.metadata_enricher import MetadataEnricher
+except ImportError:
+    MetadataEnricher = None  # type: ignore[assignment,misc]
+
+from genon.preprocessor.facade.enrichment.enrichment_config import EnrichmentConfig
 
 try:
     import chardet
@@ -144,6 +147,56 @@ def _load_config(config_path: str) -> dict:
 
 def _as_dict(value: Any) -> dict:
     return value if isinstance(value, dict) else {}
+
+
+def _parse_optional_bool(value: Any, key: str = "") -> Optional[bool]:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        text = value.strip().lower()
+        if text in {"1", "true", "yes", "y", "on"}:
+            return True
+        if text in {"0", "false", "no", "n", "off"}:
+            return False
+    if key:
+        _log.warning(
+            f"[ImageDescriptionOptions] Invalid bool value for '{key}': {value!r}. Fallback to default."
+        )
+    return None
+
+
+def _parse_optional_int(value: Any, key: str = "") -> Optional[int]:
+    if value is None or value == "":
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        if key:
+            _log.warning(
+                f"[ImageDescriptionOptions] Invalid int value for '{key}': {value!r}. Fallback to default."
+            )
+        return None
+
+
+
+
+# pdf_pipeline.device / pdf_pipeline.table_structure_mode 의 yaml 문자열 → docling enum 매핑.
+# 키가 없거나 알 수 없는 값이면 호출부에서 경고 + 기본값으로 폴백한다 (startup 견고성).
+_ACCELERATOR_DEVICE_MAP = {
+    "auto": AcceleratorDevice.AUTO,
+    "cpu": AcceleratorDevice.CPU,
+    "cuda": AcceleratorDevice.CUDA,
+    "mps": AcceleratorDevice.MPS,
+}
+
+_TABLE_FORMER_MODE_MAP = {
+    "accurate": TableFormerMode.ACCURATE,
+    "fast": TableFormerMode.FAST,
+}
 
 
 def _resolve_default_parser_config_path() -> str:
@@ -418,10 +471,11 @@ class TabularLoader:
 
 class AudioLoader:
     def __init__(self, file_path: str, req_url: str, req_data: dict,
-                 chunk_sec: int = 29, tmp_path: str = '.'):
+                 chunk_sec: int = 29, tmp_path: str = '.', chunk_overlap_ms: int = 300):
         self.file_path = file_path
         self.tmp_path = tmp_path
         self.chunk_sec = chunk_sec
+        self.chunk_overlap_ms = chunk_overlap_ms
         self.req_url = req_url
         self.req_data = req_data
 
@@ -431,7 +485,7 @@ class AudioLoader:
         n_chunks = math.ceil(len(audio) / chunk_len)
         for i in range(n_chunks):
             start_ms = i * chunk_len
-            overlap_start_ms = start_ms - 300 if start_ms > 0 else start_ms
+            overlap_start_ms = start_ms - self.chunk_overlap_ms if start_ms > 0 else start_ms
             end_ms = start_ms + chunk_len
             audio_chunk = audio[overlap_start_ms:end_ms]
             audio_chunk.export(os.path.join(self.tmp_path, "tmp_{}.wav".format(str(i))), format="wav")
@@ -456,76 +510,477 @@ class AudioLoader:
 
 
 # ============================================================
-# Enrichment 프롬프트 (from intelligent_processor.py)
+# Facade Image Description
 # ============================================================
 
-_toc_system_prompt = """You are an expert at generating table of contents (목차) from Korean documents. You specialize in regulatory documents, terms of service, contracts, and mixed-format documents that combine formal regulatory structures with general section headers.
-""".strip()
+_DEFAULT_IMAGE_DESCRIPTION_PROMPT_TEMPLATE = (
+    "문서의 일부 이미지를 설명해줘. "
+    "아래 문맥을 참고해서 핵심 정보를 2~4문장으로 간결하게 작성해줘.\n\n"
+    "[앞 문맥]\n{before_context}\n\n"
+    "[캡션]\n{caption}\n\n"
+    "[뒤 문맥]\n{after_context}\n\n"
+    "요구사항:\n"
+    "1) 추측은 최소화하고 이미지에서 확인 가능한 사실 중심으로 작성\n"
+    "2) 문서 문맥과의 연결점을 포함\n"
+    "3) 한국어로 작성"
+)
 
-_toc_user_prompt = """
-Here is the Korean document you need to analyze:
 
-<document>
-{raw_text}
-</document>
+@dataclass(frozen=True)
+class ImageDescriptionOptions:
+    enabled: bool = False
+    api_url: str = ""
+    api_key: str = ""
+    model: str = "model"
+    timeout: float = 360.0
+    concurrency: int = 16
+    before_items: int = 3
+    after_items: int = 2
+    max_context_chars: int = 1500
+    include_caption: bool = True
+    include_section_header: bool = True
+    same_page_first: bool = True
+    provenance: str = "facade_image_description"
+    prompt_template: str = _DEFAULT_IMAGE_DESCRIPTION_PROMPT_TEMPLATE
+    headers: dict[str, str] = field(default_factory=dict)
+    params: dict[str, Any] = field(default_factory=dict)
 
-Your task is to extract and organize all structural elements from this document into a hierarchical table of contents. Korean documents often have mixed structures where some sections follow formal regulatory patterns (제x장/절/관/조) while others use general section numbering and headers.
+    @classmethod
+    def from_config(
+        cls,
+        *,
+        image_desc_cfg: dict,
+        fallback_api_url: str,
+        fallback_api_key: str,
+        fallback_model: str,
+    ) -> "ImageDescriptionOptions":
+        image_desc_cfg = _as_dict(image_desc_cfg)
 
-## Analysis Process
+        def _parse_optional_float(value: Any, key: str) -> Optional[float]:
+            if value is None or value == "":
+                return None
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                _log.warning(
+                    f"[ImageDescriptionOptions] Invalid float value for '{key}': {value!r}. Fallback to default."
+                )
+                return None
 
-Before generating the final table of contents, work through the document systematically in `<analysis>` tags. It's OK for this section to be quite long. Follow these steps:
+        enabled = _parse_optional_bool(image_desc_cfg.get("enabled"), "enabled")
+        timeout = _parse_optional_float(image_desc_cfg.get("timeout"), "timeout")
+        concurrency = _parse_optional_int(image_desc_cfg.get("concurrency"), "concurrency")
+        before_items = _parse_optional_int(image_desc_cfg.get("before_items"), "before_items")
+        after_items = _parse_optional_int(image_desc_cfg.get("after_items"), "after_items")
+        max_context_chars = _parse_optional_int(
+            image_desc_cfg.get("max_context_chars"), "max_context_chars"
+        )
+        include_caption = _parse_optional_bool(image_desc_cfg.get("include_caption"), "include_caption")
+        include_section_header = _parse_optional_bool(
+            image_desc_cfg.get("include_section_header"), "include_section_header"
+        )
+        same_page_first = _parse_optional_bool(image_desc_cfg.get("same_page_first"), "same_page_first")
 
-1. **Document Title Extraction**: Quote the main document title exactly as it appears at the beginning of the document.
+        timeout = 360.0 if timeout is None or timeout <= 0 else timeout
+        if concurrency is None or concurrency <= 0:
+            concurrency = 4
+        if before_items is None or before_items < 0:
+            before_items = 3
+        if after_items is None or after_items < 0:
+            after_items = 2
+        if max_context_chars is None or max_context_chars <= 0:
+            max_context_chars = 1500
 
-2. **Structural Marker Identification**: Scan through the document and quote all the key structural markers you find, such as:
-   - Formal regulatory patterns: 제x장, 제x절, 제x관, 제x조
-   - General section patterns: numbered headers (1., 2., etc.), lettered headers (가., 나., etc.)
-   - Special sections: 부칙, 별지, 별표, etc.
+        return cls(
+            enabled=False if enabled is None else enabled,
+            api_url=str(image_desc_cfg.get("api_url") or image_desc_cfg.get("url") or fallback_api_url or "").strip(),
+            api_key=str(image_desc_cfg.get("api_key") or fallback_api_key or "").strip(),
+            model=str(image_desc_cfg.get("model") or fallback_model or "model").strip(),
+            timeout=timeout,
+            concurrency=concurrency,
+            before_items=before_items,
+            after_items=after_items,
+            max_context_chars=max_context_chars,
+            include_caption=True if include_caption is None else include_caption,
+            include_section_header=True if include_section_header is None else include_section_header,
+            same_page_first=True if same_page_first is None else same_page_first,
+            provenance=str(
+                image_desc_cfg.get("provenance", "facade_image_description")
+            ).strip()
+            or "facade_image_description",
+            prompt_template=str(
+                image_desc_cfg.get("prompt_template", _DEFAULT_IMAGE_DESCRIPTION_PROMPT_TEMPLATE)
+            ),
+            headers=_as_dict(image_desc_cfg.get("headers")),
+            params=_as_dict(image_desc_cfg.get("params")),
+        )
 
-3. **Systematic Section Extraction**: Work through the document from beginning to end, extracting each structural element in order:
-   - For each main section, quote the exact title as it appears
-   - For each subsection, quote the exact title and note which main section it belongs under
-   - For each article/item, quote the exact title and note its parent section
-   - Include any appendices, attachments, and addenda
+    @classmethod
+    def from_legacy_processor(cls, processor: Any) -> "ImageDescriptionOptions":
+        def _safe_int(value: Any, default: int, min_value: int) -> int:
+            try:
+                parsed = int(value)
+            except (TypeError, ValueError):
+                return default
+            return parsed if parsed >= min_value else default
 
-4. **Hierarchy Building**: For each extracted element, explicitly note:
-   - What level it should be at (main section, subsection, sub-subsection, etc.)
-   - What its parent section is (if any)
-   - What numbering it should receive in the final TOC (1., 1.1., 1.1.1., etc.)
+        def _safe_float(value: Any, default: float, min_value: float) -> float:
+            try:
+                parsed = float(value)
+            except (TypeError, ValueError):
+                return default
+            return parsed if parsed >= min_value else default
 
-5. **Structure Verification**: Review your extracted elements to ensure:
-   - All structural elements are captured in document order
-   - The hierarchy makes logical sense
-   - No elements are duplicated or missed
+        return cls(
+            enabled=bool(getattr(processor, "image_description_enabled", False)),
+            api_url=str(getattr(processor, "image_description_api_url", "") or "").strip(),
+            api_key=str(getattr(processor, "image_description_api_key", "") or "").strip(),
+            model=str(getattr(processor, "image_description_model", "model") or "model").strip(),
+            timeout=_safe_float(getattr(processor, "image_description_timeout", 20.0), 20.0, 0.00001),
+            concurrency=_safe_int(getattr(processor, "image_description_concurrency", 4), 4, 1),
+            before_items=_safe_int(getattr(processor, "image_description_before_items", 3), 3, 0),
+            after_items=_safe_int(getattr(processor, "image_description_after_items", 2), 2, 0),
+            max_context_chars=_safe_int(
+                getattr(processor, "image_description_max_context_chars", 1500), 1500, 1
+            ),
+            include_caption=bool(getattr(processor, "image_description_include_caption", True)),
+            include_section_header=bool(
+                getattr(processor, "image_description_include_section_header", True)
+            ),
+            same_page_first=bool(getattr(processor, "image_description_same_page_first", True)),
+            provenance=str(
+                getattr(processor, "image_description_provenance", "facade_image_description")
+                or "facade_image_description"
+            ).strip(),
+            prompt_template=str(
+                getattr(
+                    processor,
+                    "image_description_prompt_template",
+                    _DEFAULT_IMAGE_DESCRIPTION_PROMPT_TEMPLATE,
+                )
+            ),
+            headers=dict(getattr(processor, "image_description_headers", {}) or {}),
+            params=dict(getattr(processor, "image_description_params", {}) or {}),
+        )
 
-## Output Requirements
 
-After your analysis, generate the table of contents with this exact format:
+class PictureDescriptionExtractor:
+    @staticmethod
+    def extract(item: PictureItem) -> str:
+        for annotation in getattr(item, "annotations", []) or []:
+            if not isinstance(annotation, DescriptionAnnotation):
+                continue
+            text = str(getattr(annotation, "text", "") or "").strip()
+            if text:
+                return text
+        return ""
 
-```
-<toc>
-TITLE:<document title>
-1. <first main section title>
-1.1. <first subsection title>
-1.1.1. <first sub-subsection title>
-1.2. <second subsection title>
-2. <second main section title>
-2.1. <subsection under second main section>
-3. <third main section title>
-</toc>
-```
 
-## Formatting Guidelines
+class FacadeImageDescriptionEnricher:
+    def __init__(self, options: ImageDescriptionOptions):
+        self.options = options
 
-- Start with `TITLE:` followed by the document title
-- Use hierarchical decimal numbering (1, 1.1, 1.1.1, etc.)
-- Follow each number with a space and the original title exactly as it appears
-- Maintain the document's logical hierarchy
-- Include appendices, attachments, and addenda as separate top-level items
-- Extract titles exactly as they appear - do not include explanatory content
-- Handle both formal regulatory structures and general section headers
-- Wrap the entire table of contents in `<toc></toc>` tags
-""".strip()
+    @staticmethod
+    def _get_item_page_no(item: DocItem, default_page_no: int = 1) -> int:
+        prov_list = getattr(item, "prov", None) or []
+        if not prov_list:
+            return default_page_no
+        page_no = getattr(prov_list[0], "page_no", None)
+        if isinstance(page_no, int) and page_no > 0:
+            return page_no
+        return default_page_no
+
+    @staticmethod
+    def _to_single_line(text: str) -> str:
+        return re.sub(r"\s+", " ", text).strip()
+
+    def _is_context_candidate(self, item: DocItem) -> bool:
+        if isinstance(item, PictureItem):
+            return False
+
+        text = self._to_single_line(str(getattr(item, "text", "") or ""))
+        if not text:
+            return False
+
+        label = getattr(item, "label", None)
+        label_value = label.value if hasattr(label, "value") else str(label or "")
+        if label_value in {"page_header", "page_footer"}:
+            return False
+        return True
+
+    def _collect_neighbor_context(
+        self,
+        items: list[DocItem],
+        picture_index: int,
+        picture_page_no: int,
+        max_items: int,
+        direction: str,
+    ) -> list[str]:
+        if max_items <= 0:
+            return []
+
+        if direction == "before":
+            scan_range = range(picture_index - 1, -1, -1)
+        else:
+            scan_range = range(picture_index + 1, len(items))
+
+        sequential: list[str] = []
+        same_page: list[str] = []
+        cross_page: list[str] = []
+
+        for idx in scan_range:
+            candidate = items[idx]
+            if not self._is_context_candidate(candidate):
+                continue
+            text = self._to_single_line(str(getattr(candidate, "text", "") or ""))
+            if not text:
+                continue
+
+            if not self.options.same_page_first:
+                sequential.append(text)
+                if len(sequential) >= max_items:
+                    break
+                continue
+
+            candidate_page_no = self._get_item_page_no(
+                candidate, default_page_no=picture_page_no
+            )
+            if candidate_page_no == picture_page_no:
+                same_page.append(text)
+            else:
+                cross_page.append(text)
+
+            if len(same_page) + len(cross_page) >= max_items:
+                break
+
+        if self.options.same_page_first:
+            if direction == "before":
+                # 그룹 우선순위(same page -> cross page)는 유지하면서 문서 순서로 정렬
+                same_page = list(reversed(same_page))
+                cross_page = list(reversed(cross_page))
+            selected = (same_page + cross_page)[:max_items]
+        else:
+            selected = sequential[:max_items]
+            if direction == "before":
+                # 앞 문맥은 문서 순서(먼저 나온 텍스트 → 최근 텍스트)로 정렬한다.
+                selected.reverse()
+        return selected
+
+    def _collect_section_header_context(
+        self,
+        items: list[DocItem],
+        picture_index: int,
+    ) -> str:
+        for idx in range(picture_index - 1, -1, -1):
+            candidate = items[idx]
+            label = getattr(candidate, "label", None)
+            label_value = label.value if hasattr(label, "value") else str(label or "")
+            if label_value in {"section_header", "title"}:
+                text = self._to_single_line(str(getattr(candidate, "text", "") or ""))
+                if text:
+                    return text
+        return ""
+
+    def _truncate_context(self, text: str) -> str:
+        if len(text) <= self.options.max_context_chars:
+            return text
+        return text[: self.options.max_context_chars].rstrip() + " ..."
+
+    def _build_prompt(self, before_context: str, after_context: str, caption: str) -> str:
+        safe_before = before_context or "-"
+        safe_after = after_context or "-"
+        safe_caption = caption or "-"
+        try:
+            prompt = (
+                self.options.prompt_template
+                .replace("{before_context}", safe_before)
+                .replace("{after_context}", safe_after)
+                .replace("{caption}", safe_caption)
+            )
+        except Exception as exc:
+            _log.warning(
+                f"[FacadeImageDescriptionEnricher] Invalid prompt_template, fallback to default: {exc}"
+            )
+            prompt = (
+                "문맥을 참고해서 이미지를 설명해줘.\n\n"
+                f"[앞 문맥]\n{safe_before}\n\n"
+                f"[캡션]\n{safe_caption}\n\n"
+                f"[뒤 문맥]\n{safe_after}"
+            )
+        return self._truncate_context(prompt)
+
+    def _annotate_single_picture(
+        self,
+        document: DoclingDocument,
+        picture_item: PictureItem,
+        prompt: str,
+    ) -> Optional[DescriptionAnnotation]:
+        image = picture_item.get_image(document, prov_index=0)
+        if image is None:
+            return None
+
+        headers = dict(self.options.headers)
+        if self.options.api_key and "Authorization" not in headers:
+            headers["Authorization"] = f"Bearer {self.options.api_key}"
+
+        params = dict(self.options.params)
+        if self.options.model and "model" not in params:
+            params["model"] = self.options.model
+
+        output = api_image_request(
+            image=image,
+            prompt=prompt,
+            url=self.options.api_url,
+            timeout=self.options.timeout,
+            headers=headers,
+            **params,
+        )
+        output_text = str(output or "").strip()
+        if not output_text:
+            return None
+        return DescriptionAnnotation(
+            text=output_text,
+            provenance=self.options.provenance,
+        )
+
+    def enrich(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        if not self.options.enabled:
+            return document
+
+        stage_started_at = time.perf_counter()
+
+        if not self.options.api_url:
+            _log.warning(
+                "[FacadeImageDescriptionEnricher] enabled=true but api_url is empty; skip"
+            )
+            return document
+
+        items: list[DocItem] = [
+            item
+            for item, _ in document.iterate_items(
+                included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+            )
+        ]
+        if not items:
+            return document
+
+        targets: list[tuple[int, PictureItem, str]] = []
+        for idx, item in enumerate(items):
+            if not isinstance(item, PictureItem):
+                continue
+
+            page_no = self._get_item_page_no(item, default_page_no=1)
+            before_context_items = self._collect_neighbor_context(
+                items=items,
+                picture_index=idx,
+                picture_page_no=page_no,
+                max_items=self.options.before_items,
+                direction="before",
+            )
+            after_context_items = self._collect_neighbor_context(
+                items=items,
+                picture_index=idx,
+                picture_page_no=page_no,
+                max_items=self.options.after_items,
+                direction="after",
+            )
+
+            if self.options.include_section_header:
+                section_header = self._collect_section_header_context(
+                    items=items, picture_index=idx
+                )
+                if section_header:
+                    before_context_items = [section_header] + before_context_items
+
+            caption = ""
+            if self.options.include_caption:
+                try:
+                    caption = self._to_single_line(item.caption_text(document))
+                except Exception:
+                    caption = ""
+
+            before_context = "\n".join(before_context_items)
+            after_context = "\n".join(after_context_items)
+            prompt = self._build_prompt(
+                before_context=before_context,
+                after_context=after_context,
+                caption=caption,
+            )
+            picture_seq = len(targets) + 1
+            targets.append((picture_seq, item, prompt))
+
+        if not targets:
+            elapsed = time.perf_counter() - stage_started_at
+            _log.info(
+                f"[FacadeImageDescriptionEnricher] no picture target for image description; "
+                f"elapsed={elapsed:.3f}s"
+            )
+            return document
+
+        total_targets = len(targets)
+        _log.info(
+            f"[FacadeImageDescriptionEnricher] image description start: "
+            f"targets={total_targets}, concurrency={self.options.concurrency}"
+        )
+
+        stats_lock = threading.Lock()
+        success_count = 0
+        failed_count = 0
+        skipped_count = 0
+
+        def _annotate_target(target: tuple[int, PictureItem, str]) -> None:
+            nonlocal success_count, failed_count, skipped_count
+            seq, pic, prompt = target
+            picture_started_at = time.perf_counter()
+            page_no = self._get_item_page_no(pic, default_page_no=1)
+            try:
+                annotation = self._annotate_single_picture(document, pic, prompt)
+            except Exception as exc:
+                elapsed = time.perf_counter() - picture_started_at
+                with stats_lock:
+                    failed_count += 1
+                _log.warning(
+                    f"[FacadeImageDescriptionEnricher] image description failed: "
+                    f"seq={seq}, page={page_no}, elapsed={elapsed:.3f}s, error={exc}"
+                )
+                return
+            if annotation is None:
+                elapsed = time.perf_counter() - picture_started_at
+                with stats_lock:
+                    skipped_count += 1
+                _log.debug(
+                    f"[FacadeImageDescriptionEnricher] image description empty: "
+                    f"seq={seq}, page={page_no}, elapsed={elapsed:.3f}s"
+                )
+                return
+            pic.annotations = [
+                ann
+                for ann in pic.annotations
+                if not (
+                    isinstance(ann, DescriptionAnnotation)
+                    and getattr(ann, "provenance", "") == self.options.provenance
+                )
+            ]
+            pic.annotations.append(annotation)
+            elapsed = time.perf_counter() - picture_started_at
+            with stats_lock:
+                success_count += 1
+            _log.debug(
+                f"[FacadeImageDescriptionEnricher] image description done: "
+                f"seq={seq}, page={page_no}, elapsed={elapsed:.3f}s"
+            )
+
+        with ThreadPoolExecutor(max_workers=self.options.concurrency) as executor:
+            list(executor.map(_annotate_target, targets))
+
+        total_elapsed = time.perf_counter() - stage_started_at
+        _log.info(
+            f"[FacadeImageDescriptionEnricher] image description done: "
+            f"targets={total_targets}, success={success_count}, skipped={skipped_count}, "
+            f"failed={failed_count}, elapsed={total_elapsed:.3f}s"
+        )
+
+        return document
 
 
 # ============================================================
@@ -535,13 +990,45 @@ TITLE:<document title>
 
 class IntelligentDocumentProcessor:
 
-    def __init__(self, config: dict | None = None):
+    def __init__(self, config: dict | None = None, config_path: str | None = None):
         cfg = _as_dict(config)
+        self._config_dir = Path(config_path).resolve().parent if config_path else Path.cwd()
         ocr_cfg = _as_dict(cfg.get("ocr"))
         layout_cfg = _as_dict(cfg.get("layout"))
-        enrichment_cfg = _as_dict(cfg.get("enrichment"))
+        pdf_cfg = _as_dict(cfg.get("pdf_pipeline"))
+        ec = EnrichmentConfig.from_raw(cfg.get("enrichment"), self._config_dir, parent_cfg=cfg)
 
-        ocr_ep = ocr_cfg.get("ocr_endpoint") or cfg.get("ocr_endpoint", "")
+        # OCR 엔드포인트는 ocr.paddle.ocr_endpoint 가 정식 위치.
+        # 구버전 호환: ocr.ocr_endpoint(상위) / 최상위 ocr_endpoint 도 폴백으로 인식.
+        paddle_cfg = _as_dict(ocr_cfg.get("paddle"))
+        ocr_ep = (
+            paddle_cfg.get("ocr_endpoint")
+            or ocr_cfg.get("ocr_endpoint")
+            or cfg.get("ocr_endpoint", "")
+        )
+
+        # 테이블 셀 재OCR HTTP timeout (ocr_all_table_cells). 잘못된 값은 60 으로 폴백.
+        table_cell_ocr_timeout = _parse_optional_int(
+            ocr_cfg.get("table_cell_ocr_timeout"), "ocr.table_cell_ocr_timeout"
+        )
+        self._table_cell_ocr_timeout = (
+            table_cell_ocr_timeout if table_cell_ocr_timeout and table_cell_ocr_timeout > 0 else 60
+        )
+
+        # 글리프 기반 auto-OCR 재트리거 임계값.
+        glyph_cfg = _as_dict(ocr_cfg.get("glyph_detection"))
+        glyph_cell_th = _parse_optional_int(
+            glyph_cfg.get("table_cell_threshold"), "ocr.glyph_detection.table_cell_threshold"
+        )
+        self._glyph_table_cell_threshold = (
+            glyph_cell_th if glyph_cell_th and glyph_cell_th > 0 else 1
+        )
+        glyph_doc_th = _parse_optional_int(
+            glyph_cfg.get("document_threshold"), "ocr.glyph_detection.document_threshold"
+        )
+        self._glyph_document_threshold = (
+            glyph_doc_th if glyph_doc_th and glyph_doc_th > 0 else 10
+        )
         raw_ocr_mode = str(ocr_cfg.get("ocr_mode", cfg.get("ocr_mode", "auto"))).lower().strip()
         if raw_ocr_mode not in {"auto", "force", "disable"}:
             _log.warning(f"[IntelligentDocumentProcessor] Unknown ocr_mode '{raw_ocr_mode}', fallback to 'auto'")
@@ -565,6 +1052,12 @@ class IntelligentDocumentProcessor:
         layout_ep = genos_layout_cfg.get("endpoint") or cfg.get("layout_endpoint", "")
         layout_key = genos_layout_cfg.get("api_key") or cfg.get("layout_api_key", "")
         page_batch_size = genos_layout_cfg.get("page_batch_size", cfg.get("page_batch_size", 32))
+        max_completion_tokens = _parse_optional_int(
+            genos_layout_cfg.get("max_completion_tokens"),
+            "layout.genos_layout.max_completion_tokens",
+        )
+        if max_completion_tokens is None or max_completion_tokens <= 0:
+            max_completion_tokens = 16384
         try:
             page_batch_size = int(page_batch_size)
             if page_batch_size <= 0:
@@ -575,18 +1068,6 @@ class IntelligentDocumentProcessor:
             )
             page_batch_size = 32
 
-        enrichment_url = enrichment_cfg.get("api_url") or cfg.get("enrichment_api_base_url", "")
-        enrichment_key = enrichment_cfg.get("api_key") or cfg.get("enrichment_api_key", "")
-        enrichment_model = enrichment_cfg.get("model", cfg.get("enrichment_model", "model"))
-        do_toc = bool(enrichment_cfg.get("do_toc", cfg.get("do_toc", True)))
-        do_metadata = bool(enrichment_cfg.get("do_metadata", cfg.get("do_metadata", True)))
-
-        toc_cfg = _as_dict(enrichment_cfg.get("toc"))
-        toc_temperature = toc_cfg.get("temperature", cfg.get("toc_temperature", 0.0))
-        toc_top_p = toc_cfg.get("top_p", cfg.get("toc_top_p", 0.00001))
-        toc_seed = toc_cfg.get("seed", cfg.get("toc_seed", 33))
-        toc_max_tokens = toc_cfg.get("max_tokens", cfg.get("toc_max_tokens", 10000))
-
         ocr_options = self._build_ocr_options(ocr_cfg, paddle_endpoint=ocr_ep)
         if isinstance(ocr_options, UpstageOcrOptions):
             self.ocr_endpoint = ocr_options.api_endpoint
@@ -594,26 +1075,61 @@ class IntelligentDocumentProcessor:
             self.ocr_endpoint = ocr_ep
 
         self.page_chunk_counts = defaultdict(int)
-        device = AcceleratorDevice.AUTO
-        num_threads = 8
+
+        device_str = str(pdf_cfg.get("device", "auto")).lower().strip()
+        device = _ACCELERATOR_DEVICE_MAP.get(device_str)
+        if device is None:
+            _log.warning(
+                f"[IntelligentDocumentProcessor] Unknown pdf_pipeline.device '{device_str}', fallback to 'auto'"
+            )
+            device = AcceleratorDevice.AUTO
+
+        num_threads = _parse_optional_int(pdf_cfg.get("num_threads"), "pdf_pipeline.num_threads")
+        if num_threads is None or num_threads <= 0:
+            num_threads = 8
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
 
+        images_scale = _parse_optional_int(pdf_cfg.get("images_scale"), "pdf_pipeline.images_scale")
+        if images_scale is None or images_scale <= 0:
+            images_scale = 2
+
+        generate_page_images = _parse_optional_bool(
+            pdf_cfg.get("generate_page_images"), "pdf_pipeline.generate_page_images"
+        )
+        generate_picture_images = _parse_optional_bool(
+            pdf_cfg.get("generate_picture_images"), "pdf_pipeline.generate_picture_images"
+        )
+
+        table_mode_str = str(pdf_cfg.get("table_structure_mode", "accurate")).lower().strip()
+        table_structure_mode = _TABLE_FORMER_MODE_MAP.get(table_mode_str)
+        if table_structure_mode is None:
+            _log.warning(
+                f"[IntelligentDocumentProcessor] Unknown pdf_pipeline.table_structure_mode "
+                f"'{table_mode_str}', fallback to 'accurate'"
+            )
+            table_structure_mode = TableFormerMode.ACCURATE
+
         self.pipe_line_options = PdfPipelineOptions()
-        self.pipe_line_options.generate_page_images = True
-        self.pipe_line_options.generate_picture_images = True
+        self.pipe_line_options.generate_page_images = (
+            True if generate_page_images is None else generate_page_images
+        )
+        self.pipe_line_options.generate_picture_images = (
+            True if generate_picture_images is None else generate_picture_images
+        )
         self.pipe_line_options.do_ocr = False
         self.pipe_line_options.ocr_options = ocr_options
-        self.pipe_line_options.images_scale = 2
+        self.pipe_line_options.images_scale = images_scale
 
         self.pipe_line_options.layout_options.layout_model_type = layout_model_type
         self.pipe_line_options.layout_options.genos_layout_options.endpoint = layout_ep
         self.pipe_line_options.layout_options.genos_layout_options.api_key = layout_key
+        self.pipe_line_options.layout_options.genos_layout_options.max_completion_tokens = max_completion_tokens
 
         docling_settings.perf.page_batch_size = page_batch_size
 
         self.pipe_line_options.do_table_structure = True
         self.pipe_line_options.table_structure_options.do_cell_matching = True
-        self.pipe_line_options.table_structure_options.mode = TableFormerMode.ACCURATE
+        self.pipe_line_options.table_structure_options.mode = table_structure_mode
         self.pipe_line_options.accelerator_options = accelerator_options
 
         self.simple_pipeline_options = PipelineOptions()
@@ -626,25 +1142,66 @@ class IntelligentDocumentProcessor:
         self.ocr_pipe_line_options.ocr_options.force_full_page_ocr = True
 
         self._create_converters()
+        self.image_description_options = ImageDescriptionOptions.from_config(
+            image_desc_cfg=ec.image_description_cfg,
+            fallback_api_url=ec.api_url,
+            fallback_api_key=ec.api_key,
+            fallback_model=ec.model,
+        )
+        self.image_description_enricher = FacadeImageDescriptionEnricher(
+            self.image_description_options
+        )
+        self.custom_fields_enrichers: "list[CustomFieldsEnricher]" = (
+            [CustomFieldsEnricher(**c) for c in ec.custom_fields_cfgs]
+            if CustomFieldsEnricher is not None else []
+        )
+
+        # yaml에 system_prompt가 지정된 경우 커스텀 MetadataEnricher를 사용한다.
+        # 지정되지 않은 경우 docling 내장 enricher가 동작한다 (하위 호환).
+        self.metadata_enricher: "Optional[MetadataEnricher]" = (
+            MetadataEnricher(
+                url=ec.metadata.url,
+                api_key=ec.metadata.api_key,
+                model=ec.metadata.model,
+                system_prompt=ec.metadata.system_prompt,
+                user_prompt=ec.metadata.user_prompt,
+                output_fields=ec.metadata.output_fields,
+                parser=ec.metadata.parser,
+                pages=ec.metadata.pages,
+                max_tokens=ec.metadata.max_tokens,
+                temperature=ec.metadata.temperature,
+                timeout=ec.metadata.timeout,
+                config_dir=self._config_dir,
+            )
+            if MetadataEnricher is not None and ec.metadata.do_metadata and ec.metadata.system_prompt
+            else None
+        )
 
         self.enrichment_options = DataEnrichmentOptions(
-            do_toc_enrichment=do_toc,
-            toc_doc_type="law",
-            extract_metadata=do_metadata,
+            do_toc_enrichment=ec.toc.do_toc,
+            toc_doc_type=ec.toc.doc_type,
+            # 커스텀 MetadataEnricher가 있으면 docling 내장 비활성화
+            extract_metadata=ec.metadata.do_metadata and self.metadata_enricher is None,
             toc_api_provider="custom",
             metadata_api_provider="custom",
-            toc_api_base_url=enrichment_url,
-            metadata_api_base_url=enrichment_url,
-            toc_api_key=enrichment_key,
-            metadata_api_key=enrichment_key,
-            toc_model=enrichment_model,
-            metadata_model=enrichment_model,
-            toc_temperature=toc_temperature,
-            toc_top_p=toc_top_p,
-            toc_seed=toc_seed,
-            toc_max_tokens=toc_max_tokens,
-            toc_system_prompt=_toc_system_prompt,
-            toc_user_prompt=_toc_user_prompt,
+            toc_api_base_url=ec.toc.url,
+            metadata_api_base_url=ec.metadata.url,
+            toc_api_key=ec.toc.api_key,
+            metadata_api_key=ec.metadata.api_key,
+            toc_model=ec.toc.model,
+            metadata_model=ec.metadata.model,
+            toc_temperature=ec.toc.temperature,
+            toc_top_p=ec.toc.top_p,
+            toc_seed=ec.toc.seed,
+            toc_max_tokens=ec.toc.max_tokens,
+            toc_precheck_enabled=ec.toc.precheck_enabled,
+            toc_max_context_tokens=ec.toc.precheck_max_context_tokens,
+            toc_completion_reserved_tokens=ec.toc.precheck_completion_reserved_tokens,
+            metadata_precheck_enabled=ec.metadata.precheck_enabled,
+            metadata_max_context_tokens=ec.metadata.precheck_max_context_tokens,
+            metadata_completion_reserved_tokens=ec.metadata.precheck_completion_reserved_tokens,
+            toc_system_prompt=ec.toc.system_prompt,
+            toc_user_prompt=ec.toc.user_prompt,
         )
 
     @staticmethod
@@ -703,11 +1260,32 @@ class IntelligentDocumentProcessor:
                 text_score=upstage_text_score,
             )
 
+        paddle_cfg = _as_dict(ocr_cfg.get("paddle"))
+
+        raw_lang = paddle_cfg.get("lang", ["korean"])
+        if isinstance(raw_lang, list) and raw_lang:
+            paddle_lang = raw_lang
+        else:
+            if raw_lang not in (None, [], ["korean"]):
+                _log.warning(
+                    f"[IntelligentDocumentProcessor] Invalid ocr.paddle.lang '{raw_lang}', fallback to ['korean']"
+                )
+            paddle_lang = ["korean"]
+
+        raw_text_score = paddle_cfg.get("text_score", 0.3)
+        try:
+            paddle_text_score = float(raw_text_score)
+        except (TypeError, ValueError):
+            _log.warning(
+                f"[IntelligentDocumentProcessor] Invalid ocr.paddle.text_score '{raw_text_score}', fallback to 0.3"
+            )
+            paddle_text_score = 0.3
+
         return PaddleOcrOptions(
             force_full_page_ocr=False,
-            lang=['korean'],
+            lang=paddle_lang,
             ocr_endpoint=paddle_endpoint,
-            text_score=0.3,
+            text_score=paddle_text_score,
         )
 
     def _create_converters(self):
@@ -780,7 +1358,35 @@ class IntelligentDocumentProcessor:
         return self.load_documents_with_docling(file_path, **kwargs)
 
     def enrichment(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
-        document = enrich_document(document, self.enrichment_options, **kwargs)
+        try:
+            document = enrich_document(document, self.enrichment_options, **kwargs)
+            return document
+        except LLMApiError as e:
+            # Preserve provider error payload as-is for load status error message.
+            raise GenosServiceException("1", e.raw_error_message) from e
+
+    def _get_or_create_image_description_enricher(self) -> FacadeImageDescriptionEnricher:
+        enricher = getattr(self, "image_description_enricher", None)
+        if enricher is None:
+            # 테스트 등에서 __init__ 우회 시 legacy attribute 기반으로 재구성
+            legacy_options = ImageDescriptionOptions.from_legacy_processor(self)
+            enricher = FacadeImageDescriptionEnricher(legacy_options)
+            self.image_description_enricher = enricher
+        return enricher
+
+    def enrich_image_descriptions(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        enricher = self._get_or_create_image_description_enricher()
+        return enricher.enrich(document, **kwargs)
+
+    async def enrich_metadata(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        enricher = getattr(self, "metadata_enricher", None)
+        if enricher is not None:
+            document = await enricher.enrich(document, **kwargs)
+        return document
+
+    async def enrich_custom_fields(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        for enricher in self.custom_fields_enrichers:
+            document = await enricher.enrich(document, **kwargs)
         return document
 
     def check_glyph_text(self, text: str, threshold: int = 1) -> bool:
@@ -795,7 +1401,7 @@ class IntelligentDocumentProcessor:
         for item, level in document.iterate_items():
             if isinstance(item, TextItem) and hasattr(item, 'prov') and item.prov:
                 matches = re.findall(r'GLYPH\w*', item.text)
-                if len(matches) > 10:
+                if len(matches) > self._glyph_document_threshold:
                     return True
         return False
 
@@ -838,7 +1444,7 @@ class IntelligentDocumentProcessor:
 
                 b_ocr = False
                 for cell_idx, cell in enumerate(table_item.data.table_cells):
-                    if self.check_glyph_text(cell.text, threshold=1):
+                    if self.check_glyph_text(cell.text, threshold=self._glyph_table_cell_threshold):
                         b_ocr = True
                         break
 
@@ -868,7 +1474,7 @@ class IntelligentDocumentProcessor:
                     pix = page.get_pixmap(matrix=mat, clip=cell_bbox)
                     img_data = pix.tobytes("png")
 
-                    result = post_ocr_bytes(img_data, timeout=60)
+                    result = post_ocr_bytes(img_data, timeout=self._table_cell_ocr_timeout)
                     rec_texts, rec_scores, rec_boxes = extract_ocr_fields(result)
 
                     cell.text = ""
@@ -1087,7 +1693,13 @@ class DocumentProcessor:
             config_path = _resolve_default_parser_config_path()
 
         cfg = _load_config(config_path)
-        self._intel = IntelligentDocumentProcessor(cfg)
+        self._intel = IntelligentDocumentProcessor(cfg, config_path=config_path)
+
+        defaults_cfg = _as_dict(cfg.get("defaults"))
+        log_level = _parse_optional_int(defaults_cfg.get("log_level"), "defaults.log_level")
+        if log_level is None:
+            log_level = 4
+        self._log_level = log_level
 
         self._hwp = HwpDocumentLoader()
         self._docx = DocxDocumentLoader()
@@ -1117,6 +1729,14 @@ class DocumentProcessor:
         except (TypeError, ValueError):
             _log.warning("[DocumentProcessor] Invalid whisper.chunk_sec value, fallback to 29")
             self._whisper_chunk_sec = 29
+
+        try:
+            self._whisper_chunk_overlap_ms = int(
+                whisper_cfg.get("chunk_overlap_ms", attach_cfg.get("whisper_chunk_overlap_ms", 300))
+            )
+        except (TypeError, ValueError):
+            _log.warning("[DocumentProcessor] Invalid whisper.chunk_overlap_ms value, fallback to 300")
+            self._whisper_chunk_overlap_ms = 300
 
         output_cfg = _as_dict(cfg.get("output"))
         self._output_format = self._normalize_output_format(output_cfg.get("format", "json"))
@@ -1170,6 +1790,7 @@ class DocumentProcessor:
         #     image_dir=artifacts_dir, page_no=None, reference_path=reference_path
         # )
         document = self._intel.enrichment(document, **kwargs)
+
         return document
 
     def _parse_hwp_hwpx(self, file_path: str, **kwargs) -> DoclingDocument:
@@ -1205,6 +1826,7 @@ class DocumentProcessor:
                 req_url=self._whisper_url,
                 req_data=self._whisper_req_data,
                 chunk_sec=self._whisper_chunk_sec,
+                chunk_overlap_ms=self._whisper_chunk_overlap_ms,
                 tmp_path=tmp_path,
             )
             audio_chunks = loader.split_file_as_chunks()
@@ -1222,6 +1844,22 @@ class DocumentProcessor:
 
     def _parse_other(self, file_path: str, **kwargs) -> list:
         return self._generic.load_documents(file_path, **kwargs)
+
+    async def _apply_docling_post_enrichment(self, document: DoclingDocument, **kwargs) -> DoclingDocument:
+        """Facade 후처리 enrichment 훅."""
+        try:
+            document = self._intel.enrich_image_descriptions(document, **kwargs)
+        except Exception as exc:
+            _log.warning(f"[DocumentProcessor] facade image enrichment skipped: {exc}")
+        try:
+            document = await self._intel.enrich_metadata(document, **kwargs)
+        except Exception as exc:
+            _log.warning(f"[DocumentProcessor] metadata enrichment skipped: {exc}")
+        try:
+            document = await self._intel.enrich_custom_fields(document, **kwargs)
+        except Exception as exc:
+            _log.warning(f"[DocumentProcessor] custom_fields enrichment skipped: {exc}")
+        return document
 
     # ------------------------------------------------------------------
     # 직렬화 헬퍼
@@ -1348,14 +1986,22 @@ class DocumentProcessor:
             else:
                 text = getattr(item, "text", "") or ""
 
-            elements.append({
+            element = {
                 "category": label_value,
                 # "content": {"html": html, "markdown": "", "text": text},
                 "content": text,
                 "coordinates": coordinates,
                 "id": element_id,
                 "page": page_no,
-            })
+            }
+            if isinstance(item, PictureItem):
+                image_description = PictureDescriptionExtractor.extract(item)
+                if image_description:
+                    # 최종 소비계층에서 별도 필드 매핑 없이 바로 활용할 수 있도록
+                    # picture 의 content 를 이미지 설명 텍스트로 채운다.
+                    element["content"] = image_description
+
+            elements.append(element)
             element_id += 1
 
         # full_html = "\n".join(e["content"]["html"] for e in elements)
@@ -1564,7 +2210,8 @@ class DocumentProcessor:
     # ------------------------------------------------------------------
 
     async def __call__(self, request: Request, file_path: str, **kwargs) -> dict:
-        self.setup_logging(kwargs.get('log_level', 4))
+        runtime_level = kwargs.get('log_level')
+        self.setup_logging(runtime_level if runtime_level is not None else self._log_level)
 
         ext = os.path.splitext(file_path)[-1].lower()
         _log.info(f"[DocumentProcessor] file_path={file_path}, ext={ext}")
@@ -1577,18 +2224,31 @@ class DocumentProcessor:
             data_dict = self._parse_tabular(file_path)
             return self._normalize_response(self._tabular_to_parse_format(data_dict))
 
+        enrichment_context: dict = {}
+
         if ext in (".hwp", ".hwpx"):
             doc = self._parse_hwp_hwpx(file_path, **kwargs)
-            return self._normalize_response(self._build_docling_response(doc))
+            doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
+            result = self._build_docling_response(doc)
+            if enrichment_context.get("metadata"):
+                result["metadata"] = enrichment_context["metadata"]
+            return self._normalize_response(result)
 
         if ext == ".docx":
             doc = self._parse_docx(file_path, **kwargs)
-            return self._normalize_response(self._build_docling_response(doc, clear_coordinates=True))
+            doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
+            result = self._build_docling_response(doc, clear_coordinates=True)
+            if enrichment_context.get("metadata"):
+                result["metadata"] = enrichment_context["metadata"]
+            return self._normalize_response(result)
 
         if ext in (".pdf", ".html", ".htm"):
-            doc = self._parse_docling(file_path, **kwargs)
-            # result["docling_document"] = self._serialize_docling_document(doc)
-            return self._normalize_response(self._build_docling_response(doc))
+            doc = self._parse_docling(file_path, _enrichment_context=enrichment_context, **kwargs)
+            doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
+            result = self._build_docling_response(doc)
+            if enrichment_context.get("metadata"):
+                result["metadata"] = enrichment_context["metadata"]
+            return self._normalize_response(result)
 
         # 기타 포맷: doc, ppt, pptx, txt, json, md, jpg, jpeg, png 등
         docs = self._parse_other(file_path, **kwargs)

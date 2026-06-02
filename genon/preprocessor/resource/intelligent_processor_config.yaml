@@ -1,0 +1,203 @@
+defaults:
+  # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
+  log_level: 4
+
+ocr:
+  ocr_mode: "auto" # "auto"(default), "force", "disable"
+
+  # OCR 엔진 선택. "paddle"(default) | "upstage"
+  engine: "paddle"
+
+  # 글리프 깨진 테이블 셀 재OCR 시 HTTP timeout(초)
+  table_cell_ocr_timeout: 60
+
+  paddle:
+    # engine: "paddle" 일 때만 사용
+    # <OCR_ENDPOINT>: PaddleOCR 서버 주소로 변경 필요
+    ocr_endpoint: "http://<OCR_ENDPOINT>/ocr"
+    text_score: 0.3
+
+  # 글리프 깨짐 기반 auto-OCR 재트리거 임계값
+  glyph_detection:
+    table_cell_threshold: 1   # 셀 GLYPH 토큰 N개 이상이면 재OCR
+    document_threshold: 10     # 문서 GLYPH 토큰 N개 초과면 OCR 경로 재시도
+
+  # engine: "upstage" 일 때만 사용
+  upstage:
+    api_endpoint: "https://api.upstage.ai/v1/document-digitization"
+    # api_key 가 비어있으면 UPSTAGE_API_KEY 환경변수에서 fallback
+    api_key: ""
+    model: "ocr"
+    timeout: 60
+    text_score: 0.5
+
+layout:
+  layout_model_type: "genos_layout" # "genos_layout"(default) or "docling_layout"
+  genos_layout:
+    # <LAYOUT_SERVING_ID>: Genos에 등록한 layout 모델서빙 ID로 변경 필요
+    # api_key는 k8s 내부 통신 기반 모델 호출 시 불필요.
+    endpoint: "http://llmops-gateway-api-service:8080/rep/serving/<LAYOUT_SERVING_ID>/v1/chat/completions"
+    api_key: ""
+    page_batch_size: 32
+    max_completion_tokens: 16384
+
+# PDF 파이프라인 (docling PDF 파싱 성능/품질 노브)
+pdf_pipeline:
+  num_threads: 8                     # accelerator 스레드 수
+  device: "auto"                     # "auto"(default) | "cpu" | "cuda" | "mps"
+  images_scale: 2                    # 페이지/그림 이미지 렌더 배율
+  generate_page_images: true
+  generate_picture_images: true      # false 면 이미지 설명 enrichment 비활성화됨
+  table_structure_mode: "accurate"   # "accurate"(default) | "fast"
+
+# enrichment
+# 각 항목은 {이름: {옵션}} 형식의 list.
+# 비활성화: ① 항목 삭제  ② 항목 주석 처리  ③ enable: false
+# 모든 url 의 <ENRICHMENT_SERVING_ID> 는 Genos에 등록한 모델서빙 ID로 변경 필요.
+# api_key 는 k8s 내부 통신 기반 모델 호출 시 불필요.
+enrichment:
+  - toc:
+      enable: true
+      url: "http://llmops-gateway-api-service:8080/rep/serving/<ENRICHMENT_SERVING_ID>/v1/chat/completions"
+      api_key: ""
+      model: "model"
+      temperature: 0.0
+      top_p: 0.00001
+      seed: 33
+      max_tokens: 10000
+      precheck:
+        enabled: true
+        max_context_tokens: 128000
+        completion_reserved_tokens: 12000
+      system_prompt: |
+        You are an expert at generating table of contents (목차) from Korean documents. You specialize in regulatory documents, terms of service, contracts, and mixed-format documents that combine formal regulatory structures with general section headers.
+      user_prompt: |
+        Here is the Korean document you need to analyze:
+
+        <document>
+        {{raw_text}}
+        </document>
+
+        Your task is to extract and organize all structural elements from this document into a hierarchical table of contents. Korean documents often have mixed structures where some sections follow formal regulatory patterns (제x장/절/관/조) while others use general section numbering and headers.
+
+        ## Analysis Process
+
+        Before generating the final table of contents, work through the document systematically in `<analysis>` tags. It's OK for this section to be quite long. Follow these steps:
+
+        1. **Document Title Extraction**: Quote the main document title exactly as it appears at the beginning of the document.
+
+        2. **Structural Marker Identification**: Scan through the document and quote all the key structural markers you find, such as:
+           - Formal regulatory patterns: 제x장, 제x절, 제x관, 제x조
+           - General section patterns: numbered headers (1., 2., etc.), lettered headers (가., 나., etc.)
+           - Special sections: 부칙, 별지, 별표, etc.
+
+        3. **Systematic Section Extraction**: Work through the document from beginning to end, extracting each structural element in order:
+           - For each main section, quote the exact title as it appears
+           - For each subsection, quote the exact title and note which main section it belongs under
+           - For each article/item, quote the exact title and note its parent section
+           - Include any appendices, attachments, and addenda
+
+        4. **Hierarchy Building**: For each extracted element, explicitly note:
+           - What level it should be at (main section, subsection, sub-subsection, etc.)
+           - What its parent section is (if any)
+           - What numbering it should receive in the final TOC (1., 1.1., 1.1.1., etc.)
+
+        5. **Structure Verification**: Review your extracted elements to ensure:
+           - All structural elements are captured in document order
+           - The hierarchy makes logical sense
+           - No elements are duplicated or missed
+
+        ## Output Requirements
+
+        After your analysis, generate the table of contents with this exact format:
+
+        ```
+        <toc>
+        TITLE:<document title>
+        1. <first main section title>
+        1.1. <first subsection title>
+        1.1.1. <first sub-subsection title>
+        1.2. <second subsection title>
+        2. <second main section title>
+        2.1. <subsection under second main section>
+        3. <third main section title>
+        </toc>
+        ```
+
+        ## Formatting Guidelines
+
+        - Start with `TITLE:` followed by the document title
+        - Use hierarchical decimal numbering (1, 1.1, 1.1.1, etc.)
+        - Follow each number with a space and the original title exactly as it appears
+        - Maintain the document's logical hierarchy
+        - Include appendices, attachments, and addenda as separate top-level items
+        - Extract titles exactly as they appear - do not include explanatory content
+        - Handle both formal regulatory structures and general section headers
+        - Wrap the entire table of contents in `<toc></toc>` tags
+
+  - metadata:
+      enable: true
+      url: "http://llmops-gateway-api-service:8080/rep/serving/<ENRICHMENT_SERVING_ID>/v1/chat/completions"
+      api_key: ""
+      model: "model"
+      max_tokens: 10000
+      temperature: 0.0
+      timeout: 3600
+      pages: [1,4]  # null = 첫 4페이지
+      # output_fields: 프롬프트의 JSON 키와 일치해야 함
+      output_fields: [created_date, authors]
+      parser:
+        type: json   # json(default) | python
+      system_prompt: |
+        You are a professional document extraction assistant. Your job is to carefully extract metadata from semi-structured or unstructured Korean financial documents. Always follow the requested output format exactly.
+      user_prompt: |
+        다음은 한국어로 작성된 금융 보고서 문서의 일부입니다. 이 문서에서 아래 정보를 정확히 추출해주세요:
+
+        1. 최초 작성일 (날짜가 여러 개 있으면 '보고자료' 또는 '회의자료'에 가까운 날짜 사용)
+        2. 작성자 이름과 소속 또는 직책 (예: 채권시장팀 조용범 과장)
+        3. 작성자 전화번호 (내선번호 포함 시 함께 출력)
+
+        문서:
+        ---
+        {{raw_text}}
+        ---
+
+        출력 형식은 반드시 아래와 같이 맞춰주세요 (JSON 형식):
+
+        {
+          "created_date": "YYYY-MM-DD",
+          "authors": [
+            {"name": "조용범", "affiliation": "채권시장팀", "position": "과장", "phone": "4751"},
+            {"name": "임인혁", "affiliation": "주식시장팀", "position": "과장", "phone": "4672"}
+          ]
+        }
+      precheck:
+        enabled: true
+        max_context_tokens: 128000
+        completion_reserved_tokens: 12000
+
+  - image_description:
+      enable: true
+      url: "http://llmops-gateway-api-service:8080/rep/serving/<IMAGE_DESCRIPTION_SERVING_ID>/v1/chat/completions"
+      api_key: ""
+      model: "model"
+      concurrency: 16        # 이미지 설명 요청 병렬 수
+      before_items: 3
+      after_items: 2
+      max_context_chars: 1500
+      prompt_template: |
+        문서의 일부 이미지를 설명해줘. 아래 문맥을 참고해서 핵심 정보를 2~4문장으로 간결하게 작성해줘.
+
+        [앞 문맥]
+        {{before_context}}
+
+        [캡션]
+        {{caption}}
+
+        [뒤 문맥]
+        {{after_context}}
+
+        요구사항:
+        1) 추측은 최소화하고 이미지에서 확인 가능한 사실 중심으로 작성
+        2) 문서 문맥과의 연결점을 포함
+        3) 한국어로 작성

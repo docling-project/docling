@@ -23,7 +23,7 @@
   * **데이터 변환**: CSV, Excel 등의 정형 데이터를 LLM이 이해하기 쉬운 텍스트/JSON 형태로 신속 변환
   * **청커 선택**: HWP/HWPX/DOCX 청킹 방식을 `chunker_type` kwargs로 선택 (`recursive`(기본) / `hybrid`). `recursive`는 docling 문서를 markdown으로 export 후 `RecursiveCharacterTextSplitter`로 분할하며, 임베딩 입력 한도(60,000 토큰)를 절대 상한으로 강제
 
-## 1A. 변환용 전처리기 (Convert Processor)
+## 2. 변환용 전처리기 (Convert Processor)
 문서의 시각적 형태(Layout)를 유지해야 하거나, 텍스트 추출이 까다로운 레거시 포맷을 처리하기 위한 전처리기입니다. 모든 문서를 **PDF로 우선 변환(Rendering)**하여 포맷의 파편화를 해결합니다.
 첨부용 전처리기 대용으로 쓸 수 있도록 고안된 첨부 전처리기의 변형 전처리기 입니다.
 
@@ -35,7 +35,7 @@
   * **시각적 정합성 유지**: 원본 문서의 폰트, 이미지 배치, 페이지 레이아웃을 그대로 보존
   * **하이브리드 추출**: 변환된 PDF 레이어에서 텍스트와 이미지 정보를 결합하여 안정적인 정보 획득
 
-## 2. 파싱용 전처리기 (Parser Processor)
+## 3. 파싱용 전처리기 (Parser Processor)
 문서를 파싱하여 **element 단위 구조화 결과**를 반환하는 API 지향 전처리기입니다. 청킹이나 벡터 결합 없이, 원문 구조를 최대한 보존한 파싱 결과가 필요할 때 적합합니다.
 
 **"구조 중심: Element 단위 파싱 결과 반환"**
@@ -47,7 +47,7 @@
   * **출력 포맷 제어**: `config.yaml`의 `output.format`(`json`/`html`/`markdown`)과 `table_format`으로 응답 형태 제어
   * **Gateway 호출 표준화**: `/preprocessor/{id}/healthcheck`, `/preprocessor/{id}/run` 엔드포인트로 외부 시스템 연동 용이
 
-## 3. 적재용 지능형 전처리기 (Intelligent Processor)
+## 4. 적재용 지능형 전처리기 (Intelligent Processor)
 RAG(검색 증강 생성) 시스템의 지식 베이스 구축을 위해 설계된 고성능 전처리기입니다. 단순 텍스트 추출을 넘어, **딥러닝 기반의 Layout 분석**을 통해 문서의 논리적 구조를 정확하게 파악합니다.
 
 **"품질 중심: AI 기반 레이아웃 분석 및 고품질 데이터 적재"**
@@ -97,7 +97,11 @@ Layout Detection은 딥러닝 비전 모델을 활용하여 문서의 시각적 
 * **Context Enrichment**: LLM을 통해 목차(TOC)를 생성하고, 본문 내 '별지/별표' 참조를 실제 부록 파일과 자동 연결하여 검색 품질 향상
 
 #### 4) LLM을 활용한 문서 문맥 기반 Enrichment
-* **구조화된 목차 생성**: LLM을 활용하여 문서의 논리적 흐름을 분석하여 문서에 명시적으로 없더라도 문서 전체의 Table of Contents 를 찾아내고 구성합니다.
+Enrichment는 `config.yaml`의 `enrichment` 항목(list)에 enricher를 나열하여 선택적으로 활성화합니다. 각 항목은 `enable` 플래그와 자체 모델 서빙(`url`/`api_key`/`model`)을 가지며, 현재 지원하는 enricher는 다음과 같습니다.
+
+* **구조화된 목차 생성 (`toc`)**: LLM을 활용하여 문서의 논리적 흐름을 분석하여 문서에 명시적으로 없더라도 문서 전체의 Table of Contents 를 찾아내고 구성합니다.
   * "제1장 > 제1절 > 제1조" 형태의 계층적 목차(Table of Contents)를 생성
-* **메타데이터 풍부화**: 문서에서 유추 할 수 있는 정보를 각 청크에 포함시켜, 검색 시 해당 내용이 문서의 어느 위치(Context)에 해당하는지 파악할 수 있게 합니다.
-  * 문서의 생성일, 문서의 키워드, 문서의 요약 등
+* **메타데이터 풍부화 (`metadata`)**: 문서에서 유추 할 수 있는 정보(생성일, 작성자 등)를 추출하여 각 청크에 포함시켜, 검색 시 해당 내용이 문서의 어느 위치(Context)에 해당하는지 파악할 수 있게 합니다.
+  * `system_prompt`/`user_prompt`로 추출 항목을 정의하고, `field_transforms`로 추출 키를 벡터 메타 필드(예: `created_date`)로 선언적으로 매핑/변환합니다.
+* **이미지 설명 생성 (`image_description`)**: 문서 내 그림을 앞뒤 문맥과 함께 VLM에 전달하여 이미지 설명 텍스트를 생성, 해당 picture 요소의 내용으로 채웁니다.
+* **커스텀 필드 추출 (`custom_fields`)**: 사용자가 정의한 프롬프트로 임의의 필드를 추출하여 메타데이터에 병합합니다. 복수 지정이 가능하며 외부 `config_file`로 분리할 수도 있습니다.

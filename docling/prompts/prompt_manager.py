@@ -7,6 +7,24 @@ from typing import Dict, Any, List, Optional
 
 _log = logging.getLogger(__name__)
 
+
+class LLMApiError(Exception):
+    """OpenAI-compatible provider call error with raw response payload."""
+
+    def __init__(
+        self,
+        raw_error_message: str,
+        *,
+        status_code: Optional[int] = None,
+        category: Optional[str] = None,
+        prompt_type: Optional[str] = None,
+    ) -> None:
+        self.raw_error_message = raw_error_message
+        self.status_code = status_code
+        self.category = category
+        self.prompt_type = prompt_type
+        super().__init__(raw_error_message)
+
 class PromptManager:
     """프롬프트 및 API 설정 관리 클래스"""
 
@@ -101,6 +119,12 @@ class PromptManager:
                         default_config["seed"] = api_config["seed"]
                     if "max_tokens" in api_config:
                         default_config["max_tokens"] = api_config["max_tokens"]
+                    if "precheck_enabled" in api_config:
+                        default_config["precheck_enabled"] = api_config["precheck_enabled"]
+                    if "max_context_tokens" in api_config:
+                        default_config["max_context_tokens"] = api_config["max_context_tokens"]
+                    if "completion_reserved_tokens" in api_config:
+                        default_config["completion_reserved_tokens"] = api_config["completion_reserved_tokens"]
 
                 return default_config
             except KeyError:
@@ -126,6 +150,12 @@ class PromptManager:
                     config["seed"] = api_config["seed"]
                 if "max_tokens" in api_config:
                     config["max_tokens"] = api_config["max_tokens"]
+                if "precheck_enabled" in api_config:
+                    config["precheck_enabled"] = api_config["precheck_enabled"]
+                if "max_context_tokens" in api_config:
+                    config["max_context_tokens"] = api_config["max_context_tokens"]
+                if "completion_reserved_tokens" in api_config:
+                    config["completion_reserved_tokens"] = api_config["completion_reserved_tokens"]
 
             return config
         except KeyError:
@@ -146,11 +176,25 @@ class PromptManager:
         config = self.get_prompt_config(category, prompt_type)
         return config.get("user") if config else None
 
+    @staticmethod
+    def _normalize_raw_text_placeholder(template: str, **kwargs: Any) -> str:
+        """`{{raw_text}}`를 `{raw_text}`의 별칭으로 허용한다.
+
+        - `raw_text`가 실제로 주입되는 경우에만 정규화한다.
+        - 이미 `{raw_text}`가 포함된 템플릿은 건드리지 않는다.
+        - JSON 예시 표현용 `{{ ... }}` 는 그대로 보존한다.
+        """
+        has_single_placeholder = "{raw_text}" in template.replace("{{raw_text}}", "")
+        if "raw_text" in kwargs and not has_single_placeholder and "{{raw_text}}" in template:
+            return template.replace("{{raw_text}}", "{raw_text}")
+        return template
+
     def format_user_prompt(self, category: str, prompt_type: str, custom_user: Optional[str] = None, **kwargs) -> Optional[str]:
         """사용자 프롬프트 템플릿에 변수를 삽입하여 완성된 프롬프트 반환"""
         template = self.get_user_prompt_template(category, prompt_type, custom_user)
         if template is None:
             return None
+        template = self._normalize_raw_text_placeholder(template, **kwargs)
 
         try:
             return template.format(**kwargs)
@@ -200,10 +244,149 @@ class PromptManager:
             model_config["top_p"] = config["top_p"]
         if "max_tokens" in config:
             model_config["max_tokens"] = config["max_tokens"]
+        if "precheck_enabled" in config:
+            model_config["precheck_enabled"] = config["precheck_enabled"]
+        if "max_context_tokens" in config:
+            model_config["max_context_tokens"] = config["max_context_tokens"]
+        if "completion_reserved_tokens" in config:
+            model_config["completion_reserved_tokens"] = config["completion_reserved_tokens"]
 
         return model_config
 
-    def call_ai_model(self, category: str, prompt_type: str, custom_system: Optional[str] = None, custom_user: Optional[str] = None, **kwargs) -> Optional[str]:
+    @staticmethod
+    def _parse_bool(value: Any) -> Optional[bool]:
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(value)
+        if isinstance(value, str):
+            text = value.strip().lower()
+            if text in {"1", "true", "yes", "y", "on"}:
+                return True
+            if text in {"0", "false", "no", "n", "off"}:
+                return False
+        return None
+
+    @staticmethod
+    def _parse_int(value: Any, default: Optional[int] = None) -> Optional[int]:
+        if value is None or value == "":
+            return default
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    @staticmethod
+    def _flatten_message_content(content: Any) -> str:
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            parts = []
+            for item in content:
+                if isinstance(item, dict):
+                    if item.get("type") == "text":
+                        parts.append(str(item.get("text", "")))
+                    else:
+                        parts.append(str(item))
+                else:
+                    parts.append(str(item))
+            return "\n".join(parts)
+        if content is None:
+            return ""
+        return str(content)
+
+    def _render_messages_for_token_count(self, messages: List[Dict[str, Any]]) -> str:
+        rendered = []
+        for msg in messages:
+            role = str(msg.get("role", "user"))
+            content = self._flatten_message_content(msg.get("content"))
+            rendered.append(f"<|im_start|>{role}\n{content}\n<|im_end|>")
+        rendered.append("<|im_start|>assistant\n")
+        return "\n".join(rendered)
+
+    @staticmethod
+    def _rough_token_count(text: str) -> int:
+        # Measured against Qwen2.5-7B-Instruct: digits/punct tokenize at ~1.0/char,
+        # Korean at ~0.72-0.93/char (0.95 is conservative), English at ~0.16-0.22/char.
+        digits = len(re.findall(r"[0-9]", text))
+        punct  = len(re.findall(r"[^\w\s]", text))
+        kor    = len(re.findall(r"[\uAC00-\uD7AF]", text))
+        cjk    = len(re.findall(r"[\u4E00-\u9FFF\u3040-\u30FF]", text))
+        en     = len(re.findall(r"[a-zA-Z]", text))
+        other  = max(len(text) - digits - punct - kor - cjk - en, 0)
+        return int(digits * 1.0 + punct * 0.8 + kor * 0.95 + cjk * 0.95 + en * 0.25 + other * 0.3)
+
+    def _run_prompt_precheck(
+        self,
+        messages: List[Dict[str, Any]],
+        model_config: Dict[str, Any],
+        category: str,
+        prompt_type: str,
+        raise_on_error: bool,
+    ) -> bool:
+        precheck_enabled = self._parse_bool(model_config.get("precheck_enabled"))
+        max_context_tokens = self._parse_int(model_config.get("max_context_tokens"))
+        if precheck_enabled is False:
+            return True
+        if max_context_tokens is None or max_context_tokens <= 0:
+            return True
+
+        completion_reserved_tokens = self._parse_int(
+            model_config.get("completion_reserved_tokens"),
+            default=self._parse_int(model_config.get("max_tokens"), default=0) or 0,
+        ) or 0
+        if completion_reserved_tokens < 0:
+            completion_reserved_tokens = 0
+
+        allowed_prompt_tokens = max_context_tokens - completion_reserved_tokens
+        if allowed_prompt_tokens < 0:
+            allowed_prompt_tokens = 0
+
+        rendered = self._render_messages_for_token_count(messages)
+        estimated_prompt_tokens = self._rough_token_count(rendered)
+
+        if estimated_prompt_tokens > allowed_prompt_tokens:
+            raw_error_message = json.dumps(
+                {
+                    "object": "error",
+                    "message": (
+                        f"프롬프트 입력 토큰 ({estimated_prompt_tokens}) 초과 하였습니다. "
+                        f"({max_context_tokens} - reserved {completion_reserved_tokens})."
+                    ),
+                    "type": "BadRequestError",
+                    "param": "prompt",
+                    "code": 400,
+                },
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
+            if raise_on_error:
+                raise LLMApiError(
+                    raw_error_message,
+                    status_code=400,
+                    category=category,
+                    prompt_type=prompt_type,
+                )
+            _log.error(
+                "Prompt token precheck blocked request (%s.%s): %s",
+                category,
+                prompt_type,
+                raw_error_message,
+            )
+            return False
+        return True
+
+    def call_ai_model(
+        self,
+        category: str,
+        prompt_type: str,
+        custom_system: Optional[str] = None,
+        custom_user: Optional[str] = None,
+        raise_on_error: bool = False,
+        **kwargs,
+    ) -> Optional[str]:
         """AI 모델을 직접 requests.post로 호출하여 결과 반환"""
         # 메시지 구성
         messages = self.get_messages(category, prompt_type, custom_system, custom_user, **kwargs)
@@ -241,6 +424,15 @@ class PromptManager:
             if "max_tokens" in model_config:
                 payload["max_tokens"] = model_config["max_tokens"]
 
+            if not self._run_prompt_precheck(
+                messages=messages,
+                model_config=model_config,
+                category=category,
+                prompt_type=prompt_type,
+                raise_on_error=raise_on_error,
+            ):
+                return None
+
             # API URL 구성
             base_url = api_config.get("api_base_url", api_config.get("base_url"))
             if base_url.endswith("/chat/completions"):
@@ -274,12 +466,29 @@ class PromptManager:
 
         except requests.exceptions.RequestException as e:
             _log.error(f"API 요청 실패 ({category}.{prompt_type}): {e}")
+            status_code = None
+            raw_error_message = None
             if hasattr(e, 'response') and e.response is not None:
+                status_code = e.response.status_code
                 _log.error(f"응답 상태: {e.response.status_code}")
                 _log.error(f"응답 내용: {e.response.text}")
+                raw_error_message = e.response.text
+            if raise_on_error:
+                if not raw_error_message:
+                    raw_error_message = str(e)
+                raise LLMApiError(
+                    raw_error_message,
+                    status_code=status_code,
+                    category=category,
+                    prompt_type=prompt_type,
+                ) from e
             return None
         except json.JSONDecodeError as e:
             _log.error(f"JSON 응답 파싱 실패 ({category}.{prompt_type}): {e}")
+            return None
+        except LLMApiError:
+            if raise_on_error:
+                raise
             return None
         except Exception as e:
             _log.error(f"AI 모델 호출 중 예상치 못한 오류 ({category}.{prompt_type}): {e}")
@@ -312,6 +521,7 @@ class PromptManager:
         user_template = self.get_user_prompt_template(category, prompt_type, custom_user)
         if system_prompt is None or user_template is None:
             return None
+        user_template = self._normalize_raw_text_placeholder(user_template, raw_text=raw_text)
 
         # {raw_text} 플레이스홀더가 없다면 안전하게 붙여준다.
         if "{raw_text}" not in user_template:

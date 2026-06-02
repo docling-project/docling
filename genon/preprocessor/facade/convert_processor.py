@@ -5,6 +5,7 @@ import json
 import os
 import logging
 import math, bisect
+import yaml
 from pathlib import Path
 
 from collections import defaultdict
@@ -54,6 +55,7 @@ from docling.datamodel.pipeline_options import (
     TableStructureModelType,
     PipelineOptions,
     PaddleOcrOptions,
+    UpstageOcrOptions,
 )
 
 from docling.document_converter import (
@@ -63,6 +65,7 @@ from docling.document_converter import (
     WordFormatOption
 )
 from docling.datamodel.pipeline_options import DataEnrichmentOptions
+from docling.prompts.prompt_manager import LLMApiError
 from docling.utils.document_enrichment import enrich_document, check_document
 from docling.datamodel.document import ConversionResult
 from docling_core.transforms.chunker import (
@@ -125,6 +128,97 @@ try:
 except ImportError:
     upload_files = None
 
+from genon.preprocessor.facade.enrichment.enrichment_config import EnrichmentConfig
+from genon.preprocessor.facade.enrichment.field_transforms import (
+    DEFAULT_METADATA_FIELD_TRANSFORMS,
+    apply_field_transforms,
+    extract_metadata_from_document,
+    serialize_metadata_value_for_output,
+)
+try:
+    from genon.preprocessor.facade.enrichment.custom_fields_enricher import CustomFieldsEnricher
+except ImportError:
+    CustomFieldsEnricher = None  # type: ignore[assignment,misc]
+try:
+    from genon.preprocessor.facade.parser_processor import (
+        ImageDescriptionOptions,
+        FacadeImageDescriptionEnricher,
+    )
+except ImportError:
+    ImageDescriptionOptions = None  # type: ignore[assignment,misc]
+    FacadeImageDescriptionEnricher = None  # type: ignore[assignment,misc]
+
+
+# ============================================================
+# 설정 로딩 헬퍼 (from parser_processor.py)
+# ============================================================
+
+def _load_config(config_path: str) -> dict:
+    with open(config_path, "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f) or {}
+    if not isinstance(cfg, dict):
+        raise ValueError(f"Invalid config format: expected mapping, got {type(cfg).__name__}")
+    return cfg
+
+
+def _as_dict(value: Any) -> dict:
+    return value if isinstance(value, dict) else {}
+
+
+def _parse_optional_bool(value: Any, key: str = "") -> Optional[bool]:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        text = value.strip().lower()
+        if text in {"1", "true", "yes", "y", "on"}:
+            return True
+        if text in {"0", "false", "no", "n", "off"}:
+            return False
+    if key:
+        _log.warning(f"[DocumentProcessor] Invalid bool value for '{key}': {value!r}. Fallback to default.")
+    return None
+
+
+def _parse_optional_int(value: Any, key: str = "") -> Optional[int]:
+    if value is None or value == "":
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        if key:
+            _log.warning(f"[DocumentProcessor] Invalid int value for '{key}': {value!r}. Fallback to default.")
+        return None
+
+
+# pdf_pipeline.device / pdf_pipeline.table_structure_mode 의 yaml 문자열 → docling enum 매핑.
+# 키가 없거나 알 수 없는 값이면 호출부에서 경고 + 기본값으로 폴백한다 (startup 견고성).
+_ACCELERATOR_DEVICE_MAP = {
+    "auto": AcceleratorDevice.AUTO,
+    "cpu": AcceleratorDevice.CPU,
+    "cuda": AcceleratorDevice.CUDA,
+    "mps": AcceleratorDevice.MPS,
+}
+
+_TABLE_FORMER_MODE_MAP = {
+    "accurate": TableFormerMode.ACCURATE,
+    "fast": TableFormerMode.FAST,
+}
+
+
+def _resolve_default_convert_config_path() -> str:
+    base_dir = Path(__file__).resolve().parent
+    local_config = (base_dir / "../resource_dev/convert_processor_config.yaml").resolve()
+    default_config = (base_dir / "../resource/convert_processor_config.yaml").resolve()
+
+    if local_config.exists():
+        return str(local_config)
+    return str(default_config)
+
+
 # ============================================
 #
 # Copyright IBM Corp. 2024 - 2024
@@ -174,7 +268,7 @@ def _get_pdf_path(file_path: str) -> str:
     return pdf_path
 
 
-class GenosBucketChunker(BaseChunker):
+class GenosSmartChunker(BaseChunker):
     """토큰 제한을 고려하여 섹션별 청크를 분할하고 병합하는 청커 (v2)"""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -952,9 +1046,9 @@ class GenOSVectorMeta(BaseModel):
     reg_date: str = None
     chunk_bboxes: str = None
     media_files: str = None
-    created_date: int = None  # YYYYMMDD 형식의 정수
-    authors: str = None      # 팀 리스트
-    title: str = None         # 문서 제목
+    created_date: Optional[int] = None  # YYYYMMDD 형식의 정수
+    authors: Optional[str] = None      # 팀 리스트
+    title: Optional[str] = None         # 문서 제목
 
 class GenOSVectorMetaBuilder:
     def __init__(self):
@@ -976,6 +1070,7 @@ class GenOSVectorMetaBuilder:
         self.created_date: Optional[int] = None
         self.authors: Optional[str] = None      # 팀 리스트
         self.title: Optional[str] = None
+        self.extra_metadata: dict[str, Any] = {}
 
     def set_text(self, text: str) -> "GenOSVectorMetaBuilder":
         """텍스트와 관련된 데이터를 설정"""
@@ -1002,8 +1097,10 @@ class GenOSVectorMetaBuilder:
     def set_global_metadata(self, **global_metadata) -> "GenOSVectorMetaBuilder":
         """글로벌 메타데이터 병합"""
         for key, value in global_metadata.items():
-            if hasattr(self, key):
+            if key in self.__dict__ and key != "extra_metadata":
                 setattr(self, key, value)
+            else:
+                self.extra_metadata[key] = value
         return self
 
     def set_chunk_bboxes(self, doc_items: list, document: DoclingDocument) -> "GenOSVectorMetaBuilder":
@@ -1037,83 +1134,170 @@ class GenOSVectorMetaBuilder:
 
     def build(self) -> GenOSVectorMeta:
         """설정된 데이터를 사용해 최종적으로 GenOSVectorMeta 객체 생성"""
-        return GenOSVectorMeta(
-            text=self.text,
-            n_char=self.n_char,
-            n_word=self.n_word,
-            n_line=self.n_line,
-            i_page=self.i_page,
-            e_page=self.e_page,
-            i_chunk_on_page=self.i_chunk_on_page,
-            n_chunk_of_page=self.n_chunk_of_page,
-            i_chunk_on_doc=self.i_chunk_on_doc,
-            n_chunk_of_doc=self.n_chunk_of_doc,
-            n_page=self.n_page,
-            reg_date=self.reg_date,
-            chunk_bboxes=self.chunk_bboxes,
-            media_files=self.media_files,
-            created_date=self.created_date,
-            authors= self.authors,      # 팀 리스트
-            title=self.title,
-        )
+        payload = {
+            "text": self.text,
+            "n_char": self.n_char,
+            "n_word": self.n_word,
+            "n_line": self.n_line,
+            "i_page": self.i_page,
+            "e_page": self.e_page,
+            "i_chunk_on_page": self.i_chunk_on_page,
+            "n_chunk_of_page": self.n_chunk_of_page,
+            "i_chunk_on_doc": self.i_chunk_on_doc,
+            "n_chunk_of_doc": self.n_chunk_of_doc,
+            "n_page": self.n_page,
+            "reg_date": self.reg_date,
+            "chunk_bboxes": self.chunk_bboxes,
+            "media_files": self.media_files,
+            "created_date": self.created_date,
+            "authors": self.authors,      # 팀 리스트
+            "title": self.title,
+            **self.extra_metadata,
+        }
+        return GenOSVectorMeta.model_validate(payload)
 
 
 class DocumentProcessor:
 
-    def __init__(self):
+    def __init__(self, config_path: str | None = None):
         '''
-        initialize Document Converter
+        initialize Document Converter (config 기반)
+
+        config_path 가 None 이면 resource_dev/convert_processor_config.yaml
+        (없으면 resource/convert_processor_config.yaml) 을 사용한다.
+        GenOS 는 DocumentProcessor() 무인자로 호출하므로 기본 경로 resolve 필수.
         '''
-        self.ocr_endpoint = "http://192.168.73.172:48080/ocr"
-        ocr_options = PaddleOcrOptions(
-            force_full_page_ocr=False,
-            lang=['korean'],
-            ocr_endpoint=self.ocr_endpoint,
-            text_score=0.3)
+        if config_path is None:
+            config_path = _resolve_default_convert_config_path()
+
+        cfg = _load_config(config_path)
+        self._config_dir = Path(config_path).resolve().parent
+
+        defaults_cfg = _as_dict(cfg.get("defaults"))
+        log_level = _parse_optional_int(defaults_cfg.get("log_level"), "defaults.log_level")
+        if log_level is None:
+            log_level = 4
+        self._log_level = log_level
+
+        ocr_cfg = _as_dict(cfg.get("ocr"))
+        layout_cfg = _as_dict(cfg.get("layout"))
+        pdf_cfg = _as_dict(cfg.get("pdf_pipeline"))
+        ec = EnrichmentConfig.from_raw(cfg.get("enrichment"), self._config_dir, parent_cfg=cfg)
+
+        # OCR 엔드포인트는 ocr.paddle.ocr_endpoint 가 정식 위치.
+        # 구버전 호환: ocr.ocr_endpoint(상위) / 최상위 ocr_endpoint 도 폴백으로 인식.
+        paddle_cfg = _as_dict(ocr_cfg.get("paddle"))
+        ocr_ep = (
+            paddle_cfg.get("ocr_endpoint")
+            or ocr_cfg.get("ocr_endpoint")
+            or cfg.get("ocr_endpoint", "http://192.168.73.172:48080/ocr")
+        )
+
+        # OCR 수행 모드. "auto"(default)=휴리스틱 기반 재OCR / "force"=무조건 전체 OCR / "disable"=OCR 안 함
+        # (PDF 입력에만 적용. DOCX/기타 포맷은 ocr_mode 무관)
+        raw_ocr_mode = str(ocr_cfg.get("ocr_mode", cfg.get("ocr_mode", "auto"))).lower().strip()
+        if raw_ocr_mode not in {"auto", "force", "disable"}:
+            _log.warning(f"[DocumentProcessor] Unknown ocr_mode '{raw_ocr_mode}', fallback to 'auto'")
+            raw_ocr_mode = "auto"
+        self.ocr_mode = raw_ocr_mode
+
+        # 테이블 셀 재OCR HTTP timeout (ocr_all_table_cells). 잘못된 값은 60 으로 폴백.
+        table_cell_ocr_timeout = _parse_optional_int(
+            ocr_cfg.get("table_cell_ocr_timeout"), "ocr.table_cell_ocr_timeout"
+        )
+        self._table_cell_ocr_timeout = (
+            table_cell_ocr_timeout if table_cell_ocr_timeout and table_cell_ocr_timeout > 0 else 60
+        )
+
+        # 글리프 기반 auto-OCR 재트리거 임계값.
+        glyph_cfg = _as_dict(ocr_cfg.get("glyph_detection"))
+        glyph_cell_th = _parse_optional_int(
+            glyph_cfg.get("table_cell_threshold"), "ocr.glyph_detection.table_cell_threshold"
+        )
+        self._glyph_table_cell_threshold = glyph_cell_th if glyph_cell_th and glyph_cell_th > 0 else 1
+        glyph_doc_th = _parse_optional_int(
+            glyph_cfg.get("document_threshold"), "ocr.glyph_detection.document_threshold"
+        )
+        self._glyph_document_threshold = glyph_doc_th if glyph_doc_th and glyph_doc_th > 0 else 10
+
+        ocr_options = self._build_ocr_options(ocr_cfg, paddle_endpoint=ocr_ep)
+        if isinstance(ocr_options, UpstageOcrOptions):
+            self.ocr_endpoint = ocr_options.api_endpoint
+        else:
+            self.ocr_endpoint = ocr_ep
 
         self.page_chunk_counts = defaultdict(int)
-        device = AcceleratorDevice.AUTO
-        num_threads = 8
+
+        device_str = str(pdf_cfg.get("device", "auto")).lower().strip()
+        device = _ACCELERATOR_DEVICE_MAP.get(device_str)
+        if device is None:
+            _log.warning(f"[DocumentProcessor] Unknown pdf_pipeline.device '{device_str}', fallback to 'auto'")
+            device = AcceleratorDevice.AUTO
+
+        num_threads = _parse_optional_int(pdf_cfg.get("num_threads"), "pdf_pipeline.num_threads")
+        if num_threads is None or num_threads <= 0:
+            num_threads = 8
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
+
+        images_scale = _parse_optional_int(pdf_cfg.get("images_scale"), "pdf_pipeline.images_scale")
+        if images_scale is None or images_scale <= 0:
+            images_scale = 2
+
+        generate_page_images = _parse_optional_bool(
+            pdf_cfg.get("generate_page_images"), "pdf_pipeline.generate_page_images"
+        )
+        generate_picture_images = _parse_optional_bool(
+            pdf_cfg.get("generate_picture_images"), "pdf_pipeline.generate_picture_images"
+        )
+
+        table_mode_str = str(pdf_cfg.get("table_structure_mode", "accurate")).lower().strip()
+        table_structure_mode = _TABLE_FORMER_MODE_MAP.get(table_mode_str)
+        if table_structure_mode is None:
+            _log.warning(
+                f"[DocumentProcessor] Unknown pdf_pipeline.table_structure_mode '{table_mode_str}', fallback to 'accurate'"
+            )
+            table_structure_mode = TableFormerMode.ACCURATE
+
         # PDF 파이프라인 옵션 설정
         self.pipe_line_options = PdfPipelineOptions()
-        self.pipe_line_options.generate_page_images = True
-        self.pipe_line_options.generate_picture_images = True
+        self.pipe_line_options.generate_page_images = (
+            True if generate_page_images is None else generate_page_images
+        )
+        self.pipe_line_options.generate_picture_images = (
+            True if generate_picture_images is None else generate_picture_images
+        )
         self.pipe_line_options.do_ocr = False
         self.pipe_line_options.ocr_options = ocr_options
-        self.pipe_line_options.images_scale = 2
-
-        # self.pipe_line_options.ocr_options.lang = ["ko", 'en']
-        # self.pipe_line_options.ocr_options.model_storage_directory = "./.EasyOCR/model"
-        # self.pipe_line_options.ocr_options.force_full_page_ocr = True
-        # ocr_options = TesseractOcrOptions()
-        # ocr_options.lang = ['kor', 'kor_vert', 'eng', 'jpn', 'jpn_vert']
-        # ocr_options.path = './.tesseract/tessdata'
-        # self.pipe_line_options.ocr_options = ocr_options
-        # self.pipe_line_options.artifacts_path = Path("/models/")
+        self.pipe_line_options.images_scale = images_scale
 
         # layout 모델로 GENOS_LAYOUT 사용
         self.pipe_line_options.layout_options.layout_model_type = LayoutModelType.GENOS_LAYOUT
-        # 운영망 T4
-        # self.pipe_line_options.layout_options.genos_layout_options.endpoint = "https://genos.genon.ai:3443/api/gateway/rep/serving/733/v1/chat/completions"
-        # self.pipe_line_options.layout_options.genos_layout_options.api_key = "3d0aed2e6aff4d8289052d50a7aaffaa"
-
-        # H100 gpu
-        self.pipe_line_options.layout_options.genos_layout_options.endpoint = "http://192.168.75.174:26001/v1/chat/completions"
-        self.pipe_line_options.layout_options.genos_layout_options.api_key = ""
+        self.pipe_line_options.layout_options.genos_layout_options.endpoint = _as_dict(
+            layout_cfg.get("genos_layout")
+        ).get("endpoint", "http://192.168.75.174:26001/v1/chat/completions")
+        self.pipe_line_options.layout_options.genos_layout_options.api_key = _as_dict(
+            layout_cfg.get("genos_layout")
+        ).get("api_key", "")
 
         # genos layout 모델은 batch size를 32로 설정
-        settings.perf.page_batch_size = 32
+        page_batch_size = _parse_optional_int(
+            _as_dict(layout_cfg.get("genos_layout")).get("page_batch_size"), "layout.genos_layout.page_batch_size"
+        )
+        if page_batch_size is None or page_batch_size <= 0:
+            page_batch_size = 32
+        settings.perf.page_batch_size = page_batch_size
+
+        max_completion_tokens = _parse_optional_int(
+            _as_dict(layout_cfg.get("genos_layout")).get("max_completion_tokens"),
+            "layout.genos_layout.max_completion_tokens",
+        )
+        if max_completion_tokens is None or max_completion_tokens <= 0:
+            max_completion_tokens = 16384
+        self.pipe_line_options.layout_options.genos_layout_options.max_completion_tokens = max_completion_tokens
 
         self.pipe_line_options.do_table_structure = True
-        # VLM 기반 테이블 구조 모델 사용
-        # self.pipe_line_options.table_structure_options.table_structure_model_type = TableStructureModelType.VLM
-        # self.pipe_line_options.table_structure_options.vlm_table_structure_options.url = "http://localhost:8000/v1/chat/completions"
-        # self.pipe_line_options.table_structure_options.vlm_table_structure_options.api_key = ""
-        # self.pipe_line_options.table_structure_options.vlm_table_structure_options.model = ""
-
         self.pipe_line_options.table_structure_options.do_cell_matching = True
-        self.pipe_line_options.table_structure_options.mode = TableFormerMode.ACCURATE
+        self.pipe_line_options.table_structure_options.mode = table_structure_mode
         self.pipe_line_options.accelerator_options = accelerator_options
 
         # Simple 파이프라인 옵션을 인스턴스 변수로 저장
@@ -1130,34 +1314,131 @@ class DocumentProcessor:
         # 기본 컨버터들 생성
         self._create_converters()
 
-        # enrichment 옵션 설정
+        self.image_description_options = (
+            ImageDescriptionOptions.from_config(
+                image_desc_cfg=ec.image_description_cfg,
+                fallback_api_url=ec.api_url,
+                fallback_api_key=ec.api_key,
+                fallback_model=ec.model,
+            )
+            if ImageDescriptionOptions is not None
+            else None
+        )
+        self.image_description_enricher = (
+            FacadeImageDescriptionEnricher(self.image_description_options)
+            if (
+                self.image_description_options is not None
+                and FacadeImageDescriptionEnricher is not None
+            )
+            else None
+        )
+        self.custom_fields_enrichers: list = (
+            [CustomFieldsEnricher(**c) for c in ec.custom_fields_cfgs]
+            if CustomFieldsEnricher is not None
+            else []
+        )
+        # 추출 메타데이터 → typed 벡터 필드 매핑(설정 기반). 설정이 비어있으면
+        # 기존 created_date 동작을 그대로 재현한다(하위 호환).
+        self._metadata_field_transforms = (
+            ec.metadata.field_transforms or DEFAULT_METADATA_FIELD_TRANSFORMS
+        )
+
+        # enrichment 옵션 설정 (yaml 의 enrichment 섹션을 EnrichmentConfig 로 파싱)
         self.enrichment_options = DataEnrichmentOptions(
-            do_toc_enrichment=True,
-            toc_doc_type="law",
-            extract_metadata=True,
+            do_toc_enrichment=ec.toc.do_toc,
+            toc_doc_type=ec.toc.doc_type,
+            extract_metadata=ec.metadata.do_metadata,
             toc_api_provider="custom",
+            metadata_api_provider="custom",
+            toc_api_base_url=ec.toc.url,
+            metadata_api_base_url=ec.metadata.url,
+            toc_api_key=ec.toc.api_key,
+            metadata_api_key=ec.metadata.api_key,
+            toc_model=ec.toc.model,
+            metadata_model=ec.metadata.model,
+            toc_temperature=ec.toc.temperature,
+            toc_top_p=ec.toc.top_p,
+            toc_seed=ec.toc.seed,
+            toc_max_tokens=ec.toc.max_tokens,
+            toc_precheck_enabled=ec.toc.precheck_enabled,
+            toc_max_context_tokens=ec.toc.precheck_max_context_tokens,
+            toc_completion_reserved_tokens=ec.toc.precheck_completion_reserved_tokens,
+            metadata_precheck_enabled=ec.metadata.precheck_enabled,
+            metadata_max_context_tokens=ec.metadata.precheck_max_context_tokens,
+            metadata_completion_reserved_tokens=ec.metadata.precheck_completion_reserved_tokens,
+            toc_system_prompt=ec.toc.system_prompt,
+            toc_user_prompt=ec.toc.user_prompt,
+        )
 
-            # Mistral-Small-3.1-24B-Instruct-2503, 운영망
-            toc_api_base_url="https://genos.genon.ai:3443/api/gateway/rep/serving/502/v1/chat/completions",
-            metadata_api_base_url="https://genos.genon.ai:3443/api/gateway/rep/serving/502/v1/chat/completions",
-            toc_api_key="022653a3743849e299f19f19d323490b",
-            metadata_api_key="022653a3743849e299f19f19d323490b",
+    @staticmethod
+    def _build_ocr_options(ocr_cfg: dict, paddle_endpoint: str):
+        """Build OcrOptions based on ocr.engine key in yaml.
 
-            # Mistral-Small-3.1-24B-Instruct-2503, 한국은행 클러스터
-            # toc_api_base_url="http://llmops-gateway-api-service:8080/serving/13/31/v1/chat/completions",
-            # metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/13/31/v1/chat/completions",
-            # toc_api_key="9e32423947fd4a5da07a28962fe88487",
-            # metadata_api_key="9e32423947fd4a5da07a28962fe88487",
+        Returns PaddleOcrOptions or UpstageOcrOptions. Default engine is "paddle".
+        For "upstage", api_key falls back to UPSTAGE_API_KEY env var when empty.
+        Unknown engine values fall back to "paddle" with a warning.
+        """
+        ocr_cfg = ocr_cfg if isinstance(ocr_cfg, dict) else {}
+        ocr_engine = str(ocr_cfg.get("engine", "paddle")).lower().strip()
+        if ocr_engine not in {"paddle", "upstage"}:
+            _log.warning(f"[DocumentProcessor] Unknown ocr.engine '{ocr_engine}', fallback to 'paddle'")
+            ocr_engine = "paddle"
 
-            toc_model="model",
-            metadata_model="model",
-            toc_temperature=0.0,
-            toc_top_p=0.00001,
-            toc_seed=33,
-            toc_max_tokens=10000,
+        if ocr_engine == "upstage":
+            upstage_cfg = _as_dict(ocr_cfg.get("upstage"))
+            upstage_api_key = upstage_cfg.get("api_key", "") or os.getenv("UPSTAGE_API_KEY", "")
 
-            toc_system_prompt=toc_system_prompt,
-            toc_user_prompt=toc_user_prompt,
+            raw_timeout = upstage_cfg.get("timeout", 60)
+            try:
+                upstage_timeout = int(raw_timeout)
+                if upstage_timeout <= 0:
+                    raise ValueError
+            except (TypeError, ValueError):
+                _log.warning(f"[DocumentProcessor] Invalid ocr.upstage.timeout '{raw_timeout}', fallback to 60")
+                upstage_timeout = 60
+
+            raw_text_score = upstage_cfg.get("text_score", 0.5)
+            try:
+                upstage_text_score = float(raw_text_score)
+            except (TypeError, ValueError):
+                _log.warning(f"[DocumentProcessor] Invalid ocr.upstage.text_score '{raw_text_score}', fallback to 0.5")
+                upstage_text_score = 0.5
+
+            return UpstageOcrOptions(
+                force_full_page_ocr=False,
+                lang=upstage_cfg.get("lang", ["ko", "en"]),
+                api_endpoint=upstage_cfg.get(
+                    "api_endpoint",
+                    "https://api.upstage.ai/v1/document-digitization",
+                ),
+                api_key=upstage_api_key,
+                model=upstage_cfg.get("model", "ocr"),
+                timeout=upstage_timeout,
+                text_score=upstage_text_score,
+            )
+
+        paddle_cfg = _as_dict(ocr_cfg.get("paddle"))
+
+        raw_lang = paddle_cfg.get("lang", ["korean"])
+        if isinstance(raw_lang, list) and raw_lang:
+            paddle_lang = raw_lang
+        else:
+            if raw_lang not in (None, [], ["korean"]):
+                _log.warning(f"[DocumentProcessor] Invalid ocr.paddle.lang '{raw_lang}', fallback to ['korean']")
+            paddle_lang = ["korean"]
+
+        raw_text_score = paddle_cfg.get("text_score", 0.3)
+        try:
+            paddle_text_score = float(raw_text_score)
+        except (TypeError, ValueError):
+            _log.warning(f"[DocumentProcessor] Invalid ocr.paddle.text_score '{raw_text_score}', fallback to 0.3")
+            paddle_text_score = 0.3
+
+        return PaddleOcrOptions(
+            force_full_page_ocr=False,
+            lang=paddle_lang,
+            ocr_endpoint=paddle_endpoint,
+            text_score=paddle_text_score,
         )
 
     def _create_converters(self):
@@ -1267,7 +1548,7 @@ class DocumentProcessor:
         return chunks
 
     def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
-        chunker: GenosBucketChunker = GenosBucketChunker(
+        chunker: GenosSmartChunker = GenosSmartChunker(
             max_tokens = kwargs.get('max_chunk_size', 0),
             merge_peers = True
         )
@@ -1283,133 +1564,52 @@ class DocumentProcessor:
             return ''
         return ''.join(map(str, iterable)) + '\n'
 
-    def parse_created_date(self, date_text: str) -> Optional[int]:
-        """
-        작성일 텍스트를 파싱하여 YYYYMMDD 형식의 정수로 변환
-
-        Args:
-            date_text: 작성일 텍스트 (YYYY-MM 또는 YYYY-MM-DD 형식)
-
-        Returns:
-            YYYYMMDD 형식의 정수, 파싱 실패시 None
-        """
-        if not date_text or not isinstance(date_text, str) or date_text == "None":
-            return 0
-
-        # 공백 제거 및 정리
-        date_text = date_text.strip()
-
-        # YYYY-MM-DD 형식 매칭
-        match_full = re.match(r'^(\d{4})-(\d{1,2})-(\d{1,2})$', date_text)
-        if match_full:
-            year, month, day = match_full.groups()
-            try:
-                # 유효한 날짜인지 검증
-                datetime(int(year), int(month), int(day))
-                return int(f"{year}{month.zfill(2)}{day.zfill(2)}")
-            except ValueError:
-                pass
-
-        # YYYY-MM 형식 매칭 (일자는 01로 설정)
-        match_month = re.match(r'^(\d{4})-(\d{1,2})$', date_text)
-        if match_month:
-            year, month = match_month.groups()
-            try:
-                # 유효한 월인지 검증
-                datetime(int(year), int(month), 1)
-                return int(f"{year}{month.zfill(2)}01")
-            except ValueError:
-                pass
-
-        # YYYY 형식 매칭 (월일은 0101로 설정)
-        match_year = re.match(r'^(\d{4})$', date_text)
-        if match_year:
-            year = match_year.group(1)
-            try:
-                datetime(int(year), 1, 1)
-                return int(f"{year}0101")
-            except ValueError:
-                pass
-
-        return 0
-
-    def parse_authors(self, authors_data) -> list[str]:
-        """
-        작성자 데이터에서 이름만 추출하여 문자열 리스트로 반환
-        Args:
-            authors_data: 작성자 정보 (딕셔너리 리스트 또는 문자열)
-        Returns:
-            list[str]: 작성자 이름 리스트
-        """
-        if not authors_data:
-            return []
-
-        # 리스트인 경우
-        if isinstance(authors_data, list):
-            names = []
-            for author in authors_data:
-                if isinstance(author, dict):
-                    # 딕셔너리에서 "이름" 키 찾기
-                    if "이름" in author:
-                        name = author["이름"].strip()
-                        if name:  # 빈 문자열이 아닌 경우만 추가
-                            names.append(name)
-                    elif "name" in author:
-                        name = author["name"].strip()
-                        if name:
-                            names.append(name)
-                elif isinstance(author, str):
-                    # 문자열인 경우 직접 추가
-                    name = author.strip()
-                    if name:
-                        names.append(name)
-
-            # 중복 제거
-            return list(set(names))
-
-        # 문자열인 경우 (쉼표로 구분된 이름들)
-        elif isinstance(authors_data, str):
-            # 여러 구분자로 분리
-            separators = [',', ';', '/', '\n', '·', '•']
-            for sep in separators:
-                if sep in authors_data:
-                    names = [name.strip() for name in authors_data.split(sep) if name.strip()]
-                    return list(set(names))  # 중복 제거
-
-            # 구분자가 없는 경우 전체를 하나의 이름으로 처리
-            name = authors_data.strip()
-            return [name] if name else []
-
-        return []
-
     def enrichment(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        try:
+            # 새로운 enriched result 받기
+            document = enrich_document(document, self.enrichment_options, **kwargs)
+            return document
+        except LLMApiError as e:
+            # Preserve provider error payload as-is for load status error message.
+            raise GenosServiceException("1", e.raw_error_message) from e
 
-        # 새로운 enriched result 받기
-        document = enrich_document(document, self.enrichment_options, **kwargs)
+    def _get_or_create_image_description_enricher(self):
+        enricher = getattr(self, "image_description_enricher", None)
+        if enricher is None:
+            if ImageDescriptionOptions is None or FacadeImageDescriptionEnricher is None:
+                return None
+            # 테스트 등에서 __init__ 우회 시 legacy attribute 기반으로 재구성
+            legacy_options = ImageDescriptionOptions.from_legacy_processor(self)
+            enricher = FacadeImageDescriptionEnricher(legacy_options)
+            self.image_description_enricher = enricher
+        return enricher
+
+    def enrich_image_descriptions(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        enricher = self._get_or_create_image_description_enricher()
+        if enricher is None:
+            return document
+        return enricher.enrich(document, **kwargs)
+
+    async def enrich_custom_fields(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        for enricher in self.custom_fields_enrichers:
+            document = await enricher.enrich(document, **kwargs)
         return document
 
     async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request, **kwargs: dict) -> \
             list[dict]:
-        created_date = 0
-        authors = ""
         title = ""
-
-        try:
-            if (document.key_value_items and
-                len(document.key_value_items) > 0 and
-                hasattr(document.key_value_items[0], 'graph') and
-                hasattr(document.key_value_items[0].graph, 'cells') and
-                len(document.key_value_items[0].graph.cells) > 1):
-
-                # 작성일 추출 (cells[1])
-                date_text = document.key_value_items[0].graph.cells[1].text
-                created_date = self.parse_created_date(date_text)
-        except (AttributeError, IndexError) as e:
-            pass
-
-        # kwargs에서 authors 추출 (이름만)
-        if "authors" in kwargs:
-            authors = json.dumps(self.parse_authors(kwargs["authors"]))
+        enrichment_context = kwargs.get("_enrichment_context")
+        context_metadata = (
+            dict(enrichment_context.get("metadata", {}))
+            if isinstance(enrichment_context, dict) and isinstance(enrichment_context.get("metadata"), dict)
+            else {}
+        )
+        document_metadata = extract_metadata_from_document(document)
+        merged_metadata = dict(document_metadata)
+        merged_metadata.update(context_metadata)
+        # 설정 기반 typed 필드 변환 (created_date 등). source/target 키는 passthrough 에서 제외.
+        typed_values, consumed_keys = apply_field_transforms(
+            self._metadata_field_transforms, merged_metadata, document)
 
         for item, _ in document.iterate_items():
             if hasattr(item, 'label'):
@@ -1417,14 +1617,29 @@ class DocumentProcessor:
                     title = item.text.strip() if item.text else ""
                     break
 
+        passthrough_metadata = dict(merged_metadata)
+        # GenOSVectorMeta 스키마 예약 필드 + transform 이 소비한 source/target 키는 passthrough 제외.
+        reserved_keys = {
+            "text", "n_char", "n_word", "n_line", "e_page", "i_page",
+            "i_chunk_on_page", "n_chunk_of_page", "i_chunk_on_doc", "n_chunk_of_doc",
+            "n_page", "reg_date", "chunk_bboxes", "media_files", "title",
+            "created_date",
+        } | consumed_keys
+        for reserved_key in reserved_keys:
+            passthrough_metadata.pop(reserved_key, None)
+        passthrough_metadata = {
+            key: serialize_metadata_value_for_output(value)
+            for key, value in passthrough_metadata.items()
+        }
+
         global_metadata = dict(
             n_chunk_of_doc=len(chunks),
             n_page=document.num_pages(),
             reg_date=datetime.now().isoformat(timespec='seconds') + 'Z',
-            created_date=created_date,
-            authors=authors,
-            title=title
+            title=title,
         )
+        global_metadata.update(typed_values)  # 설정 기반 typed 필드 (created_date 등)
+        global_metadata.update(passthrough_metadata)
 
         current_page = None
         chunk_index_on_page = 0
@@ -1640,7 +1855,7 @@ class DocumentProcessor:
 
                 # GLYPH 항목이 있는지 확인. 정규식사용
                 matches = re.findall(r'GLYPH\w*', item.text)
-                if len(matches) > 10:
+                if len(matches) > self._glyph_document_threshold:
                     # print(f"Document has glyphs on page {page_no}. len(matches): {len(matches)}. ")
                     return True
 
@@ -1711,7 +1926,7 @@ class DocumentProcessor:
 
                 b_ocr = False
                 for cell_idx, cell in enumerate(table_item.data.table_cells):
-                    if self.check_glyph_text(cell.text, threshold=1):
+                    if self.check_glyph_text(cell.text, threshold=self._glyph_table_cell_threshold):
                         b_ocr = True
                         break
 
@@ -1753,7 +1968,7 @@ class DocumentProcessor:
                     pix = page.get_pixmap(matrix=mat, clip=cell_bbox)
                     img_data = pix.tobytes("png")
 
-                    result = post_ocr_bytes(img_data, timeout=60)
+                    result = post_ocr_bytes(img_data, timeout=self._table_cell_ocr_timeout)
                     rec_texts, rec_scores, rec_boxes = extract_ocr_fields(result)
 
                     cell.text = ""
@@ -1801,12 +2016,14 @@ class DocumentProcessor:
         logging.getLogger().setLevel(level)
 
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
-        self.setup_logging(kwargs.get('log_level', 4))
+        runtime_level = kwargs.get('log_level')
+        self.setup_logging(runtime_level if runtime_level is not None else self._log_level)
 
         _log.info(f"file_path: {file_path}")
         _log.info(f"kwargs: {kwargs}")
 
         ext = Path(file_path).suffix.lower()
+        enrichment_context: dict[str, Any] = {}
 
         # PPT 파일은 langchain으로 처리
         if ext in ['.ppt']:
@@ -1836,14 +2053,21 @@ class DocumentProcessor:
 
         # 기존 docling 처리 (PDF, DOCX 등)
         else:
-            document: DoclingDocument = self.load_documents(file_path, **kwargs)
-
             if ext in ['.pdf']:
-                if not check_document(document, self.enrichment_options) or self.check_glyphs(document):
-                    # OCR이 필요하다고 판단되면 OCR 수행
+                # ocr_mode: "force"=무조건 전체 OCR / "auto"=휴리스틱 기반 재OCR / "disable"=OCR 안 함
+                if self.ocr_mode == "force":
                     document: DoclingDocument = self.load_documents_with_docling_ocr(file_path, **kwargs)
+                else:
+                    document: DoclingDocument = self.load_documents(file_path, **kwargs)
+                    if self.ocr_mode == "auto":
+                        if not check_document(document, self.enrichment_options) or self.check_glyphs(document):
+                            # OCR이 필요하다고 판단되면 OCR 수행
+                            document: DoclingDocument = self.load_documents_with_docling_ocr(file_path, **kwargs)
                 # 글리프 깨진 텍스트가 있는 테이블에 대해서만 OCR 수행 (청크토큰 8k이상 발생 방지)
-                document: DoclingDocument = self.ocr_all_table_cells(document, file_path)
+                if self.ocr_mode != "disable" and self.ocr_endpoint:
+                    document: DoclingDocument = self.ocr_all_table_cells(document, file_path)
+            else:
+                document: DoclingDocument = self.load_documents(file_path, **kwargs)
 
             # DOCX 파일만 PDF로 변환 (PPT는 위에서 처리됨)
             if ext in ['.docx','.pptx']:
@@ -1860,6 +2084,16 @@ class DocumentProcessor:
             document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
 
             document = self.enrichment(document, **kwargs)
+            enrichment_kwargs = dict(kwargs)
+            enrichment_kwargs["_enrichment_context"] = enrichment_context
+            try:
+                document = self.enrich_image_descriptions(document, **enrichment_kwargs)
+            except Exception as exc:
+                _log.warning(f"[DocumentProcessor] facade image enrichment skipped: {exc}")
+            try:
+                document = await self.enrich_custom_fields(document, **enrichment_kwargs)
+            except Exception as exc:
+                _log.warning(f"[DocumentProcessor] custom_fields enrichment skipped: {exc}")
 
             # Extract Chunk from DoclingDocument
             chunks: List[DocChunk] = self.split_documents(document, **kwargs)
@@ -1867,7 +2101,13 @@ class DocumentProcessor:
 
             vectors = []
             if len(chunks) >= 1:
-                vectors: list[dict] = await self.compose_vectors(document, chunks, file_path, request, **kwargs)
+                vectors: list[dict] = await self.compose_vectors(
+                    document,
+                    chunks,
+                    file_path,
+                    request,
+                    **enrichment_kwargs,
+                )
             else:
                 raise GenosServiceException("1", f"chunk length is 0")
 
@@ -1905,75 +2145,3 @@ class GenosServiceException(Exception):
 async def assert_cancelled(request: Request):
     if await request.is_disconnected():
         raise GenosServiceException(1, f"Cancelled")
-
-
-#-----------------------------------------------------------------
-# enrichment 프롬프트
-#-----------------------------------------------------------------
-
-toc_system_prompt = """You are an expert at generating table of contents (목차) from Korean documents. You specialize in regulatory documents, terms of service, contracts, and mixed-format documents that combine formal regulatory structures with general section headers.
-""".strip()
-toc_user_prompt = """
-Here is the Korean document you need to analyze:
-
-<document>
-{raw_text}
-</document>
-
-Your task is to extract and organize all structural elements from this document into a hierarchical table of contents. Korean documents often have mixed structures where some sections follow formal regulatory patterns (제x장/절/관/조) while others use general section numbering and headers.
-
-## Analysis Process
-
-Before generating the final table of contents, work through the document systematically in `<analysis>` tags. It's OK for this section to be quite long. Follow these steps:
-
-1. **Document Title Extraction**: Quote the main document title exactly as it appears at the beginning of the document.
-
-2. **Structural Marker Identification**: Scan through the document and quote all the key structural markers you find, such as:
-   - Formal regulatory patterns: 제x장, 제x절, 제x관, 제x조
-   - General section patterns: numbered headers (1., 2., etc.), lettered headers (가., 나., etc.)
-   - Special sections: 부칙, 별지, 별표, etc.
-
-3. **Systematic Section Extraction**: Work through the document from beginning to end, extracting each structural element in order:
-   - For each main section, quote the exact title as it appears
-   - For each subsection, quote the exact title and note which main section it belongs under
-   - For each article/item, quote the exact title and note its parent section
-   - Include any appendices, attachments, and addenda
-
-4. **Hierarchy Building**: For each extracted element, explicitly note:
-   - What level it should be at (main section, subsection, sub-subsection, etc.)
-   - What its parent section is (if any)
-   - What numbering it should receive in the final TOC (1., 1.1., 1.1.1., etc.)
-
-5. **Structure Verification**: Review your extracted elements to ensure:
-   - All structural elements are captured in document order
-   - The hierarchy makes logical sense
-   - No elements are duplicated or missed
-
-## Output Requirements
-
-After your analysis, generate the table of contents with this exact format:
-
-```
-<toc>
-TITLE:<document title>
-1. <first main section title>
-1.1. <first subsection title>
-1.1.1. <first sub-subsection title>
-1.2. <second subsection title>
-2. <second main section title>
-2.1. <subsection under second main section>
-3. <third main section title>
-</toc>
-```
-
-## Formatting Guidelines
-
-- Start with `TITLE:` followed by the document title
-- Use hierarchical decimal numbering (1, 1.1, 1.1.1, etc.)
-- Follow each number with a space and the original title exactly as it appears
-- Maintain the document's logical hierarchy
-- Include appendices, attachments, and addenda as separate top-level items
-- Extract titles exactly as they appear - do not include explanatory content
-- Handle both formal regulatory structures and general section headers
-- Wrap the entire table of contents in `<toc></toc>` tags
-""".strip()

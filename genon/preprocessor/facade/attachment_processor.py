@@ -17,6 +17,7 @@ import sys
 import threading
 import uuid
 import warnings
+import yaml
 from datetime import datetime
 import logging
 from fastapi import Request
@@ -99,6 +100,73 @@ for n in ("fontTools", "fontTools.ttLib", "fontTools.ttLib.ttFont"):
     logging.getLogger().setLevel(logging.WARNING)
 # pdf 변환 대상 확장자
 CONVERTIBLE_EXTENSIONS = ['.hwp', '.txt', '.json', '.md', '.ppt', '.pptx', '.docx']
+
+_DEFAULT_TOKENIZER_LOCAL_PATH = "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
+_DEFAULT_TOKENIZER_ID = "sentence-transformers/all-MiniLM-L6-v2"
+_DEFAULT_HYBRID_MAX_TOKENS = int(1e30)
+
+
+def _load_config(config_path: str) -> dict:
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f) or {}
+    except FileNotFoundError:
+        _log.warning(f"[DocumentProcessor] Config file not found: {config_path}. Using defaults.")
+        return {}
+    except Exception as e:
+        _log.warning(f"[DocumentProcessor] Failed to load config '{config_path}': {e}. Using defaults.")
+        return {}
+
+    if not isinstance(cfg, dict):
+        _log.warning(
+            f"[DocumentProcessor] Invalid config format in '{config_path}' "
+            f"(expected mapping, got {type(cfg).__name__}). Using defaults."
+        )
+        return {}
+    return cfg
+
+
+def _as_dict(value: Any) -> dict:
+    return value if isinstance(value, dict) else {}
+
+
+def _parse_optional_bool(value: Any, key: str = "") -> Optional[bool]:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        text = value.strip().lower()
+        if text in {"1", "true", "yes", "y", "on"}:
+            return True
+        if text in {"0", "false", "no", "n", "off"}:
+            return False
+    if key:
+        _log.warning(f"[DocumentProcessor] Invalid bool value for '{key}': {value!r}. Fallback to default.")
+    return None
+
+
+def _parse_optional_int(value: Any, key: str = "") -> Optional[int]:
+    if value is None or value == "":
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        if key:
+            _log.warning(f"[DocumentProcessor] Invalid int value for '{key}': {value!r}. Fallback to default.")
+        return None
+
+
+def _resolve_default_attachment_config_path() -> str:
+    base_dir = Path(__file__).resolve().parent
+    local_config = (base_dir / "../resource_dev/attachment_processor_config.yaml").resolve()
+    default_config = (base_dir / "../resource/attachment_processor_config.yaml").resolve()
+
+    if local_config.exists():
+        return str(local_config)
+    return str(default_config)
 
 
 def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
@@ -336,11 +404,12 @@ class TextLoader:
 
 
 class TabularLoader:
-    def __init__(self, file_path: str, ext: str):
+    def __init__(self, file_path: str, ext: str, encoding_detect_sample_bytes: int = 10000):
         packages = ['openpyxl', 'chardet']
         install_packages(packages)
 
         self.file_path = file_path
+        self.encoding_detect_sample_bytes = max(int(encoding_detect_sample_bytes), 1)
         if ext == ".csv":
             # convert_to_pdf(file_path) csv는 Pdf 변환 안 함
             self.data_dict = self.load_csv_documents(file_path)
@@ -416,7 +485,7 @@ class TabularLoader:
         import chardet
 
         with open(file_path, "rb") as f:
-            raw_file = f.read(10000)
+            raw_file = f.read(self.encoding_detect_sample_bytes)
         enc_type = chardet.detect(raw_file)['encoding']
         df = pd.read_csv(file_path, encoding=enc_type, index_col=False)
         df = df.fillna('null')  # csv 파일에서도 xlsx 파일과 동일하게 null로 채움
@@ -512,11 +581,13 @@ class AudioLoader:
                  req_url: str,
                  req_data: dict,
                  chunk_sec: int = 29,
+                 chunk_overlap_ms: int = 300,
                  tmp_path: str = '.',
                  ):
         self.file_path = file_path
         self.tmp_path = tmp_path
         self.chunk_sec = chunk_sec
+        self.chunk_overlap_ms = max(int(chunk_overlap_ms), 0)
         self.req_url = req_url
         self.req_data = req_data
 
@@ -527,7 +598,7 @@ class AudioLoader:
 
         for i in range(n_chunks):
             start_ms = i * chunk_len
-            overlap_start_ms = start_ms - 300 if start_ms > 0 else start_ms
+            overlap_start_ms = start_ms - self.chunk_overlap_ms if start_ms > 0 else start_ms
             end_ms = start_ms + chunk_len
             audio_chunk = audio[overlap_start_ms:end_ms]
             audio_chunk.export(os.path.join(self.tmp_path, "tmp_{}.wav".format(str(i))), format="wav")
@@ -729,11 +800,11 @@ class HybridChunker(BaseChunker):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
     tokenizer: Union[PreTrainedTokenizerBase, str, Path] = (
-            Path("/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2")
-            if Path("/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2").exists()
-            else "sentence-transformers/all-MiniLM-L6-v2"
+            Path(_DEFAULT_TOKENIZER_LOCAL_PATH)
+            if Path(_DEFAULT_TOKENIZER_LOCAL_PATH).exists()
+            else _DEFAULT_TOKENIZER_ID
         )
-    max_tokens: int = int(1e30)  # type: ignore[assignment]
+    max_tokens: int = _DEFAULT_HYBRID_MAX_TOKENS  # type: ignore[assignment]
     merge_peers: bool = True
     _inner_chunker: HierarchicalChunker = HierarchicalChunker()
 
@@ -932,8 +1003,8 @@ _RECURSIVE_CHUNK_SIZE_CAP = 60000  # 임베딩 입력 한도(~128K 토큰)의 �
 
 def _resolve_recursive_tokenizer(tokenizer_id=None):
     if tokenizer_id is None:
-        local = Path("/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2")
-        tokenizer_id = local if local.exists() else "sentence-transformers/all-MiniLM-L6-v2"
+        local = Path(_DEFAULT_TOKENIZER_LOCAL_PATH)
+        tokenizer_id = local if local.exists() else _DEFAULT_TOKENIZER_ID
     return AutoTokenizer.from_pretrained(tokenizer_id)
 
 
@@ -942,6 +1013,7 @@ def _split_with_recursive_chunker(
     chunk_size=None,
     chunk_overlap=None,
     tokenizer_id=None,
+    token_chunk_size_cap=None,
 ) -> List[dict]:
     """Markdown export + RecursiveCharacterTextSplitter로 docling 문서를 분할.
 
@@ -956,6 +1028,11 @@ def _split_with_recursive_chunker(
 
     cs = max(int(chunk_size), 1) if chunk_size is not None else 8192
     co = max(int(chunk_overlap), 0) if chunk_overlap is not None else 100
+    token_chunk_size_cap = (
+        max(int(token_chunk_size_cap), 1)
+        if token_chunk_size_cap is not None
+        else _RECURSIVE_CHUNK_SIZE_CAP
+    )
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=cs,
         chunk_overlap=co,
@@ -966,12 +1043,12 @@ def _split_with_recursive_chunker(
     tokenizer = _resolve_recursive_tokenizer(tokenizer_id)
     token_splitter = RecursiveCharacterTextSplitter.from_huggingface_tokenizer(
         tokenizer,
-        chunk_size=_RECURSIVE_CHUNK_SIZE_CAP,
+        chunk_size=token_chunk_size_cap,
         chunk_overlap=0,
     )
     safe_chunks: list[str] = []
     for raw in raw_chunks:
-        if len(tokenizer.tokenize(raw)) <= _RECURSIVE_CHUNK_SIZE_CAP:
+        if len(tokenizer.tokenize(raw)) <= token_chunk_size_cap:
             safe_chunks.append(raw)
         else:
             safe_chunks.extend(token_splitter.split_text(raw))
@@ -1070,17 +1147,38 @@ class DocxProcessor:
         chunker_type = kwargs.get("chunker_type", "recursive")
 
         if chunker_type == "recursive":
+            recursive_chunk_size = kwargs.get("chunk_size")
+            if recursive_chunk_size is None:
+                recursive_chunk_size = kwargs.get("recursive_chunk_size")
+            recursive_chunk_overlap = kwargs.get("chunk_overlap")
+            if recursive_chunk_overlap is None:
+                recursive_chunk_overlap = kwargs.get("recursive_chunk_overlap")
             chunks = _split_with_recursive_chunker(
                 document,
-                chunk_size=kwargs.get("chunk_size"),
-                chunk_overlap=kwargs.get("chunk_overlap"),
+                chunk_size=recursive_chunk_size,
+                chunk_overlap=recursive_chunk_overlap,
+                tokenizer_id=kwargs.get("recursive_tokenizer_id"),
+                token_chunk_size_cap=kwargs.get("recursive_token_chunk_size_cap"),
             )
             for ch in chunks:
                 self.page_chunk_counts[ch["page_no"]] += 1
             return chunks
 
         # hybrid
-        chunker = HybridChunker(max_tokens=int(1e30), merge_peers=True)
+        hybrid_max_tokens = _parse_optional_int(kwargs.get("hybrid_max_tokens"), "hybrid_max_tokens")
+        if hybrid_max_tokens is None or hybrid_max_tokens <= 0:
+            hybrid_max_tokens = _DEFAULT_HYBRID_MAX_TOKENS
+        hybrid_merge_peers = _parse_optional_bool(kwargs.get("hybrid_merge_peers"), "hybrid_merge_peers")
+        if hybrid_merge_peers is None:
+            hybrid_merge_peers = True
+        chunker_kwargs = {
+            "max_tokens": hybrid_max_tokens,
+            "merge_peers": hybrid_merge_peers,
+        }
+        hybrid_tokenizer = kwargs.get("hybrid_tokenizer_id")
+        if hybrid_tokenizer:
+            chunker_kwargs["tokenizer"] = hybrid_tokenizer
+        chunker = HybridChunker(**chunker_kwargs)
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=document, **kwargs))
         for chunk in chunks:
             if chunk.meta.doc_items[0].prov:
@@ -1215,17 +1313,38 @@ class HwpProcessor:
         page_chunk_counts: dict[int, int] = defaultdict(int)
 
         if chunker_type == "recursive":
+            recursive_chunk_size = kwargs.get("chunk_size")
+            if recursive_chunk_size is None:
+                recursive_chunk_size = kwargs.get("recursive_chunk_size")
+            recursive_chunk_overlap = kwargs.get("chunk_overlap")
+            if recursive_chunk_overlap is None:
+                recursive_chunk_overlap = kwargs.get("recursive_chunk_overlap")
             chunks = _split_with_recursive_chunker(
                 document,
-                chunk_size=kwargs.get("chunk_size"),
-                chunk_overlap=kwargs.get("chunk_overlap"),
+                chunk_size=recursive_chunk_size,
+                chunk_overlap=recursive_chunk_overlap,
+                tokenizer_id=kwargs.get("recursive_tokenizer_id"),
+                token_chunk_size_cap=kwargs.get("recursive_token_chunk_size_cap"),
             )
             for ch in chunks:
                 page_chunk_counts[ch["page_no"]] += 1
             return chunks, page_chunk_counts
 
         # hybrid
-        chunker = HybridChunker(max_tokens=int(1e30), merge_peers=True)
+        hybrid_max_tokens = _parse_optional_int(kwargs.get("hybrid_max_tokens"), "hybrid_max_tokens")
+        if hybrid_max_tokens is None or hybrid_max_tokens <= 0:
+            hybrid_max_tokens = _DEFAULT_HYBRID_MAX_TOKENS
+        hybrid_merge_peers = _parse_optional_bool(kwargs.get("hybrid_merge_peers"), "hybrid_merge_peers")
+        if hybrid_merge_peers is None:
+            hybrid_merge_peers = True
+        chunker_kwargs = {
+            "max_tokens": hybrid_max_tokens,
+            "merge_peers": hybrid_merge_peers,
+        }
+        hybrid_tokenizer = kwargs.get("hybrid_tokenizer_id")
+        if hybrid_tokenizer:
+            chunker_kwargs["tokenizer"] = hybrid_tokenizer
+        chunker = HybridChunker(**chunker_kwargs)
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=document, **kwargs))
         for chunk in chunks:
             if chunk.meta.doc_items[0].prov:
@@ -1332,12 +1451,161 @@ class GenosServiceException(Exception):
 
 
 class DocumentProcessor:
-    def __init__(self):
+    def __init__(self, config_path: str | None = None):
+        if config_path is None:
+            config_path = _resolve_default_attachment_config_path()
+        cfg = _load_config(config_path)
+        self._config_dir = Path(config_path).resolve().parent
+
+        defaults_cfg = _as_dict(cfg.get("defaults"))
+        chunking_cfg = _as_dict(cfg.get("chunking"))
+        generic_chunk_cfg = _as_dict(chunking_cfg.get("generic"))
+        recursive_chunk_cfg = _as_dict(chunking_cfg.get("recursive"))
+        hybrid_chunk_cfg = _as_dict(chunking_cfg.get("hybrid"))
+        loaders_cfg = _as_dict(cfg.get("loaders"))
+        image_loader_cfg = _as_dict(loaders_cfg.get("image"))
+        tabular_loader_cfg = _as_dict(loaders_cfg.get("tabular"))
+        whisper_cfg = _as_dict(cfg.get("whisper"))
+
+        chunker_type = str(defaults_cfg.get("chunker_type", "recursive")).strip().lower()
+        if chunker_type not in {"recursive", "hybrid"}:
+            _log.warning(
+                f"[DocumentProcessor] Unknown defaults.chunker_type '{chunker_type}', fallback to 'recursive'."
+            )
+            chunker_type = "recursive"
+
+        use_pdf_sdk = _parse_optional_bool(defaults_cfg.get("use_pdf_sdk"), "defaults.use_pdf_sdk")
+        use_hwp_sdk = _parse_optional_bool(defaults_cfg.get("use_hwp_sdk"), "defaults.use_hwp_sdk")
+        dump_sdk_output = _parse_optional_bool(
+            defaults_cfg.get("dump_sdk_output"), "defaults.dump_sdk_output"
+        )
+        save_images = _parse_optional_bool(defaults_cfg.get("save_images"), "defaults.save_images")
+
+        log_level = _parse_optional_int(defaults_cfg.get("log_level"), "defaults.log_level")
+        if log_level is None:
+            log_level = 4
+
+        generic_chunk_size = _parse_optional_int(
+            generic_chunk_cfg.get("chunk_size"), "chunking.generic.chunk_size"
+        )
+        if generic_chunk_size is None or generic_chunk_size <= 0:
+            generic_chunk_size = 1000
+        generic_chunk_overlap = _parse_optional_int(
+            generic_chunk_cfg.get("chunk_overlap"), "chunking.generic.chunk_overlap"
+        )
+        if generic_chunk_overlap is None or generic_chunk_overlap < 0:
+            generic_chunk_overlap = 100
+
+        recursive_chunk_size = _parse_optional_int(
+            recursive_chunk_cfg.get("chunk_size"), "chunking.recursive.chunk_size"
+        )
+        if recursive_chunk_size is None or recursive_chunk_size <= 0:
+            recursive_chunk_size = 8192
+        recursive_chunk_overlap = _parse_optional_int(
+            recursive_chunk_cfg.get("chunk_overlap"), "chunking.recursive.chunk_overlap"
+        )
+        if recursive_chunk_overlap is None or recursive_chunk_overlap < 0:
+            recursive_chunk_overlap = 100
+        recursive_token_cap = _parse_optional_int(
+            recursive_chunk_cfg.get("token_chunk_size_cap"),
+            "chunking.recursive.token_chunk_size_cap",
+        )
+        if recursive_token_cap is None or recursive_token_cap <= 0:
+            recursive_token_cap = _RECURSIVE_CHUNK_SIZE_CAP
+        recursive_tokenizer_id = str(recursive_chunk_cfg.get("tokenizer_id") or "").strip() or None
+
+        hybrid_max_tokens = _parse_optional_int(
+            hybrid_chunk_cfg.get("max_tokens"), "chunking.hybrid.max_tokens"
+        )
+        if hybrid_max_tokens is None or hybrid_max_tokens <= 0:
+            hybrid_max_tokens = _DEFAULT_HYBRID_MAX_TOKENS
+        hybrid_merge_peers = _parse_optional_bool(
+            hybrid_chunk_cfg.get("merge_peers"), "chunking.hybrid.merge_peers"
+        )
+        if hybrid_merge_peers is None:
+            hybrid_merge_peers = True
+        hybrid_tokenizer_id = str(hybrid_chunk_cfg.get("tokenizer_id") or "").strip() or None
+
+        image_ocr_languages = image_loader_cfg.get("ocr_languages", ["kor", "eng"])
+        if isinstance(image_ocr_languages, (list, tuple, set)):
+            image_ocr_languages = [str(v).strip() for v in image_ocr_languages if str(v).strip()]
+        else:
+            image_ocr_languages = ["kor", "eng"]
+        if not image_ocr_languages:
+            image_ocr_languages = ["kor", "eng"]
+
+        tabular_sample_bytes = _parse_optional_int(
+            tabular_loader_cfg.get("encoding_detect_sample_bytes"),
+            "loaders.tabular.encoding_detect_sample_bytes",
+        )
+        if tabular_sample_bytes is None or tabular_sample_bytes <= 0:
+            tabular_sample_bytes = 10000
+
+        whisper_chunk_sec = _parse_optional_int(whisper_cfg.get("chunk_sec"), "whisper.chunk_sec")
+        if whisper_chunk_sec is None or whisper_chunk_sec <= 0:
+            whisper_chunk_sec = 29
+        whisper_chunk_overlap_ms = _parse_optional_int(
+            whisper_cfg.get("chunk_overlap_ms"), "whisper.chunk_overlap_ms"
+        )
+        if whisper_chunk_overlap_ms is None or whisper_chunk_overlap_ms < 0:
+            whisper_chunk_overlap_ms = 300
+        whisper_tmp_dir_prefix = str(
+            whisper_cfg.get("tmp_dir_prefix", "./tmp_audios_")
+        ).strip() or "./tmp_audios_"
+
+        self._default_kwargs = {
+            "log_level": log_level,
+            "chunker_type": chunker_type,
+            "use_pdf_sdk": True if use_pdf_sdk is None else use_pdf_sdk,
+            "use_hwp_sdk": True if use_hwp_sdk is None else use_hwp_sdk,
+            "dump_sdk_output": False if dump_sdk_output is None else dump_sdk_output,
+            "save_images": True if save_images is None else save_images,
+            "generic_chunk_size": generic_chunk_size,
+            "generic_chunk_overlap": generic_chunk_overlap,
+            "recursive_chunk_size": recursive_chunk_size,
+            "recursive_chunk_overlap": recursive_chunk_overlap,
+            "recursive_token_chunk_size_cap": recursive_token_cap,
+            "recursive_tokenizer_id": recursive_tokenizer_id,
+            "hybrid_max_tokens": hybrid_max_tokens,
+            "hybrid_merge_peers": hybrid_merge_peers,
+            "hybrid_tokenizer_id": hybrid_tokenizer_id,
+            "image_ocr_languages": image_ocr_languages,
+            "tabular_encoding_detect_sample_bytes": tabular_sample_bytes,
+            "whisper_url": str(
+                whisper_cfg.get("url", "http://192.168.74.164:30100/v1/audio/transcriptions")
+            ).strip() or "http://192.168.74.164:30100/v1/audio/transcriptions",
+            "whisper_model": str(whisper_cfg.get("model", "model")).strip() or "model",
+            "whisper_language": str(whisper_cfg.get("language", "ko")).strip() or "ko",
+            "whisper_response_format": str(
+                whisper_cfg.get("response_format", "json")
+            ).strip() or "json",
+            "whisper_temperature": str(whisper_cfg.get("temperature", "0")).strip() or "0",
+            "whisper_stream": str(whisper_cfg.get("stream", "false")).strip() or "false",
+            "whisper_timestamp_granularities": str(
+                whisper_cfg.get("timestamp_granularities", "word")
+            ).strip() or "word",
+            "whisper_chunk_sec": whisper_chunk_sec,
+            "whisper_chunk_overlap_ms": whisper_chunk_overlap_ms,
+            "whisper_tmp_dir_prefix": whisper_tmp_dir_prefix,
+        }
+
         self.page_chunk_counts = defaultdict(int)
         self.hwp_processor = HwpProcessor()
         self.docx_processor = DocxProcessor()
 
-    def get_loader(self, file_path: str, use_pdf_sdk: bool = True):
+    def _merge_runtime_kwargs(self, kwargs: dict) -> dict:
+        merged = dict(self._default_kwargs)
+        for k, v in kwargs.items():
+            if v is not None:
+                merged[k] = v
+        return merged
+
+    def get_loader(
+        self,
+        file_path: str,
+        use_pdf_sdk: bool = True,
+        image_ocr_languages: Optional[list[str]] = None,
+    ):
         ext = os.path.splitext(file_path)[-1].lower()
         real_type = self.get_real_file_type(file_path)
 
@@ -1357,10 +1625,16 @@ class DocumentProcessor:
             return UnstructuredPowerPointLoader(file_path)
         elif ext in ['.jpg', '.jpeg', '.png']:
             convert_to_pdf(file_path, use_pdf_sdk=use_pdf_sdk)
+            languages = image_ocr_languages or ["kor", "eng"]
+            if not isinstance(languages, list):
+                languages = [str(languages)]
+            languages = [str(lang).strip() for lang in languages if str(lang).strip()]
+            if not languages:
+                languages = ["kor", "eng"]
             # 한국어 OCR 지원을 위한 언어 설정
             return UnstructuredImageLoader(
                 file_path,
-                languages=["kor", "eng"],  # 한국어 + 영어 OCR
+                languages=languages,  # 한국어 + 영어 OCR
             )
         elif ext in ['.txt', '.json', '.md']:
             return TextLoader(file_path)
@@ -1417,7 +1691,11 @@ class DocumentProcessor:
         return pdf_path
 
     def load_documents(self, file_path: str, **kwargs: dict) -> list[Document]:
-        loader = self.get_loader(file_path, use_pdf_sdk=kwargs.get('use_pdf_sdk', True))
+        loader = self.get_loader(
+            file_path,
+            use_pdf_sdk=kwargs.get('use_pdf_sdk', True),
+            image_ocr_languages=kwargs.get("image_ocr_languages"),
+        )
         documents = loader.load()
 
         # 이미지 파일의 경우 텍스트 추출 안되었을 시 기본 텍스트 제공
@@ -1430,8 +1708,15 @@ class DocumentProcessor:
         return documents
 
     def split_documents(self, documents, **kwargs: dict) -> list[Document]:
-        chunk_size = kwargs.get('chunk_size', 1000)
-        chunk_overlap = kwargs.get('chunk_overlap', 100)
+        chunk_size = kwargs.get('chunk_size')
+        if chunk_size is None:
+            chunk_size = kwargs.get('generic_chunk_size', 1000)
+        chunk_overlap = kwargs.get('chunk_overlap')
+        if chunk_overlap is None:
+            chunk_overlap = kwargs.get('generic_chunk_overlap', 100)
+
+        chunk_size = max(int(chunk_size), 1)
+        chunk_overlap = max(int(chunk_overlap), 0)
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size,
                                                        chunk_overlap=chunk_overlap,)
         chunks = text_splitter.split_documents(documents)
@@ -1551,6 +1836,7 @@ class DocumentProcessor:
         logging.getLogger().setLevel(level)
 
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
+        kwargs = self._merge_runtime_kwargs(kwargs)
         self.setup_logging(kwargs.get('log_level', 4))
 
         _log.info(f"file_path: {file_path}")
@@ -1559,7 +1845,12 @@ class DocumentProcessor:
         ext = os.path.splitext(file_path)[-1].lower()
         if ext in ('.wav', '.mp3', '.m4a'):
             # Generate a temporal path saving audio chunks: the audio file is supposed to be splited to several chunks due to limitted length by the model
-            tmp_path = "./tmp_audios_{}".format(os.path.basename(file_path).split('.')[0])
+            file_stem = os.path.basename(file_path).split('.')[0]
+            tmp_prefix = str(kwargs.get("whisper_tmp_dir_prefix", "./tmp_audios_"))
+            if tmp_prefix.endswith("/"):
+                tmp_path = os.path.join(tmp_prefix, file_stem)
+            else:
+                tmp_path = f"{tmp_prefix}{file_stem}"
             if not os.path.exists(tmp_path):
                 os.makedirs(tmp_path)
 
@@ -1567,16 +1858,19 @@ class DocumentProcessor:
             # [!] Modify the request parameters to change a STT model to be used
             loader = AudioLoader(
                 file_path=file_path,
-                req_url="http://192.168.74.164:30100/v1/audio/transcriptions",
+                req_url=str(kwargs.get("whisper_url", "")),
                 req_data={
-                    'model': 'model',
-                    'language': 'ko',
-                    'response_format': 'json',
-                    'temperature': '0',
-                    'stream': 'false',
-                    'timestamp_granularities[]': 'word'
+                    'model': str(kwargs.get("whisper_model", "model")),
+                    'language': str(kwargs.get("whisper_language", "ko")),
+                    'response_format': str(kwargs.get("whisper_response_format", "json")),
+                    'temperature': str(kwargs.get("whisper_temperature", "0")),
+                    'stream': str(kwargs.get("whisper_stream", "false")),
+                    'timestamp_granularities[]': str(
+                        kwargs.get("whisper_timestamp_granularities", "word")
+                    ),
                 },
-                chunk_sec=29,  # length(sec) of a chunk from the uploaded audio
+                chunk_sec=int(kwargs.get("whisper_chunk_sec", 29)),
+                chunk_overlap_ms=int(kwargs.get("whisper_chunk_overlap_ms", 300)),
                 tmp_path=tmp_path
             )
             vectors = loader.return_vectormeta_format()
@@ -1589,7 +1883,13 @@ class DocumentProcessor:
             return vectors
 
         elif ext in ('.csv', '.xlsx'):
-            loader = TabularLoader(file_path, ext)
+            loader = TabularLoader(
+                file_path,
+                ext,
+                encoding_detect_sample_bytes=int(
+                    kwargs.get("tabular_encoding_detect_sample_bytes", 10000)
+                ),
+            )
             vectors = loader.return_vectormeta_format()
             return vectors
 

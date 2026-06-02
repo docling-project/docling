@@ -9,17 +9,26 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
+from PIL import Image
 
-from docling_core.types.doc import BoundingBox
+from docling_core.types.doc import (
+    BoundingBox,
+    DescriptionAnnotation,
+    DocItemLabel,
+    PictureItem,
+    ProvenanceItem,
+)
 from docling_core.types.doc.base import CoordOrigin
 from langchain_core.documents import Document
 
 from facade.parser_processor import (
     DocumentProcessor,
+    GenosServiceException,
     GenericDocumentLoader,
     IntelligentDocumentProcessor,
     TabularLoader,
 )
+from docling.prompts.prompt_manager import LLMApiError
 
 
 # ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -35,6 +44,7 @@ def dp():
     proc._whisper_url = ""
     proc._whisper_req_data = {}
     proc._whisper_chunk_sec = 29
+    proc._log_level = 4  # __call__ 이 setup_logging 에서 참조 (정상 __init__ 우회 보강)
     return proc
 
 
@@ -61,6 +71,23 @@ def _make_text_item(text="hello", label="paragraph", page_no=1, has_prov=True, l
     item.text = text
     item.level = level  # needed when label == "section_header"
     return item
+
+
+def _make_picture_item(page_no=1, annotations=None):
+    return PictureItem(
+        self_ref="#/pictures/0",
+        parent=None,
+        children=[],
+        label=DocItemLabel.PICTURE,
+        prov=[
+            ProvenanceItem(
+                page_no=page_no,
+                bbox=BoundingBox(l=10, t=20, r=90, b=80, coord_origin=CoordOrigin.TOPLEFT),
+                charspan=(0, 0),
+            )
+        ],
+        annotations=annotations or [],
+    )
 
 
 def _make_mock_doc(items, num_pages=1):
@@ -265,6 +292,20 @@ class TestDoclingToParseFormat:
         result = DocumentProcessor._docling_to_parse_format(doc)
         assert result["elements"][0]["category"] == "section_header"
 
+    def test_picture_annotation_is_mapped_to_content(self):
+        picture = _make_picture_item(
+            annotations=[
+                DescriptionAnnotation(
+                    text="문맥 기반 이미지 설명",
+                    provenance="facade_image_description",
+                )
+            ]
+        )
+        doc = _make_mock_doc([picture])
+        element = DocumentProcessor._docling_to_parse_format(doc)["elements"][0]
+        assert element["category"] == "picture"
+        assert element["content"] == "문맥 기반 이미지 설명"
+
 
 # ─── DocumentProcessor.__call__ routing ──────────────────────────────────────
 
@@ -347,6 +388,114 @@ class TestCheckGlyphText:
 
     def test_none_returns_false(self, intel):
         assert intel.check_glyph_text(None) is False
+
+
+@pytest.mark.unit
+class TestEnrichImageDescriptions:
+    def _make_intel(self, enabled=True):
+        intel = object.__new__(IntelligentDocumentProcessor)
+        intel.image_description_enabled = enabled
+        intel.image_description_api_url = "http://example.com/v1/chat/completions"
+        intel.image_description_api_key = "secret"
+        intel.image_description_model = "mock-model"
+        intel.image_description_timeout = 10.0
+        intel.image_description_concurrency = 1
+        intel.image_description_before_items = 2
+        intel.image_description_after_items = 2
+        intel.image_description_max_context_chars = 1500
+        intel.image_description_include_caption = False
+        intel.image_description_include_section_header = False
+        intel.image_description_same_page_first = True
+        intel.image_description_headers = {}
+        intel.image_description_params = {}
+        intel.image_description_provenance = "facade_image_description"
+        intel.image_description_prompt_template = (
+            "[앞 문맥]\\n{before_context}\\n[캡션]\\n{caption}\\n[뒤 문맥]\\n{after_context}"
+        )
+        return intel
+
+    def test_disabled_option_skips_image_description_api_call(self):
+        intel = self._make_intel(enabled=False)
+        doc = MagicMock()
+        doc.iterate_items.return_value = []
+
+        with patch("facade.parser_processor.api_image_request") as mock_api:
+            result = intel.enrich_image_descriptions(doc)
+
+        assert result is doc
+        mock_api.assert_not_called()
+
+    def test_enrichment_adds_description_annotation_with_context(self):
+        intel = self._make_intel(enabled=True)
+        before_item = _make_text_item(text="앞 문단 텍스트", page_no=1)
+        picture_item = _make_picture_item(page_no=1)
+        after_item = _make_text_item(text="뒤 문단 텍스트", page_no=1)
+        doc = _make_mock_doc([before_item, picture_item, after_item])
+
+        with patch.object(
+            PictureItem,
+            "get_image",
+            return_value=Image.new("RGB", (8, 8), color="white"),
+        ), patch(
+            "facade.parser_processor.api_image_request",
+            return_value="문맥 기반 설명 결과",
+        ) as mock_api:
+            result = intel.enrich_image_descriptions(doc)
+
+        assert result is doc
+        descriptions = [
+            ann
+            for ann in picture_item.annotations
+            if isinstance(ann, DescriptionAnnotation)
+        ]
+        assert descriptions
+        assert descriptions[0].text == "문맥 기반 설명 결과"
+        assert descriptions[0].provenance == "facade_image_description"
+
+        prompt = mock_api.call_args.kwargs["prompt"]
+        assert "앞 문단 텍스트" in prompt
+        assert "뒤 문단 텍스트" in prompt
+
+    def test_enrichment_vlm_unreachable_is_ignored(self):
+        intel = self._make_intel(enabled=True)
+        before_item = _make_text_item(text="앞 문단 텍스트", page_no=1)
+        picture_item = _make_picture_item(page_no=1)
+        after_item = _make_text_item(text="뒤 문단 텍스트", page_no=1)
+        doc = _make_mock_doc([before_item, picture_item, after_item])
+
+        with patch.object(
+            PictureItem,
+            "get_image",
+            return_value=Image.new("RGB", (8, 8), color="white"),
+        ), patch(
+            "facade.parser_processor.api_image_request",
+            side_effect=RuntimeError("VLM endpoint is unreachable"),
+        ):
+            result = intel.enrich_image_descriptions(doc)
+
+        assert result is doc
+        descriptions = [
+            ann
+            for ann in picture_item.annotations
+            if isinstance(ann, DescriptionAnnotation)
+        ]
+        assert descriptions == []
+
+
+@pytest.mark.unit
+def test_enrichment_provider_error_is_rethrown_as_genos_exception(intel):
+    raw_error = """{"object":"error","message":"This model's maximum context length is 16384 tokens.","type":"BadRequestError","param":null,"code":400}"""
+    intel.enrichment_options = MagicMock()
+    dummy_doc = MagicMock()
+
+    with patch(
+        "facade.parser_processor.enrich_document",
+        side_effect=LLMApiError(raw_error, status_code=400),
+    ):
+        with pytest.raises(GenosServiceException) as exc_info:
+            intel.enrichment(dummy_doc)
+
+    assert exc_info.value.error_msg == raw_error
 
 
 # ─── _normalize_output_format ────────────────────────────────────────────────

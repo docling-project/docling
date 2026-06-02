@@ -15,6 +15,7 @@ dependencies = [
     "starlette>=0.52.1",
     "aiofiles==24.1.0",
     "aiohttp==3.13.3",
+    "httpx>=0.27.0",
     "transformers==4.57.6",
     "accelerate==1.12.0",
     "unstructured==0.18.32",

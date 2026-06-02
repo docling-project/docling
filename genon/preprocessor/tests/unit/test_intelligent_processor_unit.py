@@ -276,3 +276,84 @@ class TestIntelligentProcessor:
         # page_chunk_counts가 defaultdict인지 확인
         from collections import defaultdict
         assert isinstance(processor.page_chunk_counts, defaultdict), "page_chunk_counts should be defaultdict"
+
+    @pytest.mark.unit
+    def test_enrichment_options_precheck_defaults(self, processor):
+        """DataEnrichmentOptions에 precheck 필드가 False 기본값으로 설정되어 있는지 확인"""
+        opts = processor.enrichment_options
+        assert opts.toc_precheck_enabled is False
+        assert opts.toc_max_context_tokens == 128000
+        assert opts.toc_completion_reserved_tokens == 12000
+        assert opts.metadata_precheck_enabled is False
+        assert opts.metadata_max_context_tokens == 128000
+        assert opts.metadata_completion_reserved_tokens == 12000
+
+    @pytest.mark.unit
+    def test_metadata_field_transforms_default_when_yaml_omits_it(self, processor):
+        """yaml 에 field_transforms 가 없으면 DEFAULT 가 적용되는지 (벡터 합성 created_date 동작 보존)."""
+        from facade.enrichment.field_transforms import DEFAULT_METADATA_FIELD_TRANSFORMS
+        assert processor._metadata_field_transforms == DEFAULT_METADATA_FIELD_TRANSFORMS
+
+    @pytest.mark.unit
+    def test_enrichers_wired_from_config(self, processor):
+        """enrichment 설정으로부터 enricher 들이 정상 연결되는지 (네트워크 호출 없음)."""
+        # 배포 dev 설정에 metadata.system_prompt 가 있으므로 커스텀 metadata enricher 가 생성된다.
+        assert processor.metadata_enricher is not None
+        # 커스텀 metadata enricher 사용 시 docling 내장 metadata 추출은 비활성화된다.
+        assert processor.enrichment_options.extract_metadata is False
+        assert isinstance(processor.custom_fields_enrichers, list)
+
+
+@pytest.mark.unit
+def test_intelligent_enrichment_llm_error_is_rethrown_as_genos_exception():
+    """intelligent_processor.enrichment()에서 LLMApiError가 GenosServiceException으로 래핑되는지 확인"""
+    from unittest.mock import MagicMock, patch
+    from facade.intelligent_processor import DocumentProcessor, GenosServiceException
+    from docling.prompts.prompt_manager import LLMApiError
+
+    proc = object.__new__(DocumentProcessor)
+    proc.enrichment_options = MagicMock()
+    raw_error = '{"object":"error","message":"context exceeded","type":"BadRequestError","param":"prompt","code":400}'
+
+    with patch(
+        "facade.intelligent_processor.enrich_document",
+        side_effect=LLMApiError(raw_error, status_code=400),
+    ):
+        with pytest.raises(GenosServiceException) as exc_info:
+            proc.enrichment(MagicMock())
+
+    assert exc_info.value.error_msg == raw_error
+
+
+# ── metadata field_transforms 일반화 테스트 ──────────────────────────────────
+
+@pytest.mark.unit
+def test_metadata_config_parses_field_transforms():
+    """enrichment 설정에서 field_transforms 가 list/dict 두 포맷 모두 파싱되고,
+    미지정 시 빈 list 로 기본화되는지 확인."""
+    from pathlib import Path
+    from facade.enrichment.enrichment_config import EnrichmentConfig
+
+    transforms = [{"source": ["doc_date"], "target": "created_date", "type": "date_int"}]
+
+    # Format B (list)
+    ec_list = EnrichmentConfig.from_raw(
+        [{"metadata": {"enable": True, "system_prompt": "x",
+                       "output_fields": ["doc_date"], "field_transforms": transforms}}],
+        Path("."),
+    )
+    assert ec_list.metadata.field_transforms == transforms
+
+    # Format A (dict)
+    ec_dict = EnrichmentConfig.from_raw(
+        {"metadata": {"system_prompt": "x", "field_transforms": transforms}},
+        Path("."), parent_cfg={},
+    )
+    assert ec_dict.metadata.field_transforms == transforms
+
+    # 미지정 → 빈 list
+    ec_default = EnrichmentConfig.from_raw(
+        [{"metadata": {"enable": True, "system_prompt": "x", "output_fields": ["created_date"]}}],
+        Path("."),
+    )
+    assert ec_default.metadata.field_transforms == []

@@ -14,6 +14,7 @@ from docling_core.types.doc.document import (
     GraphData, GraphCell, GraphCellLabel, ListItem
 )
 from docling.prompts import PromptManager
+from docling.prompts.prompt_manager import LLMApiError
 from docling.datamodel.pipeline_options import DataEnrichmentOptions
 
 from collections import Counter
@@ -105,7 +106,10 @@ class DocumentEnrichmentUtils:
         if (self.enrichment_options.toc_api_provider or
             self.enrichment_options.toc_api_key or
             self.enrichment_options.toc_api_base_url or
-            self.enrichment_options.toc_model):
+            self.enrichment_options.toc_model or
+            self.enrichment_options.toc_precheck_enabled is not None or
+            self.enrichment_options.toc_max_context_tokens is not None or
+            self.enrichment_options.toc_completion_reserved_tokens is not None):
 
             toc_config = {}
             toc_config["provider"] = self.enrichment_options.toc_api_provider or "openrouter"
@@ -124,6 +128,14 @@ class DocumentEnrichmentUtils:
                 toc_config["seed"] = self.enrichment_options.toc_seed
             if self.enrichment_options.toc_max_tokens is not None:
                 toc_config["max_tokens"] = self.enrichment_options.toc_max_tokens
+            if self.enrichment_options.toc_precheck_enabled is not None:
+                toc_config["precheck_enabled"] = self.enrichment_options.toc_precheck_enabled
+            if self.enrichment_options.toc_max_context_tokens is not None:
+                toc_config["max_context_tokens"] = self.enrichment_options.toc_max_context_tokens
+            if self.enrichment_options.toc_completion_reserved_tokens is not None:
+                toc_config["completion_reserved_tokens"] = (
+                    self.enrichment_options.toc_completion_reserved_tokens
+                )
 
             custom_api_configs["toc_extraction"] = toc_config
 
@@ -131,7 +143,10 @@ class DocumentEnrichmentUtils:
         if (self.enrichment_options.metadata_api_provider or
             self.enrichment_options.metadata_api_key or
             self.enrichment_options.metadata_api_base_url or
-            self.enrichment_options.metadata_model):
+            self.enrichment_options.metadata_model or
+            self.enrichment_options.metadata_precheck_enabled is not None or
+            self.enrichment_options.metadata_max_context_tokens is not None or
+            self.enrichment_options.metadata_completion_reserved_tokens is not None):
 
             metadata_config = {}
             metadata_config["provider"] = self.enrichment_options.metadata_api_provider or "openrouter"
@@ -150,6 +165,16 @@ class DocumentEnrichmentUtils:
                 metadata_config["seed"] = self.enrichment_options.metadata_seed
             if self.enrichment_options.metadata_max_tokens is not None:
                 metadata_config["max_tokens"] = self.enrichment_options.metadata_max_tokens
+            if self.enrichment_options.metadata_precheck_enabled is not None:
+                metadata_config["precheck_enabled"] = self.enrichment_options.metadata_precheck_enabled
+            if self.enrichment_options.metadata_max_context_tokens is not None:
+                metadata_config["max_context_tokens"] = (
+                    self.enrichment_options.metadata_max_context_tokens
+                )
+            if self.enrichment_options.metadata_completion_reserved_tokens is not None:
+                metadata_config["completion_reserved_tokens"] = (
+                    self.enrichment_options.metadata_completion_reserved_tokens
+                )
 
             custom_api_configs["metadata_extraction"] = metadata_config
             custom_api_configs["document_checking"] = metadata_config # 문서 품질 검사도 같은 설정 사용
@@ -185,6 +210,7 @@ class DocumentEnrichmentUtils:
                 prompt_type="korean_document",
                 custom_system=custom_system,
                 custom_user=custom_user,
+                raise_on_error=True,
                 raw_text=raw_text
             )
 
@@ -199,6 +225,8 @@ class DocumentEnrichmentUtils:
                 _log.warning("TOC 생성 실패")
                 return 0
 
+        except LLMApiError:
+            raise
         except Exception as e:
             _log.error(f"TOC 추출 중 오류 발생: {str(e)}")
             return 0
@@ -341,6 +369,7 @@ class DocumentEnrichmentUtils:
                 prompt_type="law_document",
                 custom_system=custom_system,
                 custom_user=custom_user,
+                raise_on_error=True,
                 raw_text=raw_text
             )
 
@@ -375,6 +404,8 @@ class DocumentEnrichmentUtils:
                 _log.warning("TOC 생성 실패")
                 return 0
 
+        except LLMApiError:
+            raise
         except Exception as e:
             _log.error(f"TOC 추출 중 오류 발생: {str(e)}")
             return 0
@@ -438,6 +469,8 @@ class DocumentEnrichmentUtils:
             else:
                 return False
 
+        except LLMApiError:
+            raise
         except Exception as e:
             _log.error(f"메타데이터 추출 중 오류 발생: {str(e)}")
             return False
@@ -1029,6 +1062,7 @@ class DocumentEnrichmentUtils:
                 prompt_type="korean_financial",
                 custom_system=custom_system,
                 custom_user=custom_user,
+                raise_on_error=True,
                 document_content=document_content
             )
 
@@ -1052,6 +1086,8 @@ class DocumentEnrichmentUtils:
                 except:
                     return {"작성일": None, "작성자": []}
 
+        except LLMApiError:
+            raise
         except Exception as e:
             _log.error(f"메타데이터 추출 중 오류 발생: {str(e)}")
             return {"작성일": None, "작성자": []}
@@ -1090,6 +1126,7 @@ class DocumentEnrichmentUtils:
                 prompt_type="korean_financial_date",
                 custom_system=custom_system,
                 custom_user=custom_user,
+                raise_on_error=True,
                 document_content=document_content
             )
 
@@ -1111,6 +1148,8 @@ class DocumentEnrichmentUtils:
                 except:
                     return {"작성일": None, "작성자": []}
 
+        except LLMApiError:
+            raise
         except Exception as e:
             _log.error(f"메타데이터 추출 중 오류 발생: {str(e)}")
             return {"작성일": None, "작성자": []}
@@ -1156,6 +1195,8 @@ def enrich_document(document: DoclingDocument, enrichment_options: DataEnrichmen
 
         return enriched_doc
 
+    except LLMApiError:
+        raise
     except Exception as e:
         _log.error(f"Document enrichment 중 오류 발생: {str(e)}")
         # 실패 시 원본 반환
