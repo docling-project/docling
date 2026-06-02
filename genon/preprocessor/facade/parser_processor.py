@@ -1,3 +1,4 @@
+# 파싱용 전처리기 v.2.2.0 (2026-06-02 Release)
 from __future__ import annotations
 
 import base64
