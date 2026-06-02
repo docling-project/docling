@@ -56,7 +56,9 @@ def _resolve_metrics_files(input_file: Path) -> list[tuple[str, Path]]:
             continue
         thread_count = run.get("threads")
         label = (
-            f"threads={thread_count}" if isinstance(thread_count, int) else f"run {index}"
+            f"threads={thread_count}"
+            if isinstance(thread_count, int)
+            else f"run {index}"
         )
         metrics_path = Path(metrics_file)
         if not metrics_path.is_absolute():
@@ -152,9 +154,13 @@ def main() -> None:
 
     fig, ax = plt.subplots(1, 1, figsize=(12, 6))
 
-    for label, total_pages, loaded_metrics, _after_metrics, _doc_boundaries in (
-        loaded_runs
-    ):
+    for (
+        label,
+        total_pages,
+        loaded_metrics,
+        _after_metrics,
+        _doc_boundaries,
+    ) in loaded_runs:
         point_count = min(
             [len(total_pages)] + [len(values) for values in loaded_metrics.values()]
         )

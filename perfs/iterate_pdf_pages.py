@@ -204,8 +204,7 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=None,
         help=(
-            "JSON summary report path. Default: "
-            "'iterate-pdf-pages-<mode>-report.json'."
+            "JSON summary report path. Default: 'iterate-pdf-pages-<mode>-report.json'."
         ),
     )
     return parser.parse_args()
@@ -918,7 +917,9 @@ def main() -> None:
         }
         runs.append(run_report)
         error_text = f" ({failed_pages} errors)" if failed_pages else ""
-        print(f"  threads={thread_count}: {elapsed_seconds:.3f}s{error_text}", flush=True)
+        print(
+            f"  threads={thread_count}: {elapsed_seconds:.3f}s{error_text}", flush=True
+        )
 
     report = {
         "glob": args.glob,
