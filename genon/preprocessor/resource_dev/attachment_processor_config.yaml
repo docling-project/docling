@@ -1,0 +1,65 @@
+# attachment_processor 기본 설정
+# DocumentProcessor() 무인자 호출 시 이 파일을 우선 로드한다.
+
+defaults:
+  # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
+  log_level: 4
+
+  # hwp/docx 분기 기본 청커: "recursive" | "hybrid"
+  chunker_type: "recursive"
+
+  # 입력 포맷 자동 PDF 변환 엔진 선택
+  use_pdf_sdk: true
+
+  # hwp/hwpx 처리 시 기본 SDK 백엔드 사용 여부
+  use_hwp_sdk: true
+
+  # use_hwp_sdk=true 일 때만 유효한 SDK 출력 덤프
+  dump_sdk_output: false
+
+  # hwp/hwpx 처리 시 이미지 저장 여부
+  save_images: true
+
+chunking:
+  # pdf/txt/md/ppt 등 일반 텍스트 splitter 기본값
+  generic:
+    chunk_size: 1000
+    chunk_overlap: 100
+
+  # hwp/hwpx/docx + recursive 분기 기본값
+  recursive:
+    chunk_size: 8192
+    chunk_overlap: 100
+    # 임베딩 입력 안정성을 위한 토큰 절대 상한
+    token_chunk_size_cap: 60000
+    # 비우면 로컬 경로(/models/...) 우선, 없으면 HF ID fallback
+    tokenizer_id: ""
+
+  # hwp/hwpx/docx + hybrid 분기 기본값
+  hybrid:
+    tokenizer_id: ""
+    max_tokens: 1000000000000000000000000000000
+    merge_peers: true
+
+loaders:
+  image:
+    # 이미지 OCR 언어
+    ocr_languages: ["kor", "eng"]
+
+  tabular:
+    # CSV 인코딩 감지 시 샘플링 바이트 수
+    encoding_detect_sample_bytes: 10000
+
+# 음성 파일(.wav/.mp3/.m4a) 처리 기본값
+whisper:
+  url: "http://192.168.74.164:30100/v1/audio/transcriptions"
+  model: "model"
+  language: "ko"
+  response_format: "json"
+  temperature: "0"
+  stream: "false"
+  timestamp_granularities: "word"
+  chunk_sec: 29
+  chunk_overlap_ms: 300
+  # 끝에 / 를 주면 디렉터리로 간주해 내부에 파일명 기준 하위 폴더 생성
+  tmp_dir_prefix: "./tmp_audios_"

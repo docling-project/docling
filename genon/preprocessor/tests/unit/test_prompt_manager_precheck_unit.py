@@ -43,3 +43,30 @@ def test_prompt_precheck_blocks_before_api_call():
     assert "프롬프트 입력 토큰 (169000) 초과" in payload["message"]
     assert "(128000 - reserved 12000)." in payload["message"]
 
+
+@pytest.mark.unit
+def test_format_user_prompt_supports_double_brace_raw_text_alias():
+    pm = PromptManager()
+
+    rendered = pm.format_user_prompt(
+        category="toc_extraction",
+        prompt_type="korean_document",
+        custom_user="문서:\n{{raw_text}}",
+        raw_text="샘플 본문",
+    )
+
+    assert rendered == "문서:\n샘플 본문"
+
+
+@pytest.mark.unit
+def test_format_user_prompt_keeps_other_escaped_braces():
+    pm = PromptManager()
+
+    rendered = pm.format_user_prompt(
+        category="toc_extraction",
+        prompt_type="korean_document",
+        custom_user='JSON 예시: {{"key":"value"}}\n문서: {{raw_text}}',
+        raw_text="본문",
+    )
+
+    assert rendered == 'JSON 예시: {"key":"value"}\n문서: 본문'
