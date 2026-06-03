@@ -266,9 +266,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             The list group to use (either reused or newly created).
         """
         if self._can_reuse_list_group(numid, parent):
+            # When reusing a list group, remove any empty text item that was added
+            # between the last list item and this one (from closing the list)
+            if doc.texts and len(doc.texts) > 0:
+                last_text = doc.texts[-1]
+                if not last_text.text or not last_text.text.strip():
+                    doc.delete_items(node_items=[last_text])
             return self.last_list_group
 
-        # Create new list group
         list_gr = doc.add_list_group(
             name="list",
             parent=parent,
@@ -318,7 +323,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.history = saved_history
             self.level_at_new_list = saved_level_at_new_list
             self.parents = saved_parents
-            # Restore list group cache
             self.last_list_group = saved_last_list_group
             self.last_list_group_numid = saved_last_list_group_numid
             self.last_list_group_parent = saved_last_list_group_parent
@@ -1360,7 +1364,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and self._prev_numid() is not None
             and p_style_id not in ["Title", "Heading"]
         ):  # Close list
-            # Remember the last numid and list group before closing so we can continue
             self.last_numid = self._prev_numid()
             # Store the list group and its parent for potential reuse
             if self.level_at_new_list and self.level_at_new_list in self.parents:
@@ -1448,8 +1451,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
 
         else:
-            # Handle standard paragraph styles and any other text styles
-            # Text style names can have not only default values but user values too
             level = self._get_level()
             parent = self._create_or_reuse_parent(
                 doc=doc,
