@@ -1,6 +1,6 @@
 # Poetry
 
-By **Sarah Louisa Forten Purvis** .
+By **Sarah Louisa Forten Purvis**.
 
 <!-- image -->
 
@@ -10,13 +10,13 @@ The Standard Ebooks logo.
 
 <!-- image -->
 
-This ebook is the product of many hours of hard work by volunteers for [Standard Ebooks](https://standardebooks.org/) , and builds on the hard work of other literature lovers made possible by the public domain.
+This ebook is the product of many hours of hard work by volunteers for [Standard Ebooks](https://standardebooks.org/), and builds on the hard work of other literature lovers made possible by the public domain.
 
-This particular ebook is based on digital scans from the [Internet Archive](https://standardebooks.org/ebooks/sarah-louisa-forten-purvis/poetry#page-scans) .
+This particular ebook is based on digital scans from the [Internet Archive](https://standardebooks.org/ebooks/sarah-louisa-forten-purvis/poetry#page-scans).
 
-The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the [CC0 1.0 Universal Public Domain Dedication](https://creativecommons.org/publicdomain/zero/1.0/) . For full license information, see the [Uncopyright](uncopyright.xhtml) at the end of this ebook.
+The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the [CC0 1.0 Universal Public Domain Dedication](https://creativecommons.org/publicdomain/zero/1.0/). For full license information, see the [Uncopyright](uncopyright.xhtml) at the end of this ebook.
 
-Standard Ebooks is a volunteer-driven project that produces ebook editions of public domain literature using modern typography, technology, and editorial standards, and distributes them free of cost. You can download this and other ebooks carefully produced for true book lovers at [standardebooks.org](https://standardebooks.org/) .
+Standard Ebooks is a volunteer-driven project that produces ebook editions of public domain literature using modern typography, technology, and editorial standards, and distributes them free of cost. You can download this and other ebooks carefully produced for true book lovers at [standardebooks.org](https://standardebooks.org/).
 
 ## The Grave of the Slave
 
@@ -60,7 +60,7 @@ No arm is stretched to rescue, and to save.
 Oh! ye who boast of Freedom's sacred claims,
 Do ye not blush to see our galling chains;
 To hear that sounding word-"that all are free"-
-When thousands groan in hopeless *slavery* ?
+When thousands groan in hopeless *slavery*?
 
 Upon your land it is a cruel stain-
 Freedom, what art thou?-nothing but a name.
@@ -152,7 +152,7 @@ A cloud of error, doubt and fear,
 O'er him is ever hovering near;
 And sad and hard his lot must be,
 To know that he can ne'er be free;
-To feel that *his* is doomed to be
+To feel that*his* is doomed to be
 A life, and death, of slavery.
 But will not justice soon arise,
 And plead the cause of the despised?
@@ -200,7 +200,7 @@ This bursting heart relief?
 
 There's nothing left for me to love
 This earth holds nothing dear,
-Since *he* , my sweet-my gentle one,
+Since*he*, my sweet-my gentle one,
 Is now no longer here.
 
 My poor fond heart had counted on
@@ -311,12 +311,12 @@ Unhonored and unnamed.
 Oh! speak not of heathenish darkness again,
 Nor tell me of lands held in error's dread chain!
 Where-where is the nation so erring as we,
-Who claim the proud name of the " **home of the free** "!
+Who claim the proud name of the "**home of the free** "!
 What a throb do the lov'd ties of country awake
 In the heart of the exile!-for time cannot break
 The sweet vision of home, and all he loved well,
 Which has thrown o'er his pathway a magical spell.
-Can the name of " **my country** "-the deeds which we sing-
+Can the name of "**my country** "-the deeds which we sing-
 Be honored-revered-'midst pollution and sin?
 Can the names of our fathers who perished in fight,
 Be hallowed in story, midst slavery's blight?
@@ -463,21 +463,21 @@ The Standard Ebooks logo.
 
 <!-- image -->
 
-*Poetry* was compiled from poems published between 1831 and 1836 by [Sarah Louisa Forten Purvis](https://en.wikipedia.org/wiki/Sarah_Louisa_Forten_Purvis) .
+*Poetry* was compiled from poems published between 1831 and 1836 by [Sarah Louisa Forten Purvis](https://en.wikipedia.org/wiki/Sarah_Louisa_Forten_Purvis).
 
-This ebook was transcribed and produced for [Standard Ebooks](https://standardebooks.org/) by [Weijia Cheng](https://weijiarhymeswith.asia/) ,
-and is based on digital scans from the [Internet Archive](https://standardebooks.org/ebooks/sarah-louisa-forten-purvis/poetry#page-scans) .
+This ebook was transcribed and produced for [Standard Ebooks](https://standardebooks.org/) by [Weijia Cheng](https://weijiarhymeswith.asia/),
+and is based on digital scans from the [Internet Archive](https://standardebooks.org/ebooks/sarah-louisa-forten-purvis/poetry#page-scans).
 
-The cover page is adapted from *Sunday Morning* ,
-a painting completed in 1877 by [Thomas Waterman Wood](https://en.wikipedia.org/wiki/Thomas_Waterman_Wood) .
-The cover and title pages feature the **League Spartan** and **Sorts Mill Goudy** typefaces created in 2014 and 2009 by [The League of Moveable Type](https://www.theleagueofmoveabletype.com/) .
+The cover page is adapted from *Sunday Morning*,
+a painting completed in 1877 by [Thomas Waterman Wood](https://en.wikipedia.org/wiki/Thomas_Waterman_Wood).
+The cover and title pages feature the **League Spartan** and **Sorts Mill Goudy** typefaces created in 2014 and 2009 by [The League of Moveable Type](https://www.theleagueofmoveabletype.com/).
 
-This edition was released on **May 21, 2026, 6:29 p.m.** and is based on **revision 936122b** .
+This edition was released on **May 21, 2026, 6:29 p.m.** and is based on **revision 936122b**.
 The first edition of this ebook was released on
 December 6, 2023, 8:52 p.m.
-You can check for updates to this ebook, view its revision history, or download it for different ereading systems at [standardebooks.org/ebooks/sarah-louisa-forten-purvis/poetry](https://standardebooks.org/ebooks/sarah-louisa-forten-purvis/poetry) .
+You can check for updates to this ebook, view its revision history, or download it for different ereading systems at [standardebooks.org/ebooks/sarah-louisa-forten-purvis/poetry](https://standardebooks.org/ebooks/sarah-louisa-forten-purvis/poetry).
 
-The volunteer-driven Standard Ebooks project relies on readers like you to submit typos, corrections, and other improvements. Anyone can contribute at [standardebooks.org](https://standardebooks.org/) .
+The volunteer-driven Standard Ebooks project relies on readers like you to submit typos, corrections, and other improvements. Anyone can contribute at [standardebooks.org](https://standardebooks.org/).
 
 ## Uncopyright
 
@@ -489,4 +489,4 @@ Copyright pages exist to tell you that you *can't* do something. Unlike them, th
 
 Copyright laws are different all over the world, and the source text or artwork in this ebook may still be copyrighted in other countries. If you're not located in the United States, you must check your local laws before using this ebook. Standard Ebooks makes no representations regarding the copyright status of the source text or artwork in this ebook in any country other than the United States.
 
-Non-authorship activities performed on items that are in the public domain-so-called "sweat of the brow" work-don't create a new copyright. That means that nobody can claim a new copyright on an item that is in the public domain for, among other things, work like digitization, markup, or typography. Regardless, the contributors to this ebook release their contributions under the terms in the [CC0 1.0 Universal Public Domain Dedication](https://creativecommons.org/publicdomain/zero/1.0/) , thus dedicating to the worldwide public domain all of the work they've done on this ebook, including but not limited to metadata, the titlepage, imprint, colophon, this Uncopyright, and any changes or enhancements to, or markup on, the original text and artwork. This dedication doesn't change the copyright status of the source text or artwork. We make this dedication in the interest of enriching our global cultural heritage, to promote free and libre culture around the world, and to give back to the unrestricted culture that has given all of us so much.
+Non-authorship activities performed on items that are in the public domain-so-called "sweat of the brow" work-don't create a new copyright. That means that nobody can claim a new copyright on an item that is in the public domain for, among other things, work like digitization, markup, or typography. Regardless, the contributors to this ebook release their contributions under the terms in the [CC0 1.0 Universal Public Domain Dedication](https://creativecommons.org/publicdomain/zero/1.0/), thus dedicating to the worldwide public domain all of the work they've done on this ebook, including but not limited to metadata, the titlepage, imprint, colophon, this Uncopyright, and any changes or enhancements to, or markup on, the original text and artwork. This dedication doesn't change the copyright status of the source text or artwork. We make this dedication in the interest of enriching our global cultural heritage, to promote free and libre culture around the world, and to give back to the unrestricted culture that has given all of us so much.

@@ -228,6 +228,7 @@ tables:
         text: data b
     num_cols: 2
     num_rows: 2
+    orientation: rot_0
     table_cells:
     - col_span: 1
       column_header: true

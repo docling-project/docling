@@ -2,7 +2,7 @@
 
 | Column A | Column B |
 | - | - |
-| This is a list:  - A First - A Second - A Third | This is a formatted list:  - B  **First** - B  *Second* - B  Third |
+| This is a list:  - A First - A Second - A Third | This is a formatted list:  - B **First** - B *Second* - B Third |
 | First Paragraph  Second Paragraph  Third paragraph before a numbered list  1. Number one 2. Number two 3. Number three | This is simple text with bold, strikethrough and italic formatting with x2 and H2O |
 | This is a paragraph  This is another paragraph |  |
 
@@ -15,7 +15,7 @@ Before table
 | Simple cell upper left | Simple cell with bold and italic text |
 | A B C Cell 1 Cell 2 Cell 3 | Rich cell A nested table  A B C Cell 1 Cell 2 Cell 3 |
 
-After table with  **bold** underline ~~strikethrough~~ *italic*
+After table with **bold** underline ~~strikethrough~~ *italic*
 
 ### Table with pictures
 

@@ -142,6 +142,6 @@ Content-Type: text/html; charset="utf-8"
 
     markdown = backend.convert().export_to_markdown()
 
-    assert "Hello **Bob** ," in markdown
+    assert "Hello **Bob**," in markdown
     assert "This is HTML." in markdown
     assert "<strong>" not in markdown

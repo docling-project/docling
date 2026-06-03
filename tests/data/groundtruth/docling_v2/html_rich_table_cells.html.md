@@ -4,7 +4,7 @@
 | - | - | - |
 | Wood Duck |  | Often seen near ponds. |
 | Mallard | Ponds, lakes, rivers | Quack |
-| Goose (not a duck!) | Water & wetlands | **Large** , *loud* , noisy , ~~small~~ |
+| Goose (not a duck!) | Water & wetlands | **Large**, *loud*, noisy, ~~small~~ |
 | Teal | - Pond - Marsh - Riverbank | 1. Fly south in winter 2. Build nest on ground |
 
 | Genus | Species |
