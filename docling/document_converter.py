@@ -662,6 +662,7 @@ class DocumentConverter:
     def _execute_pipeline(
         self, in_doc: InputDocument, raises_on_error: bool
     ) -> ConversionResult:
+        _log.info("Starting conversion of document %s.", in_doc.file.name)
         if in_doc.valid:
             pipeline = self._get_pipeline(in_doc.format)
             if pipeline is not None:
