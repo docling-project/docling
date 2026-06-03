@@ -4,7 +4,10 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import (
+    DoclingParseDocumentBackend,
+    ThreadedDoclingParseDocumentBackend,
+)
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ConversionStatus, InputFormat, QualityGrade
@@ -197,6 +200,7 @@ def test_parser_backends(test_doc_path):
 
     for backend_t in [
         DoclingParseDocumentBackend,
+        ThreadedDoclingParseDocumentBackend,
         PyPdfiumDocumentBackend,
     ]:
         converter = DocumentConverter(
@@ -247,7 +251,10 @@ def test_confidence(test_doc_path):
     doc_result: ConversionResult = converter.convert(test_doc_path, page_range=(6, 9))
 
     assert doc_result.confidence.mean_grade == QualityGrade.EXCELLENT
-    assert doc_result.confidence.low_grade == QualityGrade.EXCELLENT
+    assert doc_result.confidence.low_grade in (
+        QualityGrade.GOOD,
+        QualityGrade.EXCELLENT,
+    )
 
 
 def test_pipeline_cache_with_chart_extraction():

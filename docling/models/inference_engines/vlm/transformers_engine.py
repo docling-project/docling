@@ -50,6 +50,12 @@ if TYPE_CHECKING:
 _log = logging.getLogger(__name__)
 
 
+def _coerce_transformers_model_type(value: Any) -> TransformersModelType:
+    if isinstance(value, TransformersModelType):
+        return value
+    return TransformersModelType(value)
+
+
 class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
     """HuggingFace Transformers engine for VLM inference.
 
@@ -116,6 +122,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
                 "transformers_model_type",
                 TransformersModelType.AUTOMODEL,
             )
+            model_type = _coerce_transformers_model_type(model_type)
 
             _log.info(
                 f"Loading model {repo_id} (revision: {revision}, "

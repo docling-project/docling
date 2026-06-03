@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from docling_core.types.doc.page import SegmentedPage
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import ConversionStatus, Page
 from docling.datamodel.document import ConversionResult
@@ -50,6 +51,17 @@ from docling.pipeline.standard_pdf_pipeline import (
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 _log = logging.getLogger(__name__)
+
+
+def _raise_if_unsupported_threaded_backend(
+    backend: AbstractDocumentBackend, pipeline_name: str
+) -> None:
+    if isinstance(backend, ThreadedDoclingParseDocumentBackend):
+        raise RuntimeError(
+            f"{pipeline_name} does not support ThreadedDoclingParseDocumentBackend yet. "
+            "It still requires ordered/random page access via load_page() and cannot "
+            "consume iterator-only or out-of-order page delivery. Use StandardPdfPipeline instead."
+        )
 
 
 class ThreadedLayoutVlmPipeline(BasePipeline):
@@ -225,9 +237,10 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
 
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         """Build document using threaded layout+VLM pipeline."""
-        run_id = next(self._run_seq)
         assert isinstance(conv_res.input._backend, PdfDocumentBackend)
         backend = conv_res.input._backend
+        _raise_if_unsupported_threaded_backend(backend, self.__class__.__name__)
+        run_id = next(self._run_seq)
 
         # Initialize pages
         start_page, end_page = conv_res.input.limits.page_range
