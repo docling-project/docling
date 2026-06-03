@@ -1,20 +1,19 @@
 # %% [markdown]
-# Batch convert multiple PDF files and export results in several formats with Docling Serve.
+# Batch convert multiple PDF files and export results in several formats with Docling or Docling Serve.
 
 # What this example does
 # - Loads a small set of sample PDFs.
-# - Runs the Docling Serve PDF pipeline once per file.
+# - Runs the Docling PDF pipeline once per file.
 # - Writes outputs to `scratch/` in multiple formats (JSON, HTML, Markdown, text, doctags, YAML).
 
 # Prerequisites
-# - Install Docling, Docling Serve and dependencies as described in the repository README.
-# - Ensure you can import `docling.service_client` from your Python environment.
+# - Install Docling or Docling Serve and dependencies as described in the repository README.
+# - Ensure you can import `docling` from your Python environment.
 # <!-- YAML export requires `PyYAML` (`pip install pyyaml`). -->
 
 # Input documents
 # - Default set of sample PDFs.
-# - Update `input_doc_paths` to a desired list of file URLs.
-# - All input sources must start with `http://` or `https://`.
+# - Update `input_doc_paths` to a desired list of file paths.
 
 # Output formats (controlled by flags)
 # - `USE_V2 = True` enables the current Docling document exports (recommended).
@@ -37,10 +36,12 @@ from pathlib import Path
 import yaml
 from docling_core.types.doc.base import ImageRefMode
 
-from docling.datamodel.base_models import ConversionStatus
+from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.datamodel.pipeline_options import PdfBackend, PdfPipelineOptions
 from docling.datamodel.service.options import ConvertDocumentsOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.service_client import DoclingServiceClient
 
 _log = logging.getLogger(__name__)
@@ -157,56 +158,88 @@ def export_documents(
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    # Add your HTTP or HTTPS URLs here
-    input_doc_urls = [
-        "https://arxiv.org/pdf/1706.03762",
-        "https://arxiv.org/pdf/1103.0398",
-        "https://arxiv.org/pdf/2501.17887",
-        "https://arxiv.org/pdf/2408.09869",
+    # Location of sample PDFs used by this example. If your checkout does not
+    # include test data, change `data_folder` or point `input_doc_paths` to
+    # your own files.
+    data_folder = Path(__file__).parent / "../../tests/data"
+    input_doc_paths = [
+        data_folder / "pdf/2206.01062.pdf",
+        data_folder / "pdf/2203.01017v2.pdf",
+        data_folder / "pdf/2305.03393v1.pdf",
+        data_folder / "pdf/redp5110_sampled.pdf",
     ]
+
+    # buf = BytesIO((data_folder / "pdf/2206.01062.pdf").open("rb").read())
+    # docs = [DocumentStream(name="my_doc.pdf", stream=buf)]
+    # input = DocumentConversionInput.from_streams(docs)
+
+    # # Turn on inline debug visualizations:
+    # settings.debug.visualize_layout = True
+    # settings.debug.visualize_ocr = True
+    # settings.debug.visualize_tables = True
+    # settings.debug.visualize_cells = True
 
     # Configure the PDF pipeline. Enabling page image generation improves HTML
     # previews (embedded images) but adds processing time.
     pipeline_options = PdfPipelineOptions()
     pipeline_options.generate_page_images = True
 
-    SERVE_URL = "http://localhost:5001"
-
-    options = ConvertDocumentsOptions(
-        do_ocr=pipeline_options.do_ocr,
-        ocr_lang=pipeline_options.ocr_options.lang if pipeline_options.do_ocr else None,
-    )
-
     start_time = time.time()
 
-    # Convert all inputs. Set `raises_on_error=False` to keep processing other
-    # files even if one fails; errors are summarized after the run.
-    conv_results = []
-    failure_count = 0
-    with DoclingServiceClient(url=SERVE_URL) as client:
-        for input_doc_url in input_doc_urls:
-            try:
-                conv_result = client.convert(source=input_doc_url, options=options)
-                conv_results.append(conv_result)
-            except Exception as e:
-                _log.error(f"Failed to convert {input_doc_url}: {e}")
-                failure_count += 1
+    ###########################################################################
 
-    # Write outputs to ./scratch and log a summary.
-    _success_count, _partial_success_count, export_failure_count = export_documents(
-        conv_results, output_dir=Path("scratch")
+    # The two sections below are for either direct Docling usage or Docling Serve
+    # Uncomment exactly one section at a time
+
+    # Docling (local conversion)
+    # --------------------------------------
+    doc_converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=pipeline_options, backend=DoclingParseDocumentBackend
+            )
+        }
+    )
+    conv_results = doc_converter.convert_all(
+        input_doc_paths,
+        raises_on_error=False,  # to let conversion run through all and examine results at the end
     )
 
-    # Add conversion failures to the total failure count
-    total_failures = failure_count + export_failure_count
+    # Docling Serve (remote conversion)
+    # --------------------------------------
+    # SERVE_URL = "http://localhost:5001"
+    # table_cell_matching = getattr(pipeline_options.table_structure_options, 'do_cell_matching', True) if pipeline_options.table_structure_options else True
+    # options = ConvertDocumentsOptions(
+    #     do_ocr=pipeline_options.do_ocr,
+    #     do_table_structure=pipeline_options.do_table_structure,
+    #     table_cell_matching=table_cell_matching,
+    #     ocr_lang=pipeline_options.ocr_options.lang if pipeline_options.do_ocr else None,
+    #     pdf_backend=PdfBackend.DOCLING_PARSE,
+    # )
+    # # Convert all inputs. Set `raises_on_error=False` to keep processing other
+    # # files even if one fails; errors are summarized after the run.
+    # conv_results = []
+    # with DoclingServiceClient(url=SERVE_URL) as client:
+    #     for input_doc_path in input_doc_paths:
+    #         try:
+    #             conv_result = client.convert(source=input_doc_path, options=options)
+    #             conv_results.append(conv_result)
+    #         except Exception as e:
+    #             _log.error(f"Failed to convert {input_doc_path}: {e}")
+    ###########################################################################
+
+    # Write outputs to ./scratch and log a summary.
+    _success_count, _partial_success_count, failure_count = export_documents(
+        conv_results, output_dir=Path("scratch")
+    )
 
     end_time = time.time() - start_time
 
     _log.info(f"Document conversion complete in {end_time:.2f} seconds.")
 
-    if total_failures > 0:
+    if failure_count > 0:
         raise RuntimeError(
-            f"The example failed converting {total_failures} on {len(input_doc_urls)}."
+            f"The example failed converting {failure_count} on {len(input_doc_paths)}."
         )
 
 
