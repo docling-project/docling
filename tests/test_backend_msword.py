@@ -4,7 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from docling_core.types.doc import DocItemLabel, GroupItem
+from docling_core.types.doc import DocItemLabel, GroupItem, ListGroup, ListItem
 from lxml import etree
 
 import docling.backend.msword_backend as msword_backend_module
@@ -851,3 +851,34 @@ def test_text_after_drawingml_images(documents):
             "Skipping DrawingML text extraction test."
         )
         pytest.skip(f"Test document '{name}' not available")
+
+
+def test_ordered_list_grouping_preserves_blank_paragraphs(documents):
+    """Blank paragraphs between list items must not split a single ``<w:num>`` list.
+
+    ``unit_test_ordered_list.docx`` contains a numbered list whose items share
+    the same ``numId`` but are separated by blank paragraphs (used purely for
+    visual spacing). Without preserving real list grouping, the backend would
+    close the list at every blank paragraph and produce one ``ListGroup`` per
+    item. The fix in ``MsWordDocumentBackend._handle_text_elements`` keeps such
+    blank, ``numId``-less paragraphs from closing the current list.
+    """
+    name = "unit_test_ordered_list.docx"
+    doc = next(item[1] for item in documents if item[0].name == name)
+
+    list_groups = [g for g in doc.groups if isinstance(g, ListGroup)]
+    # The first list contains three paragraphs with the same numId separated
+    # by blank paragraphs; the remaining three lists each contain a single
+    # paragraph and use distinct numIds.
+    assert [len(g.children) for g in list_groups] == [3, 1, 1, 1]
+
+    first_group_items = [c.resolve(doc) for c in list_groups[0].children]
+    assert all(isinstance(item, ListItem) for item in first_group_items)
+    assert [item.text for item in first_group_items] == [
+        "This is the first paragraph.",
+        "This is the second paragraph.",
+        "This is the third paragraph.",
+    ]
+    assert [item.marker for item in first_group_items] == ["1.", "2.", "3."]
+    assert all(item.enumerated for item in first_group_items)
+

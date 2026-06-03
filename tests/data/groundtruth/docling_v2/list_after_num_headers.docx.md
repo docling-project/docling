@@ -8,7 +8,11 @@
 ### 1 Glosario
 
 - **Term 1** : Definition 1
+
 - **Term 2** : Definition 2
+
 - **Term 3** : Definition 3
+
 - **Term 4** : Definition 4
+
 - **Term 5** : Definition 5

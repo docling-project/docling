@@ -1,0 +1,13 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section: group header-0
+    item-2 at level 2: section_header: 1 Doc with ordered lists
+      item-3 at level 3: list: group list
+        item-4 at level 4: list_item: This is the first paragraph.
+        item-5 at level 4: list_item: This is the second paragraph.
+        item-6 at level 4: list_item: This is the third paragraph.
+      item-7 at level 3: list: group list
+        item-8 at level 4: list_item: This is the first paragraph.
+      item-9 at level 3: list: group list
+        item-10 at level 4: list_item: This is the first paragraph.
+      item-11 at level 3: list: group list
+        item-12 at level 4: list_item: This is the first paragraph.
