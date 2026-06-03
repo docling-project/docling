@@ -58,4 +58,16 @@ item-0 at level 0: unspecified: group _root_
             item-57 at level 6: list_item: List item 3
           item-58 at level 5: text: 
           item-59 at level 5: text: 
-          item-60 at level 5: text: 
+        item-60 at level 4: section_header: Test 7:
+          item-61 at level 5: list: group list
+            item-62 at level 6: list_item: First item with numId 2
+            item-63 at level 6: list_item: Second item with numId 2
+            item-64 at level 6: list_item: Third item with numId 2
+            item-65 at level 6: list_item: Fourth item with numId 2
+          item-66 at level 5: text: 
+          item-67 at level 5: list: group list
+            item-68 at level 6: list_item: Single item of a new list
+          item-69 at level 5: text: 
+          item-70 at level 5: list: group list
+            item-71 at level 6: list_item: Single item of a new list
+          item-72 at level 5: text: 
