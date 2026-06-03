@@ -13,41 +13,49 @@ item-0 at level 0: unspecified: group _root_
             item-12 at level 6: list_item: List item 1
             item-13 at level 6: list_item: List item 2
             item-14 at level 6: list_item: List item 3
-        item-15 at level 4: section_header: Test 2:
-          item-16 at level 5: list: group list
-            item-17 at level 6: list_item: List item a
-            item-18 at level 6: list_item: List item b
-            item-19 at level 6: list_item: List item c
-        item-20 at level 4: section_header: Test 3:
-          item-21 at level 5: list: group list
-            item-22 at level 6: list_item: List item 1
-            item-23 at level 6: list_item: List item 2
-            item-24 at level 6: list: group list
-              item-25 at level 7: list_item: List item 1.1
-              item-26 at level 7: list_item: List item 1.2
-              item-27 at level 7: list_item: List item 1.3
-            item-28 at level 6: list_item: List item 3
-        item-29 at level 4: section_header: Test 4:
-          item-30 at level 5: list: group list
-            item-31 at level 6: list_item: List item 1
-            item-32 at level 6: list: group list
-              item-33 at level 7: list_item: List item 1.1
-            item-34 at level 6: list_item: List item 2
-        item-35 at level 4: section_header: Test 5:
-          item-36 at level 5: list: group list
-            item-37 at level 6: list_item: List item 1
-            item-38 at level 6: list: group list
-              item-39 at level 7: list_item: List item 1.1
-              item-40 at level 7: list: group list
-                item-41 at level 8: list_item: List item 1.1.1
-            item-42 at level 6: list_item: List item 3
-        item-43 at level 4: section_header: Test 6:
-          item-44 at level 5: list: group list
-            item-45 at level 6: list_item: List item 1
-            item-46 at level 6: list_item: List item 2
-            item-47 at level 6: list: group list
-              item-48 at level 7: list_item: List item 1.1
-              item-49 at level 7: list_item: List item 1.2
-              item-50 at level 7: list: group list
-                item-51 at level 8: list_item: List item 1.2.1
-            item-52 at level 6: list_item: List item 3
+          item-15 at level 5: text: 
+        item-16 at level 4: section_header: Test 2:
+          item-17 at level 5: list: group list
+            item-18 at level 6: list_item: List item a
+            item-19 at level 6: list_item: List item b
+            item-20 at level 6: list_item: List item c
+          item-21 at level 5: text: 
+        item-22 at level 4: section_header: Test 3:
+          item-23 at level 5: list: group list
+            item-24 at level 6: list_item: List item 1
+            item-25 at level 6: list_item: List item 2
+            item-26 at level 6: list: group list
+              item-27 at level 7: list_item: List item 1.1
+              item-28 at level 7: list_item: List item 1.2
+              item-29 at level 7: list_item: List item 1.3
+            item-30 at level 6: list_item: List item 3
+          item-31 at level 5: text: 
+        item-32 at level 4: section_header: Test 4:
+          item-33 at level 5: list: group list
+            item-34 at level 6: list_item: List item 1
+            item-35 at level 6: list: group list
+              item-36 at level 7: list_item: List item 1.1
+            item-37 at level 6: list_item: List item 2
+          item-38 at level 5: text: 
+        item-39 at level 4: section_header: Test 5:
+          item-40 at level 5: list: group list
+            item-41 at level 6: list_item: List item 1
+            item-42 at level 6: list: group list
+              item-43 at level 7: list_item: List item 1.1
+              item-44 at level 7: list: group list
+                item-45 at level 8: list_item: List item 1.1.1
+            item-46 at level 6: list_item: List item 3
+          item-47 at level 5: text: 
+        item-48 at level 4: section_header: Test 6:
+          item-49 at level 5: list: group list
+            item-50 at level 6: list_item: List item 1
+            item-51 at level 6: list_item: List item 2
+            item-52 at level 6: list: group list
+              item-53 at level 7: list_item: List item 1.1
+              item-54 at level 7: list_item: List item 1.2
+              item-55 at level 7: list: group list
+                item-56 at level 8: list_item: List item 1.2.1
+            item-57 at level 6: list_item: List item 3
+          item-58 at level 5: text: 
+          item-59 at level 5: text: 
+          item-60 at level 5: text: 

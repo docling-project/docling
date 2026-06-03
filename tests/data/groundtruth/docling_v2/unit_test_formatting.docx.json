@@ -51,6 +51,9 @@
         "$ref": "#/texts/27"
       },
       {
+        "$ref": "#/texts/28"
+      },
+      {
         "$ref": "#/groups/5"
       },
       {
@@ -190,7 +193,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/28"
+          "$ref": "#/texts/29"
         }
       ],
       "content_layer": "furniture",
@@ -204,7 +207,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/29"
+          "$ref": "#/texts/30"
         }
       ],
       "content_layer": "furniture",
@@ -221,7 +224,7 @@
           "$ref": "#/groups/8"
         },
         {
-          "$ref": "#/texts/33"
+          "$ref": "#/texts/34"
         }
       ],
       "content_layer": "furniture",
@@ -235,13 +238,13 @@
       },
       "children": [
         {
-          "$ref": "#/texts/30"
-        },
-        {
           "$ref": "#/texts/31"
         },
         {
           "$ref": "#/texts/32"
+        },
+        {
+          "$ref": "#/texts/33"
         }
       ],
       "content_layer": "furniture",
@@ -255,16 +258,16 @@
       },
       "children": [
         {
-          "$ref": "#/texts/34"
+          "$ref": "#/texts/35"
         },
         {
-          "$ref": "#/texts/35"
+          "$ref": "#/texts/36"
         },
         {
           "$ref": "#/pictures/0"
         },
         {
-          "$ref": "#/texts/36"
+          "$ref": "#/texts/37"
         }
       ],
       "content_layer": "furniture",
@@ -757,6 +760,18 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/26",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
       "orig": "The second page of the document with same header and footer",
       "text": "The second page of the document with same header and footer",
       "formatting": {
@@ -768,7 +783,7 @@
       }
     },
     {
-      "self_ref": "#/texts/26",
+      "self_ref": "#/texts/27",
       "parent": {
         "$ref": "#/body"
       },
@@ -780,7 +795,7 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/27",
+      "self_ref": "#/texts/28",
       "parent": {
         "$ref": "#/body"
       },
@@ -799,7 +814,7 @@
       }
     },
     {
-      "self_ref": "#/texts/28",
+      "self_ref": "#/texts/29",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -818,7 +833,7 @@
       }
     },
     {
-      "self_ref": "#/texts/29",
+      "self_ref": "#/texts/30",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -837,7 +852,7 @@
       }
     },
     {
-      "self_ref": "#/texts/30",
+      "self_ref": "#/texts/31",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -856,7 +871,7 @@
       }
     },
     {
-      "self_ref": "#/texts/31",
+      "self_ref": "#/texts/32",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -875,7 +890,7 @@
       }
     },
     {
-      "self_ref": "#/texts/32",
+      "self_ref": "#/texts/33",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -894,7 +909,7 @@
       }
     },
     {
-      "self_ref": "#/texts/33",
+      "self_ref": "#/texts/34",
       "parent": {
         "$ref": "#/groups/7"
       },
@@ -913,7 +928,7 @@
       }
     },
     {
-      "self_ref": "#/texts/34",
+      "self_ref": "#/texts/35",
       "parent": {
         "$ref": "#/groups/9"
       },
@@ -932,7 +947,7 @@
       }
     },
     {
-      "self_ref": "#/texts/35",
+      "self_ref": "#/texts/36",
       "parent": {
         "$ref": "#/groups/9"
       },
@@ -951,7 +966,7 @@
       }
     },
     {
-      "self_ref": "#/texts/36",
+      "self_ref": "#/texts/37",
       "parent": {
         "$ref": "#/groups/9"
       },
