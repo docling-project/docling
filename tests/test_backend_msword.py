@@ -881,4 +881,3 @@ def test_ordered_list_grouping_preserves_blank_paragraphs(documents):
     ]
     assert [item.marker for item in first_group_items] == ["1.", "2.", "3."]
     assert all(item.enumerated for item in first_group_items)
-
