@@ -4,12 +4,14 @@ repo_name: docling-project/docling
 repo_url: https://github.com/docling-project/docling
 
 theme:
-  name: material
+  variant: modern
+  # name: material
   custom_dir: docs/overrides
   palette:
     # Default dark mode
     - scheme: slate
-      primary: black
+      primary: deep orange #black
+      accent: orange
       toggle:
         icon: material/brightness-7
         name: Switch to light mode
@@ -17,7 +19,9 @@ theme:
     # Light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: black
+      # primary: black
+      primary: deep orange #black
+      accent: orange
       toggle:
         icon: material/brightness-4
         name: Switch to dark mode
@@ -25,7 +29,9 @@ theme:
     # System preference (dark)
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: black
+      primary: deep orange #black
+      accent: orange
+      # primary: deep orange #black
       toggle:
         icon: material/brightness-auto
         name: Switch to system preference
@@ -79,64 +85,68 @@ nav:
     - Chunking: concepts/chunking.md
     - Plugins: concepts/plugins.md
   - Examples:
+    # NOTE: notebook (.ipynb) and jupytext percent-format (.py) sources under
+    # docs/examples/ are pre-rendered to markdown by scripts/render_notebooks.py
+    # and emitted to docs/_generated/examples/. The nav entries below point at
+    # the generated markdown.
     - Examples: examples/index.md
     - "🤝 Agent skill (Cursor / assistants)": examples/agent_skill/docling-document-intelligence/README.md
     - 🔀 Conversion:
-      - "Simple conversion": examples/minimal.py
-      - "Custom conversion": examples/custom_convert.py
-      - "Batch conversion": examples/batch_convert.py
-      - "Multi-format conversion": examples/run_with_formats.py
-      - "VLM pipeline with GraniteDocling": examples/minimal_vlm_pipeline.py
-      - "VLM pipeline with remote model": examples/vlm_pipeline_api_model.py
-      - "VLM comparison": examples/compare_vlm_models.py
-      - "ASR pipeline with Whisper": examples/minimal_asr_pipeline.py
-      - "Figure export": examples/export_figures.py
-      - "Table export": examples/export_tables.py
-      - "Multimodal export": examples/export_multimodal.py
-      - "Force full page OCR": examples/full_page_ocr.py
-      - "Automatic OCR language detection with tesseract": examples/tesseract_lang_detection.py
-      - "RapidOCR with custom OCR models": examples/rapidocr_with_custom_models.py
-      - "SuryaOCR with custom OCR models": examples/suryaocr_with_custom_models.py
-      - "Accelerator options": examples/run_with_accelerator.py
-      - "Detect and obfuscate PII": examples/pii_obfuscate.py
-      - "Simple translation": examples/translate.py
-      - examples/backend_csv.ipynb
-      - examples/backend_xml_rag.ipynb
-      - examples/xbrl_conversion.ipynb
+      - "Simple conversion": _generated/examples/minimal.md
+      - "Custom conversion": _generated/examples/custom_convert.md
+      - "Batch conversion": _generated/examples/batch_convert.md
+      - "Multi-format conversion": _generated/examples/run_with_formats.md
+      - "VLM pipeline with GraniteDocling": _generated/examples/minimal_vlm_pipeline.md
+      - "VLM pipeline with remote model": _generated/examples/vlm_pipeline_api_model.md
+      - "VLM comparison": _generated/examples/compare_vlm_models.md
+      - "ASR pipeline with Whisper": _generated/examples/minimal_asr_pipeline.md
+      - "Figure export": _generated/examples/export_figures.md
+      - "Table export": _generated/examples/export_tables.md
+      - "Multimodal export": _generated/examples/export_multimodal.md
+      - "Force full page OCR": _generated/examples/full_page_ocr.md
+      - "Automatic OCR language detection with tesseract": _generated/examples/tesseract_lang_detection.md
+      - "RapidOCR with custom OCR models": _generated/examples/rapidocr_with_custom_models.md
+      - "SuryaOCR with custom OCR models": _generated/examples/suryaocr_with_custom_models.md
+      - "Accelerator options": _generated/examples/run_with_accelerator.md
+      - "Detect and obfuscate PII": _generated/examples/pii_obfuscate.md
+      - "Simple translation": _generated/examples/translate.md
+      - _generated/examples/backend_csv.md
+      - _generated/examples/backend_xml_rag.md
+      - _generated/examples/xbrl_conversion.md
     - ✂️ Serialization & chunking:
-      - examples/serialization.ipynb
-      - examples/hybrid_chunking.ipynb
-      - examples/line_based_chunking.ipynb
-      - examples/advanced_chunking_and_serialization.ipynb
+      - _generated/examples/serialization.md
+      - _generated/examples/hybrid_chunking.md
+      - _generated/examples/line_based_chunking.md
+      - _generated/examples/advanced_chunking_and_serialization.md
     - 📤 Information extraction:
-      - examples/extraction.ipynb
+      - _generated/examples/extraction.md
     - 🤖 RAG with AI dev frameworks:
-      - examples/rag_haystack.ipynb
-      - examples/rag_langchain.ipynb
-      - examples/rag_llamaindex.ipynb
-      - examples/visual_grounding.ipynb
+      - _generated/examples/rag_haystack.md
+      - _generated/examples/rag_langchain.md
+      - _generated/examples/rag_llamaindex.md
+      - _generated/examples/visual_grounding.md
     - 🖼️ Picture annotation:
-      - "Annotate picture with local VLM": examples/pictures_description.ipynb
-      - "Annotate picture with remote VLM": examples/pictures_description_api.py
+      - "Annotate picture with local VLM": _generated/examples/pictures_description.md
+      - "Annotate picture with remote VLM": _generated/examples/pictures_description_api.md
     - 🔤 Enrichments:
-      - "Code & formula": examples/code_formula_granite_docling.py
+      - "Code & formula": _generated/examples/code_formula_granite_docling.md
     - ✨ Enrichment development:
-      - "Figure enrichment": examples/develop_picture_enrichment.py
-      - "Formula enrichment": examples/develop_formula_understanding.py
-      - "Enrich a DoclingDocument": examples/enrich_doclingdocument.py
+      - "Figure enrichment": _generated/examples/develop_picture_enrichment.md
+      - "Formula enrichment": _generated/examples/develop_formula_understanding.md
+      - "Enrich a DoclingDocument": _generated/examples/enrich_doclingdocument.md
     - ⚡️ GPU optimization:
-      - "Standard pipeline": examples/gpu_standard_pipeline.py
-      - "VLM pipeline": examples/gpu_vlm_pipeline.py
-      - "Parquet benchmark": examples/parquet_images.py
+      - "Standard pipeline": _generated/examples/gpu_standard_pipeline.md
+      - "VLM pipeline": _generated/examples/gpu_vlm_pipeline.md
+      - "Parquet benchmark": _generated/examples/parquet_images.md
     - 🗂️ More examples:
-      - examples/dpk-ingest-chunk-tokenize.ipynb
-      - examples/rag_azuresearch.ipynb
+      - _generated/examples/dpk-ingest-chunk-tokenize.md
+      - _generated/examples/rag_azuresearch.md
       - RAG with Granite [↗]: https://github.com/ibm-granite-community/granite-snack-cookbook/blob/main/recipes/RAG/Granite_Docling_RAG.ipynb
-      - examples/rag_milvus.ipynb
-      - examples/rag_opensearch.ipynb
-      - examples/rag_weaviate.ipynb
-      - examples/retrieval_qdrant.ipynb
-      - examples/rag_mongodb.ipynb
+      - _generated/examples/rag_milvus.md
+      - _generated/examples/rag_opensearch.md
+      - _generated/examples/rag_weaviate.md
+      - _generated/examples/retrieval_qdrant.md
+      - _generated/examples/rag_mongodb.md
       - RAG with Vault PII transform [↗]: https://github.com/workloads/pathfinder-prism
   - Integrations:
     - Integrations: integrations/index.md
@@ -184,20 +194,21 @@ markdown_extensions:
         kwds:
           case: lower
   - pymdownx.emoji:
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:zensical.extensions.emoji.twemoji 
+      emoji_generator: !!python/name:zensical.extensions.emoji.to_svg
   - admonition
   - pymdownx.details
   - attr_list
-  - mkdocs-click
+  # Required by mkdocstrings under Zensical: mkdocs-autorefs is normally
+  # auto-registered by MkDocs as a plugin, but Zensical's preliminary
+  # mkdocstrings integration expects it as a markdown extension.
+  - mkdocs_autorefs._internal.references:AutorefsExtension
 plugins:
-  - search
   - redirects:
       redirect_maps:
         getting_started/index.md: index.md
         installation/index.md: getting_started/installation.md
         usage/index.md: getting_started/quickstart.md
-  - mkdocs-jupyter
   - mkdocstrings:
       default_handler: python
       handlers:
@@ -210,10 +221,14 @@ plugins:
             preload_modules:
               - docling_core
 
-extra_css:
-  - stylesheets/extra.css
+# extra_css:
+#   - stylesheets/extra.css
 
 extra:
+  # Hide the "Made with Zensical" footer credit. Zensical's
+  # partials/copyright.html gates it on this flag (same convention as
+  # Material for MkDocs).
+  generator: false
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/docling-project/docling

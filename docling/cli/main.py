@@ -41,7 +41,10 @@ from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
 from rich.console import Console
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import (
+    DoclingParseDocumentBackend,
+    ThreadedDoclingParseDocumentBackend,
+)
 from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
@@ -77,6 +80,7 @@ from docling.datamodel.backend_options import (
     HTMLBackendOptions,
     LatexBackendOptions,
     PdfBackendOptions,
+    ThreadedDoclingParseBackendOptions,
 )
 from docling.datamodel.base_models import (
     ConversionStatus,
@@ -694,6 +698,16 @@ def convert(  # noqa: C901
         ),
     ] = None,
     num_threads: Annotated[int, typer.Option(..., help="Number of threads")] = 4,
+    release_native_memory_every_n_pages: Annotated[
+        int,
+        typer.Option(
+            ...,
+            help=(
+                "Release native parser memory after every N decoded pages when "
+                "using the threaded docling-parse backend."
+            ),
+        ),
+    ] = 128,
     device: Annotated[
         AcceleratorDevice, typer.Option(..., help="Accelerator device")
     ] = AcceleratorDevice.AUTO,
@@ -854,12 +868,8 @@ def convert(  # noqa: C901
             ocr_options, TesseractOcrOptions | TesseractCliOcrOptions
         ):
             ocr_options.psm = psm
-
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
-
-        # pipeline_options: PaginatedPipelineOptions
         pipeline_options: PipelineOptions
-
         format_options: dict[InputFormat, FormatOption] = {}
         pdf_backend_options: PdfBackendOptions | None = PdfBackendOptions(
             password=pdf_password
@@ -883,9 +893,7 @@ def convert(  # noqa: C901
             if isinstance(
                 pipeline_options.table_structure_options, TableStructureOptions
             ):
-                pipeline_options.table_structure_options.do_cell_matching = (
-                    True  # do_cell_matching
-                )
+                pipeline_options.table_structure_options.do_cell_matching = True
                 pipeline_options.table_structure_options.mode = table_mode
 
             if _should_generate_export_images(
@@ -897,13 +905,19 @@ def convert(  # noqa: C901
                     True  # FIXME: to be deprecated in version 3
                 )
                 pipeline_options.images_scale = 2
-
-            # Normalize deprecated backend values
             pdf_backend = normalize_pdf_backend(pdf_backend)
-
             backend: Type[PdfDocumentBackend]
             if pdf_backend == PdfBackend.DOCLING_PARSE:
                 backend = DoclingParseDocumentBackend  # type: ignore
+            elif pdf_backend == PdfBackend.THREADED_DOCLING_PARSE:
+                backend = ThreadedDoclingParseDocumentBackend  # type: ignore
+                pdf_backend_options = ThreadedDoclingParseBackendOptions(
+                    password=pdf_password,
+                    parser_threads=num_threads,
+                    release_native_memory_every_n_pages=(
+                        release_native_memory_every_n_pages
+                    ),
+                )
             elif pdf_backend == PdfBackend.PYPDFIUM2:
                 backend = PyPdfiumDocumentBackend  # type: ignore
             else:
@@ -914,16 +928,12 @@ def convert(  # noqa: C901
                 backend=backend,  # pdf_backend
                 backend_options=pdf_backend_options,
             )
-
-            # METS GBS options
             mets_gbs_options = pipeline_options.model_copy()
             mets_gbs_options.do_ocr = False
             mets_gbs_format_option = PdfFormatOption(
                 pipeline_options=mets_gbs_options,
                 backend=MetsGbsDocumentBackend,
             )
-
-            # SimplePipeline options
             simple_format_option = ConvertPipelineOptions(
                 do_picture_description=enrich_picture_description,
                 do_picture_classification=enrich_picture_classes,

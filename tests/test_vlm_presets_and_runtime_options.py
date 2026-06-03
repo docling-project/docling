@@ -11,12 +11,16 @@ This test suite validates:
 import pytest
 from pydantic import ValidationError
 
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.pipeline_options import (
     CodeFormulaVlmOptions,
     PictureDescriptionVlmEngineOptions,
     VlmConvertOptions,
 )
-from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
+from docling.datamodel.pipeline_options_vlm_model import (
+    ResponseFormat,
+    TransformersModelType,
+)
 from docling.datamodel.stage_model_specs import (
     ApiModelConfig,
     EngineModelConfig,
@@ -31,6 +35,9 @@ from docling.datamodel.vlm_engine_options import (
     VllmVlmEngineOptions,
 )
 from docling.models.inference_engines.vlm import VlmEngineType
+from docling.models.inference_engines.vlm.transformers_engine import (
+    TransformersVlmEngine,
+)
 
 pytestmark = pytest.mark.ml_vlm
 
@@ -116,6 +123,45 @@ class TestRuntimeOptions:
 
         with pytest.raises(ValidationError):
             VllmVlmEngineOptions(model_impl=None)
+
+    def test_transformers_engine_accepts_json_model_type(self, monkeypatch):
+        """Custom JSON configs carry enum values as strings."""
+        calls = []
+
+        def fake_load_model_for_repo(
+            self,
+            repo_id,
+            revision="main",
+            model_type=TransformersModelType.AUTOMODEL,
+        ):
+            calls.append((repo_id, revision, model_type))
+
+        monkeypatch.setattr(
+            TransformersVlmEngine, "_load_model_for_repo", fake_load_model_for_repo
+        )
+
+        TransformersVlmEngine(
+            options=TransformersVlmEngineOptions(),
+            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+            artifacts_path=None,
+            model_config=EngineModelConfig(
+                repo_id="test/model",
+                revision="v1",
+                extra_config={
+                    "transformers_model_type": (
+                        TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT.value
+                    )
+                },
+            ),
+        )
+
+        assert calls == [
+            (
+                "test/model",
+                "v1",
+                TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+            )
+        ]
 
 
 # =============================================================================
