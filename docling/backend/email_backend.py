@@ -3,7 +3,6 @@ import re
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Union
 
 import mailparser
 from docling_core.types.doc import DocItemLabel, DoclingDocument, DocumentOrigin
@@ -18,7 +17,7 @@ _log = logging.getLogger(__name__)
 
 
 class EmailDocumentBackend(DeclarativeDocumentBackend):
-    def __init__(self, in_doc: InputDocument, path_or_stream: Union[BytesIO, Path]):
+    def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path):
         super().__init__(in_doc, path_or_stream)
 
         self.valid = False

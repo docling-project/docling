@@ -274,10 +274,10 @@ def test_guess_format(tmp_path):
     assert dci._guess_format(stream) == InputFormat.VTT
 
     # Valid email
-    buf = BytesIO(Path("./tests/data/email/simple.eml").open("rb").read())
-    stream = DocumentStream(name="simple.eml", stream=buf)
+    buf = BytesIO(Path("./tests/data/email/eml_simple.eml").open("rb").read())
+    stream = DocumentStream(name="eml_simple.eml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.EMAIL
-    doc_path = Path("./tests/data/email/simple.eml")
+    doc_path = Path("./tests/data/email/eml_simple.eml")
     assert dci._guess_format(doc_path) == InputFormat.EMAIL
 
     # Valid Docling JSON
