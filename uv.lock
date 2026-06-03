@@ -1365,6 +1365,8 @@ format-docx = [
     { name = "python-docx" },
 ]
 format-email = [
+    { name = "beautifulsoup4" },
+    { name = "lxml" },
     { name = "mail-parser" },
 ]
 format-html = [
@@ -1557,6 +1559,7 @@ requires-dist = [
     { name = "docling-parse", marker = "extra == 'format-pdf-docling'", specifier = ">=5.3.2,<6.0.0" },
     { name = "docling-slim", extras = ["convert-core"], marker = "extra == 'extract-core'" },
     { name = "docling-slim", extras = ["format-docx", "format-pptx", "format-xlsx"], marker = "extra == 'format-office'" },
+    { name = "docling-slim", extras = ["format-html"], marker = "extra == 'format-email'" },
     { name = "docling-slim", extras = ["format-html", "format-markdown"], marker = "extra == 'format-web'" },
     { name = "docling-slim", extras = ["format-pdf", "models-local", "feat-ocr-rapidocr", "format-office", "format-web", "format-latex", "format-email", "feat-chunking", "extract-core", "service-client", "cli"], marker = "extra == 'standard'" },
     { name = "docling-slim", extras = ["format-pdf-pypdfium2", "format-pdf-docling"], marker = "extra == 'format-pdf'" },

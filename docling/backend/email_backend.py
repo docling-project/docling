@@ -1,12 +1,16 @@
 import logging
+import re
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Union
+from typing import Union
 
 import mailparser
 from docling_core.types.doc import DocItemLabel, DoclingDocument, DocumentOrigin
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.html_backend import HTMLDocumentBackend
+from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -45,10 +49,6 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.EMAIL}
 
-    def _extract_attachments(self) -> list[dict[str, Any]]:
-        """Stub for future attachment extraction support."""
-        return []
-
     def _format_addresses(
         self, addresses: list[tuple[str, str]] | None, fallback: str
     ) -> str:
@@ -64,20 +64,56 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
         return ", ".join(formatted)
 
-    def _get_body_text(self) -> str:
+    def _split_paragraphs(self, text: str) -> list[str]:
+        return [
+            paragraph.strip()
+            for paragraph in re.split(r"\n\s*\n+", text.strip())
+            if paragraph.strip()
+        ]
+
+    def _convert_html_part(self, html: str) -> DoclingDocument:
+        html_stream = BytesIO(html.encode("utf-8"))
+        in_doc = InputDocument(
+            path_or_stream=html_stream,
+            format=InputFormat.HTML,
+            filename="email-body.html",
+            backend=HTMLDocumentBackend,
+        )
+        html_stream.seek(0)
+        backend = HTMLDocumentBackend(
+            in_doc=in_doc,
+            path_or_stream=html_stream,
+            options=HTMLBackendOptions(add_title=False, infer_furniture=False),
+        )
+        return backend.convert()
+
+    def _get_body_paragraphs(self) -> list[str]:
         assert self.mail is not None
 
         if self.mail.text_plain:
-            return "\n\n".join(
-                part.strip() for part in self.mail.text_plain if part.strip()
-            )
+            paragraphs: list[str] = []
+            for part in self.mail.text_plain:
+                paragraphs.extend(self._split_paragraphs(part))
+            return paragraphs
 
         if self.mail.text_html:
-            return "\n\n".join(
-                part.strip() for part in self.mail.text_html if part.strip()
-            )
+            paragraphs = []
+            for part in self.mail.text_html:
+                html_doc = self._convert_html_part(part)
+                paragraphs.extend(self._split_paragraphs(html_doc.export_to_markdown()))
+            return paragraphs
 
-        return self.mail.body.strip()
+        return self._split_paragraphs(self.mail.body)
+
+    def _get_date_text(self) -> str:
+        assert self.mail is not None
+
+        mail_date = self.mail.date
+        if isinstance(mail_date, datetime):
+            return mail_date.isoformat()
+        if isinstance(mail_date, str):
+            return mail_date.strip()
+        return ""
 
     def convert(self) -> DoclingDocument:
         if not self.is_valid() or self.mail is None:
@@ -97,17 +133,18 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
         )
         from_text = self._format_addresses(self.mail.from_, fallback="")
         to_text = self._format_addresses(self.mail.to, fallback="")
-        body_text = self._get_body_text()
+        date_text = self._get_date_text()
+        body_paragraphs = self._get_body_paragraphs()
 
         if subject:
             doc.add_title(text=subject)
         if from_text:
-            doc.add_text(label=DocItemLabel.PARAGRAPH, text=f"From: {from_text}")
+            doc.add_text(label=DocItemLabel.TEXT, text=f"From: {from_text}")
         if to_text:
-            doc.add_text(label=DocItemLabel.PARAGRAPH, text=f"To: {to_text}")
-        if body_text:
-            doc.add_text(label=DocItemLabel.PARAGRAPH, text=body_text)
-
-        _ = self._extract_attachments()
+            doc.add_text(label=DocItemLabel.TEXT, text=f"To: {to_text}")
+        if date_text:
+            doc.add_text(label=DocItemLabel.TEXT, text=f"Date: {date_text}")
+        for body_paragraph in body_paragraphs:
+            doc.add_text(label=DocItemLabel.TEXT, text=body_paragraph)
 
         return doc
