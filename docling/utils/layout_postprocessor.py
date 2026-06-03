@@ -387,39 +387,41 @@ class LayoutPostprocessor:
         return picture_clusters + wrapper_clusters
 
     def _handle_cross_type_overlaps(self, special_clusters) -> list[Cluster]:
-        """Handle overlaps between regular and wrapper clusters before child assignment.
+        """Handle overlaps between clusters of different special types.
 
-        In particular, KEY_VALUE_REGION proposals that are almost identical to a TABLE
-        should be removed.
+        Removes:
+        - Non-TABLE wrapper proposals (e.g. KEY_VALUE_REGION) that heavily overlap
+          a TABLE cluster (TABLE is always preferred).
+        - PICTURE proposals that heavily overlap a TABLE cluster — borderless tables
+          can score above the confidence threshold for both TABLE and PICTURE
+          simultaneously; TABLE is the more specific label and takes priority.
         """
-        wrappers_to_remove = set()
+        clusters_to_remove: set[int] = set()
 
-        for wrapper in special_clusters:
-            if wrapper.label not in self.WRAPPER_TYPES:
-                continue  # only treat KEY_VALUE_REGION for now.
+        table_clusters = [c for c in special_clusters if c.label == DocItemLabel.TABLE]
 
-            for regular in self.regular_clusters:
-                if regular.label == DocItemLabel.TABLE:
-                    # Calculate overlap
-                    overlap_ratio = wrapper.bbox.intersection_over_self(regular.bbox)
+        for cluster in special_clusters:
+            if cluster.id in clusters_to_remove:
+                continue
 
-                    conf_diff = wrapper.confidence - regular.confidence
-
-                    # If wrapper is mostly overlapping with a TABLE, remove the wrapper
-                    if (
-                        overlap_ratio > 0.9 and conf_diff < 0.1
-                    ):  # self.OVERLAP_PARAMS["wrapper"]["conf_threshold"]):  # 80% overlap threshold
-                        wrappers_to_remove.add(wrapper.id)
+            # Non-TABLE wrapper (e.g. KEY_VALUE_REGION) vs TABLE
+            if cluster.label in self.WRAPPER_TYPES and cluster.label != DocItemLabel.TABLE:
+                for table in table_clusters:
+                    overlap_ratio = cluster.bbox.intersection_over_self(table.bbox)
+                    conf_diff = cluster.confidence - table.confidence
+                    if overlap_ratio > 0.9 and conf_diff < 0.1:
+                        clusters_to_remove.add(cluster.id)
                         break
 
-        # Filter out the identified wrappers
-        special_clusters = [
-            cluster
-            for cluster in special_clusters
-            if cluster.id not in wrappers_to_remove
-        ]
+            # PICTURE vs TABLE — prefer TABLE when they share the same region
+            elif cluster.label == DocItemLabel.PICTURE:
+                for table in table_clusters:
+                    overlap_ratio = cluster.bbox.intersection_over_self(table.bbox)
+                    if overlap_ratio > 0.9:
+                        clusters_to_remove.add(cluster.id)
+                        break
 
-        return special_clusters
+        return [c for c in special_clusters if c.id not in clusters_to_remove]
 
     def _should_prefer_cluster(
         self, candidate: Cluster, other: Cluster, params: dict
