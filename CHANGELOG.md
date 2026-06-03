@@ -1,3 +1,39 @@
+## [v2.96.1](https://github.com/docling-project/docling/releases/tag/v2.96.1) - 2026-06-01
+
+### Fix
+
+* Improve missing FFmpeg error for ASR ([#3478](https://github.com/docling-project/docling/issues/3478)) ([`11a1bb5`](https://github.com/docling-project/docling/commit/11a1bb5d03f1e19e6ae207c48afc1f044b4cfc96))
+* **docx:** Preserve text in DrawingML paragraphs with and without LibreOffice ([#3490](https://github.com/docling-project/docling/issues/3490)) ([`d36edac`](https://github.com/docling-project/docling/commit/d36edac51ef9242bae92d4b351f8b502bb4bff01))
+
+## [v2.96.0](https://github.com/docling-project/docling/releases/tag/v2.96.0) - 2026-05-28
+
+### Feature
+
+* Add threaded docling-parse (v6) PDF backend ([#3377](https://github.com/docling-project/docling/issues/3377)) ([`3c26f5a`](https://github.com/docling-project/docling/commit/3c26f5a3a8a5904e45848bc1a9e43105fdeba3e3))
+
+### Fix
+
+* Accept JSON transformers model type ([#3488](https://github.com/docling-project/docling/issues/3488)) ([`d25aea1`](https://github.com/docling-project/docling/commit/d25aea129a81cec331e8078a13dbda1078891d98))
+
+### Documentation
+
+* Fix rendering of icons ([#3507](https://github.com/docling-project/docling/issues/3507)) ([`3a51932`](https://github.com/docling-project/docling/commit/3a5193297e8d205a0d69e3bb1a9ba700ff5c24d7))
+* Migrate docs to Zensical ([#3504](https://github.com/docling-project/docling/issues/3504)) ([`24f916a`](https://github.com/docling-project/docling/commit/24f916ac56da28211217414172e046b03ac428e1))
+* Chunk expansion examples ([#3482](https://github.com/docling-project/docling/issues/3482)) ([`2cea3bb`](https://github.com/docling-project/docling/commit/2cea3bbc65420e1aeb67f3079a2501505a8beb36))
+
+## [v2.95.0](https://github.com/docling-project/docling/releases/tag/v2.95.0) - 2026-05-21
+
+### Feature
+
+* Add scoped settings context manager ([#3440](https://github.com/docling-project/docling/issues/3440)) ([`d907d21`](https://github.com/docling-project/docling/commit/d907d21018cf5f71280cf8c4985b2c83dac7de49))
+* Add more document metadata in callbacks ([#3485](https://github.com/docling-project/docling/issues/3485)) ([`48b4d1c`](https://github.com/docling-project/docling/commit/48b4d1c7fdf12907da05ae0bdbdb0509f18e4133))
+* **html:** Add custom headers support for HTML backend image fetching ([#3479](https://github.com/docling-project/docling/issues/3479)) ([`0a15088`](https://github.com/docling-project/docling/commit/0a15088e63c08842f5cc3b85b55f06231e5bcf60))
+
+### Fix
+
+* **docx:** Preserve text when image uses DrawingML without LibreOffice ([#3484](https://github.com/docling-project/docling/issues/3484)) ([`33e3e47`](https://github.com/docling-project/docling/commit/33e3e470df4d774d77a52460b53928c705615260))
+* **cli:** Fix for unknown docling version when docling meta-package is not present ([#3472](https://github.com/docling-project/docling/issues/3472)) ([`7561b9d`](https://github.com/docling-project/docling/commit/7561b9dc926414cf87c81330b95e6a5ea7fa765e))
+
 ## [v2.94.0](https://github.com/docling-project/docling/releases/tag/v2.94.0) - 2026-05-18
 
 ### Feature

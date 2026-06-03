@@ -350,8 +350,13 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
+# docs site build output (zensical, mkdocs)
 /site
+
+# generated docs sources — produced by scripts/render_notebooks.py and
+# scripts/render_cli_reference.py at build time
+/docs/_generated/
+/docs/reference/cli.md
 
 # Pyre type checker
 .pyre/
