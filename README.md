@@ -164,4 +164,4 @@ The project was started by the AI for knowledge team at IBM Research Zurich.
 [supported_formats]: https://docling-project.github.io/docling/usage/supported_formats/
 [docling_document]: https://docling-project.github.io/docling/concepts/docling_document/
 [integrations]: https://docling-project.github.io/docling/integrations/
-[extraction]: https://docling-project.github.io/docling/examples/extraction/
+[extraction]: https://docling-project.github.io/docling/_generated/examples/extraction/
