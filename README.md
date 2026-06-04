@@ -74,7 +74,7 @@ pip install docling
 
 Works on macOS, Linux and Windows environments. Both x86_64 and arm64 architectures.
 
-More [detailed installation instructions](https://docling-project.github.io/docling/installation/) are available in the docs.
+More [detailed installation instructions](https://docling-project.github.io/docling/getting_started/installation/) are available in the docs.
 
 ## 2. Convert a document (CLI)
 
@@ -101,7 +101,7 @@ result = converter.convert(source)
 print(result.document.export_to_markdown())  # output: "## Docling Technical Report[...]"
 ```
 
-More advanced [usage](https://docling-project.github.io/docling/usage/) and [configuration](https://docling-project.github.io/docling/installation/) options.
+More advanced [usage](https://docling-project.github.io/docling/usage/) and [configuration](https://docling-project.github.io/docling/getting_started/installation/) options.
 
 ## Documentation
 
