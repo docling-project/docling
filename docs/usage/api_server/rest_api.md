@@ -36,13 +36,13 @@ Pass these in the JSON body under `options`. This is the common subset — the *
 | `from_formats` / `to_formats` | input / output formats (see [Supported formats](../supported_formats.md)) |
 | `image_export_mode` | how images are emitted (`placeholder` / `embedded` / `referenced`) |
 | `do_ocr` / `force_ocr` | enable / force OCR |
-| `ocr_engine` / `ocr_lang` | OCR engine and languages |
+| `ocr_preset` / `ocr_lang` | OCR preset and languages (`ocr_engine` is deprecated — prefer `ocr_preset`) |
 | `table_mode` | table-structure mode (`fast` / `accurate`) |
 | `pdf_backend` | PDF parsing backend |
 | `pipeline` | processing pipeline (e.g. standard / VLM) |
 | enrichment flags | code, formula, picture classification/description, chart |
 
-For VLM / picture-description model configuration see [Vision models](../vision_models.md) and [Model catalog](../model_catalog.md).
+For full-page VLM conversion models see [Vision models](../vision_models.md); for picture-description models see [Enrichment features](../enrichments.md#picture-description) and [Model catalog](../model_catalog.md).
 
 ## Example: convert a URL (async)
 
@@ -143,11 +143,11 @@ while task["task_status"] not in ("success", "failure"):
 
 **Fetch** the result when finished — `GET /v1/result/{task_id}`.
 
-## Picture description (local vs API)
+## Picture description
 
-When picture-description enrichment is on, choose an execution mode:
+When picture-description (image captioning) enrichment is on, select the model with `picture_description_preset` (a named preset) or, for full control, `picture_description_custom_config`. The model can run locally (in-process) or via a remote OpenAI-compatible API endpoint; the remote path requires launching the server with `DOCLING_SERVE_ENABLE_REMOTE_SERVICES=true`.
 
-- **local** — run the vision-language model in-process (`picture_description_local`, e.g. a Hugging Face `repo_id`).
-- **api** — call an external OpenAI-compatible endpoint (`picture_description_api`, with `url` / `params`). This requires launching the server with `DOCLING_SERVE_ENABLE_REMOTE_SERVICES=true`.
+!!! note
+    The older `picture_description_local` / `picture_description_api` parameters are deprecated at docling-serve v1.21.0 — migrate to `picture_description_preset` / `picture_description_custom_config`.
 
-See [Vision models](../vision_models.md) for model choices and configuration.
+See [Enrichment features](../enrichments.md#picture-description) for picture-description options, and [Model catalog](../model_catalog.md) for available models.

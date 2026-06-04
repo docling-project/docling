@@ -13,7 +13,8 @@ Run Docling as an HTTP service with [docling-serve](https://github.com/docling-p
 - **[Jobkit](../jobkit.md)** — large-scale / distributed batch pipelines.
 - **[MCP server](../mcp.md)** — expose Docling as tools to AI agents.
 
-> On "fully managed": a hosted version of this same service is available as **Docling for IBM watsonx** — see the [managed option](deployment.md#fully-managed-option) on the Deployment page.
+!!! info "Fully managed option"
+    A hosted version of this same service is available as **Docling for IBM watsonx** — see the [managed option](deployment.md#fully-managed-option) on the Deployment page.
 
 !!! note "Two MCP modes"
     docling-serve can also expose Docling over MCP, bundled in the same image (streamable-http transport). That is distinct from the standalone [MCP server](../mcp.md), which remains the canonical MCP documentation. For the bundled mode see the serve [`mcp.md`](https://github.com/docling-project/docling-serve/blob/v1.21.0/docs/mcp.md).
@@ -50,7 +51,7 @@ The fastest way to make a conversion call. Both options hit the *same* REST API.
 
 ## How it works
 
-A request hits the docling-serve API, which runs the conversion through Docling core and returns the result (synchronously, or as an async task you poll). Background jobs run on a pluggable compute engine — in-process by default, or a Redis-backed queue for scaling. For Docling's internals see [Architecture](../../concepts/architecture.md); for the full API see [REST API](rest_api.md) and [Deployment](deployment.md).
+A request hits the docling-serve API, which runs the conversion through Docling and returns the result (synchronously, or as an async task you poll). Background jobs run on a pluggable compute engine — in-process by default, or a Redis-backed queue for scaling. For Docling's internals see [Architecture](../../concepts/architecture.md); for the full API see [REST API](rest_api.md) and [Deployment](deployment.md).
 
 ## Configuration model
 
@@ -69,11 +70,11 @@ docling-serve is configured by **CLI flags or environment variables**. Precedenc
 | `DOCLING_SERVE_ENABLE_UI` | serve the Gradio demo UI at `/ui` | `false` |
 | `DOCLING_SERVE_ARTIFACTS_PATH` | local path to pre-downloaded models | unset (auto-download) |
 | `DOCLING_SERVE_MAX_NUM_PAGES` / `DOCLING_SERVE_MAX_FILE_SIZE` | per-request limits | unset |
-| `DOCLING_SERVE_ENG_KIND` | async engine: `local` or `rq` | `local` |
+| `DOCLING_SERVE_ENG_KIND` | async engine: `local` or `rq` (also `kfp`/`ray` — see serve repo) | `local` |
 
 See the full reference in the source repo: [`configuration.md`](https://github.com/docling-project/docling-serve/blob/v1.21.0/docs/configuration.md) and [`.env.example`](https://github.com/docling-project/docling-serve/blob/v1.21.0/.env.example).
 
-### Docling core settings (env vars)
+### Docling settings (env vars)
 
 These tune Docling itself and are read by the server too:
 
