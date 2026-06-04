@@ -69,6 +69,27 @@ curl -X POST "http://localhost:5001/v1/convert/file" \
   -F "table_mode=fast"
 ```
 
+## Base64 file upload
+
+To send a file inline instead of multipart, POST to `/v1/convert/source` with `file_sources`. For large files, write the request body to a temp file and pass it with `-d @file` to avoid the shell's "Argument list too long" error:
+
+```sh
+# 1. base64-encode the file
+B64_DATA=$(base64 -w 0 /path/to/document.pdf)
+
+# 2. build the request body
+cat > /tmp/request_body.json <<EOF
+{
+  "file_sources": [{ "base64_string": "${B64_DATA}", "filename": "document.pdf" }]
+}
+EOF
+
+# 3. POST the request
+curl -X POST "http://localhost:5001/v1/convert/source" \
+  -H "Content-Type: application/json" \
+  -d @/tmp/request_body.json
+```
+
 ## Response format
 
 A single-file conversion returns JSON:

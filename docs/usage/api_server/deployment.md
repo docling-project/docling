@@ -37,6 +37,9 @@ curl -X POST "http://localhost:5001/v1/convert/source/async" \
   -d '{"http_sources": [{"url": "https://arxiv.org/pdf/2501.17887"}]}'
 ```
 
+!!! warning
+    When uvicorn runs with `--reload` or `--workers > 1` it spawns subprocesses, and CLI flags (e.g. `--enable-ui`, `--artifacts-path`) are ignored. Use the `DOCLING_SERVE_*` environment variables in those deployments.
+
 The **Local engine** runs jobs in a small in-process thread pool — no Redis, no extra processes; bounded by the one host. Two knobs: `DOCLING_SERVE_ENG_LOC_NUM_WORKERS` (default `2`) and `DOCLING_SERVE_ENG_LOC_SHARE_MODELS` (default `false`). To scale past one process, use the RQ engine below.
 
 ## RQ engine (distributed: Redis + separate workers)
