@@ -17,7 +17,11 @@ from docling.datamodel.base_models import ConversionStatus, InputFormat, OutputF
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
-from docling.datamodel.service.requests import HttpSourceRequest, S3SourceRequest
+from docling.datamodel.service.requests import (
+    AnyHttpSourceRequest,
+    HttpSourceRequest,
+    S3SourceRequest,
+)
 from docling.datamodel.service.responses import (
     MessageKind,
     PresignedUrlConvertDocumentResponse,
@@ -566,6 +570,7 @@ def test_convert_all_uses_async_pipeline_and_preserves_order(tmp_path) -> None:
             item_list,
             max_in_flight,
             ordered,
+            target=InBodyTarget(),
         ):
             items = list(item_list)
             calls.append(
@@ -628,6 +633,7 @@ def test_convert_all_returns_iterator_and_yields_before_batch_completion(
             item_list,
             max_in_flight,
             ordered,
+            target=InBodyTarget(),
         ):
             items = list(item_list)
             assert max_in_flight == 2
@@ -718,6 +724,7 @@ def test_convert_all_interleaves_preflight_skips_correctly(tmp_path: Path) -> No
             item_list,
             max_in_flight,
             ordered,
+            target=InBodyTarget(),
         ):
             items = list(item_list)
             assert max_in_flight == DEFAULT_MAX_CONCURRENCY
@@ -1535,6 +1542,55 @@ def test_submit_batch_posts_batch_request() -> None:
     )
 
 
+def test_submit_batch_returns_presigned_result_for_presigned_target() -> None:
+    presigned_result = PresignedUrlConvertResponse(
+        num_converted=1,
+        num_succeeded=1,
+        num_partially_succeeded=0,
+        num_failed=0,
+        processing_time=0.25,
+        documents=[
+            {
+                "source_index": 0,
+                "source_uri": "https://example.org/sample.pdf",
+                "filename": "sample.pdf",
+                "status": "success",
+                "artifacts": [
+                    {
+                        "artifact_type": "markdown",
+                        "mime_type": "text/markdown",
+                        "uri": "https://download.example.org/sample.md",
+                    }
+                ],
+            }
+        ],
+    )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_batch_task = MethodType(
+            lambda self, sources, options, target, request_headers=None: (
+                _status_response("task-presigned-batch", "pending")
+            ),
+            client,
+        )
+        client._wait_for_terminal_status = MethodType(
+            lambda self, task_id, timeout: _status_response(task_id, "success"),
+            client,
+        )
+        client._fetch_presigned_result = MethodType(
+            lambda self, task_id, last_status: presigned_result,
+            client,
+        )
+
+        job = client.submit_batch(
+            sources=[AnyHttpSourceRequest(url="https://example.org/sample.pdf")],
+            target=PresignedUrlTarget(),
+        )
+        result = job.result(timeout=1.0)
+
+    assert result is presigned_result
+
+
 def test_submit_batch_returns_counts_result_for_s3_target() -> None:
     s3_result = PresignedUrlConvertDocumentResponse(
         num_converted=1,
@@ -1546,8 +1602,8 @@ def test_submit_batch_returns_counts_result_for_s3_target() -> None:
 
     with DoclingServiceClient(url=TEST_BASE_URL) as client:
         client._submit_batch_task = MethodType(
-            lambda self, sources, options, target: _status_response(
-                "task-s3", "pending"
+            lambda self, sources, options, target, request_headers=None: (
+                _status_response("task-s3", "pending")
             ),
             client,
         )
@@ -1583,13 +1639,48 @@ def test_submit_batch_returns_counts_result_for_s3_target() -> None:
     assert result is s3_result
 
 
+def test_submit_batch_forwards_request_headers() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["path"] = request.url.path
+        captured["header_tenant"] = request.headers.get("X-Tenant-Id")
+        captured["header_api"] = request.headers.get("X-Api-Key")
+        return httpx.Response(
+            200,
+            json=_status_response("task-batch-headers", "pending").model_dump(
+                mode="json"
+            ),
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    with DoclingServiceClient(url=TEST_BASE_URL, api_key="base-key") as client:
+        client._http_client.close()
+        client._http_client = httpx.Client(
+            transport=transport,
+            headers={"X-Api-Key": "base-key"},
+            timeout=client._http_client.timeout,
+        )
+        job = client.submit_batch(
+            sources=[AnyHttpSourceRequest(url="https://example.org/sample.pdf")],
+            target=PresignedUrlTarget(),
+            headers={"X-Tenant-Id": "tenant-batch"},
+        )
+
+    assert job.task_id == "task-batch-headers"
+    assert captured["path"] == "/v1/convert/source/batch"
+    assert captured["header_tenant"] == "tenant-batch"
+    assert captured["header_api"] == "base-key"
+
+
 def test_submit_and_retrieve_many_is_deprecated_alias(tmp_path: Path) -> None:
     source = tmp_path / "a.pdf"
     source.write_bytes(b"%PDF-1.4\n")
 
     with DoclingServiceClient(url=TEST_BASE_URL) as client:
         client.submit_and_retrieve_each = MethodType(
-            lambda self, items, max_in_flight=DEFAULT_MAX_CONCURRENCY, ordered=False: (
+            lambda self, items, max_in_flight=DEFAULT_MAX_CONCURRENCY, ordered=False, target=None: (
                 iter(())
             ),
             client,

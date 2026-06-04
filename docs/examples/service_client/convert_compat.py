@@ -49,7 +49,6 @@ def run_convert_all(client: DoclingServiceClient, sources: list[str]) -> None:
             sources=sources,
             options=create_conversion_options(),
             max_concurrency=2,
-            raises_on_error=False,
         ),
         start=1,
     ):

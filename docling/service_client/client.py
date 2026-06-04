@@ -394,6 +394,7 @@ class DoclingServiceClient:
         target: BatchSubmitTarget,
         output_formats: list[OutputFormat] | None = None,
         options: ConvertDocumentsRequestOptions | None = None,
+        headers: dict[str, str] | None = None,
     ) -> (
         ConversionJob[PresignedUrlConvertDocumentResponse]
         | ConversionJob[PresignedUrlConvertResponse]
@@ -413,6 +414,7 @@ class DoclingServiceClient:
             sources=sources,
             options=submit_options,
             target=target,
+            request_headers=headers,
         )
 
     def submit_chunk(
@@ -737,6 +739,7 @@ class DoclingServiceClient:
         sources: list[BatchSourceRequestItem],
         options: ConvertDocumentsRequestOptions,
         target: BatchSubmitTarget,
+        request_headers: dict[str, str] | None = None,
     ) -> (
         ConversionJob[PresignedUrlConvertDocumentResponse]
         | ConversionJob[PresignedUrlConvertResponse]
@@ -745,6 +748,7 @@ class DoclingServiceClient:
             sources=sources,
             options=options,
             target=target,
+            request_headers=request_headers,
         )
         if isinstance(target, S3Target):
 
@@ -785,6 +789,7 @@ class DoclingServiceClient:
         sources: list[BatchSourceRequestItem],
         options: ConvertDocumentsRequestOptions,
         target: BatchSubmitTarget,
+        request_headers: dict[str, str] | None = None,
     ) -> TaskStatusResponse:
         request = BatchConvertSourcesRequest(
             options=options,
@@ -795,6 +800,7 @@ class DoclingServiceClient:
             method="POST",
             path="/v1/convert/source/batch",
             json=request.model_dump(mode="json"),
+            headers=request_headers,
         )
         if response.status_code != 200:
             self._raise_for_generic_http_error(
