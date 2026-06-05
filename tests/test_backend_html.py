@@ -9,7 +9,7 @@ from unittest.mock import Mock, mock_open, patch
 import pytest
 import requests
 from bs4 import BeautifulSoup
-from docling_core.types.doc import PictureItem
+from docling_core.types.doc import PictureItem, RichTableCell
 from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
 
@@ -585,6 +585,49 @@ def test_is_rich_table_cell(html_paths):
         assert num_cells == len(gt_cells[idx_t]), (
             f"Cell number does not match in table {idx_t}"
         )
+
+
+def test_table_row_section_flag_from_tr_and_td_class():
+    raw_html = b"""
+    <html>
+      <body>
+        <table>
+          <tr><th>Key</th><th>Value</th></tr>
+          <tr class="row_section">
+            <td>Section From TR</td>
+            <td><a href="https://example.com">Rich Section From TR</a></td>
+          </tr>
+          <tr>
+            <td class="row_section">Section From TD</td>
+            <td>Normal Cell</td>
+          </tr>
+        </table>
+      </body>
+    </html>
+    """
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test_row_section.html",
+    )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(raw_html),
+    )
+    doc: DoclingDocument = backend.convert()
+
+    cells = doc.tables[0].data.table_cells
+    cells_by_text = {cell.text: cell for cell in cells}
+
+    assert cells_by_text["Section From TR"].row_section is True
+    assert cells_by_text["Section From TD"].row_section is True
+    assert cells_by_text["Normal Cell"].row_section is False
+
+    rich_section_cell = cells_by_text["Rich Section From TR"]
+    assert isinstance(rich_section_cell, RichTableCell)
+    assert rich_section_cell.row_section is True
 
 
 data_fix_par = [

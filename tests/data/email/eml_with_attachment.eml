@@ -1,0 +1,26 @@
+From: Alice Example <alice@example.com>
+To: Bob Example <bob@example.com>
+Subject: Email with Attachment
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="----=_Part_0_123456789.1234567890"
+
+------=_Part_0_123456789.1234567890
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Hello Bob,
+
+This email contains an attachment.
+
+Best regards,
+Alice
+
+------=_Part_0_123456789.1234567890
+Content-Type: text/plain; name="test.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="test.txt"
+
+VGhpcyBpcyBhIHRlc3QgYXR0YWNobWVudCBmaWxlLgpJdCBjb250YWlucyBzb21lIGR1bW15IGNv
+bnRlbnQuCg==
+
+------=_Part_0_123456789.1234567890--

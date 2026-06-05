@@ -11,3 +11,10 @@ item-0 at level 0: unspecified: group _root_
   item-10 at level 1: text: 
   item-11 at level 1: text: 
   item-12 at level 1: picture
+  item-13 at level 1: text: 
+  item-14 at level 1: section: group textbox
+    item-15 at level 2: text: 
+    item-16 at level 2: picture
+    item-17 at level 2: text: Fig – Torque v/s Speed characteristics
+  item-18 at level 1: picture
+  item-19 at level 1: text: 

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.96.1"  # DO NOT EDIT, updated automatically
+version = "2.97.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -141,6 +141,11 @@ format-latex = [
   'pylatexenc>=2.10,<3.0',
 ]
 
+format-email = [
+  'docling-slim[format-html]',
+  'mail-parser>=4.1.4,<5.0.0',
+]
+
 format-xml-xbrl = [
   'arelle-release>=2.38.17,<3.0.0',
 ]
@@ -207,7 +212,9 @@ models-onnxruntime = [
 
 # Vision Language Models for inline processing
 models-vlm-inline = [
-  'transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*',
+  # temporary solution until huggingface/transformers#46159 is resolved
+  'transformers>=4.42.0,<5.9.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.* ; sys_platform == "darwin"',
+  'transformers>=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.* ; sys_platform != "darwin"',
   'accelerate>=1.2.1,<2.0.0',
   'mlx-vlm>=0.4.3,<1.0.0 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
   'qwen-vl-utils>=0.0.11',
@@ -236,7 +243,7 @@ cli = [
 # CONVENIENCE BUNDLES
 # ============================================================================
 standard = [
-  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-latex,feat-chunking,extract-core,service-client,cli]',
+  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-latex,format-email,feat-chunking,extract-core,service-client,cli]',
 ]
 
 all = [
