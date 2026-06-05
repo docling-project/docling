@@ -2,7 +2,7 @@ To use Docling, simply install `docling` from your Python package manager, e.g. 
 ```bash
 pip install docling
 ```
-If you are using uv:
+If you are using [uv](https://docs.astral.sh/uv/):
 ```bash
 uv add docling
 ```
@@ -17,21 +17,15 @@ Works on macOS, Linux, and Windows, with support for both x86_64 and arm64 archi
     All the different ways for installing `torch` are listed on their website <https://pytorch.org/>.
 
     One common situation is the installation on Linux systems with cpu-only support.
-    In this case, we suggest the installation of Docling with the following options
+    In this case, we suggest the installation of Docling with the following options:
 
     ```bash
     # Example for installing on the Linux cpu-only version
     pip install docling --extra-index-url https://download.pytorch.org/whl/cpu
     ```
     
-    For uv user
-    ```bash
-    uv add docling \
-      --index https://download.pytorch.org/whl/cpu \
-      --index-strategy unsafe-best-match
-    ```
-    For uv users, the `--index-strategy unsafe-best-match` flag is required
-    because uv's default behavior prevents searching across multiple indexes.
+    For `uv` users:
+    
 
 ??? "Installation on macOS Intel (x86_64)"
 
