@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from docling.datamodel.service.responses import PublicFailureInfo
+
 
 class DoclingServiceClientError(Exception):
     """Base error for all client SDK failures."""
@@ -70,6 +72,19 @@ class ResultNotReadyError(DoclingServiceClientError):
 
 class ResultExpiredError(DoclingServiceClientError):
     """Raised when a terminal task no longer has a stored result."""
+
+
+class TaskExecutionError(DoclingServiceClientError):
+    """Raised when task-level orchestration fails."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        failure: PublicFailureInfo | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.failure = failure
 
 
 class ConversionError(DoclingServiceClientError):

@@ -12,7 +12,12 @@ from docling.datamodel.service.responses import (
     ArtifactRef,
     DoclingTaskResult,
     DocumentArtifactItem,
+    FailureCategory,
+    FailurePhase,
     PresignedArtifactResult,
+    PublicFailureInfo,
+    TaskFailureResult,
+    TaskStatusResponse,
 )
 
 
@@ -98,3 +103,40 @@ def test_docling_task_result_accepts_presigned_artifact_results() -> None:
     )
 
     assert result.result.kind == "PresignedArtifactResult"
+
+
+def test_task_failure_result_roundtrip() -> None:
+    failure = PublicFailureInfo(
+        code="internal_error",
+        category=FailureCategory.INTERNAL,
+        message="Internal processing error.",
+        retryable=False,
+        phase=FailurePhase.ORCHESTRATION,
+        correlation_id="task-1",
+    )
+    result = TaskFailureResult(failure=failure)
+
+    restored = TaskFailureResult.model_validate_json(result.model_dump_json())
+
+    assert restored.failure.code == "internal_error"
+    assert restored.kind == "TaskFailureResult"
+
+
+def test_task_status_response_accepts_structured_failure() -> None:
+    response = TaskStatusResponse(
+        task_id="task-1",
+        task_type="convert",
+        task_status="failure",
+        error_message="Internal processing error.",
+        failure=PublicFailureInfo(
+            code="internal_error",
+            category=FailureCategory.INTERNAL,
+            message="Internal processing error.",
+            retryable=False,
+            phase=FailurePhase.ORCHESTRATION,
+            correlation_id="task-1",
+        ),
+    )
+
+    assert response.failure is not None
+    assert response.failure.phase == FailurePhase.ORCHESTRATION

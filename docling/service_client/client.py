@@ -53,6 +53,7 @@ from docling.datamodel.service.responses import (
     HealthCheckResponse,
     PresignedUrlConvertDocumentResponse,
     PresignedUrlConvertResponse,
+    TaskFailureResult,
     TaskStatusResponse,
     UsageLimitExceededResponse,
 )
@@ -71,6 +72,7 @@ from docling.service_client.exceptions import (
     ResultNotReadyError,
     ServiceError,
     ServiceUnavailableError,
+    TaskExecutionError,
     TaskNotFoundError,
     TaskTimeoutError,
     UsageLimitExceededError,
@@ -831,6 +833,7 @@ class DoclingServiceClient:
             )
         if response.status_code != 200:
             self._raise_for_generic_http_error(response, error_message)
+        self._raise_if_task_failure_result(response)
         return response
 
     def _fetch_convert_result_payload(
@@ -1684,6 +1687,7 @@ class DoclingServiceClient:
             )
         if response.status_code != 200:
             self._raise_for_generic_http_error(response, error_message)
+        self._raise_if_task_failure_result(response)
         return response
 
     def _check_retry(
@@ -1892,13 +1896,32 @@ class DoclingServiceClient:
             if last_status is not None and is_terminal_task_status(last_status):
                 if last_status.task_status == "failure":
                     message = last_status.error_message or f"Task {task_id} failed."
-                    raise ConversionError(message)
+                    raise TaskExecutionError(message, failure=last_status.failure)
                 raise ResultExpiredError(f"Result for task {task_id} has expired.")
             raise ResultNotReadyError(f"Result for task {task_id} is not ready.")
         raise ServiceError(
             "Unexpected result lookup error.",
             status_code=response.status_code,
             detail=detail,
+        )
+
+    def _raise_if_task_failure_result(self, response: httpx.Response) -> None:
+        content_type = response.headers.get("content-type", "")
+        if "json" not in content_type.lower():
+            return
+
+        try:
+            payload = response.json()
+        except ValueError:
+            return
+
+        if not isinstance(payload, dict) or payload.get("kind") != "TaskFailureResult":
+            return
+
+        task_failure = TaskFailureResult.model_validate(payload)
+        raise TaskExecutionError(
+            task_failure.failure.message,
+            failure=task_failure.failure,
         )
 
     def _raise_for_generic_http_error(

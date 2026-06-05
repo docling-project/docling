@@ -23,9 +23,13 @@ from docling.datamodel.service.requests import (
     S3SourceRequest,
 )
 from docling.datamodel.service.responses import (
+    FailureCategory,
+    FailurePhase,
     MessageKind,
     PresignedUrlConvertDocumentResponse,
     PresignedUrlConvertResponse,
+    PublicFailureInfo,
+    TaskFailureResult,
     TaskStatusResponse,
     WebsocketMessage,
 )
@@ -42,6 +46,7 @@ from docling.service_client.exceptions import (
     ResultExpiredError,
     ServiceError,
     ServiceUnavailableError,
+    TaskExecutionError,
     UsageLimitExceededError,
 )
 from docling.service_client.job import ConversionJob, _JobHandlers
@@ -142,11 +147,42 @@ def test_result_404_after_failed_status_raises_conversion_error() -> None:
     last_status.error_message = "conversion failed upstream"
 
     with DoclingServiceClient(url=TEST_BASE_URL) as client:
-        with pytest.raises(ConversionError, match="conversion failed upstream"):
+        with pytest.raises(TaskExecutionError, match="conversion failed upstream"):
             client._raise_for_result_404(
                 task_id="task-1",
                 response=response,
                 last_status=last_status,
+            )
+
+
+def test_fetch_result_response_raises_task_execution_error_for_failure_payload() -> (
+    None
+):
+    response = httpx.Response(
+        200,
+        json=TaskFailureResult(
+            failure=PublicFailureInfo(
+                code="internal_error",
+                category=FailureCategory.INTERNAL,
+                message="Internal processing error.",
+                retryable=False,
+                phase=FailurePhase.ORCHESTRATION,
+                correlation_id="task-1",
+            )
+        ).model_dump(mode="json"),
+        headers={"content-type": "application/json"},
+    )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._request_with_retry = MethodType(  # type: ignore[method-assign]
+            lambda self, **kwargs: response,
+            client,
+        )
+        with pytest.raises(TaskExecutionError, match=r"Internal processing error\."):
+            client._fetch_result_response(
+                task_id="task-1",
+                last_status=_status_response("task-1", "failure"),
+                error_message="fetch failed",
             )
 
 
