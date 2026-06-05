@@ -57,3 +57,14 @@ Paragraph 2.1.2
 1. Single item of a new list
 
 1. Single item of a new list
+
+#### Style-based lists:
+
+*Docling should extract the list format when the formatting comes from the styles:*
+
+- *First item*
+- *Second item*
+- *Third item*
+    - *Sub-item A*
+    - *Sub-item B*
+- *Fourth item*

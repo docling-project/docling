@@ -539,6 +539,27 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             return self._str_to_int(numId, None), self._str_to_int(ilvl, None)
 
+        # If not found directly in paragraph, check if the style defines numbering
+        if paragraph.style is not None:
+            style_elem = getattr(paragraph.style, "element", None)
+            if style_elem is not None:
+                style_numPr = style_elem.find(f".//{self._W_NS_CLARK}numPr")
+                if style_numPr is not None:
+                    numId_elem = style_numPr.find(f"{self._W_NS_CLARK}numId")
+                    ilvl_elem = style_numPr.find(f"{self._W_NS_CLARK}ilvl")
+                    numId = (
+                        numId_elem.get(self.XML_KEY) if numId_elem is not None else None
+                    )
+                    ilvl = (
+                        ilvl_elem.get(self.XML_KEY) if ilvl_elem is not None else None
+                    )
+
+                    # If numId is found but ilvl is not specified, default to level 0
+                    if numId is not None and ilvl is None:
+                        ilvl = "0"
+
+                    return self._str_to_int(numId, None), self._str_to_int(ilvl, None)
+
         return None, None  # If the paragraph is not part of a list
 
     def _get_level_element(self, numid: int, ilvl: int) -> BaseOxmlElement | None:
