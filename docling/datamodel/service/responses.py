@@ -191,8 +191,7 @@ ResultType = Annotated[
     | ZipArchiveResult
     | RemoteTargetResult
     | ChunkedDocumentResult
-    | PresignedArtifactResult
-    | TaskFailureResult,
+    | PresignedArtifactResult,
     Field(discriminator="kind"),
 ]
 
