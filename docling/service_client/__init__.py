@@ -22,6 +22,7 @@ from docling.service_client.client import (
 from docling.service_client.exceptions import (
     ConversionError,
     DoclingServiceClientError,
+    ResponseSchemaMismatchError,
     ResultExpiredError,
     ResultNotReadyError,
     ServiceError,
@@ -47,6 +48,7 @@ __all__ = [
     "PresignedUrlConvertResponse",
     "PresignedUrlTarget",
     "RawServiceResult",
+    "ResponseSchemaMismatchError",
     "ResultExpiredError",
     "ResultNotReadyError",
     "S3SourceRequest",

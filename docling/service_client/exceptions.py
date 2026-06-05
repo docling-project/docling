@@ -29,6 +29,10 @@ class ServiceUnavailableError(ServiceError):
     """Raised for unavailable service or exhausted HTTP 500 retries."""
 
 
+class ResponseSchemaMismatchError(ServiceError):
+    """Raised when a successful HTTP response cannot be parsed into the expected model."""
+
+
 class UsageLimitExceededError(ServiceError):
     """Raised when the service rejects work because the usage quota is exhausted."""
 

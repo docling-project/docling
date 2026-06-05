@@ -66,6 +66,7 @@ from docling.datamodel.settings import DocumentLimits, PageRange
 from docling.service_client._scheduler import _run_bounded
 from docling.service_client.exceptions import (
     ConversionError,
+    ResponseSchemaMismatchError,
     ResultExpiredError,
     ResultNotReadyError,
     ServiceError,
@@ -302,14 +303,19 @@ class DoclingServiceClient:
             ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
         ]
     ]:
-        effective_target = InBodyTarget() if target is None else target
+        """Yield one outcome per submitted item.
+
+        `target=None` uses the same auto-target behavior as `submit()`: the client
+        first tries `PresignedUrlTarget()` and falls back to `InBodyTarget()` when the
+        server rejects presigned output because artifact storage is not configured.
+        """
         return self._run_submit_and_retrieve_many_async(
             item_list=items,
             max_in_flight=self._validate_concurrency(
                 max_in_flight, name="max_in_flight"
             ),
             ordered=ordered,
-            target=effective_target,
+            target=target,
         )
 
     def submit_and_retrieve_many(
@@ -837,7 +843,7 @@ class DoclingServiceClient:
             last_status=last_status,
             error_message=f"Fetching result for task {task_id} failed.",
         )
-        return ConvertDocumentResponse.model_validate_json(response.text)
+        return self._parse_result_model_response(response, ConvertDocumentResponse)
 
     def _fetch_raw_result(
         self,
@@ -861,7 +867,7 @@ class DoclingServiceClient:
             last_status=last_status,
             error_message=f"Fetching result for task {task_id} failed.",
         )
-        return PresignedUrlConvertResponse.model_validate_json(response.text)
+        return self._parse_result_model_response(response, PresignedUrlConvertResponse)
 
     def _fetch_presigned_document_result(
         self,
@@ -873,7 +879,9 @@ class DoclingServiceClient:
             last_status=last_status,
             error_message=f"Fetching result for task {task_id} failed.",
         )
-        return PresignedUrlConvertDocumentResponse.model_validate_json(response.text)
+        return self._parse_result_model_response(
+            response, PresignedUrlConvertDocumentResponse
+        )
 
     def _fetch_chunk_result(
         self,
@@ -885,7 +893,21 @@ class DoclingServiceClient:
             last_status=last_status,
             error_message=f"Fetching chunk result for task {task_id} failed.",
         )
-        return ChunkDocumentResponse.model_validate_json(response.text)
+        return self._parse_result_model_response(response, ChunkDocumentResponse)
+
+    def _parse_result_model_response(
+        self,
+        response: httpx.Response,
+        model_cls: type[_T],
+    ) -> _T:
+        try:
+            return model_cls.model_validate_json(response.text)
+        except (ValidationError, ValueError) as exc:
+            raise ResponseSchemaMismatchError(
+                "Response schema mismatch — client and server versions may differ.",
+                status_code=response.status_code,
+                detail=str(exc),
+            ) from exc
 
     def _resolve_options(
         self,
@@ -1152,7 +1174,7 @@ class DoclingServiceClient:
         item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
-        target: InBodyTarget | PresignedUrlTarget = InBodyTarget(),
+        target: InBodyTarget | PresignedUrlTarget | None = None,
     ) -> Iterator[
         tuple[
             ConversionItem,
@@ -1172,7 +1194,7 @@ class DoclingServiceClient:
         item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
-        target: InBodyTarget | PresignedUrlTarget = InBodyTarget(),
+        target: InBodyTarget | PresignedUrlTarget | None = None,
     ) -> Iterator[
         tuple[
             ConversionItem,
@@ -1341,7 +1363,7 @@ class DoclingServiceClient:
         item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
-        target: InBodyTarget | PresignedUrlTarget = InBodyTarget(),
+        target: InBodyTarget | PresignedUrlTarget | None = None,
     ) -> AsyncGenerator[
         tuple[
             ConversionItem,
@@ -1362,25 +1384,46 @@ class DoclingServiceClient:
                     max_file_size=None,
                     page_range=None,
                 )
+                effective_target = PresignedUrlTarget() if target is None else target
                 submit_options = self._options_for_output_formats(
                     resolved.options,
                     output_formats=None,
-                    target=target,
+                    target=effective_target,
                 )
-                initial_status = await self._submit_convert_task_async(
-                    source=item.source,
-                    options=submit_options,
-                    target=target,
-                    async_client=async_client,
-                    request_headers=item.headers,
-                )
+                try:
+                    initial_status = await self._submit_convert_task_async(
+                        source=item.source,
+                        options=submit_options,
+                        target=effective_target,
+                        async_client=async_client,
+                        request_headers=item.headers,
+                    )
+                except ServiceError as exc:
+                    if (
+                        target is not None
+                        or not self._should_fallback_from_presigned_target(exc)
+                    ):
+                        raise
+                    effective_target = InBodyTarget()
+                    submit_options = self._options_for_output_formats(
+                        resolved.options,
+                        output_formats=None,
+                        target=effective_target,
+                    )
+                    initial_status = await self._submit_convert_task_async(
+                        source=item.source,
+                        options=submit_options,
+                        target=effective_target,
+                        async_client=async_client,
+                        request_headers=item.headers,
+                    )
                 terminal_status = await self._wait_for_terminal_status_for_submit_and_retrieve_many_async(
                     task_id=initial_status.task_id,
                     timeout=self._job_timeout,
                     async_client=async_client,
                     max_in_flight=max_in_flight,
                 )
-                if isinstance(target, PresignedUrlTarget):
+                if isinstance(effective_target, PresignedUrlTarget):
                     return await self._fetch_presigned_result_async(
                         task_id=initial_status.task_id,
                         last_status=terminal_status,
@@ -1604,7 +1647,7 @@ class DoclingServiceClient:
             last_status=last_status,
             error_message=f"Fetching result for task {task_id} failed.",
         )
-        return ConvertDocumentResponse.model_validate_json(response.text)
+        return self._parse_result_model_response(response, ConvertDocumentResponse)
 
     async def _fetch_presigned_result_async(
         self,
@@ -1618,7 +1661,7 @@ class DoclingServiceClient:
             last_status=last_status,
             error_message=f"Fetching result for task {task_id} failed.",
         )
-        return PresignedUrlConvertResponse.model_validate_json(response.text)
+        return self._parse_result_model_response(response, PresignedUrlConvertResponse)
 
     async def _fetch_result_response_async(
         self,
