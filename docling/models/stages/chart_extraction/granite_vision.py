@@ -46,7 +46,7 @@ class _BaseChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
     _model_repo_revision: str
 
     images_scale: float = 2.0
-    
+
     def __init__(
         self,
         enabled: bool,
