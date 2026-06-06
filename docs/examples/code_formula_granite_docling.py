@@ -1,5 +1,5 @@
 # %% [markdown]
-# Comparing CodeFormula models for code and formula extraction.
+# Example: Comparing CodeFormula models for code and formula extraction.
 
 # This example demonstrates how to use both the CodeFormulaV2 model
 # and the Granite Docling model for extracting code blocks and mathematical
