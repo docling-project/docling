@@ -502,7 +502,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 _log.debug(f"Ignoring element in DOCX with tag: {tag_name}")
 
         return doc, added_elements
-    
+
     def _is_valid_image(self, pil_image: Image.Image | None) -> bool:
         """Check if an image is a meaningful graphic vs a layout spacer."""
         if pil_image is None:
@@ -515,11 +515,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         try:
             extrema = pil_image.getextrema()
             if extrema is not None:
-                if pil_image.mode in ('RGBA', 'LA'):
+                if pil_image.mode in ("RGBA", "LA"):
                     # extrema[-1] is the Alpha channel. If max alpha is 0, it is 100% invisible.
                     if extrema[-1][1] == 0:
                         return False
-                elif pil_image.mode == 'RGB':
+                elif pil_image.mode == "RGB":
                     # If all channels are exactly 255, it is a pure white spacing box.
                     if extrema == ((255, 255), (255, 255), (255, 255)):
                         return False
@@ -830,7 +830,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     @classmethod
     def _get_format_from_run(
-        cls, run: Run, paragraph: Paragraph | None = None) -> Formatting | None:
+        cls, run: Run, paragraph: Paragraph | None = None
+    ) -> Formatting | None:
         is_bold = run.bold
 
         if not is_bold:
@@ -941,7 +942,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
                 )
                 fmt = (
-                    self._get_format_from_run(Run(runs[0], paragraph), paragraph) if runs else None
+                    self._get_format_from_run(Run(runs[0], paragraph), paragraph)
+                    if runs
+                    else None
                 )
                 content.append((text, fmt, None))
                 continue
@@ -968,7 +971,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     )
                 )
             elif isinstance(item, Run):
-                content.append((item.text, self._get_format_from_run(item, paragraph), None))
+                content.append(
+                    (item.text, self._get_format_from_run(item, paragraph), None)
+                )
 
         return content
 
@@ -2490,7 +2495,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                                 "Warning: VML image cannot be loaded. "
                                 "Install LibreOffice for better VML/EMF/WMF support."
                             )
-                    
+
                 if not self._is_valid_image(pil_image):
                     continue
 
@@ -2514,7 +2519,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             pil_image = self._convert_elements_via_docx(drawingml_els, element_tag=None)
             if pil_image is None:
                 raise UnidentifiedImageError
-            
+
             if not self._is_valid_image(pil_image):
                 return
 
