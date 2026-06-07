@@ -1,4 +1,5 @@
 import asyncio
+import json
 import queue
 import threading
 import time
@@ -1396,6 +1397,68 @@ def test_submit_url_forwards_request_headers() -> None:
     assert captured["path"] == "/v1/convert/source/async"
     assert captured["header_tenant"] == "tenant-a"
     assert captured["header_api"] == "base-key"
+
+
+def test_submit_url_omits_default_from_formats_from_payload() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["payload"] = json.loads(request.content.decode("utf-8"))
+        return httpx.Response(
+            200,
+            json=_status_response("task-default-formats", "pending").model_dump(
+                mode="json"
+            ),
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.close()
+        client._http_client = httpx.Client(
+            transport=transport,
+            timeout=client._http_client.timeout,
+        )
+        job = client.submit(
+            source="https://example.org/sample.pdf",
+            options=ConvertDocumentsRequestOptions(),
+            target=InBodyTarget(),
+        )
+
+    assert job.task_id == "task-default-formats"
+    assert "from_formats" not in captured["payload"]["options"]  # type: ignore[index]
+
+
+def test_submit_url_preserves_explicit_from_formats_in_payload() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["payload"] = json.loads(request.content.decode("utf-8"))
+        return httpx.Response(
+            200,
+            json=_status_response("task-explicit-formats", "pending").model_dump(
+                mode="json"
+            ),
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.close()
+        client._http_client = httpx.Client(
+            transport=transport,
+            timeout=client._http_client.timeout,
+        )
+        job = client.submit(
+            source="https://example.org/sample.pdf",
+            options=ConvertDocumentsRequestOptions(from_formats=[InputFormat.PDF]),
+            target=InBodyTarget(),
+        )
+
+    assert job.task_id == "task-explicit-formats"
+    assert captured["payload"]["options"]["from_formats"] == [  # type: ignore[index]
+        InputFormat.PDF.value
+    ]
 
 
 def test_submit_file_forwards_request_headers(tmp_path: Path) -> None:
