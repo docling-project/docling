@@ -104,6 +104,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.listIter = 0
         # Track list counters per numId and ilvl
         self.list_counters: dict[tuple[int, int], int] = {}
+        # Track the last numId to handle list continuation after interruptions
+        self.last_numid: int | None = None
+        # Track the last list group and its parent to reuse only in same context
+        self.last_list_group: ListGroup | None = None
+        self.last_list_group_numid: int | None = None
+        self.last_list_group_parent: NodeItem | None = None
         # Set starting content layer
         self.content_layer = ContentLayer.BODY
 
@@ -229,6 +235,65 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 return k
         return 0
 
+    def _can_reuse_list_group(self, numid: int, parent: NodeItem | None) -> bool:
+        """Check if we can reuse the cached list group.
+
+        Returns True only if we're continuing the same numId in the same parent context.
+        """
+        return (
+            self.last_numid == numid
+            and self.last_list_group is not None
+            and self.last_list_group_numid == numid
+            and self.last_list_group_parent == parent
+        )
+
+    def _get_or_create_list_group(
+        self,
+        doc: DoclingDocument,
+        numid: int,
+        parent: NodeItem | None,
+        elem_ref: list[RefItem],
+    ) -> ListGroup:
+        """Get existing list group if reusable, otherwise create a new one.
+
+        Args:
+            doc: The DoclingDocument being constructed.
+            numid: The numbering ID for this list.
+            parent: The parent node for the list group.
+            elem_ref: List to append new group reference to (if created).
+
+        Returns:
+            The list group to use (either reused or newly created).
+        """
+        if self._can_reuse_list_group(numid, parent):
+            # When reusing a list group, remove any empty text item that was added
+            # between the last list item and this one (from closing the list)
+            if doc.texts and len(doc.texts) > 0:
+                last_text = doc.texts[-1]
+                if not last_text.text or not last_text.text.strip():
+                    doc.delete_items(node_items=[last_text])
+            return self.last_list_group
+
+        list_gr = doc.add_list_group(
+            name="list",
+            parent=parent,
+            content_layer=self.content_layer,
+        )
+        elem_ref.append(list_gr.get_ref())
+
+        # Update cache for potential future reuse
+        self.last_list_group = list_gr
+        self.last_list_group_numid = numid
+        self.last_list_group_parent = parent
+
+        return list_gr
+
+    def _clear_list_group_cache(self) -> None:
+        """Clear the cached list group to prevent reuse across contexts."""
+        self.last_list_group = None
+        self.last_list_group_numid = None
+        self.last_list_group_parent = None
+
     @contextmanager
     def _isolated_list_context(self):
         """Preserve list state during table cell processing.
@@ -246,12 +311,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         }
         saved_level_at_new_list = self.level_at_new_list
         saved_parents = self.parents.copy()
+        # Save and clear list group cache to prevent reuse across table cells
+        saved_last_list_group = self.last_list_group
+        saved_last_list_group_numid = self.last_list_group_numid
+        saved_last_list_group_parent = self.last_list_group_parent
+        self._clear_list_group_cache()
+
         try:
             yield
         finally:
             self.history = saved_history
             self.level_at_new_list = saved_level_at_new_list
             self.parents = saved_parents
+            self.last_list_group = saved_last_list_group
+            self.last_list_group_numid = saved_last_list_group_numid
+            self.last_list_group_parent = saved_last_list_group_parent
 
     def _walk_linear(
         self,
@@ -1317,6 +1391,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and self._prev_numid() is not None
             and p_style_id not in ["Title", "Heading"]
         ):  # Close list
+            self.last_numid = self._prev_numid()
+            # Store the list group and its parent for potential reuse
+            if self.level_at_new_list and self.level_at_new_list in self.parents:
+                parent_item = self.parents.get(self.level_at_new_list)
+                if isinstance(parent_item, ListGroup):
+                    self.last_list_group = parent_item
+                    self.last_list_group_numid = self.last_numid
+                    self.last_list_group_parent = self.parents.get(
+                        self.level_at_new_list - 1
+                    )
+
             if self.level_at_new_list:
                 for key in range(len(self.parents)):
                     if key >= self.level_at_new_list:
@@ -1393,8 +1478,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
 
         else:
-            # Handle standard paragraph styles and any other text styles
-            # Text style names can have not only default values but user values too
             level = self._get_level()
             parent = self._create_or_reuse_parent(
                 doc=doc,
@@ -1661,16 +1744,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._prev_numid() == numid and self.level_at_new_list is None
         ):  # Open new list
             self.level_at_new_list = level
-            self._reset_list_counters_for_new_sequence(numid)
+            # Only reset counters if this is a truly new list (different numId)
+            if self.last_numid != numid:
+                self._reset_list_counters_for_new_sequence(numid)
 
-            list_gr = doc.add_list_group(
-                name="list",
+            list_gr = self._get_or_create_list_group(
+                doc=doc,
+                numid=numid,
                 parent=self.parents[level - 1],
-                content_layer=self.content_layer,
+                elem_ref=elem_ref,
             )
+
             self.parents[level] = list_gr
-            elem_ref.append(list_gr.get_ref())
             use_level = level
+            self.last_numid = numid
 
         elif (
             self._prev_numid() == numid
@@ -1721,13 +1808,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 use_level = level
                 self.level_at_new_list = use_level
 
-            list_gr = doc.add_list_group(
-                name="list",
+            # Only reset counters if this is a different numId
+            if self.last_numid != numid:
+                self._reset_list_counters_for_new_sequence(numid)
+
+            list_gr = self._get_or_create_list_group(
+                doc=doc,
+                numid=numid,
                 parent=self.parents[use_level - 1],
-                content_layer=self.content_layer,
+                elem_ref=elem_ref,
             )
+
             self.parents[use_level] = list_gr
-            elem_ref.append(list_gr.get_ref())
+            self.last_numid = numid
         else:
             use_level = level - 1
 
@@ -1876,6 +1969,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             cell_element = table.rows[0].cells[0]
             # In case we have a table of only 1 cell, we consider it furniture
             # And proceed processing the content of the cell as though it's in the document body
+            self._clear_list_group_cache()
             self._walk_linear(cell_element._element, doc)
             return elem_ref
 

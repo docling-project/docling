@@ -27,6 +27,28 @@ Works on macOS, Linux, and Windows, with support for both x86_64 and arm64 archi
     For `uv` users:
     
 
+    For `uv` users, add the PyTorch CPU index to your `pyproject.toml`:
+
+    ```toml
+    [[tool.uv.index]]
+    name = "pytorch-cpu"
+    url = "https://download.pytorch.org/whl/cpu"
+    explicit = true
+    ```
+
+    Then pin `torch` to that index:
+
+    ```toml
+    [tool.uv.sources]
+    torch = [{ index = "pytorch-cpu" }]
+    ```
+
+    Then run:
+
+    ```bash
+    uv add docling
+    ```
+
 ??? "Installation on macOS Intel (x86_64)"
 
     When installing Docling on macOS with Intel processors, you might encounter errors with PyTorch compatibility.

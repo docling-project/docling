@@ -2,7 +2,7 @@ import enum
 from functools import cache
 from typing import Annotated, Generic, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import AnyHttpUrl, BaseModel, Field, field_validator
 from typing_extensions import TypeVar
 
 from docling.datamodel.service.callbacks import CallbackSpec
@@ -13,6 +13,7 @@ from docling.datamodel.service.options import ConvertDocumentsOptions
 from docling.datamodel.service.sources import FileSource, HttpSource, S3Coordinates
 from docling.datamodel.service.targets import (
     InBodyTarget,
+    PresignedUrlTarget,
     PutTarget,
     S3Target,
     ZipTarget,
@@ -25,8 +26,20 @@ class FileSourceRequest(FileSource):
     kind: Literal["file"] = "file"
 
 
-class HttpSourceRequest(HttpSource):
+class AnyHttpSourceRequest(HttpSource):
     kind: Literal["http"] = "http"
+
+
+class HttpSourceRequest(AnyHttpSourceRequest):
+    """HTTP source for convert endpoints — rejects ZIP URLs."""
+
+    @field_validator("url")
+    @classmethod
+    def reject_zip_url(cls, value: AnyHttpUrl) -> AnyHttpUrl:
+        path = str(value).lower().split("?", maxsplit=1)[0]
+        if path.endswith(".zip"):
+            raise ValueError("ZIP URLs are not accepted on the convert endpoint")
+        return value
 
 
 class S3SourceRequest(S3Coordinates):
@@ -36,27 +49,48 @@ class S3SourceRequest(S3Coordinates):
 ## Multipart targets
 class TargetName(str, enum.Enum):
     INBODY = InBodyTarget().kind
+    PRESIGNED_URL = PresignedUrlTarget().kind
     ZIP = ZipTarget().kind
 
 
 ## Aliases
+BatchSourceRequestItem = Annotated[
+    AnyHttpSourceRequest | S3SourceRequest,
+    Field(discriminator="kind"),
+]
+
 SourceRequestItem = Annotated[
-    FileSourceRequest | HttpSourceRequest | S3SourceRequest, Field(discriminator="kind")
+    FileSourceRequest | HttpSourceRequest, Field(discriminator="kind")
 ]
 
 TargetRequest = Annotated[
-    InBodyTarget | ZipTarget | S3Target | PutTarget,
+    InBodyTarget | ZipTarget | S3Target | PutTarget | PresignedUrlTarget,
+    Field(discriminator="kind"),
+]
+
+BatchTargetRequest = Annotated[
+    S3Target | PresignedUrlTarget,
     Field(discriminator="kind"),
 ]
 
 
 ## Complete Source request
-class ConvertDocumentsRequest(BaseModel):
+class BatchConvertSourcesRequest(BaseModel):
+    options: ConvertDocumentsOptions = ConvertDocumentsOptions()
+    sources: list[BatchSourceRequestItem] = Field(min_length=1)
+    target: BatchTargetRequest
+    callbacks: list[CallbackSpec] = []
+
+
+class ConvertSourcesRequest(BaseModel):
     options: ConvertDocumentsOptions = ConvertDocumentsOptions()
     sources: list[SourceRequestItem]
     target: TargetRequest = InBodyTarget()
     callbacks: list[CallbackSpec] = []
 
+
+## Deprecated aliases — will be removed in a future release
+ConvertDocumentsRequest = ConvertSourcesRequest
 
 ## Source chunking requests
 

@@ -13,15 +13,23 @@ from docling_core.types.doc import DoclingDocument
 
 import docling.service_client.client as client_module
 import docling.service_client.watchers as watchers_module
-from docling.datamodel.base_models import ConversionStatus, InputFormat
+from docling.datamodel.base_models import ConversionStatus, InputFormat, OutputFormat
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
+from docling.datamodel.service.requests import (
+    AnyHttpSourceRequest,
+    HttpSourceRequest,
+    S3SourceRequest,
+)
 from docling.datamodel.service.responses import (
     MessageKind,
+    PresignedUrlConvertDocumentResponse,
+    PresignedUrlConvertResponse,
     TaskStatusResponse,
     WebsocketMessage,
 )
+from docling.datamodel.service.targets import InBodyTarget, PresignedUrlTarget, S3Target
 from docling.service_client import (
     DEFAULT_MAX_CONCURRENCY,
     MAX_CONCURRENCY_LIMIT,
@@ -562,6 +570,7 @@ def test_convert_all_uses_async_pipeline_and_preserves_order(tmp_path) -> None:
             item_list,
             max_in_flight,
             ordered,
+            target=InBodyTarget(),
         ):
             items = list(item_list)
             calls.append(
@@ -569,7 +578,6 @@ def test_convert_all_uses_async_pipeline_and_preserves_order(tmp_path) -> None:
                     "count": len(items),
                     "max_in_flight": max_in_flight,
                     "ordered": ordered,
-                    "source_headers": [item.source_headers for item in items],
                     "request_headers": [item.headers for item in items],
                 }
             )
@@ -601,12 +609,11 @@ def test_convert_all_uses_async_pipeline_and_preserves_order(tmp_path) -> None:
             "count": 3,
             "max_in_flight": 64,
             "ordered": True,
-            "source_headers": [
+            "request_headers": [
                 {"Authorization": "Bearer source-token"},
                 {"Authorization": "Bearer source-token"},
                 {"Authorization": "Bearer source-token"},
             ],
-            "request_headers": [None, None, None],
         }
     ]
     assert [result.input.file.name for result in results] == ["a.pdf", "b.pdf", "c.pdf"]
@@ -626,6 +633,7 @@ def test_convert_all_returns_iterator_and_yields_before_batch_completion(
             item_list,
             max_in_flight,
             ordered,
+            target=InBodyTarget(),
         ):
             items = list(item_list)
             assert max_in_flight == 2
@@ -716,6 +724,7 @@ def test_convert_all_interleaves_preflight_skips_correctly(tmp_path: Path) -> No
             item_list,
             max_in_flight,
             ordered,
+            target=InBodyTarget(),
         ):
             items = list(item_list)
             assert max_in_flight == DEFAULT_MAX_CONCURRENCY
@@ -793,7 +802,7 @@ def test_submit_and_retrieve_many_yields_completion_order_and_ordered_mode(
             return _DummyAsyncClient()
 
         async def fake_submit(
-            self, source, source_headers, options, async_client, request_headers=None
+            self, source, options, target, async_client, request_headers=None
         ):
             return _status_response(f"task-{source.name}", "pending")
 
@@ -821,14 +830,14 @@ def test_submit_and_retrieve_many_yields_completion_order_and_ordered_mode(
 
         completion_order = [
             Path(item.source).name
-            for item, _ in client.submit_and_retrieve_many(
+            for item, _ in client.submit_and_retrieve_each(
                 [ConversionItem(source=p1), ConversionItem(source=p2)],
                 max_in_flight=2,
             )
         ]
         ordered_names = [
             Path(item.source).name
-            for item, _ in client.submit_and_retrieve_many(
+            for item, _ in client.submit_and_retrieve_each(
                 [ConversionItem(source=p1), ConversionItem(source=p2)],
                 max_in_flight=2,
                 ordered=True,
@@ -860,7 +869,7 @@ def test_submit_and_retrieve_many_forwards_per_item_request_headers(
             return _DummyAsyncClient()
 
         async def fake_submit(
-            self, source, source_headers, options, async_client, request_headers=None
+            self, source, options, target, async_client, request_headers=None
         ):
             seen_headers.append(request_headers)
             return _status_response(f"task-{source.name}", "pending")
@@ -886,7 +895,7 @@ def test_submit_and_retrieve_many_forwards_per_item_request_headers(
         p2.write_bytes(b"%PDF-1.4\n")
 
         list(
-            client.submit_and_retrieve_many(
+            client.submit_and_retrieve_each(
                 [
                     ConversionItem(source=p1, headers={"X-Tenant-Id": "tenant-a"}),
                     ConversionItem(source=p2, headers={"X-Tenant-Id": "tenant-b"}),
@@ -901,7 +910,7 @@ def test_submit_and_retrieve_many_forwards_per_item_request_headers(
     ]
 
 
-def test_submit_and_retrieve_many_forwards_per_item_source_headers() -> None:
+def test_submit_and_retrieve_many_forwards_http_source_request_headers() -> None:
     class _DummyAsyncClient:
         async def __aenter__(self):
             return self
@@ -909,7 +918,7 @@ def test_submit_and_retrieve_many_forwards_per_item_source_headers() -> None:
         async def __aexit__(self, exc_type, exc, tb):
             return None
 
-    seen_source_headers: list[dict[str, str] | None] = []
+    seen_sources: list[HttpSourceRequest] = []
 
     with DoclingServiceClient(
         url=TEST_BASE_URL,
@@ -920,10 +929,14 @@ def test_submit_and_retrieve_many_forwards_per_item_source_headers() -> None:
             return _DummyAsyncClient()
 
         async def fake_submit(
-            self, source, source_headers, options, async_client, request_headers=None
+            self, source, options, target, async_client, request_headers=None
         ):
-            seen_source_headers.append(source_headers)
-            return _status_response(f"task-{Path(source).name}", "pending")
+            assert isinstance(source, HttpSourceRequest)
+            seen_sources.append(source)
+            return _status_response(
+                f"task-{Path(str(source.url)).name}",
+                "pending",
+            )
 
         async def fake_wait(self, task_id, timeout, async_client):
             return _status_response(task_id, "success")
@@ -941,22 +954,26 @@ def test_submit_and_retrieve_many_forwards_per_item_source_headers() -> None:
         )
 
         list(
-            client.submit_and_retrieve_many(
+            client.submit_and_retrieve_each(
                 [
                     ConversionItem(
-                        source="https://example.org/a.pdf",
-                        source_headers={"Authorization": "Bearer a"},
+                        source=HttpSourceRequest(
+                            url="https://example.org/a.pdf",
+                            headers={"Authorization": "Bearer a"},
+                        ),
                     ),
                     ConversionItem(
-                        source="https://example.org/b.pdf",
-                        source_headers={"Authorization": "Bearer b"},
+                        source=HttpSourceRequest(
+                            url="https://example.org/b.pdf",
+                            headers={"Authorization": "Bearer b"},
+                        ),
                     ),
                 ],
                 max_in_flight=2,
             )
         )
 
-    assert seen_source_headers == [
+    assert [item.headers for item in seen_sources] == [
         {"Authorization": "Bearer a"},
         {"Authorization": "Bearer b"},
     ]
@@ -979,7 +996,7 @@ def test_submit_and_retrieve_many_isolates_failures_per_item(tmp_path: Path) -> 
             return _DummyAsyncClient()
 
         async def fake_submit(
-            self, source, source_headers, options, async_client, request_headers=None
+            self, source, options, target, async_client, request_headers=None
         ):
             if source.name == "bad.pdf":
                 raise ValueError("submit failed")
@@ -1006,7 +1023,7 @@ def test_submit_and_retrieve_many_isolates_failures_per_item(tmp_path: Path) -> 
         bad.write_bytes(b"%PDF-1.4\n")
 
         outcomes = sorted(
-            client.submit_and_retrieve_many(
+            client.submit_and_retrieve_each(
                 [ConversionItem(source=bad), ConversionItem(source=good)],
                 max_in_flight=2,
             ),
@@ -1038,7 +1055,7 @@ def test_submit_and_retrieve_many_respects_max_in_flight(tmp_path: Path) -> None
             return _DummyAsyncClient()
 
         async def fake_submit(
-            self, source, source_headers, options, async_client, request_headers=None
+            self, source, options, target, async_client, request_headers=None
         ):
             state["active"] += 1
             state["submitted"] += 1
@@ -1072,7 +1089,7 @@ def test_submit_and_retrieve_many_respects_max_in_flight(tmp_path: Path) -> None
             paths.append(path)
 
         list(
-            client.submit_and_retrieve_many(
+            client.submit_and_retrieve_each(
                 [ConversionItem(source=path) for path in paths],
                 max_in_flight=2,
             )
@@ -1102,7 +1119,7 @@ def test_submit_and_retrieve_many_consumes_iterable_incrementally(
             return _DummyAsyncClient()
 
         async def fake_submit(
-            self, source, source_headers, options, async_client, request_headers=None
+            self, source, options, target, async_client, request_headers=None
         ):
             return _status_response(f"task-{Path(source).name}", "pending")
 
@@ -1131,7 +1148,7 @@ def test_submit_and_retrieve_many_consumes_iterable_incrementally(
                 generated.append(path.name)
                 yield ConversionItem(source=path)
 
-        iterator = client.submit_and_retrieve_many(
+        iterator = client.submit_and_retrieve_each(
             item_iter(),
             max_in_flight=1,
         )
@@ -1161,7 +1178,7 @@ def test_submit_and_retrieve_many_rejects_invalid_max_in_flight(
                 f"max_in_flight must be between 1 and {MAX_CONCURRENCY_LIMIT}, got {value}."
             ),
         ):
-            client.submit_and_retrieve_many(
+            client.submit_and_retrieve_each(
                 [ConversionItem(source=source)],
                 max_in_flight=value,
             )
@@ -1295,7 +1312,7 @@ async def test_submit_and_retrieve_many_ordered_mode_yields_before_batch_complet
             return _DummyAsyncClient()
 
         async def fake_submit(
-            self, source, source_headers, options, async_client, request_headers=None
+            self, source, options, target, async_client, request_headers=None
         ):
             return _status_response(f"task-{Path(source).name}", "pending")
 
@@ -1415,6 +1432,266 @@ def test_submit_file_forwards_request_headers(tmp_path: Path) -> None:
     assert captured["header_api"] == "base-key"
 
 
+def test_submit_accepts_http_source_request() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["payload"] = request.content.decode("utf-8")
+        return httpx.Response(
+            200,
+            json=_status_response("task-http-source", "pending").model_dump(
+                mode="json"
+            ),
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.close()
+        client._http_client = httpx.Client(
+            transport=transport,
+            timeout=client._http_client.timeout,
+        )
+        job = client.submit(
+            source=HttpSourceRequest(
+                url="https://example.org/sample.pdf",
+                headers={"Authorization": "Bearer source-token"},
+            ),
+            target=InBodyTarget(),
+        )
+
+    assert job.task_id == "task-http-source"
+    assert '"headers":{"Authorization":"Bearer source-token"}' in str(
+        captured["payload"]
+    )
+
+
+def test_submit_auto_falls_back_to_inbody_when_presigned_is_rejected() -> None:
+    seen_targets: list[object] = []
+    seen_formats: list[list[OutputFormat]] = []
+
+    def fake_submit_convert_task(
+        self,
+        source,
+        options,
+        target,
+        request_headers=None,
+    ):
+        seen_targets.append(target)
+        seen_formats.append(list(options.to_formats))
+        if isinstance(target, PresignedUrlTarget):
+            raise ServiceError(
+                "Task submission failed.",
+                status_code=422,
+                detail=(
+                    "Presigned URL target requires artifact storage to be configured "
+                    "and enabled on the server."
+                ),
+            )
+        return _status_response("task-fallback", "pending")
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_convert_task = MethodType(fake_submit_convert_task, client)
+        job = client.submit(
+            source="https://example.org/sample.pdf",
+            output_formats=[OutputFormat.MARKDOWN],
+        )
+
+    assert job.task_id == "task-fallback"
+    assert [type(item) for item in seen_targets] == [PresignedUrlTarget, InBodyTarget]
+    assert seen_formats == [
+        [OutputFormat.MARKDOWN],
+        [OutputFormat.MARKDOWN, OutputFormat.JSON],
+    ]
+
+
+def test_submit_batch_posts_batch_request() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["path"] = request.url.path
+        captured["payload"] = request.content.decode("utf-8")
+        return httpx.Response(
+            200, json=_status_response("task-batch", "pending").model_dump(mode="json")
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.close()
+        client._http_client = httpx.Client(
+            transport=transport,
+            timeout=client._http_client.timeout,
+        )
+        job = client.submit_batch(
+            sources=[
+                HttpSourceRequest(
+                    url="https://example.org/sample.pdf",
+                    headers={"Authorization": "Bearer source-token"},
+                )
+            ],
+            output_formats=[OutputFormat.MARKDOWN],
+            target=PresignedUrlTarget(),
+        )
+
+    assert job.task_id == "task-batch"
+    assert captured["path"] == "/v1/convert/source/batch"
+    assert '"kind":"presigned_url"' in str(captured["payload"])
+    assert '"headers":{"Authorization":"Bearer source-token"}' in str(
+        captured["payload"]
+    )
+
+
+def test_submit_batch_returns_presigned_result_for_presigned_target() -> None:
+    presigned_result = PresignedUrlConvertResponse(
+        num_converted=1,
+        num_succeeded=1,
+        num_partially_succeeded=0,
+        num_failed=0,
+        processing_time=0.25,
+        documents=[
+            {
+                "source_index": 0,
+                "source_uri": "https://example.org/sample.pdf",
+                "filename": "sample.pdf",
+                "status": "success",
+                "artifacts": [
+                    {
+                        "artifact_type": "markdown",
+                        "mime_type": "text/markdown",
+                        "uri": "https://download.example.org/sample.md",
+                    }
+                ],
+            }
+        ],
+    )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_batch_task = MethodType(
+            lambda self, sources, options, target, request_headers=None: (
+                _status_response("task-presigned-batch", "pending")
+            ),
+            client,
+        )
+        client._wait_for_terminal_status = MethodType(
+            lambda self, task_id, timeout: _status_response(task_id, "success"),
+            client,
+        )
+        client._fetch_presigned_result = MethodType(
+            lambda self, task_id, last_status: presigned_result,
+            client,
+        )
+
+        job = client.submit_batch(
+            sources=[AnyHttpSourceRequest(url="https://example.org/sample.pdf")],
+            target=PresignedUrlTarget(),
+        )
+        result = job.result(timeout=1.0)
+
+    assert result is presigned_result
+
+
+def test_submit_batch_returns_counts_result_for_s3_target() -> None:
+    s3_result = PresignedUrlConvertDocumentResponse(
+        num_converted=1,
+        num_succeeded=1,
+        num_partially_succeeded=0,
+        num_failed=0,
+        processing_time=0.25,
+    )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_batch_task = MethodType(
+            lambda self, sources, options, target, request_headers=None: (
+                _status_response("task-s3", "pending")
+            ),
+            client,
+        )
+        client._wait_for_terminal_status = MethodType(
+            lambda self, task_id, timeout: _status_response(task_id, "success"),
+            client,
+        )
+        client._fetch_presigned_document_result = MethodType(
+            lambda self, task_id, last_status: s3_result,
+            client,
+        )
+
+        job = client.submit_batch(
+            sources=[
+                S3SourceRequest(
+                    endpoint="s3.example.org",
+                    access_key="a",
+                    secret_key="b",
+                    bucket="input",
+                    key_prefix="docs/",
+                )
+            ],
+            target=S3Target(
+                endpoint="s3.example.org",
+                access_key="a",
+                secret_key="b",
+                bucket="output",
+                key_prefix="converted/",
+            ),
+        )
+        result = job.result(timeout=1.0)
+
+    assert result is s3_result
+
+
+def test_submit_batch_forwards_request_headers() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["path"] = request.url.path
+        captured["header_tenant"] = request.headers.get("X-Tenant-Id")
+        captured["header_api"] = request.headers.get("X-Api-Key")
+        return httpx.Response(
+            200,
+            json=_status_response("task-batch-headers", "pending").model_dump(
+                mode="json"
+            ),
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    with DoclingServiceClient(url=TEST_BASE_URL, api_key="base-key") as client:
+        client._http_client.close()
+        client._http_client = httpx.Client(
+            transport=transport,
+            headers={"X-Api-Key": "base-key"},
+            timeout=client._http_client.timeout,
+        )
+        job = client.submit_batch(
+            sources=[AnyHttpSourceRequest(url="https://example.org/sample.pdf")],
+            target=PresignedUrlTarget(),
+            headers={"X-Tenant-Id": "tenant-batch"},
+        )
+
+    assert job.task_id == "task-batch-headers"
+    assert captured["path"] == "/v1/convert/source/batch"
+    assert captured["header_tenant"] == "tenant-batch"
+    assert captured["header_api"] == "base-key"
+
+
+def test_submit_and_retrieve_many_is_deprecated_alias(tmp_path: Path) -> None:
+    source = tmp_path / "a.pdf"
+    source.write_bytes(b"%PDF-1.4\n")
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client.submit_and_retrieve_each = MethodType(
+            lambda self, items, max_in_flight=DEFAULT_MAX_CONCURRENCY, ordered=False, target=None: (
+                iter(())
+            ),
+            client,
+        )
+        with warnings.catch_warnings(record=True) as captured:
+            warnings.simplefilter("always")
+            list(client.submit_and_retrieve_many([ConversionItem(source=source)]))
+
+    assert any("deprecated" in str(item.message).lower() for item in captured)
+
+
 def test_request_with_retry_allows_request_headers_to_override_defaults() -> None:
     seen: dict[str, str | None] = {}
 
@@ -1513,9 +1790,8 @@ def test_503_without_retry_after_header_does_not_retry() -> None:
         with pytest.raises(ServiceUnavailableError, match="Task submission failed"):
             client._submit_convert_task(
                 source="https://example.com/test.pdf",
-                source_headers=None,
                 options=ConvertDocumentsRequestOptions(),
-                raw_result=False,
+                target=InBodyTarget(),
             )
 
     assert call_count == 1
@@ -1534,9 +1810,8 @@ def test_429_without_retry_after_header_does_not_retry() -> None:
         with pytest.raises(ServiceError, match="Task submission failed"):
             client._submit_convert_task(
                 source="https://example.com/test.pdf",
-                source_headers=None,
                 options=ConvertDocumentsRequestOptions(),
-                raw_result=False,
+                target=InBodyTarget(),
             )
 
     assert call_count == 1
@@ -1562,9 +1837,8 @@ def test_402_usage_limit_exceeded_raises_explicit_exception() -> None:
         with pytest.raises(UsageLimitExceededError) as exc_info:
             client._submit_convert_task(
                 source="https://example.com/test.pdf",
-                source_headers=None,
                 options=ConvertDocumentsRequestOptions(),
-                raw_result=False,
+                target=InBodyTarget(),
             )
 
     assert call_count == 1
@@ -1597,9 +1871,8 @@ def test_402_usage_limit_exceeded_with_invalid_payload_omits_detail() -> None:
         with pytest.raises(UsageLimitExceededError) as exc_info:
             client._submit_convert_task(
                 source="https://example.com/test.pdf",
-                source_headers=None,
                 options=ConvertDocumentsRequestOptions(),
-                raw_result=False,
+                target=InBodyTarget(),
             )
 
     assert call_count == 1
