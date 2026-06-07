@@ -30,7 +30,6 @@ import typer
 from docling.cli.main import click_app as docling_click_app
 from docling.cli.tools import app as docling_tools_typer_app
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUT_FILE = REPO_ROOT / "docs" / "reference" / "cli.md"
 
@@ -221,11 +220,7 @@ def _render_command(
     lines.append("")
 
     args = [p for p in cmd.params if isinstance(p, click.Argument)]
-    opts = [
-        p
-        for p in cmd.params
-        if isinstance(p, click.Option) and not p.hidden
-    ]
+    opts = [p for p in cmd.params if isinstance(p, click.Option) and not p.hidden]
     _render_arguments_table(args, lines)
     _render_options_table(opts, lines)
 

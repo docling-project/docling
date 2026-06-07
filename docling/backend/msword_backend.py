@@ -524,7 +524,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if extrema == ((255, 255), (255, 255), (255, 255)):
                         return True
         except Exception:
-            pass
+            pass  # pragma: no cover
 
         return False
 
