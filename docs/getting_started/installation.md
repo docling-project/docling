@@ -81,7 +81,7 @@ the following engines.
 | [RapidOCR](https://github.com/RapidAI/RapidOCR) | `rapidocr` extra can or via `pip install rapidocr onnxruntime` | `RapidOcrOptions` |
 | [OnnxTR](https://github.com/felixdittrich92/OnnxTR) | Can be installed via the plugin system `pip install "docling-ocr-onnxtr[cpu]"`. Please take a look at [docling-OCR-OnnxTR](https://github.com/felixdittrich92/docling-OCR-OnnxTR).| `OnnxtrOcrOptions` |
 
-The Docling `DocumentConverter` allows to choose the OCR engine with the `ocr_options` settings. For example
+The Docling `DocumentConverter` allows you to choose the OCR engine with the `ocr_options` settings. For example
 
 ```python
 from docling.datamodel.base_models import InputFormat
