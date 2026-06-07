@@ -196,7 +196,7 @@
           "$ref": "#/texts/29"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "page header",
       "label": "section"
     },
@@ -210,7 +210,7 @@
           "$ref": "#/texts/30"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "page footer",
       "label": "section"
     },
@@ -819,7 +819,7 @@
         "$ref": "#/groups/5"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "text",
       "prov": [],
       "orig": "This is a header",
@@ -838,7 +838,7 @@
         "$ref": "#/groups/6"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "text",
       "prov": [],
       "orig": "This is a footer",

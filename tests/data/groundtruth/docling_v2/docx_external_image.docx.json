@@ -52,6 +52,9 @@
           "$ref": "#/texts/1"
         },
         {
+          "$ref": "#/pictures/0"
+        },
+        {
           "$ref": "#/texts/2"
         }
       ],
@@ -101,7 +104,22 @@
       }
     }
   ],
-  "pictures": [],
+  "pictures": [
+    {
+      "self_ref": "#/pictures/0",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "picture",
+      "prov": [],
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "annotations": []
+    }
+  ],
   "tables": [],
   "key_value_items": [],
   "form_items": [],

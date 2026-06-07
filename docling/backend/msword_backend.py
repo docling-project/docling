@@ -503,14 +503,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return doc, added_elements
 
-    def _is_valid_image(self, pil_image: Image.Image | None) -> bool:
-        """Check if an image is a meaningful graphic vs a layout spacer."""
+    def _is_invisible_spacer(self, pil_image: Image.Image | None) -> bool:
+        """Check if an image is an invisible layout spacer rather than a meaningful graphic."""
         if pil_image is None:
-            return True
+            return False
 
         # Filter tiny spacer images
         if pil_image.width <= 5 or pil_image.height <= 5:
-            return False
+            return True
 
         try:
             extrema = pil_image.getextrema()
@@ -518,15 +518,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 if pil_image.mode in ("RGBA", "LA"):
                     # extrema[-1] is the Alpha channel. If max alpha is 0, it is 100% invisible.
                     if extrema[-1][1] == 0:
-                        return False
+                        return True
                 elif pil_image.mode == "RGB":
                     # If all channels are exactly 255, it is a pure white spacing box.
                     if extrema == ((255, 255), (255, 255), (255, 255)):
-                        return False
+                        return True
         except Exception:
             pass
 
-        return True
+        return False
 
     def _str_to_int(self, s: str | None, default: int | None = 0) -> int | None:
         if s is None:
@@ -2278,6 +2278,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         parent: NodeItem | None,
         pil_image: Image.Image | None,
+        is_spacer: bool = False,
     ) -> RefItem:
         """Add a picture element to the document.
 
@@ -2289,18 +2290,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         Returns:
             Reference to the added picture element
         """
+        target_layer = ContentLayer.INVISIBLE if is_spacer else self.content_layer
         if pil_image is not None:
             p = doc.add_picture(
                 parent=parent,
                 image=ImageRef.from_pil(image=pil_image, dpi=72),
                 caption=None,
-                content_layer=self.content_layer,
+                content_layer=target_layer,
             )
         else:
             p = doc.add_picture(
                 parent=parent,
                 caption=None,
-                content_layer=self.content_layer,
+                content_layer=target_layer,
             )
         return p.get_ref()
 
@@ -2416,7 +2418,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         _log.warning(f"Warning: image cannot be loaded by Pillow: {e}")
                         pil_image = None
 
-                if pil_image is None and image is not None:
+                if pil_image is None and image is not None and image_data is not None:
                     _log.debug(
                         "Direct PIL loading failed, trying DOCX conversion via LibreOffice"
                     )
@@ -2424,10 +2426,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         image, ["drawing", "pict"]
                     )
 
-                if not self._is_valid_image(pil_image):
-                    continue
+                is_spacer = self._is_invisible_spacer(pil_image)
+                elem_ref.append(
+                    self._add_picture_to_doc(
+                        doc, parent, pil_image, is_spacer=is_spacer
+                    )
+                )
 
-                elem_ref.append(self._add_picture_to_doc(doc, parent, pil_image))
         return elem_ref
 
     def _handle_vml_pictures(
@@ -2486,7 +2491,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         )
                         pil_image = None
 
-                    if pil_image is None:
+                    if pil_image is None and image_data is not None:
                         pil_image = self._convert_elements_via_docx(
                             imagedata, ["object", "pict"]
                         )
@@ -2496,10 +2501,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                                 "Install LibreOffice for better VML/EMF/WMF support."
                             )
 
-                if not self._is_valid_image(pil_image):
-                    continue
+                is_spacer = self._is_invisible_spacer(pil_image)
+                elem_ref.append(
+                    self._add_picture_to_doc(
+                        doc, parent, pil_image, is_spacer=is_spacer
+                    )
+                )
 
-                elem_ref.append(self._add_picture_to_doc(doc, parent, pil_image))
         return elem_ref
 
     def _handle_drawingml(self, doc: DoclingDocument, drawingml_els: Any):
@@ -2520,10 +2528,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if pil_image is None:
                 raise UnidentifiedImageError
 
-            if not self._is_valid_image(pil_image):
-                return
+            is_spacer = self._is_invisible_spacer(pil_image)
+            self._add_picture_to_doc(doc, parent, pil_image, is_spacer=is_spacer)
 
-            self._add_picture_to_doc(doc, parent, pil_image)
         except (UnidentifiedImageError, OSError):
             _log.warning("Warning: DrawingML image cannot be loaded by Pillow")
             self._add_picture_to_doc(doc, parent, None)
@@ -2553,6 +2560,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for sec_idx, section in enumerate(docx_obj.sections):
             if sec_idx > 0 and not section.different_first_page_header_footer:
                 continue
+            elif sec_idx == 0:
+                self.content_layer = ContentLayer.BODY
+            else:
+                self.content_layer = ContentLayer.FURNITURE
 
             hdr = (
                 section.first_page_header

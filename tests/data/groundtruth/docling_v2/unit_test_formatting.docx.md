@@ -19,3 +19,7 @@ Normal *italic* **bold** underline and [hyperlink](https://github.com/DS4SD/docl
 The second page of the document with same header and footer
 
 The third page of the document with different header and footer
+
+This is a header
+
+This is a footer
