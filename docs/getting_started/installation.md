@@ -23,9 +23,28 @@ Works on macOS, Linux, and Windows, with support for both x86_64 and arm64 archi
     # Example for installing on the Linux cpu-only version
     pip install docling --extra-index-url https://download.pytorch.org/whl/cpu
     ```
-    
-    For `uv` users:
-    
+
+    For `uv` users, add the PyTorch CPU index to your `pyproject.toml`:
+
+    ```toml
+    [[tool.uv.index]]
+    name = "pytorch-cpu"
+    url = "https://download.pytorch.org/whl/cpu"
+    explicit = true
+    ```
+
+    Then pin `torch` to that index:
+
+    ```toml
+    [tool.uv.sources]
+    torch = [{ index = "pytorch-cpu" }]
+    ```
+
+    Then run:
+
+    ```bash
+    uv add docling
+    ```
 
 ??? "Installation on macOS Intel (x86_64)"
 
