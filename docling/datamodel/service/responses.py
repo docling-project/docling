@@ -150,7 +150,7 @@ class PresignedArtifactResult(BaseModel):
 class ConvertedOutcomeCountsMixin(BaseModel):
     num_converted: int
     num_succeeded: int
-    num_partially_succeeded: int
+    num_partially_succeeded: int = 0
     num_failed: int
 
 
@@ -167,6 +167,17 @@ ResultType = Annotated[
 class DoclingTaskResult(ConvertedOutcomeCountsMixin):
     result: ResultType
     processing_time: float
+
+
+class ConvertDocumentResult(DoclingTaskResult):
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "ConvertDocumentResult is deprecated and will be removed in a future version. "
+            "Use DoclingTaskResult instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 
 class HealthCheckResponse(BaseModel):
