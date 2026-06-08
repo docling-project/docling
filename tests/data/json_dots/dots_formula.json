@@ -1,0 +1,11 @@
+[
+  {"bbox": [50, 30, 500, 70], "category": "Title", "text": "Mathematical Foundations"},
+  {"bbox": [50, 90, 500, 150], "category": "Text", "text": "The loss function is defined as follows:"},
+  {"bbox": [100, 160, 450, 220], "category": "Formula", "text": "\\mathcal{L} = -\\frac{1}{N} \\sum_{i=1}^{N} y_i \\log(\\hat{y}_i)"},
+  {"bbox": [50, 240, 500, 320], "category": "Text", "text": "where $N$ is the number of samples, $y_i$ is the ground truth label, and $\\hat{y}_i$ is the predicted probability."},
+  {"bbox": [50, 340, 500, 380], "category": "Section-header", "text": "2.1 Gradient Computation"},
+  {"bbox": [50, 400, 500, 460], "category": "List-item", "text": "- Compute forward pass through the network"},
+  {"bbox": [50, 470, 500, 530], "category": "List-item", "text": "- Calculate loss using cross-entropy"},
+  {"bbox": [50, 540, 500, 600], "category": "List-item", "text": "- Backpropagate gradients"},
+  {"bbox": [50, 620, 300, 640], "category": "Footnote", "text": "1. See Appendix A for derivation details."}
+]

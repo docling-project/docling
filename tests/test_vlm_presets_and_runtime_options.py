@@ -163,6 +163,41 @@ class TestRuntimeOptions:
             )
         ]
 
+    def test_transformers_engine_rejects_dots_on_transformers_v5(self, monkeypatch):
+        """Dots models are a transformers-v4-only runtime path."""
+        import docling.models.inference_engines.vlm.transformers_engine as tf_engine
+
+        monkeypatch.setattr(
+            tf_engine.importlib.metadata,
+            "version",
+            lambda package: "5.0.0" if package == "transformers" else "0.0.0",
+        )
+
+        engine = TransformersVlmEngine(
+            options=TransformersVlmEngineOptions(),
+            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+            artifacts_path=None,
+        )
+
+        with pytest.raises(NotImplementedError, match="transformers<5"):
+            engine._load_model_for_repo("rednote-hilab/dots.ocr")
+
+    def test_dots_mocr_requires_flash_attn(self, monkeypatch):
+        """dots.mocr remote code imports flash_attn even when SDPA is selected."""
+        import docling.models.inference_engines.vlm.transformers_engine as tf_engine
+
+        original_import_module = tf_engine.importlib.import_module
+
+        def import_module(name, *args, **kwargs):
+            if name == "flash_attn":
+                raise ImportError
+            return original_import_module(name, *args, **kwargs)
+
+        monkeypatch.setattr(tf_engine.importlib, "import_module", import_module)
+
+        with pytest.raises(ImportError, match="requires flash-attn"):
+            tf_engine._ensure_dots_flash_attn_import()
+
 
 # =============================================================================
 # MODEL SPEC TESTS
@@ -586,6 +621,8 @@ class TestPresetEngineIntegration:
             ResponseFormat.MARKDOWN,
             ResponseFormat.DEEPSEEKOCR_MARKDOWN,
             ResponseFormat.PLAINTEXT,
+            ResponseFormat.CHANDRA_HTML,
+            ResponseFormat.DOTS_JSON,
         ]
 
         # Check VlmConvert presets

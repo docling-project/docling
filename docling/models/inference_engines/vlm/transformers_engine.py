@@ -1,5 +1,6 @@
 """Transformers-based VLM inference engine."""
 
+import importlib
 import importlib.metadata
 import logging
 import sys
@@ -18,7 +19,6 @@ from transformers import (
     BitsAndBytesConfig,
     GenerationConfig,
     PreTrainedModel,
-    ProcessorMixin,
     StoppingCriteriaList,
     StopStringCriteria,
 )
@@ -49,11 +49,54 @@ if TYPE_CHECKING:
 
 _log = logging.getLogger(__name__)
 
+_DOTS_REPO_IDS = {"rednote-hilab/dots.ocr", "rednote-hilab/dots.mocr"}
+_DOTS_FLASH_ATTN_REQUIRED_REPO_IDS = {"rednote-hilab/dots.mocr"}
+
 
 def _coerce_transformers_model_type(value: Any) -> TransformersModelType:
     if isinstance(value, TransformersModelType):
         return value
     return TransformersModelType(value)
+
+
+def _prepare_dots_processor(processor: Any) -> Any:
+    """Patch known dots remote processor gaps without changing ProcessorMixin globally."""
+    if getattr(processor, "video_processor", None) is None and hasattr(
+        processor, "image_processor"
+    ):
+        processor.video_processor = processor.image_processor
+    return processor
+
+
+def _load_dots_processor(auto_processor: Any, *args: Any, **kwargs: Any) -> Any:
+    """Load dots remote processor with a scoped fix for its missing video processor."""
+    from transformers.processing_utils import ProcessorMixin
+
+    original_check = ProcessorMixin.check_argument_for_proper_class
+
+    def check_argument_for_proper_class(
+        self: Any, attribute_name: str, arg: Any
+    ) -> None:
+        if attribute_name == "video_processor" and arg is None:
+            return None
+        return original_check(self, attribute_name, arg)
+
+    ProcessorMixin.check_argument_for_proper_class = check_argument_for_proper_class
+    try:
+        return auto_processor.from_pretrained(*args, **kwargs)
+    finally:
+        ProcessorMixin.check_argument_for_proper_class = original_check
+
+
+def _ensure_dots_flash_attn_import() -> None:
+    try:
+        importlib.import_module("flash_attn")
+    except ImportError as exc:
+        raise ImportError(
+            "rednote-hilab/dots.mocr requires flash-attn with the Transformers "
+            "engine. Install flash-attn in the transformers-v4 environment "
+            "before using this model."
+        ) from exc
 
 
 class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
@@ -67,7 +110,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self,
         options: TransformersVlmEngineOptions,
         accelerator_options: AcceleratorOptions,
-        artifacts_path: Optional[Union[Path, str]],
+        artifacts_path: Union[Path, str] | None,
         model_config: Optional["EngineModelConfig"] = None,
     ):
         """Initialize the Transformers engine.
@@ -84,10 +127,10 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self.artifacts_path = artifacts_path
 
         # These will be set during initialization
-        self.device: Optional[str] = None
-        self.processor: Optional[ProcessorMixin] = None
-        self.vlm_model: Optional[PreTrainedModel] = None
-        self.generation_config: Optional[GenerationConfig] = None
+        self.device: str | None = None
+        self.processor: Any | None = None
+        self.vlm_model: PreTrainedModel | None = None
+        self.generation_config: GenerationConfig | None = None
 
         # Initialize immediately if model_config is provided
         if self.model_config is not None:
@@ -145,16 +188,27 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             revision: Model revision
             model_type: Type of model architecture
         """
-        # Check for Phi-4 compatibility
         transformers_version = importlib.metadata.version("transformers")
+        parsed_transformers_version = version.parse(transformers_version)
+
+        # Check for Phi-4 compatibility
         if (
             repo_id == "microsoft/Phi-4-multimodal-instruct"
-            and transformers_version >= "4.52.0"
+            and parsed_transformers_version >= version.parse("4.52.0")
         ):
             raise NotImplementedError(
                 f"Phi 4 only works with transformers<4.52.0 but you have {transformers_version=}. "
                 f"Please downgrade by running: pip install -U 'transformers<4.52.0'"
             )
+        is_dots_model = repo_id in _DOTS_REPO_IDS
+        if is_dots_model and parsed_transformers_version.major >= 5:
+            raise NotImplementedError(
+                f"{repo_id} is supported by the Transformers engine only with "
+                f"transformers<5, but you have {transformers_version=}. "
+                "Use a transformers-v4 environment, or use the vLLM engine."
+            )
+        if repo_id in _DOTS_FLASH_ATTN_REQUIRED_REPO_IDS:
+            _ensure_dots_flash_attn_import()
 
         # Download or locate model artifacts using shared utility
         def download_wrapper(repo_id: str, revision: str) -> Path:
@@ -168,7 +222,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         )
 
         # Setup quantization if needed
-        quantization_config: Optional[BitsAndBytesConfig] = None
+        quantization_config: BitsAndBytesConfig | None = None
         if self.options.quantized:
             quantization_config = BitsAndBytesConfig(
                 load_in_8bit=self.options.load_in_8bit,
@@ -188,32 +242,44 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         elif model_type == TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT:
             model_cls = AutoModelForImageTextToText  # type: ignore[assignment]
 
-        # Load processor
-        self.processor = AutoProcessor.from_pretrained(
-            artifacts_path,
-            trust_remote_code=self.options.trust_remote_code,
-            revision=revision,
-        )
+        processor_kwargs = {
+            "trust_remote_code": self.options.trust_remote_code,
+            "revision": revision,
+        }
+        if is_dots_model:
+            self.processor = _load_dots_processor(
+                AutoProcessor, artifacts_path, **processor_kwargs
+            )
+        else:
+            self.processor = AutoProcessor.from_pretrained(
+                artifacts_path, **processor_kwargs
+            )
+        if is_dots_model:
+            self.processor = _prepare_dots_processor(self.processor)
         tokenizer = self._get_tokenizer()
         if tokenizer is not None and hasattr(tokenizer, "padding_side"):
             tokenizer.padding_side = "left"
 
-        # Resolve torch_dtype: options override > extra_config > None
+        # Resolve torch_dtype: options override > model_config field > extra_config > None
         torch_dtype = self.options.torch_dtype
         if torch_dtype is None and self.model_config is not None:
-            torch_dtype = self.model_config.extra_config.get("torch_dtype")
+            torch_dtype = self.model_config.torch_dtype or self.model_config.extra_config.get("torch_dtype")
 
         # Load model
+        attn_implementation = (
+            "flash_attention_2"
+            if self.device.startswith("cuda")  # type: ignore[union-attr]
+            and self.accelerator_options.cuda_use_flash_attention2
+            else "sdpa"
+        )
+        if is_dots_model:
+            attn_implementation = "sdpa"
+
         self.vlm_model = model_cls.from_pretrained(
             artifacts_path,
             device_map=self.device,
             dtype=torch_dtype,
-            _attn_implementation=(
-                "flash_attention_2"
-                if self.device.startswith("cuda")  # type: ignore[union-attr]
-                and self.accelerator_options.cuda_use_flash_attention2
-                else "sdpa"
-            ),
+            _attn_implementation=attn_implementation,
             trust_remote_code=self.options.trust_remote_code,
             revision=revision,
             quantization_config=quantization_config,
@@ -399,13 +465,13 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         }
 
         # Generate
-        gen_kwargs = {
-            **inputs,
-            "max_new_tokens": first_input.max_new_tokens,
-            "use_cache": self.options.use_kv_cache,
-            "generation_config": self.generation_config,
+        gen_kwargs = {**inputs}
+        gen_kwargs.update(
+            max_new_tokens=first_input.max_new_tokens,
+            use_cache=self.options.use_kv_cache,
+            generation_config=self.generation_config,
             **generation_config,
-        }
+        )
 
         if first_input.temperature > 0:
             gen_kwargs["do_sample"] = True
@@ -439,6 +505,12 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         pad_token = getattr(tokenizer, "pad_token", None)
         if pad_token:
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
+
+        # Strip stop strings and their partial prefixes from decoded output
+        if first_input.stop_strings:
+            from docling.utils.vlm_utils import strip_stop_strings
+
+            decoded_texts = strip_stop_strings(decoded_texts, first_input.stop_strings)
 
         # Create outputs
         outputs = []
