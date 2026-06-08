@@ -107,18 +107,18 @@ def test_docling_task_result_accepts_presigned_artifact_results() -> None:
 
 def test_task_failure_result_roundtrip() -> None:
     failure = PublicFailureInfo(
-        code="internal_error",
         category=FailureCategory.INTERNAL,
         message="Internal processing error.",
         retryable=False,
         phase=FailurePhase.ORCHESTRATION,
-        correlation_id="task-1",
     )
     result = TaskFailureResult(failure=failure)
 
     restored = TaskFailureResult.model_validate_json(result.model_dump_json())
 
-    assert restored.failure.code == "internal_error"
+    assert restored.failure.category == FailureCategory.INTERNAL
+    assert restored.failure.message == "Internal processing error."
+    assert restored.failure.retryable is False
     assert restored.kind == "TaskFailureResult"
 
 
@@ -129,12 +129,10 @@ def test_task_status_response_accepts_structured_failure() -> None:
         task_status="failure",
         error_message="Internal processing error.",
         failure=PublicFailureInfo(
-            code="internal_error",
             category=FailureCategory.INTERNAL,
             message="Internal processing error.",
             retryable=False,
             phase=FailurePhase.ORCHESTRATION,
-            correlation_id="task-1",
         ),
     )
 

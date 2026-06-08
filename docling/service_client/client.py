@@ -560,12 +560,12 @@ class DoclingServiceClient:
             response = self._request_with_retry(
                 method="POST",
                 path="/v1/convert/source/async",
-                json=request.model_dump(mode="json"),
+                json=self._serialize_convert_request(request),
                 headers=request_headers,
             )
         else:
             files = self._source_to_upload_files(source)
-            data = options.model_dump(mode="json", exclude_none=True)
+            data = self._serialize_convert_options(options)
             data["target_type"] = target.kind
             response = self._request_with_retry(
                 method="POST",
@@ -602,7 +602,7 @@ class DoclingServiceClient:
                 chunking_options = HierarchicalChunkerOptions()
 
             payload = {
-                "convert_options": options.model_dump(mode="json", exclude_none=True),
+                "convert_options": self._serialize_convert_options(options),
                 "chunking_options": chunking_options.model_dump(
                     mode="json", exclude_none=True
                 ),
@@ -620,9 +620,7 @@ class DoclingServiceClient:
             files = self._source_to_upload_files(source)
             data: dict[str, Any] = {
                 f"convert_{key}": value
-                for key, value in options.model_dump(
-                    mode="json", exclude_none=True
-                ).items()
+                for key, value in self._serialize_convert_options(options).items()
             }
             chunk_model: HybridChunkerOptions | HierarchicalChunkerOptions
             if chunker == ChunkerKind.HYBRID:
@@ -807,7 +805,7 @@ class DoclingServiceClient:
         response = self._request_with_retry(
             method="POST",
             path="/v1/convert/source/batch",
-            json=request.model_dump(mode="json"),
+            json=self._serialize_convert_request(request),
             headers=request_headers,
         )
         if response.status_code != 200:
@@ -911,6 +909,24 @@ class DoclingServiceClient:
                 status_code=response.status_code,
                 detail=str(exc),
             ) from exc
+
+    def _serialize_convert_options(
+        self,
+        options: ConvertDocumentsRequestOptions,
+    ) -> dict[str, Any]:
+        return options.model_dump(
+            mode="json",
+            exclude_defaults=True,
+            exclude_none=True,
+        )
+
+    def _serialize_convert_request(
+        self,
+        request: ConvertDocumentsRequest | BatchConvertSourcesRequest,
+    ) -> dict[str, Any]:
+        payload = request.model_dump(mode="json", exclude_none=True)
+        payload["options"] = self._serialize_convert_options(request.options)
+        return payload
 
     def _resolve_options(
         self,
@@ -1502,12 +1518,12 @@ class DoclingServiceClient:
                 async_client=async_client,
                 method="POST",
                 path="/v1/convert/source/async",
-                json=request.model_dump(mode="json"),
+                json=self._serialize_convert_request(request),
                 headers=request_headers,
             )
         else:
             files = await self._source_to_upload_files_async(source)
-            data = options.model_dump(mode="json", exclude_none=True)
+            data = self._serialize_convert_options(options)
             data["target_type"] = target.kind
             response = await self._request_with_retry_async(
                 async_client=async_client,
