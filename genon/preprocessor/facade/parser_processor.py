@@ -104,6 +104,8 @@ except ImportError:
     MetadataEnricher = None  # type: ignore[assignment,misc]
 
 from genon.preprocessor.facade.enrichment.enrichment_config import EnrichmentConfig
+from genon.preprocessor.facade.enrichment.prompt_files import read_prompt_file
+from genon.preprocessor.facade.enrichment.prompt_template import PromptTemplate
 
 try:
     import chardet
@@ -517,9 +519,9 @@ class AudioLoader:
 _DEFAULT_IMAGE_DESCRIPTION_PROMPT_TEMPLATE = (
     "문서의 일부 이미지를 설명해줘. "
     "아래 문맥을 참고해서 핵심 정보를 2~4문장으로 간결하게 작성해줘.\n\n"
-    "[앞 문맥]\n{before_context}\n\n"
-    "[캡션]\n{caption}\n\n"
-    "[뒤 문맥]\n{after_context}\n\n"
+    "[앞 문맥]\n{{before_context}}\n\n"
+    "[캡션]\n{{caption}}\n\n"
+    "[뒤 문맥]\n{{after_context}}\n\n"
     "요구사항:\n"
     "1) 추측은 최소화하고 이미지에서 확인 가능한 사실 중심으로 작성\n"
     "2) 문서 문맥과의 연결점을 포함\n"
@@ -543,6 +545,8 @@ class ImageDescriptionOptions:
     same_page_first: bool = True
     provenance: str = "facade_image_description"
     prompt_template: str = _DEFAULT_IMAGE_DESCRIPTION_PROMPT_TEMPLATE
+    template_mode: str = "strict"
+    variables: dict[str, Any] = field(default_factory=dict)
     headers: dict[str, str] = field(default_factory=dict)
     params: dict[str, Any] = field(default_factory=dict)
 
@@ -554,8 +558,25 @@ class ImageDescriptionOptions:
         fallback_api_url: str,
         fallback_api_key: str,
         fallback_model: str,
+        config_dir: "Optional[Path]" = None,
     ) -> "ImageDescriptionOptions":
         image_desc_cfg = _as_dict(image_desc_cfg)
+        base_dir = config_dir if config_dir is not None else Path.cwd()
+
+        # prompt_template 우선순위: prompt_template_file > inline prompt_template > built-in default
+        prompt_template_file = image_desc_cfg.get("prompt_template_file")
+        if isinstance(prompt_template_file, str) and prompt_template_file.strip():
+            prompt_template = read_prompt_file(prompt_template_file.strip(), base_dir)
+        else:
+            prompt_template = str(
+                image_desc_cfg.get("prompt_template", _DEFAULT_IMAGE_DESCRIPTION_PROMPT_TEMPLATE)
+            )
+
+        img_variables = image_desc_cfg.get("variables")
+        img_variables = dict(img_variables) if isinstance(img_variables, dict) else {}
+        _tmpl_cfg = image_desc_cfg.get("template")
+        img_mode = (_tmpl_cfg.get("mode") if isinstance(_tmpl_cfg, dict) else None) \
+            or image_desc_cfg.get("template_mode") or "strict"
 
         def _parse_optional_float(value: Any, key: str) -> Optional[float]:
             if value is None or value == "":
@@ -609,9 +630,9 @@ class ImageDescriptionOptions:
                 image_desc_cfg.get("provenance", "facade_image_description")
             ).strip()
             or "facade_image_description",
-            prompt_template=str(
-                image_desc_cfg.get("prompt_template", _DEFAULT_IMAGE_DESCRIPTION_PROMPT_TEMPLATE)
-            ),
+            prompt_template=prompt_template,
+            template_mode=str(img_mode).strip().lower(),
+            variables=img_variables,
             headers=_as_dict(image_desc_cfg.get("headers")),
             params=_as_dict(image_desc_cfg.get("params")),
         )
@@ -680,6 +701,11 @@ class PictureDescriptionExtractor:
 class FacadeImageDescriptionEnricher:
     def __init__(self, options: ImageDescriptionOptions):
         self.options = options
+        self._prompt_tpl = PromptTemplate(
+            options.prompt_template,
+            mode=getattr(options, "template_mode", "strict"),
+            allowed_names=set(getattr(options, "variables", {}) or {}),
+        )
 
     @staticmethod
     def _get_item_page_no(item: DocItem, default_page_no: int = 1) -> int:
@@ -787,16 +813,24 @@ class FacadeImageDescriptionEnricher:
             return text
         return text[: self.options.max_context_chars].rstrip() + " ..."
 
-    def _build_prompt(self, before_context: str, after_context: str, caption: str) -> str:
+    def _build_prompt(
+        self,
+        before_context: str,
+        after_context: str,
+        caption: str,
+        section_header: str = "",
+    ) -> str:
         safe_before = before_context or "-"
         safe_after = after_context or "-"
         safe_caption = caption or "-"
+        safe_header = section_header or "-"
         try:
-            prompt = (
-                self.options.prompt_template
-                .replace("{before_context}", safe_before)
-                .replace("{after_context}", safe_after)
-                .replace("{caption}", safe_caption)
+            prompt = self._prompt_tpl.render(
+                before_context=safe_before,
+                after_context=safe_after,
+                caption=safe_caption,
+                section_header=safe_header,
+                **(self.options.variables or {}),
             )
         except Exception as exc:
             _log.warning(
@@ -886,6 +920,7 @@ class FacadeImageDescriptionEnricher:
                 direction="after",
             )
 
+            section_header = ""
             if self.options.include_section_header:
                 section_header = self._collect_section_header_context(
                     items=items, picture_index=idx
@@ -906,6 +941,7 @@ class FacadeImageDescriptionEnricher:
                 before_context=before_context,
                 after_context=after_context,
                 caption=caption,
+                section_header=section_header,
             )
             picture_seq = len(targets) + 1
             targets.append((picture_seq, item, prompt))
@@ -1148,6 +1184,7 @@ class IntelligentDocumentProcessor:
             fallback_api_url=ec.api_url,
             fallback_api_key=ec.api_key,
             fallback_model=ec.model,
+            config_dir=self._config_dir,
         )
         self.image_description_enricher = FacadeImageDescriptionEnricher(
             self.image_description_options
@@ -1157,8 +1194,10 @@ class IntelligentDocumentProcessor:
             if CustomFieldsEnricher is not None else []
         )
 
-        # yaml에 system_prompt가 지정된 경우 커스텀 MetadataEnricher를 사용한다.
-        # 지정되지 않은 경우 docling 내장 enricher가 동작한다 (하위 호환).
+        # 사용자가 커스텀 metadata 신호(prompt/파일/output_fields/parser)를 하나라도 지정한 경우
+        # 커스텀 MetadataEnricher를 사용한다. 지정되지 않으면 docling 내장 enricher가 동작한다
+        # (하위 호환). built-in default system prompt 가 이 게이트를 흔들지 않도록
+        # system_prompt 유무가 아닌 has_custom_metadata 로 판단한다.
         self.metadata_enricher: "Optional[MetadataEnricher]" = (
             MetadataEnricher(
                 url=ec.metadata.url,
@@ -1173,8 +1212,10 @@ class IntelligentDocumentProcessor:
                 temperature=ec.metadata.temperature,
                 timeout=ec.metadata.timeout,
                 config_dir=self._config_dir,
+                variables=ec.metadata.variables,
+                template_mode=ec.metadata.template_mode,
             )
-            if MetadataEnricher is not None and ec.metadata.do_metadata and ec.metadata.system_prompt
+            if MetadataEnricher is not None and ec.metadata.do_metadata and ec.metadata.has_custom_metadata
             else None
         )
 

@@ -179,6 +179,8 @@ pdf_pipeline:
 # enrichment: {이름: {옵션}} 형식의 list.
 # 비활성화: ① 항목 삭제  ② 항목 주석 처리  ③ enable: false
 # url 의 <ENRICHMENT_SERVING_ID> 는 Genos에 등록한 모델서빙 ID로 변경. api_key 는 k8s 내부 통신 시 불필요.
+# 프롬프트는 별도 .md 파일로 분리(*_file). 경로는 이 config 와 같은 디렉토리 기준(파일명만).
+#   상세는 3.5 의 "프롬프트 파일 분리 & 변수 치환" 참고.
 enrichment:
   - toc:
       enable: true
@@ -193,8 +195,8 @@ enrichment:
         enabled: true
         max_context_tokens: 128000
         completion_reserved_tokens: 12000
-      system_prompt: | ...
-      user_prompt: | ...        # {{raw_text}} 자리에 문서 전문 삽입
+      system_prompt_file: prompt_toc_default_system.md
+      user_prompt_file: prompt_toc_default_user.md   # 파일 안에서 {{raw_text}} 치환
   - metadata:
       enable: true
       url: "http://llmops-gateway-api-service:8080/rep/serving/<ENRICHMENT_SERVING_ID>/v1/chat/completions"
@@ -207,8 +209,8 @@ enrichment:
       output_fields: [created_date, authors]   # 프롬프트의 JSON 키와 일치해야 함
       parser:
         type: json              # json(default) | python
-      system_prompt: | ...
-      user_prompt: | ...        # {{raw_text}}
+      system_prompt_file: prompt_metadata_default_system.md
+      user_prompt_file: prompt_metadata_default_user.md   # 파일 안에서 {{raw_text}} 치환
       precheck:
         enabled: true
         max_context_tokens: 128000
@@ -222,7 +224,8 @@ enrichment:
       before_items: 3
       after_items: 2
       max_context_chars: 1500
-      prompt_template: | ...    # {{before_context}} / {{caption}} / {{after_context}}
+      # 파일 안에서 {{before_context}} / {{caption}} / {{after_context}} 치환
+      prompt_template_file: prompt_image_description_default.md
 ```
 
 > 위는 캐노니컬 스키마를 그대로 반영한 것입니다(프롬프트 본문은 `...` 로 축약). `output` / `whisper` 섹션은 [§3.6](#36-출력--whisper-설정) 참조.
@@ -298,7 +301,7 @@ docling PDF 파싱 성능/품질 노브입니다.
 | 항목 | 역할 | 처리 주체 |
 |------|------|-----------|
 | `toc` | 계층적 목차(TOC) 자동 생성 | docling enrichment (`DataEnrichmentOptions`) |
-| `metadata` | 작성일 등 메타데이터 추출 | `system_prompt` 설정 시 facade custom metadata enricher (이때 docling 내장 metadata 추출 비활성), 비어 있으면 docling 내장 경로 |
+| `metadata` | 작성일 등 메타데이터 추출 | 커스텀 신호(`system_prompt`/`user_prompt`/`*_file`/`output_fields`/`parser`) 중 하나라도 지정 시 facade custom metadata enricher (이때 docling 내장 metadata 추출 비활성), 아무 신호 없으면 docling 내장 경로 |
 | `image_description` | 그림에 대한 LLM 설명 생성 | facade 후처리 (`generate_picture_images=false` 면 비활성) |
 | `custom_fields` | 사용자 정의 추출 필드 (복수 가능) | facade 후처리 (`resource_path` 자동 주입) |
 
@@ -311,7 +314,8 @@ docling PDF 파싱 성능/품질 노브입니다.
 | `max_tokens` | 생성 최대 토큰 | 10000 |
 | `precheck.enabled` | 입력 토큰 사전 추정 차단 | true |
 | `precheck.max_context_tokens` / `precheck.completion_reserved_tokens` | 컨텍스트 한도 / 예약 토큰 | 128000 / 12000 |
-| `system_prompt` / `user_prompt` | 프롬프트. `user_prompt` 의 `{{raw_text}}` 자리에 문서 전문 삽입 | — |
+| `system_prompt_file` / `user_prompt_file` | 프롬프트 `.md` 파일 경로(권장, config 디렉토리 기준). `user_prompt` 의 `{{raw_text}}` 치환 | — |
+| `system_prompt` / `user_prompt` | inline 프롬프트(`*_file` 미지정 시 fallback) | — |
 
 #### metadata
 
@@ -323,7 +327,8 @@ docling PDF 파싱 성능/품질 노브입니다.
 | `output_fields` | 추출 필드 목록. **프롬프트의 JSON 키와 일치해야 함** | `[created_date, authors]` |
 | `parser.type` | 응답 파서 (`json` \| `python`) | json |
 | `precheck.*` | toc 와 동일 | — |
-| `system_prompt` / `user_prompt` | 프롬프트 (`{{raw_text}}`) | — |
+| `system_prompt_file` / `user_prompt_file` | 프롬프트 `.md` 파일 경로(권장). `system_prompt_file` 생략 시 built-in default | — |
+| `system_prompt` / `user_prompt` | inline 프롬프트(`*_file` 미지정 시 fallback). `{{raw_text}}` 치환 | — |
 | `field_transforms` | 추출 키 → 벡터 필드 변환 매핑 (아래) | 미지정 시 기본값 |
 
 **`field_transforms` (선언적 메타데이터 매핑)**
@@ -369,13 +374,132 @@ field_transforms:
 | `concurrency` | 이미지 설명 요청 병렬 수 | 16 |
 | `before_items` / `after_items` | 캡션 앞/뒤 문맥으로 포함할 아이템 수 | 3 / 2 |
 | `max_context_chars` | 문맥 최대 글자 수 | 1500 |
-| `prompt_template` | 프롬프트. `{{before_context}}` / `{{caption}}` / `{{after_context}}` 치환 | — |
+| `prompt_template_file` | 프롬프트 `.md` 파일 경로(권장). `{{before_context}}` / `{{caption}}` / `{{after_context}}` 치환 | — |
+| `prompt_template` | inline 프롬프트(`*_file` 미지정 시 fallback) | — |
 
 > `pdf_pipeline.generate_picture_images: false` 면 이 항목은 enable 이어도 동작하지 않습니다.
 
 #### custom_fields
 
-사용자 정의 추출 필드입니다. **복수 항목**을 list 에 나열할 수 있으며, 각 항목에 `resource_path` 가 없으면 config 디렉터리가 자동 주입됩니다. 외부 정의 파일을 쓰는 경우 `config_file` 키로 지정합니다.
+사용자 정의 추출 필드입니다. **복수 항목**을 list 에 나열할 수 있으며, 각 항목에 `resource_path` 가 없으면 config 디렉터리가 자동 주입됩니다. 프롬프트는 `system_prompt_file`/`user_prompt_file`(또는 inline `system_prompt`/`user_prompt`)로 지정하며, system 미지정 시 built-in default 가 사용됩니다. 외부 정의 파일을 쓰는 경우 `config_file` 키로 지정합니다.
+
+#### 프롬프트 파일 분리 & 변수 치환
+
+enrichment 프롬프트는 YAML 안에 inline 으로 박지 않고 **별도 `.md` 파일**로 분리합니다. 운영 시 프롬프트만 교체하기 쉽고, 두 전처리기(parser/intelligent/convert)가 동일 프롬프트를 공유할 때 파일 경로 한 줄만 같게 두면 됩니다.
+
+**프롬프트 파일 지정**
+
+| 키 | 대상 |
+|----|------|
+| `system_prompt_file` / `user_prompt_file` | toc / metadata / custom_fields |
+| `prompt_template_file` | image_description |
+
+- **경로 규칙:** 상대경로는 **해당 config 파일이 위치한 디렉토리** 기준으로 해석합니다(파일명만 적으면 됨). 절대경로도 허용하지만, 상대경로가 base 디렉토리를 벗어나면(`../…`) 거부합니다.
+- **우선순위:** `*_file` > inline(`system_prompt`/`user_prompt`/`prompt_template`) > built-in default. system prompt 는 미지정 시 enricher 별 built-in default 가 채워지므로, **`user_prompt_file` 만 지정**해도 동작합니다(system 은 도메인 안에서 거의 고정이고 자주 바뀌는 것은 user prompt 이기 때문).
+- 출하 config 는 `prompt_toc_default_system.md` / `prompt_metadata_default_user.md` 등 중립적 파일명을 사용합니다.
+
+**변수 치환(`{{var}}`)**
+
+프롬프트 본문의 `{{변수}}` 는 런타임 값으로 치환됩니다. JSON 예시(`{"key": "value"}`)의 단일 중괄호와 충돌하지 않도록 **이중 중괄호** 로 통일했습니다.
+
+- **escape:** 리터럴 중괄호가 필요하면 4중 중괄호 `{{{{ ... }}}}` 로 적습니다(→ `{{ ... }}` 로 출력). 치환된 값 안에 `{{...}}` 가 들어와도 다시 치환되지 않습니다(1-pass).
+- **단일 중괄호 호환:** 과거 표기 `{raw_text}` 도 값이 주입된 변수에 한해 당분간 치환되지만 deprecation 경고가 남습니다. 신규 프롬프트는 `{{raw_text}}` 를 사용하세요.
+
+**(1) reserved 변수 — 1차 변환 결과 `DoclingDocument` 에서 자동 추출**
+
+문서 단위 (toc / metadata / custom_fields 프롬프트):
+
+| 변수 | 의미 | 추출 소스 | 예시 값 |
+|------|------|-----------|---------|
+| `{{raw_text}}` | enricher 가 추출한 본문 텍스트(프롬프트의 핵심 입력) | metadata: `pages`(미지정 시 첫 4p)의 markdown — `<!-- image -->` 제거 + 맨 앞에 `filename: …` 주입 / custom_fields: 전체 plain text(또는 `pages` markdown) | `filename: 보고서.pdf\n\n# 1장 총칙 …` |
+| `{{full_text}}` | 문서 전체 plain text | `document.export_to_text()` | `보고서\n1장 총칙 …` (전문) |
+| `{{filename}}` | 원본 파일명 | `document.origin.filename` | `보고서.pdf` |
+| `{{mimetype}}` | MIME 타입 | `document.origin.mimetype` | `application/pdf` |
+| `{{page_count}}` | 총 페이지 수 | `document.num_pages()` | `12` |
+| `{{table_count}}` | 표 개수 | `len(document.tables)` | `3` |
+| `{{picture_count}}` | 이미지 개수 | `len(document.pictures)` | `5` |
+| `{{section_headers}}` | 섹션 헤더·제목 목록(줄바꿈 구분) | `texts` 중 label ∈ {section_header, title} | `1장 총칙\n2장 정의 …` |
+
+이미지 item 단위 (image_description 프롬프트 — 이미지마다 값이 달라짐):
+
+| 변수 | 의미 | 추출 소스 |
+|------|------|-----------|
+| `{{before_context}}` | 이미지 앞 문맥 텍스트(`before_items` 개) | 이미지 직전 텍스트 아이템들 |
+| `{{after_context}}` | 이미지 뒤 문맥 텍스트(`after_items` 개) | 이미지 직후 텍스트 아이템들 |
+| `{{caption}}` | 이미지 캡션 | `PictureItem.caption_text(document)` |
+| `{{section_header}}` | 이미지 직전 섹션 헤더 | 이미지 위쪽에서 가장 가까운 section_header/title |
+
+> 값이 없는 reserved 변수는 **빈 문자열**로 치환됩니다. 카운트(`page_count` 등)는 정수지만 문자열로 렌더링됩니다. `raw_text`/`full_text` 는 토큰이 매우 클 수 있으니 보통 둘 중 하나만 사용합니다.
+
+**(2) 사용자 정의 변수 (`variables:`)**
+
+reserved 외에 운영자가 직접 변수를 추가할 수 있습니다. enricher 항목에 `variables:` 블록으로 이름·값을 선언하고 프롬프트에서 `{{이름}}` 으로 참조합니다. 회사명·도메인처럼 프롬프트에 고정 주입할 값에 유용합니다.
+
+```yaml
+# config (예: metadata 항목)
+- metadata:
+    user_prompt_file: prompt_metadata_default_user.md
+    variables:
+      company_name: "GenON"
+      domain: "금융"
+```
+
+```text
+<!-- prompt_metadata_default_user.md 본문 -->
+당신은 {{company_name}} 의 {{domain}} 문서 분석가입니다. (총 {{page_count}}페이지)
+아래 문서에서 작성일·작성자를 추출하세요.
+
+문서:
+---
+{{raw_text}}
+---
+```
+
+- `variables` 의 이름은 strict 검증에서 reserved 와 함께 **허용 목록**에 포함됩니다.
+- 이름이 reserved 와 겹치면 `variables` 값이 **우선**합니다(override).
+
+**(3) 미정의 변수 처리 (`template.mode`)**
+
+| mode | 동작 |
+|------|------|
+| `strict` (기본) | 프롬프트에 (reserved ∪ user-defined)에 없는 `{{foo}}` 가 있으면 **config 로드 시점에 에러**로 즉시 실패(오타·누락 조기 발견) |
+| `lenient` | 미정의 변수를 빈 문자열로 치환하고 경고 로그만 남김 |
+
+```yaml
+- metadata:
+    user_prompt_file: prompt_metadata_default_user.md
+    template:
+      mode: strict   # strict(기본) | lenient
+```
+
+**(4) 워크플로우 예시 — 입력 문서 → 렌더링된 프롬프트**
+
+`보고서.pdf`(12페이지, 표 3개)를 metadata enricher 로 처리:
+
+```yaml
+# config
+- metadata:
+    user_prompt_file: prompt_metadata_default_user.md
+    variables: { company_name: "GenON" }
+```
+```text
+# prompt_metadata_default_user.md 본문
+{{company_name}} 문서 분석 — 파일 {{filename}} ({{page_count}}p, 표 {{table_count}}개)
+---
+{{raw_text}}
+---
+```
+→ 런타임 치환 후 실제 LLM 에 전달되는 user 메시지:
+```text
+GenON 문서 분석 — 파일 보고서.pdf (12p, 표 3개)
+---
+filename: 보고서.pdf
+
+# 1장 총칙 …
+---
+```
+
+> TOC 프롬프트는 docling 레이어에서 처리되어 `{{raw_text}}` 만 지원하며, 위 reserved 카탈로그·`variables`·`template.mode` 는 facade enricher(metadata / custom_fields / image_description)에 적용됩니다.
 
 ### 3.7 청킹 설정
 

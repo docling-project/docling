@@ -346,3 +346,85 @@ class TestCustomFieldsLoadConfig:
         enr = object.__new__(CustomFieldsEnricher)
         with pytest.raises(FileNotFoundError):
             enr._load_config("missing.yaml", str(tmp_path))
+
+
+@pytest.mark.unit
+class TestCustomFieldsPromptFiles:
+    """custom_fields 의 system_prompt_file / user_prompt_file 지원 + default."""
+
+    def test_prompt_files_loaded(self, tmp_path):
+        (tmp_path / "cfs.md").write_text("CF_SYS", encoding="utf-8")
+        (tmp_path / "cfu.md").write_text("CF_USER {{raw_text}}", encoding="utf-8")
+        enr = _make_custom_fields_enricher(
+            system_prompt="", user_prompt="",
+            system_prompt_file="cfs.md", user_prompt_file="cfu.md",
+            resource_path=str(tmp_path),
+        )
+        assert enr._system_prompt == "CF_SYS"
+        assert enr._user_prompt == "CF_USER {{raw_text}}"
+
+    def test_file_beats_inline_kwarg(self, tmp_path):
+        (tmp_path / "cfs.md").write_text("FROM_FILE", encoding="utf-8")
+        enr = _make_custom_fields_enricher(
+            system_prompt="INLINE", system_prompt_file="cfs.md",
+            resource_path=str(tmp_path),
+        )
+        assert enr._system_prompt == "FROM_FILE"
+
+    def test_default_system_prompt_when_unset(self, tmp_path):
+        from facade.enrichment.custom_fields_enricher import _DEFAULT_CUSTOM_FIELDS_SYSTEM_PROMPT
+        enr = _make_custom_fields_enricher(
+            system_prompt="", user_prompt="USER", resource_path=str(tmp_path),
+        )
+        assert enr._system_prompt == _DEFAULT_CUSTOM_FIELDS_SYSTEM_PROMPT
+
+    def test_missing_prompt_file_raises(self, tmp_path):
+        with pytest.raises(FileNotFoundError):
+            _make_custom_fields_enricher(
+                user_prompt_file="ghost.md", resource_path=str(tmp_path),
+            )
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("factory,modpath", _ENRICHERS)
+class TestTemplateVariablesAndMode:
+    """PromptTemplate 통합: user-defined 변수 / strict·lenient."""
+
+    def test_strict_unknown_variable_raises_at_init(self, factory, modpath):
+        with pytest.raises(ValueError):
+            factory(user_prompt="안녕 {{unknown_var}}")
+
+    def test_user_defined_variable_substituted(self, factory, modpath):
+        enr = factory(
+            user_prompt="회사={{company}} 문서={{raw_text}}",
+            variables={"company": "GenON"},
+        )
+        captured = {}
+        with _patch_async_client(modpath, captured):
+            asyncio.run(enr._call_llm("DOC"))
+        assert captured["json"]["messages"][-1]["content"] == "회사=GenON 문서=DOC"
+
+    def test_lenient_unknown_variable_renders_empty(self, factory, modpath):
+        enr = factory(user_prompt="[{{unknown_var}}] {{raw_text}}", template_mode="lenient")
+        captured = {}
+        with _patch_async_client(modpath, captured):
+            asyncio.run(enr._call_llm("DOC"))
+        assert captured["json"]["messages"][-1]["content"] == "[] DOC"
+
+    def test_json_braces_in_prompt_preserved(self, factory, modpath):
+        enr = factory(user_prompt='추출: {{raw_text}} 형식: {"date": "Y"}')
+        captured = {}
+        with _patch_async_client(modpath, captured):
+            asyncio.run(enr._call_llm("DOC"))
+        assert captured["json"]["messages"][-1]["content"] == '추출: DOC 형식: {"date": "Y"}'
+
+    def test_doc_context_fills_reserved(self, factory, modpath):
+        """document 이 주어지면 filename/page_count 등 reserved 가 채워진다."""
+        enr = factory(user_prompt="{{filename}} p{{page_count}} {{raw_text}}")
+        doc = MagicMock()
+        doc.origin.filename = "a.pdf"
+        doc.num_pages.return_value = 3
+        captured = {}
+        with _patch_async_client(modpath, captured):
+            asyncio.run(enr._call_llm("DOC", doc))
+        assert captured["json"]["messages"][-1]["content"] == "a.pdf p3 DOC"

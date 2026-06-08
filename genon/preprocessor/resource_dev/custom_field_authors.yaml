@@ -29,11 +29,7 @@ pages: [1]
 #   callable: parse
 
 # ── 프롬프트 ─────────────────────────────────────────────────────────────────
-system_prompt: |
-  너는 문서 정보추출 전문가다. 반드시 JSON 객체만 반환한다.
-  작성자가 여러 명이면 authors 배열에 모두 포함한다.
-  값이 없으면 null 또는 빈 배열([])을 반환한다.
-
+system_prompt_file: prompt_custom_fields_authors_system.md
 user_prompt: |
   아래 문서에서 작성자(authors) 정보를 추출하라.
 

@@ -1320,6 +1320,7 @@ class DocumentProcessor:
                 fallback_api_url=ec.api_url,
                 fallback_api_key=ec.api_key,
                 fallback_model=ec.model,
+                config_dir=self._config_dir,
             )
             if ImageDescriptionOptions is not None
             else None
@@ -1351,8 +1352,10 @@ class DocumentProcessor:
                 temperature=ec.metadata.temperature,
                 timeout=ec.metadata.timeout,
                 config_dir=self._config_dir,
+                variables=ec.metadata.variables,
+                template_mode=ec.metadata.template_mode,
             )
-            if _MetadataEnricher is not None and ec.metadata.do_metadata and ec.metadata.system_prompt
+            if _MetadataEnricher is not None and ec.metadata.do_metadata and ec.metadata.has_custom_metadata
             else None
         )
         # 추출 메타데이터 → typed 벡터 필드 매핑(설정 기반). 설정이 비어있으면

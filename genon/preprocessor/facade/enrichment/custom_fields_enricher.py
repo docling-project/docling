@@ -10,10 +10,17 @@ import yaml
 from docling_core.types import DoclingDocument
 
 from .base_enricher import BaseEnricher
+from .prompt_files import read_prompt_file
+from .prompt_template import PromptTemplate
 
 _log = logging.getLogger(__name__)
 
 _CONFIG_DIR = Path(__file__).parent.parent / "configs" / "enrich" / "custom_fields"
+
+# user 가 user_prompt 만 지정한 경우 사용할 built-in default system prompt.
+_DEFAULT_CUSTOM_FIELDS_SYSTEM_PROMPT = (
+    "너는 문서 정보추출 전문가다. 주어진 문서에서 요청한 필드를 정확하게 추출하라."
+)
 
 
 class CustomFieldsEnricher(BaseEnricher):
@@ -36,25 +43,37 @@ class CustomFieldsEnricher(BaseEnricher):
         timeout: int = 60,
         system_prompt: str = "",
         user_prompt: str = "",
+        system_prompt_file: str = "",
+        user_prompt_file: str = "",
         output_fields: list[str] | None = None,
         parser: dict | None = None,
         pages: list[int] | None = None,
+        variables: dict | None = None,
+        template: dict | None = None,
+        template_mode: str = "strict",
     ):
         cfg = self._load_config(config_file, resource_path)
         prompt_cfg = cfg.get("prompt", {}) if isinstance(cfg.get("prompt"), dict) else {}
+
+        # prompt 파일/parser 파일 경로 해석 기준 디렉토리.
+        self._parser_base_dir = self._resolve_parser_base_dir(config_file, resource_path)
 
         self._url = url or cfg.get("url", "")
         self._model = model or cfg.get("model", "")
         self._max_tokens = max_tokens if max_tokens != 1000 else cfg.get("max_tokens", max_tokens)
         self._temperature = temperature if temperature != 0.0 else cfg.get("temperature", temperature)
         self._timeout = timeout if timeout != 60 else cfg.get("timeout", timeout)
+        # 우선순위: file > 생성자 kwarg > cfg["*_prompt"] > cfg["prompt"][*] > built-in default
         self._system_prompt = (
-            system_prompt
+            self._maybe_read_prompt(system_prompt_file or cfg.get("system_prompt_file"))
+            or system_prompt
             or cfg.get("system_prompt", "").strip()
             or str(prompt_cfg.get("system", "")).strip()
+            or _DEFAULT_CUSTOM_FIELDS_SYSTEM_PROMPT
         )
         self._user_prompt = (
-            user_prompt
+            self._maybe_read_prompt(user_prompt_file or cfg.get("user_prompt_file"))
+            or user_prompt
             or cfg.get("user_prompt", "").strip()
             or str(prompt_cfg.get("user", "")).strip()
         )
@@ -65,12 +84,25 @@ class CustomFieldsEnricher(BaseEnricher):
             self._headers["Authorization"] = f"Bearer {resolved_key}"
 
         self._parser_cfg = parser or cfg.get("parser", {}) or {}
-        self._parser_base_dir = self._resolve_parser_base_dir(config_file, resource_path)
         self._parser_callable = self._build_parser_callable()
         self._extract_pattern: str = self._parser_cfg.get("extract_pattern", "")
 
         cfg_pages = cfg.get("pages")
         self._pages: list[int] | None = pages or (cfg_pages if isinstance(cfg_pages, list) and cfg_pages else None)
+
+        # 변수 치환 템플릿. user-defined 변수는 reserved 와 함께 strict 검증에 허용된다.
+        self._variables = dict(variables or cfg.get("variables") or {})
+        _tmpl_cfg = template if isinstance(template, dict) else cfg.get("template")
+        _mode = (_tmpl_cfg.get("mode") if isinstance(_tmpl_cfg, dict) else None) or template_mode or "strict"
+        _allowed = set(self._variables.keys())
+        self._system_tpl = PromptTemplate(self._system_prompt, mode=_mode, allowed_names=_allowed)
+        self._user_tpl = PromptTemplate(self._user_prompt, mode=_mode, allowed_names=_allowed)
+
+    def _maybe_read_prompt(self, file_ref: Any) -> str:
+        """prompt 파일 경로가 지정된 경우 읽어서 반환, 없으면 빈 문자열."""
+        if isinstance(file_ref, str) and file_ref.strip():
+            return read_prompt_file(file_ref.strip(), self._parser_base_dir)
+        return ""
 
     def _load_config(self, config_file: str, resource_path: str | None = None) -> dict:
         if not config_file:
@@ -214,15 +246,23 @@ class CustomFieldsEnricher(BaseEnricher):
             return "\n".join(chunks).strip()
         return str(content)
 
-    async def _call_llm(self, raw_text: str) -> str:
-        prompt = (
-            self._user_prompt
-            .replace("{{raw_text}}", raw_text)
-            .replace("{raw_text}", raw_text)
-        ) if self._user_prompt else raw_text
+    def _render_prompts(self, raw_text: str, document: DoclingDocument | None) -> "tuple[str, str]":
+        needed = self._user_tpl.referenced | self._system_tpl.referenced
+        if document is not None:
+            ctx = PromptTemplate.doc_context(
+                document, needed=needed, raw_text=raw_text, **self._variables
+            )
+        else:
+            ctx = {"raw_text": raw_text, **self._variables}
+        user = raw_text if self._user_tpl.is_empty else self._user_tpl.render(**ctx)
+        system = "" if self._system_tpl.is_empty else self._system_tpl.render(**ctx)
+        return system, user
+
+    async def _call_llm(self, raw_text: str, document: DoclingDocument | None = None) -> str:
+        system, prompt = self._render_prompts(raw_text, document)
         messages = []
-        if self._system_prompt:
-            messages.append({"role": "system", "content": self._system_prompt})
+        if system:
+            messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
 
         payload = {
@@ -274,7 +314,7 @@ class CustomFieldsEnricher(BaseEnricher):
 
         raw_text = self._extract_raw_text(document)
         try:
-            llm_output = await self._call_llm(raw_text)
+            llm_output = await self._call_llm(raw_text, document)
             parsed = self._parse_with_custom_parser(llm_output, document, **kwargs)
             normalized = self._normalize_output_fields(parsed)
         except Exception as e:

@@ -13,7 +13,63 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
+from .prompt_files import read_prompt_file
+
 _log = logging.getLogger(__name__)
+
+
+# enricher 별 built-in default system prompt.
+# user 가 user_prompt 만 지정(또는 user_prompt_file 만 지정)한 경우,
+# system prompt 는 이 기본값을 사용한다. (우선순위: file > inline > default)
+_DEFAULT_METADATA_SYSTEM_PROMPT = (
+    "You are a professional document extraction assistant. "
+    "Your job is to carefully extract metadata from semi-structured or "
+    "unstructured documents. Always follow the requested output format exactly."
+)
+
+
+def _resolve_prompt(
+    inline: Any,
+    file_ref: Any,
+    default: Optional[str],
+    config_dir: Path,
+) -> Optional[str]:
+    """prompt 값을 우선순위에 따라 해석한다: file > inline > default.
+
+    Args:
+        inline: YAML 의 inline prompt 문자열 (`system_prompt`/`user_prompt`).
+        file_ref: YAML 의 prompt 파일 경로 (`system_prompt_file`/`user_prompt_file`).
+        default: 둘 다 없을 때 사용할 built-in 기본값 (없으면 None).
+        config_dir: 상대경로 해석 기준 디렉토리.
+
+    Raises:
+        ValueError / FileNotFoundError: file_ref 가 잘못된 경우 (fail-fast).
+    """
+    if isinstance(file_ref, str) and file_ref.strip():
+        return read_prompt_file(file_ref.strip(), config_dir)
+    if isinstance(inline, str):
+        stripped = inline.strip()
+        if stripped:
+            return stripped
+    elif inline:
+        return inline
+    return default
+
+
+def _parse_template_opts(opts: dict, global_mode: Optional[str] = None) -> "tuple[dict, str]":
+    """enricher 블록에서 user-defined `variables` 와 `template.mode` 를 파싱한다.
+
+    mode 우선순위: 블록의 template.mode / template_mode > global_mode > "strict".
+    """
+    variables = opts.get("variables")
+    variables = dict(variables) if isinstance(variables, dict) else {}
+    tmpl = opts.get("template")
+    mode = tmpl.get("mode") if isinstance(tmpl, dict) else None
+    mode = mode or opts.get("template_mode") or global_mode or "strict"
+    mode = str(mode).strip().lower()
+    if mode not in {"strict", "lenient"}:
+        mode = "strict"
+    return variables, mode
 
 
 # ── module-private helpers ────────────────────────────────────────────────────
@@ -102,6 +158,9 @@ class _MetadataConfig:
     timeout: int = 3600
     pages: Optional[list] = None
     field_transforms: list = None
+    has_custom_metadata: bool = False
+    variables: dict = None
+    template_mode: str = "strict"
 
     def __post_init__(self):
         if self.parser is None:
@@ -110,6 +169,8 @@ class _MetadataConfig:
             self.output_fields = []
         if self.field_transforms is None:
             self.field_transforms = []
+        if self.variables is None:
+            self.variables = {}
 
 
 # ── Main dataclass ────────────────────────────────────────────────────────────
@@ -204,19 +265,37 @@ class EnrichmentConfig:
                         opts["resource_path"] = str(config_dir)
                     custom_fields_cfgs.append(opts)
 
-        toc_system_prompt = toc_opts.get("system_prompt") or None
-        toc_user_prompt = toc_opts.get("user_prompt") or None
-        if isinstance(toc_system_prompt, str):
-            toc_system_prompt = toc_system_prompt.strip() or None
-        if isinstance(toc_user_prompt, str):
-            toc_user_prompt = toc_user_prompt.strip() or None
+        # toc 는 별도 built-in default 가 없다 (없으면 docling 레이어가 자체 기본값 사용).
+        toc_system_prompt = _resolve_prompt(
+            toc_opts.get("system_prompt"), toc_opts.get("system_prompt_file"), None, config_dir
+        )
+        toc_user_prompt = _resolve_prompt(
+            toc_opts.get("user_prompt"), toc_opts.get("user_prompt_file"), None, config_dir
+        )
 
-        meta_system_prompt = metadata_opts.get("system_prompt") or None
-        meta_user_prompt = metadata_opts.get("user_prompt") or None
-        if isinstance(meta_system_prompt, str):
-            meta_system_prompt = meta_system_prompt.strip() or None
-        if isinstance(meta_user_prompt, str):
-            meta_user_prompt = meta_user_prompt.strip() or None
+        meta_system_prompt = _resolve_prompt(
+            metadata_opts.get("system_prompt"),
+            metadata_opts.get("system_prompt_file"),
+            _DEFAULT_METADATA_SYSTEM_PROMPT,
+            config_dir,
+        )
+        meta_user_prompt = _resolve_prompt(
+            metadata_opts.get("user_prompt"),
+            metadata_opts.get("user_prompt_file"),
+            None,
+            config_dir,
+        )
+        # 커스텀 metadata enricher opt-in 여부: 사용자가 prompt/파일/output_fields/parser 중
+        # 하나라도 제공하면 True. (built-in default system prompt 가 게이트를 흔들지 않게 함)
+        meta_has_custom = bool(
+            metadata_opts.get("system_prompt")
+            or metadata_opts.get("user_prompt")
+            or metadata_opts.get("system_prompt_file")
+            or metadata_opts.get("user_prompt_file")
+            or metadata_opts.get("output_fields")
+            or metadata_opts.get("parser")
+        )
+        meta_variables, meta_mode = _parse_template_opts(metadata_opts)
         meta_pages = metadata_opts.get("pages")
         if not isinstance(meta_pages, list) or not meta_pages:
             meta_pages = None
@@ -263,6 +342,9 @@ class EnrichmentConfig:
                 timeout=int(metadata_opts.get("timeout", 3600)),
                 pages=meta_pages,
                 field_transforms=list(metadata_opts.get("field_transforms") or []),
+                has_custom_metadata=meta_has_custom,
+                variables=meta_variables,
+                template_mode=meta_mode,
             ),
             image_description_cfg=image_desc_cfg,
             custom_fields_cfgs=custom_fields_cfgs,
@@ -316,19 +398,35 @@ class EnrichmentConfig:
             if "resource_path" not in _cf:
                 _cf["resource_path"] = str(config_dir)
 
-        toc_sp = toc_cfg.get("system_prompt") or None
-        toc_up = toc_cfg.get("user_prompt") or None
-        if isinstance(toc_sp, str):
-            toc_sp = toc_sp.strip() or None
-        if isinstance(toc_up, str):
-            toc_up = toc_up.strip() or None
+        toc_sp = _resolve_prompt(
+            toc_cfg.get("system_prompt"), toc_cfg.get("system_prompt_file"), None, config_dir
+        )
+        toc_up = _resolve_prompt(
+            toc_cfg.get("user_prompt"), toc_cfg.get("user_prompt_file"), None, config_dir
+        )
 
-        meta_sp = meta_cfg.get("system_prompt") or None
-        meta_up = meta_cfg.get("user_prompt") or None
-        if isinstance(meta_sp, str):
-            meta_sp = meta_sp.strip() or None
-        if isinstance(meta_up, str):
-            meta_up = meta_up.strip() or None
+        meta_sp = _resolve_prompt(
+            meta_cfg.get("system_prompt"),
+            meta_cfg.get("system_prompt_file"),
+            _DEFAULT_METADATA_SYSTEM_PROMPT,
+            config_dir,
+        )
+        meta_up = _resolve_prompt(
+            meta_cfg.get("user_prompt"),
+            meta_cfg.get("user_prompt_file"),
+            None,
+            config_dir,
+        )
+        meta_has_custom = bool(
+            meta_cfg.get("system_prompt")
+            or meta_cfg.get("user_prompt")
+            or meta_cfg.get("system_prompt_file")
+            or meta_cfg.get("user_prompt_file")
+            or meta_cfg.get("output_fields")
+            or meta_cfg.get("parser")
+        )
+        global_mode = _as_dict(cfg.get("template")).get("mode")
+        meta_variables, meta_mode = _parse_template_opts(meta_cfg, global_mode)
         meta_pages_d = meta_cfg.get("pages")
         if not isinstance(meta_pages_d, list) or not meta_pages_d:
             meta_pages_d = None
@@ -394,6 +492,9 @@ class EnrichmentConfig:
                 timeout=int(meta_cfg.get("timeout", 3600)),
                 pages=meta_pages_d,
                 field_transforms=list(meta_cfg.get("field_transforms") or []),
+                has_custom_metadata=meta_has_custom,
+                variables=meta_variables,
+                template_mode=meta_mode,
             ),
             image_description_cfg=_as_dict(cfg.get("image_description")),
             custom_fields_cfgs=cf_list,
