@@ -94,3 +94,14 @@ class S3Coordinates(BaseModel):
             ),
         ),
     ] = ""
+
+    max_num_elements: Annotated[
+        int | None,
+        Field(
+            description=(
+                "Maximum number of S3 objects to iterate for this source. "
+                "Optional, defaults to no limit."
+            ),
+            ge=1,
+        ),
+    ] = None
