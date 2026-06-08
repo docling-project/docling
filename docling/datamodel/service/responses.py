@@ -171,13 +171,10 @@ class FailurePhase(str, enum.Enum):
 
 
 class PublicFailureInfo(BaseModel):
-    scope: Literal["task"] = "task"
-    code: str
     category: FailureCategory
     message: str
     retryable: bool
     phase: FailurePhase
-    correlation_id: str
     details: dict[str, str] = Field(default_factory=dict)
 
 
