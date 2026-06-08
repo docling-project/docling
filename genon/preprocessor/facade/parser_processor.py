@@ -568,9 +568,9 @@ class ImageDescriptionOptions:
         if isinstance(prompt_template_file, str) and prompt_template_file.strip():
             prompt_template = read_prompt_file(prompt_template_file.strip(), base_dir)
         else:
-            prompt_template = str(
-                image_desc_cfg.get("prompt_template", _DEFAULT_IMAGE_DESCRIPTION_PROMPT_TEMPLATE)
-            )
+            prompt_template = image_desc_cfg.get("prompt_template")
+            if not isinstance(prompt_template, str):
+                prompt_template = _DEFAULT_IMAGE_DESCRIPTION_PROMPT_TEMPLATE
 
         img_variables = image_desc_cfg.get("variables")
         img_variables = dict(img_variables) if isinstance(img_variables, dict) else {}

@@ -67,15 +67,15 @@ class CustomFieldsEnricher(BaseEnricher):
         self._system_prompt = (
             self._maybe_read_prompt(system_prompt_file or cfg.get("system_prompt_file"))
             or system_prompt
-            or cfg.get("system_prompt", "").strip()
-            or str(prompt_cfg.get("system", "")).strip()
+            or str(cfg.get("system_prompt") or "").strip()
+            or str(prompt_cfg.get("system") or "").strip()
             or _DEFAULT_CUSTOM_FIELDS_SYSTEM_PROMPT
         )
         self._user_prompt = (
             self._maybe_read_prompt(user_prompt_file or cfg.get("user_prompt_file"))
             or user_prompt
-            or cfg.get("user_prompt", "").strip()
-            or str(prompt_cfg.get("user", "")).strip()
+            or str(cfg.get("user_prompt") or "").strip()
+            or str(prompt_cfg.get("user") or "").strip()
         )
         self._output_fields = list(output_fields or cfg.get("output_fields", []))
         self._headers: dict[str, str] = {"Content-Type": "application/json"}
