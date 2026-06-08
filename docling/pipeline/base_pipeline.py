@@ -30,6 +30,13 @@ from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     PipelineOptions,
 )
+from docling.datamodel.progress import (
+    ConversionProgressEvent,
+    DocumentCompletedProgress,
+    PageCompletedProgress,
+    PageStartedProgress,
+    ProgressCallback,
+)
 from docling.datamodel.settings import settings
 from docling.models.base_model import GenericEnrichmentModel
 from docling.models.factories import get_picture_description_factory
@@ -66,7 +73,29 @@ class BasePipeline(ABC):
                 "When defined, it must point to a folder containing all models required by the pipeline."
             )
 
-    def execute(self, in_doc: InputDocument, raises_on_error: bool) -> ConversionResult:
+    @staticmethod
+    def _emit_progress(
+        progress_callback: Optional[ProgressCallback],
+        event: ConversionProgressEvent,
+    ) -> None:
+        """Invoke a user progress callback, isolating its failures.
+
+        A misbehaving callback must never break the conversion, so any
+        exception it raises is logged and swallowed.
+        """
+        if progress_callback is None:
+            return
+        try:
+            progress_callback(event)
+        except Exception:
+            _log.warning("progress_callback raised an exception", exc_info=True)
+
+    def execute(
+        self,
+        in_doc: InputDocument,
+        raises_on_error: bool,
+        progress_callback: Optional[ProgressCallback] = None,
+    ) -> ConversionResult:
         conv_res = ConversionResult(input=in_doc)
 
         _log.info(f"Processing document {in_doc.file.name}")
@@ -76,7 +105,7 @@ class BasePipeline(ABC):
             ):
                 # These steps are building and assembling the structure of the
                 # output DoclingDocument.
-                conv_res = self._build_document(conv_res)
+                conv_res = self._build_document(conv_res, progress_callback)
                 conv_res = self._assemble_document(conv_res)
                 # From this stage, all operations should rely only on conv_res.output
                 conv_res = self._enrich_document(conv_res)
@@ -98,11 +127,23 @@ class BasePipeline(ABC):
                 raise RuntimeError(f"Pipeline {self.__class__.__name__} failed") from e
         finally:
             self._unload(conv_res)
+            # Emitted in `finally` so callers always receive a terminal event,
+            # even when raises_on_error=True re-raises above.
+            self._emit_progress(
+                progress_callback,
+                DocumentCompletedProgress(
+                    num_pages=len(conv_res.pages), status=conv_res.status
+                ),
+            )
 
         return conv_res
 
     @abstractmethod
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+    def _build_document(
+        self,
+        conv_res: ConversionResult,
+        progress_callback: Optional[ProgressCallback] = None,
+    ) -> ConversionResult:
         pass
 
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
@@ -241,7 +282,11 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
 
         yield from page_batch
 
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+    def _build_document(
+        self,
+        conv_res: ConversionResult,
+        progress_callback: Optional[ProgressCallback] = None,
+    ) -> ConversionResult:
         if not isinstance(conv_res.input._backend, PaginatedDocumentBackend):
             raise RuntimeError(
                 f"The selected backend {type(conv_res.input._backend).__name__} for {conv_res.input.file} is not a paginated backend. "
@@ -258,6 +303,10 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                 if (start_page - 1) <= i <= (end_page - 1):
                     conv_res.pages.append(Page(page_no=i + 1))
 
+            total_pages = len(conv_res.pages)
+            started_page_nos: set[int] = set()
+            completed_page_nos: set[int] = set()
+
             try:
                 total_pages_processed = 0
                 # Iterate batches of pages (page_batch_size) in the doc
@@ -265,6 +314,15 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                     conv_res.pages, settings.perf.page_batch_size
                 ):
                     start_batch_time = time.monotonic()
+
+                    for page in page_batch:
+                        started_page_nos.add(page.page_no)
+                        self._emit_progress(
+                            progress_callback,
+                            PageStartedProgress(
+                                page_no=page.page_no, total_pages=total_pages
+                            ),
+                        )
 
                     # 1. Initialise the page resources
                     init_pages = map(
@@ -275,6 +333,17 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                     pipeline_pages = self._apply_on_pages(conv_res, init_pages)
 
                     for p in pipeline_pages:  # Must exhaust!
+                        completed_page_nos.add(p.page_no)
+                        self._emit_progress(
+                            progress_callback,
+                            PageCompletedProgress(
+                                page_no=p.page_no,
+                                total_pages=total_pages,
+                                success=p._backend is not None
+                                and p._backend.is_valid(),
+                            ),
+                        )
+
                         # Cleanup cached images
                         if not self.keep_images:
                             p._image_cache = {}
@@ -314,6 +383,20 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                     total_pages_processed += len(page_batch)
                     _log.debug(
                         f"Finished converting pages {total_pages_processed}/{len(conv_res.pages)} time={end_batch_time:.3f}"
+                    )
+
+                # Pages that were announced as started but never completed
+                # (e.g. the in-flight batch when a document_timeout breaks the
+                # loop) get a terminal failure event so every page_started is
+                # balanced by a page_completed.
+                for page_no in sorted(started_page_nos - completed_page_nos):
+                    self._emit_progress(
+                        progress_callback,
+                        PageCompletedProgress(
+                            page_no=page_no,
+                            total_pages=total_pages,
+                            success=False,
+                        ),
                     )
 
             except Exception as e:
