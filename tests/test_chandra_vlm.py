@@ -149,6 +149,7 @@ def test_chandra_list_group_prediction_sample():
     """Test a saved chandra prediction containing list groups."""
     path = Path("./tests/data/html_chandra/chandra_list_group.html")
     content = path.read_text()
+    source = path.with_suffix(".source.txt").read_text()
 
     doc = parse_chandra_html(
         content=content,
@@ -159,10 +160,12 @@ def test_chandra_list_group_prediction_sample():
 
     list_items = [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
 
-    assert len(list_items) == 15
-    assert list_items[0].text == "• Overview"
-    assert list_items[1].text == "• Easy To Memories"
-    assert len(doc.pictures) == 1
+    assert "tests/data/pdf/multi_page.pdf, page 1" in source
+    assert len(list_items) == 4
+    assert "IBM MT/ST" in list_items[0].text
+    assert "Wang Laboratories" in list_items[1].text
+    assert "WordStar" in list_items[2].text
+    assert "Microsoft Word" in list_items[3].text
 
 
 def test_chandra_all_files_parse():
