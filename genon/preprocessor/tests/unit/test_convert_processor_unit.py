@@ -53,3 +53,17 @@ def test_convert_enrichment_options_precheck_defaults(processor):
     assert opts.metadata_precheck_enabled is False
     assert opts.metadata_max_context_tokens == 128000
     assert opts.metadata_completion_reserved_tokens == 12000
+
+
+@pytest.mark.unit
+def test_convert_metadata_enricher_is_wired_from_yaml(processor):
+    """metadata YAML 상세 설정을 facade enricher에 연결하고 내장 추출을 끄는지 확인."""
+    enricher = processor.metadata_enricher
+
+    assert enricher is not None
+    assert processor.enrichment_options.extract_metadata is False
+    assert enricher._output_fields == ["created_date", "authors"]
+    assert enricher._parser_cfg == {"type": "json"}
+    assert enricher._pages == [1, 4]
+    assert "created_date" in enricher._user_prompt
+    assert "authors" in enricher._user_prompt

@@ -93,7 +93,7 @@ enrichment:
         completion_reserved_tokens: 12000
 
   - image_description:
-      enable: true
+      enable: false
       url: "http://llmops-gateway-api-service:8080/rep/serving/<IMAGE_DESCRIPTION_SERVING_ID>/v1/chat/completions"
       api_key: ""
       model: "model"

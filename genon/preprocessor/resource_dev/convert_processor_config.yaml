@@ -78,7 +78,7 @@ enrichment:
   - metadata:
       enable: true
       # 동작 보존: 기존 하드코딩 값(서빙 502)을 그대로 사용
-      # (docling 내장 metadata 추출만 사용 — 아래 system/user_prompt·output_fields·parser·pages 는 미사용)
+      # prompt/output_fields/parser/pages 설정이 있으면 facade MetadataEnricher를 사용한다.
       url: "https://genos.genon.ai/api/gateway/rep/serving/750/v1/chat/completions"
       api_key: "26e6a516de0847f59a3b9db8e418976e"
       model: "model"

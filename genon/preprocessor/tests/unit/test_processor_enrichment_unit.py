@@ -4,6 +4,7 @@
 setup_logging(yaml `log_level`) 레벨 매핑을 검증한다.
 
 enrich_metadata/enrich_custom_fields 는 enrichment 배선을 들고 있는 클래스에 정의돼 있다:
+- `convert_processor.DocumentProcessor` (변환 파사드)
 - `intelligent_processor.DocumentProcessor` (단독 인텔리전트 파사드)
 - `parser_processor.IntelligentDocumentProcessor` (parser 파사드가 내부에서 위임하는 엔진)
 setup_logging 은 세 facade DocumentProcessor 가 동일하게 갖는다.
@@ -30,18 +31,20 @@ def _try_import(name):
 
 
 _intel_mod = _try_import("facade.intelligent_processor")
+_convert_mod = _try_import("facade.convert_processor")
 _parser_mod = _try_import("facade.parser_processor")
 _attach_mod = _try_import("facade.attachment_processor")
 
-if _intel_mod is None or _parser_mod is None:
+if _intel_mod is None or _convert_mod is None or _parser_mod is None:
     pytest.skip(
-        "facade intelligent/parser 프로세서 import 불가(환경 의존)",
+        "facade convert/intelligent/parser 프로세서 import 불가(환경 의존)",
         allow_module_level=True,
     )
 
 
 # enrich_* 를 정의한 클래스들(배선 보유 주체).
 _ENRICH_PROCESSORS = [
+    pytest.param(_convert_mod.DocumentProcessor, id="convert"),
     pytest.param(_intel_mod.DocumentProcessor, id="intelligent"),
     pytest.param(_parser_mod.IntelligentDocumentProcessor, id="parser_intel"),
 ]
