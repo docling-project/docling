@@ -45,6 +45,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
+    BaseVlmOptions,
     InferenceFramework,
     InlineVlmOptions,
     ResponseFormat,
@@ -546,8 +547,14 @@ class VlmPipeline(PaginatedPipeline):
         from docling.utils.vlm_utils import compute_qwen2vl_image_size
 
         vlm_options = self.pipeline_options.vlm_options
-        vlm_scale = getattr(vlm_options, "scale", 1.0)
-        vlm_max_size = getattr(vlm_options, "max_size", None)
+        if isinstance(vlm_options, (VlmConvertOptions, BaseVlmOptions)):
+            vlm_scale = vlm_options.scale
+            vlm_max_size = vlm_options.max_size
+        else:
+            raise TypeError(
+                "DOTS JSON parsing requires VlmConvertOptions or BaseVlmOptions, "
+                f"got {type(vlm_options).__name__}."
+            )
 
         page_docs = []
 

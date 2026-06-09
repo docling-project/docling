@@ -26,6 +26,8 @@ from docling.models.inference_engines.object_detection.base import (
     ObjectDetectionEngineType,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineType
+from docling.utils.chandra_utils import CHANDRA_OCR_LAYOUT_PROMPT
+from docling.utils.dots_utils import DOTS_LAYOUT_PROMPT
 
 if TYPE_CHECKING:
     from docling.datamodel.image_classification_engine_options import (
@@ -63,6 +65,14 @@ class EngineModelConfig(BaseModel):
         description="Override torch dtype for this engine (e.g., 'bfloat16')",
     )
 
+    strip_stop_strings: bool = Field(
+        default=False,
+        description=(
+            "Whether this engine should strip configured stop strings from decoded "
+            "output after generation."
+        ),
+    )
+
     extra_config: Dict[str, Any] = Field(
         default_factory=dict, description="Additional engine-specific configuration"
     )
@@ -83,6 +93,7 @@ class EngineModelConfig(BaseModel):
             repo_id=self.repo_id or base_repo_id,
             revision=self.revision or base_revision,
             torch_dtype=self.torch_dtype,
+            strip_stop_strings=self.strip_stop_strings,
             extra_config=self.extra_config,
         )
 
@@ -163,6 +174,11 @@ class VlmModelSpec(BaseModel):
         default=4096, description="Maximum number of new tokens to generate"
     )
 
+    temperature: float = Field(
+        default=0.0,
+        description="Sampling temperature for generation. 0.0 uses greedy decoding.",
+    )
+
     def get_repo_id(self, engine_type: VlmEngineType) -> str:
         """Get the repository ID for a specific engine.
 
@@ -240,14 +256,17 @@ class VlmModelSpec(BaseModel):
         # Get engine-specific extra_config and torch_dtype
         extra_config = {}
         torch_dtype = None
+        strip_stop_strings = False
         if engine_type in self.engine_overrides:
             extra_config = self.engine_overrides[engine_type].extra_config.copy()
             torch_dtype = self.engine_overrides[engine_type].torch_dtype
+            strip_stop_strings = self.engine_overrides[engine_type].strip_stop_strings
 
         return EngineModelConfig(
             repo_id=repo_id,
             revision=revision,
             torch_dtype=torch_dtype,
+            strip_stop_strings=strip_stop_strings,
             extra_config=extra_config,
         )
 
@@ -1520,51 +1539,6 @@ CODE_FORMULA_GRANITE_DOCLING = StageModelPreset(
 # CHANDRA / DOTS VLM_CONVERT PRESETS
 # -----------------------------------------------------------------------------
 
-_CHANDRA_ALLOWED_TAGS = (
-    "['math', 'br', 'i', 'b', 'u', 'del', 'sup', 'sub', 'table', 'tr', 'td', "
-    "'p', 'th', 'div', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'ul', 'ol', 'li', "
-    "'input', 'a', 'span', 'img', 'hr', 'tbody', 'small', 'caption', 'strong', "
-    "'thead', 'big', 'code', 'chem']"
-)
-_CHANDRA_ALLOWED_ATTRS = (
-    "['class', 'colspan', 'rowspan', 'display', 'checked', 'type', 'border', "
-    "'value', 'style', 'href', 'alt', 'align', 'data-bbox', 'data-label']"
-)
-_CHANDRA_PROMPT_ENDING = (
-    f"Only use these tags {_CHANDRA_ALLOWED_TAGS}, "
-    f"and these attributes {_CHANDRA_ALLOWED_ATTRS}.\n\n"
-    "Guidelines:\n"
-    "* Inline math: Surround math with <math>...</math> tags. Math expressions "
-    "should be rendered in KaTeX-compatible LaTeX. Use display for block math.\n"
-    "* Tables: Use colspan and rowspan attributes to match table structure.\n"
-    "* Formatting: Maintain consistent formatting with the image, including spacing, "
-    "indentation, subscripts/superscripts, and special characters.\n"
-    "* Images: Include a description of any images in the alt attribute of an <img> tag. "
-    "Do not fill out the src property. Describe in detail inside the div tag. "
-    "Also convert charts to high fidelity data, and convert diagrams to mermaid.\n"
-    "* Forms: Mark checkboxes and radio buttons properly.\n"
-    "* Text: join lines together properly into paragraphs using <p>...</p> tags. "
-    "Use <br> tags for line breaks within paragraphs, but only when absolutely "
-    "necessary to maintain meaning.\n"
-    "* Chemistry: Use <chem>...</chem> tags for chemical formulas with reactive SMILES.\n"
-    "* Lists: Preserve indents and proper list markers.\n"
-    "* Use the simplest possible HTML structure that accurately represents the content "
-    "of the block.\n"
-    "* Make sure the text is accurate and easy for a human to read and interpret. "
-    "Reading order should be correct and natural."
-)
-_CHANDRA_OCR_LAYOUT_PROMPT = (
-    "OCR this image to HTML, arranged as layout blocks. Each layout block should be "
-    "a div with the data-bbox attribute representing the bounding box of the block in "
-    "x0 y0 x1 y1 format. Bboxes are normalized 0-1000. The data-label attribute is "
-    "the label for the block.\n\n"
-    "Use the following labels:\n"
-    "- Caption\n- Footnote\n- Equation-Block\n- List-Group\n- Page-Header\n"
-    "- Page-Footer\n- Image\n- Section-Header\n- Table\n- Text\n- Complex-Block\n"
-    "- Code-Block\n- Form\n- Table-Of-Contents\n- Figure\n- Chemical-Block\n"
-    "- Diagram\n- Bibliography\n- Blank-Page\n\n" + _CHANDRA_PROMPT_ENDING
-)
-
 VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
     preset_id="chandra_ocr2",
     name="Chandra-OCR-2",
@@ -1572,7 +1546,7 @@ VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
     model_spec=VlmModelSpec(
         name="Chandra-OCR-2-5.3B",
         default_repo_id="datalab-to/chandra-ocr-2",
-        prompt=_CHANDRA_OCR_LAYOUT_PROMPT,
+        prompt=CHANDRA_OCR_LAYOUT_PROMPT,
         response_format=ResponseFormat.CHANDRA_HTML,
         max_new_tokens=12384,
         trust_remote_code=True,
@@ -1580,6 +1554,7 @@ VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
         engine_overrides={
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 torch_dtype="bfloat16",
+                strip_stop_strings=True,
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                     "transformers_prompt_style": TransformersPromptStyle.CHAT,
@@ -1617,23 +1592,7 @@ VLM_CONVERT_DOTS_OCR = StageModelPreset(
     model_spec=VlmModelSpec(
         name="dots.ocr-3B",
         default_repo_id="rednote-hilab/dots.ocr",
-        prompt=(
-            "Please output the layout information from the PDF image, including each layout "
-            "element's bbox, its category, and the corresponding text content within the bbox.\n\n"
-            "1. Bbox format: [x1, y1, x2, y2]\n\n"
-            "2. Layout Categories: The possible categories are ['Caption', 'Footnote', 'Formula', "
-            "'List-item', 'Page-footer', 'Page-header', 'Picture', 'Section-header', 'Table', "
-            "'Text', 'Title'].\n\n"
-            "3. Text Extraction & Formatting Rules:\n"
-            "    - Picture: For the 'Picture' category, the text field should be omitted.\n"
-            "    - Formula: Format its text as LaTeX.\n"
-            "    - Table: Format its text as HTML.\n"
-            "    - All Others (Text, Title, etc.): Format their text as Markdown.\n\n"
-            "4. Constraints:\n"
-            "    - The output text must be the original text from the image, with no translation.\n"
-            "    - All layout elements must be sorted according to human reading order.\n\n"
-            "5. Final Output: The entire output must be a single JSON object."
-        ),
+        prompt=DOTS_LAYOUT_PROMPT,
         response_format=ResponseFormat.DOTS_JSON,
         max_new_tokens=24000,
         trust_remote_code=True,
@@ -1674,23 +1633,7 @@ VLM_CONVERT_DOTS_MOCR = StageModelPreset(
     model_spec=VlmModelSpec(
         name="dots.mocr-3B",
         default_repo_id="rednote-hilab/dots.mocr",
-        prompt=(
-            "Please output the layout information from the PDF image, including each layout "
-            "element's bbox, its category, and the corresponding text content within the bbox.\n\n"
-            "1. Bbox format: [x1, y1, x2, y2]\n\n"
-            "2. Layout Categories: The possible categories are ['Caption', 'Footnote', 'Formula', "
-            "'List-item', 'Page-footer', 'Page-header', 'Picture', 'Section-header', 'Table', "
-            "'Text', 'Title'].\n\n"
-            "3. Text Extraction & Formatting Rules:\n"
-            "    - Picture: For the 'Picture' category, the text field should be omitted.\n"
-            "    - Formula: Format its text as LaTeX.\n"
-            "    - Table: Format its text as HTML.\n"
-            "    - All Others (Text, Title, etc.): Format their text as Markdown.\n\n"
-            "4. Constraints:\n"
-            "    - The output text must be the original text from the image, with no translation.\n"
-            "    - All layout elements must be sorted according to human reading order.\n\n"
-            "5. Final Output: The entire output must be a single JSON object."
-        ),
+        prompt=DOTS_LAYOUT_PROMPT,
         response_format=ResponseFormat.DOTS_JSON,
         max_new_tokens=24000,
         trust_remote_code=True,

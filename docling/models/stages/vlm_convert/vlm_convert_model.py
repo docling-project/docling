@@ -135,7 +135,7 @@ class VlmConvertModel(BasePageModel):
                     VlmEngineInput(
                         image=img,
                         prompt=prompt,
-                        temperature=0.0,
+                        temperature=self.options.model_spec.temperature,
                         max_new_tokens=self.options.model_spec.max_new_tokens,
                         stop_strings=self.options.model_spec.stop_strings,
                     )
@@ -214,7 +214,7 @@ class VlmConvertModel(BasePageModel):
             VlmEngineInput(
                 image=img,
                 prompt=p,
-                temperature=0.0,
+                temperature=self.options.model_spec.temperature,
                 max_new_tokens=self.options.model_spec.max_new_tokens,
                 stop_strings=self.options.model_spec.stop_strings,
             )

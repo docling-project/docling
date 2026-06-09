@@ -102,6 +102,9 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self.processor: Any | None = None
         self.vlm_model: PreTrainedModel | None = None
         self.generation_config: GenerationConfig | None = None
+        self.strip_stop_strings = (
+            model_config.strip_stop_strings if model_config is not None else False
+        )
 
         # Initialize immediately if model_config is provided
         if self.model_config is not None:
@@ -225,7 +228,10 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         # Resolve torch_dtype: options override > model_config field > extra_config > None
         torch_dtype = self.options.torch_dtype
         if torch_dtype is None and self.model_config is not None:
-            torch_dtype = self.model_config.torch_dtype or self.model_config.extra_config.get("torch_dtype")
+            torch_dtype = (
+                self.model_config.torch_dtype
+                or self.model_config.extra_config.get("torch_dtype")
+            )
 
         # Load model
         attn_implementation = (
@@ -427,13 +433,13 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         }
 
         # Generate
-        gen_kwargs = {**inputs}
-        gen_kwargs.update(
-            max_new_tokens=first_input.max_new_tokens,
-            use_cache=self.options.use_kv_cache,
-            generation_config=self.generation_config,
+        gen_kwargs = {
+            **inputs,
+            "max_new_tokens": first_input.max_new_tokens,
+            "use_cache": self.options.use_kv_cache,
+            "generation_config": self.generation_config,
             **generation_config,
-        )
+        }
 
         if first_input.temperature > 0:
             gen_kwargs["do_sample"] = True
@@ -468,8 +474,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         if pad_token:
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
 
-        # Strip stop strings and their partial prefixes from decoded output
-        if first_input.stop_strings:
+        if self.strip_stop_strings and first_input.stop_strings:
             from docling.utils.vlm_utils import strip_stop_strings
 
             decoded_texts = strip_stop_strings(decoded_texts, first_input.stop_strings)

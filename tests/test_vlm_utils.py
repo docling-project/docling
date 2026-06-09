@@ -1,4 +1,4 @@
-"""Unit tests for VLM utility functions (stop-string stripping, image sizing)."""
+"""Unit tests for VLM utility functions."""
 
 from docling_core.types.doc import Size
 
@@ -13,10 +13,10 @@ class TestStripStopStrings:
         result = strip_stop_strings(texts, ["<|im_end|>"])
         assert result == ["hello world"]
 
-    def test_removes_partial_trailing_prefix(self):
+    def test_keeps_partial_trailing_prefix(self):
         texts = ["hello world<|im_"]
         result = strip_stop_strings(texts, ["<|im_end|>"])
-        assert result == ["hello world"]
+        assert result == ["hello world<|im_"]
 
     def test_no_stop_string_present(self):
         texts = ["hello world"]
@@ -36,7 +36,7 @@ class TestStripStopStrings:
     def test_multiple_texts(self):
         texts = ["text1<|im_end|>", "text2", "text3<|im_"]
         result = strip_stop_strings(texts, ["<|im_end|>"])
-        assert result == ["text1", "text2", "text3"]
+        assert result == ["text1", "text2", "text3<|im_"]
 
     def test_empty_texts(self):
         result = strip_stop_strings([], ["<|im_end|>"])
@@ -47,10 +47,10 @@ class TestStripStopStrings:
         result = strip_stop_strings(texts, ["<|im_end|>"])
         assert result == [""]
 
-    def test_partial_prefix_single_char(self):
+    def test_keeps_partial_prefix_single_char(self):
         texts = ["output<"]
         result = strip_stop_strings(texts, ["<|im_end|>"])
-        assert result == ["output"]
+        assert result == ["output<"]
 
     def test_chandra_stop_tokens(self):
         texts = ["<div>content</div><|endoftext|>"]

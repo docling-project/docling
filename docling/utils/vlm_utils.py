@@ -8,11 +8,10 @@ from docling_core.types.doc import Size
 
 
 def strip_stop_strings(texts: list[str], stop_strings: list[str]) -> list[str]:
-    """Strip stop strings and their partial trailing prefixes from decoded texts.
+    """Strip stop strings from decoded texts.
 
-    For each text, removes the first occurrence of any stop string and everything
-    after it. If no full stop string is found, removes any trailing partial prefix
-    of a stop string (e.g. "<|im_" from an incomplete "<|im_end|>").
+    For each text, removes the first occurrence of any full stop string and
+    everything after it.
     """
     cleaned = []
     for text in texts:
@@ -20,11 +19,6 @@ def strip_stop_strings(texts: list[str], stop_strings: list[str]) -> list[str]:
             idx = text.find(ss)
             if idx != -1:
                 text = text[:idx]
-            else:
-                for k in range(len(ss) - 1, 0, -1):
-                    if text.endswith(ss[:k]):
-                        text = text[:-k]
-                        break
         cleaned.append(text)
     return cleaned
 

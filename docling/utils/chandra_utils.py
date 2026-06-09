@@ -28,6 +28,51 @@ from PIL import Image as PILImage
 
 _log = logging.getLogger(__name__)
 
+CHANDRA_ALLOWED_TAGS = (
+    "['math', 'br', 'i', 'b', 'u', 'del', 'sup', 'sub', 'table', 'tr', 'td', "
+    "'p', 'th', 'div', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'ul', 'ol', 'li', "
+    "'input', 'a', 'span', 'img', 'hr', 'tbody', 'small', 'caption', 'strong', "
+    "'thead', 'big', 'code', 'chem']"
+)
+CHANDRA_ALLOWED_ATTRS = (
+    "['class', 'colspan', 'rowspan', 'display', 'checked', 'type', 'border', "
+    "'value', 'style', 'href', 'alt', 'align', 'data-bbox', 'data-label']"
+)
+CHANDRA_PROMPT_ENDING = (
+    f"Only use these tags {CHANDRA_ALLOWED_TAGS}, "
+    f"and these attributes {CHANDRA_ALLOWED_ATTRS}.\n\n"
+    "Guidelines:\n"
+    "* Inline math: Surround math with <math>...</math> tags. Math expressions "
+    "should be rendered in KaTeX-compatible LaTeX. Use display for block math.\n"
+    "* Tables: Use colspan and rowspan attributes to match table structure.\n"
+    "* Formatting: Maintain consistent formatting with the image, including spacing, "
+    "indentation, subscripts/superscripts, and special characters.\n"
+    "* Images: Include a description of any images in the alt attribute of an <img> tag. "
+    "Do not fill out the src property. Describe in detail inside the div tag. "
+    "Also convert charts to high fidelity data, and convert diagrams to mermaid.\n"
+    "* Forms: Mark checkboxes and radio buttons properly.\n"
+    "* Text: join lines together properly into paragraphs using <p>...</p> tags. "
+    "Use <br> tags for line breaks within paragraphs, but only when absolutely "
+    "necessary to maintain meaning.\n"
+    "* Chemistry: Use <chem>...</chem> tags for chemical formulas with reactive SMILES.\n"
+    "* Lists: Preserve indents and proper list markers.\n"
+    "* Use the simplest possible HTML structure that accurately represents the content "
+    "of the block.\n"
+    "* Make sure the text is accurate and easy for a human to read and interpret. "
+    "Reading order should be correct and natural."
+)
+CHANDRA_OCR_LAYOUT_PROMPT = (
+    "OCR this image to HTML, arranged as layout blocks. Each layout block should be "
+    "a div with the data-bbox attribute representing the bounding box of the block in "
+    "x0 y0 x1 y1 format. Bboxes are normalized 0-1000. The data-label attribute is "
+    "the label for the block.\n\n"
+    "Use the following labels:\n"
+    "- Caption\n- Footnote\n- Equation-Block\n- List-Group\n- Page-Header\n"
+    "- Page-Footer\n- Image\n- Section-Header\n- Table\n- Text\n- Complex-Block\n"
+    "- Code-Block\n- Form\n- Table-Of-Contents\n- Figure\n- Chemical-Block\n"
+    "- Diagram\n- Bibliography\n- Blank-Page\n\n" + CHANDRA_PROMPT_ENDING
+)
+
 # Mapping from chandra-ocr-2 layout labels to DocItemLabel.
 # Labels not present in DocItemLabel fall back to TEXT.
 _LABEL_MAP: dict[str, DocItemLabel] = {
@@ -192,6 +237,11 @@ def parse_chandra_html(
     page_image: PILImage.Image | None = None,
 ) -> DoclingDocument:
     """Parse chandra-ocr-2 HTML output into a DoclingDocument.
+
+    This parser intentionally covers the common block, table, and picture cases
+    first. Some semantic relationships implied by Chandra labels, such as
+    assigning captions to figures/tables and grouping list items, are not
+    reconstructed yet.
 
     Args:
         content: Raw HTML string from chandra-ocr-2.

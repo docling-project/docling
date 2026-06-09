@@ -276,6 +276,26 @@ class TestVlmModelSpec:
         config_other = spec.get_engine_config(VlmEngineType.MLX)
         assert "torch_dtype" not in config_other.extra_config
 
+    def test_get_engine_config_preserves_strip_stop_strings(self):
+        """Transformers-only decoded stop-string stripping is opt-in per engine."""
+        spec = VlmModelSpec(
+            name="Test Model",
+            default_repo_id="test/model",
+            prompt="Test prompt",
+            response_format=ResponseFormat.DOCTAGS,
+            engine_overrides={
+                VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                    strip_stop_strings=True,
+                ),
+            },
+        )
+
+        assert (
+            spec.get_engine_config(VlmEngineType.TRANSFORMERS).strip_stop_strings
+            is True
+        )
+        assert spec.get_engine_config(VlmEngineType.VLLM).strip_stop_strings is False
+
     def test_same_repo_engine_override_counts_as_explicit_support(self):
         """Native handlers can use the default repo_id and still be explicit."""
         spec = VlmModelSpec(

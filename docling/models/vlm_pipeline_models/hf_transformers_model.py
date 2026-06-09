@@ -358,7 +358,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         generation_config = {
             k: v
             for k, v in self.vlm_options.extra_generation_config.items()
-            if k not in decoder_keys
+            if k not in decoder_keys and k != "strip_stop_strings"
         }
         decoder_config = {
             k: v
@@ -410,8 +410,10 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         if pad_token:
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
 
-        # -- Strip stop strings and their partial prefixes from decoded output
-        if self.vlm_options.stop_strings:
+        if (
+            self.vlm_options.extra_generation_config.get("strip_stop_strings", False)
+            and self.vlm_options.stop_strings
+        ):
             from docling.utils.vlm_utils import strip_stop_strings
 
             decoded_texts = strip_stop_strings(
