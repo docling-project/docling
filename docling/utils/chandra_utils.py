@@ -163,6 +163,30 @@ class _TableHTMLParser(HTMLParser):
             self._cell_text_parts.append(data)
 
 
+class _ListHTMLParser(HTMLParser):
+    """Lightweight HTML list parser using stdlib html.parser."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.items: list[str] = []
+        self._item_stack: list[list[str]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() == "li":
+            self._item_stack.append([])
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() == "li" and self._item_stack:
+            parts = self._item_stack.pop()
+            text = " ".join("".join(parts).split()).strip()
+            if text:
+                self.items.append(text)
+
+    def handle_data(self, data: str) -> None:
+        if self._item_stack:
+            self._item_stack[-1].append(data)
+
+
 def _parse_table_html(html_content: str) -> TableData:
     """Parse HTML table content and create TableData structure."""
     table_match = re.search(
@@ -229,6 +253,17 @@ def _parse_table_html(html_content: str) -> TableData:
         return TableData(num_rows=0, num_cols=0, table_cells=[])
 
 
+def _parse_list_html(html_content: str) -> list[str]:
+    """Parse HTML list content and return list item texts."""
+    try:
+        parser = _ListHTMLParser()
+        parser.feed(html_content)
+        return parser.items
+    except Exception as e:
+        _log.warning(f"Failed to parse list HTML: {e}")
+        return []
+
+
 def parse_chandra_html(
     content: str,
     original_page_size: Size,
@@ -238,10 +273,10 @@ def parse_chandra_html(
 ) -> DoclingDocument:
     """Parse chandra-ocr-2 HTML output into a DoclingDocument.
 
-    This parser intentionally covers the common block, table, and picture cases
-    first. Some semantic relationships implied by Chandra labels, such as
-    assigning captions to figures/tables and grouping list items, are not
-    reconstructed yet.
+    This parser intentionally covers the common block, list, table, and picture
+    cases first. Some semantic relationships implied by Chandra labels, such as
+    assigning captions to figures/tables and reconstructing nested list
+    hierarchy, are not reconstructed yet.
 
     Args:
         content: Raw HTML string from chandra-ocr-2.
@@ -315,6 +350,11 @@ def parse_chandra_html(
         if label_str == "Table":
             table_data = _parse_table_html(inner_html)
             doc.add_table(data=table_data, prov=prov)
+        elif label_str == "List-Group":
+            list_group = doc.add_list_group()
+            list_items = _parse_list_html(inner_html) or [_strip_tags(inner_html)]
+            for item_text in list_items:
+                doc.add_list_item(text=item_text, parent=list_group, prov=prov)
         elif label_str in ("Figure", "Image", "Diagram"):
             doc.add_picture(prov=prov)
         elif label_str == "Title":

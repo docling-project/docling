@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from docling_core.types.doc import DoclingDocument, Size
+from docling_core.types.doc import DocItemLabel, DoclingDocument, Size
 
 from docling.utils.chandra_utils import parse_chandra_html
 
@@ -143,6 +143,26 @@ def test_chandra_table_parsing():
         filename="table.html",
     )
     assert len(doc.tables) == 1
+
+
+def test_chandra_list_group_prediction_sample():
+    """Test a saved chandra prediction containing list groups."""
+    path = Path("./tests/data/html_chandra/chandra_list_group.html")
+    content = path.read_text()
+
+    doc = parse_chandra_html(
+        content=content,
+        original_page_size=Size(width=612, height=792),
+        page_no=1,
+        filename=path.name,
+    )
+
+    list_items = [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
+
+    assert len(list_items) == 15
+    assert list_items[0].text == "• Overview"
+    assert list_items[1].text == "• Easy To Memories"
+    assert len(doc.pictures) == 1
 
 
 def test_chandra_all_files_parse():
