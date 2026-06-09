@@ -1,11 +1,15 @@
-"""Tests for the OpenDocument (ODT/ODS/ODP) backends.
+"""Tests for the OpenDocument Format (ODF) backends (ODT/ODS/ODP).
 
-Fixtures are built on the fly with ``odfdo`` rather than committed as binary
-files so the suite stays small and the inputs are obvious from the code.
+This module includes two types of tests:
+1. Unit tests with fixtures built on the fly using `odfdo` to keep the suite
+   small and make inputs obvious from the code.
+2. End-to-end tests using binary ODF files from tests/data/odf/ to verify
+   complete conversion workflows including JSON, ITXT, and Markdown exports.
 """
 
 from __future__ import annotations
 
+import logging
 from io import BytesIO
 from pathlib import Path
 
@@ -17,8 +21,11 @@ from docling.backend.opendocument_backend import (
     OdtDocumentBackend,
 )
 from docling.datamodel.base_models import DocumentStream, InputFormat
-from docling.datamodel.document import InputDocument
+from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
 from docling.document_converter import DocumentConverter
+
+from .test_data_gen_flag import GEN_TEST_DATA
+from .verify_utils import verify_document, verify_export
 
 pytest.importorskip("odfdo")
 from odfdo import (
@@ -33,6 +40,10 @@ from odfdo import (
 )
 
 pytestmark = pytest.mark.cross_platform
+
+_log = logging.getLogger(__name__)
+
+GENERATE = GEN_TEST_DATA
 
 
 def _build_odt(path: Path) -> Path:
@@ -233,3 +244,66 @@ def test_invalid_odf_document_type(tmp_path: Path, odt_path: Path):
         filename=odt_path.name,
     )
     assert not in_doc.valid
+
+
+@pytest.fixture(scope="module")
+def odf_paths() -> list[Path]:
+    """Collect all ODF files from tests/data/odf directory."""
+    directory = Path("./tests/data/odf/")
+
+    # List all ODF files (odt, ods, odp) in the directory
+    odf_files = sorted(directory.glob("*.od[tsp]"))
+
+    return odf_files
+
+
+@pytest.fixture(scope="module")
+def odf_documents(odf_paths) -> list[tuple[Path, DoclingDocument]]:
+    """Convert all ODF files and return documents with their groundtruth paths."""
+    documents: list[tuple[Path, DoclingDocument]] = []
+
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.ODT, InputFormat.ODS, InputFormat.ODP]
+    )
+
+    for odf_path in odf_paths:
+        _log.debug(f"converting {odf_path}")
+
+        gt_path = odf_path.parent.parent / "groundtruth" / "docling_v2" / odf_path.name
+
+        conv_result: ConversionResult = converter.convert(odf_path)
+
+        doc: DoclingDocument = conv_result.document
+
+        assert doc, f"Failed to convert document from file {odf_path}"
+        documents.append((gt_path, doc))
+
+    return documents
+
+
+def _test_e2e_odf_conversions_impl(odf_documents: list[tuple[Path, DoclingDocument]]):
+    """Test end-to-end ODF conversions including JSON, ITXT, and Markdown exports."""
+    for gt_path, doc in odf_documents:
+        # Export to Markdown
+        pred_md: str = doc.export_to_markdown(compact_tables=True)
+        assert verify_export(pred_md, str(gt_path) + ".md", generate=GENERATE), (
+            f"export to markdown failed on {gt_path}"
+        )
+
+        # Export to indented text
+        pred_itxt: str = doc._export_to_indented_text(
+            max_text_len=70, explicit_tables=False
+        )
+        assert verify_export(
+            pred_itxt, str(gt_path) + ".itxt", generate=GENERATE, fuzzy=True
+        ), f"export to indented-text failed on {gt_path}"
+
+        # Verify DoclingDocument JSON
+        assert verify_document(
+            doc, str(gt_path) + ".json", generate=GENERATE, fuzzy=True
+        ), f"DoclingDocument verification failed on {gt_path}"
+
+
+def test_e2e_odf_conversions(odf_documents):
+    """Test end-to-end conversions for all ODF files."""
+    _test_e2e_odf_conversions_impl(odf_documents)

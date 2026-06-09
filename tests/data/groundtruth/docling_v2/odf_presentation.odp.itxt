@@ -1,0 +1,54 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: chapter: group slide-0
+    item-2 at level 2: title: Slide1
+    item-3 at level 2: text: Test Table Slide
+    item-4 at level 2: text: With footnote
+    item-5 at level 2: table with [9x7]
+  item-6 at level 1: chapter: group slide-1
+    item-7 at level 2: title: Slide2
+    item-8 at level 2: text: Second slide title
+    item-9 at level 2: list: group list
+      item-10 at level 3: list_item: Let’s introduce a list
+    item-11 at level 2: list: group list
+      item-12 at level 3: list_item: With foo
+    item-13 at level 2: list: group list
+      item-14 at level 3: list_item: Bar
+    item-15 at level 2: list: group list
+      item-16 at level 3: list_item: And baz things
+    item-17 at level 2: text: Some notes on the second slide.
+  item-18 at level 1: chapter: group slide-2
+    item-19 at level 2: title: Slide3
+    item-20 at level 2: list: group list
+      item-21 at level 3: list_item: List item4
+    item-22 at level 2: list: group list
+      item-23 at level 3: list_item: List item5
+    item-24 at level 2: list: group list
+      item-25 at level 3: list_item: List item6
+    item-26 at level 2: list: group list
+      item-27 at level 3: list_item: I1
+    item-28 at level 2: list: group list
+      item-29 at level 3: list_item: I2
+    item-30 at level 2: list: group list
+      item-31 at level 3: list_item: I3
+    item-32 at level 2: list: group list
+      item-33 at level 3: list_item: I4
+    item-34 at level 2: text: Some info:
+    item-35 at level 2: list: group list
+      item-36 at level 3: list_item: Item A
+    item-37 at level 2: list: group list
+      item-38 at level 3: list_item: Item B
+    item-39 at level 2: text: Maybe a list?
+    item-40 at level 2: list: group list
+      item-41 at level 3: list_item: List1
+    item-42 at level 2: list: group list
+      item-43 at level 3: list_item: List2
+    item-44 at level 2: list: group list
+      item-45 at level 3: list_item: List3
+    item-46 at level 2: list: group list
+      item-47 at level 3: list_item: l1
+    item-48 at level 2: list: group list
+      item-49 at level 3: list_item: l2
+    item-50 at level 2: list: group list
+      item-51 at level 3: list_item: l3
+    item-52 at level 2: text: Final notes on the third slide.
+    item-53 at level 2: text: Second line of notes.
