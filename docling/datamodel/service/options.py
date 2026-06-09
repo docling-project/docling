@@ -494,12 +494,23 @@ class ConvertDocumentsOptions(BaseModel):
         bool,
         Field(
             description=(
-                "If enabled, images will be extracted from the document. "
-                "Boolean. Optional, defaults to true."
+                "If enabled, picture element images are generated and included in "
+                "the output. Boolean. Optional, defaults to true."
             ),
             examples=[True],
         ),
     ] = True
+
+    include_page_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "If enabled, full-page images are generated and included in the "
+                "output. Boolean. Optional, defaults to false."
+            ),
+            examples=[False],
+        ),
+    ] = False
 
     images_scale: Annotated[
         float,
