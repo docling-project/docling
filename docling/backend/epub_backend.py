@@ -23,6 +23,13 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
     EPUB files are essentially ZIP archives containing XHTML content files.
     This backend extracts the content and delegates to HTMLDocumentBackend
     for processing the XHTML structure.
+
+    Known Limitations:
+        - Internal anchor links (e.g., footnote references) are converted but
+          the target anchor IDs are not preserved in the final Markdown output.
+          This is a limitation of the HTML-to-DoclingDocument conversion process.
+          Links like [1](#note-1) will be present, but the corresponding anchor
+          targets may not be accessible in the exported Markdown.
     """
 
     def __init__(
@@ -154,6 +161,28 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
         _log.debug(f"Extracted metadata: {self.metadata}")
 
+    def _fix_internal_links(self, html_content: str) -> str:
+        """Fix internal links that reference other XHTML files.
+
+        When combining multiple XHTML files into one HTML document, links like
+        'endnotes.xhtml#note-1' need to be converted to '#note-1' since all
+        content is now in a single file.
+
+        Args:
+            html_content: HTML content with potentially broken internal links
+
+        Returns:
+            HTML content with fixed internal links
+        """
+        # Pattern to match href attributes that reference .xhtml files with anchors
+        # Examples: href="endnotes.xhtml#note-1" or href="chapter-1.xhtml#section-2"
+        pattern = r'href="([^"]*\.xhtml)(#[^"]*)"'
+
+        # Replace with just the anchor part
+        fixed_content = re.sub(pattern, r'href="\2"', html_content)
+
+        return fixed_content
+
     def is_valid(self) -> bool:
         return self.valid
 
@@ -221,10 +250,15 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
                 if body_match:
                     body_content = body_match.group(1)
-                    combined_html_parts.append(body_content)
                 else:
                     # If no body tags, use the whole content
-                    combined_html_parts.append(xhtml_text)
+                    body_content = xhtml_text
+
+                # Fix internal links: convert file.xhtml#anchor to #anchor
+                # This is necessary because we're combining all XHTML files into one HTML
+                body_content = self._fix_internal_links(body_content)
+
+                combined_html_parts.append(body_content)
 
             except Exception as e:
                 _log.warning(f"Failed to read content file {content_file}: {e}")
