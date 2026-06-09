@@ -491,6 +491,8 @@ class _DocumentConversionInput(BaseModel):
         obj_ext: Optional[str] = None
 
         if isinstance(obj, Path):
+            if _DocumentConversionInput._has_doclang_extension(obj.name):
+                return InputFormat.XML_DOCLANG
             mime = filetype.guess_mime(str(obj))
             obj_ext = obj.suffix[1:] if obj.suffix else ""
             if mime is None:
@@ -515,6 +517,8 @@ class _DocumentConversionInput(BaseModel):
                         mime = office_mime
 
         elif isinstance(obj, DocumentStream):
+            if _DocumentConversionInput._has_doclang_extension(obj.name):
+                return InputFormat.XML_DOCLANG
             content = obj.stream.read(8192)
             obj.stream.seek(0)
             mime = filetype.guess_mime(content)
@@ -560,6 +564,11 @@ class _DocumentConversionInput(BaseModel):
                 )
         else:
             return None
+
+    @staticmethod
+    def _has_doclang_extension(name: str) -> bool:
+        lower_name = name.lower()
+        return lower_name.endswith((".dclg", ".dclg.xml"))
 
     @staticmethod
     def _detect_office_mime_from_zip(
