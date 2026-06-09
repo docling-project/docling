@@ -136,6 +136,15 @@ class MarkdownBackendOptions(BaseBackendOptions):
     )
 
 
+class EpubBackendOptions(BaseBackendOptions):
+    """Options specific to the EPUB backend."""
+
+    kind: Annotated[Literal["epub"], Field(exclude=True, repr=False)] = "epub"
+    fetch_images: Annotated[
+        bool, Field(description="Whether to fetch and process images from the EPUB.")
+    ] = False
+
+
 class PdfBackendOptions(BaseBackendOptions):
     """Backend options for pdf document backends."""
 

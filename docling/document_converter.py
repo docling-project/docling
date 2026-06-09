@@ -22,6 +22,7 @@ from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.email_backend import EmailDocumentBackend
+from docling.backend.epub_backend import EpubDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
@@ -38,6 +39,7 @@ from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import (
     BackendOptions,
+    EpubBackendOptions,
     HTMLBackendOptions,
     LatexBackendOptions,
     MarkdownBackendOptions,
@@ -196,6 +198,11 @@ class EmailFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = EmailDocumentBackend
 
 
+class EpubFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = EpubDocumentBackend
+
+
 def _get_default_option(format: InputFormat) -> FormatOption:
     format_to_default_options = {
         InputFormat.CSV: CsvFormatOption(),
@@ -222,6 +229,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         ),
         InputFormat.LATEX: LatexFormatOption(),
         InputFormat.EMAIL: EmailFormatOption(),
+        InputFormat.EPUB: EpubFormatOption(),
     }
     if (options := format_to_default_options.get(format)) is not None:
         return options

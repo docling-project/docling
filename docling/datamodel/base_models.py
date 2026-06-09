@@ -84,6 +84,7 @@ class InputFormat(str, Enum):
     VTT = "vtt"
     LATEX = "latex"
     EMAIL = "email"
+    EPUB = "epub"
 
 
 class OutputFormat(str, Enum):
@@ -116,6 +117,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.VTT: ["vtt"],
     InputFormat.LATEX: ["tex", "latex"],
     InputFormat.EMAIL: ["eml"],
+    InputFormat.EPUB: ["epub"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -168,6 +170,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.VTT: ["text/vtt"],
     InputFormat.LATEX: ["text/x-tex", "application/x-tex", "text/x-latex"],
     InputFormat.EMAIL: ["message/rfc822"],
+    InputFormat.EPUB: ["application/epub+zip"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
