@@ -60,6 +60,14 @@ repository = "https://github.com/docling-project/docling"
 issues = "https://github.com/docling-project/docling/issues"
 changelog = "https://github.com/docling-project/docling/blob/main/CHANGELOG.md"
 
+# Re-declared here (identical to docling-slim) so that `uv tool install docling`
+# links these entry points into ~/.local/bin. uv only exposes the named
+# package's own scripts, never a dependency's. The referenced modules are
+# provided at runtime by the docling-slim dependency.
+[project.scripts]
+docling = "docling.cli.main:app"
+docling-tools = "docling.cli.tools:app"
+
 [tool.uv.sources]
 # For local development: use workspace member
 docling-slim = { workspace = true }
