@@ -49,20 +49,15 @@ Docling simplifies document processing, parsing diverse formats — including ad
 * 💻 Simple and convenient CLI
 
 ### What's new
-* 📤 Structured [information extraction][extraction] \[🧪 beta\]
-* 📑 New layout model (**Heron**) by default, for faster PDF parsing
-* 🔌 [MCP server](https://docling-project.github.io/docling/usage/mcp/) for agentic applications
-* 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
-* 📧 Parsing of email files (`.eml`, `.msg`)
-* 📚 Parsing of EPUB (Electronic Publication) files for e-books
-* � Parsing of WebVTT (Web Video Text Tracks) files
-* 💬 Parsing of LaTeX files
-* 📝 Parsing of plain-text files (`.txt`, `.text`) and Markdown supersets (`.qmd`, `.Rmd`)
+- 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
+- 📧 Parsing of email files (`.eml`, `.msg`)
+- 📚 Parsing of EPUB (Electronic Publication) files for e-books
+- 📝 Parsing of plain-text files (`.txt`, `.text`) and Markdown supersets (`.qmd`, `.Rmd`)
+- 📊 Chart understanding (Barchart, Piechart, LinePlot): converting them into tables, code or adding detailed descriptions
 
 ### Coming soon
 
 * 📝 Metadata extraction, including title, authors, references & language
-* 📝 Chart understanding (Barchart, Piechart, LinePlot, etc)
 * 📝 Complex chemistry understanding (Molecular structures)
 
 ## What's next
