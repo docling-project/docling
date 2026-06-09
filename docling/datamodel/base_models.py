@@ -13,6 +13,7 @@ from docling_core.types.doc import (
     TableCell,
 )
 from docling_core.types.doc.base import PydanticSerCtxKey, round_pydantic_float
+from docling_core.types.doc.document import Orientation
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
 from docling_core.types.io import (
     DocumentStream as DocumentStream,
@@ -253,6 +254,7 @@ class Table(BasePageElement):
     otsl_seq: list[str]
     num_rows: int = 0
     num_cols: int = 0
+    orientation: Orientation = Orientation.ROT_0
     table_cells: list[TableCell]
 
 
