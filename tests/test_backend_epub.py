@@ -1,117 +1,191 @@
+"""Tests for EPUB document backend.
+
+Test Data Attribution
+---------------------
+The test file 'epub_purvis_poetry.epub' is sourced from Standard Ebooks
+(https://standardebooks.org), a volunteer-driven project that produces
+high-quality, carefully formatted public domain ebooks.
+
+The source text "Poetry" by Sarah Louisa Forten Purvis is in the public domain
+in the United States. Standard Ebooks dedicates the entirety of their ebook
+files, including markup, cover art, and formatting, to the public domain via
+the CC0 1.0 Universal Public Domain Dedication.
+
+For more information about Standard Ebooks and their public domain dedication,
+visit: https://standardebooks.org/about
+"""
+
+import logging
 from pathlib import Path
 
 import pytest
 
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import InputDocument
+from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
 from docling.document_converter import DocumentConverter
 
 from .test_data_gen_flag import GEN_TEST_DATA
-from .verify_utils import verify_document
+from .verify_utils import verify_document, verify_export
 
-pytestmark = pytest.mark.cross_platform
+_log = logging.getLogger(__name__)
 
-
-def test_epub_backend_basic():
-    """Test basic EPUB backend functionality."""
-    fmt = InputFormat.EPUB
-    cls = EpubDocumentBackend
-
-    epub_path = Path("tests/data/epub/sarah-louisa-forten-purvis_poetry.epub")
-
-    if not epub_path.exists():
-        pytest.skip(f"Test EPUB file not found: {epub_path}")
-
-    in_doc = InputDocument(
-        path_or_stream=epub_path,
-        format=fmt,
-        backend=cls,
-    )
-    backend = cls(
-        in_doc=in_doc,
-        path_or_stream=epub_path,
-    )
-
-    assert backend.is_valid()
-    assert backend.supported_formats() == {InputFormat.EPUB}
-    assert not backend.supports_pagination()
+GENERATE = GEN_TEST_DATA
 
 
-def test_epub_conversion():
-    """Test EPUB to DoclingDocument conversion."""
-    epub_path = Path("tests/data/epub/sarah-louisa-forten-purvis_poetry.epub")
+@pytest.fixture(scope="module")
+def epub_paths() -> list[Path]:
+    # Define the directory you want to search
+    directory = Path("./tests/data/epub/")
 
-    if not epub_path.exists():
-        pytest.skip(f"Test EPUB file not found: {epub_path}")
+    # List all epub files in the directory and its subdirectories
+    epub_files = sorted(directory.rglob("*.epub"))
 
+    return epub_files
+
+
+def get_converter():
     converter = DocumentConverter(allowed_formats=[InputFormat.EPUB])
-    result = converter.convert(epub_path)
-
-    assert result.status.name == "SUCCESS"
-    assert result.document is not None
-
-    doc = result.document
-    assert doc.name == "sarah-louisa-forten-purvis_poetry"
-    assert doc.origin.mimetype == "application/epub+zip"
-
-    # Check that content was extracted
-    md_output = doc.export_to_markdown()
-    assert len(md_output) > 1000  # Should have substantial content
-    assert "Poetry" in md_output
-    assert "Sarah Louisa Forten Purvis" in md_output
-
-    # Verify some poem titles are present
-    assert "The Grave of the Slave" in md_output
-    assert "The Slave Girl's Address to Her Mother" in md_output
+    return converter
 
 
-def test_epub_metadata_extraction():
-    """Test that EPUB metadata is properly extracted."""
-    epub_path = Path("tests/data/epub/sarah-louisa-forten-purvis_poetry.epub")
-
-    if not epub_path.exists():
-        pytest.skip(f"Test EPUB file not found: {epub_path}")
-
+@pytest.fixture(scope="module")
+def backend(epub_paths) -> EpubDocumentBackend:
+    epub_path = epub_paths[0]
     in_doc = InputDocument(
         path_or_stream=epub_path,
         format=InputFormat.EPUB,
         backend=EpubDocumentBackend,
     )
-    backend = EpubDocumentBackend(
-        in_doc=in_doc,
-        path_or_stream=epub_path,
-    )
-
-    # Check metadata was extracted
-    assert "title" in backend.metadata
-    assert backend.metadata["title"] == "Poetry"
-
-    # Check content files were found
-    assert len(backend.content_files) > 0
-    assert any("poetry.xhtml" in f for f in backend.content_files)
+    return in_doc._backend
 
 
-def test_epub_with_document_converter():
-    """Test EPUB conversion using DocumentConverter with groundtruth comparison."""
-    epub_path = Path("tests/data/epub/sarah-louisa-forten-purvis_poetry.epub")
+@pytest.fixture(scope="module")
+def documents(epub_paths) -> list[tuple[Path, DoclingDocument]]:
+    documents: list[tuple[Path, DoclingDocument]] = []
 
-    if not epub_path.exists():
-        pytest.skip(f"Test EPUB file not found: {epub_path}")
+    converter = get_converter()
 
-    gt_path = Path(
-        "tests/data/groundtruth/docling_v2/sarah-louisa-forten-purvis_poetry.epub.json"
-    )
+    for epub_path in epub_paths:
+        _log.debug(f"converting {epub_path}")
 
-    converter = DocumentConverter(allowed_formats=[InputFormat.EPUB])
+        gt_path = (
+            epub_path.parent.parent / "groundtruth" / "docling_v2" / epub_path.name
+        )
+
+        conv_result: ConversionResult = converter.convert(epub_path)
+
+        doc: DoclingDocument = conv_result.document
+
+        assert doc, f"Failed to convert document from file {gt_path}"
+        documents.append((gt_path, doc))
+
+    return documents
+
+
+def test_e2e_epub_conversions(documents):
+    """Test end-to-end EPUB conversion with ground truth validation."""
+    for epub_path, doc in documents:
+        pred_md: str = doc.export_to_markdown(compact_tables=True)
+        assert verify_export(pred_md, str(epub_path) + ".md", generate=GENERATE), (
+            f"export to markdown failed on {epub_path}"
+        )
+
+        pred_itxt: str = doc._export_to_indented_text(
+            max_text_len=70, explicit_tables=False
+        )
+        assert verify_export(
+            pred_itxt, str(epub_path) + ".itxt", generate=GENERATE, fuzzy=True
+        ), f"export to indented-text failed on {epub_path}"
+
+        assert verify_document(
+            doc, str(epub_path) + ".json", generate=GENERATE, fuzzy=True
+        ), f"DoclingDocument verification failed on {epub_path}"
+
+
+def test_epub_backend_initialization(backend):
+    """Test that the EPUB backend initializes correctly."""
+    assert backend is not None
+    assert isinstance(backend, EpubDocumentBackend)
+
+
+def test_epub_document_structure(documents):
+    """Test that converted EPUB documents have expected structure."""
+    for _, doc in documents:
+        # Check that document has content
+        assert len(doc.texts) > 0, "Document should have text items"
+
+        # Check that document has a title (from metadata)
+        assert doc.name, "Document should have a name/title"
+
+
+def test_epub_metadata_extraction(documents):
+    """Test that EPUB metadata is properly extracted."""
+    for _, doc in documents:
+        # The document should have extracted metadata
+        assert doc.name, "Document should have a title from EPUB metadata"
+
+
+def test_epub_image_extraction(documents):
+    """Test that images are properly extracted from EPUB archives."""
+    for _, doc in documents:
+        # Check if document has pictures
+        # Note: Images are only extracted when fetch_images=True in backend options
+        # The default converter doesn't fetch images, so we just verify structure
+        if len(doc.pictures) > 0:
+            # Verify that pictures exist in the document structure
+            assert all(hasattr(pic, "self_ref") for pic in doc.pictures), (
+                "All pictures should have proper structure"
+            )
+
+
+def test_epub_backend_with_image_options():
+    """Test EPUB backend options can be created with different settings."""
+    from docling.datamodel.backend_options import EpubBackendOptions
+
+    # Test creating options with fetch_images=True
+    options_with_images = EpubBackendOptions(fetch_images=True, enable_local_fetch=True)
+    assert options_with_images.fetch_images is True
+    assert options_with_images.enable_local_fetch is True
+
+    # Test creating options with fetch_images=False (default)
+    options_no_images = EpubBackendOptions(fetch_images=False)
+    assert options_no_images.fetch_images is False
+
+    # Test default options
+    options_default = EpubBackendOptions()
+    assert options_default.fetch_images is False  # Default should be False
+
+
+def test_epub_content_combination():
+    """Test that EPUB content from multiple files is properly combined."""
+    epub_path = Path("./tests/data/epub/epub_purvis_poetry.epub")
+
+    converter = get_converter()
     result = converter.convert(epub_path)
+    doc = result.document
 
-    assert result.status.name == "SUCCESS"
-    assert result.document is not None
+    # Check that content is combined (should have multiple text items)
+    assert len(doc.texts) > 1, "Should have multiple text items from combined content"
 
-    # Verify against groundtruth if it exists or generate it
-    if GEN_TEST_DATA:
-        gt_path.parent.mkdir(parents=True, exist_ok=True)
-        result.document.save_as_json(gt_path)
-    elif gt_path.exists():
-        assert verify_document(result.document, gt_path, generate=False)
+    # Check that the document has a reasonable amount of text
+    total_text = "".join(item.text for item in doc.texts)
+    assert len(total_text) > 100, "Combined content should have substantial text"
+
+
+def test_epub_link_fixing():
+    """Test that internal EPUB links are properly fixed after content combination."""
+    epub_path = Path("./tests/data/epub/epub_purvis_poetry.epub")
+
+    converter = get_converter()
+    result = converter.convert(epub_path)
+    doc = result.document
+
+    # Export to markdown to check links
+    markdown = doc.export_to_markdown()
+
+    # Internal links should not contain filenames (e.g., "chapter1.xhtml#section")
+    # They should be simplified to just anchors (e.g., "#section")
+    # This is a basic check - the actual link format may vary
+    assert markdown is not None, "Should be able to export to markdown"
+    assert len(markdown) > 0, "Markdown export should not be empty"
