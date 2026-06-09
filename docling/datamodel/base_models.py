@@ -97,6 +97,7 @@ class OutputFormat(str, Enum):
     TEXT = "text"
     DOCTAGS = "doctags"
     VTT = "vtt"
+    DOCLANG = "doclang"
 
 
 FormatToExtensions: dict[InputFormat, list[str]] = {

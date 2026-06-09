@@ -307,6 +307,7 @@ def export_documents(
     export_txt: bool,
     export_doctags: bool,
     export_vtt: bool,
+    export_doclang: bool,
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
@@ -413,6 +414,13 @@ def export_documents(
                 fname = output_dir / f"{doc_filename}.vtt"
                 _log.info(f"writing WebVTT output to {fname}")
                 conv_res.document.save_as_vtt(filename=fname)
+
+            # Export DocLang format:
+            if export_doclang:
+                fname = output_dir / f"{doc_filename}.dclg.xml"
+                _log.info(f"writing DocLang output to {fname}")
+                with fname.open("w", encoding="utf-8") as fp:
+                    fp.write(conv_res.document.export_to_doclang())
 
             # Print profiling timings
             if print_timings:
@@ -856,6 +864,7 @@ def convert(  # noqa: C901
         export_txt = OutputFormat.TEXT in to_formats
         export_doctags = OutputFormat.DOCTAGS in to_formats
         export_vtt = OutputFormat.VTT in to_formats
+        export_doclang = OutputFormat.DOCLANG in to_formats
 
         ocr_factory = get_ocr_factory(allow_external_plugins=allow_external_plugins)
         ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
@@ -1126,6 +1135,7 @@ def convert(  # noqa: C901
             export_txt=export_txt,
             export_doctags=export_doctags,
             export_vtt=export_vtt,
+            export_doclang=export_doclang,
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,

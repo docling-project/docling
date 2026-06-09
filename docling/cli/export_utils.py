@@ -10,6 +10,7 @@ _OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING = frozenset(
         OutputFormat.TEXT,
         OutputFormat.DOCTAGS,
         OutputFormat.VTT,
+        OutputFormat.DOCLANG,
     }
 )
 

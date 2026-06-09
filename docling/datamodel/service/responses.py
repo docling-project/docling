@@ -18,6 +18,7 @@ class ExportDocumentResponse(BaseModel):
     html_content: Optional[str] = None
     text_content: Optional[str] = None
     doctags_content: Optional[str] = None
+    doclang_content: Optional[str] = None
 
 
 class DocumentResultItem(BaseModel):
@@ -70,9 +71,8 @@ class RemoteTargetResult(BaseModel):
 
 
 class ArtifactRef(BaseModel):
-    # TODO: add "doclang" once batch artifact typing supports it end-to-end.
     artifact_type: Literal[
-        "json", "html", "markdown", "text", "doctags", "resource_bundle"
+        "json", "html", "markdown", "text", "doctags", "doclang", "resource_bundle"
     ]
     mime_type: str
     uri: AnyUrl
