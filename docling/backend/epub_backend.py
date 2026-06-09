@@ -2,11 +2,12 @@ import logging
 import re
 import shutil
 import tempfile
-import xml.etree.ElementTree as ET
 from io import BytesIO
 from pathlib import Path
 from zipfile import ZipFile
 
+import defusedxml.ElementTree as ET
+from defusedxml.common import DefusedXmlException
 from docling_core.types.doc import DoclingDocument, DocumentOrigin
 from typing_extensions import override
 
@@ -26,12 +27,18 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
     This backend extracts the content and delegates to HTMLDocumentBackend
     for processing the XHTML structure.
 
+    Note:
+        This module enforces limits when extracting EPUB archives for image processing.
+            These limits prevent malicious EPUBs from exhausting disk space or memory
+            through decompression bombs. Limits can be configured via
+            EpubBackendOptions.
+
     Known Limitations:
-        - Internal anchor links (e.g., footnote references) are converted but
-          the target anchor IDs are not preserved in the final Markdown output.
-          This is a limitation of the HTML-to-DoclingDocument conversion process.
-          Links like [1](#note-1) will be present, but the corresponding anchor
-          targets may not be accessible in the exported Markdown.
+        Internal anchor links (e.g., footnote references) are converted but
+            the target anchor IDs are not preserved in the final Markdown output.
+            This is a limitation of the HTML-to-DoclingDocument conversion process.
+            Links like [1](#note-1) will be present, but the corresponding anchor
+            targets may not be accessible in the exported Markdown.
     """
 
     def __init__(
@@ -136,11 +143,73 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
             _log.debug(f"Content files in reading order: {self.content_files}")
 
+        except DefusedXmlException as e:
+            _log.error(f"Security issue detected while parsing EPUB XML: {e}")
+            raise RuntimeError(
+                "EPUB file contains potentially malicious XML content"
+            ) from e
         except Exception as e:
             _log.error(f"Error parsing EPUB structure: {e}")
             raise
 
-    def _extract_metadata(self, opf_root: ET.Element):
+    def _safe_extract_epub(self, target_dir: Path) -> bool:
+        """Safely extract EPUB contents with zip-bomb protection.
+
+        Args:
+            target_dir: Directory to extract files to
+
+        Returns:
+            True if extraction succeeded, False if limits were exceeded
+
+        Raises:
+            RuntimeError: If extraction fails due to I/O errors
+        """
+        if not self.epub_zip:
+            return False
+
+        total_bytes = 0
+        member_count = 0
+        max_total_bytes = self.options.max_total_bytes
+        max_file_bytes = self.options.max_file_bytes
+        max_member_count = self.options.max_member_count
+
+        try:
+            for member in self.epub_zip.infolist():
+                member_count += 1
+                if member_count > max_member_count:
+                    _log.warning(
+                        f"EPUB archive exceeds member count limit ({max_member_count})"
+                    )
+                    return False
+
+                # Check uncompressed size
+                if member.file_size > max_file_bytes:
+                    _log.warning(
+                        f"EPUB member {member.filename} exceeds size limit "
+                        f"({member.file_size} > {max_file_bytes} bytes)"
+                    )
+                    return False
+
+                total_bytes += member.file_size
+                if total_bytes > max_total_bytes:
+                    _log.warning(
+                        f"EPUB archive exceeds total size limit ({max_total_bytes} bytes)"
+                    )
+                    return False
+
+                # Extract the member
+                self.epub_zip.extract(member, target_dir)
+
+            _log.debug(
+                f"Successfully extracted {member_count} members ({total_bytes} bytes)"
+            )
+            return True
+
+        except Exception as e:
+            _log.error(f"Error during EPUB extraction: {e}")
+            raise RuntimeError(f"Failed to extract EPUB archive: {e}") from e
+
+    def _extract_metadata(self, opf_root):
         """Extract metadata from the OPF file."""
         ns_dc = {"dc": "http://purl.org/dc/elements/1.1/"}
         ns_opf = {"opf": "http://www.idpf.org/2007/opf"}
@@ -287,9 +356,19 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             try:
                 self.temp_dir = Path(tempfile.mkdtemp(prefix="docling_epub_"))
                 _log.debug(f"Extracting EPUB to temporary directory: {self.temp_dir}")
-                self.epub_zip.extractall(self.temp_dir)
+                if not self._safe_extract_epub(self.temp_dir):
+                    _log.warning(
+                        "EPUB extraction aborted due to size/count limits. "
+                        "Images will not be available."
+                    )
+                    # Clean up the temp directory since extraction failed
+                    if self.temp_dir and self.temp_dir.exists():
+                        shutil.rmtree(self.temp_dir)
+                    self.temp_dir = None
             except Exception as e:
                 _log.warning(f"Failed to extract EPUB to temp directory: {e}")
+                if self.temp_dir and self.temp_dir.exists():
+                    shutil.rmtree(self.temp_dir)
                 self.temp_dir = None
 
         # Concatenate all XHTML content into a single HTML document

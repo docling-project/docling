@@ -143,6 +143,21 @@ class EpubBackendOptions(BaseBackendOptions):
     fetch_images: Annotated[
         bool, Field(description="Whether to fetch and process images from the EPUB.")
     ] = False
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum cumulative size in bytes of all data extracted from the EPUB archive during processing"
+        ),
+    ] = 100 * 1024 * 1024  # 100 MB
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum size in bytes for any single file extracted from the EPUB archive"
+        ),
+    ] = 10 * 1024 * 1024  # 10 MB
+    max_member_count: Annotated[
+        PositiveInt, Field(description="Maximum number of archive members to process")
+    ] = 1000
 
 
 class PdfBackendOptions(BaseBackendOptions):
