@@ -84,6 +84,18 @@ class HTMLBackendOptions(BaseBackendOptions):
             "will use it to resolve relative paths in the HTML document."
         ),
     )
+    headers: Annotated[
+        dict[str, str] | None,
+        Field(
+            description=(
+                "HTTP headers to include when fetching remote images. Use for "
+                "authentication (e.g., API keys, bearer tokens) or custom headers "
+                "required by image servers."
+            ),
+            examples=[{"Authorization": "Bearer TOKEN"}, {"X-API-Key": "your-api-key"}],
+            repr=False,
+        ),
+    ] = None
     add_title: bool = Field(
         True, description="Add the HTML title tag as furniture in the DoclingDocument."
     )
@@ -129,6 +141,29 @@ class PdfBackendOptions(BaseBackendOptions):
 
     kind: Literal["pdf"] = Field("pdf", exclude=True, repr=False)
     password: Optional[SecretStr] = None
+
+
+class ThreadedDoclingParseBackendOptions(PdfBackendOptions):
+    """Options specific to the threaded docling-parse backend."""
+
+    kind: Literal["threaded-docling-parse"] = Field(
+        "threaded-docling-parse", exclude=True, repr=False
+    )
+    parser_threads: Optional[PositiveInt] = Field(
+        None,
+        description=(
+            "Number of parser threads to use for the threaded docling-parse backend. "
+            "If unset, the backend falls back to global accelerator thread settings."
+        ),
+    )
+    release_native_memory_every_n_pages: conint(ge=0) = Field(
+        128,
+        description=(
+            "Release native parser memory after every N decoded pages in the "
+            "threaded docling-parse backend. Set to 0 to disable native-memory "
+            "release."
+        ),
+    )
 
 
 class MetsGbsBackendOptions(PdfBackendOptions):
@@ -238,6 +273,7 @@ BackendOptions = Annotated[
         HTMLBackendOptions,
         MarkdownBackendOptions,
         PdfBackendOptions,
+        ThreadedDoclingParseBackendOptions,
         MetsGbsBackendOptions,
         MsExcelBackendOptions,
         LatexBackendOptions,

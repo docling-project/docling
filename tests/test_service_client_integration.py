@@ -7,6 +7,7 @@ from docling.datamodel.base_models import OutputFormat
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
+from docling.datamodel.service.targets import InBodyTarget, ZipTarget
 from docling.service_client import (
     AsyncDoclingServiceClient,
     DoclingServiceClient,
@@ -73,7 +74,7 @@ def test_convert_and_submit_with_polling_watcher(
         assert converted.status.value in {"success", "partial_success"}
         assert converted.document.name == "2206.01062"
 
-        job = client.submit(source=source, target_format=OutputFormat.JSON)
+        job = client.submit(source=source, target=InBodyTarget())
         submitted = job.result(timeout=300.0)
         assert submitted.status.value in {"success", "partial_success"}
         assert submitted.document.name == "2206.01062"
@@ -100,7 +101,10 @@ def test_submit_non_json_returns_raw_payload(
             abort_on_error=False,
         )
         job = client.submit(
-            source=source, options=options, target_format=OutputFormat.MARKDOWN
+            source=source,
+            options=options,
+            output_formats=[OutputFormat.MARKDOWN],
+            target=ZipTarget(),
         )
         raw_result = job.result(timeout=300.0)
 
@@ -209,7 +213,7 @@ async def test_async_convert_with_polling_watcher(
         version = await client.version()
         assert isinstance(version, dict)
 
-        job = await client.submit(source=source, target_format=OutputFormat.JSON)
+        job = await client.submit(source=source, target=InBodyTarget())
         result = await job.result(timeout=300.0)
         assert result.status.value in {"success", "partial_success"}
         assert result.document.name == "2206.01062"
@@ -237,7 +241,10 @@ async def test_async_submit_non_json_returns_raw_payload(
         job_timeout=300.0,
     ) as client:
         job = await client.submit(
-            source=source, options=options, target_format=OutputFormat.MARKDOWN
+            source=source,
+            options=options,
+            output_formats=[OutputFormat.MARKDOWN],
+            target=ZipTarget(),
         )
         raw_result = await job.result(timeout=300.0)
 
@@ -293,7 +300,7 @@ async def test_async_submit_accepts_custom_request_headers(
 
 
 @pytest.mark.anyio
-async def test_async_submit_and_retrieve_many_preserves_per_item_results(
+async def test_async_submit_and_retrieve_each_preserves_per_item_results(
     live_service_url: str, service_api_key: str | None, tmp_path: Path
 ) -> None:
     source = FIXTURES_DIR / "2206.01062.pdf"
@@ -319,7 +326,7 @@ async def test_async_submit_and_retrieve_many_preserves_per_item_results(
     ) as client:
         pairs = [
             pair
-            async for pair in client.submit_and_retrieve_many(
+            async for pair in client.submit_and_retrieve_each(
                 items=items, max_in_flight=2
             )
         ]

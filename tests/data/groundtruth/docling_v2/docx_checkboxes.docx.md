@@ -1,10 +1,10 @@
 ### Table with options
 
-| **List of services**                                                                              |
-|---------------------------------------------------------------------------------------------------|
-| Breakfast options                                                                                 |
+| **List of services** |
+| - |
+| Breakfast options |
 | Choose as many as you like:  - [x] Orange juice  - [ ] Tea  - [x] Coffee  - [ ] Milk  - [x] Water |
-| Choose as many as you like:  - [x] Scramble eggs  - [ ] Porridge  - [x] Bread  - [x] Croissant    |
+| Choose as many as you like:  - [x] Scramble eggs  - [ ] Porridge  - [x] Bread  - [x] Croissant |
 
 ### Paragraph with options
 

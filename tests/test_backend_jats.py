@@ -124,7 +124,7 @@ def test_e2e_jats_conversions(use_stream=False):
             conv_result: ConversionResult = converter.convert(jats_path)
         doc: DoclingDocument = conv_result.document
 
-        pred_md: str = doc.export_to_markdown()
+        pred_md: str = doc.export_to_markdown(compact_tables=True)
         assert verify_export(pred_md, str(gt_path) + ".md", generate=GENERATE), (
             "export to md"
         )

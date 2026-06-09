@@ -2,7 +2,7 @@ import base64
 from io import BytesIO
 from typing import Annotated, Any
 
-from pydantic import AnyHttpUrl, BaseModel, Field, SecretStr, StrictStr
+from pydantic import AnyHttpUrl, BaseModel, Field, StrictStr
 
 from docling.datamodel.base_models import DocumentStream
 
@@ -66,14 +66,14 @@ class S3Coordinates(BaseModel):
     ] = True
 
     access_key: Annotated[
-        SecretStr,
+        StrictStr,
         Field(
             description=("S3 access key. Required."),
         ),
     ]
 
     secret_key: Annotated[
-        SecretStr,
+        StrictStr,
         Field(
             description=("S3 secret key. Required."),
         ),

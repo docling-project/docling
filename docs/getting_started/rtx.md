@@ -1,7 +1,7 @@
 # ⚡ RTX GPU Acceleration
 
-<div style="text-align: center">
-    <img loading="lazy" alt="Docling on RTX" src="../../assets/nvidia_logo_green.svg" width="200px" />
+<div style="text-align:center">
+    <img loading="lazy" alt="Docling on RTX" src="../assets/nvidia_logo_green.svg" width="200px" />
 </div>
 
 

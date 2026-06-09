@@ -18,7 +18,6 @@ from typing import (
     Optional,
     Type,
     Union,
-    cast,
 )
 
 import filetype
@@ -60,7 +59,10 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
-from docling.datamodel.backend_options import BackendOptions, MetsGbsBackendOptions
+from docling.datamodel.backend_options import (
+    BackendOptions,
+    MetsGbsBackendOptions,
+)
 from docling.datamodel.base_models import (
     AssembledUnit,
     ConfidenceReport,
@@ -79,7 +81,6 @@ from docling.utils.utils import create_file_hash, safe_version
 
 if TYPE_CHECKING:
     from docling.datamodel.base_models import BaseFormatOption
-    from docling.document_converter import FormatOption
 
 _log = logging.getLogger(__name__)
 
@@ -465,8 +466,7 @@ class _DocumentConversionInput(BaseModel):
             else:
                 options = format_options[format]
                 backend = options.backend
-                if "backend_options" in options.model_fields_set:
-                    backend_options = cast("FormatOption", options).backend_options
+                backend_options = options.backend_options_for_input(item)
 
             path_or_stream: Union[BytesIO, Path]
             if isinstance(obj, Path):
@@ -676,6 +676,8 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.VTT][0]
         elif ext in FormatToExtensions[InputFormat.LATEX]:
             mime = FormatToMimeType[InputFormat.LATEX][0]
+        elif ext in FormatToExtensions[InputFormat.EMAIL]:
+            mime = FormatToMimeType[InputFormat.EMAIL][0]
         return mime
 
     @staticmethod
