@@ -42,6 +42,12 @@ layout:
     api_key: ""
     page_batch_size: 32
     max_completion_tokens: 16384
+    model: "dots-mocr"          # 서빙 모델명
+    timeout: 3600               # VLM 요청 타임아웃(초)
+    retry_count: 2              # 비정상 VLM 응답 재시도 횟수
+    temperature: 0.1            # 생성 temperature
+    top_p: 0.9                  # 생성 top_p (0<top_p<=1)
+    repetition_penalty: 1.15    # >1.0, 토큰 반복(degeneration) 억제
 
 
 # ── PDF 파이프라인 ─────────────────────────────────────────────────────────────

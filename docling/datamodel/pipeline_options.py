@@ -394,6 +394,9 @@ class GenosLayoutOptions(BaseModel):
     max_completion_tokens: int = 16384
     timeout: int = 3600
     retry_count: int = 2  # Number of retries on abnormal VLM responses
+    temperature: float = 0.1
+    top_p: float = 0.9
+    repetition_penalty: float = 1.15  # >1.0 to suppress VLM token-repetition degeneration
 
 
 class LayoutOptions(BaseLayoutOptions):

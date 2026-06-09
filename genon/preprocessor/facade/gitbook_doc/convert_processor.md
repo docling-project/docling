@@ -163,6 +163,12 @@ layout:
     api_key: ""
     page_batch_size: 32
     max_completion_tokens: 16384
+    model: "dots-mocr"          # 서빙 모델명
+    timeout: 3600               # VLM 요청 타임아웃(초)
+    retry_count: 2              # 비정상 VLM 응답 재시도 횟수
+    temperature: 0.1            # 생성 temperature
+    top_p: 0.9                  # 생성 top_p (0<top_p<=1)
+    repetition_penalty: 1.15    # >1.0, 토큰 반복(degeneration) 억제 (아래 가이드 참조)
 
 # PDF 파이프라인 (docling PDF 파싱 성능/품질 노브)
 pdf_pipeline:
@@ -288,9 +294,39 @@ enrichment:
 | `genos_layout.api_key` | `""` | k8s 내부 통신 기반 호출 시 불필요. 외부 호출 정책에 따라 필요할 수 있음 |
 | `genos_layout.page_batch_size` | `32` | 레이아웃 모델 페이지 배치 크기(전역 `settings.perf.page_batch_size`). 0 이하/오류 시 32 폴백 |
 | `genos_layout.max_completion_tokens` | `16384` | Layout LLM 최대 생성 토큰. 양의 정수, 유효하지 않거나 0 이하이면 16384 폴백 |
+| `genos_layout.model` | `"dots-mocr"` | 서빙 모델명. 비어있으면 `dots-mocr` 폴백 |
+| `genos_layout.timeout` | `3600` | VLM 요청 HTTP 타임아웃(초). 유효하지 않거나 0 이하이면 3600 폴백 |
+| `genos_layout.retry_count` | `2` | 비정상(스키마 불일치 등) VLM 응답 재시도 횟수. 음수/오류 시 2 폴백 |
+| `genos_layout.temperature` | `0.1` | 생성 샘플링 temperature. 음수/오류 시 0.1 폴백 |
+| `genos_layout.top_p` | `0.9` | nucleus 샘플링 top_p. `0<top_p<=1` 아니면 0.9 폴백 |
+| `genos_layout.repetition_penalty` | `1.15` | 토큰 반복(degeneration) 억제. `>0`, 유효하지 않으면 1.15 폴백. **자세한 사용은 아래 가이드 참조** |
 
 - **`genos_layout`**: 외부 서빙형 GenOS 레이아웃 모델. 제목/본문/표/이미지 검출과 reading order 품질 개선을 기대할 수 있으나 별도 서빙 인프라가 필요합니다.
 - **`docling_layout`**: Docling 기본 레이아웃 모델. 별도 서빙 인프라가 없는 환경에서 사용합니다.
+
+#### `repetition_penalty` 사용 가이드
+
+**무엇을 막는가** — DotsOCR(VLM)이 OCR 도중 특정 토큰·구절에 갇혀, 같은 내용을 `max_completion_tokens`(기본 16384)에 도달할 때까지 끝없이 반복 생성하는 현상(*degeneration*, 반복 붕괴)을 억제합니다. 증상은 DEBUG 로그(`defaults.log_level: 5`)의 `dotsocr raw response (page=N, ...)` 출력에서 한 `text` 필드가 `"휴식, 휴식, 휴식, ..."`처럼 무한 반복되는 형태로 나타납니다. 이 반복이 **유효한 JSON 문자열 안**에 들어가면 파싱이 성공해 `retry_count` 재시도로도 걸러지지 않으므로, 생성 단계에서 억제하는 `repetition_penalty`가 1차 방어선입니다.
+
+**동작 원리** — 이미 생성된 토큰이 다시 나올 확률(logit)을 나눠 낮춥니다. `1.0`이면 페널티 없음(원본 모델 그대로), `1.0`보다 클수록 반복 억제가 강해집니다.
+
+| 값 | 효과 | 사용 상황 |
+|----|------|-----------|
+| `1.0` | 억제 없음 | dots.ocr 원본 동작. 반복이 없더라도 비권장 |
+| `1.05`~`1.1` | 약한 억제 | 가끔 반복이 보일 때 |
+| **`1.15` (기본)** | 표준 억제 | 대부분의 문서에 권장 |
+| `1.2`~`1.3` | 강한 억제 | 표/반복 어절이 많아 반복이 끈질긴 문서 |
+| `>1.3` | 과도 | 정상 텍스트까지 변형·누락될 위험, 비권장 |
+
+**튜닝 절차**
+1. 반복이 보이는 문서로 DEBUG 로그(`defaults.log_level: 5`)를 켜고 실행합니다.
+2. `dotsocr raw response`에 무한 반복이 남아 있으면 `repetition_penalty`를 `0.05`씩 상향합니다 (1.15 → 1.2 → 1.25).
+3. 반대로 정상 텍스트에서 글자 누락·치환이 생기면 값을 하향합니다.
+
+**주의**
+- 한국어처럼 조사·어절이 자연스럽게 반복되는 문서는 과한 값(`>1.3`)에서 정상 반복까지 깎여 품질이 떨어질 수 있습니다.
+- `temperature`(기본 0.1)를 약간 올리면(예: 0.2~0.3) 결정성이 낮아져 반복 탈출에 도움이 되기도 하지만 OCR 정확도와 trade-off이므로, `repetition_penalty`를 우선 조정하세요.
+- 동일 항목이 여러 번 나오는 표는 과한 penalty가 실제 반복 데이터를 누락시킬 수 있으니 문서별로 결과를 검증하세요.
 
 ---
 

@@ -96,6 +96,11 @@ class GenosDotsOCRLayoutModel(BasePageModel):
             )
             retry_count = 2
         self.retry_count = max(0, retry_count)
+        self.temperature = getattr(self.dotsocr_options, "temperature", 0.1)
+        self.top_p = getattr(self.dotsocr_options, "top_p", 0.9)
+        self.repetition_penalty = getattr(
+            self.dotsocr_options, "repetition_penalty", 1.15
+        )
 
     def _use_dotsocr_table_structure(self) -> bool:
         return (
@@ -614,9 +619,14 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                         model=self.model,
                         max_completion_tokens=self.max_completion_tokens,
                         timeout=self.timeout,
+                        temperature=self.temperature,
+                        top_p=self.top_p,
+                        repetition_penalty=self.repetition_penalty,
                     )
                     if not isinstance(response_text, str) or not response_text.strip():
                         raise ValueError("Empty VLM response text")
+
+                    # _log.debug(f"dotsocr raw response (page={page.page_no}, attempt={attempt}): {response_text}")
                     response = _parse_vlm_json_response(response_text)
                 except Exception:
                     if attempt >= total_attempts:
@@ -890,6 +900,9 @@ def call_vlm_server(
     model: str,
     max_completion_tokens: int = 6000,
     timeout: int = 3600,
+    temperature: float = 0.1,
+    top_p: float = 0.9,
+    repetition_penalty: float = 1.15,
 ) -> str:
     image_data_url = f"data:image/png;base64,{base64_image}"
     prompt_with_image_token = f"<|img|><|imgpad|><|endofimg|>{prompt}"
@@ -914,7 +927,10 @@ def call_vlm_server(
             }
         ],
         "max_completion_tokens": max_completion_tokens,
-        "temperature": 0.0,
+        "temperature": temperature,
+        "top_p": top_p,
+        # VLM이 동일 토큰을 max_completion_tokens까지 무한 반복하는 degeneration 억제용.
+        "repetition_penalty": repetition_penalty,
     }
 
     headers = {
