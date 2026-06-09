@@ -77,6 +77,7 @@ from docling.datamodel.asr_model_specs import (
     AsrModelType,
 )
 from docling.datamodel.backend_options import (
+    EpubBackendOptions,
     HTMLBackendOptions,
     LatexBackendOptions,
     PdfBackendOptions,
@@ -112,6 +113,7 @@ from docling.datamodel.settings import settings
 from docling.document_converter import (
     AudioFormatOption,
     DocumentConverter,
+    EpubFormatOption,
     ExcelFormatOption,
     FormatOption,
     HTMLFormatOption,
@@ -506,7 +508,7 @@ def convert(  # noqa: C901
     html_image_headers: str = typer.Option(
         None,
         "--html-image-headers",
-        help="Specify http request headers used when fetching HTML image resources in the form of a JSON string",
+        help="Specify http request headers used when fetching HTML and EPUB image resources in the form of a JSON string",
     ),
     image_export_mode: Annotated[
         ImageRefMode,
@@ -520,7 +522,7 @@ def convert(  # noqa: C901
         typer.Option(
             ...,
             "--html-image-fetch",
-            help="Fetch image resources referenced by HTML inputs. Choose none, local, remote, or all.",
+            help="Fetch image resources referenced by HTML and EPUB inputs. Choose none, local, remote, or all.",
         ),
     ] = HtmlImageFetchMode.NONE,
     pipeline: Annotated[
@@ -979,6 +981,20 @@ def convert(  # noqa: C901
                 InputFormat.HTML: HTMLFormatOption(
                     pipeline_options=simple_format_option,
                     backend_options=html_backend_options,
+                ),
+                InputFormat.EPUB: EpubFormatOption(
+                    pipeline_options=simple_format_option,
+                    backend_options=EpubBackendOptions(
+                        fetch_images=html_fetch_images,
+                        enable_local_fetch=html_enable_local_fetch,
+                        enable_remote_fetch=html_enable_remote_fetch,
+                    )
+                    if (
+                        html_fetch_images
+                        or html_enable_local_fetch
+                        or html_enable_remote_fetch
+                    )
+                    else None,
                 ),
                 InputFormat.MD: MarkdownFormatOption(
                     pipeline_options=simple_format_option

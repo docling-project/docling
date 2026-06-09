@@ -201,6 +201,7 @@ class EmailFormatOption(FormatOption):
 class EpubFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = EpubDocumentBackend
+    backend_options: EpubBackendOptions | None = None
 
 
 def _get_default_option(format: InputFormat) -> FormatOption:

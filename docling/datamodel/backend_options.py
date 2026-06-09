@@ -279,6 +279,7 @@ class XBRLBackendOptions(BaseBackendOptions):
 BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
+        EpubBackendOptions,
         HTMLBackendOptions,
         MarkdownBackendOptions,
         PdfBackendOptions,

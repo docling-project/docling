@@ -1,5 +1,7 @@
 import logging
 import re
+import shutil
+import tempfile
 import xml.etree.ElementTree as ET
 from io import BytesIO
 from pathlib import Path
@@ -49,6 +51,7 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
         self.epub_zip: ZipFile | None = None
         self.content_files: list[str] = []
         self.metadata: dict[str, str] = {}
+        self.temp_dir: Path | None = None
 
         try:
             # Open the EPUB file as a ZIP archive
@@ -161,6 +164,47 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
         _log.debug(f"Extracted metadata: {self.metadata}")
 
+    def _fix_image_paths(self, html_content: str, content_file_path: str) -> str:
+        """Convert relative image paths to paths relative to temp directory root.
+
+        Args:
+            html_content: HTML content with image references
+            content_file_path: Path of the current XHTML file (for resolving relative paths)
+
+        Returns:
+            HTML content with fixed image paths
+        """
+        if not self.temp_dir:
+            return html_content
+
+        # Get the directory of the current content file
+        content_dir = Path(content_file_path).parent
+
+        def replace_image_src(match):
+            src = match.group(1)
+
+            # Skip data URIs and absolute URLs
+            if src.startswith(("data:", "http://", "https://", "/")):
+                return match.group(0)
+
+            # Resolve relative path and make it relative to temp_dir
+            if content_dir:
+                image_path = content_dir / src
+            else:
+                image_path = Path(src)
+
+            # Normalize the path
+            try:
+                # Return the modified src attribute with path relative to temp_dir
+                return f'src="{image_path}"'
+            except Exception as e:
+                _log.warning(f"Failed to resolve image path {src}: {e}")
+                return match.group(0)
+
+        # Pattern to match src attributes in img tags
+        pattern = r'src="([^"]+)"'
+        return re.sub(pattern, replace_image_src, html_content)
+
     def _fix_internal_links(self, html_content: str) -> str:
         """Fix internal links that reference other XHTML files.
 
@@ -195,6 +239,17 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             self.path_or_stream.close()
         self.path_or_stream = None
 
+        # Clean up temporary directory
+        if self.temp_dir and self.temp_dir.exists():
+            try:
+                shutil.rmtree(self.temp_dir)
+                _log.debug(f"Cleaned up temporary directory: {self.temp_dir}")
+            except Exception as e:
+                _log.warning(
+                    f"Failed to clean up temporary directory {self.temp_dir}: {e}"
+                )
+            self.temp_dir = None
+
     @classmethod
     def supports_pagination(cls) -> bool:
         return False
@@ -225,6 +280,17 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
         # Initialize the main document
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
+
+        # Extract EPUB to temporary directory if images need to be fetched
+        # This allows the HTML backend to access images from the filesystem
+        if self.options.fetch_images and self.options.enable_local_fetch:
+            try:
+                self.temp_dir = Path(tempfile.mkdtemp(prefix="docling_epub_"))
+                _log.debug(f"Extracting EPUB to temporary directory: {self.temp_dir}")
+                self.epub_zip.extractall(self.temp_dir)
+            except Exception as e:
+                _log.warning(f"Failed to extract EPUB to temp directory: {e}")
+                self.temp_dir = None
 
         # Concatenate all XHTML content into a single HTML document
         combined_html_parts = [
@@ -258,6 +324,10 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
                 # This is necessary because we're combining all XHTML files into one HTML
                 body_content = self._fix_internal_links(body_content)
 
+                # Fix image paths if we extracted to temp directory
+                if self.temp_dir:
+                    body_content = self._fix_image_paths(body_content, content_file)
+
                 combined_html_parts.append(body_content)
 
             except Exception as e:
@@ -278,6 +348,11 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             infer_furniture=False,
             add_title=False,  # We already added the title
         )
+
+        if self.temp_dir:
+            dummy_file = self.temp_dir / "combined.html"
+            html_options.source_uri = str(dummy_file)
+            _log.debug(f"Set HTML backend source_uri to: {html_options.source_uri}")
 
         in_doc = InputDocument(
             path_or_stream=html_stream,
