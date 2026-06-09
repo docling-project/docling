@@ -296,9 +296,11 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
 
         return fixed_content
 
+    @override
     def is_valid(self) -> bool:
         return self.valid
 
+    @override
     def unload(self):
         """Clean up resources."""
         if self.epub_zip:
@@ -320,13 +322,16 @@ class EpubDocumentBackend(DeclarativeDocumentBackend):
             self.temp_dir = None
 
     @classmethod
+    @override
     def supports_pagination(cls) -> bool:
         return False
 
     @classmethod
+    @override
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.EPUB}
 
+    @override
     def convert(self) -> DoclingDocument:
         """Convert the EPUB file to a DoclingDocument.
 
