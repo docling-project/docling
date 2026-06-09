@@ -37,35 +37,6 @@ _DOTS_REPO_IDS = {"rednote-hilab/dots.ocr", "rednote-hilab/dots.mocr"}
 _DOTS_FLASH_ATTN_REQUIRED_REPO_IDS = {"rednote-hilab/dots.mocr"}
 
 
-def _prepare_dots_processor(processor: Any) -> Any:
-    """Patch known dots remote processor gaps without changing ProcessorMixin globally."""
-    if getattr(processor, "video_processor", None) is None and hasattr(
-        processor, "image_processor"
-    ):
-        processor.video_processor = processor.image_processor
-    return processor
-
-
-def _load_dots_processor(auto_processor: Any, *args: Any, **kwargs: Any) -> Any:
-    """Load dots remote processor with a scoped fix for its missing video processor."""
-    from transformers.processing_utils import ProcessorMixin
-
-    original_check = ProcessorMixin.check_argument_for_proper_class
-
-    def check_argument_for_proper_class(
-        self: Any, attribute_name: str, arg: Any
-    ) -> None:
-        if attribute_name == "video_processor" and arg is None:
-            return None
-        return original_check(self, attribute_name, arg)
-
-    ProcessorMixin.check_argument_for_proper_class = check_argument_for_proper_class
-    try:
-        return auto_processor.from_pretrained(*args, **kwargs)
-    finally:
-        ProcessorMixin.check_argument_for_proper_class = original_check
-
-
 def _ensure_dots_flash_attn_import() -> None:
     try:
         importlib.import_module("flash_attn")
@@ -178,20 +149,11 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             ):
                 model_cls = AutoModelForImageTextToText
 
-            processor_kwargs = {
-                "trust_remote_code": vlm_options.trust_remote_code,
-                "revision": vlm_options.revision,
-            }
-            if is_dots_model:
-                self.processor = _load_dots_processor(
-                    AutoProcessor, artifacts_path, **processor_kwargs
-                )
-            else:
-                self.processor = AutoProcessor.from_pretrained(
-                    artifacts_path, **processor_kwargs
-                )
-            if is_dots_model:
-                self.processor = _prepare_dots_processor(self.processor)
+            self.processor = AutoProcessor.from_pretrained(
+                artifacts_path,
+                trust_remote_code=vlm_options.trust_remote_code,
+                revision=vlm_options.revision,
+            )
             self.processor.tokenizer.padding_side = "left"
 
             attn_implementation = (
