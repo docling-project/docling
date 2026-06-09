@@ -171,7 +171,8 @@ def test_ods_conversion(ods_path: Path):
     assert len(doc.tables) == 2
     t1, t2 = doc.tables
     assert (t1.data.num_rows, t1.data.num_cols) == (2, 3)
-    assert (t2.data.num_rows, t2.data.num_cols) == (2, 2)
+    # Sheet2 only has data in the first row, so it should be trimmed to 1 row
+    assert (t2.data.num_rows, t2.data.num_cols) == (1, 2)
     sheet1_cells = {
         (c.start_row_offset_idx, c.start_col_offset_idx): c.text
         for c in t1.data.table_cells
@@ -306,4 +307,207 @@ def _test_e2e_odf_conversions_impl(odf_documents: list[tuple[Path, DoclingDocume
 
 def test_e2e_odf_conversions(odf_documents):
     """Test end-to-end conversions for all ODF files."""
-    _test_e2e_odf_conversions_impl(odf_documents)
+
+
+def test_ods_treat_singleton_as_text(tmp_path: Path):
+    """Test that singleton cells are treated as TextItem when option is enabled.
+
+    When treat_singleton_as_text option is enabled, 1x1 tables should be
+    converted to TextItem instead of TableItem.
+    """
+    from docling.datamodel.backend_options import OdsBackendOptions
+    from docling.document_converter import OdsFormatOption
+
+    # Create test ODS with a title (1x1 table) and a data table
+    path = tmp_path / "test_singleton.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+
+    sheet = Table("Sheet1", width=2, height=8)
+    # Title in A1 (singleton)
+    sheet.set_value("A1", "Number of freshwater ducks per year")
+
+    # Data table starting at A3
+    sheet.set_value("A3", "Year")
+    sheet.set_value("B3", "Freshwater Ducks")
+    sheet.set_value("A4", 2019)
+    sheet.set_value("B4", 120)
+    sheet.set_value("A5", 2020)
+    sheet.set_value("B5", 135)
+
+    body.append(sheet)
+    doc.save(str(path))
+
+    # Test with treat_singleton_as_text=True
+    options = OdsBackendOptions(treat_singleton_as_text=True)
+    format_options = {InputFormat.ODS: OdsFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.ODS], format_options=format_options
+    )
+
+    conv_result: ConversionResult = converter.convert(path)
+    result_doc: DoclingDocument = conv_result.document
+
+    # With treat_singleton_as_text=True, the singleton title cell should be a TextItem
+    texts = list(result_doc.texts)
+    tables = list(result_doc.tables)
+
+    assert len(texts) == 1, f"Should have 1 text item (the title), got {len(texts)}"
+    assert len(tables) == 1, f"Should have 1 table, got {len(tables)}"
+
+    # Verify the text item contains the title
+    assert texts[0].text == "Number of freshwater ducks per year", (
+        f"Text should be 'Number of freshwater ducks per year', got '{texts[0].text}'"
+    )
+
+    # Verify table dimensions (should be the data table only)
+    table = tables[0]
+    assert table.data.num_rows == 3, (
+        f"Table should have 3 rows, got {table.data.num_rows}"
+    )
+    assert table.data.num_cols == 2, (
+        f"Table should have 2 columns, got {table.data.num_cols}"
+    )
+
+
+def test_ods_gap_tolerance(tmp_path: Path):
+    """Test the effect of gap_tolerance on table detection.
+
+    Verifies:
+    1. Tolerance 0 (Default): Gaps cause splits into separate tables.
+    2. Tolerance 1: Gaps are bridged, merging tables.
+    """
+    from docling.datamodel.backend_options import OdsBackendOptions
+    from docling.document_converter import OdsFormatOption
+
+    # Create test ODS with data separated by an empty column
+    path = tmp_path / "test_gap.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+
+    sheet = Table("Sheet1", width=4, height=3)
+    # Column A has data
+    sheet.set_value("A1", "Col A")
+    sheet.set_value("A2", "Data 1")
+    sheet.set_value("A3", "Data 2")
+
+    # Column B is empty (gap)
+
+    # Column C has data
+    sheet.set_value("C1", "Col C")
+    sheet.set_value("C2", "Data 3")
+    sheet.set_value("C3", "Data 4")
+
+    body.append(sheet)
+    doc.save(str(path))
+
+    # Test with gap_tolerance=0 (strict - should split)
+    options_strict = OdsBackendOptions(gap_tolerance=0)
+    format_options_strict = {
+        InputFormat.ODS: OdsFormatOption(backend_options=options_strict)
+    }
+    converter_strict = DocumentConverter(
+        allowed_formats=[InputFormat.ODS], format_options=format_options_strict
+    )
+    doc_strict = converter_strict.convert(path).document
+
+    # With gap_tolerance=0, should have 2 separate tables
+    tables_strict = list(doc_strict.tables)
+    assert len(tables_strict) == 2, (
+        f"With gap_tolerance=0, should have 2 tables, got {len(tables_strict)}"
+    )
+
+    # Test with gap_tolerance=1 (should merge)
+    options_merged = OdsBackendOptions(gap_tolerance=1)
+    format_options_merged = {
+        InputFormat.ODS: OdsFormatOption(backend_options=options_merged)
+    }
+    converter_merged = DocumentConverter(
+        allowed_formats=[InputFormat.ODS], format_options=format_options_merged
+    )
+    doc_merged = converter_merged.convert(path).document
+
+    # With gap_tolerance=1, should merge into 1 table
+    tables_merged = list(doc_merged.tables)
+    assert len(tables_merged) == 1, (
+        f"With gap_tolerance=1, should have 1 table, got {len(tables_merged)}"
+    )
+
+    # Verify the merged table spans from column 0 to column 2 (A to C)
+    merged_table = tables_merged[0]
+    assert merged_table.prov[0].bbox.l == 0, "Merged table should start at column 0"
+    assert merged_table.prov[0].bbox.r == 3, "Merged table should end at column 3"
+
+
+def test_ods_sheet_names_filter(tmp_path: Path):
+    """Test that sheet_names option filters sheets correctly."""
+    from docling.datamodel.backend_options import OdsBackendOptions
+    from docling.document_converter import OdsFormatOption
+
+    # Create test ODS with 3 sheets
+    path = tmp_path / "test_sheets.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+
+    sheet1 = Table("Sheet1", width=2, height=1)
+    sheet1.set_value("A1", "Sheet1 Data")
+
+    sheet2 = Table("Sheet2", width=2, height=1)
+    sheet2.set_value("A1", "Sheet2 Data")
+
+    sheet3 = Table("Sheet3", width=2, height=1)
+    sheet3.set_value("A1", "Sheet3 Data")
+
+    body.append(sheet1)
+    body.append(sheet2)
+    body.append(sheet3)
+    doc.save(str(path))
+
+    # Test 1: Convert all sheets (default)
+    converter_all = DocumentConverter(allowed_formats=[InputFormat.ODS])
+    doc_all = converter_all.convert(path).document
+    assert len(doc_all.pages) == 3, f"Should have 3 pages, got {len(doc_all.pages)}"
+    assert len(doc_all.groups) == 3, f"Should have 3 groups, got {len(doc_all.groups)}"
+
+    # Test 2: Convert only Sheet1 and Sheet3
+    options_filtered = OdsBackendOptions(sheet_names=["Sheet1", "Sheet3"])
+    format_options_filtered = {
+        InputFormat.ODS: OdsFormatOption(backend_options=options_filtered)
+    }
+    converter_filtered = DocumentConverter(
+        allowed_formats=[InputFormat.ODS], format_options=format_options_filtered
+    )
+    doc_filtered = converter_filtered.convert(path).document
+
+    assert len(doc_filtered.pages) == 2, (
+        f"Should have 2 pages, got {len(doc_filtered.pages)}"
+    )
+    assert len(doc_filtered.groups) == 2, (
+        f"Should have 2 groups, got {len(doc_filtered.groups)}"
+    )
+
+    group_names = [g.name for g in doc_filtered.groups]
+    assert "sheet: Sheet1" in group_names, "Sheet1 should be included"
+    assert "sheet: Sheet3" in group_names, "Sheet3 should be included"
+    assert "sheet: Sheet2" not in group_names, "Sheet2 should be filtered out"
+
+    # Test 3: Convert only Sheet2
+    options_single = OdsBackendOptions(sheet_names=["Sheet2"])
+    format_options_single = {
+        InputFormat.ODS: OdsFormatOption(backend_options=options_single)
+    }
+    converter_single = DocumentConverter(
+        allowed_formats=[InputFormat.ODS], format_options=format_options_single
+    )
+    doc_single = converter_single.convert(path).document
+
+    assert len(doc_single.pages) == 1, (
+        f"Should have 1 page, got {len(doc_single.pages)}"
+    )
+    assert len(doc_single.groups) == 1, (
+        f"Should have 1 group, got {len(doc_single.groups)}"
+    )
+    assert doc_single.groups[0].name == "sheet: Sheet2", "Should only have Sheet2"
