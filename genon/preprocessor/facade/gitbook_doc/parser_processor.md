@@ -181,6 +181,8 @@ pdf_pipeline:
 #   비활성화: ① 항목 삭제  ② 항목 주석 처리  ③ enable: false
 #   모든 url 의 <ENRICHMENT_SERVING_ID> / <IMAGE_DESCRIPTION_SERVING_ID> 는
 #   Genos에 등록한 모델서빙 ID로 변경 필요. api_key 는 k8s 내부 통신 시 불필요.
+#   프롬프트는 별도 .md 파일로 분리합니다(아래 "프롬프트 파일 분리 & 변수 치환" 참고).
+#   *_file 경로는 이 config 파일과 같은 디렉토리 기준이며, 파일명만 적습니다.
 # ───────────────────────────────────────────────
 enrichment:
   - toc:
@@ -197,14 +199,8 @@ enrichment:
         enabled: true
         max_context_tokens: 128000        # 모델 전체 컨텍스트 한도 (입력 + 출력 합산)
         completion_reserved_tokens: 12000 # 출력용 예약 토큰 수
-      system_prompt: |
-        You are an expert at generating table of contents (목차) from Korean documents...
-      user_prompt: |
-        Here is the Korean document you need to analyze:
-        <document>
-        {{raw_text}}
-        </document>
-        ...
+      system_prompt_file: prompt_toc_default_system.md
+      user_prompt_file: prompt_toc_default_user.md   # 파일 안에서 {{raw_text}} 치환
 
   - metadata:
       enable: true
@@ -226,15 +222,8 @@ enrichment:
           target: created_date
           type: date_int                  # YYYYMMDD 정수 변환
           fallback: doc_text_scan         # 비었을 때 본문 휴리스틱 추출
-      system_prompt: |
-        You are a professional document extraction assistant...
-      user_prompt: |
-        다음은 한국어로 작성된 문서의 일부입니다. 아래 정보를 추출해주세요:
-        ...
-        문서:
-        ---
-        {{raw_text}}
-        ---
+      system_prompt_file: prompt_metadata_default_system.md
+      user_prompt_file: prompt_metadata_default_user.md   # 파일 안에서 {{raw_text}} 치환
       precheck:
         enabled: true
         max_context_tokens: 128000
@@ -251,14 +240,8 @@ enrichment:
       before_items: 3
       after_items: 2
       max_context_chars: 1500
-      prompt_template: |
-        문서의 일부 이미지를 설명해줘. 아래 문맥을 참고해서 핵심 정보를 2~4문장으로 간결하게 작성해줘.
-        [앞 문맥]
-        {{before_context}}
-        [캡션]
-        {{caption}}
-        [뒤 문맥]
-        {{after_context}}
+      # 파일 안에서 {{before_context}} / {{caption}} / {{after_context}} 치환
+      prompt_template_file: prompt_image_description_default.md
 
   # 커스텀 필드 추출 (여러 개 지정 가능). 인라인 옵션 또는 외부 config_file 사용.
   # - custom_fields:
@@ -267,10 +250,8 @@ enrichment:
   #     api_key: ""
   #     model: "model"
   #     output_fields: [doc_category, keywords]
-  #     system_prompt: |
-  #       ...
-  #     user_prompt: |
-  #       {{raw_text}}
+  #     system_prompt_file: prompt_custom_fields_xxx_system.md  # 생략 시 built-in default
+  #     user_prompt_file: prompt_custom_fields_xxx_user.md      # 파일 안에서 {{raw_text}} 치환
   #     # 또는 외부 config 파일로 분리:
   #     # config_file: "custom_fields_xxx.yaml"
 
@@ -346,8 +327,8 @@ whisper:
 | `toc` | `top_p` | `0.00001` | TOC 생성 top-p |
 | `toc` | `seed` | `33` | TOC 생성 seed |
 | `toc` | `max_tokens` | `10000` | TOC 생성 최대 토큰 수 |
-| `toc` | `system_prompt` | 내장 기본값 | TOC 시스템 프롬프트 (미지정 시 내장 기본 프롬프트) |
-| `toc` | `user_prompt` | 내장 기본값 | TOC 유저 프롬프트. `{{raw_text}}` 치환 |
+| `toc` | `system_prompt_file` / `user_prompt_file` | — | TOC 프롬프트 `.md` 파일 경로(config 디렉토리 기준). 권장 방식 |
+| `toc` | `system_prompt` / `user_prompt` | — | inline 프롬프트(`*_file` 미지정 시 fallback). `user_prompt` 의 `{{raw_text}}` 치환 |
 | `toc.precheck` | `enabled` | (미설정) | 사전 토큰 검사. `true`면 LLM 호출 전 토큰 추정하여 초과 시 즉시 에러 |
 | `toc.precheck` | `max_context_tokens` | `128000` | 모델 전체 컨텍스트 한도 (입력 + 출력 합산) |
 | `toc.precheck` | `completion_reserved_tokens` | `12000` | 출력용 예약 토큰 수. 허용 입력 = `max_context_tokens` − `completion_reserved_tokens` |
@@ -359,8 +340,8 @@ whisper:
 | `metadata` | `timeout` | `3600` | HTTP 타임아웃 (초) |
 | `metadata` | `pages` | `null` | 추출 대상 페이지 목록. 미지정/빈 값이면 첫 4페이지 |
 | `metadata` | `output_fields` | `[]` | 추출할 필드 목록. 프롬프트 JSON 키와 일치해야 함. 비어 있으면 파싱 결과 전체 사용 |
-| `metadata` | `system_prompt` | (미설정) | 메타데이터 시스템 프롬프트 |
-| `metadata` | `user_prompt` | (미설정) | 메타데이터 유저 프롬프트. `{{raw_text}}` 치환 |
+| `metadata` | `system_prompt_file` / `user_prompt_file` | — | 메타데이터 프롬프트 `.md` 파일 경로(권장). `system_prompt_file` 생략 시 built-in default system prompt 사용 |
+| `metadata` | `system_prompt` / `user_prompt` | — | inline 프롬프트(`*_file` 미지정 시 fallback). `user_prompt` 의 `{{raw_text}}` 치환 |
 | `metadata.parser` | `type` | `"json"` | 파서 종류. `json`(자동 fallback 파싱) / `python`(외부 파일). `python`이면 `file`/`callable` 필요 |
 | `metadata.field_transforms` | — | 내장 기본값 | 추출 키 → 벡터 메타 필드/타입 변환 목록(선택). 아래 [메타데이터 enricher](#메타데이터-enricher) 참고 |
 | `metadata.precheck` | `enabled` / `max_context_tokens` / `completion_reserved_tokens` | `/ 128000 / 12000` | TOC와 동일 의미 |
@@ -371,7 +352,8 @@ whisper:
 | `image_description` | `before_items` | `3` | 이미지 앞 문맥으로 넣을 텍스트 item 수 |
 | `image_description` | `after_items` | `2` | 이미지 뒤 문맥으로 넣을 텍스트 item 수 |
 | `image_description` | `max_context_chars` | `1500` | 프롬프트 전체 최대 문자 수 (초과 시 절단) |
-| `image_description` | `prompt_template` | 내장 기본 프롬프트 | 프롬프트 템플릿 (`{{before_context}}`, `{{caption}}`, `{{after_context}}` 치환) |
+| `image_description` | `prompt_template_file` | — | 프롬프트 템플릿 `.md` 파일 경로(권장). 미지정 시 inline `prompt_template` → 내장 기본 프롬프트 |
+| `image_description` | `prompt_template` | 내장 기본 프롬프트 | inline 프롬프트 템플릿(`*_file` 미지정 시 fallback). `{{before_context}}`, `{{caption}}`, `{{after_context}}` 치환 |
 | `custom_fields` | (인라인 옵션 또는 `config_file`) | — | 커스텀 필드 추출 enricher. 여러 개 지정 가능. 아래 [커스텀 필드 enricher](#커스텀-필드-enricher) 참고 |
 
 > 이미지 설명 enrichment는 `pdf_pipeline.generate_picture_images: false`인 경우 동작하지 않습니다 (그림 이미지가 생성되지 않으므로).
@@ -391,9 +373,9 @@ whisper:
 
 #### 메타데이터 enricher
 
-`metadata` 항목에 `system_prompt`/`user_prompt`가 지정되면 YAML 설정 기반 커스텀 `MetadataEnricher`가 동작합니다 (미지정 시 docling 내장 enricher가 동작 — 하위 호환). 동작 방식:
+`metadata` 항목에 커스텀 신호(`system_prompt`/`user_prompt`/`system_prompt_file`/`user_prompt_file`/`output_fields`/`parser`) 중 하나라도 지정되면 YAML 설정 기반 커스텀 `MetadataEnricher`가 동작합니다(`has_custom_metadata`). 아무 신호도 없으면 docling 내장 enricher가 동작합니다(하위 호환). `system_prompt` 를 따로 지정하지 않아도 built-in default system prompt 가 채워지므로, `output_fields` 만 지정해도 커스텀 enricher 가 활성화됩니다. 동작 방식:
 
-- `pages`로 지정한 페이지(미지정 시 첫 4페이지)의 텍스트를 추출하고 `<!-- image -->` 태그를 제거한 뒤 `user_prompt`의 `{{raw_text}}`에 주입하여 LLM을 1회 호출합니다.
+- `pages`로 지정한 페이지(미지정 시 첫 4페이지)의 텍스트를 추출하고 `<!-- image -->` 태그를 제거한 뒤 user 프롬프트의 `{{raw_text}}`에 주입하여 LLM을 1회 호출합니다.
 - 응답은 `parser.type`(`json` 기본값 / `python`)으로 파싱하며, `output_fields`로 지정한 키만 추출합니다 (비어 있으면 파싱 결과 전체).
 - 추출 결과는 docling `KeyValueItem`으로 문서에 저장되고, enrichment 컨텍스트의 `metadata`에도 병합됩니다.
 - **`field_transforms`(선택):** 추출 결과의 키를 벡터 메타 필드로 매핑·변환하는 선언형 목록입니다.
@@ -435,9 +417,127 @@ metadata:
 
 `custom_fields` 항목은 문서 단위 커스텀 메타데이터를 추출하는 enricher로, 여러 개를 지정할 수 있습니다. 각 항목은 독립적으로 LLM을 1회 호출하며, 추출 결과는 enrichment 컨텍스트의 `metadata`에 병합됩니다.
 
-- **인라인 옵션:** `url`, `api_key`, `model`, `system_prompt`, `user_prompt`, `output_fields`, `parser`, `pages`, `max_tokens`, `temperature`, `timeout`를 항목에 직접 지정합니다.
-- **외부 config:** `config_file: "이름.yaml"`로 분리할 수 있습니다. 상대 경로는 config 파일과 동일한 디렉터리(resource_path) 기준으로 해석됩니다. 외부 파일에는 `url`/`model`/`prompt`(또는 `system_prompt`/`user_prompt`)/`output_fields`/`parser`/`pages` 등을 둘 수 있으며, 항목에 직접 지정한 값이 외부 config보다 우선합니다.
+- **인라인 옵션:** `url`, `api_key`, `model`, `system_prompt_file`/`user_prompt_file`(또는 inline `system_prompt`/`user_prompt`), `output_fields`, `parser`, `pages`, `max_tokens`, `temperature`, `timeout`를 항목에 직접 지정합니다. `system_prompt`(파일·inline 모두) 미지정 시 built-in default system prompt 가 사용됩니다.
+- **외부 config:** `config_file: "이름.yaml"`로 분리할 수 있습니다. 상대 경로는 config 파일과 동일한 디렉터리(resource_path) 기준으로 해석됩니다. 외부 파일에도 `system_prompt_file`/`user_prompt_file`(또는 `system_prompt`/`user_prompt`, `prompt.system`/`prompt.user`)/`url`/`model`/`output_fields`/`parser`/`pages` 등을 둘 수 있으며, 항목에 직접 지정한 값이 외부 config보다 우선합니다. `*_file` 경로는 외부 config 파일이 위치한 디렉터리 기준으로 해석됩니다.
 - `parser.type`은 `json`(기본값) 또는 `python`(외부 파일 위임)을 지원합니다.
+
+#### 프롬프트 파일 분리 & 변수 치환
+
+enrichment 프롬프트는 YAML 안에 inline 으로 박지 않고 **별도 `.md` 파일**로 분리합니다. 운영 시 프롬프트만 교체하기 쉽고, 두 전처리기(parser/intelligent/convert)가 동일 프롬프트를 공유할 때 파일 경로 한 줄만 같게 두면 됩니다.
+
+**프롬프트 파일 지정**
+
+| 키 | 대상 |
+|----|------|
+| `system_prompt_file` / `user_prompt_file` | toc / metadata / custom_fields |
+| `prompt_template_file` | image_description |
+
+- **경로 규칙:** 상대경로는 **해당 config 파일이 위치한 디렉토리** 기준으로 해석합니다(파일명만 적으면 됨). 절대경로도 허용하지만, 상대경로가 base 디렉토리를 벗어나면(`../…`) 거부합니다.
+- **우선순위:** `*_file` > inline(`system_prompt`/`user_prompt`/`prompt_template`) > built-in default. system prompt 는 미지정 시 enricher 별 built-in default 가 채워지므로, **`user_prompt_file` 만 지정**해도 동작합니다(system 은 도메인 안에서 거의 고정이고 자주 바뀌는 것은 user prompt 이기 때문).
+- 출하 config 는 `prompt_toc_default_system.md` / `prompt_metadata_default_user.md` 등 중립적 파일명을 사용합니다.
+
+**변수 치환(`{{var}}`)**
+
+프롬프트 본문의 `{{변수}}` 는 런타임 값으로 치환됩니다. JSON 예시(`{"key": "value"}`)의 단일 중괄호와 충돌하지 않도록 **이중 중괄호** 로 통일했습니다.
+
+- **escape:** 리터럴 중괄호가 필요하면 4중 중괄호 `{{{{ ... }}}}` 로 적습니다(→ `{{ ... }}` 로 출력). 치환된 값 안에 `{{...}}` 가 들어와도 다시 치환되지 않습니다(1-pass).
+- **단일 중괄호 호환:** 과거 표기 `{raw_text}` 도 값이 주입된 변수에 한해 당분간 치환되지만 deprecation 경고가 남습니다. 신규 프롬프트는 `{{raw_text}}` 를 사용하세요.
+
+**(1) reserved 변수 — 1차 변환 결과 `DoclingDocument` 에서 자동 추출**
+
+문서 단위 (toc / metadata / custom_fields 프롬프트):
+
+| 변수 | 의미 | 추출 소스 | 예시 값 |
+|------|------|-----------|---------|
+| `{{raw_text}}` | enricher 가 추출한 본문 텍스트(프롬프트의 핵심 입력) | metadata: `pages`(미지정 시 첫 4p)의 markdown — `<!-- image -->` 제거 + 맨 앞에 `filename: …` 주입 / custom_fields: 전체 plain text(또는 `pages` markdown) | `filename: 보고서.pdf\n\n# 1장 총칙 …` |
+| `{{full_text}}` | 문서 전체 plain text | `document.export_to_text()` | `보고서\n1장 총칙 …` (전문) |
+| `{{filename}}` | 원본 파일명 | `document.origin.filename` | `보고서.pdf` |
+| `{{mimetype}}` | MIME 타입 | `document.origin.mimetype` | `application/pdf` |
+| `{{page_count}}` | 총 페이지 수 | `document.num_pages()` | `12` |
+| `{{table_count}}` | 표 개수 | `len(document.tables)` | `3` |
+| `{{picture_count}}` | 이미지 개수 | `len(document.pictures)` | `5` |
+| `{{section_headers}}` | 섹션 헤더·제목 목록(줄바꿈 구분) | `texts` 중 label ∈ {section_header, title} | `1장 총칙\n2장 정의 …` |
+
+이미지 item 단위 (image_description 프롬프트 — 이미지마다 값이 달라짐):
+
+| 변수 | 의미 | 추출 소스 |
+|------|------|-----------|
+| `{{before_context}}` | 이미지 앞 문맥 텍스트(`before_items` 개) | 이미지 직전 텍스트 아이템들 |
+| `{{after_context}}` | 이미지 뒤 문맥 텍스트(`after_items` 개) | 이미지 직후 텍스트 아이템들 |
+| `{{caption}}` | 이미지 캡션 | `PictureItem.caption_text(document)` |
+| `{{section_header}}` | 이미지 직전 섹션 헤더 | 이미지 위쪽에서 가장 가까운 section_header/title |
+
+> 값이 없는 reserved 변수는 **빈 문자열**로 치환됩니다. 카운트(`page_count` 등)는 정수지만 문자열로 렌더링됩니다. `raw_text`/`full_text` 는 토큰이 매우 클 수 있으니 보통 둘 중 하나만 사용합니다.
+
+**(2) 사용자 정의 변수 (`variables:`)**
+
+reserved 외에 운영자가 직접 변수를 추가할 수 있습니다. enricher 항목에 `variables:` 블록으로 이름·값을 선언하고 프롬프트에서 `{{이름}}` 으로 참조합니다. 회사명·도메인처럼 프롬프트에 고정 주입할 값에 유용합니다.
+
+```yaml
+# config (예: metadata 항목)
+- metadata:
+    user_prompt_file: prompt_metadata_default_user.md
+    variables:
+      company_name: "GenON"
+      domain: "금융"
+```
+
+```text
+<!-- prompt_metadata_default_user.md 본문 -->
+당신은 {{company_name}} 의 {{domain}} 문서 분석가입니다. (총 {{page_count}}페이지)
+아래 문서에서 작성일·작성자를 추출하세요.
+
+문서:
+---
+{{raw_text}}
+---
+```
+
+- `variables` 의 이름은 strict 검증에서 reserved 와 함께 **허용 목록**에 포함됩니다.
+- 이름이 reserved 와 겹치면 `variables` 값이 **우선**합니다(override).
+
+**(3) 미정의 변수 처리 (`template.mode`)**
+
+| mode | 동작 |
+|------|------|
+| `strict` (기본) | 프롬프트에 (reserved ∪ user-defined)에 없는 `{{foo}}` 가 있으면 **config 로드 시점에 에러**로 즉시 실패(오타·누락 조기 발견) |
+| `lenient` | 미정의 변수를 빈 문자열로 치환하고 경고 로그만 남김 |
+
+```yaml
+- metadata:
+    user_prompt_file: prompt_metadata_default_user.md
+    template:
+      mode: strict   # strict(기본) | lenient
+```
+
+**(4) 워크플로우 예시 — 입력 문서 → 렌더링된 프롬프트**
+
+`보고서.pdf`(12페이지, 표 3개)를 metadata enricher 로 처리:
+
+```yaml
+# config
+- metadata:
+    user_prompt_file: prompt_metadata_default_user.md
+    variables: { company_name: "GenON" }
+```
+```text
+# prompt_metadata_default_user.md 본문
+{{company_name}} 문서 분석 — 파일 {{filename}} ({{page_count}}p, 표 {{table_count}}개)
+---
+{{raw_text}}
+---
+```
+→ 런타임 치환 후 실제 LLM 에 전달되는 user 메시지:
+```text
+GenON 문서 분석 — 파일 보고서.pdf (12p, 표 3개)
+---
+filename: 보고서.pdf
+
+# 1장 총칙 …
+---
+```
+
+> TOC 프롬프트는 docling 레이어에서 처리되어 `{{raw_text}}` 만 지원하며, 위 reserved 카탈로그·`variables`·`template.mode` 는 facade enricher(metadata / custom_fields / image_description)에 적용됩니다.
 
 ### 파싱용 전처리기 최초 등록시 config 수정가이드
 

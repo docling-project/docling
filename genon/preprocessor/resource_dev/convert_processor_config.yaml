@@ -72,71 +72,8 @@ enrichment:
         enabled: false  # 동작 보존: 기존 하드코딩 toc_precheck_enabled=False
         max_context_tokens: 128000
         completion_reserved_tokens: 12000
-      system_prompt: |
-        You are an expert at generating table of contents (목차) from Korean documents. You specialize in regulatory documents, terms of service, contracts, and mixed-format documents that combine formal regulatory structures with general section headers.
-      user_prompt: |
-        Here is the Korean document you need to analyze:
-
-        <document>
-        {{raw_text}}
-        </document>
-
-        Your task is to extract and organize all structural elements from this document into a hierarchical table of contents. Korean documents often have mixed structures where some sections follow formal regulatory patterns (제x장/절/관/조) while others use general section numbering and headers.
-
-        ## Analysis Process
-
-        Before generating the final table of contents, work through the document systematically in `<analysis>` tags. It's OK for this section to be quite long. Follow these steps:
-
-        1. **Document Title Extraction**: Quote the main document title exactly as it appears at the beginning of the document.
-
-        2. **Structural Marker Identification**: Scan through the document and quote all the key structural markers you find, such as:
-           - Formal regulatory patterns: 제x장, 제x절, 제x관, 제x조
-           - General section patterns: numbered headers (1., 2., etc.), lettered headers (가., 나., etc.)
-           - Special sections: 부칙, 별지, 별표, etc.
-
-        3. **Systematic Section Extraction**: Work through the document from beginning to end, extracting each structural element in order:
-           - For each main section, quote the exact title as it appears
-           - For each subsection, quote the exact title and note which main section it belongs under
-           - For each article/item, quote the exact title and note its parent section
-           - Include any appendices, attachments, and addenda
-
-        4. **Hierarchy Building**: For each extracted element, explicitly note:
-           - What level it should be at (main section, subsection, sub-subsection, etc.)
-           - What its parent section is (if any)
-           - What numbering it should receive in the final TOC (1., 1.1., 1.1.1., etc.)
-
-        5. **Structure Verification**: Review your extracted elements to ensure:
-           - All structural elements are captured in document order
-           - The hierarchy makes logical sense
-           - No elements are duplicated or missed
-
-        ## Output Requirements
-
-        After your analysis, generate the table of contents with this exact format:
-
-        ```
-        <toc>
-        TITLE:<document title>
-        1. <first main section title>
-        1.1. <first subsection title>
-        1.1.1. <first sub-subsection title>
-        1.2. <second subsection title>
-        2. <second main section title>
-        2.1. <subsection under second main section>
-        3. <third main section title>
-        </toc>
-        ```
-
-        ## Formatting Guidelines
-
-        - Start with `TITLE:` followed by the document title
-        - Use hierarchical decimal numbering (1, 1.1, 1.1.1, etc.)
-        - Follow each number with a space and the original title exactly as it appears
-        - Maintain the document's logical hierarchy
-        - Include appendices, attachments, and addenda as separate top-level items
-        - Extract titles exactly as they appear - do not include explanatory content
-        - Handle both formal regulatory structures and general section headers
-        - Wrap the entire table of contents in `<toc></toc>` tags
+      system_prompt_file: prompt_toc_default_system.md
+      user_prompt_file: prompt_toc_default_user.md
 
   - metadata:
       enable: true
@@ -150,36 +87,15 @@ enrichment:
       timeout: 3600
       pages: [1,4]  # null = 첫 4페이지 (docling 기존 동작과 동일)
       # output_fields: 프롬프트의 JSON 키와 일치해야 함
-      output_fields: [작성일, 작성자]
+      output_fields: [created_date, authors]
       parser:
         type: json
         # extract_pattern: '<date>(.*?)</date>'
         # type: python
         # file: authors_parser.py
         # callable: parse
-      system_prompt: |
-        You are a professional document extraction assistant. Your job is to carefully extract metadata from semi-structured or unstructured Korean financial documents. Always follow the requested output format exactly.
-      user_prompt: |
-        다음은 한국어로 작성된 금융 보고서 문서의 일부입니다. 이 문서에서 아래 정보를 정확히 추출해주세요:
-
-        1. 최초 작성일 (날짜가 여러 개 있으면 '보고자료' 또는 '회의자료'에 가까운 날짜 사용)
-        2. 작성자 이름과 소속 또는 직책 (예: 채권시장팀 조용범 과장)
-        3. 작성자 전화번호 (내선번호 포함 시 함께 출력)
-
-        문서:
-        ---
-        {{raw_text}}
-        ---
-
-        출력 형식은 반드시 아래와 같이 맞춰주세요 (JSON 형식):
-
-        {
-          "작성일": "YYYY-MM-DD",
-          "작성자": [
-            {"이름": "조용범", "소속": "채권시장팀", "직책": "과장", "전화": "4751"},
-            {"이름": "임인혁", "소속": "주식시장팀", "직책": "과장", "전화": "4672"}
-          ]
-        }
+      system_prompt_file: prompt_metadata_default_system.md
+      user_prompt_file: prompt_metadata_default_user.md
       precheck:
         enabled: false  # 동작 보존: 기존 하드코딩 metadata_precheck_enabled=False
         max_context_tokens: 128000
@@ -197,22 +113,7 @@ enrichment:
       before_items: 3
       after_items: 2
       max_context_chars: 1500
-      prompt_template: |
-        문서의 일부 이미지를 설명해줘. 아래 문맥을 참고해서 핵심 정보를 2~4문장으로 간결하게 작성해줘.
-
-        [앞 문맥]
-        {{before_context}}
-
-        [캡션]
-        {{caption}}
-
-        [뒤 문맥]
-        {{after_context}}
-
-        요구사항:
-        1) 추측은 최소화하고 이미지에서 확인 가능한 사실 중심으로 작성
-        2) 문서 문맥과의 연결점을 포함
-        3) 한국어로 작성
+      prompt_template_file: prompt_image_description_default.md
 
   # ── 커스텀 LLM enricher ────────────────────────────────────────────────────
   # 복수 항목 허용: 각각 독립 LLM 호출, 결과는 metadata 병합
@@ -228,24 +129,9 @@ enrichment:
       output_fields: [authors]
       parser:
         type: json
-      system_prompt: |
-        너는 문서 정보추출 전문가다. 반드시 JSON 객체만 반환한다.
-        작성자가 여러 명이면 authors 배열에 모두 포함한다.
-        값이 없으면 null 또는 빈 배열([])을 반환한다.
+      system_prompt_file: prompt_custom_fields_authors_system.md
+      user_prompt_file: prompt_custom_fields_authors_user.md
 
-      user_prompt: |
-        아래 문서에서 작성자(authors) 정보를 추출하라.
-
-        각 작성자는 다음 두 가지 정보를 포함한다:
-        - name: 작성자 이름
-        - affiliation: 소속 기관 또는 부서 (없으면 null)
-
-        반드시 아래 JSON 포맷으로만 반환하라:
-        {"authors": [{"name": "이름", "affiliation": "소속"}]}
-
-        <document>
-        {{raw_text}}
-        </document>         # json(default) | python
   - custom_fields:
       enable: false
       config_file: custom_field_authors.yaml   # resource_path 자동 = 이 yaml 파일 디렉토리

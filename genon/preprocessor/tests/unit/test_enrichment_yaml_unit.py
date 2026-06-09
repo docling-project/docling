@@ -32,8 +32,10 @@ SHIPPED_CONFIGS = [
 ENRICHMENT_CONFIGS = [
     "resource_dev/intelligent_processor_config.yaml",
     "resource_dev/parser_processor_config.yaml",
+    "resource_dev/convert_processor_config.yaml",
     "resource/intelligent_processor_config.yaml",
     "resource/parser_processor_config.yaml",
+    "resource/convert_processor_config.yaml",
 ]
 
 
@@ -84,6 +86,27 @@ def test_shipped_enrichment_parses_without_error(repo_root, rel):
     assert isinstance(ec.image_description_cfg, dict)
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize("rel", ENRICHMENT_CONFIGS)
+def test_shipped_prompt_files_resolve_non_empty(repo_root, rel):
+    """배포 config 의 prompt 가 .md 파일에서 정상 로드되어 비어있지 않은지.
+
+    prompt 를 별도 .md 로 분리한 뒤 파일 누락/오타가 있으면 from_raw 가 즉시
+    FileNotFoundError 를 던지므로, 이 테스트는 모든 prompt 파일의 존재/가독성도 함께 검증한다.
+    """
+    path = repo_root / rel
+    if not path.exists():
+        pytest.skip(f"config not present: {rel}")
+    ec = _parse_enrichment(repo_root, rel)
+    # toc/metadata 가 활성인 경우 resolve 된 prompt 가 비어있지 않아야 한다.
+    if ec.toc.do_toc:
+        assert ec.toc.system_prompt and ec.toc.system_prompt.strip()
+        assert ec.toc.user_prompt and ec.toc.user_prompt.strip()
+    if ec.metadata.has_custom_metadata:
+        assert ec.metadata.system_prompt and ec.metadata.system_prompt.strip()
+        assert ec.metadata.user_prompt and ec.metadata.user_prompt.strip()
+
+
 # ── intelligent_processor 설정 ─────────────────────────────────────────────────
 
 @pytest.mark.unit
@@ -97,7 +120,9 @@ def test_intelligent_dev_enrichment_values(repo_root):
     assert ec.toc.do_toc is True
     assert ec.metadata.do_metadata is True
     assert ec.metadata.output_fields == ["created_date", "authors"]
-    assert ec.metadata.system_prompt  # custom metadata enricher 활성 조건
+    # custom metadata enricher 활성 조건은 has_custom_metadata (output_fields 만으로도 opt-in)
+    assert ec.metadata.has_custom_metadata is True
+    assert ec.metadata.system_prompt  # file 또는 default 로 resolve 되어 비어있지 않음
     # yaml 에서 field_transforms 는 주석 처리되어 있어 빈 list 로 파싱되고,
     # processor.__init__ 에서 DEFAULT 로 대체된다([] or DEFAULT == DEFAULT).
     assert ec.metadata.field_transforms == []
@@ -109,15 +134,18 @@ def test_intelligent_dev_enrichment_values(repo_root):
 # ── parser_processor 설정 ──────────────────────────────────────────────────────
 
 @pytest.mark.unit
-def test_parser_dev_enrichment_uses_korean_output_fields(repo_root):
-    """parser dev 설정: metadata output_fields 가 한국어 키([작성일, 작성자])로 파싱되는지."""
+def test_parser_dev_enrichment_output_fields_match_prompt(repo_root):
+    """parser dev 설정: metadata output_fields 가 영문 default 프롬프트(created_date/authors)와 일치하는지.
+
+    (prompt md 분리 후 영문 default 프롬프트로 통일 — output_fields 도 영문 키여야 추출이 정상 동작.)
+    """
     rel = "resource_dev/parser_processor_config.yaml"
     if not (repo_root / rel).exists():
         pytest.skip(f"config not present: {rel}")
     ec = _parse_enrichment(repo_root, rel)
 
     assert ec.metadata.do_metadata is True
-    assert ec.metadata.output_fields == ["작성일", "작성자"]
+    assert ec.metadata.output_fields == ["created_date", "authors"]
     assert ec.toc.do_toc is True
 
 

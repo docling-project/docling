@@ -9,6 +9,7 @@ import httpx
 from docling_core.types import DoclingDocument
 
 from .base_enricher import BaseEnricher
+from .prompt_template import PromptTemplate
 
 _log = logging.getLogger(__name__)
 
@@ -38,6 +39,8 @@ class MetadataEnricher(BaseEnricher):
         temperature: float = 0.0,
         timeout: int = 3600,
         config_dir: Optional[Path] = None,
+        variables: Optional[dict] = None,
+        template_mode: str = "strict",
     ):
         self._url = url
         self._model = model
@@ -47,6 +50,16 @@ class MetadataEnricher(BaseEnricher):
         self._system_prompt = (system_prompt or "").strip()
         self._user_prompt = (user_prompt or "").strip()
         self._output_fields = list(output_fields or [])
+
+        # 변수 치환: user-defined 변수는 reserved 와 함께 strict 검증에 허용된다.
+        self._variables = dict(variables or {})
+        _allowed = set(self._variables.keys())
+        self._system_tpl = PromptTemplate(
+            self._system_prompt, mode=template_mode, allowed_names=_allowed
+        )
+        self._user_tpl = PromptTemplate(
+            self._user_prompt, mode=template_mode, allowed_names=_allowed
+        )
         self._pages = pages  # None → 첫 4페이지 (docling 기존 동작)
 
         self._headers: dict[str, str] = {"Content-Type": "application/json"}
@@ -186,16 +199,25 @@ class MetadataEnricher(BaseEnricher):
             return "\n".join(chunks).strip()
         return str(content)
 
-    async def _call_llm(self, raw_text: str) -> str:
-        prompt = (
-            self._user_prompt
-            .replace("{{raw_text}}", raw_text)
-            .replace("{raw_text}", raw_text)
-        ) if self._user_prompt else raw_text
+    def _render_prompts(self, raw_text: str, document: Optional[DoclingDocument]) -> "tuple[str, str]":
+        """system / user prompt 를 변수 치환하여 반환한다."""
+        needed = self._user_tpl.referenced | self._system_tpl.referenced
+        if document is not None:
+            ctx = PromptTemplate.doc_context(
+                document, needed=needed, raw_text=raw_text, **self._variables
+            )
+        else:
+            ctx = {"raw_text": raw_text, **self._variables}
+        user = raw_text if self._user_tpl.is_empty else self._user_tpl.render(**ctx)
+        system = "" if self._system_tpl.is_empty else self._system_tpl.render(**ctx)
+        return system, user
+
+    async def _call_llm(self, raw_text: str, document: Optional[DoclingDocument] = None) -> str:
+        system, prompt = self._render_prompts(raw_text, document)
 
         messages = []
-        if self._system_prompt:
-            messages.append({"role": "system", "content": self._system_prompt})
+        if system:
+            messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
 
         payload = {
@@ -270,7 +292,7 @@ class MetadataEnricher(BaseEnricher):
             return document
 
         try:
-            llm_output = await self._call_llm(raw_text)
+            llm_output = await self._call_llm(raw_text, document)
             parsed = self._parse(llm_output, document, **kwargs)
             normalized = (
                 {field: parsed.get(field) for field in self._output_fields}
