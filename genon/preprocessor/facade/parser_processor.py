@@ -185,6 +185,19 @@ def _parse_optional_int(value: Any, key: str = "") -> Optional[int]:
         return None
 
 
+def _parse_optional_float(value: Any, key: str = "") -> Optional[float]:
+    if value is None or value == "":
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        if key:
+            _log.warning(
+                f"Invalid float value for '{key}': {value!r}. Fallback to default."
+            )
+        return None
+
+
 
 
 # pdf_pipeline.device / pdf_pipeline.table_structure_mode 의 yaml 문자열 → docling enum 매핑.
@@ -1105,6 +1118,35 @@ class IntelligentDocumentProcessor:
             )
             page_batch_size = 32
 
+        # DotsOCR VLM 호출/생성 파라미터 (yaml 누락·무효 시 기본값 폴백)
+        layout_model = genos_layout_cfg.get("model") or "dots-mocr"
+        layout_timeout = _parse_optional_int(
+            genos_layout_cfg.get("timeout"), "layout.genos_layout.timeout"
+        )
+        if layout_timeout is None or layout_timeout <= 0:
+            layout_timeout = 3600
+        layout_retry_count = _parse_optional_int(
+            genos_layout_cfg.get("retry_count"), "layout.genos_layout.retry_count"
+        )
+        if layout_retry_count is None or layout_retry_count < 0:
+            layout_retry_count = 2
+        layout_temperature = _parse_optional_float(
+            genos_layout_cfg.get("temperature"), "layout.genos_layout.temperature"
+        )
+        if layout_temperature is None or layout_temperature < 0:
+            layout_temperature = 0.1
+        layout_top_p = _parse_optional_float(
+            genos_layout_cfg.get("top_p"), "layout.genos_layout.top_p"
+        )
+        if layout_top_p is None or not (0 < layout_top_p <= 1):
+            layout_top_p = 0.9
+        layout_repetition_penalty = _parse_optional_float(
+            genos_layout_cfg.get("repetition_penalty"),
+            "layout.genos_layout.repetition_penalty",
+        )
+        if layout_repetition_penalty is None or layout_repetition_penalty <= 0:
+            layout_repetition_penalty = 1.15
+
         ocr_options = self._build_ocr_options(ocr_cfg, paddle_endpoint=ocr_ep)
         if isinstance(ocr_options, UpstageOcrOptions):
             self.ocr_endpoint = ocr_options.api_endpoint
@@ -1161,6 +1203,12 @@ class IntelligentDocumentProcessor:
         self.pipe_line_options.layout_options.genos_layout_options.endpoint = layout_ep
         self.pipe_line_options.layout_options.genos_layout_options.api_key = layout_key
         self.pipe_line_options.layout_options.genos_layout_options.max_completion_tokens = max_completion_tokens
+        self.pipe_line_options.layout_options.genos_layout_options.model = layout_model
+        self.pipe_line_options.layout_options.genos_layout_options.timeout = layout_timeout
+        self.pipe_line_options.layout_options.genos_layout_options.retry_count = layout_retry_count
+        self.pipe_line_options.layout_options.genos_layout_options.temperature = layout_temperature
+        self.pipe_line_options.layout_options.genos_layout_options.top_p = layout_top_p
+        self.pipe_line_options.layout_options.genos_layout_options.repetition_penalty = layout_repetition_penalty
 
         docling_settings.perf.page_batch_size = page_batch_size
 
