@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from docling_core.types.doc import DoclingDocument, Size
+from docling_core.types.doc import DocItemLabel, DoclingDocument, Size
 
 from docling.utils.dots_utils import parse_dots_json
 
@@ -17,6 +17,7 @@ def test_dots_simple_parsing():
     """Test dots JSON parsing produces expected document structure."""
     path = Path("./tests/data/json_dots/dots_simple.json")
     content = path.read_text()
+    source = path.with_suffix(".source.txt").read_text()
 
     doc = parse_dots_json(
         content=content,
@@ -33,8 +34,11 @@ def test_dots_simple_parsing():
     ]
     assert "title" in labels, "Should have a title element"
     assert "section_header" in labels, "Should have section headers"
+    assert "caption" in labels, "Should have captions"
+    assert "footnote" in labels, "Should have footnotes"
 
-    assert len(doc.tables) > 0, "Should have table elements"
+    assert "tests/data/pdf/2206.01062.pdf, page 1" in source
+    assert any("DocLayNet" in (t.text or "") for t in doc.texts)
     assert len(doc.pictures) > 0, "Should have picture elements"
 
     for item in doc.texts:
@@ -44,26 +48,29 @@ def test_dots_simple_parsing():
         assert bbox.l >= 0 and bbox.t >= 0, "Bbox coords should be non-negative"
 
 
-def test_dots_formula_parsing():
-    """Test dots JSON parsing handles formulas and list items."""
-    path = Path("./tests/data/json_dots/dots_formula.json")
+def test_dots_list_parsing():
+    """Test dots JSON parsing handles real list-item predictions."""
+    path = Path("./tests/data/json_dots/dots_list.json")
     content = path.read_text()
+    source = path.with_suffix(".source.txt").read_text()
 
     doc = parse_dots_json(
         content=content,
         original_page_size=Size(width=612, height=792),
         page_no=1,
-        filename="dots_formula.json",
+        filename=path.name,
     )
 
     labels = [
         t.label.value if hasattr(t.label, "value") else str(t.label) for t in doc.texts
     ]
-    assert "list_item" in labels, "Should have list items"
+    list_items = [item for item in doc.texts if item.label == DocItemLabel.LIST_ITEM]
 
-    assert any("\\mathcal{L}" in (t.text or "") for t in doc.texts), (
-        "Should preserve LaTeX formula content"
-    )
+    assert "tests/data/pdf/multi_page.pdf, page 1" in source
+    assert "list_item" in labels, "Should have list items"
+    assert len(list_items) == 2
+    assert "IBM MT/ST" in list_items[0].text
+    assert "Microsoft Word" in list_items[1].text
 
 
 def test_dots_model_image_size_rescaling():

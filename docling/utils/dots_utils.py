@@ -162,6 +162,8 @@ def parse_dots_json(
         _log.warning("Expected JSON array, got %s", type(elements).__name__)
         return doc
 
+    current_list_group = None
+
     for elem in elements:
         if not isinstance(elem, dict):
             continue
@@ -190,15 +192,24 @@ def parse_dots_json(
         doc_label = _LABEL_MAP.get(category, DocItemLabel.TEXT)
 
         if category == "Table":
+            current_list_group = None
             table_data = _parse_table_html(text)
             doc.add_table(data=table_data, prov=prov)
         elif category == "Picture":
+            current_list_group = None
             doc.add_picture(prov=prov)
         elif category == "Title":
+            current_list_group = None
             doc.add_title(text=text, prov=prov)
         elif category == "Section-header":
+            current_list_group = None
             doc.add_heading(text=text, prov=prov)
+        elif category == "List-item":
+            if current_list_group is None:
+                current_list_group = doc.add_list_group()
+            doc.add_list_item(text=text, parent=current_list_group, prov=prov)
         else:
+            current_list_group = None
             doc.add_text(label=doc_label, text=text, prov=prov)
 
     return doc

@@ -243,10 +243,14 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         if is_dots_model:
             attn_implementation = "sdpa"
 
+        dtype_arg_name = (
+            "dtype" if parsed_transformers_version.major >= 5 else "torch_dtype"
+        )
+
         self.vlm_model = model_cls.from_pretrained(
             artifacts_path,
             device_map=self.device,
-            dtype=torch_dtype,
+            **{dtype_arg_name: torch_dtype},
             _attn_implementation=attn_implementation,
             trust_remote_code=self.options.trust_remote_code,
             revision=revision,

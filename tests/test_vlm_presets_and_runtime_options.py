@@ -182,6 +182,77 @@ class TestRuntimeOptions:
         with pytest.raises(NotImplementedError, match="transformers<5"):
             engine._load_model_for_repo("rednote-hilab/dots.ocr")
 
+    @pytest.mark.parametrize(
+        ("transformers_version", "expected_dtype_arg"),
+        [("4.51.3", "torch_dtype"), ("5.0.0", "dtype")],
+    )
+    def test_transformers_engine_uses_versioned_dtype_arg(
+        self, monkeypatch, transformers_version, expected_dtype_arg
+    ):
+        """Transformers 4 remote models still expect torch_dtype."""
+        import docling.models.inference_engines.vlm.transformers_engine as tf_engine
+
+        captured_kwargs = {}
+
+        class FakeProcessor:
+            tokenizer = None
+
+        class FakeModel:
+            @classmethod
+            def from_pretrained(cls, *args, **kwargs):
+                captured_kwargs.update(kwargs)
+                return cls()
+
+            def eval(self):
+                return None
+
+        monkeypatch.setattr(
+            tf_engine.importlib.metadata,
+            "version",
+            lambda package: (
+                transformers_version if package == "transformers" else "0.0.0"
+            ),
+        )
+        monkeypatch.setattr(
+            tf_engine,
+            "resolve_model_artifacts_path",
+            lambda **kwargs: "artifacts",
+        )
+        monkeypatch.setattr(
+            tf_engine.AutoProcessor,
+            "from_pretrained",
+            lambda *args, **kwargs: FakeProcessor(),
+        )
+        monkeypatch.setattr(tf_engine, "AutoModelForCausalLM", FakeModel)
+        monkeypatch.setattr(
+            tf_engine.GenerationConfig,
+            "from_pretrained",
+            lambda *args, **kwargs: object(),
+        )
+
+        engine = TransformersVlmEngine(
+            options=TransformersVlmEngineOptions(
+                torch_dtype="bfloat16",
+                compile_model=False,
+            ),
+            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+            artifacts_path=None,
+        )
+        engine.device = "cpu"
+
+        engine._load_model_for_repo(
+            "rednote-hilab/dots.ocr"
+            if transformers_version.startswith("4.")
+            else "test/model",
+            model_type=TransformersModelType.AUTOMODEL_CAUSALLM,
+        )
+
+        assert captured_kwargs[expected_dtype_arg] == "bfloat16"
+        assert ("dtype" in captured_kwargs) is (expected_dtype_arg == "dtype")
+        assert ("torch_dtype" in captured_kwargs) is (
+            expected_dtype_arg == "torch_dtype"
+        )
+
     def test_dots_mocr_requires_flash_attn(self, monkeypatch):
         """dots.mocr remote code imports flash_attn even when SDPA is selected."""
         import docling.models.inference_engines.vlm.transformers_engine as tf_engine

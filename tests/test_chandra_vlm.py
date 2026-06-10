@@ -17,6 +17,7 @@ def test_chandra_simple_parsing():
     """Test chandra HTML parsing produces expected document structure."""
     path = Path("./tests/data/html_chandra/chandra_simple.html")
     content = path.read_text()
+    source = path.with_suffix(".source.txt").read_text()
 
     doc = parse_chandra_html(
         content=content,
@@ -33,8 +34,9 @@ def test_chandra_simple_parsing():
     ]
     assert "section_header" in labels, "Should have section headers"
     assert "caption" in labels, "Should have caption"
-    assert "page_footer" in labels, "Should have page footer"
+    assert "page_header" in labels, "Should have page header"
 
+    assert "tests/data/pdf/2305.03393v1-pg9.pdf, page 1" in source
     assert len(doc.tables) > 0, "Should have table elements"
 
     for item in doc.texts:
@@ -45,9 +47,10 @@ def test_chandra_simple_parsing():
 
 
 def test_chandra_multiblock_parsing():
-    """Test chandra parsing with images, equations, and footnotes."""
+    """Test chandra parsing with a saved figure prediction."""
     path = Path("./tests/data/html_chandra/chandra_multiblock.html")
     content = path.read_text()
+    source = path.with_suffix(".source.txt").read_text()
 
     doc = parse_chandra_html(
         content=content,
@@ -59,9 +62,11 @@ def test_chandra_multiblock_parsing():
     labels = [
         t.label.value if hasattr(t.label, "value") else str(t.label) for t in doc.texts
     ]
-    assert "page_header" in labels, "Should have page header"
-    assert "footnote" in labels, "Should have footnote"
+    assert "section_header" in labels, "Should have section header"
+    assert "caption" in labels, "Should have caption"
+    assert "page_footer" in labels, "Should have page footer"
 
+    assert "tests/data/pdf/picture_classification.pdf, page 1" in source
     assert len(doc.pictures) > 0, "Should have picture/image elements"
 
 
