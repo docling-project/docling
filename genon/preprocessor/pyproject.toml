@@ -75,7 +75,8 @@ dev = [
     "ipywidgets~=8.1",
     "nbqa~=1.9",
     "python-semantic-release~=7.32",
-    "pytest-asyncio>=1.2.0"
+    "pytest-asyncio>=1.2.0",
+    "apted>=1.0.3"
 ]
 
 [tool.uv.sources]
