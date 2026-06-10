@@ -20,6 +20,7 @@ from docling.service_client.client import (
     StatusWatcherKind,
 )
 from docling.service_client.exceptions import (
+    ArtifactDownloadError,
     ConversionError,
     DoclingServiceClientError,
     ResponseSchemaMismatchError,
@@ -38,6 +39,7 @@ __all__ = [
     "DEFAULT_MAX_CONCURRENCY",
     "MAX_CONCURRENCY_LIMIT",
     "AnyHttpSourceRequest",
+    "ArtifactDownloadError",
     "BatchSourceRequestItem",
     "ChunkerKind",
     "ConversionError",
