@@ -214,7 +214,8 @@ class DoclingServiceClient:
         http_read_timeout: float = 60.0,
         artifact_download_timeout: float = DEFAULT_ARTIFACT_DOWNLOAD_TIMEOUT_SECONDS,
         max_artifact_download_bytes: int = DEFAULT_MAX_ARTIFACT_DOWNLOAD_BYTES,
-        allow_private_artifact_urls: bool = False,
+        # Internal: skip the artifact SSRF guard for private/loopback storage.
+        _allow_private_artifact_urls: bool = False,
     ) -> None:
         self._base_url = self._normalize_base_url(url)
         self._api_key = api_key
@@ -239,7 +240,7 @@ class DoclingServiceClient:
         self._http_read_timeout = http_read_timeout
         self._artifact_download_timeout = artifact_download_timeout
         self._max_artifact_download_bytes = max_artifact_download_bytes
-        self._allow_private_artifact_urls = allow_private_artifact_urls
+        self._allow_private_artifact_urls = _allow_private_artifact_urls
 
         timeout = httpx.Timeout(
             connect=http_connect_timeout,
@@ -1156,14 +1157,19 @@ class DoclingServiceClient:
         Failures to download or reconstruct degrade gracefully into a FAILURE
         ConversionResult so convert_all() can keep processing other documents.
         """
-        item = self._select_presigned_document(response)
-        if item is None:
+        # convert()/convert_all() submit one source per task, so the relevant
+        # per-document item is the single (first) entry when present.
+        if not response.documents:
             return self._build_failed_conversion_result(
                 descriptor=descriptor,
                 limits=limits,
                 error_message="Presigned result contained no documents.",
                 status=ConversionStatus.FAILURE,
             )
+        item = response.documents[0]
+        failed_result = self._failed_item_result(item, descriptor, limits)
+        if failed_result is not None:
+            return failed_result
         try:
             artifact_type, artifact = self._select_artifact(item)
             content = self._download_artifact_bytes(str(artifact.uri))
@@ -1185,14 +1191,17 @@ class DoclingServiceClient:
         descriptor: _SourceDescriptor,
         limits: DocumentLimits,
     ) -> ConversionResult:
-        item = self._select_presigned_document(response)
-        if item is None:
+        if not response.documents:
             return self._build_failed_conversion_result(
                 descriptor=descriptor,
                 limits=limits,
                 error_message="Presigned result contained no documents.",
                 status=ConversionStatus.FAILURE,
             )
+        item = response.documents[0]
+        failed_result = self._failed_item_result(item, descriptor, limits)
+        if failed_result is not None:
+            return failed_result
         try:
             artifact_type, artifact = self._select_artifact(item)
             content = await self._download_artifact_bytes_async(str(artifact.uri))
@@ -1217,15 +1226,24 @@ class DoclingServiceClient:
             return str(exc)
         return f"Failed to reconstruct document from presigned artifacts: {exc}"
 
-    @staticmethod
-    def _select_presigned_document(
-        response: PresignedUrlConvertResponse,
-    ) -> DocumentArtifactItem | None:
-        # convert()/convert_all() submit one source per task, so the relevant
-        # per-document item is the single (first) entry when present.
-        if not response.documents:
+    def _failed_item_result(
+        self,
+        item: DocumentArtifactItem,
+        descriptor: _SourceDescriptor,
+        limits: DocumentLimits,
+    ) -> ConversionResult | None:
+        # A server-side FAILURE produces no document artifact to download, so
+        # preserve the server's real status/errors instead of masking them with
+        # a generic "no artifact" message from the materialization path.
+        if item.status != ConversionStatus.FAILURE:
             return None
-        return response.documents[0]
+        source_name = item.filename or descriptor.source_name
+        return self._build_conversion_result_from_artifact_item(
+            item=item,
+            document=DoclingDocument(name=Path(source_name).stem),
+            descriptor=descriptor,
+            limits=limits,
+        )
 
     @staticmethod
     def _select_artifact(item: DocumentArtifactItem) -> tuple[str, ArtifactRef]:
@@ -1247,13 +1265,9 @@ class DoclingServiceClient:
     ) -> DoclingDocument:
         if artifact_type == "resource_bundle":
             return self._reconstruct_document_from_bundle(content)
-        return self._reconstruct_document_from_json(content)
-
-    @staticmethod
-    def _reconstruct_document_from_json(json_bytes: bytes) -> DoclingDocument:
         # EMBEDDED / PLACEHOLDER JSON is self-contained (inline data: URIs or no
         # images), so no artifact resolution is required.
-        return DoclingDocument.model_validate_json(json_bytes)
+        return DoclingDocument.model_validate_json(content)
 
     def _reconstruct_document_from_bundle(self, bundle_bytes: bytes) -> DoclingDocument:
         with tempfile.TemporaryDirectory(prefix="docling-bundle-") as tmp_dir:
@@ -1309,11 +1323,21 @@ class DoclingServiceClient:
         explicitly before being inlined.
         """
 
+        base_resolved = base_dir.resolve()
+
         def embed(image_ref: ImageRef) -> ImageRef:
             uri = image_ref.uri
             if not isinstance(uri, Path) or uri.is_absolute():
                 return image_ref
             resolved = (base_dir / uri).resolve()
+            # Containment guard: the document JSON is server-supplied, so a
+            # relative URI like ``../../secret.png`` must not escape the extract
+            # dir and read arbitrary local image files. The zip-slip guard only
+            # validates ZIP members, not the URIs the JSON references.
+            if resolved != base_resolved and base_resolved not in resolved.parents:
+                raise ArtifactDownloadError(
+                    f"Resource bundle references an image outside the bundle: {uri}"
+                )
             with PILImage.open(resolved) as pil_image:
                 pil_image.load()
                 return ImageRef.from_pil(pil_image.copy(), dpi=image_ref.dpi)
@@ -1420,9 +1444,7 @@ class DoclingServiceClient:
             return
         if not _is_safe_artifact_url(url):
             raise ArtifactDownloadError(
-                f"Refusing to download artifact from a non-public URL: {url}. "
-                "Pass allow_private_artifact_urls=True to permit private or "
-                "loopback artifact storage endpoints."
+                f"Refusing to download artifact from a non-public URL: {url}."
             )
 
     @staticmethod

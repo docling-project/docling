@@ -24,7 +24,13 @@ from PIL import Image as PILImage
 
 import docling.service_client.client as client_module
 import docling.service_client.watchers as watchers_module
-from docling.datamodel.base_models import ConversionStatus, InputFormat, OutputFormat
+from docling.datamodel.base_models import (
+    ConversionStatus,
+    DoclingComponentType,
+    ErrorItem,
+    InputFormat,
+    OutputFormat,
+)
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
@@ -2811,6 +2817,111 @@ def test_convert_download_failure_degrades_gracefully(tmp_path: Path) -> None:
             client.convert(source)
 
 
+def test_convert_presigned_failed_item_preserves_server_errors(tmp_path: Path) -> None:
+    # A server-side FAILURE arrives with the real status/errors and no document
+    # artifacts; materialization must surface those, not a generic "no artifact".
+    server_error = ErrorItem(
+        component_type=DoclingComponentType.MODEL,
+        module_name="docling.pipeline",
+        error_message="OCR engine crashed on page 3",
+    )
+
+    def fake_submit(self, source, options, target, request_headers=None):
+        return _status_response("task-x", "pending")
+
+    def fake_wait(self, task_id, timeout):
+        return _status_response(task_id, "success")
+
+    def fake_fetch_presigned(self, task_id, last_status):
+        return PresignedUrlConvertResponse(
+            num_converted=1,
+            num_succeeded=0,
+            num_partially_succeeded=0,
+            num_failed=1,
+            processing_time=0.1,
+            documents=[
+                {
+                    "source_index": 0,
+                    "source_uri": "sample.pdf",
+                    "filename": "sample.pdf",
+                    "status": "failure",
+                    "errors": [server_error.model_dump()],
+                    "artifacts": [],
+                }
+            ],
+        )
+
+    def fake_download(self, uri):
+        raise AssertionError("must not download artifacts for a failed item")
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_convert_task = MethodType(fake_submit, client)
+        client._wait_for_terminal_status = MethodType(fake_wait, client)
+        client._fetch_presigned_result = MethodType(fake_fetch_presigned, client)
+        client._download_artifact_bytes = MethodType(fake_download, client)
+
+        source = tmp_path / "sample.pdf"
+        source.write_bytes(b"%PDF-1.4\n")
+        result = client.convert(source, raises_on_error=False)
+
+    assert result.status == ConversionStatus.FAILURE
+    assert [e.error_message for e in result.errors] == ["OCR engine crashed on page 3"]
+
+
+def test_convert_presigned_bundle_rejects_image_outside_bundle(tmp_path: Path) -> None:
+    # A malicious bundle whose JSON references an image outside the extract dir
+    # must be rejected rather than reading arbitrary local files.
+    doc = _sample_document_with_images()
+    with tempfile.TemporaryDirectory() as tmp:
+        base = Path(tmp)
+        doc.save_as_json(
+            base / "sample.json",
+            image_mode=ImageRefMode.REFERENCED,
+            artifacts_dir=Path("artifacts"),
+        )
+        json_path = base / "sample.json"
+        json_path.write_text(
+            json_path.read_text().replace("artifacts/", "../../../etc/")
+        )
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as bundle_zip:
+            bundle_zip.write(json_path, arcname="sample.json")
+        bundle_bytes = buf.getvalue()
+
+    def fake_submit(self, source, options, target, request_headers=None):
+        return _status_response("task-x", "pending")
+
+    def fake_wait(self, task_id, timeout):
+        return _status_response(task_id, "success")
+
+    def fake_fetch_presigned(self, task_id, last_status):
+        return _presigned_response(
+            [
+                {
+                    "artifact_type": "resource_bundle",
+                    "mime_type": "application/zip",
+                    "uri": "https://dl.example.org/sample_bundle.zip",
+                }
+            ]
+        )
+
+    def fake_download(self, uri):
+        return bundle_bytes
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_convert_task = MethodType(fake_submit, client)
+        client._wait_for_terminal_status = MethodType(fake_wait, client)
+        client._fetch_presigned_result = MethodType(fake_fetch_presigned, client)
+        client._download_artifact_bytes = MethodType(fake_download, client)
+
+        source = tmp_path / "sample.pdf"
+        source.write_bytes(b"%PDF-1.4\n")
+        result = client.convert(source, raises_on_error=False)
+
+    assert result.status == ConversionStatus.FAILURE
+    assert "outside the bundle" in result.errors[0].error_message
+
+
 def test_convert_all_materializes_presigned_results_in_order(tmp_path: Path) -> None:
     bundle_bytes = _referenced_bundle_bytes()
 
@@ -2882,7 +2993,7 @@ def test_validate_artifact_url_blocks_private_by_default() -> None:
 
 def test_validate_artifact_url_allows_private_when_opted_in() -> None:
     with DoclingServiceClient(
-        url=TEST_BASE_URL, allow_private_artifact_urls=True
+        url=TEST_BASE_URL, _allow_private_artifact_urls=True
     ) as client:
         # Should not raise.
         client._validate_artifact_url("http://127.0.0.1:9000/sample_bundle.zip")
