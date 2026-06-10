@@ -326,6 +326,8 @@ members = ["packages/docling"]
 
 [tool.uv.sources]
 docling = { workspace = true }
+docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "cau/http-download-max-size-guard" }
+
 
 [tool.uv]
 package = true

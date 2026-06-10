@@ -1348,7 +1348,7 @@ provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "asr", "
 [[package]]
 name = "docling-core"
 version = "2.80.0"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/docling-project/docling-core/?rev=cau%2Fhttp-download-max-size-guard#40f899e6df5d63d40a72c1e3484269263b2e6ae4" }
 dependencies = [
     { name = "defusedxml" },
     { name = "jsonref" },
@@ -1363,10 +1363,6 @@ dependencies = [
     { name = "tabulate" },
     { name = "typer" },
     { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/38/d2/1b0460ee245029604f1541b954c125207eb82d23f67d04a606d79f9adf5c/docling_core-2.80.0.tar.gz", hash = "sha256:7a89dda4a2cd406d7e0c85b8b14867d4fb2c6f261f39ca94f678e191b634a3ed", size = 349214, upload-time = "2026-06-09T13:38:56.16Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/46/c7/0610c9c764d31bd3fab4f976afd1a00bb1b614339a8504868d6605546c4b/docling_core-2.80.0-py3-none-any.whl", hash = "sha256:a8dcb87a445df08ac7608a0907d847a88aa7418c9da46608cb00fb9af06e279c", size = 296069, upload-time = "2026-06-09T13:38:54.361Z" },
 ]
 
 [package.optional-dependencies]
@@ -1749,8 +1745,8 @@ requires-dist = [
     { name = "beautifulsoup4", marker = "extra == 'format-html'", specifier = ">=4.12.3,<5.0.0" },
     { name = "certifi", specifier = ">=2024.7.4" },
     { name = "defusedxml", marker = "extra == 'models-local'", specifier = ">=0.7.1,<0.8.0" },
-    { name = "docling-core", specifier = ">=2.80.0,<3.0.0" },
-    { name = "docling-core", extras = ["chunking"], marker = "extra == 'feat-chunking'", specifier = ">=2.73.0,<3.0.0" },
+    { name = "docling-core", git = "https://github.com/docling-project/docling-core/?rev=cau%2Fhttp-download-max-size-guard" },
+    { name = "docling-core", extras = ["chunking"], marker = "extra == 'feat-chunking'", git = "https://github.com/docling-project/docling-core/?rev=cau%2Fhttp-download-max-size-guard" },
     { name = "docling-ibm-models", marker = "extra == 'models-local'", specifier = ">=3.13.0,<4" },
     { name = "docling-parse", marker = "extra == 'format-pdf-docling'", specifier = ">=6.2.0,<7.0.0" },
     { name = "docling-slim", extras = ["convert-core"], marker = "extra == 'extract-core'" },
@@ -1862,7 +1858,7 @@ examples = [
 ]
 pr-fast-checks = [
     { name = "boto3-stubs", specifier = "~=1.37" },
-    { name = "docling-core", extras = ["chunking"], specifier = ">=2.73.0,<3.0.0" },
+    { name = "docling-core", extras = ["chunking"], git = "https://github.com/docling-project/docling-core/?rev=cau%2Fhttp-download-max-size-guard" },
     { name = "pandas-stubs", specifier = "~=2.1" },
     { name = "pydantic", specifier = ">=2.0.0,<3.0.0" },
     { name = "pydantic-settings", specifier = ">=2.3.0,<3.0.0" },

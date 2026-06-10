@@ -49,7 +49,7 @@ from docling_core.types.legacy_doc.document import (
     CCSFileInfoObject as DsFileInfoObject,
     ExportedCCSDocument as DsDocument,
 )
-from docling_core.utils.file import resolve_source_to_stream
+from docling_core.utils.file import FileSizeLimitExceededError, resolve_source_to_stream
 from docling_core.utils.legacy import docling_document_to_legacy
 from pydantic import BaseModel, Field
 from typing_extensions import deprecated
@@ -205,6 +205,37 @@ class InputDocument(BaseModel):
                 exc_info=e,
             )
             # raise
+
+    @classmethod
+    def create_invalid(
+        cls,
+        *,
+        filename: str,
+        format: InputFormat,
+        filesize: int,
+        limits: Optional[DocumentLimits] = None,
+    ) -> "InputDocument":
+        """Build an InputDocument flagged invalid without opening a backend.
+
+        Used when the input is rejected before a stream is available, e.g. an
+        HTTP download aborted for exceeding ``limits.max_file_size``. The normal
+        constructor derives ``filesize`` from the actual path/stream, which is
+        unavailable in that case, so the fields are set explicitly here.
+
+        ``__init__`` is overridden to load from a path/stream and open a backend,
+        so the validated constructor cannot be used to set bare field values;
+        ``model_construct`` is the supported way to do that. Only fields that
+        differ from their declared defaults are passed; the rest (e.g.
+        ``backend_options``, ``page_count``) fall back to those defaults.
+        """
+        return cls.model_construct(
+            file=PurePath(filename),
+            document_hash="",
+            valid=False,
+            limits=limits or DocumentLimits(),
+            format=format,
+            filesize=filesize,
+        )
 
     def _init_doc(
         self,
@@ -449,11 +480,22 @@ class _DocumentConversionInput(BaseModel):
         format_options: Mapping[InputFormat, "BaseFormatOption"],
     ) -> Iterable[InputDocument]:
         for item in self.path_or_stream_iterator:
-            obj = (
-                resolve_source_to_stream(item, self.headers)
-                if isinstance(item, str)
-                else item
-            )
+            if isinstance(item, str):
+                try:
+                    obj = resolve_source_to_stream(
+                        item,
+                        self.headers,
+                        max_file_size=self.limits.max_file_size,
+                    )
+                except FileSizeLimitExceededError as exc:
+                    yield self._build_invalid_input_document(
+                        name=exc.filename,
+                        format_options=format_options,
+                        file_size=exc.size,
+                    )
+                    continue
+            else:
+                obj = item
             format = self._guess_format(obj)
             backend: Type[AbstractDocumentBackend]
             backend_options: Optional[BackendOptions] = None
@@ -484,6 +526,23 @@ class _DocumentConversionInput(BaseModel):
                 backend=backend,
                 backend_options=backend_options,
             )
+
+    def _build_invalid_input_document(
+        self,
+        name: str,
+        format_options: Mapping[InputFormat, "BaseFormatOption"],
+        file_size: int,
+    ) -> InputDocument:
+        guessed_format = self._guess_format(DocumentStream(name=name, stream=BytesIO()))
+        if guessed_format is None:
+            guessed_format = next(iter(format_options.keys()))
+
+        return InputDocument.create_invalid(
+            filename=name,
+            format=guessed_format,
+            filesize=file_size,
+            limits=self.limits,
+        )
 
     def _guess_format(self, obj: Union[Path, DocumentStream]) -> Optional[InputFormat]:
         content = b""  # empty binary blob
