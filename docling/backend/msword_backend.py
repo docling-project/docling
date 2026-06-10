@@ -45,6 +45,7 @@ from docling.backend.docx.drawingml.utils import (
     get_pil_from_dml_docx,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
+from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
@@ -82,8 +83,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     )
 
     @override
-    def __init__(self, in_doc: "InputDocument", path_or_stream: BytesIO | Path) -> None:
-        super().__init__(in_doc, path_or_stream)
+    def __init__(
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: BytesIO | Path,
+        options: MsWordBackendOptions | None = None,
+    ) -> None:
+        if options is None:
+            options = MsWordBackendOptions()
+        super().__init__(in_doc, path_or_stream, options)
         self.XML_KEY = f"{self._W_NS_CLARK}val"
         self.xml_namespaces = {
             "w": "http://schemas.microsoft.com/office/word/2003/wordml"
@@ -928,6 +936,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return []
 
         content: list[tuple[str, Formatting | None, AnyUrl | Path | None]] = []
+        track_changes = (
+            self.options.track_changes
+            if isinstance(self.options, MsWordBackendOptions)
+            else "accept"
+        )
 
         def _get_children_recursive(node):
             for child in node:
@@ -960,6 +973,52 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     else None
                 )
                 content.append((text, fmt, None))
+                continue
+
+            # Tracked insertion: w:ins wraps runs of newly added text.
+            # In "accept" (default) and "raw" modes we include inserted text.
+            # In "reject" mode we skip it (revert to original).
+            if tag_name == "ins":
+                if track_changes in ("accept", "raw"):
+                    for run_elem in child.iterchildren(f"{self._W_NS_CLARK}r"):
+                        run = Run(run_elem, paragraph)
+                        if not run.text:
+                            continue
+                        fmt = self._get_format_from_run(run)
+                        if track_changes == "raw":
+                            # Underline marks the text as an unaccepted insertion.
+                            fmt = Formatting(
+                                bold=fmt.bold if fmt else False,
+                                italic=fmt.italic if fmt else False,
+                                underline=True,
+                                strikethrough=fmt.strikethrough if fmt else False,
+                                script=fmt.script if fmt else Script.BASELINE,
+                            )
+                        content.append((run.text, fmt, None))
+                continue
+
+            # Tracked deletion: w:del wraps runs whose text uses w:delText.
+            # In "reject" and "raw" modes we include deleted text.
+            # In "accept" (default) mode we skip it (keep the final document).
+            if tag_name == "del":
+                if track_changes in ("reject", "raw"):
+                    for run_elem in child.iterchildren(f"{self._W_NS_CLARK}r"):
+                        del_texts = run_elem.findall(f"{self._W_NS_CLARK}delText")
+                        text = "".join(dt.text or "" for dt in del_texts)
+                        if not text:
+                            continue
+                        run = Run(run_elem, paragraph)
+                        fmt = self._get_format_from_run(run)
+                        if track_changes == "raw":
+                            # Strikethrough marks the text as a pending deletion.
+                            fmt = Formatting(
+                                bold=fmt.bold if fmt else False,
+                                italic=fmt.italic if fmt else False,
+                                underline=fmt.underline if fmt else False,
+                                strikethrough=True,
+                                script=fmt.script if fmt else Script.BASELINE,
+                            )
+                        content.append((text, fmt, None))
                 continue
 
             if tag_name not in {"r", "hyperlink"}:
