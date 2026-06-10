@@ -1348,7 +1348,7 @@ provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "asr", "
 [[package]]
 name = "docling-core"
 version = "2.80.0"
-source = { git = "https://github.com/docling-project/docling-core/?rev=cau%2Fhttp-download-max-size-guard#40f899e6df5d63d40a72c1e3484269263b2e6ae4" }
+source = { git = "https://github.com/docling-project/docling-core/?rev=main#d585a1377528105b28a0072a587accc27406195f" }
 dependencies = [
     { name = "defusedxml" },
     { name = "jsonref" },
@@ -1745,8 +1745,8 @@ requires-dist = [
     { name = "beautifulsoup4", marker = "extra == 'format-html'", specifier = ">=4.12.3,<5.0.0" },
     { name = "certifi", specifier = ">=2024.7.4" },
     { name = "defusedxml", marker = "extra == 'models-local'", specifier = ">=0.7.1,<0.8.0" },
-    { name = "docling-core", git = "https://github.com/docling-project/docling-core/?rev=cau%2Fhttp-download-max-size-guard" },
-    { name = "docling-core", extras = ["chunking"], marker = "extra == 'feat-chunking'", git = "https://github.com/docling-project/docling-core/?rev=cau%2Fhttp-download-max-size-guard" },
+    { name = "docling-core", git = "https://github.com/docling-project/docling-core/?rev=main" },
+    { name = "docling-core", extras = ["chunking"], marker = "extra == 'feat-chunking'", git = "https://github.com/docling-project/docling-core/?rev=main" },
     { name = "docling-ibm-models", marker = "extra == 'models-local'", specifier = ">=3.13.0,<4" },
     { name = "docling-parse", marker = "extra == 'format-pdf-docling'", specifier = ">=6.2.0,<7.0.0" },
     { name = "docling-slim", extras = ["convert-core"], marker = "extra == 'extract-core'" },
@@ -1858,7 +1858,7 @@ examples = [
 ]
 pr-fast-checks = [
     { name = "boto3-stubs", specifier = "~=1.37" },
-    { name = "docling-core", extras = ["chunking"], git = "https://github.com/docling-project/docling-core/?rev=cau%2Fhttp-download-max-size-guard" },
+    { name = "docling-core", extras = ["chunking"], git = "https://github.com/docling-project/docling-core/?rev=main" },
     { name = "pandas-stubs", specifier = "~=2.1" },
     { name = "pydantic", specifier = ">=2.0.0,<3.0.0" },
     { name = "pydantic-settings", specifier = ">=2.3.0,<3.0.0" },
