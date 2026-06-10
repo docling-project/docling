@@ -177,6 +177,12 @@ def test_cli_html_fetches_remote_images_with_separate_headers(tmp_path, monkeypa
         def iter_content(self, chunk_size: int):
             yield self.content
 
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
     def fake_get(self, url: str, **kwargs):
         calls.append((url, kwargs))
         if url == source_url:

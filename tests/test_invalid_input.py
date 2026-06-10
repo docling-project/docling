@@ -54,6 +54,9 @@ def test_convert_remote_too_large_filesize_limit_wout_exception(
         r = Response()
         r.status_code = 200
         r.headers["Content-Length"] = "10"
+        # A real streamed response always has a closeable ``raw``; provide one so
+        # resolve_source_to_stream can close the response on the size-limit abort.
+        r.raw = BytesIO(b"")
         return r
 
     monkeypatch.setattr(Session, "get", mock_get)
@@ -76,6 +79,9 @@ def test_convert_remote_too_large_filesize_limit_with_exception(
         r = Response()
         r.status_code = 200
         r.headers["Content-Length"] = "10"
+        # A real streamed response always has a closeable ``raw``; provide one so
+        # resolve_source_to_stream can close the response on the size-limit abort.
+        r.raw = BytesIO(b"")
         return r
 
     monkeypatch.setattr(Session, "get", mock_get)
