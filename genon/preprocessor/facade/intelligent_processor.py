@@ -748,6 +748,22 @@ def _resolve_default_intelligent_config_path() -> str:
     return str(default_config)
 
 
+# 청킹용 토크나이저 기본 경로 (config 미지정 시 현행 동작 유지)
+_DEFAULT_TOKENIZER_LOCAL_PATH = "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
+_DEFAULT_TOKENIZER_ID = "sentence-transformers/all-MiniLM-L6-v2"
+
+
+def _resolve_tokenizer(models_cfg: dict):
+    """models config 로부터 토크나이저를 결정한다.
+
+    tokenizer_path 가 실제 존재하면 그 로컬 경로를, 없으면 tokenizer_id(HF) 로 폴백한다
+    (외부 네트워크 차단 환경 대비). config 미지정 시 기본값은 현행 하드코딩 값과 동일.
+    """
+    local = models_cfg.get("tokenizer_path") or _DEFAULT_TOKENIZER_LOCAL_PATH
+    hf_id = models_cfg.get("tokenizer_id") or _DEFAULT_TOKENIZER_ID
+    return Path(local) if Path(local).exists() else hf_id
+
+
 # ============================================
 #
 # Copyright IBM Corp. 2024 - 2024
@@ -762,9 +778,9 @@ class GenosSmartChunker(BaseChunker):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     tokenizer: Union[PreTrainedTokenizerBase, str, Path] = (
-            Path("/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2")
-            if Path("/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2").exists()
-            else "sentence-transformers/all-MiniLM-L6-v2"
+            Path(_DEFAULT_TOKENIZER_LOCAL_PATH)
+            if Path(_DEFAULT_TOKENIZER_LOCAL_PATH).exists()
+            else _DEFAULT_TOKENIZER_ID
         )
     max_tokens: int = 1024
     merge_peers: bool = True
@@ -1690,7 +1706,11 @@ class DocumentProcessor:
         ocr_cfg = _as_dict(cfg.get("ocr"))
         layout_cfg = _as_dict(cfg.get("layout"))
         pdf_cfg = _as_dict(cfg.get("pdf_pipeline"))
+        models_cfg = _as_dict(cfg.get("models"))
         ec = EnrichmentConfig.from_raw(cfg.get("enrichment"), self._config_dir, parent_cfg=cfg)
+
+        # 청킹용 토크나이저 (config 기반; 미지정 시 현행 기본값)
+        self._tokenizer = _resolve_tokenizer(models_cfg)
 
         # OCR 엔드포인트는 ocr.paddle.ocr_endpoint 가 정식 위치.
         # 구버전 호환: ocr.ocr_endpoint(상위) / 최상위 ocr_endpoint 도 폴백으로 인식.
@@ -1842,6 +1862,13 @@ class DocumentProcessor:
         self.pipe_line_options.table_structure_options.do_cell_matching = True
         self.pipe_line_options.table_structure_options.mode = table_structure_mode
         self.pipe_line_options.accelerator_options = accelerator_options
+
+        # docling 모델(TableFormer 등) 로컬 경로. config 에 값이 있을 때만 설정하고,
+        # 비어있으면 설정하지 않아 docling 기본 캐시 동작을 그대로 유지(backward compat).
+        # (아래 ocr_pipe_line_options 는 pipe_line_options 의 deep copy 라 자동 전파됨)
+        artifacts_path = models_cfg.get("artifacts_path")
+        if artifacts_path:
+            self.pipe_line_options.artifacts_path = Path(artifacts_path)
 
         # Simple 파이프라인 옵션을 인스턴스 변수로 저장
         self.simple_pipeline_options = PipelineOptions()
@@ -2074,7 +2101,8 @@ class DocumentProcessor:
     def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
         chunker: GenosSmartChunker = GenosSmartChunker(
             max_tokens = kwargs.get('max_chunk_size', 0),
-            merge_peers = True
+            merge_peers = True,
+            tokenizer = self._tokenizer,
         )
 
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
