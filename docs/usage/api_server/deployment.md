@@ -6,17 +6,62 @@
 
 Get docling-serve running on one machine fast. For cluster/production hardening, follow the links to the [docling-serve repo](https://github.com/docling-project/docling-serve/tree/v1.21.0/docs).
 
-The four ways people describe "launching" docling-serve are really **two independent choices**:
+Two independent choices shape how you run it:
 
-- **How you start the process:** the `docling-serve` command, or **Docker Compose**.
-- **Which async engine runs the jobs** (`DOCLING_SERVE_ENG_KIND`): the in-process **Local** engine (default), or the Redis-backed **RQ** engine.
+- **How you start the process** — the `docling-serve` command, or **Docker Compose**.
+- **Which [compute engine](#compute-engines) runs the jobs** (`DOCLING_SERVE_ENG_KIND`) — the in-process **Local** engine (default), or the Redis-backed **RQ** engine.
 
 | | Local engine (default) | RQ engine (Redis + workers) |
 |---|---|---|
-| **`docling-serve` command** | Quickstart / dev — below | Distributed — below |
-| **Docker Compose** | Containerized single node (+GPU) — below | → [serve repo](https://github.com/docling-project/docling-serve/tree/v1.21.0/docs/deploy-examples) |
+| **`docling-serve` command** | Quickstart / dev | Distributed |
+| **Docker Compose** | Containerized single node (+GPU) | → [serve repo](https://github.com/docling-project/docling-serve/tree/v1.21.0/docs/deploy-examples) |
 
-## Simple command (Local engine — the default quickstart)
+## Configuration
+
+docling-serve is configured by **CLI flags or environment variables**. Precedence is **environment variable > config file > defaults**.
+
+!!! warning "Subprocess gotcha"
+    When uvicorn runs with `--reload` or `--workers > 1` it spawns subprocesses, and CLI flags (e.g. `--enable-ui`, `--artifacts-path`) are ignored. Use the `DOCLING_SERVE_*` environment variables in those deployments.
+
+### Most common settings
+
+| Setting (env var) | What it does | Default |
+|---|---|---|
+| `UVICORN_HOST` / `UVICORN_PORT` | bind address / port | `0.0.0.0` / `5001` |
+| `UVICORN_WORKERS` | uvicorn worker processes | `1` |
+| `DOCLING_SERVE_API_KEY` | require an `X-Api-Key` header | unset |
+| `DOCLING_SERVE_ENABLE_UI` | serve the Gradio demo UI at `/ui` | `false` |
+| `DOCLING_SERVE_ARTIFACTS_PATH` | local path to pre-downloaded models | unset (auto-download) |
+| `DOCLING_SERVE_MAX_NUM_PAGES` / `DOCLING_SERVE_MAX_FILE_SIZE` | per-request limits | unset |
+| `DOCLING_SERVE_ENG_KIND` | async engine: `local` or `rq` (also `kfp`/`ray` — see serve repo) | `local` |
+
+See the full reference in the source repo: [`configuration.md`](https://github.com/docling-project/docling-serve/blob/v1.21.0/docs/configuration.md) and [`.env.example`](https://github.com/docling-project/docling-serve/blob/v1.21.0/.env.example).
+
+### Docling settings (env vars)
+
+These tune Docling itself and are read by the server too:
+
+| Env var | What it does | Default |
+|---|---|---|
+| `DOCLING_DEVICE` | inference device: `cpu` / `cuda` / `mps` | auto |
+| `DOCLING_NUM_THREADS` | CPU threads | runtime default |
+| `DOCLING_PERF_PAGE_BATCH_SIZE` | pages per batch | runtime default |
+| `DOCLING_PERF_ELEMENTS_BATCH_SIZE` | elements per batch | runtime default |
+| `DOCLING_DEBUG_PROFILE_PIPELINE_TIMINGS` | log per-stage timings | `false` |
+
+For how to *choose* device/perf values see [GPU support](../gpu.md). For offline / air-gapped model setup see the [FAQ](../../faq/index.md) and [Advanced options](../advanced_options.md); set `DOCLING_SERVE_ARTIFACTS_PATH` to a pre-populated model directory.
+
+## Compute engines
+
+docling-serve runs each conversion as an asynchronous job dispatched to a **compute engine**, chosen with `DOCLING_SERVE_ENG_KIND`:
+
+- **Local** (`local`, the default) — jobs run in an in-process thread pool inside the server. No external services; everything stays on one host. Tunable with `DOCLING_SERVE_ENG_LOC_NUM_WORKERS` (default `2`) and `DOCLING_SERVE_ENG_LOC_SHARE_MODELS` (default `false`). Best for a single machine.
+- **RQ** (`rq`) — jobs are queued in **Redis** and executed by separate `docling-serve rq-worker` processes, so the API tier and the conversion workers scale independently. Best for horizontal scaling and higher throughput.
+- **KFP / Ray** — Kubeflow Pipelines and Ray engines for cluster orchestration; see the [serve repo](https://github.com/docling-project/docling-serve/tree/v1.21.0/docs).
+
+## Running it
+
+### Simple command (Local engine — the default quickstart)
 
 ```sh
 pip install "docling-serve[ui]"
@@ -24,12 +69,7 @@ docling-serve run --enable-ui      # production-style: reload off, binds 0.0.0.0
 # docling-serve dev                # dev: auto-reload, binds 127.0.0.1, UI on (localhost only)
 ```
 
-API at `http://localhost:5001`, interactive docs at `/docs`, demo UI at `/ui`.
-
-!!! note
-    The demo UI (`--enable-ui` / `DOCLING_SERVE_ENABLE_UI`) is a Gradio app; files it produces are cleared from its cache after ~10 hours. It is a demonstrator, not durable storage.
-
-Smoke test:
+API at `http://localhost:5001`, interactive docs at `/docs`, demo UI at `/ui`. Smoke test:
 
 ```sh
 curl -X POST "http://localhost:5001/v1/convert/source/async" \
@@ -37,34 +77,10 @@ curl -X POST "http://localhost:5001/v1/convert/source/async" \
   -d '{"http_sources": [{"url": "https://arxiv.org/pdf/2501.17887"}]}'
 ```
 
-!!! warning
-    When uvicorn runs with `--reload` or `--workers > 1` it spawns subprocesses, and CLI flags (e.g. `--enable-ui`, `--artifacts-path`) are ignored. Use the `DOCLING_SERVE_*` environment variables in those deployments.
+!!! note
+    The demo UI (`--enable-ui` / `DOCLING_SERVE_ENABLE_UI`) is a Gradio app; files it produces are cleared from its cache after ~10 hours. It is a demonstrator, not durable storage.
 
-The **Local engine** runs jobs in a small in-process thread pool — no Redis, no extra processes; bounded by the one host. Two knobs: `DOCLING_SERVE_ENG_LOC_NUM_WORKERS` (default `2`) and `DOCLING_SERVE_ENG_LOC_SHARE_MODELS` (default `false`). To scale past one process, use the RQ engine below.
-
-## RQ engine (distributed: Redis + separate workers)
-
-The API enqueues jobs to Redis; conversion runs in separate `docling-serve rq-worker` processes, so API and compute scale independently.
-
-```sh
-# 1) Redis
-docker run -p 6379:6379 redis:7-alpine
-
-# 2) API server (enqueues jobs)
-DOCLING_SERVE_ENG_KIND=rq \
-DOCLING_SERVE_ENG_RQ_REDIS_URL=redis://localhost:6379/0 \
-docling-serve run
-
-# 3) one or more workers (do the conversion)
-DOCLING_SERVE_ENG_KIND=rq \
-DOCLING_SERVE_ENG_RQ_REDIS_URL=redis://localhost:6379/0 \
-docling-serve rq-worker
-```
-
-!!! warning
-    The API alone *accepts* jobs but nothing runs them without at least one `rq-worker`. `DOCLING_SERVE_ENG_RQ_REDIS_URL` is required (no default) and must be identical across every API and worker process.
-
-## Docker Compose (Local engine, including local GPU)
+### Docker Compose (incl. local GPU)
 
 Same server, containerized. The shipped compose examples are all-in-one containers that don't set `ENG_KIND`, so they run the default Local engine.
 
@@ -89,6 +105,28 @@ Compose manifests: [`compose-nvidia.yaml`](https://github.com/docling-project/do
 !!! note
     The compose files pin older image tags (`-cu126:main`, `-rocm72:main`) than the README image table; treat the [README image table](https://github.com/docling-project/docling-serve/blob/v1.21.0/README.md) as the source of truth and adjust the `image:` line if needed. There is no shipped single-CPU compose file — use the `podman` one-liner for pure CPU.
 
+### RQ engine (distributed: Redis + separate workers)
+
+The API enqueues jobs to Redis; conversion runs in separate `docling-serve rq-worker` processes.
+
+```sh
+# 1) Redis
+docker run -p 6379:6379 redis:7-alpine
+
+# 2) API server (enqueues jobs)
+DOCLING_SERVE_ENG_KIND=rq \
+DOCLING_SERVE_ENG_RQ_REDIS_URL=redis://localhost:6379/0 \
+docling-serve run
+
+# 3) one or more workers (do the conversion)
+DOCLING_SERVE_ENG_KIND=rq \
+DOCLING_SERVE_ENG_RQ_REDIS_URL=redis://localhost:6379/0 \
+docling-serve rq-worker
+```
+
+!!! warning
+    The API alone *accepts* jobs but nothing runs them without at least one `rq-worker`. `DOCLING_SERVE_ENG_RQ_REDIS_URL` is required (no default) and must be identical across every API and worker process.
+
 ## Cluster, production & advanced variants
 
 These live in the docling-serve repo (run-time manifests aren't vendored here):
@@ -100,10 +138,4 @@ These live in the docling-serve repo (run-time manifests aren't vendored here):
 - [Model-cache PVC/Job](https://github.com/docling-project/docling-serve/blob/v1.21.0/docs/models.md) (pre-baking weights)
 - KFP / Ray engines, OpenTelemetry, CUDA image-tagging policy → [serve repo](https://github.com/docling-project/docling-serve/tree/v1.21.0/docs)
 
-## Fully-managed option
-
-!!! info "Don't want to operate it yourself?"
-
-    All of the launch modes above run **docling-serve** yourself. If you would rather not run, scale, or maintain the infrastructure, a **fully managed, hosted version** of the same service is available as **Docling for IBM watsonx**.
-
-    It exposes the same REST API described in these pages, so client code is portable — typically you only swap the base URL and supply a service-issued API key. Hosted-only concerns (account/key provisioning, quotas, SLA, and data handling) are documented separately and are out of scope for these self-hosting pages.
+Prefer not to run any of this yourself? See the [fully managed](managed.md) option.
