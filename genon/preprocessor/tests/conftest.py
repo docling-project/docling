@@ -66,6 +66,30 @@ def parser_processor():
     return mod.DocumentProcessor
 
 
+# TEDS-S 지표 함수 노출 (tests/teds_metric.py)
+@pytest.fixture(scope="session")
+def teds_s():
+    """구조 전용 TEDS(TEDS-S) 계산 함수: teds_s(pred_html, gt_html) -> float."""
+    _tests_dir = Path(__file__).resolve().parent
+    if str(_tests_dir) not in sys.path:
+        sys.path.insert(0, str(_tests_dir))
+    from teds_metric import teds_s as _f
+    return _f
+
+
+# table.pdf 각 페이지 표의 GT(ground-truth) 로드.
+# table.jsonl: 한 줄당 한 표, index i == table.pdf 페이지 (i+1) 의 표.
+@pytest.fixture(scope="session")
+def table_gt(repo_root: Path):
+    import json
+
+    gt_path = repo_root / "sample_files" / "table.jsonl"
+    if not gt_path.exists():
+        return []
+    lines = gt_path.read_text(encoding="utf-8").splitlines()
+    return [json.loads(line) for line in lines if line.strip()]
+
+
 @pytest.fixture(autouse=True)
 def _stub_vlm_for_unit_tests(request, monkeypatch):
     """unit 테스트에서는 외부 VLM 호출을 기본 차단한다."""
