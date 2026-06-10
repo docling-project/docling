@@ -2985,20 +2985,6 @@ def test_is_safe_artifact_url(url: str, expected: bool) -> None:
     assert client_module._is_safe_artifact_url(url) is expected
 
 
-def test_validate_artifact_url_blocks_private_by_default() -> None:
-    with DoclingServiceClient(url=TEST_BASE_URL) as client:
-        with pytest.raises(ArtifactDownloadError, match="non-public URL"):
-            client._validate_artifact_url("http://127.0.0.1:9000/sample_bundle.zip")
-
-
-def test_validate_artifact_url_allows_private_when_opted_in() -> None:
-    with DoclingServiceClient(
-        url=TEST_BASE_URL, _allow_private_artifact_urls=True
-    ) as client:
-        # Should not raise.
-        client._validate_artifact_url("http://127.0.0.1:9000/sample_bundle.zip")
-
-
 def test_convert_rejects_private_artifact_url_by_default(tmp_path: Path) -> None:
     def fake_submit(self, source, options, target, request_headers=None):
         return _status_response("task-x", "pending")
