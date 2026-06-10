@@ -1,1 +1,1 @@
-Generated on LSF job 641467 from tests/data/pdf/multi_page.pdf, page 1, using rednote-hilab/dots.ocr with transformers 4.51.3.
+Source: tests/data/pdf/multi_page.pdf, page 1. Model: rednote-hilab/dots.ocr. Runtime: transformers 4.51.3.
