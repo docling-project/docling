@@ -50,8 +50,8 @@ loaders:
     # CSV 인코딩 감지 시 샘플링 바이트 수
     encoding_detect_sample_bytes: 10000
 
-# 음성 파일(.wav/.mp3/.m4a) 처리 기본값
-# <WHISPER_ENDPOINT>: 음성인식 모델 서버 주소로 변경 필요
+# 음성 파일(.wav/.mp3/.m4a) 처리 기본값. 음성 처리 시에만 필요(선택).
+# <WHISPER_ENDPOINT>: 음성인식 모델 서버 주소로 변경 필요 (음성 미사용 시 무시)
 whisper:
   url: "http://<WHISPER_ENDPOINT>/v1/audio/transcriptions"
   model: "model"
@@ -64,3 +64,10 @@ whisper:
   chunk_overlap_ms: 300
   # 끝에 / 를 주면 디렉터리로 간주해 내부에 파일명 기준 하위 폴더 생성
   tmp_dir_prefix: "./tmp_audios_"
+
+# 모델 경로 (다운로드된 기본값 사용; 미지정 시 현행 동작 유지)
+models:
+  # 청킹용 토크나이저. tokenizer_path 가 실제 존재하면 그 경로,
+  # 없으면 tokenizer_id(HF) 로 폴백 (외부 네트워크 차단 환경 대비)
+  tokenizer_path: "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
+  tokenizer_id: "sentence-transformers/all-MiniLM-L6-v2"

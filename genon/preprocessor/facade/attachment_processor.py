@@ -10,6 +10,7 @@ import math
 import os
 import pandas as pd
 import pydub
+import re
 import requests
 import shutil
 import subprocess
@@ -106,6 +107,35 @@ _DEFAULT_TOKENIZER_ID = "sentence-transformers/all-MiniLM-L6-v2"
 _DEFAULT_HYBRID_MAX_TOKENS = int(1e30)
 
 
+def _warn_unresolved_placeholders(cfg: dict, config_path: str) -> None:
+    """config 에 남아있는 미치환 플레이스홀더(<UPPER_SNAKE>)를 탐지해 경고한다.
+
+    Site 배포 시 Whisper endpoint 등의 치환 누락을 조기에 드러내기 위함.
+    fail-fast 하지 않고(기동 보존) WARNING 로그만 남긴다.
+    """
+    pattern = re.compile(r"<[A-Z0-9_]+>")
+    found = []
+
+    def _scan(node, path):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                _scan(v, f"{path}.{k}" if path else str(k))
+        elif isinstance(node, list):
+            for i, v in enumerate(node):
+                _scan(v, f"{path}[{i}]")
+        elif isinstance(node, str):
+            for ph in pattern.findall(node):
+                found.append((path, ph))
+
+    _scan(cfg, "")
+    if found:
+        lines = "\n".join(f"  - {path}: {ph}" for path, ph in found)
+        _log.warning(
+            "[DocumentProcessor] 미치환 설정 플레이스홀더가 발견되었습니다 "
+            f"(config='{config_path}'). Site 배포 시 실제 값으로 변경하세요:\n{lines}"
+        )
+
+
 def _load_config(config_path: str) -> dict:
     try:
         with open(config_path, "r", encoding="utf-8") as f:
@@ -123,6 +153,7 @@ def _load_config(config_path: str) -> dict:
             f"(expected mapping, got {type(cfg).__name__}). Using defaults."
         )
         return {}
+    _warn_unresolved_placeholders(cfg, config_path)
     return cfg
 
 
@@ -167,6 +198,17 @@ def _resolve_default_attachment_config_path() -> str:
     if local_config.exists():
         return str(local_config)
     return str(default_config)
+
+
+def _resolve_tokenizer(models_cfg: dict):
+    """models config 로부터 토크나이저를 결정한다.
+
+    tokenizer_path 가 실제 존재하면 그 로컬 경로를, 없으면 tokenizer_id(HF) 로 폴백한다
+    (외부 네트워크 차단 환경 대비). config 미지정 시 기본값은 현행 하드코딩 값과 동일.
+    """
+    local = models_cfg.get("tokenizer_path") or _DEFAULT_TOKENIZER_LOCAL_PATH
+    hf_id = models_cfg.get("tokenizer_id") or _DEFAULT_TOKENIZER_ID
+    return Path(local) if Path(local).exists() else hf_id
 
 
 def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
@@ -1096,7 +1138,9 @@ def _split_with_recursive_chunker(
 
 
 class DocxProcessor:
-    def __init__(self):
+    def __init__(self, tokenizer=None):
+        # 청킹용 토크나이저 (config 기반; 미지정 시 현행 기본값)
+        self._tokenizer = tokenizer if tokenizer is not None else _resolve_tokenizer({})
         self.page_chunk_counts = defaultdict(int)
         self.pipeline_options = PipelineOptions()
         self.converter = DocumentConverter(
@@ -1173,6 +1217,7 @@ class DocxProcessor:
         chunker_kwargs = {
             "max_tokens": hybrid_max_tokens,
             "merge_peers": hybrid_merge_peers,
+            "tokenizer": self._tokenizer,
         }
         hybrid_tokenizer = kwargs.get("hybrid_tokenizer_id")
         if hybrid_tokenizer:
@@ -1246,8 +1291,9 @@ class DocxProcessor:
 
 
 class HwpProcessor:
-    def __init__(self):
-        pass
+    def __init__(self, tokenizer=None):
+        # 청킹용 토크나이저 (config 기반; 미지정 시 현행 기본값)
+        self._tokenizer = tokenizer if tokenizer is not None else _resolve_tokenizer({})
 
     def get_paths(self, file_path: str):
         """이미지 등 리소스가 저장될 경로 계산 (기존 로직 유지)"""
@@ -1339,6 +1385,7 @@ class HwpProcessor:
         chunker_kwargs = {
             "max_tokens": hybrid_max_tokens,
             "merge_peers": hybrid_merge_peers,
+            "tokenizer": self._tokenizer,
         }
         hybrid_tokenizer = kwargs.get("hybrid_tokenizer_id")
         if hybrid_tokenizer:
@@ -1465,6 +1512,10 @@ class DocumentProcessor:
         image_loader_cfg = _as_dict(loaders_cfg.get("image"))
         tabular_loader_cfg = _as_dict(loaders_cfg.get("tabular"))
         whisper_cfg = _as_dict(cfg.get("whisper"))
+        models_cfg = _as_dict(cfg.get("models"))
+
+        # 청킹용 토크나이저 (config 기반; 미지정 시 현행 기본값)
+        self._tokenizer = _resolve_tokenizer(models_cfg)
 
         chunker_type = str(defaults_cfg.get("chunker_type", "recursive")).strip().lower()
         if chunker_type not in {"recursive", "hybrid"}:
@@ -1589,8 +1640,8 @@ class DocumentProcessor:
         }
 
         self.page_chunk_counts = defaultdict(int)
-        self.hwp_processor = HwpProcessor()
-        self.docx_processor = DocxProcessor()
+        self.hwp_processor = HwpProcessor(tokenizer=self._tokenizer)
+        self.docx_processor = DocxProcessor(tokenizer=self._tokenizer)
 
     def _merge_runtime_kwargs(self, kwargs: dict) -> dict:
         merged = dict(self._default_kwargs)

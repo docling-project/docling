@@ -140,11 +140,41 @@ CONVERTIBLE_EXTENSIONS = ['.hwp', '.txt', '.json', '.md', '.ppt', '.pptx', '.doc
 # 설정 로딩
 # ============================================================
 
+def _warn_unresolved_placeholders(cfg: dict, config_path: str) -> None:
+    """config 에 남아있는 미치환 플레이스홀더(<UPPER_SNAKE>)를 탐지해 경고한다.
+
+    Site 배포 시 OCR/Layout/Enrichment endpoint·serving ID 등의 치환 누락을 조기에
+    드러내기 위함. fail-fast 하지 않고(기동 보존) WARNING 로그만 남긴다.
+    """
+    pattern = re.compile(r"<[A-Z0-9_]+>")
+    found = []
+
+    def _scan(node, path):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                _scan(v, f"{path}.{k}" if path else str(k))
+        elif isinstance(node, list):
+            for i, v in enumerate(node):
+                _scan(v, f"{path}[{i}]")
+        elif isinstance(node, str):
+            for ph in pattern.findall(node):
+                found.append((path, ph))
+
+    _scan(cfg, "")
+    if found:
+        lines = "\n".join(f"  - {path}: {ph}" for path, ph in found)
+        _log.warning(
+            "[DocumentProcessor] 미치환 설정 플레이스홀더가 발견되었습니다 "
+            f"(config='{config_path}'). Site 배포 시 실제 값으로 변경하세요:\n{lines}"
+        )
+
+
 def _load_config(config_path: str) -> dict:
     with open(config_path, "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f) or {}
     if not isinstance(cfg, dict):
         raise ValueError(f"Invalid config format: expected mapping, got {type(cfg).__name__}")
+    _warn_unresolved_placeholders(cfg, config_path)
     return cfg
 
 
