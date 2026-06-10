@@ -9,13 +9,13 @@ import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import TextCell
 from PIL import Image, ImageDraw
-from rtree import index
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import OcrOptions
 from docling.datamodel.settings import settings
+from docling.datamodel.spatial import BoundingBoxSpatialIndex, has_positive_area
 from docling.models.base_model import BaseModelWithOptions, BasePageModel
 
 _log = logging.getLogger(__name__)
@@ -117,16 +117,16 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         self, ocr_cells: List[TextCell], programmatic_cells: List[TextCell]
     ) -> List[TextCell]:
         # Create R-tree index for programmatic cells
-        p = index.Property()
-        p.dimension = 2
-        idx = index.Index(properties=p)
+        idx = BoundingBoxSpatialIndex()
         for i, cell in enumerate(programmatic_cells):
-            idx.insert(i, cell.rect.to_bounding_box().as_tuple())
+            bbox = cell.rect.to_bounding_box()
+            if has_positive_area(bbox):
+                idx.insert(i, bbox)
 
         def is_overlapping_with_existing_cells(ocr_cell):
             # Query the R-tree to get overlapping rectangles
             possible_matches_index = list(
-                idx.intersection(ocr_cell.rect.to_bounding_box().as_tuple())
+                idx.intersection(ocr_cell.rect.to_bounding_box())
             )
 
             return (
