@@ -96,27 +96,6 @@ class OcrAutoModel(BaseOcrModel):
                     _log.info("easyocr cannot be used because it is not installed.")
 
             if self._engine is None:
-                try:
-                    import torch
-                    from rapidocr import EngineType, RapidOCR  # type: ignore
-
-                    self._engine = RapidOcrModel(
-                        enabled=self.enabled,
-                        artifacts_path=artifacts_path,
-                        options=RapidOcrOptions(
-                            backend="torch",
-                            bitmap_area_threshold=self.options.bitmap_area_threshold,
-                            force_full_page_ocr=self.options.force_full_page_ocr,
-                        ),
-                        accelerator_options=accelerator_options,
-                    )
-                    _log.info("Auto OCR model selected rapidocr with torch.")
-                except ImportError:
-                    _log.info(
-                        "rapidocr cannot be used because rapidocr or torch is not installed."
-                    )
-
-            if self._engine is None:
                 _log.warning("No OCR engine found. Please review the install details.")
 
     def __call__(

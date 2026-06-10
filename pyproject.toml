@@ -243,7 +243,7 @@ cli = [
 # CONVENIENCE BUNDLES
 # ============================================================================
 standard = [
-  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr,format-office,format-web,format-latex,format-email,feat-chunking,extract-core,service-client,cli]',
+  'docling-slim[format-pdf,models-local,feat-ocr-rapidocr-onnx,format-office,format-web,format-latex,format-email,feat-chunking,extract-core,service-client,cli]',
 ]
 
 all = [

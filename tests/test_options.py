@@ -123,6 +123,13 @@ def test_kserve_v2_binary_data_deprecated_alias():
     assert options.use_binary_data is True
 
 
+def test_standard_extra_installs_rapidocr_onnx():
+    pyproject = Path("pyproject.toml").read_text()
+
+    assert "feat-ocr-rapidocr-onnx" in pyproject
+    assert "models-local,feat-ocr-rapidocr," not in pyproject
+
+
 def test_e2e_conversions(test_doc_path):
     for converter in get_converters_with_table_options():
         print(f"converting {test_doc_path}")
