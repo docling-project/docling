@@ -46,6 +46,7 @@ from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
+from docling.utils.profiling import log_profiling_summary
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
@@ -339,6 +340,7 @@ class DocumentConverter:
                 _log.info(
                     f"Finished converting document {item.input.file.name} in {elapsed:.2f} sec."
                 )
+                log_profiling_summary(item, _log)
                 yield item
 
     def _get_pipeline(self, doc_format: InputFormat) -> Optional[BasePipeline]:

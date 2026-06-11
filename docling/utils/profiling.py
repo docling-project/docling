@@ -1,3 +1,4 @@
+import logging
 import time
 from datetime import datetime
 from enum import Enum
@@ -10,6 +11,8 @@ from docling.datamodel.settings import settings
 
 if TYPE_CHECKING:
     from docling.datamodel.document import ConversionResult
+
+_log = logging.getLogger(__name__)
 
 
 class ProfilingScope(str, Enum):
@@ -60,3 +63,48 @@ class TimeRecorder:
             elapsed = time.monotonic() - self.start
             self.conv_res.timings[self.key].times.append(elapsed)
             self.conv_res.timings[self.key].count += 1
+
+
+def log_profiling_summary(
+    conv_res: "ConversionResult", logger: logging.Logger = _log
+) -> None:
+    """Log a per-stage timing breakdown for one converted document.
+
+    No-op unless ``settings.debug.profile_pipeline_timings`` is enabled (set
+    ``DOCLING_DEBUG__PROFILE_PIPELINE_TIMINGS=true``). Stages are ordered by
+    total elapsed time so the dominant bottleneck appears first.
+    """
+    if not settings.debug.profile_pipeline_timings:
+        return
+
+    timings = getattr(conv_res, "timings", None)
+    if not timings:
+        return
+
+    rows = []
+    for key, item in timings.items():
+        if not item.times:
+            continue
+        total = float(np.sum(item.times))
+        rows.append((key, item, total))
+
+    if not rows:
+        return
+
+    rows.sort(key=lambda r: r[2], reverse=True)
+
+    file_name = getattr(getattr(conv_res, "input", None), "file", "")
+    header = f"[profiling] timing summary for {file_name}"
+    lines = [
+        header,
+        f"{'stage':<28} {'scope':<9} {'count':>6} {'total(s)':>10} "
+        f"{'avg(s)':>9} {'p95(s)':>9}",
+    ]
+    for key, item, total in rows:
+        scope = item.scope.value if hasattr(item.scope, "value") else str(item.scope)
+        p95 = item.percentile(95) if len(item.times) > 1 else item.times[0]
+        lines.append(
+            f"{key:<28} {scope:<9} {item.count:>6} {total:>10.3f} "
+            f"{item.avg():>9.3f} {p95:>9.3f}"
+        )
+    logger.info("\n".join(lines))
