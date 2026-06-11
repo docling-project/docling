@@ -146,3 +146,147 @@ def test_all_gt_tables_parse_with_consistent_grid(table_gt):
 
     # 데이터셋에 병합셀 표가 다수 존재(33/51) — 파싱 결과에도 반영되어야 함.
     assert merged_seen >= 20, f"병합셀이 인식된 표가 너무 적음: {merged_seen}"
+
+
+# ─── (c) DotsOCR 한 아이템에 여러 <table> → 개별 분리 ────────────────────────
+
+
+def _extract_all(text):
+    """한 DotsOCR 아이템 text 에서 최상위 <table> 들을 모두 추출(실제 함수)."""
+    from docling.models.genos_dots_ocr_layout_model import _extract_all_table_html
+
+    return _extract_all_table_html(text)
+
+
+def _split_bbox(bbox_values, count):
+    from docling.models.genos_dots_ocr_layout_model import _split_bbox_vertically
+
+    return _split_bbox_vertically(bbox_values, count)
+
+
+# 사용자 제보 샘플: 한 아이템 text 에 <table> 2개가 연속으로 들어있는 경우
+# (앞은 목차 표, 뒤는 회의록 표). 기존엔 첫 표만 가져오고 둘째 표가 통째로 유실됨.
+_TWO_TABLE_HTML = (
+    "<table>"
+    "<tr><td>5. 2026년도 경상남도 제1회 추가경정예산안(계속)</td><td></td></tr>"
+    "<tr><td>다. 관광개발국 소관</td><td>44면</td></tr>"
+    "<tr><td>라. 보건의료국 소관</td><td>52면</td></tr>"
+    "<tr><td>부록</td><td>59면</td></tr>"
+    "</table>"
+    "<table>"
+    "<tr><td>(15시 51분 개의)</td><td>존경하는 박주언 위원장님!</td></tr>"
+    "<tr><td>전기풍 의원입니다.</td><td>감사합니다.</td></tr>"
+    "</table>"
+)
+
+
+@pytest.mark.unit
+def test_extract_all_tables_returns_each_top_level_table():
+    """여러 <table> 가 각각 분리되어 반환되는지(둘째 표 유실 없음)."""
+    tables = _extract_all(_TWO_TABLE_HTML)
+    assert len(tables) == 2
+    # 각 추출 결과는 정확히 하나의 최상위 table.
+    for html in tables:
+        assert html.count("<table") == 1
+    # 첫째는 목차, 둘째는 회의록 — 내용이 서로 섞이지 않음.
+    assert "44면" in tables[0] and "44면" not in tables[1]
+    assert "존경하는" in tables[1] and "존경하는" not in tables[0]
+
+
+@pytest.mark.unit
+def test_extract_all_tables_single_table_returns_one():
+    """단일 table 입력은 1개만 반환(회귀 방지)."""
+    single = "<table><tr><td>a</td><td>b</td></tr></table>"
+    tables = _extract_all(single)
+    assert len(tables) == 1
+    assert "a" in tables[0] and "b" in tables[0]
+
+
+@pytest.mark.unit
+def test_extract_all_tables_ignores_nested_tables():
+    """중첩 table 은 별도 항목이 아니라 외곽 table 안에 보존되어야 함."""
+    nested = (
+        "<table><tr><td>outer"
+        "<table><tr><td>inner</td></tr></table>"
+        "</td></tr></table>"
+    )
+    tables = _extract_all(nested)
+    assert len(tables) == 1
+    assert "inner" in tables[0]
+
+
+@pytest.mark.unit
+def test_extract_all_tables_empty_or_non_table():
+    """table 이 없으면 빈 리스트."""
+    assert _extract_all("") == []
+    assert _extract_all("그냥 텍스트") == []
+    assert _extract_all(None) == []
+
+
+@pytest.mark.unit
+def test_extract_table_html_first_only_backward_compat():
+    """_extract_table_html 은 기존처럼 첫 table 만 반환."""
+    from docling.models.genos_dots_ocr_layout_model import _extract_table_html
+
+    html = _extract_table_html(_TWO_TABLE_HTML)
+    assert html is not None
+    assert "44면" in html and "존경하는" not in html
+
+
+@pytest.mark.unit
+def test_extracted_tables_parse_to_consistent_grids():
+    """분리 추출한 각 표가 격자 정합(겹침/구멍 0)으로 파싱되는지."""
+    for html in _extract_all(_TWO_TABLE_HTML):
+        td = _parse(html)
+        assert td is not None
+        overlaps, holes = _grid_issues(td)
+        assert overlaps == [], f"격자 셀 겹침: {overlaps[:5]}"
+        assert holes == [], f"격자 빈 칸: {holes[:5]}"
+
+
+@pytest.mark.unit
+def test_different_column_counts_stay_consistent_when_split():
+    """컬럼 수가 다른 두 표 — 분리하면 각자 정합 격자 유지(병합 시 구멍 발생 방지)."""
+    mixed = (
+        "<table><tr><td>a</td><td>b</td></tr></table>"
+        "<table><tr><td>x</td><td>y</td><td>z</td></tr></table>"
+    )
+    tables = _extract_all(mixed)
+    assert len(tables) == 2
+
+    td0, td1 = _parse(tables[0]), _parse(tables[1])
+    assert (td0.num_rows, td0.num_cols) == (1, 2)
+    assert (td1.num_rows, td1.num_cols) == (1, 3)
+    for td in (td0, td1):
+        overlaps, holes = _grid_issues(td)
+        assert overlaps == [] and holes == []
+
+
+@pytest.mark.unit
+def test_split_bbox_vertically_disjoint_and_ordered():
+    """원본 bbox 를 세로 N등분 — 겹치지 않고 위→아래 순서, 원본 범위 내부."""
+    bbox_values = (10.0, 100.0, 200.0, 400.0)  # l, t, r, b
+    bands = _split_bbox(bbox_values, 3)
+    assert len(bands) == 3
+
+    for band in bands:
+        # 좌우 폭은 원본과 동일.
+        assert band["l"] == 10.0 and band["r"] == 200.0
+        # 세로는 원본 범위 내부.
+        assert 100.0 <= band["t"] <= band["b"] <= 400.0
+
+    # 첫 밴드 상단 = 원본 상단, 마지막 밴드 하단 = 원본 하단.
+    assert bands[0]["t"] == 100.0
+    assert bands[-1]["b"] == 400.0
+    # 인접 밴드는 경계만 공유(면적 겹침 0) → 후처리 overlap-dedup 비대상.
+    for i in range(len(bands) - 1):
+        assert bands[i]["b"] == bands[i + 1]["t"]
+        assert bands[i]["t"] < bands[i]["b"]
+
+
+@pytest.mark.unit
+def test_split_bbox_vertically_single_band():
+    """count<=1 이면 원본 bbox 그대로."""
+    assert _split_bbox((0.0, 0.0, 10.0, 10.0), 1) == [
+        {"l": 0.0, "t": 0.0, "r": 10.0, "b": 10.0}
+    ]
