@@ -299,17 +299,37 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         abs_list: list[Abstract] = []
 
         for abs_node in self.tree.xpath(".//abstract"):
-            abstract: Abstract = dict(label="", content="")
-            texts = []
-            for abs_par in abs_node.xpath("p"):
-                texts.append(JatsDocumentBackend._get_text(abs_par).strip())
-            abstract["content"] = " ".join(texts)
+            
+            sections = abs_node.xpath("sec")
 
-            label_node = abs_node.xpath("title|label")
-            if len(label_node) > 0:
-                abstract["label"] = label_node[0].text.strip()
+            if sections:
+                for sec in sections:
+                    abstract: Abstract = dict(label="", content="")
+                    sec_label = sec.xpath("title|label")
+                    if len(sec_label) > 0:
+                        abstract["label"] = sec_label[0].text.strip()
+                        
+                    texts = []
+                    for par in sec.xpath("p"):
+                        texts.append(JatsDocumentBackend._get_text(par).strip())
+                    abstract["content"] = " ".join(texts)
+                    
+                    if abstract["content"]:
+                        abs_list.append(abstract)
+                        
+            else:
+                abstract: Abstract = dict(label="", content="")
+                texts = []
+                for abs_par in abs_node.xpath("p"):
+                    texts.append(JatsDocumentBackend._get_text(abs_par).strip())
+                abstract["content"] = " ".join(texts)
 
-            abs_list.append(abstract)
+                label_node = abs_node.xpath("title|label")
+                if len(label_node) > 0:
+                    abstract["label"] = label_node[0].text.strip()
+
+                if abstract["content"]:
+                    abs_list.append(abstract)
 
         return abs_list
 
@@ -326,8 +346,11 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             aff = aff.replace("\n", " ")
             label = affiliation_node.xpath("label")
             if label:
-                # TODO: once superscript is supported, add label with formatting
-                aff = aff.removeprefix(f"{label[0].text}, ")
+                label_text = label[0].text.strip()
+                
+                # 1. Strip out the ugly, unformatted text the parser originally grabbed
+                aff = aff.removeprefix(f"{label_text}, ").strip()
+                aff = f"^{label_text}^ {aff}"
             affiliation_names.append(aff)
         affiliation_ids_names = dict(
             zip(meta.xpath(".//aff[@id]/@id"), affiliation_names)
@@ -413,7 +436,22 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     def _add_authors(self, doc: DoclingDocument, xml_components: XMLComponents) -> None:
         # TODO: once docling supports text formatting, add affiliation reference to
         # author names through superscripts
-        authors: list = [item["name"] for item in xml_components["authors"]]
+        authors: list[str] = []
+        for author in xml_components["authors"]:
+            name = author["name"]
+
+            markers = []
+            for aff in author["affiliation_names"]:
+                # 2. eg."^1^ Institute"),
+                if aff.startswith("^") and "^" in aff[1:]:
+                    marker = aff.split("^")[1]
+                    markers.append(marker)
+            
+            if markers:
+                marker_str = ",".join(markers) 
+                name = f"{name}^{marker_str}^"
+                
+            authors.append(name)
         authors_str = ", ".join(authors)
         affiliations: list = [
             item
@@ -602,23 +640,32 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             caption = None
 
         # TODO: format label vs caption once styling is supported
-        fig_text: str = f"{label}{' ' if label and caption else ''}{caption}"
+        # label to be bold (Standard scientific figure styling)
+        formatted_label = f"**{label}**" if label else ""
+        
+        # combine the bold label and the regular caption
+        fig_text: str = f"{formatted_label}{' ' if label and caption else ''}{caption}"
         fig_caption: TextItem | None = (
             doc.add_text(label=DocItemLabel.CAPTION, text=fig_text)
             if fig_text
             else None
         )
-
         doc.add_picture(parent=parent, caption=fig_caption)
-
         return
 
     # TODO: add footnotes when DocItemLabel.FOOTNOTE and styling are supported
-    # def _add_footnote_group(self, doc: DoclingDocument, parent: NodeItem, node: etree._Element) -> None:
-    #     new_parent = doc.add_group(label=GroupLabel.LIST, name="footnotes", parent=parent)
-    #     for child in node.iterchildren(tag="fn"):
-    #         text = JatsDocumentBackend._get_text(child)
-    #         doc.add_list_item(text=text, parent=new_parent)
+    def _add_footnote_group(self, doc: DoclingDocument, parent: NodeItem, node: etree._Element) -> None:
+        new_parent = doc.add_group(label=GroupLabel.LIST, name="footnotes", parent=parent)
+        
+        for child in node.iterchildren(tag="fn"):
+            #footnote label 
+            label_node = child.xpath("label")
+            fn_label = JatsDocumentBackend._get_text(label_node[0]).strip() if label_node else ""
+            text = JatsDocumentBackend._get_text(child).strip()
+            if fn_label and text.startswith(fn_label):
+                text = text[len(fn_label):].strip()
+            formatted_text = f"^{fn_label}^ {text}" if fn_label else text
+            doc.add_text(label=DocItemLabel.FOOTNOTE, text=formatted_text, parent=new_parent)
 
     def _add_metadata(
         self, doc: DoclingDocument, xml_components: XMLComponents
@@ -704,6 +751,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                         formula.replace_with(NavigableString(math_formula))
 
                 # TODO: extract content correctly from table-cells with lists
+                for list_item in html_cell(["list-item", "li"]):
+                    list_item.insert(0, NavigableString("- "))
+                    list_item.append(NavigableString("\n"))
                 text = HTMLDocumentBackend.get_text(html_cell).strip()
                 col_span, row_span = HTMLDocumentBackend._get_cell_spans(html_cell)
                 if row_header:
@@ -742,10 +792,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             return
 
         data = JatsDocumentBackend.parse_table_data(table_tag)
-        # TODO: format label vs caption once styling is supported
+        
         label = table_xml_component["label"]
         caption = table_xml_component["caption"]
-        table_text: str = f"{label}{' ' if label and caption else ''}{caption}"
+    
+        formatted_label = f"**{label}**" if label else ""
+        table_text: str = f"{formatted_label}{' ' if label and caption else ''}{caption}"
+        
         table_caption: TextItem | None = (
             doc.add_text(label=DocItemLabel.CAPTION, text=table_text)
             if table_text
@@ -859,6 +912,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             elif child.tag == "suplementary-material":
                 stop_walk = True
             elif child.tag == "fn-group":
+                header = child.xpath(".//title") or child.xpath(".//label")
+                if header:
+                    text = JatsDocumentBackend._get_text(header[0])
+                    fn_parent = doc.add_heading(text=text, parent=new_parent)
+                else:
+                    fn_parent = new_parent
+                self._add_footnote_group(doc, fn_parent, child)
                 # header = child.xpath(".//title") or child.xpath(".//label")
                 # if header:
                 #     text = JatsDocumentBackend._get_text(header[0])
@@ -888,7 +948,11 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 self._add_equation(doc, parent, child)
                 stop_walk = True
             elif child.tag == "inline-formula":
-                # TODO: address inline formulas when supported by docling-core
+                math_text = JatsDocumentBackend._get_text(child).strip()
+                if math_text:
+                    clean_math = math_text.replace("$$", "").strip()
+                    node_text += f" ${clean_math}$ "
+                    
                 stop_walk = True
 
             # step into child
