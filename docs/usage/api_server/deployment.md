@@ -138,4 +138,4 @@ These live in the docling-serve repo (run-time manifests aren't vendored here):
 - [Model-cache PVC/Job](https://github.com/docling-project/docling-serve/blob/v1.21.0/docs/models.md) (pre-baking weights)
 - KFP / Ray engines, OpenTelemetry, CUDA image-tagging policy → [serve repo](https://github.com/docling-project/docling-serve/tree/v1.21.0/docs)
 
-Prefer not to run any of this yourself? See the [fully managed](managed.md) option.
+Prefer not to run any of this yourself? See the [managed service](managed.md).

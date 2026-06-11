@@ -10,24 +10,17 @@ Run Docling as an HTTP service with [docling-serve](https://github.com/docling-p
 
 | You want to… | Use |
 |---|---|
-| Call Docling over HTTP from any language, or share one conversion service | the **API server** — [self-host](deployment.md) it, or use the [fully managed](managed.md) option |
-| Use Docling directly inside a Python application | the [Python library](../../getting_started/quickstart.md) |
+| Call Docling over HTTP from any language (including Python), or share one conversion service | the **API server** — [self-host](deployment.md) it, or use a [managed service](managed.md) |
+| Run Docling directly (in-process) in a Python application | the [Python library](../../getting_started/quickstart.md) |
 | Run large-scale or distributed batch conversions | [Jobkit](../jobkit.md) |
 | Expose Docling as tools to an AI agent | the [MCP server](../mcp.md) |
 
-!!! note "Two MCP modes"
-    docling-serve can also expose Docling over MCP, bundled in the same image (streamable-http transport). That is distinct from the standalone [MCP server](../mcp.md), which remains the canonical MCP documentation. For the bundled mode see the serve [`mcp.md`](https://github.com/docling-project/docling-serve/blob/v1.21.0/docs/mcp.md).
+!!! note "Using the API server from an MCP agent"
+    The [MCP server](../mcp.md) can convert through this REST API instead of running Docling locally — set `DOCLING_CONVERSION_MODE=remote` and point it at your service URL. See [MCP server](../mcp.md).
 
 ## Getting started
 
-Install and start the server:
-
-```sh
-pip install "docling-serve[ui]"
-docling-serve run --enable-ui
-```
-
-To call the API you need the **service URL** and, if the server requires one (`DOCLING_SERVE_API_KEY`), an **API key**. For a local run the service URL is `http://localhost:5001` — interactive API docs are at `/docs` and the demo UI at `/ui`.
+To use the API server you need a running endpoint — [run your own](deployment.md) or use a [managed service](managed.md) — plus its **service URL** and, if the server requires one (`DOCLING_SERVE_API_KEY`), an **API key**. A local server defaults to `http://localhost:5001` (interactive API docs at `/docs`):
 
 ```sh
 curl -X POST "http://localhost:5001/v1/convert/source/async" \
@@ -35,8 +28,8 @@ curl -X POST "http://localhost:5001/v1/convert/source/async" \
   -d '{"http_sources": [{"url": "https://arxiv.org/pdf/2501.17887"}]}'
 ```
 
-See [Deployment](deployment.md) for configuration and the other ways to run it, and [REST API](rest_api.md) for the full API.
+See [Deployment](deployment.md) to run and configure it, and [REST API](rest_api.md) for the full API.
 
 ## How it works
 
-A request hits the docling-serve API, which runs the conversion through Docling and returns the result (synchronously, or as an async task you poll). Background jobs run on a pluggable [compute engine](deployment.md#compute-engines) — in-process by default, or a Redis-backed queue for scaling. For Docling's internals see [Architecture](../../concepts/architecture.md); for the full API see [REST API](rest_api.md).
+A request hits the docling-serve API, which runs the conversion through Docling and returns the result (synchronously, or as an async task you poll). Background jobs run on a pluggable [compute engine](deployment.md#compute-engines) — in-process by default, or a Redis-backed queue for scaling. For the full API see [REST API](rest_api.md).
