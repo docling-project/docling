@@ -395,6 +395,8 @@ def _make_track_changes_docx() -> BytesIO:
     ins1.set(qn("w:id"), "1")
     ins1.set(qn("w:author"), "Test Author")
     ins1.set(qn("w:date"), "2024-01-01T00:00:00Z")
+    r_ins_empty = OxmlElement("w:r")  # empty run — exercises the `if not run.text` guard
+    ins1.append(r_ins_empty)
     r_ins1 = OxmlElement("w:r")
     t_ins1 = OxmlElement("w:t")
     t_ins1.text = "world"
@@ -406,6 +408,8 @@ def _make_track_changes_docx() -> BytesIO:
     del1.set(qn("w:id"), "2")
     del1.set(qn("w:author"), "Test Author")
     del1.set(qn("w:date"), "2024-01-01T00:00:00Z")
+    r_del_empty = OxmlElement("w:r")  # empty run — exercises the `if not text` guard
+    del1.append(r_del_empty)
     r_del1 = OxmlElement("w:r")
     dt1 = OxmlElement("w:delText")
     dt1.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
