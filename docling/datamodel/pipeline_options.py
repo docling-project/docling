@@ -1326,6 +1326,25 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
     ] = _default_vlm_convert_options
 
 
+class TextInPictureHandling(str, Enum):
+    """How to handle extractable text inside a region labeled as PICTURE.
+
+    The layout model predicts region labels from the rendered page image alone,
+    so it can label a block of genuinely extractable text as a ``PICTURE``. By
+    default such text is absorbed into the picture and dropped from the document
+    body. These modes control that behavior for the false-picture case (a
+    text-covered region with no embedded bitmap underneath).
+    """
+
+    ABSORB = (
+        "absorb"  # current behavior: text is absorbed into the picture and not emitted
+    )
+    DEMOTE = (
+        "demote"  # drop the false picture, keeping its text as normal text elements
+    )
+    KEEP_TEXT = "keep_text"  # keep the picture element but also retain its text
+
+
 class BaseLayoutOptions(BaseOptions):
     """Base options for document layout analysis models.
 
@@ -1358,6 +1377,17 @@ class BaseLayoutOptions(BaseOptions):
             )
         ),
     ] = False
+    text_in_picture_handling: Annotated[
+        TextInPictureHandling,
+        Field(
+            description=(
+                "How to handle extractable text the layout model placed inside a PICTURE region. "
+                "'absorb' (default) keeps current behavior (text is swallowed by the picture and not emitted); "
+                "'demote' drops a false picture (text-covered region with no embedded bitmap) so its text flows "
+                "normally; 'keep_text' keeps the picture but also retains the text. No OCR/VLM involved."
+            )
+        ),
+    ] = TextInPictureHandling.ABSORB
 
 
 class LayoutOptions(BaseLayoutOptions):

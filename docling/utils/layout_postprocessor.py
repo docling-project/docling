@@ -11,6 +11,7 @@ from docling.datamodel.base_models import BoundingBox, Cluster, Page
 from docling.datamodel.pipeline_options import (
     LayoutObjectDetectionOptions,
     LayoutOptions,
+    TextInPictureHandling,
 )
 
 _log = logging.getLogger(__name__)
@@ -171,6 +172,29 @@ class LayoutPostprocessor:
         DocItemLabel.DOCUMENT_INDEX,
     }
     SPECIAL_TYPES = WRAPPER_TYPES.union({DocItemLabel.PICTURE})
+
+    # Text-bearing labels used to detect a region the layout model called a
+    # PICTURE but which actually holds extractable text (mirrors
+    # LayoutModel.TEXT_ELEM_LABELS).
+    TEXT_LABELS = {
+        DocItemLabel.TEXT,
+        DocItemLabel.FOOTNOTE,
+        DocItemLabel.CAPTION,
+        DocItemLabel.CHECKBOX_UNSELECTED,
+        DocItemLabel.CHECKBOX_SELECTED,
+        DocItemLabel.SECTION_HEADER,
+        DocItemLabel.PAGE_HEADER,
+        DocItemLabel.PAGE_FOOTER,
+        DocItemLabel.CODE,
+        DocItemLabel.LIST_ITEM,
+        DocItemLabel.FORMULA,
+    }
+    # A PICTURE is treated as a false picture (mislabeled text) only if its
+    # contained text covers at least this fraction of the picture area ...
+    FALSE_PICTURE_TEXT_COVERAGE = 0.6
+    # ... and embedded bitmaps cover at most this fraction of it (a real raster
+    # image or, conservatively, a vector chart with a bitmap is left untouched).
+    FALSE_PICTURE_BITMAP_COVERAGE = 0.05
 
     CONFIDENCE_THRESHOLDS = {
         DocItemLabel.CAPTION: 0.5,
@@ -339,6 +363,7 @@ class LayoutPostprocessor:
                 )
             ]
 
+        demoted_picture_ids: set[int] = set()
         for special in special_clusters:
             contained = []
             for cluster in self.regular_clusters:
@@ -346,32 +371,54 @@ class LayoutPostprocessor:
                 if containment > 0.8:
                     contained.append(cluster)
 
-            if contained:
-                # Sort contained clusters by minimum cell ID:
-                contained = self._sort_clusters(contained, mode="id")
-                special.children = contained
+            if not contained:
+                continue
 
-                # Adjust bbox only for Form and Key-Value-Region, not Table or Picture
-                if special.label in [DocItemLabel.FORM, DocItemLabel.KEY_VALUE_REGION]:
-                    special.bbox = BoundingBox(
-                        l=min(c.bbox.l for c in contained),
-                        t=min(c.bbox.t for c in contained),
-                        r=max(c.bbox.r for c in contained),
-                        b=max(c.bbox.b for c in contained),
-                    )
+            # Sort contained clusters by minimum cell ID:
+            contained = self._sort_clusters(contained, mode="id")
 
-                # Conditionally collect cells from children
-                if not self.options.skip_cell_assignment:
-                    all_cells = []
-                    for child in contained:
-                        all_cells.extend(child.cells)
-                    special.cells = self._deduplicate_cells(all_cells)
-                    special.cells = self._sort_cells(special.cells)
-                else:
-                    special.cells = []
+            # A PICTURE covering extractable text with no bitmap underneath is a
+            # mislabel. Depending on configuration, recover that text instead of
+            # absorbing (and thereby dropping) it. In both non-absorb modes the
+            # contained text clusters are left as regular clusters so they survive
+            # into the document body; DEMOTE additionally drops the picture.
+            handling = self.options.text_in_picture_handling
+            if (
+                special.label == DocItemLabel.PICTURE
+                and handling != TextInPictureHandling.ABSORB
+                and self._is_false_picture(special, contained)
+            ):
+                special.children = []
+                special.cells = []
+                if handling == TextInPictureHandling.DEMOTE:
+                    demoted_picture_ids.add(special.id)
+                continue
+
+            special.children = contained
+
+            # Adjust bbox only for Form and Key-Value-Region, not Table or Picture
+            if special.label in [DocItemLabel.FORM, DocItemLabel.KEY_VALUE_REGION]:
+                special.bbox = BoundingBox(
+                    l=min(c.bbox.l for c in contained),
+                    t=min(c.bbox.t for c in contained),
+                    r=max(c.bbox.r for c in contained),
+                    b=max(c.bbox.b for c in contained),
+                )
+
+            # Conditionally collect cells from children
+            if not self.options.skip_cell_assignment:
+                all_cells = []
+                for child in contained:
+                    all_cells.extend(child.cells)
+                special.cells = self._deduplicate_cells(all_cells)
+                special.cells = self._sort_cells(special.cells)
+            else:
+                special.cells = []
 
         picture_clusters = [
-            c for c in special_clusters if c.label == DocItemLabel.PICTURE
+            c
+            for c in special_clusters
+            if c.label == DocItemLabel.PICTURE and c.id not in demoted_picture_ids
         ]
         picture_clusters = self._remove_overlapping_clusters(
             picture_clusters, "picture"
@@ -385,6 +432,60 @@ class LayoutPostprocessor:
         )
 
         return picture_clusters + wrapper_clusters
+
+    def _is_false_picture(self, picture: Cluster, contained: list[Cluster]) -> bool:
+        """Decide whether a PICTURE cluster is actually mislabeled text.
+
+        True only when the contained text clusters carry programmatic (non-OCR)
+        cells, cover most of the picture, and no embedded bitmap underlies the
+        region. This protects genuine figures (including vector charts whose
+        sparse labels cover little area, and any region backed by a real raster).
+        """
+        if self.options.skip_cell_assignment:
+            # Without cell assignment we have no text evidence to act on.
+            return False
+
+        text_children = [c for c in contained if c.label in self.TEXT_LABELS]
+        if not text_children:
+            return False
+
+        has_programmatic_text = any(
+            any(not cell.from_ocr for cell in c.cells) for c in text_children
+        )
+        if not has_programmatic_text:
+            return False
+
+        picture_area = picture.bbox.area()
+        if picture_area <= 0:
+            return False
+
+        text_area = sum(c.bbox.area() for c in text_children)
+        if text_area / picture_area < self.FALSE_PICTURE_TEXT_COVERAGE:
+            return False
+
+        return self._bitmap_coverage(picture.bbox) <= self.FALSE_PICTURE_BITMAP_COVERAGE
+
+    def _bitmap_coverage(self, bbox: BoundingBox) -> float:
+        """Fraction of ``bbox`` covered by embedded bitmap resources of the page."""
+        parsed_page = self.page.parsed_page
+        if (
+            parsed_page is None
+            or not parsed_page.bitmap_resources
+            or self.page_size is None
+        ):
+            return 0.0
+
+        bbox_area = bbox.area()
+        if bbox_area <= 0:
+            return 0.0
+
+        coverage = 0.0
+        for resource in parsed_page.bitmap_resources:
+            bitmap_bbox = resource.rect.to_bounding_box().to_top_left_origin(
+                self.page_size.height
+            )
+            coverage += bbox.intersection_over_self(bitmap_bbox)
+        return coverage
 
     def _handle_cross_type_overlaps(self, special_clusters) -> list[Cluster]:
         """Handle overlaps between regular and wrapper clusters before child assignment.
