@@ -21,7 +21,7 @@ REQUIRED_KEYS = {"elements", "usage"}
 ELEMENT_KEYS = {"id", "page", "category", "content", "coordinates"}
 
 # 평균 TEDS-S 합격 임계값 (필요 시 env 로 조정)
-TEDS_S_MIN = float(os.environ.get("TEDS_S_MIN", "0.68"))
+TEDS_S_MIN = float(os.environ.get("TEDS_S_MIN", "0.75"))
 
 
 def _resolve_sample() -> Path | None:
