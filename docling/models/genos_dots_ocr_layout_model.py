@@ -677,6 +677,10 @@ class GenosDotsOCRLayoutModel(BasePageModel):
             raw_table_html_by_cluster_id: dict[int, str] = {}
             raw_formula_latex_by_cluster_id: dict[int, str] = {}
             raw_text_by_cluster_id: dict[int, str] = {}
+            # Cluster ids default to the item index. Items that split into
+            # multiple table clusters need extra ids that cannot collide with
+            # any item index, so allocate them starting past the last index.
+            next_extra_cluster_id = len(result)
             for idx, pred_item in enumerate(result):
                 if not isinstance(pred_item, dict):
                     _log.warning(
@@ -708,11 +712,6 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                     continue
 
                 pred_item_text = _extract_layout_item_text(pred_item)
-                if label in self.TABLE_LABELS:
-                    if pred_item_text:
-                        table_html = _extract_table_html(pred_item_text)
-                        if table_html:
-                            raw_table_html_by_cluster_id[idx] = table_html
 
                 bbox_values = _rescale_dotsocr_bbox_to_page(
                     bbox=pred_item["bbox"],
@@ -728,6 +727,46 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                         pred_item.get("bbox"),
                     )
                     continue
+
+                confidence = _coerce_confidence(pred_item.get("confidence"))
+
+                # A single DotsOCR Table item may pack multiple stacked tables
+                # into its text. Split them into separate clusters (one table
+                # each) so none are dropped; otherwise only the first survives.
+                if label in self.TABLE_LABELS:
+                    table_htmls = (
+                        _extract_all_table_html(pred_item_text)
+                        if pred_item_text
+                        else []
+                    )
+                    if len(table_htmls) > 1:
+                        sub_bboxes = _split_bbox_vertically(
+                            bbox_values, len(table_htmls)
+                        )
+                        for band_idx, (sub_bbox, table_html) in enumerate(
+                            zip(sub_bboxes, table_htmls)
+                        ):
+                            if band_idx == 0:
+                                cluster_id = idx
+                            else:
+                                cluster_id = next_extra_cluster_id
+                                next_extra_cluster_id += 1
+                            clusters.append(
+                                Cluster(
+                                    id=cluster_id,
+                                    label=label,
+                                    confidence=confidence,
+                                    bbox=BoundingBox.model_validate(sub_bbox),
+                                    cells=[],
+                                )
+                            )
+                            raw_table_html_by_cluster_id[cluster_id] = table_html
+                        continue
+
+                    # Single (or no) table: fall through to single-cluster path.
+                    if table_htmls:
+                        raw_table_html_by_cluster_id[idx] = table_htmls[0]
+
                 bbox = {
                     "l": bbox_values[0],
                     "t": bbox_values[1],
@@ -737,7 +776,7 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                 cluster = Cluster(
                     id=idx,
                     label=label,
-                    confidence=_coerce_confidence(pred_item.get("confidence")),
+                    confidence=confidence,
                     # bbox=BoundingBox.model_validate(pred_item),
                     bbox=BoundingBox.model_validate(bbox),
                     cells=[],
@@ -1220,22 +1259,15 @@ def _extract_layout_item_text(layout_item: dict) -> Optional[str]:
     return None
 
 
-def _extract_table_html(raw_text: str) -> Optional[str]:
-    if not isinstance(raw_text, str):
-        return None
+def _extract_balanced_table_blocks(text: str) -> list[str]:
+    """Collect every balanced ``<table>...</table>`` block from raw text.
 
-    text = raw_text.strip()
-    if not text:
-        return None
-
-    soup = BeautifulSoup(text, "html.parser")
-    first_table = soup.find("table")
-    if isinstance(first_table, Tag):
-        return str(first_table)
-
-    # Fallback for malformed/non-HTML-like payloads:
-    # find the first balanced <table>...</table> block without truncating nested tables.
+    Used as a fallback for malformed/non-HTML-like payloads where the HTML
+    parser fails to expose tables. Nested tables are kept intact (the block
+    closes only when its own opening tag is balanced).
+    """
     tag_pattern = re.compile(r"</?table\b[^>]*>", re.IGNORECASE)
+    blocks: list[str] = []
     start_idx = None
     depth = 0
 
@@ -1255,9 +1287,65 @@ def _extract_table_html(raw_text: str) -> Optional[str]:
 
         depth -= 1
         if depth == 0:
-            return text[start_idx:match.end()]
+            blocks.append(text[start_idx : match.end()])
+            start_idx = None
 
-    return None
+    return blocks
+
+
+def _extract_all_table_html(raw_text: str) -> list[str]:
+    """Extract all top-level ``<table>`` blocks from a DotsOCR item's text.
+
+    A single DotsOCR layout item may pack multiple stacked tables into its
+    text (e.g. ``<table>...</table><table>...</table>``). Returns each
+    top-level table's HTML as a separate string, in document order. Nested
+    tables are not returned separately (they belong to their outer table).
+    """
+    if not isinstance(raw_text, str):
+        return []
+
+    text = raw_text.strip()
+    if not text:
+        return []
+
+    soup = BeautifulSoup(text, "html.parser")
+    top_level_tables = [
+        tag for tag in soup.find_all("table") if tag.find_parent("table") is None
+    ]
+    if top_level_tables:
+        return [str(tag) for tag in top_level_tables]
+
+    # Fallback for malformed/non-HTML-like payloads.
+    return _extract_balanced_table_blocks(text)
+
+
+def _extract_table_html(raw_text: str) -> Optional[str]:
+    """Extract the first top-level ``<table>`` block, or ``None``."""
+    tables = _extract_all_table_html(raw_text)
+    return tables[0] if tables else None
+
+
+def _split_bbox_vertically(
+    bbox_values: tuple[float, float, float, float], count: int
+) -> list[dict]:
+    """Split a (l, t, r, b) bbox into ``count`` non-overlapping vertical bands.
+
+    DotsOCR can group several stacked tables under one bbox. Splitting the
+    bbox into disjoint top-to-bottom bands lets each table become its own
+    cluster without triggering overlap-based dedup in the postprocessor
+    (adjacent bands share only an edge, so their intersection area is zero).
+    """
+    left, top, right, bottom = bbox_values
+    if count <= 1:
+        return [{"l": left, "t": top, "r": right, "b": bottom}]
+
+    span = (bottom - top) / count
+    bands: list[dict] = []
+    for i in range(count):
+        band_top = top + span * i
+        band_bottom = bottom if i == count - 1 else top + span * (i + 1)
+        bands.append({"l": left, "t": band_top, "r": right, "b": band_bottom})
+    return bands
 
 
 def _parse_html_to_table_data(html: str) -> Optional[TableData]:
