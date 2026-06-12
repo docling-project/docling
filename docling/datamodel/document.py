@@ -33,22 +33,6 @@ from docling_core.types.doc import (
     TextItem,
 )
 from docling_core.types.doc.document import ListItem
-from docling_core.types.legacy_doc.base import (
-    BaseText,
-    Figure,
-    GlmTableCell,
-    PageDimensions,
-    PageReference,
-    Prov,
-    Ref,
-    Table as DsSchemaTable,
-    TableCell,
-)
-from docling_core.types.legacy_doc.document import (
-    CCSDocumentDescription as DsDocumentDescription,
-    CCSFileInfoObject as DsFileInfoObject,
-    ExportedCCSDocument as DsDocument,
-)
 from docling_core.utils.file import FileSizeLimitExceededError, resolve_source_to_stream
 from docling_core.utils.legacy import docling_document_to_legacy
 from pydantic import BaseModel, Field
@@ -284,11 +268,6 @@ class ConversionAssets(BaseModel):
     confidence: ConfidenceReport = Field(default_factory=ConfidenceReport)
 
     document: DoclingDocument = _EMPTY_DOCLING_DOC
-
-    @property
-    @deprecated("Use document instead.")
-    def legacy_document(self):
-        return docling_document_to_legacy(self.document)
 
     def save(
         self,
