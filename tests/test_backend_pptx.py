@@ -1,7 +1,10 @@
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
+from docling_core.types.doc import ContentLayer
 
+from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument
 from docling.document_converter import DocumentConverter
@@ -10,6 +13,12 @@ from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
+PPTX_NAMESPACES = {
+    "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+    "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
+    "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
+}
+COMMENT_FIXTURES = {"powerpoint_comments"}
 
 
 def get_pptx_paths():
