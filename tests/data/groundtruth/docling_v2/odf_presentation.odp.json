@@ -1925,8 +1925,8 @@
       "prov": [],
       "orig": "Let’s introduce a list",
       "text": "Let’s introduce a list",
-      "enumerated": false,
-      "marker": ""
+      "enumerated": true,
+      "marker": "1."
     },
     {
       "self_ref": "#/texts/40",
@@ -2005,8 +2005,8 @@
       "prov": [],
       "orig": "List item4",
       "text": "List item4",
-      "enumerated": false,
-      "marker": ""
+      "enumerated": true,
+      "marker": "1."
     },
     {
       "self_ref": "#/texts/46",
@@ -2019,8 +2019,8 @@
       "prov": [],
       "orig": "List item5",
       "text": "List item5",
-      "enumerated": false,
-      "marker": ""
+      "enumerated": true,
+      "marker": "1."
     },
     {
       "self_ref": "#/texts/47",
@@ -2033,8 +2033,8 @@
       "prov": [],
       "orig": "List item6",
       "text": "List item6",
-      "enumerated": false,
-      "marker": ""
+      "enumerated": true,
+      "marker": "1."
     },
     {
       "self_ref": "#/texts/48",
@@ -2155,8 +2155,8 @@
       "prov": [],
       "orig": "List1",
       "text": "List1",
-      "enumerated": false,
-      "marker": ""
+      "enumerated": true,
+      "marker": "1."
     },
     {
       "self_ref": "#/texts/57",
@@ -2169,8 +2169,8 @@
       "prov": [],
       "orig": "List2",
       "text": "List2",
-      "enumerated": false,
-      "marker": ""
+      "enumerated": true,
+      "marker": "1."
     },
     {
       "self_ref": "#/texts/58",
@@ -2183,8 +2183,8 @@
       "prov": [],
       "orig": "List3",
       "text": "List3",
-      "enumerated": false,
-      "marker": ""
+      "enumerated": true,
+      "marker": "1."
     },
     {
       "self_ref": "#/texts/59",

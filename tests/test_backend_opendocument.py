@@ -38,6 +38,7 @@ from odfdo import (
     List as OdfList,
     ListItem,
     Paragraph,
+    Style,
     Table,
 )
 
@@ -316,6 +317,80 @@ def test_ods_table_cell_image_creates_rich_cell_picture(tmp_path: Path):
     pictures = [item for item in child_items if isinstance(item, PictureItem)]
     assert len(pictures) == 1
     assert pictures[0].image is not None
+
+
+def test_odt_ordered_nested_list(tmp_path: Path):
+    path = tmp_path / "ordered_nested.odt"
+    doc = OdfDocument("text")
+    body = doc.body
+    body.clear()
+
+    style = Style("list", name="Numbered")
+    style.set_level_style(1, num_format="1", suffix=".")
+    style.set_level_style(2, num_format="1", suffix=")")
+    doc.insert_style(style)
+
+    outer = OdfList(style="Numbered")
+    first = ListItem()
+    first.append(Paragraph("One"))
+    nested = OdfList(style="Numbered")
+    nested.append(ListItem("Nested one"))
+    first.append(nested)
+    outer.append(first)
+    outer.append(ListItem("Two"))
+    body.append(outer)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    list_items = [
+        item
+        for item, _level in res.document.iterate_items()
+        if isinstance(item, TextItem) and item.label == "list_item"
+    ]
+
+    assert [(item.text, item.enumerated, item.marker) for item in list_items] == [
+        ("One", True, "1."),
+        ("Nested one", True, "1)"),
+        ("Two", True, "2."),
+    ]
+    nested_group = list_items[1].parent.resolve(res.document)
+    assert nested_group.parent == list_items[0].get_ref()
+
+
+def test_odp_nested_textbox_list(tmp_path: Path):
+    path = tmp_path / "nested_list.odp"
+    doc = OdfDocument("presentation")
+    body = doc.body
+    body.clear()
+
+    page = DrawPage("page1", name="Slide One")
+    outer = OdfList()
+    first = ListItem()
+    first.append(Paragraph("Outer"))
+    nested = OdfList()
+    nested.append(ListItem("Nested"))
+    first.append(nested)
+    outer.append(first)
+    page.append(
+        Frame.text_frame(
+            outer,
+            size=("10cm", "5cm"),
+            position=("1cm", "1cm"),
+        )
+    )
+    body.append(page)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path)
+    list_items = [
+        item
+        for item, _level in res.document.iterate_items()
+        if isinstance(item, TextItem) and item.label == "list_item"
+    ]
+
+    assert [item.text for item in list_items] == ["Outer", "Nested"]
+    nested_group = list_items[1].parent.resolve(res.document)
+    assert nested_group.parent == list_items[0].get_ref()
 
 
 def test_odt_mime_detection_without_extension(odt_path: Path):

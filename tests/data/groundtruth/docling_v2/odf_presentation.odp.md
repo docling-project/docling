@@ -19,7 +19,7 @@ With footnote
 
 Second slide title
 
-- Let’s introduce a list
+1. Let’s introduce a list
 
 - With foo
 
@@ -31,11 +31,11 @@ Some notes on the second slide.
 
 # Slide3
 
-- List item4
+1. List item4
 
-- List item5
+1. List item5
 
-- List item6
+1. List item6
 
 - I1
 
@@ -53,11 +53,11 @@ Some info:
 
 Maybe a list?
 
-- List1
+1. List1
 
-- List2
+1. List2
 
-- List3
+1. List3
 
 - l1
 

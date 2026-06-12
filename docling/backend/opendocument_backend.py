@@ -231,6 +231,67 @@ def _odf_list_has_renderable_content(odf_list: OdfList) -> bool:
     return False
 
 
+def _odf_list_level_style(
+    odf_obj: OdfDocument | None, odf_list: OdfList, level: int
+) -> Any | None:
+    if odf_obj is None:
+        return None
+
+    style_name = odf_list.attributes.get("text:style-name")
+    if style_name is None:
+        return None
+
+    style = odf_obj.get_style("list", style_name)
+    if style is None:
+        return None
+
+    return style.get_level_style(level)
+
+
+def _odf_list_level_is_enumerated(
+    odf_obj: OdfDocument | None,
+    odf_list: OdfList,
+    level: int,
+    fallback: bool,
+) -> bool:
+    level_style = _odf_list_level_style(odf_obj, odf_list, level)
+    if level_style is None:
+        return fallback
+    return level_style.tag == "text:list-level-style-number"
+
+
+def _odf_list_start_value(
+    odf_obj: OdfDocument | None,
+    odf_list: OdfList,
+    level: int,
+) -> int:
+    level_style = _odf_list_level_style(odf_obj, odf_list, level)
+    if level_style is None:
+        return 1
+
+    start_value = level_style.attributes.get("text:start-value")
+    if start_value is None:
+        return 1
+
+    try:
+        return max(1, int(start_value))
+    except ValueError:
+        return 1
+
+
+def _odf_list_marker(
+    counter: int,
+    odf_obj: OdfDocument | None,
+    odf_list: OdfList,
+    level: int,
+) -> str:
+    level_style = _odf_list_level_style(odf_obj, odf_list, level)
+    suffix = "."
+    if level_style is not None:
+        suffix = level_style.attributes.get("style:num-suffix") or suffix
+    return f"{counter}{suffix}"
+
+
 def _odf_table_has_content(table: OdfTable) -> bool:
     for row in table.traverse():
         for cell in row.traverse():
@@ -334,7 +395,9 @@ def _add_odf_list(
     odf_list: OdfList,
     parent: NodeItem,
     content_layer: ContentLayer | None,
+    odf_obj: OdfDocument | None,
     enumerated: bool = False,
+    level: int = 1,
 ) -> None:
     if not _odf_list_has_renderable_content(odf_list):
         return
@@ -342,7 +405,10 @@ def _add_odf_list(
     list_group = doc.add_list_group(
         name="list", parent=parent, content_layer=content_layer
     )
-    counter = 0
+    current_enumerated = _odf_list_level_is_enumerated(
+        odf_obj, odf_list, level, fallback=enumerated
+    )
+    counter = _odf_list_start_value(odf_obj, odf_list, level) - 1
     for child in odf_list.children:
         if not isinstance(child, ListItem):
             continue
@@ -351,10 +417,14 @@ def _add_odf_list(
         if not text and not nested:
             continue
         counter += 1
-        marker = f"{counter}." if enumerated else ""
+        marker = (
+            _odf_list_marker(counter, odf_obj, odf_list, level)
+            if current_enumerated
+            else ""
+        )
         item = doc.add_list_item(
             marker=marker,
-            enumerated=enumerated,
+            enumerated=current_enumerated,
             parent=list_group,
             text=text,
             content_layer=content_layer,
@@ -365,7 +435,9 @@ def _add_odf_list(
                 nested_list,
                 parent=item,
                 content_layer=content_layer,
-                enumerated=enumerated,
+                odf_obj=odf_obj,
+                enumerated=current_enumerated,
+                level=level + 1,
             )
 
 
@@ -402,6 +474,7 @@ def _add_rich_cell_children(
                 child,
                 parent=parent,
                 content_layer=content_layer,
+                odf_obj=odf_obj,
                 enumerated=False,
             )
         elif isinstance(child, OdfTable):
@@ -637,7 +710,14 @@ class OdtDocumentBackend(_OdfBaseBackend):
                 if text:
                     doc.add_text(label=DocItemLabel.TEXT, parent=parent, text=text)
             elif isinstance(el, OdfList):
-                self._walk_list(el, parent=parent, doc=doc, enumerated=False)
+                _add_odf_list(
+                    doc,
+                    el,
+                    parent=parent,
+                    content_layer=None,
+                    odf_obj=self.odf_obj,
+                    enumerated=False,
+                )
             elif isinstance(el, OdfTable):
                 _add_table_from_odf(
                     doc,
@@ -647,39 +727,6 @@ class OdtDocumentBackend(_OdfBaseBackend):
                 )
             else:
                 _log.debug("Ignoring ODT element with tag: %s", el.tag)
-
-    def _walk_list(
-        self,
-        odf_list: OdfList,
-        parent: NodeItem | None,
-        doc: DoclingDocument,
-        enumerated: bool,
-    ) -> None:
-        list_group = doc.add_list_group(name="list", parent=parent)
-        counter = 0
-        for child in odf_list.children:
-            if not isinstance(child, ListItem):
-                continue
-            counter += 1
-            marker = f"{counter}." if enumerated else ""
-            text_parts: list[str] = []
-            nested: list[OdfList] = []
-            for sub in child.children:
-                if isinstance(sub, OdfList):
-                    nested.append(sub)
-                elif isinstance(sub, Paragraph):
-                    text_parts.append(sub.text_recursive)
-            text = " ".join(t for t in (s.strip() for s in text_parts) if t)
-            item = doc.add_list_item(
-                marker=marker,
-                enumerated=enumerated,
-                parent=list_group,
-                text=text,
-            )
-            for nested_list in nested:
-                self._walk_list(
-                    nested_list, parent=item, doc=doc, enumerated=enumerated
-                )
 
 
 class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
@@ -763,22 +810,14 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 if text:
                     doc.add_text(label=DocItemLabel.TEXT, parent=parent, text=text)
             elif isinstance(el, OdfList):
-                list_group = doc.add_list_group(name="list", parent=parent)
-                for child in el.children:
-                    if not isinstance(child, ListItem):
-                        continue
-                    text_parts = [
-                        p.text_recursive
-                        for p in child.children
-                        if isinstance(p, Paragraph)
-                    ]
-                    text = " ".join(t for t in (s.strip() for s in text_parts) if t)
-                    doc.add_list_item(
-                        marker="",
-                        enumerated=False,
-                        parent=list_group,
-                        text=text,
-                    )
+                _add_odf_list(
+                    doc,
+                    el,
+                    parent=parent,
+                    content_layer=None,
+                    odf_obj=self.odf_obj,
+                    enumerated=False,
+                )
 
 
 class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
