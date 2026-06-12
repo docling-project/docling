@@ -194,7 +194,9 @@ def test_resolve_language_warns_on_silent_fallback(caplog) -> None:
     with caplog.at_level(logging.WARNING):
         resolved = _resolve_rapidocr_language(["klingon"])
     assert resolved == "chinese"
-    assert any("no bundled model set" in record.getMessage() for record in caplog.records)
+    assert any(
+        "no bundled model set" in record.getMessage() for record in caplog.records
+    )
     assert any(
         "drops inter-word spaces" in record.getMessage() for record in caplog.records
     )
