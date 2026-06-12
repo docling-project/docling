@@ -241,7 +241,7 @@ def log_profiling_summary(
     header = f"[profiling] timing summary for {file_name}"
     lines = [
         header,
-        "# wall(s)=동시 page 구간 합집합(벽시계 추정), %pipe=pipeline_total 대비. "
+        "# wall(s)=동시 page 구간 합집합(실제 경과시간 추정), %pipe=pipeline_total 대비. "
         "중첩 스테이지는 합산 시 중복됨.",
         f"{'stage':<28} {'scope':<9} {'count':>6} {'total(s)':>10} "
         f"{'wall(s)':>10} {'%pipe':>6} {'avg(s)':>9} {'p95(s)':>9}",
