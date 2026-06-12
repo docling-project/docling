@@ -57,6 +57,182 @@ def test_e2e_pptx_conversions():
         )
 
 
+def test_comments_extraction() -> None:
+    """Test that slide comments are extracted into the NOTES content layer."""
+    from docling_core.types.doc import GroupItem
+
+    converter = get_converter()
+    path = Path("./tests/data/pptx/powerpoint_comments.pptx")
+    doc: DoclingDocument = converter.convert(path).document
+
+    comment_groups = [
+        g
+        for g in doc.groups
+        if isinstance(g, GroupItem) and g.name.startswith("comment-")
+    ]
+    assert len(comment_groups) >= 1, (
+        f"Expected ≥1 comment group, got {len(comment_groups)}"
+    )
+
+    comment_texts = [
+        t.text
+        for t in doc.texts
+        if hasattr(t, "content_layer") and t.content_layer == "notes"
+    ]
+    assert any("John Reviewer" in t for t in comment_texts), (
+        "Expected 'John Reviewer' in comment texts"
+    )
+    assert any("sample reviewer comment" in t for t in comment_texts), (
+        "Expected comment body text content"
+    )
+    for group in comment_groups:
+        assert group.content_layer == "notes", (
+            "Comments should be in NOTES content layer"
+        )
+
+def test_add_comments_handles_missing_metadata_and_parse_failures() -> None:
+    """_add_comments should skip broken slides/comments and keep valid ones."""
+
+    class FakeTargetPart:
+        def __init__(self, blob: bytes):
+            self.blob = blob
+
+    class FakeRel:
+        def __init__(self, reltype: str, blob: bytes = b""):
+            self.reltype = reltype
+            self.target_part = FakeTargetPart(blob)
+
+    class FakeSlide:
+        def __init__(self, rels):
+            self._part = SimpleNamespace(rels=rels)
+
+        @property
+        def part(self):
+            return self._part
+
+    class BrokenSlide:
+        @property
+        def part(self):
+            raise RuntimeError("broken slide")
+
+    backend = MsPowerpointDocumentBackend.__new__(MsPowerpointDocumentBackend)
+    backend.namespaces = PPTX_NAMESPACES
+    author_reltype = (
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/"
+        "commentAuthors"
+    )
+    comment_reltype = (
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
+    )
+    valid_comments = b"""
+    <p:cmLst xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+      <p:cm idx="7" authorId="1" dt="2026-05-29T10:00:00Z">
+        <p:text>  first note  </p:text>
+      </p:cm>
+      <p:cm idx="8" authorId="99">
+        <p:text>authorless note</p:text>
+      </p:cm>
+      <p:cm idx="9" authorId="1">
+        <p:text>   </p:text>
+      </p:cm>
+    </p:cmLst>
+    """
+    invalid_comments = b"<p:cmLst"
+    authors = b"""
+    <p:cmAuthorLst xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+      <p:cmAuthor id="1" name="John Reviewer" initials="JR" />
+    </p:cmAuthorLst>
+    """
+    pptx_obj = SimpleNamespace(
+        part=SimpleNamespace(rels={"authors": FakeRel(author_reltype, authors)}),
+        slides=[
+            BrokenSlide(),
+            FakeSlide(
+                {
+                    "noop": FakeRel("urn:ignored"),
+                    "comments": FakeRel(comment_reltype, valid_comments),
+                }
+            ),
+            FakeSlide({"comments": FakeRel(comment_reltype, invalid_comments)}),
+        ],
+    )
+    doc = DoclingDocument(name="comments")
+
+    backend._add_comments(pptx_obj, doc)
+
+    comment_groups = [
+        group for group in doc.groups if group.name.startswith("comment-")
+    ]
+    assert [group.name for group in comment_groups] == [
+        "comment-slide2-7",
+        "comment-slide2-8",
+    ]
+    assert [text.text for text in doc.texts] == [
+        "[author: John Reviewer (JR), time: 2026-05-29T10:00:00Z]: first note",
+        "authorless note",
+    ]
+    assert all(group.content_layer == "notes" for group in comment_groups)
+
+
+def test_add_comments_continues_when_comment_authors_cannot_be_parsed() -> None:
+    """_add_comments should still emit raw comment text when author parsing fails."""
+
+    class FakeTargetPart:
+        def __init__(self, blob: bytes):
+            self.blob = blob
+
+    class FakeRel:
+        def __init__(self, reltype: str, blob: bytes):
+            self.reltype = reltype
+            self.target_part = FakeTargetPart(blob)
+
+    class FakeSlide:
+        def __init__(self, rels):
+            self._part = SimpleNamespace(rels=rels)
+
+        @property
+        def part(self):
+            return self._part
+
+    backend = MsPowerpointDocumentBackend.__new__(MsPowerpointDocumentBackend)
+    backend.namespaces = PPTX_NAMESPACES
+    author_reltype = (
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/"
+        "commentAuthors"
+    )
+    comment_reltype = (
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
+    )
+    comments = b"""
+    <p:cmLst xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+      <p:cm idx="3" authorId="1">
+        <p:text>kept without metadata</p:text>
+      </p:cm>
+    </p:cmLst>
+    """
+    pptx_obj = SimpleNamespace(
+        part=SimpleNamespace(
+            rels={"authors": FakeRel(author_reltype, b"<p:cmAuthorLst")}
+        ),
+        slides=[FakeSlide({"comments": FakeRel(comment_reltype, comments)})],
+    )
+    doc = DoclingDocument(name="comments")
+
+    backend._add_comments(pptx_obj, doc)
+
+    assert [group.name for group in doc.groups] == ["comment-slide1-3"]
+    assert [text.text for text in doc.texts] == ["kept without metadata"]
+
+
+def test_add_comments_returns_when_pptx_object_is_missing() -> None:
+    """_add_comments should be a no-op when no presentation object is available."""
+    backend = MsPowerpointDocumentBackend.__new__(MsPowerpointDocumentBackend)
+    doc = DoclingDocument(name="comments")
+
+    backend._add_comments(None, doc)
+
+    assert doc.groups == []
+    assert doc.texts == []
 def test_pptx_unrecognized_shape_type():
     """PPTX with a <p:sp> that has no geometry should not crash.
 

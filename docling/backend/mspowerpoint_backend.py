@@ -113,6 +113,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             doc = self._walk_linear(
                 self.pptx_obj, doc, start_page=start_page, end_page=end_page
             )
+            self._add_comments(self.pptx_obj, doc)
 
         return doc
 
