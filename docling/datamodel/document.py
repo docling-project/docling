@@ -34,7 +34,6 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import ListItem
 from docling_core.utils.file import FileSizeLimitExceededError, resolve_source_to_stream
-from docling_core.utils.legacy import docling_document_to_legacy
 from pydantic import BaseModel, Field
 from typing_extensions import deprecated
 
