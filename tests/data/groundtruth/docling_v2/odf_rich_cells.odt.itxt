@@ -8,10 +8,10 @@ item-0 at level 0: unspecified: group _root_
   item-7 at level 1: section_header: Table with pictures
   item-8 at level 1: table with [3x2]
   item-9 at level 1: section_header: Lists with same numId in different cells
-  item-10 at level 1: table with [2x1]
+  item-10 at level 1: table with [1x1]
   item-11 at level 1: section_header: Lists with different numIds in different cells
-  item-12 at level 1: table with [2x1]
+  item-12 at level 1: table with [1x1]
   item-13 at level 1: section_header: Multiple columns with lists
-  item-14 at level 1: table with [2x2]
+  item-14 at level 1: table with [1x1]
   item-15 at level 1: section_header: Mixed content - list and regular text in different cells
-  item-16 at level 1: table with [2x1]
+  item-16 at level 1: table with [1x1]

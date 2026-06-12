@@ -4,16 +4,16 @@ Test Table Slide
 
 With footnote
 
-|  |  |  |  |  |  |  |
+|  | - Class1 |  |  | - Class2 |  |  |
 | - | - | - | - | - | - | - |
-|  |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |
-|  |  |  |  |  |  |  |
+|  | - A merged with B |  | - C | - A | - B | - C |
+| - R1 | - True | - False |  | - False | - True | - True |
+| - R2 |  |  | - True | - False |  |  |
+| - R3 | - False |  |  |  | - False |  |
+|  |  | - True |  | - True |  |  |
+| - R4 |  |  | - False |  | - False |  |
+|  |  | - True |  | - True | - False | - False |
+|  | - True | - False | - True | - False | - True | - False |
 
 # Slide2
 

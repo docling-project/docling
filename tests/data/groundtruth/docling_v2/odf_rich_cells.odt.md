@@ -28,22 +28,18 @@ After table with bold, underline, strikethrough, and italic formatting
 
 |  |
 | - |
-|  |
 
 ### Lists with different numIds in different cells
 
 |  |
 | - |
-|  |
 
 ### Multiple columns with lists
 
-|  |  |
-| - | - |
-|  |  |
+|  |
+| - |
 
 ### Mixed content - list and regular text in different cells
 
-|  |
-| - |
 | Regular text in second cell |
+| - |

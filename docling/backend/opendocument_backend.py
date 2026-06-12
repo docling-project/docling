@@ -33,9 +33,11 @@ from docling_core.types.doc import (
     ImageRef,
     NodeItem,
     ProvenanceItem,
+    RichTableCell,
     Size,
     TableCell,
     TableData,
+    TableItem,
 )
 from PIL import Image as PILImage
 from typing_extensions import override
@@ -146,7 +148,7 @@ def _find_true_data_bounds(table: OdfTable) -> tuple[int, int, int, int]:
     for row_idx, row in enumerate(table.traverse()):
         for col_idx, cell in enumerate(row.traverse()):
             # Check if cell has content (value or is part of a span)
-            if cell.value is not None or cell.tag == "table:covered-table-cell":
+            if _odf_cell_has_content(cell) or cell.tag == "table:covered-table-cell":
                 if min_row is None:
                     min_row = row_idx
                 if min_col is None or col_idx < min_col:
@@ -172,6 +174,345 @@ def _find_true_data_bounds(table: OdfTable) -> tuple[int, int, int, int]:
         return (0, 0, 0, 0)
 
     return (min_row, max_row, min_col, max_col)
+
+
+def _clean_odf_text_lines(text: str) -> list[str]:
+    return [line for line in (line.strip() for line in text.splitlines()) if line]
+
+
+def _odf_element_text_lines(element: Any) -> list[str]:
+    if isinstance(element, OdfList):
+        lines: list[str] = []
+        for child in element.children:
+            if isinstance(child, ListItem):
+                lines.extend(_odf_element_text_lines(child))
+        return lines
+
+    if isinstance(element, ListItem):
+        lines: list[str] = []
+        for child in element.children:
+            lines.extend(_odf_element_text_lines(child))
+        if lines:
+            return lines
+        return _clean_odf_text_lines(element.text_recursive)
+
+    if isinstance(element, (Header, Paragraph)):
+        return _clean_odf_text_lines(element.text_recursive)
+
+    child_lines: list[str] = []
+    for child in getattr(element, "children", []):
+        child_lines.extend(_odf_element_text_lines(child))
+    if child_lines:
+        return child_lines
+
+    return _clean_odf_text_lines(element.text_recursive)
+
+
+def _odf_list_item_content(item: ListItem) -> tuple[str, list[OdfList]]:
+    text_parts: list[str] = []
+    nested: list[OdfList] = []
+    for child in item.children:
+        if isinstance(child, OdfList):
+            nested.append(child)
+        elif isinstance(child, Paragraph):
+            text_parts.extend(_clean_odf_text_lines(child.text_recursive))
+    if not text_parts:
+        text_parts.extend(_clean_odf_text_lines(item.text_recursive))
+    return " ".join(text_parts), nested
+
+
+def _odf_list_has_renderable_content(odf_list: OdfList) -> bool:
+    for child in odf_list.children:
+        if not isinstance(child, ListItem):
+            continue
+        text, nested = _odf_list_item_content(child)
+        if text or any(_odf_list_has_renderable_content(item) for item in nested):
+            return True
+    return False
+
+
+def _odf_table_has_content(table: OdfTable) -> bool:
+    for row in table.traverse():
+        for cell in row.traverse():
+            if cell.tag == "table:covered-table-cell":
+                return True
+            if _odf_cell_has_content(cell):
+                return True
+    return False
+
+
+def _odf_cell_has_rich_content(cell: Any) -> bool:
+    if _odf_cell_has_images(cell):
+        return True
+
+    for child in cell.children:
+        if isinstance(child, OdfList):
+            if _odf_list_has_renderable_content(child):
+                return True
+        elif isinstance(child, (Header, Paragraph)):
+            if _clean_odf_text_lines(child.text_recursive):
+                return True
+        elif isinstance(child, OdfTable):
+            if _odf_table_has_content(child):
+                return True
+
+    return False
+
+
+def _odf_cell_text(cell: Any) -> str:
+    if cell.value is not None:
+        return str(cell.value)
+
+    lines: list[str] = []
+    for child in cell.children:
+        lines.extend(_odf_element_text_lines(child))
+    if lines:
+        return "\n".join(lines)
+    if cell.children:
+        return ""
+
+    return "\n".join(_clean_odf_text_lines(cell.text_recursive))
+
+
+def _odf_cell_has_images(cell: Any) -> bool:
+    return len(cell.get_images()) > 0
+
+
+def _odf_cell_has_content(cell: Any) -> bool:
+    return _odf_cell_text(cell) != "" or _odf_cell_has_images(cell)
+
+
+def _odf_cell_is_rich(cell: Any) -> bool:
+    return cell.value is None and _odf_cell_has_rich_content(cell)
+
+
+def _image_ref_from_odf_image(
+    odf_obj: OdfDocument | None, image: Any
+) -> ImageRef | None:
+    image_data: bytes | None = None
+    get_data = getattr(image, "get_data", None)
+    if callable(get_data):
+        image_data = get_data()
+
+    image_url = getattr(image, "url", None)
+    if image_data is None and odf_obj is not None and image_url:
+        try:
+            image_data = odf_obj.get_part(image_url)
+        except Exception:
+            image_data = None
+
+    if image_data is None and image_url:
+        image_path = Path(image_url)
+        if image_path.is_file():
+            image_data = image_path.read_bytes()
+
+    if image_data is None:
+        return None
+
+    pil_image = PILImage.open(BytesIO(image_data))
+    return ImageRef.from_pil(image=pil_image, dpi=72)
+
+
+def _add_odf_images(
+    doc: DoclingDocument,
+    images: list[Any],
+    parent: NodeItem,
+    content_layer: ContentLayer | None,
+    odf_obj: OdfDocument | None,
+) -> None:
+    for image in images:
+        try:
+            image_ref = _image_ref_from_odf_image(odf_obj, image)
+        except Exception as e:
+            _log.debug("Could not extract OpenDocument image: %s", e)
+            image_ref = None
+        doc.add_picture(parent=parent, image=image_ref, content_layer=content_layer)
+
+
+def _add_odf_list(
+    doc: DoclingDocument,
+    odf_list: OdfList,
+    parent: NodeItem,
+    content_layer: ContentLayer | None,
+    enumerated: bool = False,
+) -> None:
+    if not _odf_list_has_renderable_content(odf_list):
+        return
+
+    list_group = doc.add_list_group(
+        name="list", parent=parent, content_layer=content_layer
+    )
+    counter = 0
+    for child in odf_list.children:
+        if not isinstance(child, ListItem):
+            continue
+        text, nested = _odf_list_item_content(child)
+        nested = [item for item in nested if _odf_list_has_renderable_content(item)]
+        if not text and not nested:
+            continue
+        counter += 1
+        marker = f"{counter}." if enumerated else ""
+        item = doc.add_list_item(
+            marker=marker,
+            enumerated=enumerated,
+            parent=list_group,
+            text=text,
+            content_layer=content_layer,
+        )
+        for nested_list in nested:
+            _add_odf_list(
+                doc,
+                nested_list,
+                parent=item,
+                content_layer=content_layer,
+                enumerated=enumerated,
+            )
+
+
+def _add_rich_cell_children(
+    doc: DoclingDocument,
+    cell: Any,
+    parent: NodeItem,
+    content_layer: ContentLayer | None,
+    odf_obj: OdfDocument | None,
+) -> None:
+    for child in cell.children:
+        if isinstance(child, Header):
+            text = child.text_recursive.strip()
+            if text:
+                level = child.get_attribute_integer("text:outline-level") or 1
+                doc.add_heading(
+                    parent=parent,
+                    text=text,
+                    level=max(1, level),
+                    content_layer=content_layer,
+                )
+        elif isinstance(child, Paragraph):
+            text = child.text_recursive.strip()
+            if text:
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    parent=parent,
+                    text=text,
+                    content_layer=content_layer,
+                )
+        elif isinstance(child, OdfList):
+            _add_odf_list(
+                doc,
+                child,
+                parent=parent,
+                content_layer=content_layer,
+                enumerated=False,
+            )
+        elif isinstance(child, OdfTable):
+            _add_table_from_odf(
+                doc,
+                child,
+                parent=parent,
+                content_layer=content_layer,
+                odf_obj=odf_obj,
+            )
+
+    _add_odf_images(doc, cell.get_images(), parent, content_layer, odf_obj)
+
+
+def _add_table_from_odf(
+    doc: DoclingDocument,
+    table: OdfTable,
+    parent: NodeItem | None,
+    *,
+    min_row: int | None = None,
+    max_row: int | None = None,
+    min_col: int | None = None,
+    max_col: int | None = None,
+    prov: ProvenanceItem | None = None,
+    content_layer: ContentLayer | None = None,
+    odf_obj: OdfDocument | None = None,
+) -> TableItem | None:
+    if min_row is None or max_row is None or min_col is None or max_col is None:
+        min_row, max_row, min_col, max_col = _find_true_data_bounds(table)
+
+    height = max_row - min_row + 1
+    width = max_col - min_col + 1
+    if width == 0 or height == 0:
+        return None
+
+    data = TableData(num_rows=height, num_cols=width, table_cells=[])
+    table_item = doc.add_table(
+        parent=parent,
+        data=data,
+        prov=prov,
+        content_layer=content_layer,
+    )
+
+    for row_idx, row in enumerate(table.traverse()):
+        if row_idx < min_row or row_idx > max_row:
+            continue
+
+        for col_idx, cell in enumerate(row.traverse()):
+            if col_idx < min_col or col_idx > max_col:
+                continue
+
+            if cell.tag == "table:covered-table-cell":
+                continue
+
+            attrs = cell.attributes
+            row_span = int(attrs.get("table:number-rows-spanned") or 1)
+            col_span = int(attrs.get("table:number-columns-spanned") or 1)
+            adjusted_row = row_idx - min_row
+            adjusted_col = col_idx - min_col
+            text = _odf_cell_text(cell)
+            cell_kwargs = {
+                "text": text,
+                "row_span": row_span,
+                "col_span": col_span,
+                "start_row_offset_idx": adjusted_row,
+                "end_row_offset_idx": adjusted_row + row_span,
+                "start_col_offset_idx": adjusted_col,
+                "end_col_offset_idx": adjusted_col + col_span,
+                "column_header": adjusted_row == 0,
+                "row_header": False,
+            }
+
+            if _odf_cell_is_rich(cell):
+                group = doc.add_group(
+                    label=GroupLabel.UNSPECIFIED,
+                    name=f"rich_cell_group_{len(doc.tables) - 1}_{adjusted_col}_{adjusted_row}",
+                    parent=table_item,
+                    content_layer=content_layer,
+                )
+                _add_rich_cell_children(
+                    doc,
+                    cell,
+                    parent=group,
+                    content_layer=content_layer,
+                    odf_obj=odf_obj,
+                )
+                table_cell = RichTableCell(**cell_kwargs, ref=group.get_ref())
+            else:
+                table_cell = TableCell(**cell_kwargs)
+
+            doc.add_table_cell(table_item=table_item, cell=table_cell)
+
+    return table_item
+
+
+def _table_region_has_rich_cell(
+    table: OdfTable,
+    min_row: int,
+    max_row: int,
+    min_col: int,
+    max_col: int,
+) -> bool:
+    for row_idx, row in enumerate(table.traverse()):
+        if row_idx < min_row or row_idx > max_row:
+            continue
+        for col_idx, cell in enumerate(row.traverse()):
+            if col_idx < min_col or col_idx > max_col:
+                continue
+            if cell.tag != "table:covered-table-cell" and _odf_cell_is_rich(cell):
+                return True
+    return False
 
 
 def _table_data_from_odf(
@@ -225,7 +566,7 @@ def _table_data_from_odf(
             attrs = cell.attributes
             row_span = int(attrs.get("table:number-rows-spanned") or 1)
             col_span = int(attrs.get("table:number-columns-spanned") or 1)
-            text = "" if cell.value is None else str(cell.value)
+            text = _odf_cell_text(cell)
 
             # Adjust cell coordinates to be relative to the data region
             adjusted_row = row_idx - min_row
@@ -298,9 +639,12 @@ class OdtDocumentBackend(_OdfBaseBackend):
             elif isinstance(el, OdfList):
                 self._walk_list(el, parent=parent, doc=doc, enumerated=False)
             elif isinstance(el, OdfTable):
-                data = _table_data_from_odf(el)
-                if data is not None:
-                    doc.add_table(parent=parent, data=data)
+                _add_table_from_odf(
+                    doc,
+                    el,
+                    parent=parent,
+                    odf_obj=self.odf_obj,
+                )
             else:
                 _log.debug("Ignoring ODT element with tag: %s", el.tag)
 
@@ -392,9 +736,12 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
     ) -> None:
         for frame in page.get_frames():
             for tbl in frame.get_elements("descendant::table:table"):
-                data = _table_data_from_odf(tbl)
-                if data is not None:
-                    doc.add_table(parent=parent, data=data)
+                _add_table_from_odf(
+                    doc,
+                    tbl,
+                    parent=parent,
+                    odf_obj=self.odf_obj,
+                )
 
             for textbox in frame.get_elements("descendant::draw:text-box"):
                 self._walk_textbox_children(textbox.children, parent=parent, doc=doc)
@@ -557,9 +904,16 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
         for data_table in data_tables:
             min_row, max_row, min_col, max_col = data_table["bounds"]
             table_data = data_table["data"]
+            has_rich_content = _table_region_has_rich_cell(
+                table, min_row, max_row, min_col, max_col
+            )
 
             # Check if this is a singleton (1x1 table)
-            if treat_singleton_as_text and len(table_data.table_cells) == 1:
+            if (
+                treat_singleton_as_text
+                and len(table_data.table_cells) == 1
+                and not has_rich_content
+            ):
                 # Treat as text item instead of table
                 cell = table_data.table_cells[0]
                 doc.add_text(
@@ -578,9 +932,14 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 )
             else:
                 # Add as table with provenance information
-                doc.add_table(
-                    parent=parent,
-                    data=table_data,
+                _add_table_from_odf(
+                    doc,
+                    table,
+                    parent,
+                    min_row=min_row,
+                    max_row=max_row,
+                    min_col=min_col,
+                    max_col=max_col,
                     prov=ProvenanceItem(
                         page_no=page_no,
                         charspan=(0, 0),
@@ -590,6 +949,7 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                         ),
                     ),
                     content_layer=content_layer,
+                    odf_obj=self.odf_obj,
                 )
 
     def _find_data_tables_in_sheet(
@@ -615,7 +975,9 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
             and overall_min_col == 0
             and overall_max_col == 0
         ):
-            return []
+            first_cell = table.get_cell("A1")
+            if not _odf_cell_has_content(first_cell):
+                return []
 
         GAP_TOLERANCE = cast(OdsBackendOptions, self.options).gap_tolerance
         tables: list[dict[str, tuple[int, int, int, int] | TableData]] = []
@@ -625,8 +987,8 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
         cell_map: dict[tuple[int, int], bool] = {}
         for row_idx, row in enumerate(table.traverse()):
             for col_idx, cell in enumerate(row.traverse()):
-                has_data = (
-                    cell.value is not None or cell.tag == "table:covered-table-cell"
+                has_data = _odf_cell_has_content(cell) or (
+                    cell.tag == "table:covered-table-cell"
                 )
                 cell_map[(row_idx, col_idx)] = has_data
 

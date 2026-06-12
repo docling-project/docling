@@ -14,6 +14,8 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
+from docling_core.types.doc import PictureItem, RichTableCell, TextItem
+from PIL import Image
 
 from docling.backend.opendocument_backend import (
     OdpDocumentBackend,
@@ -226,6 +228,94 @@ def test_ods_merged_cells(tmp_path: Path):
     assert anchor.row_span == 2
     assert anchor.col_span == 1
     assert anchor.text == "merged"
+
+
+def test_odt_rich_table_cell_text(tmp_path: Path):
+    path = tmp_path / "rich_table.odt"
+    doc = OdfDocument("text")
+    body = doc.body
+    body.clear()
+
+    table = Table("Rich", width=1, height=1)
+    cell = table.get_cell("A1")
+    cell.append(Paragraph("First paragraph"))
+    lst = OdfList()
+    lst.append(ListItem("Nested list item"))
+    cell.append(lst)
+    table.set_cell("A1", cell)
+    body.append(table)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    result_doc = res.document
+    table = result_doc.tables[0]
+    cell = table.data.table_cells[0]
+    assert isinstance(cell, RichTableCell)
+    assert cell.text == "First paragraph\nNested list item"
+
+    group = cell.ref.resolve(result_doc)
+    child_texts: list[str] = []
+    for item, _level in result_doc.iterate_items(root=group):
+        if isinstance(item, TextItem):
+            child_texts.append(item.text)
+    assert child_texts == ["First paragraph", "Nested list item"]
+
+
+def test_ods_rich_table_cell_defines_data_bounds(tmp_path: Path):
+    path = tmp_path / "rich_table.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+
+    table = Table("Rich", width=2, height=1)
+    cell = table.get_cell("A1")
+    cell.append(Paragraph("Rich title"))
+    table.set_cell("A1", cell)
+    table.set_value("B1", "plain")
+    body.append(table)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(path)
+    result_doc = res.document
+    table = result_doc.tables[0]
+    cell_texts = {
+        (c.start_row_offset_idx, c.start_col_offset_idx): c.text
+        for c in table.data.table_cells
+    }
+    rich_cell = cell_texts[(0, 0)]
+    assert table.data.num_cols == 2
+    assert rich_cell == "Rich title"
+    assert isinstance(table.data.table_cells[0], RichTableCell)
+    assert cell_texts[(0, 1)] == "plain"
+
+
+def test_ods_table_cell_image_creates_rich_cell_picture(tmp_path: Path):
+    image_path = tmp_path / "cell_image.png"
+    Image.new("RGB", (2, 2), "red").save(image_path)
+
+    path = tmp_path / "image_cell.ods"
+    doc = OdfDocument("spreadsheet")
+    body = doc.body
+    body.clear()
+
+    table = Table("ImageCell", width=1, height=1)
+    body.append(table)
+    image_ref = doc.add_file(str(image_path))
+    frame = Frame.image_frame(image_ref, size=("1cm", "1cm"))
+    table.set_cell_image("A1", frame)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODS]).convert(path)
+    result_doc = res.document
+    table = result_doc.tables[0]
+    cell = table.data.table_cells[0]
+    assert isinstance(cell, RichTableCell)
+
+    group = cell.ref.resolve(result_doc)
+    child_items = [child.resolve(result_doc) for child in group.children]
+    pictures = [item for item in child_items if isinstance(item, PictureItem)]
+    assert len(pictures) == 1
+    assert pictures[0].image is not None
 
 
 def test_odt_mime_detection_without_extension(odt_path: Path):

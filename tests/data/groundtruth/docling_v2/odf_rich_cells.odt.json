@@ -825,22 +825,9 @@
             "row_header": false,
             "row_section": false,
             "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 1,
-            "end_row_offset_idx": 2,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
           }
         ],
-        "num_rows": 2,
+        "num_rows": 1,
         "num_cols": 1,
         "orientation": "rot_0",
         "grid": [
@@ -854,21 +841,6 @@
               "end_col_offset_idx": 1,
               "text": "",
               "column_header": true,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            }
-          ],
-          [
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 1,
-              "text": "",
-              "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
@@ -904,22 +876,9 @@
             "row_header": false,
             "row_section": false,
             "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 1,
-            "end_row_offset_idx": 2,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
           }
         ],
-        "num_rows": 2,
+        "num_rows": 1,
         "num_cols": 1,
         "orientation": "rot_0",
         "grid": [
@@ -933,21 +892,6 @@
               "end_col_offset_idx": 1,
               "text": "",
               "column_header": true,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            }
-          ],
-          [
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 1,
-              "text": "",
-              "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
@@ -983,49 +927,10 @@
             "row_header": false,
             "row_section": false,
             "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 0,
-            "end_row_offset_idx": 1,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 2,
-            "text": "",
-            "column_header": true,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 1,
-            "end_row_offset_idx": 2,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 1,
-            "end_row_offset_idx": 2,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 2,
-            "text": "",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
           }
         ],
-        "num_rows": 2,
-        "num_cols": 2,
+        "num_rows": 1,
+        "num_cols": 1,
         "orientation": "rot_0",
         "grid": [
           [
@@ -1038,47 +943,6 @@
               "end_col_offset_idx": 1,
               "text": "",
               "column_header": true,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 2,
-              "text": "",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            }
-          ],
-          [
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 1,
-              "text": "",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 2,
-              "text": "",
-              "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
@@ -1109,27 +973,14 @@
             "end_row_offset_idx": 1,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "",
-            "column_header": true,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 1,
-            "end_row_offset_idx": 2,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
             "text": "Regular text in second cell",
-            "column_header": false,
+            "column_header": true,
             "row_header": false,
             "row_section": false,
             "fillable": false
           }
         ],
-        "num_rows": 2,
+        "num_rows": 1,
         "num_cols": 1,
         "orientation": "rot_0",
         "grid": [
@@ -1141,23 +992,8 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            }
-          ],
-          [
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 1,
               "text": "Regular text in second cell",
-              "column_header": false,
+              "column_header": true,
               "row_header": false,
               "row_section": false,
               "fillable": false
