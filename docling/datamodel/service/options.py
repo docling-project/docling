@@ -328,13 +328,13 @@ class ConvertDocumentsOptions(BaseModel):
             description=(
                 "Image export mode for the document (in case of JSON,"
                 " Markdown or HTML). "
-                f"Allowed values: {', '.join([v.value for v in ImageRefMode])}. "
+                f"Allowed values: {', '.join([v.value  for v if v !=ImageRefMode.EMBEDDED in ImageRefMode])}. "
                 "Optional, defaults to Embedded."
             ),
-            examples=[ImageRefMode.EMBEDDED.value],
+            examples=[ImageRefMode.PLACEHOLDER.value, ImageRefMode.REFERENCED],
             # pattern="embedded|placeholder|referenced",
         ),
-    ] = ImageRefMode.EMBEDDED
+    ] = ImageRefMode.PLACEHOLDER.value
 
     do_ocr: Annotated[
         bool,
