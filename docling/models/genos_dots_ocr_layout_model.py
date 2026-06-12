@@ -9,6 +9,7 @@ import re
 import time
 import warnings
 from collections.abc import Iterable
+from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
@@ -56,10 +57,19 @@ def _record_stage_elapsed(conv_res, key: str, elapsed: float) -> None:
     blocks and is safe to call from the per-page worker threads (``list.append``
     is atomic under the GIL; keys are pre-created in ``__call__``). No-op unless
     ``settings.debug.profile_pipeline_timings`` is enabled.
+
+    Also records an approximate start timestamp (``now - elapsed``; this is
+    called right after the work finishes) so the profiling summary can compute
+    a document-level wall-clock by union-ing the per-page intervals. The two
+    ``list.append`` calls are individually atomic; concurrent worker threads may
+    interleave them, but intervals within one batch share near-identical start
+    and duration, so the union estimate is unaffected in practice. Wrap both in
+    a ``Lock`` if exact (start, duration) pairing is ever required.
     """
     if not settings.debug.profile_pipeline_timings:
         return
     item = conv_res.timings.setdefault(key, ProfilingItem(scope=ProfilingScope.PAGE))
+    item.start_timestamps.append(datetime.utcnow() - timedelta(seconds=elapsed))
     item.times.append(elapsed)
     item.count += 1
 
@@ -626,10 +636,11 @@ class GenosDotsOCRLayoutModel(BasePageModel):
             total_attempts = self.retry_count + 1
             response = None
             result = None
+            usage = None
             _vlm_started_at = time.monotonic()
             for attempt in range(1, total_attempts + 1):
                 try:
-                    response_text = call_vlm_server(
+                    response_text, usage = call_vlm_server(
                         prompt=prompt,
                         base64_image=base64_image,
                         url=self.dotocr_endpoint,
@@ -690,9 +701,17 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                 result = []
 
             assert isinstance(result, list)
-            _record_stage_elapsed(
-                conv_res, "dotsocr_vlm_call", time.monotonic() - _vlm_started_at
-            )
+            _vlm_elapsed = time.monotonic() - _vlm_started_at
+            _record_stage_elapsed(conv_res, "dotsocr_vlm_call", _vlm_elapsed)
+            if isinstance(usage, dict):
+                _log.info(
+                    "DotsOCR VLM usage (page=%s): prompt_tokens=%s, completion_tokens=%s, total_tokens=%s, elapsed=%.3fs",
+                    page.page_no,
+                    usage.get("prompt_tokens"),
+                    usage.get("completion_tokens"),
+                    usage.get("total_tokens"),
+                    _vlm_elapsed,
+                )
 
             _parse_started_at = time.monotonic()
             clusters = []
@@ -958,7 +977,7 @@ def call_vlm_server(
     temperature: float = 0.1,
     top_p: float = 0.9,
     repetition_penalty: float = 1.15,
-) -> str:
+) -> tuple[str, dict | None]:
     image_data_url = f"data:image/png;base64,{base64_image}"
     prompt_with_image_token = f"<|img|><|imgpad|><|endofimg|>{prompt}"
 
@@ -1006,7 +1025,8 @@ def call_vlm_server(
 
         response.raise_for_status()
         data = response.json()
-        return data["choices"][0]["message"]["content"]
+        usage = data.get("usage") if isinstance(data, dict) else None
+        return data["choices"][0]["message"]["content"], usage
     except requests.exceptions.RequestException as e:
         raise RuntimeError(f"HTTP 요청 오류: {e}") from e
     except KeyError as e:
