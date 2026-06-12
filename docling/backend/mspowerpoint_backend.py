@@ -774,3 +774,79 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         )
 
         return doc
+
+    def _add_comments(self, pptx_obj, doc: DoclingDocument) -> None:
+        """Extract slide comments from PPTX and add to the NOTES content layer."""
+        if not pptx_obj:
+            return
+
+        P_NS = "http://schemas.openxmlformats.org/presentationml/2006/main"
+        COMMENT_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
+        COMMENT_AUTHORS_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentAuthors"
+
+        # Build authorId → (name, initials) map from commentAuthors.xml
+        author_map: dict[str, tuple[str, str]] = {}
+        try:
+            for rel in pptx_obj.part.rels.values():
+                if rel.reltype == COMMENT_AUTHORS_REL:
+                    root = etree.fromstring(rel.target_part.blob)
+                    author_map = {
+                        author_el.get("id", ""): (
+                            author_el.get("name", ""),
+                            author_el.get("initials", ""),
+                        )
+                        for author_el in root.findall(f"{{{P_NS}}}cmAuthor")
+                    }
+        except Exception as e:
+            _log.debug(f"Could not parse PPTX comment authors: {e}")
+
+        # Iterate slides looking for comment parts
+        for slide_idx, slide in enumerate(pptx_obj.slides):
+            try:
+                slide_part = slide.part
+            except Exception:
+                continue
+
+            for rel in slide_part.rels.values():
+                if rel.reltype != COMMENT_REL:
+                    continue
+                try:
+                    root = etree.fromstring(rel.target_part.blob)
+                    for cm in root.findall(f"{{{P_NS}}}cm"):
+                        author_id = cm.get("authorId", "")
+                        dt = cm.get("dt", "")
+                        text_el = cm.find(f"{{{P_NS}}}text")
+                        raw_text = (
+                            (text_el.text or "").strip() if text_el is not None else ""
+                        )
+                        if not raw_text:
+                            continue
+
+                        name, initials = author_map.get(author_id, ("", ""))
+                        metadata_parts = []
+                        if name:
+                            author_str = f"author: {name}"
+                            if initials:
+                                author_str += f" ({initials})"
+                            metadata_parts.append(author_str)
+                        if dt:
+                            metadata_parts.append(f"time: {dt}")
+                        prefix = ", ".join(metadata_parts)
+                        full_text = f"[{prefix}]: {raw_text}" if prefix else raw_text
+
+                        comment_idx = cm.get("idx", str(slide_idx))
+                        comment_group = doc.add_group(
+                            label=GroupLabel.COMMENT_SECTION,
+                            name=f"comment-slide{slide_idx + 1}-{comment_idx}",
+                            content_layer=ContentLayer.NOTES,
+                        )
+                        doc.add_comment(
+                            text=full_text,
+                            targets=None,
+                            parent=comment_group,
+                        )
+                        _log.debug(
+                            f"Added PPTX comment slide {slide_idx + 1} idx={comment_idx}"
+                        )
+                except Exception as e:
+                    _log.debug(f"Could not parse comments for slide {slide_idx}: {e}")
