@@ -37,6 +37,18 @@ _log = logging.getLogger(__name__)
 
 
 class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
+    # Keep these as class constants because some unit tests instantiate the backend
+    # via __new__ and call _add_comments() without running __init__.
+    PRESENTATION_NS = "http://schemas.openxmlformats.org/presentationml/2006/main"
+    COMMENT_REL = (
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/"
+        "comments"
+    )
+    COMMENT_AUTHORS_REL = (
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/"
+        "commentAuthors"
+    )
+
     def __init__(
         self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
     ) -> None:
@@ -44,7 +56,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         self.namespaces = {
             "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
             "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
-            "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
+            "p": "http://schemas.openxmlformats.org/presentationml/2006/main"
         }
         # Powerpoint file:
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
@@ -780,22 +792,21 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         if not pptx_obj:
             return
 
-        P_NS = "http://schemas.openxmlformats.org/presentationml/2006/main"
-        COMMENT_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
-        COMMENT_AUTHORS_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentAuthors"
 
         # Build authorId → (name, initials) map from commentAuthors.xml
         author_map: dict[str, tuple[str, str]] = {}
         try:
             for rel in pptx_obj.part.rels.values():
-                if rel.reltype == COMMENT_AUTHORS_REL:
+                if rel.reltype == self.COMMENT_AUTHORS_REL:
                     root = etree.fromstring(rel.target_part.blob)
                     author_map = {
                         author_el.get("id", ""): (
                             author_el.get("name", ""),
                             author_el.get("initials", ""),
                         )
-                        for author_el in root.findall(f"{{{P_NS}}}cmAuthor")
+                        for author_el in root.findall(
+                            f"{{{self.namespaces[self.PRESENTATION_NS]}}}cmAuthor"
+                        )
                     }
         except Exception as e:
             _log.debug(f"Could not parse PPTX comment authors: {e}")
@@ -808,14 +819,18 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 continue
 
             for rel in slide_part.rels.values():
-                if rel.reltype != COMMENT_REL:
+                if rel.reltype != self.COMMENT_REL:
                     continue
                 try:
                     root = etree.fromstring(rel.target_part.blob)
-                    for cm in root.findall(f"{{{P_NS}}}cm"):
+                    for cm in root.findall(
+                        f"{{{self.namespaces[self.PRESENTATION_NS]}}}cm"
+                    ):
                         author_id = cm.get("authorId", "")
                         dt = cm.get("dt", "")
-                        text_el = cm.find(f"{{{P_NS}}}text")
+                        text_el = cm.find(
+                            f"{{{self.namespaces[self.PRESENTATION_NS]}}}text"
+                        )
                         raw_text = (
                             (text_el.text or "").strip() if text_el is not None else ""
                         )
