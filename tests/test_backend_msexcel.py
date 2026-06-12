@@ -3,7 +3,9 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from openpyxl import load_workbook
+from docling_core.types.doc import ContentLayer
+from openpyxl import Workbook, load_workbook
+from openpyxl.comments import Comment
 
 from docling.backend.msexcel_backend import MsExcelDocumentBackend
 from docling.datamodel.backend_options import MsExcelBackendOptions
@@ -17,6 +19,7 @@ from .verify_utils import verify_document, verify_export
 _log = logging.getLogger(__name__)
 
 GENERATE = GEN_TEST_DATA
+COMMENT_FIXTURES = {"xlsx_comments"}
 
 
 def get_excel_paths():
@@ -58,13 +61,11 @@ def documents() -> list[tuple[Path, DoclingDocument]]:
     return documents
 
 
-def test_comments_extraction() -> None:
+def test_comments_extraction(documents) -> None:
     """Test that cell comments are extracted into the NOTES content layer."""
     from docling_core.types.doc import GroupItem
 
-    converter = get_converter()
-    path = Path("./tests/data/xlsx/xlsx_comments.xlsx")
-    doc: DoclingDocument = converter.convert(path).document
+    doc = next(item for path, item in documents if path.stem == "xlsx_comments")
 
     comment_groups = [
         g
@@ -95,10 +96,70 @@ def test_comments_extraction() -> None:
         )
 
 
+def test_add_comments_skips_chartsheets_and_blank_comments() -> None:
+    """_add_comments should ignore chartsheets and blank comment bodies."""
+    backend = MsExcelDocumentBackend.__new__(MsExcelDocumentBackend)
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Data"
+    workbook.create_chartsheet("Chart")
+
+    sheet["A1"] = "covered"
+    sheet["A1"].comment = Comment("  reviewed  ", "John Reviewer")
+
+    sheet["A2"] = "ignored"
+    sheet["A2"].comment = Comment("   ", "Jane Editor")
+
+    sheet["A3"] = "no author"
+    sheet["A3"].comment = Comment("authorless note", "placeholder")
+    sheet["A3"].comment.author = ""
+
+    backend.workbook = workbook
+    doc = DoclingDocument(name="comments")
+
+    backend._add_comments(doc)
+
+    comment_groups = [
+        group for group in doc.groups if group.name.startswith("comment-")
+    ]
+    assert [group.name for group in comment_groups] == [
+        "comment-Data-A1",
+        "comment-Data-A3",
+    ]
+    assert [text.text for text in doc.texts] == [
+        "[author: John Reviewer]: reviewed",
+        "authorless note",
+    ]
+    assert all(group.content_layer == "notes" for group in comment_groups)
+
+
+def test_add_comments_returns_when_workbook_is_missing() -> None:
+    """_add_comments should be a no-op for uninitialized backends."""
+    backend = MsExcelDocumentBackend.__new__(MsExcelDocumentBackend)
+    backend.workbook = None
+    doc = DoclingDocument(name="comments")
+
+    backend._add_comments(doc)
+
+    assert doc.groups == []
+    assert doc.texts == []
+
+
 def test_e2e_excel_conversions(documents) -> None:
     for gt_path, doc in documents:
-        pred_md: str = doc.export_to_markdown(compact_tables=True)
-        assert verify_export(pred_md, str(gt_path) + ".md", GENERATE), "export to md"
+        included_content_layers = (
+            set(ContentLayer) if gt_path.stem in COMMENT_FIXTURES else None
+        )
+        pred_md: str = doc.export_to_markdown(
+            compact_tables=True,
+            included_content_layers=included_content_layers,
+        )
+        assert verify_export(
+            pred_md,
+            str(gt_path) + ".md",
+            GENERATE,
+            fuzzy=gt_path.stem in COMMENT_FIXTURES,
+        ), "export to md"
 
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False

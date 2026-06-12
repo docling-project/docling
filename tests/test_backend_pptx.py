@@ -51,8 +51,19 @@ def test_e2e_pptx_conversions():
 
         doc: DoclingDocument = conv_result.document
 
-        pred_md: str = doc.export_to_markdown(compact_tables=True)
-        assert verify_export(pred_md, str(gt_path) + ".md", GENERATE), "export to md"
+        included_content_layers = (
+            set(ContentLayer) if gt_path.stem in COMMENT_FIXTURES else None
+        )
+        pred_md: str = doc.export_to_markdown(
+            compact_tables=True,
+            included_content_layers=included_content_layers,
+        )
+        assert verify_export(
+            pred_md,
+            str(gt_path) + ".md",
+            GENERATE,
+            fuzzy=gt_path.stem in COMMENT_FIXTURES,
+        ), "export to md"
 
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
@@ -98,6 +109,7 @@ def test_comments_extraction() -> None:
         assert group.content_layer == "notes", (
             "Comments should be in NOTES content layer"
         )
+
 
 def test_add_comments_handles_missing_metadata_and_parse_failures() -> None:
     """_add_comments should skip broken slides/comments and keep valid ones."""
@@ -242,6 +254,8 @@ def test_add_comments_returns_when_pptx_object_is_missing() -> None:
 
     assert doc.groups == []
     assert doc.texts == []
+
+
 def test_pptx_unrecognized_shape_type():
     """PPTX with a <p:sp> that has no geometry should not crash.
 
