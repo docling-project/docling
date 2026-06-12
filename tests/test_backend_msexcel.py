@@ -58,6 +58,43 @@ def documents() -> list[tuple[Path, DoclingDocument]]:
     return documents
 
 
+def test_comments_extraction() -> None:
+    """Test that cell comments are extracted into the NOTES content layer."""
+    from docling_core.types.doc import GroupItem
+
+    converter = get_converter()
+    path = Path("./tests/data/xlsx/xlsx_comments.xlsx")
+    doc: DoclingDocument = converter.convert(path).document
+
+    comment_groups = [
+        g
+        for g in doc.groups
+        if isinstance(g, GroupItem) and g.name.startswith("comment-")
+    ]
+    assert len(comment_groups) >= 2, (
+        f"Expected ≥2 comment groups, got {len(comment_groups)}"
+    )
+
+    comment_texts = [
+        t.text
+        for t in doc.texts
+        if hasattr(t, "content_layer") and t.content_layer == "notes"
+    ]
+    assert any("John Reviewer" in t for t in comment_texts), (
+        "Expected 'John Reviewer' in comment texts"
+    )
+    assert any("Jane Editor" in t for t in comment_texts), (
+        "Expected 'Jane Editor' in comment texts"
+    )
+    assert any("Why Python" in t for t in comment_texts), (
+        "Expected comment body text content"
+    )
+    for group in comment_groups:
+        assert group.content_layer == "notes", (
+            "Comments should be in NOTES content layer"
+        )
+
+
 def test_e2e_excel_conversions(documents) -> None:
     for gt_path, doc in documents:
         pred_md: str = doc.export_to_markdown(compact_tables=True)
