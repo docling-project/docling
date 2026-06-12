@@ -35,7 +35,7 @@ Docling ships a Python client for the API server, so you don't have to hand-roll
 from docling.service_client import DoclingServiceClient
 from docling.datamodel.service.options import ConvertDocumentsOptions
 
-with DoclingServiceClient(url="http://localhost:5001", api_key="") as client:
+with DoclingServiceClient(url="http://localhost:5001") as client:
     result = client.convert(
         source="https://arxiv.org/pdf/2501.17887",
         options=ConvertDocumentsOptions(to_formats=["md"]),
@@ -44,7 +44,7 @@ with DoclingServiceClient(url="http://localhost:5001", api_key="") as client:
 print(result.document.export_to_markdown())
 ```
 
-`source` accepts a URL, a local path, or a `DocumentStream`; use `convert_all([...])` for batches. The `options` are the same [conversion options](#conversion-options-common) shown below. See the [examples](../../examples/index.md) for more recipes.
+`source` accepts an HTTP/HTTPS URL string, a local `pathlib.Path`, or a `DocumentStream`; use `convert_all([...])` to stream multiple conversion results. The `options` are the same [conversion options](#conversion-options-common) shown below. See the [examples](../../examples/index.md) for more recipes.
 
 ## Conversion options (common)
 
