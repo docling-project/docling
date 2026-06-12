@@ -33,7 +33,3 @@ item-0 at level 0: unspecified: group _root_
   item-32 at level 1: text: The second page of the document with same header and footer
   item-33 at level 1: text: 
   item-34 at level 1: text: The third page of the document with different header and footer
-  item-35 at level 1: section: group page header
-    item-36 at level 2: text: This is a header
-  item-37 at level 1: section: group page footer
-    item-38 at level 2: text: This is a footer

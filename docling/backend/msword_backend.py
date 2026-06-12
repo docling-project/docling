@@ -52,6 +52,14 @@ _log = logging.getLogger(__name__)
 
 
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
+    """Backend for parsing Microsoft Word (.docx) documents.
+    
+    Note:
+        Images with a total area (width * height) less than or equal to 
+        `SPACER_IMAGE_AREA_THRESHOLD` (default: 25px) are considered layout 
+        artifacts (such as invisible spacers) and are discarded during parsing.
+    """
+
     _W_NS: Final[str] = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
     _W_NS_CLARK: Final[str] = f"{{{_W_NS}}}"
 
@@ -67,6 +75,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         "a14": "http://schemas.microsoft.com/office/drawing/2010/main",
         "w14": "http://schemas.microsoft.com/office/word/2010/wordml",
     }
+
+    SPACER_IMAGE_AREA_THRESHOLD: Final[int] = 25  # Images with an area (w*h) below this are dropped as layout artifacts
 
     @override
     def __init__(self, in_doc: "InputDocument", path_or_stream: BytesIO | Path) -> None:
@@ -474,7 +484,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     self._handle_drawingml(doc=doc, drawingml_els=drawingml_els)
 
-                # # Always process text in paragraph
+                # Always process text in paragraph
                 if (
                     tag_name == "p"
                     and element.find(
@@ -509,7 +519,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return False
 
         # Filter tiny spacer images
-        if pil_image.width <= 5 or pil_image.height <= 5:
+        if pil_image.width * pil_image.height <= self.SPACER_IMAGE_AREA_THRESHOLD:
             return True
 
         try:
@@ -2286,6 +2296,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             doc: The DoclingDocument being constructed
             parent: Parent node for the picture
             pil_image: PIL Image object, or None for placeholder
+            is_spacer: Flag indicating whether the parsed image is a layout spacer artifact to be excluded
 
         Returns:
             Reference to the added picture element
@@ -2560,10 +2571,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for sec_idx, section in enumerate(docx_obj.sections):
             if sec_idx > 0 and not section.different_first_page_header_footer:
                 continue
-            elif sec_idx == 0:
-                self.content_layer = ContentLayer.BODY
-            else:
-                self.content_layer = ContentLayer.FURNITURE
 
             hdr = (
                 section.first_page_header

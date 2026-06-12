@@ -113,11 +113,6 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "comments": [
-        {
-          "$ref": "#/groups/0"
-        }
-      ],
       "orig": "This is the first paragraph that has a comment attached to it.",
       "text": "This is the first paragraph that has a comment attached to it.",
       "formatting": {
