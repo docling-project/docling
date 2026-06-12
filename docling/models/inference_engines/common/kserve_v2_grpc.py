@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from dataclasses import dataclass, field
@@ -21,6 +22,13 @@ except ImportError:
     service_pb2 = None  # type: ignore[assignment]
     service_pb2_grpc = None  # type: ignore[assignment]
 
+from docling.models.inference_engines.common.kserve_v2_errors import (
+    KserveV2ClientError,
+    KserveV2OverloadError,
+    KserveV2PersistentError,
+    KserveV2RequestError,
+    KserveV2TransportError,
+)
 from docling.models.inference_engines.common.kserve_v2_types import (
     KSERVE_V2_NUMPY_DATATYPES,
     NUMPY_KSERVE_V2_DATATYPES,
@@ -70,6 +78,118 @@ def _resolve_grpc_endpoint(*, base_url: str) -> str:
 
 def _to_grpc_metadata(metadata: Mapping[str, str]) -> Sequence[Tuple[str, str]]:
     return [(key, value) for key, value in metadata.items()]
+
+
+# Fully-qualified KServe v2 / Triton gRPC service name (proto: package
+# `inference`, service `GRPCInferenceService`). Used to scope the retry policy.
+_GRPC_INFERENCE_SERVICE = "inference.GRPCInferenceService"
+
+# Declarative transport-class retry. gRPC retries only UNAVAILABLE (connection
+# failures / GOAWAY where the server signals the stream was unprocessed), applies
+# jittered exponential backoff, and bounds total time by the per-RPC deadline.
+# This is the single retry layer: the client does not also run a Python retry
+# loop, and the channel is never recreated (gRPC self-heals subchannels).
+_RETRY_SERVICE_CONFIG = {
+    "methodConfig": [
+        {
+            "name": [{"service": _GRPC_INFERENCE_SERVICE}],
+            "retryPolicy": {
+                "maxAttempts": 3,
+                "initialBackoff": "0.1s",
+                "maxBackoff": "1s",
+                "backoffMultiplier": 2,
+                "retryableStatusCodes": ["UNAVAILABLE"],
+            },
+        }
+    ]
+}
+
+
+def _default_channel_options() -> List[Tuple[str, Any]]:
+    """Channel options that keep one long-lived, self-healing channel.
+
+    Callers can override any of these via ``grpc_channel_args``; defaults are
+    only applied for keys the caller did not set.
+    """
+    return [
+        # Detect a dead connection during an in-flight RPC instead of waiting out
+        # the full deadline. Pings are not permitted without active calls, which
+        # avoids tripping server-side "too_many_pings" GOAWAY enforcement.
+        ("grpc.keepalive_time_ms", 30000),
+        ("grpc.keepalive_timeout_ms", 10000),
+        # Enable the declarative retry service config below.
+        ("grpc.enable_retries", 1),
+        ("grpc.service_config", json.dumps(_RETRY_SERVICE_CONFIG)),
+    ]
+
+
+def _classify_grpc_error(
+    exc: Any, *, model_name: str, operation: str
+) -> KserveV2ClientError:
+    """Map a ``grpc.RpcError`` to a typed client error.
+
+    Classification leads with the gRPC status code (stable) rather than message
+    text (fragile). The status code, details, and debug string are preserved on
+    the returned error so callers and logs retain the full context.
+    """
+    code = exc.code()
+    code_name = code.name if code is not None else None
+    details = exc.details() or ""
+    debug_error_string = exc.debug_error_string()
+
+    message = (
+        f"gRPC {operation} failed for model {model_name}: "
+        f"code={code_name} details={details}"
+    )
+    context: Dict[str, Any] = {
+        "model_name": model_name,
+        "operation": operation,
+        "status_code": code_name,
+        "details": details,
+        "debug_error_string": debug_error_string,
+    }
+
+    # Request-local validation failures: the channel is healthy, fail fast.
+    if code in (
+        grpc.StatusCode.INVALID_ARGUMENT,
+        grpc.StatusCode.OUT_OF_RANGE,
+        grpc.StatusCode.FAILED_PRECONDITION,
+    ):
+        return KserveV2RequestError(message, **context)
+
+    # Overload / backpressure. RESOURCE_EXHAUSTED is the canonical KServe/Triton
+    # signal for a full scheduler queue; DEADLINE_EXCEEDED here is treated as a
+    # queue/scheduling timeout (the request was accepted but not served in time)
+    # rather than a transport fault, so it is surfaced as backpressure.
+    #
+    # TODO: confirm the exact gRPC code Triton emits for "queue full" and "queue
+    # timeout" against the deployed image (see the verification plan in
+    # TRITON_GRPC_ERROR_HANDLING_HANDOFF.md). If a build instead surfaces queue
+    # full as UNAVAILABLE with a queue marker in details, extend this branch with
+    # a narrow, centralized details check once captured live.
+    if code in (
+        grpc.StatusCode.RESOURCE_EXHAUSTED,
+        grpc.StatusCode.DEADLINE_EXCEEDED,
+    ):
+        return KserveV2OverloadError(message, **context)
+
+    # Persistent service / configuration problems requiring external change.
+    if code in (
+        grpc.StatusCode.UNAUTHENTICATED,
+        grpc.StatusCode.PERMISSION_DENIED,
+        grpc.StatusCode.NOT_FOUND,
+    ):
+        return KserveV2PersistentError(message, **context)
+
+    # Transport / session failures the channel self-heals. CANCELLED is included
+    # because a draining mesh proxy (e.g. Linkerd shedding a connection on
+    # downscale) commonly surfaces pod loss as CANCELLED rather than UNAVAILABLE.
+    if code in (grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.CANCELLED):
+        return KserveV2TransportError(message, **context)
+
+    # Unknown / INTERNAL / DATA_LOSS, etc.: treat as persistent (non-retryable)
+    # so an unclear backend failure is surfaced rather than hot-looped.
+    return KserveV2PersistentError(message, **context)
 
 
 def _set_request_parameter(
@@ -203,6 +323,14 @@ class KserveV2GrpcClient:
             ("grpc.max_receive_message_length", self.max_message_bytes),
         ]
         channel_options.extend(self.grpc_channel_args)
+        # Apply self-healing/retry defaults only for keys the caller did not set,
+        # so explicit grpc_channel_args always win.
+        caller_keys = {key for key, _ in channel_options}
+        channel_options.extend(
+            (key, value)
+            for key, value in _default_channel_options()
+            if key not in caller_keys
+        )
         # dns:/// URLs rely on gRPC's DNS resolver returning multiple A records (e.g. headless k8s
         # services). Without a client-side lb policy, gRPC would pick just the first address.
         # Auto-inject round_robin unless the caller already specified a policy.
@@ -246,8 +374,8 @@ class KserveV2GrpcClient:
                 metadata=self._grpc_metadata,
             )
         except grpc.RpcError as exc:
-            raise RuntimeError(
-                f"gRPC metadata call failed for model {self.model_name}: {exc}"
+            raise _classify_grpc_error(
+                exc, model_name=self.model_name, operation="ModelMetadata"
             ) from exc
 
         inputs = [
@@ -344,8 +472,8 @@ class KserveV2GrpcClient:
                 metadata=self._grpc_metadata,
             )
         except grpc.RpcError as exc:
-            raise RuntimeError(
-                f"gRPC infer call failed for model {self.model_name}: {exc}"
+            raise _classify_grpc_error(
+                exc, model_name=self.model_name, operation="ModelInfer"
             ) from exc
 
         if _log.isEnabledFor(logging.DEBUG):
