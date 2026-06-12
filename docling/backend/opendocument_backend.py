@@ -6,6 +6,12 @@ read the underlying XML structure and translate it into a :class:`DoclingDocumen
 The conventions used here mirror the corresponding Microsoft Office backends
 (:mod:`docling.backend.msword_backend`, :mod:`docling.backend.mspowerpoint_backend`,
 :mod:`docling.backend.msexcel_backend`).
+
+Known gaps to improve:
+- rich text styling is not preserved yet;
+- ODP table extraction and ordered-list markers are incomplete;
+- ODS conversion focuses on cell/table content rather than spreadsheet rendering
+  fidelity.
 """
 
 from __future__ import annotations
