@@ -722,10 +722,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 bottom = max(bottom, bbox.b) if bottom != -1 else bbox.b
 
         return (right - left, bottom - top)
-
     def _add_comments(self, doc: DoclingDocument) -> None:
         """Add worksheet cell comments to the NOTES content layer.
-
         Comments are added under COMMENT_SECTION groups named
         ``comment-{sheet_name}-{cell.coordinate}`` using the ``add_comment`` API.
 
