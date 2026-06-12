@@ -456,7 +456,7 @@ class oMath2Latex(Tag2Method):
             LaTeX string with subscript applied.
         """
         c_dict = self.process_children_dict(elm, include=("e", "sub", "sSubPr"))
-        base = c_dict.get("e", "")
+        base = c_dict.get("e", "").rstrip()
         sub = self._unwrap_script(c_dict.get("sub", ""), "_")
         if self._needs_grouping(base):
             base = "{" + base + "}"
@@ -472,7 +472,7 @@ class oMath2Latex(Tag2Method):
             LaTeX string with superscript applied.
         """
         c_dict = self.process_children_dict(elm, include=("e", "sup", "sSupPr"))
-        base = c_dict.get("e", "")
+        base = c_dict.get("e", "").rstrip()
         sup = self._unwrap_script(c_dict.get("sup", ""), "^")
         if self._needs_grouping(base):
             base = "{" + base + "}"
@@ -490,7 +490,7 @@ class oMath2Latex(Tag2Method):
         c_dict = self.process_children_dict(
             elm, include=("e", "sub", "sup", "sSubSupPr")
         )
-        base = c_dict.get("e", "")
+        base = c_dict.get("e", "").rstrip()
         sub = self._unwrap_script(c_dict.get("sub", ""), "_")
         sup = self._unwrap_script(c_dict.get("sup", ""), "^")
         if self._needs_grouping(base):
@@ -754,6 +754,7 @@ class oMath2Latex(Tag2Method):
         "\u2014": "-",  # EM DASH → minus
         "\u2212": "-",  # MINUS SIGN → minus
         "\u005e": "^",  # CIRCUMFLEX → superscript operator
+        "\u00d7": "\\times ",  # MULTIPLICATION SIGN → natively output \times
     }
 
     def process_unicode(self, s: str) -> str:

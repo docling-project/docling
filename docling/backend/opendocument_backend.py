@@ -13,23 +13,32 @@ from __future__ import annotations
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from docling_core.types.doc import (
+    BoundingBox,
+    ContentLayer,
+    CoordOrigin,
+    DocItem,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
     GroupLabel,
+    ImageRef,
     NodeItem,
+    ProvenanceItem,
+    Size,
     TableCell,
     TableData,
 )
+from PIL import Image as PILImage
 from typing_extensions import override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
+from docling.datamodel.backend_options import OdsBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -79,10 +88,15 @@ class _OdfBaseBackend(DeclarativeDocumentBackend):
     _odf_type: str = ""  # "text", "spreadsheet" or "presentation"
 
     @override
-    def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path) -> None:
+    def __init__(
+        self,
+        in_doc: InputDocument,
+        path_or_stream: BytesIO | Path,
+        options: OdsBackendOptions | None = None,
+    ) -> None:
         if not _ODFDO_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _ODFDO_IMPORT_ERROR
-        super().__init__(in_doc, path_or_stream)
+        super().__init__(in_doc, path_or_stream, options)
         self.path_or_stream: BytesIO | Path = path_or_stream
         self.valid: bool = False
         self.odf_obj: OdfDocument = _load_odf_document(
@@ -106,35 +120,121 @@ class _OdfBaseBackend(DeclarativeDocumentBackend):
         self.path_or_stream = None
 
 
-def _table_data_from_odf(table: OdfTable) -> TableData | None:
+def _find_true_data_bounds(table: OdfTable) -> tuple[int, int, int, int]:
+    """Find the true data boundaries (min/max rows and columns) in an ODS table.
+
+    This function scans all cells to find the smallest rectangular region that contains
+    all non-empty cells or merged cell ranges, similar to the Excel backend approach.
+
+    Args:
+        table: The ODF table to analyze.
+
+    Returns:
+        A tuple (min_row, max_row, min_col, max_col) representing the 0-based indices
+        of the data region. If the table is empty, returns (0, 0, 0, 0).
+    """
+    min_row, min_col = None, None
+    max_row, max_col = 0, 0
+
+    # Scan all rows and cells to find non-empty cells
+    for row_idx, row in enumerate(table.traverse()):
+        for col_idx, cell in enumerate(row.traverse()):
+            # Check if cell has content (value or is part of a span)
+            if cell.value is not None or cell.tag == "table:covered-table-cell":
+                if min_row is None:
+                    min_row = row_idx
+                if min_col is None or col_idx < min_col:
+                    min_col = col_idx
+                max_row = max(max_row, row_idx)
+                max_col = max(max_col, col_idx)
+
+            # Also check for cells with spans (they define data regions)
+            if cell.tag != "table:covered-table-cell":
+                attrs = cell.attributes
+                row_span = int(attrs.get("table:number-rows-spanned") or 1)
+                col_span = int(attrs.get("table:number-columns-spanned") or 1)
+                if row_span > 1 or col_span > 1:
+                    if min_row is None:
+                        min_row = row_idx
+                    if min_col is None or col_idx < min_col:
+                        min_col = col_idx
+                    max_row = max(max_row, row_idx + row_span - 1)
+                    max_col = max(max_col, col_idx + col_span - 1)
+
+    # If no data found, return empty bounds
+    if min_row is None or min_col is None:
+        return (0, 0, 0, 0)
+
+    return (min_row, max_row, min_col, max_col)
+
+
+def _table_data_from_odf(
+    table: OdfTable,
+    min_row: int | None = None,
+    max_row: int | None = None,
+    min_col: int | None = None,
+    max_col: int | None = None,
+) -> TableData | None:
     """Convert an ODF table to a :class:`TableData` object.
+
+    This function finds the true data boundaries and only processes cells within
+    that region, avoiding the inclusion of large numbers of empty cells that may
+    exist beyond the actual data.
+
+    Args:
+        table: The ODF table to convert.
+        min_row: Optional minimum row index (0-based). If None, will be computed.
+        max_row: Optional maximum row index (0-based). If None, will be computed.
+        min_col: Optional minimum column index (0-based). If None, will be computed.
+        max_col: Optional maximum column index (0-based). If None, will be computed.
 
     Returns ``None`` when the table has no rows or columns.
     """
-    width, height = table.width, table.height
+    # Find the actual data boundaries if not provided
+    if min_row is None or max_row is None or min_col is None or max_col is None:
+        min_row, max_row, min_col, max_col = _find_true_data_bounds(table)
+
+    # Calculate the dimensions of the actual data region
+    height = max_row - min_row + 1
+    width = max_col - min_col + 1
+
     if width == 0 or height == 0:
         return None
 
     cells: list[TableCell] = []
-    for row in table.traverse():
-        for cell in row.traverse():
+
+    # Only process rows and columns within the data bounds
+    for row_idx, row in enumerate(table.traverse()):
+        if row_idx < min_row or row_idx > max_row:
+            continue
+
+        for col_idx, cell in enumerate(row.traverse()):
+            if col_idx < min_col or col_idx > max_col:
+                continue
+
             if cell.tag == "table:covered-table-cell":
                 # Spanned-over cells are skipped; the anchoring cell carries the span.
                 continue
+
             attrs = cell.attributes
             row_span = int(attrs.get("table:number-rows-spanned") or 1)
             col_span = int(attrs.get("table:number-columns-spanned") or 1)
             text = "" if cell.value is None else str(cell.value)
+
+            # Adjust cell coordinates to be relative to the data region
+            adjusted_row = row_idx - min_row
+            adjusted_col = col_idx - min_col
+
             cells.append(
                 TableCell(
                     text=text,
                     row_span=row_span,
                     col_span=col_span,
-                    start_row_offset_idx=cell.y,
-                    end_row_offset_idx=cell.y + row_span,
-                    start_col_offset_idx=cell.x,
-                    end_col_offset_idx=cell.x + col_span,
-                    column_header=cell.y == 0,
+                    start_row_offset_idx=adjusted_row,
+                    end_row_offset_idx=adjusted_row + row_span,
+                    start_col_offset_idx=adjusted_col,
+                    end_col_offset_idx=adjusted_col + col_span,
+                    column_header=adjusted_row == 0,
                     row_header=False,
                 )
             )
@@ -331,11 +431,22 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
 class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
     """Backend for OpenDocument Spreadsheet (``.ods``) files.
 
-    Each sheet becomes a separate page; sheet contents are emitted as a single
-    table grouped under a section group named after the sheet.
+    Each sheet becomes a separate page. The backend can detect multiple disconnected
+    tables within a sheet and optionally treat singleton cells as text items (e.g., titles).
     """
 
     _odf_type = "spreadsheet"
+
+    @override
+    def __init__(
+        self,
+        in_doc: InputDocument,
+        path_or_stream: BytesIO | Path,
+        options: OdsBackendOptions | None = None,
+    ) -> None:
+        if options is None:
+            options = OdsBackendOptions()
+        super().__init__(in_doc, path_or_stream, options)
 
     @classmethod
     @override
@@ -346,7 +457,16 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
     def page_count(self) -> int:
         if not self.is_valid():
             return 0
-        return len(self.odf_obj.body.tables)
+        sheet_names_filter: list[str] | None = (
+            self.options.sheet_names
+            if isinstance(self.options, OdsBackendOptions)
+            else None
+        )
+        if sheet_names_filter is None:
+            return len(self.odf_obj.body.tables)
+        return sum(
+            1 for table in self.odf_obj.body.tables if table.name in sheet_names_filter
+        )
 
     @classmethod
     @override
@@ -366,14 +486,289 @@ class OdsDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 f"Cannot convert doc with {self.document_hash} because the backend failed to init."
             )
 
-        for sheet_idx, table in enumerate(self.odf_obj.body.tables, start=1):
+        sheet_names_filter: list[str] | None = (
+            self.options.sheet_names
+            if isinstance(self.options, OdsBackendOptions)
+            else None
+        )
+
+        page_no = 0
+        for sheet_idx, table in enumerate(self.odf_obj.body.tables):
+            if sheet_names_filter is not None and table.name not in sheet_names_filter:
+                _log.debug(f"Skipping sheet {sheet_idx}: {table.name} (filtered out)")
+                continue
+
+            page_no += 1
+            _log.info(f"Processing sheet {sheet_idx}: {table.name} as page {page_no}")
+
+            # Add page for this sheet
+            page = doc.add_page(page_no=page_no, size=Size(width=0, height=0))
+
+            # Determine content layer based on sheet visibility
+            content_layer = self._get_sheet_content_layer(table)
+
             sheet_group = doc.add_group(
                 parent=None,
                 label=GroupLabel.SECTION,
                 name=f"sheet: {table.name}",
+                content_layer=content_layer,
             )
-            data = _table_data_from_odf(table)
-            if data is not None:
-                doc.add_table(parent=sheet_group, data=data)
-            _log.debug("Processed ODS sheet %s as page %s", table.name, sheet_idx)
+
+            # Convert table data with provenance
+            self._convert_sheet_table(doc, table, sheet_group, page_no, content_layer)
+
+            # Extract images from the sheet
+            self._find_images_in_sheet(doc, table, sheet_group, page_no, content_layer)
+
+            # Calculate and set page size based on content
+            width, height = self._find_page_size(doc, page_no)
+            page.size = Size(width=width, height=height)
+
+            _log.debug("Processed ODS sheet %s as page %s", table.name, page_no)
         return doc
+
+    def _convert_sheet_table(
+        self,
+        doc: DoclingDocument,
+        table: OdfTable,
+        parent: NodeItem,
+        page_no: int,
+        content_layer: ContentLayer | None,
+    ) -> None:
+        """Convert an ODS table and add it to the document with provenance.
+
+        This method finds all disconnected data regions in the sheet and creates
+        separate tables for each. Singleton cells can optionally be treated as text.
+        """
+        # Find all data tables in the sheet
+        data_tables = self._find_data_tables_in_sheet(table)
+
+        treat_singleton_as_text = (
+            isinstance(self.options, OdsBackendOptions)
+            and self.options.treat_singleton_as_text
+        )
+
+        for data_table in data_tables:
+            min_row, max_row, min_col, max_col = data_table["bounds"]
+            table_data = data_table["data"]
+
+            # Check if this is a singleton (1x1 table)
+            if treat_singleton_as_text and len(table_data.table_cells) == 1:
+                # Treat as text item instead of table
+                cell = table_data.table_cells[0]
+                doc.add_text(
+                    text=cell.text,
+                    label=DocItemLabel.TEXT,
+                    parent=parent,
+                    prov=ProvenanceItem(
+                        page_no=page_no,
+                        charspan=(0, 0),
+                        bbox=BoundingBox.from_tuple(
+                            (min_col, min_row, max_col + 1, max_row + 1),
+                            origin=CoordOrigin.TOPLEFT,
+                        ),
+                    ),
+                    content_layer=content_layer,
+                )
+            else:
+                # Add as table with provenance information
+                doc.add_table(
+                    parent=parent,
+                    data=table_data,
+                    prov=ProvenanceItem(
+                        page_no=page_no,
+                        charspan=(0, 0),
+                        bbox=BoundingBox.from_tuple(
+                            (min_col, min_row, max_col + 1, max_row + 1),
+                            origin=CoordOrigin.TOPLEFT,
+                        ),
+                    ),
+                    content_layer=content_layer,
+                )
+
+    def _find_data_tables_in_sheet(
+        self, table: OdfTable
+    ) -> list[dict[str, tuple[int, int, int, int] | TableData]]:
+        """Find all disconnected data tables in an ODS sheet using flood-fill.
+
+        Returns a list of dictionaries, each containing:
+        - 'bounds': (min_row, max_row, min_col, max_col)
+        - 'data': TableData object
+        """
+        import collections
+
+        # Get the overall data bounds
+        overall_min_row, overall_max_row, overall_min_col, overall_max_col = (
+            _find_true_data_bounds(table)
+        )
+
+        # Check if we found any data
+        if (
+            overall_min_row == 0
+            and overall_max_row == 0
+            and overall_min_col == 0
+            and overall_max_col == 0
+        ):
+            return []
+
+        GAP_TOLERANCE = cast(OdsBackendOptions, self.options).gap_tolerance
+        tables: list[dict[str, tuple[int, int, int, int] | TableData]] = []
+        visited: set[tuple[int, int]] = set()
+
+        # Build a map of cell contents for quick lookup
+        cell_map: dict[tuple[int, int], bool] = {}
+        for row_idx, row in enumerate(table.traverse()):
+            for col_idx, cell in enumerate(row.traverse()):
+                has_data = (
+                    cell.value is not None or cell.tag == "table:covered-table-cell"
+                )
+                cell_map[(row_idx, col_idx)] = has_data
+
+        # Helper: Check if a cell has content
+        def has_content(r: int, c: int) -> bool:
+            if (
+                r < overall_min_row
+                or r > overall_max_row
+                or c < overall_min_col
+                or c > overall_max_col
+            ):
+                return False
+            return cell_map.get((r, c), False)
+
+        # Scan for table starts
+        for ri in range(overall_min_row, overall_max_row + 1):
+            for ci in range(overall_min_col, overall_max_col + 1):
+                if (ri, ci) in visited:
+                    continue
+
+                if not has_content(ri, ci):
+                    continue
+
+                # Found a new table start - use flood fill to find its bounds
+                table_cells: set[tuple[int, int]] = set()
+                queue = collections.deque([(ri, ci)])
+                table_cells.add((ri, ci))
+
+                min_r, max_r = ri, ri
+                min_c, max_c = ci, ci
+
+                # Phase 1: Flood Fill
+                while queue:
+                    curr_r, curr_c = queue.popleft()
+
+                    # Update bounds
+                    min_r = min(min_r, curr_r)
+                    max_r = max(max_r, curr_r)
+                    min_c = min(min_c, curr_c)
+                    max_c = max(max_c, curr_c)
+
+                    # Check neighbors in 4 directions with gap tolerance
+                    directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+
+                    for dr, dc in directions:
+                        for step in range(1, GAP_TOLERANCE + 2):
+                            nr, nc = curr_r + (dr * step), curr_c + (dc * step)
+
+                            if (nr, nc) in table_cells:
+                                break
+
+                            if has_content(nr, nc):
+                                table_cells.add((nr, nc))
+                                queue.append((nr, nc))
+                                break
+
+                # Mark all cells in this table as visited
+                visited.update(table_cells)
+
+                # Phase 2: Extract data for this table region
+                # Create a sub-table with just this region
+                data = _table_data_from_odf(
+                    table, min_row=min_r, max_row=max_r, min_col=min_c, max_col=max_c
+                )
+
+                if data is not None:
+                    tables.append(
+                        {"bounds": (min_r, max_r, min_c, max_c), "data": data}
+                    )
+
+        return tables
+
+    def _find_images_in_sheet(
+        self,
+        doc: DoclingDocument,
+        table: OdfTable,
+        parent: NodeItem,
+        page_no: int,
+        content_layer: ContentLayer | None,
+    ) -> None:
+        """Find and extract images from an ODS sheet."""
+        try:
+            # Get all images in the table
+            images = table.get_images()
+            for img in images:
+                try:
+                    # Get the image data
+                    image_data = img.get_data()
+                    if image_data:
+                        # Convert to PIL Image
+                        from io import BytesIO
+
+                        pil_image = PILImage.open(BytesIO(image_data))
+
+                        # Try to get position information
+                        # ODF images are typically anchored to cells
+                        # For now, use a default position
+                        anchor = (0, 0, 1, 1)
+
+                        doc.add_picture(
+                            parent=parent,
+                            image=ImageRef.from_pil(image=pil_image, dpi=72),
+                            caption=None,
+                            prov=ProvenanceItem(
+                                page_no=page_no,
+                                charspan=(0, 0),
+                                bbox=BoundingBox.from_tuple(
+                                    anchor, origin=CoordOrigin.TOPLEFT
+                                ),
+                            ),
+                            content_layer=content_layer,
+                        )
+                except Exception as e:
+                    _log.debug(f"Could not extract image from ODS sheet: {e}")
+        except Exception as e:
+            _log.debug(f"Could not find images in ODS sheet: {e}")
+
+    @staticmethod
+    def _find_page_size(doc: DoclingDocument, page_no: int) -> tuple[float, float]:
+        """Calculate page size based on the bounding boxes of all items on the page."""
+        left: float = -1.0
+        top: float = -1.0
+        right: float = -1.0
+        bottom: float = -1.0
+
+        for item, _ in doc.iterate_items(traverse_pictures=True, page_no=page_no):
+            if not isinstance(item, DocItem):
+                continue
+            for provenance in item.prov:
+                if provenance.bbox is None:
+                    continue
+                bbox = provenance.bbox
+                left = min(left, bbox.l) if left != -1 else bbox.l
+                right = max(right, bbox.r) if right != -1 else bbox.r
+                top = min(top, bbox.t) if top != -1 else bbox.t
+                bottom = max(bottom, bbox.b) if bottom != -1 else bbox.b
+
+        # Return dimensions, defaulting to (0, 0) if no items found
+        if left == -1 or right == -1:
+            return (0.0, 0.0)
+        return (right - left, bottom - top)
+
+    @staticmethod
+    def _get_sheet_content_layer(table: OdfTable) -> ContentLayer | None:
+        """Determine if a sheet is hidden and should be marked as invisible."""
+        # Check if the table has a display attribute indicating it's hidden
+        # ODF uses table:display="false" for hidden sheets
+        display = table.get_attribute("table:display")
+        if display == "false":
+            return ContentLayer.INVISIBLE
+        return None

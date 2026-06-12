@@ -104,6 +104,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.listIter = 0
         # Track list counters per numId and ilvl
         self.list_counters: dict[tuple[int, int], int] = {}
+        # Track the last numId to handle list continuation after interruptions
+        self.last_numid: int | None = None
+        # Track the last list group and its parent to reuse only in same context
+        self.last_list_group: ListGroup | None = None
+        self.last_list_group_numid: int | None = None
+        self.last_list_group_parent: NodeItem | None = None
         # Set starting content layer
         self.content_layer = ContentLayer.BODY
 
@@ -229,6 +235,65 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 return k
         return 0
 
+    def _can_reuse_list_group(self, numid: int, parent: NodeItem | None) -> bool:
+        """Check if we can reuse the cached list group.
+
+        Returns True only if we're continuing the same numId in the same parent context.
+        """
+        return (
+            self.last_numid == numid
+            and self.last_list_group is not None
+            and self.last_list_group_numid == numid
+            and self.last_list_group_parent == parent
+        )
+
+    def _get_or_create_list_group(
+        self,
+        doc: DoclingDocument,
+        numid: int,
+        parent: NodeItem | None,
+        elem_ref: list[RefItem],
+    ) -> ListGroup:
+        """Get existing list group if reusable, otherwise create a new one.
+
+        Args:
+            doc: The DoclingDocument being constructed.
+            numid: The numbering ID for this list.
+            parent: The parent node for the list group.
+            elem_ref: List to append new group reference to (if created).
+
+        Returns:
+            The list group to use (either reused or newly created).
+        """
+        if self._can_reuse_list_group(numid, parent):
+            # When reusing a list group, remove any empty text item that was added
+            # between the last list item and this one (from closing the list)
+            if doc.texts and len(doc.texts) > 0:
+                last_text = doc.texts[-1]
+                if not last_text.text or not last_text.text.strip():
+                    doc.delete_items(node_items=[last_text])
+            return self.last_list_group
+
+        list_gr = doc.add_list_group(
+            name="list",
+            parent=parent,
+            content_layer=self.content_layer,
+        )
+        elem_ref.append(list_gr.get_ref())
+
+        # Update cache for potential future reuse
+        self.last_list_group = list_gr
+        self.last_list_group_numid = numid
+        self.last_list_group_parent = parent
+
+        return list_gr
+
+    def _clear_list_group_cache(self) -> None:
+        """Clear the cached list group to prevent reuse across contexts."""
+        self.last_list_group = None
+        self.last_list_group_numid = None
+        self.last_list_group_parent = None
+
     @contextmanager
     def _isolated_list_context(self):
         """Preserve list state during table cell processing.
@@ -246,12 +311,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         }
         saved_level_at_new_list = self.level_at_new_list
         saved_parents = self.parents.copy()
+        # Save and clear list group cache to prevent reuse across table cells
+        saved_last_list_group = self.last_list_group
+        saved_last_list_group_numid = self.last_list_group_numid
+        saved_last_list_group_parent = self.last_list_group_parent
+        self._clear_list_group_cache()
+
         try:
             yield
         finally:
             self.history = saved_history
             self.level_at_new_list = saved_level_at_new_list
             self.parents = saved_parents
+            self.last_list_group = saved_last_list_group
+            self.last_list_group_numid = saved_last_list_group_numid
+            self.last_list_group_parent = saved_last_list_group_parent
 
     def _walk_linear(
         self,
@@ -263,11 +337,23 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for element in body:
             tag_name = etree.QName(element).localname
             # Check for Inline Images (blip elements)
-            drawing_blip = self.blip_xpath_expr(element)
-            drawingml_els = element.findall(
+            _raw_drawing_blip = self.blip_xpath_expr(element)
+            _raw_drawingml_els = element.findall(
                 ".//w:drawing", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
             )
-            vml_images = self.vml_imagedata_xpath_expr(element)
+            _raw_vml_images = self.vml_imagedata_xpath_expr(element)
+
+            # Filter out images inside textboxes to prevent double-extraction
+            # (they will be properly extracted by _handle_textbox_content instead)
+            def _in_textbox(elem):
+                return any(
+                    etree.QName(anc).localname in ["txbxContent", "textbox"]
+                    for anc in elem.iterancestors()
+                )
+
+            drawing_blip = [x for x in _raw_drawing_blip if not _in_textbox(x)]
+            drawingml_els = [x for x in _raw_drawingml_els if not _in_textbox(x)]
+            vml_images = [x for x in _raw_vml_images if not _in_textbox(x)]
 
             # Check for textbox content - check multiple textbox formats
             # Only process if the element hasn't been processed before
@@ -378,15 +464,25 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 if self.docx_to_pdf_converter is None:
                     if self.display_drawingml_warning:
-                        if self.docx_to_pdf_converter is None:
-                            _log.warning(
-                                "Found DrawingML elements in document, but no DOCX to PDF converters. "
-                                "If you want these exported, make sure you have "
-                                "LibreOffice binary in PATH or specify its path with DOCLING_LIBREOFFICE_CMD."
-                            )
-                            self.display_drawingml_warning = False
+                        _log.warning(
+                            "Found DrawingML elements in document, but no DOCX to PDF converters. "
+                            "If you want these exported, make sure you have "
+                            "LibreOffice binary in PATH or specify its path with DOCLING_LIBREOFFICE_CMD."
+                        )
+                        self.display_drawingml_warning = False
                 else:
                     self._handle_drawingml(doc=doc, drawingml_els=drawingml_els)
+
+                # Always process text in paragraph
+                if (
+                    tag_name == "p"
+                    and element.find(
+                        ".//w:t", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                    )
+                    is not None
+                ):
+                    te = self._handle_text_elements(element, doc, skip_empty_text=True)
+                    added_elements.extend(te)
             # Check for the sdt containers, like table of contents
             elif tag_name == "sdt":
                 sdt_content = element.find(
@@ -442,6 +538,27 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             ilvl = ilvl_elem.get(self.XML_KEY) if ilvl_elem is not None else None
 
             return self._str_to_int(numId, None), self._str_to_int(ilvl, None)
+
+        # If not found directly in paragraph, check if the style defines numbering
+        if paragraph.style is not None:
+            style_elem = getattr(paragraph.style, "element", None)
+            if style_elem is not None:
+                style_numPr = style_elem.find(f".//{self._W_NS_CLARK}numPr")
+                if style_numPr is not None:
+                    numId_elem = style_numPr.find(f"{self._W_NS_CLARK}numId")
+                    ilvl_elem = style_numPr.find(f"{self._W_NS_CLARK}ilvl")
+                    numId = (
+                        numId_elem.get(self.XML_KEY) if numId_elem is not None else None
+                    )
+                    ilvl = (
+                        ilvl_elem.get(self.XML_KEY) if ilvl_elem is not None else None
+                    )
+
+                    # If numId is found but ilvl is not specified, default to level 0
+                    if numId is not None and ilvl is None:
+                        ilvl = "0"
+
+                    return self._str_to_int(numId, None), self._str_to_int(ilvl, None)
 
         return None, None  # If the paragraph is not part of a list
 
@@ -1047,8 +1164,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         textbox_elements: list,
         doc: DoclingDocument,
     ) -> list[RefItem]:
-        elem_ref: list[RefItem] = []
         """Process textbox content and add it to the document structure."""
+        elem_ref: list[RefItem] = []
         level = self._get_level()
         # Create a textbox group to contain all text from the textbox
         textbox_group = doc.add_group(
@@ -1083,29 +1200,44 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Add the sorted paragraphs to our processing list
             all_paragraphs.extend(sorted_container_paragraphs)
 
-        # Track processed paragraphs to avoid duplicates (same content and position)
+        # Track processed paragraphs to avoid duplicates
         processed_paragraphs = set()
 
         # Process all the paragraphs
         for p, position in all_paragraphs:
             # Create paragraph object to get text content
             paragraph = Paragraph(p, self.docx_obj)
-            text_content = paragraph.text
+            text_content = paragraph.text.strip()
 
-            # Create a unique identifier based on content and position
-            paragraph_id = (text_content, position)
-
-            # Skip if this paragraph (same content and position) was already processed
-            if paragraph_id in processed_paragraphs:
-                _log.debug(
-                    f"Skipping duplicate paragraph: content='{text_content[:50]}...', position={position}"
-                )
-                continue
-
-            # Mark this paragraph as processed
-            processed_paragraphs.add(paragraph_id)
+            if text_content:
+                # Deduplicate AlternateContent by exact text natively
+                if text_content in processed_paragraphs:
+                    continue
+                processed_paragraphs.add(text_content)
+            else:
+                # Preserve empty regions (images) based on position
+                paragraph_id = (text_content, position)
+                if paragraph_id in processed_paragraphs:
+                    continue
+                processed_paragraphs.add(paragraph_id)
 
             elem_ref.extend(self._handle_text_elements(p, doc))
+
+            # Extract embedded images inside the text box
+            tb_drawing_blip = self.blip_xpath_expr(p)
+            tb_vml_images = self.vml_imagedata_xpath_expr(p)
+            tb_drawingml_els = p.findall(
+                ".//w:drawing", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+            )
+
+            if tb_drawing_blip:
+                pics = self._handle_pictures(tb_drawing_blip, doc)
+                elem_ref.extend(pics)
+            elif tb_vml_images:
+                vml_pics = self._handle_vml_pictures(tb_vml_images, doc)
+                elem_ref.extend(vml_pics)
+            elif tb_drawingml_els:
+                self._handle_drawingml(doc=doc, drawingml_els=tb_drawingml_els)
 
         # Restore original parent
         self.parents[level] = original_parent
@@ -1216,6 +1348,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self,
         element: BaseOxmlElement,
         doc: DoclingDocument,
+        skip_empty_text: bool = False,
     ) -> list[RefItem]:
         elem_ref: list[RefItem] = []
         paragraph = Paragraph(element, self.docx_obj)
@@ -1279,6 +1412,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and self._prev_numid() is not None
             and p_style_id not in ["Title", "Heading"]
         ):  # Close list
+            self.last_numid = self._prev_numid()
+            # Store the list group and its parent for potential reuse
+            if self.level_at_new_list and self.level_at_new_list in self.parents:
+                parent_item = self.parents.get(self.level_at_new_list)
+                if isinstance(parent_item, ListGroup):
+                    self.last_list_group = parent_item
+                    self.last_list_group_numid = self.last_numid
+                    self.last_list_group_parent = self.parents.get(
+                        self.level_at_new_list - 1
+                    )
+
             if self.level_at_new_list:
                 for key in range(len(self.parents)):
                     if key >= self.level_at_new_list:
@@ -1355,8 +1499,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
 
         else:
-            # Handle standard paragraph styles and any other text styles
-            # Text style names can have not only default values but user values too
             level = self._get_level()
             parent = self._create_or_reuse_parent(
                 doc=doc,
@@ -1368,6 +1510,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 clean_text = (
                     self._clean_checkbox_symbols(text) if checkbox_label else text
                 )
+
+                # Skip empty text items
+                if skip_empty_text and (not clean_text or not clean_text.strip()):
+                    continue
+
                 text_item = doc.add_text(
                     label=checkbox_label if checkbox_label else DocItemLabel.TEXT,
                     parent=parent,
@@ -1618,16 +1765,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._prev_numid() == numid and self.level_at_new_list is None
         ):  # Open new list
             self.level_at_new_list = level
-            self._reset_list_counters_for_new_sequence(numid)
+            # Only reset counters if this is a truly new list (different numId)
+            if self.last_numid != numid:
+                self._reset_list_counters_for_new_sequence(numid)
 
-            list_gr = doc.add_list_group(
-                name="list",
+            list_gr = self._get_or_create_list_group(
+                doc=doc,
+                numid=numid,
                 parent=self.parents[level - 1],
-                content_layer=self.content_layer,
+                elem_ref=elem_ref,
             )
+
             self.parents[level] = list_gr
-            elem_ref.append(list_gr.get_ref())
             use_level = level
+            self.last_numid = numid
 
         elif (
             self._prev_numid() == numid
@@ -1678,13 +1829,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 use_level = level
                 self.level_at_new_list = use_level
 
-            list_gr = doc.add_list_group(
-                name="list",
+            # Only reset counters if this is a different numId
+            if self.last_numid != numid:
+                self._reset_list_counters_for_new_sequence(numid)
+
+            list_gr = self._get_or_create_list_group(
+                doc=doc,
+                numid=numid,
                 parent=self.parents[use_level - 1],
-                content_layer=self.content_layer,
+                elem_ref=elem_ref,
             )
+
             self.parents[use_level] = list_gr
-            elem_ref.append(list_gr.get_ref())
+            self.last_numid = numid
         else:
             use_level = level - 1
 
@@ -1833,6 +1990,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             cell_element = table.rows[0].cells[0]
             # In case we have a table of only 1 cell, we consider it furniture
             # And proceed processing the content of the cell as though it's in the document body
+            self._clear_list_group_cache()
             self._walk_linear(cell_element._element, doc)
             return elem_ref
 
@@ -2173,6 +2331,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     except (UnidentifiedImageError, OSError) as e:
                         _log.warning(f"Warning: image cannot be loaded by Pillow: {e}")
                         pil_image = None
+
+                if pil_image is None and image is not None:
+                    _log.debug(
+                        "Direct PIL loading failed, trying DOCX conversion via LibreOffice"
+                    )
+                    pil_image = self._convert_elements_via_docx(
+                        image, ["drawing", "pict"]
+                    )
 
                 elem_ref.append(self._add_picture_to_doc(doc, parent, pil_image))
         return elem_ref

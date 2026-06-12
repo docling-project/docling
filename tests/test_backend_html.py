@@ -9,7 +9,7 @@ from unittest.mock import Mock, mock_open, patch
 import pytest
 import requests
 from bs4 import BeautifulSoup
-from docling_core.types.doc import PictureItem
+from docling_core.types.doc import PictureItem, RichTableCell
 from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
 
@@ -29,6 +29,27 @@ from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
+
+
+def _create_html_converter(backend_options):
+    """Helper to create DocumentConverter with HTML format options."""
+    return DocumentConverter(
+        allowed_formats=[InputFormat.HTML],
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
+        },
+    )
+
+
+def _create_mock_response(data=b"fake_image_data"):
+    """Helper to create a mock HTTP response for image fetching."""
+    mock_resp = Mock()
+    mock_resp.headers = {}
+    mock_resp.raise_for_status = Mock()
+    mock_resp.iter_content = Mock(return_value=[data])
+    mock_resp.is_redirect = False
+    mock_resp.is_permanent_redirect = False
+    return mock_resp
 
 
 def test_html_backend_options():
@@ -392,14 +413,8 @@ def test_fetch_remote_images(monkeypatch):
     source = "./tests/data/html/example_01.html"
 
     # no image fetching: the image_fetch flag is False
-    backend_options = HTMLBackendOptions(
-        fetch_images=False, source_uri="http://example.com"
-    )
-    converter = DocumentConverter(
-        allowed_formats=[InputFormat.HTML],
-        format_options={
-            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
-        },
+    converter = _create_html_converter(
+        HTMLBackendOptions(fetch_images=False, source_uri="http://example.com")
     )
     with patch("docling.backend.html_backend.requests.get") as mocked_get:
         res = converter.convert(source)
@@ -407,13 +422,7 @@ def test_fetch_remote_images(monkeypatch):
     assert res.document
 
     # no image fetching: the source location is False and enable_local_fetch is False
-    backend_options = HTMLBackendOptions(fetch_images=True)
-    converter = DocumentConverter(
-        allowed_formats=[InputFormat.HTML],
-        format_options={
-            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
-        },
-    )
+    converter = _create_html_converter(HTMLBackendOptions(fetch_images=True))
     with (
         patch("docling.backend.html_backend.requests.get") as mocked_get,
         pytest.warns(
@@ -425,14 +434,8 @@ def test_fetch_remote_images(monkeypatch):
     assert res.document
 
     # no image fetching: the enable_remote_fetch is False
-    backend_options = HTMLBackendOptions(
-        fetch_images=True, source_uri="http://example.com"
-    )
-    converter = DocumentConverter(
-        allowed_formats=[InputFormat.HTML],
-        format_options={
-            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
-        },
+    converter = _create_html_converter(
+        HTMLBackendOptions(fetch_images=True, source_uri="http://example.com")
     )
     with (
         patch("docling.backend.html_backend.requests.get") as mocked_get,
@@ -445,40 +448,24 @@ def test_fetch_remote_images(monkeypatch):
     assert res.document
 
     # image fetching: all conditions apply, source location is remote
-    backend_options = HTMLBackendOptions(
-        enable_remote_fetch=True, fetch_images=True, source_uri="http://example.com"
-    )
-    converter = DocumentConverter(
-        allowed_formats=[InputFormat.HTML],
-        format_options={
-            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
-        },
+    converter = _create_html_converter(
+        HTMLBackendOptions(
+            enable_remote_fetch=True, fetch_images=True, source_uri="http://example.com"
+        )
     )
     with patch(
         "docling.backend.html_backend.requests.Session.get"
     ) as mocked_session_get:
-        # Mock the response to support the new streaming interface
-        mock_resp = Mock()
-        mock_resp.headers = {}
-        mock_resp.raise_for_status = Mock()
-        mock_resp.iter_content = Mock(return_value=[b"fake_image_data"])
-        mock_resp.is_redirect = False
-        mock_resp.is_permanent_redirect = False
-        mocked_session_get.return_value = mock_resp
-
+        mocked_session_get.return_value = _create_mock_response()
         res = converter.convert(source)
         mocked_session_get.assert_called_once()
     assert res.document
 
     # image fetching: all conditions apply, local fetching allowed
-    backend_options = HTMLBackendOptions(
-        enable_local_fetch=True, fetch_images=True, source_uri=source
-    )
-    converter = DocumentConverter(
-        allowed_formats=[InputFormat.HTML],
-        format_options={
-            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
-        },
+    converter = _create_html_converter(
+        HTMLBackendOptions(
+            enable_local_fetch=True, fetch_images=True, source_uri=source
+        )
     )
     with (
         patch("docling.backend.html_backend.open") as mocked_open,
@@ -488,6 +475,35 @@ def test_fetch_remote_images(monkeypatch):
         expected_path = os.path.abspath("tests/data/html/example_image_01.png")
         mocked_open.assert_called_once_with(expected_path, "rb")
         assert res.document
+
+
+def test_fetch_remote_images_with_custom_headers():
+    """Test that custom headers are passed when fetching remote images."""
+    custom_headers = {"Authorization": "Bearer test-token", "X-API-Key": "test-api-key"}
+    backend_options = HTMLBackendOptions(
+        enable_remote_fetch=True,
+        fetch_images=True,
+        source_uri="http://example.com",
+        headers=custom_headers,
+    )
+    # Verify sensitive headers are not exposed in string representation
+    repr_str = repr(backend_options)
+    assert (
+        "test-token" not in repr_str
+        and "test-api-key" not in repr_str
+        and "headers=" not in repr_str
+    )
+
+    converter = _create_html_converter(backend_options)
+    with patch(
+        "docling.backend.html_backend.requests.Session.get"
+    ) as mocked_session_get:
+        mocked_session_get.return_value = _create_mock_response()
+        res = converter.convert("./tests/data/html/example_01.html")
+        headers_arg = mocked_session_get.call_args[1].get("headers", {})
+        assert headers_arg["Authorization"] == "Bearer test-token"
+        assert headers_arg["X-API-Key"] == "test-api-key" and "Range" in headers_arg
+    assert res.document
 
 
 def test_is_rich_table_cell(html_paths):
@@ -569,6 +585,49 @@ def test_is_rich_table_cell(html_paths):
         assert num_cells == len(gt_cells[idx_t]), (
             f"Cell number does not match in table {idx_t}"
         )
+
+
+def test_table_row_section_flag_from_tr_and_td_class():
+    raw_html = b"""
+    <html>
+      <body>
+        <table>
+          <tr><th>Key</th><th>Value</th></tr>
+          <tr class="row_section">
+            <td>Section From TR</td>
+            <td><a href="https://example.com">Rich Section From TR</a></td>
+          </tr>
+          <tr>
+            <td class="row_section">Section From TD</td>
+            <td>Normal Cell</td>
+          </tr>
+        </table>
+      </body>
+    </html>
+    """
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test_row_section.html",
+    )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(raw_html),
+    )
+    doc: DoclingDocument = backend.convert()
+
+    cells = doc.tables[0].data.table_cells
+    cells_by_text = {cell.text: cell for cell in cells}
+
+    assert cells_by_text["Section From TR"].row_section is True
+    assert cells_by_text["Section From TD"].row_section is True
+    assert cells_by_text["Normal Cell"].row_section is False
+
+    rich_section_cell = cells_by_text["Rich Section From TR"]
+    assert isinstance(rich_section_cell, RichTableCell)
+    assert rich_section_cell.row_section is True
 
 
 data_fix_par = [

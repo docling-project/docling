@@ -16,7 +16,7 @@ from email.utils import parsedate_to_datetime
 from enum import Enum
 from io import BytesIO
 from pathlib import Path, PurePath
-from typing import IO, Any, Literal, TypeAlias, TypeVar, cast, overload
+from typing import IO, Any, TypeAlias, TypeVar
 from urllib.parse import urlencode, urlparse
 
 import httpx
@@ -42,6 +42,8 @@ from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
 from docling.datamodel.service.requests import (
+    BatchConvertSourcesRequest,
+    BatchSourceRequestItem,
     ConvertDocumentsRequest,
     HttpSourceRequest,
 )
@@ -49,18 +51,28 @@ from docling.datamodel.service.responses import (
     ChunkDocumentResponse,
     ConvertDocumentResponse,
     HealthCheckResponse,
+    PresignedUrlConvertDocumentResponse,
+    PresignedUrlConvertResponse,
+    TaskFailureResult,
     TaskStatusResponse,
     UsageLimitExceededResponse,
 )
-from docling.datamodel.service.targets import InBodyTarget, ZipTarget
+from docling.datamodel.service.targets import (
+    InBodyTarget,
+    PresignedUrlTarget,
+    S3Target,
+    ZipTarget,
+)
 from docling.datamodel.settings import DocumentLimits, PageRange
 from docling.service_client._scheduler import _run_bounded
 from docling.service_client.exceptions import (
     ConversionError,
+    ResponseSchemaMismatchError,
     ResultExpiredError,
     ResultNotReadyError,
     ServiceError,
     ServiceUnavailableError,
+    TaskExecutionError,
     TaskNotFoundError,
     TaskTimeoutError,
     UsageLimitExceededError,
@@ -74,7 +86,9 @@ from docling.service_client.watchers import (
     is_terminal_task_status,
 )
 
-SourceType: TypeAlias = Path | str | DocumentStream
+SourceType: TypeAlias = Path | str | DocumentStream | HttpSourceRequest
+SubmitTarget: TypeAlias = InBodyTarget | ZipTarget | PresignedUrlTarget
+BatchSubmitTarget: TypeAlias = S3Target | PresignedUrlTarget
 logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
@@ -108,7 +122,6 @@ class ConversionItem:
     source: SourceType
     options: ConvertDocumentsRequestOptions | None = None
     headers: dict[str, str] | None = None
-    source_headers: dict[str, str] | None = None
     metadata: Any = None
 
 
@@ -266,8 +279,10 @@ class DoclingServiceClient:
             page_range=page_range,
         )
         effective_cap = self._effective_concurrency(max_concurrency)
-        submit_options, _ = self._options_for_target_format(
-            resolved.options, OutputFormat.JSON
+        submit_options = self._options_for_output_formats(
+            resolved.options,
+            output_formats=None,
+            target=InBodyTarget(),
         )
         return self._iterate_convert_all_sync(
             sources=sources,
@@ -277,18 +292,57 @@ class DoclingServiceClient:
             in_flight=effective_cap,
         )
 
-    def submit_and_retrieve_many(
+    def submit_and_retrieve_each(
         self,
         items: Iterable[ConversionItem],
         max_in_flight: int = DEFAULT_MAX_CONCURRENCY,
         ordered: bool = False,
-    ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
+        *,
+        target: InBodyTarget | PresignedUrlTarget | None = None,
+    ) -> Iterator[
+        tuple[
+            ConversionItem,
+            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+        ]
+    ]:
+        """Yield one outcome per submitted item.
+
+        `target=None` uses the same auto-target behavior as `submit()`: the client
+        first tries `PresignedUrlTarget()` and falls back to `InBodyTarget()` when the
+        server rejects presigned output because artifact storage is not configured.
+        """
         return self._run_submit_and_retrieve_many_async(
             item_list=items,
             max_in_flight=self._validate_concurrency(
                 max_in_flight, name="max_in_flight"
             ),
             ordered=ordered,
+            target=target,
+        )
+
+    def submit_and_retrieve_many(
+        self,
+        items: Iterable[ConversionItem],
+        max_in_flight: int = DEFAULT_MAX_CONCURRENCY,
+        ordered: bool = False,
+        *,
+        target: InBodyTarget | PresignedUrlTarget | None = None,
+    ) -> Iterator[
+        tuple[
+            ConversionItem,
+            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+        ]
+    ]:
+        warnings.warn(
+            "submit_and_retrieve_many() is deprecated; use submit_and_retrieve_each().",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.submit_and_retrieve_each(
+            items=items,
+            max_in_flight=max_in_flight,
+            ordered=ordered,
+            target=target,
         )
 
     def chunk(
@@ -300,51 +354,74 @@ class DoclingServiceClient:
         job = self.submit_chunk(source=source, chunker=chunker, options=options)
         return job.result(timeout=self._job_timeout)
 
-    @overload
     def submit(
         self,
         source: SourceType,
         options: ConvertDocumentsRequestOptions | None = None,
-        target_format: None | Literal["json"] = None,
+        output_formats: list[OutputFormat] | None = None,
         headers: dict[str, str] | None = None,
-    ) -> ConversionJob[ConversionResult]: ...
-
-    @overload
-    def submit(
-        self,
-        source: SourceType,
-        options: ConvertDocumentsRequestOptions | None = None,
-        target_format: OutputFormat = ...,
-        headers: dict[str, str] | None = None,
-    ) -> ConversionJob[RawServiceResult]: ...
-
-    def submit(
-        self,
-        source: SourceType,
-        options: ConvertDocumentsRequestOptions | None = None,
-        target_format: OutputFormat | Literal["json"] | None = None,
-        headers: dict[str, str] | None = None,
-    ) -> ConversionJob[ConversionResult] | ConversionJob[RawServiceResult]:
-        normalized_target_format: OutputFormat | None = (
-            OutputFormat.JSON
-            if target_format == "json"
-            else cast(OutputFormat | None, target_format)
-        )
+        *,
+        target: SubmitTarget | None = None,
+    ) -> (
+        ConversionJob[ConversionResult]
+        | ConversionJob[RawServiceResult]
+        | ConversionJob[PresignedUrlConvertResponse]
+    ):
+        descriptor = self._describe_source(source)
         resolved = self._resolve_options(
             options=options,
             max_num_pages=None,
             max_file_size=None,
             page_range=None,
         )
-        submit_options, raw_result = self._options_for_target_format(
-            resolved.options, normalized_target_format
+        resolved_target = PresignedUrlTarget() if target is None else target
+        submit_options = self._options_for_output_formats(
+            resolved.options,
+            output_formats=output_formats,
+            target=resolved_target,
         )
+        if target is None:
+            return self._submit_conversion_job_with_auto_target(
+                descriptor=descriptor,
+                source=source,
+                options=submit_options,
+                limits=resolved.limits,
+                request_headers=headers,
+            )
         return self._submit_conversion_job(
             source=source,
-            source_headers=None,
             options=submit_options,
             limits=resolved.limits,
-            raw_result=raw_result,
+            target=target,
+            request_headers=headers,
+        )
+
+    def submit_batch(
+        self,
+        sources: list[BatchSourceRequestItem],
+        target: BatchSubmitTarget,
+        output_formats: list[OutputFormat] | None = None,
+        options: ConvertDocumentsRequestOptions | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> (
+        ConversionJob[PresignedUrlConvertDocumentResponse]
+        | ConversionJob[PresignedUrlConvertResponse]
+    ):
+        resolved = self._resolve_options(
+            options=options,
+            max_num_pages=None,
+            max_file_size=None,
+            page_range=None,
+        )
+        submit_options = self._options_for_output_formats(
+            resolved.options,
+            output_formats=output_formats,
+            target=target,
+        )
+        return self._submit_batch_conversion_job(
+            sources=sources,
+            options=submit_options,
+            target=target,
             request_headers=headers,
         )
 
@@ -406,52 +483,56 @@ class DoclingServiceClient:
         if preflight is not None:
             return preflight
 
-        submit_options, _ = self._options_for_target_format(
-            resolved.options, OutputFormat.JSON
+        submit_options = self._options_for_output_formats(
+            resolved.options,
+            output_formats=None,
+            target=InBodyTarget(),
         )
-        job = cast(
-            ConversionJob[ConversionResult],
-            self._submit_conversion_job(
-                source=source,
-                source_headers=headers,
-                options=submit_options,
-                limits=resolved.limits,
-                raw_result=False,
-                descriptor=descriptor,
-            ),
+        job = self._submit_conversion_job(
+            source=source,
+            options=submit_options,
+            limits=resolved.limits,
+            target=InBodyTarget(),
+            descriptor=descriptor,
+            request_headers=headers,
         )
         result = job.result(timeout=self._job_timeout)
+        if not isinstance(result, ConversionResult):
+            raise TypeError(
+                "InBodyTarget submission returned an unexpected result type."
+            )
         return result
 
     def _submit_conversion_job(
         self,
         source: SourceType,
-        source_headers: dict[str, str] | None,
         options: ConvertDocumentsRequestOptions,
         limits: DocumentLimits,
-        raw_result: bool,
+        target: SubmitTarget,
         descriptor: _SourceDescriptor | None = None,
         request_headers: dict[str, str] | None = None,
-    ) -> ConversionJob[ConversionResult] | ConversionJob[RawServiceResult]:
+    ) -> (
+        ConversionJob[ConversionResult]
+        | ConversionJob[RawServiceResult]
+        | ConversionJob[PresignedUrlConvertResponse]
+    ):
         descriptor = descriptor or self._describe_source(source)
         initial_status = self._submit_convert_task(
             source=source,
-            source_headers=source_headers,
             options=options,
-            raw_result=raw_result,
+            target=target,
             request_headers=request_headers,
+        )
+        fetch_result = self._make_convert_fetch_result_handler(
+            descriptor=descriptor,
+            limits=limits,
+            target=target,
         )
         handlers = _JobHandlers[Any](
             poll=self._poll_task_status,
             watch=self._watch_task_updates,
             wait=self._wait_for_terminal_status,
-            fetch_result=lambda task_id, last_status: self._fetch_convert_result(
-                task_id=task_id,
-                descriptor=descriptor,
-                limits=limits,
-                raw_result=raw_result,
-                last_status=last_status,
-            ),
+            fetch_result=fetch_result,
         )
         return ConversionJob(
             task_id=initial_status.task_id,
@@ -463,36 +544,29 @@ class DoclingServiceClient:
     def _submit_convert_task(
         self,
         source: SourceType,
-        source_headers: dict[str, str] | None,
         options: ConvertDocumentsRequestOptions,
-        raw_result: bool,
+        target: SubmitTarget,
         request_headers: dict[str, str] | None = None,
     ) -> TaskStatusResponse:
         source_name = self._source_name(source)
         logger.info("Submitting convert task for source=%s", source_name)
-        target = ZipTarget() if raw_result else InBodyTarget()
-        if isinstance(source, str):
-            self._validate_http_source(source)
+        if isinstance(source, (str, HttpSourceRequest)):
+            request_source = self._normalize_http_source(source)
             request = ConvertDocumentsRequest(
                 options=options,
-                sources=[
-                    HttpSourceRequest(
-                        url=source,
-                        headers={} if source_headers is None else source_headers,
-                    )
-                ],
+                sources=[request_source],
                 target=target,
             )
             response = self._request_with_retry(
                 method="POST",
                 path="/v1/convert/source/async",
-                json=request.model_dump(mode="json"),
+                json=self._serialize_convert_request(request),
                 headers=request_headers,
             )
         else:
             files = self._source_to_upload_files(source)
-            data = options.model_dump(mode="json", exclude_none=True)
-            data["target_type"] = "zip" if raw_result else "inbody"
+            data = self._serialize_convert_options(options)
+            data["target_type"] = target.kind
             response = self._request_with_retry(
                 method="POST",
                 path="/v1/convert/file/async",
@@ -519,8 +593,8 @@ class DoclingServiceClient:
         chunker: ChunkerKind,
         options: ConvertDocumentsRequestOptions,
     ) -> TaskStatusResponse:
-        if isinstance(source, str):
-            self._validate_http_source(source)
+        if isinstance(source, (str, HttpSourceRequest)):
+            request_source = self._normalize_http_source(source)
             chunking_options: HybridChunkerOptions | HierarchicalChunkerOptions
             if chunker == ChunkerKind.HYBRID:
                 chunking_options = HybridChunkerOptions()
@@ -528,13 +602,11 @@ class DoclingServiceClient:
                 chunking_options = HierarchicalChunkerOptions()
 
             payload = {
-                "convert_options": options.model_dump(mode="json", exclude_none=True),
+                "convert_options": self._serialize_convert_options(options),
                 "chunking_options": chunking_options.model_dump(
                     mode="json", exclude_none=True
                 ),
-                "sources": [
-                    HttpSourceRequest(url=source, headers={}).model_dump(mode="json")
-                ],
+                "sources": [request_source.model_dump(mode="json")],
                 "include_converted_doc": False,
                 "target": InBodyTarget().model_dump(mode="json"),
                 "callbacks": [],
@@ -548,9 +620,7 @@ class DoclingServiceClient:
             files = self._source_to_upload_files(source)
             data: dict[str, Any] = {
                 f"convert_{key}": value
-                for key, value in options.model_dump(
-                    mode="json", exclude_none=True
-                ).items()
+                for key, value in self._serialize_convert_options(options).items()
             }
             chunk_model: HybridChunkerOptions | HierarchicalChunkerOptions
             if chunker == ChunkerKind.HYBRID:
@@ -612,36 +682,137 @@ class DoclingServiceClient:
             return self._polling_watcher
         return self._ws_watcher
 
-    def _fetch_convert_result(
+    def _submit_conversion_job_with_auto_target(
         self,
-        task_id: str,
+        descriptor: _SourceDescriptor,
+        source: SourceType,
+        options: ConvertDocumentsRequestOptions,
+        limits: DocumentLimits,
+        request_headers: dict[str, str] | None = None,
+    ) -> ConversionJob[ConversionResult] | ConversionJob[PresignedUrlConvertResponse]:
+        try:
+            return self._submit_conversion_job(
+                source=source,
+                options=options,
+                limits=limits,
+                target=PresignedUrlTarget(),
+                descriptor=descriptor,
+                request_headers=request_headers,
+            )
+        except ServiceError as exc:
+            if not self._should_fallback_from_presigned_target(exc):
+                raise
+        return self._submit_conversion_job(
+            source=source,
+            options=self._options_for_output_formats(
+                options,
+                output_formats=None,
+                target=InBodyTarget(),
+            ),
+            limits=limits,
+            target=InBodyTarget(),
+            descriptor=descriptor,
+            request_headers=request_headers,
+        )
+
+    def _make_convert_fetch_result_handler(
+        self,
         descriptor: _SourceDescriptor,
         limits: DocumentLimits,
-        raw_result: bool,
-        last_status: TaskStatusResponse | None,
-    ) -> ConversionResult | RawServiceResult:
-        if raw_result:
-            response = self._request_with_retry(
-                method="GET",
-                path=f"/v1/result/{task_id}",
+        target: SubmitTarget,
+    ) -> Any:
+        if isinstance(target, ZipTarget):
+            return lambda task_id, last_status: self._fetch_raw_result(
+                task_id=task_id,
+                last_status=last_status,
             )
-            if response.status_code == 404:
-                self._raise_for_result_404(
-                    task_id=task_id, response=response, last_status=last_status
-                )
-            if response.status_code != 200:
-                self._raise_for_generic_http_error(
-                    response, f"Fetching result for task {task_id} failed."
-                )
-            return self._decode_raw_result(response)
+        if isinstance(target, PresignedUrlTarget):
+            return lambda task_id, last_status: self._fetch_presigned_result(
+                task_id=task_id,
+                last_status=last_status,
+            )
+        return lambda task_id, last_status: self._build_conversion_result(
+            payload=self._fetch_convert_result_payload(
+                task_id=task_id,
+                last_status=last_status,
+            ),
+            descriptor=descriptor,
+            limits=limits,
+        )
 
-        payload = self._fetch_convert_result_payload(
-            task_id=task_id,
-            last_status=last_status,
+    def _submit_batch_conversion_job(
+        self,
+        sources: list[BatchSourceRequestItem],
+        options: ConvertDocumentsRequestOptions,
+        target: BatchSubmitTarget,
+        request_headers: dict[str, str] | None = None,
+    ) -> (
+        ConversionJob[PresignedUrlConvertDocumentResponse]
+        | ConversionJob[PresignedUrlConvertResponse]
+    ):
+        initial_status = self._submit_batch_task(
+            sources=sources,
+            options=options,
+            target=target,
+            request_headers=request_headers,
         )
-        return self._build_conversion_result(
-            payload=payload, descriptor=descriptor, limits=limits
+        if isinstance(target, S3Target):
+
+            def fetch_result(
+                task_id: str,
+                last_status: TaskStatusResponse | None,
+            ) -> PresignedUrlConvertDocumentResponse:
+                return self._fetch_presigned_document_result(
+                    task_id=task_id,
+                    last_status=last_status,
+                )
+        else:
+
+            def fetch_result(
+                task_id: str,
+                last_status: TaskStatusResponse | None,
+            ) -> PresignedUrlConvertResponse:
+                return self._fetch_presigned_result(
+                    task_id=task_id,
+                    last_status=last_status,
+                )
+
+        handlers = _JobHandlers[Any](
+            poll=self._poll_task_status,
+            watch=self._watch_task_updates,
+            wait=self._wait_for_terminal_status,
+            fetch_result=fetch_result,
         )
+        return ConversionJob(
+            task_id=initial_status.task_id,
+            submitted_at=datetime.now(tz=timezone.utc),
+            handlers=handlers,
+            initial_status=initial_status,
+        )
+
+    def _submit_batch_task(
+        self,
+        sources: list[BatchSourceRequestItem],
+        options: ConvertDocumentsRequestOptions,
+        target: BatchSubmitTarget,
+        request_headers: dict[str, str] | None = None,
+    ) -> TaskStatusResponse:
+        request = BatchConvertSourcesRequest(
+            options=options,
+            sources=sources,
+            target=target,
+        )
+        response = self._request_with_retry(
+            method="POST",
+            path="/v1/convert/source/batch",
+            json=self._serialize_convert_request(request),
+            headers=request_headers,
+        )
+        if response.status_code != 200:
+            self._raise_for_generic_http_error(
+                response, "Batch task submission failed."
+            )
+        return TaskStatusResponse.model_validate_json(response.text)
 
     def _fetch_result_response(
         self,
@@ -660,6 +831,7 @@ class DoclingServiceClient:
             )
         if response.status_code != 200:
             self._raise_for_generic_http_error(response, error_message)
+        self._raise_if_task_failure_result(response)
         return response
 
     def _fetch_convert_result_payload(
@@ -672,7 +844,45 @@ class DoclingServiceClient:
             last_status=last_status,
             error_message=f"Fetching result for task {task_id} failed.",
         )
-        return ConvertDocumentResponse.model_validate_json(response.text)
+        return self._parse_result_model_response(response, ConvertDocumentResponse)
+
+    def _fetch_raw_result(
+        self,
+        task_id: str,
+        last_status: TaskStatusResponse | None,
+    ) -> RawServiceResult:
+        response = self._fetch_result_response(
+            task_id=task_id,
+            last_status=last_status,
+            error_message=f"Fetching result for task {task_id} failed.",
+        )
+        return self._decode_raw_result(response)
+
+    def _fetch_presigned_result(
+        self,
+        task_id: str,
+        last_status: TaskStatusResponse | None,
+    ) -> PresignedUrlConvertResponse:
+        response = self._fetch_result_response(
+            task_id=task_id,
+            last_status=last_status,
+            error_message=f"Fetching result for task {task_id} failed.",
+        )
+        return self._parse_result_model_response(response, PresignedUrlConvertResponse)
+
+    def _fetch_presigned_document_result(
+        self,
+        task_id: str,
+        last_status: TaskStatusResponse | None,
+    ) -> PresignedUrlConvertDocumentResponse:
+        response = self._fetch_result_response(
+            task_id=task_id,
+            last_status=last_status,
+            error_message=f"Fetching result for task {task_id} failed.",
+        )
+        return self._parse_result_model_response(
+            response, PresignedUrlConvertDocumentResponse
+        )
 
     def _fetch_chunk_result(
         self,
@@ -684,7 +894,39 @@ class DoclingServiceClient:
             last_status=last_status,
             error_message=f"Fetching chunk result for task {task_id} failed.",
         )
-        return ChunkDocumentResponse.model_validate_json(response.text)
+        return self._parse_result_model_response(response, ChunkDocumentResponse)
+
+    def _parse_result_model_response(
+        self,
+        response: httpx.Response,
+        model_cls: type[_T],
+    ) -> _T:
+        try:
+            return model_cls.model_validate_json(response.text)
+        except (ValidationError, ValueError) as exc:
+            raise ResponseSchemaMismatchError(
+                "Response schema mismatch — client and server versions may differ.",
+                status_code=response.status_code,
+                detail=str(exc),
+            ) from exc
+
+    def _serialize_convert_options(
+        self,
+        options: ConvertDocumentsRequestOptions,
+    ) -> dict[str, Any]:
+        return options.model_dump(
+            mode="json",
+            exclude_defaults=True,
+            exclude_none=True,
+        )
+
+    def _serialize_convert_request(
+        self,
+        request: ConvertDocumentsRequest | BatchConvertSourcesRequest,
+    ) -> dict[str, Any]:
+        payload = request.model_dump(mode="json", exclude_none=True)
+        payload["options"] = self._serialize_convert_options(request.options)
+        return payload
 
     def _resolve_options(
         self,
@@ -718,19 +960,24 @@ class DoclingServiceClient:
         )
         return _ResolvedOptions(options=merged, limits=limits)
 
-    def _options_for_target_format(
+    def _options_for_output_formats(
         self,
         options: ConvertDocumentsRequestOptions,
-        target_format: OutputFormat | None,
-    ) -> tuple[ConvertDocumentsRequestOptions, bool]:
-        if target_format is None or target_format == OutputFormat.JSON:
-            formats = list(options.to_formats)
+        output_formats: list[OutputFormat] | None,
+        target: InBodyTarget | ZipTarget | S3Target | PresignedUrlTarget,
+    ) -> ConvertDocumentsRequestOptions:
+        effective = options
+        if output_formats is not None:
+            effective = options.model_copy(
+                update={"to_formats": list(output_formats)},
+                deep=True,
+            )
+        if isinstance(target, InBodyTarget):
+            formats = list(effective.to_formats)
             if OutputFormat.JSON not in formats:
                 formats.append(OutputFormat.JSON)
-            return options.model_copy(update={"to_formats": formats}, deep=True), False
-        return options.model_copy(
-            update={"to_formats": [target_format]}, deep=True
-        ), True
+            effective = effective.model_copy(update={"to_formats": formats}, deep=True)
+        return effective
 
     def _preflight_limits(
         self,
@@ -858,7 +1105,8 @@ class DoclingServiceClient:
                 file_size=len(source.stream.getbuffer()),
             )
 
-        parsed = urlparse(source)
+        request_source = self._normalize_http_source(source)
+        parsed = urlparse(str(request_source.url))
         filename = Path(parsed.path).name if parsed.path else "document"
         return _SourceDescriptor(
             source_name=filename,
@@ -878,10 +1126,15 @@ class DoclingServiceClient:
             return self._extension_to_format[extension]
         return InputFormat.PDF
 
-    def _validate_http_source(self, source: str) -> None:
+    def _normalize_http_source(
+        self, source: str | HttpSourceRequest
+    ) -> HttpSourceRequest:
+        if isinstance(source, HttpSourceRequest):
+            return source
         parsed = urlparse(source)
         if parsed.scheme not in {"http", "https"}:
             raise ValueError("String sources must be HTTP or HTTPS URLs.")
+        return HttpSourceRequest(url=source, headers={})
 
     def _source_to_upload_files(
         self,
@@ -940,12 +1193,19 @@ class DoclingServiceClient:
         item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
-    ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
+        target: InBodyTarget | PresignedUrlTarget | None = None,
+    ) -> Iterator[
+        tuple[
+            ConversionItem,
+            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+        ]
+    ]:
         self._ensure_sync_bridge_allowed()
         return self._iterate_submit_and_retrieve_many_sync(
             item_list=item_list,
             max_in_flight=max_in_flight,
             ordered=ordered,
+            target=target,
         )
 
     def _iterate_submit_and_retrieve_many_sync(
@@ -953,12 +1213,19 @@ class DoclingServiceClient:
         item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
-    ) -> Iterator[tuple[ConversionItem, ConvertDocumentResponse | Exception]]:
+        target: InBodyTarget | PresignedUrlTarget | None = None,
+    ) -> Iterator[
+        tuple[
+            ConversionItem,
+            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+        ]
+    ]:
         return self._iterate_async_generator_sync(
             self._submit_and_retrieve_many_async(
                 item_list=item_list,
                 max_in_flight=max_in_flight,
                 ordered=ordered,
+                target=target,
             )
         )
 
@@ -1051,7 +1318,10 @@ class DoclingServiceClient:
                     descriptor = self._describe_source(source)
                 except Exception as exc:
                     errors[idx] = self._normalize_exception(exc)
-                    name = str(source) if isinstance(source, str) else source.name
+                    if isinstance(source, (Path, DocumentStream)):
+                        name = source.name
+                    else:
+                        name = str(source)
                     descriptors[idx] = _SourceDescriptor(
                         source_name=name,
                         input_format=self._guess_input_format(name),
@@ -1068,7 +1338,7 @@ class DoclingServiceClient:
                 yield ConversionItem(
                     source=source,
                     options=submit_options,
-                    source_headers=headers,
+                    headers=headers,
                     metadata=_ConvertAllItemMetadata(
                         source_index=idx,
                         descriptor=descriptor,
@@ -1080,8 +1350,13 @@ class DoclingServiceClient:
             item_list=make_items(),
             max_in_flight=in_flight,
             ordered=True,
+            target=InBodyTarget(),
         ):
-            metadata = cast(_ConvertAllItemMetadata, item.metadata)
+            metadata = item.metadata
+            if not isinstance(metadata, _ConvertAllItemMetadata):
+                raise TypeError(
+                    "ConversionItem metadata must be _ConvertAllItemMetadata."
+                )
             while next_output_index < metadata.source_index:
                 yield result_for_index(next_output_index)
                 next_output_index += 1
@@ -1107,8 +1382,13 @@ class DoclingServiceClient:
         item_list: Iterable[ConversionItem],
         max_in_flight: int,
         ordered: bool,
+        target: InBodyTarget | PresignedUrlTarget | None = None,
     ) -> AsyncGenerator[
-        tuple[ConversionItem, ConvertDocumentResponse | Exception], None
+        tuple[
+            ConversionItem,
+            ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+        ],
+        None,
     ]:
         async with self._build_async_http_client() as async_client:
 
@@ -1116,29 +1396,58 @@ class DoclingServiceClient:
                 _idx: int,
                 item: ConversionItem,
                 async_client: httpx.AsyncClient,
-            ) -> ConvertDocumentResponse:
+            ) -> ConvertDocumentResponse | PresignedUrlConvertResponse:
                 resolved = self._resolve_options(
                     options=item.options,
                     max_num_pages=None,
                     max_file_size=None,
                     page_range=None,
                 )
-                submit_options, _ = self._options_for_target_format(
-                    resolved.options, OutputFormat.JSON
+                effective_target = PresignedUrlTarget() if target is None else target
+                submit_options = self._options_for_output_formats(
+                    resolved.options,
+                    output_formats=None,
+                    target=effective_target,
                 )
-                initial_status = await self._submit_convert_task_async(
-                    source=item.source,
-                    source_headers=item.source_headers,
-                    options=submit_options,
-                    async_client=async_client,
-                    request_headers=item.headers,
-                )
+                try:
+                    initial_status = await self._submit_convert_task_async(
+                        source=item.source,
+                        options=submit_options,
+                        target=effective_target,
+                        async_client=async_client,
+                        request_headers=item.headers,
+                    )
+                except ServiceError as exc:
+                    if (
+                        target is not None
+                        or not self._should_fallback_from_presigned_target(exc)
+                    ):
+                        raise
+                    effective_target = InBodyTarget()
+                    submit_options = self._options_for_output_formats(
+                        resolved.options,
+                        output_formats=None,
+                        target=effective_target,
+                    )
+                    initial_status = await self._submit_convert_task_async(
+                        source=item.source,
+                        options=submit_options,
+                        target=effective_target,
+                        async_client=async_client,
+                        request_headers=item.headers,
+                    )
                 terminal_status = await self._wait_for_terminal_status_for_submit_and_retrieve_many_async(
                     task_id=initial_status.task_id,
                     timeout=self._job_timeout,
                     async_client=async_client,
                     max_in_flight=max_in_flight,
                 )
+                if isinstance(effective_target, PresignedUrlTarget):
+                    return await self._fetch_presigned_result_async(
+                        task_id=initial_status.task_id,
+                        last_status=terminal_status,
+                        async_client=async_client,
+                    )
                 return await self._fetch_convert_result_payload_async(
                     task_id=initial_status.task_id,
                     last_status=terminal_status,
@@ -1146,7 +1455,11 @@ class DoclingServiceClient:
                 )
 
             buffered_results: dict[
-                int, tuple[ConversionItem, ConvertDocumentResponse | Exception]
+                int,
+                tuple[
+                    ConversionItem,
+                    ConvertDocumentResponse | PresignedUrlConvertResponse | Exception,
+                ],
             ] = {}
             next_ordered_index = 0
             async for idx, item, outcome in _run_bounded(
@@ -1155,7 +1468,9 @@ class DoclingServiceClient:
                 async_client=async_client,
                 max_in_flight=max_in_flight,
             ):
-                normalized: ConvertDocumentResponse | Exception
+                normalized: (
+                    ConvertDocumentResponse | PresignedUrlConvertResponse | Exception
+                )
                 if isinstance(outcome, BaseException):
                     normalized = self._normalize_exception(outcome)
                 else:
@@ -1185,36 +1500,31 @@ class DoclingServiceClient:
     async def _submit_convert_task_async(
         self,
         source: SourceType,
-        source_headers: dict[str, str] | None,
         options: ConvertDocumentsRequestOptions,
+        target: SubmitTarget,
         async_client: httpx.AsyncClient,
         request_headers: dict[str, str] | None = None,
     ) -> TaskStatusResponse:
         source_name = self._source_name(source)
         logger.info("Submitting convert task for source=%s", source_name)
-        if isinstance(source, str):
-            self._validate_http_source(source)
+        if isinstance(source, (str, HttpSourceRequest)):
+            request_source = self._normalize_http_source(source)
             request = ConvertDocumentsRequest(
                 options=options,
-                sources=[
-                    HttpSourceRequest(
-                        url=source,
-                        headers={} if source_headers is None else source_headers,
-                    )
-                ],
-                target=InBodyTarget(),
+                sources=[request_source],
+                target=target,
             )
             response = await self._request_with_retry_async(
                 async_client=async_client,
                 method="POST",
                 path="/v1/convert/source/async",
-                json=request.model_dump(mode="json"),
+                json=self._serialize_convert_request(request),
                 headers=request_headers,
             )
         else:
             files = await self._source_to_upload_files_async(source)
-            data = options.model_dump(mode="json", exclude_none=True)
-            data["target_type"] = "inbody"
+            data = self._serialize_convert_options(options)
+            data["target_type"] = target.kind
             response = await self._request_with_retry_async(
                 async_client=async_client,
                 method="POST",
@@ -1356,7 +1666,21 @@ class DoclingServiceClient:
             last_status=last_status,
             error_message=f"Fetching result for task {task_id} failed.",
         )
-        return ConvertDocumentResponse.model_validate_json(response.text)
+        return self._parse_result_model_response(response, ConvertDocumentResponse)
+
+    async def _fetch_presigned_result_async(
+        self,
+        task_id: str,
+        last_status: TaskStatusResponse | None,
+        async_client: httpx.AsyncClient,
+    ) -> PresignedUrlConvertResponse:
+        response = await self._fetch_result_response_async(
+            async_client=async_client,
+            task_id=task_id,
+            last_status=last_status,
+            error_message=f"Fetching result for task {task_id} failed.",
+        )
+        return self._parse_result_model_response(response, PresignedUrlConvertResponse)
 
     async def _fetch_result_response_async(
         self,
@@ -1379,6 +1703,7 @@ class DoclingServiceClient:
             )
         if response.status_code != 200:
             self._raise_for_generic_http_error(response, error_message)
+        self._raise_if_task_failure_result(response)
         return response
 
     def _check_retry(
@@ -1587,13 +1912,32 @@ class DoclingServiceClient:
             if last_status is not None and is_terminal_task_status(last_status):
                 if last_status.task_status == "failure":
                     message = last_status.error_message or f"Task {task_id} failed."
-                    raise ConversionError(message)
+                    raise TaskExecutionError(message, failure=last_status.failure)
                 raise ResultExpiredError(f"Result for task {task_id} has expired.")
             raise ResultNotReadyError(f"Result for task {task_id} is not ready.")
         raise ServiceError(
             "Unexpected result lookup error.",
             status_code=response.status_code,
             detail=detail,
+        )
+
+    def _raise_if_task_failure_result(self, response: httpx.Response) -> None:
+        content_type = response.headers.get("content-type", "")
+        if "json" not in content_type.lower():
+            return
+
+        try:
+            payload = response.json()
+        except ValueError:
+            return
+
+        if not isinstance(payload, dict) or payload.get("kind") != "TaskFailureResult":
+            return
+
+        task_failure = TaskFailureResult.model_validate(payload)
+        raise TaskExecutionError(
+            task_failure.failure.message,
+            failure=task_failure.failure,
         )
 
     def _raise_for_generic_http_error(
@@ -1637,6 +1981,26 @@ class DoclingServiceClient:
         except Exception:
             return None
         return detail if isinstance(detail, str) else None
+
+    def _should_fallback_from_presigned_target(self, exc: ServiceError) -> bool:
+        if exc.status_code not in {400, 422} or exc.detail is None:
+            return False
+
+        detail = exc.detail.lower()
+        if "artifact storage to be configured" in detail:
+            return True
+        if "presigned_url" not in detail and "presigned url" not in detail:
+            return False
+        return any(
+            phrase in detail
+            for phrase in (
+                "input should be",
+                "unexpected value",
+                "validation error",
+                "literal_error",
+                "enum",
+            )
+        )
 
     def _failure_message(self, result: ConversionResult) -> str:
         if result.errors:

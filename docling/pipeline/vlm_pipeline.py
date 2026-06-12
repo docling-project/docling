@@ -26,6 +26,7 @@ from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
     DeclarativeDocumentBackend,
 )
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
@@ -64,6 +65,17 @@ from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 _log = logging.getLogger(__name__)
 _DOCLANG_OPEN_RE = re.compile(r"<doclang(?:\s[^>]*)?>")
+
+
+def _raise_if_unsupported_threaded_backend(
+    backend: AbstractDocumentBackend, pipeline_name: str
+) -> None:
+    if isinstance(backend, ThreadedDoclingParseDocumentBackend):
+        raise RuntimeError(
+            f"{pipeline_name} does not support ThreadedDoclingParseDocumentBackend yet. "
+            "It still requires ordered/random page access via load_page() and cannot "
+            "consume iterator-only or out-of-order page delivery. Use StandardPdfPipeline instead."
+        )
 
 
 class VlmPipeline(PaginatedPipeline):
@@ -195,6 +207,9 @@ class VlmPipeline(PaginatedPipeline):
             images_scale = self.pipeline_options.images_scale
             if images_scale is not None:
                 page._default_image_scale = images_scale
+            _raise_if_unsupported_threaded_backend(
+                conv_res.input._backend, self.__class__.__name__
+            )
             page._backend = conv_res.input._backend.load_page(page.page_no - 1)  # type: ignore
             if page._backend is not None and page._backend.is_valid():
                 page.size = page._backend.get_size()

@@ -84,6 +84,18 @@ class HTMLBackendOptions(BaseBackendOptions):
             "will use it to resolve relative paths in the HTML document."
         ),
     )
+    headers: Annotated[
+        dict[str, str] | None,
+        Field(
+            description=(
+                "HTTP headers to include when fetching remote images. Use for "
+                "authentication (e.g., API keys, bearer tokens) or custom headers "
+                "required by image servers."
+            ),
+            examples=[{"Authorization": "Bearer TOKEN"}, {"X-API-Key": "your-api-key"}],
+            repr=False,
+        ),
+    ] = None
     add_title: bool = Field(
         True, description="Add the HTML title tag as furniture in the DoclingDocument."
     )
@@ -124,11 +136,58 @@ class MarkdownBackendOptions(BaseBackendOptions):
     )
 
 
+class EpubBackendOptions(BaseBackendOptions):
+    """Options specific to the EPUB backend."""
+
+    kind: Annotated[Literal["epub"], Field(exclude=True, repr=False)] = "epub"
+    fetch_images: Annotated[
+        bool, Field(description="Whether to fetch and process images from the EPUB.")
+    ] = False
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum cumulative size in bytes of all data extracted from the EPUB archive during processing"
+        ),
+    ] = 100 * 1024 * 1024  # 100 MB
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum size in bytes for any single file extracted from the EPUB archive"
+        ),
+    ] = 10 * 1024 * 1024  # 10 MB
+    max_member_count: Annotated[
+        PositiveInt, Field(description="Maximum number of archive members to process")
+    ] = 1000
+
+
 class PdfBackendOptions(BaseBackendOptions):
     """Backend options for pdf document backends."""
 
     kind: Literal["pdf"] = Field("pdf", exclude=True, repr=False)
     password: Optional[SecretStr] = None
+
+
+class ThreadedDoclingParseBackendOptions(PdfBackendOptions):
+    """Options specific to the threaded docling-parse backend."""
+
+    kind: Literal["threaded-docling-parse"] = Field(
+        "threaded-docling-parse", exclude=True, repr=False
+    )
+    parser_threads: Optional[PositiveInt] = Field(
+        None,
+        description=(
+            "Number of parser threads to use for the threaded docling-parse backend. "
+            "If unset, the backend falls back to global accelerator thread settings."
+        ),
+    )
+    release_native_memory_every_n_pages: conint(ge=0) = Field(
+        128,
+        description=(
+            "Release native parser memory after every N decoded pages in the "
+            "threaded docling-parse backend. Set to 0 to disable native-memory "
+            "release."
+        ),
+    )
 
 
 class MetsGbsBackendOptions(PdfBackendOptions):
@@ -179,6 +238,41 @@ class MsExcelBackendOptions(BaseBackendOptions):
             "Set to None (default) to include all sheets."
         ),
     )
+
+
+class OdsBackendOptions(BaseBackendOptions):
+    """Options specific to the ODS (OpenDocument Spreadsheet) backend."""
+
+    kind: Annotated[Literal["ods"], Field(exclude=True, repr=False)] = "ods"
+    treat_singleton_as_text: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to treat singleton cells (1x1 tables with empty neighboring "
+                "cells) as TextItem instead of TableItem."
+            )
+        ),
+    ] = False
+    gap_tolerance: Annotated[
+        int,
+        Field(
+            description=(
+                "The tolerance (in number of empty rows/columns) for merging nearby "
+                "data clusters into a single table. Default is 0 (strict)."
+            )
+        ),
+    ] = 0
+    sheet_names: Annotated[
+        Optional[list[str]],
+        Field(
+            description=(
+                "An optional list of sheet names to include in conversion. "
+                "When set, only sheets whose names appear in this list will be processed. "
+                "Sheet names are matched case-sensitively. "
+                "Set to None (default) to include all sheets."
+            )
+        ),
+    ] = None
 
 
 class LatexBackendOptions(BaseBackendOptions):
@@ -235,11 +329,14 @@ class XBRLBackendOptions(BaseBackendOptions):
 BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
+        EpubBackendOptions,
         HTMLBackendOptions,
         MarkdownBackendOptions,
         PdfBackendOptions,
+        ThreadedDoclingParseBackendOptions,
         MetsGbsBackendOptions,
         MsExcelBackendOptions,
+        OdsBackendOptions,
         LatexBackendOptions,
         XBRLBackendOptions,
     ],

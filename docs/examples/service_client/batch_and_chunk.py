@@ -3,11 +3,13 @@ from __future__ import annotations
 
 import os
 
-from docling.datamodel.base_models import ConversionStatus, OutputFormat
+from docling.datamodel.base_models import OutputFormat
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
-from docling.service_client import DoclingServiceClient
+from docling.datamodel.service.requests import AnyHttpSourceRequest
+from docling.datamodel.service.targets import PresignedUrlTarget
+from docling.service_client import ChunkerKind, DoclingServiceClient
 
 SERVICE_URL_ENV = "DOCLING_SERVICE_URL"
 SERVICE_API_KEY_ENV = "DOCLING_SERVICE_API_KEY"
@@ -34,52 +36,46 @@ def create_conversion_options() -> ConvertDocumentsRequestOptions:
     )
 
 
+def run_submit_batch(client: DoclingServiceClient) -> None:
+    print("\n=== submit_batch(): HTTP sources -> PresignedUrlTarget ===")
+    job = client.submit_batch(
+        sources=[AnyHttpSourceRequest(url=source) for source in SAMPLE_SOURCES],
+        target=PresignedUrlTarget(),
+        output_formats=[OutputFormat.MARKDOWN, OutputFormat.JSON],
+        options=create_conversion_options(),
+    )
+    result = job.result(timeout=300.0)
+    print(
+        "task counts:",
+        result.num_succeeded,
+        "succeeded /",
+        result.num_failed,
+        "failed",
+    )
+    for document in result.documents:
+        print("document:", document.filename, "status=", document.status.value)
+        for artifact in document.artifacts:
+            print("artifact:", artifact.artifact_type, str(artifact.uri))
+
+
+def run_chunk(client: DoclingServiceClient) -> None:
+    print("\n=== chunk(): single HTTP source -> hierarchical chunks ===")
+    chunk_response = client.chunk(
+        source=SAMPLE_SOURCES[0],
+        chunker=ChunkerKind.HIERARCHICAL,
+        options=create_conversion_options(),
+    )
+    print("num chunks:", len(chunk_response.chunks))
+    print("num documents:", len(chunk_response.documents))
+
+
 def main() -> None:
     with DoclingServiceClient(
         url=_service_url(),
         api_key=os.environ.get(SERVICE_API_KEY_ENV),
     ) as client:
-        options = create_conversion_options()
-        print("batch results:", len(SAMPLE_SOURCES))
-        chunked_count = 0
-        for idx, (source, result) in enumerate(
-            zip(
-                SAMPLE_SOURCES,
-                client.convert_all(
-                    sources=SAMPLE_SOURCES,
-                    options=options,
-                    max_concurrency=2,
-                    raises_on_error=False,
-                ),
-            ),
-            start=1,
-        ):
-            print(
-                f"{idx}.",
-                "input=",
-                result.input.file.name,
-                "status=",
-                result.status.value,
-            )
-
-            if result.status not in {
-                ConversionStatus.SUCCESS,
-                ConversionStatus.PARTIAL_SUCCESS,
-            }:
-                print("skip chunking due to failed conversion:", source)
-                continue
-
-            chunk_response = client.chunk(
-                source=source,
-                chunker="hierarchical",
-                options=options,
-            )
-            chunked_count += 1
-            print("chunked source:", source)
-            print("num chunks:", len(chunk_response.chunks))
-            print("num documents:", len(chunk_response.documents))
-
-        print("sources chunked:", chunked_count)
+        run_submit_batch(client)
+        run_chunk(client)
 
 
 if __name__ == "__main__":

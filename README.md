@@ -32,7 +32,7 @@ Docling simplifies document processing, parsing diverse formats — including ad
 
 ## Features
 
-- 🗂️ Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, PPTX, XLSX, HTML, WAV, MP3, WebVTT, images (PNG, TIFF, JPEG, ...), LaTeX, plain text, and more
+- 🗂️ Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, PPTX, XLSX, HTML, EPUB, WAV, MP3, WebVTT, email formats (EML, MSG), images (PNG, TIFF, JPEG, ...), LaTeX, plain text, and more
 - 📑 Advanced PDF understanding incl. page layout, reading order, table structure, code, formulas, image classification, and more
 - 🧬 Unified, expressive [DoclingDocument][docling_document] representation format
 - ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, WebVTT, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
@@ -47,14 +47,12 @@ Docling simplifies document processing, parsing diverse formats — including ad
 
 ### What's new
 
-- 📤 Structured [information extraction][extraction] \[🧪 beta\]
-- 📑 New layout model (**Heron**) by default, for faster PDF parsing
-- 🔌 [MCP server](https://docling-project.github.io/docling/usage/mcp/) for agentic applications
-- 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
-- 💬 Parsing of WebVTT (Web Video Text Tracks) files and export to WebVTT format
-- 💬 Parsing of LaTeX files
+- 📄 Parsing of ODF (OpenDocument Format) files for text documents (`.odt`), spreadsheets (`.ods`), and presentations (`.odp`)
+- � Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
+- 📧 Parsing of email files (`.eml`, `.msg`)
+- 📚 Parsing of EPUB (Electronic Publication) files for e-books
 - 📝 Parsing of plain-text files (`.txt`, `.text`) and Markdown supersets (`.qmd`, `.Rmd`)
-- 📝 Chart understanding (Barchart, Piechart, LinePlot): converting them into tables, code or adding detailed descriptions
+- 📊 Chart understanding (Barchart, Piechart, LinePlot): converting them into tables, code or adding detailed descriptions
 
 ### Coming soon
 
@@ -73,7 +71,7 @@ pip install docling
 
 Works on macOS, Linux and Windows environments. Both x86_64 and arm64 architectures.
 
-More [detailed installation instructions](https://docling-project.github.io/docling/installation/) are available in the docs.
+More [detailed installation instructions](https://docling-project.github.io/docling/getting_started/installation/) are available in the docs.
 
 ## 2. Convert a document (CLI)
 
@@ -163,4 +161,4 @@ The project was started by the AI for knowledge team at IBM Research Zurich.
 [supported_formats]: https://docling-project.github.io/docling/usage/supported_formats/
 [docling_document]: https://docling-project.github.io/docling/concepts/docling_document/
 [integrations]: https://docling-project.github.io/docling/integrations/
-[extraction]: https://docling-project.github.io/docling/examples/extraction/
+[extraction]: https://docling-project.github.io/docling/_generated/examples/extraction/

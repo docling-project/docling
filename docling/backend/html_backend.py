@@ -1,5 +1,3 @@
-# mypy: disable-error-code=import-untyped
-
 import base64
 import ipaddress
 import logging
@@ -146,6 +144,7 @@ _FORMAT_TAG_MAP: Final = {
 
 _DATA_DOCLING_ID_ATTR: Final = "data-docling-id"
 _FORM_CONTAINER_CLASS: Final = "form_region"
+_ROW_SECTION_CLASS: Final = "row_section"
 _FORM_KEY_ID_RE: Final = re.compile(r"^key(?P<key_id>[A-Za-z0-9]+)$")
 _FORM_MARKER_ID_RE: Final = re.compile(r"^key(?P<key_id>[A-Za-z0-9]+)_marker$")
 _FORM_VALUE_ID_RE: Final = re.compile(
@@ -1483,6 +1482,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for row in element("tr", recursive=False):
             if not isinstance(row, Tag):
                 continue
+            row_classes = {
+                class_name.lower() for class_name in self._get_tag_classes(row)
+            }
+            row_is_row_section = _ROW_SECTION_CLASS in row_classes
             # For each row, find all the column cells (both <td> and <th>)
             # We don't want this recursive to support nested tables
             cells = row(["td", "th"], recursive=False)
@@ -1508,6 +1511,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             for html_cell in cells:
                 if not isinstance(html_cell, Tag):
                     continue
+                cell_classes = {
+                    class_name.lower()
+                    for class_name in self._get_tag_classes(html_cell)
+                }
+                row_section = row_is_row_section or (_ROW_SECTION_CLASS in cell_classes)
 
                 # extract inline formulas
                 for formula in html_cell("inline-formula"):
@@ -1563,6 +1571,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         end_col_offset_idx=col_idx + col_span,
                         column_header=col_header,
                         row_header=((not col_header) and html_cell.name == "th"),
+                        row_section=row_section,
                         ref=ref_for_rich_cell,  # points to an artificial group around children
                     )
                     doc.add_table_cell(table_item=docling_table, cell=rich_cell)
@@ -1578,6 +1587,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         end_col_offset_idx=col_idx + col_span,
                         column_header=col_header,
                         row_header=((not col_header) and html_cell.name == "th"),
+                        row_section=row_section,
                     )
                     doc.add_table_cell(table_item=docling_table, cell=simple_cell)
         return data
@@ -4331,6 +4341,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             max_size = self.options.max_remote_image_bytes
             headers = {"Range": f"bytes=0-{max_size - 1}"}
+
+            # Merge custom headers from options if provided
+            if self.options.headers:
+                headers.update(self.options.headers)
 
             # Create session with redirect limit
             session = requests.Session()

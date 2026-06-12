@@ -21,6 +21,8 @@ from docling.backend.abstract_backend import (
 from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.email_backend import EmailDocumentBackend
+from docling.backend.epub_backend import EpubDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
@@ -42,6 +44,7 @@ from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import (
     BackendOptions,
+    EpubBackendOptions,
     HTMLBackendOptions,
     LatexBackendOptions,
     MarkdownBackendOptions,
@@ -83,6 +86,11 @@ _PIPELINE_CACHE_LOCK = threading.Lock()
 class FormatOption(BaseFormatOption):
     pipeline_cls: Type[BasePipeline]
     backend_options: Optional[BackendOptions] = None
+
+    def backend_options_for_input(
+        self, source: Path | str | DocumentStream
+    ) -> BackendOptions | None:
+        return self.backend_options
 
     @model_validator(mode="after")
     def set_optional_field_default(self) -> Self:
@@ -143,6 +151,21 @@ class HTMLFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = HTMLDocumentBackend
     backend_options: Optional[HTMLBackendOptions] = None
 
+    def backend_options_for_input(
+        self, source: Path | str | DocumentStream
+    ) -> HTMLBackendOptions | None:
+        options = self.backend_options
+        if (
+            options is None
+            or options.source_uri is not None
+            or isinstance(source, DocumentStream)
+        ):
+            return options
+
+        return HTMLBackendOptions.model_validate(
+            {**options.model_dump(), "source_uri": source}
+        )
+
 
 class PatentUsptoFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
@@ -190,6 +213,17 @@ class LatexFormatOption(FormatOption):
     backend_options: Optional[LatexBackendOptions] = None
 
 
+class EmailFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = EmailDocumentBackend
+
+
+class EpubFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = EpubDocumentBackend
+    backend_options: EpubBackendOptions | None = None
+
+
 def _get_default_option(format: InputFormat) -> FormatOption:
     format_to_default_options = {
         InputFormat.CSV: CsvFormatOption(),
@@ -218,6 +252,8 @@ def _get_default_option(format: InputFormat) -> FormatOption:
             pipeline_cls=SimplePipeline, backend=WebVTTDocumentBackend
         ),
         InputFormat.LATEX: LatexFormatOption(),
+        InputFormat.EMAIL: EmailFormatOption(),
+        InputFormat.EPUB: EpubFormatOption(),
     }
     if (options := format_to_default_options.get(format)) is not None:
         return options

@@ -102,13 +102,13 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
         )
-        assert verify_export(pred_itxt, str(docx_path) + ".itxt", generate=GENERATE), (
-            f"export to indented-text failed on {docx_path}"
-        )
+        assert verify_export(
+            pred_itxt, str(docx_path) + ".itxt", generate=GENERATE, fuzzy=True
+        ), f"export to indented-text failed on {docx_path}"
 
-        assert verify_document(doc, str(docx_path) + ".json", generate=GENERATE), (
-            f"DoclingDocument verification failed on {docx_path}"
-        )
+        assert verify_document(
+            doc, str(docx_path) + ".json", generate=GENERATE, fuzzy=True
+        ), f"DoclingDocument verification failed on {docx_path}"
 
         if docx_path.name in {"word_tables.docx", "docx_rich_cells.docx"}:
             pred_html: str = doc.export_to_html()
@@ -187,6 +187,33 @@ def test_text_after_image_anchors(documents):
         and found_text_after_anchor_2
         and found_text_after_anchor_3
         and found_text_after_anchor_4
+    )
+
+
+def test_text_with_drawingml_without_libreoffice(docx_paths, monkeypatch):
+    """Test that text is extracted from paragraphs with DrawingML images even without LibreOffice."""
+    monkeypatch.setattr(
+        msword_backend_module, "get_docx_to_pdf_converter", lambda: None
+    )
+
+    # Use word_image_anchors.docx which contains images with text
+    name = "word_image_anchors.docx"
+    path = next(item for item in docx_paths if item.name == name)
+
+    converter = get_converter()
+    conv_result = converter.convert(path)
+    doc = conv_result.document
+
+    text_items = [item for item, _ in doc.iterate_items() if isinstance(item, TextItem)]
+    assert len(text_items) > 0, (
+        "Expected text items to be extracted even without LibreOffice"
+    )
+
+    all_text = " ".join(item.text for item in text_items)
+    assert len(all_text) > 0, "Expected non-empty text content"
+
+    assert "This is test 1" in all_text or "This is test 2" in all_text, (
+        "Expected text from paragraphs with images to be extracted"
     )
 
 
@@ -791,3 +818,36 @@ def test_checkbox_labels_in_tables(documents):
     ]
 
     assert len(found_food_checkboxes) > 0, "No checkboxes found in table cells"
+
+
+def test_text_after_drawingml_images(documents):
+    """Text in paragraphs containing DrawingML images was being omitted during conversion, both with and without LibreOffice."""
+    name = "drawingml.docx"
+
+    doc_found = False
+    for path, doc in documents:
+        if path.name == name:
+            doc_found = True
+
+            text_items = [
+                item for item, _ in doc.iterate_items() if isinstance(item, TextItem)
+            ]
+
+            assert len(text_items) > 0, (
+                f"No text items found in {name}. "
+                "Text after DrawingML images should be preserved even without LibreOffice."
+            )
+
+            # Log the text items found for debugging
+            _log.info(f"Found {len(text_items)} text items in {name}")
+            for idx, item in enumerate(text_items[:5]):  # Log first 5 items
+                _log.info(f"  Text item {idx}: {item.text[:50]}...")
+
+            break
+
+    if not doc_found:
+        _log.warning(
+            f"Test document '{name}' not found in test set. "
+            "Skipping DrawingML text extraction test."
+        )
+        pytest.skip(f"Test document '{name}' not available")

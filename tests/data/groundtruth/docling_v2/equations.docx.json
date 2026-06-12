@@ -4,7 +4,7 @@
   "name": "equations",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "binary_hash": 15129791106175345334,
+    "binary_hash": 14529667209329784536,
     "filename": "equations.docx"
   },
   "furniture": {
@@ -184,6 +184,21 @@
       },
       {
         "$ref": "#/texts/76"
+      },
+      {
+        "$ref": "#/texts/77"
+      },
+      {
+        "$ref": "#/texts/78"
+      },
+      {
+        "$ref": "#/texts/79"
+      },
+      {
+        "$ref": "#/texts/80"
+      },
+      {
+        "$ref": "#/texts/81"
       }
     ],
     "content_layer": "body",
@@ -607,8 +622,8 @@
       "content_layer": "body",
       "label": "formula",
       "prov": [],
-      "orig": "a^{2}+b^{2}=c^{2} \\text{ \\texttimes } 23",
-      "text": "a^{2}+b^{2}=c^{2} \\text{ \\texttimes } 23"
+      "orig": "a^{2}+b^{2}=c^{2} \\times 23",
+      "text": "a^{2}+b^{2}=c^{2} \\times 23"
     },
     {
       "self_ref": "#/texts/20",
@@ -1354,6 +1369,66 @@
     },
     {
       "self_ref": "#/texts/76",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/77",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/78",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/79",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/80",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "formula",
+      "prov": [],
+      "orig": "s\\left\\{max\\right\\}= A \\times B",
+      "text": "s\\left\\{max\\right\\}= A \\times B"
+    },
+    {
+      "self_ref": "#/texts/81",
       "parent": {
         "$ref": "#/body"
       },
