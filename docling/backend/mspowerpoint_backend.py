@@ -41,8 +41,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     # via __new__ and call _add_comments() without running __init__.
     PRESENTATION_NS = "http://schemas.openxmlformats.org/presentationml/2006/main"
     COMMENT_REL = (
-        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/"
-        "comments"
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
     )
     COMMENT_AUTHORS_REL = (
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/"
@@ -56,7 +55,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         self.namespaces = {
             "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
             "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
-            "p": "http://schemas.openxmlformats.org/presentationml/2006/main"
+            "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
         }
         # Powerpoint file:
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
@@ -792,7 +791,6 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         if not pptx_obj:
             return
 
-
         # Build authorId → (name, initials) map from commentAuthors.xml
         author_map: dict[str, tuple[str, str]] = {}
         try:
@@ -805,7 +803,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                             author_el.get("initials", ""),
                         )
                         for author_el in root.findall(
-                            f"{{{self.namespaces[self.PRESENTATION_NS]}}}cmAuthor"
+                            f"{{{self.PRESENTATION_NS}}}cmAuthor"
                         )
                     }
         except Exception as e:
@@ -823,14 +821,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     continue
                 try:
                     root = etree.fromstring(rel.target_part.blob)
-                    for cm in root.findall(
-                        f"{{{self.namespaces[self.PRESENTATION_NS]}}}cm"
-                    ):
+                    for cm in root.findall(f"{{{self.PRESENTATION_NS}}}cm"):
                         author_id = cm.get("authorId", "")
                         dt = cm.get("dt", "")
-                        text_el = cm.find(
-                            f"{{{self.namespaces[self.PRESENTATION_NS]}}}text"
-                        )
+                        text_el = cm.find(f"{{{self.PRESENTATION_NS}}}text")
                         raw_text = (
                             (text_el.text or "").strip() if text_el is not None else ""
                         )
