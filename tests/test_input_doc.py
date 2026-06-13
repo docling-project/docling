@@ -28,6 +28,14 @@ def test_in_doc_from_valid_path():
     assert doc.backend_options is None
 
 
+def test_in_doc_exposes_backend():
+    test_doc_path = Path("./tests/data/pdf/2206.01062.pdf")
+    doc = _make_input_doc(test_doc_path)
+
+    assert doc.backend is doc._backend
+    assert doc.backend.is_valid()
+
+
 def test_in_doc_from_invalid_path():
     test_doc_path = Path("./tests/does/not/exist.pdf")
 

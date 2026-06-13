@@ -254,6 +254,11 @@ class InputDocument(BaseModel):
         if not self._backend.is_valid():
             self.valid = False
 
+    @property
+    def backend(self) -> AbstractDocumentBackend:
+        """Backend instance used to read and parse this input document."""
+        return self._backend
+
 
 class DocumentFormat(str, Enum):
     V2 = "v2"
