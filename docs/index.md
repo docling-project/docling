@@ -46,6 +46,7 @@ Docling simplifies document processing, parsing diverse formats — including ad
 * 👓 Support of several Visual Language Models ([GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M))
 * 🎙️ Audio support with Automatic Speech Recognition (ASR) models
 * 🔌 Connect to any agent using the [MCP server](https://docling-project.github.io/docling/usage/mcp/)
+* 🌐 Run Docling as a service with the [API server](https://docling-project.github.io/docling/usage/api_server/) (docling-serve)
 * 💻 Simple and convenient CLI
 
 ### What's new

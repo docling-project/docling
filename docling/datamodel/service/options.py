@@ -331,10 +331,10 @@ class ConvertDocumentsOptions(BaseModel):
                 f"Allowed values: {', '.join([v.value for v in ImageRefMode])}. "
                 "Optional, defaults to Embedded."
             ),
-            examples=[ImageRefMode.EMBEDDED.value],
+            examples=[ImageRefMode.PLACEHOLDER.value],
             # pattern="embedded|placeholder|referenced",
         ),
-    ] = ImageRefMode.EMBEDDED
+    ] = ImageRefMode.PLACEHOLDER
 
     do_ocr: Annotated[
         bool,
