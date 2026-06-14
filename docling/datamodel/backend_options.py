@@ -136,6 +136,22 @@ class MarkdownBackendOptions(BaseBackendOptions):
     )
 
 
+class HwpBackendOptions(BaseBackendOptions):
+    """Options specific to the HWP/HWPX backend."""
+
+    kind: Literal["hwp"] = Field("hwp", exclude=True, repr=False)
+    rhwp_binary: str = Field(
+        "rhwp",
+        description=(
+            "Path to the rhwp executable used to export HWP/HWPX render-tree JSON."
+        ),
+    )
+    export_timeout: float = Field(
+        60.0,
+        description="Maximum time in seconds to wait for each rhwp export command.",
+    )
+
+
 class EpubBackendOptions(BaseBackendOptions):
     """Options specific to the EPUB backend."""
 
@@ -295,6 +311,7 @@ BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
         EpubBackendOptions,
+        HwpBackendOptions,
         HTMLBackendOptions,
         MarkdownBackendOptions,
         PdfBackendOptions,

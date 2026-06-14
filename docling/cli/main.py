@@ -79,6 +79,7 @@ from docling.datamodel.asr_model_specs import (
 from docling.datamodel.backend_options import (
     EpubBackendOptions,
     HTMLBackendOptions,
+    HwpBackendOptions,
     LatexBackendOptions,
     PdfBackendOptions,
     ThreadedDoclingParseBackendOptions,
@@ -117,6 +118,7 @@ from docling.document_converter import (
     ExcelFormatOption,
     FormatOption,
     HTMLFormatOption,
+    HwpFormatOption,
     LatexFormatOption,
     MarkdownFormatOption,
     PdfFormatOption,
@@ -983,6 +985,10 @@ def convert(  # noqa: C901
                 ),
                 InputFormat.PPTX: PowerpointFormatOption(
                     pipeline_options=simple_format_option
+                ),
+                InputFormat.HWP: HwpFormatOption(
+                    pipeline_options=simple_format_option,
+                    backend_options=HwpBackendOptions(),
                 ),
                 InputFormat.XLSX: ExcelFormatOption(
                     pipeline_options=simple_format_option

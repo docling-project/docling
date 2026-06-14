@@ -552,6 +552,8 @@ class _DocumentConversionInput(BaseModel):
         if isinstance(obj, Path):
             if _DocumentConversionInput._has_doclang_extension(obj.name):
                 return InputFormat.XML_DOCLANG
+            if _DocumentConversionInput._has_hwp_extension(obj.name):
+                return InputFormat.HWP
             mime = filetype.guess_mime(str(obj))
             obj_ext = obj.suffix[1:] if obj.suffix else ""
             if mime is None:
@@ -578,6 +580,8 @@ class _DocumentConversionInput(BaseModel):
         elif isinstance(obj, DocumentStream):
             if _DocumentConversionInput._has_doclang_extension(obj.name):
                 return InputFormat.XML_DOCLANG
+            if _DocumentConversionInput._has_hwp_extension(obj.name):
+                return InputFormat.HWP
             content = obj.stream.read(8192)
             obj.stream.seek(0)
             mime = filetype.guess_mime(content)
@@ -628,6 +632,11 @@ class _DocumentConversionInput(BaseModel):
     def _has_doclang_extension(name: str) -> bool:
         lower_name = name.lower()
         return lower_name.endswith((".dclg", ".dclg.xml"))
+
+    @staticmethod
+    def _has_hwp_extension(name: str) -> bool:
+        lower_name = name.lower()
+        return lower_name.endswith((".hwp", ".hwpx"))
 
     @staticmethod
     def _detect_office_mime_from_zip(
@@ -734,6 +743,8 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.JSON_DOCLING][0]
         elif ext in FormatToExtensions[InputFormat.PDF]:
             mime = FormatToMimeType[InputFormat.PDF][0]
+        elif ext in FormatToExtensions[InputFormat.HWP]:
+            mime = FormatToMimeType[InputFormat.HWP][0]
         elif ext in FormatToExtensions[InputFormat.DOCX]:
             mime = FormatToMimeType[InputFormat.DOCX][0]
         elif ext in FormatToExtensions[InputFormat.PPTX]:
