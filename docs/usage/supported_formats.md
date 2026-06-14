@@ -20,6 +20,7 @@ Below you can find a listing of all supported input and output formats.
 | WAV, MP3, M4A, AAC, OGG, FLAC | Audio formats (requires `asr` extra — see [Processing audio and video](processing_audio_media.md)) |
 | MP4, AVI, MOV | Video formats — audio track is extracted and transcribed (requires `asr` extra and `ffmpeg`) |
 | WebVTT | Web Video Text Tracks format for displaying timed text |
+| HWP, HWPX | _Experimental._ Korean Hangul Word Processor formats; routed through DocLang via the early-stage (0.x) `hangulang` package (requires the `format-hwp` extra: `pip install docling[format-hwp]`) |
 
 Schema-specific support:
 

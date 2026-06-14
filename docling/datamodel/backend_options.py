@@ -136,6 +136,19 @@ class MarkdownBackendOptions(BaseBackendOptions):
     )
 
 
+class HwpBackendOptions(BaseBackendOptions):
+    """Options specific to the experimental HWP/HWPX backend."""
+
+    kind: Literal["hwp"] = Field("hwp", exclude=True, repr=False)
+    include_locations: bool = Field(
+        False,
+        description=(
+            "Emit best-effort layout provenance (page-local bounding boxes) when "
+            "the underlying hangulang/rhwp render tree exposes geometry."
+        ),
+    )
+
+
 class EpubBackendOptions(BaseBackendOptions):
     """Options specific to the EPUB backend."""
 
@@ -295,6 +308,7 @@ BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
         EpubBackendOptions,
+        HwpBackendOptions,
         HTMLBackendOptions,
         MarkdownBackendOptions,
         PdfBackendOptions,
