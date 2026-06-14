@@ -100,7 +100,9 @@ class HwpDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
             return self.path_or_stream
 
         if isinstance(self.path_or_stream, BytesIO):
-            suffix = self.file.suffix if self.file.suffix in {".hwp", ".hwpx"} else ".hwp"
+            suffix = (
+                self.file.suffix if self.file.suffix in {".hwp", ".hwpx"} else ".hwp"
+            )
             input_path = tmp_path / f"input{suffix}"
             input_path.write_bytes(self.path_or_stream.getvalue())
             return input_path
