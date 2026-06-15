@@ -657,12 +657,33 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         return
 
-    # TODO: add footnotes when DocItemLabel.FOOTNOTE and styling are supported
-    # def _add_footnote_group(self, doc: DoclingDocument, parent: NodeItem, node: etree._Element) -> None:
-    #     new_parent = doc.add_group(label=GroupLabel.LIST, name="footnotes", parent=parent)
-    #     for child in node.iterchildren(tag="fn"):
-    #         text = JatsDocumentBackend._get_text(child)
-    #         doc.add_list_item(text=text, parent=new_parent)
+    def _add_footnote_group(
+        self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
+    ) -> None:
+        # Extract footnote title if available
+        title_node = node.xpath("title")
+        header_text = (
+            JatsDocumentBackend._get_text(title_node[0]).strip() if title_node else ""
+        )
+
+        # Fallback to label in case title is not provided
+        if not header_text:
+            label_node = node.xpath("label")
+            header_text = (
+                JatsDocumentBackend._get_text(label_node[0]).strip()
+                if label_node
+                else ""
+            )
+        
+        fn_parent = doc.add_heading(text=header_text, parent=parent) if header_text else parent
+
+        # Footnotes
+        for child in node.iterchildren(tag="fn"):
+            text = JatsDocumentBackend._get_text(child).strip()
+            if text:
+                doc.add_text(label=DocItemLabel.FOOTNOTE, text=text, parent=fn_parent)
+
+        return
 
     def _add_metadata(
         self, doc: DoclingDocument, xml_components: XMLComponents
@@ -903,11 +924,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             elif child.tag == "suplementary-material":
                 stop_walk = True
             elif child.tag == "fn-group":
-                # header = child.xpath(".//title") or child.xpath(".//label")
-                # if header:
-                #     text = JatsDocumentBackend._get_text(header[0])
-                #     fn_parent = doc.add_heading(text=text, parent=new_parent)
-                # self._add_footnote_group(doc, fn_parent, child)
+                self._add_footnote_group(doc, parent, child)
                 stop_walk = True
             elif child.tag == "ref-list" and node.tag != "ref-list":
                 header = child.xpath("title|label")

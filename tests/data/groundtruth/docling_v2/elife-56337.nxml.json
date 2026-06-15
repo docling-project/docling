@@ -73,54 +73,9 @@
     {
       "self_ref": "#/groups/1",
       "parent": {
-        "$ref": "#/texts/77"
+        "$ref": "#/texts/92"
       },
       "children": [
-        {
-          "$ref": "#/texts/78"
-        },
-        {
-          "$ref": "#/texts/79"
-        },
-        {
-          "$ref": "#/texts/80"
-        },
-        {
-          "$ref": "#/texts/81"
-        },
-        {
-          "$ref": "#/texts/82"
-        },
-        {
-          "$ref": "#/texts/83"
-        },
-        {
-          "$ref": "#/texts/84"
-        },
-        {
-          "$ref": "#/texts/85"
-        },
-        {
-          "$ref": "#/texts/86"
-        },
-        {
-          "$ref": "#/texts/87"
-        },
-        {
-          "$ref": "#/texts/88"
-        },
-        {
-          "$ref": "#/texts/89"
-        },
-        {
-          "$ref": "#/texts/90"
-        },
-        {
-          "$ref": "#/texts/91"
-        },
-        {
-          "$ref": "#/texts/92"
-        },
         {
           "$ref": "#/texts/93"
         },
@@ -243,6 +198,51 @@
         },
         {
           "$ref": "#/texts/133"
+        },
+        {
+          "$ref": "#/texts/134"
+        },
+        {
+          "$ref": "#/texts/135"
+        },
+        {
+          "$ref": "#/texts/136"
+        },
+        {
+          "$ref": "#/texts/137"
+        },
+        {
+          "$ref": "#/texts/138"
+        },
+        {
+          "$ref": "#/texts/139"
+        },
+        {
+          "$ref": "#/texts/140"
+        },
+        {
+          "$ref": "#/texts/141"
+        },
+        {
+          "$ref": "#/texts/142"
+        },
+        {
+          "$ref": "#/texts/143"
+        },
+        {
+          "$ref": "#/texts/144"
+        },
+        {
+          "$ref": "#/texts/145"
+        },
+        {
+          "$ref": "#/texts/146"
+        },
+        {
+          "$ref": "#/texts/147"
+        },
+        {
+          "$ref": "#/texts/148"
         }
       ],
       "content_layer": "body",
@@ -288,13 +288,13 @@
           "$ref": "#/texts/65"
         },
         {
-          "$ref": "#/texts/66"
+          "$ref": "#/texts/81"
         },
         {
-          "$ref": "#/texts/67"
+          "$ref": "#/texts/82"
         },
         {
-          "$ref": "#/texts/77"
+          "$ref": "#/texts/92"
         }
       ],
       "content_layer": "body",
@@ -1279,7 +1279,17 @@
       "parent": {
         "$ref": "#/texts/0"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/66"
+        },
+        {
+          "$ref": "#/texts/68"
+        },
+        {
+          "$ref": "#/texts/79"
+        }
+      ],
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
@@ -1290,25 +1300,38 @@
     {
       "self_ref": "#/texts/66",
       "parent": {
-        "$ref": "#/texts/0"
+        "$ref": "#/texts/65"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/67"
+        }
+      ],
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "Additional files",
-      "text": "Additional files",
+      "orig": "Competing interests",
+      "text": "Competing interests",
       "level": 1
     },
     {
       "self_ref": "#/texts/67",
       "parent": {
-        "$ref": "#/texts/0"
+        "$ref": "#/texts/66"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [],
+      "orig": "No competing interests declared.",
+      "text": "No competing interests declared."
+    },
+    {
+      "self_ref": "#/texts/68",
+      "parent": {
+        "$ref": "#/texts/65"
       },
       "children": [
-        {
-          "$ref": "#/texts/68"
-        },
         {
           "$ref": "#/texts/69"
         },
@@ -1332,6 +1355,215 @@
         },
         {
           "$ref": "#/texts/76"
+        },
+        {
+          "$ref": "#/texts/77"
+        },
+        {
+          "$ref": "#/texts/78"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Author contributions",
+      "text": "Author contributions",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/69",
+      "parent": {
+        "$ref": "#/texts/68"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [],
+      "orig": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft.",
+      "text": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft."
+    },
+    {
+      "self_ref": "#/texts/70",
+      "parent": {
+        "$ref": "#/texts/68"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [],
+      "orig": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft, Writing - review and editing.",
+      "text": "Conceptualization, Data curation, Formal analysis, Investigation, Methodology, Writing - original draft, Writing - review and editing."
+    },
+    {
+      "self_ref": "#/texts/71",
+      "parent": {
+        "$ref": "#/texts/68"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [],
+      "orig": "Conceptualization, Data curation, Software, Formal analysis, Investigation, Visualization, Methodology, Writing - review and editing.",
+      "text": "Conceptualization, Data curation, Software, Formal analysis, Investigation, Visualization, Methodology, Writing - review and editing."
+    },
+    {
+      "self_ref": "#/texts/72",
+      "parent": {
+        "$ref": "#/texts/68"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [],
+      "orig": "Conceptualization, Formal analysis, Investigation, Writing - review and editing.",
+      "text": "Conceptualization, Formal analysis, Investigation, Writing - review and editing."
+    },
+    {
+      "self_ref": "#/texts/73",
+      "parent": {
+        "$ref": "#/texts/68"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [],
+      "orig": "Investigation.",
+      "text": "Investigation."
+    },
+    {
+      "self_ref": "#/texts/74",
+      "parent": {
+        "$ref": "#/texts/68"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [],
+      "orig": "Investigation.",
+      "text": "Investigation."
+    },
+    {
+      "self_ref": "#/texts/75",
+      "parent": {
+        "$ref": "#/texts/68"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [],
+      "orig": "Data curation, Software, Formal analysis, Visualization.",
+      "text": "Data curation, Software, Formal analysis, Visualization."
+    },
+    {
+      "self_ref": "#/texts/76",
+      "parent": {
+        "$ref": "#/texts/68"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [],
+      "orig": "Investigation.",
+      "text": "Investigation."
+    },
+    {
+      "self_ref": "#/texts/77",
+      "parent": {
+        "$ref": "#/texts/68"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [],
+      "orig": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Writing - review and editing.",
+      "text": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Writing - review and editing."
+    },
+    {
+      "self_ref": "#/texts/78",
+      "parent": {
+        "$ref": "#/texts/68"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [],
+      "orig": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Methodology, Writing - original draft, Project administration, Writing - review and editing.",
+      "text": "Conceptualization, Resources, Supervision, Funding acquisition, Investigation, Methodology, Writing - original draft, Project administration, Writing - review and editing."
+    },
+    {
+      "self_ref": "#/texts/79",
+      "parent": {
+        "$ref": "#/texts/65"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/80"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Ethics",
+      "text": "Ethics",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/80",
+      "parent": {
+        "$ref": "#/texts/79"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "footnote",
+      "prov": [],
+      "orig": "Animal experimentation: All studies using mice were performed in accordance to the Guide for the Care and Use of Laboratory Animals of the NIH, under IACUC animal protocol (ASP )18-026.",
+      "text": "Animal experimentation: All studies using mice were performed in accordance to the Guide for the Care and Use of Laboratory Animals of the NIH, under IACUC animal protocol (ASP )18-026."
+    },
+    {
+      "self_ref": "#/texts/81",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Additional files",
+      "text": "Additional files",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/82",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/83"
+        },
+        {
+          "$ref": "#/texts/84"
+        },
+        {
+          "$ref": "#/texts/85"
+        },
+        {
+          "$ref": "#/texts/86"
+        },
+        {
+          "$ref": "#/texts/87"
+        },
+        {
+          "$ref": "#/texts/88"
+        },
+        {
+          "$ref": "#/texts/89"
+        },
+        {
+          "$ref": "#/texts/90"
+        },
+        {
+          "$ref": "#/texts/91"
         }
       ],
       "content_layer": "body",
@@ -1342,9 +1574,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/68",
+      "self_ref": "#/texts/83",
       "parent": {
-        "$ref": "#/texts/67"
+        "$ref": "#/texts/82"
       },
       "children": [],
       "content_layer": "body",
@@ -1354,9 +1586,9 @@
       "text": "All NGS data has been deposited in GEO (GSE115291). Sequences of full-length de novo ETn insertions have been deposited in the GenBank database (MH449667- MH449669)."
     },
     {
-      "self_ref": "#/texts/69",
+      "self_ref": "#/texts/84",
       "parent": {
-        "$ref": "#/texts/67"
+        "$ref": "#/texts/82"
       },
       "children": [],
       "content_layer": "body",
@@ -1366,9 +1598,9 @@
       "text": "The following datasets were generated:"
     },
     {
-      "self_ref": "#/texts/70",
+      "self_ref": "#/texts/85",
       "parent": {
-        "$ref": "#/texts/67"
+        "$ref": "#/texts/82"
       },
       "children": [],
       "content_layer": "body",
@@ -1378,9 +1610,9 @@
       "text": "Wolf G. Retrotransposon reactivation and mobilization upon deletions of megabase scale KRAB zinc finger gene clusters in mice. NCBI Gene Expression Omnibus (2019). NCBI: GSE115291"
     },
     {
-      "self_ref": "#/texts/71",
+      "self_ref": "#/texts/86",
       "parent": {
-        "$ref": "#/texts/67"
+        "$ref": "#/texts/82"
       },
       "children": [],
       "content_layer": "body",
@@ -1390,9 +1622,9 @@
       "text": "Wolf G. Mus musculus musculus strain C57BL/6x129X1/SvJ retrotransposon MMETn-int, complete sequence. NCBI GenBank (2019). NCBI: MH449667"
     },
     {
-      "self_ref": "#/texts/72",
+      "self_ref": "#/texts/87",
       "parent": {
-        "$ref": "#/texts/67"
+        "$ref": "#/texts/82"
       },
       "children": [],
       "content_layer": "body",
@@ -1402,9 +1634,9 @@
       "text": "Wolf G. Mus musculus musculus strain C57BL/6x129X1/SvJ retrotransposon MMETn-int, complete sequence. NCBI GenBank (2019). NCBI: MH449668"
     },
     {
-      "self_ref": "#/texts/73",
+      "self_ref": "#/texts/88",
       "parent": {
-        "$ref": "#/texts/67"
+        "$ref": "#/texts/82"
       },
       "children": [],
       "content_layer": "body",
@@ -1414,9 +1646,9 @@
       "text": "Wolf G. Mus musculus musculus strain C57BL/6x129X1/SvJ retrotransposon MMETn-int, complete sequence. NCBI GenBank (2019). NCBI: MH449669"
     },
     {
-      "self_ref": "#/texts/74",
+      "self_ref": "#/texts/89",
       "parent": {
-        "$ref": "#/texts/67"
+        "$ref": "#/texts/82"
       },
       "children": [],
       "content_layer": "body",
@@ -1426,9 +1658,9 @@
       "text": "The following previously published datasets were used:"
     },
     {
-      "self_ref": "#/texts/75",
+      "self_ref": "#/texts/90",
       "parent": {
-        "$ref": "#/texts/67"
+        "$ref": "#/texts/82"
       },
       "children": [],
       "content_layer": "body",
@@ -1438,9 +1670,9 @@
       "text": "Castro-Diaz N, Ecco G, Coluccio A, Kapopoulou A, Duc J, Trono D. Evollutionally dynamic L1 regulation in embryonic stem cells. NCBI Gene Expression Omnibus (2014). NCBI: GSM1406445"
     },
     {
-      "self_ref": "#/texts/76",
+      "self_ref": "#/texts/91",
       "parent": {
-        "$ref": "#/texts/67"
+        "$ref": "#/texts/82"
       },
       "children": [],
       "content_layer": "body",
@@ -1450,7 +1682,7 @@
       "text": "Andrew ZX. H3K9me3_ChIPSeq (Ctrl). NCBI Gene Expression Omnibus (2014). NCBI: GSM1327148"
     },
     {
-      "self_ref": "#/texts/77",
+      "self_ref": "#/texts/92",
       "parent": {
         "$ref": "#/texts/0"
       },
@@ -1467,7 +1699,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/78",
+      "self_ref": "#/texts/93",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1481,7 +1713,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/79",
+      "self_ref": "#/texts/94",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1495,7 +1727,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/80",
+      "self_ref": "#/texts/95",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1509,7 +1741,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/81",
+      "self_ref": "#/texts/96",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1523,7 +1755,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/82",
+      "self_ref": "#/texts/97",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1537,7 +1769,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/83",
+      "self_ref": "#/texts/98",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1551,7 +1783,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/84",
+      "self_ref": "#/texts/99",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1565,7 +1797,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/85",
+      "self_ref": "#/texts/100",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1579,7 +1811,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/86",
+      "self_ref": "#/texts/101",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1593,7 +1825,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/87",
+      "self_ref": "#/texts/102",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1607,7 +1839,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/88",
+      "self_ref": "#/texts/103",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1621,7 +1853,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/89",
+      "self_ref": "#/texts/104",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1635,7 +1867,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/90",
+      "self_ref": "#/texts/105",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1649,7 +1881,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/91",
+      "self_ref": "#/texts/106",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1663,7 +1895,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/92",
+      "self_ref": "#/texts/107",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1677,7 +1909,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/93",
+      "self_ref": "#/texts/108",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1691,7 +1923,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/94",
+      "self_ref": "#/texts/109",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1705,7 +1937,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/95",
+      "self_ref": "#/texts/110",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1719,7 +1951,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/96",
+      "self_ref": "#/texts/111",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1733,7 +1965,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/97",
+      "self_ref": "#/texts/112",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1747,7 +1979,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/98",
+      "self_ref": "#/texts/113",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1761,7 +1993,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/99",
+      "self_ref": "#/texts/114",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1775,7 +2007,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/100",
+      "self_ref": "#/texts/115",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1789,7 +2021,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/101",
+      "self_ref": "#/texts/116",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1803,7 +2035,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/102",
+      "self_ref": "#/texts/117",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1817,7 +2049,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/103",
+      "self_ref": "#/texts/118",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1831,7 +2063,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/104",
+      "self_ref": "#/texts/119",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1845,7 +2077,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/105",
+      "self_ref": "#/texts/120",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1859,7 +2091,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/106",
+      "self_ref": "#/texts/121",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1873,7 +2105,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/107",
+      "self_ref": "#/texts/122",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1887,7 +2119,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/108",
+      "self_ref": "#/texts/123",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1901,7 +2133,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/109",
+      "self_ref": "#/texts/124",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1915,7 +2147,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/110",
+      "self_ref": "#/texts/125",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1929,7 +2161,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/111",
+      "self_ref": "#/texts/126",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1943,7 +2175,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/112",
+      "self_ref": "#/texts/127",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1957,7 +2189,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/113",
+      "self_ref": "#/texts/128",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1971,7 +2203,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/114",
+      "self_ref": "#/texts/129",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1985,7 +2217,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/115",
+      "self_ref": "#/texts/130",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -1999,7 +2231,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/116",
+      "self_ref": "#/texts/131",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2013,7 +2245,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/117",
+      "self_ref": "#/texts/132",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2027,7 +2259,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/118",
+      "self_ref": "#/texts/133",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2041,7 +2273,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/119",
+      "self_ref": "#/texts/134",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2055,7 +2287,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/120",
+      "self_ref": "#/texts/135",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2069,7 +2301,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/121",
+      "self_ref": "#/texts/136",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2083,7 +2315,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/122",
+      "self_ref": "#/texts/137",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2097,7 +2329,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/123",
+      "self_ref": "#/texts/138",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2111,7 +2343,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/124",
+      "self_ref": "#/texts/139",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2125,7 +2357,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/125",
+      "self_ref": "#/texts/140",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2139,7 +2371,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/126",
+      "self_ref": "#/texts/141",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2153,7 +2385,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/127",
+      "self_ref": "#/texts/142",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2167,7 +2399,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/128",
+      "self_ref": "#/texts/143",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2181,7 +2413,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/129",
+      "self_ref": "#/texts/144",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2195,7 +2427,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/130",
+      "self_ref": "#/texts/145",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2209,7 +2441,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/131",
+      "self_ref": "#/texts/146",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2223,7 +2455,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/132",
+      "self_ref": "#/texts/147",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2237,7 +2469,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/133",
+      "self_ref": "#/texts/148",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -2932,6 +3164,7 @@
         ],
         "num_rows": 9,
         "num_cols": 5,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -5576,6 +5809,7 @@
         ],
         "num_rows": 31,
         "num_cols": 5,
+        "orientation": "rot_0",
         "grid": [
           [
             {
