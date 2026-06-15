@@ -674,8 +674,10 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 if label_node
                 else ""
             )
-        
-        fn_parent = doc.add_heading(text=header_text, parent=parent) if header_text else parent
+
+        fn_parent = (
+            doc.add_heading(text=header_text, parent=parent) if header_text else parent
+        )
 
         # Footnotes
         for child in node.iterchildren(tag="fn"):
