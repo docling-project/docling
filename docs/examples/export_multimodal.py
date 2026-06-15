@@ -35,11 +35,11 @@ import time
 from pathlib import Path
 
 import pandas as pd
+from docling.utils.export import generate_multimodal_pages
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
-from docling.utils.export import generate_multimodal_pages
 from docling.utils.utils import create_hash
 
 _log = logging.getLogger(__name__)
