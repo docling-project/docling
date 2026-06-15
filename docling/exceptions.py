@@ -17,4 +17,3 @@ class SecurityError(BaseError):
 class AcceleratorDeviceNotAvailableError(BaseError):
     """Raised when an explicitly requested accelerator device is not available."""
 
-    pass
