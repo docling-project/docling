@@ -49,9 +49,13 @@ from docling_core.types.legacy_doc.document import (
     CCSFileInfoObject as DsFileInfoObject,
     ExportedCCSDocument as DsDocument,
 )
-from docling_core.utils.file import FileSizeLimitExceededError, resolve_source_to_stream
+from docling_core.utils.file import (
+    FileSizeLimitExceededError,
+    resolve_remote_filename,
+    resolve_source_to_stream,
+)
 from docling_core.utils.legacy import docling_document_to_legacy
-from pydantic import BaseModel, Field
+from pydantic import AnyHttpUrl, BaseModel, Field, TypeAdapter, ValidationError
 from typing_extensions import deprecated
 
 from docling.backend.abstract_backend import (
@@ -494,6 +498,21 @@ class _DocumentConversionInput(BaseModel):
                         file_size=exc.size,
                     )
                     continue
+                except (OSError, ValueError) as exc:
+                    # A source that cannot be fetched or resolved -- unreachable
+                    # URL, HTTP error status, connection/timeout failure, unsafe or
+                    # malformed URL, missing local file, ... -- must not abort the
+                    # whole batch. Emit an invalid InputDocument so it surfaces as a
+                    # document-level FAILURE that still honors raises_on_error
+                    # (i.e. aborts only when abort_on_error is set). requests'
+                    # RequestException subclasses derive from OSError, so this also
+                    # covers all HTTP fetch errors without importing requests here.
+                    _log.error("Failed to resolve input source %r: %s", item, exc)
+                    yield self._build_invalid_input_document(
+                        name=self._filename_from_source(item),
+                        format_options=format_options,
+                    )
+                    continue
             else:
                 obj = item
             format = self._guess_format(obj)
@@ -531,7 +550,7 @@ class _DocumentConversionInput(BaseModel):
         self,
         name: str,
         format_options: Mapping[InputFormat, "BaseFormatOption"],
-        file_size: int,
+        file_size: int = 0,
     ) -> InputDocument:
         guessed_format = self._guess_format(DocumentStream(name=name, stream=BytesIO()))
         if guessed_format is None:
@@ -543,6 +562,21 @@ class _DocumentConversionInput(BaseModel):
             filesize=file_size,
             limits=self.limits,
         )
+
+    @staticmethod
+    def _filename_from_source(source: str) -> str:
+        """Best-effort filename for a source that could not be resolved.
+
+        Reuses docling-core's ``resolve_remote_filename`` for URLs (the same
+        helper ``resolve_source_to_stream`` uses to name successful fetches) so a
+        failed source is labeled consistently; the URL path basename is used with
+        the query string dropped. Non-URL sources fall back to the path basename.
+        """
+        try:
+            http_url = TypeAdapter(AnyHttpUrl).validate_python(source)
+        except ValidationError:
+            return PurePath(source).name or source
+        return resolve_remote_filename(http_url=http_url, response_headers={})
 
     def _guess_format(self, obj: Union[Path, DocumentStream]) -> Optional[InputFormat]:
         content = b""  # empty binary blob

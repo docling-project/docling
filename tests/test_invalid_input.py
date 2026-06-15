@@ -2,7 +2,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from requests import Response, Session
+from requests import ConnectionError, Response, Session
 
 from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.document_converter import ConversionError, DocumentConverter
@@ -92,6 +92,81 @@ def test_convert_remote_too_large_filesize_limit_with_exception(
             max_file_size=5,
             raises_on_error=True,
         )
+
+
+def test_convert_unreachable_url_wout_exception(
+    converter: DocumentConverter, monkeypatch
+):
+    def mock_get(self, *args, **kwargs):
+        raise ConnectionError("Failed to establish a new connection")
+
+    monkeypatch.setattr(Session, "get", mock_get)
+
+    result = converter.convert(
+        "https://example.com/input.pdf?token=secret",
+        raises_on_error=False,
+    )
+    assert result.status == ConversionStatus.FAILURE
+    # Query string is dropped so the filename/extension stay recoverable.
+    assert result.input.file.name == "input.pdf"
+    assert result.input.valid is False
+
+
+def test_convert_unreachable_url_with_exception(
+    converter: DocumentConverter, monkeypatch
+):
+    def mock_get(self, *args, **kwargs):
+        raise ConnectionError("Failed to establish a new connection")
+
+    monkeypatch.setattr(Session, "get", mock_get)
+
+    with pytest.raises(ConversionError):
+        converter.convert(
+            "https://example.com/input.pdf",
+            raises_on_error=True,
+        )
+
+
+def test_convert_http_error_status_wout_exception(
+    converter: DocumentConverter, monkeypatch
+):
+    def mock_get(self, *args, **kwargs):
+        r = Response()
+        r.status_code = 404
+        r.url = "https://example.com/input.pdf"
+        r.raw = BytesIO(b"")
+        return r
+
+    monkeypatch.setattr(Session, "get", mock_get)
+
+    result = converter.convert(
+        "https://example.com/input.pdf",
+        raises_on_error=False,
+    )
+    assert result.status == ConversionStatus.FAILURE
+    assert result.input.valid is False
+
+
+def test_convert_all_unreachable_url_does_not_abort_batch(
+    converter: DocumentConverter, monkeypatch
+):
+    """One unreachable source must not fail its sibling documents in the batch."""
+
+    def mock_get(self, *args, **kwargs):
+        raise ConnectionError("Failed to establish a new connection")
+
+    monkeypatch.setattr(Session, "get", mock_get)
+
+    sources = [
+        DocumentStream(name="ok.md", stream=BytesIO(b"# Hello")),
+        "https://example.com/missing.pdf",
+    ]
+    results = list(converter.convert_all(sources, raises_on_error=False))
+
+    assert len(results) == 2
+    statuses = {res.input.file.name: res.status for res in results}
+    assert statuses["ok.md"] == ConversionStatus.SUCCESS
+    assert statuses["missing.pdf"] == ConversionStatus.FAILURE
 
 
 def test_convert_no_pipeline_wout_exception():
