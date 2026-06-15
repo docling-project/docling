@@ -246,6 +246,22 @@ def test_description_lists():
         )
     )
 
+    # Edge case: Empty description list
+    test_set.append(
+        (
+            b"<html><body><dl></dl></body></html>",
+            "",
+        )
+    )
+
+    # Edge case: Description list with dd without dt (discouraged but valid HTML)
+    test_set.append(
+        (
+            b"<html><body><dl><dd>Orphan description 1</dd><dd>Orphan description 2</dd></dl></body></html>",
+            "- Orphan description 1\n- Orphan description 2",
+        )
+    )
+
     for idx, pair in enumerate(test_set):
         in_doc = InputDocument(
             path_or_stream=BytesIO(pair[0]),
