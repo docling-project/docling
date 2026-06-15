@@ -12,3 +12,9 @@ class OperationNotAllowed(BaseError):
 
 class SecurityError(BaseError):
     pass
+
+
+class AcceleratorDeviceNotAvailableError(BaseError):
+    """Raised when an explicitly requested accelerator device is not available."""
+
+    pass
