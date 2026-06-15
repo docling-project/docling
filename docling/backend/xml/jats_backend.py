@@ -889,11 +889,23 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     label=GroupLabel.LIST, name="list", parent=parent
                 )
             elif child.tag == "list-item":
-                # TODO: address any type of content (another list, formula,...)
-                # TODO: address list type and item label
                 text = JatsDocumentBackend._get_text(child).strip()
-                new_parent = doc.add_list_item(text=text, parent=parent)
+
+                label_nodes = child.xpath("label")
+                label = ""
+
+                if label_nodes:
+                    label = JatsDocumentBackend._get_text(label_nodes[0]).strip()
+
+                if label and not text.startswith(label):
+                    text = f"{label} {text}"
+
+                new_parent = doc.add_list_item(
+                    text=text,
+                    parent=parent,
+                )
                 stop_walk = True
+                
             elif child.tag == "fig":
                 self._add_figure_captions(doc, parent, child)
                 stop_walk = True

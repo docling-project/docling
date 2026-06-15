@@ -51,7 +51,50 @@ def convert_jats_contribs(contribs: str, affiliations: str = "") -> DoclingDocum
 """
     )
 
+def convert_jats_body(body: str) -> DoclingDocument:
+    xml = f"""<!DOCTYPE article
+PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
+<article article-type="research-article">
+  <front>
+    <article-meta>
+      <title-group>
+        <article-title>List Test</article-title>
+      </title-group>
+    </article-meta>
+  </front>
+  <body>
+    {body}
+  </body>
+</article>
+"""
 
+    stream = DocumentStream(
+        name="list-test.nxml",
+        stream=BytesIO(xml.encode()),
+    )
+
+    conv_result = get_converter().convert(stream)
+    return conv_result.document
+
+def test_jats_list_item_labels_are_preserved():
+    doc = convert_jats_body(
+        """
+        <sec>
+            <list>
+                <list-item>
+                    <label>A.</label>
+                    <p>First item</p>
+                </list-item>
+            </list>
+        </sec>
+        """
+    )
+
+    md = doc.export_to_markdown()
+
+    assert "A." in md
+    assert "First item" in md
+    
 def test_jats_structured_abstract_sections_are_preserved():
     doc = convert_jats_article_meta(
         """
