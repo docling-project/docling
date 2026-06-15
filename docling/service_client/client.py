@@ -979,6 +979,11 @@ class DoclingServiceClient:
     ) -> dict[str, Any]:
         payload = request.model_dump(mode="json", exclude_none=True)
         payload["options"] = self._serialize_convert_options(request.options)
+        # Always serialize the target explicitly. The request model defaults
+        # `target` to PresignedUrlTarget(), so any exclude_defaults serialization
+        # would drop it and let the server silently apply its own default. The
+        # target the client chose must always travel with the request.
+        payload["target"] = request.target.model_dump(mode="json")
         return payload
 
     def _resolve_options(
