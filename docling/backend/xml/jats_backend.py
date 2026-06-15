@@ -905,7 +905,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     parent=parent,
                 )
                 stop_walk = True
-                
             elif child.tag == "fig":
                 self._add_figure_captions(doc, parent, child)
                 stop_walk = True

@@ -55,6 +55,13 @@ dependencies = [
   'certifi>=2024.7.4',
   'pluggy>=1.0.0,<2.0.0',
   'tqdm>=4.65.0,<5.0.0',
+  "pypdfium2>=5.9.0",
+  "docling-parse>=6.2.0",
+  "pylatexenc==2.10",
+  "marko==2.1.2",
+  "mail-parser>=4.3.0",
+  "rtree>=1.4.1",
+  "docling-ibm-models>=3.13.3",
 ]
 
 [project.urls]
