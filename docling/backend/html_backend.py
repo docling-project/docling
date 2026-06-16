@@ -2120,6 +2120,28 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.level = original_level
             self.parents = original_parents
 
+    @contextmanager
+    def _use_list_item_context(self, parent_item: RefItem | None) -> Iterator[None]:
+        """Set up context for processing nested content within a list item.
+
+        Args:
+            parent_item: The list item to use as parent for nested content.
+                If None, the context manager does nothing.
+
+        While the context manager is active, the hierarchy level is increased
+        and the parent is set. When exiting, the level and parent are restored.
+        """
+        if parent_item:
+            self.parents[self.level + 1] = parent_item
+            self.level += 1
+            try:
+                yield
+            finally:
+                self.parents[self.level + 1] = None
+                self.level -= 1
+        else:
+            yield
+
     def _handle_heading(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:
         added_ref = []
         tag_name = tag.name.lower()
@@ -2373,7 +2395,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
             return list_item
 
-    def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:  # noqa: C901
+    def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:
         tag_name = tag.name.lower()
         start: Optional[int] = None
         name: str = ""
@@ -2460,16 +2482,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     # Process nested content (images, lists, etc.) in the description
                     # Set parent for nested content (use dd_item if available, otherwise dd_parent)
                     content_parent = dd_item or dd_parent
-                    self.parents[self.level + 1] = content_parent
-                    self.level += 1
-
-                    processed_elements = set()
-                    self._process_list_item_nested_content(
-                        child, doc, processed_elements
-                    )
-
-                    self.parents[self.level + 1] = None
-                    self.level -= 1
+                    with self._use_list_item_context(content_parent):
+                        processed_elements = set()
+                        self._process_list_item_nested_content(
+                            child, doc, processed_elements
+                        )
 
             self.parents[self.level + 1] = None
             self.level -= 1
@@ -2523,27 +2540,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     list_item_counter += 1
 
                 if list_item or inputs_in_li or custom_checkboxes_in_li:
-                    if list_item:
-                        self.parents[self.level + 1] = list_item
-                        self.level += 1
+                    with self._use_list_item_context(list_item):
+                        # Handle inputs and checkboxes
+                        if inputs_in_li or custom_checkboxes_in_li:
+                            for input_tag in inputs_in_li:
+                                if isinstance(input_tag, Tag):
+                                    self._emit_input(input_tag, doc)
+                            for checkbox_tag in custom_checkboxes_in_li:
+                                if isinstance(checkbox_tag, Tag):
+                                    self._emit_custom_checkbox(checkbox_tag, doc)
 
-                    # Handle inputs and checkboxes
-                    if inputs_in_li or custom_checkboxes_in_li:
-                        for input_tag in inputs_in_li:
-                            if isinstance(input_tag, Tag):
-                                self._emit_input(input_tag, doc)
-                        for checkbox_tag in custom_checkboxes_in_li:
-                            if isinstance(checkbox_tag, Tag):
-                                self._emit_custom_checkbox(checkbox_tag, doc)
-
-                    # 4) Process nested content (images, lists, etc.) in DOM order
-                    processed_elements = set()
-                    self._process_list_item_nested_content(li, doc, processed_elements)
-
-                    # Restore level after processing nested content
-                    if list_item:
-                        self.parents[self.level + 1] = None
-                        self.level -= 1
+                        # 4) Process nested content (images, lists, etc.) in DOM order
+                        processed_elements = set()
+                        self._process_list_item_nested_content(
+                            li, doc, processed_elements
+                        )
                 else:
                     # No content, but check for nested lists (including those wrapped in divs)
                     for sublist in li({"ul", "ol", "dl"}):
