@@ -310,3 +310,92 @@ class TestEnrichmentConfigFromDict:
             parent_cfg={},
         )
         assert ec.metadata.field_transforms == transforms
+
+
+# ── Split(carry-over refine) TOC 분할 설정 매핑 ────────────────────────────────
+
+@pytest.mark.unit
+class TestTocSplitConfig:
+    """toc.split.* 가 _TocConfig 로 올바르게 매핑되는지(두 YAML 경로)."""
+
+    def test_list_format_split_override(self):
+        ec = EnrichmentConfig.from_raw(
+            [
+                {"toc": {
+                    "enable": True,
+                    "url": "http://t",
+                    "split": {
+                        "enabled": True,
+                        "pages_per_chunk": 3,
+                        "page_overlap": 1,
+                        "carryover_max_tokens": 800,
+                    },
+                }},
+            ],
+            Path("."),
+        )
+        assert ec.toc.split_enabled is True
+        assert ec.toc.split_pages_per_chunk == 3
+        assert ec.toc.split_page_overlap == 1
+        assert ec.toc.split_carryover_max_tokens == 800
+
+    def test_list_format_split_absent_is_none(self):
+        ec = EnrichmentConfig.from_raw(
+            [{"toc": {"enable": True, "url": "http://t"}}],
+            Path("."),
+        )
+        assert ec.toc.split_enabled is None
+        assert ec.toc.split_pages_per_chunk is None
+        assert ec.toc.split_page_overlap is None
+        assert ec.toc.split_carryover_max_tokens is None
+
+    def test_dict_format_split_override(self):
+        ec = EnrichmentConfig.from_raw(
+            {
+                "toc": {
+                    "url": "http://t",
+                    "split": {
+                        "enabled": True,
+                        "pages_per_chunk": 10,
+                        "page_overlap": 2,
+                        "carryover_max_tokens": 1200,
+                    },
+                },
+            },
+            Path("."),
+            parent_cfg={},
+        )
+        assert ec.toc.split_enabled is True
+        assert ec.toc.split_pages_per_chunk == 10
+        assert ec.toc.split_page_overlap == 2
+        assert ec.toc.split_carryover_max_tokens == 1200
+
+    def test_dict_format_split_absent_is_none(self):
+        ec = EnrichmentConfig.from_raw(
+            {"toc": {"url": "http://t"}},
+            Path("."),
+            parent_cfg={},
+        )
+        assert ec.toc.split_enabled is None
+        assert ec.toc.split_pages_per_chunk is None
+
+    def test_repetition_penalty_mapping(self):
+        # list 포맷
+        ec = EnrichmentConfig.from_raw(
+            [{"toc": {"enable": True, "url": "http://t", "repetition_penalty": 1.1}}],
+            Path("."),
+        )
+        assert ec.toc.repetition_penalty == 1.1
+        # dict 포맷
+        ec2 = EnrichmentConfig.from_raw(
+            {"toc": {"url": "http://t", "repetition_penalty": 1.2}},
+            Path("."),
+            parent_cfg={},
+        )
+        assert ec2.toc.repetition_penalty == 1.2
+        # 미설정 시 None
+        ec3 = EnrichmentConfig.from_raw(
+            [{"toc": {"enable": True, "url": "http://t"}}],
+            Path("."),
+        )
+        assert ec3.toc.repetition_penalty is None

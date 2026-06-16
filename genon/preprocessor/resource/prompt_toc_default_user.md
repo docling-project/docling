@@ -1,8 +1,25 @@
+The following is the table of contents accumulated so far (the higher-level structure extracted from earlier parts of the document; it may be empty):
+
+<previous_outline>
+{{prior_toc}}
+</previous_outline>
+
 Here is the Korean document you need to analyze:
 
 <document>
 {{raw_text}}
 </document>
+
+## Operating Mode (decide first)
+
+- **If <previous_outline> is empty (first-extraction mode)**: Work through the 'Analysis Process' below inside `<analysis>` tags, then output the table of contents for the entire document in `<toc>`. Include `TITLE:`.
+- **If <previous_outline> has content (continuation mode)**: This `<document>` is a **continuing later part** of a longer document. Follow these rules:
+  - Do **not** output `<analysis>`, explanations, or reasoning. Output only the `<toc>...</toc>` block.
+  - Output only the structural items that **newly appear** in this document. Do not repeat items already present in `<previous_outline>`.
+  - This `<document>` may continue a chapter/section that already appears in `<previous_outline>`. Even when a parent chapter/section is already listed, you **MUST still extract every article/sub-item (제x조, 항목 등) that is not yet in the outline**. Do **not** skip articles merely because their parent section already appears — resume from the last item in `<previous_outline>` and continue in document order until the end of this `<document>`.
+  - Numbering may restart from 1; do not worry if it differs from the numbering or order in `<previous_outline>` (the final numbering is reassigned in post-processing).
+  - Omit `TITLE:` (it is already in the accumulated outline).
+  - If there are no new items to extract, output `<toc></toc>`.
 
 Your task is to extract and organize all structural elements from this document into a hierarchical table of contents. Korean documents often have mixed structures where some sections follow formal regulatory patterns (제x장/절/관/조) while others use general section numbering and headers.
 

@@ -111,6 +111,19 @@ def _parse_optional_int(value: Any, key: str = "") -> Optional[int]:
         return None
 
 
+def _parse_optional_float(value: Any, key: str = "") -> Optional[float]:
+    if value is None or value == "":
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        if key:
+            _log.warning(
+                f"[EnrichmentConfig] Invalid float value for '{key}': {value!r}. Falling back to default."
+            )
+        return None
+
+
 # enricher 이름 alias 매핑
 _ENRICHMENT_LIST_NAMES: dict[str, set[str]] = {
     "toc": {"toc", "toc_enricher"},
@@ -138,6 +151,12 @@ class _TocConfig:
     system_prompt: Optional[str] = None
     user_prompt: Optional[str] = None
     doc_type: str = "law"
+    repetition_penalty: Optional[float] = None  # >1.0 반복(degeneration) 억제. None=미전송
+    # Split (carry-over refine) TOC extraction, page-based. None = use code defaults.
+    split_enabled: Optional[bool] = None
+    split_pages_per_chunk: Optional[int] = None
+    split_page_overlap: Optional[int] = None
+    split_carryover_max_tokens: Optional[int] = None
 
 
 @dataclass
@@ -320,6 +339,19 @@ class EnrichmentConfig:
                 system_prompt=toc_system_prompt,
                 user_prompt=toc_user_prompt,
                 doc_type=str(toc_opts.get("doc_type", "law") or "law"),
+                repetition_penalty=_parse_optional_float(toc_opts.get("repetition_penalty")),
+                split_enabled=_parse_optional_bool(
+                    _as_dict(toc_opts.get("split")).get("enabled")
+                ),
+                split_pages_per_chunk=_parse_optional_int(
+                    _as_dict(toc_opts.get("split")).get("pages_per_chunk")
+                ),
+                split_page_overlap=_parse_optional_int(
+                    _as_dict(toc_opts.get("split")).get("page_overlap")
+                ),
+                split_carryover_max_tokens=_parse_optional_int(
+                    _as_dict(toc_opts.get("split")).get("carryover_max_tokens")
+                ),
             ),
             metadata=_MetadataConfig(
                 do_metadata=metadata_enabled,
@@ -459,6 +491,19 @@ class EnrichmentConfig:
                 system_prompt=toc_sp,
                 user_prompt=toc_up,
                 doc_type=str(toc_cfg.get("doc_type", parent_cfg.get("toc_doc_type", "law")) or "law"),
+                repetition_penalty=_parse_optional_float(toc_cfg.get("repetition_penalty")),
+                split_enabled=_parse_optional_bool(
+                    _as_dict(toc_cfg.get("split")).get("enabled")
+                ),
+                split_pages_per_chunk=_parse_optional_int(
+                    _as_dict(toc_cfg.get("split")).get("pages_per_chunk")
+                ),
+                split_page_overlap=_parse_optional_int(
+                    _as_dict(toc_cfg.get("split")).get("page_overlap")
+                ),
+                split_carryover_max_tokens=_parse_optional_int(
+                    _as_dict(toc_cfg.get("split")).get("carryover_max_tokens")
+                ),
             ),
             metadata=_MetadataConfig(
                 do_metadata=bool(cfg.get("do_metadata", parent_cfg.get("do_metadata", True))),

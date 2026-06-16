@@ -25,6 +25,11 @@ _log = logging.getLogger(__name__)
 class DocumentEnrichmentUtils:
     """문서 enrichment 유틸리티 클래스 - TOC 추출 및 메타데이터 추출 기능 제공"""
 
+    # Split(carry-over refine) TOC 추출 기본값. YAML/옵션이 None이면 아래 값 사용.
+    _DEFAULT_PAGES_PER_CHUNK = 5
+    _DEFAULT_PAGE_OVERLAP = 0
+    _DEFAULT_CARRYOVER_MAX_TOKENS = 1500
+
     def __init__(self, enrichment_options: DataEnrichmentOptions):
         """
         Args:
@@ -109,7 +114,8 @@ class DocumentEnrichmentUtils:
             self.enrichment_options.toc_model or
             self.enrichment_options.toc_precheck_enabled is not None or
             self.enrichment_options.toc_max_context_tokens is not None or
-            self.enrichment_options.toc_completion_reserved_tokens is not None):
+            self.enrichment_options.toc_completion_reserved_tokens is not None or
+            self.enrichment_options.toc_repetition_penalty is not None):
 
             toc_config = {}
             toc_config["provider"] = self.enrichment_options.toc_api_provider or "openrouter"
@@ -128,6 +134,8 @@ class DocumentEnrichmentUtils:
                 toc_config["seed"] = self.enrichment_options.toc_seed
             if self.enrichment_options.toc_max_tokens is not None:
                 toc_config["max_tokens"] = self.enrichment_options.toc_max_tokens
+            if self.enrichment_options.toc_repetition_penalty is not None:
+                toc_config["repetition_penalty"] = self.enrichment_options.toc_repetition_penalty
             if self.enrichment_options.toc_precheck_enabled is not None:
                 toc_config["precheck_enabled"] = self.enrichment_options.toc_precheck_enabled
             if self.enrichment_options.toc_max_context_tokens is not None:
@@ -204,19 +212,31 @@ class DocumentEnrichmentUtils:
             custom_system = self.enrichment_options.toc_system_prompt
             custom_user = self.enrichment_options.toc_user_prompt
 
-            # AI로 목차 생성
-            toc_content = self.prompt_manager.call_ai_model(
-                category="toc_extraction",
-                prompt_type="korean_document",
-                custom_system=custom_system,
-                custom_user=custom_user,
-                raise_on_error=True,
-                raw_text=raw_text
-            )
+            # 분할 옵션이 켜져 있으면 청크 분할 추출, 아니면 기존 단일 호출
+            if self._split_enabled():
+                _log.info("TOC 분할 추출 수행 (korean_document)")
+                toc_content = self._extract_toc_split(
+                    document,
+                    prompt_type="korean_document",
+                    custom_system=custom_system,
+                    custom_user=custom_user,
+                )
+            else:
+                toc_content = self.prompt_manager.call_ai_model(
+                    category="toc_extraction",
+                    prompt_type="korean_document",
+                    custom_system=custom_system,
+                    custom_user=custom_user,
+                    raise_on_error=True,
+                    raw_text=raw_text,
+                    prior_toc=""
+                )
 
             if toc_content:
                 # 모든 SectionHeaderItem을 TextItem으로 변환
                 self._convert_section_headers_to_text(document)
+                # <toc> 블록만 추출(분석문 오염 방지). 블록이 없으면 원문 유지.
+                toc_content = self.extract_content(toc_content)
                 # 목차를 기반으로 SectionHeader 적용
                 matched_count = self._apply_toc_to_document(document, toc_content)
                 _log.info(f"TOC 추출 완료 - {matched_count}개 섹션 헤더 생성")
@@ -230,6 +250,75 @@ class DocumentEnrichmentUtils:
         except Exception as e:
             _log.error(f"TOC 추출 중 오류 발생: {str(e)}")
             return 0
+
+    # 경계 stitch 시 직전 누적의 tail에서 비교할 항목 수(overlap 페이지 분량보다 넉넉히).
+    _STITCH_TAIL_WINDOW = 80
+
+    @staticmethod
+    def _toc_item_key(item: Dict[str, Any]) -> str:
+        """TOC 항목의 정규화된 식별 키.
+
+        - 별표(별표 N)·별지(별지 제N호)·조항(제N조/제N조의M)은 규정 내 고유 식별자 → 전역 dedup용.
+        - 그 외(장/절/관 섹션·일반 항목)는 제목 정규화 키(꼬리표 '(계속)/(continued)' 제거). 같은 이름의
+          섹션이 장이 달라 정당하게 반복될 수 있으므로 전역 dedup엔 쓰지 않고 경계 stitch 비교에만 사용.
+
+        주의: 별표/별지 제목에는 "(제N조 관련)" 상호참조가 흔하므로, 별표/별지를 조항보다 먼저 검사하고
+        모든 식별자를 **제목 맨 앞(anchored)** 에서만 매칭한다(re.match). 그래야 "[별표 1] …(제9조 관련)"
+        가 그 항목 자체인 별표 1로 키잉되고, 괄호 안 조항 참조(제9조)로 오분류되어 전역 dedup에 삭제되는
+        regression을 막는다.
+        """
+        title = (item.get('title') or '').strip()
+        m = re.match(r'\[?\s*별표\s*제?\s*(\d+)', title)
+        if m:
+            return 'BP:별표' + m.group(1)
+        m = re.match(r'\[?\s*별지\s*제\s*(\d+)\s*호', title)
+        if m:
+            return 'BJ:별지제' + m.group(1) + '호'
+        m = re.match(r'제\s*\d+\s*조(?:\s*의\s*\d+)*', title)
+        if m:
+            return 'JO:' + re.sub(r'\s+', '', m.group(0))
+        base = re.sub(r'\s*[\(（]\s*(?:계속|continued)\s*[\)）]\s*$', '', title, flags=re.I)
+        base = re.sub(r'\s+', '', base)
+        return 'T:' + base if base else ''
+
+    @staticmethod
+    def _is_continuation_header(item: Dict[str, Any]) -> bool:
+        """제목이 '…(계속)'/'…(continued)' 로 끝나는 재나열 헤더인지."""
+        title = (item.get('title') or '')
+        return bool(re.search(r'[\(（]\s*(?:계속|continued)\s*[\)）]\s*$', title, flags=re.I))
+
+    def _overlap_prefix_len(
+        self, acc: list, items: list, *, max_skip: int = 3, min_run: int = 1
+    ) -> int:
+        """경계 overlap으로 재추출된 `items`의 선행 구간 길이를 반환(제거 대상).
+
+        'acc 의 suffix' == 'items 의 prefix' 가 되는 가장 긴 연속 시퀀스를 찾아 제거한다.
+        키는 `_toc_item_key`(별표/별지/조 식별자 또는 정규화 제목).
+        - 선행 건너뛰기(o)는 **'(계속)' 재나열 헤더에 한해서만** 허용한다. (임의 항목을 건너뛰면,
+          다중 약관 문서에서 새 약관의 일반 조(제1조[목적]…)가 직전 약관의 동일 조와 우연히 일치해
+          새 약관이 통째로 삭제되는 오류가 난다.) acc 의 tail 은 항상 '직전 내용의 끝'이고 새 head 는
+          '겹침' 또는 '새 약관의 시작'이므로, o=0 매칭은 진짜 겹침에서만 성립한다.
+        - min_run: 우연한 단발 일치 방지를 위한 최소 연속 길이(기본 1; suffix==prefix 자체가 안전).
+        반환값 0이면 겹침 없음.
+        """
+        if not acc or not items:
+            return 0
+        acc_keys = [self._toc_item_key(x) for x in acc]
+        new_keys = [self._toc_item_key(x) for x in items]
+        window = self._STITCH_TAIL_WINDOW
+        o = 0
+        while o <= max_skip and o < len(items):
+            max_len = min(len(acc), len(items) - o, window)
+            for cand in range(max_len, min_run - 1, -1):
+                if cand <= 0:
+                    break
+                if acc_keys[-cand:] == new_keys[o:o + cand]:
+                    return o + cand
+            # 다음 항목으로 진행은 현재 head 가 '(계속)' 재나열 헤더일 때만.
+            if not self._is_continuation_header(items[o]):
+                break
+            o += 1
+        return 0
 
     # ===== 유사도 기반 중복 제거 (경계 중복 완화) =====
     def _similar(self, a: str, b: str, thr: float = 0.92) -> bool:
@@ -297,23 +386,34 @@ class DocumentEnrichmentUtils:
             2. ...
         """
         final_title: Optional[str] = None
-        collected = []
+        parsed_windows: List[list] = []
 
         for txt in window_texts:
             parsed_data = self._parse_toc_content(txt)
             title = parsed_data['title']
-            items = parsed_data['toc_items']
             if title and not final_title:
                 final_title = title
-            collected.extend(items)
+            parsed_windows.append(parsed_data['toc_items'])
 
-        # print("--- Combined TOC Items ---")
-        # print(collected)
+        # 경계 overlap stitch(시퀀스 기반): page_overlap으로 두 창에 걸친 페이지를 모델이 재추출하면,
+        #   '직전 누적의 tail'과 '새 창의 head'가 동일 항목의 '연속 시퀀스'로 겹친다. 그 겹침 구간만 제거.
+        #   - 전역 식별자 dedup은 쓰지 않는다(보험약관 등 다중 약관 문서는 약관마다 제1조~ 가 정당하게
+        #     반복되므로 전역 1회화하면 후순위 약관의 조가 통째로 사라짐).
+        #   - 시퀀스(연속) 일치만 제거하므로, 약관 경계에서 우연히 같은 조번호가 있어도(누적 tail은 늘
+        #     '직전 내용의 끝'이고 새 head는 겹침 또는 새 약관의 '시작'이라) 오삭제되지 않는다.
+        merged_items: list = []
+        for items in parsed_windows:
+            if not merged_items:
+                merged_items.extend(items)
+                continue
+            drop = self._overlap_prefix_len(merged_items, items)
+            merged_items.extend(items[drop:])
 
+        collected = merged_items
         if not collected and not final_title:
             return ""
 
-        # 중복 제거(경계 부근의 같은 항목 제거)
+        # 인접 유사 중복 정리(경계 잔여) 후 번호 재생성
         deduped = self._dedupe_items(collected)
         # print("--- Deduped TOC Items ---")
         # print(deduped)
@@ -331,14 +431,264 @@ class DocumentEnrichmentUtils:
     def extract_content(self, text: str) -> str:
 
         # -------------------------------------
-        # <toc> 블록 추출
+        # <toc> 블록 추출 (분석문 내 인라인 <toc> 언급에 오염되지 않도록 robust 추출)
         # -------------------------------------
-        matches = re.findall(r"<toc>(.*?)</toc>", text, flags=re.S | re.I)
-        if matches:
-            # 가장 마지막 <toc> 블록
-            return matches[-1].replace("```", "").strip()
+        block = self._extract_toc_block(text)
+        if block is not None:
+            return block
 
-        return text.strip()
+        return (text or "").strip()
+
+    # ===== Split(carry-over refine) TOC 추출 =====
+    def _split_enabled(self) -> bool:
+        """분할 추출 수행 여부(명시적 옵션). 옵션이 None이면 기본 False(기존 단일 호출)."""
+        enabled = self.enrichment_options.toc_split_enabled
+        return bool(enabled) if enabled is not None else False
+
+    def _is_token_overflow(self, err: LLMApiError) -> bool:
+        """LLM 호출 에러가 토큰(컨텍스트 길이) 초과인지 판별."""
+        if getattr(err, "status_code", None) == 400:
+            return True
+        msg = (getattr(err, "raw_error_message", "") or str(err)).lower()
+        signals = [
+            "초과",
+            "context length",
+            "maximum context",
+            "context_length_exceeded",
+            "too long",
+            "reduce the length",
+            "max_tokens",
+        ]
+        return any(s in msg for s in signals)
+
+    def _estimate_tokens(self, text: str) -> int:
+        """prompt_manager와 동일한 척도로 토큰 추정(없으면 문자 수 fallback)."""
+        if self.prompt_manager is not None:
+            return self.prompt_manager.estimate_tokens(text)
+        return len(text or "")
+
+    @staticmethod
+    def _item_page_no(item, default_page_no: int) -> int:
+        """text item의 prov[0].page_no를 안전하게 얻는다(없거나 비정상이면 default_page_no)."""
+        prov_list = getattr(item, "prov", None) or []
+        if not prov_list:
+            return default_page_no
+        page_no = getattr(prov_list[0], "page_no", None)
+        if isinstance(page_no, int) and page_no > 0:
+            return page_no
+        return default_page_no
+
+    def _chunk_by_pages(
+        self, document, pages_per_chunk: int, page_overlap: int
+    ) -> List[str]:
+        """문서를 페이지(N개) 단위로 청크화. 페이지 경계를 보존한다.
+
+        - document.texts를 순회하며 각 item의 prov page_no로 페이지를 구해
+          {page_no: [정규화된 줄]} 로 모은다. prov가 없거나 비정상이면 직전 페이지를
+          carry-forward(초기 1)하여 reading order 상 자연스러운 페이지에 귀속시킨다.
+        - 관측된 최소~최대 페이지 범위를 pages_per_chunk 창으로 끊어 각 창의 텍스트를 join.
+          page_overlap 만큼 다음 창 시작을 앞당긴다(빈 창은 skip).
+        """
+        step = max(1, pages_per_chunk)
+        overlap = max(0, page_overlap)
+        if overlap >= step:
+            overlap = step - 1  # 진행 보장(무한루프 방지)
+
+        page_lines: Dict[int, List[str]] = {}
+        last_page = 1
+        for text in document.texts:
+            cleaned = re.sub(r'\s+', ' ', text.text.strip())
+            if not cleaned:
+                continue
+            pno = self._item_page_no(text, last_page)
+            last_page = pno
+            page_lines.setdefault(pno, []).append(cleaned)
+
+        if not page_lines:
+            return []
+
+        first_page = min(page_lines)
+        last_page_no = max(page_lines)
+
+        chunks: List[str] = []
+        start = first_page
+        while start <= last_page_no:
+            end = start + step - 1
+            lines: List[str] = []
+            for p in range(start, end + 1):
+                lines.extend(page_lines.get(p, []))
+            if lines:
+                chunks.append("\n".join(lines))
+            if end >= last_page_no:
+                break
+            start = end + 1 - overlap
+        return chunks
+
+    def _shrink_outline(self, toc: str, max_tokens: int) -> str:
+        """누적 outline이 max_tokens를 넘으면 상위 레벨만 남겨 축약(계층 컨텍스트 유지)."""
+        if not toc or max_tokens <= 0:
+            return toc
+        if self._estimate_tokens(toc) <= max_tokens:
+            return toc
+
+        lines = toc.split("\n")
+        title_lines = [l for l in lines if l.strip().startswith("TITLE:")]
+        body = [l for l in lines if not l.strip().startswith("TITLE:")]
+
+        def _level(line: str) -> int:
+            m = re.match(r'^(\d+(?:\.\d+)*)\.', line.strip())
+            return m.group(1).count('.') + 1 if m else 1
+
+        # 1) 레벨 2까지 → 2) 레벨 1까지 순으로 축약 시도
+        for max_level in (2, 1):
+            kept = [l for l in body if _level(l) <= max_level]
+            candidate = "\n".join(title_lines + kept)
+            if self._estimate_tokens(candidate) <= max_tokens:
+                return candidate
+
+        # 3) 최후: TITLE + 앞부분 줄을 토큰 예산까지만 유지
+        kept = list(title_lines)
+        acc_tok = self._estimate_tokens("\n".join(kept))
+        for l in body:
+            t = self._estimate_tokens(l) + 1
+            if acc_tok + t > max_tokens:
+                break
+            kept.append(l)
+            acc_tok += t
+        return "\n".join(kept)
+
+    def _build_continuation_user(self, base_user: Optional[str], prior: str) -> str:
+        """`{{prior_toc}}` 자리표시자가 없는 커스텀 md용 fallback continuation 프롬프트.
+
+        설정 md가 통합 프롬프트(=`{{prior_toc}}` 보유)가 아니면, 이어쓰기 지시 + 누적 목차 블록을
+        base_user 앞에 prepend 하여 carry-over를 유지한다.
+        - placeholder 주입 경로와 달리 prior가 템플릿 문자열에 직접 삽입되므로 중괄호를 이스케이프한다.
+        - base_user의 `{{raw_text}}`/`{raw_text}` 자리표시자는 보존되어 format 단계에서 렌더된다.
+        """
+        prior_safe = (prior or "").replace("{", "{{").replace("}", "}}")
+        preamble = (
+            "이 문서는 더 긴 문서의 이어지는 부분입니다. 분석·설명·사고과정을 출력하지 말고, "
+            "아래 '누적 목차'를 참고하여 문서에서 새로 등장하는 항목만 <toc>...</toc> 로 출력하세요. "
+            "이미 누적된 항목은 다시 출력하지 말고, 번호는 1부터 다시 시작해도 됩니다"
+            "(최종 번호는 후처리에서 재부여).\n\n"
+            f"## 누적 목차\n{prior_safe}\n\n---\n\n"
+        )
+        return preamble + (base_user or "")
+
+    def _extract_toc_split(
+        self,
+        document: DoclingDocument,
+        prompt_type: str,
+        custom_system: Optional[str],
+        custom_user: Optional[str],
+    ) -> Optional[str]:
+        """긴 문서를 청크로 나눠 누적 outline(carry-over)을 이어받아 순차 TOC 추출.
+
+        - 모든 청크에서 설정 프롬프트(prompt_type + custom_system/custom_user)를 사용한다.
+        - 두 번째 이후 청크는 설정 user 프롬프트 앞에 직전까지 누적된 outline을 컨텍스트로
+          덧붙여(carry-over) 계층/번호 일관성을 유지한다.
+        - 매 스텝 결과를 combine_windowed_toc로 누적 병합(중복 제거 + 번호 재생성).
+        """
+        if self.prompt_manager is None:
+            return None
+
+        pages_per_chunk = (
+            self.enrichment_options.toc_pages_per_chunk
+            or self._DEFAULT_PAGES_PER_CHUNK
+        )
+        page_overlap = self.enrichment_options.toc_page_overlap
+        if page_overlap is None:
+            page_overlap = self._DEFAULT_PAGE_OVERLAP
+        carryover_max = (
+            self.enrichment_options.toc_carryover_max_tokens
+            or self._DEFAULT_CARRYOVER_MAX_TOKENS
+        )
+
+        chunks = self._chunk_by_pages(document, pages_per_chunk, page_overlap)
+        if not chunks:
+            return None
+        _log.info(
+            f"TOC 분할 추출: {len(chunks)}개 청크 "
+            f"(pages_per_chunk={pages_per_chunk}, page_overlap={page_overlap})"
+        )
+
+        acc = ""
+        for i, chunk in enumerate(chunks):
+            try:
+                if i == 0:
+                    # 첫 청크: 통합 md를 그대로 사용. prior_toc="" → 빈 누적 목차(첫 추출 모드).
+                    piece = self.prompt_manager.call_ai_model(
+                        category="toc_extraction",
+                        prompt_type=prompt_type,
+                        custom_system=custom_system,
+                        custom_user=custom_user,
+                        raise_on_error=True,
+                        raw_text=chunk,
+                        prior_toc="",
+                    )
+                else:
+                    prior = self._shrink_outline(acc, carryover_max)
+                    # 통합 md(= {{prior_toc}} 보유)면 자리표시자 주입, 아니면 코드가 prior 블록 prepend.
+                    base_user = custom_user or self.prompt_manager.get_user_prompt_template(
+                        "toc_extraction", prompt_type
+                    )
+                    if base_user and "{{prior_toc}}" in base_user:
+                        continuation_user = base_user
+                    else:
+                        continuation_user = self._build_continuation_user(base_user, prior)
+                    piece = self.prompt_manager.call_ai_model(
+                        category="toc_extraction",
+                        prompt_type=prompt_type,
+                        custom_system=custom_system,
+                        custom_user=continuation_user,
+                        raise_on_error=True,
+                        raw_text=chunk,
+                        prior_toc=prior,
+                    )
+            except LLMApiError as e:
+                # 청크 1개가 여전히 초과하면 해당 청크만 건너뛰고 누적 결과는 유지
+                if self._is_token_overflow(e):
+                    _log.warning(
+                        f"TOC 분할 추출: 청크 {i + 1}/{len(chunks)} 토큰 초과로 건너뜀"
+                    )
+                    continue
+                raise
+
+            _log.debug(f"--- TOC Chunk {i + 1}/{len(chunks)} ---\n{piece}")
+
+            # 가드: <toc> 블록이 없는 응답(분석문/절단 등)은 병합하지 않고 건너뜀.
+            # (이전엔 extract_content가 원문 전체를 반환해 추론문이 목차로 주입되는 오염 발생)
+            toc_block = self._extract_toc_block(piece)
+            if toc_block is None:
+                _log.warning(
+                    f"TOC 분할 추출: 청크 {i + 1}/{len(chunks)} 유효한 <toc> 미생성"
+                    f"(분석문/절단 추정) → 건너뜀"
+                )
+                continue
+
+            acc = self.combine_windowed_toc([acc, toc_block])
+
+        return acc or None
+
+    @staticmethod
+    def _extract_toc_block(piece: Optional[str]) -> Optional[str]:
+        """응답에서 <toc>...</toc> 블록 내부 텍스트를 반환. 블록이 없으면 None.
+
+        '마지막 </toc> 직전의 마지막 <toc>' 사이만 추출한다. 모델이 분석문(<analysis>) 안에서
+        '<toc>'를 인라인 언급(예: "Output <toc> only")한 경우, 비탐욕 정규식은 그 인라인 언급부터
+        실제 닫는 태그까지 한 번에 매칭해 분석문을 통째로 삼킨다(매치가 1개뿐이라 matches[-1]도 오염).
+        rfind 기반으로 실제 블록만 안전하게 추출한다.
+        """
+        if not piece:
+            return None
+        low = piece.lower()
+        end = low.rfind("</toc>")
+        if end == -1:
+            return None
+        start = low.rfind("<toc>", 0, end)
+        if start == -1:
+            return None
+        return piece[start + len("<toc>"):end].replace("```", "").strip()
 
     def apply_law_toc_enrichment(self, document: DoclingDocument) -> int:
         """
@@ -363,29 +713,25 @@ class DocumentEnrichmentUtils:
             custom_system = self.enrichment_options.toc_system_prompt
             custom_user = self.enrichment_options.toc_user_prompt
 
-            # AI로 목차 생성
-            toc_content = self.prompt_manager.call_ai_model(
-                category="toc_extraction",
-                prompt_type="law_document",
-                custom_system=custom_system,
-                custom_user=custom_user,
-                raise_on_error=True,
-                raw_text=raw_text
-            )
-
-            # 20250918, shkim, sliding window 방식으로 여러 조각을 받아서 결합하는 경우. 테스트 중.
-            # pieces = self.prompt_manager.call_ai_model_windowed(
-            #     category="toc_extraction",
-            #     prompt_type="law_document",
-            #     custom_system=custom_system,
-            #     custom_user=custom_user,
-            #     raw_text=raw_text
-            # )
-
-            # for i, p in enumerate(pieces):
-            #     print(f"--- TOC piece {i} ---\n{p}\n")
-
-            # toc_content = self.combine_windowed_toc(pieces)
+            # 분할 옵션이 켜져 있으면 청크 분할 추출, 아니면 기존 단일 호출
+            if self._split_enabled():
+                _log.info("TOC 분할 추출 수행 (law_document)")
+                toc_content = self._extract_toc_split(
+                    document,
+                    prompt_type="law_document",
+                    custom_system=custom_system,
+                    custom_user=custom_user,
+                )
+            else:
+                toc_content = self.prompt_manager.call_ai_model(
+                    category="toc_extraction",
+                    prompt_type="law_document",
+                    custom_system=custom_system,
+                    custom_user=custom_user,
+                    raise_on_error=True,
+                    raw_text=raw_text,
+                    prior_toc=""
+                )
 
             _log.debug(f"--- TOC ---\n{toc_content}")
 
