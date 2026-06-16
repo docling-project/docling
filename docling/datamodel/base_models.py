@@ -205,10 +205,37 @@ class VlmStopReason(str, Enum):
     UNSPECIFIED = "unspecified"  # Defaul none value
 
 
+class ErrorCategory(str, Enum):
+    """Categories of errors that can occur during document conversion.
+
+    This enum provides semantic categorization of errors to enable
+    downstream consumers to filter and handle specific error types.
+    """
+
+    TIMEOUT = "timeout"
+    PARSING_ERROR = "parsing_error"
+    MODEL_ERROR = "model_error"
+    RESOURCE_ERROR = "resource_error"
+    VALIDATION_ERROR = "validation_error"
+    UNKNOWN = "unknown"
+
+
 class ErrorItem(BaseModel):
+    """Structured error information from document conversion.
+
+    Attributes:
+        component_type: The component that generated the error.
+        module_name: The module where the error occurred.
+        error_message: Human-readable error description.
+        category: Semantic category of the error for filtering.
+        metadata: Additional context-specific information about the error.
+    """
+
     component_type: DoclingComponentType
     module_name: str
     error_message: str
+    category: ErrorCategory = ErrorCategory.UNKNOWN
+    metadata: dict[str, Any] = {}
 
 
 class Cluster(BaseModel):

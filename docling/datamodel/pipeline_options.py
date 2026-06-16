@@ -1119,8 +1119,10 @@ class PipelineOptions(BaseOptions):
         Field(
             description=(
                 "Maximum processing time in seconds before aborting document conversion. When exceeded, the pipeline "
-                "stops processing and returns partial results with PARTIAL_SUCCESS status. If None, no timeout is "
-                "enforced. Recommended: 90-120 seconds for production systems."
+                "stops processing and returns partial results with PARTIAL_SUCCESS status. Timeout errors are recorded "
+                "in ConversionResult.errors with category=TIMEOUT and include metadata about pages processed. "
+                "Use ConversionResult.has_timeout_errors() to detect timeouts. If None, no timeout is enforced. "
+                "Recommended: 90-120 seconds for production systems."
             ),
             examples=[10.0, 20.0],
         ),

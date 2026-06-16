@@ -833,7 +833,26 @@ class StandardPdfPipeline(ConvertPipeline):
             )
             conv_res.errors.append(error_item)
         if timeout_exceeded and proc.total_expected > 0:
-            # Timeout exceeded: set PARTIAL_SUCCESS if any pages were attempted
+            # Timeout exceeded: add structured error and set PARTIAL_SUCCESS
+            from docling.datamodel.base_models import ErrorCategory
+
+            timeout_msg = (
+                f"Pipeline stage processing exceeded document timeout. "
+                f"Processed {len(proc.pages)}/{proc.total_expected} pages successfully."
+            )
+            timeout_error = ErrorItem(
+                component_type=DoclingComponentType.PIPELINE,
+                module_name=self.__class__.__name__,
+                error_message=timeout_msg,
+                category=ErrorCategory.TIMEOUT,
+                metadata={
+                    "timeout_type": "stage_level",
+                    "pages_completed": len(proc.pages),
+                    "pages_failed": len(proc.failed_pages),
+                    "total_pages": proc.total_expected,
+                },
+            )
+            conv_res.errors.append(timeout_error)
             conv_res.status = ConversionStatus.PARTIAL_SUCCESS
         elif proc.is_complete_failure:
             conv_res.status = ConversionStatus.FAILURE

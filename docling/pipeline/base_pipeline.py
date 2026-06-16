@@ -290,9 +290,33 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                         self.pipeline_options.document_timeout is not None
                         and total_elapsed_time > self.pipeline_options.document_timeout
                     ):
-                        _log.warning(
-                            f"Document processing time ({total_elapsed_time:.3f} seconds) exceeded the specified timeout of {self.pipeline_options.document_timeout:.3f} seconds"
+                        timeout_msg = (
+                            f"Document processing time ({total_elapsed_time:.3f} seconds) "
+                            f"exceeded the specified timeout of {self.pipeline_options.document_timeout:.3f} seconds"
                         )
+                        _log.warning(timeout_msg)
+
+                        # Add structured timeout error
+                        from docling.datamodel.base_models import (
+                            DoclingComponentType,
+                            ErrorCategory,
+                            ErrorItem,
+                        )
+
+                        timeout_error = ErrorItem(
+                            component_type=DoclingComponentType.PIPELINE,
+                            module_name="base_pipeline",
+                            error_message=timeout_msg,
+                            category=ErrorCategory.TIMEOUT,
+                            metadata={
+                                "timeout_seconds": self.pipeline_options.document_timeout,
+                                "elapsed_seconds": total_elapsed_time,
+                                "pages_processed": total_pages_processed,
+                                "total_pages": len(conv_res.pages),
+                                "timeout_type": "document_level",
+                            },
+                        )
+                        conv_res.errors.append(timeout_error)
                         conv_res.status = ConversionStatus.PARTIAL_SUCCESS
                         break
                     total_pages_processed += len(page_batch)

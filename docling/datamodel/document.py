@@ -14,6 +14,7 @@ from pathlib import Path, PurePath
 from typing import (
     TYPE_CHECKING,
     Annotated,
+    Any,
     Literal,
     Optional,
     Type,
@@ -453,6 +454,49 @@ class ConversionAssets(BaseModel):
 class ConversionResult(ConversionAssets):
     input: InputDocument
     assembled: AssembledUnit = AssembledUnit()
+
+    def has_timeout_errors(self) -> bool:
+        """Check if conversion encountered timeout errors.
+
+        Returns:
+            True if any errors have category TIMEOUT, False otherwise.
+        """
+        from docling.datamodel.base_models import ErrorCategory
+
+        return any(e.category == ErrorCategory.TIMEOUT for e in self.errors)
+
+    def get_timeout_info(self) -> dict[str, Any]:
+        """Get aggregated timeout information from all timeout errors.
+
+        Returns:
+            Dictionary containing timeout details, or empty dict if no timeouts occurred.
+            Keys include:
+            - timeout_occurred: bool
+            - timeout_count: int
+            - timeout_types: list of timeout type strings
+            - details: list of error details with message, component, and metadata
+        """
+        from docling.datamodel.base_models import ErrorCategory
+
+        timeout_errors = [e for e in self.errors if e.category == ErrorCategory.TIMEOUT]
+        if not timeout_errors:
+            return {}
+
+        return {
+            "timeout_occurred": True,
+            "timeout_count": len(timeout_errors),
+            "timeout_types": list(
+                {e.metadata.get("timeout_type", "unknown") for e in timeout_errors}
+            ),
+            "details": [
+                {
+                    "message": e.error_message,
+                    "component": e.component_type,
+                    "metadata": e.metadata,
+                }
+                for e in timeout_errors
+            ],
+        }
 
 
 class _DummyBackend(AbstractDocumentBackend):

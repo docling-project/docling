@@ -147,6 +147,8 @@ def test_page_range(test_doc_path):
 
 
 def test_document_timeout(test_doc_path):
+    from docling.datamodel.base_models import ErrorCategory
+
     converter = DocumentConverter(
         format_options={
             InputFormat.PDF: PdfFormatOption(
@@ -156,7 +158,15 @@ def test_document_timeout(test_doc_path):
     )
     result = converter.convert(test_doc_path)
     assert result.status == ConversionStatus.PARTIAL_SUCCESS, (
-        "Expected document timeout to be used"
+        "Expected document timeout to result in PARTIAL_SUCCESS status"
+    )
+    # Verify timeout error is present
+    assert result.has_timeout_errors(), "Expected timeout errors to be recorded"
+    timeout_info = result.get_timeout_info()
+    assert timeout_info["timeout_occurred"] is True
+    assert timeout_info["timeout_count"] > 0
+    assert any(e.category == ErrorCategory.TIMEOUT for e in result.errors), (
+        "Expected at least one error with TIMEOUT category"
     )
 
     converter = DocumentConverter(
@@ -169,7 +179,11 @@ def test_document_timeout(test_doc_path):
     )
     result = converter.convert(test_doc_path)
     assert result.status == ConversionStatus.PARTIAL_SUCCESS, (
-        "Expected document timeout to be used"
+        "Expected document timeout to result in PARTIAL_SUCCESS status"
+    )
+    # Verify timeout error is present for legacy pipeline too
+    assert result.has_timeout_errors(), (
+        "Expected timeout errors to be recorded in legacy pipeline"
     )
 
 
