@@ -30,6 +30,8 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
+from docling.backend.pptx_slide_renderer import PptxSlideCompositionRenderer
+from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -38,9 +40,12 @@ _log = logging.getLogger(__name__)
 
 class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
     def __init__(
-        self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        options: Optional[MsPowerpointBackendOptions] = None,
     ) -> None:
-        super().__init__(in_doc, path_or_stream)
+        super().__init__(in_doc, path_or_stream, options=options)
         self.namespaces = {
             "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
             "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
@@ -579,6 +584,49 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 )
         return
 
+    def _get_pptx_options(self) -> MsPowerpointBackendOptions:
+        if isinstance(self.options, MsPowerpointBackendOptions):
+            return self.options
+
+        return MsPowerpointBackendOptions()
+
+    def _handle_slide_visual_composition(
+        self,
+        slide,
+        parent_slide,
+        slide_ind,
+        doc: DoclingDocument,
+        slide_size: Size,
+    ) -> None:
+        options = self._get_pptx_options()
+        renderer = PptxSlideCompositionRenderer(
+            dpi=options.slide_visual_composition_dpi,
+        )
+        pil_image = renderer.render(
+            slide=slide,
+            slide_width=slide_size.width,
+            slide_height=slide_size.height,
+        )
+
+        prov = ProvenanceItem(
+            page_no=slide_ind + 1,
+            charspan=[0, 0],
+            bbox=BoundingBox.from_tuple(
+                (0, 0, slide_size.width, slide_size.height),
+                origin=CoordOrigin.BOTTOMLEFT,
+            ),
+        )
+
+        doc.add_picture(
+            parent=parent_slide,
+            image=ImageRef.from_pil(
+                image=pil_image,
+                dpi=options.slide_visual_composition_dpi,
+            ),
+            caption=None,
+            prov=prov,
+        )
+
     def _handle_pictures(self, shape, parent_slide, slide_ind, doc, slide_size):
         # Open it with PIL
         try:
@@ -700,6 +748,15 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
             slide_size = Size(width=slide_width, height=slide_height)
             doc.add_page(page_no=slide_ind + 1, size=slide_size)
+
+            if self._get_pptx_options().create_slide_visual_composition:
+                self._handle_slide_visual_composition(
+                    slide=slide,
+                    parent_slide=parent_slide,
+                    slide_ind=slide_ind,
+                    doc=doc,
+                    slide_size=slide_size,
+                )
 
             def _safe_shape_type(shape):
                 """Return shape.shape_type, or None if unrecognized.
