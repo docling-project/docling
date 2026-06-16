@@ -54,6 +54,7 @@ from docling.datamodel.service.targets import InBodyTarget, PresignedUrlTarget, 
 from docling.service_client import (
     DEFAULT_MAX_CONCURRENCY,
     MAX_CONCURRENCY_LIMIT,
+    ChunkerKind,
     ConversionItem,
     DoclingServiceClient,
 )
@@ -1542,6 +1543,43 @@ def test_submit_source_serializes_convert_options_without_defaults() -> None:
     assert payload["options"] == {"page_range": [3, 7]}
 
 
+def test_submit_local_string_source_uses_file_endpoint(tmp_path: Path) -> None:
+    captured: dict[str, object] = {}
+    sample = tmp_path / "sample.pdf"
+    sample.write_bytes(b"%PDF-1.4\n")
+
+    def fake_request_with_retry(**kw: object) -> httpx.Response:
+        captured.update(kw)
+        return httpx.Response(
+            200,
+            json=_status_response("task-file-string", "pending").model_dump(
+                mode="json"
+            ),
+        )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._request_with_retry = fake_request_with_retry  # type: ignore[method-assign]
+        job = client.submit(
+            source=str(sample),
+            target=InBodyTarget(),
+            options=ConvertDocumentsRequestOptions(
+                page_range=(3, 7),
+                document_timeout=None,
+            ),
+        )
+
+    assert job.task_id == "task-file-string"
+    assert captured["path"] == "/v1/convert/file/async"
+    data = captured["data"]
+    assert isinstance(data, dict)
+    assert data["page_range"] == [3, 7]
+    assert data["target_type"] == "inbody"
+    files = captured["files"]
+    assert isinstance(files, dict)
+    assert files["files"][0] == "sample.pdf"
+    assert files["files"][2] == "application/pdf"
+
+
 def test_submit_file_serializes_convert_options_without_defaults(
     tmp_path: Path,
 ) -> None:
@@ -1572,6 +1610,105 @@ def test_submit_file_serializes_convert_options_without_defaults(
         "page_range": [3, 7],
         "target_type": "inbody",
     }
+
+
+def test_submit_chunk_local_string_source_uses_file_endpoint(tmp_path: Path) -> None:
+    captured: dict[str, object] = {}
+    sample = tmp_path / "sample.pdf"
+    sample.write_bytes(b"%PDF-1.4\n")
+
+    def fake_request_with_retry(**kw: object) -> httpx.Response:
+        captured.update(kw)
+        return httpx.Response(
+            200,
+            json=_status_response("task-chunk-file-string", "pending").model_dump(
+                mode="json"
+            ),
+        )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._request_with_retry = fake_request_with_retry  # type: ignore[method-assign]
+        job = client.submit_chunk(
+            source=str(sample),
+            chunker=ChunkerKind.HYBRID,
+            options=ConvertDocumentsRequestOptions(),
+        )
+
+    assert job.task_id == "task-chunk-file-string"
+    assert captured["path"] == "/v1/chunk/hybrid/file/async"
+    files = captured["files"]
+    assert isinstance(files, dict)
+    assert files["files"][0] == "sample.pdf"
+    assert files["files"][2] == "application/pdf"
+
+
+def test_submit_and_retrieve_each_routes_local_and_http_string_sources(
+    tmp_path: Path,
+) -> None:
+    class _DummyAsyncClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+    local_sample = tmp_path / "local.pdf"
+    local_sample.write_bytes(b"%PDF-1.4\n")
+    seen_paths: list[str] = []
+
+    with DoclingServiceClient(url=TEST_BASE_URL, status_watcher="polling") as client:
+
+        def fake_build_async_http_client(self):
+            return _DummyAsyncClient()
+
+        async def fake_request_with_retry_async(
+            self, async_client, method, path, **kwargs
+        ):
+            seen_paths.append(path)
+            if path.endswith("/source/async"):
+                task_name = Path(kwargs["json"]["sources"][0]["url"]).name
+            else:
+                task_name = kwargs["files"]["files"][0]
+            return httpx.Response(
+                200,
+                json=_status_response(f"task-{task_name}", "pending").model_dump(
+                    mode="json"
+                ),
+            )
+
+        async def fake_wait(self, task_id, timeout, async_client, max_in_flight):
+            return _status_response(task_id, "success")
+
+        async def fake_fetch_payload(self, task_id, last_status, async_client):
+            return _convert_payload(task_id.removeprefix("task-"))
+
+        client._build_async_http_client = MethodType(
+            fake_build_async_http_client, client
+        )
+        client._request_with_retry_async = MethodType(  # type: ignore[method-assign]
+            fake_request_with_retry_async, client
+        )
+        client._wait_for_terminal_status_for_submit_and_retrieve_many_async = (  # type: ignore[method-assign]
+            MethodType(fake_wait, client)
+        )
+        client._fetch_convert_result_payload_async = MethodType(
+            fake_fetch_payload, client
+        )
+
+        list(
+            client.submit_and_retrieve_each(
+                [
+                    ConversionItem(source=str(local_sample)),
+                    ConversionItem(source="https://example.org/remote.pdf"),
+                ],
+                max_in_flight=1,
+                ordered=True,
+                target=InBodyTarget(),
+            )
+        )
+
+    assert seen_paths.count("/v1/convert/file/async") == 1
+    assert seen_paths.count("/v1/convert/source/async") == 1
 
 
 def test_submit_accepts_http_source_request() -> None:
@@ -1605,6 +1742,34 @@ def test_submit_accepts_http_source_request() -> None:
     assert job.task_id == "task-http-source"
     assert '"headers":{"Authorization":"Bearer source-token"}' in str(
         captured["payload"]
+    )
+
+
+def test_convert_rejects_unsupported_url_scheme() -> None:
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        with pytest.raises(ValueError, match="Unsupported URL scheme"):
+            client.convert("ftp://example.org/sample.pdf")
+
+
+def test_convert_all_missing_local_string_matches_missing_path(
+    tmp_path: Path,
+) -> None:
+    missing = tmp_path / "missing.pdf"
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        results = list(client.convert_all([str(missing), missing]))
+
+    assert [result.status for result in results] == [
+        ConversionStatus.FAILURE,
+        ConversionStatus.FAILURE,
+    ]
+    assert [result.input.file.name for result in results] == [
+        "missing.pdf",
+        "missing.pdf",
+    ]
+    assert all(
+        "No such file or directory" in result.errors[0].error_message
+        for result in results
     )
 
 
