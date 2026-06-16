@@ -119,7 +119,7 @@ class TestIsTokenOverflow:
 
 @pytest.mark.unit
 class TestBuildContinuationUser:
-    """{prior_toc} 없는 커스텀 md용 fallback prepend (base_user, prior) 2-arg."""
+    """{{prior_toc}} 없는 커스텀 md용 fallback prepend (base_user, prior) 2-arg."""
 
     def test_prepends_prior_and_preserves_base(self):
         util = _make_util()
@@ -175,10 +175,10 @@ class TestExtractTocSplit:
         assert result is not None and "TITLE:DOC" in result
 
     def test_unified_md_with_prior_toc_injects_via_placeholder(self):
-        """통합 md(= {prior_toc} 보유)면 모든 청크가 동일 md 사용 + prior_toc kwarg 주입."""
+        """통합 md(= {{prior_toc}} 보유)면 모든 청크가 동일 md 사용 + prior_toc kwarg 주입."""
         util = _make_util()
         document = _fake_document(["t1", "t2"])
-        unified_md = "통합 TOC 프롬프트\n<previous_outline>\n{prior_toc}\n</previous_outline>\n문서:\n{{raw_text}}"
+        unified_md = "통합 TOC 프롬프트\n<previous_outline>\n{{prior_toc}}\n</previous_outline>\n문서:\n{{raw_text}}"
         calls = []
 
         def fake_call(category, prompt_type, raise_on_error=False, raw_text=None,
@@ -201,7 +201,7 @@ class TestExtractTocSplit:
         assert calls[1]["prior_toc"] and "a" in calls[1]["prior_toc"]
 
     def test_custom_md_without_prior_toc_falls_back_to_prepend(self):
-        """{prior_toc} 없는 커스텀 md면 반복 시 코드가 prior 블록을 prepend(carry-over 유지)."""
+        """{{prior_toc}} 없는 커스텀 md면 반복 시 코드가 prior 블록을 prepend(carry-over 유지)."""
         util = _make_util()
         document = _fake_document(["t1", "t2"])
         configured_user = "설정된 TOC 프롬프트 {{raw_text}}"

@@ -123,9 +123,9 @@ def test_format_user_prompt_supports_double_brace_raw_text_alias():
 
 @pytest.mark.unit
 def test_format_user_prompt_renders_prior_toc_and_raw_text():
-    """통합 TOC 프롬프트 메커니즘: {prior_toc}(단일) + {{raw_text}}(이중) 동시 렌더."""
+    """통합 TOC 프롬프트 메커니즘: {{prior_toc}} + {{raw_text}}(둘 다 이중 중괄호) 동시 렌더."""
     pm = PromptManager()
-    tmpl = "<previous_outline>\n{prior_toc}\n</previous_outline>\n문서:\n{{raw_text}}"
+    tmpl = "<previous_outline>\n{{prior_toc}}\n</previous_outline>\n문서:\n{{raw_text}}"
 
     # 첫 추출: prior_toc="" → 빈 outline, 본문 주입
     r_first = pm.format_user_prompt(
@@ -134,7 +134,7 @@ def test_format_user_prompt_renders_prior_toc_and_raw_text():
     )
     assert r_first is not None
     assert "본문A" in r_first
-    assert "{raw_text}" not in r_first  # 미치환 잔존 없음
+    assert "{raw_text}" not in r_first and "{prior_toc}" not in r_first  # 미치환 잔존 없음
 
     # 이어쓰기: prior 값에 중괄호가 있어도 안전(치환값은 재파싱되지 않음)
     r_cont = pm.format_user_prompt(

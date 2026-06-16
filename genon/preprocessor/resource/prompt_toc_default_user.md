@@ -1,7 +1,7 @@
 The following is the table of contents accumulated so far (the higher-level structure extracted from earlier parts of the document; it may be empty):
 
 <previous_outline>
-{prior_toc}
+{{prior_toc}}
 </previous_outline>
 
 Here is the Korean document you need to analyze:

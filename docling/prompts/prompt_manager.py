@@ -182,15 +182,21 @@ class PromptManager:
 
     @staticmethod
     def _normalize_raw_text_placeholder(template: str, **kwargs: Any) -> str:
-        """`{{raw_text}}`를 `{raw_text}`의 별칭으로 허용한다.
+        """`{{var}}`를 `{var}`의 별칭으로 허용한다(주입되는 kwargs 키 한정).
 
-        - `raw_text`가 실제로 주입되는 경우에만 정규화한다.
-        - 이미 `{raw_text}`가 포함된 템플릿은 건드리지 않는다.
-        - JSON 예시 표현용 `{{ ... }}` 는 그대로 보존한다.
+        - 실제로 주입되는 키(`raw_text`, `prior_toc` 등)에 대해서만 `{{key}}`→`{key}` 로 정규화한다.
+        - 이미 단일 `{key}` 가 포함된 템플릿은 건드리지 않는다.
+        - JSON 예시 표현용 `{{ ... }}`(주입 키가 아닌 것)는 그대로 보존한다.
         """
-        has_single_placeholder = "{raw_text}" in template.replace("{{raw_text}}", "")
-        if "raw_text" in kwargs and not has_single_placeholder and "{{raw_text}}" in template:
-            return template.replace("{{raw_text}}", "{raw_text}")
+        for key in kwargs:
+            token2 = "{{" + key + "}}"
+            if token2 not in template:
+                continue
+            token1 = "{" + key + "}"
+            # 이미 단일 형태가 있으면 그대로 둔다(중복 치환 방지).
+            if token1 in template.replace(token2, ""):
+                continue
+            template = template.replace(token2, token1)
         return template
 
     def format_user_prompt(self, category: str, prompt_type: str, custom_user: Optional[str] = None, **kwargs) -> Optional[str]:

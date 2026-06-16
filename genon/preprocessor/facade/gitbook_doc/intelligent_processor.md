@@ -352,6 +352,51 @@ docling PDF 파싱 성능/품질 노브입니다.
 | `precheck.max_context_tokens` / `precheck.completion_reserved_tokens` | 컨텍스트 한도 / 예약 토큰 | 128000 / 12000 |
 | `system_prompt_file` / `user_prompt_file` | 프롬프트 `.md` 파일 경로(권장, config 디렉토리 기준). `user_prompt` 의 `{{raw_text}}` 치환 | — |
 | `system_prompt` / `user_prompt` | inline 프롬프트(`*_file` 미지정 시 fallback) | — |
+| `split.enabled` | 긴 문서 **분할(Split) TOC 추출** 수행 여부(아래 참고) | false |
+| `split.pages_per_chunk` / `split.page_overlap` | 청크당 페이지 수 / 청크 경계 중복 페이지 수 | 5 / 0 |
+| `split.carryover_max_tokens` | 다음 청크에 주입할 누적 목차(outline) 토큰 상한 | 1500 |
+| `repetition_penalty` | 토큰 반복(degeneration) 억제(>1.0). 게이트웨이/vLLM 지원 시에만 사용, 미설정 시 미전송 | — |
+
+##### 분할(Split) TOC 추출 — 긴 문서 대응
+
+기본 TOC 추출은 **문서 전체를 한 번에** LLM에 보냅니다. 문서가 길면 서빙 모델의 `max-model-len` 을 초과해
+토큰 에러가 날 수 있습니다. `split.enabled: true` 면 문서를 **페이지 단위 청크**로 나눠 순차 추출하고,
+앞 청크까지 누적된 목차를 다음 청크 프롬프트에 컨텍스트로 주입(**carry-over refine**)해 계층/번호 일관성을
+유지합니다.
+
+```yaml
+- toc:
+    enable: true
+    # ... url/model/precheck/프롬프트 파일 등 기존 설정
+    system_prompt_file: prompt_toc_default_system.md
+    user_prompt_file: prompt_toc_default_user.md
+    split:
+      enabled: false            # true 면 길이와 무관하게 항상 분할 추출
+      pages_per_chunk: 5        # 청크당 페이지 수
+      page_overlap: 0           # 청크 경계 중복 페이지 수(경계 누락 완화용)
+      carryover_max_tokens: 1500
+    # repetition_penalty: 1.1   # 반복 억제가 필요할 때만 주석 해제
+```
+
+**동작**
+- **OFF(기본)**: 단일 호출. 동작 변화 없음(컨텍스트 초과 시 기존처럼 에러).
+- **ON**: 페이지 N개씩 청크화 → 첫 청크는 설정 프롬프트로, 이후 청크는 설정 프롬프트 앞에 누적 목차를 덧붙여
+  순차 추출 → 매 스텝 병합(경계 중복 제거·번호 재부여). 응답에 `<toc>` 블록이 없거나(분석문/절단) 컨텍스트를
+  초과하는 청크는 건너뛰어 부분 결과를 보존합니다.
+
+**통합 프롬프트(`prompt_toc_default_user.md`)** — 하나의 프롬프트가 첫 추출/이어쓰기를 모두 처리합니다.
+- `{{prior_toc}}`(누적 목차) 자리표시자 + **작업 모드(Operating Mode)** 분기를 가집니다: `<previous_outline>`
+  이 비면 전체 추출(분석 후 `<toc>`, `TITLE:` 포함), 내용이 있으면 이어쓰기(분석 출력 금지·`<toc>`만·새 항목만,
+  이미 누적된 항목/부모 섹션은 반복 금지하되 미추출 하위 조항은 모두 추출).
+- 커스텀 프롬프트에 `{{prior_toc}}` 가 없으면 코드가 누적 목차 블록을 앞에 자동으로 덧붙입니다.
+
+**권장 / 주의**
+- 컨텍스트에 들어가는 문서는 분할이 불필요하므로 기본값(OFF) 유지를 권장합니다. 긴 문서가 토큰 초과로 실패할 때
+  켜세요.
+- `page_overlap>0` 은 경계 항목 누락을 줄이지만, 모델 재추출이 경계에서 깔끔히 정렬되지 않으면 중복이 일부 남을
+  수 있습니다(중복이 문제면 `0` 권장).
+- 분할은 LLM의 지시 준수에 의존합니다. 매우 긴 청크에서 모델이 장황해지면 `<toc>` 전에 토큰이 소진될 수 있으며,
+  이때 해당 청크는 건너뜁니다. `repetition_penalty`(지원 시) 활성화가 도움이 됩니다.
 
 #### metadata
 

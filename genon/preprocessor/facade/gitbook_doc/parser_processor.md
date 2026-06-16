@@ -368,6 +368,10 @@ whisper:
 | `toc.precheck` | `enabled` | (미설정) | 사전 토큰 검사. `true`면 LLM 호출 전 토큰 추정하여 초과 시 즉시 에러 |
 | `toc.precheck` | `max_context_tokens` | `128000` | 모델 전체 컨텍스트 한도 (입력 + 출력 합산) |
 | `toc.precheck` | `completion_reserved_tokens` | `12000` | 출력용 예약 토큰 수. 허용 입력 = `max_context_tokens` − `completion_reserved_tokens` |
+| `toc.split` | `enabled` | `false` | 긴 문서 **분할(Split) TOC 추출**(carry-over refine) 수행 여부(아래 참고) |
+| `toc.split` | `pages_per_chunk` / `page_overlap` | `5` / `0` | 청크당 페이지 수 / 청크 경계 중복 페이지 수 |
+| `toc.split` | `carryover_max_tokens` | `1500` | 다음 청크에 주입할 누적 목차(outline) 토큰 상한 |
+| `toc` | `repetition_penalty` | — | 토큰 반복(degeneration) 억제(>1.0). 게이트웨이/vLLM 지원 시에만, 미설정 시 미전송 |
 | `metadata` | `url` | `""` | 메타데이터 추출 LLM API URL |
 | `metadata` | `api_key` | `""` | LLM API 인증 키 |
 | `metadata` | `model` | `"model"` | 메타데이터 추출 모델명 |
@@ -393,6 +397,36 @@ whisper:
 | `custom_fields` | (인라인 옵션 또는 `config_file`) | — | 커스텀 필드 추출 enricher. 여러 개 지정 가능. 아래 [커스텀 필드 enricher](#커스텀-필드-enricher) 참고 |
 
 > 이미지 설명 enrichment는 `pdf_pipeline.generate_picture_images: false`인 경우 동작하지 않습니다 (그림 이미지가 생성되지 않으므로).
+
+#### 분할(Split) TOC 추출 — 긴 문서 대응
+
+기본 TOC 추출은 **문서 전체를 한 번에** LLM에 보냅니다. 문서가 길면 서빙 모델의 `max-model-len` 을 초과해
+토큰 에러가 날 수 있습니다. `toc.split.enabled: true` 면 문서를 **페이지 단위 청크**로 나눠 순차 추출하고,
+앞 청크까지 누적된 목차를 다음 청크 프롬프트에 컨텍스트로 주입(**carry-over refine**)해 계층/번호 일관성을
+유지합니다. (parser 는 내부적으로 `IntelligentDocumentProcessor` 의 TOC 경로를 사용하므로 동작은 동일합니다.)
+
+```yaml
+- toc:
+    enable: true
+    # ... url/model/precheck/프롬프트 파일 등 기존 설정
+    system_prompt_file: prompt_toc_default_system.md
+    user_prompt_file: prompt_toc_default_user.md
+    split:
+      enabled: false            # true 면 길이와 무관하게 항상 분할 추출
+      pages_per_chunk: 5        # 청크당 페이지 수
+      page_overlap: 0           # 청크 경계 중복 페이지 수(경계 누락 완화용)
+      carryover_max_tokens: 1500
+    # repetition_penalty: 1.1   # 반복 억제가 필요할 때만 주석 해제
+```
+
+- **OFF(기본)**: 단일 호출. 동작 변화 없음(컨텍스트 초과 시 기존처럼 에러).
+- **ON**: 페이지 N개씩 청크화 → 첫 청크는 설정 프롬프트로, 이후 청크는 설정 프롬프트 앞에 누적 목차를 덧붙여
+  순차 추출 → 매 스텝 병합(경계 중복 제거·번호 재부여). `<toc>` 블록이 없거나(분석문/절단) 컨텍스트를 초과하는
+  청크는 건너뛰어 부분 결과를 보존합니다.
+- **통합 프롬프트**: `prompt_toc_default_user.md` 가 `{{prior_toc}}` 자리표시자 + 작업 모드(Operating Mode)로
+  첫 추출/이어쓰기를 모두 처리합니다(`<previous_outline>` 비면 전체 추출, 있으면 새 항목만 이어쓰기).
+- **주의**: 컨텍스트에 들어가는 문서는 OFF 유지 권장. `page_overlap>0` 은 경계 누락을 줄이나 중복이 일부 남을 수
+  있어(중복이 문제면 `0` 권장), 매우 긴 청크는 토큰 소진 시 스킵될 수 있습니다.
 
 **출력 / Whisper**
 

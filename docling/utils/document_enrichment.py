@@ -560,9 +560,9 @@ class DocumentEnrichmentUtils:
         return "\n".join(kept)
 
     def _build_continuation_user(self, base_user: Optional[str], prior: str) -> str:
-        """`{prior_toc}` 자리표시자가 없는 커스텀 md용 fallback continuation 프롬프트.
+        """`{{prior_toc}}` 자리표시자가 없는 커스텀 md용 fallback continuation 프롬프트.
 
-        설정 md가 통합 프롬프트(=`{prior_toc}` 보유)가 아니면, 이어쓰기 지시 + 누적 목차 블록을
+        설정 md가 통합 프롬프트(=`{{prior_toc}}` 보유)가 아니면, 이어쓰기 지시 + 누적 목차 블록을
         base_user 앞에 prepend 하여 carry-over를 유지한다.
         - placeholder 주입 경로와 달리 prior가 템플릿 문자열에 직접 삽입되므로 중괄호를 이스케이프한다.
         - base_user의 `{{raw_text}}`/`{raw_text}` 자리표시자는 보존되어 format 단계에서 렌더된다.
@@ -630,11 +630,11 @@ class DocumentEnrichmentUtils:
                     )
                 else:
                     prior = self._shrink_outline(acc, carryover_max)
-                    # 통합 md(= {prior_toc} 보유)면 자리표시자 주입, 아니면 코드가 prior 블록 prepend.
+                    # 통합 md(= {{prior_toc}} 보유)면 자리표시자 주입, 아니면 코드가 prior 블록 prepend.
                     base_user = custom_user or self.prompt_manager.get_user_prompt_template(
                         "toc_extraction", prompt_type
                     )
-                    if base_user and "{prior_toc}" in base_user:
+                    if base_user and "{{prior_toc}}" in base_user:
                         continuation_user = base_user
                     else:
                         continuation_user = self._build_continuation_user(base_user, prior)
