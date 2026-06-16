@@ -206,6 +206,26 @@ def convert_remote(
             help="Comma-separated list of OCR languages (engine-specific names).",
         ),
     ] = None,
+    enrich_code: Annotated[
+        bool,
+        typer.Option(help="Enable the service's code enrichment model."),
+    ] = False,
+    enrich_formula: Annotated[
+        bool,
+        typer.Option(help="Enable the service's formula enrichment model."),
+    ] = False,
+    enrich_picture_classes: Annotated[
+        bool,
+        typer.Option(help="Enable the service's picture classification model."),
+    ] = False,
+    enrich_picture_description: Annotated[
+        bool,
+        typer.Option(help="Enable the service's picture description model."),
+    ] = False,
+    enrich_chart_extraction: Annotated[
+        bool,
+        typer.Option(help="Enable the service's chart data extraction."),
+    ] = False,
     image_export_mode: Annotated[
         Optional[ImageRefMode],
         typer.Option(
@@ -314,9 +334,14 @@ def convert_remote(
         "to_formats": to_formats,
         "do_ocr": ocr,
         "force_ocr": force_ocr,
+        "ocr_lang": _split_list(ocr_lang),
         "do_table_structure": tables,
         "pipeline": pipeline,
-        "ocr_lang": _split_list(ocr_lang),
+        "do_code_enrichment": enrich_code,
+        "do_formula_enrichment": enrich_formula,
+        "do_picture_classification": enrich_picture_classes,
+        "do_picture_description": enrich_picture_description,
+        "do_chart_extraction": enrich_chart_extraction,
         "document_timeout": document_timeout,
         "abort_on_error": abort_on_error,
     }
