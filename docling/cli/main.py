@@ -77,6 +77,7 @@ from docling.datamodel.asr_model_specs import (
     AsrModelType,
 )
 from docling.datamodel.backend_options import (
+    EpubBackendOptions,
     HTMLBackendOptions,
     LatexBackendOptions,
     PdfBackendOptions,
@@ -112,6 +113,7 @@ from docling.datamodel.settings import settings
 from docling.document_converter import (
     AudioFormatOption,
     DocumentConverter,
+    EpubFormatOption,
     ExcelFormatOption,
     FormatOption,
     HTMLFormatOption,
@@ -305,6 +307,7 @@ def export_documents(
     export_txt: bool,
     export_doctags: bool,
     export_vtt: bool,
+    export_doclang: bool,
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
@@ -412,6 +415,13 @@ def export_documents(
                 _log.info(f"writing WebVTT output to {fname}")
                 conv_res.document.save_as_vtt(filename=fname)
 
+            # Export DocLang format:
+            if export_doclang:
+                fname = output_dir / f"{doc_filename}.dclg.xml"
+                _log.info(f"writing DocLang output to {fname}")
+                with fname.open("w", encoding="utf-8") as fp:
+                    fp.write(conv_res.document.export_to_doclang())
+
             # Print profiling timings
             if print_timings:
                 table = rich.table.Table(title=f"Profiling Summary, {doc_filename}")
@@ -506,7 +516,7 @@ def convert(  # noqa: C901
     html_image_headers: str = typer.Option(
         None,
         "--html-image-headers",
-        help="Specify http request headers used when fetching HTML image resources in the form of a JSON string",
+        help="Specify http request headers used when fetching HTML and EPUB image resources in the form of a JSON string",
     ),
     image_export_mode: Annotated[
         ImageRefMode,
@@ -520,7 +530,7 @@ def convert(  # noqa: C901
         typer.Option(
             ...,
             "--html-image-fetch",
-            help="Fetch image resources referenced by HTML inputs. Choose none, local, remote, or all.",
+            help="Fetch image resources referenced by HTML and EPUB inputs. Choose none, local, remote, or all.",
         ),
     ] = HtmlImageFetchMode.NONE,
     pipeline: Annotated[
@@ -854,6 +864,7 @@ def convert(  # noqa: C901
         export_txt = OutputFormat.TEXT in to_formats
         export_doctags = OutputFormat.DOCTAGS in to_formats
         export_vtt = OutputFormat.VTT in to_formats
+        export_doclang = OutputFormat.DOCLANG in to_formats
 
         ocr_factory = get_ocr_factory(allow_external_plugins=allow_external_plugins)
         ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
@@ -980,6 +991,20 @@ def convert(  # noqa: C901
                     pipeline_options=simple_format_option,
                     backend_options=html_backend_options,
                 ),
+                InputFormat.EPUB: EpubFormatOption(
+                    pipeline_options=simple_format_option,
+                    backend_options=EpubBackendOptions(
+                        fetch_images=html_fetch_images,
+                        enable_local_fetch=html_enable_local_fetch,
+                        enable_remote_fetch=html_enable_remote_fetch,
+                    )
+                    if (
+                        html_fetch_images
+                        or html_enable_local_fetch
+                        or html_enable_remote_fetch
+                    )
+                    else None,
+                ),
                 InputFormat.MD: MarkdownFormatOption(
                     pipeline_options=simple_format_option
                 ),
@@ -991,6 +1016,7 @@ def convert(  # noqa: C901
 
         elif pipeline == ProcessingPipeline.VLM:
             pipeline_options = VlmPipelineOptions(
+                accelerator_options=accelerator_options,
                 enable_remote_services=enable_remote_services,
             )
 
@@ -1110,6 +1136,7 @@ def convert(  # noqa: C901
             export_txt=export_txt,
             export_doctags=export_doctags,
             export_vtt=export_vtt,
+            export_doclang=export_doclang,
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,

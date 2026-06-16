@@ -22,8 +22,8 @@ docling [OPTIONS] source
 
 | Name | Type | Default | Description |
 | --- | --- | --- | --- |
-| `--from` | `docx`, `pptx`, `html`, `image`, `pdf`, `asciidoc`, `md`, `csv`, `xlsx`, `xml_uspto`, `xml_jats`, `xml_xbrl`, `mets_gbs`, `json_docling`, `audio`, `vtt`, `latex` (repeatable) |  | Input formats to accept. Defaults to all supported formats. |
-| `--to` | `md`, `json`, `yaml`, `html`, `html_split_page`, `text`, `doctags`, `vtt` (repeatable) |  | Specify output formats. Defaults to Markdown. |
+| `--from` | `docx`, `pptx`, `html`, `image`, `pdf`, `asciidoc`, `md`, `csv`, `xlsx`, `xml_uspto`, `xml_jats`, `xml_xbrl`, `xml_doclang`, `mets_gbs`, `json_docling`, `audio`, `vtt`, `latex` (repeatable) |  | Input formats to accept. Defaults to all supported formats. |
+| `--to` | `md`, `json`, `yaml`, `html`, `html_split_page`, `text`, `doctags`, `vtt`, `doclang` (repeatable) |  | Specify output formats. Defaults to Markdown. |
 | `--show-layout` / `--no-show-layout` | flag | `false` | If enabled, the page images will show the bounding-boxes of the items. |
 | `--headers` | `text` |  | Specify http request headers used when fetching url input sources in the form of a JSON string |
 | `--image-export-mode` | `placeholder`, `embedded`, `referenced` | `embedded` | Image export mode for image-capable document outputs (JSON, YAML, HTML, HTML split-page, and Markdown). Text, DocTags, and WebVTT outputs do not export images. With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document. |
@@ -137,4 +137,3 @@ docling-tools models download-hf-repo [OPTIONS] MODELS...
 | `-o` / `--output-dir` | `path` | `/Users/dol/.cache/docling/models` | The directory where to download the models. |
 | `--force` / `--no-force` | flag | `false` | If true, the download will be forced. |
 | `-q` / `--quiet` | flag | `false` | No extra output is generated, the CLI prints only the directory with the cached models. |
-

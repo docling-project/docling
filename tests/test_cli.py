@@ -10,9 +10,10 @@ from typer.testing import CliRunner
 
 from docling.cli.export_utils import _should_generate_export_images, _split_list
 from docling.cli.main import app
+from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import InputFormat, OutputFormat
-from docling.datamodel.pipeline_options import PdfBackend
+from docling.datamodel.pipeline_options import PdfBackend, VlmPipelineOptions
 from docling.document_converter import PdfFormatOption
 
 runner = CliRunner()
@@ -71,6 +72,32 @@ def test_cli_convert(tmp_path):
     assert result.exit_code == 0
     converted = output / f"{Path(source).stem}.md"
     assert converted.exists()
+
+
+def test_cli_exports_doclang(tmp_path):
+    source = tmp_path / "input.md"
+    source.write_text("# DocLang CLI\n\nHello from Markdown.", encoding="utf-8")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "md",
+            "--to",
+            "doclang",
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert result.exit_code == 0
+    converted = output / "input.dclg.xml"
+    assert converted.exists()
+    content = converted.read_text(encoding="utf-8")
+    assert "<doclang>" in content
+    assert "DocLang CLI" in content
 
 
 def test_cli_html_fetches_local_images_per_input(tmp_path):
@@ -150,6 +177,12 @@ def test_cli_html_fetches_remote_images_with_separate_headers(tmp_path, monkeypa
 
         def iter_content(self, chunk_size: int):
             yield self.content
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
 
     def fake_get(self, url: str, **kwargs):
         calls.append((url, kwargs))
@@ -260,6 +293,7 @@ def test_export_documents_marks_empty_markdown_as_failure(tmp_path):
         export_txt=False,
         export_doctags=False,
         export_vtt=False,
+        export_doclang=False,
         print_timings=False,
         export_timings=False,
         image_export_mode=ImageRefMode.PLACEHOLDER,
@@ -320,6 +354,7 @@ def test_export_documents_marks_stat_errors_as_failure(tmp_path, monkeypatch):
         export_txt=False,
         export_doctags=False,
         export_vtt=False,
+        export_doclang=False,
         print_timings=False,
         export_timings=False,
         image_export_mode=ImageRefMode.PLACEHOLDER,
@@ -334,6 +369,7 @@ def test_export_documents_marks_stat_errors_as_failure(tmp_path, monkeypatch):
     [
         (ImageRefMode.PLACEHOLDER, [OutputFormat.JSON], False),
         (ImageRefMode.EMBEDDED, [OutputFormat.TEXT, OutputFormat.DOCTAGS], False),
+        (ImageRefMode.EMBEDDED, [OutputFormat.DOCLANG], False),
         (ImageRefMode.EMBEDDED, [OutputFormat.MARKDOWN], True),
         (
             ImageRefMode.EMBEDDED,
@@ -351,6 +387,7 @@ def test_image_export_policy_covers_all_output_formats():
         OutputFormat.TEXT,
         OutputFormat.DOCTAGS,
         OutputFormat.VTT,
+        OutputFormat.DOCLANG,
     }
     image_export_formats = set(OutputFormat) - non_image_export_formats
 
@@ -486,3 +523,56 @@ def test_cli_accepts_threaded_docling_parse_backend(
     assert captured_backend_options is not None
     assert captured_backend_options.parser_threads == 7
     assert captured_backend_options.release_native_memory_every_n_pages == 64
+
+
+def test_cli_passes_accelerator_options_to_vlm_pipeline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured_pipeline_options: VlmPipelineOptions | None = None
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            nonlocal captured_pipeline_options
+            pdf_option = format_options[InputFormat.PDF]
+            assert format_options[InputFormat.IMAGE] is pdf_option
+            assert isinstance(pdf_option.pipeline_options, VlmPipelineOptions)
+            captured_pipeline_options = pdf_option.pipeline_options
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+        ) -> list[Any]:
+            assert len(input_doc_paths) == 1
+            return []
+
+    monkeypatch.setattr("docling.cli.main.DocumentConverter", _FakeDocumentConverter)
+
+    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            source,
+            "--output",
+            str(output),
+            "--pipeline",
+            "vlm",
+            "--device",
+            "cpu",
+            "--num-threads",
+            "7",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_pipeline_options is not None
+    assert captured_pipeline_options.accelerator_options.device == AcceleratorDevice.CPU
+    assert captured_pipeline_options.accelerator_options.num_threads == 7

@@ -1,21 +1,36 @@
 import asyncio
+import io
 import json
 import queue
+import tempfile
 import threading
 import time
 import warnings
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path, PurePath
 from types import MethodType, SimpleNamespace
 
 import httpx
 import pytest
-from docling_core.types.doc import DoclingDocument
+from docling_core.types.doc import (
+    DoclingDocument,
+    ImageRef,
+    ImageRefMode,
+    PictureItem,
+)
+from docling_core.types.doc.document import BoundingBox, ProvenanceItem, Size
+from PIL import Image as PILImage
 
-import docling.service_client._async_client as _async_client_module
 import docling.service_client.client as client_module
 import docling.service_client.watchers as watchers_module
-from docling.datamodel.base_models import ConversionStatus, InputFormat, OutputFormat
+from docling.datamodel.base_models import (
+    ConversionStatus,
+    DoclingComponentType,
+    ErrorItem,
+    InputFormat,
+    OutputFormat,
+)
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
@@ -48,6 +63,7 @@ from docling.service_client import (
     DoclingServiceClient,
 )
 from docling.service_client.exceptions import (
+    ArtifactDownloadError,
     ConversionError,
     ResponseSchemaMismatchError,
     ResultExpiredError,
@@ -505,70 +521,102 @@ def test_websocket_watcher_raises_after_max_reconnect_attempts(
 async def test_async_wait_for_terminal_enforces_minimum_client_cadence(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    sleep_calls: list[float] = []
-    clock_now = [0.0]
+    class _Clock:
+        def __init__(self) -> None:
+            self.now = 0.0
+            self.sleep_calls: list[float] = []
 
-    monkeypatch.setattr(watchers_module.time, "monotonic", lambda: clock_now[0])
+        def monotonic(self) -> float:
+            return self.now
 
-    async def fake_sleep(seconds: float) -> None:
-        sleep_calls.append(seconds)
-        clock_now[0] += seconds
+        def advance(self, seconds: float) -> None:
+            self.sleep_calls.append(seconds)
+            self.now += seconds
 
-    monkeypatch.setattr(watchers_module.asyncio, "sleep", fake_sleep)
+    clock = _Clock()
+    monkeypatch.setattr(client_module.time, "monotonic", clock.monotonic)
+
+    async def fake_async_sleep(seconds: float) -> None:
+        clock.advance(seconds)
+
+    monkeypatch.setattr(client_module.asyncio, "sleep", fake_async_sleep)
 
     statuses = iter(["pending", "success"])
     wait_values: list[float] = []
 
-    async def fake_poll(task_id: str, wait: float) -> TaskStatusResponse:
+    async def fake_poll(
+        self,
+        task_id: str,
+        wait: float,
+        async_client,
+    ) -> TaskStatusResponse:
         wait_values.append(wait)
         return _status_response(task_id=task_id, status=next(statuses))
 
-    watcher = AsyncPollingWatcher(
-        poll_status=fake_poll,
-        poll_server_wait=0.5,
-        poll_client_interval=None,
-        default_timeout=5.0,
-    )
-    updates = [u async for u in watcher.iter_updates(task_id="task-1")]
+    with DoclingServiceClient(url=TEST_BASE_URL, poll_server_wait=0.5) as client:
+        client._poll_task_status_async = MethodType(fake_poll, client)
+        result = await client._wait_for_terminal_status_async(
+            task_id="task-1",
+            timeout=5.0,
+            async_client=None,  # type: ignore[arg-type]
+        )
 
-    assert [u.task_status for u in updates] == ["pending", "success"]
+    assert result.task_status == "success"
     assert wait_values == [0.5, 0.5]
-    assert sleep_calls == [pytest.approx(0.5)]
+    assert clock.sleep_calls == [pytest.approx(0.5)]
 
 
 @pytest.mark.anyio
 async def test_async_wait_for_terminal_supports_explicit_client_interval(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    sleep_calls: list[float] = []
-    clock_now = [0.0]
+    class _Clock:
+        def __init__(self) -> None:
+            self.now = 0.0
+            self.sleep_calls: list[float] = []
 
-    monkeypatch.setattr(watchers_module.time, "monotonic", lambda: clock_now[0])
+        def monotonic(self) -> float:
+            return self.now
 
-    async def fake_sleep(seconds: float) -> None:
-        sleep_calls.append(seconds)
-        clock_now[0] += seconds
+        def advance(self, seconds: float) -> None:
+            self.sleep_calls.append(seconds)
+            self.now += seconds
 
-    monkeypatch.setattr(watchers_module.asyncio, "sleep", fake_sleep)
+    clock = _Clock()
+    monkeypatch.setattr(client_module.time, "monotonic", clock.monotonic)
+
+    async def fake_async_sleep(seconds: float) -> None:
+        clock.advance(seconds)
+
+    monkeypatch.setattr(client_module.asyncio, "sleep", fake_async_sleep)
 
     statuses = iter(["pending", "success"])
     wait_values: list[float] = []
 
-    async def fake_poll(task_id: str, wait: float) -> TaskStatusResponse:
+    async def fake_poll(
+        self,
+        task_id: str,
+        wait: float,
+        async_client,
+    ) -> TaskStatusResponse:
         wait_values.append(wait)
         return _status_response(task_id=task_id, status=next(statuses))
 
-    watcher = AsyncPollingWatcher(
-        poll_status=fake_poll,
+    with DoclingServiceClient(
+        url=TEST_BASE_URL,
         poll_server_wait=5.0,
         poll_client_interval=1.0,
-        default_timeout=10.0,
-    )
-    updates = [u async for u in watcher.iter_updates(task_id="task-1")]
+    ) as client:
+        client._poll_task_status_async = MethodType(fake_poll, client)
+        result = await client._wait_for_terminal_status_async(
+            task_id="task-1",
+            timeout=10.0,
+            async_client=None,  # type: ignore[arg-type]
+        )
 
-    assert [u.task_status for u in updates] == ["pending", "success"]
+    assert result.task_status == "success"
     assert wait_values == [5.0, 5.0]
-    assert sleep_calls == [pytest.approx(1.0)]
+    assert clock.sleep_calls == [pytest.approx(1.0)]
 
 
 def test_convert_all_uses_async_pipeline_and_preserves_order(tmp_path) -> None:
@@ -1140,7 +1188,9 @@ def test_submit_and_retrieve_many_consumes_iterable_incrementally(
             return _status_response(f"task-{Path(source).name}", "pending")
 
         async def fake_wait(self, task_id, timeout, async_client):
-            await asyncio.sleep(0)
+            await asyncio.sleep(
+                0
+            )  # yield so the event loop can process completed results
             return _status_response(task_id, "success")
 
         async def fake_fetch_payload(self, task_id, last_status, async_client):
@@ -1198,6 +1248,111 @@ def test_submit_and_retrieve_many_rejects_invalid_max_in_flight(
                 max_in_flight=value,
                 target=InBodyTarget(),
             )
+
+
+@pytest.mark.anyio
+async def test_submit_and_retrieve_many_prefers_websocket_wait_at_or_below_threshold() -> (
+    None
+):
+    with DoclingServiceClient(
+        url=TEST_BASE_URL,
+        status_watcher="websocket",
+    ) as client:
+        seen: list[tuple[str, float | None]] = []
+
+        def fake_wait_for_terminal(
+            task_id: str, timeout: float | None
+        ) -> TaskStatusResponse:
+            seen.append((task_id, timeout))
+            return _status_response(task_id, "success")
+
+        client._ws_watcher.wait_for_terminal = fake_wait_for_terminal  # type: ignore[method-assign]
+
+        result = await client._wait_for_terminal_status_for_submit_and_retrieve_many_async(
+            task_id="task-1",
+            timeout=3.0,
+            async_client=None,  # type: ignore[arg-type]
+            max_in_flight=client_module.SUBMIT_AND_RETRIEVE_MANY_MAX_IN_FLIGHT_WEBSOCKETS,
+        )
+
+    assert result.task_status == "success"
+    assert seen == [("task-1", 3.0)]
+
+
+@pytest.mark.anyio
+async def test_submit_and_retrieve_many_uses_polling_above_websocket_threshold() -> (
+    None
+):
+    with DoclingServiceClient(
+        url=TEST_BASE_URL,
+        status_watcher="websocket",
+    ) as client:
+        seen: list[tuple[str, float, object]] = []
+
+        async def fake_wait_async(self, task_id, timeout, async_client):
+            seen.append((task_id, timeout, async_client))
+            return _status_response(task_id, "success")
+
+        def fail_wait_for_terminal(
+            task_id: str, timeout: float | None
+        ) -> TaskStatusResponse:
+            raise AssertionError("websocket wait should not be used above threshold")
+
+        client._wait_for_terminal_status_async = MethodType(fake_wait_async, client)
+        client._ws_watcher.wait_for_terminal = fail_wait_for_terminal  # type: ignore[method-assign]
+
+        marker = object()
+        result = (
+            await client._wait_for_terminal_status_for_submit_and_retrieve_many_async(
+                task_id="task-2",
+                timeout=4.0,
+                async_client=marker,  # type: ignore[arg-type]
+                max_in_flight=(
+                    client_module.SUBMIT_AND_RETRIEVE_MANY_MAX_IN_FLIGHT_WEBSOCKETS + 1
+                ),
+            )
+        )
+
+    assert result.task_status == "success"
+    assert seen == [("task-2", 4.0, marker)]
+
+
+@pytest.mark.anyio
+async def test_submit_and_retrieve_many_respects_explicit_polling_watcher_for_waits() -> (
+    None
+):
+    with DoclingServiceClient(
+        url=TEST_BASE_URL,
+        status_watcher="polling",
+    ) as client:
+        seen: list[tuple[str, float, object]] = []
+
+        async def fake_wait_async(self, task_id, timeout, async_client):
+            seen.append((task_id, timeout, async_client))
+            return _status_response(task_id, "success")
+
+        def fail_wait_for_terminal(
+            task_id: str, timeout: float | None
+        ) -> TaskStatusResponse:
+            raise AssertionError(
+                "websocket wait should not be used for polling watcher"
+            )
+
+        client._wait_for_terminal_status_async = MethodType(fake_wait_async, client)
+        client._ws_watcher.wait_for_terminal = fail_wait_for_terminal  # type: ignore[method-assign]
+
+        marker = object()
+        result = (
+            await client._wait_for_terminal_status_for_submit_and_retrieve_many_async(
+                task_id="task-3",
+                timeout=5.0,
+                async_client=marker,  # type: ignore[arg-type]
+                max_in_flight=1,
+            )
+        )
+
+    assert result.task_status == "success"
+    assert seen == [("task-3", 5.0, marker)]
 
 
 @pytest.mark.anyio
@@ -2199,14 +2354,12 @@ def test_get_transport_error_after_all_retries_raises_service_unavailable_error(
 async def test_503_with_retry_after_header_retries_async(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from docling.service_client._async_client import AsyncDoclingServiceClient
-
     sleep_calls: list[float] = []
 
     async def fake_sleep(s: float) -> None:
         sleep_calls.append(s)
 
-    monkeypatch.setattr(_async_client_module.asyncio, "sleep", fake_sleep)
+    monkeypatch.setattr(client_module.asyncio, "sleep", fake_sleep)
 
     call_count = 0
 
@@ -2220,12 +2373,9 @@ async def test_503_with_retry_after_header_retries_async(
                 )
             return httpx.Response(200, json={})
 
-        async def aclose(self) -> None:
-            pass
-
-    async with AsyncDoclingServiceClient(url=TEST_BASE_URL) as async_client:
-        async_client._async_client = FakeAsyncClient()  # type: ignore[assignment]
-        response = await async_client._request_with_retry(
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        response = await client._request_with_retry_async(
+            async_client=FakeAsyncClient(),  # type: ignore[arg-type]
             method="POST",
             path="/v1/convert/source/async",
             retries=1,
@@ -2239,14 +2389,12 @@ async def test_503_with_retry_after_header_retries_async(
 async def test_429_with_retry_after_header_retries_async(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from docling.service_client._async_client import AsyncDoclingServiceClient
-
     sleep_calls: list[float] = []
 
     async def fake_sleep(s: float) -> None:
         sleep_calls.append(s)
 
-    monkeypatch.setattr(_async_client_module.asyncio, "sleep", fake_sleep)
+    monkeypatch.setattr(client_module.asyncio, "sleep", fake_sleep)
 
     call_count = 0
 
@@ -2260,12 +2408,9 @@ async def test_429_with_retry_after_header_retries_async(
                 )
             return httpx.Response(200, json={})
 
-        async def aclose(self) -> None:
-            pass
-
-    async with AsyncDoclingServiceClient(url=TEST_BASE_URL) as async_client:
-        async_client._async_client = FakeAsyncClient()  # type: ignore[assignment]
-        response = await async_client._request_with_retry(
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        response = await client._request_with_retry_async(
+            async_client=FakeAsyncClient(),  # type: ignore[arg-type]
             method="POST",
             path="/v1/convert/source/async",
             retries=1,
@@ -2279,14 +2424,12 @@ async def test_429_with_retry_after_header_retries_async(
 async def test_502_retries_with_exponential_backoff_async(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from docling.service_client._async_client import AsyncDoclingServiceClient
-
     sleep_calls: list[float] = []
 
     async def fake_sleep(s: float) -> None:
         sleep_calls.append(s)
 
-    monkeypatch.setattr(_async_client_module.asyncio, "sleep", fake_sleep)
+    monkeypatch.setattr(client_module.asyncio, "sleep", fake_sleep)
 
     call_count = 0
 
@@ -2298,12 +2441,9 @@ async def test_502_retries_with_exponential_backoff_async(
                 return httpx.Response(502, json={"detail": "bad gateway"})
             return httpx.Response(200, json={})
 
-        async def aclose(self) -> None:
-            pass
-
-    async with AsyncDoclingServiceClient(url=TEST_BASE_URL) as async_client:
-        async_client._async_client = FakeAsyncClient()  # type: ignore[assignment]
-        response = await async_client._request_with_retry(
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        response = await client._request_with_retry_async(
+            async_client=FakeAsyncClient(),  # type: ignore[arg-type]
             method="POST",
             path="/v1/convert/source/async",
             retries=3,
@@ -2317,14 +2457,12 @@ async def test_502_retries_with_exponential_backoff_async(
 async def test_get_transport_error_retries_async(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from docling.service_client._async_client import AsyncDoclingServiceClient
-
     sleep_calls: list[float] = []
 
     async def fake_sleep(s: float) -> None:
         sleep_calls.append(s)
 
-    monkeypatch.setattr(_async_client_module.asyncio, "sleep", fake_sleep)
+    monkeypatch.setattr(client_module.asyncio, "sleep", fake_sleep)
 
     call_count = 0
 
@@ -2336,12 +2474,9 @@ async def test_get_transport_error_retries_async(
                 raise httpx.ConnectTimeout("connect timed out")
             return httpx.Response(200, json={})
 
-        async def aclose(self) -> None:
-            pass
-
-    async with AsyncDoclingServiceClient(url=TEST_BASE_URL) as async_client:
-        async_client._async_client = FakeAsyncClient()  # type: ignore[assignment]
-        response = await async_client._request_with_retry(
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        response = await client._request_with_retry_async(
+            async_client=FakeAsyncClient(),  # type: ignore[arg-type]
             method="GET",
             path="/v1/result/task-123",
         )
@@ -2352,8 +2487,6 @@ async def test_get_transport_error_retries_async(
 
 @pytest.mark.anyio
 async def test_post_transport_error_does_not_retry_async() -> None:
-    from docling.service_client._async_client import AsyncDoclingServiceClient
-
     call_count = 0
 
     class FakeAsyncClient:
@@ -2362,16 +2495,13 @@ async def test_post_transport_error_does_not_retry_async() -> None:
             call_count += 1
             raise httpx.ConnectTimeout("connect timed out")
 
-        async def aclose(self) -> None:
-            pass
-
-    async with AsyncDoclingServiceClient(url=TEST_BASE_URL) as async_client:
-        async_client._async_client = FakeAsyncClient()  # type: ignore[assignment]
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
         with pytest.raises(
             ServiceUnavailableError,
             match="Service transport request failed",
         ):
-            await async_client._request_with_retry(
+            await client._request_with_retry_async(
+                async_client=FakeAsyncClient(),  # type: ignore[arg-type]
                 method="POST",
                 path="/v1/convert/source/async",
                 retries=3,
@@ -2441,6 +2571,457 @@ def test_page_range_json_serialization_is_warning_free() -> None:
         "PydanticSerializationUnexpectedValue" not in str(warning.message)
         for warning in caught
     )
+
+
+# ---------------------------------------------------------------------------
+# Presigned materialization for high-level convert()/convert_all()
+# ---------------------------------------------------------------------------
+
+
+def _sample_document_with_images() -> DoclingDocument:
+    doc = DoclingDocument(name="sample")
+    page_img = PILImage.new("RGB", (40, 30), (10, 20, 30))
+    doc.add_page(
+        page_no=1,
+        size=Size(width=40, height=30),
+        image=ImageRef.from_pil(page_img, dpi=72),
+    )
+    pic_img = PILImage.new("RGB", (12, 8), (200, 100, 50))
+    prov = ProvenanceItem(
+        page_no=1, bbox=BoundingBox(l=0, t=0, r=12, b=8), charspan=(0, 0)
+    )
+    doc.add_picture(image=ImageRef.from_pil(pic_img, dpi=72), prov=prov)
+    return doc
+
+
+def _referenced_bundle_bytes() -> bytes:
+    """Build a resource-bundle ZIP the way the server does: doc JSON at the root
+    plus the externalized images under artifacts/ (REFERENCED mode)."""
+    doc = _sample_document_with_images()
+    with tempfile.TemporaryDirectory() as tmp:
+        base = Path(tmp)
+        doc.save_as_json(
+            base / "sample.json",
+            image_mode=ImageRefMode.REFERENCED,
+            artifacts_dir=Path("artifacts"),
+        )
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as bundle_zip:
+            for path in sorted(base.rglob("*")):
+                if path.is_file():
+                    bundle_zip.write(path, arcname=path.relative_to(base).as_posix())
+        return buf.getvalue()
+
+
+def _embedded_json_bytes() -> bytes:
+    return _sample_document_with_images().model_dump_json().encode("utf-8")
+
+
+def _presigned_response(
+    artifacts: list[dict], *, filename: str = "sample.pdf", status: str = "success"
+) -> PresignedUrlConvertResponse:
+    return PresignedUrlConvertResponse(
+        num_converted=1,
+        num_succeeded=1 if status == "success" else 0,
+        num_partially_succeeded=0,
+        num_failed=0,
+        processing_time=0.1,
+        documents=[
+            {
+                "source_index": 0,
+                "source_uri": filename,
+                "filename": filename,
+                "status": status,
+                "artifacts": artifacts,
+            }
+        ],
+    )
+
+
+def test_convert_presigned_bundle_materializes_embedded_images(tmp_path: Path) -> None:
+    bundle_bytes = _referenced_bundle_bytes()
+    seen_targets: list[type[object]] = []
+    downloaded: list[str] = []
+
+    def fake_submit(self, source, options, target, request_headers=None):
+        seen_targets.append(type(target))
+        return _status_response("task-x", "pending")
+
+    def fake_wait(self, task_id, timeout):
+        return _status_response(task_id, "success")
+
+    def fake_fetch_presigned(self, task_id, last_status):
+        return _presigned_response(
+            [
+                {
+                    "artifact_type": "json",
+                    "mime_type": "application/json",
+                    "uri": "https://dl.example.org/sample.json",
+                },
+                {
+                    "artifact_type": "resource_bundle",
+                    "mime_type": "application/zip",
+                    "uri": "https://dl.example.org/sample_bundle.zip",
+                },
+            ]
+        )
+
+    def fake_download(self, uri):
+        downloaded.append(uri)
+        return bundle_bytes
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_convert_task = MethodType(fake_submit, client)
+        client._wait_for_terminal_status = MethodType(fake_wait, client)
+        client._fetch_presigned_result = MethodType(fake_fetch_presigned, client)
+        client._download_artifact_bytes = MethodType(fake_download, client)
+
+        source = tmp_path / "sample.pdf"
+        source.write_bytes(b"%PDF-1.4\n")
+        result = client.convert(source)
+
+    # Presigned is attempted first; the bundle (not the bare JSON) is downloaded.
+    assert seen_targets == [PresignedUrlTarget]
+    assert downloaded == ["https://dl.example.org/sample_bundle.zip"]
+    assert result.status == ConversionStatus.SUCCESS
+    assert result.input.file.name == "sample.pdf"
+
+    pictures = [
+        item
+        for item, _ in result.document.iterate_items()
+        if isinstance(item, PictureItem)
+    ]
+    assert pictures and pictures[0].image is not None
+    assert str(pictures[0].image.uri).startswith("data:image")
+    assert pictures[0].image.pil_image.size == (12, 8)
+
+    page_image = result.document.pages[1].image
+    assert page_image is not None
+    assert str(page_image.uri).startswith("data:image")
+    assert page_image.pil_image.size == (40, 30)
+
+
+def test_convert_presigned_json_only_is_self_contained(tmp_path: Path) -> None:
+    json_bytes = _embedded_json_bytes()
+    downloaded: list[str] = []
+
+    def fake_submit(self, source, options, target, request_headers=None):
+        return _status_response("task-x", "pending")
+
+    def fake_wait(self, task_id, timeout):
+        return _status_response(task_id, "success")
+
+    def fake_fetch_presigned(self, task_id, last_status):
+        return _presigned_response(
+            [
+                {
+                    "artifact_type": "json",
+                    "mime_type": "application/json",
+                    "uri": "https://dl.example.org/sample.json",
+                }
+            ]
+        )
+
+    def fake_download(self, uri):
+        downloaded.append(uri)
+        return json_bytes
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_convert_task = MethodType(fake_submit, client)
+        client._wait_for_terminal_status = MethodType(fake_wait, client)
+        client._fetch_presigned_result = MethodType(fake_fetch_presigned, client)
+        client._download_artifact_bytes = MethodType(fake_download, client)
+
+        source = tmp_path / "sample.pdf"
+        source.write_bytes(b"%PDF-1.4\n")
+        result = client.convert(source)
+
+    assert downloaded == ["https://dl.example.org/sample.json"]
+    assert result.status == ConversionStatus.SUCCESS
+    pictures = [
+        item
+        for item, _ in result.document.iterate_items()
+        if isinstance(item, PictureItem)
+    ]
+    assert pictures and str(pictures[0].image.uri).startswith("data:image")
+
+
+def test_convert_falls_back_to_inbody_when_presigned_is_rejected(
+    tmp_path: Path,
+) -> None:
+    seen_targets: list[type[object]] = []
+
+    def fake_submit(self, source, options, target, request_headers=None):
+        seen_targets.append(type(target))
+        if isinstance(target, PresignedUrlTarget):
+            raise ServiceError(
+                "Task submission failed.",
+                status_code=422,
+                detail=(
+                    "Presigned URL target requires artifact storage to be configured "
+                    "and enabled on the server."
+                ),
+            )
+        return _status_response("task-x", "pending")
+
+    def fake_wait(self, task_id, timeout):
+        return _status_response(task_id, "success")
+
+    def fake_fetch_payload(self, task_id, last_status):
+        return _convert_payload("sample.pdf")
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_convert_task = MethodType(fake_submit, client)
+        client._wait_for_terminal_status = MethodType(fake_wait, client)
+        client._fetch_convert_result_payload = MethodType(fake_fetch_payload, client)
+
+        source = tmp_path / "sample.pdf"
+        source.write_bytes(b"%PDF-1.4\n")
+        result = client.convert(source)
+
+    assert seen_targets == [PresignedUrlTarget, InBodyTarget]
+    assert result.status == ConversionStatus.SUCCESS
+
+
+def test_convert_download_failure_degrades_gracefully(tmp_path: Path) -> None:
+    def fake_submit(self, source, options, target, request_headers=None):
+        return _status_response("task-x", "pending")
+
+    def fake_wait(self, task_id, timeout):
+        return _status_response(task_id, "success")
+
+    def fake_fetch_presigned(self, task_id, last_status):
+        return _presigned_response(
+            [
+                {
+                    "artifact_type": "resource_bundle",
+                    "mime_type": "application/zip",
+                    "uri": "https://dl.example.org/sample_bundle.zip",
+                }
+            ]
+        )
+
+    def fake_download(self, uri):
+        raise ArtifactDownloadError("Artifact download failed: boom")
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_convert_task = MethodType(fake_submit, client)
+        client._wait_for_terminal_status = MethodType(fake_wait, client)
+        client._fetch_presigned_result = MethodType(fake_fetch_presigned, client)
+        client._download_artifact_bytes = MethodType(fake_download, client)
+
+        source = tmp_path / "sample.pdf"
+        source.write_bytes(b"%PDF-1.4\n")
+
+        result = client.convert(source, raises_on_error=False)
+        assert result.status == ConversionStatus.FAILURE
+        assert result.errors
+        assert "boom" in result.errors[0].error_message
+
+        with pytest.raises(ConversionError):
+            client.convert(source)
+
+
+def test_convert_presigned_failed_item_preserves_server_errors(tmp_path: Path) -> None:
+    # A server-side FAILURE arrives with the real status/errors and no document
+    # artifacts; materialization must surface those, not a generic "no artifact".
+    server_error = ErrorItem(
+        component_type=DoclingComponentType.MODEL,
+        module_name="docling.pipeline",
+        error_message="OCR engine crashed on page 3",
+    )
+
+    def fake_submit(self, source, options, target, request_headers=None):
+        return _status_response("task-x", "pending")
+
+    def fake_wait(self, task_id, timeout):
+        return _status_response(task_id, "success")
+
+    def fake_fetch_presigned(self, task_id, last_status):
+        return PresignedUrlConvertResponse(
+            num_converted=1,
+            num_succeeded=0,
+            num_partially_succeeded=0,
+            num_failed=1,
+            processing_time=0.1,
+            documents=[
+                {
+                    "source_index": 0,
+                    "source_uri": "sample.pdf",
+                    "filename": "sample.pdf",
+                    "status": "failure",
+                    "errors": [server_error.model_dump()],
+                    "artifacts": [],
+                }
+            ],
+        )
+
+    def fake_download(self, uri):
+        raise AssertionError("must not download artifacts for a failed item")
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_convert_task = MethodType(fake_submit, client)
+        client._wait_for_terminal_status = MethodType(fake_wait, client)
+        client._fetch_presigned_result = MethodType(fake_fetch_presigned, client)
+        client._download_artifact_bytes = MethodType(fake_download, client)
+
+        source = tmp_path / "sample.pdf"
+        source.write_bytes(b"%PDF-1.4\n")
+        result = client.convert(source, raises_on_error=False)
+
+    assert result.status == ConversionStatus.FAILURE
+    assert [e.error_message for e in result.errors] == ["OCR engine crashed on page 3"]
+
+
+def test_convert_presigned_bundle_rejects_image_outside_bundle(tmp_path: Path) -> None:
+    # A malicious bundle whose JSON references an image outside the extract dir
+    # must be rejected rather than reading arbitrary local files.
+    doc = _sample_document_with_images()
+    with tempfile.TemporaryDirectory() as tmp:
+        base = Path(tmp)
+        doc.save_as_json(
+            base / "sample.json",
+            image_mode=ImageRefMode.REFERENCED,
+            artifacts_dir=Path("artifacts"),
+        )
+        json_path = base / "sample.json"
+        json_path.write_text(
+            json_path.read_text().replace("artifacts/", "../../../etc/")
+        )
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as bundle_zip:
+            bundle_zip.write(json_path, arcname="sample.json")
+        bundle_bytes = buf.getvalue()
+
+    def fake_submit(self, source, options, target, request_headers=None):
+        return _status_response("task-x", "pending")
+
+    def fake_wait(self, task_id, timeout):
+        return _status_response(task_id, "success")
+
+    def fake_fetch_presigned(self, task_id, last_status):
+        return _presigned_response(
+            [
+                {
+                    "artifact_type": "resource_bundle",
+                    "mime_type": "application/zip",
+                    "uri": "https://dl.example.org/sample_bundle.zip",
+                }
+            ]
+        )
+
+    def fake_download(self, uri):
+        return bundle_bytes
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_convert_task = MethodType(fake_submit, client)
+        client._wait_for_terminal_status = MethodType(fake_wait, client)
+        client._fetch_presigned_result = MethodType(fake_fetch_presigned, client)
+        client._download_artifact_bytes = MethodType(fake_download, client)
+
+        source = tmp_path / "sample.pdf"
+        source.write_bytes(b"%PDF-1.4\n")
+        result = client.convert(source, raises_on_error=False)
+
+    assert result.status == ConversionStatus.FAILURE
+    assert "outside the bundle" in result.errors[0].error_message
+
+
+def test_convert_all_materializes_presigned_results_in_order(tmp_path: Path) -> None:
+    bundle_bytes = _referenced_bundle_bytes()
+
+    async def fake_many(self, item_list, max_in_flight, ordered, target=None):
+        assert target is None
+        for item in list(item_list):
+            name = Path(item.source).name
+            yield (
+                item,
+                _presigned_response(
+                    [
+                        {
+                            "artifact_type": "resource_bundle",
+                            "mime_type": "application/zip",
+                            "uri": f"https://dl.example.org/{name}.zip",
+                        }
+                    ],
+                    filename=name,
+                ),
+            )
+
+    async def fake_download_async(self, uri):
+        return bundle_bytes
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_and_retrieve_many_async = MethodType(fake_many, client)
+        client._download_artifact_bytes_async = MethodType(fake_download_async, client)
+
+        paths = []
+        for name in ("a.pdf", "b.pdf", "c.pdf"):
+            p = tmp_path / name
+            p.write_bytes(b"%PDF-1.4\n")
+            paths.append(p)
+
+        results = list(client.convert_all(paths))
+
+    assert [r.input.file.name for r in results] == ["a.pdf", "b.pdf", "c.pdf"]
+    assert all(r.status == ConversionStatus.SUCCESS for r in results)
+    for result in results:
+        pictures = [
+            item
+            for item, _ in result.document.iterate_items()
+            if isinstance(item, PictureItem)
+        ]
+        assert pictures and str(pictures[0].image.uri).startswith("data:image")
+
+
+@pytest.mark.parametrize(
+    "url, expected",
+    [
+        ("https://8.8.8.8/artifact.zip", True),
+        ("https://127.0.0.1/artifact.zip", False),
+        ("http://10.1.2.3/artifact.zip", False),
+        ("https://169.254.169.254/artifact.zip", False),
+        ("http://[::1]/artifact.zip", False),
+        ("ftp://8.8.8.8/artifact.zip", False),
+        ("not-a-url", False),
+    ],
+)
+def test_is_safe_artifact_url(url: str, expected: bool) -> None:
+    assert client_module._is_safe_artifact_url(url) is expected
+
+
+def test_convert_rejects_private_artifact_url_by_default(tmp_path: Path) -> None:
+    def fake_submit(self, source, options, target, request_headers=None):
+        return _status_response("task-x", "pending")
+
+    def fake_wait(self, task_id, timeout):
+        return _status_response(task_id, "success")
+
+    def fake_fetch_presigned(self, task_id, last_status):
+        return _presigned_response(
+            [
+                {
+                    "artifact_type": "resource_bundle",
+                    "mime_type": "application/zip",
+                    "uri": "http://127.0.0.1:9000/sample_bundle.zip",
+                }
+            ]
+        )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_convert_task = MethodType(fake_submit, client)
+        client._wait_for_terminal_status = MethodType(fake_wait, client)
+        client._fetch_presigned_result = MethodType(fake_fetch_presigned, client)
+
+        source = tmp_path / "sample.pdf"
+        source.write_bytes(b"%PDF-1.4\n")
+
+        # The SSRF guard fires before any network call, degrading to FAILURE.
+        result = client.convert(source, raises_on_error=False)
+
+    assert result.status == ConversionStatus.FAILURE
+    assert result.errors
+    assert "non-public URL" in result.errors[0].error_message
 
 
 # ---------------------------------------------------------------------------

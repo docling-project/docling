@@ -26,24 +26,53 @@ def get_converter():
     return converter
 
 
-def convert_jats_contribs(contribs: str, affiliations: str = "") -> DoclingDocument:
+def convert_jats_article_meta(article_meta: str) -> DoclingDocument:
     xml = f"""<!DOCTYPE article
 PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
 <article article-type="research-article">
   <front>
     <article-meta>
-      <title-group><article-title>Author Variant Test</article-title></title-group>
-      <contrib-group>{contribs}</contrib-group>
-      {affiliations}
+      {article_meta}
     </article-meta>
   </front>
 </article>
 """
-    stream = DocumentStream(
-        name="author-variant-test.nxml", stream=BytesIO(xml.encode())
-    )
+    stream = DocumentStream(name="article-meta-test.nxml", stream=BytesIO(xml.encode()))
     conv_result: ConversionResult = get_converter().convert(stream)
     return conv_result.document
+
+
+def convert_jats_contribs(contribs: str, affiliations: str = "") -> DoclingDocument:
+    return convert_jats_article_meta(
+        f"""
+      <title-group><article-title>Author Variant Test</article-title></title-group>
+      <contrib-group>{contribs}</contrib-group>
+      {affiliations}
+"""
+    )
+
+
+def test_jats_structured_abstract_sections_are_preserved():
+    doc = convert_jats_article_meta(
+        """
+      <title-group><article-title>Structured Abstract Test</article-title></title-group>
+      <abstract>
+        <sec>
+          <title>Background</title>
+          <p>Background text.</p>
+        </sec>
+        <sec>
+          <title>Methods</title>
+          <p>Methods text.</p>
+        </sec>
+      </abstract>
+"""
+    )
+
+    md = doc.export_to_markdown()
+    assert "## Abstract" in md
+    assert "Background: Background text." in md
+    assert "Methods: Methods text." in md
 
 
 @pytest.mark.parametrize(

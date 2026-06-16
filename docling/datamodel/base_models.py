@@ -13,6 +13,7 @@ from docling_core.types.doc import (
     TableCell,
 )
 from docling_core.types.doc.base import PydanticSerCtxKey, round_pydantic_float
+from docling_core.types.doc.document import Orientation
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
 from docling_core.types.io import (
     DocumentStream as DocumentStream,
@@ -77,12 +78,14 @@ class InputFormat(str, Enum):
     XML_USPTO = "xml_uspto"
     XML_JATS = "xml_jats"
     XML_XBRL = "xml_xbrl"
+    XML_DOCLANG = "xml_doclang"
     METS_GBS = "mets_gbs"
     JSON_DOCLING = "json_docling"
     AUDIO = "audio"
     VTT = "vtt"
     LATEX = "latex"
     EMAIL = "email"
+    EPUB = "epub"
 
 
 class OutputFormat(str, Enum):
@@ -94,6 +97,7 @@ class OutputFormat(str, Enum):
     TEXT = "text"
     DOCTAGS = "doctags"
     VTT = "vtt"
+    DOCLANG = "doclang"
 
 
 FormatToExtensions: dict[InputFormat, list[str]] = {
@@ -104,6 +108,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.HTML: ["html", "htm", "xhtml"],
     InputFormat.XML_JATS: ["xml", "nxml"],
     InputFormat.XML_XBRL: ["xml", "xbrl"],
+    InputFormat.XML_DOCLANG: ["dclg", "dclg.xml"],
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
@@ -115,6 +120,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.VTT: ["vtt"],
     InputFormat.LATEX: ["tex", "latex"],
     InputFormat.EMAIL: ["eml"],
+    InputFormat.EPUB: ["epub"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -130,6 +136,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.HTML: ["text/html", "application/xhtml+xml"],
     InputFormat.XML_JATS: ["application/xml"],
     InputFormat.XML_XBRL: ["application/xml", "application/xhtml+xml"],
+    InputFormat.XML_DOCLANG: ["application/xml"],
     InputFormat.IMAGE: [
         "image/png",
         "image/jpeg",
@@ -167,6 +174,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.VTT: ["text/vtt"],
     InputFormat.LATEX: ["text/x-tex", "application/x-tex", "text/x-latex"],
     InputFormat.EMAIL: ["message/rfc822"],
+    InputFormat.EPUB: ["application/epub+zip"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
@@ -253,6 +261,7 @@ class Table(BasePageElement):
     otsl_seq: list[str]
     num_rows: int = 0
     num_cols: int = 0
+    orientation: Orientation = Orientation.ROT_0
     table_cells: list[TableCell]
 
 

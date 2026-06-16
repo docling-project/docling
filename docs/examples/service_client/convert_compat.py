@@ -1,4 +1,3 @@
-# NOTE: docling.service_client is experimental and may change in future releases.
 from __future__ import annotations
 
 import os
