@@ -78,7 +78,7 @@ enrichment:
         enabled: false  # 동작 보존: 기존 하드코딩 toc_precheck_enabled=False
         max_context_tokens: 128000
         completion_reserved_tokens: 12000
-      # 반복(degeneration) 억제. 게이트웨이/vLLM 지원 시 주석 해제(예 1.1). 미설정 시 미전송.
+      # 반복(degeneration) 억제. 미설정 시 미전송.
       repetition_penalty: 1.1
       system_prompt_file: prompt_toc_default_system.md
       user_prompt_file: prompt_toc_default_user.md
