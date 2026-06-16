@@ -369,7 +369,7 @@ whisper:
 | `toc.precheck` | `max_context_tokens` | `128000` | 모델 전체 컨텍스트 한도 (입력 + 출력 합산) |
 | `toc.precheck` | `completion_reserved_tokens` | `12000` | 출력용 예약 토큰 수. 허용 입력 = `max_context_tokens` − `completion_reserved_tokens` |
 | `toc.split` | `enabled` | `false` | 긴 문서 **분할(Split) TOC 추출**(carry-over refine) 수행 여부(아래 참고) |
-| `toc.split` | `pages_per_chunk` / `page_overlap` | `5` / `0` | 청크당 페이지 수 / 청크 경계 중복 페이지 수 |
+| `toc.split` | `pages_per_chunk` / `page_overlap` | `100` / `1` | 청크당 페이지 수 / 청크 경계 중복 페이지 수 |
 | `toc.split` | `carryover_max_tokens` | `1500` | 다음 청크에 주입할 누적 목차(outline) 토큰 상한 |
 | `toc` | `repetition_penalty` | — | 토큰 반복(degeneration) 억제(>1.0). 게이트웨이/vLLM 지원 시에만, 미설정 시 미전송 |
 | `metadata` | `url` | `""` | 메타데이터 추출 LLM API URL |
@@ -413,8 +413,8 @@ whisper:
     user_prompt_file: prompt_toc_default_user.md
     split:
       enabled: false            # true 면 길이와 무관하게 항상 분할 추출
-      pages_per_chunk: 5        # 청크당 페이지 수
-      page_overlap: 0           # 청크 경계 중복 페이지 수(경계 누락 완화용)
+      pages_per_chunk: 100      # 청크당 페이지 수
+      page_overlap: 1           # 청크 경계 중복 페이지 수(경계 누락 완화용)
       carryover_max_tokens: 1500
     # repetition_penalty: 1.1   # 반복 억제가 필요할 때만 주석 해제
 ```

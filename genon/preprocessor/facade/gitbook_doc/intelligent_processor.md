@@ -353,7 +353,7 @@ docling PDF 파싱 성능/품질 노브입니다.
 | `system_prompt_file` / `user_prompt_file` | 프롬프트 `.md` 파일 경로(권장, config 디렉토리 기준). `user_prompt` 의 `{{raw_text}}` 치환 | — |
 | `system_prompt` / `user_prompt` | inline 프롬프트(`*_file` 미지정 시 fallback) | — |
 | `split.enabled` | 긴 문서 **분할(Split) TOC 추출** 수행 여부(아래 참고) | false |
-| `split.pages_per_chunk` / `split.page_overlap` | 청크당 페이지 수 / 청크 경계 중복 페이지 수 | 5 / 0 |
+| `split.pages_per_chunk` / `split.page_overlap` | 청크당 페이지 수 / 청크 경계 중복 페이지 수 | 100 / 1 |
 | `split.carryover_max_tokens` | 다음 청크에 주입할 누적 목차(outline) 토큰 상한 | 1500 |
 | `repetition_penalty` | 토큰 반복(degeneration) 억제(>1.0). 게이트웨이/vLLM 지원 시에만 사용, 미설정 시 미전송 | — |
 
@@ -372,8 +372,8 @@ docling PDF 파싱 성능/품질 노브입니다.
     user_prompt_file: prompt_toc_default_user.md
     split:
       enabled: false            # true 면 길이와 무관하게 항상 분할 추출
-      pages_per_chunk: 5        # 청크당 페이지 수
-      page_overlap: 0           # 청크 경계 중복 페이지 수(경계 누락 완화용)
+      pages_per_chunk: 100      # 청크당 페이지 수
+      page_overlap: 1           # 청크 경계 중복 페이지 수(경계 누락 완화용)
       carryover_max_tokens: 1500
     # repetition_penalty: 1.1   # 반복 억제가 필요할 때만 주석 해제
 ```

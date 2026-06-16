@@ -274,7 +274,7 @@ class DocumentEnrichmentUtils:
         m = re.match(r'\[?\s*별지\s*제\s*(\d+)\s*호', title)
         if m:
             return 'BJ:별지제' + m.group(1) + '호'
-        m = re.match(r'제\s*\d+\s*조(?:\s*의\s*\d+)?', title)
+        m = re.match(r'제\s*\d+\s*조(?:\s*의\s*\d+)*', title)
         if m:
             return 'JO:' + re.sub(r'\s+', '', m.group(0))
         base = re.sub(r'\s*[\(（]\s*(?:계속|continued)\s*[\)）]\s*$', '', title, flags=re.I)
@@ -468,15 +468,15 @@ class DocumentEnrichmentUtils:
         return len(text or "")
 
     @staticmethod
-    def _item_page_no(item, default_page_no: int) -> Optional[int]:
-        """text item의 prov[0].page_no를 안전하게 얻는다(없으면 None)."""
+    def _item_page_no(item, default_page_no: int) -> int:
+        """text item의 prov[0].page_no를 안전하게 얻는다(없거나 비정상이면 default_page_no)."""
         prov_list = getattr(item, "prov", None) or []
         if not prov_list:
-            return None
+            return default_page_no
         page_no = getattr(prov_list[0], "page_no", None)
         if isinstance(page_no, int) and page_no > 0:
             return page_no
-        return None
+        return default_page_no
 
     def _chunk_by_pages(
         self, document, pages_per_chunk: int, page_overlap: int
@@ -501,8 +501,6 @@ class DocumentEnrichmentUtils:
             if not cleaned:
                 continue
             pno = self._item_page_no(text, last_page)
-            if pno is None:
-                pno = last_page
             last_page = pno
             page_lines.setdefault(pno, []).append(cleaned)
 
