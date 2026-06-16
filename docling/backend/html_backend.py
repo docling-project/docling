@@ -67,6 +67,7 @@ DEFAULT_IMAGE_HEIGHT = 128
 _BLOCK_TAGS: Final = {
     "address",
     "details",
+    "dl",
     "figure",
     "footer",
     "img",
@@ -2192,18 +2193,138 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     added_ref.append(im_ref)
         return added_ref
 
+    def _add_list_item_with_content(
+        self,
+        tag: Tag,
+        doc: DoclingDocument,
+        parent: RefItem,
+        enumerated: bool = False,
+        marker: str = "",
+        extra_formatting: Optional[Formatting] = None,
+    ) -> Optional[RefItem]:
+        """Helper method to add a list item with its content.
+
+        Handles both simple and complex content with inline groups.
+        Returns the created list item or None if no content.
+        """
+        # Extract text and hyperlinks
+        parts = self._extract_text_and_hyperlink_recursively(
+            tag, ignore_list=True, find_parent_annotation=True
+        )
+        min_parts = parts.simplify_text_elements()
+        item_text = re.sub(
+            r"\s+|\n+", " ", "".join([el.text for el in min_parts])
+        ).strip()
+
+        if not item_text:
+            return None
+
+        if len(min_parts) > 1:
+            # Complex content - create list item with inline group
+            item_prov = self._make_text_prov(text=item_text, tag=tag)
+            list_item = doc.add_list_item(
+                text="",
+                enumerated=enumerated,
+                marker=marker,
+                parent=parent,
+                content_layer=self.content_layer,
+                prov=item_prov,
+            )
+            self.parents[self.level + 1] = list_item
+            self.level += 1
+
+            with self._use_inline_group(min_parts, doc):
+                compacted_parts = self._compact_adjacent_single_char_parts(min_parts)
+                for annotated_text, source_tag_ids in compacted_parts:
+                    text_part = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
+                    clean_text = HTMLDocumentBackend._clean_unicode(text_part)
+
+                    # Apply extra formatting if provided
+                    formatting = annotated_text.formatting
+                    if extra_formatting:
+                        if extra_formatting.bold:
+                            if formatting is None:
+                                formatting = Formatting()
+                            formatting.bold = True
+
+                    prov = self._make_text_prov_for_source_tag_ids(
+                        text=clean_text,
+                        tag=tag,
+                        source_tag_ids=source_tag_ids,
+                    )
+
+                    if annotated_text.code:
+                        doc.add_code(
+                            parent=self.parents[self.level],
+                            text=clean_text,
+                            content_layer=self.content_layer,
+                            formatting=formatting,
+                            hyperlink=annotated_text.hyperlink,
+                            prov=prov,
+                        )
+                    else:
+                        doc.add_text(
+                            parent=self.parents[self.level],
+                            label=DocItemLabel.TEXT,
+                            text=clean_text,
+                            content_layer=self.content_layer,
+                            formatting=formatting,
+                            hyperlink=annotated_text.hyperlink,
+                            prov=prov,
+                        )
+
+            self.parents[self.level] = None
+            self.level -= 1
+            return list_item
+        else:
+            # Simple content - single text element
+            annotated_text = min_parts[0]
+            text = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
+            clean_text = HTMLDocumentBackend._clean_unicode(text)
+            prov = self._make_text_prov(
+                text=clean_text,
+                tag=tag,
+                source_tag_id=annotated_text.source_tag_id,
+            )
+
+            # Apply extra formatting if provided
+            formatting = annotated_text.formatting
+            if extra_formatting:
+                if extra_formatting.bold:
+                    if formatting is None:
+                        formatting = Formatting()
+                    formatting.bold = True
+
+            list_item = doc.add_list_item(
+                text=clean_text,
+                enumerated=enumerated,
+                marker=marker,
+                orig=text,
+                parent=parent,
+                content_layer=self.content_layer,
+                formatting=formatting,
+                hyperlink=annotated_text.hyperlink,
+                prov=prov,
+            )
+            return list_item
+
     def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:  # noqa: C901
         tag_name = tag.name.lower()
         start: Optional[int] = None
         name: str = ""
         is_ordered = tag_name == "ol"
-        if is_ordered:
+        is_description = tag_name == "dl"
+
+        if is_description:
+            name = "description list"
+        elif is_ordered:
             start_attr = tag.get("start")
             if isinstance(start_attr, str) and start_attr.isnumeric():
                 start = int(start_attr)
             name = "ordered list" + (f" start {start}" if start is not None else "")
         else:
             name = "list"
+
         # Create the list container
         list_group = doc.add_list_group(
             name=name,
@@ -2216,7 +2337,68 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.ctx.list_start_by_ref[list_group.self_ref] = start
         self.level += 1
 
-        # For each top-level <li> in this list
+        # Handle description lists (<dl> with <dt> and <dd>)
+        if is_description:
+            current_dt_item = None
+            dd_group = None  # Group for multiple <dd> under same <dt>
+
+            children = tag.find_all(["dt", "dd"], recursive=False)
+
+            for i, child in enumerate(children):
+                if not isinstance(child, Tag):
+                    continue
+
+                child_name = child.name.lower()
+
+                if child_name == "dt":
+                    dd_group = None
+
+                    # Add term with bold formatting
+                    bold_formatting = Formatting()
+                    bold_formatting.bold = True
+                    current_dt_item = self._add_list_item_with_content(
+                        tag=child,
+                        doc=doc,
+                        parent=list_group,
+                        extra_formatting=bold_formatting,
+                    )
+                    if current_dt_item:
+                        self.parents[self.level + 1] = current_dt_item
+
+                        dd_count = 0
+                        for next_child in children[i + 1 :]:
+                            if isinstance(next_child, Tag):
+                                if next_child.name.lower() == "dd":
+                                    dd_count += 1
+                                elif next_child.name.lower() == "dt":
+                                    break
+
+                        if dd_count > 1:
+                            dd_group = doc.add_list_group(
+                                name="descriptions",
+                                parent=current_dt_item,
+                                content_layer=self.content_layer,
+                            )
+
+                elif child_name == "dd":
+                    dd_parent = dd_group or current_dt_item or list_group
+
+                    self._add_list_item_with_content(
+                        tag=child,
+                        doc=doc,
+                        parent=dd_parent,
+                    )
+
+                    # Handle any images in the description
+                    for img_tag in child("img"):
+                        if isinstance(img_tag, Tag):
+                            self._emit_image(img_tag, doc)
+
+            self.parents[self.level + 1] = None
+            self.level -= 1
+            return list_group.get_ref()
+
+        # For each top-level <li> in this list (ul/ol)
         for li in tag.find_all({"li", "ul", "ol"}, recursive=False):
             if not isinstance(li, Tag):
                 continue
@@ -2233,14 +2415,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     marker = ""
 
-                # 2) extract only the "direct" text from this <li>
-                parts = self._extract_text_and_hyperlink_recursively(
-                    li, ignore_list=True, find_parent_annotation=True
-                )
-                min_parts = parts.simplify_text_elements()
-                li_text = re.sub(
-                    r"\s+|\n+", " ", "".join([el.text for el in min_parts])
-                ).strip()
+                # 2) Find inputs and checkboxes in this <li>
                 inputs_in_li = [
                     input_tag
                     for input_tag in li.find_all("input")
@@ -2256,140 +2431,45 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if checkbox_tag.find_parent("li") is li
                 ]
 
-                # 3) add the list item
-                if li_text or inputs_in_li or custom_checkboxes_in_li:
-                    if len(min_parts) > 1:
-                        li_prov = self._make_text_prov(text=li_text, tag=li)
-                        # create an empty list element in order to hook the inline group onto that one
-                        self.parents[self.level + 1] = doc.add_list_item(
-                            text="",
-                            enumerated=is_ordered,
-                            marker=marker,
-                            parent=list_group,
-                            content_layer=self.content_layer,
-                            prov=li_prov,
-                        )
-                        self.level += 1
-                        with self._use_inline_group(min_parts, doc):
-                            compacted_parts = self._compact_adjacent_single_char_parts(
-                                min_parts
-                            )
-                            for annotated_text, source_tag_ids in compacted_parts:
-                                li_text = re.sub(
-                                    r"\s+|\n+", " ", annotated_text.text
-                                ).strip()
-                                li_clean = HTMLDocumentBackend._clean_unicode(li_text)
-                                if annotated_text.code:
-                                    prov = self._make_text_prov_for_source_tag_ids(
-                                        text=li_clean,
-                                        tag=li,
-                                        source_tag_ids=source_tag_ids,
-                                    )
-                                    doc.add_code(
-                                        parent=self.parents[self.level],
-                                        text=li_clean,
-                                        content_layer=self.content_layer,
-                                        formatting=annotated_text.formatting,
-                                        hyperlink=annotated_text.hyperlink,
-                                        prov=prov,
-                                    )
-                                else:
-                                    prov = self._make_text_prov_for_source_tag_ids(
-                                        text=li_clean,
-                                        tag=li,
-                                        source_tag_ids=source_tag_ids,
-                                    )
-                                    doc.add_text(
-                                        parent=self.parents[self.level],
-                                        label=DocItemLabel.TEXT,
-                                        text=li_clean,
-                                        content_layer=self.content_layer,
-                                        formatting=annotated_text.formatting,
-                                        hyperlink=annotated_text.hyperlink,
-                                        prov=prov,
-                                    )
+                # 3) Add the list item using the helper function
+                list_item = self._add_list_item_with_content(
+                    tag=li,
+                    doc=doc,
+                    parent=list_group,
+                    enumerated=is_ordered,
+                    marker=marker,
+                )
 
+                if list_item or inputs_in_li or custom_checkboxes_in_li:
+                    # If we created a list item, set it as parent for nested content
+                    if list_item:
+                        self.parents[self.level + 1] = list_item
+
+                    # Handle inputs and checkboxes
+                    if inputs_in_li or custom_checkboxes_in_li:
+                        self.level += 1
                         for input_tag in inputs_in_li:
                             if isinstance(input_tag, Tag):
                                 self._emit_input(input_tag, doc)
                         for checkbox_tag in custom_checkboxes_in_li:
                             if isinstance(checkbox_tag, Tag):
                                 self._emit_custom_checkbox(checkbox_tag, doc)
-
-                        # 4) recurse into any nested lists, attaching them to this <li> item
-                        for sublist in li({"ul", "ol"}, recursive=False):
-                            if isinstance(sublist, Tag):
-                                self._handle_block(sublist, doc)
-
-                        # now the list element with inline group is not a parent anymore
-                        self.parents[self.level] = None
                         self.level -= 1
-                    elif li_text:
-                        annotated_text = min_parts[0]
-                        li_text = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
-                        li_clean = HTMLDocumentBackend._clean_unicode(li_text)
-                        prov = self._make_text_prov(
-                            text=li_clean,
-                            tag=li,
-                            source_tag_id=annotated_text.source_tag_id,
-                        )
-                        self.parents[self.level + 1] = doc.add_list_item(
-                            text=li_clean,
-                            enumerated=is_ordered,
-                            marker=marker,
-                            orig=li_text,
-                            parent=list_group,
-                            content_layer=self.content_layer,
-                            formatting=annotated_text.formatting,
-                            hyperlink=annotated_text.hyperlink,
-                            prov=prov,
-                        )
 
-                        if inputs_in_li or custom_checkboxes_in_li:
+                    # 4) Recurse into any nested lists
+                    for sublist in li({"ul", "ol"}, recursive=False):
+                        if isinstance(sublist, Tag):
                             self.level += 1
-                            for input_tag in inputs_in_li:
-                                if isinstance(input_tag, Tag):
-                                    self._emit_input(input_tag, doc)
-                            for checkbox_tag in custom_checkboxes_in_li:
-                                if isinstance(checkbox_tag, Tag):
-                                    self._emit_custom_checkbox(checkbox_tag, doc)
+                            self._handle_block(sublist, doc)
+                            self.parents[self.level + 1] = None
                             self.level -= 1
-
-                        # 4) recurse into any nested lists, attaching them to this <li> item
-                        for sublist in li({"ul", "ol"}, recursive=False):
-                            if isinstance(sublist, Tag):
-                                self.level += 1
-                                self._handle_block(sublist, doc)
-                                self.parents[self.level + 1] = None
-                                self.level -= 1
-                    else:
-                        li_prov = self._make_text_prov(text="", tag=li)
-                        self.parents[self.level + 1] = doc.add_list_item(
-                            text="",
-                            enumerated=is_ordered,
-                            marker=marker,
-                            parent=list_group,
-                            content_layer=self.content_layer,
-                            prov=li_prov,
-                        )
-                        self.level += 1
-                        for input_tag in inputs_in_li:
-                            if isinstance(input_tag, Tag):
-                                self._emit_input(input_tag, doc)
-                        for checkbox_tag in custom_checkboxes_in_li:
-                            if isinstance(checkbox_tag, Tag):
-                                self._emit_custom_checkbox(checkbox_tag, doc)
-                        for sublist in li({"ul", "ol"}, recursive=False):
-                            if isinstance(sublist, Tag):
-                                self._handle_block(sublist, doc)
-                        self.parents[self.level] = None
-                        self.level -= 1
                 else:
+                    # No content, but check for nested lists
                     for sublist in li({"ul", "ol"}, recursive=False):
                         if isinstance(sublist, Tag):
                             self._handle_block(sublist, doc)
 
-                # 5) extract any images under this <li>
+                # 5) Extract any images under this <li>
                 for img_tag in li("img"):
                     if isinstance(img_tag, Tag):
                         self._emit_image(img_tag, doc)
@@ -2438,7 +2518,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             heading_refs = self._handle_heading(tag, doc)
             added_refs.extend(heading_refs)
 
-        elif tag_name in {"ul", "ol"}:
+        elif tag_name in {"ul", "ol", "dl"}:
             list_ref = self._handle_list(tag, doc)
             added_refs.append(list_ref)
 

@@ -148,3 +148,82 @@ def test_model_downloader_fetches_both_rapidocr_language_sets(
         ("onnxruntime", "chinese"),
         ("onnxruntime", "english"),
     }
+
+
+def test_rapidocr_uses_latin_mobile_assets(monkeypatch, tmp_path: Path) -> None:
+    captured_params: list[dict[str, object]] = []
+    _install_fake_rapidocr(monkeypatch, captured_params)
+
+    RapidOcrModel(
+        enabled=True,
+        artifacts_path=tmp_path,
+        options=RapidOcrOptions(lang=["de", "fr"], backend="onnxruntime"),
+        accelerator_options=AcceleratorOptions(),
+    )
+
+    assert len(captured_params) == 1
+    params = captured_params[0]
+    assert params["Rec.model_path"] == (
+        tmp_path / "RapidOcr" / "onnx/PP-OCRv4/rec/latin_PP-OCRv3_rec_mobile.onnx"
+    )
+    assert params["Rec.rec_keys_path"] == (
+        tmp_path
+        / "RapidOcr"
+        / "paddle/PP-OCRv4/rec/latin_PP-OCRv3_rec_mobile/latin_dict.txt"
+    )
+
+
+def test_resolve_language_aliases_and_groups(caplog) -> None:
+    from docling.models.stages.ocr.rapid_ocr_model import _resolve_rapidocr_language
+
+    assert _resolve_rapidocr_language(["eng"]) == "english"
+    assert _resolve_rapidocr_language(["en-US"]) == "english"
+    assert _resolve_rapidocr_language(["deu"]) == "latin"
+    assert _resolve_rapidocr_language(["latin"]) == "latin"
+    # english + another Latin-script language -> latin covers both
+    assert _resolve_rapidocr_language(["en", "de"]) == "latin"
+    assert _resolve_rapidocr_language(["zh"]) == "chinese"
+    assert _resolve_rapidocr_language(None) == "chinese"
+
+
+def test_resolve_language_warns_on_silent_fallback(caplog) -> None:
+    import logging
+
+    from docling.models.stages.ocr.rapid_ocr_model import _resolve_rapidocr_language
+
+    with caplog.at_level(logging.WARNING):
+        resolved = _resolve_rapidocr_language(["klingon"])
+    assert resolved == "chinese"
+    assert any(
+        "no bundled model set" in record.getMessage() for record in caplog.records
+    )
+    assert any(
+        "drops inter-word spaces" in record.getMessage() for record in caplog.records
+    )
+
+
+def test_rapidocr_passes_lang_type_without_artifacts(monkeypatch) -> None:
+    captured_params: list[dict[str, object]] = []
+    _install_fake_rapidocr(monkeypatch, captured_params)
+
+    fake_typings = ModuleType("rapidocr.utils.typings")
+    fake_typings.LangDet = SimpleNamespace(EN="en", CH="ch", MULTI="multi")
+    fake_typings.LangRec = SimpleNamespace(EN="en", LATIN="latin", CH="ch")
+    fake_utils = ModuleType("rapidocr.utils")
+    fake_utils.typings = fake_typings
+    monkeypatch.setitem(sys.modules, "rapidocr.utils", fake_utils)
+    monkeypatch.setitem(sys.modules, "rapidocr.utils.typings", fake_typings)
+
+    RapidOcrModel(
+        enabled=True,
+        artifacts_path=None,
+        options=RapidOcrOptions(lang=["en"], backend="onnxruntime"),
+        accelerator_options=AcceleratorOptions(),
+    )
+
+    assert len(captured_params) == 1
+    params = captured_params[0]
+    assert params["Rec.lang_type"] == "en"
+    assert params["Det.lang_type"] == "en"
+    # No pinned paths: rapidocr resolves the models itself.
+    assert params["Rec.model_path"] is None

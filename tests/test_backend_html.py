@@ -218,6 +218,69 @@ def test_ordered_lists():
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
 
 
+def test_description_lists():
+    """Test that HTML description lists (<dl>, <dt>, <dd>) are properly parsed."""
+    test_set: list[tuple[bytes, str]] = []
+
+    # Simple description list
+    test_set.append(
+        (
+            b"<html><body><dl><dt>Coffee</dt><dd>Black hot drink</dd><dt>Milk</dt><dd>White cold drink</dd></dl></body></html>",
+            "- **Coffee**\n    - Black hot drink\n- **Milk**\n    - White cold drink",
+        )
+    )
+
+    # Description list with multiple descriptions per term
+    test_set.append(
+        (
+            b"<html><body><dl><dt>Python</dt><dd>A high-level programming language</dd><dd>Known for simplicity</dd></dl></body></html>",
+            "- **Python**\n    - A high-level programming language\n    - Known for simplicity",
+        )
+    )
+
+    # Description list with formatting in terms
+    test_set.append(
+        (
+            b"<html><body><dl><dt><strong>HTML</strong></dt><dd>HyperText Markup Language</dd></dl></body></html>",
+            "- **HTML**\n    - HyperText Markup Language",
+        )
+    )
+
+    # Edge case: Empty description list
+    test_set.append(
+        (
+            b"<html><body><dl></dl></body></html>",
+            "",
+        )
+    )
+
+    # Edge case: Description list with dd without dt (discouraged but valid HTML)
+    test_set.append(
+        (
+            b"<html><body><dl><dd>Orphan description 1</dd><dd>Orphan description 2</dd></dl></body></html>",
+            "- Orphan description 1\n- Orphan description 2",
+        )
+    )
+
+    for idx, pair in enumerate(test_set):
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(pair[0]),
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            filename="test",
+        )
+        backend = HTMLDocumentBackend(
+            in_doc=in_doc,
+            path_or_stream=BytesIO(pair[0]),
+        )
+        doc: DoclingDocument = backend.convert()
+        assert doc
+        markdown_output = doc.export_to_markdown()
+        assert markdown_output == pair[1], (
+            f"Error in case {idx}: expected '{pair[1]}', got '{markdown_output}'"
+        )
+
+
 def test_unicode_characters():
     raw_html = "<html><body><h1>Hello World!</h1></body></html>".encode()  # noqa: RUF001
     in_doc = InputDocument(

@@ -1036,6 +1036,7 @@ def convert(  # noqa: C901
 
         elif pipeline == ProcessingPipeline.VLM:
             pipeline_options = VlmPipelineOptions(
+                accelerator_options=accelerator_options,
                 enable_remote_services=enable_remote_services,
             )
 
