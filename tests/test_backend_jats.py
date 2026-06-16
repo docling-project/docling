@@ -60,6 +60,27 @@ PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 201
     return conv_result.document
 
 
+def convert_jats_body(body_content: str) -> DoclingDocument:
+    xml = f"""<!DOCTYPE article
+PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
+<article article-type="research-article">
+  <front>
+    <article-meta>
+      <title-group>
+        <article-title>Body Test</article-title>
+      </title-group>
+    </article-meta>
+  </front>
+  <body>
+    {body_content}
+  </body>
+</article>
+"""
+    stream = DocumentStream(name="body-test.nxml", stream=BytesIO(xml.encode()))
+    conv_result: ConversionResult = get_converter().convert(stream)
+    return conv_result.document
+
+
 def convert_jats_contribs(contribs: str, affiliations: str = "") -> DoclingDocument:
     return convert_jats_article_meta(
         f"""
@@ -92,6 +113,33 @@ def test_jats_structured_abstract_sections_are_preserved():
     assert "Background: Background text." in md
     assert "Methods: Methods text." in md
 
+def test_jats_nested_lists_are_preserved():
+    doc = convert_jats_body(
+        """
+        <sec>
+          <title>List Test</title>
+          <list>
+            <list-item>
+              <p>Item 1</p>
+              <list>
+                <list-item>
+                  <p>Subitem A</p>
+                </list-item>
+              </list>
+            </list-item>
+          </list>
+        </sec>
+        """
+    )
+
+    md = doc.export_to_markdown()
+
+    print("\n----- NESTED LIST OUTPUT -----")
+    print(md)
+    print("------------------------------")
+
+    assert "Item 1" in md
+    assert "Subitem A" in md
 
 def _inline_group_items(doc: DoclingDocument) -> list[list]:
     """Return the resolved child items of every INLINE group, in document order."""
