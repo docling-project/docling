@@ -240,6 +240,25 @@ class MsExcelBackendOptions(BaseBackendOptions):
     )
 
 
+class MsPowerpointBackendOptions(BaseBackendOptions):
+    """Options specific to the MS PowerPoint backend."""
+
+    kind: Literal["pptx"] = Field("pptx", exclude=True, repr=False)
+
+    create_slide_visual_composition: bool = Field(
+        False,
+        description=(
+            "Whether to add a slide-level PictureItem that captures the full "
+            "visual composition of each PPTX slide."
+        ),
+    )
+
+    slide_visual_composition_dpi: PositiveInt = Field(
+        144,
+        description="DPI used when rasterizing slide-level visual compositions.",
+    )
+
+
 class LatexBackendOptions(BaseBackendOptions):
     """Options specific to the LaTeX backend."""
 
@@ -301,6 +320,7 @@ BackendOptions = Annotated[
         ThreadedDoclingParseBackendOptions,
         MetsGbsBackendOptions,
         MsExcelBackendOptions,
+        MsPowerpointBackendOptions,
         LatexBackendOptions,
         XBRLBackendOptions,
     ],
