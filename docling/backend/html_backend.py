@@ -2451,16 +2451,25 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 elif child_name == "dd":
                     dd_parent = dd_group or current_dt_item or list_group
 
-                    self._add_list_item_with_content(
+                    dd_item = self._add_list_item_with_content(
                         tag=child,
                         doc=doc,
                         parent=dd_parent,
                     )
 
-                    # Handle any images in the description
-                    for img_tag in child("img"):
-                        if isinstance(img_tag, Tag):
-                            self._emit_image(img_tag, doc)
+                    # Process nested content (images, lists, etc.) in the description
+                    # Set parent for nested content (use dd_item if available, otherwise dd_parent)
+                    content_parent = dd_item or dd_parent
+                    self.parents[self.level + 1] = content_parent
+                    self.level += 1
+
+                    processed_elements = set()
+                    self._process_list_item_nested_content(
+                        child, doc, processed_elements
+                    )
+
+                    self.parents[self.level + 1] = None
+                    self.level -= 1
 
             self.parents[self.level + 1] = None
             self.level -= 1
