@@ -48,7 +48,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import ContentLayer, Formatting, ImageRef, Script
 from PIL import Image, UnidentifiedImageError
 from pydantic import AnyUrl, BaseModel, ValidationError
-from typing_extensions import override
+from typing_extensions import Self, override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
@@ -390,24 +390,37 @@ class AnnotatedTextList(list):
             )
         return simplified
 
-    def split_by_newline(self):
-        """Split text elements on explicit line breaks (from <br> tags).
+    def split_by_newline(self) -> list[Self]:
+        """Split text elements on multiple consecutive line breaks (from <br> tags).
 
-        Only splits on the sentinel character that marks <br> tags.
+        Single <br> tags are converted to newline characters (\n) within the same paragraph.
+        Multiple consecutive <br> tags (2+) create new paragraphs.
         Regular newlines from HTML source formatting have already been
         normalized to spaces during text extraction.
         """
-        super_list = []
+        super_list: list[Self] = []
         active_annotated_text_list = AnnotatedTextList()
+        double_sentinel = _BR_SENTINEL + _BR_SENTINEL
+
         for el in self:
-            sub_texts = el.text.split(_BR_SENTINEL)
-            if len(sub_texts) == 1:
+            if _BR_SENTINEL not in el.text:
                 active_annotated_text_list.append(el)
-            else:
-                for text in sub_texts:
-                    sub_el = deepcopy(el)
-                    sub_el.text = text
-                    active_annotated_text_list.append(sub_el)
+                continue
+
+            # Split on 2+ consecutive sentinels (paragraph breaks)
+            sub_texts = el.text.split(double_sentinel)
+
+            for i, text in enumerate(sub_texts):
+                # Replace single sentinels with \n and strip spaces around newlines
+                text = text.replace(_BR_SENTINEL, "\n")
+                text = re.sub(r" *\n *", "\n", text)
+
+                sub_el = deepcopy(el)
+                sub_el.text = text
+                active_annotated_text_list.append(sub_el)
+
+                # Create new paragraph after each segment except the last
+                if i < len(sub_texts) - 1:
                     super_list.append(active_annotated_text_list)
                     active_annotated_text_list = AnnotatedTextList()
         if active_annotated_text_list:

@@ -1141,26 +1141,44 @@ can be performed using the application programming interface
         "Source newlines should not create paragraph breaks"
     )
 
-    # <br> tags should create line breaks
-    html_br = """<!DOCTYPE html>
+    # Test 2: Single <br> tags should create line breaks within same paragraph
+    html_single_br = """<!DOCTYPE html>
 <html>
 <body>
-<p>
-First line<br>
-Second line<br>
-Third line
-</p>
+<p>foo<br>bar</p>
 </body>
 </html>"""
 
-    result = converter.convert_string(html_br, InputFormat.HTML)
+    result = converter.convert_string(html_single_br, InputFormat.HTML)
     markdown = result.document.export_to_markdown()
 
-    lines = [line.strip() for line in markdown.split("\n") if line.strip()]
-    assert len(lines) == 3, f"Expected 3 lines from <br> tags, got {len(lines)}"
-    assert "First line" in lines[0]
-    assert "Second line" in lines[1]
-    assert "Third line" in lines[2]
+    # Single <br> should result in one paragraph with newline
+    assert "foo\nbar" in markdown or "foo  \nbar" in markdown, (
+        "Single <br> should create line break within same paragraph"
+    )
+    # Should NOT create separate paragraphs
+    assert "\n\nbar" not in markdown, (
+        "Single <br> should not create separate paragraphs"
+    )
+
+    # Test 3: Multiple consecutive <br> tags should create separate paragraphs
+    html_double_br = """<!DOCTYPE html>
+<html>
+<body>
+<p>foo<br><br>bar</p>
+</body>
+</html>"""
+
+    result = converter.convert_string(html_double_br, InputFormat.HTML)
+    markdown = result.document.export_to_markdown()
+
+    # Double <br> should create separate paragraphs
+    paragraphs = [p.strip() for p in markdown.split("\n\n") if p.strip()]
+    assert len(paragraphs) >= 2, (
+        f"Expected at least 2 paragraphs from double <br>, got {len(paragraphs)}"
+    )
+    assert any("foo" in p for p in paragraphs), "First paragraph should contain 'foo'"
+    assert any("bar" in p for p in paragraphs), "Second paragraph should contain 'bar'"
 
     # <pre> blocks should preserve newlines
     html_pre = """<!DOCTYPE html>
@@ -1180,6 +1198,44 @@ Line 3
     assert "Line 1" in markdown
     assert "Line 2" in markdown
     assert "Line 3" in markdown
+
+    # Verify behavior applies to other tags (address, summary, td)
+    html_other_tags = """<!DOCTYPE html>
+<html>
+<body>
+<address>Street 1<br>City</address>
+<details><summary>Title<br>Subtitle</summary></details>
+<table>
+<tr><td>Cell 1<br>Line 2</td></tr>
+<tr><td>Cell A<br><br>Cell B</td></tr>
+</table>
+</body>
+</html>"""
+
+    result = converter.convert_string(html_other_tags, InputFormat.HTML)
+    markdown = result.document.export_to_markdown()
+    doc = result.document
+
+    assert "Street 1\nCity" in markdown or "Street 1  \nCity" in markdown, (
+        "Single <br> in <address> should create line break within same item"
+    )
+
+    assert "Title\nSubtitle" in markdown or "Title  \nSubtitle" in markdown, (
+        "Single <br> in <summary> should create line break within same item"
+    )
+
+    table_found = False
+    if doc.tables:
+        cells = doc.tables[0].data.table_cells
+        for cell in cells:
+            if cell.text and "Cell 1" in cell.text:
+                assert "\n" in cell.text, (
+                    f"Single <br> in <td> should create newline in cell text. Got: {cell.text!r}"
+                )
+                table_found = True
+                break
+
+    assert table_found, "Should have found table with Cell 1"
 
     # Pre-existing sentinel characters should be cleaned up
     html_with_sentinel = f"""<!DOCTYPE html>
