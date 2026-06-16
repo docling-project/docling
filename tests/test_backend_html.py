@@ -13,7 +13,11 @@ from docling_core.types.doc import PictureItem, RichTableCell
 from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
 
-from docling.backend.html_backend import HTMLDocumentBackend, _validate_url_safety
+from docling.backend.html_backend import (
+    _BR_SENTINEL,
+    HTMLDocumentBackend,
+    _validate_url_safety,
+)
 from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
@@ -347,6 +351,12 @@ def test_e2e_html_conversions(html_paths):
         doc: DoclingDocument = conv_result.document
 
         pred_md: str = doc.export_to_markdown(compact_tables=True)
+
+        # Verify no sentinel characters leak into markdown output
+        assert _BR_SENTINEL not in pred_md, (
+            f"Sentinel character found in markdown output for {html_path.name}"
+        )
+
         assert verify_export(pred_md, str(gt_path) + ".md", generate=GENERATE), (
             "export to md"
         )
@@ -1097,3 +1107,96 @@ def test_valid_local_paths_still_work():
     resolved = html_doc._resolve_relative_path("example_image_01.png")
     assert "tests/data/html" in resolved
     assert "example_image_01.png" in resolved
+
+
+def test_html_newline_handling():
+    """Test that HTML newlines are handled correctly per HTML spec.
+
+    This test verifies:
+    1. Newlines in HTML source within <p> tags are collapsed to spaces (HTML spec)
+    2. Explicit <br> tags create line breaks
+    3. <pre> blocks preserve newlines
+    """
+    converter = get_converter()
+
+    # Paragraph newlines should be collapsed
+    html_paragraph = """<!DOCTYPE html>
+<html>
+<body>
+<p>
+This document provides information about data processing that
+can be performed using the application programming interface
+(<a title="API">API</a>). This is a web-based service.
+</p>
+</body>
+</html>"""
+
+    result = converter.convert_string(html_paragraph, InputFormat.HTML)
+    markdown = result.document.export_to_markdown()
+
+    assert "data processing that can be performed" in markdown, (
+        "Text should be continuous in markdown"
+    )
+    assert "\n\ncan be performed" not in markdown, (
+        "Source newlines should not create paragraph breaks"
+    )
+
+    # <br> tags should create line breaks
+    html_br = """<!DOCTYPE html>
+<html>
+<body>
+<p>
+First line<br>
+Second line<br>
+Third line
+</p>
+</body>
+</html>"""
+
+    result = converter.convert_string(html_br, InputFormat.HTML)
+    markdown = result.document.export_to_markdown()
+
+    lines = [line.strip() for line in markdown.split("\n") if line.strip()]
+    assert len(lines) == 3, f"Expected 3 lines from <br> tags, got {len(lines)}"
+    assert "First line" in lines[0]
+    assert "Second line" in lines[1]
+    assert "Third line" in lines[2]
+
+    # <pre> blocks should preserve newlines
+    html_pre = """<!DOCTYPE html>
+<html>
+<body>
+<pre>
+Line 1
+Line 2
+Line 3
+</pre>
+</body>
+</html>"""
+
+    result = converter.convert_string(html_pre, InputFormat.HTML)
+    markdown = result.document.export_to_markdown()
+
+    assert "Line 1" in markdown
+    assert "Line 2" in markdown
+    assert "Line 3" in markdown
+
+    # Pre-existing sentinel characters should be cleaned up
+    html_with_sentinel = f"""<!DOCTYPE html>
+<html>
+<body>
+<p>
+Text with pre-existing sentinel{_BR_SENTINEL}character should be cleaned.
+</p>
+</body>
+</html>"""
+
+    result = converter.convert_string(html_with_sentinel, InputFormat.HTML)
+    markdown = result.document.export_to_markdown()
+
+    assert _BR_SENTINEL not in markdown, (
+        "Pre-existing sentinel characters should be cleaned up"
+    )
+    assert "sentinelcharacter" in markdown or "sentinel character" in markdown, (
+        "Text should still be present after sentinel cleanup"
+    )

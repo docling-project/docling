@@ -33,6 +33,9 @@
         "$ref": "#/texts/4"
       },
       {
+        "$ref": "#/texts/5"
+      },
+      {
         "$ref": "#/groups/0"
       },
       {
@@ -51,10 +54,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/5"
+          "$ref": "#/texts/6"
         },
         {
-          "$ref": "#/texts/6"
+          "$ref": "#/texts/7"
         }
       ],
       "content_layer": "body",
@@ -68,13 +71,13 @@
       },
       "children": [
         {
-          "$ref": "#/texts/7"
-        },
-        {
           "$ref": "#/texts/8"
         },
         {
           "$ref": "#/texts/9"
+        },
+        {
+          "$ref": "#/texts/10"
         }
       ],
       "content_layer": "body",
@@ -140,11 +143,23 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This is a third div with a new line.",
-      "text": "This is a third div with a new line."
+      "orig": "This is a third div",
+      "text": "This is a third div"
     },
     {
       "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "with a new line.",
+      "text": "with a new line."
+    },
+    {
+      "self_ref": "#/texts/6",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -156,7 +171,7 @@
       "text": "Heading for the details element"
     },
     {
-      "self_ref": "#/texts/6",
+      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -168,7 +183,7 @@
       "text": "Description of the details element."
     },
     {
-      "self_ref": "#/texts/7",
+      "self_ref": "#/texts/8",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -180,7 +195,7 @@
       "text": "This is a fourth div with a"
     },
     {
-      "self_ref": "#/texts/8",
+      "self_ref": "#/texts/9",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -199,7 +214,7 @@
       }
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/10",
       "parent": {
         "$ref": "#/groups/1"
       },

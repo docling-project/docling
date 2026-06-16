@@ -60,6 +60,10 @@ from docling.exceptions import OperationNotAllowed
 
 _log = logging.getLogger(__name__)
 
+# Sentinel character for explicit line breaks from <br> tags
+# Using Unicode Private Use Area to avoid conflicts with actual content
+_BR_SENTINEL = "\ue000"
+
 DEFAULT_IMAGE_WIDTH = 128
 DEFAULT_IMAGE_HEIGHT = 128
 
@@ -387,10 +391,16 @@ class AnnotatedTextList(list):
         return simplified
 
     def split_by_newline(self):
+        """Split text elements on explicit line breaks (from <br> tags).
+
+        Only splits on the sentinel character that marks <br> tags.
+        Regular newlines from HTML source formatting have already been
+        normalized to spaces during text extraction.
+        """
         super_list = []
         active_annotated_text_list = AnnotatedTextList()
         for el in self:
-            sub_texts = el.text.split("\n")
+            sub_texts = el.text.split(_BR_SENTINEL)
             if len(sub_texts) == 1:
                 active_annotated_text_list.append(el)
             else:
@@ -528,10 +538,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         HTMLDocumentBackend._fix_invalid_paragraph_structure(self.soup)
 
         content = self.soup.body or self.soup
-        # normalize <br> tags
+
+        # normalize <br> tags - use sentinel to distinguish from source newlines
+        for text_node in content.find_all(string=True):
+            if _BR_SENTINEL in text_node:
+                text_node.replace_with(text_node.replace(_BR_SENTINEL, ""))
         for br in content("br"):
-            br.replace_with(NavigableString("\n"))
-        # set default content layer
+            br.replace_with(NavigableString(_BR_SENTINEL))
 
         # Furniture before the first heading rule, except for headers in tables
         header = None
@@ -1866,7 +1879,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     return AnnotatedTextList()
                 if self._is_checkbox_label_container(item.parent):
                     return AnnotatedTextList()
-            text = item.strip()
+
+            if keep_newlines:
+                text: str = item.strip()
+            else:
+                # For normal content, collapse newlines to spaces (HTML spec behavior)
+                # but preserve the sentinel character for explicit <br> tags
+                text = item.replace("\n", " ").replace("\r", " ")
+                text = " ".join(text.split())
+
             code = any(code_tag in self.format_tags for code_tag in _CODE_TAG_SET)
             source_tag_id = (
                 self._get_tag_id(item.parent) if isinstance(item.parent, Tag) else None
@@ -4600,7 +4621,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             result: list[str] = []
 
             if isinstance(item, NavigableString):
-                result = [item]
+                text = str(item).replace(_BR_SENTINEL, "\n")
+                result = [text]
             elif isinstance(item, Tag):
                 tag = cast(Tag, item)
                 parts: list[str] = []
