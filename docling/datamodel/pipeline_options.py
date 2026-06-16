@@ -480,10 +480,19 @@ class DataEnrichmentOptions(BaseModel):
     toc_top_p: Optional[float] = None
     toc_seed: Optional[int] = None
     toc_max_tokens: Optional[int] = None
+    toc_repetition_penalty: Optional[float] = None  # >1.0 suppresses repetition/degeneration loops
     # Preflight prompt-token guard options (TOC)
     toc_precheck_enabled: Optional[bool] = None
     toc_max_context_tokens: Optional[int] = None
     toc_completion_reserved_tokens: Optional[int] = None
+    # Split (carry-over refine) TOC extraction options.
+    # When enabled, the document is split into page-based chunks (N pages each) and
+    # extracted sequentially, carrying the accumulated outline forward into each
+    # subsequent chunk's prompt. This is an explicit mode toggle (not an overflow fallback).
+    toc_split_enabled: Optional[bool] = None
+    toc_pages_per_chunk: Optional[int] = None
+    toc_page_overlap: Optional[int] = None
+    toc_carryover_max_tokens: Optional[int] = None
 
     # Metadata extraction options
     extract_metadata: bool = False

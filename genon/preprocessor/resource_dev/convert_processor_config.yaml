@@ -67,8 +67,8 @@ enrichment:
   - toc:
       enable: true
       # 동작 보존: 기존 하드코딩 값(서빙 502)을 그대로 사용
-      url: "https://genos.genon.ai/api/gateway/rep/serving/750/v1/chat/completions"
-      api_key: "26e6a516de0847f59a3b9db8e418976e"
+      url: "https://genos.genon.ai/api/gateway/rep/serving/752/v1/chat/completions"
+      api_key: "d1a9e0acab6243019008a96cd8af868e"
       model: "model"
       temperature: 0.0
       top_p: 0.00001
@@ -78,15 +78,24 @@ enrichment:
         enabled: false  # 동작 보존: 기존 하드코딩 toc_precheck_enabled=False
         max_context_tokens: 128000
         completion_reserved_tokens: 12000
+      # 반복(degeneration) 억제. 게이트웨이/vLLM 지원 시 주석 해제(예 1.1). 미설정 시 미전송.
+      repetition_penalty: 1.1
       system_prompt_file: prompt_toc_default_system.md
       user_prompt_file: prompt_toc_default_user.md
+      # 긴 문서 분할 TOC 추출(carry-over refine). enabled=true 면 길이와 무관하게 항상 분할 수행.
+      # 분할 각 청크에도 위 system/user 프롬프트를 사용하며, 2번째 청크부터 누적 목차를 컨텍스트로 덧붙인다.
+      split:
+        enabled: false
+        pages_per_chunk: 100          # 청크당 페이지 수
+        page_overlap: 1             # 청크 경계 중복 페이지 수
+        carryover_max_tokens: 1500  # 다음 청크에 주입할 누적 목차 토큰 상한
 
   - metadata:
       enable: true
       # 동작 보존: 기존 하드코딩 값(서빙 502)을 그대로 사용
       # prompt/output_fields/parser/pages 설정이 있으면 facade MetadataEnricher를 사용한다.
-      url: "https://genos.genon.ai/api/gateway/rep/serving/750/v1/chat/completions"
-      api_key: "26e6a516de0847f59a3b9db8e418976e"
+      url: "https://genos.genon.ai/api/gateway/rep/serving/752/v1/chat/completions"
+      api_key: "d1a9e0acab6243019008a96cd8af868e"
       model: "model"
       max_tokens: 10000
       temperature: 0.0
@@ -111,8 +120,8 @@ enrichment:
   #       기본값은 기존 동작 보존을 위해 enable:false.
   - image_description:
       enable: false
-      url: "https://genos.genon.ai/api/gateway/rep/serving/750/v1/chat/completions"
-      api_key: "26e6a516de0847f59a3b9db8e418976e"
+      url: "https://genos.genon.ai/api/gateway/rep/serving/752/v1/chat/completions"
+      api_key: "d1a9e0acab6243019008a96cd8af868e"
       model: "model"
       # 이미지 설명 요청 병렬 수 (기본 16, 문서 내 이미지가 많을 때 처리속도에 영향)
       concurrency: 16
@@ -125,8 +134,8 @@ enrichment:
   # 복수 항목 허용: 각각 독립 LLM 호출, 결과는 metadata 병합
   - custom_fields:
       enable: false
-      url: "https://genos.genon.ai/api/gateway/rep/serving/750/v1/chat/completions"
-      api_key: "26e6a516de0847f59a3b9db8e418976e"
+      url: "https://genos.genon.ai/api/gateway/rep/serving/752/v1/chat/completions"
+      api_key: "d1a9e0acab6243019008a96cd8af868e"
       model: "model"
       max_tokens: 1000
       temperature: 0.0

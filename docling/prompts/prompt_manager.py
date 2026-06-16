@@ -119,6 +119,8 @@ class PromptManager:
                         default_config["seed"] = api_config["seed"]
                     if "max_tokens" in api_config:
                         default_config["max_tokens"] = api_config["max_tokens"]
+                    if "repetition_penalty" in api_config:
+                        default_config["repetition_penalty"] = api_config["repetition_penalty"]
                     if "precheck_enabled" in api_config:
                         default_config["precheck_enabled"] = api_config["precheck_enabled"]
                     if "max_context_tokens" in api_config:
@@ -150,6 +152,8 @@ class PromptManager:
                     config["seed"] = api_config["seed"]
                 if "max_tokens" in api_config:
                     config["max_tokens"] = api_config["max_tokens"]
+                if "repetition_penalty" in api_config:
+                    config["repetition_penalty"] = api_config["repetition_penalty"]
                 if "precheck_enabled" in api_config:
                     config["precheck_enabled"] = api_config["precheck_enabled"]
                 if "max_context_tokens" in api_config:
@@ -244,6 +248,8 @@ class PromptManager:
             model_config["top_p"] = config["top_p"]
         if "max_tokens" in config:
             model_config["max_tokens"] = config["max_tokens"]
+        if "repetition_penalty" in config:
+            model_config["repetition_penalty"] = config["repetition_penalty"]
         if "precheck_enabled" in config:
             model_config["precheck_enabled"] = config["precheck_enabled"]
         if "max_context_tokens" in config:
@@ -317,6 +323,14 @@ class PromptManager:
         en     = len(re.findall(r"[a-zA-Z]", text))
         other  = max(len(text) - digits - punct - kor - cjk - en, 0)
         return int(digits * 1.0 + punct * 0.8 + kor * 0.95 + cjk * 0.95 + en * 0.25 + other * 0.3)
+
+    def estimate_tokens(self, text: str) -> int:
+        """프롬프트 토큰 수 추정값을 반환한다.
+
+        precheck(`_run_prompt_precheck`)와 동일한 추정기(`_rough_token_count`)를 사용하므로,
+        분할 로직이 precheck와 같은 척도로 토큰 예산을 산정할 수 있다.
+        """
+        return self._rough_token_count(text or "")
 
     def _run_prompt_precheck(
         self,
@@ -423,6 +437,9 @@ class PromptManager:
                 payload["top_p"] = model_config["top_p"]
             if "max_tokens" in model_config:
                 payload["max_tokens"] = model_config["max_tokens"]
+            if "repetition_penalty" in model_config:
+                payload["repetition_penalty"] = model_config["repetition_penalty"]
+            # payload["reasoning"] = {"enabled": False}  # 모델이 프롬프트를 완전히 이해하지 못하는 경우를 대비해, reasoning을 강제로 활성화하여 최대한 답변을 생성하도록 유도
 
             if not self._run_prompt_precheck(
                 messages=messages,

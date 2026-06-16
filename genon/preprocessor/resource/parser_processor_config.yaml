@@ -75,8 +75,17 @@ enrichment:
         enabled: true
         max_context_tokens: 128000
         completion_reserved_tokens: 12000
+      # 반복(degeneration) 억제. 게이트웨이/vLLM 지원 시 주석 해제(예 1.1). 미설정 시 미전송.
+      repetition_penalty: 1.1
       system_prompt_file: prompt_toc_default_system.md
       user_prompt_file: prompt_toc_default_user.md
+      # 긴 문서 분할 TOC 추출(carry-over refine). enabled=true 면 길이와 무관하게 항상 분할 수행.
+      # 분할 각 청크에도 위 system/user 프롬프트를 사용하며, 2번째 청크부터 누적 목차를 컨텍스트로 덧붙인다.
+      split:
+        enabled: false
+        pages_per_chunk: 100          # 청크당 페이지 수
+        page_overlap: 1             # 청크 경계 중복 페이지 수
+        carryover_max_tokens: 1500  # 다음 청크에 주입할 누적 목차 토큰 상한
 
   - metadata:
       enable: true
