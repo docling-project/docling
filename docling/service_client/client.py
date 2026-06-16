@@ -1513,8 +1513,7 @@ class DoclingServiceClient:
                 file_size=len(source.stream.getbuffer()),
             )
 
-        request_source = self._normalize_http_source(source)
-        parsed = urlparse(str(request_source.url))
+        parsed = urlparse(str(source.url))
         filename = Path(parsed.path).name if parsed.path else "document"
         return _SourceDescriptor(
             source_name=filename,
@@ -1533,14 +1532,6 @@ class DoclingServiceClient:
         if extension in self._extension_to_format:
             return self._extension_to_format[extension]
         return InputFormat.PDF
-
-    def _normalize_http_source(
-        self, source: str | HttpSourceRequest
-    ) -> HttpSourceRequest:
-        normalized_source = self._normalize_source(source)
-        if isinstance(normalized_source, HttpSourceRequest):
-            return normalized_source
-        raise ValueError("String sources must be HTTP or HTTPS URLs.")
 
     def _source_to_upload_files(
         self,
