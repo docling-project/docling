@@ -33,7 +33,7 @@ from docling.utils.profiling import TimeRecorder
 _log = logging.getLogger(__name__)
 
 # Regex for valid Tesseract language identifiers (e.g. "eng", "script/Latin", "eng+deu")
-_VALID_LANG_RE = re.compile(r"^[a-zA-Z0-9_/+-]+$")
+_VALID_LANG_RE = re.compile(r"^[a-zA-Z0-9_/][a-zA-Z0-9_/+-]*$")
 
 
 class TesseractOcrCliModel(BaseOcrModel):
@@ -115,15 +115,10 @@ class TesseractOcrCliModel(BaseOcrModel):
     def _sanitize_cmd(cmd: str) -> str:
         """Validate and sanitize the Tesseract executable name/path to prevent injection.
 
-        Rejects values containing null bytes or shell metacharacters.
+        Rejects values containing null bytes.
         """
         if "\x00" in cmd:
             raise ValueError("Invalid Tesseract command: contains null byte.")
-        _UNSAFE_CMD_CHARS = set("|;&`$(){}[]<>!\\\"'")
-        if any(c in _UNSAFE_CMD_CHARS for c in cmd):
-            raise ValueError(
-                f"Invalid Tesseract command: {cmd!r} contains unsafe characters."
-            )
         return cmd
 
     @staticmethod
