@@ -232,6 +232,11 @@ feat-chunking = [
 service-client = [
   'httpx>=0.28,<1.0.0',
   'websockets>=14.0,<17.0',
+  'typer>=0.12.5,<0.27.0',
+  'rich>=13.0.0',
+  # Best-effort .env loading for `docling convert-remote`; the command still
+  # works (flags + env vars) if this is absent.
+  'python-dotenv~=1.0',
 ]
 
 cli = [
@@ -242,10 +247,6 @@ cli = [
   'python-dotenv~=1.0',
 ]
 
-# Convenience bundle for `docling convert-remote` (CLI + service client).
-cli-remote = [
-  'docling-slim[cli,service-client]',
-]
 
 # ============================================================================
 # CONVENIENCE BUNDLES

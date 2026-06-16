@@ -241,11 +241,10 @@ app = typer.Typer(
     add_completion=False,
     pretty_exceptions_enable=False,
     epilog=(
-        "Remote conversion: to convert through a docling-serve service rather "
-        "than locally, use `docling convert-remote`. Agents should read "
-        "`docling convert-remote --help` for authentication "
-        "(DOCLING_SERVICE_URL / DOCLING_SERVICE_API_KEY), supported options, "
-        "and exit codes before invoking it."
+        "Remote conversion: when installed with the `service-client` extra, "
+        "use `docling convert-remote` and read `docling convert-remote --help` "
+        "for authentication (DOCLING_SERVICE_URL / DOCLING_SERVICE_API_KEY), "
+        "supported options, and exit codes before invoking it."
     ),
 )
 
@@ -1163,12 +1162,18 @@ def convert(  # noqa: C901
     _log.info(f"All documents were converted in {end_time:.2f} seconds.")
 
 
-# Register the `convert-remote` command on `app`. Imported here (after `app`,
-# `export_documents`, and the source-collection helpers are defined) so the
-# command is attached before the click app is built below.
-from docling.cli.remote import register as _register_remote  # noqa: E402
-
-_register_remote(app)
+# Register `convert-remote` only when the service-client extra is installed.
+# Imported here (after `app`, `export_documents`, and the source-collection
+# helpers are defined) so the command is attached before the click app is built
+# below.
+try:
+    from docling.cli.remote import register as _register_remote
+except ImportError:
+    _log.debug(
+        "Skipping `convert-remote` registration because service-client dependencies are unavailable."
+    )
+else:
+    _register_remote(app)
 
 click_app = typer.main.get_command(app)
 

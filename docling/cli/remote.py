@@ -6,13 +6,11 @@ identical. Only the conversion options the service honors are exposed here;
 local-execution flags (device, threads, PDF-backend internals, debug visualizers)
 do not apply to remote conversion and are intentionally absent.
 
-The service client (``httpx``/``websockets``) is imported lazily so installing the
-``cli`` extra alone keeps this command importable; it raises an actionable error
-naming the right extra only when the command is actually run without it.
+Installing the ``service-client`` extra provides the CLI runtime and the
+client dependencies needed by this command.
 """
 
 import logging
-from enum import Enum
 from pathlib import Path
 from typing import Annotated, Optional
 
@@ -22,22 +20,17 @@ from docling_core.types.doc import ImageRefMode
 from docling.cli.export_utils import _export_flags_from_formats, _split_list
 from docling.datamodel.base_models import InputFormat, OutputFormat
 from docling.datamodel.pipeline_options import ProcessingPipeline
+from docling.datamodel.service.options import (
+    ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
+)
 from docling.datamodel.settings import PageRange
+from docling.service_client import (
+    DEFAULT_MAX_CONCURRENCY,
+    DoclingServiceClient,
+    StatusWatcherKind,
+)
 
 _log = logging.getLogger(__name__)
-
-# Mirror docling.service_client.client.DEFAULT_MAX_CONCURRENCY without importing it
-# (that module pulls in httpx, which the `cli` extra does not require).
-_DEFAULT_MAX_CONCURRENCY = 8
-
-
-class WatcherKind(str, Enum):
-    """Local mirror of ``StatusWatcherKind`` (same values), usable in the CLI
-    signature without importing the service client at module load."""
-
-    WEBSOCKET = "websocket"
-    POLLING = "polling"
-
 
 _REMOTE_HELP = """\
 Convert documents through a remote docling-serve service instead of locally.
@@ -260,7 +253,7 @@ def convert_remote(
             help="Maximum number of documents converted concurrently against the "
             "service.",
         ),
-    ] = _DEFAULT_MAX_CONCURRENCY,
+    ] = DEFAULT_MAX_CONCURRENCY,
     timeout: Annotated[
         float,
         typer.Option(
@@ -268,11 +261,11 @@ def convert_remote(
         ),
     ] = 300.0,
     watcher: Annotated[
-        WatcherKind,
+        StatusWatcherKind,
         typer.Option(
             help="How the client tracks job status: websocket (default) or polling.",
         ),
-    ] = WatcherKind.WEBSOCKET,
+    ] = StatusWatcherKind.WEBSOCKET,
     output: Annotated[
         Path,
         typer.Option(help="Output directory where results are saved."),
@@ -297,20 +290,7 @@ def convert_remote(
 
     from docling.cli.main import err_console, export_documents
 
-    # 1. Lazy import — the `cli` extra does NOT pull in the service client.
-    try:
-        from docling.datamodel.service.options import (
-            ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
-        )
-        from docling.service_client import DoclingServiceClient, StatusWatcherKind
-    except ImportError:
-        err_console.print(
-            "[red]Remote conversion requires the service client.[/red]\n"
-            "Install with:  pip install 'docling[service-client]'"
-        )
-        raise typer.Exit(1)
-
-    # 2. Validate credentials (flag/env/.env already merged by Typer + callback).
+    # 1. Validate credentials (flag/env/.env already merged by Typer + callback).
     if not service_url:
         err_console.print(
             "[red]No service URL. Pass --service-url, set DOCLING_SERVICE_URL, "
@@ -325,10 +305,10 @@ def convert_remote(
 
     parsed_page_range = _parse_page_range(page_range)
 
-    # 3. Collect sources — dirs filtered by --from, http(s) URLs stay strings.
+    # 2. Collect sources — dirs filtered by --from, http(s) URLs stay strings.
     sources = _collect_sources(source, from_formats)
 
-    # 4. Map flags -> ConvertDocumentsOptions (only fields the service honors).
+    # 3. Map flags -> ConvertDocumentsOptions (only fields the service honors).
     option_kwargs = {
         "from_formats": from_formats,
         "to_formats": to_formats,
@@ -356,7 +336,7 @@ def convert_remote(
     # user's override, or the options model default when unset).
     resolved_image_mode = options.image_export_mode
 
-    # 5. Run and reuse the existing exporter.
+    # 4. Run and reuse the existing exporter.
     with DoclingServiceClient(
         url=service_url,
         api_key=api_key or "",
