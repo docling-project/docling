@@ -506,7 +506,9 @@ def test_cli_accepts_threaded_docling_parse_backend(
             assert len(input_doc_paths) == 1
             return []
 
-    monkeypatch.setattr("docling.cli.main.DocumentConverter", _FakeDocumentConverter)
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
 
     source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
     output = tmp_path / "out"
@@ -561,7 +563,9 @@ def test_cli_passes_accelerator_options_to_vlm_pipeline(
             assert len(input_doc_paths) == 1
             return []
 
-    monkeypatch.setattr("docling.cli.main.DocumentConverter", _FakeDocumentConverter)
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
 
     source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
     output = tmp_path / "out"

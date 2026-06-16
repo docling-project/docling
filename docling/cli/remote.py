@@ -207,12 +207,13 @@ def convert_remote(
         ),
     ] = None,
     image_export_mode: Annotated[
-        ImageRefMode,
+        Optional[ImageRefMode],
         typer.Option(
             help="Image export mode for image-capable outputs (JSON, YAML, HTML, "
-            "Markdown): embedded, placeholder, or referenced.",
+            "Markdown): embedded, placeholder, or referenced. If unset, the "
+            "service default applies.",
         ),
-    ] = ImageRefMode.EMBEDDED,
+    ] = None,
     page_range: Annotated[
         Optional[str],
         typer.Option(
@@ -316,13 +317,19 @@ def convert_remote(
         "do_table_structure": tables,
         "pipeline": pipeline,
         "ocr_lang": _split_list(ocr_lang),
-        "image_export_mode": image_export_mode,
         "document_timeout": document_timeout,
         "abort_on_error": abort_on_error,
     }
+    # Only send image_export_mode when the user set it, so the service/datamodel
+    # default applies otherwise.
+    if image_export_mode is not None:
+        option_kwargs["image_export_mode"] = image_export_mode
     if parsed_page_range is not None:
         option_kwargs["page_range"] = parsed_page_range
     options = ConvertDocumentsRequestOptions(**option_kwargs)
+    # Local export must match what the service produced: resolved value (the
+    # user's override, or the options model default when unset).
+    resolved_image_mode = options.image_export_mode
 
     # 5. Run and reuse the existing exporter.
     with DoclingServiceClient(
@@ -348,7 +355,7 @@ def convert_remote(
                 show_layout=False,
                 print_timings=False,
                 export_timings=False,
-                image_export_mode=image_export_mode,
+                image_export_mode=resolved_image_mode,
             )
         except typer.Exit:
             raise
@@ -365,9 +372,12 @@ def _load_dotenv() -> None:
     support is best-effort — flags and environment variables still work without it.
     """
     try:
-        from dotenv import load_dotenv
+        from dotenv import find_dotenv, load_dotenv
 
-        load_dotenv(override=False)
+        # usecwd=True searches from the user's working directory; the default
+        # (usecwd=False) searches up from this installed package dir and never
+        # finds the user's .env.
+        load_dotenv(find_dotenv(usecwd=True), override=False)
     except ImportError:
         pass
 

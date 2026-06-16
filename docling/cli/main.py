@@ -41,14 +41,6 @@ from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
 from rich.console import Console
 
-from docling.backend.docling_parse_backend import (
-    DoclingParseDocumentBackend,
-    ThreadedDoclingParseDocumentBackend,
-)
-from docling.backend.image_backend import ImageDocumentBackend
-from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
-from docling.backend.pdf_backend import PdfDocumentBackend
-from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.cli.export_utils import (
     _export_flags_from_formats,
     _is_empty_output,
@@ -111,27 +103,12 @@ from docling.datamodel.pipeline_options import (
     normalize_pdf_backend,
 )
 from docling.datamodel.settings import settings
-from docling.document_converter import (
-    AudioFormatOption,
-    DocumentConverter,
-    EpubFormatOption,
-    ExcelFormatOption,
-    FormatOption,
-    HTMLFormatOption,
-    LatexFormatOption,
-    MarkdownFormatOption,
-    PdfFormatOption,
-    PowerpointFormatOption,
-    WordFormatOption,
-)
 from docling.models.factories import (
     get_layout_factory,
     get_ocr_factory,
     get_table_structure_factory,
 )
 from docling.models.factories.base_factory import BaseFactory
-from docling.pipeline.asr_pipeline import AsrPipeline
-from docling.pipeline.vlm_pipeline import VlmPipeline
 from docling.utils.profiling import ProfilingItem
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
@@ -777,6 +754,33 @@ def convert(  # noqa: C901
         ),
     ] = False,
 ):
+    # Heavy backend/converter/pipeline imports are deferred to here so the CLI
+    # (and `convert-remote`) stay importable without the local PDF stack
+    # (pypdfium2 / docling_parse). Only local `convert` needs them.
+    from docling.backend.docling_parse_backend import (
+        DoclingParseDocumentBackend,
+        ThreadedDoclingParseDocumentBackend,
+    )
+    from docling.backend.image_backend import ImageDocumentBackend
+    from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
+    from docling.backend.pdf_backend import PdfDocumentBackend
+    from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+    from docling.document_converter import (
+        AudioFormatOption,
+        DocumentConverter,
+        EpubFormatOption,
+        ExcelFormatOption,
+        FormatOption,
+        HTMLFormatOption,
+        LatexFormatOption,
+        MarkdownFormatOption,
+        PdfFormatOption,
+        PowerpointFormatOption,
+        WordFormatOption,
+    )
+    from docling.pipeline.asr_pipeline import AsrPipeline
+    from docling.pipeline.vlm_pipeline import VlmPipeline
+
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
     if verbose == 0:
