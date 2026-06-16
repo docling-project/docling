@@ -49,7 +49,16 @@ def _assert_markdown_embeds_png(path: Path, image_bytes: bytes | None = None) ->
 
 
 def test_cli_help():
+    # Top-level help lists the available commands and points agents at the
+    # remote command (the `convert` options live under `docling convert --help`).
     result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    assert "convert-remote" in result.output
+    assert "DOCLING_SERVICE_URL" in result.output
+
+
+def test_cli_convert_help():
+    result = runner.invoke(app, ["convert", "--help"])
     assert result.exit_code == 0
     assert "Input formats to" in result.output
     assert "all supported" in result.output

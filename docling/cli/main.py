@@ -50,6 +50,7 @@ from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.cli.export_utils import (
+    _export_flags_from_formats,
     _is_empty_output,
     _should_generate_export_images,
     _split_list,
@@ -237,11 +238,38 @@ DOCLING_ASCII_ART = r"""
 """
 
 
+class _DefaultCommandGroup(typer.core.TyperGroup):
+    """Route a bare ``docling <source>`` invocation to the ``convert`` command.
+
+    Historically the CLI exposed a single command, so Typer let users run
+    ``docling report.pdf`` without naming it. Adding a second command
+    (``convert-remote``) would otherwise force ``docling convert report.pdf``
+    on everyone. This group preserves the old behavior: when the first token is
+    not a known subcommand (nor the top-level ``--help``), it is treated as
+    arguments to ``convert``. ``docling --help`` still shows the command list.
+    """
+
+    default_command = "convert"
+
+    def parse_args(self, ctx, args):
+        if args and args[0] not in self.commands and args[0] not in ("--help", "-h"):
+            args = [self.default_command, *args]
+        return super().parse_args(ctx, args)
+
+
 app = typer.Typer(
     name="Docling",
+    cls=_DefaultCommandGroup,
     no_args_is_help=True,
     add_completion=False,
     pretty_exceptions_enable=False,
+    epilog=(
+        "Remote conversion: to convert through a docling-serve service rather "
+        "than locally, use `docling convert-remote`. Agents should read "
+        "`docling convert-remote --help` for authentication "
+        "(DOCLING_SERVICE_URL / DOCLING_SERVICE_API_KEY), supported options, "
+        "and exit codes before invoking it."
+    ),
 )
 
 
@@ -856,15 +884,7 @@ def convert(  # noqa: C901
         if to_formats is None:
             to_formats = [OutputFormat.MARKDOWN]
 
-        export_json = OutputFormat.JSON in to_formats
-        export_yaml = OutputFormat.YAML in to_formats
-        export_html = OutputFormat.HTML in to_formats
-        export_html_split_page = OutputFormat.HTML_SPLIT_PAGE in to_formats
-        export_md = OutputFormat.MARKDOWN in to_formats
-        export_txt = OutputFormat.TEXT in to_formats
-        export_doctags = OutputFormat.DOCTAGS in to_formats
-        export_vtt = OutputFormat.VTT in to_formats
-        export_doclang = OutputFormat.DOCLANG in to_formats
+        export_flags = _export_flags_from_formats(to_formats)
 
         ocr_factory = get_ocr_factory(allow_external_plugins=allow_external_plugins)
         ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
@@ -1126,16 +1146,8 @@ def convert(  # noqa: C901
         export_documents(
             conv_results,
             output_dir=output,
-            export_json=export_json,
-            export_yaml=export_yaml,
-            export_html=export_html,
-            export_html_split_page=export_html_split_page,
+            **export_flags,
             show_layout=show_layout,
-            export_md=export_md,
-            export_txt=export_txt,
-            export_doctags=export_doctags,
-            export_vtt=export_vtt,
-            export_doclang=export_doclang,
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,
@@ -1145,6 +1157,13 @@ def convert(  # noqa: C901
 
     _log.info(f"All documents were converted in {end_time:.2f} seconds.")
 
+
+# Register the `convert-remote` command on `app`. Imported here (after `app`,
+# `export_documents`, and the source-collection helpers are defined) so the
+# command is attached before the click app is built below.
+from docling.cli.remote import register as _register_remote  # noqa: E402
+
+_register_remote(app)
 
 click_app = typer.main.get_command(app)
 
