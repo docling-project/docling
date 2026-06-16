@@ -2455,38 +2455,44 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if current_dt_item:
                         self.parents[self.level + 1] = current_dt_item
 
-                        dd_count = 0
-                        for next_child in children[i + 1 :]:
-                            if isinstance(next_child, Tag):
-                                if next_child.name.lower() == "dd":
-                                    dd_count += 1
-                                elif next_child.name.lower() == "dt":
-                                    break
-
-                        if dd_count > 1:
+                elif child_name == "dd":
+                    has_nested_dl = child.find("dl", recursive=False) is not None
+                    if has_nested_dl:
+                        # Close current descriptions group before processing nested <dl>
+                        dd_group = None
+                        # If <dd> contains a nested <dl>, process it directly under the term item
+                        # Don't create a list item for the <dd> itself to avoid double indentation
+                        if current_dt_item:
+                            with self._use_list_item_context(current_dt_item):
+                                processed_elements = set()
+                                self._process_list_item_nested_content(
+                                    child, doc, processed_elements
+                                )
+                    else:
+                        # For regular <dd> without nested <dl>, create/use descriptions group
+                        if dd_group is None and current_dt_item:
                             dd_group = doc.add_list_group(
                                 name="descriptions",
                                 parent=current_dt_item,
                                 content_layer=self.content_layer,
                             )
 
-                elif child_name == "dd":
-                    dd_parent = dd_group or current_dt_item or list_group
+                        # dd_group should exist at this point (or fall back to list_group)
+                        dd_parent = dd_group or list_group
 
-                    dd_item = self._add_list_item_with_content(
-                        tag=child,
-                        doc=doc,
-                        parent=dd_parent,
-                    )
-
-                    # Process nested content (images, lists, etc.) in the description
-                    # Set parent for nested content (use dd_item if available, otherwise dd_parent)
-                    content_parent = dd_item or dd_parent
-                    with self._use_list_item_context(content_parent):
-                        processed_elements = set()
-                        self._process_list_item_nested_content(
-                            child, doc, processed_elements
+                        dd_item = self._add_list_item_with_content(
+                            tag=child,
+                            doc=doc,
+                            parent=dd_parent,
                         )
+
+                        # Process nested content (images, lists, etc.) in the description
+                        content_parent = dd_item or dd_parent
+                        with self._use_list_item_context(content_parent):
+                            processed_elements = set()
+                            self._process_list_item_nested_content(
+                                child, doc, processed_elements
+                            )
 
             self.parents[self.level + 1] = None
             self.level -= 1
