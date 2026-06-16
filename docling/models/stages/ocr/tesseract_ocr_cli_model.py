@@ -178,7 +178,9 @@ class TesseractOcrCliModel(BaseOcrModel):
                 cmd.append(self._sanitize_lang(lang))
         elif self.options.lang is not None and len(self.options.lang) > 0:
             cmd.append("-l")
-            cmd.append("+".join(self._sanitize_lang(l) for l in self.options.lang))
+            cmd.append(
+                "+".join(self._sanitize_lang(lang) for lang in self.options.lang)
+            )
 
         if self._safe_tessdata_path is not None:
             cmd.append("--tessdata-dir")
@@ -223,8 +225,15 @@ class TesseractOcrCliModel(BaseOcrModel):
         Run tesseract in PSM 0 mode to detect the language
         """
 
-        cmd = [self._safe_tesseract_cmd, "--psm", "0", "-l", "osd",
-               self._sanitize_filename(ifilename), "stdout"]
+        cmd = [
+            self._safe_tesseract_cmd,
+            "--psm",
+            "0",
+            "-l",
+            "osd",
+            self._sanitize_filename(ifilename),
+            "stdout",
+        ]
         _log.info("command: {}".format(" ".join(cmd)))
         output = subprocess.run(
             cmd, capture_output=True, stdin=DEVNULL, check=True, shell=False
