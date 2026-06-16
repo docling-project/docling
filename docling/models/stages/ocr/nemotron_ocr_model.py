@@ -59,7 +59,7 @@ class NemotronOcrModel(BaseOcrModel):
             self._validate_runtime(accelerator_options=accelerator_options)
 
             try:
-                from nemotron_ocr.inference.pipeline import NemotronOCR
+                from nemotron_ocr.inference.pipeline_v2 import NemotronOCRV2
             except ImportError as exc:
                 raise ImportError(
                     "Nemotron OCR is not installed. Install the optional dependency "
@@ -68,7 +68,7 @@ class NemotronOcrModel(BaseOcrModel):
                 ) from exc
 
             model_dir = self._resolve_model_dir(artifacts_path=artifacts_path)
-            self.reader = NemotronOCR(
+            self.reader = NemotronOCRV2(
                 model_dir=None if model_dir is None else str(model_dir)
             )
 
@@ -216,6 +216,8 @@ class NemotronOcrModel(BaseOcrModel):
                         )
                         image_width, image_height = high_res_image.size
                         image_array = numpy.array(high_res_image)
+
+                        # TODO: Will it be faster to predict multiple rects (batch>1) at once
                         raw_predictions = cast(
                             Sequence[NemotronOcrPrediction],
                             self.reader(
