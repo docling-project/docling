@@ -93,8 +93,9 @@ def main():
         },
     )
 
-    # Limit PDF pages under CI to keep runtime low (harmless for non-PDF inputs).
-    page_range = (3, 4) if IS_CI else DEFAULT_PAGE_RANGE
+    # Limit PDF pages under CI to keep runtime low. The range starts at page 1
+    # so single-page inputs (e.g. images) stay within range and remain valid.
+    page_range = (1, 2) if IS_CI else DEFAULT_PAGE_RANGE
     conv_results = doc_converter.convert_all(input_paths, page_range=page_range)
 
     for res in conv_results:
