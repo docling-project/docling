@@ -2548,17 +2548,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     # No content, but check for nested lists (including those wrapped in divs)
                     for sublist in li({"ul", "ol", "dl"}):
                         if isinstance(sublist, Tag):
-                            # Check if this list has a ul/ol ancestor within the current li
-                            has_list_ancestor = False
-                            parent = sublist.parent
-                            while parent and parent != li:
-                                if isinstance(parent, Tag) and parent.name in {
-                                    "ul",
-                                    "ol",
-                                }:
-                                    has_list_ancestor = True
-                                    break
-                                parent = parent.parent
+                            # Check if this list has a ul/ol/dl ancestor within the current li
+                            has_list_ancestor = self._has_list_ancestor(sublist, li)
 
                             if not has_list_ancestor:
                                 self._handle_block(sublist, doc)
