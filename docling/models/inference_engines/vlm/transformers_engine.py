@@ -103,7 +103,11 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self.vlm_model: PreTrainedModel | None = None
         self.generation_config: GenerationConfig | None = None
         self.strip_stop_strings = (
-            model_config.strip_stop_strings if model_config is not None else False
+            bool(
+                model_config.extra_config.get("transformers_strip_stop_strings", False)
+            )
+            if model_config is not None
+            else False
         )
 
         # Initialize immediately if model_config is provided

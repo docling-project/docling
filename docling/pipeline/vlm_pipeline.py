@@ -565,13 +565,15 @@ class VlmPipeline(PaginatedPipeline):
 
             assert page.size is not None
 
+            inference_image = page.get_image(scale=vlm_scale, max_size=vlm_max_size)
+
             model_image_size = None
-            if page.image is not None:
+            if inference_image is not None:
                 model_image_size = compute_qwen2vl_image_size(
-                    width=page.image.width,
-                    height=page.image.height,
-                    scale=vlm_scale,
-                    max_size=vlm_max_size,
+                    width=inference_image.width,
+                    height=inference_image.height,
+                    scale=1.0,
+                    max_size=None,
                 )
 
             page_doc = parse_dots_json(

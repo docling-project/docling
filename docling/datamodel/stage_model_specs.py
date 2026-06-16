@@ -65,14 +65,6 @@ class EngineModelConfig(BaseModel):
         description="Override torch dtype for this engine (e.g., 'bfloat16')",
     )
 
-    strip_stop_strings: bool = Field(
-        default=False,
-        description=(
-            "Whether this engine should strip configured stop strings from decoded "
-            "output after generation."
-        ),
-    )
-
     extra_config: Dict[str, Any] = Field(
         default_factory=dict, description="Additional engine-specific configuration"
     )
@@ -93,7 +85,6 @@ class EngineModelConfig(BaseModel):
             repo_id=self.repo_id or base_repo_id,
             revision=self.revision or base_revision,
             torch_dtype=self.torch_dtype,
-            strip_stop_strings=self.strip_stop_strings,
             extra_config=self.extra_config,
         )
 
@@ -256,17 +247,14 @@ class VlmModelSpec(BaseModel):
         # Get engine-specific extra_config and torch_dtype
         extra_config = {}
         torch_dtype = None
-        strip_stop_strings = False
         if engine_type in self.engine_overrides:
             extra_config = self.engine_overrides[engine_type].extra_config.copy()
             torch_dtype = self.engine_overrides[engine_type].torch_dtype
-            strip_stop_strings = self.engine_overrides[engine_type].strip_stop_strings
 
         return EngineModelConfig(
             repo_id=repo_id,
             revision=revision,
             torch_dtype=torch_dtype,
-            strip_stop_strings=strip_stop_strings,
             extra_config=extra_config,
         )
 
@@ -1294,6 +1282,7 @@ VLM_CONVERT_GLMOCR = StageModelPreset(
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                     "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    "transformers_strip_stop_strings": True,
                     "torch_dtype": "bfloat16",
                 },
             ),
@@ -1554,10 +1543,10 @@ VLM_CONVERT_CHANDRA_OCR2 = StageModelPreset(
         engine_overrides={
             VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 torch_dtype="bfloat16",
-                strip_stop_strings=True,
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                     "transformers_prompt_style": TransformersPromptStyle.CHAT,
+                    "transformers_strip_stop_strings": True,
                 },
             ),
             VlmEngineType.VLLM: EngineModelConfig(
