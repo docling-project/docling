@@ -145,12 +145,6 @@
       },
       {
         "$ref": "#/texts/1311"
-      },
-      {
-        "$ref": "#/texts/1374"
-      },
-      {
-        "$ref": "#/texts/1375"
       }
     ],
     "content_layer": "body",
@@ -3218,9 +3212,6 @@
       "children": [
         {
           "$ref": "#/texts/761"
-        },
-        {
-          "$ref": "#/pictures/17"
         }
       ],
       "content_layer": "body",
@@ -5645,37 +5636,19 @@
           "$ref": "#/texts/1279"
         },
         {
-          "$ref": "#/pictures/18"
-        },
-        {
           "$ref": "#/texts/1282"
-        },
-        {
-          "$ref": "#/pictures/19"
         },
         {
           "$ref": "#/texts/1285"
         },
         {
-          "$ref": "#/pictures/20"
-        },
-        {
           "$ref": "#/texts/1288"
-        },
-        {
-          "$ref": "#/pictures/21"
         },
         {
           "$ref": "#/texts/1291"
         },
         {
-          "$ref": "#/pictures/22"
-        },
-        {
           "$ref": "#/texts/1294"
-        },
-        {
-          "$ref": "#/pictures/23"
         }
       ],
       "content_layer": "body",
@@ -6219,14 +6192,7 @@
       "parent": {
         "$ref": "#/groups/188"
       },
-      "children": [
-        {
-          "$ref": "#/pictures/25"
-        },
-        {
-          "$ref": "#/pictures/26"
-        }
-      ],
+      "children": [],
       "content_layer": "furniture",
       "name": "list",
       "label": "list"
@@ -17349,7 +17315,11 @@
       "parent": {
         "$ref": "#/groups/88"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/pictures/17"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
@@ -25167,6 +25137,9 @@
       "children": [
         {
           "$ref": "#/groups/169"
+        },
+        {
+          "$ref": "#/pictures/18"
         }
       ],
       "content_layer": "body",
@@ -25210,6 +25183,9 @@
       "children": [
         {
           "$ref": "#/groups/170"
+        },
+        {
+          "$ref": "#/pictures/19"
         }
       ],
       "content_layer": "body",
@@ -25253,6 +25229,9 @@
       "children": [
         {
           "$ref": "#/groups/171"
+        },
+        {
+          "$ref": "#/pictures/20"
         }
       ],
       "content_layer": "body",
@@ -25296,6 +25275,9 @@
       "children": [
         {
           "$ref": "#/groups/172"
+        },
+        {
+          "$ref": "#/pictures/21"
         }
       ],
       "content_layer": "body",
@@ -25339,6 +25321,9 @@
       "children": [
         {
           "$ref": "#/groups/173"
+        },
+        {
+          "$ref": "#/pictures/22"
         }
       ],
       "content_layer": "body",
@@ -25382,6 +25367,9 @@
       "children": [
         {
           "$ref": "#/groups/174"
+        },
+        {
+          "$ref": "#/pictures/23"
         }
       ],
       "content_layer": "body",
@@ -26522,32 +26510,6 @@
       "hyperlink": "//en.m.wikipedia.org/w/index.php?title=Duck&mobileaction=toggle_view_mobile",
       "enumerated": false,
       "marker": ""
-    },
-    {
-      "self_ref": "#/texts/1374",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "furniture",
-      "label": "caption",
-      "prov": [],
-      "orig": "Wikimedia Foundation",
-      "text": "Wikimedia Foundation",
-      "hyperlink": "https://wikimediafoundation.org/"
-    },
-    {
-      "self_ref": "#/texts/1375",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "furniture",
-      "label": "caption",
-      "prov": [],
-      "orig": "Powered by MediaWiki",
-      "text": "Powered by MediaWiki",
-      "hyperlink": "https://www.mediawiki.org/"
     }
   ],
   "pictures": [
@@ -26856,7 +26818,7 @@
     {
       "self_ref": "#/pictures/17",
       "parent": {
-        "$ref": "#/groups/88"
+        "$ref": "#/texts/761"
       },
       "children": [],
       "content_layer": "body",
@@ -26870,7 +26832,7 @@
     {
       "self_ref": "#/pictures/18",
       "parent": {
-        "$ref": "#/groups/168"
+        "$ref": "#/texts/1279"
       },
       "children": [],
       "content_layer": "body",
@@ -26884,7 +26846,7 @@
     {
       "self_ref": "#/pictures/19",
       "parent": {
-        "$ref": "#/groups/168"
+        "$ref": "#/texts/1282"
       },
       "children": [],
       "content_layer": "body",
@@ -26898,7 +26860,7 @@
     {
       "self_ref": "#/pictures/20",
       "parent": {
-        "$ref": "#/groups/168"
+        "$ref": "#/texts/1285"
       },
       "children": [],
       "content_layer": "body",
@@ -26912,7 +26874,7 @@
     {
       "self_ref": "#/pictures/21",
       "parent": {
-        "$ref": "#/groups/168"
+        "$ref": "#/texts/1288"
       },
       "children": [],
       "content_layer": "body",
@@ -26926,7 +26888,7 @@
     {
       "self_ref": "#/pictures/22",
       "parent": {
-        "$ref": "#/groups/168"
+        "$ref": "#/texts/1291"
       },
       "children": [],
       "content_layer": "body",
@@ -26940,7 +26902,7 @@
     {
       "self_ref": "#/pictures/23",
       "parent": {
-        "$ref": "#/groups/168"
+        "$ref": "#/texts/1294"
       },
       "children": [],
       "content_layer": "body",
@@ -26963,42 +26925,6 @@
       "captions": [
         {
           "$ref": "#/texts/1311"
-        }
-      ],
-      "references": [],
-      "footnotes": [],
-      "annotations": []
-    },
-    {
-      "self_ref": "#/pictures/25",
-      "parent": {
-        "$ref": "#/groups/192"
-      },
-      "children": [],
-      "content_layer": "furniture",
-      "label": "picture",
-      "prov": [],
-      "captions": [
-        {
-          "$ref": "#/texts/1374"
-        }
-      ],
-      "references": [],
-      "footnotes": [],
-      "annotations": []
-    },
-    {
-      "self_ref": "#/pictures/26",
-      "parent": {
-        "$ref": "#/groups/192"
-      },
-      "children": [],
-      "content_layer": "furniture",
-      "label": "picture",
-      "prov": [],
-      "captions": [
-        {
-          "$ref": "#/texts/1375"
         }
       ],
       "references": [],
@@ -27345,6 +27271,7 @@
         ],
         "num_rows": 13,
         "num_cols": 2,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -27815,6 +27742,7 @@
         ],
         "num_rows": 3,
         "num_cols": 2,
+        "orientation": "rot_0",
         "grid": [
           [
             {

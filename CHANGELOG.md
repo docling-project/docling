@@ -1,3 +1,16 @@
+## [v2.102.2](https://github.com/docling-project/docling/releases/tag/v2.102.2) - 2026-06-15
+
+### Fix
+
+* **service:** Make presigned_url target default on service client, handle HTTP download errors correctly ([#3609](https://github.com/docling-project/docling/issues/3609)) ([`75733f6`](https://github.com/docling-project/docling/commit/75733f6f41aa80df6d9afce864a7346a693bde28))
+* **jats:** Preserve structured abstract sections ([#3584](https://github.com/docling-project/docling/issues/3584)) ([`0db276d`](https://github.com/docling-project/docling/commit/0db276dd062a60e9cbf4260866e914aaa235474a))
+* Allow newer `typer` versions ([#3594](https://github.com/docling-project/docling/issues/3594)) ([`de0c55a`](https://github.com/docling-project/docling/commit/de0c55abe487ee9a63000d1933f09a713eb24c31))
+* Approved API fix for doclang in docling/pipeline/vlm_pipeline.py ([#3591](https://github.com/docling-project/docling/issues/3591)) ([`e1ae136`](https://github.com/docling-project/docling/commit/e1ae136529d41f606b4fa0fb35146e4a69131b71))
+
+### Documentation
+
+* Add API server usage pages ([#3596](https://github.com/docling-project/docling/issues/3596)) ([`ef9bb95`](https://github.com/docling-project/docling/commit/ef9bb95e1e8e95655c2a56edad953e282b6bd15d))
+
 ## [v2.102.1](https://github.com/docling-project/docling/releases/tag/v2.102.1) - 2026-06-12
 
 ### Fix
