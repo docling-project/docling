@@ -147,6 +147,7 @@ depends_on = [
   "docling.models.inference_engines.image_classification",
   "docling.models.inference_engines.object_detection",
   "docling.models.inference_engines.vlm",
+  "docling.utils",
 ]
 
 [[modules]]
