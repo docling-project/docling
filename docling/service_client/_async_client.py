@@ -65,10 +65,6 @@ from docling.datamodel.settings import DocumentLimits, PageRange
 from docling.service_client._scheduler import _run_bounded
 from docling.service_client.client import (
     DEFAULT_MAX_CONCURRENCY,
-    HTTP_RETRY_BACKOFF_BASE_SECONDS,
-    MAX_CONCURRENCY_LIMIT,
-    SUBMIT_AND_RETRIEVE_MANY_MAX_IN_FLIGHT_WEBSOCKETS,
-    TRANSPORT_RETRYABLE_HTTP_METHODS,
     BatchSubmitTarget,
     ChunkerKind,
     ConversionItem,
@@ -76,6 +72,9 @@ from docling.service_client.client import (
     SourceType,
     StatusWatcherKind,
     SubmitTarget,
+    _BaseDoclingServiceClient,
+    _ResolvedOptions,
+    _SourceDescriptor,
 )
 from docling.service_client.exceptions import (
     ConversionError,
@@ -101,7 +100,7 @@ logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
 
-class AsyncDoclingServiceClient:
+class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
     """Native async client for docling-serve."""
 
     def __init__(
@@ -119,28 +118,20 @@ class AsyncDoclingServiceClient:
         http_connect_timeout: float = 10.0,
         http_read_timeout: float = 60.0,
     ) -> None:
-        self._base_url = self._normalize_base_url(url)
-        self._api_key = api_key
-        self._extension_to_format = self._build_extension_to_format_map()
-        self._default_options = (
-            options.model_copy(deep=True)
-            if options is not None
-            else ConvertDocumentsRequestOptions()
+        super().__init__(
+            url=url,
+            api_key=api_key,
+            options=options,
+            status_watcher=status_watcher,
+            ws_fallback_to_poll=ws_fallback_to_poll,
+            poll_server_wait=poll_server_wait,
+            poll_client_interval=poll_client_interval,
+            job_timeout=job_timeout,
+            max_concurrency=max_concurrency,
+            http_retries=http_retries,
+            http_connect_timeout=http_connect_timeout,
+            http_read_timeout=http_read_timeout,
         )
-        self._status_watcher_kind = status_watcher
-        self._ws_fallback_to_poll = ws_fallback_to_poll
-        self._poll_server_wait = poll_server_wait
-        self._poll_client_interval = (
-            poll_server_wait if poll_client_interval is None else poll_client_interval
-        )
-        self._job_timeout = job_timeout
-        self._max_concurrency = self._validate_concurrency(
-            max_concurrency, name="max_concurrency"
-        )
-        self._http_retries = http_retries
-        self._http_connect_timeout = http_connect_timeout
-        self._http_read_timeout = http_read_timeout
-
         self._async_client: httpx.AsyncClient | None = None
         self._polling_watcher: AsyncPollingWatcher | None = None
         self._ws_watcher: AsyncWebSocketWatcher | None = None
@@ -873,15 +864,6 @@ class AsyncDoclingServiceClient:
             if sleep_for > 0:
                 await asyncio.sleep(sleep_for)
 
-    def _submit_and_retrieve_many_uses_websocket_wait(
-        self,
-        max_in_flight: int,
-    ) -> bool:
-        return (
-            self._status_watcher_kind == StatusWatcherKind.WEBSOCKET
-            and max_in_flight <= SUBMIT_AND_RETRIEVE_MANY_MAX_IN_FLIGHT_WEBSOCKETS
-        )
-
     async def _wait_for_terminal_status_for_submit_and_retrieve_many(
         self,
         task_id: str,
@@ -1016,196 +998,6 @@ class AsyncDoclingServiceClient:
         self._raise_if_task_failure_result(response)
         return response
 
-    def _parse_result_model_response(
-        self,
-        response: httpx.Response,
-        model_cls: type[_T],
-    ) -> _T:
-        try:
-            return model_cls.model_validate_json(response.text)
-        except (ValidationError, ValueError) as exc:
-            raise ResponseSchemaMismatchError(
-                "Response schema mismatch — client and server versions may differ.",
-                status_code=response.status_code,
-                detail=str(exc),
-            ) from exc
-
-    def _serialize_convert_options(
-        self,
-        options: ConvertDocumentsRequestOptions,
-    ) -> dict[str, Any]:
-        return options.model_dump(
-            mode="json",
-            exclude_defaults=True,
-            exclude_none=True,
-        )
-
-    def _serialize_convert_request(
-        self,
-        request: ConvertDocumentsRequest | BatchConvertSourcesRequest,
-    ) -> dict[str, Any]:
-        payload = request.model_dump(mode="json", exclude_none=True)
-        payload["options"] = self._serialize_convert_options(request.options)
-        return payload
-
-    def _resolve_options(
-        self,
-        options: ConvertDocumentsRequestOptions | None,
-        max_num_pages: int | None,
-        max_file_size: int | None,
-        page_range: PageRange | None,
-    ) -> _ResolvedOptions:
-        merged = self._default_options.model_copy(deep=True)
-        if options is not None and options.model_fields_set:
-            explicit = {
-                field: getattr(options, field) for field in options.model_fields_set
-            }
-            merged = merged.model_copy(update=explicit, deep=True)
-
-        effective_range = merged.page_range if page_range is None else page_range
-        if max_num_pages is not None:
-            effective_range = (
-                effective_range[0],
-                min(effective_range[1], max_num_pages),
-            )
-        merged.page_range = effective_range
-
-        limits = DocumentLimits(
-            max_num_pages=sys.maxsize if max_num_pages is None else max_num_pages,
-            max_file_size=sys.maxsize if max_file_size is None else max_file_size,
-            page_range=effective_range,
-        )
-        return _ResolvedOptions(options=merged, limits=limits)
-
-    def _options_for_output_formats(
-        self,
-        options: ConvertDocumentsRequestOptions,
-        output_formats: list[OutputFormat] | None,
-        target: InBodyTarget | ZipTarget | S3Target | PresignedUrlTarget,
-    ) -> ConvertDocumentsRequestOptions:
-        effective = options
-        if output_formats is not None:
-            effective = options.model_copy(
-                update={"to_formats": list(output_formats)},
-                deep=True,
-            )
-        if isinstance(target, InBodyTarget):
-            formats = list(effective.to_formats)
-            if OutputFormat.JSON not in formats:
-                formats.append(OutputFormat.JSON)
-            effective = effective.model_copy(update={"to_formats": formats}, deep=True)
-        return effective
-
-    def _build_conversion_result(
-        self,
-        payload: ConvertDocumentResponse,
-        descriptor: _SourceDescriptor,
-        limits: DocumentLimits,
-    ) -> ConversionResult:
-        source_name = payload.document.filename or descriptor.source_name
-        input_doc = self._build_input_document(
-            source_name=source_name,
-            input_format=descriptor.input_format,
-            file_size=descriptor.file_size,
-            limits=limits,
-        )
-        document = payload.document.json_content
-        if document is None:
-            document = DoclingDocument(name=Path(source_name).stem)
-
-        return ConversionResult(
-            input=input_doc,
-            assembled=AssembledUnit(),
-            status=payload.status,
-            errors=payload.errors,
-            timings=payload.timings,
-            document=document,
-        )
-
-    def _build_input_document(
-        self,
-        source_name: str,
-        input_format: InputFormat,
-        file_size: int | None,
-        limits: DocumentLimits,
-    ) -> InputDocument:
-        input_doc = InputDocument(
-            path_or_stream=BytesIO(b"x"),
-            format=input_format,
-            backend=NoOpBackend,
-            filename=source_name,
-            limits=limits,
-        )
-        input_doc.file = PurePath(source_name)
-        input_doc.document_hash = source_name
-        input_doc.filesize = file_size
-        input_doc.page_count = 0
-        return input_doc
-
-    def _decode_raw_result(self, response: httpx.Response) -> RawServiceResult:
-        content_type = response.headers.get("content-type", "application/octet-stream")
-        filename = self._filename_from_headers(response.headers)
-        return RawServiceResult(
-            content=response.content,
-            content_type=content_type,
-            filename=filename,
-        )
-
-    def _filename_from_headers(self, headers: httpx.Headers) -> str | None:
-        disposition = headers.get("content-disposition")
-        if disposition is None:
-            return None
-        match = re.search(r'filename="?(?P<name>[^";]+)"?', disposition)
-        if match is None:
-            return None
-        return match.group("name")
-
-    def _describe_source(self, source: SourceType) -> _SourceDescriptor:
-        if isinstance(source, Path):
-            return _SourceDescriptor(
-                source_name=source.name,
-                input_format=self._guess_input_format(source.name),
-                file_size=source.stat().st_size,
-            )
-        if isinstance(source, DocumentStream):
-            return _SourceDescriptor(
-                source_name=source.name,
-                input_format=self._guess_input_format(source.name),
-                file_size=len(source.stream.getbuffer()),
-            )
-
-        request_source = self._normalize_http_source(source)
-        parsed = urlparse(str(request_source.url))
-        filename = Path(parsed.path).name if parsed.path else "document"
-        return _SourceDescriptor(
-            source_name=filename,
-            input_format=self._guess_input_format(filename),
-            file_size=None,
-        )
-
-    def _source_name(self, source: SourceType) -> str:
-        return self._describe_source(source).source_name
-
-    def _guess_input_format(self, name: str) -> InputFormat:
-        lowered = name.lower()
-        extension = (
-            "tar.gz" if lowered.endswith(".tar.gz") else Path(name).suffix[1:].lower()
-        )
-        if extension in self._extension_to_format:
-            return self._extension_to_format[extension]
-        return InputFormat.PDF
-
-    def _normalize_http_source(
-        self,
-        source: str | HttpSourceRequest,
-    ) -> HttpSourceRequest:
-        if isinstance(source, HttpSourceRequest):
-            return source
-        parsed = urlparse(source)
-        if parsed.scheme not in {"http", "https"}:
-            raise ValueError("String sources must be HTTP or HTTPS URLs.")
-        return HttpSourceRequest(url=source, headers={})
-
     async def _source_to_upload_files(
         self,
         source: Path | DocumentStream,
@@ -1219,264 +1011,3 @@ class AsyncDoclingServiceClient:
             content = source.stream
         mime = mimetypes.guess_type(filename)[0] or "application/octet-stream"
         return {"files": (filename, content, mime)}
-
-    @staticmethod
-    def _validate_concurrency(value: int, *, name: str) -> int:
-        if value < 1 or value > MAX_CONCURRENCY_LIMIT:
-            raise ValueError(
-                f"{name} must be between 1 and {MAX_CONCURRENCY_LIMIT}, got {value}."
-            )
-        return value
-
-    @staticmethod
-    def _normalize_exception(exc: BaseException) -> Exception:
-        if isinstance(exc, Exception):
-            return exc
-        return RuntimeError(str(exc))
-
-    def _check_retry(
-        self,
-        response: httpx.Response,
-        attempt: int,
-        max_retries: int,
-    ) -> tuple[httpx.Response | None, float]:
-        if response.status_code in {500, 502}:
-            return self._retry_with_exponential_backoff(
-                response=response,
-                attempt=attempt,
-                max_retries=max_retries,
-                error_message=(
-                    f"Service returned HTTP {response.status_code} after retries."
-                ),
-            )
-        if response.status_code in {429, 503}:
-            return self._retry_with_retry_after_header(
-                response=response,
-                attempt=attempt,
-                max_retries=max_retries,
-            )
-        return response, 0.0
-
-    def _retry_with_exponential_backoff(
-        self,
-        response: httpx.Response,
-        attempt: int,
-        max_retries: int,
-        error_message: str,
-    ) -> tuple[httpx.Response | None, float]:
-        if attempt < max_retries:
-            return None, HTTP_RETRY_BACKOFF_BASE_SECONDS * (2**attempt)
-        raise ServiceUnavailableError(
-            error_message,
-            status_code=response.status_code,
-            detail=self._http_error_detail(response),
-        )
-
-    def _retry_with_retry_after_header(
-        self,
-        response: httpx.Response,
-        attempt: int,
-        max_retries: int,
-    ) -> tuple[httpx.Response | None, float]:
-        retry_after_delay = self._retry_after_delay_seconds(response)
-        if retry_after_delay is None:
-            return response, 0.0
-        if attempt < max_retries:
-            return None, retry_after_delay
-        raise ServiceUnavailableError(
-            f"Service returned HTTP {response.status_code} after retries.",
-            status_code=response.status_code,
-            detail=self._http_error_detail(response),
-        )
-
-    def _transport_retry_delay(
-        self,
-        *,
-        method: str,
-        exc: httpx.HTTPError,
-        attempt: int,
-        max_retries: int,
-    ) -> float | None:
-        method_name = method.upper()
-        if (
-            not isinstance(exc, httpx.TransportError)
-            or method_name not in TRANSPORT_RETRYABLE_HTTP_METHODS
-        ):
-            return None
-        if attempt < max_retries:
-            return HTTP_RETRY_BACKOFF_BASE_SECONDS * (2**attempt)
-        raise ServiceUnavailableError(
-            "Service transport request failed after retries.",
-            detail=str(exc),
-        ) from exc
-
-    def _retry_after_delay_seconds(self, response: httpx.Response) -> float | None:
-        retry_after_header = response.headers.get("Retry-After")
-        if retry_after_header is None:
-            return None
-        try:
-            return max(0.0, float(retry_after_header))
-        except ValueError:
-            pass
-        try:
-            retry_at = parsedate_to_datetime(retry_after_header)
-        except (TypeError, ValueError, IndexError, OverflowError):
-            return None
-        now = datetime.now(tz=retry_at.tzinfo or timezone.utc)
-        return max(0.0, (retry_at - now).total_seconds())
-
-    def _raise_for_result_404(
-        self,
-        task_id: str,
-        response: httpx.Response,
-        last_status: TaskStatusResponse | None,
-    ) -> None:
-        detail = self._http_error_detail(response)
-        if detail == "Task not found.":
-            raise TaskNotFoundError(f"Task {task_id} was not found.")
-        if detail is not None and detail.startswith("Task result not found"):
-            if last_status is not None and is_terminal_task_status(last_status):
-                if last_status.task_status == "failure":
-                    message = last_status.error_message or f"Task {task_id} failed."
-                    raise TaskExecutionError(message, failure=last_status.failure)
-                raise ResultExpiredError(f"Result for task {task_id} has expired.")
-            raise ResultNotReadyError(f"Result for task {task_id} is not ready.")
-        raise ServiceError(
-            "Unexpected result lookup error.",
-            status_code=response.status_code,
-            detail=detail,
-        )
-
-    def _raise_if_task_failure_result(self, response: httpx.Response) -> None:
-        content_type = response.headers.get("content-type", "")
-        if "json" not in content_type.lower():
-            return
-        try:
-            payload = response.json()
-        except ValueError:
-            return
-        if not isinstance(payload, dict) or payload.get("kind") != "TaskFailureResult":
-            return
-        task_failure = TaskFailureResult.model_validate(payload)
-        raise TaskExecutionError(
-            task_failure.failure.message,
-            failure=task_failure.failure,
-        )
-
-    def _raise_for_generic_http_error(
-        self,
-        response: httpx.Response,
-        message: str,
-    ) -> None:
-        if response.status_code == 402:
-            usage_limit = self._parse_usage_limit_exceeded_response(response)
-            raise UsageLimitExceededError(
-                message,
-                status_code=response.status_code,
-                detail=None if usage_limit is None else usage_limit.message,
-                current_usage=(
-                    None if usage_limit is None else usage_limit.details.currentUsage
-                ),
-                limit=None if usage_limit is None else usage_limit.details.limit,
-            )
-
-        detail = self._http_error_detail(response)
-        if 400 <= response.status_code < 500:
-            raise ServiceError(message, status_code=response.status_code, detail=detail)
-        raise ServiceUnavailableError(
-            message,
-            status_code=response.status_code,
-            detail=detail,
-        )
-
-    def _parse_usage_limit_exceeded_response(
-        self,
-        response: httpx.Response,
-    ) -> UsageLimitExceededResponse | None:
-        try:
-            return UsageLimitExceededResponse.model_validate_json(response.text)
-        except (ValidationError, ValueError):
-            return None
-
-    def _http_error_detail(self, response: httpx.Response) -> str | None:
-        try:
-            detail = response.json().get("detail")
-        except Exception:
-            return None
-        return detail if isinstance(detail, str) else None
-
-    def _should_fallback_from_presigned_target(self, exc: ServiceError) -> bool:
-        if exc.status_code not in {400, 422} or exc.detail is None:
-            return False
-        detail = exc.detail.lower()
-        if "artifact storage to be configured" in detail:
-            return True
-        if "presigned_url" not in detail and "presigned url" not in detail:
-            return False
-        return any(
-            phrase in detail
-            for phrase in (
-                "input should be",
-                "unexpected value",
-                "validation error",
-                "literal_error",
-                "enum",
-            )
-        )
-
-    def _url(self, path: str) -> str:
-        if path.startswith("/"):
-            return f"{self._base_url}{path}"
-        return f"{self._base_url}/{path}"
-
-    def _build_ws_status_url(self, task_id: str) -> str:
-        parsed = urlparse(self._base_url)
-        ws_scheme = "wss" if parsed.scheme == "https" else "ws"
-        ws_url = f"{ws_scheme}://{parsed.netloc}{parsed.path}/v1/status/ws/{task_id}"
-        if not self._api_key:
-            return ws_url
-        return f"{ws_url}?{urlencode({'api_key': self._api_key})}"
-
-    def _normalize_base_url(self, url: str) -> str:
-        parsed = urlparse(url)
-        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-            raise ValueError("Client URL must be an absolute http(s) base URL.")
-        if parsed.query or parsed.fragment:
-            raise ValueError(
-                "Client URL must not include query or fragment components."
-            )
-        path = parsed.path.rstrip("/")
-        if path.endswith("/v1"):
-            raise ValueError(
-                "Client URL must be the service base URL, not include /v1."
-            )
-        return f"{parsed.scheme}://{parsed.netloc}{path}"
-
-    def _build_extension_to_format_map(self) -> dict[str, InputFormat]:
-        extension_to_format: dict[str, InputFormat] = {}
-        for input_format, extensions in FormatToExtensions.items():
-            for extension in extensions:
-                extension_to_format.setdefault(extension.lower(), input_format)
-        return extension_to_format
-
-
-class _ResolvedOptions:
-    def __init__(
-        self,
-        options: ConvertDocumentsRequestOptions,
-        limits: DocumentLimits,
-    ) -> None:
-        self.options = options
-        self.limits = limits
-
-
-class _SourceDescriptor:
-    def __init__(
-        self,
-        source_name: str,
-        input_format: InputFormat,
-        file_size: int | None,
-    ) -> None:
-        self.source_name = source_name
-        self.input_format = input_format
-        self.file_size = file_size

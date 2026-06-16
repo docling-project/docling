@@ -22,6 +22,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import BoundingBox, ProvenanceItem, Size
 from PIL import Image as PILImage
 
+import docling.service_client._async_client as async_module
 import docling.service_client.client as client_module
 import docling.service_client.watchers as watchers_module
 from docling.datamodel.base_models import (
@@ -76,6 +77,10 @@ from docling.service_client.job import ConversionJob, _JobHandlers
 from docling.service_client.watchers import AsyncPollingWatcher, PollingWatcher
 
 TEST_BASE_URL = "http://docling-service.invalid"
+
+# The sync batch APIs (convert_all / submit_and_retrieve_each) drive a native
+# AsyncDoclingServiceClient internally; tests stub its task I/O at the class level.
+_ASYNC_CLIENT = async_module.AsyncDoclingServiceClient
 
 
 @pytest.fixture
@@ -534,12 +539,12 @@ async def test_async_wait_for_terminal_enforces_minimum_client_cadence(
             self.now += seconds
 
     clock = _Clock()
-    monkeypatch.setattr(client_module.time, "monotonic", clock.monotonic)
+    monkeypatch.setattr(async_module.time, "monotonic", clock.monotonic)
 
     async def fake_async_sleep(seconds: float) -> None:
         clock.advance(seconds)
 
-    monkeypatch.setattr(client_module.asyncio, "sleep", fake_async_sleep)
+    monkeypatch.setattr(async_module.asyncio, "sleep", fake_async_sleep)
 
     statuses = iter(["pending", "success"])
     wait_values: list[float] = []
@@ -553,13 +558,13 @@ async def test_async_wait_for_terminal_enforces_minimum_client_cadence(
         wait_values.append(wait)
         return _status_response(task_id=task_id, status=next(statuses))
 
-    with DoclingServiceClient(url=TEST_BASE_URL, poll_server_wait=0.5) as client:
-        client._poll_task_status_async = MethodType(fake_poll, client)
-        result = await client._wait_for_terminal_status_async(
-            task_id="task-1",
-            timeout=5.0,
-            async_client=None,  # type: ignore[arg-type]
-        )
+    client = _ASYNC_CLIENT(url=TEST_BASE_URL, poll_server_wait=0.5)
+    client._poll_task_status_using_client = MethodType(fake_poll, client)
+    result = await client._wait_for_terminal_status(
+        task_id="task-1",
+        timeout=5.0,
+        async_client=None,  # type: ignore[arg-type]
+    )
 
     assert result.task_status == "success"
     assert wait_values == [0.5, 0.5]
@@ -583,12 +588,12 @@ async def test_async_wait_for_terminal_supports_explicit_client_interval(
             self.now += seconds
 
     clock = _Clock()
-    monkeypatch.setattr(client_module.time, "monotonic", clock.monotonic)
+    monkeypatch.setattr(async_module.time, "monotonic", clock.monotonic)
 
     async def fake_async_sleep(seconds: float) -> None:
         clock.advance(seconds)
 
-    monkeypatch.setattr(client_module.asyncio, "sleep", fake_async_sleep)
+    monkeypatch.setattr(async_module.asyncio, "sleep", fake_async_sleep)
 
     statuses = iter(["pending", "success"])
     wait_values: list[float] = []
@@ -602,35 +607,38 @@ async def test_async_wait_for_terminal_supports_explicit_client_interval(
         wait_values.append(wait)
         return _status_response(task_id=task_id, status=next(statuses))
 
-    with DoclingServiceClient(
+    client = _ASYNC_CLIENT(
         url=TEST_BASE_URL,
         poll_server_wait=5.0,
         poll_client_interval=1.0,
-    ) as client:
-        client._poll_task_status_async = MethodType(fake_poll, client)
-        result = await client._wait_for_terminal_status_async(
-            task_id="task-1",
-            timeout=10.0,
-            async_client=None,  # type: ignore[arg-type]
-        )
+    )
+    client._poll_task_status_using_client = MethodType(fake_poll, client)
+    result = await client._wait_for_terminal_status(
+        task_id="task-1",
+        timeout=10.0,
+        async_client=None,  # type: ignore[arg-type]
+    )
 
     assert result.task_status == "success"
     assert wait_values == [5.0, 5.0]
     assert clock.sleep_calls == [pytest.approx(1.0)]
 
 
-def test_convert_all_uses_async_pipeline_and_preserves_order(tmp_path) -> None:
+def test_convert_all_uses_async_pipeline_and_preserves_order(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     with DoclingServiceClient(url=TEST_BASE_URL) as client:
         calls: list[dict[str, object]] = []
 
-        async def fake_submit_and_retrieve_many_async(
+        async def fake_submit_and_retrieve_each(
             self,
-            item_list,
-            max_in_flight,
-            ordered,
-            target=InBodyTarget(),
+            items,
+            max_in_flight=DEFAULT_MAX_CONCURRENCY,
+            ordered=False,
+            *,
+            target=None,
         ):
-            items = list(item_list)
+            items = list(items)
             calls.append(
                 {
                     "count": len(items),
@@ -642,8 +650,10 @@ def test_convert_all_uses_async_pipeline_and_preserves_order(tmp_path) -> None:
             for item in items:
                 yield item, _convert_payload(Path(item.source).name)
 
-        client._submit_and_retrieve_many_async = MethodType(
-            fake_submit_and_retrieve_many_async, client
+        monkeypatch.setattr(
+            async_module.AsyncDoclingServiceClient,
+            "submit_and_retrieve_each",
+            fake_submit_and_retrieve_each,
         )
 
         p1 = tmp_path / "a.pdf"
@@ -680,20 +690,22 @@ def test_convert_all_uses_async_pipeline_and_preserves_order(tmp_path) -> None:
 
 def test_convert_all_returns_iterator_and_yields_before_batch_completion(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     release_first = threading.Event()
     release_third = threading.Event()
 
     with DoclingServiceClient(url=TEST_BASE_URL) as client:
 
-        async def fake_submit_and_retrieve_many_async(
+        async def fake_submit_and_retrieve_each(
             self,
-            item_list,
-            max_in_flight,
-            ordered,
-            target=InBodyTarget(),
+            items,
+            max_in_flight=DEFAULT_MAX_CONCURRENCY,
+            ordered=False,
+            *,
+            target=None,
         ):
-            items = list(item_list)
+            items = list(items)
             assert max_in_flight == 2
             assert ordered is True
 
@@ -704,8 +716,10 @@ def test_convert_all_returns_iterator_and_yields_before_batch_completion(
             await asyncio.to_thread(release_third.wait)
             yield items[2], _convert_payload(Path(items[2].source).name)
 
-        client._submit_and_retrieve_many_async = MethodType(
-            fake_submit_and_retrieve_many_async, client
+        monkeypatch.setattr(
+            async_module.AsyncDoclingServiceClient,
+            "submit_and_retrieve_each",
+            fake_submit_and_retrieve_each,
         )
 
         p1 = tmp_path / "a.pdf"
@@ -773,18 +787,21 @@ def test_convert_all_returns_iterator_and_yields_before_batch_completion(
             next(iterator)
 
 
-def test_convert_all_interleaves_preflight_skips_correctly(tmp_path: Path) -> None:
+def test_convert_all_interleaves_preflight_skips_correctly(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     with DoclingServiceClient(url=TEST_BASE_URL) as client:
         submitted_names: list[str] = []
 
-        async def fake_submit_and_retrieve_many_async(
+        async def fake_submit_and_retrieve_each(
             self,
-            item_list,
-            max_in_flight,
-            ordered,
-            target=InBodyTarget(),
+            items,
+            max_in_flight=DEFAULT_MAX_CONCURRENCY,
+            ordered=False,
+            *,
+            target=None,
         ):
-            items = list(item_list)
+            items = list(items)
             assert max_in_flight == DEFAULT_MAX_CONCURRENCY
             assert ordered is True
 
@@ -792,8 +809,10 @@ def test_convert_all_interleaves_preflight_skips_correctly(tmp_path: Path) -> No
                 submitted_names.append(Path(item.source).name)
                 yield item, _convert_payload(Path(item.source).name)
 
-        client._submit_and_retrieve_many_async = MethodType(
-            fake_submit_and_retrieve_many_async, client
+        monkeypatch.setattr(
+            async_module.AsyncDoclingServiceClient,
+            "submit_and_retrieve_each",
+            fake_submit_and_retrieve_each,
         )
 
         p1 = tmp_path / "a.pdf"
@@ -843,44 +862,35 @@ def test_convert_all_rejects_invalid_max_concurrency(
 
 def test_submit_and_retrieve_many_yields_completion_order_and_ordered_mode(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class _DummyAsyncClient:
-        async def __aenter__(self):
-            return self
+    async def fake_submit(
+        self, source, options, target, async_client, request_headers=None
+    ):
+        return _status_response(f"task-{source.name}", "pending")
 
-        async def __aexit__(self, exc_type, exc, tb):
-            return None
+    async def fake_wait(self, task_id, timeout, async_client, max_in_flight):
+        if task_id == "task-a.pdf":
+            await asyncio.sleep(0.01)
+        return _status_response(task_id, "success")
+
+    async def fake_fetch_payload(self, task_id, last_status, async_client):
+        return _convert_payload(task_id.removeprefix("task-"))
+
+    monkeypatch.setattr(_ASYNC_CLIENT, "_submit_convert_task", fake_submit)
+    monkeypatch.setattr(
+        _ASYNC_CLIENT,
+        "_wait_for_terminal_status_for_submit_and_retrieve_many",
+        fake_wait,
+    )
+    monkeypatch.setattr(
+        _ASYNC_CLIENT, "_fetch_convert_result_payload", fake_fetch_payload
+    )
 
     with DoclingServiceClient(
         url=TEST_BASE_URL,
         status_watcher="polling",
     ) as client:
-
-        def fake_build_async_http_client(self):
-            return _DummyAsyncClient()
-
-        async def fake_submit(
-            self, source, options, target, async_client, request_headers=None
-        ):
-            return _status_response(f"task-{source.name}", "pending")
-
-        async def fake_wait(self, task_id, timeout, async_client):
-            if task_id == "task-a.pdf":
-                await asyncio.sleep(0.01)
-            return _status_response(task_id, "success")
-
-        async def fake_fetch_payload(self, task_id, last_status, async_client):
-            return _convert_payload(task_id.removeprefix("task-"))
-
-        client._build_async_http_client = MethodType(
-            fake_build_async_http_client, client
-        )
-        client._submit_convert_task_async = MethodType(fake_submit, client)
-        client._wait_for_terminal_status_async = MethodType(fake_wait, client)
-        client._fetch_convert_result_payload_async = MethodType(
-            fake_fetch_payload, client
-        )
-
         p1 = tmp_path / "a.pdf"
         p2 = tmp_path / "b.pdf"
         p1.write_bytes(b"%PDF-1.4\n")
@@ -910,45 +920,36 @@ def test_submit_and_retrieve_many_yields_completion_order_and_ordered_mode(
 
 def test_submit_and_retrieve_many_forwards_per_item_request_headers(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class _DummyAsyncClient:
-        async def __aenter__(self):
-            return self
-
-        async def __aexit__(self, exc_type, exc, tb):
-            return None
-
     seen_headers: list[dict[str, str] | None] = []
+
+    async def fake_submit(
+        self, source, options, target, async_client, request_headers=None
+    ):
+        seen_headers.append(request_headers)
+        return _status_response(f"task-{source.name}", "pending")
+
+    async def fake_wait(self, task_id, timeout, async_client, max_in_flight):
+        return _status_response(task_id, "success")
+
+    async def fake_fetch_payload(self, task_id, last_status, async_client):
+        return _convert_payload(task_id.removeprefix("task-"))
+
+    monkeypatch.setattr(_ASYNC_CLIENT, "_submit_convert_task", fake_submit)
+    monkeypatch.setattr(
+        _ASYNC_CLIENT,
+        "_wait_for_terminal_status_for_submit_and_retrieve_many",
+        fake_wait,
+    )
+    monkeypatch.setattr(
+        _ASYNC_CLIENT, "_fetch_convert_result_payload", fake_fetch_payload
+    )
 
     with DoclingServiceClient(
         url=TEST_BASE_URL,
         status_watcher="polling",
     ) as client:
-
-        def fake_build_async_http_client(self):
-            return _DummyAsyncClient()
-
-        async def fake_submit(
-            self, source, options, target, async_client, request_headers=None
-        ):
-            seen_headers.append(request_headers)
-            return _status_response(f"task-{source.name}", "pending")
-
-        async def fake_wait(self, task_id, timeout, async_client):
-            return _status_response(task_id, "success")
-
-        async def fake_fetch_payload(self, task_id, last_status, async_client):
-            return _convert_payload(task_id.removeprefix("task-"))
-
-        client._build_async_http_client = MethodType(
-            fake_build_async_http_client, client
-        )
-        client._submit_convert_task_async = MethodType(fake_submit, client)
-        client._wait_for_terminal_status_async = MethodType(fake_wait, client)
-        client._fetch_convert_result_payload_async = MethodType(
-            fake_fetch_payload, client
-        )
-
         p1 = tmp_path / "a.pdf"
         p2 = tmp_path / "b.pdf"
         p1.write_bytes(b"%PDF-1.4\n")
@@ -971,49 +972,41 @@ def test_submit_and_retrieve_many_forwards_per_item_request_headers(
     ]
 
 
-def test_submit_and_retrieve_many_forwards_http_source_request_headers() -> None:
-    class _DummyAsyncClient:
-        async def __aenter__(self):
-            return self
-
-        async def __aexit__(self, exc_type, exc, tb):
-            return None
-
+def test_submit_and_retrieve_many_forwards_http_source_request_headers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     seen_sources: list[HttpSourceRequest] = []
+
+    async def fake_submit(
+        self, source, options, target, async_client, request_headers=None
+    ):
+        assert isinstance(source, HttpSourceRequest)
+        seen_sources.append(source)
+        return _status_response(
+            f"task-{Path(str(source.url)).name}",
+            "pending",
+        )
+
+    async def fake_wait(self, task_id, timeout, async_client, max_in_flight):
+        return _status_response(task_id, "success")
+
+    async def fake_fetch_payload(self, task_id, last_status, async_client):
+        return _convert_payload(task_id.removeprefix("task-"))
+
+    monkeypatch.setattr(_ASYNC_CLIENT, "_submit_convert_task", fake_submit)
+    monkeypatch.setattr(
+        _ASYNC_CLIENT,
+        "_wait_for_terminal_status_for_submit_and_retrieve_many",
+        fake_wait,
+    )
+    monkeypatch.setattr(
+        _ASYNC_CLIENT, "_fetch_convert_result_payload", fake_fetch_payload
+    )
 
     with DoclingServiceClient(
         url=TEST_BASE_URL,
         status_watcher="polling",
     ) as client:
-
-        def fake_build_async_http_client(self):
-            return _DummyAsyncClient()
-
-        async def fake_submit(
-            self, source, options, target, async_client, request_headers=None
-        ):
-            assert isinstance(source, HttpSourceRequest)
-            seen_sources.append(source)
-            return _status_response(
-                f"task-{Path(str(source.url)).name}",
-                "pending",
-            )
-
-        async def fake_wait(self, task_id, timeout, async_client):
-            return _status_response(task_id, "success")
-
-        async def fake_fetch_payload(self, task_id, last_status, async_client):
-            return _convert_payload(task_id.removeprefix("task-"))
-
-        client._build_async_http_client = MethodType(
-            fake_build_async_http_client, client
-        )
-        client._submit_convert_task_async = MethodType(fake_submit, client)
-        client._wait_for_terminal_status_async = MethodType(fake_wait, client)
-        client._fetch_convert_result_payload_async = MethodType(
-            fake_fetch_payload, client
-        )
-
         list(
             client.submit_and_retrieve_each(
                 [
@@ -1041,44 +1034,36 @@ def test_submit_and_retrieve_many_forwards_http_source_request_headers() -> None
     ]
 
 
-def test_submit_and_retrieve_many_isolates_failures_per_item(tmp_path: Path) -> None:
-    class _DummyAsyncClient:
-        async def __aenter__(self):
-            return self
+def test_submit_and_retrieve_many_isolates_failures_per_item(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_submit(
+        self, source, options, target, async_client, request_headers=None
+    ):
+        if source.name == "bad.pdf":
+            raise ValueError("submit failed")
+        return _status_response(f"task-{source.name}", "pending")
 
-        async def __aexit__(self, exc_type, exc, tb):
-            return None
+    async def fake_wait(self, task_id, timeout, async_client, max_in_flight):
+        return _status_response(task_id, "success")
+
+    async def fake_fetch_payload(self, task_id, last_status, async_client):
+        return _convert_payload(task_id.removeprefix("task-"))
+
+    monkeypatch.setattr(_ASYNC_CLIENT, "_submit_convert_task", fake_submit)
+    monkeypatch.setattr(
+        _ASYNC_CLIENT,
+        "_wait_for_terminal_status_for_submit_and_retrieve_many",
+        fake_wait,
+    )
+    monkeypatch.setattr(
+        _ASYNC_CLIENT, "_fetch_convert_result_payload", fake_fetch_payload
+    )
 
     with DoclingServiceClient(
         url=TEST_BASE_URL,
         status_watcher="polling",
     ) as client:
-
-        def fake_build_async_http_client(self):
-            return _DummyAsyncClient()
-
-        async def fake_submit(
-            self, source, options, target, async_client, request_headers=None
-        ):
-            if source.name == "bad.pdf":
-                raise ValueError("submit failed")
-            return _status_response(f"task-{source.name}", "pending")
-
-        async def fake_wait(self, task_id, timeout, async_client):
-            return _status_response(task_id, "success")
-
-        async def fake_fetch_payload(self, task_id, last_status, async_client):
-            return _convert_payload(task_id.removeprefix("task-"))
-
-        client._build_async_http_client = MethodType(
-            fake_build_async_http_client, client
-        )
-        client._submit_convert_task_async = MethodType(fake_submit, client)
-        client._wait_for_terminal_status_async = MethodType(fake_wait, client)
-        client._fetch_convert_result_payload_async = MethodType(
-            fake_fetch_payload, client
-        )
-
         good = tmp_path / "good.pdf"
         bad = tmp_path / "bad.pdf"
         good.write_bytes(b"%PDF-1.4\n")
@@ -1098,53 +1083,45 @@ def test_submit_and_retrieve_many_isolates_failures_per_item(tmp_path: Path) -> 
     assert getattr(outcomes[1][1], "status") == ConversionStatus.SUCCESS
 
 
-def test_submit_and_retrieve_many_respects_max_in_flight(tmp_path: Path) -> None:
-    class _DummyAsyncClient:
-        async def __aenter__(self):
-            return self
-
-        async def __aexit__(self, exc_type, exc, tb):
-            return None
-
+def test_submit_and_retrieve_many_respects_max_in_flight(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     state = {"active": 0, "max_seen": 0, "submitted": 0}
     release = asyncio.Event()
+
+    async def fake_submit(
+        self, source, options, target, async_client, request_headers=None
+    ):
+        state["active"] += 1
+        state["submitted"] += 1
+        state["max_seen"] = max(state["max_seen"], state["active"])
+        if state["submitted"] >= 2:
+            release.set()
+        return _status_response(f"task-{source.name}", "pending")
+
+    async def fake_wait(self, task_id, timeout, async_client, max_in_flight):
+        if task_id in {"task-a.pdf", "task-b.pdf"}:
+            await release.wait()
+        return _status_response(task_id, "success")
+
+    async def fake_fetch_payload(self, task_id, last_status, async_client):
+        state["active"] -= 1
+        return _convert_payload(task_id.removeprefix("task-"))
+
+    monkeypatch.setattr(_ASYNC_CLIENT, "_submit_convert_task", fake_submit)
+    monkeypatch.setattr(
+        _ASYNC_CLIENT,
+        "_wait_for_terminal_status_for_submit_and_retrieve_many",
+        fake_wait,
+    )
+    monkeypatch.setattr(
+        _ASYNC_CLIENT, "_fetch_convert_result_payload", fake_fetch_payload
+    )
 
     with DoclingServiceClient(
         url=TEST_BASE_URL,
         status_watcher="polling",
     ) as client:
-
-        def fake_build_async_http_client(self):
-            return _DummyAsyncClient()
-
-        async def fake_submit(
-            self, source, options, target, async_client, request_headers=None
-        ):
-            state["active"] += 1
-            state["submitted"] += 1
-            state["max_seen"] = max(state["max_seen"], state["active"])
-            if state["submitted"] >= 2:
-                release.set()
-            return _status_response(f"task-{source.name}", "pending")
-
-        async def fake_wait(self, task_id, timeout, async_client):
-            if task_id in {"task-a.pdf", "task-b.pdf"}:
-                await release.wait()
-            return _status_response(task_id, "success")
-
-        async def fake_fetch_payload(self, task_id, last_status, async_client):
-            state["active"] -= 1
-            return _convert_payload(task_id.removeprefix("task-"))
-
-        client._build_async_http_client = MethodType(
-            fake_build_async_http_client, client
-        )
-        client._submit_convert_task_async = MethodType(fake_submit, client)
-        client._wait_for_terminal_status_async = MethodType(fake_wait, client)
-        client._fetch_convert_result_payload_async = MethodType(
-            fake_fetch_payload, client
-        )
-
         paths = []
         for name in ["a.pdf", "b.pdf", "c.pdf"]:
             path = tmp_path / name
@@ -1164,46 +1141,36 @@ def test_submit_and_retrieve_many_respects_max_in_flight(tmp_path: Path) -> None
 
 def test_submit_and_retrieve_many_consumes_iterable_incrementally(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class _DummyAsyncClient:
-        async def __aenter__(self):
-            return self
-
-        async def __aexit__(self, exc_type, exc, tb):
-            return None
-
     generated: list[str] = []
+
+    async def fake_submit(
+        self, source, options, target, async_client, request_headers=None
+    ):
+        return _status_response(f"task-{Path(source).name}", "pending")
+
+    async def fake_wait(self, task_id, timeout, async_client, max_in_flight):
+        await asyncio.sleep(0)  # yield so the event loop can process completed results
+        return _status_response(task_id, "success")
+
+    async def fake_fetch_payload(self, task_id, last_status, async_client):
+        return _convert_payload(task_id.removeprefix("task-"))
+
+    monkeypatch.setattr(_ASYNC_CLIENT, "_submit_convert_task", fake_submit)
+    monkeypatch.setattr(
+        _ASYNC_CLIENT,
+        "_wait_for_terminal_status_for_submit_and_retrieve_many",
+        fake_wait,
+    )
+    monkeypatch.setattr(
+        _ASYNC_CLIENT, "_fetch_convert_result_payload", fake_fetch_payload
+    )
 
     with DoclingServiceClient(
         url=TEST_BASE_URL,
         status_watcher="polling",
     ) as client:
-
-        def fake_build_async_http_client(self):
-            return _DummyAsyncClient()
-
-        async def fake_submit(
-            self, source, options, target, async_client, request_headers=None
-        ):
-            return _status_response(f"task-{Path(source).name}", "pending")
-
-        async def fake_wait(self, task_id, timeout, async_client):
-            await asyncio.sleep(
-                0
-            )  # yield so the event loop can process completed results
-            return _status_response(task_id, "success")
-
-        async def fake_fetch_payload(self, task_id, last_status, async_client):
-            return _convert_payload(task_id.removeprefix("task-"))
-
-        client._build_async_http_client = MethodType(
-            fake_build_async_http_client, client
-        )
-        client._submit_convert_task_async = MethodType(fake_submit, client)
-        client._wait_for_terminal_status_async = MethodType(fake_wait, client)
-        client._fetch_convert_result_payload_async = MethodType(
-            fake_fetch_payload, client
-        )
 
         def item_iter():
             for idx in range(50):
@@ -1254,21 +1221,21 @@ def test_submit_and_retrieve_many_rejects_invalid_max_in_flight(
 async def test_submit_and_retrieve_many_prefers_websocket_wait_at_or_below_threshold() -> (
     None
 ):
-    with DoclingServiceClient(
+    seen: list[tuple[str, float | None]] = []
+
+    async def fake_wait_for_terminal(
+        task_id: str, timeout: float | None
+    ) -> TaskStatusResponse:
+        seen.append((task_id, timeout))
+        return _status_response(task_id, "success")
+
+    async with _ASYNC_CLIENT(
         url=TEST_BASE_URL,
         status_watcher="websocket",
     ) as client:
-        seen: list[tuple[str, float | None]] = []
+        client._ws_watcher.wait_for_terminal = fake_wait_for_terminal  # type: ignore[method-assign,union-attr]
 
-        def fake_wait_for_terminal(
-            task_id: str, timeout: float | None
-        ) -> TaskStatusResponse:
-            seen.append((task_id, timeout))
-            return _status_response(task_id, "success")
-
-        client._ws_watcher.wait_for_terminal = fake_wait_for_terminal  # type: ignore[method-assign]
-
-        result = await client._wait_for_terminal_status_for_submit_and_retrieve_many_async(
+        result = await client._wait_for_terminal_status_for_submit_and_retrieve_many(
             task_id="task-1",
             timeout=3.0,
             async_client=None,  # type: ignore[arg-type]
@@ -1283,34 +1250,32 @@ async def test_submit_and_retrieve_many_prefers_websocket_wait_at_or_below_thres
 async def test_submit_and_retrieve_many_uses_polling_above_websocket_threshold() -> (
     None
 ):
-    with DoclingServiceClient(
+    seen: list[tuple[str, float, object]] = []
+
+    async def fake_wait_async(self, task_id, timeout, async_client):
+        seen.append((task_id, timeout, async_client))
+        return _status_response(task_id, "success")
+
+    async def fail_wait_for_terminal(
+        task_id: str, timeout: float | None
+    ) -> TaskStatusResponse:
+        raise AssertionError("websocket wait should not be used above threshold")
+
+    async with _ASYNC_CLIENT(
         url=TEST_BASE_URL,
         status_watcher="websocket",
     ) as client:
-        seen: list[tuple[str, float, object]] = []
-
-        async def fake_wait_async(self, task_id, timeout, async_client):
-            seen.append((task_id, timeout, async_client))
-            return _status_response(task_id, "success")
-
-        def fail_wait_for_terminal(
-            task_id: str, timeout: float | None
-        ) -> TaskStatusResponse:
-            raise AssertionError("websocket wait should not be used above threshold")
-
-        client._wait_for_terminal_status_async = MethodType(fake_wait_async, client)
-        client._ws_watcher.wait_for_terminal = fail_wait_for_terminal  # type: ignore[method-assign]
+        client._wait_for_terminal_status = MethodType(fake_wait_async, client)  # type: ignore[method-assign]
+        client._ws_watcher.wait_for_terminal = fail_wait_for_terminal  # type: ignore[method-assign,union-attr]
 
         marker = object()
-        result = (
-            await client._wait_for_terminal_status_for_submit_and_retrieve_many_async(
-                task_id="task-2",
-                timeout=4.0,
-                async_client=marker,  # type: ignore[arg-type]
-                max_in_flight=(
-                    client_module.SUBMIT_AND_RETRIEVE_MANY_MAX_IN_FLIGHT_WEBSOCKETS + 1
-                ),
-            )
+        result = await client._wait_for_terminal_status_for_submit_and_retrieve_many(
+            task_id="task-2",
+            timeout=4.0,
+            async_client=marker,  # type: ignore[arg-type]
+            max_in_flight=(
+                client_module.SUBMIT_AND_RETRIEVE_MANY_MAX_IN_FLIGHT_WEBSOCKETS + 1
+            ),
         )
 
     assert result.task_status == "success"
@@ -1321,34 +1286,30 @@ async def test_submit_and_retrieve_many_uses_polling_above_websocket_threshold()
 async def test_submit_and_retrieve_many_respects_explicit_polling_watcher_for_waits() -> (
     None
 ):
-    with DoclingServiceClient(
+    seen: list[tuple[str, float, object]] = []
+
+    async def fake_wait_async(self, task_id, timeout, async_client):
+        seen.append((task_id, timeout, async_client))
+        return _status_response(task_id, "success")
+
+    async def fail_wait_for_terminal(
+        task_id: str, timeout: float | None
+    ) -> TaskStatusResponse:
+        raise AssertionError("websocket wait should not be used for polling watcher")
+
+    async with _ASYNC_CLIENT(
         url=TEST_BASE_URL,
         status_watcher="polling",
     ) as client:
-        seen: list[tuple[str, float, object]] = []
-
-        async def fake_wait_async(self, task_id, timeout, async_client):
-            seen.append((task_id, timeout, async_client))
-            return _status_response(task_id, "success")
-
-        def fail_wait_for_terminal(
-            task_id: str, timeout: float | None
-        ) -> TaskStatusResponse:
-            raise AssertionError(
-                "websocket wait should not be used for polling watcher"
-            )
-
-        client._wait_for_terminal_status_async = MethodType(fake_wait_async, client)
-        client._ws_watcher.wait_for_terminal = fail_wait_for_terminal  # type: ignore[method-assign]
+        client._wait_for_terminal_status = MethodType(fake_wait_async, client)  # type: ignore[method-assign]
+        client._ws_watcher.wait_for_terminal = fail_wait_for_terminal  # type: ignore[method-assign,union-attr]
 
         marker = object()
-        result = (
-            await client._wait_for_terminal_status_for_submit_and_retrieve_many_async(
-                task_id="task-3",
-                timeout=5.0,
-                async_client=marker,  # type: ignore[arg-type]
-                max_in_flight=1,
-            )
+        result = await client._wait_for_terminal_status_for_submit_and_retrieve_many(
+            task_id="task-3",
+            timeout=5.0,
+            async_client=marker,  # type: ignore[arg-type]
+            max_in_flight=1,
         )
 
     assert result.task_status == "success"
@@ -1359,47 +1320,33 @@ async def test_submit_and_retrieve_many_respects_explicit_polling_watcher_for_wa
 async def test_submit_and_retrieve_many_ordered_mode_yields_before_batch_completion(
     tmp_path: Path,
 ) -> None:
-    class _DummyAsyncClient:
-        async def __aenter__(self):
-            return self
-
-        async def __aexit__(self, exc_type, exc, tb):
-            return None
-
     release_first = asyncio.Event()
     release_third = asyncio.Event()
 
-    with DoclingServiceClient(
+    async def fake_submit(
+        self, source, options, target, async_client, request_headers=None
+    ):
+        return _status_response(f"task-{Path(source).name}", "pending")
+
+    async def fake_wait(self, task_id, timeout, async_client, max_in_flight):
+        if task_id == "task-a.pdf":
+            await release_first.wait()
+        if task_id == "task-c.pdf":
+            await release_third.wait()
+        return _status_response(task_id, "success")
+
+    async def fake_fetch_payload(self, task_id, last_status, async_client):
+        return _convert_payload(task_id.removeprefix("task-"))
+
+    async with _ASYNC_CLIENT(
         url=TEST_BASE_URL,
         status_watcher="polling",
     ) as client:
-
-        def fake_build_async_http_client(self):
-            return _DummyAsyncClient()
-
-        async def fake_submit(
-            self, source, options, target, async_client, request_headers=None
-        ):
-            return _status_response(f"task-{Path(source).name}", "pending")
-
-        async def fake_wait(self, task_id, timeout, async_client):
-            if task_id == "task-a.pdf":
-                await release_first.wait()
-            if task_id == "task-c.pdf":
-                await release_third.wait()
-            return _status_response(task_id, "success")
-
-        async def fake_fetch_payload(self, task_id, last_status, async_client):
-            return _convert_payload(task_id.removeprefix("task-"))
-
-        client._build_async_http_client = MethodType(
-            fake_build_async_http_client, client
+        client._submit_convert_task = MethodType(fake_submit, client)
+        client._wait_for_terminal_status_for_submit_and_retrieve_many = MethodType(
+            fake_wait, client
         )
-        client._submit_convert_task_async = MethodType(fake_submit, client)
-        client._wait_for_terminal_status_async = MethodType(fake_wait, client)
-        client._fetch_convert_result_payload_async = MethodType(
-            fake_fetch_payload, client
-        )
+        client._fetch_convert_result_payload = MethodType(fake_fetch_payload, client)
 
         items: list[ConversionItem] = []
         for name in ["a.pdf", "b.pdf", "c.pdf"]:
@@ -1407,10 +1354,11 @@ async def test_submit_and_retrieve_many_ordered_mode_yields_before_batch_complet
             path.write_bytes(b"%PDF-1.4\n")
             items.append(ConversionItem(source=path))
 
-        async_iterator = client._submit_and_retrieve_many_async(
-            item_list=items,
+        async_iterator = client.submit_and_retrieve_each(
+            items=items,
             max_in_flight=2,
             ordered=True,
+            target=InBodyTarget(),
         )
 
         first_result_task = asyncio.create_task(anext(async_iterator))
@@ -1654,14 +1602,8 @@ def test_submit_auto_falls_back_to_inbody_when_presigned_is_rejected() -> None:
 
 def test_submit_and_retrieve_each_auto_target_returns_presigned_when_supported(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class _DummyAsyncClient:
-        async def __aenter__(self):
-            return self
-
-        async def __aexit__(self, exc_type, exc, tb):
-            return None
-
     seen_targets: list[type[object]] = []
     presigned_result = PresignedUrlConvertResponse(
         num_converted=1,
@@ -1686,30 +1628,27 @@ def test_submit_and_retrieve_each_auto_target_returns_presigned_when_supported(
         ],
     )
 
+    async def fake_submit(
+        self, source, options, target, async_client, request_headers=None
+    ):
+        seen_targets.append(type(target))
+        return _status_response(f"task-{source.name}", "pending")
+
+    async def fake_wait(self, task_id, timeout, async_client, max_in_flight):
+        return _status_response(task_id, "success")
+
+    async def fake_fetch_presigned(self, task_id, last_status, async_client):
+        return presigned_result
+
+    monkeypatch.setattr(_ASYNC_CLIENT, "_submit_convert_task", fake_submit)
+    monkeypatch.setattr(
+        _ASYNC_CLIENT,
+        "_wait_for_terminal_status_for_submit_and_retrieve_many",
+        fake_wait,
+    )
+    monkeypatch.setattr(_ASYNC_CLIENT, "_fetch_presigned_result", fake_fetch_presigned)
+
     with DoclingServiceClient(url=TEST_BASE_URL, status_watcher="polling") as client:
-
-        def fake_build_async_http_client(self):
-            return _DummyAsyncClient()
-
-        async def fake_submit(
-            self, source, options, target, async_client, request_headers=None
-        ):
-            seen_targets.append(type(target))
-            return _status_response(f"task-{source.name}", "pending")
-
-        async def fake_wait(self, task_id, timeout, async_client):
-            return _status_response(task_id, "success")
-
-        async def fake_fetch_presigned(self, task_id, last_status, async_client):
-            return presigned_result
-
-        client._build_async_http_client = MethodType(
-            fake_build_async_http_client, client
-        )
-        client._submit_convert_task_async = MethodType(fake_submit, client)
-        client._wait_for_terminal_status_async = MethodType(fake_wait, client)
-        client._fetch_presigned_result_async = MethodType(fake_fetch_presigned, client)
-
         source = tmp_path / "a.pdf"
         source.write_bytes(b"%PDF-1.4\n")
         outcomes = list(
@@ -1725,51 +1664,42 @@ def test_submit_and_retrieve_each_auto_target_returns_presigned_when_supported(
 
 def test_submit_and_retrieve_each_auto_target_falls_back_to_inbody_when_presigned_is_rejected(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class _DummyAsyncClient:
-        async def __aenter__(self):
-            return self
-
-        async def __aexit__(self, exc_type, exc, tb):
-            return None
-
     seen_targets: list[type[object]] = []
 
+    async def fake_submit(
+        self, source, options, target, async_client, request_headers=None
+    ):
+        seen_targets.append(type(target))
+        if isinstance(target, PresignedUrlTarget):
+            raise ServiceError(
+                "Task submission failed.",
+                status_code=422,
+                detail=(
+                    "Presigned URL target requires artifact storage to be configured "
+                    "and enabled on the server."
+                ),
+            )
+        return _status_response(f"task-{source.name}", "pending")
+
+    async def fake_wait(self, task_id, timeout, async_client, max_in_flight):
+        return _status_response(task_id, "success")
+
+    async def fake_fetch_payload(self, task_id, last_status, async_client):
+        return _convert_payload(task_id.removeprefix("task-"))
+
+    monkeypatch.setattr(_ASYNC_CLIENT, "_submit_convert_task", fake_submit)
+    monkeypatch.setattr(
+        _ASYNC_CLIENT,
+        "_wait_for_terminal_status_for_submit_and_retrieve_many",
+        fake_wait,
+    )
+    monkeypatch.setattr(
+        _ASYNC_CLIENT, "_fetch_convert_result_payload", fake_fetch_payload
+    )
+
     with DoclingServiceClient(url=TEST_BASE_URL, status_watcher="polling") as client:
-
-        def fake_build_async_http_client(self):
-            return _DummyAsyncClient()
-
-        async def fake_submit(
-            self, source, options, target, async_client, request_headers=None
-        ):
-            seen_targets.append(type(target))
-            if isinstance(target, PresignedUrlTarget):
-                raise ServiceError(
-                    "Task submission failed.",
-                    status_code=422,
-                    detail=(
-                        "Presigned URL target requires artifact storage to be configured "
-                        "and enabled on the server."
-                    ),
-                )
-            return _status_response(f"task-{source.name}", "pending")
-
-        async def fake_wait(self, task_id, timeout, async_client):
-            return _status_response(task_id, "success")
-
-        async def fake_fetch_payload(self, task_id, last_status, async_client):
-            return _convert_payload(task_id.removeprefix("task-"))
-
-        client._build_async_http_client = MethodType(
-            fake_build_async_http_client, client
-        )
-        client._submit_convert_task_async = MethodType(fake_submit, client)
-        client._wait_for_terminal_status_async = MethodType(fake_wait, client)
-        client._fetch_convert_result_payload_async = MethodType(
-            fake_fetch_payload, client
-        )
-
         source = tmp_path / "a.pdf"
         source.write_bytes(b"%PDF-1.4\n")
         outcomes = list(
@@ -1985,19 +1915,19 @@ async def test_fetch_presigned_result_async_wraps_schema_mismatch() -> None:
 
     transport = httpx.MockTransport(handler)
 
-    with DoclingServiceClient(url=TEST_BASE_URL) as client:
-        async with httpx.AsyncClient(
-            transport=transport,
-            timeout=client._http_client.timeout,
-        ) as async_client:
-            with pytest.raises(
-                ResponseSchemaMismatchError,
-            ) as exc_info:
-                await client._fetch_presigned_result_async(
-                    "task-bad-presigned",
-                    None,
-                    async_client,
-                )
+    client = _ASYNC_CLIENT(url=TEST_BASE_URL)
+    async with httpx.AsyncClient(
+        transport=transport,
+        timeout=httpx.Timeout(60.0),
+    ) as async_client:
+        with pytest.raises(
+            ResponseSchemaMismatchError,
+        ) as exc_info:
+            await client._fetch_presigned_result(
+                task_id="task-bad-presigned",
+                last_status=None,
+                async_client=async_client,
+            )
 
     assert exc_info.value.status_code == 200
     assert exc_info.value.detail is not None
@@ -2359,7 +2289,7 @@ async def test_503_with_retry_after_header_retries_async(
     async def fake_sleep(s: float) -> None:
         sleep_calls.append(s)
 
-    monkeypatch.setattr(client_module.asyncio, "sleep", fake_sleep)
+    monkeypatch.setattr(async_module.asyncio, "sleep", fake_sleep)
 
     call_count = 0
 
@@ -2373,13 +2303,13 @@ async def test_503_with_retry_after_header_retries_async(
                 )
             return httpx.Response(200, json={})
 
-    with DoclingServiceClient(url=TEST_BASE_URL) as client:
-        response = await client._request_with_retry_async(
-            async_client=FakeAsyncClient(),  # type: ignore[arg-type]
-            method="POST",
-            path="/v1/convert/source/async",
-            retries=1,
-        )
+    client = _ASYNC_CLIENT(url=TEST_BASE_URL)
+    response = await client._request_with_retry_using_client(
+        async_client=FakeAsyncClient(),  # type: ignore[arg-type]
+        method="POST",
+        path="/v1/convert/source/async",
+        retries=1,
+    )
 
     assert response.status_code == 200
     assert sleep_calls == [3.0]
@@ -2394,7 +2324,7 @@ async def test_429_with_retry_after_header_retries_async(
     async def fake_sleep(s: float) -> None:
         sleep_calls.append(s)
 
-    monkeypatch.setattr(client_module.asyncio, "sleep", fake_sleep)
+    monkeypatch.setattr(async_module.asyncio, "sleep", fake_sleep)
 
     call_count = 0
 
@@ -2408,13 +2338,13 @@ async def test_429_with_retry_after_header_retries_async(
                 )
             return httpx.Response(200, json={})
 
-    with DoclingServiceClient(url=TEST_BASE_URL) as client:
-        response = await client._request_with_retry_async(
-            async_client=FakeAsyncClient(),  # type: ignore[arg-type]
-            method="POST",
-            path="/v1/convert/source/async",
-            retries=1,
-        )
+    client = _ASYNC_CLIENT(url=TEST_BASE_URL)
+    response = await client._request_with_retry_using_client(
+        async_client=FakeAsyncClient(),  # type: ignore[arg-type]
+        method="POST",
+        path="/v1/convert/source/async",
+        retries=1,
+    )
 
     assert response.status_code == 200
     assert sleep_calls == [5.0]
@@ -2429,7 +2359,7 @@ async def test_502_retries_with_exponential_backoff_async(
     async def fake_sleep(s: float) -> None:
         sleep_calls.append(s)
 
-    monkeypatch.setattr(client_module.asyncio, "sleep", fake_sleep)
+    monkeypatch.setattr(async_module.asyncio, "sleep", fake_sleep)
 
     call_count = 0
 
@@ -2441,13 +2371,13 @@ async def test_502_retries_with_exponential_backoff_async(
                 return httpx.Response(502, json={"detail": "bad gateway"})
             return httpx.Response(200, json={})
 
-    with DoclingServiceClient(url=TEST_BASE_URL) as client:
-        response = await client._request_with_retry_async(
-            async_client=FakeAsyncClient(),  # type: ignore[arg-type]
-            method="POST",
-            path="/v1/convert/source/async",
-            retries=3,
-        )
+    client = _ASYNC_CLIENT(url=TEST_BASE_URL)
+    response = await client._request_with_retry_using_client(
+        async_client=FakeAsyncClient(),  # type: ignore[arg-type]
+        method="POST",
+        path="/v1/convert/source/async",
+        retries=3,
+    )
 
     assert response.status_code == 200
     assert sleep_calls == [1.0, 2.0, 4.0]
@@ -2462,7 +2392,7 @@ async def test_get_transport_error_retries_async(
     async def fake_sleep(s: float) -> None:
         sleep_calls.append(s)
 
-    monkeypatch.setattr(client_module.asyncio, "sleep", fake_sleep)
+    monkeypatch.setattr(async_module.asyncio, "sleep", fake_sleep)
 
     call_count = 0
 
@@ -2474,12 +2404,12 @@ async def test_get_transport_error_retries_async(
                 raise httpx.ConnectTimeout("connect timed out")
             return httpx.Response(200, json={})
 
-    with DoclingServiceClient(url=TEST_BASE_URL) as client:
-        response = await client._request_with_retry_async(
-            async_client=FakeAsyncClient(),  # type: ignore[arg-type]
-            method="GET",
-            path="/v1/result/task-123",
-        )
+    client = _ASYNC_CLIENT(url=TEST_BASE_URL)
+    response = await client._request_with_retry_using_client(
+        async_client=FakeAsyncClient(),  # type: ignore[arg-type]
+        method="GET",
+        path="/v1/result/task-123",
+    )
 
     assert response.status_code == 200
     assert sleep_calls == [1.0, 2.0]
@@ -2495,17 +2425,17 @@ async def test_post_transport_error_does_not_retry_async() -> None:
             call_count += 1
             raise httpx.ConnectTimeout("connect timed out")
 
-    with DoclingServiceClient(url=TEST_BASE_URL) as client:
-        with pytest.raises(
-            ServiceUnavailableError,
-            match="Service transport request failed",
-        ):
-            await client._request_with_retry_async(
-                async_client=FakeAsyncClient(),  # type: ignore[arg-type]
-                method="POST",
-                path="/v1/convert/source/async",
-                retries=3,
-            )
+    client = _ASYNC_CLIENT(url=TEST_BASE_URL)
+    with pytest.raises(
+        ServiceUnavailableError,
+        match="Service transport request failed",
+    ):
+        await client._request_with_retry_using_client(
+            async_client=FakeAsyncClient(),  # type: ignore[arg-type]
+            method="POST",
+            path="/v1/convert/source/async",
+            retries=3,
+        )
 
     assert call_count == 1
 
@@ -2927,12 +2857,21 @@ def test_convert_presigned_bundle_rejects_image_outside_bundle(tmp_path: Path) -
     assert "outside the bundle" in result.errors[0].error_message
 
 
-def test_convert_all_materializes_presigned_results_in_order(tmp_path: Path) -> None:
+def test_convert_all_materializes_presigned_results_in_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     bundle_bytes = _referenced_bundle_bytes()
 
-    async def fake_many(self, item_list, max_in_flight, ordered, target=None):
+    async def fake_each(
+        self,
+        items,
+        max_in_flight=DEFAULT_MAX_CONCURRENCY,
+        ordered=False,
+        *,
+        target=None,
+    ):
         assert target is None
-        for item in list(item_list):
+        for item in list(items):
             name = Path(item.source).name
             yield (
                 item,
@@ -2951,8 +2890,13 @@ def test_convert_all_materializes_presigned_results_in_order(tmp_path: Path) -> 
     async def fake_download_async(self, uri):
         return bundle_bytes
 
+    monkeypatch.setattr(
+        async_module.AsyncDoclingServiceClient,
+        "submit_and_retrieve_each",
+        fake_each,
+    )
+
     with DoclingServiceClient(url=TEST_BASE_URL) as client:
-        client._submit_and_retrieve_many_async = MethodType(fake_many, client)
         client._download_artifact_bytes_async = MethodType(fake_download_async, client)
 
         paths = []
