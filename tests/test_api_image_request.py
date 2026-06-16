@@ -9,6 +9,8 @@ from PIL import Image
 from docling.datamodel.base_models import VlmStopReason
 from docling.utils.api_image_request import api_image_request
 
+pytestmark = pytest.mark.cross_platform
+
 
 class TestApiImageRequest:
     """Test cases for api_image_request function."""

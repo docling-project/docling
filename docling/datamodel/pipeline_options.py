@@ -26,6 +26,7 @@ from docling.datamodel.chart_extraction_options import (
     ChartExtractionModelKind,
     ChartExtractionModelOptions,
 )
+from docling.datamodel.extraction_options import ExtractionPromptStyle
 from docling.datamodel.kserve_v2_options import KserveV2OptionsMixin
 from docling.datamodel.layout_model_specs import (
     DOCLING_LAYOUT_EGRET_LARGE,
@@ -57,6 +58,7 @@ from docling.datamodel.stage_model_specs import (
 )
 from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
 from docling.datamodel.vlm_model_specs import (
+    GRANITE_VISION_4_1_TRANSFORMERS,
     GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
     GRANITE_VISION_TRANSFORMERS as granite_vision_vlm_conversion_options,
     NU_EXTRACT_2B_TRANSFORMERS,
@@ -153,6 +155,12 @@ class TableStructureV2Options(BaseTableStructureOptions):
     )
 
 
+class GraniteVisionTableStructureOptions(BaseTableStructureOptions):
+    """Options for the table structure model using Granite Vision (VLM-based)."""
+
+    kind: ClassVar[str] = "granite_vision_table"
+
+
 class OcrOptions(BaseOptions):
     """Base configuration for Optical Character Recognition engines.
 
@@ -224,16 +232,16 @@ class RapidOcrOptions(OcrOptions):
     """
 
     kind: ClassVar[Literal["rapidocr"]] = "rapidocr"
-    # English and chinese are the most commly used models and have been tested with RapidOCR.
+    # English and chinese are the most commonly used models and have been tested with RapidOCR.
     lang: Annotated[
         list[str],
         Field(
             description=(
-                "List of OCR languages. Note: RapidOCR does not currently support language selection; "
-                "this parameter is reserved for future compatibility. See RapidOCR documentation for supported languages."
+                "List of OCR languages. Note: RapidOCR currently supports 'english' and 'chinese' (default). "
+                "See RapidOCR documentation for other supported languages."
             )
         ),
-    ] = ["english", "chinese"]
+    ] = ["chinese"]
     backend: Annotated[
         Literal["onnxruntime", "openvino", "paddle", "torch"],
         Field(
@@ -952,6 +960,7 @@ VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_PIXTRAL)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GOT_OCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_PHI4)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_QWEN)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_NANONETS_OCR2)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_12B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_27B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOLPHIN)
@@ -1016,6 +1025,8 @@ class PdfBackend(str, Enum):
         DOCLING_PARSE: Docling Parse backend providing enhanced layout
             analysis, structure preservation, and advanced table detection.
             This is the recommended backend for most use cases.
+        THREADED_DOCLING_PARSE: Threaded Docling Parse backend optimized for
+            concurrent page parsing in the standard PDF pipeline.
         DLPARSE_V1: Deprecated. Maps to `DOCLING_PARSE`.
         DLPARSE_V2: Deprecated. Maps to `DOCLING_PARSE`.
         DLPARSE_V4: Deprecated. Maps to `DOCLING_PARSE`.
@@ -1023,6 +1034,7 @@ class PdfBackend(str, Enum):
 
     PYPDFIUM2 = "pypdfium2"
     DOCLING_PARSE = "docling_parse"
+    THREADED_DOCLING_PARSE = "threaded_docling_parse"
 
     # Deprecated - these map to DOCLING_PARSE
     DLPARSE_V1 = "dlparse_v1"  # deprecated
@@ -1451,6 +1463,10 @@ class VlmExtractionPipelineOptions(PipelineOptions):
     NuExtract-2B) to extract structured data fields from document images.
     Unlike `VlmPipelineOptions` which converts pages to document format,
     this pipeline targets extraction of specific entities or key-value pairs.
+
+    Supported models:
+        - ``NU_EXTRACT_2B_TRANSFORMERS`` (default) with ``ExtractionPromptStyle.NUEXTRACT``
+        - ``GRANITE_VISION_4_1_TRANSFORMERS`` with ``ExtractionPromptStyle.GRANITE_VISION``
     """
 
     vlm_options: Annotated[
@@ -1462,6 +1478,16 @@ class VlmExtractionPipelineOptions(PipelineOptions):
             )
         ),
     ] = NU_EXTRACT_2B_TRANSFORMERS
+
+    extraction_prompt_style: Annotated[
+        "ExtractionPromptStyle",
+        Field(
+            description=(
+                "Prompt style to use for extraction. Determines how the template "
+                "is formatted and passed to the model."
+            )
+        ),
+    ] = ExtractionPromptStyle.NUEXTRACT
 
 
 class PdfPipelineOptions(PaginatedPipelineOptions):

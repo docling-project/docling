@@ -1,4 +1,4 @@
-name: "Build and publish package"
+name: "Build and publish packages"
 
 on:
   release:
@@ -11,28 +11,69 @@ permissions:
   contents: read
 
 jobs:
-  build-and-publish:
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ['3.12']
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: ./.github/actions/setup-ubuntu-ci
+        with:
+          python_version: ${{ matrix.python-version }}
+          uv_sync_args: --frozen --all-extras
+      - name: Build packages
+        run: bash .github/scripts/build-packages.sh
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish-docling-slim:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/docling-slim
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish docling-slim to PyPI
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+        with:
+          attestations: true
+          packages-dir: dist/docling-slim/
+          skip-existing: false
+
+  publish-docling:
+    # docling is a meta-package that depends on docling-slim, so publish it
+    # after docling-slim is available on PyPI.
+    needs: publish-docling-slim
+    runs-on: ubuntu-latest
     environment:
       name: pypi
       url: https://pypi.org/p/docling
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
     steps:
-      - uses: actions/checkout@v6
-      - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v7
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
         with:
-          python-version: ${{ matrix.python-version }}
-          enable-cache: true
-      - name: Install dependencies
-        run: uv sync --all-extras
-      - name: Build package
-        run: uv build
-      - name: Publish distribution 📦 to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+          name: dist
+          path: dist/
+      - name: Wait for docling-slim to be available on PyPI
+        run: |
+          echo "Waiting 60 seconds for docling-slim to propagate on PyPI..."
+          sleep 60
+      - name: Publish docling to PyPI
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           attestations: true
+          packages-dir: dist/docling/
+          skip-existing: false

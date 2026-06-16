@@ -1,8 +1,8 @@
-| Industry           |
-|--------------------|
+| Industry |
+| - |
 | Accounting/Finance |
-| Automotive         |
-| Healthcare         |
+| Automotive |
+| Healthcare |
 | Hospitality/Travel |
-| Sales              |
-| Other              |
+| Sales |
+| Other |

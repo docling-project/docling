@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
 from docling.datamodel.backend_options import PdfBackendOptions
@@ -19,8 +19,10 @@ class ManagedPdfiumDocumentBackend(PdfDocumentBackend, ABC):
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
-        options: PdfBackendOptions = PdfBackendOptions(),
+        options: Optional[PdfBackendOptions] = None,
     ) -> None:
+        if options is None:
+            options = PdfBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
         self._closed = False
 

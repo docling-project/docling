@@ -123,7 +123,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         self,
         in_doc: "InputDocument",
         path_or_stream: Union[BytesIO, Path],
-        options: MsExcelBackendOptions = MsExcelBackendOptions(),
+        options: Optional[MsExcelBackendOptions] = None,
     ) -> None:
         """Initialize the MsExcelDocumentBackend object.
 
@@ -135,6 +135,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Raises:
             RuntimeError: An error occurred parsing the file.
         """
+        if options is None:
+            options = MsExcelBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
 
         # Initialise the parents for the hierarchy

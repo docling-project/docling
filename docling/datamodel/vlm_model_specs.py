@@ -37,6 +37,7 @@ GRANITEDOCLING_TRANSFORMERS = InlineVlmOptions(
     stop_strings=["</doctag>", "<|end_of_text|>"],
 )
 
+
 GRANITEDOCLING_VLLM = GRANITEDOCLING_TRANSFORMERS.model_copy(deep=True)
 GRANITEDOCLING_VLLM.inference_framework = InferenceFramework.VLLM
 
@@ -71,6 +72,27 @@ GRANITEDOCLING_VLLM_API = ApiVlmOptions(
 GRANITEDOCLING_OLLAMA = GRANITEDOCLING_VLLM_API.model_copy(deep=True)
 GRANITEDOCLING_OLLAMA.url = AnyUrl("http://localhost:11434/v1/chat/completions")
 GRANITEDOCLING_OLLAMA.params["model"] = "ibm/granite-docling:258m"
+
+
+# Granite-Docling 2 stage
+GRANITEDOCLING_2STAGE_TRANSFORMERS = InlineVlmOptions(
+    repo_id="docling-project/granite-docling-2stage-258m",
+    prompt="Convert this page to docling.",  # gets augmented with layout objects
+    response_format=ResponseFormat.DOCTAGS,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+    supported_devices=[
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.XPU,
+    ],
+    extra_generation_config=dict(skip_special_tokens=False),
+    scale=2.0,
+    temperature=0.0,
+    max_new_tokens=8192,
+    stop_strings=["</doctag>", "<|end_of_text|>"],
+)
+
 
 # SmolDocling
 SMOLDOCLING_MLX = InlineVlmOptions(
@@ -256,6 +278,79 @@ QWEN25_VL_3B_MLX = InlineVlmOptions(
     temperature=0.0,
 )
 
+# Nanonets OCR2
+NANONETS_OCR2_TRANSFORMERS = InlineVlmOptions(
+    repo_id="nanonets/Nanonets-OCR2-3B",
+    prompt=(
+        "Extract the text from the above document as if you were reading it naturally. "
+        "Return the tables in html format. Return the equations in LaTeX representation. "
+        "If there is an image in the document and image caption is not present, add a "
+        "small description of the image inside the <img></img> tag; otherwise, add the "
+        "image caption inside <img></img>. Watermarks should be wrapped in brackets. "
+        "Ex: <watermark>OFFICIAL COPY</watermark>. Page numbers should be wrapped in "
+        "brackets. Ex: <page_number>14</page_number> or <page_number>9/22</page_number>. "
+        "Prefer using ☐ and ☑ for check boxes."
+    ),
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+    transformers_prompt_style=TransformersPromptStyle.CHAT,
+    supported_devices=[
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.MPS,
+        AcceleratorDevice.XPU,
+    ],
+    torch_dtype="bfloat16",
+    scale=2.0,
+    temperature=0.0,
+    max_new_tokens=15000,
+)
+
+# MLX uses the converted qwen2_5_vl-compatible checkpoint published by
+# mlx-community for Apple Silicon inference.
+NANONETS_OCR2_MLX = InlineVlmOptions(
+    repo_id="mlx-community/Nanonets-OCR2-3B-bf16",
+    prompt=NANONETS_OCR2_TRANSFORMERS.prompt,
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.MLX,
+    supported_devices=[AcceleratorDevice.MPS],
+    scale=2.0,
+    temperature=0.0,
+    max_new_tokens=15000,
+)
+
+NANONETS_OCR2_VLLM = NANONETS_OCR2_TRANSFORMERS.model_copy(deep=True)
+NANONETS_OCR2_VLLM.inference_framework = InferenceFramework.VLLM
+
+NANONETS_OCR2_VLLM_API = ApiVlmOptions(
+    url="http://localhost:8000/v1/chat/completions",
+    params=dict(
+        model="nanonets/Nanonets-OCR2-3B",
+        max_tokens=15000,
+    ),
+    prompt=NANONETS_OCR2_TRANSFORMERS.prompt,
+    timeout=90,
+    scale=2.0,
+    temperature=0.0,
+    concurrency=4,
+    response_format=ResponseFormat.MARKDOWN,
+)
+
+NANONETS_OCR2_LMSTUDIO_API = ApiVlmOptions(
+    url=AnyUrl("http://localhost:1234/v1/chat/completions"),
+    params=dict(
+        model="nanonets-ocr2-3b",
+        max_tokens=15000,
+    ),
+    prompt=NANONETS_OCR2_TRANSFORMERS.prompt,
+    timeout=120,
+    scale=2.0,
+    temperature=0.0,
+    concurrency=2,
+    response_format=ResponseFormat.MARKDOWN,
+)
+
 # GoT 2.0
 GOT2_TRANSFORMERS = InlineVlmOptions(
     repo_id="stepfun-ai/GOT-OCR-2.0-hf",
@@ -336,6 +431,17 @@ GLMOCR_TRANSFORMERS = InlineVlmOptions(
     temperature=0.0,
 )
 
+# Requires mlx-vlm >=0.3.11.
+GLMOCR_MLX = InlineVlmOptions(
+    repo_id="mlx-community/GLM-OCR-bf16",
+    prompt="Text Recognition:",
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.MLX,
+    supported_devices=[AcceleratorDevice.MPS],
+    scale=2.0,
+    temperature=0.0,
+)
+
 GLMOCR_VLLM = GLMOCR_TRANSFORMERS.model_copy(deep=True)
 GLMOCR_VLLM.inference_framework = InferenceFramework.VLLM
 
@@ -368,6 +474,19 @@ LIGHTONOCR_TRANSFORMERS = InlineVlmOptions(
         AcceleratorDevice.XPU,
     ],
     torch_dtype="bfloat16",
+    scale=2.0,
+    temperature=0.0,
+    max_new_tokens=4096,
+)
+
+# Routed via mlx-vlm's generic mistral3 handler; there is no LightOn-specific
+# handler in mlx-vlm today.
+LIGHTONOCR_MLX = InlineVlmOptions(
+    repo_id="mlx-community/LightOnOCR-2-1B-bf16",
+    prompt="",
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.MLX,
+    supported_devices=[AcceleratorDevice.MPS],
     scale=2.0,
     temperature=0.0,
     max_new_tokens=4096,
@@ -425,6 +544,26 @@ NU_EXTRACT_2B_TRANSFORMERS = InlineVlmOptions(
     temperature=0.0,
 )
 
+# Granite Vision 4.1
+GRANITE_VISION_4_1_TRANSFORMERS = InlineVlmOptions(
+    repo_id="ibm-granite/granite-vision-4.1-4b",
+    revision="dd48e97503de471803850df70843cf9eb5da8712",
+    prompt="",  # Template is passed separately via extract()
+    torch_dtype="bfloat16",
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+    response_format=ResponseFormat.PLAINTEXT,
+    supported_devices=[
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.MPS,
+        AcceleratorDevice.XPU,
+    ],
+    scale=2.0,
+    temperature=0.0,
+    trust_remote_code=True,
+)
+
 
 class VlmModelType(str, Enum):
     SMOLDOCLING = "smoldocling"
@@ -435,6 +574,9 @@ class VlmModelType(str, Enum):
     GOT_OCR_2 = "got_ocr_2"
     GRANITEDOCLING = "granite_docling"
     GRANITEDOCLING_VLLM = "granite_docling_vllm"
+    NANONETS_OCR2 = "nanonets_ocr2"
+    NANONETS_OCR2_VLLM = "nanonets_ocr2_vllm"
+    NANONETS_OCR2_LMSTUDIO = "nanonets_ocr2_lmstudio"
     GLMOCR = "glm_ocr"
     GLMOCR_VLLM = "glm_ocr_vllm"
     LIGHTONOCR = "lightonocr"

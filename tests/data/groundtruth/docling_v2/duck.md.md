@@ -30,11 +30,11 @@ I like to eat leaves
 
 Here are some interesting things a respectful duck could eat:
 
-|         | Food                             |   Calories per portion |
-|---------|----------------------------------|------------------------|
-| Leaves  | Ash, Elm, Maple                  |                     50 |
-| Berries | Blueberry, Strawberry, Cranberry |                    150 |
-| Grain   | Corn, Buckwheat, Barley          |                    200 |
+|  | Food | Calories per portion |
+| - | - | - |
+| Leaves | Ash, Elm, Maple | 50 |
+| Berries | Blueberry, Strawberry, Cranberry | 150 |
+| Grain | Corn, Buckwheat, Barley | 200 |
 
 And let’s add another list in the end:
 

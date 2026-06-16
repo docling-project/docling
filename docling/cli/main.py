@@ -1,15 +1,35 @@
 import datetime
 import logging
 import re
+import sys
 import tempfile
 import time
 import warnings
 from collections.abc import Iterable
+from enum import Enum
 from pathlib import Path
 from typing import Annotated, Type
+from urllib.parse import urlparse
 
-import rich.table
-import typer
+# Check for CLI dependencies
+try:
+    import rich.table
+    import typer
+except ImportError as e:
+    missing_package = str(e).split("'")[1] if "'" in str(e) else "typer or rich"
+    print(
+        f"Error: Missing required CLI dependency '{missing_package}'", file=sys.stderr
+    )
+    print("\nThe docling CLI requires additional dependencies.", file=sys.stderr)
+    print("Please install them using one of the following options:\n", file=sys.stderr)
+    print("  1. Install the full docling package (recommended):", file=sys.stderr)
+    print("     pip install docling\n", file=sys.stderr)
+    print("  2. Install docling-slim with CLI support:", file=sys.stderr)
+    print("     pip install docling-slim[cli]\n", file=sys.stderr)
+    print("  3. Install just the missing dependencies:", file=sys.stderr)
+    print("     pip install typer rich\n", file=sys.stderr)
+    sys.exit(1)
+
 from docling_core.transforms.serializer.html import (
     HTMLDocSerializer,
     HTMLOutputStyle,
@@ -21,11 +41,19 @@ from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
 from rich.console import Console
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import (
+    DoclingParseDocumentBackend,
+    ThreadedDoclingParseDocumentBackend,
+)
 from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.cli.export_utils import (
+    _is_empty_output,
+    _should_generate_export_images,
+    _split_list,
+)
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
     WHISPER_BASE,
@@ -48,9 +76,17 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_TURBO_NATIVE,
     AsrModelType,
 )
-from docling.datamodel.backend_options import PdfBackendOptions
+from docling.datamodel.backend_options import (
+    EpubBackendOptions,
+    HTMLBackendOptions,
+    LatexBackendOptions,
+    PdfBackendOptions,
+    ThreadedDoclingParseBackendOptions,
+)
 from docling.datamodel.base_models import (
     ConversionStatus,
+    DoclingComponentType,
+    ErrorItem,
     FormatToExtensions,
     InputFormat,
     OutputFormat,
@@ -77,6 +113,7 @@ from docling.datamodel.settings import settings
 from docling.document_converter import (
     AudioFormatOption,
     DocumentConverter,
+    EpubFormatOption,
     ExcelFormatOption,
     FormatOption,
     HTMLFormatOption,
@@ -103,6 +140,58 @@ _log = logging.getLogger(__name__)
 
 console = Console()
 err_console = Console(stderr=True)
+
+
+class HtmlImageFetchMode(str, Enum):
+    NONE = "none"
+    LOCAL = "local"
+    REMOTE = "remote"
+    ALL = "all"
+
+
+def _is_http_url(source: str) -> bool:
+    parsed = urlparse(source)
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def _name_matches_format(name: str, format: InputFormat) -> bool:
+    name_lower = name.lower()
+    return any(
+        name_lower.endswith(f".{extension.lower()}")
+        for extension in FormatToExtensions[format]
+    )
+
+
+def _is_html_source(source: str, from_formats: list[InputFormat]) -> bool:
+    if InputFormat.HTML not in from_formats:
+        return False
+    if len(from_formats) == 1:
+        return True
+
+    source_name = urlparse(source).path if _is_http_url(source) else source
+    return _name_matches_format(source_name, InputFormat.HTML)
+
+
+def _is_temporary_word_file(path: Path) -> bool:
+    return path.name.startswith("~$") and path.suffix.lower() == ".docx"
+
+
+def _iter_input_paths_from_directory(
+    local_path: Path, from_formats: list[InputFormat]
+) -> Iterable[Path]:
+    seen_paths: set[Path] = set()
+    for path in sorted(local_path.rglob("*")):
+        if not path.is_file() or not any(
+            _name_matches_format(path.name, fmt) for fmt in from_formats
+        ):
+            continue
+        if _is_temporary_word_file(path):
+            _log.info(f"Ignoring temporary Word file: {path}")
+            continue
+        if path not in seen_paths:
+            seen_paths.add(path)
+            yield path
+
 
 ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
 ocr_engines_enum_internal = ocr_factory_internal.get_enum()
@@ -165,7 +254,12 @@ def logo_callback(value: bool):
 def version_callback(value: bool):
     if value:
         v = DoclingVersion()
-        print(f"Docling version: {v.docling_version}")
+        docling_version = (
+            v.docling_version
+            if v.docling_version != "unknown"
+            else v.docling_slim_version
+        )
+        print(f"Docling version: {docling_version}")
         print(f"Docling Core version: {v.docling_core_version}")
         print(f"Docling IBM Models version: {v.docling_ibm_models_version}")
         print(f"Docling Parse version: {v.docling_parse_version}")
@@ -213,6 +307,7 @@ def export_documents(
     export_txt: bool,
     export_doctags: bool,
     export_vtt: bool,
+    export_doclang: bool,
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
@@ -221,8 +316,8 @@ def export_documents(
     failure_count = 0
 
     for conv_res in conv_results:
-        if conv_res.status == ConversionStatus.SUCCESS:
-            success_count += 1
+        doc_failed = conv_res.status != ConversionStatus.SUCCESS
+        if not doc_failed:
             doc_filename = conv_res.input.file.stem
 
             # Export JSON format:
@@ -292,6 +387,21 @@ def export_documents(
                 conv_res.document.save_as_markdown(
                     filename=fname, image_mode=image_export_mode
                 )
+                if _is_empty_output(fname):
+                    error_message = (
+                        "Markdown export produced empty output for "
+                        f"{conv_res.input.file.name}"
+                    )
+                    _log.error(error_message)
+                    conv_res.errors.append(
+                        ErrorItem(
+                            component_type=DoclingComponentType.DOC_ASSEMBLER,
+                            module_name="export_documents",
+                            error_message=error_message,
+                        )
+                    )
+                    conv_res.status = ConversionStatus.FAILURE
+                    doc_failed = True
 
             # Export Document Tags format:
             if export_doctags:
@@ -304,6 +414,13 @@ def export_documents(
                 fname = output_dir / f"{doc_filename}.vtt"
                 _log.info(f"writing WebVTT output to {fname}")
                 conv_res.document.save_as_vtt(filename=fname)
+
+            # Export DocLang format:
+            if export_doclang:
+                fname = output_dir / f"{doc_filename}.dclg.xml"
+                _log.info(f"writing DocLang output to {fname}")
+                with fname.open("w", encoding="utf-8") as fp:
+                    fp.write(conv_res.document.export_to_doclang())
 
             # Print profiling timings
             if print_timings:
@@ -349,7 +466,7 @@ def export_documents(
                     r = TimingsT.dump_json(conv_res.timings, indent=2)
                     fp.write(r)
 
-        else:
+        if doc_failed:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
             if _log.isEnabledFor(logging.INFO):
                 for err in conv_res.errors:
@@ -358,40 +475,17 @@ def export_documents(
                         f"Module: {err.module_name}, Message: {err.error_message}"
                     )
             failure_count += 1
+        else:
+            success_count += 1
 
     _log.info(
         f"Processed {success_count + failure_count} docs, of which {failure_count} failed"
     )
 
 
-def _split_list(raw: str | None) -> list[str] | None:
-    if raw is None:
-        return None
-    return re.split(r"[;,]", raw)
-
-
-_OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING = frozenset(
-    {
-        OutputFormat.TEXT,
-        OutputFormat.DOCTAGS,
-        OutputFormat.VTT,
-    }
-)
-
-
-def _should_generate_export_images(
-    image_export_mode: ImageRefMode,
-    to_formats: list[OutputFormat],
-) -> bool:
-    return image_export_mode != ImageRefMode.PLACEHOLDER and any(
-        to_format not in _OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING
-        for to_format in to_formats
-    )
-
-
 @app.command(no_args_is_help=True)
 def convert(  # noqa: C901
-    input_sources: Annotated[
+    source: Annotated[
         list[str],
         typer.Argument(
             ...,
@@ -402,7 +496,7 @@ def convert(  # noqa: C901
     from_formats: list[InputFormat] = typer.Option(
         None,
         "--from",
-        help="Specify input formats to convert from. Defaults to all formats.",
+        help="Input formats to accept. Defaults to all supported formats.",
     ),
     to_formats: list[OutputFormat] = typer.Option(
         None, "--to", help="Specify output formats. Defaults to Markdown."
@@ -419,6 +513,11 @@ def convert(  # noqa: C901
         "--headers",
         help="Specify http request headers used when fetching url input sources in the form of a JSON string",
     ),
+    html_image_headers: str = typer.Option(
+        None,
+        "--html-image-headers",
+        help="Specify http request headers used when fetching HTML and EPUB image resources in the form of a JSON string",
+    ),
     image_export_mode: Annotated[
         ImageRefMode,
         typer.Option(
@@ -426,6 +525,14 @@ def convert(  # noqa: C901
             help="Image export mode for image-capable document outputs (JSON, YAML, HTML, HTML split-page, and Markdown). Text, DocTags, and WebVTT outputs do not export images. With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document.",
         ),
     ] = ImageRefMode.EMBEDDED,
+    html_image_fetch: Annotated[
+        HtmlImageFetchMode,
+        typer.Option(
+            ...,
+            "--html-image-fetch",
+            help="Fetch image resources referenced by HTML and EPUB inputs. Choose none, local, remote, or all.",
+        ),
+    ] = HtmlImageFetchMode.NONE,
     pipeline: Annotated[
         ProcessingPipeline,
         typer.Option(..., help="Choose the pipeline to process PDF or image files."),
@@ -577,7 +684,7 @@ def convert(  # noqa: C901
     debug_visualize_layout: Annotated[
         bool,
         typer.Option(
-            ..., help="Enable debug output which visualizes the layour clusters"
+            ..., help="Enable debug output which visualizes the layout clusters"
         ),
     ] = False,
     debug_visualize_tables: Annotated[
@@ -601,6 +708,16 @@ def convert(  # noqa: C901
         ),
     ] = None,
     num_threads: Annotated[int, typer.Option(..., help="Number of threads")] = 4,
+    release_native_memory_every_n_pages: Annotated[
+        int,
+        typer.Option(
+            ...,
+            help=(
+                "Release native parser memory after every N decoded pages when "
+                "using the threaded docling-parse backend."
+            ),
+        ),
+    ] = 128,
     device: Annotated[
         AcceleratorDevice, typer.Option(..., help="Accelerator device")
     ] = AcceleratorDevice.AUTO,
@@ -655,18 +772,59 @@ def convert(  # noqa: C901
         headers_t = TypeAdapter(dict[str, str])
         parsed_headers = headers_t.validate_json(headers)
 
+    parsed_html_image_headers: dict[str, str] | None = None
+    if html_image_headers is not None:
+        headers_t = TypeAdapter(dict[str, str])
+        parsed_html_image_headers = headers_t.validate_json(html_image_headers)
+
+    html_fetch_images = html_image_fetch != HtmlImageFetchMode.NONE
+    html_enable_local_fetch = html_image_fetch in {
+        HtmlImageFetchMode.LOCAL,
+        HtmlImageFetchMode.ALL,
+    }
+    html_enable_remote_fetch = html_image_fetch in {
+        HtmlImageFetchMode.REMOTE,
+        HtmlImageFetchMode.ALL,
+    }
+    if parsed_html_image_headers is not None and not html_enable_remote_fetch:
+        err_console.print(
+            "[red]Error: --html-image-headers requires --html-image-fetch remote or all.[/red]"
+        )
+        raise typer.Abort()
+
     if profiling or save_profiling:
         settings.debug.profile_pipeline_timings = True
 
     with tempfile.TemporaryDirectory() as tempdir:
-        input_doc_paths: list[Path] = []
-        for src in input_sources:
+        input_doc_paths: list[Path | str] = []
+        for src in source:
             try:
+                if _is_http_url(src) and _is_html_source(src, from_formats):
+                    input_doc_paths.append(src)
+                    continue
+
+                local_path = TypeAdapter(Path).validate_python(src)
+                if local_path.exists():
+                    if local_path.is_dir():
+                        input_doc_paths.extend(
+                            _iter_input_paths_from_directory(local_path, from_formats)
+                        )
+                    elif _is_temporary_word_file(local_path):
+                        _log.info(f"Ignoring temporary Word file: {local_path}")
+                    elif _is_html_source(src, from_formats):
+                        input_doc_paths.append(local_path)
+                    else:
+                        resolved_source = resolve_source_to_path(
+                            source=src, headers=parsed_headers, workdir=Path(tempdir)
+                        )
+                        input_doc_paths.append(resolved_source)
+                    continue
+
                 # check if we can fetch some remote url
-                source = resolve_source_to_path(
+                resolved_source = resolve_source_to_path(
                     source=src, headers=parsed_headers, workdir=Path(tempdir)
                 )
-                input_doc_paths.append(source)
+                input_doc_paths.append(resolved_source)
             except FileNotFoundError:
                 err_console.print(
                     f"[red]Error: The input file {src} does not exist.[/red]"
@@ -677,28 +835,14 @@ def convert(  # noqa: C901
                 try:
                     local_path = TypeAdapter(Path).validate_python(src)
                     if local_path.exists() and local_path.is_dir():
-                        for fmt in from_formats:
-                            for ext in FormatToExtensions[fmt]:
-                                for path in local_path.glob(f"**/*.{ext}"):
-                                    if path.name.startswith("~$") and ext == "docx":
-                                        _log.info(
-                                            f"Ignoring temporary Word file: {path}"
-                                        )
-                                        continue
-                                    input_doc_paths.append(path)
-
-                                for path in local_path.glob(f"**/*.{ext.upper()}"):
-                                    if path.name.startswith("~$") and ext == "docx":
-                                        _log.info(
-                                            f"Ignoring temporary Word file: {path}"
-                                        )
-                                        continue
-                                    input_doc_paths.append(path)
+                        input_doc_paths.extend(
+                            _iter_input_paths_from_directory(local_path, from_formats)
+                        )
                     elif local_path.exists():
-                        if not local_path.name.startswith("~$") and ext == "docx":
-                            _log.info(f"Ignoring temporary Word file: {path}")
-                            continue
-                        input_doc_paths.append(local_path)
+                        if _is_temporary_word_file(local_path):
+                            _log.info(f"Ignoring temporary Word file: {local_path}")
+                        else:
+                            input_doc_paths.append(local_path)
                     else:
                         err_console.print(
                             f"[red]Error: The input file {src} does not exist.[/red]"
@@ -720,6 +864,7 @@ def convert(  # noqa: C901
         export_txt = OutputFormat.TEXT in to_formats
         export_doctags = OutputFormat.DOCTAGS in to_formats
         export_vtt = OutputFormat.VTT in to_formats
+        export_doclang = OutputFormat.DOCLANG in to_formats
 
         ocr_factory = get_ocr_factory(allow_external_plugins=allow_external_plugins)
         ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
@@ -734,12 +879,8 @@ def convert(  # noqa: C901
             ocr_options, TesseractOcrOptions | TesseractCliOcrOptions
         ):
             ocr_options.psm = psm
-
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
-
-        # pipeline_options: PaginatedPipelineOptions
         pipeline_options: PipelineOptions
-
         format_options: dict[InputFormat, FormatOption] = {}
         pdf_backend_options: PdfBackendOptions | None = PdfBackendOptions(
             password=pdf_password
@@ -763,9 +904,7 @@ def convert(  # noqa: C901
             if isinstance(
                 pipeline_options.table_structure_options, TableStructureOptions
             ):
-                pipeline_options.table_structure_options.do_cell_matching = (
-                    True  # do_cell_matching
-                )
+                pipeline_options.table_structure_options.do_cell_matching = True
                 pipeline_options.table_structure_options.mode = table_mode
 
             if _should_generate_export_images(
@@ -777,13 +916,19 @@ def convert(  # noqa: C901
                     True  # FIXME: to be deprecated in version 3
                 )
                 pipeline_options.images_scale = 2
-
-            # Normalize deprecated backend values
             pdf_backend = normalize_pdf_backend(pdf_backend)
-
             backend: Type[PdfDocumentBackend]
             if pdf_backend == PdfBackend.DOCLING_PARSE:
                 backend = DoclingParseDocumentBackend  # type: ignore
+            elif pdf_backend == PdfBackend.THREADED_DOCLING_PARSE:
+                backend = ThreadedDoclingParseDocumentBackend  # type: ignore
+                pdf_backend_options = ThreadedDoclingParseBackendOptions(
+                    password=pdf_password,
+                    parser_threads=num_threads,
+                    release_native_memory_every_n_pages=(
+                        release_native_memory_every_n_pages
+                    ),
+                )
             elif pdf_backend == PdfBackend.PYPDFIUM2:
                 backend = PyPdfiumDocumentBackend  # type: ignore
             else:
@@ -794,16 +939,12 @@ def convert(  # noqa: C901
                 backend=backend,  # pdf_backend
                 backend_options=pdf_backend_options,
             )
-
-            # METS GBS options
             mets_gbs_options = pipeline_options.model_copy()
             mets_gbs_options.do_ocr = False
             mets_gbs_format_option = PdfFormatOption(
                 pipeline_options=mets_gbs_options,
                 backend=MetsGbsDocumentBackend,
             )
-
-            # SimplePipeline options
             simple_format_option = ConvertPipelineOptions(
                 do_picture_description=enrich_picture_description,
                 do_picture_classification=enrich_picture_classes,
@@ -811,6 +952,20 @@ def convert(  # noqa: C901
             )
             if artifacts_path is not None:
                 simple_format_option.artifacts_path = artifacts_path
+
+            html_backend_options: HTMLBackendOptions | None = None
+            if (
+                html_fetch_images
+                or html_enable_local_fetch
+                or html_enable_remote_fetch
+                or parsed_html_image_headers is not None
+            ):
+                html_backend_options = HTMLBackendOptions(
+                    fetch_images=html_fetch_images,
+                    enable_local_fetch=html_enable_local_fetch,
+                    enable_remote_fetch=html_enable_remote_fetch,
+                    headers=parsed_html_image_headers,
+                )
 
             # Use image-native backend for IMAGE to avoid pypdfium2 locking
             image_format_option = PdfFormatOption(
@@ -833,18 +988,35 @@ def convert(  # noqa: C901
                     pipeline_options=simple_format_option
                 ),
                 InputFormat.HTML: HTMLFormatOption(
-                    pipeline_options=simple_format_option
+                    pipeline_options=simple_format_option,
+                    backend_options=html_backend_options,
+                ),
+                InputFormat.EPUB: EpubFormatOption(
+                    pipeline_options=simple_format_option,
+                    backend_options=EpubBackendOptions(
+                        fetch_images=html_fetch_images,
+                        enable_local_fetch=html_enable_local_fetch,
+                        enable_remote_fetch=html_enable_remote_fetch,
+                    )
+                    if (
+                        html_fetch_images
+                        or html_enable_local_fetch
+                        or html_enable_remote_fetch
+                    )
+                    else None,
                 ),
                 InputFormat.MD: MarkdownFormatOption(
                     pipeline_options=simple_format_option
                 ),
                 InputFormat.LATEX: LatexFormatOption(
-                    pipeline_options=simple_format_option
+                    pipeline_options=simple_format_option,
+                    backend_options=LatexBackendOptions(),
                 ),
             }
 
         elif pipeline == ProcessingPipeline.VLM:
             pipeline_options = VlmPipelineOptions(
+                accelerator_options=accelerator_options,
                 enable_remote_services=enable_remote_services,
             )
 
@@ -964,6 +1136,7 @@ def convert(  # noqa: C901
             export_txt=export_txt,
             export_doctags=export_doctags,
             export_vtt=export_vtt,
+            export_doclang=export_doclang,
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,

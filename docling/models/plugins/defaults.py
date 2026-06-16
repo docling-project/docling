@@ -62,6 +62,9 @@ def table_structure_engines():
     from docling.models.stages.table_structure.table_structure_model import (
         TableStructureModel,
     )
+    from docling.models.stages.table_structure.table_structure_model_granite_vision import (
+        GraniteVisionTableStructureModel,
+    )
     from docling.models.stages.table_structure.table_structure_model_v2 import (
         TableStructureModelV2,
     )
@@ -70,5 +73,6 @@ def table_structure_engines():
         "table_structure_engines": [
             TableStructureModel,
             TableStructureModelV2,
+            GraniteVisionTableStructureModel,
         ]
     }

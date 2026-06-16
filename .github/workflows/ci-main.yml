@@ -1,0 +1,50 @@
+name: "Run CI Main"
+
+on:
+  push:
+    branches:
+      - "main"
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      full_matrix:
+        description: "Run the full Python and package-compatibility matrix."
+        type: boolean
+        default: false
+      run_cross_platform:
+        description: "Run Windows and macOS smoke lanes."
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  code-checks:
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: ./.github/workflows/checks.yml
+    with:
+      run_lint: true
+      force_all_checks: true
+      run_package_compat: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.full_matrix) }}
+      run_windows: ${{ github.event_name == 'workflow_dispatch' && (inputs.full_matrix || inputs.run_cross_platform) }}
+      run_macos: ${{ github.event_name == 'workflow_dispatch' && (inputs.full_matrix || inputs.run_cross_platform) }}
+      use_tach: false
+      python_versions: >-
+        ${{
+          (
+            github.event_name == 'schedule' ||
+            (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
+          ) &&
+          '["3.10", "3.11", "3.12", "3.13", "3.14"]' ||
+          '["3.10"]'
+        }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

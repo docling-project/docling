@@ -5,22 +5,35 @@ patent applications since 2001.
 The original files can be found in https://bulkdata.uspto.gov.
 
 Security Note:
-    This module uses defusedxml.sax.make_parser() with customized security settings
-    to protect against XML External Entity (XXE) attacks while allowing USPTO XML files
-    to be parsed. In addition, it includes safeguards against entity expansion attacks
-    and entity nesting depth. USPTO files contain DTD declarations that defusedxml
-    blocks by default, so we configure the parser with:
+    This module uses defusedxml.sax.make_parser() with security settings to protect
+    against XML External Entity (XXE) attacks and entity expansion attacks (Billion
+    Laughs/CWE-776). The parser is configured with:
 
-    - feature_external_ges: False (blocks external general entities)
-    - feature_external_pes: False (blocks external parameter entities)
-    - forbid_dtd: False (allows DTD declarations in the XML)
-    - forbid_entities: False (allows entity declarations)
-    - forbid_external: False (allows external references in declarations)
+    - feature_external_ges: False (blocks external general entity resolution)
+    - feature_external_pes: False (blocks external parameter entity resolution)
+    - forbid_dtd: False (allows DTD declarations required by USPTO XML format)
+    - forbid_entities: False (allows entity declarations including NDATA)
+    - forbid_external: False (allows SYSTEM declarations in DTD)
 
-    This configuration permits DTD declarations (required for USPTO files) while the
-    disabled external entity features prevent actual fetching of external resources,
-    effectively blocking XXE attacks. The parser processes the XML structure without
-    accessing any external files or URLs.
+    Security Analysis:
+    1. XXE Prevention: While external entities can be declared (forbid_external=False),
+       they are never resolved or fetched due to feature_external_ges=False and
+       feature_external_pes=False. This prevents XXE attacks.
+
+    2. Billion Laughs Mitigation: defusedxml's built-in entity expansion limits
+       (MAX_ENTITY_EXPANSION=10,000) prevent exponential entity expansion from
+       causing memory exhaustion. While not completely blocking entity expansion,
+       this limit prevents the worst-case denial-of-service scenarios.
+
+    3. NDATA Entities: USPTO files use NDATA entities for image references
+       (e.g., <!ENTITY img SYSTEM "file.tif" NDATA TIF>). These are unparsed
+       entities that don't expand inline and aren't fetched due to the external
+       entity resolution being disabled.
+
+    This configuration balances security with USPTO format compatibility. The key
+    insight is that defusedxml distinguishes between entity declaration (allowed)
+    and entity resolution/fetched (blocked), providing protection while allowing
+    the required DTD structure.
 """
 
 import html

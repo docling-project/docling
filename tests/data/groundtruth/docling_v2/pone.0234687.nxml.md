@@ -40,20 +40,20 @@ ECM = Milk production × (0.0929 × fat% + 0.0588× true protein% + 0.192) / (0.
 
 Table 1 Descriptive characteristics of the herd.
 
-| Item                          | Unit      |   Average |
-|-------------------------------|-----------|-----------|
-| Milking cows                  | #         |     165   |
-| Milk production               | kg year-1 |    7015   |
-| Milk fat                      | %         |       4   |
-| Milk protein                  | %         |       3.3 |
-| Length of lactation           | days      |     305   |
-| Body weight                   | kg        |     553   |
-| Lactations per cow            | #         |       4   |
-| Replacement rate              | %         |      25   |
-| Cull rate                     | %         |      25   |
-| First artificial insemination | months    |      16   |
-| Weaned                        | days      |      60   |
-| Mortality                     | %         |       3   |
+| Item | Unit | Average |
+| - | - | - |
+| Milking cows | # | 165 |
+| Milk production | kg year-1 | 7,015 |
+| Milk fat | % | 4.0 |
+| Milk protein | % | 3.3 |
+| Length of lactation | days | 305 |
+| Body weight | kg | 553 |
+| Lactations per cow | # | 4 |
+| Replacement rate | % | 25 |
+| Cull rate | % | 25 |
+| First artificial insemination | months | 16 |
+| Weaned | days | 60 |
+| Mortality | % | 3.0 |
 
 ### Data sources and livestock system description
 
@@ -73,28 +73,28 @@ The DM intake of each ingredient throughout the entire life of animals during la
 
 Table 2 Dairy cows’ diets in different scenariosa.
 
-|                                   | Calf                              | Calf                              | Pregnant/dry                      | Pregnant/dry                      | Lactation                         | Lactation                         | Lactation                         | Weighted average                  | Weighted average                  | Weighted average                  |
-|-----------------------------------|-----------------------------------|-----------------------------------|-----------------------------------|-----------------------------------|-----------------------------------|-----------------------------------|-----------------------------------|-----------------------------------|-----------------------------------|-----------------------------------|
-|                                   | 0–12 mo                           | 12-AI mo                          | Heifer                            | Cow                               | TMR                               | TMR75                             | TMR50                             | TMR                               | TMR75                             | TMR50                             |
-| Days                              | 360                               | 120                               | 270                               | 180                               | 1220                              | 1220                              | 1220                              |                                   |                                   |                                   |
-| DM intake, kg d-1                 | 3.35                              | 6.90                              | 10.4                              | 11.0                              | 18.7                              | 17.2                              | 17.0                              | 13.8                              | 12.9                              | 12.8                              |
-| Ingredients, g (kg DM)-1          | Ingredients, g (kg DM)-1          | Ingredients, g (kg DM)-1          | Ingredients, g (kg DM)-1          | Ingredients, g (kg DM)-1          | Ingredients, g (kg DM)-1          | Ingredients, g (kg DM)-1          | Ingredients, g (kg DM)-1          | Ingredients, g (kg DM)-1          | Ingredients, g (kg DM)-1          | Ingredients, g (kg DM)-1          |
-| Ground corn                       | 309                               | 145                               | 96.3                              | -                                 | 257                               | 195                               | 142                               | 218                               | 183                               | 153                               |
-| Soybean meal                      | 138                               | 22                                | 26.7                              | -                                 | 143                               | 105                               | 76.1                              | 109                               | 88.0                              | 71.0                              |
-| Corn silage                       | 149                               | 290                               | 85.6                              | -                                 | 601                               | 451                               | 326                               | 393                               | 308                               | 237                               |
-| Ann temperate pasture             | 184                               | 326                               | 257                               | -                                 | -                                 | 185                               | 337                               | 81.3                              | 186                               | 273                               |
-| Ann tropical pasture              | -                                 | -                                 | 107                               | -                                 | -                                 | 63                                | 119                               | 13.4                              | 49.1                              | 81.0                              |
-| Perenn tropical pasture           | 219                               | 217                               | 428                               | 1000                              | -                                 | -                                 | -                                 | 186                               | 186                               | 186                               |
+|  | Calf | Calf | Pregnant/dry | Pregnant/dry | Lactation | Lactation | Lactation | Weighted average | Weighted average | Weighted average |
+| - | - | - | - | - | - | - | - | - | - | - |
+|  | 0–12 mo | 12-AI mo | Heifer | Cow | TMR | TMR75 | TMR50 | TMR | TMR75 | TMR50 |
+| Days | 360 | 120 | 270 | 180 | 1220 | 1220 | 1220 |  |  |  |
+| DM intake, kg d-1 | 3.35 | 6.90 | 10.4 | 11.0 | 18.7 | 17.2 | 17.0 | 13.8 | 12.9 | 12.8 |
+| Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 | Ingredients, g (kg DM)-1 |
+| Ground corn | 309 | 145 | 96.3 | - | 257 | 195 | 142 | 218 | 183 | 153 |
+| Soybean meal | 138 | 22 | 26.7 | - | 143 | 105 | 76.1 | 109 | 88.0 | 71.0 |
+| Corn silage | 149 | 290 | 85.6 | - | 601 | 451 | 326 | 393 | 308 | 237 |
+| Ann temperate pasture | 184 | 326 | 257 | - | - | 185 | 337 | 81.3 | 186 | 273 |
+| Ann tropical pasture | - | - | 107 | - | - | 63 | 119 | 13.4 | 49.1 | 81.0 |
+| Perenn tropical pasture | 219 | 217 | 428 | 1000 | - | - | - | 186 | 186 | 186 |
 | Chemical composition, g (kg DM)-1 | Chemical composition, g (kg DM)-1 | Chemical composition, g (kg DM)-1 | Chemical composition, g (kg DM)-1 | Chemical composition, g (kg DM)-1 | Chemical composition, g (kg DM)-1 | Chemical composition, g (kg DM)-1 | Chemical composition, g (kg DM)-1 | Chemical composition, g (kg DM)-1 | Chemical composition, g (kg DM)-1 | Chemical composition, g (kg DM)-1 |
-| Organic matter                    | 935                               | 924                               | 913                               | 916                               | 958                               | 939                               | 924                               | 943                               | 932                               | 924                               |
-| Crude protein                     | 216                               | 183                               | 213                               | 200                               | 150                               | 170                               | 198                               | 175                               | 186                               | 202                               |
-| Neutral detergent fibre           | 299                               | 479                               | 518                               | 625                               | 382                               | 418                               | 449                               | 411                               | 431                               | 449                               |
-| Acid detergent fibre              | 127                               | 203                               | 234                               | 306                               | 152                               | 171                               | 187                               | 174                               | 185                               | 194                               |
-| Ether extract                     | 46.5                              | 30.4                              | 28.6                              | 25.0                              | 31.8                              | 31.1                              | 30.4                              | 33.2                              | 32.8                              | 32.4                              |
-| Nutritive value                   | Nutritive value                   | Nutritive value                   | Nutritive value                   | Nutritive value                   | Nutritive value                   | Nutritive value                   | Nutritive value                   | Nutritive value                   | Nutritive value                   | Nutritive value                   |
-| OM digestibility, %               | 82.1                              | 77.9                              | 77.1                              | 71.9                              | 72.4                              | 75.0                              | 77.2                              | 74.8                              | 76.3                              | 77.6                              |
-| NEL, Mcal (kg DM)-1               | 1.96                              | 1.69                              | 1.63                              | 1.44                              | 1.81                              | 1.78                              | 1.74                              | 1.8                               | 1.8                               | 1.7                               |
-| MP, g (kg DM)-1                   | 111                               | 93.6                              | 97.6                              | 90.0                              | 95.0                              | 102                               | 102                               | 97.5                              | 102                               | 101                               |
+| Organic matter | 935 | 924 | 913 | 916 | 958 | 939 | 924 | 943 | 932 | 924 |
+| Crude protein | 216 | 183 | 213 | 200 | 150 | 170 | 198 | 175 | 186 | 202 |
+| Neutral detergent fibre | 299 | 479 | 518 | 625 | 382 | 418 | 449 | 411 | 431 | 449 |
+| Acid detergent fibre | 127 | 203 | 234 | 306 | 152 | 171 | 187 | 174 | 185 | 194 |
+| Ether extract | 46.5 | 30.4 | 28.6 | 25.0 | 31.8 | 31.1 | 30.4 | 33.2 | 32.8 | 32.4 |
+| Nutritive value | Nutritive value | Nutritive value | Nutritive value | Nutritive value | Nutritive value | Nutritive value | Nutritive value | Nutritive value | Nutritive value | Nutritive value |
+| OM digestibility, % | 82.1 | 77.9 | 77.1 | 71.9 | 72.4 | 75.0 | 77.2 | 74.8 | 76.3 | 77.6 |
+| NEL, Mcal (kg DM)-1 | 1.96 | 1.69 | 1.63 | 1.44 | 1.81 | 1.78 | 1.74 | 1.8 | 1.8 | 1.7 |
+| MP, g (kg DM)-1 | 111 | 93.6 | 97.6 | 90.0 | 95.0 | 102 | 102 | 97.5 | 102 | 101 |
 
 #### GHG emissions from crop and pasture production
 
@@ -102,50 +102,50 @@ GHG emission factors used for off- and on-farm feed production were based on lit
 
 Table 3 GHG emission factors for Off- and On-farm feed production.
 
-| Feed             |   DM yield (kg ha-1) |   Emission factor | Unita                | References   |
-|------------------|----------------------|-------------------|----------------------|--------------|
-| Off-farm         |                      |                   |                      |              |
-| Corn grain       |                7,500 |             0.316 | kg CO2e (kg grain)-1 | [30]         |
-| Soybean          |                2,200 |             0.186 | kg CO2e (kg grain)-1 | [31]         |
-| On-farm          |                      |                   |                      |              |
-| Corn silageb     |               16,000 |             0.206 | kg CO2e (kg DM)-1    | [32,33]      |
-| Annual ryegrassc |                9,500 |             0.226 | kg CO2e (kg DM)-1    | [32,34]      |
-| Pearl milletd    |               11,000 |             0.195 | kg CO2e (kg DM)-1    | [32,35]      |
-| Kikuyu grasse    |                9,500 |             0.226 | kg CO2e (kg DM)-1    | [32,36]      |
+| Feed | DM yield (kg ha-1) | Emission factor | Unita | References |
+| - | - | - | - | - |
+| Off-farm |  |  |  |  |
+| Corn grain | 7,500 | 0.316 | kg CO2e (kg grain)-1 | [30] |
+| Soybean | 2,200 | 0.186 | kg CO2e (kg grain)-1 | [31] |
+| On-farm |  |  |  |  |
+| Corn silageb | 16,000 | 0.206 | kg CO2e (kg DM)-1 | [32,33] |
+| Annual ryegrassc | 9,500 | 0.226 | kg CO2e (kg DM)-1 | [32,34] |
+| Pearl milletd | 11,000 | 0.195 | kg CO2e (kg DM)-1 | [32,35] |
+| Kikuyu grasse | 9,500 | 0.226 | kg CO2e (kg DM)-1 | [32,36] |
 
 Emissions from on-farm feed production (corn silage and pasture) were estimated using primary and secondary sources based on the actual amount of each input (Table 4). Primary sources were direct and indirect N2O-N emissions from organic and synthetic fertilizers and crop/pasture residues, CO2-C emissions from lime and urea applications, as well as fuel combustion. The direct N2O-N emission factor (kg (kg N input)-1) is based on a local study performed previously [37]. For indirect N2O-N emissions (kg N2O-N (kg NH3-N + NOx)-1), as well as CO2-C emissions from lime + urea, default values proposed by IPCC [38] were used. For perennial pastures, a C sequestration of 0.57 t ha-1 was used based on a 9-year study conducted in southern Brazil [39]. Due to the use of conventional tillage, no C sequestration was considered for annual pastures. The amount of fuel required was 8.9 (no-tillage) and 14.3 L ha-1 (disking) for annual tropical and temperate pastures, respectively [40]. The CO2 from fuel combustion was 2.7 kg CO2 L-1 [41]. Secondary sources of emissions during the production of fuel, machinery, fertilizer, pesticides, seeds and plastic for ensilage were estimated using emission factors described by Rotz et al. [42].
 
 Table 4 GHG emissions from On-farm feed production.
 
-| Item                                      | Corn silage   | Annual temperate pasture   | Annual tropical pasture   |   Perennial tropical pasture |
-|-------------------------------------------|---------------|----------------------------|---------------------------|------------------------------|
-| DM yield, kg ha-1                         | 16000         | 9500                       | 11000                     |                    9500      |
-| Direct N2O emissions to air               |               |                            |                           |                              |
-| N organic fertilizer, kg ha-1a            | 150           | 180                        | 225                       |                     225      |
-| N synthetic fertilizer                    | -             | 20                         | 25                        |                      25      |
-| N from residual DM, kg ha-1b              | 70            | 112                        | 129                       |                     112      |
-| Emission fator, kg N2O-N (kg N)-1c        | 0.002         | 0.002                      | 0.002                     |                       0.002  |
-| kg N2O ha-1 from direct emissions         | 0.69          | 0.98                       | 1.19                      |                       1.14   |
-| Indirect N2O emissions to air             |               |                            |                           |                              |
-| kg NH3-N+NOx-N (kg organic N)-1b          | 0.2           | 0.2                        | 0.2                       |                       0.2    |
-| kg NH3-N+NOx-N (kg synthetic N)-1b        | 0.1           | 0.1                        | 0.1                       |                       0.1    |
-| kg N2O-N (kg NH3-N+NOx-N)-1b              | 0.01          | 0.01                       | 0.01                      |                       0.01   |
-| kg N2O ha-1 from NH3+NOx volatilized      | 0.47          | 0.60                       | 0.75                      |                       0.75   |
-| Indirect N2O emissions to soil            |               |                            |                           |                              |
-| kg N losses by leaching (kg N)-1b         | 0.3           | 0.3                        | 0.3                       |                       0.3    |
-| kg N2O-N (kg N leaching)-1                | 0.0075        | 0.0075                     | 0.0075                    |                       0.0075 |
-| kg N2O ha-1 from N losses by leaching     | 0.78          | 1.10                       | 1.34                      |                       1.28   |
-| kg N2O ha-1 (direct + indirect emissions) | 1.94          | 2.68                       | 3.28                      |                       3.16   |
-| kg CO2e ha-1 from N20 emissionsd          | 514           | 710                        | 869                       |                     838      |
-| kg CO2 ha-1 from lime+ureab               | 515           | 721                        | 882                       |                     852      |
-| kg CO2 ha-1 from diesel combustione       | 802           | 38                         | 23                        |                      12      |
-| kg CO2e from secondary sourcesf           | 516           | 205                        | 225                       |                     284      |
-| Total CO2e emitted, kg ha-1               | 1833          | 964                        | 1130                      |                    1148      |
-| Emission factor, kg CO2e (kg DM)-1g       | 0.115         | 0.145                      | 0.147                     |                       0.173  |
-| Carbon sequestered, kg ha-1h              | -             | -                          | -                         |                     570      |
-| Sequestered CO2-C, kg ha-1                | -             | -                          | -                         |                    1393      |
-| kg CO2e ha-1 (emitted—sequestered)        | 1833          | 964                        | 1130                      |                    -245      |
-| Emission factor, kg CO2e (kg DM)-1i       | 0.115         | 0.145                      | 0.147                     |                      -0.037  |
+| Item | Corn silage | Annual temperate pasture | Annual tropical pasture | Perennial tropical pasture |
+| - | - | - | - | - |
+| DM yield, kg ha-1 | 16000 | 9500 | 11000 | 9500 |
+| Direct N2O emissions to air |  |  |  |  |
+| N organic fertilizer, kg ha-1a | 150 | 180 | 225 | 225 |
+| N synthetic fertilizer | - | 20 | 25 | 25 |
+| N from residual DM, kg ha-1b | 70 | 112 | 129 | 112 |
+| Emission fator, kg N2O-N (kg N)-1c | 0.002 | 0.002 | 0.002 | 0.002 |
+| kg N2O ha-1 from direct emissions | 0.69 | 0.98 | 1.19 | 1.14 |
+| Indirect N2O emissions to air |  |  |  |  |
+| kg NH3-N+NOx-N (kg organic N)-1b | 0.2 | 0.2 | 0.2 | 0.2 |
+| kg NH3-N+NOx-N (kg synthetic N)-1b | 0.1 | 0.1 | 0.1 | 0.1 |
+| kg N2O-N (kg NH3-N+NOx-N)-1b | 0.01 | 0.01 | 0.01 | 0.01 |
+| kg N2O ha-1 from NH3+NOx volatilized | 0.47 | 0.60 | 0.75 | 0.75 |
+| Indirect N2O emissions to soil |  |  |  |  |
+| kg N losses by leaching (kg N)-1b | 0.3 | 0.3 | 0.3 | 0.3 |
+| kg N2O-N (kg N leaching)-1 | 0.0075 | 0.0075 | 0.0075 | 0.0075 |
+| kg N2O ha-1 from N losses by leaching | 0.78 | 1.10 | 1.34 | 1.28 |
+| kg N2O ha-1 (direct + indirect emissions) | 1.94 | 2.68 | 3.28 | 3.16 |
+| kg CO2e ha-1 from N20 emissionsd | 514 | 710 | 869 | 838 |
+| kg CO2 ha-1 from lime+ureab | 515 | 721 | 882 | 852 |
+| kg CO2 ha-1 from diesel combustione | 802 | 38 | 23 | 12 |
+| kg CO2e from secondary sourcesf | 516 | 205 | 225 | 284 |
+| Total CO2e emitted, kg ha-1 | 1833 | 964 | 1130 | 1148 |
+| Emission factor, kg CO2e (kg DM)-1g | 0.115 | 0.145 | 0.147 | 0.173 |
+| Carbon sequestered, kg ha-1h | - | - | - | 570 |
+| Sequestered CO2-C, kg ha-1 | - | - | - | 1393 |
+| kg CO2e ha-1 (emitted—sequestered) | 1833 | 964 | 1130 | -245 |
+| Emission factor, kg CO2e (kg DM)-1i | 0.115 | 0.145 | 0.147 | -0.037 |
 
 ### Animal husbandry
 
@@ -165,19 +165,19 @@ Emissions due to farm management included those from fuel and machinery for manu
 
 Table 5 Factors for major resource inputs in farm management.
 
-| Item                                     |   Factor | Unita             | References   |
-|------------------------------------------|----------|-------------------|--------------|
-| Production and transport of diesel       |    0.374 | kg CO2e L-1       | [41]         |
-| Emissions from diesel fuel combustion    |    2.637 | kg CO2e L-1       | [41]         |
-| Production of electricityb               |    0.73  | kg CO2e kWh-1     | [41]         |
-| Production of electricity (alternative)c |    0.205 | kg CO2e kWh-1     | [46]         |
-| Production of machinery                  |    3.54  | kg CO2e (kg mm)-1 | [42]         |
-| Manure handling                          |          |                   |              |
-| Fuel for manure handling                 |    0.6   | L diesel tonne-1  | [42]         |
-| Machinery for manure handling            |    0.17  | kg mm kg-1        | [42]         |
-| Milking and confinement                  |          |                   |              |
-| Electricity for milking                  |    0.06  | kWh (kg milk)-1   | [47]         |
-| Electricity for lightingd                |   75     | kWh cow-1         | [47]         |
+| Item | Factor | Unita | References |
+| - | - | - | - |
+| Production and transport of diesel | 0.374 | kg CO2e L-1 | [41] |
+| Emissions from diesel fuel combustion | 2.637 | kg CO2e L-1 | [41] |
+| Production of electricityb | 0.73 | kg CO2e kWh-1 | [41] |
+| Production of electricity (alternative)c | 0.205 | kg CO2e kWh-1 | [46] |
+| Production of machinery | 3.54 | kg CO2e (kg mm)-1 | [42] |
+| Manure handling |  |  |  |
+| Fuel for manure handling | 0.600 | L diesel tonne-1 | [42] |
+| Machinery for manure handling | 0.17 | kg mm kg-1 | [42] |
+| Milking and confinement |  |  |  |
+| Electricity for milking | 0.06 | kWh (kg milk)-1 | [47] |
+| Electricity for lightingd | 75 | kWh cow-1 | [47] |
 
 The amount of fuel use for manure handling were estimated taking into consideration the amount of manure produced per cow and the amounts of fuel required for manure handling (L diesel t-1) [42]. The amount of manure was estimated from OM excretions (kg cow-1), assuming that the manure has 8% ash on DM basis and 60% DM content. The OM excretions were calculated by NDOMI × days in confinement × proportion of daily time that animals stayed on confinement.
 

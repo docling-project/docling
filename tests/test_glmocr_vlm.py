@@ -18,6 +18,8 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.models.inference_engines.vlm.base import VlmEngineType
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
+pytestmark = pytest.mark.ml_vlm
+
 
 def test_glmocr_preset_exists():
     """Verify preset is registered with correct metadata and model spec."""
@@ -63,10 +65,11 @@ def test_glmocr_preset_engine_config():
     assert VlmEngineType.API_OPENAI in api_overrides
     assert api_overrides[VlmEngineType.API_OPENAI].params["model"] == "glm-ocr"
 
-    # No MLX override yet — engine config should fall back to default repo_id
+    # GLM-OCR now has an explicit MLX export for Apple Silicon.
     mlx_config = spec.get_engine_config(VlmEngineType.MLX)
-    assert mlx_config.repo_id == "zai-org/GLM-OCR"
+    assert mlx_config.repo_id == "mlx-community/GLM-OCR-bf16"
     assert mlx_config.extra_config == {}
+    assert spec.has_explicit_engine_export(VlmEngineType.MLX) is True
 
 
 def test_glmocr_preset_instantiation():
@@ -95,6 +98,12 @@ def test_glmocr_legacy_specs():
     assert v.repo_id == t.repo_id
     assert v.inference_framework == InferenceFramework.VLLM
     assert v.response_format == t.response_format
+
+    # MLX spec uses the converted mlx-community weights.
+    m = vlm_model_specs.GLMOCR_MLX
+    assert m.repo_id == "mlx-community/GLM-OCR-bf16"
+    assert m.inference_framework == InferenceFramework.MLX
+    assert m.response_format == t.response_format
 
     # API spec
     a = vlm_model_specs.GLMOCR_VLLM_API

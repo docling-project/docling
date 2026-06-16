@@ -6,9 +6,30 @@ on:
       - "main"
 
 jobs:
-  build-deploy-docs:
+  build-docs:
     uses: ./.github/workflows/docs.yml
     with:
       deploy: true
     permissions:
-      contents: write
+      contents: read
+
+  deploy-docs:
+    needs: build-docs
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      # Required by actions/deploy-pages — the official GitHub Pages
+      # deployment action. These permissions only live on the deploy job so
+      # the build-only path (called by ci-docs.yml) does not have to request
+      # them.
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

@@ -1,65 +1,87 @@
+"""LaTeX dictionary for OMML to LaTeX conversion.
+
+This module contains constants and dictionaries used for converting Office Math
+Markup Language (OMML) to LaTeX format. It includes mappings for special characters,
+mathematical symbols, functions, and formatting templates.
+
+Adapted from https://github.com/xiilei/dwml/blob/master/dwml/latex_dict.py on 23/01/2025
 """
-Adapted from https://github.com/xiilei/dwml/blob/master/dwml/latex_dict.py
-On 23/01/2025
-"""
 
-CHARS = ("{", "}", "_", "^", "#", "&", "$", "%", "~")
+from typing import Final
 
-BLANK = ""
-BACKSLASH = "\\"
-ALN = "&"
+CHARS: Final[tuple[str, ...]] = ("{", "}", "_", "^", "#", "&", "$", "%", "~")
 
-CHR = {
+BLANK: Final[str] = ""
+BACKSLASH: Final[str] = "\\"
+ALN: Final[str] = "&"
+
+# Characters that indicate mathematical expressions (not plain text)
+# Used to detect when spaces should be escaped in limit labels
+MATH_CHARS: Final[tuple[str, ...]] = (
+    BACKSLASH,
+    "<",
+    ">",
+    "=",
+    "+",
+    "*",
+    "/",
+    "^",
+    "_",
+    "{",
+    "}",
+)
+
+CHR: Final[dict[str, str]] = {
     # Unicode : Latex Math Symbols
     # Top accents
-    "\u0300": "\\grave{{{0}}}",
-    "\u0301": "\\acute{{{0}}}",
-    "\u0302": "\\hat{{{0}}}",
-    "\u0303": "\\tilde{{{0}}}",
-    "\u0304": "\\bar{{{0}}}",
-    "\u0305": "\\overbar{{{0}}}",
-    "\u0306": "\\breve{{{0}}}",
-    "\u0307": "\\dot{{{0}}}",
-    "\u0308": "\\ddot{{{0}}}",
-    "\u0309": "\\ovhook{{{0}}}",
-    "\u030a": "\\ocirc{{{0}}}}",
-    "\u030c": "\\check{{{0}}}}",
-    "\u0310": "\\candra{{{0}}}",
-    "\u0312": "\\oturnedcomma{{{0}}}",
-    "\u0315": "\\ocommatopright{{{0}}}",
-    "\u031a": "\\droang{{{0}}}",
-    "\u0338": "\\not{{{0}}}",
-    "\u20d0": "\\leftharpoonaccent{{{0}}}",
-    "\u20d1": "\\rightharpoonaccent{{{0}}}",
-    "\u20d2": "\\vertoverlay{{{0}}}",
-    "\u20d6": "\\overleftarrow{{{0}}}",
-    "\u20d7": "\\vec{{{0}}}",
-    "\u20db": "\\dddot{{{0}}}",
-    "\u20dc": "\\ddddot{{{0}}}",
-    "\u20e1": "\\overleftrightarrow{{{0}}}",
-    "\u20e7": "\\annuity{{{0}}}",
-    "\u20e9": "\\widebridgeabove{{{0}}}",
-    "\u20f0": "\\asteraccent{{{0}}}",
+    "\u0300": "\\grave{%s}",
+    "\u0301": "\\acute{%s}",
+    "\u0302": "\\hat{%s}",
+    "\u0303": "\\tilde{%s}",
+    "\u0304": "\\bar{%s}",
+    "\u0305": "\\overbar{%s}",
+    "\u0306": "\\breve{%s}",
+    "\u0307": "\\dot{%s}",
+    "\u0308": "\\ddot{%s}",
+    "\u0309": "\\ovhook{%s}",
+    "\u030a": "\\ocirc{%s}",
+    "\u030c": "\\check{%s}",
+    "\u0310": "\\candra{%s}",
+    "\u0312": "\\oturnedcomma{%s}",
+    "\u0315": "\\ocommatopright{%s}",
+    "\u031a": "\\droang{%s}",
+    "\u0338": "\\not{%s}",
+    "\u20d0": "\\leftharpoonaccent{%s}",
+    "\u20d1": "\\rightharpoonaccent{%s}",
+    "\u20d2": "\\vertoverlay{%s}",
+    "\u20d6": "\\overleftarrow{%s}",
+    "\u20d7": "\\vec{%s}",
+    "\u20db": "\\dddot{%s}",
+    "\u20dc": "\\ddddot{%s}",
+    "\u20e1": "\\overleftrightarrow{%s}",
+    "\u20e7": "\\annuity{%s}",
+    "\u20e9": "\\widebridgeabove{%s}",
+    "\u20f0": "\\asteraccent{%s}",
     # Bottom accents
-    "\u0330": "\\wideutilde{{{0}}}",
-    "\u0331": "\\underbar{{{0}}}",
-    "\u20e8": "\\threeunderdot{{{0}}}",
-    "\u20ec": "\\underrightharpoondown{{{0}}}",
-    "\u20ed": "\\underleftharpoondown{{{0}}}",
-    "\u20ee": "\\underledtarrow{{{0}}}",
-    "\u20ef": "\\underrightarrow{{{0}}}",
+    "\u0330": "\\wideutilde{%s}",
+    "\u0331": "\\underbar{%s}",
+    "\u20e8": "\\threeunderdot{%s}",
+    "\u20ec": "\\underrightharpoondown{%s}",
+    "\u20ed": "\\underleftharpoondown{%s}",
+    "\u20ee": "\\underledtarrow{%s}",
+    "\u20ef": "\\underrightarrow{%s}",
     # Over | group
-    "\u23b4": "\\overbracket{{{0}}}",
-    "\u23dc": "\\overparen{{{0}}}",
-    "\u23de": "\\overbrace{{{0}}}",
+    "\u23b4": "\\overbracket{%s}",
+    "\u23dc": "\\overparen{%s}",
+    "\u23de": "\\overbrace{%s}",
     # Under| group
-    "\u23b5": "\\underbracket{{{0}}}",
-    "\u23dd": "\\underparen{{{0}}}",
-    "\u23df": "\\underbrace{{{0}}}",
+    "\u23b5": "\\underbracket{%s}",
+    "\u23dd": "\\underparen{%s}",
+    "\u23df": "\\underbrace{%s}",
 }
 
-CHR_BO = {
-    # Big operators,
+CHR_BO: Final[dict[str, str]] = {
+    # Big operators
     "\u2140": "\\Bbbsum",
     "\u220f": "\\prod",
     "\u2210": "\\coprod",
@@ -79,7 +101,7 @@ CHR_BO = {
     "\u2a02": "\\bigotimes",
 }
 
-T = {
+T: Final[dict[str, str]] = {
     # Greek letters
     "\U0001d6fc": "\\alpha ",
     "\U0001d6fd": "\\beta ",
@@ -201,7 +223,7 @@ T = {
     "\U0001d467": "z",
 }
 
-FUNC = {
+FUNC: Final[dict[str, str]] = {
     "sin": "\\sin({fe})",
     "cos": "\\cos({fe})",
     "tan": "\\tan({fe})",
@@ -234,55 +256,69 @@ FUNC = {
     "Pr": "\\Pr({fe})",
 }
 
-FUNC_PLACE = "{fe}"
+FUNC_PLACE: Final[str] = "{fe}"
 
-BRK = "\\\\"
+BRK: Final[str] = "\\\\"
 
-CHR_DEFAULT = {
-    "ACC_VAL": "\\hat{{{0}}}",
+CHR_DEFAULT: Final[dict[str, str]] = {
+    "ACC_VAL": "\\hat{%s}",
+    "GROUPCHR_VAL": "\\underbrace{%s}",
 }
 
-POS = {
-    "top": "\\overline{{{0}}}",  # not sure
-    "bot": "\\underline{{{0}}}",
+# Grouping functions that can have subscripts/superscripts
+# These are bracket/brace functions, not limit functions
+GROUPING_FUNCS: Final[tuple[str, ...]] = (
+    "\\underbrace",
+    "\\overbrace",
+    "\\underparen",
+    "\\overparen",
+    "\\underbracket",
+    "\\overbracket",
+)
+
+POS: Final[dict[str, str]] = {
+    "top": "\\overline{%s}",
+    "bot": "\\underline{%s}",
 }
 
-POS_DEFAULT = {
-    "BAR_VAL": "\\overline{{{0}}}",
+POS_DEFAULT: Final[dict[str, str]] = {
+    "BAR_VAL": "\\overline{%s}",
 }
 
-SUB = "_{{{0}}}"
+SUB: Final[str] = "_{%s}"
 
-SUP = "^{{{0}}}"
+SUP: Final[str] = "^{%s}"
 
-F = {
-    "bar": "\\frac{{{num}}}{{{den}}}",
-    "skw": r"^{{{num}}}/_{{{den}}}",
-    "noBar": "\\genfrac{{}}{{}}{{0pt}}{{}}{{{num}}}{{{den}}}",
-    "lin": "{{{num}}}/{{{den}}}",
+F: Final[dict[str, str]] = {
+    "bar": "\\frac{%(num)s}{%(den)s}",
+    "skw": r"^{%(num)s}/_{%(den)s}",
+    "noBar": "\\genfrac{}{}{0pt}{}{%(num)s}{%(den)s}",
+    "lin": "{%(num)s}/{%(den)s}",
 }
-F_DEFAULT = "\\frac{{{num}}}{{{den}}}"
+F_DEFAULT: Final[str] = "\\frac{%(num)s}{%(den)s}"
 
-D = "\\left{left}{text}\\right{right}"
+D: Final[str] = "\\left%(left)s%(text)s\\right%(right)s"
 
-D_DEFAULT = {
+D_DEFAULT: Final[dict[str, str]] = {
     "left": "(",
     "right": ")",
     "null": ".",
 }
 
-RAD = "\\sqrt[{deg}]{{{text}}}"
-RAD_DEFAULT = "\\sqrt{{{text}}}"
-ARR = "{text}"
+RAD: Final[str] = "\\sqrt[%(deg)s]{%(text)s}"
+RAD_DEFAULT: Final[str] = "\\sqrt{%(text)s}"
+ARR: Final[str] = "%(text)s"
 
-LIM_FUNC = {
-    "lim": "\\lim_{{{lim}}}",
-    "max": "\\max_{{{lim}}}",
-    "min": "\\min_{{{lim}}}",
+LIM_FUNC: Final[dict[str, str]] = {
+    "lim": "\\lim_{%(lim)s}",
+    "max": "\\max_{%(lim)s}",
+    "min": "\\min_{%(lim)s}",
+    "argmax": "\\operatorname{argmax}_{%(lim)s}",
+    "argmin": "\\operatorname{argmin}_{%(lim)s}",
 }
 
-LIM_TO = ("\\rightarrow", "\\to")
+LIM_TO: Final[tuple[str, str]] = ("\\rightarrow", "\\to")
 
-LIM_UPP = "\\overset{{{lim}}}{{{text}}}"
+LIM_UPP: Final[str] = "\\overset{%(lim)s}{%(text)s}"
 
-M = "\\begin{{matrix}}{text}\\end{{matrix}}"
+M: Final[str] = "\\begin{matrix}%(text)s\\end{matrix}"

@@ -1,7 +1,7 @@
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Iterable, List, Union
+from typing import Iterable, List, Optional, Union
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import (
@@ -23,9 +23,14 @@ _log = logging.getLogger(__name__)
 
 
 class _ImagePageBackend(PdfPageBackend):
-    def __init__(self, image: Image.Image):
+    def __init__(self, image: Image.Image, page_no: int):
         self._image: Image.Image | None = image
+        self._page_no = page_no
         self.valid: bool = self._image is not None
+
+    @property
+    def page_no(self) -> int:
+        return self._page_no + 1
 
     def is_valid(self) -> bool:
         return self.valid
@@ -133,8 +138,10 @@ class ImageDocumentBackend(PdfDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
-        options: PdfBackendOptions = PdfBackendOptions(),
+        options: Optional[PdfBackendOptions] = None,
     ):
+        if options is None:
+            options = PdfBackendOptions()
         # Bypass PdfDocumentBackend.__init__ to avoid image→PDF conversion
         AbstractDocumentBackend.__init__(self, in_doc, path_or_stream, options)
         self.options: PdfBackendOptions = options
@@ -174,7 +181,7 @@ class ImageDocumentBackend(PdfDocumentBackend):
     def load_page(self, page_no: int) -> _ImagePageBackend:
         if not (0 <= page_no < len(self._frames)):
             raise IndexError(f"Page index out of range: {page_no}")
-        return _ImagePageBackend(self._frames[page_no])
+        return _ImagePageBackend(self._frames[page_no], page_no)
 
     @classmethod
     def supported_formats(cls) -> set[InputFormat]:

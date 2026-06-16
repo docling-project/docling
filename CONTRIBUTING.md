@@ -48,22 +48,22 @@ uv add [OPTIONS] <PACKAGES|--requirements <REQUIREMENTS>>
 We use the following tools to enforce code style:
 
 - [Ruff](https://docs.astral.sh/ruff/), as linter and code formatter
-- [MyPy](https://mypy.readthedocs.io), as static type checker
+- [ty](https://docs.astral.sh/ty/), as static type checker
 
-A set of styling checks, as well as regression tests, are defined and managed through the [pre-commit](https://pre-commit.com/) framework.
-To ensure that those scripts run automatically before a commit is finalized, install `pre-commit` on your local repository:
+A set of styling checks, as well as regression tests, are defined and managed through [prek](https://pypi.org/project/prek/), a fast runner for pre-commit-compatible hook configs.
+To ensure that those scripts run automatically before a commit is finalized, install `prek` on your local repository:
 
 ```bash
-pre-commit install
+uv run prek install
 ```
 
 To run the checks on-demand, run:
 
 ```bash
-pre-commit run --all-files
+uv run prek run --all-files
 ```
 
-Note: Checks like `Ruff` will "fail" if they modify files. This is because `pre-commit` doesn't like to see files modified by its hooks. In these cases, `git add` the modified files and `git commit` again.
+Note: Checks like `Ruff` will "fail" if they modify files. This is because hook runners don't like to see files modified by their hooks. In these cases, `git add` the modified files and `git commit` again.
 
 ## Tests
 

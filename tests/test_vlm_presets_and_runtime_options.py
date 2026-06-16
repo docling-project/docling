@@ -11,12 +11,16 @@ This test suite validates:
 import pytest
 from pydantic import ValidationError
 
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.pipeline_options import (
     CodeFormulaVlmOptions,
     PictureDescriptionVlmEngineOptions,
     VlmConvertOptions,
 )
-from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
+from docling.datamodel.pipeline_options_vlm_model import (
+    ResponseFormat,
+    TransformersModelType,
+)
 from docling.datamodel.stage_model_specs import (
     ApiModelConfig,
     EngineModelConfig,
@@ -31,6 +35,11 @@ from docling.datamodel.vlm_engine_options import (
     VllmVlmEngineOptions,
 )
 from docling.models.inference_engines.vlm import VlmEngineType
+from docling.models.inference_engines.vlm.transformers_engine import (
+    TransformersVlmEngine,
+)
+
+pytestmark = pytest.mark.ml_vlm
 
 # =============================================================================
 # RUNTIME OPTIONS TESTS
@@ -110,6 +119,49 @@ class TestRuntimeOptions:
         """Test VllmVlmEngineOptions creation."""
         options = VllmVlmEngineOptions()
         assert options.engine_type == VlmEngineType.VLLM
+        assert options.model_impl == "auto"
+
+        with pytest.raises(ValidationError):
+            VllmVlmEngineOptions(model_impl=None)
+
+    def test_transformers_engine_accepts_json_model_type(self, monkeypatch):
+        """Custom JSON configs carry enum values as strings."""
+        calls = []
+
+        def fake_load_model_for_repo(
+            self,
+            repo_id,
+            revision="main",
+            model_type=TransformersModelType.AUTOMODEL,
+        ):
+            calls.append((repo_id, revision, model_type))
+
+        monkeypatch.setattr(
+            TransformersVlmEngine, "_load_model_for_repo", fake_load_model_for_repo
+        )
+
+        TransformersVlmEngine(
+            options=TransformersVlmEngineOptions(),
+            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+            artifacts_path=None,
+            model_config=EngineModelConfig(
+                repo_id="test/model",
+                revision="v1",
+                extra_config={
+                    "transformers_model_type": (
+                        TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT.value
+                    )
+                },
+            ),
+        )
+
+        assert calls == [
+            (
+                "test/model",
+                "v1",
+                TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+            )
+        ]
 
 
 # =============================================================================
@@ -189,6 +241,18 @@ class TestVlmModelSpec:
         config_other = spec.get_engine_config(VlmEngineType.MLX)
         assert "torch_dtype" not in config_other.extra_config
 
+    def test_same_repo_engine_override_counts_as_explicit_support(self):
+        """Native handlers can use the default repo_id and still be explicit."""
+        spec = VlmModelSpec(
+            name="Falcon-Style Model",
+            default_repo_id="org/model",
+            prompt="Test prompt",
+            response_format=ResponseFormat.MARKDOWN,
+            engine_overrides={VlmEngineType.MLX: EngineModelConfig()},
+        )
+
+        assert spec.has_explicit_engine_export(VlmEngineType.MLX) is True
+
     def test_model_spec_with_api_overrides(self):
         """Test model spec with API-specific overrides."""
         spec = VlmModelSpec(
@@ -257,6 +321,7 @@ class TestPresetSystem:
         assert "granite_vision" in preset_ids
         assert "pixtral" in preset_ids
         assert "got_ocr" in preset_ids
+        assert "nanonets_ocr2" in preset_ids
         assert "glm_ocr" in preset_ids
         assert "lightonocr" in preset_ids
 
@@ -517,6 +582,7 @@ class TestPresetEngineIntegration:
         # Note: Presets may be shared across different stage types
         all_valid_formats = [
             ResponseFormat.DOCTAGS,
+            ResponseFormat.DOCLANG,
             ResponseFormat.MARKDOWN,
             ResponseFormat.DEEPSEEKOCR_MARKDOWN,
             ResponseFormat.PLAINTEXT,

@@ -390,9 +390,10 @@ class LayoutPostprocessor:
         """Handle overlaps between regular and wrapper clusters before child assignment.
 
         In particular, KEY_VALUE_REGION proposals that are almost identical to a TABLE
-        should be removed.
+        should be removed. A PICTURE proposal that nearly coincides with a TABLE is also
+        removed, keeping the structured TABLE.
         """
-        wrappers_to_remove = set()
+        clusters_to_remove = set()
 
         for wrapper in special_clusters:
             if wrapper.label not in self.WRAPPER_TYPES:
@@ -409,14 +410,28 @@ class LayoutPostprocessor:
                     if (
                         overlap_ratio > 0.9 and conf_diff < 0.1
                     ):  # self.OVERLAP_PARAMS["wrapper"]["conf_threshold"]):  # 80% overlap threshold
-                        wrappers_to_remove.add(wrapper.id)
+                        clusters_to_remove.add(wrapper.id)
                         break
 
-        # Filter out the identified wrappers
+        # The picture/table buckets are de-overlapped independently elsewhere, so a
+        # region the layout model proposes as BOTH a PICTURE and a TABLE survives twice.
+        # When a PICTURE nearly coincides with a TABLE (high IoU), keep the structured
+        # TABLE and drop the PICTURE. IoU (not containment) is used so a genuine small
+        # figure fully inside a large table region is not removed.
+        tables = [c for c in special_clusters if c.label == DocItemLabel.TABLE]
+        for picture in special_clusters:
+            if picture.label != DocItemLabel.PICTURE:
+                continue
+            for table in tables:
+                if picture.bbox.intersection_over_union(table.bbox) > 0.8:
+                    clusters_to_remove.add(picture.id)
+                    break
+
+        # Filter out the identified clusters
         special_clusters = [
             cluster
             for cluster in special_clusters
-            if cluster.id not in wrappers_to_remove
+            if cluster.id not in clusters_to_remove
         ]
 
         return special_clusters
@@ -658,7 +673,7 @@ class LayoutPostprocessor:
 
     def _sort_cells(self, cells: list[TextCell]) -> list[TextCell]:
         """Sort cells in native reading order."""
-        return sorted(cells, key=lambda c: (c.index))
+        return sorted(cells, key=lambda c: c.index)
 
     def _sort_clusters(
         self, clusters: list[Cluster], mode: str = "id"

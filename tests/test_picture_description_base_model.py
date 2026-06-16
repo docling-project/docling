@@ -22,6 +22,8 @@ from docling.datamodel.pipeline_options import (
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.pipeline.base_pipeline import BasePipeline
 
+pytestmark = pytest.mark.ml_vlm
+
 
 class _TestOptions(PictureDescriptionBaseOptions):
     kind: ClassVar[str] = "test"

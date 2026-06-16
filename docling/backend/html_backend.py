@@ -1,8 +1,10 @@
 import base64
+import ipaddress
 import logging
 import math
 import os
 import re
+import socket
 import warnings
 from contextlib import contextmanager
 from copy import deepcopy
@@ -65,6 +67,7 @@ DEFAULT_IMAGE_HEIGHT = 128
 _BLOCK_TAGS: Final = {
     "address",
     "details",
+    "dl",
     "figure",
     "footer",
     "img",
@@ -142,11 +145,44 @@ _FORMAT_TAG_MAP: Final = {
 
 _DATA_DOCLING_ID_ATTR: Final = "data-docling-id"
 _FORM_CONTAINER_CLASS: Final = "form_region"
+_ROW_SECTION_CLASS: Final = "row_section"
 _FORM_KEY_ID_RE: Final = re.compile(r"^key(?P<key_id>[A-Za-z0-9]+)$")
 _FORM_MARKER_ID_RE: Final = re.compile(r"^key(?P<key_id>[A-Za-z0-9]+)_marker$")
 _FORM_VALUE_ID_RE: Final = re.compile(
     r"^key(?P<key_id>[A-Za-z0-9]+)_value(?P<value_id>[A-Za-z0-9]+)$"
 )
+
+
+def _validate_url_safety(url: str) -> None:
+    parsed = urlparse(url)
+    hostname = parsed.hostname
+
+    if not hostname:
+        raise ValueError("URL must contain a valid hostname")
+
+    try:
+        ip = ipaddress.ip_address(hostname)
+    except ValueError:
+        try:
+            ip_str = socket.gethostbyname(hostname)
+            ip = ipaddress.ip_address(ip_str)
+        except (socket.gaierror, socket.herror) as e:
+            raise ValueError(f"Cannot resolve hostname: {hostname}") from e
+
+    if not (
+        ip.is_global
+        and not (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_reserved
+            or ip.is_multicast
+            or ip.is_unspecified
+        )
+    ):
+        raise ValueError(f"Access to restricted IP address not allowed: {ip}")
+
+
 _CUSTOM_CHECKBOX_CLASSES: Final = {"checkbox", "checkbox-box", "checkbox-input"}
 _CHECKBOX_MARK_TEXTS: Final = {"x", "✓", "✔", "☑"}
 _CHECKBOX_CONTAINER_CLASSES: Final = {
@@ -375,8 +411,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
-        options: HTMLBackendOptions = HTMLBackendOptions(),
+        options: Optional[HTMLBackendOptions] = None,
     ):
+        if options is None:
+            options = HTMLBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
         self.options: HTMLBackendOptions
         self.soup: Optional[BeautifulSoup] = None
@@ -529,6 +567,25 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return value
         return Path(value).resolve().as_uri()
 
+    def _get_browser_request_block_reason(self, request_url: str) -> Optional[str]:
+        parsed = urlparse(request_url)
+        scheme = (parsed.scheme or "").lower()
+        if scheme in {"file", "data", "about", "blob"}:
+            return None
+
+        if HTMLDocumentBackend._is_remote_url(request_url):
+            if self.options.enable_remote_fetch:
+                return None
+            return (
+                "remote fetch is disabled "
+                "(set options.enable_remote_fetch=True to allow)"
+            )
+
+        return f"URL scheme '{scheme or '<empty>'}' is not allowed"
+
+    def _is_browser_request_allowed(self, request_url: str) -> bool:
+        return self._get_browser_request_block_reason(request_url) is None
+
     def _get_render_html_text(self) -> str:
         if self._raw_html_bytes is None:
             return ""
@@ -559,7 +616,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return
 
         try:
-            from playwright.sync_api import sync_playwright
+            from playwright.sync_api import sync_playwright  # type: ignore
         except ImportError as exc:
             raise RuntimeError(
                 "Playwright is required for HTML rendering. "
@@ -582,10 +639,30 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
+            # If remote fetch is disabled, keep Chromium offline.
+            offline_mode = not options.enable_remote_fetch
             context = browser.new_context(
                 viewport={"width": width, "height": height},
                 device_scale_factor=options.render_device_scale,
+                # Disable page JavaScript execution for deterministic static rendering.
+                java_script_enabled=False,
+                offline=offline_mode,
+                service_workers="block",
             )
+
+            def _route_request(route, request) -> None:
+                block_reason = self._get_browser_request_block_reason(request.url)
+                if block_reason is None:
+                    route.continue_()
+                else:
+                    warnings.warn(
+                        "Blocked browser request during HTML rendering: "
+                        f"{request.method} {request.url} ({block_reason})"
+                    )
+                    route.abort("blockedbyclient")
+
+            context.route("**/*", _route_request)
+
             page = context.new_page()
             if options.render_print_media:
                 page.emulate_media(media="print")
@@ -1229,19 +1306,53 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         parsed = urlparse(value)
         return parsed.scheme in {"http", "https", "ftp", "s3", "gs"}
 
+    @staticmethod
+    def _is_local_path(value: str) -> bool:
+        """Check if value is a local filesystem path (not a URI)."""
+        parsed = urlparse(value)
+        return not parsed.netloc and (
+            not parsed.scheme
+            or (len(parsed.scheme) == 1 and parsed.scheme.isalpha())  # Windows case
+        )
+
+    def _is_absolute_path(self, loc: str) -> bool:
+        return Path(loc).is_absolute() or (  # Windows-specific absolute paths:
+            len((parsed_loc := urlparse(loc)).scheme) == 1
+            and parsed_loc.scheme.isalpha()
+            and not parsed_loc.netloc
+        )
+
     def _resolve_relative_path(self, loc: str) -> str:
+        loc = loc.strip()
+
+        # Strip file:// prefix for validation as local path
+        if loc.startswith(file_prefix := "file://"):
+            loc = loc[len(file_prefix) :]
+
         abs_loc = loc
 
         if self.base_path:
             if loc.startswith("//"):
-                # Protocol-relative URL - default to https
                 abs_loc = "https:" + loc
-            elif not loc.startswith(("http://", "https://", "data:", "file://")):
-                if HTMLDocumentBackend._is_remote_url(self.base_path):  # remote fetch
+            elif not loc.startswith(("http://", "https://", "data:", "#")):
+                if HTMLDocumentBackend._is_remote_url(self.base_path):
                     abs_loc = urljoin(self.base_path, loc)
-                elif self.base_path:  # local fetch
-                    # For local files, resolve relative to the HTML file location
-                    abs_loc = str(Path(self.base_path).parent / loc)
+                elif HTMLDocumentBackend._is_local_path(self.base_path):
+                    if self._is_absolute_path(loc):
+                        raise ValueError(
+                            f"Absolute paths are not allowed with local base_path: '{loc}'"
+                        )
+
+                    base_dir = Path(self.base_path).parent.resolve()
+                    resolved_path = (base_dir / loc).resolve()
+
+                    if not resolved_path.is_relative_to(base_dir):
+                        raise ValueError(
+                            f"Path traversal blocked: '{loc}' resolves outside base directory"
+                        )
+                    abs_loc = str(resolved_path)
+                else:
+                    raise ValueError(f"Invalid base_path format: '{self.base_path}'")
 
         _log.debug(f"Resolved location {loc} to {abs_loc}")
         return abs_loc
@@ -1372,6 +1483,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for row in element("tr", recursive=False):
             if not isinstance(row, Tag):
                 continue
+            row_classes = {
+                class_name.lower() for class_name in self._get_tag_classes(row)
+            }
+            row_is_row_section = _ROW_SECTION_CLASS in row_classes
             # For each row, find all the column cells (both <td> and <th>)
             # We don't want this recursive to support nested tables
             cells = row(["td", "th"], recursive=False)
@@ -1397,6 +1512,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             for html_cell in cells:
                 if not isinstance(html_cell, Tag):
                     continue
+                cell_classes = {
+                    class_name.lower()
+                    for class_name in self._get_tag_classes(html_cell)
+                }
+                row_section = row_is_row_section or (_ROW_SECTION_CLASS in cell_classes)
 
                 # extract inline formulas
                 for formula in html_cell("inline-formula"):
@@ -1452,6 +1572,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         end_col_offset_idx=col_idx + col_span,
                         column_header=col_header,
                         row_header=((not col_header) and html_cell.name == "th"),
+                        row_section=row_section,
                         ref=ref_for_rich_cell,  # points to an artificial group around children
                     )
                     doc.add_table_cell(table_item=docling_table, cell=rich_cell)
@@ -1467,6 +1588,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         end_col_offset_idx=col_idx + col_span,
                         column_header=col_header,
                         row_header=((not col_header) and html_cell.name == "th"),
+                        row_section=row_section,
                     )
                     doc.add_table_cell(table_item=docling_table, cell=simple_cell)
         return data
@@ -1570,8 +1692,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     node.find(_BLOCK_TAGS)
                     or node.find("input")
                     or node.find(
-                        lambda item: isinstance(item, Tag)
-                        and self._is_custom_checkbox_tag(item)
+                        lambda item: (
+                            isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
+                        )
                     )
                 )
                 has_pending_form_fields = self._has_pending_form_field_in_subtree(node)
@@ -2070,18 +2193,138 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     added_ref.append(im_ref)
         return added_ref
 
+    def _add_list_item_with_content(
+        self,
+        tag: Tag,
+        doc: DoclingDocument,
+        parent: RefItem,
+        enumerated: bool = False,
+        marker: str = "",
+        extra_formatting: Optional[Formatting] = None,
+    ) -> Optional[RefItem]:
+        """Helper method to add a list item with its content.
+
+        Handles both simple and complex content with inline groups.
+        Returns the created list item or None if no content.
+        """
+        # Extract text and hyperlinks
+        parts = self._extract_text_and_hyperlink_recursively(
+            tag, ignore_list=True, find_parent_annotation=True
+        )
+        min_parts = parts.simplify_text_elements()
+        item_text = re.sub(
+            r"\s+|\n+", " ", "".join([el.text for el in min_parts])
+        ).strip()
+
+        if not item_text:
+            return None
+
+        if len(min_parts) > 1:
+            # Complex content - create list item with inline group
+            item_prov = self._make_text_prov(text=item_text, tag=tag)
+            list_item = doc.add_list_item(
+                text="",
+                enumerated=enumerated,
+                marker=marker,
+                parent=parent,
+                content_layer=self.content_layer,
+                prov=item_prov,
+            )
+            self.parents[self.level + 1] = list_item
+            self.level += 1
+
+            with self._use_inline_group(min_parts, doc):
+                compacted_parts = self._compact_adjacent_single_char_parts(min_parts)
+                for annotated_text, source_tag_ids in compacted_parts:
+                    text_part = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
+                    clean_text = HTMLDocumentBackend._clean_unicode(text_part)
+
+                    # Apply extra formatting if provided
+                    formatting = annotated_text.formatting
+                    if extra_formatting:
+                        if extra_formatting.bold:
+                            if formatting is None:
+                                formatting = Formatting()
+                            formatting.bold = True
+
+                    prov = self._make_text_prov_for_source_tag_ids(
+                        text=clean_text,
+                        tag=tag,
+                        source_tag_ids=source_tag_ids,
+                    )
+
+                    if annotated_text.code:
+                        doc.add_code(
+                            parent=self.parents[self.level],
+                            text=clean_text,
+                            content_layer=self.content_layer,
+                            formatting=formatting,
+                            hyperlink=annotated_text.hyperlink,
+                            prov=prov,
+                        )
+                    else:
+                        doc.add_text(
+                            parent=self.parents[self.level],
+                            label=DocItemLabel.TEXT,
+                            text=clean_text,
+                            content_layer=self.content_layer,
+                            formatting=formatting,
+                            hyperlink=annotated_text.hyperlink,
+                            prov=prov,
+                        )
+
+            self.parents[self.level] = None
+            self.level -= 1
+            return list_item
+        else:
+            # Simple content - single text element
+            annotated_text = min_parts[0]
+            text = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
+            clean_text = HTMLDocumentBackend._clean_unicode(text)
+            prov = self._make_text_prov(
+                text=clean_text,
+                tag=tag,
+                source_tag_id=annotated_text.source_tag_id,
+            )
+
+            # Apply extra formatting if provided
+            formatting = annotated_text.formatting
+            if extra_formatting:
+                if extra_formatting.bold:
+                    if formatting is None:
+                        formatting = Formatting()
+                    formatting.bold = True
+
+            list_item = doc.add_list_item(
+                text=clean_text,
+                enumerated=enumerated,
+                marker=marker,
+                orig=text,
+                parent=parent,
+                content_layer=self.content_layer,
+                formatting=formatting,
+                hyperlink=annotated_text.hyperlink,
+                prov=prov,
+            )
+            return list_item
+
     def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:  # noqa: C901
         tag_name = tag.name.lower()
         start: Optional[int] = None
         name: str = ""
         is_ordered = tag_name == "ol"
-        if is_ordered:
+        is_description = tag_name == "dl"
+
+        if is_description:
+            name = "description list"
+        elif is_ordered:
             start_attr = tag.get("start")
             if isinstance(start_attr, str) and start_attr.isnumeric():
                 start = int(start_attr)
             name = "ordered list" + (f" start {start}" if start is not None else "")
         else:
             name = "list"
+
         # Create the list container
         list_group = doc.add_list_group(
             name=name,
@@ -2094,7 +2337,68 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.ctx.list_start_by_ref[list_group.self_ref] = start
         self.level += 1
 
-        # For each top-level <li> in this list
+        # Handle description lists (<dl> with <dt> and <dd>)
+        if is_description:
+            current_dt_item = None
+            dd_group = None  # Group for multiple <dd> under same <dt>
+
+            children = tag.find_all(["dt", "dd"], recursive=False)
+
+            for i, child in enumerate(children):
+                if not isinstance(child, Tag):
+                    continue
+
+                child_name = child.name.lower()
+
+                if child_name == "dt":
+                    dd_group = None
+
+                    # Add term with bold formatting
+                    bold_formatting = Formatting()
+                    bold_formatting.bold = True
+                    current_dt_item = self._add_list_item_with_content(
+                        tag=child,
+                        doc=doc,
+                        parent=list_group,
+                        extra_formatting=bold_formatting,
+                    )
+                    if current_dt_item:
+                        self.parents[self.level + 1] = current_dt_item
+
+                        dd_count = 0
+                        for next_child in children[i + 1 :]:
+                            if isinstance(next_child, Tag):
+                                if next_child.name.lower() == "dd":
+                                    dd_count += 1
+                                elif next_child.name.lower() == "dt":
+                                    break
+
+                        if dd_count > 1:
+                            dd_group = doc.add_list_group(
+                                name="descriptions",
+                                parent=current_dt_item,
+                                content_layer=self.content_layer,
+                            )
+
+                elif child_name == "dd":
+                    dd_parent = dd_group or current_dt_item or list_group
+
+                    self._add_list_item_with_content(
+                        tag=child,
+                        doc=doc,
+                        parent=dd_parent,
+                    )
+
+                    # Handle any images in the description
+                    for img_tag in child("img"):
+                        if isinstance(img_tag, Tag):
+                            self._emit_image(img_tag, doc)
+
+            self.parents[self.level + 1] = None
+            self.level -= 1
+            return list_group.get_ref()
+
+        # For each top-level <li> in this list (ul/ol)
         for li in tag.find_all({"li", "ul", "ol"}, recursive=False):
             if not isinstance(li, Tag):
                 continue
@@ -2111,14 +2415,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     marker = ""
 
-                # 2) extract only the "direct" text from this <li>
-                parts = self._extract_text_and_hyperlink_recursively(
-                    li, ignore_list=True, find_parent_annotation=True
-                )
-                min_parts = parts.simplify_text_elements()
-                li_text = re.sub(
-                    r"\s+|\n+", " ", "".join([el.text for el in min_parts])
-                ).strip()
+                # 2) Find inputs and checkboxes in this <li>
                 inputs_in_li = [
                     input_tag
                     for input_tag in li.find_all("input")
@@ -2127,146 +2424,52 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 custom_checkboxes_in_li = [
                     checkbox_tag
                     for checkbox_tag in li.find_all(
-                        lambda item: isinstance(item, Tag)
-                        and self._is_custom_checkbox_tag(item)
+                        lambda item: (
+                            isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
+                        )
                     )
                     if checkbox_tag.find_parent("li") is li
                 ]
 
-                # 3) add the list item
-                if li_text or inputs_in_li or custom_checkboxes_in_li:
-                    if len(min_parts) > 1:
-                        li_prov = self._make_text_prov(text=li_text, tag=li)
-                        # create an empty list element in order to hook the inline group onto that one
-                        self.parents[self.level + 1] = doc.add_list_item(
-                            text="",
-                            enumerated=is_ordered,
-                            marker=marker,
-                            parent=list_group,
-                            content_layer=self.content_layer,
-                            prov=li_prov,
-                        )
-                        self.level += 1
-                        with self._use_inline_group(min_parts, doc):
-                            compacted_parts = self._compact_adjacent_single_char_parts(
-                                min_parts
-                            )
-                            for annotated_text, source_tag_ids in compacted_parts:
-                                li_text = re.sub(
-                                    r"\s+|\n+", " ", annotated_text.text
-                                ).strip()
-                                li_clean = HTMLDocumentBackend._clean_unicode(li_text)
-                                if annotated_text.code:
-                                    prov = self._make_text_prov_for_source_tag_ids(
-                                        text=li_clean,
-                                        tag=li,
-                                        source_tag_ids=source_tag_ids,
-                                    )
-                                    doc.add_code(
-                                        parent=self.parents[self.level],
-                                        text=li_clean,
-                                        content_layer=self.content_layer,
-                                        formatting=annotated_text.formatting,
-                                        hyperlink=annotated_text.hyperlink,
-                                        prov=prov,
-                                    )
-                                else:
-                                    prov = self._make_text_prov_for_source_tag_ids(
-                                        text=li_clean,
-                                        tag=li,
-                                        source_tag_ids=source_tag_ids,
-                                    )
-                                    doc.add_text(
-                                        parent=self.parents[self.level],
-                                        label=DocItemLabel.TEXT,
-                                        text=li_clean,
-                                        content_layer=self.content_layer,
-                                        formatting=annotated_text.formatting,
-                                        hyperlink=annotated_text.hyperlink,
-                                        prov=prov,
-                                    )
+                # 3) Add the list item using the helper function
+                list_item = self._add_list_item_with_content(
+                    tag=li,
+                    doc=doc,
+                    parent=list_group,
+                    enumerated=is_ordered,
+                    marker=marker,
+                )
 
+                if list_item or inputs_in_li or custom_checkboxes_in_li:
+                    # If we created a list item, set it as parent for nested content
+                    if list_item:
+                        self.parents[self.level + 1] = list_item
+
+                    # Handle inputs and checkboxes
+                    if inputs_in_li or custom_checkboxes_in_li:
+                        self.level += 1
                         for input_tag in inputs_in_li:
                             if isinstance(input_tag, Tag):
                                 self._emit_input(input_tag, doc)
                         for checkbox_tag in custom_checkboxes_in_li:
                             if isinstance(checkbox_tag, Tag):
                                 self._emit_custom_checkbox(checkbox_tag, doc)
-
-                        # 4) recurse into any nested lists, attaching them to this <li> item
-                        for sublist in li({"ul", "ol"}, recursive=False):
-                            if isinstance(sublist, Tag):
-                                self._handle_block(sublist, doc)
-
-                        # now the list element with inline group is not a parent anymore
-                        self.parents[self.level] = None
                         self.level -= 1
-                    elif li_text:
-                        annotated_text = min_parts[0]
-                        li_text = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
-                        li_clean = HTMLDocumentBackend._clean_unicode(li_text)
-                        prov = self._make_text_prov(
-                            text=li_clean,
-                            tag=li,
-                            source_tag_id=annotated_text.source_tag_id,
-                        )
-                        self.parents[self.level + 1] = doc.add_list_item(
-                            text=li_clean,
-                            enumerated=is_ordered,
-                            marker=marker,
-                            orig=li_text,
-                            parent=list_group,
-                            content_layer=self.content_layer,
-                            formatting=annotated_text.formatting,
-                            hyperlink=annotated_text.hyperlink,
-                            prov=prov,
-                        )
 
-                        if inputs_in_li or custom_checkboxes_in_li:
+                    # 4) Recurse into any nested lists
+                    for sublist in li({"ul", "ol"}, recursive=False):
+                        if isinstance(sublist, Tag):
                             self.level += 1
-                            for input_tag in inputs_in_li:
-                                if isinstance(input_tag, Tag):
-                                    self._emit_input(input_tag, doc)
-                            for checkbox_tag in custom_checkboxes_in_li:
-                                if isinstance(checkbox_tag, Tag):
-                                    self._emit_custom_checkbox(checkbox_tag, doc)
+                            self._handle_block(sublist, doc)
+                            self.parents[self.level + 1] = None
                             self.level -= 1
-
-                        # 4) recurse into any nested lists, attaching them to this <li> item
-                        for sublist in li({"ul", "ol"}, recursive=False):
-                            if isinstance(sublist, Tag):
-                                self.level += 1
-                                self._handle_block(sublist, doc)
-                                self.parents[self.level + 1] = None
-                                self.level -= 1
-                    else:
-                        li_prov = self._make_text_prov(text="", tag=li)
-                        self.parents[self.level + 1] = doc.add_list_item(
-                            text="",
-                            enumerated=is_ordered,
-                            marker=marker,
-                            parent=list_group,
-                            content_layer=self.content_layer,
-                            prov=li_prov,
-                        )
-                        self.level += 1
-                        for input_tag in inputs_in_li:
-                            if isinstance(input_tag, Tag):
-                                self._emit_input(input_tag, doc)
-                        for checkbox_tag in custom_checkboxes_in_li:
-                            if isinstance(checkbox_tag, Tag):
-                                self._emit_custom_checkbox(checkbox_tag, doc)
-                        for sublist in li({"ul", "ol"}, recursive=False):
-                            if isinstance(sublist, Tag):
-                                self._handle_block(sublist, doc)
-                        self.parents[self.level] = None
-                        self.level -= 1
                 else:
+                    # No content, but check for nested lists
                     for sublist in li({"ul", "ol"}, recursive=False):
                         if isinstance(sublist, Tag):
                             self._handle_block(sublist, doc)
 
-                # 5) extract any images under this <li>
+                # 5) Extract any images under this <li>
                 for img_tag in li("img"):
                     if isinstance(img_tag, Tag):
                         self._emit_image(img_tag, doc)
@@ -2315,7 +2518,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             heading_refs = self._handle_heading(tag, doc)
             added_refs.extend(heading_refs)
 
-        elif tag_name in {"ul", "ol"}:
+        elif tag_name in {"ul", "ol", "dl"}:
             list_ref = self._handle_list(tag, doc)
             added_refs.append(list_ref)
 
@@ -2375,8 +2578,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if input_ref is not None:
                         added_refs.append(input_ref)
             for checkbox_tag in tag.find_all(
-                lambda item: isinstance(item, Tag)
-                and self._is_custom_checkbox_tag(item)
+                lambda item: (
+                    isinstance(item, Tag) and self._is_custom_checkbox_tag(item)
+                )
             ):
                 if isinstance(checkbox_tag, Tag):
                     checkbox_ref = self._emit_custom_checkbox(checkbox_tag, doc)
@@ -2713,8 +2917,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return "fillable"
         if (
             value_tag.find(
-                lambda item: isinstance(item, Tag)
-                and HTMLDocumentBackend._is_checkbox_like_tag(item)
+                lambda item: (
+                    isinstance(item, Tag)
+                    and HTMLDocumentBackend._is_checkbox_like_tag(item)
+                )
             )
             is not None
         ):
@@ -3370,9 +3576,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return True
         if (
             tag.find(
-                lambda item: isinstance(item, Tag)
-                and item is not tag
-                and self._is_form_semantic_id(self._get_html_id(item))
+                lambda item: (
+                    isinstance(item, Tag)
+                    and item is not tag
+                    and self._is_form_semantic_id(self._get_html_id(item))
+                )
             )
             is not None
         ):
@@ -4208,22 +4416,79 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     "Fetching remote resources is only allowed when set explicitly. "
                     "Set options.enable_remote_fetch=True."
                 )
-            response = requests.get(src_loc, stream=True)
-            response.raise_for_status()
-            return response.content
-        elif src_loc.startswith("data:"):
-            data = re.sub(r"^data:image/.+;base64,", "", src_loc)
-            return base64.b64decode(data)
 
-        if src_loc.startswith("file://"):
-            src_loc = src_loc[7:]
+            _validate_url_safety(src_loc)
+
+            max_size = self.options.max_remote_image_bytes
+            headers = {"Range": f"bytes=0-{max_size - 1}"}
+
+            # Merge custom headers from options if provided
+            if self.options.headers:
+                headers.update(self.options.headers)
+
+            # Create session with redirect limit
+            session = requests.Session()
+            session.max_redirects = self.options.max_redirects
+
+            # Hook to validate each redirect target
+            def _check_redirect_safety(response, *args, **kwargs):
+                """Validate each redirect target before following it."""
+                if response.is_redirect or response.is_permanent_redirect:
+                    redirect_url = response.headers.get("location")
+                    if redirect_url:
+                        # Handle relative redirects
+                        if not redirect_url.startswith(("http://", "https://")):
+                            from urllib.parse import urljoin
+
+                            redirect_url = urljoin(response.url, redirect_url)
+
+                        # Validate the redirect target
+                        _validate_url_safety(redirect_url)
+
+            session.hooks["response"].append(_check_redirect_safety)
+
+            response = session.get(
+                src_loc, stream=True, headers=headers, timeout=(5, 30)
+            )
+            response.raise_for_status()
+
+            content_length = response.headers.get("content-length")
+            if content_length and int(content_length) > max_size:
+                raise ValueError(f"Resource size exceeds limit: {content_length} bytes")
+
+            chunks = []
+            total_size = 0
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    total_size += len(chunk)
+                    if total_size > max_size:
+                        raise ValueError("Downloaded data exceeds size limit")
+                    chunks.append(chunk)
+
+            return b"".join(chunks)
+        elif src_loc.startswith("data:"):
+            encoded_data = re.sub(r"^data:image/.+;base64,", "", src_loc)
+            decoded_data = base64.b64decode(encoded_data)
+
+            if len(decoded_data) > self.options.max_image_data_base64_bytes:
+                raise ValueError(
+                    f"Decoded image exceeds size limit of {self.options.max_image_data_base64_bytes} bytes."
+                )
+
+            return decoded_data
 
         if not self.options.enable_local_fetch:
             raise OperationNotAllowed(
                 "Fetching local resources is only allowed when set explicitly. "
                 "Set options.enable_local_fetch=True."
             )
-        # add check that file exists and can read
+
+        # Require base_path for directory confinement (validation done in _resolve_relative_path)
+        if not self.base_path:
+            raise OperationNotAllowed(
+                f"Local file access requires base_path for directory confinement: '{src_loc}'"
+            )
+
         if os.path.isfile(src_loc) and os.access(src_loc, os.R_OK):
             with open(src_loc, "rb") as f:
                 return f.read()

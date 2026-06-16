@@ -1,9 +1,11 @@
 """Auto-inline VLM inference engine that selects the best local engine."""
 
+from __future__ import annotations
+
 import logging
 import platform
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, List, Union
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.vlm_engine_options import (
@@ -41,8 +43,8 @@ class AutoInlineVlmEngine(BaseVlmEngine):
         self,
         options: AutoInlineVlmEngineOptions,
         accelerator_options: AcceleratorOptions,
-        artifacts_path: Optional[Union[Path, str]],
-        model_spec: Optional["VlmModelSpec"] = None,
+        artifacts_path: Union[Path, str] | None,
+        model_spec: VlmModelSpec | None = None,
     ):
         """Initialize the auto-inline engine.
 
@@ -59,8 +61,8 @@ class AutoInlineVlmEngine(BaseVlmEngine):
         self.model_spec = model_spec
 
         # The actual engine will be set during initialization
-        self.actual_engine: Optional[BaseVlmEngine] = None
-        self.selected_engine_type: Optional[VlmEngineType] = None
+        self.actual_engine: BaseVlmEngine | None = None
+        self.selected_engine_type: VlmEngineType | None = None
 
         # Initialize immediately if model_spec is provided
         if self.model_spec is not None:
@@ -112,8 +114,8 @@ class AutoInlineVlmEngine(BaseVlmEngine):
                     )
             else:
                 _log.info(
-                    "MLX not selected: no explicit MLX export found for this model "
-                    "(no different repo_id in engine_overrides or not in supported_engines). "
+                    "MLX not selected: no explicit MLX support found for this model "
+                    "(no MLX engine override or supported_engines declaration). "
                     "Falling back to Transformers."
                 )
 

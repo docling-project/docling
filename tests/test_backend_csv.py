@@ -1,7 +1,7 @@
 from io import BytesIO
 from pathlib import Path
 
-from pytest import warns
+import pytest
 
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument
@@ -11,6 +11,7 @@ from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
+pytestmark = pytest.mark.cross_platform
 
 
 def get_csv_paths():
@@ -45,20 +46,20 @@ def test_e2e_valid_csv_conversions():
             "csv-too-many-columns",
             "csv-inconsistent-header",
         ):
-            with warns(UserWarning, match="Inconsistent column lengths"):
+            with pytest.warns(UserWarning, match="Inconsistent column lengths"):
                 conv_result: ConversionResult = converter.convert(csv_path)
         else:
             conv_result: ConversionResult = converter.convert(csv_path)
 
         doc: DoclingDocument = conv_result.document
 
-        pred_md: str = doc.export_to_markdown()
-        assert verify_export(pred_md, str(gt_path) + ".md"), "export to md"
+        pred_md: str = doc.export_to_markdown(compact_tables=True)
+        assert verify_export(pred_md, str(gt_path) + ".md", GENERATE), "export to md"
 
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
         )
-        assert verify_export(pred_itxt, str(gt_path) + ".itxt"), (
+        assert verify_export(pred_itxt, str(gt_path) + ".itxt", GENERATE), (
             "export to indented-text"
         )
 
@@ -76,15 +77,15 @@ def test_e2e_invalid_csv_conversions():
     converter = get_converter()
 
     print(f"converting {csv_too_few_columns}")
-    with warns(UserWarning, match="Inconsistent column lengths"):
+    with pytest.warns(UserWarning, match="Inconsistent column lengths"):
         converter.convert(csv_too_few_columns)
 
     print(f"converting {csv_too_many_columns}")
-    with warns(UserWarning, match="Inconsistent column lengths"):
+    with pytest.warns(UserWarning, match="Inconsistent column lengths"):
         converter.convert(csv_too_many_columns)
 
     print(f"converting {csv_inconsistent_header}")
-    with warns(UserWarning, match="Inconsistent column lengths"):
+    with pytest.warns(UserWarning, match="Inconsistent column lengths"):
         converter.convert(csv_inconsistent_header)
 
 

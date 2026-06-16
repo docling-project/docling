@@ -4,27 +4,33 @@ on:
   workflow_dispatch:
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   UV_FROZEN: "1"
-    
+
 jobs:
   code-checks:
+    permissions:
+      contents: read
+      pull-requests: read
     uses: ./.github/workflows/checks.yml
     with:
       push_coverage: false
+      force_all_checks: true
+      run_package_compat: true
+      use_tach: false
+      python_versions: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
   pre-release-check:
     runs-on: ubuntu-latest
     outputs:
       TARGET_TAG_V: ${{ steps.version_check.outputs.TRGT_VERSION }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0  # for fetching tags, required for semantic-release
-      - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v7
+      - uses: ./.github/actions/setup-ubuntu-ci
         with:
-          enable-cache: true
-      - name: Install dependencies
-        run: uv sync --only-dev
+          python_version: "3.12"
+          uv_sync_args: --frozen --only-dev
       - name: Check version of potential release
         id: version_check
         run: |
@@ -40,21 +46,19 @@ jobs:
     runs-on: ubuntu-latest
     concurrency: release
     steps:
-      - uses: actions/create-github-app-token@v2
+      - uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
         id: app-token
         with:
           app-id: ${{ vars.CI_APP_ID }}
           private-key: ${{ secrets.CI_PRIVATE_KEY }}
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0  # for fetching tags, required for semantic-release
-      - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v7
+      - uses: ./.github/actions/setup-ubuntu-ci
         with:
-          enable-cache: true
-      - name: Install dependencies
-        run: uv sync --only-dev
+          python_version: "3.12"
+          uv_sync_args: --frozen --only-dev
       - name: Run release script
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}

@@ -10,6 +10,7 @@ Below you can find a listing of all supported input and output formats.
 |--------|-------------|
 | PDF | |
 | DOCX, XLSX, PPTX | Default formats in MS Office 2007+, based on Office Open XML |
+| EPUB | Electronic Publication format for e-books |
 | Markdown | |
 | AsciiDoc | Human-readable, plain-text markup language for structured technical content |
 | LaTeX | Scientific document preparation system |
@@ -24,6 +25,7 @@ Schema-specific support:
 
 | Format | Description |
 |--------|-------------|
+| DocLang XML | XML format following [DocLang](https://doclang.ai); supported extensions: `.dclg`, `.dclg.xml` |
 | USPTO XML | XML format followed by [USPTO](https://www.uspto.gov/patents) patents |
 | JATS XML | XML format followed by [JATS](https://jats.nlm.nih.gov/) articles |
 | XBRL XML | XML format for business and financial reporting following [XBRL](https://www.xbrl.org/) standard |
@@ -36,6 +38,7 @@ Schema-specific support:
 | HTML | Both image embedding and referencing are supported |
 | Markdown | |
 | JSON | Lossless serialization of Docling Document |
+| DocLang XML | XML serialization following [DocLang](https://doclang.ai); CLI output format: `doclang` |
 | Text | Plain text, i.e. without Markdown markers |
 | [Doctags](https://arxiv.org/pdf/2503.11576) | Markup format for efficiently representing the full content and layout characteristics of a document |
 | WebVTT | Web Video Text Tracks format for displaying timed text |

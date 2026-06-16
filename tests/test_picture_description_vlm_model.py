@@ -10,6 +10,8 @@ from docling.models.stages.picture_description.picture_description_vlm_model imp
     PictureDescriptionVlmModel,
 )
 
+pytestmark = pytest.mark.ml_vlm
+
 
 class _DummyBatch(dict):
     def to(self, device):

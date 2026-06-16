@@ -48,6 +48,7 @@ class VllmVlmEngine(BaseVlmEngine):
         # Stops / outputs
         "stop",
         "stop_token_ids",
+        "include_stop_str_in_output",
         "skip_special_tokens",
         "spaces_between_special_tokens",
         # Search / length
@@ -67,6 +68,7 @@ class VllmVlmEngine(BaseVlmEngine):
         # Model/tokenizer/impl
         "tokenizer",
         "tokenizer_mode",
+        "model_impl",
         "download_dir",
         # Parallelism / memory / lengths
         "tensor_parallel_size",
@@ -197,12 +199,12 @@ class VllmVlmEngine(BaseVlmEngine):
             # Construct LLM kwargs (engine/load-time)
             llm_kwargs: Dict[str, Any] = {
                 "model": str(artifacts_path),
-                "model_impl": "transformers",
                 "limit_mm_per_prompt": {"image": 1},
                 "revision": revision,
                 "trust_remote_code": self.options.trust_remote_code,
                 **load_cfg,
             }
+            llm_kwargs["model_impl"] = self.options.model_impl
 
             if self.device == "cpu":
                 llm_kwargs.setdefault("enforce_eager", True)

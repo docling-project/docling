@@ -5,8 +5,8 @@ from io import BytesIO
 from pathlib import Path
 from typing import List, Union, cast
 
+from docling_core.transforms.deserializer.doclang import DocLangDocDeserializer
 from docling_core.types.doc import (
-    BoundingBox,
     ContentLayer,
     DocItem,
     DoclingDocument,
@@ -27,6 +27,7 @@ from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
     DeclarativeDocumentBackend,
 )
+from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
@@ -64,6 +65,18 @@ from docling.utils.deepseekocr_utils import parse_deepseekocr_markdown
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 _log = logging.getLogger(__name__)
+_DOCLANG_OPEN_RE = re.compile(r"<doclang(?:\s[^>]*)?>")
+
+
+def _raise_if_unsupported_threaded_backend(
+    backend: AbstractDocumentBackend, pipeline_name: str
+) -> None:
+    if isinstance(backend, ThreadedDoclingParseDocumentBackend):
+        raise RuntimeError(
+            f"{pipeline_name} does not support ThreadedDoclingParseDocumentBackend yet. "
+            "It still requires ordered/random page access via load_page() and cannot "
+            "consume iterator-only or out-of-order page delivery. Use StandardPdfPipeline instead."
+        )
 
 
 class VlmPipeline(PaginatedPipeline):
@@ -195,6 +208,9 @@ class VlmPipeline(PaginatedPipeline):
             images_scale = self.pipeline_options.images_scale
             if images_scale is not None:
                 page._default_image_scale = images_scale
+            _raise_if_unsupported_threaded_backend(
+                conv_res.input._backend, self.__class__.__name__
+            )
             page._backend = conv_res.input._backend.load_page(page.page_no - 1)  # type: ignore
             if page._backend is not None and page._backend.is_valid():
                 page.size = page._backend.get_size()
@@ -270,6 +286,9 @@ class VlmPipeline(PaginatedPipeline):
             if response_format_legacy == ResponseFormat.DOCTAGS:
                 conv_res.document = self._turn_dt_into_doc(conv_res)
 
+            elif response_format_legacy == ResponseFormat.DOCLANG:
+                conv_res.document = self._turn_doclang_into_doc(conv_res)
+
             elif response_format_legacy == ResponseFormat.DEEPSEEKOCR_MARKDOWN:
                 conv_res.document = self._parse_deepseekocr_markdown(conv_res)
 
@@ -315,6 +334,103 @@ class VlmPipeline(PaginatedPipeline):
                         )
 
         return conv_res
+
+    def _extract_doclang_fragment(self, text: str) -> str | None:
+        """Extract the first <doclang>...</doclang> fragment from text."""
+        if not text or not _DOCLANG_OPEN_RE.search(text):
+            return None
+        start = text.find("<doclang")
+        if start < 0:
+            return None
+        end = text.find("</doclang>", start)
+        if end < 0:
+            return None
+        return text[start : end + len("</doclang>")]
+
+    def _turn_doclang_into_doc(self, conv_res: ConversionResult) -> DoclingDocument:
+
+        deserializer = DocLangDocDeserializer()
+        doclang_strings: list[str] = []
+        images: list[PILImage.Image] = []
+
+        # Process ALL pages in order, like DOCTAGS does
+        for page in conv_res.pages:
+            doclang_text = ""
+            img = PILImage.new("RGB", (1, 1), "rgb(255,255,255)")
+
+            if page.predictions.vlm_response:
+                fragment = self._extract_doclang_fragment(
+                    page.predictions.vlm_response.text
+                )
+                if fragment:
+                    doclang_text = fragment
+                else:
+                    conv_res.errors.append(
+                        ErrorItem(
+                            component_type=DoclingComponentType.PIPELINE,
+                            module_name=self.__class__.__name__,
+                            error_message=(
+                                f"Page {page.page_no}: No <doclang> XML fragment found in VLM response."
+                            ),
+                        )
+                    )
+                    conv_res.status = ConversionStatus.PARTIAL_SUCCESS
+
+            if page.image:
+                img = page.image
+
+            doclang_strings.append(doclang_text)
+            images.append(img)
+
+        # Deserialize each page and attach its image
+        page_docs: list[DoclingDocument] = []
+        for idx, (doclang_text, img) in enumerate(zip(doclang_strings, images)):
+            if not doclang_text or not doclang_text.strip():
+                # Create empty document for missing pages
+                empty_doc = DoclingDocument(name=f"page_{idx}")
+                empty_doc.add_page(
+                    page_no=idx + 1,
+                    size=Size(width=img.width, height=img.height),
+                    image=ImageRef.from_pil(image=img, dpi=72),
+                )
+                page_docs.append(empty_doc)
+                continue
+
+            try:
+                page_doc = deserializer.deserialize_str(doclang_text)
+                # Attach the image to the deserialized page
+                page_nos = list(page_doc.pages.keys())
+                if page_nos:
+                    page_no = page_nos[0]
+                    page_doc.pages[page_no].image = ImageRef.from_pil(image=img, dpi=72)
+                page_docs.append(page_doc)
+            except Exception as exc:
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name=self.__class__.__name__,
+                        error_message=(
+                            f"Page {idx + 1}: DoclangDeserializer failed: {exc}"
+                        ),
+                    )
+                )
+                conv_res.status = ConversionStatus.PARTIAL_SUCCESS
+                # Create empty document for failed pages
+                empty_doc = DoclingDocument(name=f"page_{idx}")
+                empty_doc.add_page(
+                    page_no=idx + 1,
+                    size=Size(width=img.width, height=img.height),
+                    image=ImageRef.from_pil(image=img, dpi=72),
+                )
+                page_docs.append(empty_doc)
+
+        if not page_docs:
+            raise RuntimeError("No pages to process.")
+
+        if len(page_docs) == 1:
+            return page_docs[0]
+
+        return DoclingDocument.concatenate(docs=page_docs)
 
     def _turn_dt_into_doc(self, conv_res) -> DoclingDocument:
         doctags_list = []

@@ -1,4 +1,5 @@
 import logging
+import shutil
 import sys
 import tempfile
 from io import BytesIO
@@ -21,6 +22,8 @@ from docling.datamodel.accelerator_options import (
 )
 from docling.datamodel.base_models import (
     ConversionStatus,
+    DoclingComponentType,
+    ErrorItem,
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
@@ -43,6 +46,13 @@ When an ASR segment has end_time <= start_time but contains non-empty text,
 this epsilon value is added to the start_time to create a valid time range.
 This prevents validation issues with Docling data models.
 """
+
+MISSING_FFMPEG_MESSAGE: Final[str] = (
+    "FFmpeg is required for audio processing but was not found on PATH. "
+    "Install it with your system package manager (e.g., 'brew install ffmpeg' "
+    "on macOS, 'apt-get install ffmpeg' on Linux, 'winget install ffmpeg' on "
+    "Windows)."
+)
 
 
 def _process_conversation(
@@ -230,6 +240,18 @@ class _NativeWhisperModel:
             )
 
         try:
+            if shutil.which("ffmpeg") is None:
+                _log.error(MISSING_FFMPEG_MESSAGE)
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name="AsrPipeline",
+                        error_message=MISSING_FFMPEG_MESSAGE,
+                    )
+                )
+                conv_res.status = ConversionStatus.FAILURE
+                return conv_res
+
             conversation = self.transcribe(audio_path)
             _process_conversation(conversation, conv_res)
             return conv_res
@@ -323,6 +345,18 @@ class _MlxWhisperModel:
         audio_path: Path = Path(conv_res.input.file).resolve()
 
         try:
+            if shutil.which("ffmpeg") is None:
+                _log.error(MISSING_FFMPEG_MESSAGE)
+                conv_res.errors.append(
+                    ErrorItem(
+                        component_type=DoclingComponentType.PIPELINE,
+                        module_name="AsrPipeline",
+                        error_message=MISSING_FFMPEG_MESSAGE,
+                    )
+                )
+                conv_res.status = ConversionStatus.FAILURE
+                return conv_res
+
             conversation = self.transcribe(audio_path)
             _process_conversation(conversation, conv_res)
             conv_res.status = ConversionStatus.SUCCESS

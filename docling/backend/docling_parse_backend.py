@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union
@@ -7,7 +7,14 @@ from typing import TYPE_CHECKING, Optional, Union
 import pypdfium2 as pdfium
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
-from docling_parse.pdf_parser import DoclingPdfParser, PdfDocument
+from docling_parse.pdf_parser import (
+    DoclingPdfParser,
+    DoclingThreadedPdfParser,
+    PageParseResult,
+    PdfDocument,
+    RenderConfig,
+    ThreadedPdfParserConfig,
+)
 from docling_parse.pdf_parsers import DecodePageConfig
 from PIL import Image
 from pypdfium2 import PdfPage
@@ -16,14 +23,45 @@ from docling.backend.managed_pdfium_backend import (
     ManagedPdfiumDocumentBackend,
     ManagedPdfiumPageBackend,
 )
-from docling.datamodel.backend_options import PdfBackendOptions
+from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
+from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.backend_options import (
+    PdfBackendOptions,
+    ThreadedDoclingParseBackendOptions,
+)
 from docling.datamodel.base_models import Size
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.utils.locks import pypdfium2_lock
 
 if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
+
+
+def _make_docling_parse_decode_config(
+    *,
+    create_words: bool,
+    create_textlines: bool,
+    release_native_memory_every_n_pages: int | None = None,
+) -> DecodePageConfig:
+    config = DecodePageConfig()
+    config.keep_char_cells = False
+    config.keep_shapes = False
+    config.keep_bitmaps = (
+        True  # we need to set this to True, otherwhise OCR will not work
+    )
+    config.create_word_cells = create_words
+    config.create_line_cells = create_textlines
+    config.enforce_same_font = True
+    config.materialize_bitmap_bytes = (
+        False  # don't need bitmap images, only rectangles.
+    )
+
+    if release_native_memory_every_n_pages is not None:
+        config.release_native_memory_every_n_pages = release_native_memory_every_n_pages
+
+    return config
 
 
 class DoclingParsePageBackend(ManagedPdfiumPageBackend):
@@ -55,6 +93,10 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         self._unloaded = False
         self.valid = (self._ppage is not None) and (self._dp_doc is not None)
 
+    @property
+    def page_no(self) -> int:
+        return self._page_no + 1
+
     def _require_page(self) -> PdfPage:
         assert self._ppage is not None, "Page backend was unloaded."
         return self._ppage
@@ -68,17 +110,10 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         # should not need to keep the char's, but it seems no lines
         # get created if we dont keep the chars. Updated version of
         # docling-parse >v5.3.0 should fix this.
-        config = DecodePageConfig()
-        config.keep_char_cells = (
-            True  # we need to set this to True, otherwhise we have no lines
+        config = _make_docling_parse_decode_config(
+            create_words=self._create_words,
+            create_textlines=self._create_textlines,
         )
-        config.keep_shapes = False  # we dont need this, self._keep_lines
-        config.keep_bitmaps = (
-            True  # we need to set this to True, otherwhise OCR will not work
-        )
-        config.create_word_cells = self._create_words
-        config.create_line_cells = self._create_textlines
-        config.enforce_same_font = True
 
         assert self._dp_doc is not None
         seg_page = self._dp_doc.get_page(self._page_no + 1, config=config)
@@ -218,8 +253,10 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
         self,
         in_doc: "InputDocument",
         path_or_stream: Union[BytesIO, Path],
-        options: PdfBackendOptions = PdfBackendOptions(),
+        options: Optional[PdfBackendOptions] = None,
     ):
+        if options is None:
+            options = PdfBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
 
         password = (
@@ -281,3 +318,183 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
                 except Exception:
                     pass
             self._pdoc = None
+
+
+def _resolve_threaded_page_numbers(
+    path_or_stream: Union[BytesIO, Path],
+    password: Optional[str],
+    page_range: tuple[int, int],
+) -> list[int] | None:
+    start_page, end_page = page_range
+
+    if page_range == DEFAULT_PAGE_RANGE:
+        return None
+
+    with pypdfium2_lock:
+        pdoc = pdfium.PdfDocument(path_or_stream, password=password)
+        try:
+            page_count = len(pdoc)
+        finally:
+            pdoc.close()
+
+    clipped_end_page = min(end_page, page_count)
+    if start_page > clipped_end_page:
+        return []
+
+    return list(range(start_page, clipped_end_page + 1))
+
+
+class ThreadedDoclingParsePageBackend(PdfPageBackend):
+    def __init__(self, result: PageParseResult):
+        self._result = result
+        self._seg_page: Optional[SegmentedPdfPage] = None
+
+    @property
+    def page_no(self) -> int:
+        return self._result.page_number
+
+    def is_valid(self) -> bool:
+        return self._result.success
+
+    def get_text_in_rect(self, bbox: BoundingBox) -> str:
+        segmented_page = self.get_segmented_page()
+        if segmented_page is None:
+            return ""
+
+        text_piece = ""
+        for cell in segmented_page.textline_cells:
+            cell_bbox = cell.rect.to_bounding_box()
+            overlap_frac = cell_bbox.intersection_over_self(bbox)
+            if overlap_frac > 0.5:
+                if text_piece:
+                    text_piece += " "
+                text_piece += cell.text
+
+        return text_piece
+
+    def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
+        if not self.is_valid():
+            return None
+        if self._seg_page is None:
+            seg_page = self._result.get_page()
+            page_height = seg_page.dimension.height
+            for tc in seg_page.textline_cells:
+                tc.to_top_left_origin(page_height)
+            for tc in seg_page.char_cells:
+                tc.to_top_left_origin(page_height)
+            for tc in seg_page.word_cells:
+                tc.to_top_left_origin(page_height)
+            self._seg_page = seg_page
+        return self._seg_page
+
+    def get_text_cells(self) -> Iterable[TextCell]:
+        segmented_page = self.get_segmented_page()
+        if segmented_page is None:
+            return []
+        return segmented_page.textline_cells
+
+    def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
+        segmented_page = self.get_segmented_page()
+        if segmented_page is None:
+            return []
+
+        page_height = self.get_size().height
+        cropboxes: list[BoundingBox] = []
+        for image_resource in segmented_page.bitmap_resources:
+            cropbox = image_resource.rect.to_bounding_box().to_top_left_origin(
+                page_height
+            )
+            if cropbox.area() > 0:
+                cropboxes.append(cropbox.scaled(scale=scale))
+        return cropboxes
+
+    def get_page_image(
+        self, scale: float = 1, cropbox: Optional[BoundingBox] = None
+    ) -> Image.Image:
+        return self._result.get_image(scale=scale, cropbox=cropbox).convert("RGB")
+
+    def get_size(self) -> Size:
+        return Size(width=self._result.page_width, height=self._result.page_height)
+
+    def unload(self) -> None:
+        return None
+
+
+class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
+    supports_random_page_access = False
+
+    def __init__(
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        options: Optional[PdfBackendOptions] = None,
+    ):
+        if options is None:
+            options = PdfBackendOptions()
+        super().__init__(in_doc, path_or_stream, options)
+        self.options: PdfBackendOptions
+        self._closed = False
+
+        password = (
+            self.options.password.get_secret_value() if self.options.password else None
+        )
+        requested_page_numbers = _resolve_threaded_page_numbers(
+            self.path_or_stream,
+            password,
+            in_doc.limits.page_range,
+        )
+
+        parser_threads = (
+            self.options.parser_threads
+            if isinstance(self.options, ThreadedDoclingParseBackendOptions)
+            and self.options.parser_threads is not None
+            else AcceleratorOptions().num_threads
+        )
+        render_config = RenderConfig()
+        render_config.scale = 1.0
+        native_memory_release_interval = (
+            self.options.release_native_memory_every_n_pages
+            if isinstance(self.options, ThreadedDoclingParseBackendOptions)
+            else 128
+        )
+        decode_config = _make_docling_parse_decode_config(
+            create_words=True,
+            create_textlines=True,
+            release_native_memory_every_n_pages=native_memory_release_interval,
+        )
+
+        self.parser = DoclingThreadedPdfParser(
+            parser_config=ThreadedPdfParserConfig(
+                loglevel="fatal",
+                threads=parser_threads,
+                render_config=render_config,
+            ),
+            decode_config=decode_config,
+        )
+        self.doc_key = self.parser.load(
+            self.path_or_stream,
+            password=password,
+            page_numbers=requested_page_numbers,
+        )
+
+    def is_valid(self) -> bool:
+        return not self._closed and self.page_count() > 0
+
+    def page_count(self) -> int:
+        return self.parser.page_count(self.doc_key)
+
+    def load_page(self, page_no: int) -> PdfPageBackend:
+        raise NotImplementedError(
+            "ThreadedDoclingParseDocumentBackend only supports iter_pages()."
+        )
+
+    def iter_pages(self) -> Iterator[ThreadedDoclingParsePageBackend]:
+        for result in self.parser.iterate_results():
+            yield ThreadedDoclingParsePageBackend(result)
+
+    def unload(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        self.parser.unload(self.doc_key)
+        super().unload()

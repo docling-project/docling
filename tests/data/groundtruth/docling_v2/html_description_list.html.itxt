@@ -1,0 +1,31 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: Beverages
+    item-2 at level 2: list: group description list
+      item-3 at level 3: list_item: Coffee
+        item-4 at level 4: list: group group
+          item-5 at level 5: list_item: Black hot drink
+      item-6 at level 3: list_item: Milk
+        item-7 at level 4: list: group group
+          item-8 at level 5: list_item: White cold drink
+    item-9 at level 2: section_header: Programming Languages
+      item-10 at level 3: list: group description list
+        item-11 at level 4: list_item: Python
+          item-12 at level 5: list: group descriptions
+            item-13 at level 6: list_item: A high-level programming language
+            item-14 at level 6: list_item: Known for its simplicity and readability
+        item-15 at level 4: list_item: JavaScript
+          item-16 at level 5: list: group group
+            item-17 at level 6: list_item: A scripting language for web browsers
+    item-18 at level 2: section_header: Complex Example
+      item-19 at level 3: list: group description list
+        item-20 at level 4: list_item: HTML
+          item-21 at level 5: list: group group
+            item-22 at level 6: list_item: 
+              item-23 at level 7: inline: group group
+                item-24 at level 8: text: HyperText Markup Language - used for
+                item-25 at level 8: text: structuring
+                item-26 at level 8: text: web content
+        item-27 at level 4: list_item: CSS
+          item-28 at level 5: list: group descriptions
+            item-29 at level 6: list_item: Cascading Style Sheets
+            item-30 at level 6: list_item: Used for styling and layout
