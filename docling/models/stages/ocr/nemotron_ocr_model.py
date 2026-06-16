@@ -223,7 +223,6 @@ class NemotronOcrModel(BaseOcrModel):
                             self.reader(
                                 image_array,
                                 merge_level=self.options.merge_level,
-                                visualize=False,
                             ),
                         )
 
