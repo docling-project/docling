@@ -20,3 +20,13 @@
 - **CSS**
     - Cascading Style Sheets
     - Used for styling and layout
+
+## Nested Lists
+
+- **Main Term 1**
+    - Description for the first main term.
+- **Main Term 2 (Sub-categories)**
+    - **Sub-term A**
+        - Detail for sub-term A.
+    - **Sub-term B**
+        - Detail for sub-term B.

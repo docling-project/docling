@@ -29,3 +29,16 @@ item-0 at level 0: unspecified: group _root_
           item-28 at level 5: list: group descriptions
             item-29 at level 6: list_item: Cascading Style Sheets
             item-30 at level 6: list_item: Used for styling and layout
+    item-31 at level 2: section_header: Nested Lists
+      item-32 at level 3: list: group description list
+        item-33 at level 4: list_item: Main Term 1
+          item-34 at level 5: list: group group
+            item-35 at level 6: list_item: Description for the first main term.
+        item-36 at level 4: list_item: Main Term 2 (Sub-categories)
+          item-37 at level 5: list: group description list
+            item-38 at level 6: list_item: Sub-term A
+              item-39 at level 7: list: group group
+                item-40 at level 8: list_item: Detail for sub-term A.
+            item-41 at level 6: list_item: Sub-term B
+              item-42 at level 7: list: group group
+                item-43 at level 8: list_item: Detail for sub-term B.
