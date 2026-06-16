@@ -5,6 +5,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import List, Union, cast
 
+from docling_core.transforms.deserializer.doclang import DocLangDocDeserializer
 from docling_core.types.doc import (
     ContentLayer,
     DocItem,
@@ -354,9 +355,8 @@ class VlmPipeline(PaginatedPipeline):
         return text[start : end + len("</doclang>")]
 
     def _turn_doclang_into_doc(self, conv_res: ConversionResult) -> DoclingDocument:
-        from docling_core.experimental.doclang import DoclangDeserializer
 
-        deserializer = DoclangDeserializer()
+        deserializer = DocLangDocDeserializer()
         doclang_strings: list[str] = []
         images: list[PILImage.Image] = []
 
@@ -404,7 +404,7 @@ class VlmPipeline(PaginatedPipeline):
                 continue
 
             try:
-                page_doc = deserializer.deserialize(text=doclang_text)
+                page_doc = deserializer.deserialize_str(doclang_text)
                 # Attach the image to the deserialized page
                 page_nos = list(page_doc.pages.keys())
                 if page_nos:

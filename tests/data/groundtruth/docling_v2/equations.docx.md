@@ -6,7 +6,7 @@ This is a word document and this is an inline equation:  $A= \pi r^{2}$ .
 
 If instead, I want an equation by line, I can do this:
 
-$$a^{2}+b^{2}=c^{2} \text{ \texttimes } 23$$
+$$a^{2}+b^{2}=c^{2} \times 23$$
 
 And that is an equation by itself. Cheers!
 
@@ -65,3 +65,5 @@ Equations with the OMML group character object:
 $$P_{ x}=\underbrace{S \cdot T \cdot G \cdot (x+y+z)}_{group\ with\ underbraces}+e^{x}$$
 
 $$Q_{ y}=\overset{group\ with\ overbraces}{\overbrace{G \cdot T \cdot S \cdot (x+y+z)}}+e^{y}$$
+
+$$s\left\{max\right\}= A \times B$$

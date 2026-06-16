@@ -1,4 +1,3 @@
-# NOTE: docling.service_client is experimental and may change in future releases.
 from __future__ import annotations
 
 import os
@@ -49,7 +48,6 @@ def run_convert_all(client: DoclingServiceClient, sources: list[str]) -> None:
             sources=sources,
             options=create_conversion_options(),
             max_concurrency=2,
-            raises_on_error=False,
         ),
         start=1,
     ):

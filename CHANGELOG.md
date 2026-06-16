@@ -1,3 +1,101 @@
+## [v2.102.2](https://github.com/docling-project/docling/releases/tag/v2.102.2) - 2026-06-15
+
+### Fix
+
+* **service:** Make presigned_url target default on service client, handle HTTP download errors correctly ([#3609](https://github.com/docling-project/docling/issues/3609)) ([`75733f6`](https://github.com/docling-project/docling/commit/75733f6f41aa80df6d9afce864a7346a693bde28))
+* **jats:** Preserve structured abstract sections ([#3584](https://github.com/docling-project/docling/issues/3584)) ([`0db276d`](https://github.com/docling-project/docling/commit/0db276dd062a60e9cbf4260866e914aaa235474a))
+* Allow newer `typer` versions ([#3594](https://github.com/docling-project/docling/issues/3594)) ([`de0c55a`](https://github.com/docling-project/docling/commit/de0c55abe487ee9a63000d1933f09a713eb24c31))
+* Approved API fix for doclang in docling/pipeline/vlm_pipeline.py ([#3591](https://github.com/docling-project/docling/issues/3591)) ([`e1ae136`](https://github.com/docling-project/docling/commit/e1ae136529d41f606b4fa0fb35146e4a69131b71))
+
+### Documentation
+
+* Add API server usage pages ([#3596](https://github.com/docling-project/docling/issues/3596)) ([`ef9bb95`](https://github.com/docling-project/docling/commit/ef9bb95e1e8e95655c2a56edad953e282b6bd15d))
+
+## [v2.102.1](https://github.com/docling-project/docling/releases/tag/v2.102.1) - 2026-06-12
+
+### Fix
+
+* **service:** Defaults for image_export_mode ([#3595](https://github.com/docling-project/docling/issues/3595)) ([`2d2e3dc`](https://github.com/docling-project/docling/commit/2d2e3dc7def617ae95730697e5a2498500d143a2))
+
+## [v2.102.0](https://github.com/docling-project/docling/releases/tag/v2.102.0) - 2026-06-12
+
+### Feature
+
+* **service:** Retrieve convert()/convert_all() results via presigned artifacts ([#3578](https://github.com/docling-project/docling/issues/3578)) ([`521e86b`](https://github.com/docling-project/docling/commit/521e86bb1837d5e26a2ef28f1e781f50bd8e092d))
+
+## [v2.101.0](https://github.com/docling-project/docling/releases/tag/v2.101.0) - 2026-06-10
+
+### Feature
+
+* **service:** Add explicit generate_page_images control in ConvertDocumentsOptions ([#3574](https://github.com/docling-project/docling/issues/3574)) ([`1b80839`](https://github.com/docling-project/docling/commit/1b80839c996136eed47c4875e8a82f0d7ff19c69))
+
+### Fix
+
+* Update _DocumentConversionInput to avoid construction with too large HTTP inputs ([#3577](https://github.com/docling-project/docling/issues/3577)) ([`2288658`](https://github.com/docling-project/docling/commit/22886583af5a074a8a976af009d42a81c7d67ec4))
+
+## [v2.100.0](https://github.com/docling-project/docling/releases/tag/v2.100.0) - 2026-06-09
+
+### Feature
+
+* Add DocLang backend ([#3573](https://github.com/docling-project/docling/issues/3573)) ([`7c37732`](https://github.com/docling-project/docling/commit/7c377320df4497aa5054d2fb4c288f035942b193))
+* Add EPUB document backend with full conversion support ([#3571](https://github.com/docling-project/docling/issues/3571)) ([`bffe900`](https://github.com/docling-project/docling/commit/bffe900d43150b90b4110c5e0ec3c7c69b64cd04))
+
+### Fix
+
+* Expose CLI entry points when installing docling meta-package ([#3572](https://github.com/docling-project/docling/issues/3572)) ([`c5fa6e3`](https://github.com/docling-project/docling/commit/c5fa6e3cad2dcc174bb6ba56b2981df2d1df6ee0))
+* Propagate the orientation of the TableData ([#3570](https://github.com/docling-project/docling/issues/3570)) ([`b108ca8`](https://github.com/docling-project/docling/commit/b108ca8c0fe0f6f0d619b839b3d0207bb0b5ba05))
+
+## [v2.99.0](https://github.com/docling-project/docling/releases/tag/v2.99.0) - 2026-06-08
+
+### Feature
+
+* **service:** Add S3Coordinates.max_num_elements ([#3565](https://github.com/docling-project/docling/issues/3565)) ([`d3159d7`](https://github.com/docling-project/docling/commit/d3159d736d544040fd375e75e05716dd5dbeb745))
+* **service:** Proper failure mode handling and user-interpretable error output ([#3554](https://github.com/docling-project/docling/issues/3554)) ([`057241c`](https://github.com/docling-project/docling/commit/057241c1bc2e4543ab6fef6b69fb777e43b02896))
+
+### Fix
+
+* Ensure backward compatibility of service data models to previous serve/jobkit versions ([#3563](https://github.com/docling-project/docling/issues/3563)) ([`271d3c7`](https://github.com/docling-project/docling/commit/271d3c7c6240d2a6239a28872388b8623cf66649))
+* **msword:** Detect lists when numbering is defined in paragraph styles ([#3552](https://github.com/docling-project/docling/issues/3552)) ([`8c61a78`](https://github.com/docling-project/docling/commit/8c61a78e504bcd0b9570955097e74c138528de54))
+
+### Documentation
+
+* Polish OCR documentation wording ([#3559](https://github.com/docling-project/docling/issues/3559)) ([`dbae180`](https://github.com/docling-project/docling/commit/dbae180d167ddf9a583c4d1e9bda1e5c6ba603a5))
+* Fix rendering for Code & Formula enrichment example ([#3558](https://github.com/docling-project/docling/issues/3558)) ([`dca008c`](https://github.com/docling-project/docling/commit/dca008c332fb6d4eac9f1cd1b46bad31cf89ad6e))
+
+## [v2.98.0](https://github.com/docling-project/docling/releases/tag/v2.98.0) - 2026-06-08
+
+### Feature
+
+* **service:** Updates for service client, batch endpoint support, and cleanup ([#3519](https://github.com/docling-project/docling/issues/3519)) ([`b613414`](https://github.com/docling-project/docling/commit/b613414044d493165cb1ec15b1a9a40bf5d3e392))
+
+### Fix
+
+* Add images_scale for chart extraction and correctly set keep_backend flag in StandardPDFPipeline ([#3557](https://github.com/docling-project/docling/issues/3557)) ([`37c6a1e`](https://github.com/docling-project/docling/commit/37c6a1e0ce7ea93d8388438a395c69533845d86f))
+* **docx:** List numbering and grouping with empty paragraphs ([#3539](https://github.com/docling-project/docling/issues/3539)) ([`b7b01f1`](https://github.com/docling-project/docling/commit/b7b01f1b670700d349990f77b12adc109fffd6b7))
+* **msword:** Extract images from text boxes and fix OMML math spacing ([#3394](https://github.com/docling-project/docling/issues/3394)) ([`efcc193`](https://github.com/docling-project/docling/commit/efcc193b1c87702a57d1b80b4f97da884ea3e1c3))
+* Pin docling-core docling-ibm-models for running transformers with MPS ([#3546](https://github.com/docling-project/docling/issues/3546)) ([`854b2b1`](https://github.com/docling-project/docling/commit/854b2b1fe236d1535ad08c79e900fe9ebd911433))
+
+### Documentation
+
+* Add uv installation instructions ([#3549](https://github.com/docling-project/docling/issues/3549)) ([`0a22016`](https://github.com/docling-project/docling/commit/0a22016a4e50db824fe995e18e188bb1067ee0cb))
+* Fix broken link for extraction example ([#3547](https://github.com/docling-project/docling/issues/3547)) ([`d2b4e74`](https://github.com/docling-project/docling/commit/d2b4e74bbfb597e44f8bd789c45fe957773b3fe5))
+* Fix copy-paste docstring error in PaginatedDocumentBackend ([#3537](https://github.com/docling-project/docling/issues/3537)) ([`953b298`](https://github.com/docling-project/docling/commit/953b298bc4bfa059037c89b898422aa1673a19ba))
+* Fix image path in RTX GPU Acceleration guide ([#3543](https://github.com/docling-project/docling/issues/3543)) ([`f971048`](https://github.com/docling-project/docling/commit/f971048912efdf1ebad6d03fc5259ed12f429cea))
+* Fix installation instructions link in README ([#3541](https://github.com/docling-project/docling/issues/3541)) ([`3d456f8`](https://github.com/docling-project/docling/commit/3d456f8addea98471ff5ad790557424f4091ddde))
+
+## [v2.97.0](https://github.com/docling-project/docling/releases/tag/v2.97.0) - 2026-06-03
+
+### Feature
+
+* Add email parsing to the backends ([#3475](https://github.com/docling-project/docling/issues/3475)) ([`b741c4a`](https://github.com/docling-project/docling/commit/b741c4affd736fa3ee5d760cc45956320da3fbb0))
+* Row-section support in HTML backend ([#3360](https://github.com/docling-project/docling/issues/3360)) ([`d9c71cb`](https://github.com/docling-project/docling/commit/d9c71cb172ac2aa844e3ca7141e9673da41ae700))
+* **cli:** Fetch HTML images ([#3506](https://github.com/docling-project/docling/issues/3506)) ([`055e1a5`](https://github.com/docling-project/docling/commit/055e1a50c87d12882388fff4f1a2999ed08727bc))
+
+### Fix
+
+* Rename shadowed built-in 'float' parameter to 'scale' ([#3532](https://github.com/docling-project/docling/issues/3532)) ([`cf0493d`](https://github.com/docling-project/docling/commit/cf0493da88eeec1d7cadc0cc3bbaffea5e0bde51))
+* **deps:** Pin transformers<5.9.0 on macOS for MPS compatibility ([#3530](https://github.com/docling-project/docling/issues/3530)) ([`5b27d97`](https://github.com/docling-project/docling/commit/5b27d9782f226fefdf37cebac3bb434cf547cecf))
+
 ## [v2.96.1](https://github.com/docling-project/docling/releases/tag/v2.96.1) - 2026-06-01
 
 ### Fix

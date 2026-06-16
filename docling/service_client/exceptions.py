@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from docling.datamodel.service.responses import PublicFailureInfo
+
 
 class DoclingServiceClientError(Exception):
     """Base error for all client SDK failures."""
@@ -27,6 +29,10 @@ class ServiceError(DoclingServiceClientError):
 
 class ServiceUnavailableError(ServiceError):
     """Raised for unavailable service or exhausted HTTP 500 retries."""
+
+
+class ResponseSchemaMismatchError(ServiceError):
+    """Raised when a successful HTTP response cannot be parsed into the expected model."""
 
 
 class UsageLimitExceededError(ServiceError):
@@ -66,6 +72,28 @@ class ResultNotReadyError(DoclingServiceClientError):
 
 class ResultExpiredError(DoclingServiceClientError):
     """Raised when a terminal task no longer has a stored result."""
+
+
+class TaskExecutionError(DoclingServiceClientError):
+    """Raised when task-level orchestration fails."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        failure: PublicFailureInfo | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.failure = failure
+
+
+class ArtifactDownloadError(DoclingServiceClientError):
+    """Raised when a presigned artifact cannot be downloaded or is too large.
+
+    Used by the high-level convert()/convert_all() materialization path. It is
+    normally caught internally and surfaced as a FAILURE ConversionResult, not
+    propagated to callers.
+    """
 
 
 class ConversionError(DoclingServiceClientError):

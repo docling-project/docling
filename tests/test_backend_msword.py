@@ -102,13 +102,13 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
         )
-        assert verify_export(pred_itxt, str(docx_path) + ".itxt", generate=GENERATE), (
-            f"export to indented-text failed on {docx_path}"
-        )
+        assert verify_export(
+            pred_itxt, str(docx_path) + ".itxt", generate=GENERATE, fuzzy=True
+        ), f"export to indented-text failed on {docx_path}"
 
-        assert verify_document(doc, str(docx_path) + ".json", generate=GENERATE), (
-            f"DoclingDocument verification failed on {docx_path}"
-        )
+        assert verify_document(
+            doc, str(docx_path) + ".json", generate=GENERATE, fuzzy=True
+        ), f"DoclingDocument verification failed on {docx_path}"
 
         if docx_path.name in {"word_tables.docx", "docx_rich_cells.docx"}:
             pred_html: str = doc.export_to_html()

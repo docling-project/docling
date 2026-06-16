@@ -46,3 +46,25 @@ Paragraph 2.1.2
     - List item 1.2
         - List item 1.2.1
 - List item 3
+
+#### Test 7:
+
+1. First item with numId 2
+2. Second item with numId 2
+3. Third item with numId 2
+4. Fourth item with numId 2
+
+1. Single item of a new list
+
+1. Single item of a new list
+
+#### Style-based lists:
+
+*Docling should extract the list format when the formatting comes from the styles:*
+
+- *First item*
+- *Second item*
+- *Third item*
+    - *Sub-item A*
+    - *Sub-item B*
+- *Fourth item*

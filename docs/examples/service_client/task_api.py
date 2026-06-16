@@ -1,4 +1,3 @@
-# NOTE: docling.service_client is experimental and may change in future releases.
 from __future__ import annotations
 
 import os
@@ -8,7 +7,15 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.service.options import (
     ConvertDocumentsOptions as ConvertDocumentsRequestOptions,
 )
-from docling.datamodel.service.responses import TaskStatusResponse
+from docling.datamodel.service.responses import (
+    PresignedUrlConvertResponse,
+    TaskStatusResponse,
+)
+from docling.datamodel.service.targets import (
+    InBodyTarget,
+    PresignedUrlTarget,
+    ZipTarget,
+)
 from docling.service_client import ConversionJob, DoclingServiceClient, RawServiceResult
 
 SERVICE_URL_ENV = "DOCLING_SERVICE_URL"
@@ -40,24 +47,17 @@ def _client() -> DoclingServiceClient:
     )
 
 
-def run_json_task_flow_with_watch() -> None:
-    print("\n=== JSON task flow: submit -> watch -> result ===")
+def run_presigned_task_flow_with_watch() -> None:
+    print("\n=== Presigned artifact task flow: submit -> watch -> result ===")
     with _client() as client:
-        job: ConversionJob[ConversionResult] = client.submit(
+        job: ConversionJob[PresignedUrlConvertResponse] = client.submit(
             source=SAMPLE_SOURCE,
             options=create_conversion_options(),
-            target_format=OutputFormat.JSON,
+            output_formats=[OutputFormat.MARKDOWN, OutputFormat.JSON],
+            target=PresignedUrlTarget(),
         )
-        print("submit() returns ConversionJob[ConversionResult]")
-        print("job fields:", "task_id,", "status,", "queue_position,", "submitted_at")
         print("submit() returned task id:", job.task_id)
-        print(
-            "watch(timeout=...) blocks and yields updates until task status is terminal."
-        )
-        print(
-            "watch() yields TaskStatusResponse(task_id, task_type, task_status, "
-            "task_position, task_meta, error_message)"
-        )
+        print("job fields:", "task_id,", "status,", "queue_position,", "submitted_at")
 
         for update in job.watch(timeout=300.0):
             status_update: TaskStatusResponse = update
@@ -70,41 +70,54 @@ def run_json_task_flow_with_watch() -> None:
                 status_update.task_type,
             )
 
+        result = job.result(timeout=300.0)
+        print("result() return type: PresignedUrlConvertResponse")
         print(
-            "result(timeout=...) fetches the final payload; after terminal watch, "
-            "this call should return immediately."
+            "task counts:",
+            result.num_succeeded,
+            "succeeded /",
+            result.num_failed,
+            "failed",
         )
-        result: ConversionResult = job.result(timeout=300.0)
-        print("result() return type (JSON target): ConversionResult")
-        print("result fields:", "status,", "document,", "errors,", "timings")
+        for document in result.documents:
+            print("document:", document.filename, "status=", document.status.value)
+            for artifact in document.artifacts:
+                print("artifact:", artifact.artifact_type, str(artifact.uri))
+
+
+def run_json_task_flow_without_storage() -> None:
+    print("\n=== Inline JSON task flow: explicit InBodyTarget ===")
+    with _client() as client:
+        job: ConversionJob[ConversionResult] = client.submit(
+            source=SAMPLE_SOURCE,
+            options=create_conversion_options(),
+            target=InBodyTarget(),
+        )
+        result = job.result(timeout=300.0)
+        print("result() return type: ConversionResult")
         print("json result status:", result.status.value)
         print("json document name:", result.document.name)
 
 
-def run_markdown_task_flow_without_watch() -> None:
-    print("\n=== Raw task flow: submit(...).result(...) ===")
+def run_zip_task_flow_without_watch() -> None:
+    print("\n=== ZIP task flow: submit(...).result(...) ===")
     with _client() as client:
-        print(
-            "watch() is optional. result(timeout=...) waits until success/failure "
-            "or timeout."
-        )
         job: ConversionJob[RawServiceResult] = client.submit(
             source=SAMPLE_SOURCE,
             options=create_conversion_options(),
-            target_format=OutputFormat.MARKDOWN,
+            output_formats=[OutputFormat.MARKDOWN],
+            target=ZipTarget(),
         )
-        print("submit() returns ConversionJob[RawServiceResult] for MARKDOWN target")
-        raw_result: RawServiceResult = job.result(timeout=300.0)
-        print("result() return type (MARKDOWN target): RawServiceResult")
-        print("result fields:", "content,", "content_type,", "filename")
-
+        raw_result = job.result(timeout=300.0)
+        print("result() return type: RawServiceResult")
         print("raw content-type:", raw_result.content_type)
         print("raw payload bytes:", len(raw_result.content))
 
 
 def main() -> None:
-    run_json_task_flow_with_watch()
-    run_markdown_task_flow_without_watch()
+    run_presigned_task_flow_with_watch()
+    run_json_task_flow_without_storage()
+    run_zip_task_flow_without_watch()
 
 
 if __name__ == "__main__":

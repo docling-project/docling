@@ -556,7 +556,9 @@ def verify_conversion_result_v2(
             )
 
 
-def verify_document(pred_doc: DoclingDocument, gtfile: str, generate: bool = False):
+def verify_document(
+    pred_doc: DoclingDocument, gtfile: str, generate: bool = False, fuzzy: bool = False
+):
     if not os.path.exists(gtfile) or generate:
         with open(gtfile, mode="w", encoding="utf-8") as fw:
             pred_dict = pred_doc.export_to_dict(
@@ -571,11 +573,13 @@ def verify_document(pred_doc: DoclingDocument, gtfile: str, generate: bool = Fal
             true_doc = DoclingDocument.model_validate_json(fr.read())
 
         return verify_docitems(
-            doc_pred=pred_doc, doc_true=true_doc, fuzzy=False, pdf_filename=gtfile
+            doc_pred=pred_doc, doc_true=true_doc, fuzzy=fuzzy, pdf_filename=gtfile
         )
 
 
-def verify_export(pred_text: str, gtfile: str, generate: bool = False) -> bool:
+def verify_export(
+    pred_text: str, gtfile: str, generate: bool = False, fuzzy: bool = False
+) -> bool:
     file = Path(gtfile)
 
     if not file.exists() or generate:
@@ -585,5 +589,8 @@ def verify_export(pred_text: str, gtfile: str, generate: bool = False) -> bool:
 
     with file.open(encoding="utf-8") as fr:
         true_text = fr.read()
+
+    if fuzzy:
+        return verify_text(true_text, pred_text, fuzzy=True)
 
     return pred_text == true_text

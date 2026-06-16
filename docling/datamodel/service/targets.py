@@ -22,7 +22,11 @@ class PutTarget(BaseModel):
     url: AnyHttpUrl
 
 
+class PresignedUrlTarget(BaseModel):
+    kind: Literal["presigned_url"] = "presigned_url"
+
+
 Target = Annotated[
-    InBodyTarget | ZipTarget | S3Target | PutTarget,
+    InBodyTarget | ZipTarget | S3Target | PutTarget | PresignedUrlTarget,
     Field(discriminator="kind"),
 ]

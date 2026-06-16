@@ -9,7 +9,7 @@ from unittest.mock import Mock, mock_open, patch
 import pytest
 import requests
 from bs4 import BeautifulSoup
-from docling_core.types.doc import PictureItem
+from docling_core.types.doc import PictureItem, RichTableCell
 from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
 
@@ -216,6 +216,69 @@ def test_ordered_lists():
         doc: DoclingDocument = backend.convert()
         assert doc
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
+
+
+def test_description_lists():
+    """Test that HTML description lists (<dl>, <dt>, <dd>) are properly parsed."""
+    test_set: list[tuple[bytes, str]] = []
+
+    # Simple description list
+    test_set.append(
+        (
+            b"<html><body><dl><dt>Coffee</dt><dd>Black hot drink</dd><dt>Milk</dt><dd>White cold drink</dd></dl></body></html>",
+            "- **Coffee**\n    - Black hot drink\n- **Milk**\n    - White cold drink",
+        )
+    )
+
+    # Description list with multiple descriptions per term
+    test_set.append(
+        (
+            b"<html><body><dl><dt>Python</dt><dd>A high-level programming language</dd><dd>Known for simplicity</dd></dl></body></html>",
+            "- **Python**\n    - A high-level programming language\n    - Known for simplicity",
+        )
+    )
+
+    # Description list with formatting in terms
+    test_set.append(
+        (
+            b"<html><body><dl><dt><strong>HTML</strong></dt><dd>HyperText Markup Language</dd></dl></body></html>",
+            "- **HTML**\n    - HyperText Markup Language",
+        )
+    )
+
+    # Edge case: Empty description list
+    test_set.append(
+        (
+            b"<html><body><dl></dl></body></html>",
+            "",
+        )
+    )
+
+    # Edge case: Description list with dd without dt (discouraged but valid HTML)
+    test_set.append(
+        (
+            b"<html><body><dl><dd>Orphan description 1</dd><dd>Orphan description 2</dd></dl></body></html>",
+            "- Orphan description 1\n- Orphan description 2",
+        )
+    )
+
+    for idx, pair in enumerate(test_set):
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(pair[0]),
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            filename="test",
+        )
+        backend = HTMLDocumentBackend(
+            in_doc=in_doc,
+            path_or_stream=BytesIO(pair[0]),
+        )
+        doc: DoclingDocument = backend.convert()
+        assert doc
+        markdown_output = doc.export_to_markdown()
+        assert markdown_output == pair[1], (
+            f"Error in case {idx}: expected '{pair[1]}', got '{markdown_output}'"
+        )
 
 
 def test_unicode_characters():
@@ -585,6 +648,49 @@ def test_is_rich_table_cell(html_paths):
         assert num_cells == len(gt_cells[idx_t]), (
             f"Cell number does not match in table {idx_t}"
         )
+
+
+def test_table_row_section_flag_from_tr_and_td_class():
+    raw_html = b"""
+    <html>
+      <body>
+        <table>
+          <tr><th>Key</th><th>Value</th></tr>
+          <tr class="row_section">
+            <td>Section From TR</td>
+            <td><a href="https://example.com">Rich Section From TR</a></td>
+          </tr>
+          <tr>
+            <td class="row_section">Section From TD</td>
+            <td>Normal Cell</td>
+          </tr>
+        </table>
+      </body>
+    </html>
+    """
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test_row_section.html",
+    )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(raw_html),
+    )
+    doc: DoclingDocument = backend.convert()
+
+    cells = doc.tables[0].data.table_cells
+    cells_by_text = {cell.text: cell for cell in cells}
+
+    assert cells_by_text["Section From TR"].row_section is True
+    assert cells_by_text["Section From TD"].row_section is True
+    assert cells_by_text["Normal Cell"].row_section is False
+
+    rich_section_cell = cells_by_text["Rich Section From TR"]
+    assert isinstance(rich_section_cell, RichTableCell)
+    assert rich_section_cell.row_section is True
 
 
 data_fix_par = [
