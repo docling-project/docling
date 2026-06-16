@@ -95,6 +95,7 @@ def test_jats_structured_abstract_sections_are_preserved():
     assert "Background: Background text." in md
     assert "Methods: Methods text." in md
 
+
 def test_jats_nested_lists_are_preserved():
     doc = convert_jats_body(
         """
@@ -116,12 +117,14 @@ def test_jats_nested_lists_are_preserved():
 
     md = doc.export_to_markdown()
 
-    print("\n----- NESTED LIST OUTPUT -----")
-    print(md)
-    print("------------------------------")
-
-    assert "Item 1" in md
+    assert "- Item 1" in md
     assert "Subitem A" in md
+
+    # Nested item should not be flattened into the parent item
+    assert (
+        "Item 1                                                   Subitem A" not in md
+    )
+
 
 @pytest.mark.parametrize(
     ("contrib", "expected"),

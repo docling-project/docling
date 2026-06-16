@@ -891,9 +891,25 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             elif child.tag == "list-item":
                 # TODO: address any type of content (another list, formula,...)
                 # TODO: address list type and item label
-                text = JatsDocumentBackend._get_text(child).strip()
-                new_parent = doc.add_list_item(text=text, parent=parent)
+                text_parts = []
+
+                for elem in child:
+                    if elem.tag == "p":
+                        text_parts.append(JatsDocumentBackend._get_text(elem).strip())
+
+                text = " ".join(part for part in text_parts if part)
+
+                new_parent = doc.add_list_item(
+                    text=text,
+                    parent=parent,
+                )
+
+                for elem in child:
+                    if elem.tag == "list":
+                        self._walk_linear(doc, new_parent, elem)
+
                 stop_walk = True
+
             elif child.tag == "fig":
                 self._add_figure_captions(doc, parent, child)
                 stop_walk = True
