@@ -7,6 +7,8 @@ from typing import Any
 import requests
 from PIL import Image
 from pydantic import AnyUrl
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from docling.datamodel.base_models import (
     OpenAiApiResponse,
@@ -16,6 +18,30 @@ from docling.datamodel.base_models import (
 from docling.models.utils.generation_utils import GenerationStopper
 
 _log = logging.getLogger(__name__)
+
+_RETRY_TOTAL = 5
+_RETRY_BACKOFF_FACTOR = 0.1
+_RETRY_STATUS_FORCELIST = (429, 500, 502, 503, 504)
+
+
+def _make_retry_session() -> requests.Session:
+    retry_strategy = Retry(
+        total=_RETRY_TOTAL,
+        connect=_RETRY_TOTAL,
+        read=0,
+        status=_RETRY_TOTAL,
+        allowed_methods={"POST"},
+        backoff_factor=_RETRY_BACKOFF_FACTOR,
+        status_forcelist=_RETRY_STATUS_FORCELIST,
+        respect_retry_after_header=True,
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+
+    session = requests.Session()
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
 
 
 def _extract_text_from_tool_arguments(arguments: str | None) -> str:
@@ -119,12 +145,13 @@ def api_image_request(
 
             headers = headers or {}
 
-            r = requests.post(
-                str(url),
-                headers=headers,
-                json=payload,
-                timeout=timeout,
-            )
+            with _make_retry_session() as session:
+                r = session.post(
+                    str(url),
+                    headers=headers,
+                    json=payload,
+                    timeout=timeout,
+                )
             if not r.ok:
                 _log.error(f"Error calling the API. Response was {r.text}")
                 # image.show()
@@ -194,64 +221,67 @@ def api_image_request_streaming(
         hdrs["X-Temperature"] = str(params["temperature"])
 
     # Stream the HTTP response
-    with requests.post(
-        str(url), headers=hdrs, json=payload, timeout=timeout, stream=True
-    ) as r:
-        if not r.ok:
-            _log.error(
-                f"Error calling the API {url} in streaming mode. Response was {r.text}"
-            )
-        r.raise_for_status()
+    with _make_retry_session() as session:
+        with session.post(
+            str(url), headers=hdrs, json=payload, timeout=timeout, stream=True
+        ) as r:
+            if not r.ok:
+                _log.error(
+                    f"Error calling the API {url} in streaming mode. "
+                    f"Response was {r.text}"
+                )
+            r.raise_for_status()
 
-        full_text = []
-        for raw_line in r.iter_lines(decode_unicode=True):
-            if not raw_line:  # keep-alives / blank lines
-                continue
-            if not raw_line.startswith("data:"):
-                # Some proxies inject comments; ignore anything not starting with 'data:'
-                continue
+            full_text = []
+            for raw_line in r.iter_lines(decode_unicode=True):
+                if not raw_line:  # keep-alives / blank lines
+                    continue
+                if not raw_line.startswith("data:"):
+                    # Some proxies inject comments; ignore anything not starting with 'data:'
+                    continue
 
-            data = raw_line[len("data:") :].strip()
-            if data == "[DONE]":
-                break
+                data = raw_line[len("data:") :].strip()
+                if data == "[DONE]":
+                    break
 
-            try:
-                obj = json.loads(data)
-            except json.JSONDecodeError:
-                _log.debug("Skipping non-JSON SSE chunk: %r", data[:200])
-                continue
+                try:
+                    obj = json.loads(data)
+                except json.JSONDecodeError:
+                    _log.debug("Skipping non-JSON SSE chunk: %r", data[:200])
+                    continue
 
-            # OpenAI-compatible delta format
-            # obj["choices"][0]["delta"]["content"] may be None or missing (e.g., tool calls)
-            try:
-                delta = obj["choices"][0].get("delta") or {}
-                piece = delta.get("content") or ""
-            except (KeyError, IndexError) as e:
-                _log.debug("Unexpected SSE chunk shape: %s", e)
-                piece = ""
+                # OpenAI-compatible delta format
+                # obj["choices"][0]["delta"]["content"] may be None or missing
+                # (e.g., tool calls)
+                try:
+                    delta = obj["choices"][0].get("delta") or {}
+                    piece = delta.get("content") or ""
+                except (KeyError, IndexError) as e:
+                    _log.debug("Unexpected SSE chunk shape: %s", e)
+                    piece = ""
 
-            # Try to extract token count
-            num_tokens = None
-            try:
-                if "usage" in obj:
-                    usage = obj["usage"]
-                    num_tokens = usage.get("total_tokens")
-            except Exception as e:
+                # Try to extract token count
                 num_tokens = None
-                _log.debug("Usage key not included in response: %s", e)
+                try:
+                    if "usage" in obj:
+                        usage = obj["usage"]
+                        num_tokens = usage.get("total_tokens")
+                except Exception as e:
+                    num_tokens = None
+                    _log.debug("Usage key not included in response: %s", e)
 
-            if piece:
-                full_text.append(piece)
-                for stopper in generation_stoppers:
-                    # Respect stopper's lookback window. We use a simple string window which
-                    # works with the GenerationStopper interface.
-                    lookback = max(1, stopper.lookback_tokens())
-                    window = "".join(full_text)[-lookback:]
-                    if stopper.should_stop(window):
-                        # Break out of the loop cleanly. The context manager will handle
-                        # closing the connection when we exit the 'with' block.
-                        # vLLM/OpenAI-compatible servers will detect the client disconnect
-                        # and abort the request server-side.
-                        return "".join(full_text), num_tokens
+                if piece:
+                    full_text.append(piece)
+                    for stopper in generation_stoppers:
+                        # Respect stopper's lookback window. We use a simple string window
+                        # which works with the GenerationStopper interface.
+                        lookback = max(1, stopper.lookback_tokens())
+                        window = "".join(full_text)[-lookback:]
+                        if stopper.should_stop(window):
+                            # Break out of the loop cleanly. The context manager will handle
+                            # closing the connection when we exit the 'with' block.
+                            # vLLM/OpenAI-compatible servers will detect the client
+                            # disconnect and abort the request server-side.
+                            return "".join(full_text), num_tokens
 
-        return "".join(full_text), num_tokens
+            return "".join(full_text), num_tokens

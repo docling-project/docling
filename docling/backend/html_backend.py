@@ -1904,7 +1904,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return AnnotatedTextList()
         if self._is_checkbox_label_tag(tag):
             return AnnotatedTextList()
-        if not ignore_list or (tag.name not in ["ul", "ol"]):
+        if not ignore_list or (tag.name not in ["ul", "ol", "dl"]):
             for child in tag:
                 if isinstance(child, Tag) and child.name in _FORMAT_TAG_MAP:
                     with self._use_format([child.name]):
@@ -2120,6 +2120,28 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.level = original_level
             self.parents = original_parents
 
+    @contextmanager
+    def _use_list_item_context(self, parent_item: RefItem | None) -> Iterator[None]:
+        """Set up context for processing nested content within a list item.
+
+        Args:
+            parent_item: The list item to use as parent for nested content.
+                If None, the context manager does nothing.
+
+        While the context manager is active, the hierarchy level is increased
+        and the parent is set. When exiting, the level and parent are restored.
+        """
+        if parent_item:
+            self.parents[self.level + 1] = parent_item
+            self.level += 1
+            try:
+                yield
+            finally:
+                self.parents[self.level + 1] = None
+                self.level -= 1
+        else:
+            yield
+
     def _handle_heading(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:
         added_ref = []
         tag_name = tag.name.lower()
@@ -2192,6 +2214,71 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if im_ref:
                     added_ref.append(im_ref)
         return added_ref
+
+    def _has_list_ancestor(self, elem: Tag, boundary: Tag) -> bool:
+        """Check if element has a list ancestor between itself and boundary.
+
+        Args:
+            elem: The element to check
+            boundary: The boundary element (typically the list item)
+
+        Returns:
+            True if a list ancestor exists, False otherwise
+        """
+        parent = elem.parent
+        while parent and parent != boundary:
+            if isinstance(parent, Tag) and parent.name in {"ul", "ol", "dl"}:
+                return True
+            parent = parent.parent
+        return False
+
+    def _process_nested_element(
+        self,
+        elem,
+        li: Tag,
+        doc: DoclingDocument,
+        processed_elements: set,
+    ) -> None:
+        """Process a single nested element within a list item.
+
+        Args:
+            elem: The element to process
+            li: The parent list item tag
+            doc: The DoclingDocument being built
+            processed_elements: Set of element IDs already processed
+        """
+        if id(elem) in processed_elements:
+            return
+        processed_elements.add(id(elem))
+
+        if isinstance(elem, Tag):
+            if elem.name == "img":
+                self._emit_image(elem, doc)
+            elif elem.name in {"ul", "ol", "dl"}:
+                # Only process top-level lists (not nested within other lists)
+                if not self._has_list_ancestor(elem, li):
+                    self._handle_block(elem, doc)
+                    self.parents[self.level + 1] = None
+            else:
+                # Recursively process children for other elements (like divs)
+                for child in elem.children:
+                    self._process_nested_element(child, li, doc, processed_elements)
+
+    def _process_list_item_nested_content(
+        self,
+        li: Tag,
+        doc: DoclingDocument,
+        processed_elements: set,
+    ) -> None:
+        """Process nested content (images, lists, etc.) within a list item in DOM order.
+
+        Args:
+            li: The list item tag
+            doc: The DoclingDocument being built
+            processed_elements: Set of element IDs already processed to avoid duplicates
+        """
+        for child in li.children:
+            self._process_nested_element(child, li, doc, processed_elements)
 
     def _add_list_item_with_content(
         self,
@@ -2308,7 +2395,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
             return list_item
 
-    def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:  # noqa: C901
+    def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:
         tag_name = tag.name.lower()
         start: Optional[int] = None
         name: str = ""
@@ -2336,6 +2423,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if is_ordered and start is not None:
             self.ctx.list_start_by_ref[list_group.self_ref] = start
         self.level += 1
+
+        # Track the number of list items added (not all children)
+        list_item_counter: int = 0
 
         # Handle description lists (<dl> with <dt> and <dd>)
         if is_description:
@@ -2383,16 +2473,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 elif child_name == "dd":
                     dd_parent = dd_group or current_dt_item or list_group
 
-                    self._add_list_item_with_content(
+                    dd_item = self._add_list_item_with_content(
                         tag=child,
                         doc=doc,
                         parent=dd_parent,
                     )
 
-                    # Handle any images in the description
-                    for img_tag in child("img"):
-                        if isinstance(img_tag, Tag):
-                            self._emit_image(img_tag, doc)
+                    # Process nested content (images, lists, etc.) in the description
+                    # Set parent for nested content (use dd_item if available, otherwise dd_parent)
+                    content_parent = dd_item or dd_parent
+                    with self._use_list_item_context(content_parent):
+                        processed_elements = set()
+                        self._process_list_item_nested_content(
+                            child, doc, processed_elements
+                        )
 
             self.parents[self.level + 1] = None
             self.level -= 1
@@ -2409,11 +2503,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self._handle_block(li, doc)
 
             else:
-                # 1) determine the marker
-                if is_ordered and start is not None:
-                    marker = f"{start + len(list_group.children)}."
-                else:
-                    marker = ""
+                # 1) determine the marker using the counter
+                marker: str = (
+                    f"{start + list_item_counter}."
+                    if is_ordered and start is not None
+                    else ""
+                )
 
                 # 2) Find inputs and checkboxes in this <li>
                 inputs_in_li = [
@@ -2440,39 +2535,35 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     marker=marker,
                 )
 
+                # Increment counter only when a list item is actually added
+                if list_item:
+                    list_item_counter += 1
+
                 if list_item or inputs_in_li or custom_checkboxes_in_li:
-                    # If we created a list item, set it as parent for nested content
-                    if list_item:
-                        self.parents[self.level + 1] = list_item
+                    with self._use_list_item_context(list_item):
+                        # Handle inputs and checkboxes
+                        if inputs_in_li or custom_checkboxes_in_li:
+                            for input_tag in inputs_in_li:
+                                if isinstance(input_tag, Tag):
+                                    self._emit_input(input_tag, doc)
+                            for checkbox_tag in custom_checkboxes_in_li:
+                                if isinstance(checkbox_tag, Tag):
+                                    self._emit_custom_checkbox(checkbox_tag, doc)
 
-                    # Handle inputs and checkboxes
-                    if inputs_in_li or custom_checkboxes_in_li:
-                        self.level += 1
-                        for input_tag in inputs_in_li:
-                            if isinstance(input_tag, Tag):
-                                self._emit_input(input_tag, doc)
-                        for checkbox_tag in custom_checkboxes_in_li:
-                            if isinstance(checkbox_tag, Tag):
-                                self._emit_custom_checkbox(checkbox_tag, doc)
-                        self.level -= 1
-
-                    # 4) Recurse into any nested lists
-                    for sublist in li({"ul", "ol"}, recursive=False):
-                        if isinstance(sublist, Tag):
-                            self.level += 1
-                            self._handle_block(sublist, doc)
-                            self.parents[self.level + 1] = None
-                            self.level -= 1
+                        # 4) Process nested content (images, lists, etc.) in DOM order
+                        processed_elements = set()
+                        self._process_list_item_nested_content(
+                            li, doc, processed_elements
+                        )
                 else:
-                    # No content, but check for nested lists
-                    for sublist in li({"ul", "ol"}, recursive=False):
+                    # No content, but check for nested lists (including those wrapped in divs)
+                    for sublist in li({"ul", "ol", "dl"}):
                         if isinstance(sublist, Tag):
-                            self._handle_block(sublist, doc)
+                            # Check if this list has a ul/ol/dl ancestor within the current li
+                            has_list_ancestor = self._has_list_ancestor(sublist, li)
 
-                # 5) Extract any images under this <li>
-                for img_tag in li("img"):
-                    if isinstance(img_tag, Tag):
-                        self._emit_image(img_tag, doc)
+                            if not has_list_ancestor:
+                                self._handle_block(sublist, doc)
 
         self.parents[self.level + 1] = None
         self.level -= 1
