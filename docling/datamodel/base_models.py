@@ -228,14 +228,12 @@ class ErrorItem(BaseModel):
         module_name: The module where the error occurred.
         error_message: Human-readable error description.
         category: Semantic category of the error for filtering.
-        metadata: Additional context-specific information about the error.
     """
 
     component_type: DoclingComponentType
     module_name: str
     error_message: str
     category: ErrorCategory = ErrorCategory.UNKNOWN
-    metadata: dict[str, Any] = {}
 
 
 class Cluster(BaseModel):

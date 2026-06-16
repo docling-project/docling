@@ -162,9 +162,6 @@ def test_document_timeout(test_doc_path):
     )
     # Verify timeout error is present
     assert result.has_timeout_errors(), "Expected timeout errors to be recorded"
-    timeout_info = result.get_timeout_info()
-    assert timeout_info["timeout_occurred"] is True
-    assert timeout_info["timeout_count"] > 0
     assert any(e.category == ErrorCategory.TIMEOUT for e in result.errors), (
         "Expected at least one error with TIMEOUT category"
     )

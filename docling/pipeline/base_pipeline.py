@@ -291,8 +291,8 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                         and total_elapsed_time > self.pipeline_options.document_timeout
                     ):
                         timeout_msg = (
-                            f"Document processing time ({total_elapsed_time:.3f} seconds) "
-                            f"exceeded the specified timeout of {self.pipeline_options.document_timeout:.3f} seconds"
+                            f"Document processing timeout: exceeded {self.pipeline_options.document_timeout:.3f}s limit "
+                            f"after {total_elapsed_time:.3f}s. Processed {total_pages_processed}/{len(conv_res.pages)} pages."
                         )
                         _log.warning(timeout_msg)
 
@@ -308,13 +308,6 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                             module_name="base_pipeline",
                             error_message=timeout_msg,
                             category=ErrorCategory.TIMEOUT,
-                            metadata={
-                                "timeout_seconds": self.pipeline_options.document_timeout,
-                                "elapsed_seconds": total_elapsed_time,
-                                "pages_processed": total_pages_processed,
-                                "total_pages": len(conv_res.pages),
-                                "timeout_type": "document_level",
-                            },
                         )
                         conv_res.errors.append(timeout_error)
                         conv_res.status = ConversionStatus.PARTIAL_SUCCESS
