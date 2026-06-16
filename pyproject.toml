@@ -333,6 +333,10 @@ docling = { workspace = true }
 package = true
 default-groups = "all"
 
+override-dependencies = [
+  "grpcio>=1.75.1"
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["docling"]
 

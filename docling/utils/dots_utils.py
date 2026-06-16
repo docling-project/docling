@@ -39,24 +39,6 @@ from docling.utils.chandra_utils import _parse_table_html
 
 _log = logging.getLogger(__name__)
 
-DOTS_LAYOUT_PROMPT = (
-    "Please output the layout information from the PDF image, including each layout "
-    "element's bbox, its category, and the corresponding text content within the bbox.\n\n"
-    "1. Bbox format: [x1, y1, x2, y2]\n\n"
-    "2. Layout Categories: The possible categories are ['Caption', 'Footnote', 'Formula', "
-    "'List-item', 'Page-footer', 'Page-header', 'Picture', 'Section-header', 'Table', "
-    "'Text', 'Title'].\n\n"
-    "3. Text Extraction & Formatting Rules:\n"
-    "    - Picture: For the 'Picture' category, the text field should be omitted.\n"
-    "    - Formula: Format its text as LaTeX.\n"
-    "    - Table: Format its text as HTML.\n"
-    "    - All Others (Text, Title, etc.): Format their text as Markdown.\n\n"
-    "4. Constraints:\n"
-    "    - The output text must be the original text from the image, with no translation.\n"
-    "    - All layout elements must be sorted according to human reading order.\n\n"
-    "5. Final Output: The entire output must be a single JSON object."
-)
-
 # Mapping from dots.ocr/dots.mocr category strings to DocItemLabel.
 _LABEL_MAP: dict[str, DocItemLabel] = {
     "Text": DocItemLabel.TEXT,

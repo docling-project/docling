@@ -361,9 +361,12 @@ class TestVlmModelSpec:
             },
         )
 
-        assert spec.get_engine_config(VlmEngineType.TRANSFORMERS).extra_config[
-            "transformers_strip_stop_strings"
-        ] is True
+        assert (
+            spec.get_engine_config(VlmEngineType.TRANSFORMERS).extra_config[
+                "transformers_strip_stop_strings"
+            ]
+            is True
+        )
         assert (
             "transformers_strip_stop_strings"
             not in spec.get_engine_config(VlmEngineType.VLLM).extra_config

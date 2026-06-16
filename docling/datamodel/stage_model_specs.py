@@ -19,6 +19,10 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersPromptStyle,
 )
 from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
+from docling.datamodel.vlm_prompts import (
+    CHANDRA_OCR_LAYOUT_PROMPT,
+    DOTS_LAYOUT_PROMPT,
+)
 from docling.models.inference_engines.image_classification.base import (
     ImageClassificationEngineType,
 )
@@ -26,8 +30,6 @@ from docling.models.inference_engines.object_detection.base import (
     ObjectDetectionEngineType,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineType
-from docling.utils.chandra_utils import CHANDRA_OCR_LAYOUT_PROMPT
-from docling.utils.dots_utils import DOTS_LAYOUT_PROMPT
 
 if TYPE_CHECKING:
     from docling.datamodel.image_classification_engine_options import (
