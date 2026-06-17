@@ -1593,7 +1593,8 @@ class GenosSmartChunker(BaseChunker):
                 text = "\n".join(g["texts"])
                 headings = self._extract_used_headers(g["h_short"]) or []
                 header_line = ("HEADER: " + ", ".join(headings) + "\n") if headings else ""
-                return len(header_line) + len(text)
+                # char 모드면 문자 수, huggingface 모드면 토큰 수로 산정 (max_tokens 단위와 일치)
+                return self._count_tokens(header_line + text)
 
             def _merge(a, b):
                 return {
