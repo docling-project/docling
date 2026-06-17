@@ -216,10 +216,12 @@ def _heading_font_size(item: SectionHeaderItem, pages_by_no: dict) -> float | No
 
 def _infer_from_style(
     headings: list[SectionHeaderItem],
-    conv_res: ConversionResult,
+    conv_res: ConversionResult | None,
     options: HeadingHierarchyOptions,
 ) -> dict[int, int]:
     """Map heading index -> level from font size buckets (larger size = higher level)."""
+    if conv_res is None:
+        return {}
     pages_by_no = {page.page_no: page for page in conv_res.pages}
     sizes: dict[int, float] = {}
     for i, heading in enumerate(headings):
@@ -240,7 +242,7 @@ def _infer_from_style(
 
 def _infer_from_bookmarks(
     headings: list[SectionHeaderItem],
-    conv_res: ConversionResult,
+    conv_res: ConversionResult | None,
     options: HeadingHierarchyOptions,
 ) -> dict[int, int]:
     """Reserved: map heading index -> level from the PDF outline/bookmarks.
@@ -253,13 +255,14 @@ def _infer_from_bookmarks(
 
 def assign_heading_levels(
     document: DoclingDocument,
-    conv_res: ConversionResult,
+    conv_res: ConversionResult | None,
     options: HeadingHierarchyOptions,
 ) -> None:
     """Assign ``SectionHeaderItem.level`` in place from the configured signals.
 
     Numbering wins over style; bookmarks (when implemented) win over both. Headings with no
-    applicable signal keep their existing level.
+    applicable signal keep their existing level. ``conv_res`` may be ``None`` when only
+    ``conv_res``-independent signals (numbering) are enabled.
     """
     headings = [item for item in document.texts if isinstance(item, SectionHeaderItem)]
     if not headings:
