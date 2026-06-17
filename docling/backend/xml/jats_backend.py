@@ -855,9 +855,11 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         parent: NodeItem,
         node: etree._Element,
     ) -> None:
+        title = node.findtext("title")
+
         footnote_group = doc.add_group(
             label=GroupLabel.LIST,
-            name="footnotes",
+            name=title.strip() if title else "footnotes",
             parent=parent,
         )
 
