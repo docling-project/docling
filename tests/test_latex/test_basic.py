@@ -2,7 +2,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, GroupLabel
+from docling_core.types.doc import DocItemLabel
 
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.datamodel.backend_options import LatexBackendOptions

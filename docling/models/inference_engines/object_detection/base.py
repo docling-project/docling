@@ -9,11 +9,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
-    List,
     Literal,
     Optional,
-    Type,
     get_args,
     get_origin,
 )
@@ -56,7 +53,7 @@ class BaseObjectDetectionEngineOptions(BaseModel):
     )
 
     _registry: ClassVar[
-        dict[ObjectDetectionEngineType, Type[BaseObjectDetectionEngineOptions]]
+        dict[ObjectDetectionEngineType, type[BaseObjectDetectionEngineOptions]]
     ] = {}
 
     @classmethod
@@ -117,7 +114,7 @@ class ObjectDetectionEngineInput(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     image: Image = Field(description="PIL image to run inference on")
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Optional metadata that is echoed back in the output",
     )
@@ -126,19 +123,19 @@ class ObjectDetectionEngineInput(BaseModel):
 class ObjectDetectionEngineOutput(BaseModel):
     """Output returned by object-detection engines."""
 
-    label_ids: List[int] = Field(
+    label_ids: list[int] = Field(
         default_factory=list,
         description="Predicted class indices",
     )
-    scores: List[float] = Field(
+    scores: list[float] = Field(
         default_factory=list,
         description="Confidence scores for the predictions",
     )
-    bboxes: List[List[float]] = Field(
+    bboxes: list[list[float]] = Field(
         default_factory=list,
         description="Bounding boxes as [x_min, y_min, x_max, y_max] in pixels",
     )
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Optional metadata echoed back from the input or engine",
     )
@@ -168,12 +165,12 @@ class BaseObjectDetectionEngine(ABC):
 
     @abstractmethod
     def predict_batch(
-        self, input_batch: List[ObjectDetectionEngineInput]
-    ) -> List[ObjectDetectionEngineOutput]:
+        self, input_batch: list[ObjectDetectionEngineInput]
+    ) -> list[ObjectDetectionEngineOutput]:
         """Run inference on a batch of inputs."""
 
     @abstractmethod
-    def get_label_mapping(self) -> Dict[int, str]:
+    def get_label_mapping(self) -> dict[int, str]:
         """Get the label mapping for this model.
 
         Returns:
@@ -193,8 +190,8 @@ class BaseObjectDetectionEngine(ABC):
 
     def __call__(
         self,
-        input_data: ObjectDetectionEngineInput | List[ObjectDetectionEngineInput],
-    ) -> ObjectDetectionEngineOutput | List[ObjectDetectionEngineOutput]:
+        input_data: ObjectDetectionEngineInput | list[ObjectDetectionEngineInput],
+    ) -> ObjectDetectionEngineOutput | list[ObjectDetectionEngineOutput]:
         if not self._initialized:
             _log.debug("Initializing %s for call", type(self).__name__)
             self.initialize()

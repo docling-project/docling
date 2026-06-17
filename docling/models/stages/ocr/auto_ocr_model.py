@@ -2,7 +2,7 @@ import logging
 import sys
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional, Type
+from typing import Optional
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -42,7 +42,7 @@ class OcrAutoModel(BaseOcrModel):
         if self.enabled:
             if "darwin" == sys.platform:
                 try:
-                    from ocrmac import ocrmac
+                    from ocrmac import ocrmac  # noqa: F401
 
                     self._engine = OcrMacModel(
                         enabled=self.enabled,
@@ -59,7 +59,7 @@ class OcrAutoModel(BaseOcrModel):
 
             if self._engine is None:
                 try:
-                    import onnxruntime
+                    import onnxruntime  # noqa: F401
                     from rapidocr import EngineType, RapidOCR  # type: ignore
 
                     self._engine = RapidOcrModel(
@@ -80,7 +80,7 @@ class OcrAutoModel(BaseOcrModel):
 
             if self._engine is None:
                 try:
-                    import easyocr
+                    import easyocr  # noqa: F401
 
                     self._engine = EasyOcrModel(
                         enabled=self.enabled,
@@ -97,8 +97,11 @@ class OcrAutoModel(BaseOcrModel):
 
             if self._engine is None:
                 try:
-                    import torch
-                    from rapidocr import EngineType, RapidOCR  # type: ignore
+                    import torch  # noqa: F401
+                    from rapidocr import (  # type: ignore  # noqa: F401
+                        EngineType,
+                        RapidOCR,
+                    )
 
                     self._engine = RapidOcrModel(
                         enabled=self.enabled,
@@ -128,5 +131,5 @@ class OcrAutoModel(BaseOcrModel):
         yield from self._engine(conv_res, page_batch)
 
     @classmethod
-    def get_options_type(cls) -> Type[OcrOptions]:
+    def get_options_type(cls) -> type[OcrOptions]:
         return OcrAutoOptions

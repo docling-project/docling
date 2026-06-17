@@ -1,11 +1,12 @@
 import logging
 import re
 import warnings
+from collections.abc import Callable
 from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, Final
+from typing import Any, Final
 from urllib.parse import urlparse
 
 from docling_core.types.doc import (

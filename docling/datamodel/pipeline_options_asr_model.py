@@ -1,14 +1,9 @@
 from enum import Enum
-from typing import Annotated, Any, Literal, Optional, Union
+from typing import Annotated, Literal, Optional
 
-from pydantic import AnyUrl, BaseModel, Field
-from typing_extensions import deprecated
+from pydantic import BaseModel, Field
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
-from docling.datamodel.pipeline_options_vlm_model import (
-    # InferenceFramework,
-    TransformersModelType,
-)
 
 
 class BaseAsrOptions(BaseModel):

@@ -4,7 +4,7 @@ import logging
 import sys
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.pipeline_options_vlm_model import TransformersPromptStyle
@@ -197,7 +197,7 @@ class VllmVlmEngine(BaseVlmEngine):
                 _log.warning("Ignoring unknown extra_config keys for vLLM: %s", unknown)
 
             # Construct LLM kwargs (engine/load-time)
-            llm_kwargs: Dict[str, Any] = {
+            llm_kwargs: dict[str, Any] = {
                 "model": str(artifacts_path),
                 "limit_mm_per_prompt": {"image": 1},
                 "revision": revision,
@@ -251,7 +251,7 @@ class VllmVlmEngine(BaseVlmEngine):
         self._initialized = True
         _log.info("vLLM runtime initialized")
 
-    def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
+    def predict_batch(self, input_batch: list[VlmEngineInput]) -> list[VlmEngineOutput]:
         """Run inference on a batch of inputs using vLLM.
 
         This method processes multiple images in a single batched vLLM call,
@@ -286,7 +286,7 @@ class VllmVlmEngine(BaseVlmEngine):
         )
 
         # Format prompts
-        prompts: List[str | None] = []
+        prompts: list[str | None] = []
         for input_data in input_batch:
             formatted_prompt = format_prompt_for_vlm(
                 prompt=input_data.prompt,
@@ -328,7 +328,7 @@ class VllmVlmEngine(BaseVlmEngine):
         )
 
         # Create output objects
-        results: List[VlmEngineOutput] = []
+        results: list[VlmEngineOutput] = []
         for i, output in enumerate(outputs):
             text = output.outputs[0].text if output.outputs else ""
             stop_reason = (

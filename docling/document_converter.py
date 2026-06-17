@@ -10,9 +10,9 @@ from datetime import datetime
 from functools import partial
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Type, Union
+from typing import Optional, Union
 
-from pydantic import ConfigDict, Field, model_validator, validate_call
+from pydantic import ConfigDict, model_validator, validate_call
 from typing_extensions import Self
 
 from docling.backend.abstract_backend import (
@@ -61,7 +61,7 @@ from docling.datamodel.document import (
     InputDocument,
     _DocumentConversionInput,
 )
-from docling.datamodel.pipeline_options import ConvertPipelineOptions, PipelineOptions
+from docling.datamodel.pipeline_options import PipelineOptions
 from docling.datamodel.settings import (
     DEFAULT_PAGE_RANGE,
     DocumentLimits,
@@ -80,7 +80,7 @@ _PIPELINE_CACHE_LOCK = threading.Lock()
 
 
 class FormatOption(BaseFormatOption):
-    pipeline_cls: Type[BasePipeline]
+    pipeline_cls: type[BasePipeline]
     backend_options: Optional[BackendOptions] = None
 
     def backend_options_for_input(
@@ -97,39 +97,39 @@ class FormatOption(BaseFormatOption):
 
 
 class CsvFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = CsvDocumentBackend
+    pipeline_cls: type = SimplePipeline
+    backend: type[AbstractDocumentBackend] = CsvDocumentBackend
 
 
 class ExcelFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = MsExcelDocumentBackend
+    pipeline_cls: type = SimplePipeline
+    backend: type[AbstractDocumentBackend] = MsExcelDocumentBackend
 
 
 class WordFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = MsWordDocumentBackend
+    pipeline_cls: type = SimplePipeline
+    backend: type[AbstractDocumentBackend] = MsWordDocumentBackend
 
 
 class PowerpointFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = MsPowerpointDocumentBackend
+    pipeline_cls: type = SimplePipeline
+    backend: type[AbstractDocumentBackend] = MsPowerpointDocumentBackend
 
 
 class MarkdownFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = MarkdownDocumentBackend
+    pipeline_cls: type = SimplePipeline
+    backend: type[AbstractDocumentBackend] = MarkdownDocumentBackend
     backend_options: Optional[MarkdownBackendOptions] = None
 
 
 class AsciiDocFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = AsciiDocBackend
+    pipeline_cls: type = SimplePipeline
+    backend: type[AbstractDocumentBackend] = AsciiDocBackend
 
 
 class HTMLFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = HTMLDocumentBackend
+    pipeline_cls: type = SimplePipeline
+    backend: type[AbstractDocumentBackend] = HTMLDocumentBackend
     backend_options: Optional[HTMLBackendOptions] = None
 
     def backend_options_for_input(
@@ -149,64 +149,64 @@ class HTMLFormatOption(FormatOption):
 
 
 class PatentUsptoFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[PatentUsptoDocumentBackend] = PatentUsptoDocumentBackend
+    pipeline_cls: type = SimplePipeline
+    backend: type[PatentUsptoDocumentBackend] = PatentUsptoDocumentBackend
 
 
 class XMLJatsFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = JatsDocumentBackend
+    pipeline_cls: type = SimplePipeline
+    backend: type[AbstractDocumentBackend] = JatsDocumentBackend
 
 
 class XMLDocLangFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = DocLangDocumentBackend
+    pipeline_cls: type = SimplePipeline
+    backend: type[AbstractDocumentBackend] = DocLangDocumentBackend
 
 
 class XBRLFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = XBRLDocumentBackend
+    pipeline_cls: type = SimplePipeline
+    backend: type[AbstractDocumentBackend] = XBRLDocumentBackend
     backend_options: XBRLBackendOptions | None = None
 
 
 class ImageFormatOption(FormatOption):
-    pipeline_cls: Type = StandardPdfPipeline
-    backend: Type[AbstractDocumentBackend] = ImageDocumentBackend
+    pipeline_cls: type = StandardPdfPipeline
+    backend: type[AbstractDocumentBackend] = ImageDocumentBackend
 
 
 class PdfFormatOption(FormatOption):
-    pipeline_cls: Type = StandardPdfPipeline
-    backend: Type[AbstractDocumentBackend] = DoclingParseDocumentBackend
+    pipeline_cls: type = StandardPdfPipeline
+    backend: type[AbstractDocumentBackend] = DoclingParseDocumentBackend
     backend_options: Optional[PdfBackendOptions] = None
 
 
 class MetsGbsFormatOption(FormatOption):
-    pipeline_cls: Type = StandardPdfPipeline
-    backend: Type[AbstractDocumentBackend] = MetsGbsDocumentBackend
+    pipeline_cls: type = StandardPdfPipeline
+    backend: type[AbstractDocumentBackend] = MetsGbsDocumentBackend
     backend_options: MetsGbsBackendOptions | None = None
 
 
 class AudioFormatOption(FormatOption):
-    pipeline_cls: Type = AsrPipeline
-    backend: Type[AbstractDocumentBackend] = NoOpBackend
+    pipeline_cls: type = AsrPipeline
+    backend: type[AbstractDocumentBackend] = NoOpBackend
 
 
 class LatexFormatOption(FormatOption):
     """Format options for LaTeX documents."""
 
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = LatexDocumentBackend
+    pipeline_cls: type = SimplePipeline
+    backend: type[AbstractDocumentBackend] = LatexDocumentBackend
     backend_options: Optional[LatexBackendOptions] = None
 
 
 class EmailFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = EmailDocumentBackend
+    pipeline_cls: type = SimplePipeline
+    backend: type[AbstractDocumentBackend] = EmailDocumentBackend
 
 
 class EpubFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = EpubDocumentBackend
+    pipeline_cls: type = SimplePipeline
+    backend: type[AbstractDocumentBackend] = EpubDocumentBackend
     backend_options: EpubBackendOptions | None = None
 
 
@@ -338,12 +338,12 @@ class DocumentConverter:
             for format in self.allowed_formats
         }
         self.initialized_pipelines: dict[
-            tuple[Type[BasePipeline], str], BasePipeline
+            tuple[type[BasePipeline], str], BasePipeline
         ] = {}
 
     def _get_initialized_pipelines(
         self,
-    ) -> dict[tuple[Type[BasePipeline], str], BasePipeline]:
+    ) -> dict[tuple[type[BasePipeline], str], BasePipeline]:
         return self.initialized_pipelines
 
     def _get_pipeline_options_hash(self, pipeline_options: PipelineOptions) -> str:

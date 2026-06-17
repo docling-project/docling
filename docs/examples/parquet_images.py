@@ -37,7 +37,7 @@ import typer
 from PIL import Image
 
 from docling.datamodel import vlm_model_specs
-from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
@@ -45,7 +45,6 @@ from docling.datamodel.pipeline_options import (
     RapidOcrOptions,
     VlmPipelineOptions,
 )
-from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
 from docling.datamodel.settings import settings
 from docling.document_converter import DocumentConverter, ImageFormatOption
 from docling.pipeline.base_pipeline import ConvertPipeline

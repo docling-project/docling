@@ -6,12 +6,13 @@ import os
 import re
 import socket
 import warnings
+from collections.abc import Iterator
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass, field as dataclass_field
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Final, Iterator, Literal, Optional, Union, cast
+from typing import Any, Final, Literal, Optional, Union, cast
 from urllib.parse import urljoin, urlparse
 
 import requests

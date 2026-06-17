@@ -1,7 +1,7 @@
 """Test that PictureDescriptionBaseModel converts non-RGB images to RGB."""
 
 from collections.abc import Iterable
-from typing import ClassVar, List, Type
+from typing import ClassVar
 
 import pytest
 from docling_core.types.doc import DoclingDocument, PictureItem
@@ -25,10 +25,10 @@ class _RecordingPictureDescriptionModel(PictureDescriptionBaseModel):
         self.enabled = True
         self.options = _TestOptions()
         self.provenance = "test"
-        self.received_modes: List[str] = []
+        self.received_modes: list[str] = []
 
     @classmethod
-    def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
+    def get_options_type(cls) -> type[PictureDescriptionBaseOptions]:
         return _TestOptions
 
     def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:

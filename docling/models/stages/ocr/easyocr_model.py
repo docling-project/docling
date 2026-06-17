@@ -4,7 +4,7 @@ import warnings
 import zipfile
 from collections.abc import Iterable
 from pathlib import Path
-from typing import List, Optional, Type
+from typing import Optional
 
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin
@@ -94,8 +94,8 @@ class EasyOcrModel(BaseOcrModel):
 
     @staticmethod
     def download_models(
-        detection_models: List[str] = ["craft"],
-        recognition_models: List[str] = ["english_g2", "latin_g2"],
+        detection_models: list[str] = ["craft"],
+        recognition_models: list[str] = ["english_g2", "latin_g2"],
         local_dir: Optional[Path] = None,
         force: bool = False,
         progress: bool = False,
@@ -204,5 +204,5 @@ class EasyOcrModel(BaseOcrModel):
                 yield page
 
     @classmethod
-    def get_options_type(cls) -> Type[OcrOptions]:
+    def get_options_type(cls) -> type[OcrOptions]:
         return EasyOcrOptions

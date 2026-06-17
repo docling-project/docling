@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Literal, Type, TypedDict
+from typing import Literal, TypedDict
 
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin
@@ -539,5 +539,5 @@ class RapidOcrModel(BaseOcrModel):
                 yield page
 
     @classmethod
-    def get_options_type(cls) -> Type[OcrOptions]:
+    def get_options_type(cls) -> type[OcrOptions]:
         return RapidOcrOptions

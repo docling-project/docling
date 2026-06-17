@@ -8,7 +8,7 @@ import logging
 import re
 from collections.abc import Iterable
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -151,7 +151,7 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
         else:
             raise NotImplementedError("Label must be either code or formula")
 
-    def _extract_code_language(self, input_string: str) -> Tuple[str, Optional[str]]:
+    def _extract_code_language(self, input_string: str) -> tuple[str, Optional[str]]:
         """Extract programming language from the beginning of a string.
 
         Checks if the input string starts with a pattern of the form
@@ -240,9 +240,9 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
         if self.engine is None:
             raise RuntimeError("Engine not initialized")
 
-        labels: List[str] = []
-        images: List[Union[Image.Image, np.ndarray]] = []
-        elements: List[Union[CodeItem, TextItem]] = []
+        labels: list[str] = []
+        images: list[Union[Image.Image, np.ndarray]] = []
+        elements: list[Union[CodeItem, TextItem]] = []
 
         for el in element_batch:
             assert isinstance(el.item, CodeItem | TextItem)

@@ -2,7 +2,7 @@ import hashlib
 from io import BytesIO
 from itertools import islice
 from pathlib import Path
-from typing import List, Union
+from typing import Union
 
 import requests
 from tqdm import tqdm
@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 def chunkify(iterator, chunk_size):
     """Yield successive chunks of chunk_size from the iterable."""
-    if isinstance(iterator, List):
+    if isinstance(iterator, list):
         iterator = iter(iterator)
     for first in iterator:  # Take the first element from the iterator
         yield [first, *list(islice(iterator, chunk_size - 1))]

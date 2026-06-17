@@ -1,10 +1,9 @@
 import logging
-import random
 from collections.abc import Iterable
 from importlib.metadata import version
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
@@ -16,7 +15,7 @@ from docling_core.types.doc.page import (
     SegmentedPdfPage,
     TextCell,
 )
-from PIL import Image, ImageDraw
+from PIL import Image
 from pypdfium2 import PdfTextPage
 from pypdfium2._helpers.misc import PdfiumError
 
@@ -141,7 +140,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         assert self._ppage is not None, "Page backend was unloaded."
         return self._ppage
 
-    def _compute_text_cells(self) -> List[TextCell]:
+    def _compute_text_cells(self) -> list[TextCell]:
         """Compute text cells from pypdfium."""
         with pypdfium2_lock:
             if not self.text_page:
@@ -179,14 +178,14 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         # PyPdfium2 produces very fragmented cells, with sub-word level boundaries, in many PDFs.
         # The cell merging code below is to clean this up.
         def merge_horizontal_cells(
-            cells: List[TextCell],
+            cells: list[TextCell],
             horizontal_threshold_factor: float = 1.0,
             vertical_threshold_factor: float = 0.5,
-        ) -> List[TextCell]:
+        ) -> list[TextCell]:
             if not cells:
                 return []
 
-            def group_rows(cells: List[TextCell]) -> List[List[TextCell]]:
+            def group_rows(cells: list[TextCell]) -> list[list[TextCell]]:
                 rows = []
                 current_row = [cells[0]]
                 row_top = cells[0].rect.to_bounding_box().t
@@ -217,7 +216,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
                 return rows
 
-            def merge_row(row: List[TextCell]) -> List[TextCell]:
+            def merge_row(row: list[TextCell]) -> list[TextCell]:
                 merged = []
                 current_group = [row[0]]
 
@@ -241,7 +240,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
 
                 return merged
 
-            def merge_group(group: List[TextCell]) -> TextCell:
+            def merge_group(group: list[TextCell]) -> TextCell:
                 if len(group) == 1:
                     return group[0]
 

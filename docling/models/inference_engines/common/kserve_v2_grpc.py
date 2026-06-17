@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Mapping, Sequence, Tuple
+from typing import Any
 from urllib.parse import SplitResult, urlsplit
 
 import numpy as np
@@ -68,7 +69,7 @@ def _resolve_grpc_endpoint(*, base_url: str) -> str:
     return base_url
 
 
-def _to_grpc_metadata(metadata: Mapping[str, str]) -> Sequence[Tuple[str, str]]:
+def _to_grpc_metadata(metadata: Mapping[str, str]) -> Sequence[tuple[str, str]]:
     return [(key, value) for key, value in metadata.items()]
 
 
@@ -186,7 +187,7 @@ class KserveV2GrpcClient:
     use_tls: bool
     max_message_bytes: int
     use_binary_data: bool = True
-    grpc_channel_args: List[Tuple[str, Any]] = field(default_factory=list)
+    grpc_channel_args: list[tuple[str, Any]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if grpc is None or service_pb2 is None or service_pb2_grpc is None:
@@ -198,7 +199,7 @@ class KserveV2GrpcClient:
         endpoint = _resolve_grpc_endpoint(
             base_url=self.base_url,
         )
-        channel_options: List[Tuple[str, Any]] = [
+        channel_options: list[tuple[str, Any]] = [
             ("grpc.max_send_message_length", self.max_message_bytes),
             ("grpc.max_receive_message_length", self.max_message_bytes),
         ]
@@ -281,7 +282,7 @@ class KserveV2GrpcClient:
         inputs: Mapping[str, np.ndarray],
         output_names: list[str],
         request_parameters: Mapping[str, Any] | None = None,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         _batch_size = next(iter(inputs.values())).shape[0] if inputs else 0
 
         if _log.isEnabledFor(logging.DEBUG):
@@ -359,7 +360,7 @@ class KserveV2GrpcClient:
             _t_deser_start = time.time()
             _t_deser_mono = time.monotonic()
 
-        decoded_outputs: Dict[str, np.ndarray] = {}
+        decoded_outputs: dict[str, np.ndarray] = {}
 
         if self.use_binary_data:
             if len(response.raw_output_contents) != len(response.outputs):

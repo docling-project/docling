@@ -1,7 +1,7 @@
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Set, Union
+from typing import Union
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -47,5 +47,5 @@ class NoOpBackend(AbstractDocumentBackend):
         return False
 
     @classmethod
-    def supported_formats(cls) -> Set[InputFormat]:
+    def supported_formats(cls) -> set[InputFormat]:
         return set(InputFormat)

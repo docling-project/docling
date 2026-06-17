@@ -6,7 +6,6 @@ from docling.datamodel.extraction_options import ExtractionPromptStyle
 from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
 from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_4_1_TRANSFORMERS,
-    NU_EXTRACT_2B_TRANSFORMERS,
 )
 from docling.models.extraction.prompt_utils import _build_extraction_prompt
 

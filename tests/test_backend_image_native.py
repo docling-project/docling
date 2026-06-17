@@ -1,7 +1,6 @@
 from io import BytesIO
 from unittest.mock import MagicMock
 
-import pytest
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from PIL import Image
 

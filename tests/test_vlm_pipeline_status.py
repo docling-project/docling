@@ -19,7 +19,6 @@ from docling.datamodel.base_models import (
     VlmStopReason,
 )
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import VlmPipelineOptions
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
 pytestmark = pytest.mark.ml_vlm

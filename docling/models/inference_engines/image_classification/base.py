@@ -9,11 +9,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
-    List,
     Literal,
     Optional,
-    Type,
     get_args,
     get_origin,
 )
@@ -57,7 +54,7 @@ class BaseImageClassificationEngineOptions(BaseModel):
     )
 
     _registry: ClassVar[
-        Dict[ImageClassificationEngineType, Type[BaseImageClassificationEngineOptions]]
+        dict[ImageClassificationEngineType, type[BaseImageClassificationEngineOptions]]
     ] = {}
 
     @classmethod
@@ -112,7 +109,7 @@ class ImageClassificationEngineInput(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     image: Image = Field(description="PIL image to run inference on")
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Optional metadata that is echoed back in the output",
     )
@@ -121,15 +118,15 @@ class ImageClassificationEngineInput(BaseModel):
 class ImageClassificationEngineOutput(BaseModel):
     """Output returned by image-classification engines."""
 
-    label_ids: List[int] = Field(
+    label_ids: list[int] = Field(
         default_factory=list,
         description="Predicted class indices sorted by confidence descending",
     )
-    scores: List[float] = Field(
+    scores: list[float] = Field(
         default_factory=list,
         description="Confidence scores sorted descending",
     )
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Optional metadata echoed back from the input or engine",
     )
@@ -159,12 +156,12 @@ class BaseImageClassificationEngine(ABC):
 
     @abstractmethod
     def predict_batch(
-        self, input_batch: List[ImageClassificationEngineInput]
-    ) -> List[ImageClassificationEngineOutput]:
+        self, input_batch: list[ImageClassificationEngineInput]
+    ) -> list[ImageClassificationEngineOutput]:
         """Run inference on a batch of inputs."""
 
     @abstractmethod
-    def get_label_mapping(self) -> Dict[int, str]:
+    def get_label_mapping(self) -> dict[int, str]:
         """Get the label mapping for this model.
 
         Returns:
@@ -185,8 +182,8 @@ class BaseImageClassificationEngine(ABC):
     def __call__(
         self,
         input_data: ImageClassificationEngineInput
-        | List[ImageClassificationEngineInput],
-    ) -> ImageClassificationEngineOutput | List[ImageClassificationEngineOutput]:
+        | list[ImageClassificationEngineInput],
+    ) -> ImageClassificationEngineOutput | list[ImageClassificationEngineOutput]:
         if not self._initialized:
             _log.debug("Initializing %s for call", type(self).__name__)
             self.initialize()

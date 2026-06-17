@@ -9,7 +9,7 @@ This module defines:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Set
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -67,7 +67,7 @@ class EngineModelConfig(BaseModel):
         description="Override torch dtype for this engine (e.g., 'bfloat16')",
     )
 
-    extra_config: Dict[str, Any] = Field(
+    extra_config: dict[str, Any] = Field(
         default_factory=dict, description="Additional engine-specific configuration"
     )
 
@@ -97,12 +97,12 @@ class ApiModelConfig(BaseModel):
     For API engines, configuration is simpler - just params to send.
     """
 
-    params: Dict[str, Any] = Field(
+    params: dict[str, Any] = Field(
         default_factory=dict,
         description="API parameters (model name, max_tokens, etc.)",
     )
 
-    def merge_with(self, base_params: Dict[str, Any]) -> ApiModelConfig:
+    def merge_with(self, base_params: dict[str, Any]) -> ApiModelConfig:
         """Merge with base parameters.
 
         Args:
@@ -143,15 +143,15 @@ class VlmModelSpec(BaseModel):
         description="Expected response format from the model"
     )
 
-    supported_engines: Set[VlmEngineType] | None = Field(
+    supported_engines: set[VlmEngineType] | None = Field(
         default=None, description="Set of supported engines (None = all supported)"
     )
 
-    engine_overrides: Dict[VlmEngineType, EngineModelConfig] = Field(
+    engine_overrides: dict[VlmEngineType, EngineModelConfig] = Field(
         default_factory=dict, description="Engine-specific configuration overrides"
     )
 
-    api_overrides: Dict[VlmEngineType, ApiModelConfig] = Field(
+    api_overrides: dict[VlmEngineType, ApiModelConfig] = Field(
         default_factory=dict, description="API-specific configuration overrides"
     )
 
@@ -159,7 +159,7 @@ class VlmModelSpec(BaseModel):
         default=False, description="Whether to trust remote code for this model"
     )
 
-    stop_strings: List[str] = Field(
+    stop_strings: list[str] = Field(
         default_factory=list, description="Stop strings for generation"
     )
 
@@ -200,7 +200,7 @@ class VlmModelSpec(BaseModel):
             return override.revision or self.revision
         return self.revision
 
-    def get_api_params(self, engine_type: VlmEngineType) -> Dict[str, Any]:
+    def get_api_params(self, engine_type: VlmEngineType) -> dict[str, Any]:
         """Get API parameters for a specific engine.
 
         Args:
@@ -339,7 +339,7 @@ class ObjectDetectionModelSpec(BaseModel):
 
     revision: str = Field(default="main", description="Default model revision")
 
-    engine_overrides: Dict[ObjectDetectionEngineType, EngineModelConfig] = Field(
+    engine_overrides: dict[ObjectDetectionEngineType, EngineModelConfig] = Field(
         default_factory=dict,
         description="Engine-specific configuration overrides",
     )
@@ -403,7 +403,7 @@ class ImageClassificationModelSpec(BaseModel):
 
     revision: str = Field(default="main", description="Default model revision")
 
-    engine_overrides: Dict[ImageClassificationEngineType, EngineModelConfig] = Field(
+    engine_overrides: dict[ImageClassificationEngineType, EngineModelConfig] = Field(
         default_factory=dict,
         description="Engine-specific configuration overrides",
     )
@@ -463,12 +463,12 @@ class StageModelPreset(BaseModel):
         description="Default engine to use with this preset",
     )
 
-    stage_options: Dict[str, Any] = Field(
+    stage_options: dict[str, Any] = Field(
         default_factory=dict, description="Additional stage-specific options"
     )
 
     @property
-    def supported_engines(self) -> Set[VlmEngineType]:
+    def supported_engines(self) -> set[VlmEngineType]:
         """Get supported engines from model spec."""
         if self.model_spec.supported_engines is None:
             return set(VlmEngineType)
@@ -495,7 +495,7 @@ class StagePresetMixin:
 
     # Class variable to store presets for this specific stage
     # Note: Each subclass gets its own _presets dict via __init_subclass__
-    _presets: ClassVar[Dict[str, StageModelPreset]]
+    _presets: ClassVar[dict[str, StageModelPreset]]
 
     def __init_subclass__(cls, **kwargs):
         """Initialize each subclass with its own preset registry.
@@ -546,7 +546,7 @@ class StagePresetMixin:
         return cls._presets[preset_id]
 
     @classmethod
-    def list_presets(cls) -> List[StageModelPreset]:
+    def list_presets(cls) -> list[StageModelPreset]:
         """List all presets for this stage.
 
         Returns:
@@ -555,7 +555,7 @@ class StagePresetMixin:
         return list(cls._presets.values())
 
     @classmethod
-    def list_preset_ids(cls) -> List[str]:
+    def list_preset_ids(cls) -> list[str]:
         """List all preset IDs for this stage.
 
         Returns:
@@ -564,7 +564,7 @@ class StagePresetMixin:
         return list(cls._presets.keys())
 
     @classmethod
-    def get_preset_info(cls) -> List[Dict[str, str]]:
+    def get_preset_info(cls) -> list[dict[str, str]]:
         """Get summary info for all presets (useful for CLI).
 
         Returns:
@@ -662,7 +662,7 @@ class ObjectDetectionStagePreset(BaseModel):
         default=ObjectDetectionEngineType.ONNXRUNTIME,
         description="Default inference engine to use",
     )
-    stage_options: Dict[str, Any] = Field(
+    stage_options: dict[str, Any] = Field(
         default_factory=dict, description="Additional stage-specific defaults"
     )
 
@@ -670,7 +670,7 @@ class ObjectDetectionStagePreset(BaseModel):
 class ObjectDetectionStagePresetMixin:
     """Mixin to enable preset loading for object detection stages."""
 
-    _presets: ClassVar[Dict[str, ObjectDetectionStagePreset]]
+    _presets: ClassVar[dict[str, ObjectDetectionStagePreset]]
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -695,15 +695,15 @@ class ObjectDetectionStagePresetMixin:
         return cls._presets[preset_id]
 
     @classmethod
-    def list_presets(cls) -> List[ObjectDetectionStagePreset]:
+    def list_presets(cls) -> list[ObjectDetectionStagePreset]:
         return list(cls._presets.values())
 
     @classmethod
-    def list_preset_ids(cls) -> List[str]:
+    def list_preset_ids(cls) -> list[str]:
         return list(cls._presets.keys())
 
     @classmethod
-    def get_preset_info(cls) -> List[Dict[str, str]]:
+    def get_preset_info(cls) -> list[dict[str, str]]:
         return [
             {
                 "preset_id": p.preset_id,
@@ -723,7 +723,6 @@ class ObjectDetectionStagePresetMixin:
         **overrides: Any,
     ):
         from docling.datamodel.object_detection_engine_options import (
-            ApiKserveV2ObjectDetectionEngineOptions,
             OnnxRuntimeObjectDetectionEngineOptions,
             TransformersObjectDetectionEngineOptions,
         )
@@ -772,7 +771,7 @@ class ImageClassificationStagePreset(BaseModel):
         default=ImageClassificationEngineType.TRANSFORMERS,
         description="Default inference engine to use",
     )
-    stage_options: Dict[str, Any] = Field(
+    stage_options: dict[str, Any] = Field(
         default_factory=dict, description="Additional stage-specific defaults"
     )
 
@@ -780,7 +779,7 @@ class ImageClassificationStagePreset(BaseModel):
 class ImageClassificationStagePresetMixin:
     """Mixin to enable preset loading for image-classification stages."""
 
-    _presets: ClassVar[Dict[str, ImageClassificationStagePreset]]
+    _presets: ClassVar[dict[str, ImageClassificationStagePreset]]
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -805,15 +804,15 @@ class ImageClassificationStagePresetMixin:
         return cls._presets[preset_id]
 
     @classmethod
-    def list_presets(cls) -> List[ImageClassificationStagePreset]:
+    def list_presets(cls) -> list[ImageClassificationStagePreset]:
         return list(cls._presets.values())
 
     @classmethod
-    def list_preset_ids(cls) -> List[str]:
+    def list_preset_ids(cls) -> list[str]:
         return list(cls._presets.keys())
 
     @classmethod
-    def get_preset_info(cls) -> List[Dict[str, str]]:
+    def get_preset_info(cls) -> list[dict[str, str]]:
         return [
             {
                 "preset_id": p.preset_id,
@@ -833,7 +832,6 @@ class ImageClassificationStagePresetMixin:
         **overrides: Any,
     ):
         from docling.datamodel.image_classification_engine_options import (
-            ApiKserveV2ImageClassificationEngineOptions,
             OnnxRuntimeImageClassificationEngineOptions,
             TransformersImageClassificationEngineOptions,
         )

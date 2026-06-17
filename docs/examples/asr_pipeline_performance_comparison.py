@@ -162,7 +162,7 @@ def main():
         has_mps = False
 
     try:
-        import mlx_whisper
+        import mlx_whisper  # noqa: F401
 
         has_mlx_whisper = True
     except ImportError:

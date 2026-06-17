@@ -1,12 +1,10 @@
 import sys
 from pathlib import Path
-from typing import List
 
 import pytest
-from pydantic.type_adapter import R
 
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import ConversionResult, DoclingDocument
+from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     EasyOcrOptions,
     OcrMacOptions,
@@ -48,7 +46,7 @@ def get_converter(ocr_options: OcrOptions):
 def test_e2e_webp_conversions():
     webp_paths = get_webp_paths()
 
-    engines: List[OcrOptions] = [
+    engines: list[OcrOptions] = [
         EasyOcrOptions(),
         TesseractOcrOptions(),
         TesseractCliOcrOptions(),

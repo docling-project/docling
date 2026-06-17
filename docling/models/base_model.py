@@ -1,11 +1,10 @@
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import Any, Generic, Optional, Protocol, Type, Union
+from typing import Any, Generic, Optional, Protocol, Union
 
 import numpy as np
 from docling_core.types.doc import (
-    BoundingBox,
     DocItem,
     DoclingDocument,
     NodeItem,
@@ -30,7 +29,7 @@ from docling.datamodel.settings import settings
 
 class BaseModelWithOptions(Protocol):
     @classmethod
-    def get_options_type(cls) -> Type[BaseOptions]: ...
+    def get_options_type(cls) -> type[BaseOptions]: ...
 
     def __init__(self, *, options: BaseOptions, **kwargs): ...
 

@@ -10,7 +10,6 @@ from docling_core.types.doc.page import (
     PdfHyperlink,
     SegmentedPdfPage,
 )
-from pydantic import AnyUrl
 
 from docling.datamodel.base_models import Page
 from docling.models.stages.page_assemble.page_assemble_model import (
@@ -132,7 +131,6 @@ class TestSanitizeTextLigatures:
 
     def test_regex_matches_new_codepoints(self, model):
         """Verify the regex actually matches U+0132, U+0133, U+F0A0."""
-        import re
 
         from docling.models.stages.page_assemble.page_assemble_model import _LIGATURE_RE
 

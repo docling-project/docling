@@ -1,12 +1,9 @@
 """API-based VLM inference engine for remote services."""
 
-import asyncio
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import TYPE_CHECKING, List, Optional
-
-from PIL.Image import Image
+from typing import TYPE_CHECKING, Optional
 
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.exceptions import OperationNotAllowed
@@ -19,7 +16,6 @@ from docling.models.inference_engines.vlm.base import (
     VlmEngineInput,
     VlmEngineOutput,
 )
-from docling.models.utils.generation_utils import GenerationStopper
 from docling.utils.api_image_request import (
     api_image_request,
     api_image_request_streaming,
@@ -98,7 +94,7 @@ class ApiVlmEngine(BaseVlmEngine):
         self._initialized = True
         _log.info("API runtime initialized")
 
-    def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
+    def predict_batch(self, input_batch: list[VlmEngineInput]) -> list[VlmEngineOutput]:
         """Run inference on a batch of inputs using concurrent API requests.
 
         This method processes multiple images concurrently using a thread pool,

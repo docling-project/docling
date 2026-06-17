@@ -1,7 +1,6 @@
 """Opt-in integration test for KServe v2 OCR."""
 
 import os
-import socket
 from pathlib import Path
 
 import pytest

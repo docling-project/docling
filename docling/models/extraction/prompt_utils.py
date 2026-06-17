@@ -21,7 +21,7 @@ def build_nuextract_inputs(
     Requires qwen-vl-utils for vision processing.
     """
     try:
-        from qwen_vl_utils import process_vision_info
+        from qwen_vl_utils import process_vision_info  # noqa: F401
     except ImportError:
         raise ImportError(
             "qwen-vl-utils is required for NuExtract extraction. "

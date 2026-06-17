@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
 
@@ -7,7 +7,7 @@ _log = logging.getLogger(__name__)
 
 
 def decide_device(
-    accelerator_device: str, supported_devices: Optional[List[AcceleratorDevice]] = None
+    accelerator_device: str, supported_devices: Optional[list[AcceleratorDevice]] = None
 ) -> str:
     r"""
     Resolve the device based on the acceleration options and the available devices in the system.

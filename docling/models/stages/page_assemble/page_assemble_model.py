@@ -2,9 +2,8 @@ import logging
 import re
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
-import numpy as np
 from docling_core.types.doc import BoundingBox
 from pydantic import AnyUrl, BaseModel, ValidationError
 
@@ -28,7 +27,7 @@ _log = logging.getLogger(__name__)
 # Covers the Unicode Alphabetic Presentation Forms block (U+FB00-U+FB06),
 # the Latin capital/small ligature IJ (U+0132/U+0133), and the Private-Use
 # Area character U+F0A0 (emitted by some PDF fonts as a spurious glyph).
-_LIGATURE_MAP: Dict[str, str] = {
+_LIGATURE_MAP: dict[str, str] = {
     "\ufb00": "ff",  # ﬀ Latin small ligature ff
     "\ufb01": "fi",  # ﬁ Latin small ligature fi
     "\ufb02": "fl",  # ﬂ Latin small ligature fl
@@ -79,7 +78,7 @@ class PageAssembleModel(BasePageModel):
 
         # Accumulate coverage per URI — a single hyperlink may span multiple
         # annotation rectangles (e.g. a URL that wraps across lines).
-        coverage_by_uri: Dict[str, float] = {}
+        coverage_by_uri: dict[str, float] = {}
 
         for hl in page.parsed_page.hyperlinks:
             if hl.uri is None:
@@ -163,9 +162,9 @@ class PageAssembleModel(BasePageModel):
 
                     # assembles some JSON output page by page.
 
-                    elements: List[PageElement] = []
-                    headers: List[PageElement] = []
-                    body: List[PageElement] = []
+                    elements: list[PageElement] = []
+                    headers: list[PageElement] = []
+                    body: list[PageElement] = []
 
                     for cluster in page.predictions.layout.clusters:
                         # _log.info("Cluster label seen:", cluster.label)

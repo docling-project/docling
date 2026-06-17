@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.models.inference_engines.common import HfVisionModelMixin

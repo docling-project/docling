@@ -3,9 +3,9 @@ import logging
 import time
 import traceback
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Any, Callable, List, Optional
+from typing import Any, Optional
 
 from docling_core.types.doc import NodeItem
 
@@ -21,7 +21,6 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.chart_extraction_options import (
     ChartExtractionModelKind,
-    ChartExtractionModelOptions,
 )
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import (
@@ -50,8 +49,8 @@ class BasePipeline(ABC):
     def __init__(self, pipeline_options: PipelineOptions):
         self.pipeline_options = pipeline_options
         self.keep_images = False
-        self.build_pipe: List[Callable] = []
-        self.enrichment_pipe: List[GenericEnrichmentModel[Any]] = []
+        self.build_pipe: list[Callable] = []
+        self.enrichment_pipe: list[GenericEnrichmentModel[Any]] = []
 
         self.artifacts_path: Optional[Path] = None
         if pipeline_options.artifacts_path is not None:

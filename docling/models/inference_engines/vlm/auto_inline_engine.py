@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import platform
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING, Union
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.vlm_engine_options import (
@@ -23,7 +23,7 @@ from docling.models.inference_engines.vlm.base import (
 from docling.utils.accelerator_utils import decide_device
 
 if TYPE_CHECKING:
-    from docling.datamodel.stage_model_specs import EngineModelConfig, VlmModelSpec
+    from docling.datamodel.stage_model_specs import VlmModelSpec
 
 _log = logging.getLogger(__name__)
 
@@ -102,7 +102,7 @@ class AutoInlineVlmEngine(BaseVlmEngine):
 
             if has_mlx_export:
                 try:
-                    import mlx_vlm
+                    import mlx_vlm  # noqa: F401
 
                     _log.info(
                         "Selected MLX engine (Apple Silicon with explicit MLX export)"
@@ -134,7 +134,7 @@ class AutoInlineVlmEngine(BaseVlmEngine):
 
             if has_vllm_support:
                 try:
-                    import vllm
+                    import vllm  # noqa: F401
 
                     _log.info("Selected vLLM engine (CUDA + prefer_vllm=True)")
                     return VlmEngineType.VLLM
@@ -223,7 +223,7 @@ class AutoInlineVlmEngine(BaseVlmEngine):
             f"Auto-inline engine initialized with {self.selected_engine_type.value}"
         )
 
-    def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
+    def predict_batch(self, input_batch: list[VlmEngineInput]) -> list[VlmEngineOutput]:
         """Run inference on a batch of inputs using the selected engine.
 
         Args:

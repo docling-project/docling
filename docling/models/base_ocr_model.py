@@ -3,7 +3,7 @@ import logging
 from abc import abstractmethod
 from collections.abc import Iterable
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Type
+from typing import Optional
 
 import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin
@@ -31,13 +31,12 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         accelerator_options: AcceleratorOptions,
     ):
         # Make sure any delay/error from import occurs on ocr model init and not first use
-        from scipy.ndimage import binary_dilation, find_objects, label
 
         self.enabled = enabled
         self.options = options
 
     # Computes the optimum amount and coordinates of rectangles to OCR on a given page
-    def get_ocr_rects(self, page: Page) -> List[BoundingBox]:
+    def get_ocr_rects(self, page: Page) -> list[BoundingBox]:
         from scipy.ndimage import binary_dilation, find_objects, label
 
         BITMAP_COVERAGE_TRESHOLD = 0.75
@@ -64,7 +63,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             np_image = binary_dilation(np_image > 0, structure=structure)
 
             # Find the connected components
-            labeled_image, num_features = label(
+            labeled_image, _num_features = label(
                 np_image > 0
             )  # Label black (0 value) regions
 
@@ -114,8 +113,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
     # Filters OCR cells by dropping any OCR cell that intersects with an existing programmatic cell.
     def _filter_ocr_cells(
-        self, ocr_cells: List[TextCell], programmatic_cells: List[TextCell]
-    ) -> List[TextCell]:
+        self, ocr_cells: list[TextCell], programmatic_cells: list[TextCell]
+    ) -> list[TextCell]:
         # Create R-tree index for programmatic cells
         p = index.Property()
         p.dimension = 2
@@ -139,7 +138,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         return filtered_ocr_cells
 
-    def post_process_cells(self, ocr_cells: List[TextCell], page: Page) -> None:
+    def post_process_cells(self, ocr_cells: list[TextCell], page: Page) -> None:
         r"""
         Post-process the OCR cells and update the page object.
         Updates parsed_page.textline_cells directly since page.cells is now read-only.
@@ -171,8 +170,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             page.parsed_page.has_chars = len(page.parsed_page.char_cells) > 0
 
     def _combine_cells(
-        self, existing_cells: List[TextCell], ocr_cells: List[TextCell]
-    ) -> List[TextCell]:
+        self, existing_cells: list[TextCell], ocr_cells: list[TextCell]
+    ) -> list[TextCell]:
         """Combine existing and OCR cells with filtering and re-indexing."""
         if self.options.force_full_page_ocr:
             combined = ocr_cells
@@ -239,5 +238,5 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
     @classmethod
     @abstractmethod
-    def get_options_type(cls) -> Type[OcrOptions]:
+    def get_options_type(cls) -> type[OcrOptions]:
         pass

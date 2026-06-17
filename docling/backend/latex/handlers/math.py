@@ -1,8 +1,9 @@
 import re
-from typing import TYPE_CHECKING, Callable, List, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Any
+    pass
 
 from docling_core.types.doc.document import DocItemLabel, DoclingDocument, NodeItem
 from pylatexenc.latexwalker import LatexMathNode
@@ -20,7 +21,7 @@ class MathHandlerMixin:
         node: LatexMathNode,
         doc: DoclingDocument,
         parent: NodeItem | None,
-        text_buffer: List[str],
+        text_buffer: list[str],
         flush_fn: Callable[[], None],
     ):
         is_display = getattr(node, "displaytype", None) == "display"

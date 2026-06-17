@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import numpy as np
 from pydantic import BaseModel
 
 # KServe v2 protocol uses the same data type names as Triton Inference Server.
-KSERVE_V2_NUMPY_DATATYPES: Dict[str, np.dtype[Any]] = {
+KSERVE_V2_NUMPY_DATATYPES: dict[str, np.dtype[Any]] = {
     "BOOL": np.dtype(np.bool_),
     "UINT8": np.dtype(np.uint8),
     "UINT16": np.dtype(np.uint16),
@@ -26,7 +26,7 @@ KSERVE_V2_NUMPY_DATATYPES: Dict[str, np.dtype[Any]] = {
     ),  # Variable-length byte strings (used for TYPE_STRING in Triton)
 }
 
-NUMPY_KSERVE_V2_DATATYPES: Dict[np.dtype[Any], str] = {
+NUMPY_KSERVE_V2_DATATYPES: dict[np.dtype[Any], str] = {
     dtype: name for name, dtype in KSERVE_V2_NUMPY_DATATYPES.items()
 }
 
@@ -36,14 +36,14 @@ class KserveV2ModelTensorSpec(BaseModel):
 
     name: str
     datatype: str
-    shape: List[int | str]
+    shape: list[int | str]
 
 
 class KserveV2ModelMetadataResponse(BaseModel):
     """KServe v2 model metadata response payload."""
 
     name: str
-    versions: Optional[List[str]] = None
+    versions: Optional[list[str]] = None
     platform: Optional[str] = None
-    inputs: List[KserveV2ModelTensorSpec]
-    outputs: List[KserveV2ModelTensorSpec]
+    inputs: list[KserveV2ModelTensorSpec]
+    outputs: list[KserveV2ModelTensorSpec]

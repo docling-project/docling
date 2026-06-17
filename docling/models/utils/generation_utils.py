@@ -3,7 +3,6 @@ import logging
 import re
 import sys
 from abc import abstractmethod
-from typing import List
 
 _log = logging.getLogger(__name__)
 
@@ -51,7 +50,7 @@ class DocTagsRepetitionStopper(GenerationStopper):
         )
 
     # --- small helper ---
-    def _regular(self, vals: List[int]) -> bool:
+    def _regular(self, vals: list[int]) -> bool:
         """3+ strictly increasing values with ~regular spacing (±20%)."""
         if len(vals) < 3:
             return False
@@ -74,7 +73,7 @@ class DocTagsRepetitionStopper(GenerationStopper):
         prev_tag = prev_text = None
         run = []  # list of (x,y,w,h)
 
-        def run_repetitive(boxes: List[tuple]) -> bool:
+        def run_repetitive(boxes: list[tuple]) -> bool:
             if len(boxes) < 3:
                 return False
             # duplicates?

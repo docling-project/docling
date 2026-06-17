@@ -3,7 +3,7 @@ import logging
 import warnings
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import Set, Union
+from typing import Union
 
 from docling_core.types.doc import DoclingDocument, DocumentOrigin, TableCell, TableData
 
@@ -46,7 +46,7 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         self.path_or_stream = None
 
     @classmethod
-    def supported_formats(cls) -> Set[InputFormat]:
+    def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.CSV}
 
     def convert(self) -> DoclingDocument:

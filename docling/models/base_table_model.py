@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
-from typing import Type
 
 from docling.datamodel.base_models import Page, TableStructurePrediction
 from docling.datamodel.document import ConversionResult
@@ -17,7 +16,7 @@ class BaseTableStructureModel(BasePageModel, BaseModelWithOptions, ABC):
 
     @classmethod
     @abstractmethod
-    def get_options_type(cls) -> Type[BaseTableStructureOptions]:
+    def get_options_type(cls) -> type[BaseTableStructureOptions]:
         """Return the options type supported by this table model."""
 
     @abstractmethod

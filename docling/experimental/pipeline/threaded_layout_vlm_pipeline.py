@@ -10,7 +10,7 @@ from __future__ import annotations
 import itertools
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Optional, Union, cast
 
 from docling_core.types.doc import DoclingDocument
 from docling_core.types.doc.document import DocTagsDocument
@@ -244,7 +244,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
 
         # Initialize pages
         start_page, end_page = conv_res.input.limits.page_range
-        pages: List[Page] = []
+        pages: list[Page] = []
         images_scale = self.pipeline_options.images_scale
         for i in range(conv_res.input.page_count):
             if start_page - 1 <= i <= end_page - 1:
@@ -424,8 +424,8 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                 image_list.append(page.image)
                 doctags_list.append(predicted_doctags)
 
-        doctags_list_c = cast(List[Union[Path, str]], doctags_list)
-        image_list_c = cast(List[Union[Path, PILImage.Image]], image_list)
+        doctags_list_c = cast(list[Union[Path, str]], doctags_list)
+        image_list_c = cast(list[Union[Path, PILImage.Image]], image_list)
         doctags_doc = DocTagsDocument.from_doctags_and_image_pairs(
             doctags_list_c, image_list_c
         )

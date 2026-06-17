@@ -23,7 +23,6 @@ from openpyxl import load_workbook
 from openpyxl.chartsheet.chartsheet import Chartsheet
 from openpyxl.drawing.image import Image
 from openpyxl.drawing.spreadsheet_drawing import OneCellAnchor, TwoCellAnchor
-from openpyxl.styles import PatternFill
 from openpyxl.worksheet.worksheet import Worksheet
 from PIL import Image as PILImage
 from pydantic import BaseModel, Field, NonNegativeInt, PositiveInt

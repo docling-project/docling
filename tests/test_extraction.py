@@ -9,7 +9,6 @@ import pytest
 from pydantic import BaseModel, Field
 
 from docling.datamodel.base_models import InputFormat
-from docling.document_converter import DocumentConverter
 from docling.document_extractor import DocumentExtractor
 
 IS_CI = bool(os.getenv("CI"))

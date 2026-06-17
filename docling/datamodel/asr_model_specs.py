@@ -1,18 +1,12 @@
 import logging
 from enum import Enum
 
-from pydantic import (
-    AnyUrl,
-)
-
-from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.pipeline_options_asr_model import (
     # AsrResponseFormat,
     # ApiAsrOptions,
     InferenceAsrFramework,
     InlineAsrMlxWhisperOptions,
     InlineAsrNativeWhisperOptions,
-    TransformersModelType,
 )
 
 _log = logging.getLogger(__name__)
@@ -35,7 +29,7 @@ def _get_whisper_tiny_model():
 
     # Check if mlx-whisper is available
     try:
-        import mlx_whisper  # type: ignore
+        import mlx_whisper  # type: ignore  # noqa: F401
 
         has_mlx_whisper = True
     except ImportError:
@@ -87,7 +81,7 @@ def _get_whisper_small_model():
 
     # Check if mlx-whisper is available
     try:
-        import mlx_whisper  # type: ignore
+        import mlx_whisper  # type: ignore  # noqa: F401
 
         has_mlx_whisper = True
     except ImportError:
@@ -139,7 +133,7 @@ def _get_whisper_medium_model():
 
     # Check if mlx-whisper is available
     try:
-        import mlx_whisper  # type: ignore
+        import mlx_whisper  # type: ignore  # noqa: F401
 
         has_mlx_whisper = True
     except ImportError:
@@ -191,7 +185,7 @@ def _get_whisper_base_model():
 
     # Check if mlx-whisper is available
     try:
-        import mlx_whisper  # type: ignore
+        import mlx_whisper  # type: ignore  # noqa: F401
 
         has_mlx_whisper = True
     except ImportError:
@@ -243,7 +237,7 @@ def _get_whisper_large_model():
 
     # Check if mlx-whisper is available
     try:
-        import mlx_whisper  # type: ignore
+        import mlx_whisper  # type: ignore  # noqa: F401
 
         has_mlx_whisper = True
     except ImportError:
@@ -295,7 +289,7 @@ def _get_whisper_turbo_model():
 
     # Check if mlx-whisper is available
     try:
-        import mlx_whisper  # type: ignore
+        import mlx_whisper  # type: ignore  # noqa: F401
 
         has_mlx_whisper = True
     except ImportError:

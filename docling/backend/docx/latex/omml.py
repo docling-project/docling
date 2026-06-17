@@ -9,7 +9,8 @@ Adapted from https://github.com/xiilei/dwml/blob/master/dwml/omml.py on 23/01/20
 """
 
 import logging
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 import lxml.etree as ET
 from lxml.etree import _Element

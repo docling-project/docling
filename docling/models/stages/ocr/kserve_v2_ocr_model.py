@@ -3,7 +3,7 @@
 import logging
 from collections.abc import Iterable
 from pathlib import Path
-from typing import List, Optional, Type
+from typing import Optional
 
 import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin
@@ -137,7 +137,7 @@ class KserveV2OcrModel(BaseOcrModel):
         txts: np.ndarray,
         scores: np.ndarray,
         ocr_rect: BoundingBox,
-    ) -> List[TextCell]:
+    ) -> list[TextCell]:
         """Convert KServe v2 OCR outputs to TextCell objects.
 
         Args:
@@ -149,7 +149,7 @@ class KserveV2OcrModel(BaseOcrModel):
         Returns:
             List of TextCell objects with proper coordinate transformation.
         """
-        cells: List[TextCell] = []
+        cells: list[TextCell] = []
 
         for idx, (box, txt, score) in enumerate(zip(boxes, txts, scores)):
             # box format: [[x0,y0], [x1,y1], [x2,y2], [x3,y3]]
@@ -209,7 +209,7 @@ class KserveV2OcrModel(BaseOcrModel):
                 # Get OCR rectangles (inherited from BaseOcrModel)
                 ocr_rects = self.get_ocr_rects(page)
 
-                all_ocr_cells: List[TextCell] = []
+                all_ocr_cells: list[TextCell] = []
                 for rect_idx, ocr_rect in enumerate(ocr_rects):
                     # Skip zero area boxes
                     if ocr_rect.area() == 0:
@@ -265,7 +265,7 @@ class KserveV2OcrModel(BaseOcrModel):
             yield page
 
     @classmethod
-    def get_options_type(cls) -> Type[OcrOptions]:
+    def get_options_type(cls) -> type[OcrOptions]:
         """Get the options type for this OCR model.
 
         Returns:

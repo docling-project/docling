@@ -6,7 +6,7 @@ from typing import Optional
 from docling.datamodel.base_models import ConversionStatus, ErrorItem
 from docling.datamodel.document import InputDocument
 from docling.datamodel.extraction import ExtractionResult, ExtractionTemplateType
-from docling.datamodel.pipeline_options import BaseOptions, PipelineOptions
+from docling.datamodel.pipeline_options import PipelineOptions
 from docling.datamodel.settings import settings
 
 _log = logging.getLogger(__name__)

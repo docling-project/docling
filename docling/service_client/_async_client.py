@@ -5,33 +5,20 @@ from __future__ import annotations
 import asyncio
 import logging
 import mimetypes
-import re
-import sys
 import time
 import warnings
-from collections.abc import AsyncGenerator, AsyncIterator, Iterable
+from collections.abc import AsyncGenerator, Iterable
 from datetime import datetime, timezone
-from email.utils import parsedate_to_datetime
-from io import BytesIO
-from pathlib import Path, PurePath
-from typing import IO, Any, Literal, TypeVar, cast, overload
-from urllib.parse import urlencode, urlparse
+from pathlib import Path
+from typing import IO, Any, TypeVar, overload
 
 import httpx
-from docling_core.types.doc import DoclingDocument
 from docling_core.types.io import DocumentStream
-from pydantic import ValidationError
 
-from docling.backend.noop_backend import NoOpBackend
 from docling.datamodel.base_models import (
-    ConversionStatus,
-    DoclingComponentType,
-    ErrorItem,
-    FormatToExtensions,
-    InputFormat,
     OutputFormat,
 )
-from docling.datamodel.document import AssembledUnit, ConversionResult, InputDocument
+from docling.datamodel.document import ConversionResult
 from docling.datamodel.service.chunking import (
     HierarchicalChunkerOptions,
     HybridChunkerOptions,
@@ -51,9 +38,7 @@ from docling.datamodel.service.responses import (
     HealthCheckResponse,
     PresignedUrlConvertDocumentResponse,
     PresignedUrlConvertResponse,
-    TaskFailureResult,
     TaskStatusResponse,
-    UsageLimitExceededResponse,
 )
 from docling.datamodel.service.targets import (
     InBodyTarget,
@@ -61,7 +46,7 @@ from docling.datamodel.service.targets import (
     S3Target,
     ZipTarget,
 )
-from docling.datamodel.settings import DocumentLimits, PageRange
+from docling.datamodel.settings import DocumentLimits
 from docling.service_client._scheduler import _run_bounded
 from docling.service_client.client import (
     DEFAULT_MAX_CONCURRENCY,
@@ -73,20 +58,13 @@ from docling.service_client.client import (
     StatusWatcherKind,
     SubmitTarget,
     _BaseDoclingServiceClient,
-    _ResolvedOptions,
     _SourceDescriptor,
 )
 from docling.service_client.exceptions import (
-    ConversionError,
-    ResponseSchemaMismatchError,
-    ResultExpiredError,
-    ResultNotReadyError,
     ServiceError,
     ServiceUnavailableError,
-    TaskExecutionError,
     TaskNotFoundError,
     TaskTimeoutError,
-    UsageLimitExceededError,
 )
 from docling.service_client.job import AsyncConversionJob, _AsyncJobHandlers
 from docling.service_client.watchers import (

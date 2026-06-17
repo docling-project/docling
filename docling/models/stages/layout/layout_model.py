@@ -1,9 +1,8 @@
-import copy
 import logging
 import warnings
 from collections.abc import Sequence
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 from docling_core.types.doc import DocItemLabel
@@ -12,7 +11,7 @@ from PIL import Image
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import BoundingBox, Cluster, LayoutPrediction, Page
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_V2, LayoutModelConfig
+from docling.datamodel.layout_model_specs import LayoutModelConfig
 from docling.datamodel.pipeline_options import LayoutOptions
 from docling.datamodel.settings import settings
 from docling.models.base_layout_model import BaseLayoutModel
@@ -161,7 +160,7 @@ class LayoutModel(BaseLayoutModel):
 
         # Separate valid and invalid pages
         valid_pages = []
-        valid_page_images: List[Union[Image.Image, np.ndarray]] = []
+        valid_page_images: list[Union[Image.Image, np.ndarray]] = []
 
         for page in pages:
             assert page._backend is not None

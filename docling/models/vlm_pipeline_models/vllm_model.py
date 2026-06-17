@@ -3,7 +3,7 @@ import sys
 import time
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 from PIL.Image import Image
@@ -18,7 +18,6 @@ from docling.datamodel.base_models import (
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
-    TransformersPromptStyle,
 )
 from docling.models.base_model import BaseVlmPageModel
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
@@ -169,7 +168,7 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
             )
 
         # --------- Construct LLM kwargs (engine/load-time) ---------
-        llm_kwargs: Dict[str, Any] = {
+        llm_kwargs: dict[str, Any] = {
             "model": str(artifacts_path),
             "model_impl": "transformers",
             "limit_mm_per_prompt": {"image": 1},

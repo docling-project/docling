@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from packaging import version
 
@@ -174,8 +174,8 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
         )
 
     def predict_batch(
-        self, input_batch: List[ObjectDetectionEngineInput]
-    ) -> List[ObjectDetectionEngineOutput]:
+        self, input_batch: list[ObjectDetectionEngineInput]
+    ) -> list[ObjectDetectionEngineOutput]:
         """Run inference on a batch of inputs.
 
         Args:
@@ -212,7 +212,7 @@ class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
         )
 
         # Convert to our output format
-        batch_outputs: List[ObjectDetectionEngineOutput] = []
+        batch_outputs: list[ObjectDetectionEngineOutput] = []
         for input_item, result in zip(input_batch, results):
             batch_outputs.append(
                 self._build_output(

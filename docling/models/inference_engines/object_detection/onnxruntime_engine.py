@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import numpy as np
 
@@ -133,7 +133,7 @@ class OnnxRuntimeObjectDetectionEngine(HfObjectDetectionEngineBase):
             f"ONNX Runtime engine ready (providers={self._session.get_providers()})"
         )
 
-    def _resolve_providers(self) -> List[str]:
+    def _resolve_providers(self) -> list[str]:
         """Resolve ONNX Runtime providers from accelerator and engine options."""
         configured_providers = self.options.providers or ["CPUExecutionProvider"]
         if configured_providers != ["CPUExecutionProvider"]:
@@ -155,8 +155,8 @@ class OnnxRuntimeObjectDetectionEngine(HfObjectDetectionEngineBase):
         return ["CPUExecutionProvider"]
 
     def predict_batch(
-        self, input_batch: List[ObjectDetectionEngineInput]
-    ) -> List[ObjectDetectionEngineOutput]:
+        self, input_batch: list[ObjectDetectionEngineInput]
+    ) -> list[ObjectDetectionEngineOutput]:
         """Run inference on a batch of inputs.
 
         Args:
@@ -196,7 +196,7 @@ class OnnxRuntimeObjectDetectionEngine(HfObjectDetectionEngineBase):
 
         labels_batch, boxes_batch, scores_batch = output_tensors[:3]
 
-        batch_outputs: List[ObjectDetectionEngineOutput] = []
+        batch_outputs: list[ObjectDetectionEngineOutput] = []
         for idx, input_item in enumerate(input_batch):
             batch_outputs.append(
                 self._build_output(

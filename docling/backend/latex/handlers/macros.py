@@ -1,7 +1,8 @@
 import logging
 import re
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from io import BytesIO

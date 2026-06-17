@@ -6,9 +6,7 @@ import logging
 import threading
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, List, Union
-
-from PIL.Image import Image
+from typing import TYPE_CHECKING, Any, Union
 
 from docling.datamodel.vlm_engine_options import MlxVlmEngineOptions
 from docling.models.inference_engines.vlm._utils import (
@@ -20,7 +18,6 @@ from docling.models.inference_engines.vlm.base import (
     VlmEngineInput,
     VlmEngineOutput,
 )
-from docling.models.utils.generation_utils import GenerationStopper
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 
 if TYPE_CHECKING:
@@ -82,9 +79,9 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         _log.info("Initializing MLX VLM inference engine...")
 
         try:
-            from mlx_vlm import load, stream_generate
+            from mlx_vlm import load, stream_generate  # noqa: F401
             from mlx_vlm.prompt_utils import apply_chat_template
-            from mlx_vlm.utils import load_config
+            from mlx_vlm.utils import load_config  # noqa: F401
         except ImportError:
             raise ImportError(
                 "mlx-vlm is not installed. Please install it via `pip install mlx-vlm` "
@@ -146,7 +143,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
         _log.info(f"Loaded MLX model {repo_id} (revision: {revision})")
 
-    def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
+    def predict_batch(self, input_batch: list[VlmEngineInput]) -> list[VlmEngineOutput]:
         """Run inference on a batch of inputs.
 
         Note: MLX models are not thread-safe and use a global lock, so batch
@@ -177,7 +174,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             "(MLX does not support batched inference)"
         )
 
-        outputs: List[VlmEngineOutput] = []
+        outputs: list[VlmEngineOutput] = []
 
         # MLX models are not thread-safe - use global lock to serialize access
         with _MLX_GLOBAL_LOCK:

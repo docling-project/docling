@@ -15,13 +15,9 @@
 # ## Example code
 # %%
 
-import datetime
 import logging
 import time
 from pathlib import Path
-
-import numpy as np
-from pydantic import TypeAdapter
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ConversionStatus, InputFormat
@@ -30,7 +26,6 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.threaded_standard_pdf_pipeline import ThreadedStandardPdfPipeline
-from docling.utils.profiling import ProfilingItem
 
 _log = logging.getLogger(__name__)
 

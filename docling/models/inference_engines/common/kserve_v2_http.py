@@ -10,8 +10,9 @@ from __future__ import annotations
 import json
 import logging
 import time
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Optional
 
 import numpy as np
 import requests
@@ -41,7 +42,7 @@ def _tensor_kserve_dtype(tensor: np.ndarray) -> str:
     return kserve_dtype
 
 
-def _encode_input_tensor(name: str, tensor: np.ndarray) -> Dict[str, Any]:
+def _encode_input_tensor(name: str, tensor: np.ndarray) -> dict[str, Any]:
     kserve_dtype = _tensor_kserve_dtype(tensor)
 
     return {
@@ -54,7 +55,7 @@ def _encode_input_tensor(name: str, tensor: np.ndarray) -> Dict[str, Any]:
 
 def _encode_binary_input_tensor(
     name: str, tensor: np.ndarray
-) -> tuple[Dict[str, Any], bytes]:
+) -> tuple[dict[str, Any], bytes]:
     kserve_dtype = _tensor_kserve_dtype(tensor)
     if kserve_dtype == "BYTES":
         raw_payload = encode_bytes_tensor(tensor)
@@ -77,15 +78,15 @@ class KserveV2OutputTensor(BaseModel):
 
     name: str
     datatype: str
-    shape: List[int]
-    data: Optional[List[Any]] = None
-    parameters: Optional[Dict[str, Any]] = None
+    shape: list[int]
+    data: Optional[list[Any]] = None
+    parameters: Optional[dict[str, Any]] = None
 
 
 class KserveV2InferResponse(BaseModel):
     """KServe v2 infer response payload."""
 
-    outputs: List[KserveV2OutputTensor]
+    outputs: list[KserveV2OutputTensor]
 
 
 def _decode_output_tensor(raw_output: KserveV2OutputTensor) -> np.ndarray:
@@ -142,9 +143,9 @@ def _build_binary_request(
     inputs: Mapping[str, np.ndarray],
     output_names: list[str],
     request_parameters: Optional[Mapping[str, Any]],
-) -> tuple[Dict[str, str], bytes]:
+) -> tuple[dict[str, str], bytes]:
     raw_inputs: list[bytes] = []
-    payload: Dict[str, Any] = {"inputs": []}
+    payload: dict[str, Any] = {"inputs": []}
     for input_name, tensor in inputs.items():
         encoded_tensor, raw_payload = _encode_binary_input_tensor(
             name=input_name, tensor=np.asarray(tensor)
@@ -318,7 +319,7 @@ class KserveV2HttpClient:
         inputs: Mapping[str, np.ndarray],
         output_names: list[str],
         request_parameters: Optional[Mapping[str, Any]] = None,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """Execute inference request against KServe v2 endpoint.
 
         Args:
@@ -339,7 +340,7 @@ class KserveV2HttpClient:
             _batch_size = next(iter(inputs.values())).shape[0] if inputs else 0
             _t_ser_start = time.time()
             _t_ser_mono = time.monotonic()
-        request_kwargs: Dict[str, Any]
+        request_kwargs: dict[str, Any]
         if self.use_binary_data:
             binary_headers, request_body = _build_binary_request(
                 inputs=inputs,
@@ -351,7 +352,7 @@ class KserveV2HttpClient:
                 "headers": {**dict(self.headers), **binary_headers},
             }
         else:
-            payload: Dict[str, Any] = {
+            payload: dict[str, Any] = {
                 "inputs": [
                     _encode_input_tensor(name=input_name, tensor=tensor)
                     for input_name, tensor in inputs.items()
@@ -403,7 +404,7 @@ class KserveV2HttpClient:
                 f"Invalid inference response from {self.infer_url}: {exc}"
             ) from exc
 
-        decoded_outputs: Dict[str, np.ndarray] = {}
+        decoded_outputs: dict[str, np.ndarray] = {}
         header_len_text = response.headers.get(_INFERENCE_HEADER_CONTENT_LENGTH)
         raw_body = b""
         if self.use_binary_data and header_len_text is not None:

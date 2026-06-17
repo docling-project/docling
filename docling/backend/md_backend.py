@@ -6,7 +6,7 @@ from enum import Enum
 from html import unescape
 from io import BytesIO
 from pathlib import Path
-from typing import Literal, Optional, Union, cast
+from typing import Annotated, Literal, Optional, Union, cast
 
 import marko
 import marko.element
@@ -24,7 +24,7 @@ from docling_core.types.doc import (
 )
 from marko import Markdown
 from pydantic import AnyUrl, BaseModel, Field, TypeAdapter
-from typing_extensions import Annotated, override
+from typing_extensions import override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,

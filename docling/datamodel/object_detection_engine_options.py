@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Literal
+from typing import Literal
 
 from pydantic import Field
 
@@ -30,7 +30,7 @@ class OnnxRuntimeObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
         description="Filename of the ONNX export inside the model repository",
     )
 
-    providers: List[str] = Field(
+    providers: list[str] = Field(
         default_factory=lambda: ["CPUExecutionProvider"],
         description="Ordered list of ONNX Runtime execution providers to try",
     )

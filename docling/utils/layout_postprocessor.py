@@ -3,7 +3,7 @@ import logging
 import sys
 from collections import defaultdict
 
-from docling_core.types.doc import DocItemLabel, Size
+from docling_core.types.doc import DocItemLabel
 from docling_core.types.doc.page import TextCell
 from rtree import index
 

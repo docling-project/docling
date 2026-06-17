@@ -1,11 +1,9 @@
 import sys
 from pathlib import Path
-from typing import List, Tuple
 
 import pytest
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
-from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
@@ -60,7 +58,7 @@ def get_converter(ocr_options: OcrOptions):
 def test_e2e_conversions():
     pdf_paths = get_pdf_paths()
 
-    engines: List[Tuple[OcrOptions, bool]] = [
+    engines: list[tuple[OcrOptions, bool]] = [
         (TesseractOcrOptions(), True),
         (TesseractCliOcrOptions(), True),
         (EasyOcrOptions(), False),

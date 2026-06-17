@@ -20,12 +20,10 @@ from docling.datamodel.pipeline_options import (
     PipelineOptions,
     VlmExtractionPipelineOptions,
 )
-from docling.datamodel.settings import settings
 from docling.models.extraction.transformers_extraction_model import (
     TransformersExtractionModel,
 )
 from docling.pipeline.base_extraction_pipeline import BaseExtractionPipeline
-from docling.utils.accelerator_utils import decide_device
 
 _log = logging.getLogger(__name__)
 
@@ -87,7 +85,7 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
                 prompt = "Extract all text and structured information from this document. Return as JSON."
 
             # Process all images with VLM model
-            start_page, end_page = ext_res.input.limits.page_range
+            start_page, _end_page = ext_res.input.limits.page_range
             for i, image in enumerate(images):
                 # Calculate the actual page number based on the filtered range
                 page_number = start_page + i

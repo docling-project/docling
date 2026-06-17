@@ -1,7 +1,7 @@
 from collections import defaultdict
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -44,7 +44,7 @@ class BaseFormatOption(BaseModel):
     """Base class for format options used by _DocumentConversionInput."""
 
     pipeline_options: PipelineOptions | None = None
-    backend: Type[AbstractDocumentBackend]
+    backend: type[AbstractDocumentBackend]
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 

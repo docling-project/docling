@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import Optional
 
 import numpy as np
 from docling_core.types.doc import CoordOrigin, DocItemLabel
@@ -51,7 +52,7 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
         # Convert engine's string labels to DocItemLabel enums
         self._label_map = self._build_label_map()
 
-    def _build_label_map(self) -> Dict[int, DocItemLabel]:
+    def _build_label_map(self) -> dict[int, DocItemLabel]:
         """Build label mapping from engine's label names to DocItemLabel enums.
 
         Raises:
@@ -146,12 +147,12 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
         page: Page,
         image: Image.Image,
         engine_output: ObjectDetectionEngineOutput,
-    ) -> List[Cluster]:
+    ) -> list[Cluster]:
         assert page.size is not None
         scale_x = page.size.width / image.width
         scale_y = page.size.height / image.height
 
-        clusters: List[Cluster] = []
+        clusters: list[Cluster] = []
         for idx, (label_id, score, bbox_coords) in enumerate(
             zip(engine_output.label_ids, engine_output.scores, engine_output.bboxes)
         ):

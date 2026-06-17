@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import pytest
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle
@@ -69,7 +67,7 @@ RECT_270 = BoundingRectangle(
 )
 def test_rotate_bounding_box(
     bbox: BoundingBox,
-    im_size: Tuple[int, int],
+    im_size: tuple[int, int],
     angle: int,
     expected_rectangle: BoundingRectangle,
 ):

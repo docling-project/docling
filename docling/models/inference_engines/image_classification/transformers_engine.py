@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from packaging import version
 
@@ -155,8 +155,8 @@ class TransformersImageClassificationEngine(HfImageClassificationEngineBase):
         )
 
     def predict_batch(
-        self, input_batch: List[ImageClassificationEngineInput]
-    ) -> List[ImageClassificationEngineOutput]:
+        self, input_batch: list[ImageClassificationEngineInput]
+    ) -> list[ImageClassificationEngineOutput]:
         """Run inference on a batch of inputs."""
         import torch
 
@@ -172,7 +172,7 @@ class TransformersImageClassificationEngine(HfImageClassificationEngineBase):
             outputs = self._model(**inputs)  # type: ignore[operator]
             probs_batch = torch.softmax(outputs.logits, dim=-1)
 
-        batch_outputs: List[ImageClassificationEngineOutput] = []
+        batch_outputs: list[ImageClassificationEngineOutput] = []
         for input_item, probs_vector in zip(input_batch, probs_batch):
             # Use topk for efficiency when top_k is specified
             if self.options.top_k is not None:

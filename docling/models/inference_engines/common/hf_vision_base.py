@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from numbers import Integral, Real
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import numpy as np
 
@@ -45,7 +45,7 @@ class HfVisionModelMixin(HuggingFaceModelDownloadMixin):
         )
         self._model_family_name = model_family_name
         self._processor: Optional[BaseImageProcessor] = None
-        self._id_to_label: Dict[int, str] = {}
+        self._id_to_label: dict[int, str] = {}
 
     def _resolve_model_folder(self, repo_id: str, revision: str) -> Path:
         """Resolve model folder from artifacts_path or HF download."""
@@ -90,7 +90,7 @@ class HfVisionModelMixin(HuggingFaceModelDownloadMixin):
                 f"Failed to load image processor from {model_folder}: {exc}"
             )
 
-    def _load_label_mapping(self, model_folder: Path) -> Dict[int, str]:
+    def _load_label_mapping(self, model_folder: Path) -> dict[int, str]:
         """Load label mapping from HuggingFace model config."""
         try:
             from transformers import AutoConfig
@@ -105,7 +105,7 @@ class HfVisionModelMixin(HuggingFaceModelDownloadMixin):
                 f"Failed to load label mapping from model config at {model_folder}: {exc}"
             )
 
-    def get_label_mapping(self) -> Dict[int, str]:
+    def get_label_mapping(self) -> dict[int, str]:
         """Get the label mapping for this model."""
         return self._id_to_label
 

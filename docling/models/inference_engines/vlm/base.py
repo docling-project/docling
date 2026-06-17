@@ -7,11 +7,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
-    List,
     Literal,
     Optional,
-    Type,
     get_args,
     get_origin,
 )
@@ -75,7 +72,7 @@ class BaseVlmEngineOptions(BaseModel):
     engine_type: VlmEngineType = Field(description="Type of inference engine to use")
 
     # registry: engine_type → subclass
-    _registry: ClassVar[Dict[VlmEngineType, Type["BaseVlmEngineOptions"]]] = {}
+    _registry: ClassVar[dict[VlmEngineType, type["BaseVlmEngineOptions"]]] = {}
 
     @classmethod
     def __pydantic_init_subclass__(cls, **kwargs):
@@ -151,10 +148,10 @@ class VlmEngineInput(BaseModel):
     max_new_tokens: int = Field(
         default=4096, description="Maximum number of tokens to generate"
     )
-    stop_strings: List[str] = Field(
+    stop_strings: list[str] = Field(
         default_factory=list, description="Strings that trigger generation stopping"
     )
-    extra_generation_config: Dict[str, Any] = Field(
+    extra_generation_config: dict[str, Any] = Field(
         default_factory=dict, description="Additional generation configuration"
     )
 
@@ -169,7 +166,7 @@ class VlmEngineOutput(BaseModel):
     stop_reason: str | None = Field(
         default=None, description="Reason why generation stopped"
     )
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata from the engine"
     )
 
@@ -215,7 +212,7 @@ class BaseVlmEngine(ABC):
         """
 
     @abstractmethod
-    def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
+    def predict_batch(self, input_batch: list[VlmEngineInput]) -> list[VlmEngineOutput]:
         """Run inference on a batch of inputs.
 
         This is the primary method that all engines must implement.
@@ -248,8 +245,8 @@ class BaseVlmEngine(ABC):
         return results[0]
 
     def __call__(
-        self, input_data: VlmEngineInput | List[VlmEngineInput]
-    ) -> VlmEngineOutput | List[VlmEngineOutput]:
+        self, input_data: VlmEngineInput | list[VlmEngineInput]
+    ) -> VlmEngineOutput | list[VlmEngineOutput]:
         """Convenience method to run inference.
 
         Args:
