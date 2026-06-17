@@ -660,20 +660,11 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     def _add_footnote_group(
         self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
     ) -> None:
-        # Extract footnote title if available
-        title_node = node.xpath("title")
+        # Extract footnote title if available else fallback to label
+        header_node = node.xpath("title") or node.xpath("label")
         header_text = (
-            JatsDocumentBackend._get_text(title_node[0]).strip() if title_node else ""
+            JatsDocumentBackend._get_text(header_node[0]).strip() if header_node else ""
         )
-
-        # Fallback to label in case title is not provided
-        if not header_text:
-            label_node = node.xpath("label")
-            header_text = (
-                JatsDocumentBackend._get_text(label_node[0]).strip()
-                if label_node
-                else ""
-            )
 
         fn_parent = (
             doc.add_heading(text=header_text, parent=parent) if header_text else parent
