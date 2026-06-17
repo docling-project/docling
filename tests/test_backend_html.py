@@ -11,7 +11,10 @@ from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
 
 from docling.backend.html_backend import HTMLDocumentBackend
-from docling.datamodel.backend_options import HTMLBackendOptions
+from docling.datamodel.backend_options import (
+    HTMLBackendOptions,
+    HTMLContentLayerDetectionStrategy,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
     ConversionResult,
@@ -32,7 +35,10 @@ def test_html_backend_options():
     assert options.kind == "html"
     assert not options.fetch_images
     assert options.source_uri is None
-    assert options.default_content_layer is None
+    assert (
+        options.content_layer_detection_strategy
+        == HTMLContentLayerDetectionStrategy.AUTO
+    )
 
     url = "http://example.com"
     source_location = AnyUrl(url=url)
@@ -43,17 +49,19 @@ def test_html_backend_options():
     options = HTMLBackendOptions(source_uri=source_location)
     assert options.source_uri == source_location
 
-    options = HTMLBackendOptions(default_content_layer=ContentLayer.BODY)
-    assert options.default_content_layer == ContentLayer.BODY
-
-    options = HTMLBackendOptions(default_content_layer=ContentLayer.FURNITURE)
-    assert options.default_content_layer == ContentLayer.FURNITURE
+    options = HTMLBackendOptions(
+        content_layer_detection_strategy=HTMLContentLayerDetectionStrategy.BODY_ONLY
+    )
+    assert (
+        options.content_layer_detection_strategy
+        == HTMLContentLayerDetectionStrategy.BODY_ONLY
+    )
 
     with pytest.raises(ValidationError, match="Input is not a valid path"):
         HTMLBackendOptions(source_uri=12345)
 
-    with pytest.raises(ValidationError, match="body|furniture"):
-        HTMLBackendOptions(default_content_layer=ContentLayer.NOTES)
+    with pytest.raises(ValidationError, match=r"auto|body_only"):
+        HTMLBackendOptions(content_layer_detection_strategy="notes")
 
 
 def _make_html_doc(html: bytes, options: HTMLBackendOptions) -> DoclingDocument:
@@ -88,11 +96,12 @@ def _collect_text_layers(doc: DoclingDocument) -> list[tuple[str, ContentLayer]]
     ]
 
 
-def test_html_backend_default_content_layer():
-    # Explicit override to BODY
+def test_html_backend_body_only_content_layer_detection_strategy():
     doc = _make_html_doc(
         _HTML_WITH_HEADING,
-        HTMLBackendOptions(default_content_layer=ContentLayer.BODY),
+        HTMLBackendOptions(
+            content_layer_detection_strategy=HTMLContentLayerDetectionStrategy.BODY_ONLY
+        ),
     )
     assert _collect_text_layers(doc) == [
         ("Before heading", ContentLayer.BODY),
@@ -101,21 +110,19 @@ def test_html_backend_default_content_layer():
     ]
 
 
-def test_html_backend_default_content_layer_furniture_override():
+def test_html_backend_infer_furniture_false_uses_body_layer():
     doc = _make_html_doc(
         _HTML_WITH_HEADING,
-        HTMLBackendOptions(default_content_layer=ContentLayer.FURNITURE),
+        HTMLBackendOptions(infer_furniture=False),
     )
     assert _collect_text_layers(doc) == [
-        ("Before heading", ContentLayer.FURNITURE),
+        ("Before heading", ContentLayer.BODY),
         ("Title", ContentLayer.BODY),
         ("After heading", ContentLayer.BODY),
     ]
 
 
-def test_html_backend_default_content_layer_none_preserves_inference():
-    # Without override (None), content before the first heading should be
-    # inferred as FURNITURE when infer_furniture=True.
+def test_html_backend_auto_content_layer_detection_strategy_preserves_inference():
     doc = _make_html_doc(_HTML_WITH_HEADING, HTMLBackendOptions())
     assert _collect_text_layers(doc) == [
         ("Before heading", ContentLayer.FURNITURE),

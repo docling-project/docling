@@ -93,6 +93,31 @@ The options in this list require the explicit `enable_remote_services=True` when
 The example file [custom_convert.py](../examples/custom_convert.py) contains multiple ways
 one can adjust the conversion pipeline and features.
 
+### Control HTML content layer detection
+
+By default, HTML conversion infers content before the first heading as furniture.
+For HTML sources that are already filtered to main content, you can force parsed
+body content into the body layer:
+
+```python
+from docling.datamodel.backend_options import (
+    HTMLBackendOptions,
+    HTMLContentLayerDetectionStrategy,
+)
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, HTMLFormatOption
+
+html_backend_options = HTMLBackendOptions(
+    content_layer_detection_strategy=HTMLContentLayerDetectionStrategy.BODY_ONLY
+)
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.HTML: HTMLFormatOption(backend_options=html_backend_options)
+    }
+)
+```
+
 ### Control PDF table extraction options
 
 You can control if table structure recognition should map the recognized structure back to PDF cells (default) or use text cells from the structure prediction itself.

@@ -36,7 +36,10 @@ from typing_extensions import override
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
-from docling.datamodel.backend_options import HTMLBackendOptions
+from docling.datamodel.backend_options import (
+    HTMLBackendOptions,
+    HTMLContentLayerDetectionStrategy,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import OperationNotAllowed
@@ -333,12 +336,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if len(clean_headers):
             header = clean_headers[0]
         # Set starting content layer
-        if self.options.default_content_layer is not None:
-            self.content_layer = self.options.default_content_layer
-        elif (not self.options.infer_furniture) or (header is None):
-            self.content_layer = ContentLayer.BODY
-        else:
-            self.content_layer = ContentLayer.FURNITURE
+        should_infer_furniture = (
+            self.options.content_layer_detection_strategy
+            == HTMLContentLayerDetectionStrategy.AUTO
+            and self.options.infer_furniture
+        )
+        self.content_layer = (
+            ContentLayer.FURNITURE
+            if should_infer_furniture and header is not None
+            else ContentLayer.BODY
+        )
         # reset context
         self.ctx = _Context()
         self._walk(content, doc)
