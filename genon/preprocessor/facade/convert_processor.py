@@ -1845,7 +1845,7 @@ class DocumentProcessor:
             _as_dict(layout_cfg.get("genos_layout")).get("page_batch_size"), "layout.genos_layout.page_batch_size"
         )
         if page_batch_size is None or page_batch_size <= 0:
-            page_batch_size = 32
+            page_batch_size = 128
         settings.perf.page_batch_size = page_batch_size
 
         max_completion_tokens = _parse_optional_int(

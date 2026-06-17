@@ -73,13 +73,13 @@
    > **주의 (배포 정책):** `synap` 빌드는 유료 PDF SDK가 포함된다. 운영계 Genos 도커 레지스트리에는 **`standard` 이미지만** 올린다. 일반 사이트 배포는 **기본적으로 `standard`** 로 진행하며, 특정 사이트에 `synap`(유료 PDF SDK) 버전을 들고가야 하는 요청이 생길 경우엔, **AI Search 팀 내부에서 자체적으로 빌드후, 이미지를 전달**한다 (PDF SDK 토큰/라이선스는 AI Search 팀이 관리, 비공개).
 
    **(배경 설명)**
-   - PDF SDK란? → `타문서(HWP,docx 등) → PDF`를 고품질로 변환하기 위한 유료용 SDK. 이 SDK의 유무에 따라 `standard` 또는 `synap` 버전으로 구분됨. 
-   - **`standard`** — 기본 버전. 
-     - 오픈소스(LibreOffice + rhwp)만 사용하여 PDF로 변환. PDF SDK 자산이 이미지에 일절 들어가지 않음 (다운로드 단계 자체가 없음). 
+   - PDF SDK란? → `타문서(HWP,docx 등) → PDF`를 고품질로 변환하기 위한 유료용 SDK. 이 SDK의 유무에 따라 `standard` 또는 `synap` 버전으로 구분됨.
+   - **`standard`** — 기본 버전.
+     - 오픈소스(LibreOffice + rhwp)만 사용하여 PDF로 변환. PDF SDK 자산이 이미지에 일절 들어가지 않음 (다운로드 단계 자체가 없음).
      - 사내 운영계 GenOS 환경/일반적인 외부 사이트 배포용. **`HWP_SDK_TOKEN` 외에 별도의 추가 토큰값 필요 없음**.
    - **`synap`** — 오픈소스(LibreOffice + rhwp) + 유료 PDF SDK 포함 버전.
-     - PDF로의 문서 변환시, `pdf_sdk → rhwp(hwp/hwpx 전용) → libreoffice` 순서로 fallback 동작(=변환 실패시 후순위 로직 사용). 
-     - `PDF SDK`는 **전처리기 빌드시 자동 설치되며, `PDF_SDK_TOKEN`값이 사전에 필수로 적용되어야함(`HWP_SDK_TOKEN`과 별개 값)**. 
+     - PDF로의 문서 변환시, `pdf_sdk → rhwp(hwp/hwpx 전용) → libreoffice` 순서로 fallback 동작(=변환 실패시 후순위 로직 사용).
+     - `PDF SDK`는 **전처리기 빌드시 자동 설치되며, `PDF_SDK_TOKEN`값이 사전에 필수로 적용되어야함(`HWP_SDK_TOKEN`과 별개 값)**.
 
    **(진행 순서)**
 
@@ -264,11 +264,8 @@ huggingface-cli download rednote-hilab/dots.mocr \
 - huggingface: https://huggingface.co/rednote-hilab/dots.mocr
 
 2. Genos 모델서빙 기능으로 서빙생성
-- 주요 옵션은 아래 서빙명령어 참고
 
-* 참고
-
-- 내부 별도서버에 서비스 했던 vllm 서빙명령어
+- 주요 옵션은 아래 서빙명령어 참고 (내부 별도서버에 서비스 했던 vllm 서빙명령어)
 
 ```shell
 CUDA_VISIBLE_DEVICES=0 vllm serve rednote-hilab/dots.mocr \
@@ -278,8 +275,10 @@ CUDA_VISIBLE_DEVICES=0 vllm serve rednote-hilab/dots.mocr \
  --dtype bfloat16 \
  --gpu-memory-utilization 0.9 \
  --max-model-len 20000 \
- --max-num-seqs 32 \
+ --max-num-seqs 256 \
  --chat-template-content-format string \
  --served-model-name dots-mocr \
  --trust-remote-code
 ```
+
+- max-num-sqes를 256으로 설정한 근거 문서 참고바람: [dotsocr_vllm_max_num_seqs.md](dotsocr_vllm_max_num_seqs.md)

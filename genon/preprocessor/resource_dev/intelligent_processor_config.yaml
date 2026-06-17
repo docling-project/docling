@@ -40,7 +40,7 @@ layout:
   genos_layout:
     endpoint: "http://192.168.75.174:26001/v1/chat/completions"
     api_key: ""
-    page_batch_size: 32
+    page_batch_size: 128
     max_completion_tokens: 16384
     model: "dots-mocr"          # 서빙 모델명
     timeout: 3600               # VLM 요청 타임아웃(초)

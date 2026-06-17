@@ -161,7 +161,7 @@ layout:
     # api_key는 k8s 내부 통신 기반 모델 호출 시 불필요
     endpoint: "http://llmops-gateway-api-service:8080/rep/serving/<LAYOUT_SERVING_ID>/v1/chat/completions"
     api_key: ""
-    page_batch_size: 32
+    page_batch_size: 128
     max_completion_tokens: 16384
     model: "dots-mocr"          # 서빙 모델명
     timeout: 3600               # VLM 요청 타임아웃(초)
@@ -292,7 +292,7 @@ enrichment:
 | `layout_model_type` | `"genos_layout"` | `genos_layout` \| `docling_layout` |
 | `genos_layout.endpoint` | `.../serving/<LAYOUT_SERVING_ID>/...` | Genos layout 모델 서빙 엔드포인트. **사이트별 교체 필요** |
 | `genos_layout.api_key` | `""` | k8s 내부 통신 기반 호출 시 불필요. 외부 호출 정책에 따라 필요할 수 있음 |
-| `genos_layout.page_batch_size` | `32` | 레이아웃 모델 페이지 배치 크기(전역 `settings.perf.page_batch_size`). 0 이하/오류 시 32 폴백 |
+| `genos_layout.page_batch_size` | `128` | 레이아웃 모델 페이지 배치 크기(전역 `settings.perf.page_batch_size`). 0 이하/오류 시 128 폴백 |
 | `genos_layout.max_completion_tokens` | `16384` | Layout LLM 최대 생성 토큰. 양의 정수, 유효하지 않거나 0 이하이면 16384 폴백 |
 | `genos_layout.model` | `"dots-mocr"` | 서빙 모델명. 비어있으면 `dots-mocr` 폴백 |
 | `genos_layout.timeout` | `3600` | VLM 요청 HTTP 타임아웃(초). 유효하지 않거나 0 이하이면 3600 폴백 |

@@ -1146,7 +1146,7 @@ class IntelligentDocumentProcessor:
             _log.warning(
                 f"[IntelligentDocumentProcessor] Invalid page_batch_size '{page_batch_size}', fallback to 32"
             )
-            page_batch_size = 32
+            page_batch_size = 128
 
         # DotsOCR VLM 호출/생성 파라미터 (yaml 누락·무효 시 기본값 폴백)
         layout_model = genos_layout_cfg.get("model") or "dots-mocr"

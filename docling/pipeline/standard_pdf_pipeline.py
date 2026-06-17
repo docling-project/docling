@@ -1,7 +1,7 @@
 import logging
 import warnings
 from pathlib import Path
-from typing import Optional, cast
+from typing import Optional
 
 import numpy as np
 from docling_core.types.doc import DocItem, ImageRef, PictureItem, TableItem
@@ -269,12 +269,17 @@ class StandardPdfPipeline(PaginatedPipeline):
 
             # Generate page images in the output
             if self.pipeline_options.generate_page_images:
-                for page in conv_res.pages:
-                    assert page.image is not None
-                    page_no = page.page_no + 1
-                    conv_res.document.pages[page_no].image = ImageRef.from_pil(
-                        page.image, dpi=int(72 * self.pipeline_options.images_scale)
-                    )
+                with TimeRecorder(
+                    conv_res,
+                    "doc_assemble_page_images",
+                    scope=ProfilingScope.DOCUMENT,
+                ):
+                    for page in conv_res.pages:
+                        assert page.image is not None
+                        page_no = page.page_no + 1
+                        conv_res.document.pages[page_no].image = ImageRef.from_pil(
+                            page.image, dpi=int(72 * self.pipeline_options.images_scale)
+                        )
 
             # Generate images of the requested element types
             with warnings.catch_warnings():  # deprecated generate_table_images
@@ -283,38 +288,46 @@ class StandardPdfPipeline(PaginatedPipeline):
                     self.pipeline_options.generate_picture_images
                     or self.pipeline_options.generate_table_images
                 ):
-                    scale = self.pipeline_options.images_scale
-                    for element, _level in conv_res.document.iterate_items():
-                        if not isinstance(element, DocItem) or len(element.prov) == 0:
-                            continue
-                        if (
-                            isinstance(element, PictureItem)
-                            and self.pipeline_options.generate_picture_images
-                        ) or (
-                            isinstance(element, TableItem)
-                            and self.pipeline_options.generate_table_images
-                        ):
-                            page_ix = element.prov[0].page_no - 1
-                            page = next(
-                                (p for p in conv_res.pages if p.page_no == page_ix),
-                                cast("Page", None),
-                            )
-                            assert page is not None
-                            assert page.size is not None
-                            assert page.image is not None
+                    with TimeRecorder(
+                        conv_res,
+                        "doc_assemble_element_images",
+                        scope=ProfilingScope.DOCUMENT,
+                    ):
+                        scale = self.pipeline_options.images_scale
+                        # Index pages by page_no once to avoid an
+                        # O(elements x pages) linear scan per picture/table.
+                        page_no_to_page = {p.page_no: p for p in conv_res.pages}
+                        for element, _level in conv_res.document.iterate_items():
+                            if (
+                                not isinstance(element, DocItem)
+                                or len(element.prov) == 0
+                            ):
+                                continue
+                            if (
+                                isinstance(element, PictureItem)
+                                and self.pipeline_options.generate_picture_images
+                            ) or (
+                                isinstance(element, TableItem)
+                                and self.pipeline_options.generate_table_images
+                            ):
+                                page_ix = element.prov[0].page_no - 1
+                                page = page_no_to_page.get(page_ix)
+                                assert page is not None
+                                assert page.size is not None
+                                assert page.image is not None
 
-                            crop_bbox = (
-                                element.prov[0]
-                                .bbox.scaled(scale=scale)
-                                .to_top_left_origin(
-                                    page_height=page.size.height * scale
+                                crop_bbox = (
+                                    element.prov[0]
+                                    .bbox.scaled(scale=scale)
+                                    .to_top_left_origin(
+                                        page_height=page.size.height * scale
+                                    )
                                 )
-                            )
 
-                            cropped_im = page.image.crop(crop_bbox.as_tuple())
-                            element.image = ImageRef.from_pil(
-                                cropped_im, dpi=int(72 * scale)
-                            )
+                                cropped_im = page.image.crop(crop_bbox.as_tuple())
+                                element.image = ImageRef.from_pil(
+                                    cropped_im, dpi=int(72 * scale)
+                                )
 
             # Aggregate confidence values for document:
             if len(conv_res.pages) > 0:

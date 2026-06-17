@@ -6,8 +6,10 @@ import requests
 import copy
 import logging
 import re
+import time
 import warnings
 from collections.abc import Iterable
+from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
@@ -42,10 +44,35 @@ from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 
 from docling.utils.genos_dotsocr_postprocessor import LayoutPostprocessor
-from docling.utils.profiling import TimeRecorder
+from docling.utils.profiling import ProfilingItem, ProfilingScope, TimeRecorder
 from docling.utils.visualization import draw_clusters
 
 _log = logging.getLogger(__name__)
+
+
+def _record_stage_elapsed(conv_res, key: str, elapsed: float) -> None:
+    """Append a sub-stage duration into ``conv_res.timings[key]``.
+
+    Mirrors :class:`TimeRecorder` but works without re-indenting large code
+    blocks and is safe to call from the per-page worker threads (``list.append``
+    is atomic under the GIL; keys are pre-created in ``__call__``). No-op unless
+    ``settings.debug.profile_pipeline_timings`` is enabled.
+
+    Also records an approximate start timestamp (``now - elapsed``; this is
+    called right after the work finishes) so the profiling summary can compute
+    a document-level wall-clock by union-ing the per-page intervals. The two
+    ``list.append`` calls are individually atomic; concurrent worker threads may
+    interleave them, but intervals within one batch share near-identical start
+    and duration, so the union estimate is unaffected in practice. Wrap both in
+    a ``Lock`` if exact (start, duration) pairing is ever required.
+    """
+    if not settings.debug.profile_pipeline_timings:
+        return
+    item = conv_res.timings.setdefault(key, ProfilingItem(scope=ProfilingScope.PAGE))
+    item.start_timestamps.append(datetime.utcnow() - timedelta(seconds=elapsed))
+    item.times.append(elapsed)
+    item.count += 1
+
 
 DOTSOCR_IMAGE_FACTOR = 28
 DOTSOCR_MIN_PIXELS = 3136
@@ -609,9 +636,11 @@ class GenosDotsOCRLayoutModel(BasePageModel):
             total_attempts = self.retry_count + 1
             response = None
             result = None
+            usage = None
+            _vlm_started_at = time.monotonic()
             for attempt in range(1, total_attempts + 1):
                 try:
-                    response_text = call_vlm_server(
+                    response_text, usage = call_vlm_server(
                         prompt=prompt,
                         base64_image=base64_image,
                         url=self.dotocr_endpoint,
@@ -672,7 +701,19 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                 result = []
 
             assert isinstance(result, list)
+            _vlm_elapsed = time.monotonic() - _vlm_started_at
+            _record_stage_elapsed(conv_res, "dotsocr_vlm_call", _vlm_elapsed)
+            if isinstance(usage, dict):
+                _log.info(
+                    "DotsOCR VLM usage (page=%s): prompt_tokens=%s, completion_tokens=%s, total_tokens=%s, elapsed=%.3fs",
+                    page.page_no,
+                    usage.get("prompt_tokens"),
+                    usage.get("completion_tokens"),
+                    usage.get("total_tokens"),
+                    _vlm_elapsed,
+                )
 
+            _parse_started_at = time.monotonic()
             clusters = []
             raw_table_html_by_cluster_id: dict[int, str] = {}
             raw_formula_latex_by_cluster_id: dict[int, str] = {}
@@ -822,10 +863,19 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                 clusters=clusters,
                 dotsocr_text_by_cluster_id=raw_text_by_cluster_id,
             )
+            _record_stage_elapsed(
+                conv_res, "dotsocr_parse", time.monotonic() - _parse_started_at
+            )
 
+            _postprocess_started_at = time.monotonic()
             processed_clusters, processed_cells = LayoutPostprocessor(
                 page, clusters, self.options
             ).postprocess()
+            _record_stage_elapsed(
+                conv_res,
+                "dotsocr_postprocess",
+                time.monotonic() - _postprocess_started_at,
+            )
 
             # Note: LayoutPostprocessor updates page.cells and page.parsed_page internally
             with warnings.catch_warnings():
@@ -866,10 +916,16 @@ class GenosDotsOCRLayoutModel(BasePageModel):
             )
 
             if self._use_dotsocr_table_structure():
+                _table_started_at = time.monotonic()
                 page.predictions.tablestructure = self._build_tablestructure_from_dotsocr(
                     page=page,
                     clusters=processed_clusters,
                     table_html_by_cluster_id=raw_table_html_by_cluster_id,
+                )
+                _record_stage_elapsed(
+                    conv_res,
+                    "dotsocr_table_build",
+                    time.monotonic() - _table_started_at,
                 )
 
         if settings.debug.visualize_layout:
@@ -905,11 +961,29 @@ class GenosDotsOCRLayoutModel(BasePageModel):
         if not pages:
             return
 
+        # Pre-create per-page sub-stage timing keys before spawning worker
+        # threads so concurrent TimeRecorder/_record_stage_elapsed calls don't
+        # race on dict initialization (list.append itself is atomic).
+        if settings.debug.profile_pipeline_timings:
+            for _key in (
+                "layout",
+                "dotsocr_vlm_call",
+                "dotsocr_parse",
+                "dotsocr_postprocess",
+                "dotsocr_table_build",
+            ):
+                conv_res.timings.setdefault(
+                    _key, ProfilingItem(scope=ProfilingScope.PAGE)
+                )
+
         def _process(page: Page) -> Page:
             return self._process_page(conv_res, page)
 
-        with ThreadPoolExecutor(max_workers=len(pages)) as executor:
-            yield from executor.map(_process, pages)
+        with TimeRecorder(
+            conv_res, "dotsocr_layout_wallclock", scope=ProfilingScope.DOCUMENT
+        ):
+            with ThreadPoolExecutor(max_workers=len(pages)) as executor:
+                yield from executor.map(_process, pages)
 
 
 prompt = """Please output the layout information from the PDF image, including each layout element's bbox, its category, and the corresponding text content within the bbox.
@@ -942,7 +1016,7 @@ def call_vlm_server(
     temperature: float = 0.1,
     top_p: float = 0.9,
     repetition_penalty: float = 1.15,
-) -> str:
+) -> tuple[str, dict | None]:
     image_data_url = f"data:image/png;base64,{base64_image}"
     prompt_with_image_token = f"<|img|><|imgpad|><|endofimg|>{prompt}"
 
@@ -990,7 +1064,8 @@ def call_vlm_server(
 
         response.raise_for_status()
         data = response.json()
-        return data["choices"][0]["message"]["content"]
+        usage = data.get("usage") if isinstance(data, dict) else None
+        return data["choices"][0]["message"]["content"], usage
     except requests.exceptions.RequestException as e:
         raise RuntimeError(f"HTTP 요청 오류: {e}") from e
     except KeyError as e:
