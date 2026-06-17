@@ -8,6 +8,7 @@ import tempfile
 import hashlib
 import re
 import uuid
+from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from typing_extensions import override  # 상단 임포트에 추가
@@ -95,8 +96,11 @@ _HEADING_NUMBER_MARKERS = [
 #   단독으로는 본문일 가능성이 커서 "강조(bold/큰폰트)"와 AND 결합 시에만 heading으로 본다.
 #   Issue #206의 "마커 패턴 확장(❏ □ ■ ◆ ○ ● 등)"도 이 집합으로 흡수한다.
 #   (실측: 조항 하위의 ①②, 입찰서의 가./나. 등은 baseline 폰트·비bold라 강한마커면 과다 검출됨)
+#   한글 enum은 모든 음절(가-힣)이 아니라 실제 순서 표기 음절(가나다…하)로 제한해
+#   '법.', '표.' 등 일반 단락 시작어의 오탐을 막는다.
+_KOR_ORDER = "가나다라마바사아자차카타파하"
 _HEADING_WEAK_MARKER = re.compile(
-    r'^(?:[❏□■◆◇○●▶▷▪▫※◦◈∙·•*\-①-⑳]\s|[가-힣]\.\s|\((?:[가-힣]|\d+)\)\s)'
+    r'^(?:[❏□■◆◇○●▶▷▪▫※◦◈∙·•*\-①-⑳]\s|[' + _KOR_ORDER + r']\.\s|\((?:[' + _KOR_ORDER + r']|\d+)\)\s)'
 )
 
 # heading 후보가 "제목"이 아니라 서술형 본문 문장이면 강등한다 (divider 제외).
@@ -411,8 +415,6 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         절대 임계(size>=18) 대신 이 baseline에 대한 상대값으로 "큰 폰트"를 판정하기 위함. (Issue #206)
         run이 하나도 없으면 기본 10.0을 반환한다.
         """
-        from collections import Counter
-
         weighted: "Counter[float]" = Counter()
         for paragraph_items in data:
             if not paragraph_items:
@@ -424,7 +426,9 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
                 weight = len(text.strip())
                 if weight <= 0:
                     continue
-                size = float(item.get("font", {}).get("size", 10.0) or 10.0)
+                # font 필드가 명시적으로 null일 수 있어 `or {}`로 방어 (None.get 방지)
+                font = item.get("font") or {}
+                size = float(font.get("size", 10.0) or 10.0)
                 # 0.5pt 단위로 양자화하여 미세한 차이로 최빈값이 흩어지는 것을 방지
                 weighted[round(size * 2) / 2] += weight
 
