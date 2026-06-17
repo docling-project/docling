@@ -849,6 +849,29 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         )
         return
 
+    def _add_footnote_group(
+        self,
+        doc: DoclingDocument,
+        parent: NodeItem,
+        node: etree._Element,
+    ) -> None:
+        footnote_group = doc.add_group(
+            label=GroupLabel.LIST,
+            name="footnotes",
+            parent=parent,
+        )
+
+        for fn in node.iterchildren(tag="fn"):
+            text = JatsDocumentBackend._normalize_whitespace(
+                JatsDocumentBackend._get_text(fn)
+            )
+
+            doc.add_text(
+                label=DocItemLabel.FOOTNOTE,
+                text=text,
+                parent=footnote_group,
+            )
+
     def _walk_linear(
         self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
     ) -> str:
@@ -903,11 +926,11 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             elif child.tag == "suplementary-material":
                 stop_walk = True
             elif child.tag == "fn-group":
-                # header = child.xpath(".//title") or child.xpath(".//label")
-                # if header:
-                #     text = JatsDocumentBackend._get_text(header[0])
-                #     fn_parent = doc.add_heading(text=text, parent=new_parent)
-                # self._add_footnote_group(doc, fn_parent, child)
+                self._add_footnote_group(
+                    doc,
+                    parent,
+                    child,
+                )
                 stop_walk = True
             elif child.tag == "ref-list" and node.tag != "ref-list":
                 header = child.xpath("title|label")
