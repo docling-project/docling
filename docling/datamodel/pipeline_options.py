@@ -734,6 +734,17 @@ class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):
             )
         ),
     ] = ""
+    usage_response_key: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Response JSON key, or dotted path, whose value should be preserved as the raw usage payload "
+                "on picture description metadata. The default captures OpenAI-compatible `usage` objects. "
+                "Set to None to disable usage payload capture."
+            ),
+            examples=["usage", "providerUsage", "meta.usage"],
+        ),
+    ] = "usage"
 
 
 class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):

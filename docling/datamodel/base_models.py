@@ -1,4 +1,6 @@
 from collections import defaultdict
+from collections.abc import Iterator
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Type, Union
@@ -247,8 +249,77 @@ class VlmPrediction(BaseModel):
     generated_tokens: list[VlmPredictionToken] = []
     generation_time: float = -1
     num_tokens: int | None = None
+    usage: Any | None = None
     stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
     input_prompt: str | None = None
+
+
+@dataclass(frozen=True)
+class ApiImageRequestResult:
+    """Image API result that preserves the historical 3-tuple unpacking API."""
+
+    text: str
+    num_tokens: int | None
+    stop_reason: VlmStopReason
+    usage: Any | None = None
+
+    def __iter__(self) -> Iterator[Any]:
+        yield self.text
+        yield self.num_tokens
+        yield self.stop_reason
+
+    def __getitem__(self, index: int) -> Any:
+        return (self.text, self.num_tokens, self.stop_reason)[index]
+
+    def __len__(self) -> int:
+        return 3
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, ApiImageRequestResult):
+            return (
+                self.text,
+                self.num_tokens,
+                self.stop_reason,
+                self.usage,
+            ) == (
+                other.text,
+                other.num_tokens,
+                other.stop_reason,
+                other.usage,
+            )
+        if isinstance(other, tuple):
+            return (self.text, self.num_tokens, self.stop_reason) == other
+        return super().__eq__(other)
+
+
+@dataclass(frozen=True)
+class ApiImageStreamingRequestResult:
+    """Streaming image API result preserving the historical 2-tuple unpacking API."""
+
+    text: str
+    num_tokens: int | None
+    usage: Any | None = None
+
+    def __iter__(self) -> Iterator[Any]:
+        yield self.text
+        yield self.num_tokens
+
+    def __getitem__(self, index: int) -> Any:
+        return (self.text, self.num_tokens)[index]
+
+    def __len__(self) -> int:
+        return 2
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, ApiImageStreamingRequestResult):
+            return (self.text, self.num_tokens, self.usage) == (
+                other.text,
+                other.num_tokens,
+                other.usage,
+            )
+        if isinstance(other, tuple):
+            return (self.text, self.num_tokens) == other
+        return super().__eq__(other)
 
 
 class ContainerElement(
@@ -416,7 +487,7 @@ class OpenAiApiResponse(BaseModel):
     model: str | None = None  # returned by openai
     choices: list[OpenAiResponseChoice]
     created: int
-    usage: OpenAiResponseUsage
+    usage: OpenAiResponseUsage | None = None
 
 
 # Create a type alias for score values
