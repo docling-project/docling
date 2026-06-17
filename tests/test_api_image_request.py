@@ -7,8 +7,17 @@ import pytest
 from PIL import Image
 from requests.adapters import HTTPAdapter
 
-from docling.datamodel.base_models import VlmStopReason
-from docling.utils.api_image_request import _make_retry_session, api_image_request
+from docling.datamodel.base_models import (
+    ApiImageRequestResult,
+    ApiImageStreamingRequestResult,
+    VlmStopReason,
+)
+from docling.models.utils.generation_utils import GenerationStopper
+from docling.utils.api_image_request import (
+    _make_retry_session,
+    api_image_request,
+    api_image_request_streaming,
+)
 
 pytestmark = pytest.mark.cross_platform
 
@@ -256,6 +265,102 @@ class TestApiImageRequest:
 
         assert response.usage == {"input_tokens": 1, "output_tokens": 2}
 
+    def test_request_result_preserves_tuple_compatibility(self):
+        """Test that result objects compare like legacy tuples when needed."""
+        response = ApiImageRequestResult(
+            text="text",
+            num_tokens=5,
+            stop_reason=VlmStopReason.END_OF_SEQUENCE,
+            usage={"total_tokens": 5},
+        )
+
+        assert tuple(response) == ("text", 5, VlmStopReason.END_OF_SEQUENCE)
+        assert response[1] == 5
+        assert len(response) == 3
+        assert response == ("text", 5, VlmStopReason.END_OF_SEQUENCE)
+        assert response == ApiImageRequestResult(
+            "text", 5, VlmStopReason.END_OF_SEQUENCE, {"total_tokens": 5}
+        )
+        assert response != "text"
+
+    def test_streaming_result_preserves_tuple_compatibility(self):
+        """Test that streaming result objects keep the legacy two-value API."""
+        response = ApiImageStreamingRequestResult(
+            text="text",
+            num_tokens=5,
+            usage={"total_tokens": 5},
+        )
+
+        assert tuple(response) == ("text", 5)
+        assert response[1] == 5
+        assert len(response) == 2
+        assert response == ("text", 5)
+        assert response == ApiImageStreamingRequestResult(
+            "text", 5, {"total_tokens": 5}
+        )
+        assert response != "text"
+
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_nested_usage_key_supplies_token_count_when_openai_usage_is_absent(
+        self, mock_session_factory, sample_image
+    ):
+        """Test dotted usage paths for providers that do not return OpenAI usage."""
+        mock_resp = MagicMock()
+        mock_resp.ok = True
+        mock_resp.text = json.dumps(
+            {
+                "id": "test-id",
+                "created": 1234567890,
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": "Test response"},
+                        "finish_reason": "stop",
+                    }
+                ],
+                "meta": {"usage": {"total_tokens": 44, "cache_read_tokens": 5}},
+            }
+        )
+        mock_session_factory.return_value.__enter__.return_value.post.return_value = (
+            mock_resp
+        )
+
+        response = api_image_request(
+            image=sample_image,
+            prompt="Test prompt",
+            url="http://test.api/v1/chat/completions",
+            usage_response_key="meta.usage",
+        )
+
+        assert response.num_tokens == 44
+        assert response.usage == {"total_tokens": 44, "cache_read_tokens": 5}
+
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_invalid_json_response_logs_preview_and_returns_unspecified(
+        self, mock_session_factory, sample_image, caplog
+    ):
+        """Test that malformed provider responses include useful diagnostics."""
+        mock_resp = MagicMock()
+        mock_resp.ok = True
+        mock_resp.text = "not-json" * 100
+        mock_resp.status_code = 200
+        mock_resp.headers = {"content-type": "text/plain"}
+        mock_session_factory.return_value.__enter__.return_value.post.return_value = (
+            mock_resp
+        )
+
+        result_text, tokens, stop_reason = api_image_request(
+            image=sample_image,
+            prompt="Test prompt",
+            url="http://test.api/v1/chat/completions",
+        )
+
+        assert result_text == ""
+        assert tokens == 0
+        assert stop_reason == VlmStopReason.UNSPECIFIED
+        assert "API response body was not JSON" in caplog.text
+        assert "not-json" in caplog.text
+
     @patch("docling.utils.api_image_request._make_retry_session")
     def test_empty_api_response_logs_status_and_returns_unspecified(
         self, mock_session_factory, sample_image, caplog
@@ -298,3 +403,96 @@ class TestApiImageRequest:
             assert set(retry_config.status_forcelist) == {429, 500, 502, 503, 504}
             assert retry_config.allowed_methods == {"POST"}
             assert retry_config.respect_retry_after_header is True
+
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_streaming_response_preserves_usage_payload(
+        self, mock_session_factory, sample_image
+    ):
+        """Test usage extraction from OpenAI-compatible SSE chunks."""
+
+        class _StreamingResponse:
+            ok = True
+            text = ""
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def raise_for_status(self):
+                return None
+
+            def iter_lines(self, decode_unicode=True):
+                yield ""
+                yield "event: keepalive"
+                yield "data: not-json"
+                yield 'data: {"choices": [{"delta": {"content": "hel"}}]}'
+                yield (
+                    'data: {"choices": [{"delta": {"content": "lo"}}], '
+                    '"usage": {"total_tokens": 8}}'
+                )
+                yield "data: [DONE]"
+
+        mock_session_factory.return_value.__enter__.return_value.post.return_value = (
+            _StreamingResponse()
+        )
+
+        response = api_image_request_streaming(
+            image=sample_image,
+            prompt="Test prompt",
+            url="http://test.api/v1/chat/completions",
+        )
+
+        assert response.text == "hello"
+        assert response.num_tokens == 8
+        assert response.usage == {"total_tokens": 8}
+
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_streaming_response_returns_usage_when_stopper_triggers(
+        self, mock_session_factory, sample_image
+    ):
+        """Test early streaming abort still returns usage seen so far."""
+
+        class _StopOnDone(GenerationStopper):
+            def lookback_tokens(self):
+                return 4
+
+            def should_stop(self, s: str) -> bool:
+                return "done" in s
+
+        class _StreamingResponse:
+            ok = True
+            text = ""
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def raise_for_status(self):
+                return None
+
+            def iter_lines(self, decode_unicode=True):
+                yield (
+                    'data: {"choices": [{"delta": {"content": "done"}}], '
+                    '"meta": {"usage": {"total_tokens": 3}}}'
+                )
+                yield 'data: {"choices": [{"delta": {"content": " ignored"}}]}'
+
+        mock_session_factory.return_value.__enter__.return_value.post.return_value = (
+            _StreamingResponse()
+        )
+
+        response = api_image_request_streaming(
+            image=sample_image,
+            prompt="Test prompt",
+            url="http://test.api/v1/chat/completions",
+            generation_stoppers=[_StopOnDone()],
+            usage_response_key="meta.usage",
+        )
+
+        assert response.text == "done"
+        assert response.num_tokens == 3
+        assert response.usage == {"total_tokens": 3}
