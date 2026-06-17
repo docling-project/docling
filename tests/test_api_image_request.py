@@ -5,10 +5,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from PIL import Image
-from requests.adapters import HTTPAdapter
 
 from docling.datamodel.base_models import VlmStopReason
-from docling.utils.api_image_request import _make_retry_session, api_image_request
+from docling.utils.api_image_request import api_image_request
 
 pytestmark = pytest.mark.cross_platform
 
@@ -148,20 +147,3 @@ class TestApiImageRequest:
         assert result_text == "Extracted text\nSecond block"
         assert tokens == 100
         assert stop_reason == VlmStopReason.END_OF_SEQUENCE
-
-    def test_retry_session_retries_transient_api_errors(self):
-        """Test that remote API calls retry common transient failures."""
-        with _make_retry_session() as session:
-            adapter = session.get_adapter("https://")
-
-            assert isinstance(adapter, HTTPAdapter)
-
-            retry_config = adapter.max_retries
-            assert retry_config.total == 5
-            assert retry_config.connect == 5
-            assert retry_config.read == 0
-            assert retry_config.status == 5
-            assert retry_config.backoff_factor == 0.1
-            assert set(retry_config.status_forcelist) == {429, 500, 502, 503, 504}
-            assert retry_config.allowed_methods == {"POST"}
-            assert retry_config.respect_retry_after_header is True

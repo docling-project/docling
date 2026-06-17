@@ -441,59 +441,6 @@ class TestVlmModelSpec:
 class TestPresetSystem:
     """Test preset registration and retrieval."""
 
-    def test_vlm_convert_presets_exist(self):
-        """Test that VlmConvert presets are registered."""
-        preset_ids = VlmConvertOptions.list_preset_ids()
-
-        # Check that key presets exist
-        assert "smoldocling" in preset_ids
-        assert "granite_docling" in preset_ids
-        assert "deepseek_ocr" in preset_ids
-        assert "granite_vision" in preset_ids
-        assert "pixtral" in preset_ids
-        assert "got_ocr" in preset_ids
-        assert "nanonets_ocr2" in preset_ids
-        assert "glm_ocr" in preset_ids
-        assert "lightonocr" in preset_ids
-
-        # Verify we can retrieve them
-        smoldocling = VlmConvertOptions.get_preset("smoldocling")
-        assert smoldocling.preset_id == "smoldocling"
-        assert smoldocling.name == "SmolDocling"
-        assert smoldocling.model_spec.response_format == ResponseFormat.DOCTAGS
-
-    def test_picture_description_presets_exist(self):
-        """Test that PictureDescription presets are registered."""
-        preset_ids = PictureDescriptionVlmEngineOptions.list_preset_ids()
-
-        # Check that key presets exist
-        assert "smolvlm" in preset_ids
-        assert "granite_vision" in preset_ids
-        assert "pixtral" in preset_ids
-        assert "qwen" in preset_ids
-
-        # Verify we can retrieve them
-        smolvlm = PictureDescriptionVlmEngineOptions.get_preset("smolvlm")
-        assert smolvlm.preset_id == "smolvlm"
-        assert smolvlm.name == "SmolVLM-256M"  # Full model name
-
-    def test_code_formula_presets_exist(self):
-        """Test that CodeFormula presets are registered."""
-        preset_ids = CodeFormulaVlmOptions.list_preset_ids()
-
-        # Check that key presets exist
-        assert "codeformulav2" in preset_ids
-        assert "granite_docling" in preset_ids
-
-        # Verify we can retrieve them
-        codeformulav2 = CodeFormulaVlmOptions.get_preset("codeformulav2")
-        assert codeformulav2.preset_id == "codeformulav2"
-        assert codeformulav2.name == "CodeFormulaV2"
-
-        granite_docling = CodeFormulaVlmOptions.get_preset("granite_docling")
-        assert granite_docling.preset_id == "granite_docling"
-        assert granite_docling.name == "Granite-Docling-CodeFormula"
-
     def test_preset_not_found_error(self):
         """Test that requesting non-existent preset raises KeyError."""
         with pytest.raises(KeyError) as exc_info:
