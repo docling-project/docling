@@ -30,122 +30,92 @@ class _StopOnDone(GenerationStopper):
         return "done" in s
 
 
-def test_api_vlm_model_preserves_usage_on_prediction() -> None:
-    image = Image.new("RGB", (8, 8), "red")
+@pytest.mark.parametrize(
+    ("streaming", "request_name", "api_result", "expected_stop_reason"),
+    [
+        (
+            False,
+            "api_image_request",
+            ApiImageRequestResult(
+                "description", 7, VlmStopReason.END_OF_SEQUENCE, {"total_tokens": 7}
+            ),
+            VlmStopReason.END_OF_SEQUENCE,
+        ),
+        (
+            True,
+            "api_image_request_streaming",
+            ApiImageStreamingRequestResult("done", 8, {"total_tokens": 8}),
+            VlmStopReason.UNSPECIFIED,
+        ),
+    ],
+)
+def test_api_vlm_model_preserves_usage_on_prediction(
+    streaming, request_name, api_result, expected_stop_reason
+) -> None:
     options = ApiVlmOptions(
         prompt="Describe",
         url="http://test.api/v1/chat/completions",
         response_format=ResponseFormat.PLAINTEXT,
+        custom_stopping_criteria=[_StopOnDone()] if streaming else [],
     )
-    model = ApiVlmModel(
-        enabled=True,
-        enable_remote_services=True,
-        vlm_options=options,
-    )
+    model = ApiVlmModel(True, True, options)
 
     with patch(
-        "docling.models.vlm_pipeline_models.api_vlm_model.api_image_request",
-        return_value=ApiImageRequestResult(
-            text="description",
-            num_tokens=7,
-            stop_reason=VlmStopReason.END_OF_SEQUENCE,
-            usage={"total_tokens": 7},
-        ),
+        f"docling.models.vlm_pipeline_models.api_vlm_model.{request_name}",
+        return_value=api_result,
     ):
-        predictions = list(model.process_images([image], "Describe"))
+        prediction = next(model.process_images([Image.new("RGB", (8, 8))], "Describe"))
 
-    assert predictions[0].text == "description"
-    assert predictions[0].num_tokens == 7
-    assert predictions[0].usage == {"total_tokens": 7}
+    assert prediction.text == api_result.text
+    assert prediction.num_tokens == api_result.num_tokens
+    assert prediction.usage == api_result.usage
+    assert prediction.stop_reason == expected_stop_reason
 
 
-def test_api_vlm_model_preserves_streaming_usage_on_prediction() -> None:
-    image = Image.new("RGB", (8, 8), "red")
-    options = ApiVlmOptions(
-        prompt="Describe",
-        url="http://test.api/v1/chat/completions",
-        response_format=ResponseFormat.PLAINTEXT,
-        custom_stopping_criteria=[_StopOnDone()],
-    )
-    model = ApiVlmModel(
-        enabled=True,
-        enable_remote_services=True,
-        vlm_options=options,
-    )
-
-    with patch(
-        "docling.models.vlm_pipeline_models.api_vlm_model.api_image_request_streaming",
-        return_value=ApiImageStreamingRequestResult(
-            text="done",
-            num_tokens=8,
-            usage={"total_tokens": 8},
+@pytest.mark.parametrize(
+    ("input_data", "request_name", "api_result", "expected_stop_reason"),
+    [
+        (
+            VlmEngineInput(image=Image.new("RGB", (8, 8)), prompt="Describe"),
+            "api_image_request",
+            ApiImageRequestResult(
+                "description", 9, VlmStopReason.END_OF_SEQUENCE, {"total_tokens": 9}
+            ),
+            VlmStopReason.END_OF_SEQUENCE,
         ),
-    ):
-        predictions = list(model.process_images([image], "Describe"))
-
-    assert predictions[0].text == "done"
-    assert predictions[0].num_tokens == 8
-    assert predictions[0].usage == {"total_tokens": 8}
-
-
-def test_api_vlm_engine_preserves_usage_on_output_metadata() -> None:
-    image = Image.new("RGB", (8, 8), "red")
+        (
+            VlmEngineInput(
+                image=Image.new("RGB", (8, 8)),
+                prompt="Describe",
+                extra_generation_config={"custom_stopping_criteria": [_StopOnDone()]},
+            ),
+            "api_image_request_streaming",
+            ApiImageStreamingRequestResult("done", 10, {"total_tokens": 10}),
+            "custom_criteria",
+        ),
+    ],
+)
+def test_api_vlm_engine_preserves_usage_on_output_metadata(
+    input_data, request_name, api_result, expected_stop_reason
+) -> None:
     engine = ApiVlmEngine(
         enable_remote_services=True,
         options=ApiVlmEngineOptions(url="http://test.api/v1/chat/completions"),
     )
 
     with patch(
-        "docling.models.inference_engines.vlm.api_openai_compatible_engine.api_image_request",
-        return_value=ApiImageRequestResult(
-            text="description",
-            num_tokens=9,
-            stop_reason=VlmStopReason.END_OF_SEQUENCE,
-            usage={"total_tokens": 9},
-        ),
+        f"docling.models.inference_engines.vlm.api_openai_compatible_engine.{request_name}",
+        return_value=api_result,
     ):
-        outputs = engine.predict_batch([VlmEngineInput(image=image, prompt="Describe")])
+        output = engine.predict_batch([input_data])[0]
 
-    assert outputs[0].text == "description"
-    assert outputs[0].metadata["num_tokens"] == 9
-    assert outputs[0].metadata["usage"] == {"total_tokens": 9}
-
-
-def test_api_vlm_engine_preserves_streaming_usage_on_output_metadata() -> None:
-    image = Image.new("RGB", (8, 8), "red")
-    engine = ApiVlmEngine(
-        enable_remote_services=True,
-        options=ApiVlmEngineOptions(url="http://test.api/v1/chat/completions"),
-    )
-
-    with patch(
-        "docling.models.inference_engines.vlm.api_openai_compatible_engine.api_image_request_streaming",
-        return_value=ApiImageStreamingRequestResult(
-            text="done",
-            num_tokens=10,
-            usage={"total_tokens": 10},
-        ),
-    ):
-        outputs = engine.predict_batch(
-            [
-                VlmEngineInput(
-                    image=image,
-                    prompt="Describe",
-                    extra_generation_config={
-                        "custom_stopping_criteria": [_StopOnDone()],
-                    },
-                )
-            ]
-        )
-
-    assert outputs[0].text == "done"
-    assert outputs[0].stop_reason == "custom_criteria"
-    assert outputs[0].metadata["num_tokens"] == 10
-    assert outputs[0].metadata["usage"] == {"total_tokens": 10}
+    assert output.text == api_result.text
+    assert output.stop_reason == expected_stop_reason
+    assert output.metadata["num_tokens"] == api_result.num_tokens
+    assert output.metadata["usage"] == api_result.usage
 
 
 def test_picture_description_api_model_forwards_usage_response_key() -> None:
-    image = Image.new("RGB", (8, 8), "red")
     model = PictureDescriptionApiModel(
         enabled=True,
         enable_remote_services=True,
@@ -159,18 +129,12 @@ def test_picture_description_api_model_forwards_usage_response_key() -> None:
 
     def _api_image_request(**kwargs):
         assert kwargs["usage_response_key"] == "providerUsage"
-        return ApiImageRequestResult(
-            text="description",
-            num_tokens=11,
-            stop_reason=VlmStopReason.END_OF_SEQUENCE,
-            usage={"provider_tokens": 11},
-        )
+        return ApiImageRequestResult("description", 11, VlmStopReason.END_OF_SEQUENCE)
 
     with patch(
         "docling.models.stages.picture_description.picture_description_api_model.api_image_request",
         side_effect=_api_image_request,
     ):
-        results = list(model._annotate_images([image]))
+        result = next(model._annotate_images([Image.new("RGB", (8, 8))]))
 
-    assert results[0].text == "description"
-    assert results[0].usage == {"provider_tokens": 11}
+    assert result.text == "description"

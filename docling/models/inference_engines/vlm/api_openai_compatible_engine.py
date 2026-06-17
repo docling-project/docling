@@ -164,7 +164,8 @@ class ApiVlmEngine(BaseVlmEngine):
                     timeout=self.options.timeout,
                     **api_params,
                 )
-                generated_text, num_tokens = api_response
+                generated_text = api_response.text
+                num_tokens = api_response.num_tokens
 
                 # Check if stopped by custom criteria
                 for stopper in custom_stoppers:
@@ -181,8 +182,9 @@ class ApiVlmEngine(BaseVlmEngine):
                     timeout=self.options.timeout,
                     **api_params,
                 )
-                generated_text, num_tokens, api_stop_reason = api_response
-                stop_reason = api_stop_reason
+                generated_text = api_response.text
+                num_tokens = api_response.num_tokens
+                stop_reason = api_response.stop_reason
 
             generation_time = time.time() - request_start_time
 

@@ -156,7 +156,8 @@ class ApiVlmModel(BaseVlmPageModel):
                     generation_stoppers=instantiated_stoppers,
                     **self.params,
                 )
-                page_tags, num_tokens = api_response
+                page_tags = api_response.text
+                num_tokens = api_response.num_tokens
             else:
                 # Non-streaming fallback (existing behavior)
                 api_response = api_image_request(
@@ -167,7 +168,9 @@ class ApiVlmModel(BaseVlmPageModel):
                     headers=self.vlm_options.headers,
                     **self.params,
                 )
-                page_tags, num_tokens, stop_reason = api_response
+                page_tags = api_response.text
+                num_tokens = api_response.num_tokens
+                stop_reason = api_response.stop_reason
 
             page_tags = self.vlm_options.decode_response(page_tags)
             input_prompt = prompt_text if self.vlm_options.track_input_prompt else None

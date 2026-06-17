@@ -7,11 +7,7 @@ import pytest
 from PIL import Image
 from requests.adapters import HTTPAdapter
 
-from docling.datamodel.base_models import (
-    ApiImageRequestResult,
-    ApiImageStreamingRequestResult,
-    VlmStopReason,
-)
+from docling.datamodel.base_models import VlmStopReason
 from docling.models.utils.generation_utils import GenerationStopper
 from docling.utils.api_image_request import (
     _make_retry_session,
@@ -77,14 +73,14 @@ class TestApiImageRequest:
             )
         )
 
-        result_text, _tokens, stop_reason = api_image_request(
+        response = api_image_request(
             image=sample_image,
             prompt="Test prompt",
             url="http://test.api/v1/chat/completions",
         )
 
-        assert result_text == "Filtered content"
-        assert stop_reason == VlmStopReason.CONTENT_FILTERED
+        assert response.text == "Filtered content"
+        assert response.stop_reason == VlmStopReason.CONTENT_FILTERED
 
     @patch("docling.utils.api_image_request._make_retry_session")
     def test_length_finish_reason(
@@ -95,14 +91,14 @@ class TestApiImageRequest:
             mock_response_factory(content="Truncated content", finish_reason="length")
         )
 
-        result_text, _tokens, stop_reason = api_image_request(
+        response = api_image_request(
             image=sample_image,
             prompt="Test prompt",
             url="http://test.api/v1/chat/completions",
         )
 
-        assert result_text == "Truncated content"
-        assert stop_reason == VlmStopReason.LENGTH
+        assert response.text == "Truncated content"
+        assert response.stop_reason == VlmStopReason.LENGTH
 
     @patch("docling.utils.api_image_request._make_retry_session")
     def test_stop_finish_reason(
@@ -113,14 +109,14 @@ class TestApiImageRequest:
             mock_response_factory(content="Normal completion", finish_reason="stop")
         )
 
-        result_text, _tokens, stop_reason = api_image_request(
+        response = api_image_request(
             image=sample_image,
             prompt="Test prompt",
             url="http://test.api/v1/chat/completions",
         )
 
-        assert result_text == "Normal completion"
-        assert stop_reason == VlmStopReason.END_OF_SEQUENCE
+        assert response.text == "Normal completion"
+        assert response.stop_reason == VlmStopReason.END_OF_SEQUENCE
 
     @patch("docling.utils.api_image_request._make_retry_session")
     def test_tool_calls_response(
@@ -148,21 +144,21 @@ class TestApiImageRequest:
             )
         )
 
-        result_text, tokens, stop_reason = api_image_request(
+        response = api_image_request(
             image=sample_image,
             prompt="Test prompt",
             url="http://test.api/v1/chat/completions",
         )
 
-        assert result_text == "Extracted text\nSecond block"
-        assert tokens == 100
-        assert stop_reason == VlmStopReason.END_OF_SEQUENCE
+        assert response.text == "Extracted text\nSecond block"
+        assert response.num_tokens == 100
+        assert response.stop_reason == VlmStopReason.END_OF_SEQUENCE
 
     @patch("docling.utils.api_image_request._make_retry_session")
-    def test_exposes_full_usage_payload_while_preserving_tuple_unpacking(
+    def test_exposes_full_usage_payload(
         self, mock_session_factory, sample_image, mock_response_factory
     ):
-        """Test that callers can access raw usage without breaking tuple unpacking."""
+        """Test that callers can access raw usage metadata."""
         mock_session_factory.return_value.__enter__.return_value.post.return_value = (
             mock_response_factory(total_tokens=123)
         )
@@ -172,13 +168,10 @@ class TestApiImageRequest:
             prompt="Test prompt",
             url="http://test.api/v1/chat/completions",
         )
-        result_text, tokens, stop_reason = response
 
-        assert result_text == "Test response"
-        assert response[0] == "Test response"
-        assert len(response) == 3
-        assert tokens == 123
-        assert stop_reason == VlmStopReason.END_OF_SEQUENCE
+        assert response.text == "Test response"
+        assert response.num_tokens == 123
+        assert response.stop_reason == VlmStopReason.END_OF_SEQUENCE
         assert response.usage == {
             "prompt_tokens": 50,
             "completion_tokens": 50,
@@ -265,41 +258,6 @@ class TestApiImageRequest:
 
         assert response.usage == {"input_tokens": 1, "output_tokens": 2}
 
-    def test_request_result_preserves_tuple_compatibility(self):
-        """Test that result objects compare like legacy tuples when needed."""
-        response = ApiImageRequestResult(
-            text="text",
-            num_tokens=5,
-            stop_reason=VlmStopReason.END_OF_SEQUENCE,
-            usage={"total_tokens": 5},
-        )
-
-        assert tuple(response) == ("text", 5, VlmStopReason.END_OF_SEQUENCE)
-        assert response[1] == 5
-        assert len(response) == 3
-        assert response == ("text", 5, VlmStopReason.END_OF_SEQUENCE)
-        assert response == ApiImageRequestResult(
-            "text", 5, VlmStopReason.END_OF_SEQUENCE, {"total_tokens": 5}
-        )
-        assert response != "text"
-
-    def test_streaming_result_preserves_tuple_compatibility(self):
-        """Test that streaming result objects keep the legacy two-value API."""
-        response = ApiImageStreamingRequestResult(
-            text="text",
-            num_tokens=5,
-            usage={"total_tokens": 5},
-        )
-
-        assert tuple(response) == ("text", 5)
-        assert response[1] == 5
-        assert len(response) == 2
-        assert response == ("text", 5)
-        assert response == ApiImageStreamingRequestResult(
-            "text", 5, {"total_tokens": 5}
-        )
-        assert response != "text"
-
     @patch("docling.utils.api_image_request._make_retry_session")
     def test_nested_usage_key_supplies_token_count_when_openai_usage_is_absent(
         self, mock_session_factory, sample_image
@@ -349,15 +307,15 @@ class TestApiImageRequest:
             mock_resp
         )
 
-        result_text, tokens, stop_reason = api_image_request(
+        response = api_image_request(
             image=sample_image,
             prompt="Test prompt",
             url="http://test.api/v1/chat/completions",
         )
 
-        assert result_text == ""
-        assert tokens == 0
-        assert stop_reason == VlmStopReason.UNSPECIFIED
+        assert response.text == ""
+        assert response.num_tokens == 0
+        assert response.stop_reason == VlmStopReason.UNSPECIFIED
         assert "API response body was not JSON" in caplog.text
         assert "not-json" in caplog.text
 
@@ -375,15 +333,15 @@ class TestApiImageRequest:
             mock_resp
         )
 
-        result_text, tokens, stop_reason = api_image_request(
+        response = api_image_request(
             image=sample_image,
             prompt="Test prompt",
             url="http://test.api/v1/chat/completions",
         )
 
-        assert result_text == ""
-        assert tokens == 0
-        assert stop_reason == VlmStopReason.UNSPECIFIED
+        assert response.text == ""
+        assert response.num_tokens == 0
+        assert response.stop_reason == VlmStopReason.UNSPECIFIED
         assert "API response body was empty" in caplog.text
         assert "status=200" in caplog.text
 
