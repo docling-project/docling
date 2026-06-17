@@ -152,18 +152,15 @@ class VlmConvertModel(BasePageModel):
             images = []
             prompts = []
             valid_pages = []
-            rasterize_time = 0.0
-            scale_resize_time = 0.0
-            max_size_resize_time = 0.0
+            image_prep_time = 0.0
 
             for page in page_list:
-                rasterize_start = time.perf_counter()
+                image_prep_start = time.perf_counter()
                 image = page.get_image(
                     scale=self.options.scale,
                     max_size=self.options.max_size,
                 )
-                rasterize_time += time.perf_counter() - rasterize_start
-
+                image_prep_time += time.perf_counter() - image_prep_start
                 if image is None:
                     _log.warning(
                         f"Page {page.page_no} has no image, skipping VLM conversion"
@@ -180,11 +177,9 @@ class VlmConvertModel(BasePageModel):
 
             # Process through runtime using batch prediction
             _log.debug(
-                "Prepared %s pages for VLM engine: rasterize=%.3fs, scale_resize=%.3fs, max_size_resize=%.3fs",
+                "Prepared %s pages for VLM engine in %.3fs",
                 len(images),
-                rasterize_time,
-                scale_resize_time,
-                max_size_resize_time,
+                image_prep_time,
             )
 
             try:
