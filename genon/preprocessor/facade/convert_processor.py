@@ -1831,8 +1831,20 @@ class DocumentProcessor:
         self.pipe_line_options.ocr_options = ocr_options
         self.pipe_line_options.images_scale = images_scale
 
-        # layout 모델로 GENOS_LAYOUT 사용
-        self.pipe_line_options.layout_options.layout_model_type = LayoutModelType.GENOS_LAYOUT
+        # layout 모델 선택. "genos_layout"(default) / "docling_layout". 잘못된 값은 경고 후 폴백.
+        layout_model_type_str = str(
+            layout_cfg.get("layout_model_type", cfg.get("layout_model_type", "genos_layout"))
+        ).lower().strip()
+        if layout_model_type_str == LayoutModelType.DOCLING_LAYOUT.value:
+            layout_model_type = LayoutModelType.DOCLING_LAYOUT
+        else:
+            if layout_model_type_str != LayoutModelType.GENOS_LAYOUT.value:
+                _log.warning(
+                    f"[DocumentProcessor] Unknown layout_model_type '{layout_model_type_str}', "
+                    f"fallback to '{LayoutModelType.GENOS_LAYOUT.value}'"
+                )
+            layout_model_type = LayoutModelType.GENOS_LAYOUT
+        self.pipe_line_options.layout_options.layout_model_type = layout_model_type
         self.pipe_line_options.layout_options.genos_layout_options.endpoint = _as_dict(
             layout_cfg.get("genos_layout")
         ).get("endpoint", "http://192.168.75.174:26001/v1/chat/completions")

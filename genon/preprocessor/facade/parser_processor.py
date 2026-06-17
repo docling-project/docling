@@ -1247,6 +1247,13 @@ class IntelligentDocumentProcessor:
         self.pipe_line_options.table_structure_options.mode = table_structure_mode
         self.pipe_line_options.accelerator_options = accelerator_options
 
+        # docling 모델(TableFormer 등) 로컬 경로. config 에 값이 있을 때만 설정하고,
+        # 비어있으면 설정하지 않아 docling 기본 캐시 동작을 그대로 유지(backward compat).
+        models_cfg = _as_dict(cfg.get("models"))
+        artifacts_path = models_cfg.get("artifacts_path")
+        if artifacts_path:
+            self.pipe_line_options.artifacts_path = Path(artifacts_path)
+
         self.simple_pipeline_options = PipelineOptions()
         self.simple_pipeline_options.save_images = False
 
