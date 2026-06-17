@@ -766,14 +766,14 @@ _DEFAULT_TOKENIZER_LOCAL_PATH = "/models/doc_parser_models/sentence-transformers
 _DEFAULT_TOKENIZER_ID = "sentence-transformers/all-MiniLM-L6-v2"
 
 
-def _resolve_tokenizer(models_cfg: dict):
-    """models config 로부터 토크나이저를 결정한다.
+def _resolve_tokenizer(chunking_cfg: dict):
+    """chunking config 로부터 토크나이저를 결정한다.
 
     tokenizer_path 가 실제 존재하면 그 로컬 경로를, 없으면 tokenizer_id(HF) 로 폴백한다
     (외부 네트워크 차단 환경 대비). config 미지정 시 기본값은 현행 하드코딩 값과 동일.
     """
-    local = models_cfg.get("tokenizer_path") or _DEFAULT_TOKENIZER_LOCAL_PATH
-    hf_id = models_cfg.get("tokenizer_id") or _DEFAULT_TOKENIZER_ID
+    local = chunking_cfg.get("tokenizer_path") or _DEFAULT_TOKENIZER_LOCAL_PATH
+    hf_id = chunking_cfg.get("tokenizer_id") or _DEFAULT_TOKENIZER_ID
     return Path(local) if Path(local).exists() else hf_id
 
 
@@ -837,6 +837,8 @@ class GenosSmartChunker(BaseChunker):
         )
     max_tokens: int = 1024
     merge_peers: bool = True
+    # 토큰 수 계산 방식. "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
+    tokenizer_type: str = "char"
 
     # _inner_chunker: BaseChunker = None
     _tokenizer: PreTrainedTokenizerBase = None
@@ -845,11 +847,20 @@ class GenosSmartChunker(BaseChunker):
     @model_validator(mode="after")
     def _initialize_components(self) -> Self:
         # 토크나이저 초기화
-        self._tokenizer = (
-            self.tokenizer
-            if isinstance(self.tokenizer, PreTrainedTokenizerBase)
-            else AutoTokenizer.from_pretrained(self.tokenizer)
-        )
+        mode = (self.tokenizer_type or "char").strip().lower()
+        if mode not in {"char", "huggingface"}:
+            _log.warning(f"[GenosSmartChunker] Unknown tokenizer_type '{mode}', fallback to 'char'.")
+            mode = "char"
+        self.tokenizer_type = mode
+        if mode == "char":
+            # 문자 수 기반: HF 토크나이저 로드 불필요 (외부 모델 의존 제거)
+            self._tokenizer = None
+        else:
+            self._tokenizer = (
+                self.tokenizer
+                if isinstance(self.tokenizer, PreTrainedTokenizerBase)
+                else AutoTokenizer.from_pretrained(self.tokenizer)
+            )
         return self
 
     def preprocess(self, dl_doc: DLDocument, **kwargs: Any) -> Iterator[BaseChunk]:
@@ -981,6 +992,9 @@ class GenosSmartChunker(BaseChunker):
         """텍스트의 토큰 수 계산 (안전한 분할 처리)"""
         if not text:
             return 0
+
+        if self._tokenizer is None:   # 문자 수 기반
+            return len(text)
 
         # 텍스트를 더 작은 단위로 분할하여 계산
         max_chunk_length = 300  # 더 안전한 길이로 설정
@@ -1149,8 +1163,9 @@ class GenosSmartChunker(BaseChunker):
             return [table_text]
 
         # 단순히 토큰 수 기준으로 텍스트 분할
-        # semchunk 사용하여 토큰 제한에 맞게 분할
-        chunker = semchunk.chunkerify(self._tokenizer, chunk_size=max_tokens)
+        # semchunk 사용하여 토큰 제한에 맞게 분할 (char 모드는 문자 수 카운터 len 사용)
+        counter = len if self._tokenizer is None else self._tokenizer
+        chunker = semchunk.chunkerify(counter, chunk_size=max_tokens)
         chunks = chunker(table_text)
         return chunks if chunks else [table_text]
 
@@ -1511,12 +1526,21 @@ class GenosSmartChunker(BaseChunker):
             sections_with_text.pop(i + 1)
 
         # ================================================================
-        # 4단계: 토큰 기준 병합
+        # 4단계: 토큰 기준 병합 (1차 — 섹션 구조 경계 기준 그룹 생성)
         # ================================================================
 
-        result_chunks = []
+        groups: list[dict] = []
         merged_texts, merged_items = [], []
         merged_header_infos, merged_header_short_infos = [], []
+
+        def flush_group():
+            if merged_texts:
+                groups.append({
+                    "texts": list(merged_texts),
+                    "items": list(merged_items),
+                    "h_infos": list(merged_header_infos),
+                    "h_short": list(merged_header_short_infos),
+                })
 
         for text, items, header_infos, header_short_infos in sections_with_text:
 
@@ -1542,15 +1566,13 @@ class GenosSmartChunker(BaseChunker):
 
             # 새로운 청크 생성
             if b_new_chunk:
-                cur_chunk = get_current_chunk(doc_chunk, merged_texts, merged_header_short_infos, merged_items)
-                if cur_chunk:
-                    result_chunks.append(cur_chunk)
+                flush_group()
 
                 # 새로운 병합 시작
                 merged_texts = [text]
-                merged_items = items
-                merged_header_infos = header_infos
-                merged_header_short_infos = header_short_infos
+                merged_items = list(items)
+                merged_header_infos = list(header_infos)
+                merged_header_short_infos = list(header_short_infos)
             else:
                 # 현재 섹션 병합
                 merged_texts.append(text)
@@ -1559,9 +1581,46 @@ class GenosSmartChunker(BaseChunker):
                 merged_header_short_infos.extend(header_short_infos)
 
         # 마지막 병합된 items 처리
-        cur_chunk = get_current_chunk(doc_chunk, merged_texts, merged_header_short_infos, merged_items)
-        if cur_chunk:
-            result_chunks.append(cur_chunk)
+        flush_group()
+
+        # ================================================================
+        # 5단계: chunk_size 한도 내 인접 그룹 greedy 병합
+        #   1차 결과(구조 경계 기준 그룹)를 순서대로, 합산 크기가 chunk_size 이하인 동안
+        #   인접 그룹끼리 결합한다. (크기는 HEADER 라인 포함 최종 텍스트 기준)
+        # ================================================================
+        if self.max_tokens > 0 and groups:
+            def _size(g):
+                text = "\n".join(g["texts"])
+                headings = self._extract_used_headers(g["h_short"]) or []
+                header_line = ("HEADER: " + ", ".join(headings) + "\n") if headings else ""
+                # char 모드면 문자 수, huggingface 모드면 토큰 수로 산정 (max_tokens 단위와 일치)
+                return self._count_tokens(header_line + text)
+
+            def _merge(a, b):
+                return {
+                    "texts": a["texts"] + b["texts"],
+                    "items": a["items"] + b["items"],
+                    "h_infos": a["h_infos"] + b["h_infos"],
+                    "h_short": a["h_short"] + b["h_short"],
+                }
+
+            merged_groups = [groups[0]]
+            for g in groups[1:]:
+                cand = _merge(merged_groups[-1], g)
+                if _size(cand) <= self.max_tokens:
+                    merged_groups[-1] = cand
+                else:
+                    merged_groups.append(g)
+            groups = merged_groups
+
+        # ================================================================
+        # 6단계: 최종 DocChunk 생성
+        # ================================================================
+        result_chunks = []
+        for g in groups:
+            cur_chunk = get_current_chunk(doc_chunk, g["texts"], g["h_short"], g["items"])
+            if cur_chunk:
+                result_chunks.append(cur_chunk)
 
         return result_chunks
 
@@ -1740,10 +1799,22 @@ class DocumentProcessor:
         layout_cfg = _as_dict(cfg.get("layout"))
         pdf_cfg = _as_dict(cfg.get("pdf_pipeline"))
         models_cfg = _as_dict(cfg.get("models"))
+        chunking_cfg = _as_dict(cfg.get("chunking"))
         ec = EnrichmentConfig.from_raw(cfg.get("enrichment"), self._config_dir, parent_cfg=cfg)
 
-        # 청킹용 토크나이저 (config 기반; 미지정 시 현행 기본값)
-        self._tokenizer = _resolve_tokenizer(models_cfg)
+        # 청킹용 토크나이저 (chunking config 기반; 미지정 시 현행 기본값)
+        self._tokenizer = _resolve_tokenizer(chunking_cfg)
+
+        # 토큰 수 계산 방식 (chunking 섹션). "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
+        self._tokenizer_type = str(chunking_cfg.get("tokenizer_type", "char")).strip().lower()
+        if self._tokenizer_type not in {"char", "huggingface"}:
+            _log.warning(
+                f"[DocumentProcessor] Unknown chunking.tokenizer_type '{self._tokenizer_type}', fallback to 'char'."
+            )
+            self._tokenizer_type = "char"
+
+        # 청크 최대 크기(GenosSmartChunker.max_tokens) 기본값. kwargs 의 chunk_size 가 우선.
+        self._chunk_size = _parse_optional_int(chunking_cfg.get("chunk_size"), "chunking.chunk_size")
 
         # OCR 엔드포인트는 ocr.paddle.ocr_endpoint 가 정식 위치.
         # 구버전 호환: ocr.ocr_endpoint(상위) / 최상위 ocr_endpoint 도 폴백으로 인식.
@@ -2181,10 +2252,15 @@ class DocumentProcessor:
         return chunks
 
     def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
+        # chunk_size 우선순위: kwargs > yaml(chunking.chunk_size) > 0
+        chunk_size = _parse_optional_int(kwargs.get('chunk_size'), 'chunk_size')
+        if chunk_size is None:
+            chunk_size = self._chunk_size
         chunker: GenosSmartChunker = GenosSmartChunker(
-            max_tokens = kwargs.get('max_chunk_size', 0),
+            max_tokens = chunk_size if chunk_size is not None else 0,
             merge_peers = True,
             tokenizer = self._tokenizer,
+            tokenizer_type = self._tokenizer_type,
         )
 
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))

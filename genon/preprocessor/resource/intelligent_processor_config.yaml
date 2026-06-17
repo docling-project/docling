@@ -118,11 +118,19 @@ enrichment:
       max_context_chars: 1500
       prompt_template_file: prompt_image_description_default.md
 
-# 모델 경로 (다운로드된 기본값 사용; 미지정 시 현행 동작 유지)
-models:
-  # 청킹용 토크나이저. tokenizer_path 가 실제 존재하면 그 경로,
+# 청킹(GenosSmartChunker) 설정
+chunking:
+  # 청크 최대 크기(max_tokens). char 모드면 "최대 문자 수", huggingface 모드면 "최대 토큰 수".
+  # 우선순위: 호출 kwargs 의 chunk_size > 아래 chunk_size. 0 = 토큰/문자 기반 분할 안 함.
+  chunk_size: 0
+  # 토큰 수 계산 방식. "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
+  tokenizer_type: "char"
+  # 청킹용 토크나이저(huggingface 모드에서만 사용). tokenizer_path 가 실제 존재하면 그 경로,
   # 없으면 tokenizer_id(HF) 로 폴백 (외부 네트워크 차단 환경 대비)
   tokenizer_path: "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
   tokenizer_id: "sentence-transformers/all-MiniLM-L6-v2"
+
+# 모델 경로 (다운로드된 기본값 사용; 미지정 시 현행 동작 유지)
+models:
   # docling 모델(TableFormer 등) 로컬 경로. 비우면 docling 기본 캐시 사용(현행).
   artifacts_path: ""
