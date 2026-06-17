@@ -41,7 +41,6 @@ depends_on = [
   "docling.datamodel",
   "docling.datamodel.backend_options",
   "docling.exceptions",
-  "docling.utils",
 ]
 
 [[modules]]
