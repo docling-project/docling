@@ -359,6 +359,7 @@ markers = [
   "ml_vlm: VLM and picture-description tests that download or execute vision-language model code.",
   "ml_asr: ASR tests that download or execute speech model code.",
   "cross_platform: Lightweight smoke tests run on Windows and macOS workflow-dispatch lanes.",
+  "external_service: Tests that require a real external service and are excluded from CI.",
 ]
 
 [tool.ruff]

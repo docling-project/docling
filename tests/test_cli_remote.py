@@ -13,6 +13,7 @@ from docling.cli.remote import _parse_page_range
 from docling.datamodel.base_models import ConversionStatus, InputFormat, OutputFormat
 
 runner = CliRunner()
+pytestmark = pytest.mark.external_service
 
 
 class _FakeDoc:
@@ -78,7 +79,7 @@ def _reset_fake():
 
 @pytest.fixture
 def _patch_client(monkeypatch):
-    monkeypatch.setattr("docling.service_client.DoclingServiceClient", _FakeClient)
+    monkeypatch.setattr("docling.cli.remote.DoclingServiceClient", _FakeClient)
     return _FakeClient
 
 
@@ -216,7 +217,7 @@ def test_remote_health_failure_exits_1(tmp_path, monkeypatch):
             self.health_error = ConnectionError("connection refused")
 
     monkeypatch.setattr(
-        "docling.service_client.DoclingServiceClient", _UnreachableClient
+        "docling.cli.remote.DoclingServiceClient", _UnreachableClient
     )
 
     result = runner.invoke(
@@ -243,7 +244,7 @@ def test_remote_missing_input_exits_1(tmp_path, _patch_client):
         ],
     )
     assert result.exit_code == 1
-    assert "does not exist" in result.output
+    assert " ".join(result.output.split()).endswith("does not exist.")
 
 
 @pytest.mark.parametrize(
