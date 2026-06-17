@@ -11,6 +11,8 @@
   | 파싱용 (Element 구조화 API) | `preprocessor/facade/parser_processor.py` |
   | 적재용 지능형 (RAG 고품질) | `preprocessor/facade/intelligent_processor.py` |
 
+- 설치(이미지 빌드·배포) 및 Facade·config 구성 절차는 [GenOS v2 Doc Parser 설치 및 Facade 구성 매뉴얼](installation.md)을 참고하세요.
+
 ## 1. 첨부용 전처리기 (Attachment Processor)
 사용자가 채팅 중 첨부로 업로드하는 파일을 실시간으로 분석하기 위한 경량화 전처리기입니다. 복잡한 구조 분석 과정을 생략하고, **텍스트 추출(Text Extraction)**에 집중하여 즉각적인 응답 속도를 보장합니다.
 
