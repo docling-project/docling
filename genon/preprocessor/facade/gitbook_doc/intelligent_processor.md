@@ -21,14 +21,17 @@ RAG 지식베이스 구축을 위한 **품질 최우선** 전처리기입니다.
     - [사이트별 필수 수정 항목 요약](#사이트별-필수-수정-항목-요약)
   - [3. 설정 (`intelligent_processor_config.yaml`)](#3-설정-intelligent_processor_configyaml)
     - [3.1 전체 스키마](#31-전체-스키마)
+      - [defaults 설정](#defaults-설정)
     - [3.2 OCR 설정](#32-ocr-설정)
     - [3.3 레이아웃 설정](#33-레이아웃-설정)
+      - [`repetition_penalty` 사용 가이드](#repetition_penalty-사용-가이드)
     - [3.4 PDF 파이프라인 설정](#34-pdf-파이프라인-설정)
     - [3.5 Enrichment 설정](#35-enrichment-설정)
       - [toc](#toc)
       - [metadata](#metadata)
       - [image\_description](#image_description)
       - [custom\_fields](#custom_fields)
+      - [프롬프트 파일 분리 \& 변수 치환](#프롬프트-파일-분리--변수-치환)
     - [3.7 청킹 설정](#37-청킹-설정)
     - [3.8 사이트 적용 시 필수 수정 항목](#38-사이트-적용-시-필수-수정-항목)
     - [3.9 자주 쓰는 튜닝 시나리오](#39-자주-쓰는-튜닝-시나리오)
@@ -165,7 +168,7 @@ layout:
   genos_layout:
     endpoint: "http://llmops-gateway-api-service:8080/rep/serving/<LAYOUT_SERVING_ID>/v1/chat/completions"
     api_key: ""               # k8s 내부 통신 시 불필요
-    page_batch_size: 32
+    page_batch_size: 128
     max_completion_tokens: 16384
     model: "dots-mocr"          # 서빙 모델명
     timeout: 3600               # VLM 요청 타임아웃(초)
@@ -277,7 +280,7 @@ enrichment:
 | `layout.layout_model_type` | `genos_layout`=외부 서빙형 / `docling_layout`=Docling 내재 모델 | `genos_layout` |
 | `layout.genos_layout.endpoint` | GenOS layout 모델 서빙 주소 (`<LAYOUT_SERVING_ID>` 치환) | — |
 | `layout.genos_layout.api_key` | k8s 내부 통신 시 불필요 | `""` |
-| `layout.genos_layout.page_batch_size` | layout 추론 페이지 배치 크기 (전역 `settings.perf` 에 반영) | 32 |
+| `layout.genos_layout.page_batch_size` | layout 추론 페이지 배치 크기 (전역 `settings.perf` 에 반영) | 128 |
 | `layout.genos_layout.max_completion_tokens` | layout LLM 최대 생성 토큰. 양의 정수, 유효하지 않거나 0 이하이면 16384 폴백 | 16384 |
 | `layout.genos_layout.model` | 서빙 모델명. 비어있으면 `dots-mocr` 폴백 | `"dots-mocr"` |
 | `layout.genos_layout.timeout` | VLM 요청 HTTP 타임아웃(초). 유효하지 않거나 0 이하이면 3600 폴백 | 3600 |

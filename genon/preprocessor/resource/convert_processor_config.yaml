@@ -40,7 +40,7 @@ layout:
     # api_key는 k8s 내부 통신 기반 모델 호출 시 불필요.
     endpoint: "http://llmops-gateway-api-service:8080/rep/serving/<LAYOUT_SERVING_ID>/v1/chat/completions"
     api_key: ""
-    page_batch_size: 32
+    page_batch_size: 128
     max_completion_tokens: 16384
     model: "dots-mocr"          # 서빙 모델명
     timeout: 3600               # VLM 요청 타임아웃(초)
