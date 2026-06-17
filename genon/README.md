@@ -265,20 +265,52 @@ huggingface-cli download rednote-hilab/dots.mocr \
 
 2. Genos 모델서빙 기능으로 서빙생성
 
-- 주요 옵션은 아래 서빙명령어 참고 (내부 별도서버에 서비스 했던 vllm 서빙명령어)
+GPU 메모리 크기에 따라 권장 옵션이 갈린다 (이슈 [#205](https://github.com/genonai/doc_parser/issues/205) 운영 분석 + 메모리 한계 기반 계산식 — 자세한 근거는 [`dotsocr_vllm_max_num_seqs.md`](dotsocr_vllm_max_num_seqs.md) 참고).
+
+### 공통 옵션 (모든 케이스 동일)
+
+```shell
+--host 0.0.0.0 \
+--port 26001 \
+--tensor-parallel-size 1 \
+--dtype bfloat16 \
+--max-model-len 20480 \            # 이미지 ~2.5k + 출력 16384 + 여유분 (짧으면 OOM)
+--limit-mm-per-prompt image=1 \
+--enable-chunked-prefill \         # 긴 prefill(이미지) + decode 혼합 효율↑
+--chat-template-content-format string \
+--served-model-name dots-mocr \
+--trust-remote-code
+```
+
+### 케이스별 가변 옵션 (`--gpu-memory-utilization` / `--max-num-seqs`)
+
+| GPU 메모리 | `--gpu-memory-utilization` | `--max-num-seqs` (표준 권장) | 비고 |
+|---|---|---|---|
+| 24G (L4 등) | 0.9 | **64** | 메모리 한계 기준 |
+| 40G (MIG 슬라이스) | 0.9 | **128** | |
+| 80G (H100, 안전) | 0.9 | **256** | 표준 권장. CUDA graph capture 천장이 256 |
+| 80G (KV cache 극대화) | 0.95 | **128** | KV cache 더 끌어쓰되 동시성 보수 |
+
+> 모든 요청이 `max completion token` 을 꽉 채우는 worst case가 운영상 우려되면 더 보수적 마진(24/40G:32, 80G:64)을 사용한다. 자세한 표는 [`dotsocr_vllm_max_num_seqs.md` "7.3 보수적 옵션"](dotsocr_vllm_max_num_seqs.md#73-보수적-옵션-worst-case-oom-회피) 참고.
+
+
+
+### 예시: 80G 표준 권장 (다른 GPU 크기는 위 표에 따라 두 옵션만 바꾸면 동일 패턴)
 
 ```shell
 CUDA_VISIBLE_DEVICES=0 vllm serve rednote-hilab/dots.mocr \
- --host 0.0.0.0 \
- --port 26001 \
- --tensor-parallel-size 1 \
- --dtype bfloat16 \
- --gpu-memory-utilization 0.9 \
- --max-model-len 20000 \
- --max-num-seqs 256 \
- --chat-template-content-format string \
- --served-model-name dots-mocr \
- --trust-remote-code
+  --host 0.0.0.0 \
+  --port 26001 \
+  --tensor-parallel-size 1 \
+  --dtype bfloat16 \
+  --gpu-memory-utilization 0.9 \
+  --max-model-len 20480 \
+  --max-num-seqs 256 \
+  --limit-mm-per-prompt image=1 \
+  --enable-chunked-prefill \
+  --chat-template-content-format string \
+  --served-model-name dots-mocr \
+  --trust-remote-code
 ```
 
-- max-num-sqes를 256으로 설정한 근거 문서 참고바람: [dotsocr_vllm_max_num_seqs.md](dotsocr_vllm_max_num_seqs.md)
+`CUDA_VISIBLE_DEVICES` 는 MIG 환경이면 `MIG-<instance-UUID>` 로, L4 단일 GPU 환경이면 `0` 등으로 지정한다.
