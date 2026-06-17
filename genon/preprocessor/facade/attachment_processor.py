@@ -200,14 +200,14 @@ def _resolve_default_attachment_config_path() -> str:
     return str(default_config)
 
 
-def _resolve_tokenizer(models_cfg: dict):
-    """models config 로부터 토크나이저를 결정한다.
+def _resolve_tokenizer(chunking_cfg: dict):
+    """chunking config 로부터 토크나이저를 결정한다.
 
     tokenizer_path 가 실제 존재하면 그 로컬 경로를, 없으면 tokenizer_id(HF) 로 폴백한다
     (외부 네트워크 차단 환경 대비). config 미지정 시 기본값은 현행 하드코딩 값과 동일.
     """
-    local = models_cfg.get("tokenizer_path") or _DEFAULT_TOKENIZER_LOCAL_PATH
-    hf_id = models_cfg.get("tokenizer_id") or _DEFAULT_TOKENIZER_ID
+    local = chunking_cfg.get("tokenizer_path") or _DEFAULT_TOKENIZER_LOCAL_PATH
+    hf_id = chunking_cfg.get("tokenizer_id") or _DEFAULT_TOKENIZER_ID
     return Path(local) if Path(local).exists() else hf_id
 
 
@@ -847,19 +847,32 @@ class HybridChunker(BaseChunker):
         )
     max_tokens: int = _DEFAULT_HYBRID_MAX_TOKENS  # type: ignore[assignment]
     merge_peers: bool = True
+    # 토큰 수 계산 방식. "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
+    tokenizer_type: str = "char"
     _inner_chunker: HierarchicalChunker = HierarchicalChunker()
 
     @model_validator(mode="after")
     def _patch_tokenizer_and_max_tokens(self) -> Self:
-        self._tokenizer = (
-            self.tokenizer
-            if isinstance(self.tokenizer, PreTrainedTokenizerBase)
-            else AutoTokenizer.from_pretrained(self.tokenizer)
-        )
-        if self.max_tokens is None:
-            self.max_tokens = TypeAdapter(PositiveInt).validate_python(
-                self._tokenizer.model_max_length
+        mode = (self.tokenizer_type or "char").strip().lower()
+        if mode not in {"char", "huggingface"}:
+            _log.warning(f"[HybridChunker] Unknown tokenizer_type '{mode}', fallback to 'char'.")
+            mode = "char"
+        self.tokenizer_type = mode
+        if mode == "char":
+            # 문자 수 기반: HF 토크나이저 로드 불필요 (외부 모델 의존 제거)
+            self._tokenizer = None
+            if self.max_tokens is None:
+                self.max_tokens = _DEFAULT_HYBRID_MAX_TOKENS
+        else:
+            self._tokenizer = (
+                self.tokenizer
+                if isinstance(self.tokenizer, PreTrainedTokenizerBase)
+                else AutoTokenizer.from_pretrained(self.tokenizer)
             )
+            if self.max_tokens is None:
+                self.max_tokens = TypeAdapter(PositiveInt).validate_python(
+                    self._tokenizer.model_max_length
+                )
         return self
 
     def _count_text_tokens(self, text: Optional[Union[str, list[str]]]):
@@ -870,6 +883,8 @@ class HybridChunker(BaseChunker):
             for t in text:
                 total += self._count_text_tokens(t)
             return total
+        if self._tokenizer is None:   # 문자 수 기반
+            return len(text)
         return len(self._tokenizer.tokenize(text))
 
     class _ChunkLengthInfo(BaseModel):
@@ -879,6 +894,8 @@ class HybridChunker(BaseChunker):
 
     def _count_chunk_tokens(self, doc_chunk: DocChunk):
         ser_txt = self.serialize(chunk=doc_chunk)
+        if self._tokenizer is None:   # 문자 수 기반
+            return len(ser_txt)
         return len(self._tokenizer.tokenize(text=ser_txt))
 
     def _doc_chunk_length(self, doc_chunk: DocChunk):
@@ -955,8 +972,10 @@ class HybridChunker(BaseChunker):
         else:
             # 헤더/캡션을 제외하고 본문 텍스트에 할당 가능한 토큰 수 계산
             available_length = self.max_tokens - lengths.other_len
+            # char 모드는 문자 수 카운터 len 사용
+            counter = len if self._tokenizer is None else self._tokenizer
             sem_chunker = semchunk.chunkerify(
-                self._tokenizer, chunk_size=available_length
+                counter, chunk_size=available_length
             )
             if available_length <= 0:
                 warnings.warn(
@@ -1208,16 +1227,17 @@ class DocxProcessor:
             return chunks
 
         # hybrid
-        hybrid_max_tokens = _parse_optional_int(kwargs.get("hybrid_max_tokens"), "hybrid_max_tokens")
-        if hybrid_max_tokens is None or hybrid_max_tokens <= 0:
-            hybrid_max_tokens = _DEFAULT_HYBRID_MAX_TOKENS
+        hybrid_chunk_size = _parse_optional_int(kwargs.get("hybrid_chunk_size"), "hybrid_chunk_size")
+        if hybrid_chunk_size is None or hybrid_chunk_size <= 0:
+            hybrid_chunk_size = _DEFAULT_HYBRID_MAX_TOKENS
         hybrid_merge_peers = _parse_optional_bool(kwargs.get("hybrid_merge_peers"), "hybrid_merge_peers")
         if hybrid_merge_peers is None:
             hybrid_merge_peers = True
         chunker_kwargs = {
-            "max_tokens": hybrid_max_tokens,
+            "max_tokens": hybrid_chunk_size,
             "merge_peers": hybrid_merge_peers,
             "tokenizer": self._tokenizer,
+            "tokenizer_type": kwargs.get("hybrid_tokenizer_type", "char"),
         }
         hybrid_tokenizer = kwargs.get("hybrid_tokenizer_id")
         if hybrid_tokenizer:
@@ -1376,16 +1396,17 @@ class HwpProcessor:
             return chunks, page_chunk_counts
 
         # hybrid
-        hybrid_max_tokens = _parse_optional_int(kwargs.get("hybrid_max_tokens"), "hybrid_max_tokens")
-        if hybrid_max_tokens is None or hybrid_max_tokens <= 0:
-            hybrid_max_tokens = _DEFAULT_HYBRID_MAX_TOKENS
+        hybrid_chunk_size = _parse_optional_int(kwargs.get("hybrid_chunk_size"), "hybrid_chunk_size")
+        if hybrid_chunk_size is None or hybrid_chunk_size <= 0:
+            hybrid_chunk_size = _DEFAULT_HYBRID_MAX_TOKENS
         hybrid_merge_peers = _parse_optional_bool(kwargs.get("hybrid_merge_peers"), "hybrid_merge_peers")
         if hybrid_merge_peers is None:
             hybrid_merge_peers = True
         chunker_kwargs = {
-            "max_tokens": hybrid_max_tokens,
+            "max_tokens": hybrid_chunk_size,
             "merge_peers": hybrid_merge_peers,
             "tokenizer": self._tokenizer,
+            "tokenizer_type": kwargs.get("hybrid_tokenizer_type", "char"),
         }
         hybrid_tokenizer = kwargs.get("hybrid_tokenizer_id")
         if hybrid_tokenizer:
@@ -1512,10 +1533,9 @@ class DocumentProcessor:
         image_loader_cfg = _as_dict(loaders_cfg.get("image"))
         tabular_loader_cfg = _as_dict(loaders_cfg.get("tabular"))
         whisper_cfg = _as_dict(cfg.get("whisper"))
-        models_cfg = _as_dict(cfg.get("models"))
 
-        # 청킹용 토크나이저 (config 기반; 미지정 시 현행 기본값)
-        self._tokenizer = _resolve_tokenizer(models_cfg)
+        # 청킹용 토크나이저 (chunking config 기반; 미지정 시 현행 기본값)
+        self._tokenizer = _resolve_tokenizer(chunking_cfg)
 
         chunker_type = str(defaults_cfg.get("chunker_type", "recursive")).strip().lower()
         if chunker_type not in {"recursive", "hybrid"}:
@@ -1564,17 +1584,23 @@ class DocumentProcessor:
             recursive_token_cap = _RECURSIVE_CHUNK_SIZE_CAP
         recursive_tokenizer_id = str(recursive_chunk_cfg.get("tokenizer_id") or "").strip() or None
 
-        hybrid_max_tokens = _parse_optional_int(
-            hybrid_chunk_cfg.get("max_tokens"), "chunking.hybrid.max_tokens"
+        hybrid_chunk_size = _parse_optional_int(
+            hybrid_chunk_cfg.get("chunk_size"), "chunking.hybrid.chunk_size"
         )
-        if hybrid_max_tokens is None or hybrid_max_tokens <= 0:
-            hybrid_max_tokens = _DEFAULT_HYBRID_MAX_TOKENS
+        if hybrid_chunk_size is None or hybrid_chunk_size <= 0:
+            hybrid_chunk_size = _DEFAULT_HYBRID_MAX_TOKENS
         hybrid_merge_peers = _parse_optional_bool(
             hybrid_chunk_cfg.get("merge_peers"), "chunking.hybrid.merge_peers"
         )
         if hybrid_merge_peers is None:
             hybrid_merge_peers = True
         hybrid_tokenizer_id = str(hybrid_chunk_cfg.get("tokenizer_id") or "").strip() or None
+        hybrid_tokenizer_type = str(hybrid_chunk_cfg.get("tokenizer_type", "char")).strip().lower()
+        if hybrid_tokenizer_type not in {"char", "huggingface"}:
+            _log.warning(
+                f"[DocumentProcessor] Unknown chunking.hybrid.tokenizer_type '{hybrid_tokenizer_type}', fallback to 'char'."
+            )
+            hybrid_tokenizer_type = "char"
 
         image_ocr_languages = image_loader_cfg.get("ocr_languages", ["kor", "eng"])
         if isinstance(image_ocr_languages, (list, tuple, set)):
@@ -1616,9 +1642,10 @@ class DocumentProcessor:
             "recursive_chunk_overlap": recursive_chunk_overlap,
             "recursive_token_chunk_size_cap": recursive_token_cap,
             "recursive_tokenizer_id": recursive_tokenizer_id,
-            "hybrid_max_tokens": hybrid_max_tokens,
+            "hybrid_chunk_size": hybrid_chunk_size,
             "hybrid_merge_peers": hybrid_merge_peers,
             "hybrid_tokenizer_id": hybrid_tokenizer_id,
+            "hybrid_tokenizer_type": hybrid_tokenizer_type,
             "image_ocr_languages": image_ocr_languages,
             "tabular_encoding_detect_sample_bytes": tabular_sample_bytes,
             "whisper_url": str(

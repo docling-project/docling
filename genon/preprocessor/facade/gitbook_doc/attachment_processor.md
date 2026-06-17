@@ -109,6 +109,11 @@ defaults:
   save_images: true
 
 chunking:
+  # 청킹용 토크나이저 기본값(hybrid 경로 등). tokenizer_path 가 실제 존재하면 그 경로,
+  # 없으면 tokenizer_id(HF) 로 폴백 (외부 네트워크 차단 환경 대비)
+  tokenizer_path: "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
+  tokenizer_id: "sentence-transformers/all-MiniLM-L6-v2"
+
   # pdf/txt/md/ppt 등 일반 텍스트 splitter 기본값
   generic:
     chunk_size: 1000
@@ -125,8 +130,10 @@ chunking:
 
   # hwp/hwpx/docx + hybrid 분기 기본값
   hybrid:
+    # 토큰 수 계산 방식. "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
+    tokenizer_type: "char"
     tokenizer_id: ""
-    max_tokens: 10000000
+    chunk_size: 10000000
     merge_peers: true
 
 loaders:
@@ -169,6 +176,13 @@ whisper:
 | `dump_sdk_output` | `false` | SDK 원본 출력 덤프 여부. `use_hwp_sdk=true` 일 때만 유효 |
 | `save_images` | `true` | hwp/hwpx 처리 시 추출 이미지 저장 여부 |
 
+#### chunking (청킹용 토크나이저 기본값)
+
+| 키 | 기본값 | 설명 |
+|----|--------|------|
+| `tokenizer_path` | `/models/...all-MiniLM-L6-v2` | 청킹용 토크나이저 로컬 경로(hybrid `huggingface` 모드 및 recursive 60K 토큰 cap 계산에 사용). 경로가 실제 존재하면 그 경로 사용 |
+| `tokenizer_id` | `sentence-transformers/all-MiniLM-L6-v2` | `tokenizer_path` 가 없을 때 폴백할 HF ID (외부 네트워크 차단 환경 대비) |
+
 #### chunking.generic (pdf/txt/md/ppt 등 일반 splitter)
 
 | 키 | 기본값 | 설명 |
@@ -189,9 +203,10 @@ whisper:
 
 | 키 | 기본값 | 설명 |
 |----|--------|------|
-| `tokenizer_id` | `""` | 비우면 로컬 경로 우선, 없으면 HF ID로 fallback |
-| `max_tokens` | `10000000` | 청크당 최대 토큰. 기본값은 사실상 토큰 제한 없음 → hybrid를 레이아웃 기반 병합 도구로만 사용. 0 이하/누락 시 코드 fallback(`1e30`) |
-| `merge_peers` | `true` | 같은 제목/캡션을 가진 작은 청크를 토큰 제한 내에서 병합 |
+| `tokenizer_type` | `"char"` | 토큰 수 계산 방식. `char`(기본)=문자 수 기준(HF 토크나이저 미로드, 외부 모델 의존 없음) / `huggingface`=HF 토크나이저 기준. 그 외 값은 `char`로 폴백 |
+| `tokenizer_id` | `""` | `huggingface` 모드에서만 사용. 비우면 chunking 상위 토크나이저(로컬 경로 우선, 없으면 HF ID)로 fallback |
+| `chunk_size` | `10000000` | 청크당 최대 크기. `char` 모드면 문자 수, `huggingface` 모드면 토큰 수. 기본값은 사실상 제한 없음 → hybrid를 레이아웃 기반 병합 도구로만 사용. 0 이하/누락 시 코드 fallback(`1e30`) |
+| `merge_peers` | `true` | 같은 제목/캡션을 가진 작은 청크를 크기 제한 내에서 병합 |
 
 #### loaders.image
 
@@ -223,7 +238,7 @@ whisper:
 #### chunker_type: recursive vs hybrid
 
 - **recursive (기본)**: `DoclingDocument`를 markdown으로 export한 뒤 `RecursiveCharacterTextSplitter`로 **문자 단위** 분할합니다. 단락/헤딩/표 경계의 줄바꿈이 보존되어 문장 중간에서 잘리는 현상이 적고, 페이지 단위 정확도를 가집니다. 대부분의 경우 권장됩니다.
-- **hybrid**: 레이아웃 계층 구조를 유지하며 **토큰 수 기반**으로 청크를 조절합니다. 기본 `max_tokens=10000000`은 사실상 토큰 제한이 없는 수준이라, 이 전처리기에서는 주로 레이아웃 기반 병합 도구로 동작합니다. 청크 단위 bbox 정확도가 필요할 때 사용합니다.
+- **hybrid**: 레이아웃 계층 구조를 유지하며 청크 크기 기반으로 청크를 조절합니다. 크기 계산 방식은 `chunking.hybrid.tokenizer_type`(기본 `char`=문자 수 / `huggingface`=HF 토큰 수)으로 선택합니다. 기본 `chunk_size=10000000`은 사실상 제한이 없는 수준이라, 이 전처리기에서는 주로 레이아웃 기반 병합 도구로 동작합니다. 청크 단위 bbox 정확도가 필요할 때 사용합니다.
 - **60K 토큰 cap**: recursive 분기에서는 chunk_size와 무관하게 한 청크가 `token_chunk_size_cap`(기본 60000) 토큰을 넘으면 토큰 단위로 강제 재분할됩니다. 기본 8192자 청크에서는 보통 트리거되지 않으며, 큰 chunk_size를 지정했을 때의 안전망입니다.
 
 ### 3.3 런타임 kwargs override
@@ -261,7 +276,8 @@ defaults:
   chunker_type: "hybrid"
 chunking:
   hybrid:
-    max_tokens: 1000     # 실제 토큰 제한을 두려면 작은 값 지정
+    tokenizer_type: "char"  # char=문자 수 기준 | huggingface=HF 토큰 수 기준
+    chunk_size: 1000        # 실제 분할 제한을 두려면 작은 값 지정(char 모드면 문자 수)
     merge_peers: true
 ```
 

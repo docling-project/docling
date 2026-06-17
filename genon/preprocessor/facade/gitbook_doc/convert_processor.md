@@ -179,6 +179,17 @@ pdf_pipeline:
   generate_picture_images: true
   table_structure_mode: "accurate"   # "accurate"(default) | "fast"
 
+# 청킹(GenosSmartChunker) 설정
+chunking:
+  # 청크 최대 크기. char 모드면 "최대 문자 수", huggingface 모드면 "최대 토큰 수".
+  # 우선순위: 호출 kwargs 의 chunk_size > 아래 chunk_size. 0 = 크기 기반 분할 안 함.
+  chunk_size: 0
+  # 토큰 수 계산 방식. "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
+  tokenizer_type: "char"
+  # 청킹용 토크나이저(huggingface 모드에서만 사용). tokenizer_path 존재 시 그 경로, 없으면 tokenizer_id(HF) 폴백
+  tokenizer_path: "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
+  tokenizer_id: "sentence-transformers/all-MiniLM-L6-v2"
+
 # enrichment — {이름: {옵션}} 형식의 list.
 # 비활성화: ① 항목 삭제  ② 항목 주석 처리  ③ enable: false
 # 모든 url 의 <ENRICHMENT_SERVING_ID> 는 Genos에 등록한 모델서빙 ID로 변경 필요.
@@ -670,9 +681,10 @@ filename: 보고서.pdf
 | **표 분석 속도 우선** | `pdf_pipeline.table_structure_mode: "fast"` |
 | **메모리 절감** | `pdf_pipeline.generate_page_images: false`, `images_scale: 1` |
 | **레이아웃 인프라 없음** | `layout.layout_model_type: "docling_layout"` |
-| **청크 토큰 크기 조정** | 코드의 `GenosSmartChunker` `max_tokens` 조정 (운영 기준 약 2000). config 노브가 아니므로 [부록 E](#부록-코드-내부-상세) 참고 |
+| **청크 크기 조정** | `chunking.chunk_size` (yaml) 또는 호출 kwargs `chunk_size`. 우선순위 kwargs > yaml > 0 |
+| **청크 크기 계산 방식** | `chunking.tokenizer_type`: `char`(기본)=문자 수 기준 / `huggingface`=HF 토큰 수 기준 |
 
-> **청크 토큰**: convert 경로의 청크 크기는 `split_documents()` → `GenosSmartChunker(max_tokens=...)` 로 결정됩니다. 현재 facade 구현에서는 호출 kwargs(`max_chunk_size`) 또는 운영 기준 약 2000 토큰을 사용합니다. 향후 config 노브로 노출될 예정이며, 지금은 코드 변경 사항입니다.
+> **청크 크기**: convert 경로의 청크 크기는 `split_documents()` → `GenosSmartChunker(max_tokens=...)` 로 결정됩니다. 값은 호출 kwargs `chunk_size` 가 우선이고, 없으면 yaml `chunking.chunk_size`, 둘 다 없으면 `0`(크기 기반 분할 안 함)입니다. 크기 단위는 `chunking.tokenizer_type` 으로 정해집니다(`char`=문자 수, `huggingface`=HF 토큰 수). char 모드에서는 HF 토크나이저를 로드하지 않습니다.
 
 ---
 
@@ -808,7 +820,7 @@ class GenOSVectorMeta(BaseModel):
 | `created_date` 가 0 | 추출/본문 스캔 모두 실패 또는 날짜 포맷 미인식 | `enrichment.metadata.field_transforms`, 프롬프트 `output_fields` |
 | 메모리 부족(OOM) | 이미지 생성·배율 과다 | `pdf_pipeline.generate_page_images: false`, `images_scale` 하향 |
 | 표 분석 느림 | accurate 모드 | `pdf_pipeline.table_structure_mode: "fast"` |
-| 청크가 너무 큼/작음 | `GenosSmartChunker.max_tokens` | (코드 노브, [부록 E](#부록-코드-내부-상세) 참고) |
+| 청크가 너무 큼/작음 | `chunking.chunk_size`(yaml) 또는 kwargs `chunk_size` | 우선순위 kwargs > yaml > 0. 단위는 `chunking.tokenizer_type`(char=문자/huggingface=토큰) |
 | `chunk length is 0` | 청크 미생성(빈 문서/파싱 실패) | 입력 파일·OCR·레이아웃 점검 |
 
 ---
@@ -878,13 +890,14 @@ else:  # .pdf / .docx / .pptx 등 Docling 경로
 
 ```python
 class GenosSmartChunker(BaseChunker):
-    tokenizer = "/models/.../sentence-transformers-all-MiniLM-L6-v2"  # 토큰 카운팅용 (없으면 HF fallback)
-    max_tokens: int = 1024        # 클래스 기본값. split_documents() 호출 시 max_chunk_size kwargs 로 오버라이드(운영 기준 약 2000)
+    tokenizer = "/models/.../sentence-transformers-all-MiniLM-L6-v2"  # huggingface 모드 토큰 카운팅용 (없으면 HF fallback)
+    max_tokens: int = 1024        # 클래스 기본값. split_documents() 에서 chunk_size(kwargs>yaml>0)로 오버라이드
+    tokenizer_type: str = "char"  # "char"(기본)=문자 수 기준 | "huggingface"=HF 토큰 수 기준
     merge_peers: bool = True
     merge_list_items: bool = True
 ```
 
-`split_documents()` 는 `GenosSmartChunker(max_tokens=kwargs.get('max_chunk_size', 0), merge_peers=True)` 로 청커를 만들고, 청크별 시작 페이지 카운트를 누적합니다. `preprocess()` 로 모든 아이템+헤더를 1개의 DocChunk 로 수집한 뒤 `_split_document_by_tokens()` 의 4단계(+2.5 보정) 파이프라인으로 분할합니다([4.3](#43-genosbucketchunker-전략)).
+`split_documents()` 는 청크 크기를 `chunk_size = kwargs.get('chunk_size')` (없으면 yaml `chunking.chunk_size`, 둘 다 없으면 `0`)로 정하고 `GenosSmartChunker(max_tokens=chunk_size, tokenizer_type=<chunking.tokenizer_type>, merge_peers=True)` 로 청커를 만듭니다. 청킹 토크나이저 경로/계산 방식은 yaml `chunking` 섹션(`tokenizer_path`/`tokenizer_id`/`tokenizer_type`)에서 읽습니다. `preprocess()` 로 모든 아이템+헤더를 1개의 DocChunk 로 수집한 뒤 `_split_document_by_tokens()` 의 4단계(+2.5 보정) 파이프라인으로 분할합니다([4.3](#43-genosbucketchunker-전략)).
 
 ### F. `compose_vectors` 메타데이터 병합
 

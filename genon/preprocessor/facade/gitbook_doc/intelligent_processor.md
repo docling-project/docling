@@ -185,6 +185,17 @@ pdf_pipeline:
   generate_picture_images: true   # false 면 이미지 설명 enrichment 비활성화됨
   table_structure_mode: "accurate" # "accurate"(default) | "fast"
 
+# 청킹(GenosSmartChunker) 설정
+chunking:
+  # 청크 최대 크기. char 모드면 "최대 문자 수", huggingface 모드면 "최대 토큰 수".
+  # 우선순위: 호출 kwargs 의 chunk_size > 아래 chunk_size. 0 = 크기 기반 분할 안 함(순수 섹션 분할).
+  chunk_size: 0
+  # 토큰 수 계산 방식. "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
+  tokenizer_type: "char"
+  # 청킹용 토크나이저(huggingface 모드에서만 사용). tokenizer_path 존재 시 그 경로, 없으면 tokenizer_id(HF) 폴백
+  tokenizer_path: "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
+  tokenizer_id: "sentence-transformers/all-MiniLM-L6-v2"
+
 # enrichment: {이름: {옵션}} 형식의 list.
 # 비활성화: ① 항목 삭제  ② 항목 주석 처리  ③ enable: false
 # url 의 <ENRICHMENT_SERVING_ID> 는 Genos에 등록한 모델서빙 ID로 변경. api_key 는 k8s 내부 통신 시 불필요.
@@ -587,7 +598,7 @@ filename: 보고서.pdf
 
 ### 3.7 청킹 설정
 
-intelligent 는 `GenosSmartChunker(max_tokens=0)` 으로 **순수 섹션 분할**을 수행합니다. `max_tokens=0` 은 "토큰 기반 병합·분할을 하지 않고 각 섹션을 독립 청크로 유지"한다는 의미입니다.
+intelligent 는 `GenosSmartChunker` 로 섹션 분할을 수행합니다. 청크 크기는 yaml `chunking.chunk_size`(또는 호출 kwargs `chunk_size`)로 지정하며, `chunk_size=0` 이면 **순수 섹션 분할**("크기 기반 병합·분할을 하지 않고 각 섹션을 독립 청크로 유지")이 됩니다.
 
 ```
 Bucket = 바구니(하나의 청크), max_tokens = 바구니 크기, 섹션 = 담을 물건
@@ -609,16 +620,17 @@ max_tokens=2000 (convert):          max_tokens=0 (intelligent):
 
 > `max_tokens=0` 이면 "초과 청크 균등 분할"(캡션/표내그림 조정 포함)도 스킵됩니다 — 아무리 긴 섹션도 자르지 않아 표·조항이 중간에 끊기지 않습니다.
 
-**값 변경 (코드 레벨 보조 튜닝)** — `max_tokens` 는 현재 YAML 노브가 아니라 `split_documents()` 코드에 있습니다. 조정이 필요하면:
+**값 변경 (YAML 노브)** — 청크 크기는 yaml `chunking.chunk_size` 또는 호출 kwargs `chunk_size` 로 지정합니다(우선순위 kwargs > yaml > 0). 크기 단위는 `chunking.tokenizer_type` 으로 정해집니다(`char`=문자 수 기준(기본, HF 토크나이저 미로드) / `huggingface`=HF 토큰 수 기준).
 
-```python
-# intelligent_processor.py — split_documents()
-chunker = GenosSmartChunker(max_tokens=0, merge_peers=True)  # ← 0 → 512/1024/2000 등으로 변경
+```yaml
+chunking:
+  chunk_size: 0           # 0=순수 섹션 분할 / 512·1024·2000 등=크기 기반 병합
+  tokenizer_type: "char"  # char=문자 수 기준 | huggingface=HF 토큰 수 기준
 ```
 
-| 값 | 동작 | 권장 |
+| `chunk_size` | 동작 | 권장 |
 |----|------|------|
-| `0` | 각 섹션 독립 청크 (기본) | 법률/규정, 정밀 검색 RAG |
+| `0` | 각 섹션 독립 청크 (순수 섹션 분할) | 법률/규정, 정밀 검색 RAG |
 | `512` | 작은 섹션 병합 | 짧은 조항 多 |
 | `1024` | 중간 병합 | 일반 RAG |
 | `2000` | 큰 단위 병합 | 문맥 연속성 중시 |
@@ -828,7 +840,7 @@ async def __call__(self, request, file_path, **kwargs):
     document = document._with_pictures_refs(...)
     document = self.enrichment(document, **kwargs)
     # 빈 문서면 더미 "." 삽입
-    chunks = self.split_documents(document, **kwargs)   # GenosSmartChunker(max_tokens=0)
+    chunks = self.split_documents(document, **kwargs)   # GenosSmartChunker(max_tokens=chunking.chunk_size, 기본 0)
     if len(chunks) < 1: raise GenosServiceException(1, "chunk length is 0")
     return await self.compose_vectors(document, chunks, file_path, request, converted_pdf_path=..., **kwargs)
 ```
