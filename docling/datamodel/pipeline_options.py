@@ -1490,6 +1490,84 @@ class VlmExtractionPipelineOptions(PipelineOptions):
     ] = ExtractionPromptStyle.NUEXTRACT
 
 
+class HeadingHierarchyOptions(BaseModel):
+    """Options for inferring section-header levels in the PDF/image pipeline.
+
+    The layout model only flags regions as ``SECTION_HEADER`` without a level, so every
+    heading produced by the PDF path defaults to ``level=1`` and the document hierarchy is
+    flattened. When ``enabled``, a post-assembly step in the reading-order stage assigns
+    ``SectionHeaderItem.level`` from (in precedence order) numbering, font style and -- once
+    the backend plumbing lands -- PDF bookmarks. The step only changes heading levels; it
+    never adds, removes or reorders items, and headings for which no signal applies keep
+    their current level.
+
+    Notes:
+        - ``use_style`` requires the parsed PDF cells to still be available when the
+          reading-order stage runs, i.e. ``PdfPipelineOptions.generate_parsed_pages=True``.
+          Without them, style inference is silently skipped (numbering still applies).
+        - ``use_bookmarks`` is reserved for the PDF-outline signal and is a no-op until the
+          backend outline extraction is implemented (tracked as a follow-up).
+    """
+
+    enabled: Annotated[
+        bool,
+        Field(
+            description=(
+                "Enable inference of section-header levels for the PDF/image pipeline. When "
+                "disabled (default), all detected headings remain at level 1 (unchanged "
+                "behavior)."
+            )
+        ),
+    ] = False
+    use_numbering: Annotated[
+        bool,
+        Field(
+            description=(
+                "Use legal/outline numbering (e.g. PART I -> 1. -> 1.1 -> (a) -> (i), Roman "
+                "vs Arabic numerals) as the primary signal for heading level."
+            )
+        ),
+    ] = True
+    use_style: Annotated[
+        bool,
+        Field(
+            description=(
+                "Use font size (approximated from parsed PDF cell heights) as a fallback for "
+                "headings without recognizable numbering. Requires "
+                "`generate_parsed_pages=True`."
+            )
+        ),
+    ] = True
+    use_bookmarks: Annotated[
+        bool,
+        Field(
+            description=(
+                "Use the PDF outline/bookmarks as an authoritative signal. Reserved for a "
+                "follow-up; currently a no-op until backend outline extraction is added."
+            )
+        ),
+    ] = False
+    numbering_schemes: Annotated[
+        Optional[list[str]],
+        Field(
+            description=(
+                "Optional override of the numbering-scheme precedence (highest level first). "
+                "Known schemes: 'part', 'chapter', 'article', 'roman_u', 'arabic', "
+                "'alpha_u', 'alpha_l', 'roman_l'. When None, a default legal/regulatory "
+                "ordering is used."
+            )
+        ),
+    ] = None
+    max_level: Annotated[
+        int,
+        Field(
+            ge=1,
+            le=100,
+            description="Maximum heading level to assign. Deeper levels are clamped.",
+        ),
+    ] = 6
+
+
 class PdfPipelineOptions(PaginatedPipelineOptions):
     """Configuration options for the PDF document processing pipeline.
 
@@ -1639,6 +1717,17 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = False
+    heading_hierarchy_options: Annotated[
+        HeadingHierarchyOptions,
+        Field(
+            description=(
+                "Configuration for inferring section-header levels from numbering, font "
+                "style and (future) PDF bookmarks. Disabled by default; when enabled, the "
+                "reading-order stage assigns SectionHeaderItem.level instead of leaving every "
+                "heading at level 1."
+            )
+        ),
+    ] = HeadingHierarchyOptions()
 
     ### Arguments for threaded PDF pipeline with batching and backpressure control
 
