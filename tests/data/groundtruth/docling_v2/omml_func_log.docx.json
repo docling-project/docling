@@ -1,0 +1,102 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.10.0",
+  "name": "omml_func_log",
+  "origin": {
+    "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "binary_hash": 7094307576006927945,
+    "filename": "omml_func_log.docx"
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "children": [],
+    "content_layer": "furniture",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "children": [
+      {
+        "$ref": "#/groups/0"
+      }
+    ],
+    "content_layer": "body",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [
+    {
+      "self_ref": "#/groups/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/0"
+        }
+      ],
+      "content_layer": "body",
+      "name": "header-0",
+      "label": "section"
+    }
+  ],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/1"
+        },
+        {
+          "$ref": "#/texts/2"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Issue 4: Missing \\log command",
+      "text": "Issue 4: Missing \\log command",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The equation below uses <m:func> with fName='log'.\nExpected LaTeX: y = \\log(x)\nDocling produces: y = l o g(x)  (letters rendered as italic variables)\nand emits a warning about an unrecognized function name.\n\nThe <m:fName> element contains a plain-text run with style 'p' (upright).",
+      "text": "The equation below uses <m:func> with fName='log'.\nExpected LaTeX: y = \\log(x)\nDocling produces: y = l o g(x)  (letters rendered as italic variables)\nand emits a warning about an unrecognized function name.\n\nThe <m:fName> element contains a plain-text run with style 'p' (upright).",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "formula",
+      "prov": [],
+      "orig": "y = \\log(\\left(x\\right))",
+      "text": "y = \\log(\\left(x\\right))"
+    }
+  ],
+  "pictures": [],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {}
+}

@@ -2,7 +2,7 @@ from enum import Enum
 from pathlib import Path, PurePath
 from typing import Annotated, Literal, Optional, Union
 
-from pydantic import AnyUrl, BaseModel, Field, SecretStr
+from pydantic import AnyUrl, BaseModel, Field, PositiveInt, SecretStr, conint
 
 
 class BaseBackendOptions(BaseModel):
@@ -36,6 +36,48 @@ class HTMLBackendOptions(BaseBackendOptions):
     """
 
     kind: Literal["html"] = Field("html", exclude=True, repr=False)
+    render_page: bool = Field(
+        False,
+        description=(
+            "Render HTML in a headless browser to capture page images and "
+            "element bounding boxes."
+        ),
+    )
+    render_page_width: int = Field(
+        794, description="Render page width in CSS pixels (A4 @ 96 DPI)."
+    )
+    render_page_height: int = Field(
+        1123, description="Render page height in CSS pixels (A4 @ 96 DPI)."
+    )
+    render_page_orientation: Literal["portrait", "landscape"] = Field(
+        "portrait", description="Render page orientation."
+    )
+    render_print_media: bool = Field(
+        True, description="Use print media emulation when rendering."
+    )
+    render_wait_until: Literal["load", "domcontentloaded", "networkidle"] = Field(
+        "networkidle",
+        description="Playwright wait condition before extracting the DOM.",
+    )
+    render_wait_ms: int = Field(
+        0, description="Extra delay in milliseconds after load."
+    )
+    render_device_scale: float = Field(
+        1.0, description="Device scale factor for rendering."
+    )
+    page_padding: int = Field(
+        0,
+        description=(
+            "Padding in CSS pixels applied to the HTML body before rendering."
+        ),
+    )
+    render_full_page: bool = Field(
+        False,
+        description=("Capture a single full-height page image instead of paginating."),
+    )
+    render_dpi: int = Field(
+        96, description="DPI used for page images created from rendering."
+    )
     fetch_images: bool = Field(
         False,
         description=(
@@ -50,6 +92,18 @@ class HTMLBackendOptions(BaseBackendOptions):
             "will use it to resolve relative paths in the HTML document."
         ),
     )
+    headers: Annotated[
+        dict[str, str] | None,
+        Field(
+            description=(
+                "HTTP headers to include when fetching remote images. Use for "
+                "authentication (e.g., API keys, bearer tokens) or custom headers "
+                "required by image servers."
+            ),
+            examples=[{"Authorization": "Bearer TOKEN"}, {"X-API-Key": "your-api-key"}],
+            repr=False,
+        ),
+    ] = None
     add_title: bool = Field(
         True, description="Add the HTML title tag as furniture in the DoclingDocument."
     )
@@ -68,6 +122,18 @@ class HTMLBackendOptions(BaseBackendOptions):
             "starts parsed body content in the BODY layer and disables pre-heading "
             "furniture inference."
         ),
+    )
+    max_image_data_base64_bytes: PositiveInt = Field(
+        20 * 1024 * 1024,  # 20 MB
+        description="The maximum number of base64 data bytes that the backend will accept.",
+    )
+    max_remote_image_bytes: PositiveInt = Field(
+        20 * 1024 * 1024,  # 20 MB
+        description="The maximum number of bytes for remote image downloads.",
+    )
+    max_redirects: Annotated[int, Field(ge=0)] = Field(
+        5,
+        description="Maximum number of HTTP redirects to follow when fetching remote resources. Set to 0 to disable redirects.",
     )
 
 
@@ -91,11 +157,79 @@ class MarkdownBackendOptions(BaseBackendOptions):
     )
 
 
+class EpubBackendOptions(BaseBackendOptions):
+    """Options specific to the EPUB backend."""
+
+    kind: Annotated[Literal["epub"], Field(exclude=True, repr=False)] = "epub"
+    fetch_images: Annotated[
+        bool, Field(description="Whether to fetch and process images from the EPUB.")
+    ] = False
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum cumulative size in bytes of all data extracted from the EPUB archive during processing"
+        ),
+    ] = 100 * 1024 * 1024  # 100 MB
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum size in bytes for any single file extracted from the EPUB archive"
+        ),
+    ] = 10 * 1024 * 1024  # 10 MB
+    max_member_count: Annotated[
+        PositiveInt, Field(description="Maximum number of archive members to process")
+    ] = 1000
+
+
 class PdfBackendOptions(BaseBackendOptions):
     """Backend options for pdf document backends."""
 
     kind: Literal["pdf"] = Field("pdf", exclude=True, repr=False)
     password: Optional[SecretStr] = None
+
+
+class ThreadedDoclingParseBackendOptions(PdfBackendOptions):
+    """Options specific to the threaded docling-parse backend."""
+
+    kind: Literal["threaded-docling-parse"] = Field(
+        "threaded-docling-parse", exclude=True, repr=False
+    )
+    parser_threads: Optional[PositiveInt] = Field(
+        None,
+        description=(
+            "Number of parser threads to use for the threaded docling-parse backend. "
+            "If unset, the backend falls back to global accelerator thread settings."
+        ),
+    )
+    release_native_memory_every_n_pages: conint(ge=0) = Field(
+        128,
+        description=(
+            "Release native parser memory after every N decoded pages in the "
+            "threaded docling-parse backend. Set to 0 to disable native-memory "
+            "release."
+        ),
+    )
+
+
+class MetsGbsBackendOptions(PdfBackendOptions):
+    """Options specific to the METS-GBS document backend."""
+
+    kind: Annotated[Literal["mets-gbs"], Field(exclude=True, repr=False)] = "mets-gbs"  # type: ignore[assignment]
+    max_total_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum cumulative size in bytes of all data extracted from the archive during processing"
+        ),
+    ] = 300 * 1024 * 1024
+    max_file_bytes: Annotated[
+        PositiveInt,
+        Field(
+            description="Maximum size in bytes for any single file extracted from the archive"
+        ),
+    ] = 10 * 1024 * 1024
+    max_member_count: Annotated[
+        PositiveInt, Field(description="Maximum number of archive members to process")
+    ] = 1000
 
 
 class MsExcelBackendOptions(BaseBackendOptions):
@@ -116,6 +250,15 @@ class MsExcelBackendOptions(BaseBackendOptions):
             "data clusters into a single table. Default is 0 (strict)."
         ),
     )
+    sheet_names: Optional[list[str]] = Field(
+        None,
+        description=(
+            "An optional list of sheet names to include in conversion. "
+            "When set, only sheets whose names appear in this list will be processed. "
+            "Sheet names are matched case-sensitively. "
+            "Set to None (default) to include all sheets."
+        ),
+    )
 
 
 class LatexBackendOptions(BaseBackendOptions):
@@ -127,6 +270,25 @@ class LatexBackendOptions(BaseBackendOptions):
         description=(
             "Maximum time allowed for parsing a LaTeX document. "
             "Set to None to disable the timeout. Defaults to 30 s."
+        ),
+    )
+    tikz_engine: Optional[Literal["tectonic"]] = Field(
+        None,
+        description=(
+            "The engine to use for rendering Tikz diagrams into images. "
+            "Set to 'tectonic' to enable asynchronous image generation."
+        ),
+    )
+    tikz_engine_timeout: float = Field(
+        60.0,
+        description="The timeout in seconds for rendering a single TikZ diagram.",
+    )
+    tikz_engine_allow_shell_escape: bool = Field(
+        False,
+        description=(
+            "Allow Tectonic TikZ rendering to enable shell escape during "
+            "compilation. Disabled by default for safer rendering of untrusted "
+            "LaTeX."
         ),
     )
 
@@ -153,9 +315,12 @@ class XBRLBackendOptions(BaseBackendOptions):
 BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
+        EpubBackendOptions,
         HTMLBackendOptions,
         MarkdownBackendOptions,
         PdfBackendOptions,
+        ThreadedDoclingParseBackendOptions,
+        MetsGbsBackendOptions,
         MsExcelBackendOptions,
         LatexBackendOptions,
         XBRLBackendOptions,

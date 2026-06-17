@@ -17,6 +17,7 @@
 
 # %%
 
+import os
 from pathlib import Path
 
 from docling.datamodel.base_models import InputFormat
@@ -24,7 +25,13 @@ from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     TesseractCliOcrOptions,
 )
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.document_converter import DocumentConverter, PdfFormatOption
+
+# Under CI we limit the conversion to a representative page range to keep the
+# example fast; locally the full document is processed.
+IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")
+CI_PAGE_RANGE = (3, 4)
 
 
 def main():
@@ -47,7 +54,8 @@ def main():
         }
     )
 
-    doc = converter.convert(input_doc_path).document
+    page_range = CI_PAGE_RANGE if IS_CI else DEFAULT_PAGE_RANGE
+    doc = converter.convert(input_doc_path, page_range=page_range).document
     md = doc.export_to_markdown()
     print(md)
 

@@ -1,10 +1,13 @@
 import logging
 import os
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
-from docling_core.types.doc import GroupItem
+from docling_core.types.doc import DocItemLabel, GroupItem
+from lxml import etree
 
+import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -44,6 +47,17 @@ def get_converter():
 
 
 @pytest.fixture(scope="module")
+def backend(docx_paths) -> MsWordDocumentBackend:
+    docx_path = docx_paths[0]
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    return in_doc._backend
+
+
+@pytest.fixture(scope="module")
 def documents(docx_paths) -> list[tuple[Path, DoclingDocument]]:
     documents: list[dict[Path, DoclingDocument]] = []
 
@@ -80,7 +94,7 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument
             print(f"Skipping {docx_path} because no Libreoffice is installed.")
             continue
 
-        pred_md: str = doc.export_to_markdown()
+        pred_md: str = doc.export_to_markdown(compact_tables=True)
         assert verify_export(pred_md, str(docx_path) + ".md", generate=GENERATE), (
             f"export to markdown failed on {docx_path}"
         )
@@ -88,15 +102,15 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
         )
-        assert verify_export(pred_itxt, str(docx_path) + ".itxt", generate=GENERATE), (
-            f"export to indented-text failed on {docx_path}"
-        )
+        assert verify_export(
+            pred_itxt, str(docx_path) + ".itxt", generate=GENERATE, fuzzy=True
+        ), f"export to indented-text failed on {docx_path}"
 
-        assert verify_document(doc, str(docx_path) + ".json", generate=GENERATE), (
-            f"DoclingDocument verification failed on {docx_path}"
-        )
+        assert verify_document(
+            doc, str(docx_path) + ".json", generate=GENERATE, fuzzy=True
+        ), f"DoclingDocument verification failed on {docx_path}"
 
-        if docx_path.name == "word_tables.docx":
+        if docx_path.name in {"word_tables.docx", "docx_rich_cells.docx"}:
             pred_html: str = doc.export_to_html()
             assert verify_export(
                 pred_text=pred_html,
@@ -176,6 +190,33 @@ def test_text_after_image_anchors(documents):
     )
 
 
+def test_text_with_drawingml_without_libreoffice(docx_paths, monkeypatch):
+    """Test that text is extracted from paragraphs with DrawingML images even without LibreOffice."""
+    monkeypatch.setattr(
+        msword_backend_module, "get_docx_to_pdf_converter", lambda: None
+    )
+
+    # Use word_image_anchors.docx which contains images with text
+    name = "word_image_anchors.docx"
+    path = next(item for item in docx_paths if item.name == name)
+
+    converter = get_converter()
+    conv_result = converter.convert(path)
+    doc = conv_result.document
+
+    text_items = [item for item, _ in doc.iterate_items() if isinstance(item, TextItem)]
+    assert len(text_items) > 0, (
+        "Expected text items to be extracted even without LibreOffice"
+    )
+
+    all_text = " ".join(item.text for item in text_items)
+    assert len(all_text) > 0, "Expected non-empty text content"
+
+    assert "This is test 1" in all_text or "This is test 2" in all_text, (
+        "Expected text from paragraphs with images to be extracted"
+    )
+
+
 def test_is_rich_table_cell(docx_paths):
     """Test the function is_rich_table_cell."""
 
@@ -200,6 +241,14 @@ def test_is_rich_table_cell(docx_paths):
     gt_cells.extend([False, False, False, True, True, True])
     # table: Table with pictures
     gt_cells.extend([False, False, False, True, True, False])
+    # table: Lists with same numId in different cells
+    gt_cells.extend([True, True])
+    # table: Lists with different numIds in different cells
+    gt_cells.extend([True, True])
+    # table: Multiple columns with lists
+    gt_cells.extend([True, True, True, True])
+    # table: Mixed content - list and regular text in different cells
+    gt_cells.extend([True, False])
     gt_it = iter(gt_cells)
 
     for idx_t, table in enumerate(backend.docx_obj.tables):
@@ -392,3 +441,413 @@ def test_get_heading_and_level_non_heading(
     label, level = backend._get_heading_and_level(style_label)
     assert label == expected_label
     assert level == expected_level
+
+
+def test_external_image_references():
+    """Test that .docx files with external image references convert without crashing.
+
+    Docx files saved from web browsers often have images as external references
+    (TargetMode="External") pointing to URLs or file:// paths rather than embedded
+    in word/media/. Previously this caused a ValueError from python-docx:
+    "target_part property on _Relationship is undefined when target mode is External"
+
+    See: https://github.com/docling-project/docling/issues/3113
+    """
+    docx_path = Path("./tests/data/docx/docx_external_image.docx")
+    assert docx_path.exists(), f"Test file not found: {docx_path}"
+
+    converter = get_converter()
+
+    with pytest.warns(UserWarning, match="Skipping external image reference"):
+        conv_result = converter.convert(docx_path)
+
+    doc = conv_result.document
+
+    # Document should convert successfully (not crash)
+    assert doc is not None
+
+    # Text content should still be extracted even though the external image is skipped
+    md = doc.export_to_markdown()
+    assert "Test Document with External Image" in md
+    assert "text before the image" in md
+    assert "after the external image" in md
+
+
+def test_inline_sdt_references(tmp_path):
+    """Test that inline SDT citation blocks are preserved in DOCX paragraphs."""
+    from docx import Document
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    def _append_citation(paragraph, text: str):
+        sdt = OxmlElement("w:sdt")
+        sdt_pr = OxmlElement("w:sdtPr")
+        tag = OxmlElement("w:tag")
+        tag.set(qn("w:val"), "MENDELEY_CITATION_v3_test")
+        sdt_pr.append(tag)
+
+        sdt_content = OxmlElement("w:sdtContent")
+        run = OxmlElement("w:r")
+        run_text = OxmlElement("w:t")
+        run_text.text = text
+        run.append(run_text)
+        sdt_content.append(run)
+
+        sdt.append(sdt_pr)
+        sdt.append(sdt_content)
+        paragraph._p.append(sdt)
+
+    docx_path = tmp_path / "inline_sdt_reference.docx"
+    doc = Document()
+
+    first_paragraph = doc.add_paragraph()
+    first_paragraph.add_run("Impact ")
+    _append_citation(first_paragraph, "(Hagman G 1984)")
+    first_paragraph.add_run(". After.")
+
+    second_paragraph = doc.add_paragraph()
+    _append_citation(second_paragraph, "(Standalone citation)")
+
+    doc.save(docx_path)
+
+    conv_result = get_converter().convert(docx_path)
+    markdown = conv_result.document.export_to_markdown()
+
+    assert "Impact (Hagman G 1984). After." in markdown
+    assert "(Standalone citation)" in markdown
+
+
+def test_list_counter_and_enum_marker(docx_paths):
+    """Test list counter increment, sub-level reset, marker building, and sequence reset."""
+    docx_path = docx_paths[0]
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = in_doc._backend
+
+    # Basic increment
+    assert backend._get_list_counter(1, 0) == 1
+    assert backend._get_list_counter(1, 0) == 2
+    assert backend._get_list_counter(1, 1) == 1
+    assert backend._get_list_counter(1, 1) == 2
+    assert backend._get_list_counter(1, 1) == 3
+
+    # Advancing parent level resets sub-levels
+    backend._get_list_counter(1, 2)  # (1,2) = 1
+    backend._get_list_counter(1, 0)  # (1,0) = 3, resets lvl 1 and 2
+    assert backend.list_counters[(1, 1)] == 0
+    assert backend.list_counters[(1, 2)] == 0
+    assert backend._get_list_counter(1, 1) == 1  # restarts from 1
+
+    # Hierarchical enum markers
+    backend.list_counters[(1, 0)] = 2
+    backend.list_counters[(1, 1)] = 3
+    backend.list_counters[(1, 2)] = 1
+    assert backend._build_enum_marker(1, 0) == "2."
+    assert backend._build_enum_marker(1, 1) == "2.3."
+    assert backend._build_enum_marker(1, 2) == "2.3.1."
+    assert backend._build_enum_marker(99, 0) == "1."  # missing counter defaults to 1
+
+    # Reset sequence for a specific numid
+    backend._get_list_counter(2, 0)  # (2,0) = 1
+    backend._reset_list_counters_for_new_sequence(1)
+    assert backend.list_counters[(1, 0)] == 0
+    assert backend.list_counters[(1, 1)] == 0
+    assert backend.list_counters[(2, 0)] == 1  # unaffected
+
+
+def test_custom_numbering_format_markers(tmp_path):
+    """Test that lvlText templates like 'Proposal %1:' produce correct markers.
+
+    Word documents can define custom numbering formats in the lvlText element,
+    e.g. 'Proposal %1:' or 'Observation %1:'. The marker should preserve the
+    text prefix/suffix and substitute %N with the counter value for level N.
+    """
+    from docx import Document
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    doc = Document()
+
+    # Add numbering definitions with custom lvlText
+    numbering_part = doc.part.numbering_part
+    numbering = numbering_part.element
+
+    # Create abstractNum with lvlText="Proposal %1:" at level 0
+    abstract_num = OxmlElement("w:abstractNum")
+    abstract_num.set(qn("w:abstractNumId"), "100")
+    lvl = OxmlElement("w:lvl")
+    lvl.set(qn("w:ilvl"), "0")
+    start = OxmlElement("w:start")
+    start.set(qn("w:val"), "1")
+    lvl.append(start)
+    numfmt = OxmlElement("w:numFmt")
+    numfmt.set(qn("w:val"), "decimal")
+    lvl.append(numfmt)
+    lvltext = OxmlElement("w:lvlText")
+    lvltext.set(qn("w:val"), "Proposal %1:")
+    lvl.append(lvltext)
+    abstract_num.append(lvl)
+    numbering.append(abstract_num)
+
+    # Create num referencing abstractNum 100
+    num_elem = OxmlElement("w:num")
+    num_elem.set(qn("w:numId"), "200")
+    abstract_ref = OxmlElement("w:abstractNumId")
+    abstract_ref.set(qn("w:val"), "100")
+    num_elem.append(abstract_ref)
+    numbering.append(num_elem)
+
+    # Save and load through backend
+    docx_path = tmp_path / "custom_numbering.docx"
+    doc.save(str(docx_path))
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = in_doc._backend
+
+    # Simulate counter state and verify markers
+    backend.list_counters[(200, 0)] = 1
+    assert backend._build_enum_marker(200, 0) == "Proposal 1:"
+
+    backend.list_counters[(200, 0)] = 3
+    assert backend._build_enum_marker(200, 0) == "Proposal 3:"
+
+    # Verify plain numeric markers still work (no text prefix)
+    backend.list_counters[(1, 0)] = 5
+    assert backend._build_enum_marker(1, 0) == "5."
+
+    # Verify hierarchical markers still work
+    backend.list_counters[(1, 0)] = 2
+    backend.list_counters[(1, 1)] = 3
+    assert backend._build_enum_marker(1, 1) == "2.3."
+
+
+def test_handle_equations_in_text_returns_original_text_on_mismatch(
+    backend, monkeypatch
+):
+    element = etree.Element("p")
+    run = etree.SubElement(element, "r")
+    text_elem = etree.SubElement(run, "t")
+    text_elem.text = "alpha"
+    etree.SubElement(element, "oMath")
+
+    monkeypatch.setattr(msword_backend_module, "oMath2Latex", lambda _: "x")
+
+    text, equations = backend._handle_equations_in_text(element=element, text="beta")
+
+    assert text == "beta"
+    assert equations == []
+
+
+def test_handle_equations_in_text_skips_empty_substrings(backend, monkeypatch):
+    equation = backend.equation_bookends.format(EQ="x")
+
+    element = etree.Element("p")
+    empty_run = etree.SubElement(element, "r")
+    empty_text = etree.SubElement(empty_run, "t")
+    empty_text.text = ""
+    etree.SubElement(element, "oMath")
+    tail_run = etree.SubElement(element, "r")
+    tail_text = etree.SubElement(tail_run, "t")
+    tail_text.text = "tail"
+
+    monkeypatch.setattr(msword_backend_module, "oMath2Latex", lambda _: "x")
+
+    text, equations = backend._handle_equations_in_text(element=element, text="tail")
+
+    assert equations == [equation]
+    assert text == f"{equation}tail"
+
+
+def test_handle_text_elements_returns_empty_refs_when_text_is_none(
+    backend, monkeypatch
+):
+    element = backend.docx_obj.paragraphs[0]._element
+
+    monkeypatch.setattr(
+        backend, "_handle_equations_in_text", lambda element, text: (None, [])
+    )
+
+    refs = backend._handle_text_elements(element, DoclingDocument(name="test"))
+
+    assert refs == []
+
+
+def test_handle_text_elements_heading_defaults_to_non_numbered_when_style_missing(
+    backend, monkeypatch
+):
+    captured: dict[str, tuple[int, str, bool]] = {}
+
+    class FakeParagraph:
+        def __init__(self, element, docx_obj):
+            self.text = "Heading text"
+            self.style = SimpleNamespace()
+
+    monkeypatch.setattr(msword_backend_module, "Paragraph", FakeParagraph)
+    monkeypatch.setattr(backend, "_get_paragraph_elements", lambda paragraph: [])
+    monkeypatch.setattr(
+        backend, "_handle_equations_in_text", lambda element, text: (text, [])
+    )
+    monkeypatch.setattr(backend, "_get_comment_ids_for_element", lambda element: [])
+    monkeypatch.setattr(
+        backend, "_get_label_and_level", lambda paragraph: ("Heading", 1)
+    )
+    monkeypatch.setattr(backend, "_get_numId_and_ilvl", lambda paragraph: (None, None))
+
+    def fake_add_heading(doc, level, text, is_numbered_style):
+        captured["heading"] = (level, text, is_numbered_style)
+        return []
+
+    monkeypatch.setattr(backend, "_add_heading", fake_add_heading)
+
+    refs = backend._handle_text_elements(object(), DoclingDocument(name="test"))
+
+    assert refs == []
+    assert captured["heading"] == (1, "Heading text", False)
+
+
+def test_handle_text_elements_inline_equations_stop_when_text_is_consumed(
+    backend, monkeypatch
+):
+    equation_one = backend.equation_bookends.format(EQ="a")
+    equation_two = backend.equation_bookends.format(EQ="b")
+
+    class FakeParagraph:
+        def __init__(self, element, docx_obj):
+            self.text = "inline eq"
+            self.style = SimpleNamespace()
+
+    monkeypatch.setattr(msword_backend_module, "Paragraph", FakeParagraph)
+    monkeypatch.setattr(backend, "_get_paragraph_elements", lambda paragraph: [])
+    monkeypatch.setattr(
+        backend,
+        "_handle_equations_in_text",
+        lambda element, text: (equation_one, [equation_one, equation_two]),
+    )
+    monkeypatch.setattr(backend, "_get_comment_ids_for_element", lambda element: [])
+    monkeypatch.setattr(
+        backend, "_get_label_and_level", lambda paragraph: ("Normal", None)
+    )
+    monkeypatch.setattr(backend, "_get_numId_and_ilvl", lambda paragraph: (None, None))
+    monkeypatch.setattr(backend, "_prev_numid", lambda: None)
+    monkeypatch.setattr(backend, "_get_level", lambda: 1)
+    backend.parents[0] = None
+
+    refs = backend._handle_text_elements(object(), DoclingDocument(name="test"))
+
+    assert len(refs) == 2
+
+
+def test_checkbox_detection_and_parsing(documents):
+    """Test that checkboxes in DOCX files are correctly detected and parsed."""
+    name = "docx_checkboxes.docx"
+    doc = next((item[1] for item in documents if item[0].name == name), None)
+
+    if doc is None:
+        pytest.skip(f"Test file not found: {name}")
+
+    checkbox_items = [
+        item
+        for item in doc.texts
+        if item.label
+        in (DocItemLabel.CHECKBOX_SELECTED, DocItemLabel.CHECKBOX_UNSELECTED)
+    ]
+
+    assert len(checkbox_items) > 0, "No checkboxes found in the document"
+
+    # Verify we have both selected and unselected checkboxes
+    selected = [
+        item for item in checkbox_items if item.label == DocItemLabel.CHECKBOX_SELECTED
+    ]
+    unselected = [
+        item
+        for item in checkbox_items
+        if item.label == DocItemLabel.CHECKBOX_UNSELECTED
+    ]
+
+    assert len(selected) > 0, "No selected checkboxes found"
+    assert len(unselected) > 0, "No unselected checkboxes found"
+
+    checkbox_texts = [item.text for item in checkbox_items]
+    assert any("Design" in text for text in checkbox_texts), (
+        "Expected checkbox text not found"
+    )
+    assert any("Implementation" in text for text in checkbox_texts), (
+        "Expected checkbox text not found"
+    )
+    assert any("Documentation" in text for text in checkbox_texts), (
+        "Expected checkbox text not found"
+    )
+
+
+def test_checkbox_labels_in_tables(documents):
+    """Test that checkboxes in table cells are correctly parsed."""
+    name = "docx_checkboxes.docx"
+    doc = next((item[1] for item in documents if item[0].name == name), None)
+
+    if doc is None:
+        pytest.skip(f"Test file not found: {name}")
+
+    checkbox_items = [
+        item
+        for item in doc.texts
+        if item.label
+        in (DocItemLabel.CHECKBOX_SELECTED, DocItemLabel.CHECKBOX_UNSELECTED)
+    ]
+
+    food_items = [
+        "Orange juice",
+        "Tea",
+        "Coffee",
+        "Milk",
+        "Water",
+        "Scramble eggs",
+        "Porridge",
+        "Bread",
+        "Croissant",
+    ]
+
+    found_food_checkboxes = [
+        item for item in checkbox_items if any(food in item.text for food in food_items)
+    ]
+
+    assert len(found_food_checkboxes) > 0, "No checkboxes found in table cells"
+
+
+def test_text_after_drawingml_images(documents):
+    """Text in paragraphs containing DrawingML images was being omitted during conversion, both with and without LibreOffice."""
+    name = "drawingml.docx"
+
+    doc_found = False
+    for path, doc in documents:
+        if path.name == name:
+            doc_found = True
+
+            text_items = [
+                item for item, _ in doc.iterate_items() if isinstance(item, TextItem)
+            ]
+
+            assert len(text_items) > 0, (
+                f"No text items found in {name}. "
+                "Text after DrawingML images should be preserved even without LibreOffice."
+            )
+
+            # Log the text items found for debugging
+            _log.info(f"Found {len(text_items)} text items in {name}")
+            for idx, item in enumerate(text_items[:5]):  # Log first 5 items
+                _log.info(f"  Text item {idx}: {item.text[:50]}...")
+
+            break
+
+    if not doc_found:
+        _log.warning(
+            f"Test document '{name}' not found in test set. "
+            "Skipping DrawingML text extraction test."
+        )
+        pytest.skip(f"Test document '{name}' not available")

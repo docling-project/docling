@@ -21,6 +21,9 @@ KSERVE_V2_NUMPY_DATATYPES: Dict[str, np.dtype[Any]] = {
     "FP16": np.dtype(np.float16),
     "FP32": np.dtype(np.float32),
     "FP64": np.dtype(np.float64),
+    "BYTES": np.dtype(
+        object
+    ),  # Variable-length byte strings (used for TYPE_STRING in Triton)
 }
 
 NUMPY_KSERVE_V2_DATATYPES: Dict[np.dtype[Any], str] = {

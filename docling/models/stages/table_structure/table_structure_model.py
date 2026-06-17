@@ -1,4 +1,5 @@
 import copy
+import logging
 import warnings
 from collections.abc import Iterable, Sequence
 from pathlib import Path
@@ -24,6 +25,8 @@ from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
+
+_log = logging.getLogger(__name__)
 
 
 class TableStructureModel(BaseTableStructureModel):
@@ -324,6 +327,21 @@ class TableStructureModel(BaseTableStructureModel):
 
         # The table box spans the entire cropped image
         tbl_box = [0.0, 0.0, float(img_width), float(img_height)]
+
+        # Sanity-check: every non-empty cell must have a unique index so that
+        # the predictor's matching dict (keyed by cell id) works correctly.
+        # The most common mistake is leaving all indices at the default -1.
+        non_empty_cells = [c for c in table_cluster.cells if len(c.text.strip()) > 0]
+        cell_ids = [c.index for c in non_empty_cells]
+        if len(cell_ids) != len(set(cell_ids)):
+            msg = (
+                f"_do_prediction_on_image_to_table: duplicate cell indices detected "
+                f"({len(cell_ids) - len(set(cell_ids))} duplicates). "
+                f"All TextCell.index values must be unique; ensure callers assign "
+                f"a distinct index to each cell (default index=-1 causes this)."
+            )
+            _log.error(msg)
+            raise ValueError(msg)
 
         # Translate cell coordinates from page space to image-local space
         tokens = []

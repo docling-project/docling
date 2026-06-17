@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "name": "table_05",
   "origin": {
     "mimetype": "text/html",
@@ -167,6 +167,7 @@
         ],
         "num_rows": 2,
         "num_cols": 2,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -323,6 +324,7 @@
         ],
         "num_rows": 2,
         "num_cols": 3,
+        "orientation": "rot_0",
         "grid": [
           [
             {

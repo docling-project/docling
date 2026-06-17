@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "name": "word_tables",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -408,6 +408,7 @@
         ],
         "num_rows": 3,
         "num_cols": 3,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -644,6 +645,7 @@
         ],
         "num_rows": 3,
         "num_cols": 3,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -919,6 +921,7 @@
         ],
         "num_rows": 3,
         "num_cols": 4,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -1272,6 +1275,7 @@
         ],
         "num_rows": 5,
         "num_cols": 3,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -1967,6 +1971,7 @@
         ],
         "num_rows": 9,
         "num_cols": 5,
+        "orientation": "rot_0",
         "grid": [
           [
             {

@@ -1,4 +1,5 @@
 import json
+import math
 import os
 from pathlib import Path
 from typing import Optional
@@ -12,6 +13,7 @@ from docling_core.types.doc import (
     TableItem,
     TextItem,
 )
+from docling_core.types.doc.base import BoundingBox
 from docling_core.types.legacy_doc.document import ExportedCCSDocument as DsDocument
 from PIL import Image as PILImage
 from pydantic import BaseModel, TypeAdapter
@@ -21,6 +23,10 @@ from docling.datamodel.document import ConversionResult
 
 COORD_PREC = 2  # decimal places for coordinates
 CONFID_PREC = 3  # decimal places for confidence
+STRICT_BBOX_TOL_RATIO = 0.0025  # allow minor cross-platform layout variance
+FUZZY_BBOX_TOL_RATIO = (
+    0.005  # OCR/image output varies more, but gross shifts should fail
+)
 
 
 class _TestPagesMeta(BaseModel):
@@ -29,6 +35,40 @@ class _TestPagesMeta(BaseModel):
     @classmethod
     def from_page(cls, page: Page):
         return cls(num_cells=len(page.cells))
+
+
+def _assert_bbox_close(
+    *,
+    true_bbox: BoundingBox,
+    pred_bbox: BoundingBox,
+    fuzzy: bool,
+    page_extent: Optional[float],
+    pdf_filename: str,
+):
+    """Compare bbox coordinates at the same precision used in serialized fixtures."""
+
+    tol_ratio = FUZZY_BBOX_TOL_RATIO if fuzzy else STRICT_BBOX_TOL_RATIO
+    tol = max(10 ** (-COORD_PREC), (page_extent or 0.0) * tol_ratio)
+
+    assert true_bbox.coord_origin == pred_bbox.coord_origin, (
+        f"[{pdf_filename}] BBox coord_origin mismatch"
+    )
+
+    for label, true_value, pred_value in (
+        ("left", true_bbox.l, pred_bbox.l),
+        ("top", true_bbox.t, pred_bbox.t),
+        ("right", true_bbox.r, pred_bbox.r),
+        ("bottom", true_bbox.b, pred_bbox.b),
+    ):
+        true_rounded = round(true_value, COORD_PREC)
+        pred_rounded = round(pred_value, COORD_PREC)
+        diff = abs(true_rounded - pred_rounded)
+
+        assert math.isclose(true_rounded, pred_rounded, rel_tol=0.0, abs_tol=tol), (
+            f"[{pdf_filename}] BBox {label} mismatch:"
+            f" {true_rounded} vs {pred_rounded}"
+            f" (raw pred: {pred_value}, diff: {diff:.2f}, tol: {tol:.2f})"
+        )
 
 
 def levenshtein(str1: str, str2: str) -> int:
@@ -236,6 +276,9 @@ def verify_docitems(
     assert len(doc_true.tables) == len(doc_pred.tables), (
         f"[{pdf_filename}] document has different count of tables than expected."
     )
+    assert len(doc_true.pictures) == len(doc_pred.pictures), (
+        f"[{pdf_filename}] Picture lengths do not match: {len(doc_true.pictures)} != {len(doc_pred.pictures)}"
+    )
 
     for (true_item, _true_level), (pred_item, _pred_level) in zip(
         doc_true.iterate_items(), doc_pred.iterate_items()
@@ -258,12 +301,28 @@ def verify_docitems(
         if len(true_item.prov) > 0:
             true_prov = true_item.prov[0]
             pred_prov = pred_item.prov[0]
+            true_page = doc_true.pages.get(true_prov.page_no)
+            pred_page = doc_pred.pages.get(pred_prov.page_no)
 
             assert true_prov.page_no == pred_prov.page_no, (
                 f"[{pdf_filename}] Page provenance mistmatch"
             )
+            assert (true_prov.bbox is None) == (pred_prov.bbox is None), (
+                f"[{pdf_filename}] BBox presence mismatch"
+            )
 
-            # TODO: add bbox check with tolerance
+            if true_prov.bbox is not None and pred_prov.bbox is not None:
+                _assert_bbox_close(
+                    true_bbox=true_prov.bbox,
+                    pred_bbox=pred_prov.bbox,
+                    fuzzy=fuzzy,
+                    page_extent=(
+                        max(page.size.width, page.size.height)
+                        if (page := true_page or pred_page) is not None
+                        else None
+                    ),
+                    pdf_filename=pdf_filename,
+                )
 
         # Validate source
         assert bool(true_item.source) == bool(pred_item.source), (
@@ -303,7 +362,7 @@ def verify_docitems(
             )
 
             true_image = true_item.get_image(doc=doc_true)
-            pred_image = true_item.get_image(doc=doc_pred)
+            pred_image = pred_item.get_image(doc=doc_pred)
             if true_image is not None:
                 assert verify_picture_image_v2(true_image, pred_image), (
                     f"[{pdf_filename}] Picture image mismatch"
@@ -426,7 +485,7 @@ def verify_conversion_result_v2(
         _TestPagesMeta.from_page(page) for page in doc_pred_pages
     ]
     doc_pred: DoclingDocument = doc_result.document
-    doc_pred_md = doc_result.document.export_to_markdown()
+    doc_pred_md = doc_result.document.export_to_markdown(compact_tables=True)
     doc_pred_dt = doc_result.document.export_to_doctags()
 
     engine_suffix = "" if ocr_engine is None else f".{ocr_engine}"
@@ -497,7 +556,9 @@ def verify_conversion_result_v2(
             )
 
 
-def verify_document(pred_doc: DoclingDocument, gtfile: str, generate: bool = False):
+def verify_document(
+    pred_doc: DoclingDocument, gtfile: str, generate: bool = False, fuzzy: bool = False
+):
     if not os.path.exists(gtfile) or generate:
         with open(gtfile, mode="w", encoding="utf-8") as fw:
             pred_dict = pred_doc.export_to_dict(
@@ -512,11 +573,13 @@ def verify_document(pred_doc: DoclingDocument, gtfile: str, generate: bool = Fal
             true_doc = DoclingDocument.model_validate_json(fr.read())
 
         return verify_docitems(
-            doc_pred=pred_doc, doc_true=true_doc, fuzzy=False, pdf_filename=gtfile
+            doc_pred=pred_doc, doc_true=true_doc, fuzzy=fuzzy, pdf_filename=gtfile
         )
 
 
-def verify_export(pred_text: str, gtfile: str, generate: bool = False) -> bool:
+def verify_export(
+    pred_text: str, gtfile: str, generate: bool = False, fuzzy: bool = False
+) -> bool:
     file = Path(gtfile)
 
     if not file.exists() or generate:
@@ -526,5 +589,8 @@ def verify_export(pred_text: str, gtfile: str, generate: bool = False) -> bool:
 
     with file.open(encoding="utf-8") as fr:
         true_text = fr.read()
+
+    if fuzzy:
+        return verify_text(true_text, pred_text, fuzzy=True)
 
     return pred_text == true_text

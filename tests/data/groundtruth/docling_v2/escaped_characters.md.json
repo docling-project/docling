@@ -1,10 +1,10 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "name": "escaped_characters",
   "origin": {
     "mimetype": "text/html",
-    "binary_hash": 2788634321146182339,
+    "binary_hash": 961663658752708402,
     "filename": "escaped_characters.md"
   },
   "furniture": {

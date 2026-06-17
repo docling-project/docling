@@ -1,0 +1,41 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: HEADER
+    item-2 at level 2: text: Order Receipt Details
+    item-3 at level 2: text: Receipt documentation for table service:
+      item-4 at level 2: field_region: ignored
+        item-5 at level 3: field_item: ignored
+        item-6 at level 4: marker: 1
+        item-7 at level 4: field_key: Restaurant
+        item-8 at level 4: field_value: Docling
+        item-9 at level 3: field_item: ignored
+        item-10 at level 4: marker: 2
+        item-11 at level 4: field_key: Telephone
+        item-12 at level 4: field_value: (123) 456-7890
+        item-13 at level 3: field_item: ignored
+        item-14 at level 4: marker: 3
+        item-15 at level 4: field_key: Server
+        item-16 at level 4: field_value: Quack Quackling
+        item-17 at level 3: field_item: ignored
+        item-18 at level 4: marker: 4
+        item-19 at level 4: field_key: Order Number
+        item-20 at level 4: field_value: 12345
+        item-21 at level 3: field_item: ignored
+        item-22 at level 4: marker: 5
+        item-23 at level 4: field_key: Seating
+        item-24 at level 4: field_value: 13
+        item-25 at level 3: field_item: ignored
+        item-26 at level 4: marker: 6
+        item-27 at level 4: field_key: Dining Type
+        item-28 at level 4: field_value: Celebration
+        item-29 at level 3: field_item: ignored
+        item-30 at level 4: marker: 7
+        item-31 at level 4: field_key: Number of guests
+        item-32 at level 4: field_value: 5
+        item-33 at level 3: field_item: ignored
+        item-34 at level 4: marker: 8
+        item-35 at level 4: field_key: Receipt date
+        item-36 at level 4: field_value: 16/03/2026
+    item-37 at level 2: text: Order items:
+    item-38 at level 2: text: Itemized list of products ordered with quantities.
+    item-39 at level 2: table with [4x3]
+    item-40 at level 2: text: Docling Restaurant 2026

@@ -23,9 +23,14 @@ _log = logging.getLogger(__name__)
 
 
 class _ImagePageBackend(PdfPageBackend):
-    def __init__(self, image: Image.Image):
-        self._image: Optional[Image.Image] = image
+    def __init__(self, image: Image.Image, page_no: int):
+        self._image: Image.Image | None = image
+        self._page_no = page_no
         self.valid: bool = self._image is not None
+
+    @property
+    def page_no(self) -> int:
+        return self._page_no + 1
 
     def is_valid(self) -> bool:
         return self.valid
@@ -85,7 +90,7 @@ class _ImagePageBackend(PdfPageBackend):
         yield full_page_bbox
 
     def get_page_image(
-        self, scale: float = 1, cropbox: Optional[BoundingBox] = None
+        self, scale: float = 1, cropbox: BoundingBox | None = None
     ) -> Image.Image:
         assert self._image is not None
         img = self._image
@@ -133,8 +138,10 @@ class ImageDocumentBackend(PdfDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
-        options: PdfBackendOptions = PdfBackendOptions(),
+        options: Optional[PdfBackendOptions] = None,
     ):
+        if options is None:
+            options = PdfBackendOptions()
         # Bypass PdfDocumentBackend.__init__ to avoid image→PDF conversion
         AbstractDocumentBackend.__init__(self, in_doc, path_or_stream, options)
         self.options: PdfBackendOptions = options
@@ -147,20 +154,22 @@ class ImageDocumentBackend(PdfDocumentBackend):
         # Load frames eagerly for thread-safety across pages
         self._frames: List[Image.Image] = []
         try:
-            img = Image.open(self.path_or_stream)  # type: ignore[arg-type]
+            with Image.open(self.path_or_stream) as img:  # type: ignore[arg-type]
+                # Handle multi-frame and single-frame images
+                # - multiframe formats: TIFF, GIF, ICO
+                # - singleframe formats: JPEG (.jpg, .jpeg), PNG (.png), BMP, WEBP (unless animated), HEIC
+                frame_count = getattr(img, "n_frames", 1)
 
-            # Handle multi-frame and single-frame images
-            # - multiframe formats: TIFF, GIF, ICO
-            # - singleframe formats: JPEG (.jpg, .jpeg), PNG (.png), BMP, WEBP (unless animated), HEIC
-            frame_count = getattr(img, "n_frames", 1)
-
-            if frame_count > 1:
-                for i in range(frame_count):
-                    img.seek(i)
-                    self._frames.append(img.copy().convert("RGB"))
-            else:
-                self._frames.append(img.convert("RGB"))
+                if frame_count > 1:
+                    for i in range(frame_count):
+                        img.seek(i)
+                        self._frames.append(img.copy().convert("RGB"))
+                else:
+                    self._frames.append(img.convert("RGB"))
         except Exception as e:
+            for frame in self._frames:
+                frame.close()
+            self._frames = []
             raise RuntimeError(f"Could not load image for document {self.file}") from e
 
     def is_valid(self) -> bool:
@@ -172,7 +181,7 @@ class ImageDocumentBackend(PdfDocumentBackend):
     def load_page(self, page_no: int) -> _ImagePageBackend:
         if not (0 <= page_no < len(self._frames)):
             raise IndexError(f"Page index out of range: {page_no}")
-        return _ImagePageBackend(self._frames[page_no])
+        return _ImagePageBackend(self._frames[page_no], page_no)
 
     @classmethod
     def supported_formats(cls) -> set[InputFormat]:
@@ -184,5 +193,7 @@ class ImageDocumentBackend(PdfDocumentBackend):
         return True
 
     def unload(self):
-        super().unload()
+        for frame in self._frames:
+            frame.close()
         self._frames = []
+        super().unload()

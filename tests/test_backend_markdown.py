@@ -1,7 +1,9 @@
 from pathlib import Path
 
+import pytest
+
 from docling.backend.md_backend import MarkdownDocumentBackend
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
@@ -11,7 +13,9 @@ from docling.document_converter import DocumentConverter
 from tests.verify_utils import CONFID_PREC, COORD_PREC
 
 from .test_data_gen_flag import GEN_TEST_DATA
-from .verify_utils import verify_document
+from .verify_utils import verify_docitems, verify_document
+
+pytestmark = pytest.mark.cross_platform
 
 
 def test_convert_valid():
@@ -23,7 +27,7 @@ def test_convert_valid():
     assert len(relevant_paths) > 0
 
     yaml_filter = ["inline_and_formatting", "mixed_without_h1"]
-    json_filter = ["escaped_characters"]
+    json_filter = ["escaped_characters", "signature_stamp_01"]
 
     for in_path in relevant_paths:
         md_gt_path = root_path / "groundtruth" / "docling_v2" / f"{in_path.name}.md"
@@ -42,7 +46,7 @@ def test_convert_valid():
         assert backend.is_valid()
 
         act_doc = backend.convert()
-        act_data = act_doc.export_to_markdown()
+        act_data = act_doc.export_to_markdown(compact_tables=True)
 
         if in_path.stem in json_filter:
             assert verify_document(act_doc, json_gt_path, GEN_TEST_DATA), (
@@ -66,7 +70,7 @@ def test_convert_valid():
 
             if in_path.stem in yaml_filter:
                 exp_doc = DoclingDocument.load_from_yaml(yaml_gt_path)
-                assert act_doc == exp_doc, f"export to yaml failed on {in_path}"
+                verify_docitems(doc_true=act_doc, doc_pred=exp_doc, fuzzy=False)
 
 
 def get_md_paths():
@@ -98,7 +102,7 @@ def test_e2e_md_conversions():
 
         doc: DoclingDocument = conv_result.document
 
-        pred_md: str = doc.export_to_markdown()
+        pred_md: str = doc.export_to_markdown(compact_tables=True)
         assert true_md == pred_md
 
         conv_result_: ConversionResult = converter.convert_string(
@@ -107,5 +111,53 @@ def test_e2e_md_conversions():
 
         doc_: DoclingDocument = conv_result_.document
 
-        pred_md_: str = doc_.export_to_markdown()
+        pred_md_: str = doc_.export_to_markdown(compact_tables=True)
         assert true_md == pred_md_
+
+
+def test_convert_leading_dash_sequences():
+    converter = get_converter()
+    markdown = """## Research Article
+
+Here is some content...
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -This is an open access article under the terms of the Creative Commons Attribution License, which permits use, distribution and reproduction in any medium, provided the original work is properly cited.
+
+<!-- image -->
+"""
+
+    conv_result: ConversionResult = converter.convert_string(
+        markdown, format=InputFormat.MD
+    )
+
+    pred_md = conv_result.document.export_to_markdown()
+
+    assert conv_result.status == ConversionStatus.SUCCESS
+    assert (
+        "- This is an open access article under the terms of the Creative Commons Attribution License"
+        in pred_md
+    )
+
+
+def test_convert_list_item_codespan_only():
+    """
+    Regression test:
+    A list item that only contains an inline CodeSpan (no RawText) must not leave
+    a pending ListItem payload behind, otherwise later RawText will attach it to a
+    wrong parent and create a very deep tree (RecursionError in iterate/export).
+    """
+    converter = get_converter()
+    markdown = """# Title
+
+*   `raw_ops.Abort`
+*   `raw_ops.Abs`
+"""
+
+    conv_result: ConversionResult = converter.convert_string(
+        markdown, format=InputFormat.MD
+    )
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    pred_md = conv_result.document.export_to_markdown()
+    assert "- raw\\_ops.Abort" in pred_md
+    assert "- raw\\_ops.Abs" in pred_md

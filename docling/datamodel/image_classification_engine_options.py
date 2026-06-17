@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import List, Literal
 
 from pydantic import Field
 
+from docling.datamodel.kserve_v2_options import KserveV2OptionsMixin
 from docling.datamodel.settings import default_compile_model
 from docling.models.inference_engines.image_classification.base import (
     BaseImageClassificationEngineOptions,
@@ -62,83 +63,11 @@ class TransformersImageClassificationEngineOptions(
     )
 
 
-class ApiKserveV2ImageClassificationEngineOptions(BaseImageClassificationEngineOptions):
+class ApiKserveV2ImageClassificationEngineOptions(
+    BaseImageClassificationEngineOptions, KserveV2OptionsMixin
+):
     """Runtime configuration for remote KServe v2 inference."""
 
     engine_type: Literal[ImageClassificationEngineType.API_KSERVE_V2] = (
         ImageClassificationEngineType.API_KSERVE_V2
-    )
-
-    url: str = Field(
-        description=(
-            "Endpoint URL for KServe v2 transport. "
-            "For transport='http', use http(s)://host[:port] or plain host:port. "
-            "For transport='grpc', use plain host:port."
-        ),
-    )
-
-    model_name: Optional[str] = Field(
-        default=None,
-        description=(
-            "Remote model name registered in the KServe v2 endpoint. "
-            "If omitted, a repo_id-derived default is used."
-        ),
-    )
-
-    model_version: Optional[str] = Field(
-        default=None,
-        description="Optional model version. If omitted, the server default is used.",
-    )
-
-    transport: Literal["grpc", "http"] = Field(
-        default="grpc",
-        description=(
-            "Transport protocol for KServe v2 calls. "
-            "Use 'grpc' for binary tensor payloads (default), or 'http' for JSON REST."
-        ),
-    )
-
-    headers: Dict[str, str] = Field(
-        default_factory=dict,
-        description="Optional HTTP headers for authentication/routing when transport='http'.",
-    )
-
-    grpc_metadata: Dict[str, str] = Field(
-        default_factory=dict,
-        description=(
-            "Optional gRPC metadata for authentication/routing when transport='grpc'. "
-            "No HTTP headers are reused in gRPC mode."
-        ),
-    )
-
-    grpc_use_tls: bool = Field(
-        default=False,
-        description=(
-            "Whether to use TLS for the gRPC channel. "
-            "When omitted, plain-text h2c is used."
-        ),
-    )
-
-    grpc_max_message_bytes: int = Field(
-        default=64 * 1024 * 1024,
-        ge=1,
-        description="Max send/receive gRPC message size in bytes.",
-    )
-
-    grpc_use_binary_data: bool = Field(
-        default=True,
-        description=(
-            "Whether to request/expect binary tensor payloads on gRPC output tensors. "
-            "Set to False for servers that do not support binary_data output parameters."
-        ),
-    )
-
-    timeout: float = Field(
-        default=60.0,
-        description="Per-request timeout in seconds for both HTTP and gRPC calls.",
-    )
-
-    request_parameters: Dict[str, Any] = Field(
-        default_factory=dict,
-        description="Optional top-level KServe v2 infer request parameters.",
     )

@@ -48,6 +48,7 @@ class VllmVlmEngine(BaseVlmEngine):
         # Stops / outputs
         "stop",
         "stop_token_ids",
+        "include_stop_str_in_output",
         "skip_special_tokens",
         "spaces_between_special_tokens",
         # Search / length
@@ -67,6 +68,7 @@ class VllmVlmEngine(BaseVlmEngine):
         # Model/tokenizer/impl
         "tokenizer",
         "tokenizer_mode",
+        "model_impl",
         "download_dir",
         # Parallelism / memory / lengths
         "tensor_parallel_size",
@@ -88,7 +90,7 @@ class VllmVlmEngine(BaseVlmEngine):
         self,
         options: VllmVlmEngineOptions,
         accelerator_options: AcceleratorOptions,
-        artifacts_path: Optional[Union[Path, str]],
+        artifacts_path: Union[Path, str] | None,
         model_config: Optional["EngineModelConfig"] = None,
     ):
         """Initialize the vLLM engine.
@@ -105,7 +107,7 @@ class VllmVlmEngine(BaseVlmEngine):
         self.artifacts_path = artifacts_path
 
         # These will be set during initialization
-        self.device: Optional[str] = None
+        self.device: str | None = None
         self.llm: Any = None
         self.sampling_params: Any = None
         self.processor: Any = None
@@ -197,12 +199,12 @@ class VllmVlmEngine(BaseVlmEngine):
             # Construct LLM kwargs (engine/load-time)
             llm_kwargs: Dict[str, Any] = {
                 "model": str(artifacts_path),
-                "model_impl": "transformers",
                 "limit_mm_per_prompt": {"image": 1},
                 "revision": revision,
                 "trust_remote_code": self.options.trust_remote_code,
                 **load_cfg,
             }
+            llm_kwargs["model_impl"] = self.options.model_impl
 
             if self.device == "cpu":
                 llm_kwargs.setdefault("enforce_eager", True)
@@ -210,6 +212,16 @@ class VllmVlmEngine(BaseVlmEngine):
                 # Use configured gpu_memory_utilization or default
                 llm_kwargs.setdefault(
                     "gpu_memory_utilization", self.options.gpu_memory_utilization
+                )
+
+                # Apply CUDA graph capture mode
+                from vllm.config.compilation import (
+                    CompilationConfig,
+                    CUDAGraphMode,
+                )
+
+                llm_kwargs["compilation_config"] = CompilationConfig(
+                    cudagraph_mode=CUDAGraphMode[self.options.cudagraph_mode.value]
                 )
 
             # Quantization support (if specified in extra_config)
@@ -274,7 +286,7 @@ class VllmVlmEngine(BaseVlmEngine):
         )
 
         # Format prompts
-        prompts: List[Optional[str]] = []
+        prompts: List[str | None] = []
         for input_data in input_batch:
             formatted_prompt = format_prompt_for_vlm(
                 prompt=input_data.prompt,

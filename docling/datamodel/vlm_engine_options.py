@@ -5,6 +5,7 @@ of model specifications and prompts.
 """
 
 import logging
+from enum import Enum
 from typing import Any, Dict, Literal, Optional
 
 from pydantic import AnyUrl, Field
@@ -105,6 +106,48 @@ class MlxVlmEngineOptions(BaseVlmEngineOptions):
 # =============================================================================
 
 
+class VllmCudaGraphMode(str, Enum):
+    """CUDA graph capture mode for the vLLM v1 engine.
+
+    Controls whether and how vLLM captures CUDA graphs to speed up inference.
+    CUDA graphs reduce kernel-launch overhead by replaying a recorded sequence
+    of CUDA operations instead of launching each kernel individually.
+
+    NONE:
+        Disable CUDA graphs entirely; everything runs in eager mode.
+        Fastest startup, lowest steady-state throughput.
+        Best for short-lived processes, notebooks, and debugging.
+
+    FULL:
+        Capture the entire forward pass as one monolithic CUDA graph.
+        Maximum graph coverage but requires very static execution shapes;
+        may fail with some models or dynamic workloads.
+
+    PIECEWISE:
+        Capture segments of the model (e.g. transformer blocks) as multiple
+        smaller graphs between selected ops.  Handles dynamic shapes better
+        than FULL while still accelerating most of the forward pass.
+
+    FULL_AND_PIECEWISE:
+        Hybrid mode (default in many vLLM versions): FULL graphs for
+        decode-only batches; PIECEWISE graphs for prefill and mixed
+        prefill+decode batches.  Usually the best throughput option for
+        typical LLM serving workloads.
+
+    FULL_DECODE_ONLY:
+        FULL CUDA graphs only for decode batches; prefill and mixed batches
+        run in eager mode.  Dramatically reduces graph-capture time and
+        memory footprint compared to FULL_AND_PIECEWISE while still
+        accelerating token generation.
+    """
+
+    NONE = "NONE"
+    FULL = "FULL"
+    PIECEWISE = "PIECEWISE"
+    FULL_AND_PIECEWISE = "FULL_AND_PIECEWISE"
+    FULL_DECODE_ONLY = "FULL_DECODE_ONLY"
+
+
 class VllmVlmEngineOptions(BaseVlmEngineOptions):
     """Options for vLLM inference engine (high-throughput serving)."""
 
@@ -124,6 +167,26 @@ class VllmVlmEngineOptions(BaseVlmEngineOptions):
 
     trust_remote_code: bool = Field(
         default=False, description="Allow execution of custom code from model repo"
+    )
+
+    cudagraph_mode: VllmCudaGraphMode = Field(
+        default=VllmCudaGraphMode.PIECEWISE,
+        description=(
+            "CUDA graph capture mode (vLLM v1 engine only). "
+            "See VllmCudaGraphMode for the available options and their trade-offs."
+        ),
+    )
+
+    model_impl: str = Field(
+        default="auto",
+        description=(
+            "vLLM model implementation backend. "
+            "Accepted values depend on the installed vLLM version; common values are "
+            "'auto', 'vllm', and 'transformers'. "
+            "'auto' uses vLLM's native implementation when available and otherwise falls back "
+            "to the Transformers modeling backend; 'vllm' forces the native implementation; "
+            "'transformers' forces the Transformers modeling backend."
+        ),
     )
 
 

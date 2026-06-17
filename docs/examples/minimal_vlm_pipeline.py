@@ -21,6 +21,8 @@
 
 # %%
 
+import platform
+
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     VlmConvertOptions,
@@ -28,7 +30,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.vlm_engine_options import (
     MlxVlmEngineOptions,
-    VlmEngineType,
+    TransformersVlmEngineOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
@@ -76,17 +78,26 @@ print(doc.export_to_markdown())
 
 
 ###### EXAMPLE 3: USING PRESETS WITH RUNTIME OVERRIDE (ADVANCED)
-# Demonstrates using the same preset but overriding the runtime to use MLX
-# on macOS with MPS acceleration. The preset automatically uses the MLX-specific
-# model variant when available.
+# Demonstrates using the same preset but overriding the runtime explicitly.
+# MLX is Apple Silicon only, so keep the example portable by using MLX on
+# macOS/arm64 and Transformers everywhere else, including Linux CI.
+
+engine_options = (
+    MlxVlmEngineOptions()
+    if platform.system() == "Darwin" and platform.machine() == "arm64"
+    else TransformersVlmEngineOptions()
+)
 
 vlm_options = VlmConvertOptions.from_preset(
     "granite_docling",
-    engine_options=MlxVlmEngineOptions(),
+    engine_options=engine_options,
 )
 
-# The preset automatically selects the MLX-optimized model variant
-print(f"Using model: {vlm_options.model_spec.get_repo_id(VlmEngineType.MLX)}")
+# The preset automatically selects the model variant matching the runtime.
+print(
+    "Using model: "
+    f"{vlm_options.model_spec.get_repo_id(vlm_options.engine_options.engine_type)}"
+)
 
 converter = DocumentConverter(
     format_options={

@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "name": "webp-test",
   "origin": {
     "mimetype": "application/pdf",
@@ -39,10 +39,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 234.09,
-            "t": 2570.1,
-            "r": 1696.1,
-            "b": 2315.25,
+            "l": 233.67,
+            "t": 2577.33,
+            "r": 1702.0,
+            "b": 2311.67,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

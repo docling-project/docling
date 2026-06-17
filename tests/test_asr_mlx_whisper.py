@@ -26,6 +26,8 @@ from docling.datamodel.pipeline_options_asr_model import (
 )
 from docling.pipeline.asr_pipeline import AsrPipeline, _MlxWhisperModel
 
+pytestmark = pytest.mark.ml_asr
+
 
 class TestMlxWhisperIntegration:
     """Test MLX Whisper model integration."""

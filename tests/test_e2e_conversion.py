@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
@@ -10,6 +12,7 @@ from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_conversion_result_v2
 
 GENERATE_V2 = GEN_TEST_DATA
+pytestmark = pytest.mark.ml_pdf_model
 
 SKIP_DOCTAGS_COMPARISON = ["2203.01017v2.pdf"]
 

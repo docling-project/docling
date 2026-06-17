@@ -1,0 +1,29 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section: group header-0
+    item-2 at level 2: section: group header-1
+      item-3 at level 3: section_header: Table with options
+        item-4 at level 4: text: 
+        item-5 at level 4: table with [4x1]
+          item-6 at level 5: unspecified: group rich_cell_group_1_0_0
+            item-7 at level 6: text: List of services
+          item-8 at level 5: unspecified: group rich_cell_group_1_0_2
+            item-9 at level 6: text: Choose as many as you like:
+            item-10 at level 6: checkbox_selected: Orange juice
+            item-11 at level 6: checkbox_unselected: Tea
+            item-12 at level 6: checkbox_selected: Coffee
+            item-13 at level 6: checkbox_unselected: Milk
+            item-14 at level 6: checkbox_selected: Water
+          item-15 at level 5: unspecified: group rich_cell_group_1_0_3
+            item-16 at level 6: text: Choose as many as you like:
+            item-17 at level 6: checkbox_selected: Scramble eggs
+            item-18 at level 6: checkbox_unselected: Porridge
+            item-19 at level 6: checkbox_selected: Bread
+            item-20 at level 6: checkbox_selected: Croissant
+        item-21 at level 4: text: 
+      item-22 at level 3: section_header: Paragraph with options
+        item-23 at level 4: text: 
+        item-24 at level 4: text: Tasks before release:
+        item-25 at level 4: checkbox_selected: Design
+        item-26 at level 4: checkbox_selected: Implementation
+        item-27 at level 4: checkbox_unselected: Documentation of the task with a ... d the maximum length of a single line.
+        item-28 at level 4: text: 

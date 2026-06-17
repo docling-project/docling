@@ -13,6 +13,7 @@ from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
+pytestmark = pytest.mark.cross_platform
 
 
 def test_e2e_vtt_conversions():
@@ -27,7 +28,7 @@ def test_e2e_vtt_conversions():
 
         doc: DoclingDocument = conv_result.document
 
-        pred_md: str = doc.export_to_markdown(escape_html=False)
+        pred_md: str = doc.export_to_markdown(escape_html=False, compact_tables=True)
         assert verify_export(pred_md, str(gt_path) + ".md", generate=GENERATE), (
             "export to md"
         )

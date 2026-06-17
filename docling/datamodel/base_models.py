@@ -1,6 +1,7 @@
 from collections import defaultdict
 from enum import Enum
-from typing import TYPE_CHECKING, Optional, Type, Union
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Optional, Type, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -12,12 +13,16 @@ from docling_core.types.doc import (
     TableCell,
 )
 from docling_core.types.doc.base import PydanticSerCtxKey, round_pydantic_float
+from docling_core.types.doc.document import Orientation
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
-from docling_core.types.io import DocumentStream
+from docling_core.types.io import (
+    DocumentStream as DocumentStream,
+)
 
 # DO NOT REMOVE; explicitly exposed from this location
 from PIL.Image import Image
 from pydantic import (
+    AnyUrl,
     BaseModel,
     ConfigDict,
     Field,
@@ -29,6 +34,7 @@ from pydantic import (
 
 if TYPE_CHECKING:
     from docling.backend.pdf_backend import PdfPageBackend
+    from docling.datamodel.backend_options import BackendOptions
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.datamodel.pipeline_options import PipelineOptions
@@ -37,10 +43,15 @@ from docling.datamodel.pipeline_options import PipelineOptions
 class BaseFormatOption(BaseModel):
     """Base class for format options used by _DocumentConversionInput."""
 
-    pipeline_options: Optional[PipelineOptions] = None
+    pipeline_options: PipelineOptions | None = None
     backend: Type[AbstractDocumentBackend]
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def backend_options_for_input(
+        self, source: Path | str | DocumentStream
+    ) -> "BackendOptions | None":
+        return None
 
 
 class ConversionStatus(str, Enum):
@@ -67,11 +78,14 @@ class InputFormat(str, Enum):
     XML_USPTO = "xml_uspto"
     XML_JATS = "xml_jats"
     XML_XBRL = "xml_xbrl"
+    XML_DOCLANG = "xml_doclang"
     METS_GBS = "mets_gbs"
     JSON_DOCLING = "json_docling"
     AUDIO = "audio"
     VTT = "vtt"
     LATEX = "latex"
+    EMAIL = "email"
+    EPUB = "epub"
 
 
 class OutputFormat(str, Enum):
@@ -83,16 +97,18 @@ class OutputFormat(str, Enum):
     TEXT = "text"
     DOCTAGS = "doctags"
     VTT = "vtt"
+    DOCLANG = "doclang"
 
 
 FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.DOCX: ["docx", "dotx", "docm", "dotm"],
     InputFormat.PPTX: ["pptx", "potx", "ppsx", "pptm", "potm", "ppsm"],
     InputFormat.PDF: ["pdf"],
-    InputFormat.MD: ["md"],
+    InputFormat.MD: ["md", "txt", "text", "qmd", "rmd", "Rmd"],
     InputFormat.HTML: ["html", "htm", "xhtml"],
     InputFormat.XML_JATS: ["xml", "nxml"],
     InputFormat.XML_XBRL: ["xml", "xbrl"],
+    InputFormat.XML_DOCLANG: ["dclg", "dclg.xml"],
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
@@ -103,6 +119,8 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.AUDIO: ["wav", "mp3", "m4a", "aac", "ogg", "flac", "mp4", "avi", "mov"],
     InputFormat.VTT: ["vtt"],
     InputFormat.LATEX: ["tex", "latex"],
+    InputFormat.EMAIL: ["eml"],
+    InputFormat.EPUB: ["epub"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -118,6 +136,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.HTML: ["text/html", "application/xhtml+xml"],
     InputFormat.XML_JATS: ["application/xml"],
     InputFormat.XML_XBRL: ["application/xml", "application/xhtml+xml"],
+    InputFormat.XML_DOCLANG: ["application/xml"],
     InputFormat.IMAGE: [
         "image/png",
         "image/jpeg",
@@ -128,7 +147,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     ],
     InputFormat.PDF: ["application/pdf"],
     InputFormat.ASCIIDOC: ["text/asciidoc"],
-    InputFormat.MD: ["text/markdown", "text/x-markdown"],
+    InputFormat.MD: ["text/markdown", "text/x-markdown", "text/plain"],
     InputFormat.CSV: ["text/csv"],
     InputFormat.XLSX: [
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -154,6 +173,8 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     ],
     InputFormat.VTT: ["text/vtt"],
     InputFormat.LATEX: ["text/x-tex", "application/x-tex", "text/x-latex"],
+    InputFormat.EMAIL: ["message/rfc822"],
+    InputFormat.EPUB: ["application/epub+zip"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
@@ -180,6 +201,7 @@ class VlmStopReason(str, Enum):
     LENGTH = "length"  # max tokens reached
     STOP_SEQUENCE = "stop_sequence"  # Custom stopping criteria met
     END_OF_SEQUENCE = "end_of_sequence"  # Model generated end-of-text token
+    CONTENT_FILTERED = "content_filter"  # Content filtered by API provider
     UNSPECIFIED = "unspecified"  # Defaul none value
 
 
@@ -207,7 +229,7 @@ class BasePageElement(BaseModel):
     id: int
     page_no: int
     cluster: Cluster
-    text: Optional[str] = None
+    text: str | None = None
 
 
 class LayoutPrediction(BaseModel):
@@ -224,9 +246,9 @@ class VlmPrediction(BaseModel):
     text: str = ""
     generated_tokens: list[VlmPredictionToken] = []
     generation_time: float = -1
-    num_tokens: Optional[int] = None
+    num_tokens: int | None = None
     stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
-    input_prompt: Optional[str] = None
+    input_prompt: str | None = None
 
 
 class ContainerElement(
@@ -239,6 +261,7 @@ class Table(BasePageElement):
     otsl_seq: list[str]
     num_rows: int = 0
     num_cols: int = 0
+    orientation: Orientation = Orientation.ROT_0
     table_cells: list[TableCell]
 
 
@@ -248,18 +271,19 @@ class TableStructurePrediction(BaseModel):
 
 class TextElement(BasePageElement):
     text: str
+    hyperlink: Optional[Union[AnyUrl, Path]] = None
 
 
 class FigureElement(BasePageElement):
     annotations: list[PictureDataType] = []
-    provenance: Optional[str] = None
-    predicted_class: Optional[str] = None
-    confidence: Optional[float] = None
+    provenance: str | None = None
+    predicted_class: str | None = None
+    confidence: float | None = None
 
     @field_serializer("confidence")
     def _serialize(
-        self, value: Optional[float], info: FieldSerializationInfo
-    ) -> Optional[float]:
+        self, value: float | None, info: FieldSerializationInfo
+    ) -> float | None:
         return (
             round_pydantic_float(value, info.context, PydanticSerCtxKey.CONFID_PREC)
             if value is not None
@@ -278,11 +302,11 @@ class EquationPrediction(BaseModel):
 
 
 class PagePredictions(BaseModel):
-    layout: Optional[LayoutPrediction] = None
-    tablestructure: Optional[TableStructurePrediction] = None
-    figures_classification: Optional[FigureClassificationPrediction] = None
-    equations_prediction: Optional[EquationPrediction] = None
-    vlm_response: Optional[VlmPrediction] = None
+    layout: LayoutPrediction | None = None
+    tablestructure: TableStructurePrediction | None = None
+    figures_classification: FigureClassificationPrediction | None = None
+    equations_prediction: EquationPrediction | None = None
+    vlm_response: VlmPrediction | None = None
 
 
 PageElement = Union[TextElement, Table, FigureElement, ContainerElement]
@@ -306,10 +330,10 @@ class Page(BaseModel):
 
     page_no: int
     # page_hash: Optional[str] = None
-    size: Optional[Size] = None
-    parsed_page: Optional[SegmentedPdfPage] = None
+    size: Size | None = None
+    parsed_page: SegmentedPdfPage | None = None
     predictions: PagePredictions = PagePredictions()
-    assembled: Optional[AssembledUnit] = None
+    assembled: AssembledUnit | None = None
 
     _backend: Optional["PdfPageBackend"] = (
         None  # Internal PDF backend. By default it is cleared during assembling.
@@ -330,9 +354,9 @@ class Page(BaseModel):
     def get_image(
         self,
         scale: float = 1.0,
-        max_size: Optional[int] = None,
-        cropbox: Optional[BoundingBox] = None,
-    ) -> Optional[Image]:
+        max_size: int | None = None,
+        cropbox: BoundingBox | None = None,
+    ) -> Image | None:
         if self._backend is None:
             return self._image_cache.get(scale, None)
 
@@ -358,7 +382,7 @@ class Page(BaseModel):
             )
 
     @property
-    def image(self) -> Optional[Image]:
+    def image(self) -> Image | None:
         return self.get_image(scale=self._default_image_scale)
 
 
@@ -367,13 +391,14 @@ class Page(BaseModel):
 
 class OpenAiChatMessage(BaseModel):
     role: str
-    content: str
+    content: str | None = None
+    tool_calls: list[dict[str, Any]] | None = None
 
 
 class OpenAiResponseChoice(BaseModel):
     index: int
     message: OpenAiChatMessage
-    finish_reason: Optional[str]
+    finish_reason: str | None
 
 
 class OpenAiResponseUsage(BaseModel):
@@ -388,7 +413,7 @@ class OpenAiApiResponse(BaseModel):
     )
 
     id: str
-    model: Optional[str] = None  # returned by openai
+    model: str | None = None  # returned by openai
     choices: list[OpenAiResponseChoice]
     created: int
     usage: OpenAiResponseUsage

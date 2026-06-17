@@ -1,0 +1,18 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: chapter: group slide-0
+    item-2 at level 2: title: Q3 Revenue Summary
+    item-3 at level 2: list: group list
+      item-4 at level 3: list_item: Total revenue grew 18% year-over-year.
+      item-5 at level 3: list_item: Enterprise segment led growth at 24%.
+      item-6 at level 3: list_item: APAC region exceeded targets by 12%.
+  item-7 at level 1: chapter: group slide-1
+    item-8 at level 2: paragraph: Key Metrics
+    item-9 at level 2: paragraph: Monthly active users: 4.2M
+    item-10 at level 2: paragraph: Net retention rate: 112%
+    item-11 at level 2: paragraph: Text in an unrecognized shape
+  item-12 at level 1: chapter: group slide-2
+    item-13 at level 2: title: Next Steps
+    item-14 at level 2: list: group list
+      item-15 at level 3: list_item: 1. Finalize pricing model
+      item-16 at level 3: list_item: 2. Launch APAC campaign
+      item-17 at level 3: list_item: 3. Hire 3 additional SEs

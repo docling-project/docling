@@ -1,6 +1,7 @@
 import warnings
 from pathlib import Path
 
+import pytest
 from docling_core.types.doc import (
     PictureClassificationData,
     PictureClassificationMetaField,
@@ -11,6 +12,8 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
+
+pytestmark = pytest.mark.ml_pdf_model
 
 
 def get_converter():

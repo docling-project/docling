@@ -9,6 +9,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.settings import settings
 from docling.datamodel.vlm_model_specs import (
+    GRANITEDOCLING_2STAGE_TRANSFORMERS,
     GRANITEDOCLING_MLX,
     GRANITEDOCLING_TRANSFORMERS,
     SMOLDOCLING_MLX,
@@ -16,6 +17,7 @@ from docling.datamodel.vlm_model_specs import (
 )
 from docling.models.stages.chart_extraction.granite_vision import (
     ChartExtractionModelGraniteVision,
+    ChartExtractionModelGraniteVisionV4,
 )
 from docling.models.stages.code_formula.code_formula_model import CodeFormulaModel
 from docling.models.stages.layout.layout_model import LayoutModel
@@ -49,10 +51,12 @@ def download_models(
     with_smolvlm: bool = False,
     with_granitedocling: bool = False,
     with_granitedocling_mlx: bool = False,
+    with_granitedocling_2stage: bool = False,
     with_smoldocling: bool = False,
     with_smoldocling_mlx: bool = False,
     with_granite_vision: bool = False,
     with_granite_chart_extraction: bool = False,
+    with_granite_chart_extraction_v4: bool = False,
     with_rapidocr: bool = True,
     with_easyocr: bool = False,
 ):
@@ -135,6 +139,15 @@ def download_models(
             progress=progress,
         )
 
+    if with_granitedocling_2stage:
+        _log.info("Downloading GraniteDocling 2stage model...")
+        download_hf_model(
+            repo_id=GRANITEDOCLING_2STAGE_TRANSFORMERS.repo_id,
+            local_dir=output_dir / GRANITEDOCLING_2STAGE_TRANSFORMERS.repo_cache_folder,
+            force=force,
+            progress=progress,
+        )
+
     if with_smoldocling:
         _log.info("Downloading SmolDocling model...")
         download_hf_model(
@@ -171,15 +184,26 @@ def download_models(
             progress=progress,
         )
 
+    if with_granite_chart_extraction_v4:
+        _log.info("Downloading Granite Vision 4.1 Charts Extraction model...")
+        ChartExtractionModelGraniteVisionV4.download_models(
+            local_dir=output_dir
+            / ChartExtractionModelGraniteVisionV4._model_repo_folder,
+            force=force,
+            progress=progress,
+        )
+
     if with_rapidocr:
         for backend in ("torch", "onnxruntime"):
-            _log.info(f"Downloading rapidocr {backend} models...")
-            RapidOcrModel.download_models(
-                backend=backend,
-                local_dir=output_dir / RapidOcrModel._model_repo_folder,
-                force=force,
-                progress=progress,
-            )
+            for lang in ("chinese", "english"):
+                _log.info(f"Downloading rapidocr {backend} {lang} models...")
+                RapidOcrModel.download_models(
+                    backend=backend,
+                    local_dir=output_dir / RapidOcrModel._model_repo_folder,
+                    force=force,
+                    progress=progress,
+                    lang=lang,
+                )
 
     if with_easyocr:
         _log.info("Downloading easyocr models...")
