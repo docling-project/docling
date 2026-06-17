@@ -51,6 +51,14 @@ def decide_device(
             device = "xpu"
 
     elif accelerator_device.startswith("cuda"):
+        if (
+            supported_devices is not None
+            and AcceleratorDevice.CUDA not in supported_devices
+        ):
+            raise AcceleratorDeviceNotAvailableError(
+                f"CUDA is not supported by this model. Supported devices: {[d.value for d in supported_devices]}"
+            )
+
         if has_cuda:
             # if cuda device index specified extract device id
             parts = accelerator_device.split(":")
@@ -78,6 +86,14 @@ def decide_device(
             )
 
     elif accelerator_device == AcceleratorDevice.MPS.value:
+        if (
+            supported_devices is not None
+            and AcceleratorDevice.MPS not in supported_devices
+        ):
+            raise AcceleratorDeviceNotAvailableError(
+                f"MPS is not supported by this model. Supported devices: {[d.value for d in supported_devices]}"
+            )
+
         if has_mps:
             device = "mps"
         else:
@@ -87,6 +103,14 @@ def decide_device(
             )
 
     elif accelerator_device == AcceleratorDevice.XPU.value:
+        if (
+            supported_devices is not None
+            and AcceleratorDevice.XPU not in supported_devices
+        ):
+            raise AcceleratorDeviceNotAvailableError(
+                f"XPU is not supported by this model. Supported devices: {[d.value for d in supported_devices]}"
+            )
+
         if has_xpu:
             device = "xpu"
         else:
@@ -99,8 +123,9 @@ def decide_device(
         device = "cpu"
 
     else:
-        _log.warning(
-            "Unknown device option '%s'. Fall back to 'CPU'", accelerator_device
+        raise AcceleratorDeviceNotAvailableError(
+            f"Unknown device option '{accelerator_device}'. "
+            f"Valid options are: auto, cpu, cuda, mps, xpu, or cuda:N"
         )
 
     _log.info("Accelerator device: '%s'", device)
