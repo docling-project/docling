@@ -68,6 +68,52 @@ else:
 # dump_sdk_output=True 시 HWP SDK 중간 산출물이 저장되는 디렉터리
 _SDK_DEBUG_OUTPUT_DIR = Path("/tmp/docparser_debug")
 
+# --- [헤더 판별용 마커 패턴] (Issue #206) ---
+# 마커를 3계층으로 구분한다 (실측 10종 공문서 회귀로 도출):
+#   1) divider  — 장/조/붙임/별표 등 "문서 구획 분절자". 폰트 무관 heading, 길이/문장 강등 면제
+#                 (조항 헤더는 SDK가 본문과 한 단락으로 합쳐도 heading 유지해야 하므로 면제).
+#   2) number   — 로마자./번호(N., N.N). 폰트 무관 heading이되, 긴 문장/서술형이면 본문으로 강등.
+#   3) weak     — 글머리기호·①②·(1)·가. 등. 본문 글머리로도 흔해 "강조(bold/큰폰트) AND"일 때만 heading.
+# (level 힌트: 1=장/구획, 2=절/번호, 3=세부)
+
+# divider: 폰트·길이·문장 무관하게 heading (강등 면제)
+_HEADING_DIVIDER_MARKERS = [
+    (re.compile(r'^제\s*\d+\s*[편장]\b'), 1),                 # 제1편 / 제 2 장
+    (re.compile(r'^제\s*\d+\s*[절관조]\b'), 2),               # 제1절 / 제2조
+    # 붙임/별첨/별표/별지/참고/첨부/서식/양식/부록 — 괄호([<〈【) 안에 있어도 인식
+    (re.compile(r'^[\[<〈【(]?\s*(?:붙임|별첨|별표|별지|참고|첨부물|첨부|서식|양식|부록)\b'), 1),
+]
+
+# number: 로마자./번호 — heading이되 긴 서술형이면 강등 대상
+_HEADING_NUMBER_MARKERS = [
+    (re.compile(r'^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\.\s'), 1),               # Ⅰ. Ⅱ.
+    (re.compile(r'^\d{1,2}\.\s'), 2),                        # 1.  (연도 등 3자리+ 숫자 제외)
+    (re.compile(r'^\d{1,2}\.\d+(?:\.\d+)*\s'), 2),           # 1.1, 1.2.3
+]
+
+# 약한 마커(공문서 글머리 기호 + 불릿 + ①②·(1)·가.): 본문 글머리로도 흔히 쓰여
+#   단독으로는 본문일 가능성이 커서 "강조(bold/큰폰트)"와 AND 결합 시에만 heading으로 본다.
+#   Issue #206의 "마커 패턴 확장(❏ □ ■ ◆ ○ ● 등)"도 이 집합으로 흡수한다.
+#   (실측: 조항 하위의 ①②, 입찰서의 가./나. 등은 baseline 폰트·비bold라 강한마커면 과다 검출됨)
+_HEADING_WEAK_MARKER = re.compile(
+    r'^(?:[❏□■◆◇○●▶▷▪▫※◦◈∙·•*\-①-⑳]\s|[가-힣]\.\s|\((?:[가-힣]|\d+)\)\s)'
+)
+
+# heading 후보가 "제목"이 아니라 서술형 본문 문장이면 강등한다 (divider 제외).
+#   한국 공문서 본문은 종결형 '다./함/음/됨/임' 또는 의문형 '까?'로 끝나는 경우가 많다.
+#   '요'는 명사(개요/요약 등) 오인이 많아 제외. 제목은 보통 명사로 끝난다.
+_SENTENCE_FINAL = re.compile(r'(?:다|함|음|됨|임)[.)\]」』】〉]?\s*$|까[?]\s*$')
+# 마커가 있어도 이 길이를 넘으면 제목이 아니라 본문으로 본다 (divider 제외).
+_HEADING_MAX_LEN = 80
+
+# 단락의 강조(bold/큰폰트) 비율 임계값 — 이 비율 이상일 때만 "강조 단락"으로 본다.
+_EMPHASIS_RATIO_THRESHOLD = 0.7
+# baseline(본문 최빈 폰트) 대비 이 배수 이상이면 "큰 폰트"로 본다.
+_LARGE_FONT_FACTOR = 1.15
+# heading run이 baseline 대비 얼마나 큰지로 L1/L2/L3 세분화.
+_LEVEL1_FONT_FACTOR = 1.5
+_LEVEL2_FONT_FACTOR = 1.25
+
 class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
     def __init__(self, in_doc: InputDocument, path_or_stream: Union[Path, BytesIO], **kwargs) -> None:
         super().__init__(in_doc, path_or_stream)
@@ -80,8 +126,12 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         self.dump_sdk_output = kwargs.get("dump_sdk_output", False)
 
         self._processed_hashes = set()  # 중복 텍스트(머리말/꼬리말) 필터링용
-        
-        # 1. 환경 설정      
+
+        # 문서 전체 최빈 폰트 크기(본문 baseline). 사전 패스에서 산출하며,
+        # 헤더 판별의 "큰 폰트" 기준을 절대값 대신 이 값에 대한 상대값으로 잡는다. (Issue #206)
+        self.body_font_size = 10.0
+
+        # 1. 환경 설정
         self.valid = False
         
         # 2. 계층 및 상태 관리 (GenosMsWord 방식 이식)
@@ -146,16 +196,65 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         """추상 메서드 구현: 페이지 단위 처리를 지원하는지 여부 (HWP는 대개 False이나, hwp_sdk는 true)"""
         return True
     
-    def _get_label_and_level_hwp(self, text, size, is_bold):
-        """폰트와 텍스트 패턴으로 p_style_id와 p_level을 결정합니다."""
-        # 명시적 헤더 패턴 (1. , 가. , Ⅰ. 등)
-        is_explicit_pattern = bool(re.match(r'^(?:\d+\.|\*|[-•]|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\.)\s+', text))
-        
-        if is_explicit_pattern or size >= 18 or is_bold:
-            # 폰트 크기에 따라 계층(Level) 세분화
-            level = 1 if size >= 20 else 2
-            return "Heading", level
-            
+    @staticmethod
+    def _match_structural_marker(text: str):
+        """강한 마커(divider/number)에 매칭되면 (level, kind)를 반환, 아니면 (None, None).
+
+        kind: 'divider'(장/조/붙임/별표 등 — 강등 면제) | 'number'(로마자./번호 — 강등 대상).
+        약한 마커(글머리기호·①②·가. 등)는 여기서 매칭하지 않고 _HEADING_WEAK_MARKER로 따로 본다.
+        """
+        for pattern, level_hint in _HEADING_DIVIDER_MARKERS:
+            if pattern.match(text):
+                return level_hint, "divider"
+        for pattern, level_hint in _HEADING_NUMBER_MARKERS:
+            if pattern.match(text):
+                return level_hint, "number"
+        return None, None
+
+    def _level_from_font(self, max_size: float, marker_level: Optional[int]) -> int:
+        """baseline 대비 폰트 비율로 L1/L2/L3를 결정한다.
+        폰트가 본문과 비슷해 분간이 안 되면(구조 마커만으로 heading인 경우)
+        마커가 준 level 힌트를 사용한다. (Issue #206)
+        """
+        baseline = self.body_font_size or 10.0
+        ratio = max_size / baseline if baseline else 1.0
+        if ratio >= _LEVEL1_FONT_FACTOR:
+            return 1
+        if ratio >= _LEVEL2_FONT_FACTOR:
+            return 2
+        if ratio >= _LARGE_FONT_FACTOR:
+            return 3
+        # 폰트만으로는 본문과 구분이 안 됨 → 마커 힌트(없으면 가장 깊은 L3)로 폴백
+        return marker_level if marker_level is not None else 3
+
+    def _get_label_and_level_hwp(self, text, max_size, bold_ratio, large_ratio, marker=None):
+        """텍스트 패턴 + 강조 비율로 p_style_id와 p_level을 결정한다. (Issue #206)
+
+        판별 규칙:
+          (A) 강한 마커(divider=장/조/붙임/별표, number=로마자./번호)는 폰트/강조 무관 heading.
+          (B) 약한 마커(글머리기호·①②·(1)·가.)는 "강조(bold/큰폰트) AND"일 때만 heading.
+              마커 없는 순수 bold/큰폰트 단락은 heading으로 보지 않는다 (Issue #183 가짜헤더 차단).
+        서술형 본문 문장으로의 강등은 호출부(_handle_paragraph)에서 처리한다.
+        level은 baseline 대비 폰트 비율로 L1/L2/L3 세분화한다.
+        """
+        if marker is None:
+            marker = self._match_structural_marker(text)
+        marker_level, _marker_kind = marker
+
+        # 강조 단락 여부: 단락의 70% 이상이 bold이거나 큰 폰트일 때만.
+        is_emphasized = (
+            bold_ratio >= _EMPHASIS_RATIO_THRESHOLD
+            or large_ratio >= _EMPHASIS_RATIO_THRESHOLD
+        )
+
+        # (A) 강한 마커(divider/number) → 단독으로 heading
+        if marker_level is not None:
+            return "Heading", self._level_from_font(max_size, marker_level)
+
+        # (B) 약한 마커 AND 강조 동시 충족
+        if bool(_HEADING_WEAK_MARKER.match(text)) and is_emphasized:
+            return "Heading", self._level_from_font(max_size, None)
+
         return "Normal", 0
 
     # --- 핵심 변환 로직 ---
@@ -305,10 +404,40 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         return doc
 
     # --- DoclingDocument 객체에 HWP SDK의 결과를 채워주는 함수 ---
+    @staticmethod
+    def _compute_body_font_size(data: List[List[Dict]]) -> float:
+        """문서 전체 text run의 폰트 크기를 글자수 가중으로 집계해 최빈값(본문 baseline)을 구한다.
+
+        절대 임계(size>=18) 대신 이 baseline에 대한 상대값으로 "큰 폰트"를 판정하기 위함. (Issue #206)
+        run이 하나도 없으면 기본 10.0을 반환한다.
+        """
+        from collections import Counter
+
+        weighted: "Counter[float]" = Counter()
+        for paragraph_items in data:
+            if not paragraph_items:
+                continue
+            for item in paragraph_items:
+                if str(item.get("item", "")).lower() != "text":
+                    continue
+                text = item.get("value", "") or ""
+                weight = len(text.strip())
+                if weight <= 0:
+                    continue
+                size = float(item.get("font", {}).get("size", 10.0) or 10.0)
+                # 0.5pt 단위로 양자화하여 미세한 차이로 최빈값이 흩어지는 것을 방지
+                weighted[round(size * 2) / 2] += weight
+
+        if not weighted:
+            return 10.0
+        return weighted.most_common(1)[0][0]
+
     def _walk_hwp_data(self, data: List[List[Dict]], doc: DoclingDocument):
         """페이지 그룹화를 제거하고 모든 아이템을 body에 직접 나열하여 DOCX 스타일로 구성합니다."""
         self._processed_hashes = set()
-        root_parent = doc.body 
+        # 본문 baseline 폰트 사전 패스 (헤더 상대 판정용)
+        self.body_font_size = self._compute_body_font_size(data)
+        root_parent = doc.body
         self.active_main_parent = root_parent
 
         for paragraph_items in data:
@@ -573,23 +702,45 @@ class GenosHwpDocumentBackend(DeclarativeDocumentBackend):
         if not full_text: 
             return
 
-        # 2. 폰트/스타일 정보 추출
-        max_font_size = max([i.get("font", {}).get("size", 10.0) for i in paragraph_items])
-        is_bold = any([i.get("font", {}).get("bold", False) for i in paragraph_items])
+        # 2. 폰트/스타일 정보 추출 — run 단위 max()/any() 대신 글자수 가중 "비율"로 집계.
+        #    단락의 일부 run만 강조돼도 전체가 강조로 잡히던 문제를 막는다. (Issue #206)
+        baseline = self.body_font_size or 10.0
+        total_chars = 0
+        bold_chars = 0
+        large_chars = 0
+        max_font_size = 0.0
+        for i in paragraph_items:
+            weight = len(str(i.get("value", "")).strip())
+            font = i.get("font", {}) or {}
+            size = float(font.get("size", 10.0) or 10.0)
+            max_font_size = max(max_font_size, size)
+            if weight <= 0:
+                continue
+            total_chars += weight
+            if font.get("bold", False):
+                bold_chars += weight
+            if size >= baseline * _LARGE_FONT_FACTOR:
+                large_chars += weight
+        if max_font_size <= 0.0:
+            max_font_size = baseline
+        bold_ratio = (bold_chars / total_chars) if total_chars else 0.0
+        large_ratio = (large_chars / total_chars) if total_chars else 0.0
 
         # 가상 스타일 판정
-        p_style_id, p_level = self._get_label_and_level_hwp(full_text, max_font_size, is_bold)
+        marker = self._match_structural_marker(full_text)
+        p_style_id, p_level = self._get_label_and_level_hwp(
+            full_text, max_font_size, bold_ratio, large_ratio, marker=marker
+        )
 
         # 3. 패턴 감지 (TOC 및 헤더)
         # [추가]: TOC 패턴 감지 (점 2개 이상, 탭, 또는 긴 공백 뒤에 숫자로 끝나는 경우)
         is_toc = bool(re.search(r'(\.{2,}|…|\t|\s{4,})\s*\d+$', full_text))
-        
-        # 명시적 헤더 패턴 (1., 가., * 등)
-        is_explicit_pattern = bool(re.match(r'^(?:\d+\.|\*|[-•]|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\.)\s+', full_text))
-        
-        # 4. 강등 로직
-        if p_style_id == "Heading":
-            if not is_explicit_pattern and len(full_text) > 80:
+
+        # 4. 강등 로직: heading으로 잡혔지만 실제로는 서술형 본문 문장/리스트 항목인 경우 강등.
+        #    divider 마커(장/조/붙임/별표)는 SDK가 본문과 한 단락으로 합쳐도 heading 유지 → 면제.
+        #    그 외(number/weak heading)는 종결형 문장으로 끝나거나 지나치게 길면 본문으로 강등.
+        if p_style_id == "Heading" and marker[1] != "divider":
+            if len(full_text) > _HEADING_MAX_LEN or _SENTENCE_FINAL.search(full_text):
                 p_style_id = "Normal"
                 p_level = 0
 
