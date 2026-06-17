@@ -26,6 +26,18 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10101/badge)](https://www.bestpractices.dev/projects/10101)
 [![LF AI & Data](https://img.shields.io/badge/LF%20AI%20%26%20Data-003778?logo=linuxfoundation&logoColor=fff&color=0094ff&labelColor=003778)](https://lfaidata.foundation/projects/)
 
+## Atlas Cloud (hosted VLM backend)
+
+<p align="center">
+  <a href="https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=docling">
+    <img loading="lazy" alt="Atlas Cloud" src="docs/assets/atlas-cloud-logo.png" width="200">
+  </a>
+</p>
+
+> 🎁 **[Atlas Cloud](https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=docling)** is a full-modal, OpenAI-compatible AI inference platform. Docling's VLM pipeline can run against any remote OpenAI-compatible endpoint, so you can point it at Atlas Cloud to use hosted vision-language models (e.g. `qwen/qwen3-vl-30b-a3b-instruct`, `deepseek-ai/deepseek-ocr`) instead of self-hosting — handy for teams that prefer a managed API. Full model list: [atlascloud.ai/models](https://www.atlascloud.ai/models).
+
+Use the generic API runtime (`VlmEngineType.API`) with `url="https://api.atlascloud.ai/v1/chat/completions"`, a `Bearer` auth header, and the model in `params`. See [docs/examples/vlm_pipeline_api_model.py](docs/examples/vlm_pipeline_api_model.py) (Example 5) and [docs/examples/pictures_description_api.py](docs/examples/pictures_description_api.py).
+
 ## What is Docling ?
 
 Docling simplifies document processing, parsing diverse formats — including advanced PDF understanding — and providing seamless integrations with the gen AI ecosystem.

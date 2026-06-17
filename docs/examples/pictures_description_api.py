@@ -169,6 +169,70 @@ def run_watsonx_example(input_doc_path: Path):
             )
 
 
+def run_atlas_cloud_example(input_doc_path: Path):
+    """Example 3: Using Granite Vision preset with Atlas Cloud.
+
+    Atlas Cloud (https://www.atlascloud.ai) exposes a single OpenAI-compatible
+    `/v1/chat/completions` endpoint serving many vision-language models, so it
+    is reached through the generic API runtime.
+    """
+    print("\n" + "=" * 70)
+    print("Example 3: Picture description with Atlas Cloud (OpenAI-compatible API)")
+    print("=" * 70)
+
+    # Skip in CI: this calls a hosted service and needs a key.
+    if os.environ.get("CI"):
+        print("Skipping Atlas Cloud example in CI environment")
+        return
+
+    api_key = os.environ.get("ATLASCLOUD_API_KEY")
+    if not api_key:
+        print("WARNING: Atlas Cloud API key not found.")
+        print(
+            "Set ATLASCLOUD_API_KEY to run this example "
+            "(get a key at https://www.atlascloud.ai)."
+        )
+        print("Skipping Atlas Cloud example.\n")
+        return
+
+    # Generic API runtime pointed at Atlas Cloud with a vision-language model.
+    picture_desc_options = PictureDescriptionVlmEngineOptions.from_preset(
+        "granite_vision",
+        engine_options=ApiVlmEngineOptions(
+            runtime_type=VlmEngineType.API,  # Generic API type
+            url="https://api.atlascloud.ai/v1/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}"},
+            params={
+                "model": "qwen/qwen3-vl-30b-a3b-instruct",
+                "max_tokens": 400,
+            },
+            timeout=60,
+        ),
+    )
+
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.do_picture_description = True
+    pipeline_options.picture_description_options = picture_desc_options
+    pipeline_options.enable_remote_services = True
+
+    doc_converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=pipeline_options,
+            )
+        }
+    )
+    result = doc_converter.convert(input_doc_path)
+
+    for element, _level in result.document.iterate_items():
+        if isinstance(element, PictureItem):
+            print(
+                f"Picture {element.self_ref}\n"
+                f"Caption: {element.caption_text(doc=result.document)}\n"
+                f"Meta: {element.meta}\n"
+            )
+
+
 def main():
     logging.basicConfig(level=logging.INFO)
 
@@ -180,6 +244,9 @@ def main():
 
     # Run watsonx.ai example (skips if in CI or credentials not found)
     run_watsonx_example(input_doc_path)
+
+    # Run Atlas Cloud example (skips if in CI or ATLASCLOUD_API_KEY not set)
+    run_atlas_cloud_example(input_doc_path)
 
 
 if __name__ == "__main__":
@@ -210,6 +277,7 @@ if __name__ == "__main__":
 # - Local MLX runtime (macOS)
 # - LM Studio API runtime (this example)
 # - watsonx.ai API runtime (this example)
+# - Atlas Cloud API runtime (this example)
 # - Any other API endpoint
 #
 # This makes it easy to develop locally and deploy to production!

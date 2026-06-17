@@ -424,6 +424,72 @@ def run_watsonx_example(input_doc_path: Path) -> bool:
     return True
 
 
+def run_atlas_cloud_example(input_doc_path: Path) -> bool:
+    """Example 5: Using a preset with Atlas Cloud (hosted OpenAI-compatible API).
+
+    Atlas Cloud (https://www.atlascloud.ai) exposes a single OpenAI-compatible
+    `/v1/chat/completions` endpoint that serves many vision-language models, so
+    it is reached through the generic API runtime — no special options class.
+
+    Returns:
+        True if example ran successfully, False if skipped
+    """
+    print("\n" + "=" * 70)
+    print("Example 5: VLM with Atlas Cloud (hosted OpenAI-compatible API)")
+    print("=" * 70)
+
+    # Skip in CI: this calls a hosted service and needs a key.
+    if os.environ.get("CI"):
+        print("Skipping Atlas Cloud example in CI environment")
+        return False
+
+    api_key = os.environ.get("ATLASCLOUD_API_KEY")
+    if not api_key:
+        print("WARNING: Atlas Cloud API key not found.")
+        print(
+            "Set ATLASCLOUD_API_KEY to run this example "
+            "(get a key at https://www.atlascloud.ai)."
+        )
+        print("Skipping Atlas Cloud example.\n")
+        return False
+
+    # Use the generic API runtime and point it at Atlas Cloud. The preset still
+    # provides the prompt and response format; we override the model with a
+    # vision-language model served by Atlas Cloud.
+    vlm_options = VlmConvertOptions.from_preset(
+        "granite_docling",
+        engine_options=ApiVlmEngineOptions(
+            runtime_type=VlmEngineType.API,  # Generic API type
+            url="https://api.atlascloud.ai/v1/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}"},
+            params={
+                "model": "qwen/qwen3-vl-30b-a3b-instruct",
+                "temperature": 0.0,
+                "max_tokens": 4096,
+            },
+            timeout=90,
+        ),
+    )
+
+    pipeline_options = VlmPipelineOptions(
+        vlm_options=vlm_options,
+        enable_remote_services=True,  # Required for API runtimes
+    )
+
+    doc_converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=pipeline_options,
+                pipeline_cls=VlmPipeline,
+            )
+        }
+    )
+
+    result = doc_converter.convert(input_doc_path)
+    print(result.document.export_to_markdown())
+    return True
+
+
 def main():
     logging.basicConfig(level=logging.INFO)
 
@@ -436,6 +502,7 @@ def main():
         "Ollama": run_ollama_example(input_doc_path),
         "VLLM": run_vllm_example(input_doc_path),
         "watsonx.ai": run_watsonx_example(input_doc_path),
+        "Atlas Cloud": run_atlas_cloud_example(input_doc_path),
     }
 
     # Print summary
@@ -460,6 +527,11 @@ def main():
                     reason = "Running in CI environment"
                 else:
                     reason = "Credentials not found (WX_API_KEY, WX_PROJECT_ID)"
+            elif name == "Atlas Cloud":
+                if os.environ.get("CI"):
+                    reason = "Running in CI environment"
+                else:
+                    reason = "API key not found (ATLASCLOUD_API_KEY)"
             print(f"  - {name}: {reason}")
 
     print()
@@ -482,10 +554,13 @@ if __name__ == "__main__":
 # Each preset knows the appropriate model names for these API types.
 #
 # ### Custom API Configuration
-# For services like watsonx.ai that need custom configuration:
+# For services like watsonx.ai or Atlas Cloud that need custom configuration:
 # - Use `VlmEngineType.API` (generic)
 # - Provide custom `url`, `headers`, and `params`
 # - The preset still provides the base model configuration (prompt, response format)
+#
+# For a hosted, OpenAI-compatible endpoint such as Atlas Cloud, this is just a
+# `url` + a `Bearer` auth header + the `model` in `params` (see Example 5).
 #
 # ### Same Preset, Different Runtime
 # You can use the same preset (e.g., "granite_docling") with:
@@ -495,6 +570,7 @@ if __name__ == "__main__":
 # - Ollama API runtime (this example)
 # - VLLM API runtime (this example)
 # - watsonx.ai API runtime (this example)
+# - Atlas Cloud API runtime (this example)
 # - Any other API endpoint
 #
 # This makes it easy to develop locally and deploy to production!
