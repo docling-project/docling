@@ -216,9 +216,7 @@ def test_remote_health_failure_exits_1(tmp_path, monkeypatch):
             super().__init__(**kwargs)
             self.health_error = ConnectionError("connection refused")
 
-    monkeypatch.setattr(
-        "docling.cli.remote.DoclingServiceClient", _UnreachableClient
-    )
+    monkeypatch.setattr("docling.cli.remote.DoclingServiceClient", _UnreachableClient)
 
     result = runner.invoke(
         app,
