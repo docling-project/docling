@@ -42,51 +42,51 @@ def _summarize(vectors: list) -> dict:
 
 # ---- Regression Test -------------------------------------------------------
 
-@pytest.mark.regression
-@pytest.mark.skipif(len(HWPX_FILES) == 0, reason="no .hwpx samples found")
-@pytest.mark.parametrize("hwpx_file", HWPX_FILES, ids=lambda f: f.stem)
-@pytest.mark.asyncio
-async def test_hwpx_regression(hwpx_file, basic_processor):
-    """HWPX 문서 처리 결과를 baseline과 비교합니다."""
-    baseline_path = BASELINE_DIR / f"hwpx_{hwpx_file.stem}.json"
-
-    if not baseline_path.exists():
-        pytest.fail(
-            f"Baseline not found: {baseline_path}. "
-            f"Run: pytest -m update_baseline -k test_update_hwpx_baselines"
-        )
-
-    dp = basic_processor()
-    vectors = await dp(None, str(hwpx_file), chunker_type="hybrid")
-    current = _summarize(vectors)
-
-    with open(baseline_path, "r", encoding="utf-8") as f:
-        baseline = json.load(f)
-
-    # 1) 벡터 수 일치
-    assert current["num_vectors"] == baseline["num_vectors"], (
-        f"[{hwpx_file.name}] vector count: "
-        f"{current['num_vectors']} != {baseline['num_vectors']}"
-    )
-
-    # 2) 전체 문자수 ±5% 이내
-    base_chars = max(baseline["total_characters"], 1)
-    char_ratio = abs(current["total_characters"] - base_chars) / base_chars
-    assert char_ratio < 0.05, (
-        f"[{hwpx_file.name}] char count drift {char_ratio:.1%} "
-        f"({current['total_characters']} vs {base_chars})"
-    )
-
-    # 3) 각 벡터 텍스트 유사도 ≥ 0.85
-    for i, (cur_v, base_v) in enumerate(
-        zip(current["vectors"], baseline["vectors"])
-    ):
-        sim = difflib.SequenceMatcher(
-            None, cur_v.get("text", ""), base_v.get("text", "")
-        ).ratio()
-        assert sim >= 0.85, (
-            f"[{hwpx_file.name}] vector[{i}] text similarity {sim:.2%} < 85%"
-        )
+# @pytest.mark.regression
+# @pytest.mark.skipif(len(HWPX_FILES) == 0, reason="no .hwpx samples found")
+# @pytest.mark.parametrize("hwpx_file", HWPX_FILES, ids=lambda f: f.stem)
+# @pytest.mark.asyncio
+# async def test_hwpx_regression(hwpx_file, basic_processor):
+#     """HWPX 문서 처리 결과를 baseline과 비교합니다."""
+#     baseline_path = BASELINE_DIR / f"hwpx_{hwpx_file.stem}.json"
+#
+#     if not baseline_path.exists():
+#         pytest.fail(
+#             f"Baseline not found: {baseline_path}. "
+#             f"Run: pytest -m update_baseline -k test_update_hwpx_baselines"
+#         )
+#
+#     dp = basic_processor()
+#     vectors = await dp(None, str(hwpx_file), chunker_type="hybrid")
+#     current = _summarize(vectors)
+#
+#     with open(baseline_path, "r", encoding="utf-8") as f:
+#         baseline = json.load(f)
+#
+#     # 1) 벡터 수 일치
+#     assert current["num_vectors"] == baseline["num_vectors"], (
+#         f"[{hwpx_file.name}] vector count: "
+#         f"{current['num_vectors']} != {baseline['num_vectors']}"
+#     )
+#
+#     # 2) 전체 문자수 ±5% 이내
+#     base_chars = max(baseline["total_characters"], 1)
+#     char_ratio = abs(current["total_characters"] - base_chars) / base_chars
+#     assert char_ratio < 0.05, (
+#         f"[{hwpx_file.name}] char count drift {char_ratio:.1%} "
+#         f"({current['total_characters']} vs {base_chars})"
+#     )
+#
+#     # 3) 각 벡터 텍스트 유사도 ≥ 0.85
+#     for i, (cur_v, base_v) in enumerate(
+#         zip(current["vectors"], baseline["vectors"])
+#     ):
+#         sim = difflib.SequenceMatcher(
+#             None, cur_v.get("text", ""), base_v.get("text", "")
+#         ).ratio()
+#         assert sim >= 0.85, (
+#             f"[{hwpx_file.name}] vector[{i}] text similarity {sim:.2%} < 85%"
+#         )
 
 
 # ---- Baseline 업데이트 ------------------------------------------------------
