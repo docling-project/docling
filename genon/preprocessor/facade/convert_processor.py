@@ -1526,12 +1526,21 @@ class GenosSmartChunker(BaseChunker):
             sections_with_text.pop(i + 1)
 
         # ================================================================
-        # 4단계: 토큰 기준 병합
+        # 4단계: 토큰 기준 병합 (1차 — 섹션 구조 경계 기준 그룹 생성)
         # ================================================================
 
-        result_chunks = []
+        groups: list[dict] = []
         merged_texts, merged_items = [], []
         merged_header_infos, merged_header_short_infos = [], []
+
+        def flush_group():
+            if merged_texts:
+                groups.append({
+                    "texts": list(merged_texts),
+                    "items": list(merged_items),
+                    "h_infos": list(merged_header_infos),
+                    "h_short": list(merged_header_short_infos),
+                })
 
         for text, items, header_infos, header_short_infos in sections_with_text:
 
@@ -1557,15 +1566,13 @@ class GenosSmartChunker(BaseChunker):
 
             # 새로운 청크 생성
             if b_new_chunk:
-                cur_chunk = get_current_chunk(doc_chunk, merged_texts, merged_header_short_infos, merged_items)
-                if cur_chunk:
-                    result_chunks.append(cur_chunk)
+                flush_group()
 
                 # 새로운 병합 시작
                 merged_texts = [text]
-                merged_items = items
-                merged_header_infos = header_infos
-                merged_header_short_infos = header_short_infos
+                merged_items = list(items)
+                merged_header_infos = list(header_infos)
+                merged_header_short_infos = list(header_short_infos)
             else:
                 # 현재 섹션 병합
                 merged_texts.append(text)
@@ -1574,9 +1581,45 @@ class GenosSmartChunker(BaseChunker):
                 merged_header_short_infos.extend(header_short_infos)
 
         # 마지막 병합된 items 처리
-        cur_chunk = get_current_chunk(doc_chunk, merged_texts, merged_header_short_infos, merged_items)
-        if cur_chunk:
-            result_chunks.append(cur_chunk)
+        flush_group()
+
+        # ================================================================
+        # 5단계: chunk_size 한도 내 인접 그룹 greedy 병합
+        #   1차 결과(구조 경계 기준 그룹)를 순서대로, 합산 크기가 chunk_size 이하인 동안
+        #   인접 그룹끼리 결합한다. (크기는 HEADER 라인 포함 최종 텍스트 기준)
+        # ================================================================
+        if self.max_tokens > 0 and groups:
+            def _size(g):
+                text = "\n".join(g["texts"])
+                headings = self._extract_used_headers(g["h_short"]) or []
+                header_line = ("HEADER: " + ", ".join(headings) + "\n") if headings else ""
+                return len(header_line) + len(text)
+
+            def _merge(a, b):
+                return {
+                    "texts": a["texts"] + b["texts"],
+                    "items": a["items"] + b["items"],
+                    "h_infos": a["h_infos"] + b["h_infos"],
+                    "h_short": a["h_short"] + b["h_short"],
+                }
+
+            merged_groups = [groups[0]]
+            for g in groups[1:]:
+                cand = _merge(merged_groups[-1], g)
+                if _size(cand) <= self.max_tokens:
+                    merged_groups[-1] = cand
+                else:
+                    merged_groups.append(g)
+            groups = merged_groups
+
+        # ================================================================
+        # 6단계: 최종 DocChunk 생성
+        # ================================================================
+        result_chunks = []
+        for g in groups:
+            cur_chunk = get_current_chunk(doc_chunk, g["texts"], g["h_short"], g["items"])
+            if cur_chunk:
+                result_chunks.append(cur_chunk)
 
         return result_chunks
 
