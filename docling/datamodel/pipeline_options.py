@@ -355,6 +355,15 @@ class NemotronOcrOptions(OcrOptions):
     model_config = ConfigDict(
         extra="forbid",
     )
+    batch_size: Annotated[
+        int,
+        Field(
+            description=(
+                "Number of images within the same page to process. "
+                "In practice a batch>1 happens only with PDF inputs with many OCR rectangles."
+            )
+        ),
+    ] = 8
 
 
 class EasyOcrOptions(OcrOptions):

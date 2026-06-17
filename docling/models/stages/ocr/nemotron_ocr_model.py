@@ -206,41 +206,64 @@ class NemotronOcrModel(BaseOcrModel):
                 with TimeRecorder(conv_res, "ocr"):
                     ocr_rects = self.get_ocr_rects(page)
 
+                    # Process the OCR rectangles in batches of at most
+                    # `batch_size` images. `self.reader` accepts a list of
+                    # images and returns one prediction list per image.
                     all_ocr_cells = []
-                    for ocr_rect in ocr_rects:
-                        if ocr_rect.area() == 0:
-                            continue
+                    valid_rects = [
+                        ocr_rect for ocr_rect in ocr_rects if ocr_rect.area() != 0
+                    ]
+                    batch_size = max(1, self.options.batch_size)
 
-                        high_res_image = page._backend.get_page_image(
-                            scale=self.scale, cropbox=ocr_rect
-                        )
-                        image_width, image_height = high_res_image.size
-                        image_array = numpy.array(high_res_image)
+                    for batch_start in range(0, len(valid_rects), batch_size):
+                        batch_rects = valid_rects[
+                            batch_start : batch_start + batch_size
+                        ]
 
-                        # TODO: Will it be faster to predict multiple rects (batch>1) at once
-                        raw_predictions = cast(
-                            Sequence[NemotronOcrPrediction],
+                        high_res_images = []
+                        image_arrays = []
+                        # Image dimensions parallel to `batch_rects`, needed to
+                        # map normalized predictions back to page coordinates.
+                        image_sizes = []
+                        for ocr_rect in batch_rects:
+                            high_res_image = page._backend.get_page_image(
+                                scale=self.scale, cropbox=ocr_rect
+                            )
+                            high_res_images.append(high_res_image)
+                            image_arrays.append(numpy.array(high_res_image))
+                            image_sizes.append(high_res_image.size)
+
+                        # Run the model to get the raw predictions
+                        batch_predictions = cast(
+                            Sequence[Sequence[NemotronOcrPrediction]],
                             self.reader(
-                                image_array,
+                                image_arrays,
                                 merge_level=self.options.merge_level,
                             ),
                         )
 
-                        del high_res_image
-                        del image_array
+                        del high_res_images
+                        del image_arrays
 
-                        cells = [
-                            self._prediction_to_cell(
-                                prediction=prediction,
-                                index=index,
-                                ocr_rect=ocr_rect,
-                                image_width=image_width,
-                                image_height=image_height,
-                                scale=self.scale,
-                            )
-                            for index, prediction in enumerate(raw_predictions)
-                        ]
-                        all_ocr_cells.extend(cells)
+                        # Convert the raw predictions to docling's OCR cells
+                        for ocr_rect, (
+                            image_width,
+                            image_height,
+                        ), raw_predictions in zip(
+                            batch_rects, image_sizes, batch_predictions
+                        ):
+                            cells = [
+                                self._prediction_to_cell(
+                                    prediction=prediction,
+                                    index=index,
+                                    ocr_rect=ocr_rect,
+                                    image_width=image_width,
+                                    image_height=image_height,
+                                    scale=self.scale,
+                                )
+                                for index, prediction in enumerate(raw_predictions)
+                            ]
+                            all_ocr_cells.extend(cells)
 
                     self.post_process_cells(all_ocr_cells, page)
 
