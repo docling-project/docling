@@ -3,6 +3,7 @@
 The service client is faked so these run without a live docling-serve instance.
 """
 
+import re
 from pathlib import Path, PurePath
 
 import pytest
@@ -14,6 +15,11 @@ from docling.datamodel.base_models import ConversionStatus, InputFormat, OutputF
 
 runner = CliRunner()
 pytestmark = pytest.mark.external_service
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _strip_ansi(text: str) -> str:
+    return _ANSI_RE.sub("", text)
 
 
 class _FakeDoc:
@@ -86,6 +92,7 @@ def _patch_client(monkeypatch):
 def test_remote_help_is_self_sufficient():
     result = runner.invoke(app, ["convert-remote", "--help"])
     assert result.exit_code == 0
+    help_text = _strip_ansi(result.output)
     for marker in (
         "Authentication",
         "Exit codes",
@@ -94,7 +101,7 @@ def test_remote_help_is_self_sufficient():
         "DOCLING_SERVICE_API_KEY",
         "--service-url",
     ):
-        assert marker in result.output
+        assert marker in help_text
 
 
 def test_remote_missing_url_exits_2(monkeypatch):
