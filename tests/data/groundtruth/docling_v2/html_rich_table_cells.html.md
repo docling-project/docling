@@ -9,9 +9,9 @@
 
 | Genus | Species |
 | - | - |
-| Aythya  (Diving ducks) | Hawser, Common Pochard |
-| Lophonetta  (Pintail group) | Fulvous Whistling Duck |
-| Oxyura  (Benthic ducks) | Wigee, Banded Water-screw |
+| Aythya (Diving ducks) | Hawser, Common Pochard |
+| Lophonetta (Pintail group) | Fulvous Whistling Duck |
+| Oxyura (Benthic ducks) | Wigee, Banded Water-screw |
 
 | Action | Action |
 | - | - |

@@ -29,12 +29,14 @@
 
 import json
 import logging
+import os
 from pathlib import Path
 
 import yaml
 
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import InputFormat
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.document_converter import (
     DocumentConverter,
     PdfFormatOption,
@@ -44,6 +46,9 @@ from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 
 _log = logging.getLogger(__name__)
+
+# Check if running in CI
+IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")
 
 
 def main():
@@ -88,7 +93,10 @@ def main():
         },
     )
 
-    conv_results = doc_converter.convert_all(input_paths)
+    # Limit PDF pages under CI to keep runtime low. The range starts at page 1
+    # so single-page inputs (e.g. images) stay within range and remain valid.
+    page_range = (1, 2) if IS_CI else DEFAULT_PAGE_RANGE
+    conv_results = doc_converter.convert_all(input_paths, page_range=page_range)
 
     for res in conv_results:
         out_path = Path("scratch")  # ensure this directory exists before running
