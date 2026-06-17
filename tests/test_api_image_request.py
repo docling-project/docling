@@ -56,13 +56,15 @@ class TestApiImageRequest:
 
         return _create_mock_response
 
-    @patch("docling.utils.api_image_request.requests.post")
+    @patch("docling.utils.api_image_request._make_retry_session")
     def test_content_filter_finish_reason(
-        self, mock_post, sample_image, mock_response_factory
+        self, mock_session_factory, sample_image, mock_response_factory
     ):
         """Test that content_filter finish reason returns CONTENT_FILTERED."""
-        mock_post.return_value = mock_response_factory(
-            content="Filtered content", finish_reason="content_filter"
+        mock_session_factory.return_value.__enter__.return_value.post.return_value = (
+            mock_response_factory(
+                content="Filtered content", finish_reason="content_filter"
+            )
         )
 
         result_text, _tokens, stop_reason = api_image_request(
@@ -74,11 +76,13 @@ class TestApiImageRequest:
         assert result_text == "Filtered content"
         assert stop_reason == VlmStopReason.CONTENT_FILTERED
 
-    @patch("docling.utils.api_image_request.requests.post")
-    def test_length_finish_reason(self, mock_post, sample_image, mock_response_factory):
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_length_finish_reason(
+        self, mock_session_factory, sample_image, mock_response_factory
+    ):
         """Test that length finish reason returns LENGTH."""
-        mock_post.return_value = mock_response_factory(
-            content="Truncated content", finish_reason="length"
+        mock_session_factory.return_value.__enter__.return_value.post.return_value = (
+            mock_response_factory(content="Truncated content", finish_reason="length")
         )
 
         result_text, _tokens, stop_reason = api_image_request(
@@ -90,11 +94,13 @@ class TestApiImageRequest:
         assert result_text == "Truncated content"
         assert stop_reason == VlmStopReason.LENGTH
 
-    @patch("docling.utils.api_image_request.requests.post")
-    def test_stop_finish_reason(self, mock_post, sample_image, mock_response_factory):
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_stop_finish_reason(
+        self, mock_session_factory, sample_image, mock_response_factory
+    ):
         """Test that stop finish reason returns END_OF_SEQUENCE."""
-        mock_post.return_value = mock_response_factory(
-            content="Normal completion", finish_reason="stop"
+        mock_session_factory.return_value.__enter__.return_value.post.return_value = (
+            mock_response_factory(content="Normal completion", finish_reason="stop")
         )
 
         result_text, _tokens, stop_reason = api_image_request(
@@ -106,26 +112,30 @@ class TestApiImageRequest:
         assert result_text == "Normal completion"
         assert stop_reason == VlmStopReason.END_OF_SEQUENCE
 
-    @patch("docling.utils.api_image_request.requests.post")
-    def test_tool_calls_response(self, mock_post, sample_image, mock_response_factory):
+    @patch("docling.utils.api_image_request._make_retry_session")
+    def test_tool_calls_response(
+        self, mock_session_factory, sample_image, mock_response_factory
+    ):
         """Test that tool calling responses are converted into generated text."""
-        mock_post.return_value = mock_response_factory(
-            message={
-                "role": "assistant",
-                "tool_calls": [
-                    {
-                        "function": {
-                            "name": "markdown_no_bbox",
-                            "arguments": json.dumps(
-                                [
-                                    {"text": "Extracted text"},
-                                    {"text": "Second block"},
-                                ]
-                            ),
+        mock_session_factory.return_value.__enter__.return_value.post.return_value = (
+            mock_response_factory(
+                message={
+                    "role": "assistant",
+                    "tool_calls": [
+                        {
+                            "function": {
+                                "name": "markdown_no_bbox",
+                                "arguments": json.dumps(
+                                    [
+                                        {"text": "Extracted text"},
+                                        {"text": "Second block"},
+                                    ]
+                                ),
+                            }
                         }
-                    }
-                ],
-            }
+                    ],
+                }
+            )
         )
 
         result_text, tokens, stop_reason = api_image_request(

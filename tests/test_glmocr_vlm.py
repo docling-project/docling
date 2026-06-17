@@ -37,6 +37,7 @@ def test_glmocr_preset_exists():
     assert spec.response_format == ResponseFormat.MARKDOWN
     assert spec.prompt == "Text Recognition:"
     assert spec.trust_remote_code is False
+    assert spec.stop_strings == ["<|user|>", "<|endoftext|>"]
 
 
 def test_glmocr_preset_engine_config():
@@ -92,6 +93,7 @@ def test_glmocr_legacy_specs():
     assert t.transformers_model_type == TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT
     assert t.scale == 2.0
     assert t.temperature == 0.0
+    assert t.stop_strings == ["<|user|>", "<|endoftext|>"]
 
     # VLLM spec should share repo_id but differ in framework
     v = vlm_model_specs.GLMOCR_VLLM

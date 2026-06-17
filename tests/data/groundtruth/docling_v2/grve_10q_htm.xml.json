@@ -1636,6 +1636,7 @@
         ],
         "num_rows": 4,
         "num_cols": 9,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -2563,6 +2564,7 @@
         ],
         "num_rows": 4,
         "num_cols": 9,
+        "orientation": "rot_0",
         "grid": [
           [
             {

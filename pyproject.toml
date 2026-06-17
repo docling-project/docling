@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.102.1"  # DO NOT EDIT, updated automatically
+version = "2.103.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -238,12 +238,21 @@ feat-chunking = [
 service-client = [
   'httpx>=0.28,<1.0.0',
   'websockets>=14.0,<17.0',
+  'typer>=0.12.5,<0.27.0',
+  'rich>=13.0.0',
+  # Best-effort .env loading for `docling convert-remote`; the command still
+  # works (flags + env vars) if this is absent.
+  'python-dotenv~=1.0',
 ]
 
 cli = [
   'typer>=0.12.5,<0.27.0',
   'rich>=13.0.0',
+  # Best-effort .env loading for `docling convert-remote`; the command still
+  # works (flags + env vars) if this is absent.
+  'python-dotenv~=1.0',
 ]
+
 
 # ============================================================================
 # CONVENIENCE BUNDLES
@@ -338,6 +347,10 @@ docling = { workspace = true }
 [tool.uv]
 package = true
 default-groups = "all"
+
+override-dependencies = [
+  "grpcio>=1.75.1"
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["docling"]
