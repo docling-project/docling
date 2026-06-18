@@ -12,6 +12,8 @@ from docling.datamodel.document import InputDocument
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
+pytestmark = pytest.mark.ml_pdf_model
+
 
 @pytest.fixture
 def test_doc_path():

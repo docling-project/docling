@@ -1,0 +1,7 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section: group header-0
+    item-2 at level 2: section_header: Issue 3: Concatenated equation blocks
+      item-3 at level 3: text: The paragraph below contains thr ... ts are siblings inside a single <w:p>.
+      item-4 at level 3: formula: a=b
+      item-5 at level 3: formula: c=d
+      item-6 at level 3: formula: e=f

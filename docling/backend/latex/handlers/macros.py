@@ -1,7 +1,7 @@
 import logging
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     from io import BytesIO
@@ -17,12 +17,20 @@ from docling_core.types.doc.document import (
     NodeItem,
 )
 from PIL import Image
-from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
+from pylatexenc.latexwalker import (
+    LatexCharsNode,
+    LatexEnvironmentNode,
+    LatexGroupNode,
+    LatexMacroNode,
+    LatexWalker,
+    LatexWalkerParseError,
+)
 
 from docling.backend.latex.constants import (
     MACROS_ACCENTS,
     MACROS_CITATION,
     MACROS_COLOR,
+    MACROS_COLOR_INLINE,
     MACROS_ESCAPED,
     MACROS_HEADING,
     MACROS_IGNORED,
@@ -44,6 +52,7 @@ class MacroHandlerMixin:
         path_or_stream: "BytesIO | Path"
         _input_stack: set[str]
         _custom_macros: dict[str, str]
+        _custom_macro_num_args: dict[str, int]
         labels: dict[str, bool]
 
         def _process_nodes(
@@ -76,6 +85,7 @@ class MacroHandlerMixin:
                     argnlist = node.nodeargd.argnlist
 
                     name_arg = argnlist[1] if len(argnlist) > 1 else None
+                    num_args_arg = argnlist[2] if len(argnlist) > 2 else None
 
                     def_arg = None
                     for arg in reversed(argnlist):
@@ -99,6 +109,9 @@ class MacroHandlerMixin:
 
                         if macro_name:
                             self._custom_macros[macro_name] = macro_def
+                            self._custom_macro_num_args[macro_name] = (
+                                self._parse_custom_macro_num_args(num_args_arg)
+                            )
                             _log.debug(
                                 f"Registered custom macro: \\{macro_name} -> '{macro_def}'"
                             )
@@ -149,9 +162,10 @@ class MacroHandlerMixin:
         parent: NodeItem | None,
         formatting: Formatting | None,
         text_label: DocItemLabel | None,
-        text_buffer: List[str],
+        text_buffer: list[str],
         flush_fn: Callable[[], None],
-    ):
+        following_nodes=None,
+    ) -> int:
         if node.macroname in MACROS_INLINE_VERBATIM:
             if node.macroname == "~":
                 text_buffer.append(" ")
@@ -164,9 +178,18 @@ class MacroHandlerMixin:
             if formatted_text:
                 text_buffer.append(formatted_text)
         elif node.macroname in self._custom_macros:
-            expansion = self._custom_macros[node.macroname]
-            _log.debug(f"Expanding custom macro \\{node.macroname} -> '{expansion}'")
-            text_buffer.append(expansion)
+            expansion, consumed = self._expand_custom_macro_invocation(
+                node, following_nodes or []
+            )
+            if expansion:
+                _log.debug(
+                    f"Expanding custom macro \\{node.macroname} -> '{expansion}'"
+                )
+                if self._custom_macro_num_args.get(node.macroname, 0) > 0:
+                    text_buffer.append(self._parse_latex_fragment_to_text(expansion))
+                else:
+                    text_buffer.append(expansion)
+            return consumed
         elif node.macroname in MACROS_CITATION:
             ref_arg = self._extract_macro_arg(node)
             if ref_arg:
@@ -177,10 +200,28 @@ class MacroHandlerMixin:
                 text_buffer.append(url_text)
         elif node.macroname in MACROS_COLOR:
             pass
+        elif node.macroname in MACROS_TEXT_STYLE:
+            formatted_text = self._extract_macro_arg(node)
+            if formatted_text:
+                text_buffer.append(formatted_text)
+        elif node.macroname in MACROS_COLOR_INLINE:
+            # Skip the color argument; the text content is always the last arg
+            if node.nodeargd and node.nodeargd.argnlist:
+                text_arg = node.nodeargd.argnlist[-1]
+                if text_arg is not None and hasattr(text_arg, "nodelist"):
+                    text = self._nodes_to_text(text_arg.nodelist)
+                    if text:
+                        text_buffer.append(text)
         else:
             if node.macroname in MACROS_STRUCTURAL:
                 flush_fn()
                 self._process_macro(node, doc, parent, formatting, text_label)
+            elif node.macroname in MACROS_SPACING or node.macroname in MACROS_IGNORED:
+                # Spacing and ignored commands are silently discarded along with
+                # their arguments (e.g. \vspace{-1mm} should not emit "-1mm")
+                _log.debug(
+                    f"Discarding spacing/ignored macro and its arguments: {node.macroname}"
+                )
             elif node.nodeargd and node.nodeargd.argnlist:
                 inline_text = self._extract_all_macro_args_inline(node)
                 if inline_text:
@@ -193,6 +234,7 @@ class MacroHandlerMixin:
                 _log.debug(
                     f"Skipping unknown macro without arguments: {node.macroname}"
                 )
+        return 0
 
     def _process_macro(  # noqa: C901
         self,
@@ -265,7 +307,19 @@ class MacroHandlerMixin:
                 image = None
                 try:
                     if isinstance(self.path_or_stream, Path):
+                        base_dir = self.path_or_stream.parent.resolve()
                         img_full_path = self.path_or_stream.parent / img_path
+                        try:
+                            if not img_full_path.resolve().is_relative_to(base_dir):
+                                _log.warning(
+                                    f"Path traversal attempt blocked for image: {img_path}"
+                                )
+                                raise ValueError("Path traversal not allowed")
+                        except ValueError:
+                            _log.warning(
+                                f"Invalid path for image (different drive or traversal): {img_path}"
+                            )
+                            raise
                         if img_full_path.exists():
                             suffix = img_full_path.suffix.lower()
                             if suffix == ".pdf":
@@ -311,9 +365,23 @@ class MacroHandlerMixin:
 
             filepath = self._extract_macro_arg(node)
             if filepath and isinstance(self.path_or_stream, Path):
+                base_dir = self.path_or_stream.parent.resolve()
                 input_path = self.path_or_stream.parent / filepath
                 if not input_path.suffix:
                     input_path = input_path.with_suffix(".tex")
+
+                try:
+                    if not input_path.resolve().is_relative_to(base_dir):
+                        _log.warning(
+                            f"Path traversal attempt blocked for input file: {filepath}"
+                        )
+                        return
+                except ValueError:
+                    _log.warning(
+                        f"Invalid path for input file (different drive or traversal): {filepath}"
+                    )
+                    return
+
                 resolved = str(input_path.resolve())
                 if resolved in self._input_stack:
                     _log.warning(f"Circular \\input detected: {filepath}")
@@ -482,12 +550,82 @@ class MacroHandlerMixin:
 
     def _expand_macros(self, latex_str: str) -> str:
         for macro_name, macro_def in self._custom_macros.items():
+            if self._custom_macro_num_args.get(macro_name, 0) > 0:
+                continue
             latex_str = re.sub(
                 rf"\\{re.escape(macro_name)}(?![a-zA-Z])",
                 lambda m: macro_def,
                 latex_str,
             )
         return latex_str
+
+    def _parse_custom_macro_num_args(self, num_args_arg) -> int:
+        if num_args_arg is None:
+            return 0
+
+        raw = num_args_arg.latex_verbatim().strip("{}[] \n\t")
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            return 0
+
+    def _extract_custom_macro_invocation_args(
+        self, following_nodes, expected_arg_count: int
+    ) -> tuple[list[str], int]:
+        if expected_arg_count <= 0:
+            return [], 0
+
+        arg_values: list[str] = []
+        consumed = 0
+
+        for next_node in following_nodes:
+            if len(arg_values) >= expected_arg_count:
+                break
+
+            if isinstance(next_node, LatexCharsNode) and not next_node.chars.strip():
+                consumed += 1
+                continue
+
+            if isinstance(next_node, LatexGroupNode):
+                arg_values.append(self._nodes_to_text(next_node.nodelist or []))
+                consumed += 1
+                continue
+
+            break
+
+        return arg_values, consumed
+
+    def _render_custom_macro_expansion(
+        self, macro_name: str, arg_values: list[str]
+    ) -> str:
+        expansion = self._custom_macros[macro_name]
+        for idx in range(len(arg_values), 0, -1):
+            expansion = expansion.replace(f"#{idx}", arg_values[idx - 1])
+        return expansion
+
+    def _parse_latex_fragment_to_text(self, latex_fragment: str) -> str:
+        try:
+            walker = LatexWalker(latex_fragment, tolerant_parsing=True)
+            parsed_nodes, _, _ = walker.get_latex_nodes()
+        except LatexWalkerParseError:
+            return latex_fragment
+
+        return self._nodes_to_text(parsed_nodes)
+
+    def _expand_custom_macro_invocation(
+        self, node: LatexMacroNode, following_nodes
+    ) -> tuple[str, int]:
+        expected_arg_count = self._custom_macro_num_args.get(node.macroname, 0)
+        if expected_arg_count <= 0:
+            return self._custom_macros[node.macroname], 0
+
+        arg_values, consumed = self._extract_custom_macro_invocation_args(
+            following_nodes, expected_arg_count
+        )
+        if len(arg_values) < expected_arg_count:
+            return self._custom_macros[node.macroname], 0
+
+        return self._render_custom_macro_expansion(node.macroname, arg_values), consumed
 
     def _get_heading_level(self, macroname: str) -> int:
         levels = {

@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Set, Union
+from typing import ClassVar, Optional, Set, Union
 
 from docling_core.types.doc import BoundingBox, Size
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
@@ -15,6 +15,11 @@ from docling.datamodel.document import InputDocument
 
 
 class PdfPageBackend(ABC):
+    @property
+    @abstractmethod
+    def page_no(self) -> int:
+        pass
+
     @abstractmethod
     def get_text_in_rect(self, bbox: BoundingBox) -> str:
         pass
@@ -28,7 +33,7 @@ class PdfPageBackend(ABC):
         pass
 
     @abstractmethod
-    def get_bitmap_rects(self, float: int = 1) -> Iterable[BoundingBox]:
+    def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         pass
 
     @abstractmethod
@@ -51,12 +56,16 @@ class PdfPageBackend(ABC):
 
 
 class PdfDocumentBackend(PaginatedDocumentBackend):
+    supports_random_page_access: ClassVar[bool] = True
+
     def __init__(
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
-        options: PdfBackendOptions = PdfBackendOptions(),
+        options: Optional[PdfBackendOptions] = None,
     ):
+        if options is None:
+            options = PdfBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
         self.options: PdfBackendOptions
 
@@ -72,6 +81,10 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
     @abstractmethod
     def page_count(self) -> int:
         pass
+
+    def iter_pages(self) -> Iterator[PdfPageBackend]:
+        for page_index in range(self.page_count()):
+            yield self.load_page(page_index)
 
     @classmethod
     def supported_formats(cls) -> Set[InputFormat]:

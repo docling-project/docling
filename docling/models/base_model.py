@@ -125,10 +125,6 @@ class BaseVlmPageModel(BasePageModel, BaseVlmModel):
                 {
                     "role": "user",
                     "content": [
-                        {
-                            "type": "text",
-                            "text": "This is a page from a document.",
-                        },
                         {"type": "image"},
                         {"type": "text", "text": user_prompt},
                     ],

@@ -1,3 +1,8 @@
+import pytest
+
+pytestmark = pytest.mark.cross_platform
+
+
 def _setup_env(monkeypatch):
     monkeypatch.setenv("DOCLING_PERF_PAGE_BATCH_SIZE", "12")
     monkeypatch.setenv("DOCLING_DEBUG_VISUALIZE_RAW_LAYOUT", "True")
@@ -47,3 +52,34 @@ def test_compile_model_defaults_from_settings(monkeypatch):
     assert TransformersObjectDetectionEngineOptions().compile_model is True
     assert TransformersImageClassificationEngineOptions().compile_model is True
     assert TransformersVlmEngineOptions().compile_model is True
+
+
+def test_scoped_settings_restores_state():
+    import importlib
+
+    import docling.datamodel.settings as settings_module
+
+    settings_module = importlib.reload(settings_module)
+
+    original = settings_module.settings.model_copy(deep=True)
+
+    with pytest.raises(RuntimeError):
+        with settings_module.scoped(
+            perf=settings_module.BatchConcurrencySettings(page_batch_size=99),
+            debug=settings_module.DebugSettings(profile_pipeline_timings=True),
+            inference=settings_module.InferenceSettings(compile_torch_models=False),
+        ):
+            assert settings_module.settings.perf.page_batch_size == 99
+            assert settings_module.settings.debug.profile_pipeline_timings is True
+            assert settings_module.settings.inference.compile_torch_models is False
+            raise RuntimeError("boom")
+
+    assert settings_module.settings.model_dump(mode="json") == original.model_dump(
+        mode="json"
+    )
+
+    fresh = settings_module.defaults()
+    assert fresh is not settings_module.settings
+    assert fresh.model_dump(mode="json") == settings_module.settings.model_dump(
+        mode="json"
+    )

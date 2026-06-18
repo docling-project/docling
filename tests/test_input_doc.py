@@ -14,7 +14,11 @@ from docling.datamodel.backend_options import (
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument, _DocumentConversionInput
 from docling.datamodel.settings import DocumentLimits
-from docling.document_converter import ImageFormatOption, PdfFormatOption
+from docling.document_converter import (
+    HTMLFormatOption,
+    ImageFormatOption,
+    PdfFormatOption,
+)
 
 
 def test_in_doc_from_valid_path():
@@ -112,6 +116,32 @@ def test_in_doc_with_backend_options():
             backend=HTMLDocumentBackend,
             backend_options=BaseBackendOptions(),
         )
+
+
+def test_html_backend_options_set_source_uri_per_input(tmp_path):
+    first = tmp_path / "first.html"
+    second = tmp_path / "second.html"
+    first.write_text("<html><body>First</body></html>")
+    second.write_text("<html><body>Second</body></html>")
+    backend_options = HTMLBackendOptions(enable_local_fetch=True)
+    conversion_input = _DocumentConversionInput(path_or_stream_iterator=[first, second])
+
+    docs = list(
+        conversion_input.docs(
+            {
+                InputFormat.HTML: HTMLFormatOption(
+                    backend_options=backend_options,
+                )
+            }
+        )
+    )
+
+    assert len(docs) == 2
+    assert isinstance(docs[0].backend_options, HTMLBackendOptions)
+    assert isinstance(docs[1].backend_options, HTMLBackendOptions)
+    assert docs[0].backend_options.source_uri == first
+    assert docs[1].backend_options.source_uri == second
+    assert backend_options.source_uri is None
 
 
 def test_guess_format(tmp_path):
@@ -245,17 +275,40 @@ def test_guess_format(tmp_path):
     stream = DocumentStream(name="docling_test.xml", stream=buf)
     assert dci._guess_format(stream) is None
 
-    # Invalid USPTO patent (as plain text)
+    # Plain .txt file (not USPTO) should be detected as Markdown
     stream = DocumentStream(name="pftaps057006474.txt", stream=BytesIO(b"xyz"))
-    assert dci._guess_format(stream) is None
+    assert dci._guess_format(stream) == InputFormat.MD
+
+    # Valid METS-GBS archive
+    mets_gbs_path = Path("./tests/data/mets_gbs/32044009881525_select.tar.gz")
+    if mets_gbs_path.exists():
+        assert dci._guess_format(mets_gbs_path) == InputFormat.METS_GBS
+
+        buf = BytesIO(mets_gbs_path.open("rb").read())
+        stream = DocumentStream(name="32044009881525_select.tar.gz", stream=buf)
+        assert dci._guess_format(stream) == InputFormat.METS_GBS
+
     doc_path = temp_dir / "pftaps_wrong.txt"
     doc_path.write_text("xyz", encoding="utf-8")
-    assert dci._guess_format(doc_path) is None
+    assert dci._guess_format(doc_path) == InputFormat.MD
+
+    # Plain .txt with typical text content
+    stream = DocumentStream(
+        name="readme.txt", stream=BytesIO(b"Hello, this is a plain text file.")
+    )
+    assert dci._guess_format(stream) == InputFormat.MD
 
     # Valid WebVTT
     buf = BytesIO(Path("./tests/data/webvtt/webvtt_example_01.vtt").open("rb").read())
     stream = DocumentStream(name="webvtt_example_01.vtt", stream=buf)
     assert dci._guess_format(stream) == InputFormat.VTT
+
+    # Valid email
+    buf = BytesIO(Path("./tests/data/email/eml_simple.eml").open("rb").read())
+    stream = DocumentStream(name="eml_simple.eml", stream=buf)
+    assert dci._guess_format(stream) == InputFormat.EMAIL
+    doc_path = Path("./tests/data/email/eml_simple.eml")
+    assert dci._guess_format(doc_path) == InputFormat.EMAIL
 
     # Valid Docling JSON
     test_str = '{"name": ""}'

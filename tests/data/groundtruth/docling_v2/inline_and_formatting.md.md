@@ -27,6 +27,6 @@ Some *`formatted_code`*
 
 ## Table Heading
 
-| Bold Heading   | Italic Heading   |
-|----------------|------------------|
-| data a         | data b           |
+| Bold Heading | Italic Heading |
+| - | - |
+| data a | data b |

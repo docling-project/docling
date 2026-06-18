@@ -214,6 +214,105 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         return text
 
+    @staticmethod
+    def _normalize_whitespace(text: str | None) -> str:
+        return " ".join(text.split()) if text else ""
+
+    @staticmethod
+    def _get_node_text(node: etree._Element) -> str:
+        return JatsDocumentBackend._normalize_whitespace(" ".join(node.itertext()))
+
+    @staticmethod
+    def _parse_abstract_section(section_node: etree._Element) -> str:
+        section_texts: list[str] = []
+
+        for child_node in section_node:
+            if child_node.tag == "p":
+                paragraph_text = JatsDocumentBackend._normalize_whitespace(
+                    JatsDocumentBackend._get_text(child_node)
+                )
+                if paragraph_text:
+                    section_texts.append(paragraph_text)
+            elif child_node.tag == "sec":
+                section_text = JatsDocumentBackend._parse_abstract_section(child_node)
+                if section_text:
+                    section_texts.append(section_text)
+
+        section_content = JatsDocumentBackend._normalize_whitespace(
+            " ".join(section_texts)
+        )
+        if not section_content:
+            return ""
+
+        label_node = section_node.xpath("title|label")
+        if len(label_node) > 0:
+            label = JatsDocumentBackend._get_node_text(label_node[0])
+            if label:
+                return f"{label}: {section_content}"
+
+        return section_content
+
+    @staticmethod
+    def _parse_structured_name(name_node: etree._Element) -> str:
+        name_parts: list[str] = []
+        for tag_name in ["prefix", "given-names", "surname", "suffix"]:
+            for part_node in name_node.xpath(tag_name):
+                part_text = JatsDocumentBackend._get_node_text(part_node)
+                if part_text:
+                    name_parts.append(part_text)
+
+        if name_parts:
+            return JatsDocumentBackend._normalize_whitespace(" ".join(name_parts))
+
+        return JatsDocumentBackend._get_node_text(name_node)
+
+    @staticmethod
+    def _parse_name_alternatives(node: etree._Element) -> str:
+        for tag_name in ["name", "string-name", "collab-name", "collab"]:
+            for name_node in node.xpath(tag_name):
+                if tag_name == "name":
+                    name = JatsDocumentBackend._parse_structured_name(name_node)
+                else:
+                    name = JatsDocumentBackend._get_node_text(name_node)
+                if name:
+                    return name
+
+        return ""
+
+    @staticmethod
+    def _parse_contrib_name(author_node: etree._Element) -> str:
+        for name_node in author_node.xpath("name"):
+            name = JatsDocumentBackend._parse_structured_name(name_node)
+            if name:
+                return name
+
+        for name_node in author_node.xpath("string-name"):
+            name = JatsDocumentBackend._get_node_text(name_node)
+            if name:
+                return name
+
+        for alternatives_node in author_node.xpath("name-alternatives"):
+            name = JatsDocumentBackend._parse_name_alternatives(alternatives_node)
+            if name:
+                return name
+
+        for tag_name in ["collab-name", "collab"]:
+            for name_node in author_node.xpath(tag_name):
+                name = JatsDocumentBackend._get_node_text(name_node)
+                if name:
+                    return name
+
+        for tag_name in ["collab-name-alternatives", "collab-alternatives"]:
+            for alternatives_node in author_node.xpath(tag_name):
+                name = JatsDocumentBackend._parse_name_alternatives(alternatives_node)
+                if name:
+                    return name
+
+        if author_node.xpath("anonymous"):
+            return "Anonymous"
+
+        return ""
+
     def _find_metadata(self) -> etree._Element | None:
         meta_names: list[str] = ["article-meta", "book-part-meta"]
         meta: etree._Element | None = None
@@ -226,19 +325,33 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return meta
 
     def _parse_abstract(self) -> list[Abstract]:
-        # TODO: address cases with multiple sections
         abs_list: list[Abstract] = []
 
         for abs_node in self.tree.xpath(".//abstract"):
             abstract: Abstract = dict(label="", content="")
-            texts = []
-            for abs_par in abs_node.xpath("p"):
-                texts.append(JatsDocumentBackend._get_text(abs_par).strip())
-            abstract["content"] = " ".join(texts)
+            texts: list[str] = []
+
+            for child_node in abs_node:
+                if child_node.tag == "p":
+                    paragraph_text = JatsDocumentBackend._normalize_whitespace(
+                        JatsDocumentBackend._get_text(child_node)
+                    )
+                    if paragraph_text:
+                        texts.append(paragraph_text)
+                elif child_node.tag == "sec":
+                    section_text = JatsDocumentBackend._parse_abstract_section(
+                        child_node
+                    )
+                    if section_text:
+                        texts.append(section_text)
+
+            abstract["content"] = JatsDocumentBackend._normalize_whitespace(
+                " ".join(texts)
+            )
 
             label_node = abs_node.xpath("title|label")
             if len(label_node) > 0:
-                abstract["label"] = label_node[0].text.strip()
+                abstract["label"] = JatsDocumentBackend._get_node_text(label_node[0])
 
             abs_list.append(abstract)
 
@@ -282,11 +395,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     author["affiliation_names"].append(affiliation_ids_names[id])
 
             # Name
-            author["name"] = (
-                author_node.xpath("name/given-names")[0].text
-                + " "
-                + author_node.xpath("name/surname")[0].text
-            )
+            author["name"] = JatsDocumentBackend._parse_contrib_name(author_node)
+            if not author["name"]:
+                continue
 
             authors.append(author)
 

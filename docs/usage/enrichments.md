@@ -82,7 +82,7 @@ The picture classification step classifies the `PictureItem` elements in the doc
 This model is specialized to understand the classes of pictures found in documents, e.g. different chart types, flow diagrams,
 logos, signatures, etc.
 
-Model specs: see the [`DocumentFigureClassifier` model card](https://huggingface.co/ds4sd/DocumentFigureClassifier).
+Model specs: see the [`DocumentFigureClassifier-v2.5` model card](https://huggingface.co/docling-project/DocumentFigureClassifier-v2.5).
 
 Example command line:
 

@@ -177,6 +177,18 @@ class VllmVlmEngineOptions(BaseVlmEngineOptions):
         ),
     )
 
+    model_impl: str = Field(
+        default="auto",
+        description=(
+            "vLLM model implementation backend. "
+            "Accepted values depend on the installed vLLM version; common values are "
+            "'auto', 'vllm', and 'transformers'. "
+            "'auto' uses vLLM's native implementation when available and otherwise falls back "
+            "to the Transformers modeling backend; 'vllm' forces the native implementation; "
+            "'transformers' forces the Transformers modeling backend."
+        ),
+    )
+
 
 # =============================================================================
 # API ENGINE OPTIONS

@@ -10,6 +10,8 @@ MACROS_CITATION = frozenset(["cite", "citep", "citet", "ref", "eqref"])
 
 MACROS_COLOR = frozenset(["color", "definecolor", "colorlet"])
 
+MACROS_COLOR_INLINE = frozenset(["textcolor", "colorbox"])
+
 MACROS_STRUCTURAL = frozenset(
     [
         "section",
@@ -143,6 +145,15 @@ MACROS_SPACING = frozenset(
         "vfill",
         "vskip",
         "hskip",
+        "vspace",
+        "hspace",
+        # "vspace*" / "hspace*" are intentionally omitted: pylatexenc parses
+        # \vspace*{...} as macroname="vspace" (the * becomes an argument node),
+        # so "vspace" above already covers the starred forms.
+        # "addvspace" is intentionally omitted: pylatexenc does not register it
+        # with a mandatory argument spec, so {<dim>} is parsed as a sibling
+        # LatexGroupNode and is not attached to the macro node — the guard in
+        # _process_macro_node_inline and _nodes_to_text cannot suppress it.
     ]
 )
 

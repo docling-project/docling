@@ -1,3 +1,4 @@
+import pytest
 from docling_core.types.doc import (
     PictureClassificationLabel,
     PictureClassificationMetaField,
@@ -5,6 +6,8 @@ from docling_core.types.doc import (
 )
 
 from docling.models.picture_description_base_model import _passes_classification
+
+pytestmark = pytest.mark.ml_vlm
 
 
 def _meta_with_predictions(predictions):

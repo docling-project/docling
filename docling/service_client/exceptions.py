@@ -1,0 +1,111 @@
+"""Exceptions for the docling-serve client SDK."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from docling.datamodel.service.responses import PublicFailureInfo
+
+
+class DoclingServiceClientError(Exception):
+    """Base error for all client SDK failures."""
+
+
+@dataclass(slots=True)
+class ServiceError(DoclingServiceClientError):
+    """Raised for non-retryable HTTP service errors."""
+
+    message: str
+    status_code: int | None = None
+    detail: str | None = None
+
+    def __str__(self) -> str:
+        if self.status_code is None:
+            return self.message
+        if self.detail:
+            return f"{self.message} (status={self.status_code}, detail={self.detail})"
+        return f"{self.message} (status={self.status_code})"
+
+
+class ServiceUnavailableError(ServiceError):
+    """Raised for unavailable service or exhausted HTTP 500 retries."""
+
+
+class ResponseSchemaMismatchError(ServiceError):
+    """Raised when a successful HTTP response cannot be parsed into the expected model."""
+
+
+class UsageLimitExceededError(ServiceError):
+    """Raised when the service rejects work because the usage quota is exhausted."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int | None = None,
+        detail: str | None = None,
+        current_usage: int | None = None,
+        limit: int | None = None,
+    ) -> None:
+        super().__init__(message, status_code=status_code, detail=detail)
+        self.current_usage = current_usage
+        self.limit = limit
+
+    def __str__(self) -> str:
+        base = super().__str__()
+        if self.current_usage is None or self.limit is None:
+            return base
+        return f"{base} [current_usage={self.current_usage}, limit={self.limit}]"
+
+
+class TaskTimeoutError(DoclingServiceClientError):
+    """Raised when waiting for task completion exceeds timeout."""
+
+
+class TaskNotFoundError(DoclingServiceClientError):
+    """Raised when a task id is unknown to the service."""
+
+
+class ResultNotReadyError(DoclingServiceClientError):
+    """Raised when a result is requested before task reaches terminal state."""
+
+
+class ResultExpiredError(DoclingServiceClientError):
+    """Raised when a terminal task no longer has a stored result."""
+
+
+class TaskExecutionError(DoclingServiceClientError):
+    """Raised when task-level orchestration fails."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        failure: PublicFailureInfo | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.failure = failure
+
+
+class ArtifactDownloadError(DoclingServiceClientError):
+    """Raised when a presigned artifact cannot be downloaded or is too large.
+
+    Used by the high-level convert()/convert_all() materialization path. It is
+    normally caught internally and surfaced as a FAILURE ConversionResult, not
+    propagated to callers.
+    """
+
+
+class ConversionError(DoclingServiceClientError):
+    """Raised when a single conversion completes with failure."""
+
+
+@dataclass(slots=True)
+class BatchConversionError(DoclingServiceClientError):
+    """Raised when one or more sources fail in convert_all()."""
+
+    message: str
+    failures: list[Exception]
+
+    def __str__(self) -> str:
+        return f"{self.message} ({len(self.failures)} failure(s))"

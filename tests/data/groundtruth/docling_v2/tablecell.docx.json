@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "name": "tablecell",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -316,6 +316,7 @@
         ],
         "num_rows": 3,
         "num_cols": 3,
+        "orientation": "rot_0",
         "grid": [
           [
             {

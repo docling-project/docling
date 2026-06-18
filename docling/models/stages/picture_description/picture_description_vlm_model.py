@@ -57,7 +57,6 @@ class PictureDescriptionVlmModel(
                 import torch
                 from transformers import (
                     AutoModelForImageTextToText,
-                    AutoModelForVision2Seq,
                     AutoProcessor,
                 )
             except ImportError:
@@ -68,6 +67,9 @@ class PictureDescriptionVlmModel(
             # Initialize processor and model
             with _model_init_lock:
                 self.processor = AutoProcessor.from_pretrained(artifacts_path)
+                tokenizer = getattr(self.processor, "tokenizer", None)
+                if tokenizer is not None:
+                    tokenizer.padding_side = self.options.padding_side
                 self.model = AutoModelForImageTextToText.from_pretrained(
                     artifacts_path,
                     device_map=self.device,
@@ -89,6 +91,10 @@ class PictureDescriptionVlmModel(
     def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
         from transformers import GenerationConfig
 
+        image_batch = list(images)
+        if not image_batch:
+            return
+
         # Create input messages
         messages = [
             {
@@ -100,24 +106,27 @@ class PictureDescriptionVlmModel(
             },
         ]
 
-        # TODO: do batch generation
+        prompt = self.processor.apply_chat_template(
+            messages, add_generation_prompt=True
+        )
+        inputs = self.processor(
+            text=[prompt] * len(image_batch),
+            images=image_batch,
+            return_tensors="pt",
+            padding=True,
+        )
+        inputs = inputs.to(self.device)
 
-        for image in images:
-            # Prepare inputs
-            prompt = self.processor.apply_chat_template(
-                messages, add_generation_prompt=True
-            )
-            inputs = self.processor(text=prompt, images=[image], return_tensors="pt")
-            inputs = inputs.to(self.device)
+        from typing import Any, cast
 
-            # Generate outputs
-            generated_ids = self.model.generate(
-                **inputs,
-                generation_config=GenerationConfig(**self.options.generation_config),
-            )
-            generated_texts = self.processor.batch_decode(
-                generated_ids[:, inputs["input_ids"].shape[1] :],
-                skip_special_tokens=True,
-            )
+        generated_ids = cast(Any, self.model).generate(
+            **inputs,
+            generation_config=GenerationConfig(**self.options.generation_config),
+        )
+        generated_texts = self.processor.batch_decode(
+            generated_ids[:, inputs["input_ids"].shape[1] :],
+            skip_special_tokens=True,
+        )
 
-            yield generated_texts[0].strip()
+        for text in generated_texts:
+            yield text.strip()

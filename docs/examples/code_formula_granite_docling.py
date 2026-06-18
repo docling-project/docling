@@ -1,9 +1,11 @@
-"""Example: Comparing CodeFormula models for code and formula extraction.
+# %% [markdown]
+# Example: Comparing CodeFormula models for code and formula extraction.
 
-This example demonstrates how to use both the CodeFormulaV2 model
-and the Granite Docling model for extracting code blocks and mathematical
-formulas from PDF documents, allowing you to compare their outputs.
-"""
+# This example demonstrates how to use both the CodeFormulaV2 model
+# and the Granite Docling model for extracting code blocks and mathematical
+# formulas from PDF documents, allowing you to compare their outputs.
+
+# %%
 
 from pathlib import Path
 
@@ -43,6 +45,9 @@ def extract_with_preset(preset_name: str, input_doc: Path):
 
     # Configure the PDF pipeline to use code/formula enrichment
     pipeline_options = PdfPipelineOptions(
+        # The sample PDF already contains embedded text, so OCR only adds an
+        # unrelated backend dependency for this code/formula comparison example.
+        do_ocr=False,
         do_code_enrichment=True,
         do_formula_enrichment=True,
         code_formula_options=code_formula_options,

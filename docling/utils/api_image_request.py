@@ -2,16 +2,98 @@ import base64
 import json
 import logging
 from io import BytesIO
-from typing import Dict, List, Optional, Tuple
+from typing import Any
 
 import requests
 from PIL import Image
 from pydantic import AnyUrl
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
-from docling.datamodel.base_models import OpenAiApiResponse, VlmStopReason
+from docling.datamodel.base_models import (
+    OpenAiApiResponse,
+    OpenAiChatMessage,
+    VlmStopReason,
+)
 from docling.models.utils.generation_utils import GenerationStopper
 
 _log = logging.getLogger(__name__)
+
+_RETRY_TOTAL = 5
+_RETRY_BACKOFF_FACTOR = 0.1
+_RETRY_STATUS_FORCELIST = (429, 500, 502, 503, 504)
+
+
+def _make_retry_session() -> requests.Session:
+    retry_strategy = Retry(
+        total=_RETRY_TOTAL,
+        connect=_RETRY_TOTAL,
+        read=0,
+        status=_RETRY_TOTAL,
+        allowed_methods={"POST"},
+        backoff_factor=_RETRY_BACKOFF_FACTOR,
+        status_forcelist=_RETRY_STATUS_FORCELIST,
+        respect_retry_after_header=True,
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+
+    session = requests.Session()
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
+
+def _extract_text_from_tool_arguments(arguments: str | None) -> str:
+    if arguments is None:
+        return ""
+
+    try:
+        payload = json.loads(arguments)
+    except json.JSONDecodeError:
+        return arguments.strip()
+
+    fragments: list[str] = []
+
+    def _collect_text(obj: Any) -> None:
+        if isinstance(obj, list):
+            for item in obj:
+                _collect_text(item)
+        elif isinstance(obj, dict):
+            text = obj.get("text")
+            if isinstance(text, str) and text.strip():
+                fragments.append(text.strip())
+            for value in obj.values():
+                _collect_text(value)
+
+    _collect_text(payload)
+    return "\n".join(fragments)
+
+
+def _extract_generated_text(message: OpenAiChatMessage) -> str:
+    if message.content is not None:
+        return message.content.strip()
+
+    for tool_call in message.tool_calls or []:
+        function = tool_call.get("function")
+        if not isinstance(function, dict):
+            continue
+
+        generated_text = _extract_text_from_tool_arguments(function.get("arguments"))
+        if generated_text:
+            return generated_text
+
+    return ""
+
+
+def _map_stop_reason(finish_reason: str | None) -> VlmStopReason:
+    if finish_reason == "content_filter":
+        _log.warning("API response was filtered due to content safety policy.")
+        return VlmStopReason.CONTENT_FILTERED
+    elif finish_reason == "length":
+        return VlmStopReason.LENGTH
+    else:
+        return VlmStopReason.END_OF_SEQUENCE
 
 
 def api_image_request(
@@ -19,9 +101,9 @@ def api_image_request(
     prompt: str,
     url: AnyUrl,
     timeout: float = 20,
-    headers: Optional[dict[str, str]] = None,
+    headers: dict[str, str] | None = None,
     **params,
-) -> Tuple[str, Optional[int], VlmStopReason]:
+) -> tuple[str, int | None, VlmStopReason]:
     img_io = BytesIO()
     image = (
         image.copy()
@@ -63,25 +145,22 @@ def api_image_request(
 
             headers = headers or {}
 
-            r = requests.post(
-                str(url),
-                headers=headers,
-                json=payload,
-                timeout=timeout,
-            )
+            with _make_retry_session() as session:
+                r = session.post(
+                    str(url),
+                    headers=headers,
+                    json=payload,
+                    timeout=timeout,
+                )
             if not r.ok:
                 _log.error(f"Error calling the API. Response was {r.text}")
                 # image.show()
             # r.raise_for_status()
 
             api_resp = OpenAiApiResponse.model_validate_json(r.text)
-            generated_text = api_resp.choices[0].message.content.strip()
+            generated_text = _extract_generated_text(api_resp.choices[0].message)
             num_tokens = api_resp.usage.total_tokens
-            stop_reason = (
-                VlmStopReason.LENGTH
-                if api_resp.choices[0].finish_reason == "length"
-                else VlmStopReason.END_OF_SEQUENCE
-            )
+            stop_reason = _map_stop_reason(api_resp.choices[0].finish_reason)
 
             return generated_text, num_tokens, stop_reason
         except Exception as e:
@@ -97,10 +176,10 @@ def api_image_request_streaming(
     url: AnyUrl,
     *,
     timeout: float = 20,
-    headers: Optional[dict[str, str]] = None,
+    headers: dict[str, str] | None = None,
     generation_stoppers: list[GenerationStopper] = [],
     **params,
-) -> Tuple[str, Optional[int]]:
+) -> tuple[str, int | None]:
     """
     Stream a chat completion from an OpenAI-compatible server (e.g., vLLM).
     Parses SSE lines: 'data: {json}\\n\\n', terminated by 'data: [DONE]'.
@@ -142,64 +221,67 @@ def api_image_request_streaming(
         hdrs["X-Temperature"] = str(params["temperature"])
 
     # Stream the HTTP response
-    with requests.post(
-        str(url), headers=hdrs, json=payload, timeout=timeout, stream=True
-    ) as r:
-        if not r.ok:
-            _log.error(
-                f"Error calling the API {url} in streaming mode. Response was {r.text}"
-            )
-        r.raise_for_status()
+    with _make_retry_session() as session:
+        with session.post(
+            str(url), headers=hdrs, json=payload, timeout=timeout, stream=True
+        ) as r:
+            if not r.ok:
+                _log.error(
+                    f"Error calling the API {url} in streaming mode. "
+                    f"Response was {r.text}"
+                )
+            r.raise_for_status()
 
-        full_text = []
-        for raw_line in r.iter_lines(decode_unicode=True):
-            if not raw_line:  # keep-alives / blank lines
-                continue
-            if not raw_line.startswith("data:"):
-                # Some proxies inject comments; ignore anything not starting with 'data:'
-                continue
+            full_text = []
+            for raw_line in r.iter_lines(decode_unicode=True):
+                if not raw_line:  # keep-alives / blank lines
+                    continue
+                if not raw_line.startswith("data:"):
+                    # Some proxies inject comments; ignore anything not starting with 'data:'
+                    continue
 
-            data = raw_line[len("data:") :].strip()
-            if data == "[DONE]":
-                break
+                data = raw_line[len("data:") :].strip()
+                if data == "[DONE]":
+                    break
 
-            try:
-                obj = json.loads(data)
-            except json.JSONDecodeError:
-                _log.debug("Skipping non-JSON SSE chunk: %r", data[:200])
-                continue
+                try:
+                    obj = json.loads(data)
+                except json.JSONDecodeError:
+                    _log.debug("Skipping non-JSON SSE chunk: %r", data[:200])
+                    continue
 
-            # OpenAI-compatible delta format
-            # obj["choices"][0]["delta"]["content"] may be None or missing (e.g., tool calls)
-            try:
-                delta = obj["choices"][0].get("delta") or {}
-                piece = delta.get("content") or ""
-            except (KeyError, IndexError) as e:
-                _log.debug("Unexpected SSE chunk shape: %s", e)
-                piece = ""
+                # OpenAI-compatible delta format
+                # obj["choices"][0]["delta"]["content"] may be None or missing
+                # (e.g., tool calls)
+                try:
+                    delta = obj["choices"][0].get("delta") or {}
+                    piece = delta.get("content") or ""
+                except (KeyError, IndexError) as e:
+                    _log.debug("Unexpected SSE chunk shape: %s", e)
+                    piece = ""
 
-            # Try to extract token count
-            num_tokens = None
-            try:
-                if "usage" in obj:
-                    usage = obj["usage"]
-                    num_tokens = usage.get("total_tokens")
-            except Exception as e:
+                # Try to extract token count
                 num_tokens = None
-                _log.debug("Usage key not included in response: %s", e)
+                try:
+                    if "usage" in obj:
+                        usage = obj["usage"]
+                        num_tokens = usage.get("total_tokens")
+                except Exception as e:
+                    num_tokens = None
+                    _log.debug("Usage key not included in response: %s", e)
 
-            if piece:
-                full_text.append(piece)
-                for stopper in generation_stoppers:
-                    # Respect stopper's lookback window. We use a simple string window which
-                    # works with the GenerationStopper interface.
-                    lookback = max(1, stopper.lookback_tokens())
-                    window = "".join(full_text)[-lookback:]
-                    if stopper.should_stop(window):
-                        # Break out of the loop cleanly. The context manager will handle
-                        # closing the connection when we exit the 'with' block.
-                        # vLLM/OpenAI-compatible servers will detect the client disconnect
-                        # and abort the request server-side.
-                        return "".join(full_text), num_tokens
+                if piece:
+                    full_text.append(piece)
+                    for stopper in generation_stoppers:
+                        # Respect stopper's lookback window. We use a simple string window
+                        # which works with the GenerationStopper interface.
+                        lookback = max(1, stopper.lookback_tokens())
+                        window = "".join(full_text)[-lookback:]
+                        if stopper.should_stop(window):
+                            # Break out of the loop cleanly. The context manager will handle
+                            # closing the connection when we exit the 'with' block.
+                            # vLLM/OpenAI-compatible servers will detect the client
+                            # disconnect and abort the request server-side.
+                            return "".join(full_text), num_tokens
 
-        return "".join(full_text), num_tokens
+            return "".join(full_text), num_tokens

@@ -9,17 +9,19 @@ item-0 at level 0: unspecified: group _root_
         item-8 at level 4: text: Page B
         item-9 at level 4: text: for details.
     item-10 at level 2: unspecified: group rich_cell_group_1_0_3
-      item-11 at level 3: text: Bold
-      item-12 at level 3: text: and
-      item-13 at level 3: text: italic
-      item-14 at level 3: text: text
-    item-15 at level 2: unspecified: group rich_cell_group_1_0_4
-      item-16 at level 3: code: inline_fn()
-    item-17 at level 2: unspecified: group rich_cell_group_1_0_5
-      item-18 at level 3: code: do_thing()
-    item-19 at level 2: unspecified: group rich_cell_group_1_0_6
-      item-20 at level 3: inline: group group
-        item-21 at level 4: code: See
-        item-22 at level 4: code: the docs
-        item-23 at level 4: code: first
-  item-24 at level 1: text: Outro paragraph.
+      item-11 at level 3: inline: group group
+        item-12 at level 4: text: Bold
+        item-13 at level 4: text: and
+        item-14 at level 4: text: italic
+        item-15 at level 4: text: text
+    item-16 at level 2: unspecified: group rich_cell_group_1_0_4
+      item-17 at level 3: inline: group group
+        item-18 at level 4: code: inline_fn()
+    item-19 at level 2: unspecified: group rich_cell_group_1_0_5
+      item-20 at level 3: code: do_thing()
+    item-21 at level 2: unspecified: group rich_cell_group_1_0_6
+      item-22 at level 3: inline: group group
+        item-23 at level 4: code: See
+        item-24 at level 4: code: the docs
+        item-25 at level 4: code: first
+  item-26 at level 1: text: Outro paragraph.

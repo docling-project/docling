@@ -39,10 +39,13 @@ def _nemotron_available() -> bool:
     return cuda_version is not None and cuda_version.startswith("13.")
 
 
-pytestmark = pytest.mark.skipif(
-    not _nemotron_available(),
-    reason="Nemotron OCR requires Linux x86_64, Python 3.12 and CUDA 13.x.",
-)
+pytestmark = [
+    pytest.mark.ml_ocr,
+    pytest.mark.skipif(
+        not _nemotron_available(),
+        reason="Nemotron OCR requires Linux x86_64, Python 3.12 and CUDA 13.x.",
+    ),
+]
 
 
 def get_pdf_paths():

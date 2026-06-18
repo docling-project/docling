@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "name": "powerpoint_sample",
   "origin": {
     "mimetype": "application/vnd.ms-powerpoint",
@@ -463,7 +463,7 @@
         "$ref": "#/groups/1"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "notes",
       "label": "text",
       "prov": [
         {
@@ -979,7 +979,7 @@
         "$ref": "#/groups/3"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "notes",
       "label": "text",
       "prov": [
         {

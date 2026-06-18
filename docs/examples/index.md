@@ -7,6 +7,7 @@ Here some of our picks to get you started:
 - 📤 [{==\[:fontawesome-solid-flask:{ title="beta feature" } beta\]==} structured data extraction](./extraction.ipynb)
 - examples for ✍️ [serialization](./serialization.ipynb) and ✂️ [chunking](./hybrid_chunking.ipynb), including [user-defined customizations](./advanced_chunking_and_serialization.ipynb)
 - 🖼️ [picture annotations](./pictures_description.ipynb) and [enrichments](./enrich_doclingdocument.py)
+- 🤝 [**Agent skill**](./agent_skill/docling-document-intelligence/README.md) for Cursor and other assistants (`SKILL.md`, pipeline reference, `docling-convert.py` / `docling-evaluate.py` helpers)
 
 👈 ... and there is much more: explore all the examples using the navigation menu on the side
 

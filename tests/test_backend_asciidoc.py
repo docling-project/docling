@@ -66,7 +66,7 @@ def test_asciidocs_examples():
         pred_itdoc = doc._export_to_indented_text(max_text_len=16)
         print("\n\n", pred_itdoc)
 
-        pred_mddoc = doc.export_to_markdown()
+        pred_mddoc = doc.export_to_markdown(compact_tables=True)
         print("\n\n", pred_mddoc)
 
         if os.path.exists(gname):

@@ -3,8 +3,17 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional, Union
 
 from docling_core.types.doc.page import SegmentedPage
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field
-from transformers import StoppingCriteria
 from typing_extensions import deprecated
+
+try:
+    from transformers import StoppingCriteria
+except ImportError:
+    # `transformers` is optional for slim installs (e.g. `service-client`
+    # extra). The placeholder keeps the `custom_stopping_criteria` field
+    # annotation valid; pydantic accepts it via `arbitrary_types_allowed`.
+    class StoppingCriteria:  # type: ignore[no-redef]
+        pass
+
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.models.utils.generation_utils import GenerationStopper
@@ -91,11 +100,14 @@ class BaseVlmOptions(BaseModel):
 
 class ResponseFormat(str, Enum):
     DOCTAGS = "doctags"
+    DOCLANG = "doclang"
     MARKDOWN = "markdown"
     DEEPSEEKOCR_MARKDOWN = "deepseekocr_markdown"
     HTML = "html"
     OTSL = "otsl"
     PLAINTEXT = "plaintext"
+    CHANDRA_HTML = "chandra_html"
+    DOTS_JSON = "dots_json"
 
 
 class InferenceFramework(str, Enum):
@@ -106,7 +118,6 @@ class InferenceFramework(str, Enum):
 
 class TransformersModelType(str, Enum):
     AUTOMODEL = "automodel"
-    AUTOMODEL_VISION2SEQ = "automodel-vision2seq"
     AUTOMODEL_CAUSALLM = "automodel-causallm"
     AUTOMODEL_IMAGETEXTTOTEXT = "automodel-imagetexttotext"
 
@@ -221,8 +232,9 @@ class InlineVlmOptions(BaseVlmOptions):
         Field(
             description=(
                 "Expected output format from the VLM. Options: `doctags` "
-                "(structured tags), `markdown`, `html`, `otsl` (table "
-                "structure), `plaintext`. Guides model output parsing."
+                "(structured tags), `doclang` (Doclang XML), `markdown`, "
+                "`html`, `otsl` (table structure), `plaintext`. Guides model "
+                "output parsing."
             ),
         ),
     ]
@@ -401,8 +413,9 @@ class ApiVlmOptions(BaseVlmOptions):
         Field(
             description=(
                 "Expected output format from the VLM API. Options: `doctags` "
-                "(structured tags), `markdown`, `html`, `otsl` (table "
-                "structure), `plaintext`. Guides response parsing."
+                "(structured tags), `doclang` (Doclang XML), `markdown`, "
+                "`html`, `otsl` (table structure), `plaintext`. Guides "
+                "response parsing."
             ),
         ),
     ]
