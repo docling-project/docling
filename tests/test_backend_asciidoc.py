@@ -51,6 +51,38 @@ def test_parse_picture():
     )
 
 
+def test_table_cell_format_specifiers():
+    # A header row whose cells carry alignment + style specifiers ("^.^h|")
+    # must still be detected as a table line and parsed into clean cells.
+    line = "^.^h|Field               ^.^h| Description"
+    assert AsciiDocBackend._is_table_line(line)
+    assert AsciiDocBackend._parse_table_line(line) == ["Field", "Description"]
+
+    # A column-spanning specifier ("2+^|") is dropped from the cell text.
+    assert AsciiDocBackend._parse_table_line("2+^|Spanned ^|Next") == [
+        "Spanned",
+        "Next",
+    ]
+
+
+def test_table_cell_content_preserved():
+    # Single-letter cells that coincide with style operators (s, h, m, ...) and
+    # words ending in one (Eth) must not be mistaken for cell specifiers.
+    assert AsciiDocBackend._parse_table_line("| s | Strong") == ["s", "Strong"]
+    assert AsciiDocBackend._parse_table_line("| eth | Eth | Ethernet") == [
+        "eth",
+        "Eth",
+        "Ethernet",
+    ]
+
+
+def test_empty_table_does_not_crash():
+    # An empty table must yield an empty grid rather than raising.
+    data = AsciiDocBackend._populate_table_as_grid([])
+    assert data.num_rows == 0
+    assert data.num_cols == 0
+
+
 def test_asciidocs_examples():
     fnames = sorted(glob.glob("./tests/data/asciidoc/*.asciidoc"))
 
