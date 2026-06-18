@@ -102,7 +102,7 @@ class AutoInlineVlmEngine(BaseVlmEngine):
 
             if has_mlx_export:
                 try:
-                    import mlx_vlm  # noqa: F401
+                    import mlx_vlm
 
                     _log.info(
                         "Selected MLX engine (Apple Silicon with explicit MLX export)"
@@ -134,7 +134,7 @@ class AutoInlineVlmEngine(BaseVlmEngine):
 
             if has_vllm_support:
                 try:
-                    import vllm  # noqa: F401
+                    import vllm
 
                     _log.info("Selected vLLM engine (CUDA + prefer_vllm=True)")
                     return VlmEngineType.VLLM

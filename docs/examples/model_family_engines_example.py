@@ -57,7 +57,7 @@ IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")
 def is_onnxruntime_available() -> bool:
     """Return True when onnxruntime can be imported in this environment."""
     try:
-        import onnxruntime  # noqa: F401
+        import onnxruntime
     except ImportError:
         return False
     return True

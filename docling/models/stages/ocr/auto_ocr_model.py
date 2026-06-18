@@ -42,7 +42,7 @@ class OcrAutoModel(BaseOcrModel):
         if self.enabled:
             if "darwin" == sys.platform:
                 try:
-                    from ocrmac import ocrmac  # noqa: F401
+                    from ocrmac import ocrmac
 
                     self._engine = OcrMacModel(
                         enabled=self.enabled,
@@ -59,7 +59,7 @@ class OcrAutoModel(BaseOcrModel):
 
             if self._engine is None:
                 try:
-                    import onnxruntime  # noqa: F401
+                    import onnxruntime
                     from rapidocr import EngineType, RapidOCR  # type: ignore
 
                     self._engine = RapidOcrModel(
@@ -80,7 +80,7 @@ class OcrAutoModel(BaseOcrModel):
 
             if self._engine is None:
                 try:
-                    import easyocr  # noqa: F401
+                    import easyocr
 
                     self._engine = EasyOcrModel(
                         enabled=self.enabled,
@@ -97,8 +97,8 @@ class OcrAutoModel(BaseOcrModel):
 
             if self._engine is None:
                 try:
-                    import torch  # noqa: F401
-                    from rapidocr import (  # type: ignore  # noqa: F401
+                    import torch
+                    from rapidocr import (  # type: ignore
                         EngineType,
                         RapidOCR,
                     )

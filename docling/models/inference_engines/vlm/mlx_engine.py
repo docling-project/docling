@@ -79,9 +79,9 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         _log.info("Initializing MLX VLM inference engine...")
 
         try:
-            from mlx_vlm import load, stream_generate  # noqa: F401
+            from mlx_vlm import load, stream_generate
             from mlx_vlm.prompt_utils import apply_chat_template
-            from mlx_vlm.utils import load_config  # noqa: F401
+            from mlx_vlm.utils import load_config
         except ImportError:
             raise ImportError(
                 "mlx-vlm is not installed. Please install it via `pip install mlx-vlm` "

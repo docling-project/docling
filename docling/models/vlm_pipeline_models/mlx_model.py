@@ -50,7 +50,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
 
         if self.enabled:
             try:
-                from mlx_vlm import (  # type: ignore  # noqa: F401
+                from mlx_vlm import (  # type: ignore
                     generate,
                     load,
                     stream_generate,

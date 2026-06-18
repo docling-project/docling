@@ -29,7 +29,7 @@ def _get_whisper_tiny_model():
 
     # Check if mlx-whisper is available
     try:
-        import mlx_whisper  # type: ignore  # noqa: F401
+        import mlx_whisper  # type: ignore
 
         has_mlx_whisper = True
     except ImportError:
@@ -81,7 +81,7 @@ def _get_whisper_small_model():
 
     # Check if mlx-whisper is available
     try:
-        import mlx_whisper  # type: ignore  # noqa: F401
+        import mlx_whisper  # type: ignore
 
         has_mlx_whisper = True
     except ImportError:
@@ -133,7 +133,7 @@ def _get_whisper_medium_model():
 
     # Check if mlx-whisper is available
     try:
-        import mlx_whisper  # type: ignore  # noqa: F401
+        import mlx_whisper  # type: ignore
 
         has_mlx_whisper = True
     except ImportError:
@@ -185,7 +185,7 @@ def _get_whisper_base_model():
 
     # Check if mlx-whisper is available
     try:
-        import mlx_whisper  # type: ignore  # noqa: F401
+        import mlx_whisper  # type: ignore
 
         has_mlx_whisper = True
     except ImportError:
@@ -237,7 +237,7 @@ def _get_whisper_large_model():
 
     # Check if mlx-whisper is available
     try:
-        import mlx_whisper  # type: ignore  # noqa: F401
+        import mlx_whisper  # type: ignore
 
         has_mlx_whisper = True
     except ImportError:
@@ -289,7 +289,7 @@ def _get_whisper_turbo_model():
 
     # Check if mlx-whisper is available
     try:
-        import mlx_whisper  # type: ignore  # noqa: F401
+        import mlx_whisper  # type: ignore
 
         has_mlx_whisper = True
     except ImportError:

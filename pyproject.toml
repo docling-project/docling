@@ -390,6 +390,7 @@ ignore = [
   "C408",   # Unnecessary `dict()` call (rewrite as a literal)
   "E501",   # Line too long, handled by ruff formatter
   "D107",   # "Missing docstring in __init__",
+  "F401",   # imported but unused; consider using `importlib.util.find_spec` to test for "
   "F811",   # "redefinition of the same function"
   "PL",     # Pylint
   "RUF012", # Mutable Class Attributes
