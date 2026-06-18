@@ -1,11 +1,11 @@
 {
   "schema_name": "DoclingDocument",
   "version": "1.10.0",
-  "name": "word_comments",
+  "name": "docx_comments",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "binary_hash": 1843681623434877502,
-    "filename": "word_comments.docx"
+    "filename": "docx_comments.docx"
   },
   "furniture": {
     "self_ref": "#/furniture",
@@ -204,8 +204,8 @@
       "content_layer": "notes",
       "label": "text",
       "prov": [],
-      "orig": "[author: John Reviewer (JR), time: 2026-01-04T05:48:07+00:00]: This is a sample reviewer comment on the first paragraph.",
-      "text": "[author: John Reviewer (JR), time: 2026-01-04T05:48:07+00:00]: This is a sample reviewer comment on the first paragraph."
+      "orig": "[author: John Reviewer (JR), time: 2026-01-04T05:48:07.000+00:00]: This is a sample reviewer comment on the first paragraph.",
+      "text": "[author: John Reviewer (JR), time: 2026-01-04T05:48:07.000+00:00]: This is a sample reviewer comment on the first paragraph."
     },
     {
       "self_ref": "#/texts/6",
@@ -216,8 +216,8 @@
       "content_layer": "notes",
       "label": "text",
       "prov": [],
-      "orig": "[author: Jane Editor (JE), time: 2026-01-04T05:48:07+00:00]: Another comment by a different reviewer.",
-      "text": "[author: Jane Editor (JE), time: 2026-01-04T05:48:07+00:00]: Another comment by a different reviewer."
+      "orig": "[author: Jane Editor (JE), time: 2026-01-04T05:48:07.000+00:00]: Another comment by a different reviewer.",
+      "text": "[author: Jane Editor (JE), time: 2026-01-04T05:48:07.000+00:00]: Another comment by a different reviewer."
     },
     {
       "self_ref": "#/texts/7",
@@ -228,8 +228,8 @@
       "content_layer": "notes",
       "label": "text",
       "prov": [],
-      "orig": "[time: 2026-01-04T05:48:07+00:00]: Anonymous feedback on this paragraph.",
-      "text": "[time: 2026-01-04T05:48:07+00:00]: Anonymous feedback on this paragraph."
+      "orig": "[time: 2026-01-04T05:48:07.000+00:00]: Anonymous feedback on this paragraph.",
+      "text": "[time: 2026-01-04T05:48:07.000+00:00]: Anonymous feedback on this paragraph."
     }
   ],
   "pictures": [],
