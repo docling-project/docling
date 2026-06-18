@@ -16,7 +16,14 @@ from docling.models.stages.reading_order.readingorder_model import ReadingOrderM
 _PAGE = Size(width=600, height=800)
 
 
-def _el(cid: int, label: DocItemLabel, l: float, r: float, b: float, t: float):
+def _el(
+    cid: int,
+    label: DocItemLabel,
+    left: float,
+    right: float,
+    bottom: float,
+    top: float,
+):
     # Bottom-left origin (as produced by predict_reading_order): larger y = higher.
     return PageElement(
         cid=cid,
@@ -25,10 +32,10 @@ def _el(cid: int, label: DocItemLabel, l: float, r: float, b: float, t: float):
         page_no=0,
         page_size=_PAGE,
         label=label,
-        l=l,
-        r=r,
-        b=b,
-        t=t,
+        l=left,
+        r=right,
+        b=bottom,
+        t=top,
         coord_origin=CoordOrigin.BOTTOMLEFT,
     )
 
