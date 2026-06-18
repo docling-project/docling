@@ -191,8 +191,6 @@ feat-ocr-mac = [
 
 feat-ocr-nemotron = [
   'nemotron-ocr>=2.0.0 ; python_version == "3.12" and sys_platform == "linux" and platform_machine == "x86_64"',
-  'torch==2.11.0+cu130 ; python_version == "3.12" and sys_platform == "linux" and platform_machine == "x86_64"',
-  'torchvision==0.26.0+cu130 ; python_version == "3.12" and sys_platform == "linux" and platform_machine == "x86_64"',
 ]
 
 # ============================================================================
@@ -342,18 +340,6 @@ members = ["packages/docling"]
 [tool.uv.sources]
 docling = { workspace = true }
 # docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
-torch = [
-  { index = "pytorch-cu130", extra = "feat-ocr-nemotron", marker = "python_version == '3.12' and sys_platform == 'linux' and platform_machine == 'x86_64'" },
-]
-torchvision = [
-  { index = "pytorch-cu130", extra = "feat-ocr-nemotron", marker = "python_version == '3.12' and sys_platform == 'linux' and platform_machine == 'x86_64'" },
-]
-
-[[tool.uv.index]]
-name = "pytorch-cu130"
-url = "https://download.pytorch.org/whl/cu130"
-explicit = true
-
 
 [tool.uv]
 package = true
