@@ -63,7 +63,7 @@ class NemotronOcrModel(BaseOcrModel):
             except ImportError as exc:
                 raise ImportError(
                     "Nemotron OCR is not installed. Install the optional dependency "
-                    'via `pip install "docling[nemotron-ocr]"` on Linux x86_64 with '
+                    'via `pip install "docling[feat-ocr-nemotron]"` on Linux x86_64 with '
                     "Python 3.12 and CUDA 13.x."
                 ) from exc
 

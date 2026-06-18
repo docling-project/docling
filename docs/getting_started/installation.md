@@ -79,7 +79,7 @@ The following table summarizes the extras available in the `docling` package. Th
 | `asr` | Installs dependencies for running the ASR pipeline. |
 | `vlm` | Installs dependencies for running the VLM pipeline. |
 | `easyocr` | Installs the [EasyOCR](https://github.com/JaidedAI/EasyOCR) OCR engine. |
-| `nemotron-ocr` | Installs NVIDIA Nemotron OCR. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. |
+| `feat-ocr-nemotron` | Installs NVIDIA Nemotron OCR. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. |
 | `tesserocr` | Installs the Tesseract binding for using it as OCR engine. |
 | `ocrmac` | Installs the OcrMac OCR engine. |
 | `htmlrender` | Installs dependencies for HTML page rendering in the HTML backend. |
@@ -95,7 +95,7 @@ the following engines.
 | Engine | Installation | Usage |
 | ------ | ------------ | ----- |
 | [EasyOCR](https://github.com/JaidedAI/EasyOCR) | `easyocr` extra or via `pip install easyocr`. | `EasyOcrOptions` |
-| [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v1) | `nemotron-ocr` extra. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. See installation note below. | `NemotronOcrOptions` |
+| [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v1) | `feat-ocr-nemotron` extra. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. See installation note below. | `NemotronOcrOptions` |
 | Tesseract | System dependency. See description for Tesseract and Tesserocr below.  | `TesseractOcrOptions` |
 | Tesseract CLI | System dependency. See description below. | `TesseractCliOcrOptions` |
 | OcrMac | System dependency. See description below. | `OcrMacOptions` |
@@ -168,11 +168,11 @@ doc_converter = DocumentConverter(
 ??? "Nemotron OCR installation"
 
     [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v1) requires the CUDA 13 PyTorch wheels.
-    Install it with the `nemotron-ocr` extra, the CUDA 13 PyTorch index, and the `unsafe-best-match`
+    Install it with the `feat-ocr-nemotron` extra, the CUDA 13 PyTorch index, and the `unsafe-best-match`
     index strategy so `pip` resolves the CUDA-enabled `torch` packages correctly.
 
     ```console
-    pip install "docling[nemotron-ocr]" \
+    pip install "docling[feat-ocr-nemotron]" \
       --extra-index-url https://download.pytorch.org/whl/cu130 \
       --index-strategy unsafe-best-match
     ```
@@ -184,8 +184,8 @@ doc_converter = DocumentConverter(
 To develop Docling features, bugfixes etc., install as follows from your local clone's root dir:
 
 ```bash
-uv sync --all-extras --no-extra nemotron-ocr
+uv sync --all-extras --no-extra feat-ocr-nemotron
 ```
 
-The `nemotron-ocr` extra is intentionally excluded from the default development
+The `feat-ocr-nemotron` extra is intentionally excluded from the default development
 setup because it is only usable on Linux x86_64 with Python 3.12 and CUDA 13.x.

@@ -189,7 +189,7 @@ feat-ocr-mac = [
   'ocrmac>=1.0.0,<2.0.0 ; sys_platform == "darwin"',
 ]
 
-nemotron-ocr = [
+feat-ocr-nemotron = [
   'nemotron-ocr>=2.0.0 ; python_version == "3.12" and sys_platform == "linux" and platform_machine == "x86_64"',
   'torch==2.11.0+cu130 ; python_version == "3.12" and sys_platform == "linux" and platform_machine == "x86_64"',
   'torchvision==0.26.0+cu130 ; python_version == "3.12" and sys_platform == "linux" and platform_machine == "x86_64"',
@@ -199,8 +199,8 @@ nemotron-ocr = [
 # MODELS
 # ============================================================================
 models-local = [
-  'torch>=2.2.2,<3.0.0 ; extra != "nemotron-ocr"',
-  'torchvision>=0,<1 ; extra != "nemotron-ocr"',
+  'torch>=2.2.2,<3.0.0 ; extra != "feat-ocr-nemotron"',
+  'torchvision>=0,<1 ; extra != "feat-ocr-nemotron"',
   'docling-ibm-models>=3.13.0,<4',
   'accelerate>=1.0.0,<2',
   'huggingface_hub>=0.23,<2',
@@ -343,10 +343,10 @@ members = ["packages/docling"]
 docling = { workspace = true }
 # docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
 torch = [
-  { index = "pytorch-cu130", extra = "nemotron-ocr", marker = "python_version == '3.12' and sys_platform == 'linux' and platform_machine == 'x86_64'" },
+  { index = "pytorch-cu130", extra = "feat-ocr-nemotron", marker = "python_version == '3.12' and sys_platform == 'linux' and platform_machine == 'x86_64'" },
 ]
 torchvision = [
-  { index = "pytorch-cu130", extra = "nemotron-ocr", marker = "python_version == '3.12' and sys_platform == 'linux' and platform_machine == 'x86_64'" },
+  { index = "pytorch-cu130", extra = "feat-ocr-nemotron", marker = "python_version == '3.12' and sys_platform == 'linux' and platform_machine == 'x86_64'" },
 ]
 
 [[tool.uv.index]]
