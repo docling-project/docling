@@ -43,7 +43,7 @@ Convert many concurrently:
 
 ```python
 for result in client.convert_all(
-    sources=["a.pdf", "b.pdf", "https://.../c.pdf"],
+    source=["a.pdf", "b.pdf", "https://.../c.pdf"],
     max_concurrency=4,
 ):
     print(result.input.file.name, result.status)
@@ -61,5 +61,4 @@ Defaults (OCR, table structure, Markdown output) match that of docling's `Docume
 | `tasks.py`   | the `submit*` API: job lifecycle, result targets, per-item fan-out |
 | `batch.py`   | `submit_batch()` for many or long-running HTTP/S3 sources          |
 | `chunk.py`   | `chunk()` — split a document into retrieval-ready pieces           |
-
 

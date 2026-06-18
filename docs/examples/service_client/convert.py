@@ -41,7 +41,7 @@ def main() -> None:
 
         # Many documents, converted concurrently.
         print("\nconvert_all():")
-        for result in client.convert_all(sources=MANY, max_concurrency=4):
+        for result in client.convert_all(source=MANY, max_concurrency=4):
             print(" ", result.input.file.name, result.status.value)
 
 

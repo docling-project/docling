@@ -351,7 +351,7 @@ def convert_remote(
             raise typer.Exit(1)
 
         output.mkdir(parents=True, exist_ok=True)
-        conv_results = client.convert_all(sources, options=options)
+        conv_results = client.convert_all(source=sources, options=options)
         try:
             export_documents(
                 conv_results,
