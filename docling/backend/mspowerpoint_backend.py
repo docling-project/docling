@@ -2,7 +2,7 @@ import logging
 import warnings
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Union
+from typing import Final, Optional, Union
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -37,9 +37,19 @@ _log = logging.getLogger(__name__)
 
 
 class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
-    # Keep these as class constants because some unit tests instantiate the backend
-    # via __new__ and call _add_comments() without running __init__.
-    PRESENTATION_NS = "http://schemas.openxmlformats.org/presentationml/2006/main"
+    """Backend for parsing PPTX documents.
+
+    Converts PPTX presentations into structured DoclingDocument format,
+    extracting text, tables, images, lists, and comments from slides.
+    """
+
+    # XML namespaces for element lookup
+    NAMESPACES: Final[dict[str, str]] = {
+        "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+        "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
+        "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
+    }
+    # XML relationship types
     COMMENT_REL = (
         "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
     )
@@ -52,12 +62,6 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
     ) -> None:
         super().__init__(in_doc, path_or_stream)
-        self.namespaces = {
-            "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
-            "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
-            "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
-        }
-        # Powerpoint file:
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
         self.page_range = in_doc.limits.page_range
 
@@ -163,7 +167,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 found, no `lvl` attribute exists, or the `lvl` attribute value is
                 invalid.
         """
-        pPr = paragraph.find("a:pPr", namespaces=self.namespaces)
+        pPr = paragraph.find("a:pPr", namespaces=self.NAMESPACES)
         if pPr is not None and "lvl" in pPr.attrib:
             try:
                 return int(pPr.get("lvl"))
@@ -194,21 +198,21 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             return (None, None, None)
 
         # Explicitly no bullet
-        if pPr.find("a:buNone", namespaces=self.namespaces) is not None:
+        if pPr.find("a:buNone", namespaces=self.NAMESPACES) is not None:
             return (False, "buNone", None)
 
         # Bullet character
-        buChar = pPr.find("a:buChar", namespaces=self.namespaces)
+        buChar = pPr.find("a:buChar", namespaces=self.NAMESPACES)
         if buChar is not None:
             return (True, "buChar", buChar.get("char"))
 
         # Auto numbering
-        buAuto = pPr.find("a:buAutoNum", namespaces=self.namespaces)
+        buAuto = pPr.find("a:buAutoNum", namespaces=self.NAMESPACES)
         if buAuto is not None:
             return (True, "buAutoNum", buAuto.get("type"))
 
         # Picture bullet
-        buBlip = pPr.find("a:buBlip", namespaces=self.namespaces)
+        buBlip = pPr.find("a:buBlip", namespaces=self.NAMESPACES)
         if buBlip is not None:
             return (True, "buBlip", "image")
 
@@ -231,7 +235,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         if lstStyle is None:
             return None
         tag = f"a:lvl{lvl + 1}pPr"
-        return lstStyle.find(tag, namespaces=self.namespaces)
+        return lstStyle.find(tag, namespaces=self.NAMESPACES)
 
     def _parse_bullet_from_text_body_list_style(
         self, txBody, lvl: int
@@ -254,7 +258,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         """
         if txBody is None:
             return (None, None, None)
-        lstStyle = txBody.find("a:lstStyle", namespaces=self.namespaces)
+        lstStyle = txBody.find("a:lstStyle", namespaces=self.NAMESPACES)
         lvl_pPr = self._find_level_properties_in_list_style(lstStyle, lvl)
         is_list, kind, detail = self._parse_bullet_from_paragraph_properties(lvl_pPr)
         return (is_list, kind, detail)
@@ -276,18 +280,18 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 or `p:otherStyle`) or None when no styles are defined.
         """
         txStyles = slide_master._element.find(
-            ".//p:txStyles", namespaces=self.namespaces
+            ".//p:txStyles", namespaces=self.NAMESPACES
         )
         if txStyles is None:
             return None
 
         if placeholder_type in (PP_PLACEHOLDER.BODY, PP_PLACEHOLDER.OBJECT):
-            return txStyles.find("p:bodyStyle", namespaces=self.namespaces)
+            return txStyles.find("p:bodyStyle", namespaces=self.NAMESPACES)
 
         if placeholder_type == PP_PLACEHOLDER.TITLE:
-            return txStyles.find("p:titleStyle", namespaces=self.namespaces)
+            return txStyles.find("p:titleStyle", namespaces=self.NAMESPACES)
 
-        return txStyles.find("p:otherStyle", namespaces=self.namespaces)
+        return txStyles.find("p:otherStyle", namespaces=self.NAMESPACES)
 
     def _parse_bullet_from_master_text_styles(
         self, slide_master, placeholder_type, lvl: int
@@ -314,7 +318,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         if style is None:
             return (None, None, None)
 
-        lvl_pPr = style.find(f".//a:lvl{lvl + 1}pPr", namespaces=self.namespaces)
+        lvl_pPr = style.find(f".//a:lvl{lvl + 1}pPr", namespaces=self.NAMESPACES)
         is_list, kind, detail = self._parse_bullet_from_paragraph_properties(lvl_pPr)
         return (is_list, kind, detail)
 
@@ -373,10 +377,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             return (False, "None")
 
         # Fallback to simpler check if shape is not available
-        if p.find(".//a:buChar", namespaces={"a": self.namespaces["a"]}) is not None:
+        if p.find(".//a:buChar", namespaces={"a": self.NAMESPACES["a"]}) is not None:
             return (True, "Bullet")
         elif (
-            p.find(".//a:buAutoNum", namespaces={"a": self.namespaces["a"]}) is not None
+            p.find(".//a:buAutoNum", namespaces={"a": self.NAMESPACES["a"]}) is not None
         ):
             return (True, "Numbered")
         elif paragraph.level > 0:
@@ -409,7 +413,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         lvl = self._get_paragraph_level(p)
 
         # 1) Direct paragraph properties
-        pPr = p.find("a:pPr", namespaces=self.namespaces)
+        pPr = p.find("a:pPr", namespaces=self.NAMESPACES)
         is_list, kind, detail = self._parse_bullet_from_paragraph_properties(pPr)
         if is_list is not None:
             return {
@@ -420,7 +424,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             }
 
         # 2) Shape-level lstStyle (txBody/a:lstStyle)
-        txBody = shape._element.find(".//p:txBody", namespaces=self.namespaces)
+        txBody = shape._element.find(".//p:txBody", namespaces=self.NAMESPACES)
         is_list, kind, detail = self._parse_bullet_from_text_body_list_style(
             txBody, lvl
         )
@@ -445,7 +449,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
             if layout_ph is not None:
                 layout_tx = layout_ph._element.find(
-                    ".//p:txBody", namespaces=self.namespaces
+                    ".//p:txBody", namespaces=self.NAMESPACES
                 )
                 is_list, kind, detail = self._parse_bullet_from_text_body_list_style(
                     layout_tx, lvl
@@ -803,7 +807,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                             author_el.get("initials", ""),
                         )
                         for author_el in root.findall(
-                            f"{{{self.PRESENTATION_NS}}}cmAuthor"
+                            "p:cmAuthor", namespaces=self.NAMESPACES
                         )
                     }
         except Exception as e:
@@ -821,10 +825,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     continue
                 try:
                     root = etree.fromstring(rel.target_part.blob)
-                    for cm in root.findall(f"{{{self.PRESENTATION_NS}}}cm"):
+                    for cm in root.findall("p:cm", namespaces=self.NAMESPACES):
                         author_id = cm.get("authorId", "")
                         dt = cm.get("dt", "")
-                        text_el = cm.find(f"{{{self.PRESENTATION_NS}}}text")
+                        text_el = cm.find("p:text", namespaces=self.NAMESPACES)
                         raw_text = (
                             (text_el.text or "").strip() if text_el is not None else ""
                         )
