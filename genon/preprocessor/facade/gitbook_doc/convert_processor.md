@@ -179,6 +179,9 @@ pdf_pipeline:
   generate_picture_images: true
   table_structure_mode: "accurate"   # "accurate"(default) | "fast"
 
+table_image:
+  enable: false                      # true 면 모든 표를 이미지로 저장 + media_files 기록
+
 # 청킹(GenosSmartChunker) 설정
 chunking:
   # 청크 최대 크기. char 모드면 "최대 문자 수", huggingface 모드면 "최대 토큰 수".
@@ -355,6 +358,20 @@ enrichment:
 | `table_structure_mode` | `"accurate"` | `accurate`(품질) \| `fast`(속도). 알 수 없는 값은 `accurate` 폴백 |
 
 > **참고**: 코드는 항상 `do_table_structure=True`, `do_cell_matching=True` 로 표 구조 분석을 켜며, 기본 파이프라인의 `do_ocr=False`(OCR 은 별도 OCR 컨버터에서 수행)로 둡니다. 이 두 값은 config 노브가 아닌 고정 동작입니다.
+
+---
+
+### 3.4.1 표 이미지 설정 (`table_image`)
+
+복잡한 병합/레이아웃 표를 텍스트로 완전히 정규화하기 어려운 경우를 위해, 표를 그림(picture)과 동일하게 **이미지로도 함께 보관**하는 옵션입니다. 검색은 청크 텍스트 기반으로 하고, 답변 단계에서 표 이미지를 활용하는 "검색=청크 / 답변=표 이미지" 하이브리드 전략을 지원합니다.
+
+| 키 | 기본값 | 설명 |
+|----|--------|------|
+| `table_image.enable` | `false` | 모든 표 영역을 PNG 로 잘라 저장하고 `media_files` 에 `type='table_image'` 로 기록 |
+
+`enable: true` 면 문서 내 모든 `TableItem` 을 페이지 이미지에서 bbox 로 잘라 artifacts 디렉터리에 `table_*.png` 로 저장하고, 각 표를 `media_files` 에 `{name, type:'table_image', ref}` 로 추가합니다(`ref` 는 `chunk_bboxes` 의 해당 표 엔트리와 동일 → 조인 가능). 청크 내 표 텍스트(MD/HTML)는 그대로 유지됩니다(하이브리드).
+
+> **주의** — 표 이미지는 페이지 이미지를 잘라 만들므로, `enable: true` 이면 `pdf_pipeline.generate_page_images` 가 내부적으로 **강제 `true`** 로 보정됩니다(별도 설정 불필요).
 
 ---
 
@@ -804,6 +821,25 @@ class GenOSVectorMeta(BaseModel):
 | `HEADER:` (text 선두) | `GenosSmartChunker` 헤더 경로 | 청크가 속한 섹션 헤더 경로 접두어 (예: `HEADER: 제1장 총칙, 제1절 목적`) |
 
 > `extra='allow'` 이므로 `custom_fields` enricher 가 추출한 임의 키도 예약 필드와 충돌하지 않는 한 그대로 벡터에 passthrough 됩니다(중첩 값은 JSON 문자열로 직렬화).
+
+### 5.1 `media_files` 구조
+
+`media_files` 는 청크에 포함된 미디어(그림/표 이미지) 목록을 담은 **JSON 문자열**입니다. 각 항목은 `{name, type, ref}` 형태입니다.
+
+| 키 | 설명 |
+|----|------|
+| `name` | 저장된 이미지 파일명 (artifacts 디렉터리 기준) |
+| `type` | `image` = 그림(`PictureItem`), `table_image` = 표 이미지(`table_image.enable: true` 일 때만) |
+| `ref` | docling `self_ref`. **같은 `ref` 가 `chunk_bboxes` 에도 존재**하므로 bbox·이미지·청크를 조인할 수 있습니다 |
+
+```json
+[
+  {"name": "image_000001_ab12.png", "type": "image",       "ref": "#/pictures/0"},
+  {"name": "table_000000_cd34.png", "type": "table_image", "ref": "#/tables/3"}
+]
+```
+
+> `type='table_image'` 항목은 `table_image.enable: true` 인 경우에만 생성됩니다(기본 false → 그림만 기록되어 기존 동작과 동일).
 
 ---
 

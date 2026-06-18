@@ -114,6 +114,7 @@ from docling_core.types.doc import (
     DoclingDocument,
     DocumentOrigin,
     DocItem,
+    ImageRef,
     PictureItem,
     SectionHeaderItem,
     TableItem,
@@ -121,6 +122,7 @@ from docling_core.types.doc import (
     PageItem,
     ProvenanceItem
 )
+from docling_core.types.doc.utils import relative_path
 from docling.datamodel.settings import settings
 from docling.utils.api_image_request import api_image_request
 
@@ -1734,13 +1736,19 @@ class GenOSVectorMetaBuilder:
         self.chunk_bboxes = json.dumps(chunk_bboxes)
         return self
 
-    def set_media_files(self, doc_items: list) -> "GenOSVectorMetaBuilder":
+    def set_media_files(self, doc_items: list, include_tables: bool = False) -> "GenOSVectorMetaBuilder":
         temp_list = []
         for item in doc_items:
             if isinstance(item, PictureItem) and item.image:
                 path = str(item.image.uri)
                 name = path.rsplit("/", 1)[-1]
                 temp_list.append({'name': name, 'type': 'image', 'ref': item.self_ref})
+            elif include_tables and isinstance(item, TableItem) and item.image:
+                # 표 이미지는 picture 와 구분되도록 type='table_image' 로 기록한다.
+                # ref(self_ref)는 chunk_bboxes 의 table 엔트리 ref 와 동일 → 조인 가능.
+                path = str(item.image.uri)
+                name = path.rsplit("/", 1)[-1]
+                temp_list.append({'name': name, 'type': 'table_image', 'ref': item.self_ref})
         self.media_files = json.dumps(temp_list)
         return self
 
@@ -1878,6 +1886,14 @@ class DocumentProcessor:
             pdf_cfg.get("generate_picture_images"), "pdf_pipeline.generate_picture_images"
         )
 
+        # 표 이미지(table_image) 옵션: 표를 picture 와 동일하게 이미지로 잘라 저장하고,
+        # media_files 에 type='table_image' 로 기록한다(검색=청크 텍스트 / 답변=표 이미지).
+        # 기본 False 라 미설정 시 기존 동작과 동일(하위 호환).
+        table_image_cfg = _as_dict(cfg.get("table_image"))
+        self.table_image_enabled = bool(
+            _parse_optional_bool(table_image_cfg.get("enable"), "table_image.enable")
+        )
+
         table_mode_str = str(pdf_cfg.get("table_structure_mode", "accurate")).lower().strip()
         table_structure_mode = _TABLE_FORMER_MODE_MAP.get(table_mode_str)
         if table_structure_mode is None:
@@ -1894,6 +1910,10 @@ class DocumentProcessor:
         self.pipe_line_options.generate_picture_images = (
             True if generate_picture_images is None else generate_picture_images
         )
+        # 표 이미지 크롭(TableItem.get_image)은 페이지 이미지를 소스로 하므로,
+        # table_image 가 켜지면 generate_page_images 를 True 로 강제 보장한다.
+        if self.table_image_enabled:
+            self.pipe_line_options.generate_page_images = True
         self.pipe_line_options.do_ocr = False
         self.pipe_line_options.ocr_options = ocr_options
         self.pipe_line_options.images_scale = images_scale
@@ -2360,13 +2380,13 @@ class DocumentProcessor:
                       .set_chunk_index(chunk_idx)
                       .set_global_metadata(**chunk_global_metadata) #!! appendix feature (2025-09-30, geonhee kim) !!
                       .set_chunk_bboxes(chunk.meta.doc_items, document)
-                      .set_media_files(chunk.meta.doc_items)
+                      .set_media_files(chunk.meta.doc_items, include_tables=self.table_image_enabled)
                       ).build()
             vectors.append(vector)
 
             chunk_index_on_page += 1
             if upload_files:
-                file_list = self.get_media_files(chunk.meta.doc_items)
+                file_list = self.get_media_files(chunk.meta.doc_items, include_tables=self.table_image_enabled)
                 upload_tasks.append(asyncio.create_task(
                     upload_files(file_list, request=request)
                 ))
@@ -2376,10 +2396,56 @@ class DocumentProcessor:
 
         return vectors
 
-    def get_media_files(self, doc_items: list):
+    def _save_table_images(
+        self,
+        document: DoclingDocument,
+        image_dir: Path,
+        reference_path: Optional[Path] = None,
+    ) -> None:
+        """표 영역을 PNG 로 저장하고 TableItem.image.uri 를 설정한다(in-place).
+
+        docling 의 DoclingDocument._with_pictures_refs 가 PictureItem 만 디스크에
+        저장하므로, 동일 로직을 TableItem 에 대해 미러링한다. TableItem.get_image 는
+        item.image 가 없으면 페이지 이미지에서 prov bbox 로 잘라 반환한다
+        (generate_page_images 가 True 여야 함 — __init__ 에서 보장).
+        """
+        image_dir.mkdir(parents=True, exist_ok=True)
+        if not image_dir.is_dir():
+            return
+
+        img_count = 0
+        for item, _ in document.iterate_items(with_groups=False):
+            if not isinstance(item, TableItem):
+                continue
+            img = item.get_image(doc=document)
+            if img is None:
+                continue
+            hexhash = PictureItem._image_to_hexhash(img)
+            if hexhash is None:
+                continue
+            loc_path = image_dir / f"table_{img_count:06}_{hexhash}.png"
+            img.save(loc_path)
+            if reference_path is not None:
+                obj_path = relative_path(reference_path.resolve(), loc_path.resolve())
+            else:
+                obj_path = loc_path
+            # 파이프라인이 표 이미지를 미리 크롭하지 않으므로(generate_table_images 미사용)
+            # item.image 는 보통 None 이다. ImageRef 를 생성하되 uri 는 반드시 저장한
+            # PNG 파일 경로로 설정한다(from_pil 의 base64 data URI 가 남지 않도록).
+            if item.image is None:
+                scale = img.size[0] / item.prov[0].bbox.width
+                item.image = ImageRef.from_pil(image=img, dpi=round(72 * scale))
+            item.image.uri = Path(obj_path)
+            img_count += 1
+
+    def get_media_files(self, doc_items: list, include_tables: bool = False):
         temp_list = []
         for item in doc_items:
-            if isinstance(item, PictureItem):
+            if isinstance(item, PictureItem) and item.image:
+                path = str(item.image.uri)
+                name = path.rsplit("/", 1)[-1]
+                temp_list.append({'path': path, 'name': name})
+            elif include_tables and isinstance(item, TableItem) and item.image:
                 path = str(item.image.uri)
                 name = path.rsplit("/", 1)[-1]
                 temp_list.append({'path': path, 'name': name})
@@ -2658,6 +2724,11 @@ class DocumentProcessor:
             reference_path = artifacts_dir.parent
 
         document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
+
+        # 표 이미지 저장 옵션이 켜진 경우, picture 와 동일하게 표 영역을 PNG 로 저장하고
+        # TableItem.image.uri 를 설정한다(_with_pictures_refs 미러).
+        if self.table_image_enabled:
+            self._save_table_images(document, image_dir=artifacts_dir, reference_path=reference_path)
 
         document = self.enrichment(document, **kwargs)
 

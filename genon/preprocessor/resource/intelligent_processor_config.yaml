@@ -56,6 +56,13 @@ pdf_pipeline:
   generate_picture_images: true      # false 면 이미지 설명 enrichment 비활성화됨
   table_structure_mode: "accurate"   # "accurate"(default) | "fast"
 
+# table_image
+# 복잡 표 대응: 표를 picture 와 동일하게 이미지로 잘라 저장하고 media_files 에
+# type='table_image' 로 기록한다(검색=청크 텍스트 / 답변=표 이미지).
+# 청크 내 표 텍스트(MD/HTML)는 그대로 유지되는 하이브리드 방식이다.
+table_image:
+  enable: false           # true 면 모든 표를 이미지로 저장 + media_files 기록
+
 # enrichment
 # 각 항목은 {이름: {옵션}} 형식의 list.
 # 비활성화: ① 항목 삭제  ② 항목 주석 처리  ③ enable: false
