@@ -40,10 +40,89 @@ class ReadingOrderOptions(BaseModel):
 
 
 class ReadingOrderModel:
+    # Flowing-text labels a left-margin section header can attach to (#3643).
+    _SIDE_HEADING_BODY_LABELS = (DocItemLabel.TEXT, DocItemLabel.LIST_ITEM)
+
     def __init__(self, options: ReadingOrderOptions):
         self.options = options
         self.ro_model = ReadingOrderPredictor()
         self.list_item_processor = ListItemMarkerProcessor()
+
+    @staticmethod
+    def _reorder_side_headings(
+        sorted_elements: list[ReadingOrderPageElement],
+    ) -> list[ReadingOrderPageElement]:
+        """Re-interleave left-margin section headers with their body block.
+
+        The rule-based predictor reads a full column top-to-bottom before moving
+        right, so a "side-heading" layout (narrow ``SECTION_HEADER``s in a left
+        column, paragraphs in a right column) is emitted as every header first
+        and then every paragraph. This pass detects that pattern and moves each
+        side-heading to sit immediately before the body block it is row-aligned
+        with, restoring ``header -> paragraph`` reading order.
+
+        A header is only treated as a side-heading when it is horizontally
+        disjoint from every body block (i.e. it lives in a margin rather than
+        heading a column), so single-column and ordinary multi-column layouts
+        are left untouched.
+        See https://github.com/docling-project/docling/issues/3643.
+        """
+        body_labels = ReadingOrderModel._SIDE_HEADING_BODY_LABELS
+
+        # Group element indices by page; relative order is otherwise preserved.
+        page_to_indices: dict[int, list[int]] = {}
+        for idx, el in enumerate(sorted_elements):
+            page_to_indices.setdefault(el.page_no, []).append(idx)
+
+        anchor: dict[int, int] = {}  # header index -> body index it precedes
+        for indices in page_to_indices.values():
+            body_indices = [
+                i for i in indices if sorted_elements[i].label in body_labels
+            ]
+            for i in indices:
+                header = sorted_elements[i]
+                if header.label != DocItemLabel.SECTION_HEADER:
+                    continue
+                # Ordinary headers share a column with body text (horizontal
+                # overlap); only margin headers are disjoint from all of it.
+                if any(
+                    header.overlaps_horizontally(sorted_elements[b])
+                    for b in body_indices
+                ):
+                    continue
+                # Attach to the nearest body block to the right on the same row.
+                min_overlap = 0.5 * (header.t - header.b)
+                best_body: int | None = None
+                for b in body_indices:
+                    body = sorted_elements[b]
+                    if not header.is_strictly_left_of(body):
+                        continue
+                    if header.y_overlap_with(body) < min_overlap:
+                        continue
+                    if best_body is None or body.l < sorted_elements[best_body].l:
+                        best_body = b
+                if best_body is not None:
+                    anchor[i] = best_body
+
+        if not anchor:
+            return sorted_elements
+
+        # body index -> headers to place before it (higher on the page first)
+        headers_before: dict[int, list[int]] = {}
+        for header_idx, body_idx in anchor.items():
+            headers_before.setdefault(body_idx, []).append(header_idx)
+        for header_list in headers_before.values():
+            header_list.sort(key=lambda i: sorted_elements[i].t, reverse=True)
+
+        moved = set(anchor)
+        reordered: list[ReadingOrderPageElement] = []
+        for idx, el in enumerate(sorted_elements):
+            if idx in moved:
+                continue  # emitted right before its anchor body block
+            for header_idx in headers_before.get(idx, []):
+                reordered.append(sorted_elements[header_idx])
+            reordered.append(el)
+        return reordered
 
     def _assembled_to_readingorder_elements(
         self, conv_res: ConversionResult
@@ -448,6 +527,9 @@ class ReadingOrderModel:
             sorted_elements = self.ro_model.predict_reading_order(
                 page_elements=page_elements
             )
+            # Re-interleave left-margin section headers with the body block on
+            # their right (side-heading layouts, see #3643).
+            sorted_elements = self._reorder_side_headings(sorted_elements)
             el_to_captions_mapping = self.ro_model.predict_to_captions(
                 sorted_elements=sorted_elements
             )
