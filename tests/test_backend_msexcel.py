@@ -103,6 +103,45 @@ def test_pages(documents) -> None:
     assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
 
 
+def test_page_range() -> None:
+    """Test that page_range selects a contiguous subset of sheets.
+
+    xlsx_01.xlsx has 4 sheets. Converting with page_range=(2, 4) should yield
+    only sheets 2-4, keeping their original page numbers (2, 3, 4).
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_01")
+
+    converter = get_converter()
+    doc = converter.convert(path, page_range=(2, 4)).document
+
+    assert set(doc.pages.keys()) == {2, 3, 4}
+    # original page numbering is preserved, so sizes match the full-document ones
+    assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
+    assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
+    assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
+
+
+def test_page_range_with_sheet_names() -> None:
+    """Test that page_range applies to the sheet_names-filtered set.
+
+    With sheet_names dropping "Sheet2", the filtered sequence is
+    [Sheet1, Sheet3, Sheet4] at positions 1, 2, 3. page_range=(2, 3) then
+    selects Sheet3 and Sheet4 (pages 2 and 3 of the filtered set).
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_01")
+
+    options = MsExcelBackendOptions(sheet_names=["Sheet1", "Sheet3", "Sheet4"])
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+    doc = converter.convert(path, page_range=(2, 3)).document
+
+    assert set(doc.pages.keys()) == {2, 3}
+    sheet_groups = [g.name for g in doc.groups if g.name.startswith("sheet: ")]
+    assert sheet_groups == ["sheet: Sheet3", "sheet: Sheet4"]
+
+
 def test_chartsheet(documents) -> None:
     """Test the conversion of Chartsheets.
 

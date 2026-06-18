@@ -48,7 +48,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import ContentLayer, Formatting, ImageRef, Script
 from PIL import Image, UnidentifiedImageError
 from pydantic import AnyUrl, BaseModel, ValidationError
-from typing_extensions import override
+from typing_extensions import Self, override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
@@ -59,6 +59,10 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import OperationNotAllowed
 
 _log = logging.getLogger(__name__)
+
+# Sentinel character for explicit line breaks from <br> tags
+# Using Unicode Private Use Area to avoid conflicts with actual content
+_BR_SENTINEL = "\ue000"
 
 DEFAULT_IMAGE_WIDTH = 128
 DEFAULT_IMAGE_HEIGHT = 128
@@ -386,18 +390,37 @@ class AnnotatedTextList(list):
             )
         return simplified
 
-    def split_by_newline(self):
-        super_list = []
+    def split_by_newline(self) -> list[Self]:
+        """Split text elements on multiple consecutive line breaks (from <br> tags).
+
+        Single <br> tags are converted to newline characters (\n) within the same paragraph.
+        Multiple consecutive <br> tags (2+) create new paragraphs.
+        Regular newlines from HTML source formatting have already been
+        normalized to spaces during text extraction.
+        """
+        super_list: list[Self] = []
         active_annotated_text_list = AnnotatedTextList()
+        double_sentinel = _BR_SENTINEL + _BR_SENTINEL
+
         for el in self:
-            sub_texts = el.text.split("\n")
-            if len(sub_texts) == 1:
+            if _BR_SENTINEL not in el.text:
                 active_annotated_text_list.append(el)
-            else:
-                for text in sub_texts:
-                    sub_el = deepcopy(el)
-                    sub_el.text = text
-                    active_annotated_text_list.append(sub_el)
+                continue
+
+            # Split on 2+ consecutive sentinels (paragraph breaks)
+            sub_texts = el.text.split(double_sentinel)
+
+            for i, text in enumerate(sub_texts):
+                # Replace single sentinels with \n and strip spaces around newlines
+                text = text.replace(_BR_SENTINEL, "\n")
+                text = re.sub(r" *\n *", "\n", text)
+
+                sub_el = deepcopy(el)
+                sub_el.text = text
+                active_annotated_text_list.append(sub_el)
+
+                # Create new paragraph after each segment except the last
+                if i < len(sub_texts) - 1:
                     super_list.append(active_annotated_text_list)
                     active_annotated_text_list = AnnotatedTextList()
         if active_annotated_text_list:
@@ -528,10 +551,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         HTMLDocumentBackend._fix_invalid_paragraph_structure(self.soup)
 
         content = self.soup.body or self.soup
-        # normalize <br> tags
+
+        # normalize <br> tags - use sentinel to distinguish from source newlines
+        for text_node in content.find_all(string=True):
+            if _BR_SENTINEL in text_node:
+                text_node.replace_with(text_node.replace(_BR_SENTINEL, ""))
         for br in content("br"):
-            br.replace_with(NavigableString("\n"))
-        # set default content layer
+            br.replace_with(NavigableString(_BR_SENTINEL))
 
         # Furniture before the first heading rule, except for headers in tables
         header = None
@@ -1866,7 +1892,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     return AnnotatedTextList()
                 if self._is_checkbox_label_container(item.parent):
                     return AnnotatedTextList()
-            text = item.strip()
+
+            if keep_newlines:
+                text: str = item.strip()
+            else:
+                # For normal content, collapse newlines to spaces (HTML spec behavior)
+                # but preserve the sentinel character for explicit <br> tags
+                text = item.replace("\n", " ").replace("\r", " ")
+                text = " ".join(text.split())
+
             code = any(code_tag in self.format_tags for code_tag in _CODE_TAG_SET)
             source_tag_id = (
                 self._get_tag_id(item.parent) if isinstance(item.parent, Tag) else None
@@ -2455,38 +2489,44 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if current_dt_item:
                         self.parents[self.level + 1] = current_dt_item
 
-                        dd_count = 0
-                        for next_child in children[i + 1 :]:
-                            if isinstance(next_child, Tag):
-                                if next_child.name.lower() == "dd":
-                                    dd_count += 1
-                                elif next_child.name.lower() == "dt":
-                                    break
-
-                        if dd_count > 1:
+                elif child_name == "dd":
+                    has_nested_dl = child.find("dl", recursive=False) is not None
+                    if has_nested_dl:
+                        # Close current descriptions group before processing nested <dl>
+                        dd_group = None
+                        # If <dd> contains a nested <dl>, process it directly under the term item
+                        # Don't create a list item for the <dd> itself to avoid double indentation
+                        if current_dt_item:
+                            with self._use_list_item_context(current_dt_item):
+                                processed_elements = set()
+                                self._process_list_item_nested_content(
+                                    child, doc, processed_elements
+                                )
+                    else:
+                        # For regular <dd> without nested <dl>, create/use descriptions group
+                        if dd_group is None and current_dt_item:
                             dd_group = doc.add_list_group(
                                 name="descriptions",
                                 parent=current_dt_item,
                                 content_layer=self.content_layer,
                             )
 
-                elif child_name == "dd":
-                    dd_parent = dd_group or current_dt_item or list_group
+                        # dd_group should exist at this point (or fall back to list_group)
+                        dd_parent = dd_group or list_group
 
-                    dd_item = self._add_list_item_with_content(
-                        tag=child,
-                        doc=doc,
-                        parent=dd_parent,
-                    )
-
-                    # Process nested content (images, lists, etc.) in the description
-                    # Set parent for nested content (use dd_item if available, otherwise dd_parent)
-                    content_parent = dd_item or dd_parent
-                    with self._use_list_item_context(content_parent):
-                        processed_elements = set()
-                        self._process_list_item_nested_content(
-                            child, doc, processed_elements
+                        dd_item = self._add_list_item_with_content(
+                            tag=child,
+                            doc=doc,
+                            parent=dd_parent,
                         )
+
+                        # Process nested content (images, lists, etc.) in the description
+                        content_parent = dd_item or dd_parent
+                        with self._use_list_item_context(content_parent):
+                            processed_elements = set()
+                            self._process_list_item_nested_content(
+                                child, doc, processed_elements
+                            )
 
             self.parents[self.level + 1] = None
             self.level -= 1
@@ -4600,7 +4640,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             result: list[str] = []
 
             if isinstance(item, NavigableString):
-                result = [item]
+                text = str(item).replace(_BR_SENTINEL, "\n")
+                result = [text]
             elif isinstance(item, Tag):
                 tag = cast(Tag, item)
                 parts: list[str] = []

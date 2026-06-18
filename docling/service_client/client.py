@@ -830,14 +830,28 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
 
     def convert_all(
         self,
-        sources: Iterable[SourceType],
+        source: Iterable[SourceType] | None = None,
         headers: dict[str, str] | None = None,
         max_num_pages: int | None = None,
         max_file_size: int | None = None,
         page_range: PageRange | None = None,
         options: ConvertDocumentsRequestOptions | None = None,
         max_concurrency: int | None = None,
+        *,
+        sources: Iterable[SourceType] | None = None,
     ) -> Iterator[ConversionResult]:
+        if source is not None and sources is not None:
+            raise TypeError("convert_all() got both 'source' and deprecated 'sources'")
+        if source is None:
+            if sources is None:
+                raise TypeError("convert_all() missing 1 required argument: 'source'")
+            warnings.warn(
+                "'sources' is deprecated; use 'source' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            source = sources
+
         resolved = self._resolve_options(
             options=options,
             max_num_pages=max_num_pages,
@@ -849,7 +863,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         # serves presigned artifacts or falls back to InBody.
         submit_options = self._with_json_output_format(resolved.options)
         return self._iterate_convert_all_sync(
-            sources=sources,
+            sources=source,
             headers=headers,
             resolved=resolved,
             submit_options=submit_options,

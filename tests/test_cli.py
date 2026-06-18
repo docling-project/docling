@@ -50,7 +50,16 @@ def _assert_markdown_embeds_png(path: Path, image_bytes: bytes | None = None) ->
 
 
 def test_cli_help():
+    # Top-level help lists the available commands and points agents at the
+    # remote command (the `convert` options live under `docling convert --help`).
     result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    assert "convert-remote" in result.output
+    assert "DOCLING_SERVICE_URL" in result.output
+
+
+def test_cli_convert_help():
+    result = runner.invoke(app, ["convert", "--help"])
     assert result.exit_code == 0
     assert "Input formats to" in result.output
     assert "all supported" in result.output
@@ -497,7 +506,9 @@ def test_cli_accepts_threaded_docling_parse_backend(
             assert len(input_doc_paths) == 1
             return []
 
-    monkeypatch.setattr("docling.cli.main.DocumentConverter", _FakeDocumentConverter)
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
 
     source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
     output = tmp_path / "out"
@@ -552,7 +563,9 @@ def test_cli_passes_accelerator_options_to_vlm_pipeline(
             assert len(input_doc_paths) == 1
             return []
 
-    monkeypatch.setattr("docling.cli.main.DocumentConverter", _FakeDocumentConverter)
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
 
     source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
     output = tmp_path / "out"

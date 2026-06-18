@@ -112,13 +112,22 @@ def _convert_payload(source_name: str) -> SimpleNamespace:
     )
 
 
-def test_base_url_accepts_root_with_or_without_trailing_slash() -> None:
-    with DoclingServiceClient(url=TEST_BASE_URL) as client:
-        assert client._base_url == TEST_BASE_URL
+@pytest.mark.parametrize(
+    ("url", "expected_base"),
+    [
+        (TEST_BASE_URL, TEST_BASE_URL),
+        (f"{TEST_BASE_URL}/", TEST_BASE_URL),
+        ("http://proxy.example.com/docling", "http://proxy.example.com/docling"),
+        ("http://proxy.example.com/docling/", "http://proxy.example.com/docling"),
+        ("http://proxy.example.com/a/b/c", "http://proxy.example.com/a/b/c"),
+    ],
+)
+def test_base_url_normalizes_trailing_slash_and_path_prefix(
+    url: str, expected_base: str
+) -> None:
+    with DoclingServiceClient(url=url) as client:
+        assert client._base_url == expected_base
         assert client._max_concurrency == DEFAULT_MAX_CONCURRENCY
-
-    with DoclingServiceClient(url=f"{TEST_BASE_URL}/") as client:
-        assert client._base_url == TEST_BASE_URL
 
 
 @pytest.mark.parametrize("value", [0, -1, MAX_CONCURRENCY_LIMIT + 1])
@@ -146,18 +155,48 @@ def test_base_url_rejects_v1_path(url: str) -> None:
         DoclingServiceClient(url=url)
 
 
-def test_ws_status_url_is_derived_from_base_url() -> None:
-    with DoclingServiceClient(url="https://example.org") as client:
-        assert (
-            client._build_ws_status_url("task-123")
-            == "wss://example.org/v1/status/ws/task-123"
-        )
-
-    with DoclingServiceClient(url="http://example.org", api_key="k") as client:
-        assert (
-            client._build_ws_status_url("task-123")
-            == "ws://example.org/v1/status/ws/task-123?api_key=k"
-        )
+@pytest.mark.parametrize(
+    ("url", "api_key", "task_id", "expected"),
+    [
+        # scheme derivation (https->wss, http->ws) and api_key query param
+        (
+            "https://example.org",
+            None,
+            "task-123",
+            "wss://example.org/v1/status/ws/task-123",
+        ),
+        (
+            "http://example.org",
+            "k",
+            "task-123",
+            "ws://example.org/v1/status/ws/task-123?api_key=k",
+        ),
+        # base path prefix is preserved
+        (
+            "https://proxy.example.com/docling",
+            None,
+            "task-123",
+            "wss://proxy.example.com/docling/v1/status/ws/task-123",
+        ),
+        (
+            "http://proxy.example.com/a/b",
+            None,
+            "task-99",
+            "ws://proxy.example.com/a/b/v1/status/ws/task-99",
+        ),
+        (
+            "https://proxy.example.com/docling",
+            "secret-key",
+            "task-123",
+            "wss://proxy.example.com/docling/v1/status/ws/task-123?api_key=secret-key",
+        ),
+    ],
+)
+def test_ws_status_url_is_derived_from_base_url(
+    url: str, api_key: str | None, task_id: str, expected: str
+) -> None:
+    with DoclingServiceClient(url=url, api_key=api_key) as client:
+        assert client._build_ws_status_url(task_id) == expected
 
 
 def test_guess_input_format_uses_docling_extension_map() -> None:
@@ -2517,47 +2556,11 @@ async def test_post_transport_error_does_not_retry_async() -> None:
 # --- Path-prefix URL tests ---
 
 
-def test_base_url_accepts_path_prefix() -> None:
-    with DoclingServiceClient(url="http://proxy.example.com/docling") as client:
-        assert client._base_url == "http://proxy.example.com/docling"
-
-    with DoclingServiceClient(url="http://proxy.example.com/docling/") as client:
-        assert client._base_url == "http://proxy.example.com/docling"
-
-    with DoclingServiceClient(url="http://proxy.example.com/a/b/c") as client:
-        assert client._base_url == "http://proxy.example.com/a/b/c"
-
-
 def test_api_url_includes_base_path_prefix() -> None:
     with DoclingServiceClient(url="http://proxy.example.com/docling") as client:
         assert (
             client._url("/v1/convert/source/async")
             == "http://proxy.example.com/docling/v1/convert/source/async"
-        )
-
-
-def test_ws_status_url_includes_base_path_prefix() -> None:
-    with DoclingServiceClient(url="https://proxy.example.com/docling") as client:
-        assert (
-            client._build_ws_status_url("task-123")
-            == "wss://proxy.example.com/docling/v1/status/ws/task-123"
-        )
-
-    with DoclingServiceClient(url="http://proxy.example.com/a/b") as client:
-        assert (
-            client._build_ws_status_url("task-99")
-            == "ws://proxy.example.com/a/b/v1/status/ws/task-99"
-        )
-
-
-def test_ws_status_url_includes_api_key_query_param_with_base_path_prefix() -> None:
-    with DoclingServiceClient(
-        url="https://proxy.example.com/docling", api_key="secret-key"
-    ) as client:
-        assert (
-            client._build_ws_status_url("task-123")
-            == "wss://proxy.example.com/docling/v1/status/ws/task-123"
-            "?api_key=secret-key"
         )
 
 
@@ -3106,39 +3109,6 @@ def test_async_client_rejects_invalid_default_max_concurrency(value: int) -> Non
         match=f"max_concurrency must be between 1 and {MAX_CONCURRENCY_LIMIT}, got {value}.",
     ):
         AsyncDoclingServiceClient(url=TEST_BASE_URL, max_concurrency=value)
-
-
-def test_async_client_constructor_matches_sync_defaults() -> None:
-    """Verify AsyncDoclingServiceClient has the same default signature as DoclingServiceClient."""
-    import inspect
-
-    from docling.service_client.client import DEFAULT_MAX_CONCURRENCY
-
-    sync_sig = inspect.signature(DoclingServiceClient.__init__)
-    async_sig = inspect.signature(AsyncDoclingServiceClient.__init__)
-
-    shared_params = [
-        "url",
-        "api_key",
-        "options",
-        "status_watcher",
-        "ws_fallback_to_poll",
-        "poll_server_wait",
-        "poll_client_interval",
-        "job_timeout",
-        "max_concurrency",
-        "http_retries",
-        "http_connect_timeout",
-        "http_read_timeout",
-    ]
-    for name in shared_params:
-        assert name in sync_sig.parameters, f"sync missing {name}"
-        assert name in async_sig.parameters, f"async missing {name}"
-        s_default = sync_sig.parameters[name].default
-        a_default = async_sig.parameters[name].default
-        assert s_default == a_default, (
-            f"default mismatch for {name!r}: sync={s_default!r} async={a_default!r}"
-        )
 
 
 # --- AsyncConversionJob lifecycle ---

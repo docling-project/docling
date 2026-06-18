@@ -140,8 +140,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This is a third div with a new line.",
-      "text": "This is a third div with a new line."
+      "orig": "This is a third div\nwith a new line.",
+      "text": "This is a third div\nwith a new line."
     },
     {
       "self_ref": "#/texts/5",

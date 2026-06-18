@@ -4,6 +4,8 @@
     - Black hot drink
 - **Milk**
     - White cold drink
+- **Soda**
+- **Water**
 
 ## Programming Languages
 
@@ -30,3 +32,10 @@
         - Detail for sub-term A.
     - **Sub-term B**
         - Detail for sub-term B.
+- **Main Term 3 (Mixed)**
+    - This is a regular text description.
+    - **Sub-term C**
+        - Detail for sub-term C.
+    - **Sub-term D**
+        - Detail for sub-term D.
+    - Final regular text description.

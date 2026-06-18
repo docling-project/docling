@@ -1,3 +1,29 @@
+## [v2.103.0](https://github.com/docling-project/docling/releases/tag/v2.103.0) - 2026-06-17
+
+### Feature
+
+* **cli:** Add docling service capability to CLI ([#3622](https://github.com/docling-project/docling/issues/3622)) ([`5897004`](https://github.com/docling-project/docling/commit/5897004c10b2cf84b796dad46f8199e3b6abd29c))
+* Remove the legacy DoclingDocument ([#3592](https://github.com/docling-project/docling/issues/3592)) ([`147ac25`](https://github.com/docling-project/docling/commit/147ac25b493fef55710481c5affb040d6a98149f))
+* **service:** Async service client facade ([#3450](https://github.com/docling-project/docling/issues/3450)) ([`947ab69`](https://github.com/docling-project/docling/commit/947ab6907201d7a549c9e803b418fc269abd16fc))
+* **html:** Add description list support and optimize list handling ([#3615](https://github.com/docling-project/docling/issues/3615)) ([`a178bbb`](https://github.com/docling-project/docling/commit/a178bbb8870089738fe7bea6e73d9dafd85a5a1f))
+
+### Fix
+
+* **html:** Collapse source newlines to spaces per HTML spec ([#3630](https://github.com/docling-project/docling/issues/3630)) ([`dfdac6b`](https://github.com/docling-project/docling/commit/dfdac6bf0826fe16a3a582d42354e835ef88926f))
+* **html:** Ensure proper ListGroup parent for description list items ([#3628](https://github.com/docling-project/docling/issues/3628)) ([`42b1c01`](https://github.com/docling-project/docling/commit/42b1c013cb250cb852b4aafeac60facf5d52b9ea))
+* **service:** Allow DoclingServiceClient.convert to accept local filepaths as str ([#3626](https://github.com/docling-project/docling/issues/3626)) ([`0d3b641`](https://github.com/docling-project/docling/commit/0d3b641e419081bdfba7087814fc92c7b907de34))
+* **html:** Correct list numbering and nested list processing ([#3625](https://github.com/docling-project/docling/issues/3625)) ([`6914bf4`](https://github.com/docling-project/docling/commit/6914bf4cf8121504652787705bde706cfc9cca23))
+* Retry transient remote VLM API failures ([#3515](https://github.com/docling-project/docling/issues/3515)) ([`419fc4c`](https://github.com/docling-project/docling/commit/419fc4c5fe205a1d5d4e6040ab92602ab13a7498))
+* **layout:** Drop PICTURE cluster coinciding with a TABLE ([#3523](https://github.com/docling-project/docling/issues/3523)) ([`156d854`](https://github.com/docling-project/docling/commit/156d85456050246f7823aa11588688440bbea60e))
+* **ocr:** Honor requested languages in RapidOCR model selection ([#3586](https://github.com/docling-project/docling/issues/3586)) ([`d9ceb41`](https://github.com/docling-project/docling/commit/d9ceb412a4ee98d6daea43d80a72167e571bd740))
+* **cli:** Pass accelerator options to VLM pipeline ([#3599](https://github.com/docling-project/docling/issues/3599)) ([`846f81a`](https://github.com/docling-project/docling/commit/846f81ae48d917a009346a8a866fba028d1350ce))
+
+### Documentation
+
+* Update service client examples ([#3627](https://github.com/docling-project/docling/issues/3627)) ([`2f693f5`](https://github.com/docling-project/docling/commit/2f693f526dcdfbd034fda7c1dadd620a94870042))
+* Fix README link to installation page ([#3620](https://github.com/docling-project/docling/issues/3620)) ([`35126d7`](https://github.com/docling-project/docling/commit/35126d77da009400acdeb55a95c3c0be2b799b87))
+* Add uv installation instructions 3544 ([#3560](https://github.com/docling-project/docling/issues/3560)) ([`3375ded`](https://github.com/docling-project/docling/commit/3375ded35e66731b824571c45beacffdb02bc854))
+
 ## [v2.102.2](https://github.com/docling-project/docling/releases/tag/v2.102.2) - 2026-06-15
 
 ### Fix

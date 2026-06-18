@@ -255,8 +255,8 @@ item-0 at level 0: unspecified: group _root_
       item-253 at level 3: unspecified: group rich_cell_group_1_0_1
         item-254 at level 4: picture
       item-255 at level 3: unspecified: group rich_cell_group_1_0_2
-        item-256 at level 4: text: Bufflehead
-        item-257 at level 4: inline: group group
+        item-256 at level 4: inline: group group
+          item-257 at level 5: text: Bufflehead
           item-258 at level 5: text: (
           item-259 at level 5: text: Bucephala albeola
           item-260 at level 5: text: )

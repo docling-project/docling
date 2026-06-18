@@ -17,6 +17,7 @@
 
 # %%
 
+import os
 from pathlib import Path
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
@@ -25,8 +26,13 @@ from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     TableStructureOptions,
 )
-from docling.datamodel.settings import settings
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE, settings
 from docling.document_converter import DocumentConverter, PdfFormatOption
+
+# Under CI we limit the conversion to a representative page range to keep the
+# example fast; locally the full document is processed.
+IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")
+CI_PAGE_RANGE = (3, 4)
 
 
 def main():
@@ -73,7 +79,8 @@ def main():
     settings.debug.profile_pipeline_timings = True
 
     # Convert the document
-    conversion_result = converter.convert(input_doc_path)
+    page_range = CI_PAGE_RANGE if IS_CI else DEFAULT_PAGE_RANGE
+    conversion_result = converter.convert(input_doc_path, page_range=page_range)
     doc = conversion_result.document
 
     # List with total time per document

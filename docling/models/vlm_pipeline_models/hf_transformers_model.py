@@ -1,3 +1,4 @@
+import importlib
 import importlib.metadata
 import logging
 import sys
@@ -7,6 +8,7 @@ from pathlib import Path
 from typing import Any, Optional, Union
 
 import numpy as np
+from packaging import version
 from PIL.Image import Image
 from transformers import StoppingCriteria, StoppingCriteriaList, StopStringCriteria
 
@@ -31,12 +33,26 @@ from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
 
+_DOTS_REPO_IDS = {"rednote-hilab/dots.ocr", "rednote-hilab/dots.mocr"}
+_DOTS_FLASH_ATTN_REQUIRED_REPO_IDS = {"rednote-hilab/dots.mocr"}
+
+
+def _ensure_dots_flash_attn_import() -> None:
+    try:
+        importlib.import_module("flash_attn")
+    except ImportError as exc:
+        raise ImportError(
+            "rednote-hilab/dots.mocr requires flash-attn with the Transformers "
+            "engine. Install flash-attn in the transformers-v4 environment "
+            "before using this model."
+        ) from exc
+
 
 class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
         vlm_options: InlineVlmOptions,
     ):
@@ -56,13 +72,26 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             )
 
             transformers_version = importlib.metadata.version("transformers")
+            parsed_transformers_version = version.parse(transformers_version)
             if (
                 self.vlm_options.repo_id == "microsoft/Phi-4-multimodal-instruct"
-                and transformers_version >= "4.52.0"
+                and parsed_transformers_version >= version.parse("4.52.0")
             ):
                 raise NotImplementedError(
-                    f"Phi 4 only works with transformers<4.52.0 but you have {transformers_version=}. Please downgrage running pip install -U 'transformers<4.52.0'."
+                    f"Phi 4 only works with transformers<4.52.0 but you have "
+                    f"{transformers_version=}. Please downgrade by running: "
+                    "pip install -U 'transformers<4.52.0'"
                 )
+            is_dots_model = self.vlm_options.repo_id in _DOTS_REPO_IDS
+            if is_dots_model and parsed_transformers_version.major >= 5:
+                raise NotImplementedError(
+                    f"{self.vlm_options.repo_id} is supported by the Transformers "
+                    f"engine only with transformers<5, but you have "
+                    f"{transformers_version=}. Use a transformers-v4 environment, "
+                    "or use the vLLM engine."
+                )
+            if self.vlm_options.repo_id in _DOTS_FLASH_ATTN_REQUIRED_REPO_IDS:
+                _ensure_dots_flash_attn_import()
 
             self.device = decide_device(
                 accelerator_options.device,
@@ -101,7 +130,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                     f"  3. Or use a different model that exists in your artifacts_path"
                 )
 
-            self.param_quantization_config: Optional[BitsAndBytesConfig] = None
+            self.param_quantization_config: BitsAndBytesConfig | None = None
             if vlm_options.quantized:
                 self.param_quantization_config = BitsAndBytesConfig(
                     load_in_8bit=vlm_options.load_in_8bit,
@@ -127,16 +156,20 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             )
             self.processor.tokenizer.padding_side = "left"
 
+            attn_implementation = (
+                "flash_attention_2"
+                if self.device.startswith("cuda")
+                and accelerator_options.cuda_use_flash_attention2
+                else "sdpa"
+            )
+            if is_dots_model:
+                attn_implementation = "sdpa"
+
             self.vlm_model = model_cls.from_pretrained(
                 artifacts_path,
                 device_map=self.device,
                 dtype=self.vlm_options.torch_dtype,
-                _attn_implementation=(
-                    "flash_attention_2"
-                    if self.device.startswith("cuda")
-                    and accelerator_options.cuda_use_flash_attention2
-                    else "sdpa"
-                ),
+                _attn_implementation=attn_implementation,
                 trust_remote_code=vlm_options.trust_remote_code,
                 revision=vlm_options.revision,
             )
@@ -325,7 +358,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         generation_config = {
             k: v
             for k, v in self.vlm_options.extra_generation_config.items()
-            if k not in decoder_keys
+            if k not in decoder_keys and k != "strip_stop_strings"
         }
         decoder_config = {
             k: v
@@ -376,6 +409,16 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         pad_token = self.processor.tokenizer.pad_token
         if pad_token:
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
+
+        if (
+            self.vlm_options.extra_generation_config.get("strip_stop_strings", False)
+            and self.vlm_options.stop_strings
+        ):
+            from docling.utils.vlm_utils import strip_stop_strings
+
+            decoded_texts = strip_stop_strings(
+                decoded_texts, self.vlm_options.stop_strings
+            )
 
         # -- Optional logging
         num_tokens = None

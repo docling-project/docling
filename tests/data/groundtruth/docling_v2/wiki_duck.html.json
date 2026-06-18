@@ -1286,6 +1286,9 @@
       },
       "children": [
         {
+          "$ref": "#/texts/251"
+        },
+        {
           "$ref": "#/texts/252"
         },
         {
@@ -1305,9 +1308,6 @@
         "$ref": "#/tables/0"
       },
       "children": [
-        {
-          "$ref": "#/texts/251"
-        },
         {
           "$ref": "#/groups/45"
         }
@@ -10040,7 +10040,7 @@
     {
       "self_ref": "#/texts/251",
       "parent": {
-        "$ref": "#/groups/46"
+        "$ref": "#/groups/45"
       },
       "children": [],
       "content_layer": "body",
