@@ -4,7 +4,7 @@
   "name": "powerpoint_comments",
   "origin": {
     "mimetype": "application/vnd.ms-powerpoint",
-    "binary_hash": 5544552046075867675,
+    "binary_hash": 166076676741187219,
     "filename": "powerpoint_comments.pptx"
   },
   "furniture": {
@@ -22,6 +22,21 @@
       },
       {
         "$ref": "#/groups/1"
+      },
+      {
+        "$ref": "#/groups/2"
+      },
+      {
+        "$ref": "#/groups/3"
+      },
+      {
+        "$ref": "#/groups/4"
+      },
+      {
+        "$ref": "#/groups/6"
+      },
+      {
+        "$ref": "#/groups/7"
       }
     ],
     "content_layer": "body",
@@ -37,6 +52,9 @@
       "children": [
         {
           "$ref": "#/texts/0"
+        },
+        {
+          "$ref": "#/texts/1"
         }
       ],
       "content_layer": "body",
@@ -50,11 +68,107 @@
       },
       "children": [
         {
-          "$ref": "#/texts/1"
+          "$ref": "#/texts/2"
         }
       ],
       "content_layer": "notes",
       "name": "comment-slide1-1",
+      "label": "comment_section"
+    },
+    {
+      "self_ref": "#/groups/2",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/3"
+        }
+      ],
+      "content_layer": "notes",
+      "name": "comment-slide1-1",
+      "label": "comment_section"
+    },
+    {
+      "self_ref": "#/groups/3",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/4"
+        },
+        {
+          "$ref": "#/texts/5"
+        }
+      ],
+      "content_layer": "body",
+      "name": "slide-1",
+      "label": "chapter"
+    },
+    {
+      "self_ref": "#/groups/4",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/6"
+        },
+        {
+          "$ref": "#/groups/5"
+        }
+      ],
+      "content_layer": "body",
+      "name": "slide-2",
+      "label": "chapter"
+    },
+    {
+      "self_ref": "#/groups/5",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/7"
+        },
+        {
+          "$ref": "#/texts/8"
+        },
+        {
+          "$ref": "#/texts/9"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/6",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/10"
+        }
+      ],
+      "content_layer": "notes",
+      "name": "comment-slide3-2",
+      "label": "comment_section"
+    },
+    {
+      "self_ref": "#/groups/7",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/11"
+        }
+      ],
+      "content_layer": "notes",
+      "name": "comment-slide3-3",
       "label": "comment_section"
     }
   ],
@@ -89,6 +203,33 @@
     {
       "self_ref": "#/texts/1",
       "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 457200.0,
+            "t": 6126163.0,
+            "r": 8686800.0,
+            "b": 1600200.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            172
+          ]
+        }
+      ],
+      "orig": "Docling converts messy documents into structured data and simplifies downstream document and AI processing by detecting tables, formulas, reading order, OCR, and much more.",
+      "text": "Docling converts messy documents into structured data and simplifies downstream document and AI processing by detecting tables, formulas, reading order, OCR, and much more."
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
         "$ref": "#/groups/1"
       },
       "children": [],
@@ -97,6 +238,210 @@
       "prov": [],
       "orig": "[author: John Reviewer (JR), time: 2026-01-01T00:00:00]: This is a sample reviewer comment",
       "text": "[author: John Reviewer (JR), time: 2026-01-01T00:00:00]: This is a sample reviewer comment"
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "notes",
+      "label": "text",
+      "prov": [],
+      "orig": "[author: Jane Smith (JS), time: 2026-06-18T17:35:35.236]: This is a sample response",
+      "text": "[author: Jane Smith (JS), time: 2026-06-18T17:35:35.236]: This is a sample response"
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "title",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 457200.0,
+            "t": 1417638.0,
+            "r": 8686800.0,
+            "b": 274638.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            5
+          ]
+        }
+      ],
+      "orig": "Start",
+      "text": "Start"
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 457200.0,
+            "t": 6126163.0,
+            "r": 8686800.0,
+            "b": 1600200.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            70
+          ]
+        }
+      ],
+      "orig": "Install Docling as a Python library with your favorite package manager",
+      "text": "Install Docling as a Python library with your favorite package manager"
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "title",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 457200.0,
+            "t": 1417638.0,
+            "r": 8686800.0,
+            "b": 274638.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            8
+          ]
+        }
+      ],
+      "orig": "Features",
+      "text": "Features"
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 457200.0,
+            "t": 6126163.0,
+            "r": 8686800.0,
+            "b": 1600200.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            322
+          ]
+        }
+      ],
+      "orig": "Import many document formats into a unified and structured Docling Document , including scanned pages via an OCR engine of your choice.",
+      "text": "Import many document formats into a unified and structured Docling Document , including scanned pages via an OCR engine of your choice.",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 457200.0,
+            "t": 6126163.0,
+            "r": 8686800.0,
+            "b": 1600200.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            322
+          ]
+        }
+      ],
+      "orig": "Export a parsed document to formats that simplify processing and ingestion into AI, RAG, and agentic systems. ",
+      "text": "Export a parsed document to formats that simplify processing and ingestion into AI, RAG, and agentic systems. ",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 457200.0,
+            "t": 6126163.0,
+            "r": 8686800.0,
+            "b": 1600200.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            322
+          ]
+        }
+      ],
+      "orig": "Extract document components and their properties from the Docling Document.",
+      "text": "Extract document components and their properties from the Docling Document.",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/groups/6"
+      },
+      "children": [],
+      "content_layer": "notes",
+      "label": "text",
+      "prov": [],
+      "orig": "[author: Jane Smith (JS), time: 2026-06-18T17:37:55.253]: This is a cool feature",
+      "text": "[author: Jane Smith (JS), time: 2026-06-18T17:37:55.253]: This is a cool feature"
+    },
+    {
+      "self_ref": "#/texts/11",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "notes",
+      "label": "text",
+      "prov": [],
+      "orig": "[author: Jane Smith (JS), time: 2026-06-18T17:38:32.720]: I need to try this out!",
+      "text": "[author: Jane Smith (JS), time: 2026-06-18T17:38:32.720]: I need to try this out!"
     }
   ],
   "pictures": [],
@@ -110,6 +455,20 @@
         "height": 6858000.0
       },
       "page_no": 1
+    },
+    "2": {
+      "size": {
+        "width": 9144000.0,
+        "height": 6858000.0
+      },
+      "page_no": 2
+    },
+    "3": {
+      "size": {
+        "width": 9144000.0,
+        "height": 6858000.0
+      },
+      "page_no": 3
     }
   }
 }

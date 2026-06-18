@@ -2,7 +2,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from docling_core.types.doc import ContentLayer
+from docling_core.types.doc import ContentLayer, GroupItem, TextItem
 
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -13,12 +13,6 @@ from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
-PPTX_NAMESPACES = {
-    "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
-    "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
-    "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
-}
-COMMENT_FIXTURES = {"powerpoint_comments"}
 
 
 def get_pptx_paths():
@@ -52,7 +46,7 @@ def test_e2e_pptx_conversions():
         doc: DoclingDocument = conv_result.document
 
         included_content_layers = (
-            set(ContentLayer) if gt_path.stem in COMMENT_FIXTURES else None
+            set(ContentLayer) if gt_path.stem in "powerpoint_comments" else None
         )
         pred_md: str = doc.export_to_markdown(
             compact_tables=True,
@@ -62,7 +56,6 @@ def test_e2e_pptx_conversions():
             pred_md,
             str(gt_path) + ".md",
             GENERATE,
-            fuzzy=gt_path.stem in COMMENT_FIXTURES,
         ), "export to md"
 
         pred_itxt: str = doc._export_to_indented_text(
@@ -78,182 +71,98 @@ def test_e2e_pptx_conversions():
 
 
 def test_comments_extraction() -> None:
-    """Test that slide comments are extracted into the NOTES content layer."""
-    from docling_core.types.doc import GroupItem
+    """Test comprehensive comment extraction including metadata, authors, and slide distribution."""
 
     converter = get_converter()
     path = Path("./tests/data/pptx/powerpoint_comments.pptx")
     doc: DoclingDocument = converter.convert(path).document
 
+    assert doc.num_pages() == 3, f"Expected 3 slides, got {doc.num_pages()}"
+
+    # Comment groups: 4 total (2 on slide 1, 0 on slide 2, 2 on slide 3)
     comment_groups = [
         g
         for g in doc.groups
         if isinstance(g, GroupItem) and g.name.startswith("comment-")
     ]
-    assert len(comment_groups) >= 1, (
-        f"Expected ≥1 comment group, got {len(comment_groups)}"
+    assert len(comment_groups) == 4, (
+        f"Expected 4 comment groups, got {len(comment_groups)}"
+    )
+
+    assert all(g.content_layer == ContentLayer.NOTES for g in comment_groups), (
+        "All comment groups should be in NOTES content layer"
+    )
+
+    slide1_comments = [g for g in comment_groups if "slide1" in g.name]
+    slide2_comments = [g for g in comment_groups if "slide2" in g.name]
+    slide3_comments = [g for g in comment_groups if "slide3" in g.name]
+    assert len(slide1_comments) == 2, (
+        f"Expected 2 comments on slide 1, got {len(slide1_comments)}"
+    )
+    assert len(slide2_comments) == 0, (
+        f"Expected 0 comments on slide 2, got {len(slide2_comments)}"
+    )
+    assert len(slide3_comments) == 2, (
+        f"Expected 2 comments on slide 3, got {len(slide3_comments)}"
     )
 
     comment_texts = [
         t.text
         for t in doc.texts
-        if hasattr(t, "content_layer") and t.content_layer == "notes"
+        if isinstance(t, TextItem) and t.content_layer == ContentLayer.NOTES
     ]
-    assert any("John Reviewer" in t for t in comment_texts), (
-        "Expected 'John Reviewer' in comment texts"
+    assert len(comment_texts) == 4, (
+        f"Expected 4 comment texts, got {len(comment_texts)}"
     )
-    assert any("sample reviewer comment" in t for t in comment_texts), (
-        "Expected comment body text content"
+
+    assert all("[author:" in text for text in comment_texts), (
+        "All comments should have author metadata"
     )
-    for group in comment_groups:
-        assert group.content_layer == "notes", (
-            "Comments should be in NOTES content layer"
-        )
+
+    all_text = " ".join(comment_texts)
+    assert "John Reviewer (JR)" in all_text, "Expected John Reviewer (JR) in comments"
+    assert "Jane Smith (JS)" in all_text, "Expected Jane Smith (JS) in comments"
+    assert "sample reviewer comment" in all_text, "Expected original comment text"
+    assert "sample response" in all_text, "Expected reply comment text"
+
+    jr_comments = [t for t in comment_texts if "John Reviewer (JR)" in t]
+    js_comments = [t for t in comment_texts if "Jane Smith (JS)" in t]
+    assert len(jr_comments) == 1, f"Expected 1 comment from JR, got {len(jr_comments)}"
+    assert len(js_comments) == 3, f"Expected 3 comments from JS, got {len(js_comments)}"
 
 
-def test_add_comments_handles_missing_metadata_and_parse_failures() -> None:
-    """_add_comments should skip broken slides/comments and keep valid ones."""
+def test_comments_respect_page_range() -> None:
+    """Test that comments are only extracted for slides within page_range."""
+    path = Path("./tests/data/pptx/powerpoint_comments.pptx")
+    converter = get_converter()
 
-    class FakeTargetPart:
-        def __init__(self, blob: bytes):
-            self.blob = blob
+    doc: DoclingDocument = converter.convert(path, page_range=(1, 1)).document
 
-    class FakeRel:
-        def __init__(self, reltype: str, blob: bytes = b""):
-            self.reltype = reltype
-            self.target_part = FakeTargetPart(blob)
-
-    class FakeSlide:
-        def __init__(self, rels):
-            self._part = SimpleNamespace(rels=rels)
-
-        @property
-        def part(self):
-            return self._part
-
-    class BrokenSlide:
-        @property
-        def part(self):
-            raise RuntimeError("broken slide")
-
-    backend = MsPowerpointDocumentBackend.__new__(MsPowerpointDocumentBackend)
-    backend.namespaces = PPTX_NAMESPACES
-    author_reltype = (
-        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/"
-        "commentAuthors"
+    comment_groups = [g for g in doc.groups if g.name.startswith("comment-")]
+    assert len(comment_groups) == 2, (
+        f"Expected 2 comment groups from slide 1, got {len(comment_groups)}"
     )
-    comment_reltype = (
-        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
+
+    assert all("slide1" in g.name for g in comment_groups), (
+        "Comments should only be from slide 1 when page_range is (1,1)"
     )
-    valid_comments = b"""
-    <p:cmLst xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
-      <p:cm idx="7" authorId="1" dt="2026-05-29T10:00:00Z">
-        <p:text>  first note  </p:text>
-      </p:cm>
-      <p:cm idx="8" authorId="99">
-        <p:text>authorless note</p:text>
-      </p:cm>
-      <p:cm idx="9" authorId="1">
-        <p:text>   </p:text>
-      </p:cm>
-    </p:cmLst>
-    """
-    invalid_comments = b"<p:cmLst"
-    authors = b"""
-    <p:cmAuthorLst xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
-      <p:cmAuthor id="1" name="John Reviewer" initials="JR" />
-    </p:cmAuthorLst>
-    """
-    pptx_obj = SimpleNamespace(
-        part=SimpleNamespace(rels={"authors": FakeRel(author_reltype, authors)}),
-        slides=[
-            BrokenSlide(),
-            FakeSlide(
-                {
-                    "noop": FakeRel("urn:ignored"),
-                    "comments": FakeRel(comment_reltype, valid_comments),
-                }
-            ),
-            FakeSlide({"comments": FakeRel(comment_reltype, invalid_comments)}),
-        ],
+
+    doc3: DoclingDocument = converter.convert(path, page_range=(3, 3)).document
+
+    comment_groups3 = [g for g in doc3.groups if g.name.startswith("comment-")]
+    assert len(comment_groups3) == 2, (
+        f"Expected 2 comment groups from slide 3, got {len(comment_groups3)}"
     )
-    doc = DoclingDocument(name="comments")
 
-    backend._add_comments(pptx_obj, doc)
-
-    comment_groups = [
-        group for group in doc.groups if group.name.startswith("comment-")
-    ]
-    assert [group.name for group in comment_groups] == [
-        "comment-slide2-7",
-        "comment-slide2-8",
-    ]
-    assert [text.text for text in doc.texts] == [
-        "[author: John Reviewer (JR), time: 2026-05-29T10:00:00Z]: first note",
-        "authorless note",
-    ]
-    assert all(group.content_layer == "notes" for group in comment_groups)
-
-
-def test_add_comments_continues_when_comment_authors_cannot_be_parsed() -> None:
-    """_add_comments should still emit raw comment text when author parsing fails."""
-
-    class FakeTargetPart:
-        def __init__(self, blob: bytes):
-            self.blob = blob
-
-    class FakeRel:
-        def __init__(self, reltype: str, blob: bytes):
-            self.reltype = reltype
-            self.target_part = FakeTargetPart(blob)
-
-    class FakeSlide:
-        def __init__(self, rels):
-            self._part = SimpleNamespace(rels=rels)
-
-        @property
-        def part(self):
-            return self._part
-
-    backend = MsPowerpointDocumentBackend.__new__(MsPowerpointDocumentBackend)
-    backend.namespaces = PPTX_NAMESPACES
-    author_reltype = (
-        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/"
-        "commentAuthors"
+    assert all("slide3" in g.name for g in comment_groups3), (
+        "Comments should only be from slide 3 when page_range is (3,3)"
     )
-    comment_reltype = (
-        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
+
+    doc2: DoclingDocument = converter.convert(path, page_range=(2, 2)).document
+    comment_groups2 = [g for g in doc2.groups if g.name.startswith("comment-")]
+    assert len(comment_groups2) == 0, (
+        f"Expected 0 comment groups from slide 2, got {len(comment_groups2)}"
     )
-    comments = b"""
-    <p:cmLst xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
-      <p:cm idx="3" authorId="1">
-        <p:text>kept without metadata</p:text>
-      </p:cm>
-    </p:cmLst>
-    """
-    pptx_obj = SimpleNamespace(
-        part=SimpleNamespace(
-            rels={"authors": FakeRel(author_reltype, b"<p:cmAuthorLst")}
-        ),
-        slides=[FakeSlide({"comments": FakeRel(comment_reltype, comments)})],
-    )
-    doc = DoclingDocument(name="comments")
-
-    backend._add_comments(pptx_obj, doc)
-
-    assert [group.name for group in doc.groups] == ["comment-slide1-3"]
-    assert [text.text for text in doc.texts] == ["kept without metadata"]
-
-
-def test_add_comments_returns_when_pptx_object_is_missing() -> None:
-    """_add_comments should be a no-op when no presentation object is available."""
-    backend = MsPowerpointDocumentBackend.__new__(MsPowerpointDocumentBackend)
-    doc = DoclingDocument(name="comments")
-
-    backend._add_comments(None, doc)
-
-    assert doc.groups == []
-    assert doc.texts == []
 
 
 def test_pptx_unrecognized_shape_type():

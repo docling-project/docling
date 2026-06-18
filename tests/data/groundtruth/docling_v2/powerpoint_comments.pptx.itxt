@@ -1,3 +1,13 @@
 item-0 at level 0: unspecified: group _root_
   item-1 at level 1: chapter: group slide-0
     item-2 at level 2: title: Test Slide With Comments
+    item-3 at level 2: paragraph: Docling converts messy documents ... as, reading order, OCR, and much more.
+  item-4 at level 1: chapter: group slide-1
+    item-5 at level 2: title: Start
+    item-6 at level 2: paragraph: Install Docling as a Python library with your favorite package manager
+  item-7 at level 1: chapter: group slide-2
+    item-8 at level 2: title: Features
+    item-9 at level 2: list: group list
+      item-10 at level 3: list_item: Import many document formats int ... ages via an OCR engine of your choice.
+      item-11 at level 3: list_item: Export a parsed document to form ... on into AI, RAG, and agentic systems. 
+      item-12 at level 3: list_item: Extract document components and  ...  properties from the Docling Document.
