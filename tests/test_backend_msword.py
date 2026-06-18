@@ -4,7 +4,12 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from docling_core.types.doc import DocItemLabel, GroupItem
+from docling_core.types.doc import (
+    DocItemLabel,
+    GroupItem,
+    SectionHeaderItem,
+    TextItem,
+)
 from lxml import etree
 
 import docling.backend.msword_backend as msword_backend_module
@@ -15,8 +20,6 @@ from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
     InputDocument,
-    SectionHeaderItem,
-    TextItem,
 )
 from docling.document_converter import DocumentConverter
 
