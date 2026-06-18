@@ -155,7 +155,7 @@ jobs:
       - uses: ./.github/actions/setup-ubuntu-ci
         with:
           python_version: ${{ matrix.python-version }}
-          uv_sync_args: --frozen --group dev --all-extras --no-extra feat-ocr-nemotron --all-packages --no-group docs --no-group examples
+          uv_sync_args: --frozen --group dev --all-extras --all-packages --no-group docs --no-group examples
 
       - name: Set prek cache key
         run: echo "PY=$(python -VV | sha256sum | cut -d' ' -f1)" >> "$GITHUB_ENV"
@@ -207,7 +207,7 @@ jobs:
       - uses: ./.github/actions/setup-ubuntu-ci
         with:
           python_version: ${{ matrix.python-version }}
-          uv_sync_args: --frozen --group dev --all-extras --no-extra feat-ocr-nemotron --all-packages --no-group docs --no-group examples
+          uv_sync_args: --frozen --group dev --all-extras --all-packages --no-group docs --no-group examples
           install_system_deps: "true"
           cache_models: "true"
 
@@ -249,7 +249,7 @@ jobs:
       - uses: ./.github/actions/setup-ubuntu-ci
         with:
           python_version: ${{ matrix.python-version }}
-          uv_sync_args: --frozen --group dev --all-extras --no-extra feat-ocr-nemotron --all-packages --no-group docs --no-group examples
+          uv_sync_args: --frozen --group dev --all-extras --all-packages --no-group docs --no-group examples
           install_system_deps: "true"
           cache_models: "true"
 
@@ -300,7 +300,7 @@ jobs:
       - uses: ./.github/actions/setup-ubuntu-ci
         with:
           python_version: ${{ matrix.python-version }}
-          uv_sync_args: --frozen --group examples --all-extras --no-extra feat-ocr-nemotron --all-packages --no-group docs --no-group dev
+          uv_sync_args: --frozen --group examples --all-extras --all-packages --no-group docs --no-group dev
           install_system_deps: "true"
           cache_models: "true"
 
@@ -556,7 +556,7 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --all-extras --no-extra feat-ocr-nemotron
+        run: uv sync --all-extras
 
       - name: Build packages
         run: bash .github/scripts/build-packages.sh

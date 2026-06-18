@@ -197,8 +197,8 @@ feat-ocr-nemotron = [
 # MODELS
 # ============================================================================
 models-local = [
-  'torch>=2.2.2,<3.0.0 ; extra != "feat-ocr-nemotron"',
-  'torchvision>=0,<1 ; extra != "feat-ocr-nemotron"',
+  'torch>=2.2.2,<3.0.0',
+  'torchvision>=0,<1',
   'docling-ibm-models>=3.13.0,<4',
   'accelerate>=1.0.0,<2',
   'huggingface_hub>=0.23,<2',
