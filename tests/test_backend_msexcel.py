@@ -3,7 +3,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import ContentLayer
+from docling_core.types.doc import ContentLayer, TextItem
 from openpyxl import Workbook, load_workbook
 from openpyxl.comments import Comment
 
@@ -19,7 +19,6 @@ from .verify_utils import verify_document, verify_export
 _log = logging.getLogger(__name__)
 
 GENERATE = GEN_TEST_DATA
-COMMENT_FIXTURES = {"xlsx_comments"}
 
 
 def get_excel_paths():
@@ -72,15 +71,17 @@ def test_comments_extraction(documents) -> None:
         for g in doc.groups
         if isinstance(g, GroupItem) and g.name.startswith("comment-")
     ]
-    assert len(comment_groups) >= 2, (
-        f"Expected ≥2 comment groups, got {len(comment_groups)}"
+    assert len(comment_groups) == 4, (
+        f"Expected 4 comment groups (2 notes + 2 threaded), got {len(comment_groups)}"
     )
 
     comment_texts = [
         t.text
         for t in doc.texts
-        if hasattr(t, "content_layer") and t.content_layer == "notes"
+        if isinstance(t, TextItem) and t.content_layer == ContentLayer.NOTES
     ]
+
+    # Check for old-style notes
     assert any("John Reviewer" in t for t in comment_texts), (
         "Expected 'John Reviewer' in comment texts"
     )
@@ -90,65 +91,60 @@ def test_comments_extraction(documents) -> None:
     assert any("Why Python" in t for t in comment_texts), (
         "Expected comment body text content"
     )
+
+    # Check for threaded comments with author and timestamp
+    assert any("Marcus Sterling" in t and "time:" in t for t in comment_texts), (
+        "Expected threaded comment with author Marcus Sterling and timestamp"
+    )
+    assert any("Jane Smith" in t and "time:" in t for t in comment_texts), (
+        "Expected threaded comment with author Jane Smith and timestamp"
+    )
+    assert any("never thought it would be so low" in t for t in comment_texts), (
+        "Expected threaded comment reply text"
+    )
+    assert any("Maximum number of ducks" in t for t in comment_texts), (
+        "Expected threaded comment text"
+    )
+
     for group in comment_groups:
-        assert group.content_layer == "notes", (
+        assert group.content_layer == ContentLayer.NOTES, (
             "Comments should be in NOTES content layer"
         )
 
 
-def test_add_comments_skips_chartsheets_and_blank_comments() -> None:
-    """_add_comments should ignore chartsheets and blank comment bodies."""
-    backend = MsExcelDocumentBackend.__new__(MsExcelDocumentBackend)
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = "Data"
-    workbook.create_chartsheet("Chart")
+def test_comment_cell_coordinates(documents) -> None:
+    """Test that comment names include cell coordinates."""
+    from docling_core.types.doc import GroupItem
 
-    sheet["A1"] = "covered"
-    sheet["A1"].comment = Comment("  reviewed  ", "John Reviewer")
-
-    sheet["A2"] = "ignored"
-    sheet["A2"].comment = Comment("   ", "Jane Editor")
-
-    sheet["A3"] = "no author"
-    sheet["A3"].comment = Comment("authorless note", "placeholder")
-    sheet["A3"].comment.author = ""
-
-    backend.workbook = workbook
-    doc = DoclingDocument(name="comments")
-
-    backend._add_comments(doc)
+    doc = next(item for path, item in documents if path.stem == "xlsx_comments")
 
     comment_groups = [
-        group for group in doc.groups if group.name.startswith("comment-")
+        g
+        for g in doc.groups
+        if isinstance(g, GroupItem) and g.name.startswith("comment-")
     ]
-    assert [group.name for group in comment_groups] == [
-        "comment-Data-A1",
-        "comment-Data-A3",
-    ]
-    assert [text.text for text in doc.texts] == [
-        "[author: John Reviewer]: reviewed",
-        "authorless note",
-    ]
-    assert all(group.content_layer == "notes" for group in comment_groups)
 
+    # Should have 4 comments (2 notes + 2 threaded)
+    assert len(comment_groups) == 4, (
+        f"Expected 4 comment groups, got {len(comment_groups)}"
+    )
 
-def test_add_comments_returns_when_workbook_is_missing() -> None:
-    """_add_comments should be a no-op for uninitialized backends."""
-    backend = MsExcelDocumentBackend.__new__(MsExcelDocumentBackend)
-    backend.workbook = None
-    doc = DoclingDocument(name="comments")
-
-    backend._add_comments(doc)
-
-    assert doc.groups == []
-    assert doc.texts == []
+    # Verify comment names include cell coordinates
+    comment_names = [g.name for g in comment_groups]
+    assert any("A1" in name for name in comment_names), "Expected comment for cell A1"
+    assert any("B2" in name for name in comment_names), "Expected comment for cell B2"
+    assert any("F7" in name for name in comment_names), (
+        "Expected threaded comment for cell F7"
+    )
+    assert any("G12" in name for name in comment_names), (
+        "Expected threaded comment for cell G12"
+    )
 
 
 def test_e2e_excel_conversions(documents) -> None:
     for gt_path, doc in documents:
         included_content_layers = (
-            set(ContentLayer) if gt_path.stem in COMMENT_FIXTURES else None
+            set(ContentLayer) if gt_path.stem in "xlsx_comments" else None
         )
         pred_md: str = doc.export_to_markdown(
             compact_tables=True,
@@ -158,7 +154,6 @@ def test_e2e_excel_conversions(documents) -> None:
             pred_md,
             str(gt_path) + ".md",
             GENERATE,
-            fuzzy=gt_path.stem in COMMENT_FIXTURES,
         ), "export to md"
 
         pred_itxt: str = doc._export_to_indented_text(

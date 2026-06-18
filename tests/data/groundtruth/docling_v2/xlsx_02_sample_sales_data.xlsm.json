@@ -1168,6 +1168,7 @@
         ],
         "num_rows": 21,
         "num_cols": 4,
+        "orientation": "rot_0",
         "grid": [
           [
             {
