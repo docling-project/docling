@@ -184,7 +184,7 @@ def test_convert_all_preserves_input_order(
     ) as client:
         results = list(
             client.convert_all(
-                sources=[source_a, source_b],
+                source=[source_a, source_b],
                 options=_json_options(),
                 max_concurrency=2,
             )
