@@ -174,7 +174,7 @@ def verify_table_v2(true_item: TableItem, pred_item: TableItem, fuzzy: bool):
 
 def verify_picture_image_v2(
     true_image: PILImage.Image, pred_item: Optional[PILImage.Image], fuzzy: bool = False
-) -> None:
+) -> bool:
     """Compare image properties with optional fuzziness for cross-platform variance.
 
     Args:
@@ -212,6 +212,8 @@ def verify_picture_image_v2(
         f"Image height mismatch: {true_height} vs {pred_height} "
         f"(diff: {height_diff}, tol: {height_tol} [{tol_ratio:.1%}])"
     )
+
+    return True
 
 
 def verify_docitems(
