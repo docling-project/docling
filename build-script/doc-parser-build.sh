@@ -97,8 +97,9 @@ case "${INSTALL_RHWP}" in
     ;;
 esac
 
-# standard 에서 rhwp/LibreOffice 를 둘 다 끄면 변환 backend 가 0개 → PDF 입력만 처리 가능.
-# (synap 은 PDF SDK 가 남아 있으므로 해당 없음.) 의도된 구성일 수 있으니 막지 않고 경고만.
+# standard 에서 rhwp/LibreOffice 를 둘 다 끄면 변환 backend 가 0개 → 적재형(지능형)은 비-PDF 처리 불가.
+# (첨부형/변환형/파싱형은 HWP SDK·원본 파싱으로 동작, synap 은 PDF SDK 가 남아 해당 없음.)
+# 의도된 구성일 수 있으니 막지 않고 경고만.
 if [[ "${BUILD_VARIANT}" == "standard" && "${INSTALL_LIBREOFFICE}" == "false" && "${INSTALL_RHWP}" == "false" ]]; then
   echo "[WARN] standard + INSTALL_LIBREOFFICE=false + INSTALL_RHWP=false 조합입니다."
   echo "[WARN] 이 이미지에는 HWP/오피스 → PDF 변환 backend 가 전혀 없습니다. 영향은 전처리기별로 다릅니다:"
