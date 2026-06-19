@@ -22,7 +22,7 @@ PDF SDK의 사용 여부에 따라 `standard` 또는 `synap`로 분리됨.
 
 ## rhwp / LibreOffice 설치 on/off (이슈 [#286](https://github.com/genonai/doc_parser/issues/286))
 
-두 Dockerfile 모두 `INSTALL_LIBREOFFICE` · `INSTALL_RHWP` 빌드 인자(`true` | `false`, 기본 `true`)로 해당 패키지를 빼고 빌드할 수 있다. rhwp/LibreOffice 를 쓰지 않는 사이트(예: 한국은행)용.
+두 Dockerfile 모두 `INSTALL_LIBREOFFICE` · `INSTALL_RHWP` 빌드 인자(`true` | `false`, 기본 `true`)로 해당 패키지를 빼고 빌드할 수 있다. rhwp/LibreOffice 를 쓰지 않는 사이트용.
 
 | 빌드 인자 | `false` 일 때 |
 |---|---|

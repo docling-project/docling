@@ -29,7 +29,7 @@ ARG RHWP_GIT_REF=genos/main
 # 이슈 #286 — rhwp / LibreOffice 설치 여부 빌드 플래그 (true | false).
 #   INSTALL_LIBREOFFICE=false → LibreOffice/Java apt 패키지 및 H2Orestart 확장 미설치.
 #   INSTALL_RHWP=false        → rhwp 바이너리 빌드/포함 안 함 (Rust 빌드 stage 자체를 건너뜀).
-# 한국은행 등 위 패키지를 쓰지 않는 사이트용. 두 값 모두 정확히 true/false 여야 한다
+# 위 패키지를 쓰지 않는 사이트용. 두 값 모두 정확히 true/false 여야 한다
 # (rhwp 는 stage 이름 alias 로 분기하므로 다른 문자열이면 빌드가 깨진다).
 # 단, synap 는 PDF SDK 가 비-HWP 변환의 1순위라, 둘 다 꺼도 docx/ppt 등은 PDF SDK 로 변환된다
 # (HWP/HWPX 는 rhwp 가 빠지면 PDF SDK 만으로 처리).
