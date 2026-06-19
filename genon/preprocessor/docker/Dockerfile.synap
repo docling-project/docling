@@ -26,11 +26,21 @@ ARG TORCH_CPU_INDEX_URL=https://download.pytorch.org/whl/cpu
 # 이슈 #199 후속 — rhwp 바이너리를 컨테이너에 직접 빌드해 넣기 위한 git ref
 ARG RHWP_GIT_URL=https://github.com/genonai/genos-rhwp.git
 ARG RHWP_GIT_REF=genos/main
+# 이슈 #286 — rhwp / LibreOffice 설치 여부 빌드 플래그 (true | false).
+#   INSTALL_LIBREOFFICE=false → LibreOffice/Java apt 패키지 및 H2Orestart 확장 미설치.
+#   INSTALL_RHWP=false        → rhwp 바이너리 빌드/포함 안 함 (Rust 빌드 stage 자체를 건너뜀).
+# 한국은행 등 위 패키지를 쓰지 않는 사이트용. 두 값 모두 정확히 true/false 여야 한다
+# (rhwp 는 stage 이름 alias 로 분기하므로 다른 문자열이면 빌드가 깨진다).
+# 단, synap 는 PDF SDK 가 비-HWP 변환의 1순위라, 둘 다 꺼도 docx/ppt 등은 PDF SDK 로 변환된다
+# (HWP/HWPX 는 rhwp 가 빠지면 PDF SDK 만으로 처리).
+ARG INSTALL_LIBREOFFICE=true
+ARG INSTALL_RHWP=true
 
 ############################
 # 1) Base (APT + LibreOffice)
 ############################
 FROM python:${PY_VER}-slim-${DEBIAN_DIST} AS base
+ARG INSTALL_LIBREOFFICE
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
     HOME=/app \
@@ -62,15 +72,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       libgdk-pixbuf-xlib-2.0-0 \
       libffi-dev \
       libgl1 \
-      libreoffice \
       ffmpeg \
       unzip \
-      openjdk-21-jre-headless  \
-      ca-certificates-java  \
-      libreoffice-java-common \
-      libreoffice-writer \
-      libreoffice-impress \
-      libreoffice-l10n-ko \
       fonts-dejavu \
       fonts-noto-cjk \
       fonts-noto-cjk-extra \
@@ -81,6 +84,19 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       tesseract-ocr-eng \
       tesseract-ocr-kor \
       sudo \
+    && if [ "${INSTALL_LIBREOFFICE}" = "true" ]; then \
+         echo "[INFO] INSTALL_LIBREOFFICE=true — installing LibreOffice + Java stack" && \
+         apt-get install -y --no-install-recommends \
+           libreoffice \
+           libreoffice-java-common \
+           libreoffice-writer \
+           libreoffice-impress \
+           libreoffice-l10n-ko \
+           openjdk-21-jre-headless \
+           ca-certificates-java; \
+       else \
+         echo "[INFO] INSTALL_LIBREOFFICE=false — skipping LibreOffice/Java (이슈 #286)"; \
+       fi \
     && apt-get install -y --no-install-recommends --only-upgrade \
       imagemagick \
       imagemagick-7.q16 \
@@ -97,16 +113,22 @@ RUN sed -i 's/# \(ko_KR.UTF-8\)/\1/' /etc/locale.gen \
 ############################
 FROM base AS loext
 ARG H2ORESTART_URL
+ARG INSTALL_LIBREOFFICE
 COPY ./genon/preprocessor/resources /app
+# H2Orestart 는 LibreOffice 확장이라 LibreOffice 미설치 시 단계 자체를 건너뛴다 (이슈 #286)
 RUN --mount=type=cache,target=/opt/h2o_cache \
     set -eux; \
-    mkdir -p /opt/h2orestart /usr/lib/libreoffice/share/extensions/h2orestart; \
-    if [ ! -f /opt/h2o_cache/H2Orestart.oxt ]; then \
-      wget -O /opt/h2o_cache/H2Orestart.oxt "${H2ORESTART_URL}"; \
-    fi; \
-    cp /opt/h2o_cache/H2Orestart.oxt /opt/h2orestart/H2Orestart.oxt; \
-    unzip -q -o /opt/h2orestart/H2Orestart.oxt -d /usr/lib/libreoffice/share/extensions/h2orestart; \
-    soffice --headless --nologo --nodefault --nofirststartwizard --terminate_after_init
+    if [ "${INSTALL_LIBREOFFICE}" = "true" ]; then \
+      mkdir -p /opt/h2orestart /usr/lib/libreoffice/share/extensions/h2orestart; \
+      if [ ! -f /opt/h2o_cache/H2Orestart.oxt ]; then \
+        wget -O /opt/h2o_cache/H2Orestart.oxt "${H2ORESTART_URL}"; \
+      fi; \
+      cp /opt/h2o_cache/H2Orestart.oxt /opt/h2orestart/H2Orestart.oxt; \
+      unzip -q -o /opt/h2orestart/H2Orestart.oxt -d /usr/lib/libreoffice/share/extensions/h2orestart; \
+      soffice --headless --nologo --nodefault --nofirststartwizard --terminate_after_init; \
+    else \
+      echo "[INFO] INSTALL_LIBREOFFICE=false — skipping H2Orestart extension (이슈 #286)"; \
+    fi
 RUN set -eux; \
     mkdir -p /usr/share/fonts && \
     tar zxf /app/HCRBatang.ttf.tar.gz -C /usr/share/fonts/ && \
@@ -275,8 +297,13 @@ RUN --mount=type=cache,target=${HF_HOME} \
 # genonai/genos-rhwp 를 clone 해서 Rust multi-stage 로 빌드 후 rhwp 바이너리만
 # runtime 으로 COPY. Python 측은 subprocess 로 `/usr/local/bin/rhwp export-pdf` 호출.
 # Cargo cache mount 로 incremental build, 의존성 다운로드는 처음 1회만 무거움.
+#
+# 이슈 #286 — INSTALL_RHWP=false 면 stage alias 가 rhwp_builder_false(빈 산출물)로
+# 잡혀 Rust 빌드 자체를 건너뛴다. 두 stage 모두 /rhwp_out/ 디렉토리를 만들고,
+# runtime 은 그 "내용"을 /usr/local/bin/ 로 복사하므로 off 일 때는 아무것도 안 들어간다
+# (→ rhwp_available() == False → chain 에서 자동 제외).
 ############################
-FROM rust:latest AS rhwp_builder
+FROM rust:latest AS rhwp_builder_true
 ARG RHWP_GIT_URL
 ARG RHWP_GIT_REF
 WORKDIR /src
@@ -287,7 +314,15 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/src/target \
     cargo build --release --bin rhwp \
- && cp /src/target/release/rhwp /usr/local/bin/rhwp
+ && mkdir -p /rhwp_out \
+ && cp /src/target/release/rhwp /rhwp_out/rhwp
+
+# INSTALL_RHWP=false 일 때 선택되는 경량 stage (Rust 빌드 없이 빈 디렉토리만)
+FROM base AS rhwp_builder_false
+RUN mkdir -p /rhwp_out
+
+# INSTALL_RHWP(true|false) 값으로 위 두 stage 중 하나를 선택
+FROM rhwp_builder_${INSTALL_RHWP} AS rhwp_builder
 
 ############################
 # 4-3) 모델 아티팩트
@@ -395,7 +430,8 @@ COPY --from=sdk_artifacts /app/hwp_sdk /app/hwp_sdk
 COPY --from=pdf_sdk_artifacts /app/pdf_sdk /app/pdf_sdk
 
 # 🔴 rhwp 바이너리 (이슈 #199 후속 — 컨테이너 내 바이너리, subprocess 호출)
-COPY --from=rhwp_builder /usr/local/bin/rhwp /usr/local/bin/rhwp
+# 이슈 #286 — /rhwp_out/ 내용을 복사. INSTALL_RHWP=false 면 빈 디렉토리라 아무것도 안 들어감.
+COPY --from=rhwp_builder /rhwp_out/ /usr/local/bin/
 
 # 추가 폰트 설치
 COPY --from=font_artifacts /app/extra_fonts /usr/share/fonts/additional

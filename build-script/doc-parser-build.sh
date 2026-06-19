@@ -28,6 +28,8 @@ IMAGE_NAME="${IMAGE_NAME:-doc-parser-preprocessor}"
 IMAGE_VERSION="${IMAGE_VERSION:-latest}"
 BUILD_VARIANT="${BUILD_VARIANT:-}"
 HW_VARIANT="${HW_VARIANT:-}"
+INSTALL_LIBREOFFICE="${INSTALL_LIBREOFFICE:-true}"
+INSTALL_RHWP="${INSTALL_RHWP:-true}"
 APP_UID="${APP_UID:-1000}"
 APP_GID="${APP_GID:-1000}"
 APP_UNAME="${APP_UNAME:-genos}"
@@ -77,6 +79,32 @@ case "${HW_VARIANT}" in
     ;;
 esac
 
+# INSTALL_LIBREOFFICE / INSTALL_RHWP 분기 (이슈 #286 — rhwp/LibreOffice 설치 on/off)
+# Dockerfile 의 stage alias(rhwp_builder_${INSTALL_RHWP})·shell 조건이 정확히 true/false 를
+# 기대하므로 다른 값은 즉시 에러 처리한다.
+case "${INSTALL_LIBREOFFICE}" in
+  true|false) ;;
+  *)
+    echo "[ERROR] INSTALL_LIBREOFFICE 는 true 또는 false 만 허용됩니다 (현재: '${INSTALL_LIBREOFFICE}')."
+    exit 1
+    ;;
+esac
+case "${INSTALL_RHWP}" in
+  true|false) ;;
+  *)
+    echo "[ERROR] INSTALL_RHWP 는 true 또는 false 만 허용됩니다 (현재: '${INSTALL_RHWP}')."
+    exit 1
+    ;;
+esac
+
+# standard 에서 rhwp/LibreOffice 를 둘 다 끄면 변환 backend 가 0개 → PDF 입력만 처리 가능.
+# (synap 은 PDF SDK 가 남아 있으므로 해당 없음.) 의도된 구성일 수 있으니 막지 않고 경고만.
+if [[ "${BUILD_VARIANT}" == "standard" && "${INSTALL_LIBREOFFICE}" == "false" && "${INSTALL_RHWP}" == "false" ]]; then
+  echo "[WARN] standard + INSTALL_LIBREOFFICE=false + INSTALL_RHWP=false 조합입니다."
+  echo "[WARN] 이 이미지는 HWP/오피스 → PDF 변환 backend 가 전혀 없습니다. PDF 입력만 정상 처리됩니다."
+  echo "[WARN] HWP/오피스 입력은 'PDF 직접 입력' 안내와 함께 실패합니다 (의도된 구성이면 무시)."
+fi
+
 # 최종 이미지 태그 (이슈 #236)
 # 기본 조합(cpu + standard)은 가장 기본 산출물이므로 접미사 없이 ${IMAGE_VERSION} 만 사용.
 # 그 외 조합은 hw 먼저, variant 나중 순서로 접미사: ${IMAGE_VERSION}-${HW_VARIANT}-${BUILD_VARIANT}
@@ -90,6 +118,8 @@ fi
 echo "[INFO] ROOT_DIR        = ${ROOT_DIR}"
 echo "[INFO] BUILD_VARIANT   = ${BUILD_VARIANT}"
 echo "[INFO] HW_VARIANT      = ${HW_VARIANT}"
+echo "[INFO] INSTALL_LIBREOFFICE = ${INSTALL_LIBREOFFICE}"
+echo "[INFO] INSTALL_RHWP        = ${INSTALL_RHWP}"
 echo "[INFO] DOCKERFILE_PATH = ${DOCKERFILE_PATH}"
 echo "[INFO] IMAGE_TAG       = ${IMAGE_TAG}"
 echo "[INFO] UID:GID         = ${APP_UID}:${APP_GID} (${APP_UNAME}:${APP_GNAME})"
@@ -129,6 +159,8 @@ DOCKER_BUILDKIT=1 docker build \
   -t "${IMAGE_TAG}" \
   "${SECRET_ARGS[@]}" \
   --build-arg HW_VARIANT="${HW_VARIANT}" \
+  --build-arg INSTALL_LIBREOFFICE="${INSTALL_LIBREOFFICE}" \
+  --build-arg INSTALL_RHWP="${INSTALL_RHWP}" \
   --build-arg TORCH_CPU_INDEX_URL="${TORCH_CPU_INDEX_URL}" \
   --build-arg UID="${APP_UID}" \
   --build-arg GID="${APP_GID}" \

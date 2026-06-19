@@ -58,6 +58,25 @@ def _is_pdf(file_path: str) -> bool:
         return False
 
 
+def _has_any_pdf_converter() -> bool:
+    """PDF 변환 backend(pdf_sdk / rhwp / libreoffice) 가 하나라도 가용한지 확인 (이슈 #286).
+
+    빌드 시 INSTALL_LIBREOFFICE / INSTALL_RHWP 를 끄거나 PDF SDK 미포함(standard)이면
+    변환 backend 가 0개가 될 수 있다. 이때 비-PDF 입력을 변환 시도하면 무조건 실패하므로,
+    호출부에서 "PDF 로 직접 입력" 안내를 주기 위한 판별 헬퍼.
+    가용성 판단 자체가 불가하면(import 실패 등) True 를 반환해 기존 동작을 유지한다.
+    """
+    try:
+        from genon.preprocessor.converters.hwp_to_pdf.availability import (
+            libreoffice_available,
+            pdf_sdk_available,
+            rhwp_available,
+        )
+        return bool(pdf_sdk_available() or rhwp_available() or libreoffice_available())
+    except Exception:
+        return True
+
+
 # docling imports
 
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
@@ -2689,6 +2708,16 @@ class DocumentProcessor:
         # - auto_convert_to_pdf=False: 변환 없이 그대로 진행 (변경 전 동작; PDF 가정)
         converted_pdf_path: Optional[str] = None
         if kwargs.get('auto_convert_to_pdf', True) and not _is_pdf(file_path):
+            # 변환 backend(pdf_sdk/rhwp/libreoffice)가 전무하면(이슈 #286 — 빌드 시 OFF)
+            # 변환 시도 자체가 무의미하므로, PDF 직접 입력을 안내하며 즉시 중단한다.
+            if not _has_any_pdf_converter():
+                raise GenosServiceException(
+                    1,
+                    f"이 전처리기 이미지에는 PDF 변환기(rhwp/LibreOffice/PDF SDK)가 설치되어 "
+                    f"있지 않아 '{os.path.basename(file_path)}' 를 PDF 로 변환할 수 없습니다. "
+                    f"PDF 로 변환한 파일을 입력하거나, 변환기를 포함해 전처리기 이미지를 다시 "
+                    f"빌드하세요 (genon/README.md 참고).",
+                )
             _log.info(f"[intelligent] Non-PDF input — auto-converting to PDF: {file_path}")
             use_sdk = kwargs.get('use_pdf_sdk', True)
             converted = convert_to_pdf(file_path, use_pdf_sdk=use_sdk)

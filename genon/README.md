@@ -125,6 +125,22 @@
      ```
      - 비워둔 채 `doc-parser-build.sh` 를 실행하면 즉시 에러로 중단된다.
 
+### A-2. (선택) rhwp / LibreOffice 제외 빌드 (이슈 [#286](https://github.com/genonai/doc_parser/issues/286))
+
+특정 사이트(예: 한국은행)는 정책상 rhwp · LibreOffice 를 이미지에 넣지 않기를 요구한다. 이 경우 [`doc-parser-build.config`](../build-script/doc-parser-build.config) 의 두 플래그를 끄고 **이미지를 새로 빌드**한다 (이미 빌드된 운영 이미지에는 두 패키지가 포함돼 있으므로, 제외하려면 재빌드가 필수다).
+
+```bash
+# build-script/doc-parser-build.config
+INSTALL_LIBREOFFICE=false   # 기본 true. false 면 LibreOffice + Java + H2Orestart 미설치
+INSTALL_RHWP=false          # 기본 true. false 면 rhwp 바이너리(Rust 빌드 stage) 미포함
+```
+
+- 둘 다 `true`(기본)면 기존과 동일하다. `true` / `false` 외의 값은 빌드가 즉시 에러로 중단된다.
+- **동작 영향** — HWP/오피스 → PDF 변환은 가용한 backend 만 자동 등록된다 (미설치 backend 는 graceful 제외).
+  - **`standard` + 둘 다 `false`** → 변환 backend 가 0개. **PDF 입력만** 처리 가능하고, HWP/오피스 입력은 *"PDF 로 직접 입력하라"* 안내와 함께 실패한다. (한국은행 케이스)
+  - **`synap`** 은 PDF SDK 가 비-HWP 변환의 1순위라, 둘 다 꺼도 docx/ppt 등은 PDF SDK 로 변환된다 (HWP/HWPX 는 PDF SDK 만으로 처리).
+- ⚠️ 이 두 플래그는 **이미지 태그에 반영되지 않는다**. 패키지를 끈 특수 이미지는 `IMAGE_VERSION` 에 식별자(예: `1.3.6.3-nooffice`)를 붙여 운영 이미지와 구분할 것.
+
 ### B. 이미지 빌드 (4~5번)
 
 4. [doc-parser-build.config](../build-script/doc-parser-build.config) 에 기타 변경 사항 반영 (1·2번을 수행했다면 `HWP_SDK_TOKEN` / `PDF_SDK_TOKEN` 값은 직접 입력하지 말 것)
