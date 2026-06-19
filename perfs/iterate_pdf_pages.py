@@ -11,12 +11,17 @@ import os
 import sys
 import time
 from collections.abc import Iterator
+from enum import IntEnum
 from pathlib import Path
 from typing import Any
 
 import psutil
-from docling_parse.pdf_parser import PageMaterializationConfig, RenderConfig
-from docling_parse.pdf_parsers import DecodePageConfig
+from docling_parse.pdf_parser import (
+    DecodeConfig,
+    PageContentConfig,
+    PageItemLevel,
+    RenderConfig,
+)
 
 from docling.backend.docling_parse_backend import ThreadedDoclingParseDocumentBackend
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
@@ -239,23 +244,26 @@ def _format_config_table(rows: list[tuple[str, object]]) -> str:
 
 def _make_display_decode_config(
     release_native_memory_every_n_pages: int,
-) -> DecodePageConfig:
-    config = DecodePageConfig()
-    config.keep_char_cells = True
-    config.keep_shapes = True
-    config.keep_bitmaps = True
-    config.create_word_cells = True
-    config.create_line_cells = True
-    config.enforce_same_font = True
-    config.release_native_memory_every_n_pages = release_native_memory_every_n_pages
+) -> DecodeConfig:
+    return DecodeConfig(
+        enforce_same_font=True,
+        release_native_memory_every_n_pages=release_native_memory_every_n_pages,
+    )
 
-    # docling-parse moved this setting between config objects across versions.
-    try:
-        config.materialize_bitmap_bytes = False
-    except AttributeError:
-        pass
 
-    return config
+def _make_display_content_config() -> PageContentConfig:
+    return PageContentConfig(
+        char_cells=PageItemLevel.COMPUTE,
+        word_cells=PageItemLevel.MATERIALIZE,
+        line_cells=PageItemLevel.MATERIALIZE,
+        shapes=PageItemLevel.SKIP,
+        bitmaps=PageItemLevel.MATERIALIZE,
+        include_bitmap_bytes=False,
+    )
+
+
+def _display_level(level: IntEnum) -> str:
+    return level.name.lower()
 
 
 def _log_docling_parse_config(
@@ -270,13 +278,7 @@ def _log_docling_parse_config(
     decode_config = _make_display_decode_config(
         release_native_memory_every_n_pages=release_native_memory_every_n_pages,
     )
-    materialization_config = PageMaterializationConfig()
-    materialization_config.materialize_char_cells = False
-    materialization_config.materialize_word_cells = True
-    materialization_config.materialize_line_cells = True
-    materialization_config.materialize_shapes = False
-    materialization_config.materialize_bitmaps = True
-    materialization_config.materialize_bitmap_bytes = False
+    content_config = _make_display_content_config()
     render_config = RenderConfig()
     render_config.scale = scale
 
@@ -288,15 +290,9 @@ def _log_docling_parse_config(
         "Decode config:\n%s",
         _format_config_table(
             [
-                ("page_boundary", decode_config.page_boundary),
                 ("do_sanitization", decode_config.do_sanitization),
-                ("keep_char_cells", decode_config.keep_char_cells),
-                ("keep_shapes", decode_config.keep_shapes),
-                ("keep_bitmaps", decode_config.keep_bitmaps),
                 ("max_num_lines", decode_config.max_num_lines),
                 ("max_num_bitmaps", decode_config.max_num_bitmaps),
-                ("create_word_cells", decode_config.create_word_cells),
-                ("create_line_cells", decode_config.create_line_cells),
                 ("enforce_same_font", decode_config.enforce_same_font),
                 (
                     "horizontal_cell_tolerance",
@@ -325,27 +321,15 @@ def _log_docling_parse_config(
         ),
     )
     _log.info(
-        "Materialization config:\n%s",
+        "Content config:\n%s",
         _format_config_table(
             [
-                (
-                    "materialize_char_cells",
-                    materialization_config.materialize_char_cells,
-                ),
-                (
-                    "materialize_word_cells",
-                    materialization_config.materialize_word_cells,
-                ),
-                (
-                    "materialize_line_cells",
-                    materialization_config.materialize_line_cells,
-                ),
-                ("materialize_shapes", materialization_config.materialize_shapes),
-                ("materialize_bitmaps", materialization_config.materialize_bitmaps),
-                (
-                    "materialize_bitmap_bytes",
-                    materialization_config.materialize_bitmap_bytes,
-                ),
+                ("char_cells", _display_level(content_config.char_cells)),
+                ("word_cells", _display_level(content_config.word_cells)),
+                ("line_cells", _display_level(content_config.line_cells)),
+                ("shapes", _display_level(content_config.shapes)),
+                ("bitmaps", _display_level(content_config.bitmaps)),
+                ("include_bitmap_bytes", content_config.include_bitmap_bytes),
             ]
         ),
     )
