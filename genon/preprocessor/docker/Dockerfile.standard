@@ -386,6 +386,13 @@ ENV UV_PROJECT_ENVIRONMENT=${APP_VENV} \
     DOC_PARSER_BUILD_VARIANT=standard \
     RHWP_BIN=/usr/local/bin/rhwp
 
+# 이슈 #286 — 빌드 시 rhwp/LibreOffice 설치 여부를 이미지에 self-describing 으로 기록.
+# 태그 접미사(-nolibre/-norhwp)와 별개로 `docker inspect` 로도 확인 가능.
+ARG INSTALL_LIBREOFFICE
+ARG INSTALL_RHWP
+LABEL ai.genon.install.libreoffice="${INSTALL_LIBREOFFICE}" \
+      ai.genon.install.rhwp="${INSTALL_RHWP}"
+
 WORKDIR /app
 COPY ./genon/preprocessor/configs /app/configs
 COPY ./genon/preprocessor/env /app/env
