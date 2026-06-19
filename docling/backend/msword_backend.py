@@ -486,16 +486,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Check for the sdt containers, like table of contents
             elif tag_name == "sdt":
                 sdt_content = element.find(
-                    ".//w:sdtContent", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                    "./w:sdtContent", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
                 )
                 if sdt_content is not None:
-                    # Iterate paragraphs, runs, or text inside <w:sdtContent>.
-                    paragraphs = sdt_content.findall(
-                        ".//w:p", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-                    )
-                    for p in paragraphs:
-                        te = self._handle_text_elements(p, doc)
-                        added_elements.extend(te)
+                    _, sdt_elements = self._walk_linear(sdt_content, doc)
+                    added_elements.extend(sdt_elements)
             # Check for Text
             elif tag_name == "p":
                 # "tcPr", "sectPr"
