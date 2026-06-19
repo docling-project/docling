@@ -113,3 +113,44 @@ def test_rapidocr_model_initialization_uses_mobile_default_paths(
     assert Path(params["Rec.model_path"]).name == rec_name
     assert Path(params["Rec.rec_keys_path"]).name == "ppocr_keys_v1.txt"
     assert Path(params["Global.font_path"]).name == "FZYTK.TTF"
+
+
+@pytest.mark.parametrize(
+    ("backend", "engine_key"),
+    [
+        ("onnxruntime", "EngineConfig.onnxruntime.intra_op_num_threads"),
+        ("openvino", "EngineConfig.openvino.inference_num_threads"),
+    ],
+)
+def test_rapidocr_num_threads_propagated_per_engine(
+    monkeypatch: pytest.MonkeyPatch,
+    backend: str,
+    engine_key: str,
+):
+    captured: dict[str, object] = {}
+
+    class FakeEngineType(str, Enum):
+        ONNXRUNTIME = "onnxruntime"
+        OPENVINO = "openvino"
+        PADDLE = "paddle"
+        TORCH = "torch"
+
+    class FakeRapidOCR:
+        def __init__(self, params):
+            captured["params"] = params
+
+    monkeypatch.setitem(
+        sys.modules,
+        "rapidocr",
+        SimpleNamespace(EngineType=FakeEngineType, RapidOCR=FakeRapidOCR),
+    )
+
+    RapidOcrModel(
+        enabled=True,
+        artifacts_path=None,
+        options=RapidOcrOptions(backend=backend),
+        accelerator_options=AcceleratorOptions(device="cpu", num_threads=4),
+    )
+
+    # num_threads must reach the engine actually in use, not only ONNXRuntime.
+    assert captured["params"][engine_key] == 4
