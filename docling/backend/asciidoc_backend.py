@@ -368,8 +368,10 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         # Drop cell specifiers glued to a "|" (e.g. "^.^h"); anchored to
         # whitespace so content ending in a style letter (e.g. "Eth") survives.
         line = re.sub(rf"(^|\s){_CELL_SPEC}(?=\|)", r"\1", line)
-        # Split table cells and trim extra spaces
-        return [cell.strip() for cell in line.split("|") if cell.strip()]
+        # Split by "|" and remove the leading empty string from the first "|"
+        cells = line.split("|")[1:]
+        # Strip whitespace from each cell (empty cells become empty strings)
+        return [cell.strip() for cell in cells]
 
     @staticmethod
     def _populate_table_as_grid(table_data):
