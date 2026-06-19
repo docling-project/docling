@@ -103,9 +103,8 @@ def test_verify_docitems_rejects_picture_count_mismatch():
 
 
 def test_verify_docitems_uses_predicted_picture_image() -> None:
-    """Test that image size mismatches are detected."""
-    doc_true = _make_doc_with_picture(image_size=(10, 10))
-    doc_pred = _make_doc_with_picture(image_size=(15, 10))  # 5 pixel difference
+    doc_true = _make_doc_with_picture(image_size=(2, 2))
+    doc_pred = _make_doc_with_picture(image_size=(3, 2))
 
     with pytest.raises(AssertionError, match="Image width mismatch"):
         verify_docitems(
@@ -120,35 +119,60 @@ def test_verify_docitems_uses_predicted_picture_image() -> None:
     "true_size,pred_size,fuzzy,should_pass,expected_error",
     [
         # Strict mode (fuzzy=False): tolerance is 1.5% of image dimension
-        # For 254x267 image: width_tol=3.8px, height_tol=4px
+        # For 254x267 image: 3px = 1.18% width, 4px = 1.50% height
+        ((254, 267), (251, 267), False, True, None),  # 3px = 1.18% width: passes
         (
             (254, 267),
-            (251, 267),
+            (250, 267),
             False,
-            True,
-            None,
-        ),  # 3px width diff: passes (within 1.5%)
-        ((254, 267), (250, 267), False, False, "Image width mismatch"),  # 4px: fails
+            False,
+            "Image width mismatch",
+        ),  # 4px = 1.57%: fails
         (
             (254, 267),
             (254, 263),
             False,
             True,
             None,
-        ),  # 4px height diff: passes (within 1.5%)
-        ((254, 267), (254, 262), False, False, "Image height mismatch"),  # 5px: fails
+        ),  # 4px = 1.50% height: passes (at boundary)
+        (
+            (254, 267),
+            (254, 262),
+            False,
+            False,
+            "Image height mismatch",
+        ),  # 5px = 1.87%: fails
         # Fuzzy mode (fuzzy=True): tolerance is 5% of image dimension
-        # For 254x267 image: width_tol=12px, height_tol=13px
-        ((254, 267), (242, 254), True, True, None),  # 12-13px diff: passes (within 5%)
-        ((254, 267), (241, 267), True, False, "Image width mismatch"),  # 13px: fails
-        ((254, 267), (254, 253), True, False, "Image height mismatch"),  # 14px: fails
-        # Small images should have at least 1 pixel tolerance
-        ((10, 10), (9, 9), False, True, None),  # 1px diff on small image: passes
+        # For 254x267 image: 12px = 4.72% width, 13px = 4.87% height
+        ((254, 267), (242, 254), True, True, None),  # 12-13px = ~4.7-4.9%: passes
+        (
+            (254, 267),
+            (241, 267),
+            True,
+            False,
+            "Image width mismatch",
+        ),  # 13px = 5.12%: fails
+        (
+            (254, 267),
+            (254, 253),
+            True,
+            False,
+            "Image height mismatch",
+        ),  # 14px = 5.24%: fails
+        # Small images: percentage-based tolerance is precise
+        (
+            (10, 10),
+            (9, 9),
+            False,
+            False,
+            "Image width mismatch",
+        ),  # 1px = 10%: fails (>> 1.5%)
+        ((100, 100), (99, 99), False, True, None),  # 1px = 1%: passes (< 1.5%)
     ],
 )
 def test_verify_docitems_image_size_fuzziness(
-    true_size: tuple(int, int),
-    pred_size: tuple(int, int),
+    true_size: tuple[int, int],
+    pred_size: tuple[int, int],
     fuzzy: bool,
     should_pass: bool,
     expected_error: str | None,

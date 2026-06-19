@@ -197,20 +197,20 @@ def verify_picture_image_v2(
     true_width, true_height = true_image.size
     pred_width, pred_height = pred_item.size
 
-    # Calculate tolerance based on the true image dimensions
-    width_tol = max(1, int(true_width * tol_ratio))
-    height_tol = max(1, int(true_height * tol_ratio))
-
     width_diff = abs(true_width - pred_width)
     height_diff = abs(true_height - pred_height)
 
-    assert width_diff <= width_tol, (
+    # Calculate actual percentage differences
+    width_diff_ratio = width_diff / true_width if true_width > 0 else 0
+    height_diff_ratio = height_diff / true_height if true_height > 0 else 0
+
+    assert width_diff_ratio <= tol_ratio, (
         f"Image width mismatch: {true_width} vs {pred_width} "
-        f"(diff: {width_diff}, tol: {width_tol} [{tol_ratio:.1%}])"
+        f"(diff: {width_diff} pixels, {width_diff_ratio:.1%} vs tolerance {tol_ratio:.1%})"
     )
-    assert height_diff <= height_tol, (
+    assert height_diff_ratio <= tol_ratio, (
         f"Image height mismatch: {true_height} vs {pred_height} "
-        f"(diff: {height_diff}, tol: {height_tol} [{tol_ratio:.1%}])"
+        f"(diff: {height_diff} pixels, {height_diff_ratio:.1%} vs tolerance {tol_ratio:.1%})"
     )
 
     return True
