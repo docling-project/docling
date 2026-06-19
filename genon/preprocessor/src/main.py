@@ -117,6 +117,40 @@ async def parse(
     return make_success_response(data=data)
 
 
+@app.post('/chunker')
+async def chunker(
+        request: Request,
+        file_path: str = Body(default='', embed=True),
+        params: dict = Body(default_factory=dict)
+):
+    if not getattr(processor, 'IS_CHUNKER', False):
+        return JSONResponse(
+            {'code': 1,
+             'errMsg': '현재 설치된 전처리기는 /chunker API를 지원하지 않습니다.',
+             'data': None,
+             'error_code': 1,
+             'error_msg': '현재 설치된 전처리기는 /chunker API를 지원하지 않습니다.'},
+            status_code=200)
+    pt = time.time()
+    try:
+        logger.info('[chunker] Start')
+        # 앞단계(파싱) 결과 docling JSON 은 params["document"] 로 인라인 전달된다.
+        data = await processor(request, file_path, **params)
+        logger.info('[chunker] Success')
+    except GenosServiceException as e:
+        logger.error(f'[chunker] Error\n{traceback.format_exc()}\n')
+        return JSONResponse(
+            {'code': 1, 'errMsg': e.error_msg, 'data': None,
+             'error_code': e.error_code, 'error_msg': e.error_msg},
+            status_code=200)
+    except Exception as e:
+        logger.error(f'[chunker] Error\n{traceback.format_exc()}\n')
+        return make_failure_response(str(e))
+    finally:
+        logger.info(f'[chunker] End ({time.time() - pt:.2f} seconds)')
+    return make_success_response(data=data)
+
+
 if __name__ == '__main__':
     import uvicorn
 

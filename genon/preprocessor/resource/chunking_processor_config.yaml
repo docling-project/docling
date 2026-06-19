@@ -1,0 +1,28 @@
+# 청킹 전용 전처리기(Chunk API, /chunker) 설정 — 모니모 GenOS Temporal 파이프라인 #284
+#
+# 이 facade(chunking_processor.py)는 파싱(docling) 결과를 입력으로 받아 청킹만 수행한다.
+# 파싱/로딩/OCR/레이아웃/enrichment 는 앞단계(파싱 Activity)에서 이미 끝났으므로
+# 여기서는 호출되지 않는다. 따라서 ocr/layout/pdf_pipeline/enrichment 섹션은 두지 않으며,
+# 미설정 시 코드 기본값으로 안전하게 폴백된다.
+
+defaults:
+  # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
+  log_level: 4
+
+# 청킹(GenosSmartChunker) 설정
+chunking:
+  # 청크 최대 크기(max_tokens). char 모드면 "최대 문자 수", huggingface 모드면 "최대 토큰 수".
+  # 우선순위: 호출 kwargs 의 chunk_size > 아래 chunk_size. 0 = 토큰/문자 기반 분할 안 함.
+  chunk_size: 0
+  # 토큰 수 계산 방식. "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
+  tokenizer_type: "char"
+  # 청킹용 토크나이저(huggingface 모드에서만 사용). tokenizer_path 가 실제 존재하면 그 경로,
+  # 없으면 tokenizer_id(HF) 로 폴백 (외부 네트워크 차단 환경 대비)
+  tokenizer_path: "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
+  tokenizer_id: "sentence-transformers/all-MiniLM-L6-v2"
+
+# table_image
+# 표를 이미지로 잘라 저장하고 media_files 에 type='table_image' 로 기록할지 여부.
+# 청킹 단계에서는 입력 docling 문서에 이미 들어있는 이미지/표 참조를 활용한다.
+table_image:
+  enable: false

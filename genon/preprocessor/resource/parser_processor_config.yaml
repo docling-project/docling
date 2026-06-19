@@ -119,8 +119,9 @@ enrichment:
       prompt_template_file: prompt_image_description_default.md
 
 output:
-  format: "json" # "json" (default), "html", "markdown"
-  table_format: "html" # "html" (default), "markdown"
+  format: "json" # "json" (default), "html", "markdown", "docling"
+  # "docling": 복원 가능한 DoclingDocument 원본 JSON 을 data.document 로 반환(Chunk API 입력용)
+  table_format: "html" # "html" (default), "markdown"  ("docling" 포맷에서는 무시)
 
 # whisper 설정. 음성(.wav/.mp3/.m4a) 처리 시에만 필요(선택).
 # <WHISPER_ENDPOINT>: 음성인식 모델 서버 주소로 변경 필요 (음성 미사용 시 무시)
