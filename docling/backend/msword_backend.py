@@ -53,10 +53,10 @@ _log = logging.getLogger(__name__)
 
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
     """Backend for parsing Microsoft Word (.docx) documents.
-    
+
     Note:
-        Images with a total area (width * height) less than or equal to 
-        `SPACER_IMAGE_AREA_THRESHOLD` (default: 25px) are considered layout 
+        Images with a total area (width * height) less than or equal to
+        `SPACER_IMAGE_AREA_THRESHOLD` (default: 25px) are considered layout
         artifacts (such as invisible spacers) and are discarded during parsing.
     """
 
@@ -76,7 +76,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         "w14": "http://schemas.microsoft.com/office/word/2010/wordml",
     }
 
-    SPACER_IMAGE_AREA_THRESHOLD: Final[int] = 25  # Images with an area (w*h) below this are dropped as layout artifacts
+    SPACER_IMAGE_AREA_THRESHOLD: Final[int] = (
+        25  # Images with an area (w*h) below this are dropped as layout artifacts
+    )
 
     @override
     def __init__(self, in_doc: "InputDocument", path_or_stream: BytesIO | Path) -> None:
