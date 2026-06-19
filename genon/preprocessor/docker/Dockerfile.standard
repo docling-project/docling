@@ -50,6 +50,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TMPDIR=/app/tmp \
     HF_HOME=/app/.cache/huggingface \
     NLTK_DATA=/app/nltk_data
+# systemd-standalone-tmpfiles: sudo(sid) 가 `systemd | systemd-standalone-tmpfiles |
+# systemd-tmpfiles` 를 요구하는데, 명시하지 않으면 apt 가 풀 systemd 를 끌어와
+# 빌드 컨테이너에서 postinst 가 실패한다(/etc/machine-id, "Failed to enable units").
+# 컨테이너 친화적 standalone 변형을 미리 깔아 풀 systemd 설치를 회피한다.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     echo "deb http://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/sid.list && \
@@ -83,6 +87,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       tesseract-ocr-eng \
       tesseract-ocr-kor \
       sudo \
+      systemd-standalone-tmpfiles \
     && if [ "${INSTALL_LIBREOFFICE}" = "true" ]; then \
          echo "[INFO] INSTALL_LIBREOFFICE=true — installing LibreOffice + Java stack" && \
          apt-get install -y --no-install-recommends \
