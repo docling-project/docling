@@ -101,8 +101,10 @@ esac
 # (synap 은 PDF SDK 가 남아 있으므로 해당 없음.) 의도된 구성일 수 있으니 막지 않고 경고만.
 if [[ "${BUILD_VARIANT}" == "standard" && "${INSTALL_LIBREOFFICE}" == "false" && "${INSTALL_RHWP}" == "false" ]]; then
   echo "[WARN] standard + INSTALL_LIBREOFFICE=false + INSTALL_RHWP=false 조합입니다."
-  echo "[WARN] 이 이미지는 HWP/오피스 → PDF 변환 backend 가 전혀 없습니다. PDF 입력만 정상 처리됩니다."
-  echo "[WARN] HWP/오피스 입력은 'PDF 직접 입력' 안내와 함께 실패합니다 (의도된 구성이면 무시)."
+  echo "[WARN] 이 이미지에는 HWP/오피스 → PDF 변환 backend 가 전혀 없습니다. 영향은 전처리기별로 다릅니다:"
+  echo "[WARN]   - 적재형(지능형): 비-PDF 입력은 내부 PDF 변환이 필요 → 처리 불가. PDF 로 변환된 문서를 입력해야 함."
+  echo "[WARN]   - 첨부형/변환형/파싱형: HWP 는 내장 HWP SDK, docx/ppt 는 원본을 직접 파싱하므로 동작(영향 적음)."
+  echo "[WARN]   (의도된 구성이면 무시)"
 fi
 
 # 최종 이미지 태그 (이슈 #236)

@@ -29,7 +29,9 @@ PDF SDK의 사용 여부에 따라 `standard` 또는 `synap`로 분리됨.
 | `INSTALL_LIBREOFFICE` | LibreOffice + Java apt 패키지, H2Orestart 확장(`loext` 단계) 미설치 |
 | `INSTALL_RHWP` | rhwp 바이너리 미포함. `rhwp_builder_${INSTALL_RHWP}` stage alias 로 분기해 **Rust 빌드 stage 자체를 건너뜀** (`false` → 빈 `/rhwp_out/` 만 복사) |
 
-- 미설치 backend 는 런타임 chain 에서 자동 제외된다(아래 가용성 판정 참조). `standard` 에서 둘 다 `false` 면 변환 backend 가 0개라 **PDF 입력만** 처리 가능 — 비-PDF 입력은 facade(`intelligent_processor`)가 "PDF 직접 입력" 안내와 함께 실패시킨다.
+- 미설치 backend 는 런타임 chain 에서 자동 제외된다(아래 가용성 판정 참조). `standard` 에서 둘 다 `false` 면 변환 backend 가 0개가 되며, 영향은 전처리기별로 다르다:
+  - 적재형(지능형) — 비-PDF 입력을 내부 PDF 변환 후 파싱하므로 처리 불가 → "PDF 직접 입력/재빌드" 안내와 함께 실패.
+  - 첨부형/변환형/파싱형 — HWP 는 내장 HWP SDK, docx/ppt 는 원본 직접 파싱이라 변환 backend 없이도 동작(영향 적음).
 - `synap` 은 PDF SDK 가 남아 docx/ppt 등은 계속 변환된다.
 - ⚠️ 두 플래그는 이미지 태그에 반영되지 않으니, 끈 이미지는 `IMAGE_VERSION` 에 식별자를 붙여 구분한다. 설정/빌드 절차는 [`../../README.md` "A-2. (선택) rhwp / LibreOffice 제외 빌드"](../../README.md#a-2-선택-rhwp--libreoffice-제외-빌드-이슈-286) 참고.
 
