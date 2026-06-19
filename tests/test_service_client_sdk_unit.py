@@ -105,6 +105,7 @@ def _convert_payload(source_name: str) -> SimpleNamespace:
         status=ConversionStatus.SUCCESS,
         errors=[],
         timings={},
+        confidence=None,
         document=SimpleNamespace(
             filename=None,
             json_content=DoclingDocument(name=PurePath(source_name).stem),
