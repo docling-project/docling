@@ -50,14 +50,16 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TMPDIR=/app/tmp \
     HF_HOME=/app/.cache/huggingface \
     NLTK_DATA=/app/nltk_data
-# systemd-standalone-tmpfiles: sudo(sid) 가 `systemd | systemd-standalone-tmpfiles |
-# systemd-tmpfiles` 를 요구하는데, 명시하지 않으면 apt 가 풀 systemd 를 끌어와
-# 빌드 컨테이너에서 postinst 가 실패한다(/etc/machine-id, "Failed to enable units").
-# 컨테이너 친화적 standalone 변형을 미리 깔아 풀 systemd 설치를 회피한다.
+# 이슈 #286 빌드 안정화 — python3.13 핀이 sid 를 끌어오는 캐스케이드로 sudo/systemd 가
+# sid 버전으로 당겨지는데, 두 패키지의 sid postinst 가 빌드 컨테이너에서 깨진다
+# (systemd: /etc/machine-id "Failed to enable units" / sudo: "Failed to read sudo.conf").
+# → 핀에서 sudo·systemd 를 sid 금지(Pin-Priority: -1)해 안정판 trixie 로 받는다.
+# 추가로 sudo 의 `systemd | systemd-standalone-tmpfiles | systemd-tmpfiles` 의존은
+# 풀 systemd 대신 컨테이너 친화적 systemd-standalone-tmpfiles 로 충족시킨다.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     echo "deb http://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/sid.list && \
-    printf "Package: python3.13 python3.13-minimal libpython3.13 libpython3.13-minimal libpython3.13-stdlib\nPin: release a=sid\nPin-Priority: 990\n\nPackage: *\nPin: release a=sid\nPin-Priority: 100\n" > /etc/apt/preferences.d/pin-python3.13 && \
+    printf "Package: python3.13 python3.13-minimal libpython3.13 libpython3.13-minimal libpython3.13-stdlib\nPin: release a=sid\nPin-Priority: 990\n\nPackage: sudo systemd\nPin: release a=sid\nPin-Priority: -1\n\nPackage: *\nPin: release a=sid\nPin-Priority: 100\n" > /etc/apt/preferences.d/pin-python3.13 && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
       net-tools \
