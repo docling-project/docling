@@ -1,22 +1,65 @@
+import base64
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
 import pytest
 from docling_core.types.doc import ImageRefMode
+from PIL import Image
 from typer.testing import CliRunner
 
 from docling.cli.export_utils import _should_generate_export_images, _split_list
 from docling.cli.main import app
+from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import InputFormat, OutputFormat
-from docling.datamodel.pipeline_options import PdfBackend
+from docling.datamodel.pipeline_options import PdfBackend, VlmPipelineOptions
 from docling.document_converter import PdfFormatOption
 
 runner = CliRunner()
 
+PNG_BYTES = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
+)
+
+
+def _png_bytes(color: tuple[int, int, int]) -> bytes:
+    buffer = BytesIO()
+    Image.new("RGB", (1, 1), color=color).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def _write_html_image_case(
+    root: Path, filename: str, text: str, image_bytes: bytes = PNG_BYTES
+) -> Path:
+    root.mkdir()
+    (root / "pixel.png").write_bytes(image_bytes)
+    html_path = root / filename
+    html_path.write_text(
+        f"<html><body><p>{text}</p><img src='pixel.png'></body></html>"
+    )
+    return html_path
+
+
+def _assert_markdown_embeds_png(path: Path, image_bytes: bytes | None = None) -> None:
+    content = path.read_text()
+    assert "data:image/png;base64" in content
+    assert "Image not available" not in content
+    if image_bytes is not None:
+        assert base64.b64encode(image_bytes).decode() in content
+
 
 def test_cli_help():
+    # Top-level help lists the available commands and points agents at the
+    # remote command (the `convert` options live under `docling convert --help`).
     result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    assert "convert-remote" in result.output
+    assert "DOCLING_SERVICE_URL" in result.output
+
+
+def test_cli_convert_help():
+    result = runner.invoke(app, ["convert", "--help"])
     assert result.exit_code == 0
     assert "Input formats to" in result.output
     assert "all supported" in result.output
@@ -38,6 +81,183 @@ def test_cli_convert(tmp_path):
     assert result.exit_code == 0
     converted = output / f"{Path(source).stem}.md"
     assert converted.exists()
+
+
+def test_cli_exports_doclang(tmp_path):
+    source = tmp_path / "input.md"
+    source.write_text("# DocLang CLI\n\nHello from Markdown.", encoding="utf-8")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "md",
+            "--to",
+            "doclang",
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert result.exit_code == 0
+    converted = output / "input.dclg.xml"
+    assert converted.exists()
+    content = converted.read_text(encoding="utf-8")
+    assert "<doclang>" in content
+    assert "DocLang CLI" in content
+
+
+def test_cli_html_fetches_local_images_per_input(tmp_path):
+    first_png = _png_bytes((255, 0, 0))
+    second_png = _png_bytes((0, 0, 255))
+    first = _write_html_image_case(tmp_path / "first", "first.html", "First", first_png)
+    second = _write_html_image_case(
+        tmp_path / "second", "second.html", "Second", second_png
+    )
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(first),
+            str(second),
+            "--from",
+            "html",
+            "--to",
+            "md",
+            "--output",
+            str(output),
+            "--image-export-mode",
+            "embedded",
+            "--html-image-fetch",
+            "local",
+        ],
+    )
+
+    assert result.exit_code == 0
+    _assert_markdown_embeds_png(output / "first.md", first_png)
+    _assert_markdown_embeds_png(output / "second.md", second_png)
+
+
+def test_cli_html_directory_matches_mixed_case_extensions(tmp_path):
+    source_dir = tmp_path / "source"
+    _write_html_image_case(source_dir, "Case.HtMl", "Mixed case")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source_dir),
+            "--from",
+            "html",
+            "--to",
+            "md",
+            "--output",
+            str(output),
+            "--image-export-mode",
+            "embedded",
+            "--html-image-fetch",
+            "local",
+        ],
+    )
+
+    assert result.exit_code == 0
+    _assert_markdown_embeds_png(output / "Case.md")
+
+
+def test_cli_html_fetches_remote_images_with_separate_headers(tmp_path, monkeypatch):
+    source_url = "https://example.com/docs/page.html"
+    image_url = "https://example.com/docs/pixel.png"
+    output = tmp_path / "out"
+    calls: list[tuple[str, dict]] = []
+
+    class FakeResponse:
+        def __init__(self, url: str, content: bytes):
+            self.url = url
+            self.content = content
+            self.headers: dict[str, str] = {}
+            self.is_redirect = False
+            self.is_permanent_redirect = False
+
+        def raise_for_status(self):
+            return None
+
+        def iter_content(self, chunk_size: int):
+            yield self.content
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    def fake_get(self, url: str, **kwargs):
+        calls.append((url, kwargs))
+        if url == source_url:
+            return FakeResponse(
+                url,
+                b"<html><body><p>Remote</p><img src='pixel.png'></body></html>",
+            )
+        if url == image_url:
+            return FakeResponse(url, PNG_BYTES)
+        raise AssertionError(f"Unexpected URL fetched: {url}")
+
+    monkeypatch.setattr("requests.Session.get", fake_get)
+
+    result = runner.invoke(
+        app,
+        [
+            source_url,
+            "--from",
+            "html",
+            "--to",
+            "md",
+            "--output",
+            str(output),
+            "--image-export-mode",
+            "embedded",
+            "--headers",
+            '{"Authorization": "Bearer source-token"}',
+            "--html-image-headers",
+            '{"X-Image-Token": "image-token"}',
+            "--html-image-fetch",
+            "remote",
+        ],
+    )
+
+    assert result.exit_code == 0
+    _assert_markdown_embeds_png(output / "page.md")
+    source_call = next(kwargs for url, kwargs in calls if url == source_url)
+    image_call = next(kwargs for url, kwargs in calls if url == image_url)
+    assert source_call["headers"]["authorization"] == "Bearer source-token"
+    assert "Authorization" not in image_call["headers"]
+    assert "authorization" not in image_call["headers"]
+    assert image_call["headers"]["X-Image-Token"] == "image-token"
+
+
+def test_cli_html_image_headers_require_remote_fetch(tmp_path):
+    source = _write_html_image_case(tmp_path / "source", "index.html", "Local")
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "html",
+            "--to",
+            "md",
+            "--html-image-headers",
+            '{"Authorization": "Bearer token"}',
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert (
+        "--html-image-headers requires --html-image-fetch remote or all"
+        in result.output
+    )
 
 
 def test_export_documents_marks_empty_markdown_as_failure(tmp_path):
@@ -82,6 +302,7 @@ def test_export_documents_marks_empty_markdown_as_failure(tmp_path):
         export_txt=False,
         export_doctags=False,
         export_vtt=False,
+        export_doclang=False,
         print_timings=False,
         export_timings=False,
         image_export_mode=ImageRefMode.PLACEHOLDER,
@@ -142,6 +363,7 @@ def test_export_documents_marks_stat_errors_as_failure(tmp_path, monkeypatch):
         export_txt=False,
         export_doctags=False,
         export_vtt=False,
+        export_doclang=False,
         print_timings=False,
         export_timings=False,
         image_export_mode=ImageRefMode.PLACEHOLDER,
@@ -156,6 +378,7 @@ def test_export_documents_marks_stat_errors_as_failure(tmp_path, monkeypatch):
     [
         (ImageRefMode.PLACEHOLDER, [OutputFormat.JSON], False),
         (ImageRefMode.EMBEDDED, [OutputFormat.TEXT, OutputFormat.DOCTAGS], False),
+        (ImageRefMode.EMBEDDED, [OutputFormat.DOCLANG], False),
         (ImageRefMode.EMBEDDED, [OutputFormat.MARKDOWN], True),
         (
             ImageRefMode.EMBEDDED,
@@ -173,6 +396,7 @@ def test_image_export_policy_covers_all_output_formats():
         OutputFormat.TEXT,
         OutputFormat.DOCTAGS,
         OutputFormat.VTT,
+        OutputFormat.DOCLANG,
     }
     image_export_formats = set(OutputFormat) - non_image_export_formats
 
@@ -282,7 +506,9 @@ def test_cli_accepts_threaded_docling_parse_backend(
             assert len(input_doc_paths) == 1
             return []
 
-    monkeypatch.setattr("docling.cli.main.DocumentConverter", _FakeDocumentConverter)
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
 
     source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
     output = tmp_path / "out"
@@ -308,3 +534,58 @@ def test_cli_accepts_threaded_docling_parse_backend(
     assert captured_backend_options is not None
     assert captured_backend_options.parser_threads == 7
     assert captured_backend_options.release_native_memory_every_n_pages == 64
+
+
+def test_cli_passes_accelerator_options_to_vlm_pipeline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured_pipeline_options: VlmPipelineOptions | None = None
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            nonlocal captured_pipeline_options
+            pdf_option = format_options[InputFormat.PDF]
+            assert format_options[InputFormat.IMAGE] is pdf_option
+            assert isinstance(pdf_option.pipeline_options, VlmPipelineOptions)
+            captured_pipeline_options = pdf_option.pipeline_options
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+        ) -> list[Any]:
+            assert len(input_doc_paths) == 1
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            source,
+            "--output",
+            str(output),
+            "--pipeline",
+            "vlm",
+            "--device",
+            "cpu",
+            "--num-threads",
+            "7",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_pipeline_options is not None
+    assert captured_pipeline_options.accelerator_options.device == AcceleratorDevice.CPU
+    assert captured_pipeline_options.accelerator_options.num_threads == 7

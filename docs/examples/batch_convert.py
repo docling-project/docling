@@ -16,11 +16,6 @@
 # - If you cloned without test data, or want to use your own files, edit
 #   `input_doc_paths` below to point to PDFs on your machine.
 
-# Output formats (controlled by flags)
-# - `USE_V2 = True` enables the current Docling document exports (recommended).
-# - `USE_LEGACY = False` keeps legacy Deep Search exports disabled.
-#   You can set it to `True` if you need legacy formats for compatibility tests.
-
 # Notes
 # - Set `pipeline_options.generate_page_images = True` to include page images in HTML.
 # - The script logs conversion progress and raises if any documents fail.
@@ -45,12 +40,6 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 _log = logging.getLogger(__name__)
 
-# Export toggles:
-# - USE_V2 controls modern Docling document exports.
-# - USE_LEGACY enables legacy Deep Search exports for comparison or migration.
-USE_V2 = True
-USE_LEGACY = False
-
 
 def export_documents(
     conv_results: Iterable[ConversionResult],
@@ -67,73 +56,44 @@ def export_documents(
             success_count += 1
             doc_filename = conv_res.input.file.stem
 
-            if USE_V2:
-                # Recommended modern Docling exports. These helpers mirror the
-                # lower-level "export_to_*" methods used below, but handle
-                # common details like image handling.
-                conv_res.document.save_as_json(
-                    output_dir / f"{doc_filename}.json",
-                    image_mode=ImageRefMode.PLACEHOLDER,
-                )
-                conv_res.document.save_as_html(
-                    output_dir / f"{doc_filename}.html",
-                    image_mode=ImageRefMode.EMBEDDED,
-                )
-                conv_res.document.save_as_doctags(
-                    output_dir / f"{doc_filename}.doctags.txt"
-                )
-                conv_res.document.save_as_markdown(
-                    output_dir / f"{doc_filename}.md",
-                    image_mode=ImageRefMode.PLACEHOLDER,
-                )
-                conv_res.document.save_as_markdown(
-                    output_dir / f"{doc_filename}.txt",
-                    image_mode=ImageRefMode.PLACEHOLDER,
-                    strict_text=True,
-                )
+            # These helpers mirror the lower-level "export_to_*" methods used below,
+            # but handle common details like image handling.
+            conv_res.document.save_as_json(
+                output_dir / f"{doc_filename}.json",
+                image_mode=ImageRefMode.PLACEHOLDER,
+            )
+            conv_res.document.save_as_html(
+                output_dir / f"{doc_filename}.html",
+                image_mode=ImageRefMode.EMBEDDED,
+            )
+            conv_res.document.save_as_doctags(
+                output_dir / f"{doc_filename}.doctags.txt"
+            )
+            conv_res.document.save_as_markdown(
+                output_dir / f"{doc_filename}.md",
+                image_mode=ImageRefMode.PLACEHOLDER,
+            )
+            conv_res.document.save_as_markdown(
+                output_dir / f"{doc_filename}.txt",
+                image_mode=ImageRefMode.PLACEHOLDER,
+                strict_text=True,
+            )
 
-                # Export Docling document format to YAML:
-                with (output_dir / f"{doc_filename}.yaml").open("w") as fp:
-                    fp.write(yaml.safe_dump(conv_res.document.export_to_dict()))
+            # Export Docling document format to YAML:
+            with (output_dir / f"{doc_filename}.yaml").open("w") as fp:
+                fp.write(yaml.safe_dump(conv_res.document.export_to_dict()))
 
-                # Export Docling document format to doctags:
-                with (output_dir / f"{doc_filename}.doctags.txt").open("w") as fp:
-                    fp.write(conv_res.document.export_to_doctags())
+            # Export Docling document format to doctags:
+            with (output_dir / f"{doc_filename}.doctags.txt").open("w") as fp:
+                fp.write(conv_res.document.export_to_doctags())
 
-                # Export Docling document format to markdown:
-                with (output_dir / f"{doc_filename}.md").open("w") as fp:
-                    fp.write(conv_res.document.export_to_markdown())
+            # Export Docling document format to markdown:
+            with (output_dir / f"{doc_filename}.md").open("w") as fp:
+                fp.write(conv_res.document.export_to_markdown())
 
-                # Export Docling document format to text:
-                with (output_dir / f"{doc_filename}.txt").open("w") as fp:
-                    fp.write(conv_res.document.export_to_markdown(strict_text=True))
-
-            if USE_LEGACY:
-                # Export Deep Search document JSON format:
-                with (output_dir / f"{doc_filename}.legacy.json").open(
-                    "w", encoding="utf-8"
-                ) as fp:
-                    fp.write(json.dumps(conv_res.legacy_document.export_to_dict()))
-
-                # Export Text format:
-                with (output_dir / f"{doc_filename}.legacy.txt").open(
-                    "w", encoding="utf-8"
-                ) as fp:
-                    fp.write(
-                        conv_res.legacy_document.export_to_markdown(strict_text=True)
-                    )
-
-                # Export Markdown format:
-                with (output_dir / f"{doc_filename}.legacy.md").open(
-                    "w", encoding="utf-8"
-                ) as fp:
-                    fp.write(conv_res.legacy_document.export_to_markdown())
-
-                # Export Document Tags format:
-                with (output_dir / f"{doc_filename}.legacy.doctags.txt").open(
-                    "w", encoding="utf-8"
-                ) as fp:
-                    fp.write(conv_res.legacy_document.export_to_document_tokens())
+            # Export Docling document format to text:
+            with (output_dir / f"{doc_filename}.txt").open("w") as fp:
+                fp.write(conv_res.document.export_to_markdown(strict_text=True))
 
         elif conv_res.status == ConversionStatus.PARTIAL_SUCCESS:
             _log.info(

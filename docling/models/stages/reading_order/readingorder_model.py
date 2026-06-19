@@ -131,6 +131,25 @@ class ReadingOrderModel:
 
         return group_element.get_ref()
 
+    @staticmethod
+    def _table_data_from_table(element: Table) -> TableData:
+        if element.num_rows == 0 and element.num_cols == 0:
+            num_rows = 1 if element.cluster.children else 0
+            num_cols = 1 if element.cluster.children else 0
+            return TableData(
+                num_rows=num_rows,
+                num_cols=num_cols,
+                table_cells=[],
+                orientation=element.orientation,
+            )
+
+        return TableData(
+            num_rows=element.num_rows,
+            num_cols=element.num_cols,
+            table_cells=element.table_cells,
+            orientation=element.orientation,
+        )
+
     def _readingorder_elements_to_docling_doc(
         self,
         conv_res: ConversionResult,
@@ -225,21 +244,7 @@ class ReadingOrderModel:
                             )
 
             elif isinstance(element, Table):
-                # Check if table has no structure prediction
-                if element.num_rows == 0 and element.num_cols == 0:
-                    # Only create 1x1 table if there are children to put in it
-                    if element.cluster.children:
-                        # Create minimal 1x1 table with rich cell containing all children
-                        tbl_data = TableData(num_rows=1, num_cols=1, table_cells=[])
-                    else:
-                        # Create empty table with no structure
-                        tbl_data = TableData(num_rows=0, num_cols=0, table_cells=[])
-                else:
-                    tbl_data = TableData(
-                        num_rows=element.num_rows,
-                        num_cols=element.num_cols,
-                        table_cells=element.table_cells,
-                    )
+                tbl_data = self._table_data_from_table(element)
 
                 prov = ProvenanceItem(
                     page_no=element.page_no,

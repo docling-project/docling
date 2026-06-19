@@ -13,6 +13,7 @@ from docling_core.types.doc import (
     TableCell,
 )
 from docling_core.types.doc.base import PydanticSerCtxKey, round_pydantic_float
+from docling_core.types.doc.document import Orientation
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
 from docling_core.types.io import (
     DocumentStream as DocumentStream,
@@ -26,13 +27,16 @@ from pydantic import (
     ConfigDict,
     Field,
     FieldSerializationInfo,
+    PrivateAttr,
     computed_field,
     field_serializer,
     field_validator,
+    model_validator,
 )
 
 if TYPE_CHECKING:
     from docling.backend.pdf_backend import PdfPageBackend
+    from docling.datamodel.backend_options import BackendOptions
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.datamodel.pipeline_options import PipelineOptions
@@ -45,6 +49,11 @@ class BaseFormatOption(BaseModel):
     backend: Type[AbstractDocumentBackend]
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def backend_options_for_input(
+        self, source: Path | str | DocumentStream
+    ) -> "BackendOptions | None":
+        return None
 
 
 class ConversionStatus(str, Enum):
@@ -71,11 +80,14 @@ class InputFormat(str, Enum):
     XML_USPTO = "xml_uspto"
     XML_JATS = "xml_jats"
     XML_XBRL = "xml_xbrl"
+    XML_DOCLANG = "xml_doclang"
     METS_GBS = "mets_gbs"
     JSON_DOCLING = "json_docling"
     AUDIO = "audio"
     VTT = "vtt"
     LATEX = "latex"
+    EMAIL = "email"
+    EPUB = "epub"
 
 
 class OutputFormat(str, Enum):
@@ -87,6 +99,7 @@ class OutputFormat(str, Enum):
     TEXT = "text"
     DOCTAGS = "doctags"
     VTT = "vtt"
+    DOCLANG = "doclang"
 
 
 FormatToExtensions: dict[InputFormat, list[str]] = {
@@ -97,6 +110,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.HTML: ["html", "htm", "xhtml"],
     InputFormat.XML_JATS: ["xml", "nxml"],
     InputFormat.XML_XBRL: ["xml", "xbrl"],
+    InputFormat.XML_DOCLANG: ["dclg", "dclg.xml"],
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
@@ -107,6 +121,8 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.AUDIO: ["wav", "mp3", "m4a", "aac", "ogg", "flac", "mp4", "avi", "mov"],
     InputFormat.VTT: ["vtt"],
     InputFormat.LATEX: ["tex", "latex"],
+    InputFormat.EMAIL: ["eml"],
+    InputFormat.EPUB: ["epub"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -122,6 +138,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.HTML: ["text/html", "application/xhtml+xml"],
     InputFormat.XML_JATS: ["application/xml"],
     InputFormat.XML_XBRL: ["application/xml", "application/xhtml+xml"],
+    InputFormat.XML_DOCLANG: ["application/xml"],
     InputFormat.IMAGE: [
         "image/png",
         "image/jpeg",
@@ -158,6 +175,8 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     ],
     InputFormat.VTT: ["text/vtt"],
     InputFormat.LATEX: ["text/x-tex", "application/x-tex", "text/x-latex"],
+    InputFormat.EMAIL: ["message/rfc822"],
+    InputFormat.EPUB: ["application/epub+zip"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
@@ -244,6 +263,7 @@ class Table(BasePageElement):
     otsl_seq: list[str]
     num_rows: int = 0
     num_cols: int = 0
+    orientation: Orientation = Orientation.ROT_0
     table_cells: list[TableCell]
 
 
@@ -487,10 +507,50 @@ class ConfidenceReport(PageConfidenceScores):
     pages: dict[int, PageConfidenceScores] = Field(
         default_factory=lambda: defaultdict(PageConfidenceScores)
     )
+    _mean_score_override: ScoreValue = PrivateAttr(default=np.nan)
+    _low_score_override: ScoreValue = PrivateAttr(default=np.nan)
+
+    @staticmethod
+    def _coerce_override_score(value: Any) -> ScoreValue:
+        if value is None:
+            return ScoreValue(np.nan)
+        if isinstance(value, str) and value.strip().lower() in {
+            "nan",
+            "null",
+            "none",
+            "",
+        }:
+            return ScoreValue(np.nan)
+        return ScoreValue(value)
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def _accept_flat_confidence_scores(cls, value, handler):
+        mean_override = ScoreValue(np.nan)
+        low_override = ScoreValue(np.nan)
+
+        if isinstance(value, dict):
+            mean_override = cls._coerce_override_score(value.get("mean_score"))
+            low_override = cls._coerce_override_score(value.get("low_score"))
+            value = dict(value)
+            value.pop("mean_score", None)
+            value.pop("low_score", None)
+            value.pop("mean_grade", None)
+            value.pop("low_grade", None)
+
+        model = handler(value)
+        if not model.pages:
+            model._mean_score_override = mean_override
+            model._low_score_override = low_override
+        return model
 
     @computed_field  # type: ignore
     @property
     def mean_score(self) -> ScoreValue:
+        if not np.isnan(self._mean_score_override):
+            return self._mean_score_override
+        if not self.pages:
+            return super().mean_score
         return ScoreValue(
             np.nanmean(
                 [c.mean_score for c in self.pages.values()],
@@ -500,6 +560,10 @@ class ConfidenceReport(PageConfidenceScores):
     @computed_field  # type: ignore
     @property
     def low_score(self) -> ScoreValue:
+        if not np.isnan(self._low_score_override):
+            return self._low_score_override
+        if not self.pages:
+            return super().low_score
         return ScoreValue(
             np.nanmean(
                 [c.low_score for c in self.pages.values()],

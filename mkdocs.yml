@@ -74,6 +74,11 @@ nav:
       - GPU support: usage/gpu.md
       - MCP server: usage/mcp.md
       - Jobkit: usage/jobkit.md
+      - API server:
+        - Overview: usage/api_server/index.md
+        - Deployment: usage/api_server/deployment.md
+        - REST API: usage/api_server/rest_api.md
+        - Managed service: usage/api_server/managed.md
     - FAQ:
       - FAQ: faq/index.md
   - Concepts:

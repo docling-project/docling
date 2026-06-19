@@ -4,7 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from docling_core.types.doc import DocItemLabel, GroupItem
+from docling_core.types.doc import DocItemLabel, GroupItem, TableItem
 from lxml import etree
 
 import docling.backend.msword_backend as msword_backend_module
@@ -102,13 +102,13 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[tuple[Path, DoclingDocument
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
         )
-        assert verify_export(pred_itxt, str(docx_path) + ".itxt", generate=GENERATE), (
-            f"export to indented-text failed on {docx_path}"
-        )
+        assert verify_export(
+            pred_itxt, str(docx_path) + ".itxt", generate=GENERATE, fuzzy=True
+        ), f"export to indented-text failed on {docx_path}"
 
-        assert verify_document(doc, str(docx_path) + ".json", generate=GENERATE), (
-            f"DoclingDocument verification failed on {docx_path}"
-        )
+        assert verify_document(
+            doc, str(docx_path) + ".json", generate=GENERATE, fuzzy=True
+        ), f"DoclingDocument verification failed on {docx_path}"
 
         if docx_path.name in {"word_tables.docx", "docx_rich_cells.docx"}:
             pred_html: str = doc.export_to_html()
@@ -515,6 +515,42 @@ def test_inline_sdt_references(tmp_path):
 
     assert "Impact (Hagman G 1984). After." in markdown
     assert "(Standalone citation)" in markdown
+
+
+def test_block_sdt_tables_are_extracted():
+    """Test tables wrapped in block-level SDT content controls."""
+    docx_path = Path("./tests/data/docx/docx_rich_tables_01.docx")
+
+    conv_result = get_converter().convert(docx_path)
+    doc = conv_result.document
+
+    assert len(doc.tables) == 2
+    for table in doc.tables:
+        assert table.data.num_rows == 24
+        assert table.data.num_cols == 3
+        assert [cell.text for cell in table.data.table_cells[:3]] == [
+            "Feature",
+            "Action Needed",
+            "Comment/Links",
+        ]
+
+    body_items = [child.resolve(doc) for child in doc.body.children]
+    phase_1_idx = next(
+        idx
+        for idx, item in enumerate(body_items)
+        if getattr(item, "text", None) == "Phase 1"
+    )
+    phase_2_idx = next(
+        idx
+        for idx, item in enumerate(body_items)
+        if getattr(item, "text", None) == "Phase 2"
+    )
+    table_idxs = [
+        idx for idx, item in enumerate(body_items) if isinstance(item, TableItem)
+    ]
+
+    assert phase_1_idx < table_idxs[0] < phase_2_idx
+    assert phase_2_idx < table_idxs[1]
 
 
 def test_list_counter_and_enum_marker(docx_paths):

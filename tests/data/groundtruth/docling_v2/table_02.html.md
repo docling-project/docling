@@ -4,6 +4,6 @@ This is the first paragraph.
 
 | A | B |
 | - | - |
-| First Paragraph  Second Paragraph  Third Paragraph | 2... |
+| First Line Second Line Third Line | 2... |
 
 After table

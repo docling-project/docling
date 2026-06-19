@@ -1,9 +1,11 @@
-"""Example: Comparing CodeFormula models for code and formula extraction.
+# %% [markdown]
+# Example: Comparing CodeFormula models for code and formula extraction.
 
-This example demonstrates how to use both the CodeFormulaV2 model
-and the Granite Docling model for extracting code blocks and mathematical
-formulas from PDF documents, allowing you to compare their outputs.
-"""
+# This example demonstrates how to use both the CodeFormulaV2 model
+# and the Granite Docling model for extracting code blocks and mathematical
+# formulas from PDF documents, allowing you to compare their outputs.
+
+# %%
 
 from pathlib import Path
 

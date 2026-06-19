@@ -429,6 +429,7 @@ GLMOCR_TRANSFORMERS = InlineVlmOptions(
     torch_dtype="bfloat16",
     scale=2.0,
     temperature=0.0,
+    stop_strings=["<|user|>", "<|endoftext|>"],
 )
 
 # Requires mlx-vlm >=0.3.11.

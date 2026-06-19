@@ -13,7 +13,7 @@ from docling.document_converter import DocumentConverter
 from tests.verify_utils import CONFID_PREC, COORD_PREC
 
 from .test_data_gen_flag import GEN_TEST_DATA
-from .verify_utils import verify_document
+from .verify_utils import verify_docitems, verify_document
 
 pytestmark = pytest.mark.cross_platform
 
@@ -70,7 +70,7 @@ def test_convert_valid():
 
             if in_path.stem in yaml_filter:
                 exp_doc = DoclingDocument.load_from_yaml(yaml_gt_path)
-                assert act_doc == exp_doc, f"export to yaml failed on {in_path}"
+                verify_docitems(doc_true=act_doc, doc_pred=exp_doc, fuzzy=False)
 
 
 def get_md_paths():

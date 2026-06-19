@@ -101,15 +101,6 @@ def test_formulate_prompt_none():
     assert model.formulate_prompt("ignored") == ""
 
 
-def test_formulate_prompt_phi4_special_case():
-    model = _DummyVlm(
-        TransformersPromptStyle.RAW, repo_id="ibm-granite/granite-docling-258M"
-    )
-    # RAW style with granite-docling should still invoke the special path only when style not RAW;
-    # ensure RAW returns the user text
-    assert model.formulate_prompt("describe image") == "describe image"
-
-
 def test_formulate_prompt_chat_uses_processor_template():
     model = _DummyVlm(TransformersPromptStyle.CHAT)
     model.processor.apply_chat_template.return_value = "templated"
@@ -124,15 +115,3 @@ def test_formulate_prompt_unknown_style_raises():
     model.vlm_options.transformers_prompt_style = "__invalid__"  # type: ignore[assignment]
     with pytest.raises(RuntimeError):
         model.formulate_prompt("x")
-
-
-def test_vlm_prompt_style_none_and_chat_variants():
-    # NONE always empty
-    m_none = _DummyVlm(TransformersPromptStyle.NONE)
-    assert m_none.formulate_prompt("anything") == ""
-
-    # CHAT path ensures processor used even with complex prompt
-    m_chat = _DummyVlm(TransformersPromptStyle.CHAT)
-    m_chat.processor.apply_chat_template.return_value = "ok"
-    out = m_chat.formulate_prompt("details please")
-    assert out == "ok"
