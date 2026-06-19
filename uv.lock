@@ -1756,7 +1756,7 @@ requires-dist = [
     { name = "beautifulsoup4", marker = "extra == 'format-html'", specifier = ">=4.12.3,<5.0.0" },
     { name = "certifi", specifier = ">=2024.7.4" },
     { name = "defusedxml", marker = "extra == 'models-local'", specifier = ">=0.7.1,<0.8.0" },
-    { name = "docling-core", specifier = ">=2.83.1" },
+    { name = "docling-core", specifier = ">=2.83.1,<3.0.0" },
     { name = "docling-core", extras = ["chunking"], marker = "extra == 'feat-chunking'", specifier = ">=2.73.0,<3.0.0" },
     { name = "docling-ibm-models", marker = "extra == 'models-local'", specifier = ">=3.13.0,<4" },
     { name = "docling-parse", marker = "extra == 'format-pdf-docling'", specifier = ">=6.2.0,<7.0.0" },
