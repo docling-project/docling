@@ -31,6 +31,7 @@ from pydantic import AnyHttpUrl, TypeAdapter, ValidationError
 
 from docling.backend.noop_backend import NoOpBackend
 from docling.datamodel.base_models import (
+    ConfidenceReport,
     ConversionStatus,
     DoclingComponentType,
     ErrorItem,
@@ -367,6 +368,11 @@ class _BaseDoclingServiceClient:
             status=payload.status,
             errors=payload.errors,
             timings=payload.timings,
+            confidence=ConfidenceReport.model_validate(
+                {}
+                if payload.confidence is None
+                else payload.confidence.model_dump(mode="json")
+            ),
             document=document,
         )
 
@@ -1756,6 +1762,11 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             status=item.status,
             errors=item.errors,
             timings=item.timings,
+            confidence=ConfidenceReport.model_validate(
+                {}
+                if item.confidence is None
+                else item.confidence.model_dump(mode="json")
+            ),
             document=document,
         )
 
