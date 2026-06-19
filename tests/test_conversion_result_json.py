@@ -1,13 +1,9 @@
-from io import BytesIO
 from pathlib import Path
-
-import pytest
 
 from docling.backend.pypdfium2_backend import (
     PyPdfiumDocumentBackend,
-    PyPdfiumPageBackend,
 )
-from docling.datamodel.base_models import ConversionStatus, InputFormat
+from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionAssets
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption

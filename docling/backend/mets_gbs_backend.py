@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.page import (
@@ -216,7 +216,7 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
             else tarfile.open(fileobj=self.path_or_stream, mode="r:gz")
         )
         self.root_mets: Optional[etree._Element] = None
-        self.page_map: Dict[int, _PageFiles] = {}
+        self.page_map: dict[int, _PageFiles] = {}
         self._total_bytes_extracted = 0
         member_count = 0
 
@@ -260,7 +260,7 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
             "marc": "http://www.loc.gov/MARC21/slim",
         }
 
-        file_info_by_id: Dict[str, _FileInfo] = {}
+        file_info_by_id: dict[str, _FileInfo] = {}
 
         for filegrp in self.root_mets.xpath(".//mets:fileGrp", namespaces=ns):
             use_raw = filegrp.get("USE")
@@ -328,7 +328,7 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         _log.warning(f"The root element is not <mets:mets> with PROFILE='gbs': {root}")
         return None
 
-    def _parse_page(self, page_no: int) -> Tuple[SegmentedPdfPage, PILImage]:
+    def _parse_page(self, page_no: int) -> tuple[SegmentedPdfPage, PILImage]:
         # TODO: use better fallbacks...
         image_info = self.page_map[page_no].image
         assert image_info is not None
@@ -372,8 +372,8 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         parser = etree.HTMLParser(no_network=True)
         ocr_root: etree._Element = etree.fromstring(ocr_content, parser=parser)
 
-        line_cells: List[TextCell] = []
-        word_cells: List[TextCell] = []
+        line_cells: list[TextCell] = []
+        word_cells: list[TextCell] = []
 
         page_div = ocr_root.xpath("//div[@class='ocr_page']")
 
@@ -449,7 +449,7 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
         return self.root_mets is not None and self.page_count() > 0
 
     @classmethod
-    def supported_formats(cls) -> Set[InputFormat]:
+    def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.METS_GBS}
 
     @classmethod

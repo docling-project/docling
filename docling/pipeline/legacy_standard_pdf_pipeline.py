@@ -10,9 +10,7 @@ from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import AssembledUnit, Page
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.layout_model_specs import LayoutModelConfig
 from docling.datamodel.pipeline_options import PdfPipelineOptions
-from docling.datamodel.settings import settings
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.factories import (
     get_layout_factory,

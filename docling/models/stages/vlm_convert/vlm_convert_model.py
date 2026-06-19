@@ -7,7 +7,7 @@ using vision-language models through a pluggable runtime system.
 import logging
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional, Union
+from typing import Union
 
 from PIL import Image as PILImage
 

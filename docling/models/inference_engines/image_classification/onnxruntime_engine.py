@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import numpy as np
 
@@ -130,7 +130,7 @@ class OnnxRuntimeImageClassificationEngine(HfImageClassificationEngineBase):
             self._session.get_providers(),
         )
 
-    def _resolve_providers(self) -> List[str]:
+    def _resolve_providers(self) -> list[str]:
         """Resolve ONNX Runtime providers from accelerator and engine options."""
         configured_providers = self.options.providers or ["CPUExecutionProvider"]
         if configured_providers != ["CPUExecutionProvider"]:
@@ -152,8 +152,8 @@ class OnnxRuntimeImageClassificationEngine(HfImageClassificationEngineBase):
         return ["CPUExecutionProvider"]
 
     def predict_batch(
-        self, input_batch: List[ImageClassificationEngineInput]
-    ) -> List[ImageClassificationEngineOutput]:
+        self, input_batch: list[ImageClassificationEngineInput]
+    ) -> list[ImageClassificationEngineOutput]:
         """Run inference on a batch of inputs."""
         if not input_batch:
             return []

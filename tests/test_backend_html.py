@@ -9,7 +9,7 @@ from unittest.mock import Mock, mock_open, patch
 import pytest
 import requests
 from bs4 import BeautifulSoup
-from docling_core.types.doc import PictureItem, RichTableCell
+from docling_core.types.doc import PictureItem, RichTableCell, SectionHeaderItem
 from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
 
@@ -24,7 +24,6 @@ from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
     InputDocument,
-    SectionHeaderItem,
 )
 from docling.document_converter import DocumentConverter, HTMLFormatOption
 from docling.exceptions import OperationNotAllowed

@@ -26,7 +26,6 @@ from docling_core.types.doc.document import (
     TableItem,
 )
 from PIL import Image, ImageFilter
-from PIL.ImageOps import crop
 from pydantic import BaseModel, ConfigDict
 from tqdm import tqdm
 

@@ -13,13 +13,6 @@ from docling.models.inference_engines.vlm.base import (
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig, VlmModelSpec
-    from docling.datamodel.vlm_engine_options import (
-        ApiVlmEngineOptions,
-        AutoInlineVlmEngineOptions,
-        MlxVlmEngineOptions,
-        TransformersVlmEngineOptions,
-        VllmVlmEngineOptions,
-    )
 
 _log = logging.getLogger(__name__)
 

@@ -1,9 +1,10 @@
 import os
 import shutil
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Callable, Optional
+from typing import Optional
 
 import pypdfium2
 from docx.document import Document

@@ -31,7 +31,6 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 from docling_core.types.doc import ImageRefMode, TableItem, TextItem
 from tabulate import tabulate
@@ -85,8 +84,8 @@ class SimplePiiObfuscator:
 
     def __init__(self, ner_callable):
         self.ner = ner_callable
-        self.entity_map: Dict[str, str] = {}
-        self.counters: Dict[str, int] = {
+        self.entity_map: dict[str, str] = {}
+        self.counters: dict[str, int] = {
             "person": 0,
             "org": 0,
             "location": 0,
@@ -115,7 +114,7 @@ class SimplePiiObfuscator:
     def _normalize(self, s: str) -> str:
         return re.sub(r"\s+", " ", s).strip()
 
-    def _extract_entities(self, text: str) -> List[Tuple[str, str]]:
+    def _extract_entities(self, text: str) -> list[tuple[str, str]]:
         """Run NER and return a list of (surface_text, type) to obfuscate."""
         if not text:
             return []
@@ -132,7 +131,7 @@ class SimplePiiObfuscator:
             word = self._normalize(r.get("word") or r.get("text") or "")
             items.append({"label": label, "start": start, "end": end, "word": word})
 
-        found: List[Tuple[str, str]] = []
+        found: list[tuple[str, str]] = []
         # If the pipeline provides character spans, merge consecutive/overlapping
         # entities of the same type into a single span, then take the substring
         # from the original text. This handles cases like subword tokenization
@@ -184,7 +183,7 @@ class SimplePiiObfuscator:
             return text
 
         # Deduplicate per text, keep stable global mapping
-        unique_words: Dict[str, str] = {}
+        unique_words: dict[str, str] = {}
         for word, label in entities:
             if word not in self.entity_map:
                 replacement = self._next_id(label)
@@ -249,11 +248,11 @@ class AdvancedPIIObfuscator:
     - Obfuscates with stable IDs per fine-grained label, e.g. `email-1`.
     """
 
-    def __init__(self, gliner_model, labels: List[str]):
+    def __init__(self, gliner_model, labels: list[str]):
         self.model = gliner_model
         self.labels = labels
-        self.entity_map: Dict[str, str] = {}
-        self.counters: Dict[str, int] = {}
+        self.entity_map: dict[str, str] = {}
+        self.counters: dict[str, int] = {}
 
     def _normalize(self, s: str) -> str:
         return re.sub(r"\s+", " ", s).strip()
@@ -275,13 +274,13 @@ class AdvancedPIIObfuscator:
         if typ not in self.counters:
             self.counters[typ] = 0
 
-    def _extract_entities(self, text: str) -> List[Tuple[str, str]]:
+    def _extract_entities(self, text: str) -> list[tuple[str, str]]:
         if not text:
             return []
         results = self.model.predict_entities(
             text, self.labels
         )  # expects dicts with text/label
-        found: List[Tuple[str, str]] = []
+        found: list[tuple[str, str]] = []
         for r in results:
             label = self._norm_label(str(r.get("label", "pii")))
             surface = self._normalize(str(r.get("text", "")))
@@ -296,7 +295,7 @@ class AdvancedPIIObfuscator:
         if not entities:
             return text
 
-        unique_words: Dict[str, str] = {}
+        unique_words: dict[str, str] = {}
         for word, label in entities:
             if word not in self.entity_map:
                 replacement = self._next_id(label)

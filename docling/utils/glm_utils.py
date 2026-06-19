@@ -1,6 +1,5 @@
 import re
 from pathlib import Path
-from typing import List
 
 import pandas as pd
 from docling_core.types.doc import (
@@ -52,7 +51,7 @@ def resolve_item(paths, obj):
         return None
 
 
-def _flatten_table_grid(grid: List[List[dict]]) -> List[dict]:
+def _flatten_table_grid(grid: list[list[dict]]) -> list[dict]:
     unique_objects = []
     seen_spans = set()
 

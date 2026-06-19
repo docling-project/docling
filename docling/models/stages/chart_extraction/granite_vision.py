@@ -5,7 +5,7 @@ from abc import abstractmethod
 from collections.abc import Iterable
 from io import StringIO
 from pathlib import Path
-from typing import Any, List, Literal, Optional, cast
+from typing import Any, Optional, cast
 
 import pandas as pd
 import torch
@@ -23,13 +23,11 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import CodeMetaField
 from PIL import Image
-from pydantic import BaseModel
 from transformers import AutoModelForImageTextToText, AutoProcessor
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.datamodel.chart_extraction_options import (
-    ChartExtractionModelKind,
     ChartExtractionModelOptions,
 )
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
@@ -223,8 +221,8 @@ class ChartExtractionModelGraniteVision(_BaseChartExtractionModelGraniteVision):
                 yield element.item
             return
 
-        images: List[Image.Image] = []
-        elements: List[PictureItem] = []
+        images: list[Image.Image] = []
+        elements: list[PictureItem] = []
         for el in element_batch:
             elements.append(el.item)  # type: ignore[arg-type]
             images.append(el.image)
@@ -388,8 +386,8 @@ class ChartExtractionModelGraniteVisionV4(_BaseChartExtractionModelGraniteVision
                 yield element.item
             return
 
-        images: List[Image.Image] = []
-        elements: List[PictureItem] = []
+        images: list[Image.Image] = []
+        elements: list[PictureItem] = []
         for el in element_batch:
             elements.append(el.item)  # type: ignore[arg-type]
             images.append(el.image)

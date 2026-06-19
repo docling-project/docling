@@ -1,16 +1,15 @@
 from abc import ABC, abstractmethod
-from typing import FrozenSet
 
 
 class LibraryHandler(ABC):
     @property
     @abstractmethod
-    def environments(self) -> FrozenSet[str]:
+    def environments(self) -> frozenset[str]:
         pass
 
     @property
     @abstractmethod
-    def macros(self) -> FrozenSet[str]:
+    def macros(self) -> frozenset[str]:
         pass
 
     @abstractmethod

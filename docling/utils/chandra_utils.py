@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import re
 from html.parser import HTMLParser
-from typing import Optional, Union
+from typing import Union
 
 from docling_core.types.doc import (
     BoundingBox,

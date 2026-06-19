@@ -24,8 +24,9 @@
 
 ### Load modules
 
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
 
 from docling_core.types.doc import BoundingBox, DocItem, DoclingDocument, NodeItem
 from rich.pretty import pprint

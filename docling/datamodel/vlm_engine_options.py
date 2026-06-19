@@ -6,7 +6,7 @@ of model specifications and prompts.
 
 import logging
 from enum import Enum
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import AnyUrl, Field
 
@@ -214,11 +214,11 @@ class ApiVlmEngineOptions(BaseVlmEngineOptions):
         description="API endpoint URL",
     )
 
-    headers: Dict[str, str] = Field(
+    headers: dict[str, str] = Field(
         default_factory=dict, description="HTTP headers for authentication"
     )
 
-    params: Dict[str, Any] = Field(
+    params: dict[str, Any] = Field(
         default_factory=dict,
         description="Additional API parameters (model, max_tokens, etc.)",
     )

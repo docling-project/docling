@@ -3,7 +3,7 @@ import re
 import warnings
 from io import BytesIO
 from pathlib import Path
-from typing import List, Union, cast
+from typing import Union, cast
 
 from docling_core.transforms.deserializer.doclang import DocLangDocDeserializer
 from docling_core.types.doc import (
@@ -51,7 +51,6 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     ResponseFormat,
 )
-from docling.datamodel.settings import settings
 
 # VlmResponseFormat is actually ResponseFormat from pipeline_options_vlm_model
 # No need to import it separately as it's already imported above
@@ -452,8 +451,8 @@ class VlmPipeline(PaginatedPipeline):
             image_list.append(img)
             doctags_list.append(predicted_doctags)
 
-        doctags_list_c = cast(List[Union[Path, str]], doctags_list)
-        image_list_c = cast(List[Union[Path, PILImage.Image]], image_list)
+        doctags_list_c = cast(list[Union[Path, str]], doctags_list)
+        image_list_c = cast(list[Union[Path, PILImage.Image]], image_list)
         doctags_doc = DocTagsDocument.from_doctags_and_image_pairs(
             doctags_list_c, image_list_c
         )
@@ -615,7 +614,7 @@ class VlmPipeline(PaginatedPipeline):
 
     def _add_page_metadata_and_concatenate(
         self,
-        page_docs: List[DoclingDocument],
+        page_docs: list[DoclingDocument],
         conv_res: ConversionResult,
     ) -> DoclingDocument:
         """

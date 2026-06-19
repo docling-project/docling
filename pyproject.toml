@@ -395,10 +395,7 @@ ignore = [
   "F811",   # "redefinition of the same function"
   "PL",     # Pylint
   "RUF012", # Mutable Class Attributes
-  "RUF059", # Unused unpacked variables
-  "UP006",  # List vs list, etc
   "UP007",  # Option and Union
-  "UP035",  # `typing.Set` is deprecated, use `set` instead"
   "UP045",  # `Optional[T]` vs `T | None`
 ]
 

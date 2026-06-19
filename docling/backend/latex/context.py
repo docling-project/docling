@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Optional
 
 from docling_core.types.doc.document import (
     DocItemLabel,

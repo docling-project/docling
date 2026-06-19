@@ -2,7 +2,7 @@ import logging
 from collections.abc import Iterable, Sequence
 from itertools import groupby
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import Literal, Optional
 
 import numpy
 import torch

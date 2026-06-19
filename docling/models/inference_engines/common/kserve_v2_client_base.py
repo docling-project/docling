@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Mapping, Optional, Protocol
+from collections.abc import Mapping
+from typing import Any, Optional, Protocol
 
 import numpy as np
 
@@ -23,7 +24,7 @@ class KserveV2Client(Protocol):
         inputs: Mapping[str, np.ndarray],
         output_names: list[str],
         request_parameters: Optional[Mapping[str, Any]] = None,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """Execute model inference and return outputs keyed by tensor name."""
 
     def close(self) -> None:

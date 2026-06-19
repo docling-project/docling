@@ -2,7 +2,7 @@ import re
 import warnings
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Optional
 
 import numpy as np
 from PIL import ImageDraw

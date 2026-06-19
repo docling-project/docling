@@ -2,17 +2,13 @@ import re
 from io import BytesIO
 from pathlib import Path
 
-import pytest
-from docling_core.types.doc import DocItemLabel, GroupLabel
+from docling_core.types.doc import DocItemLabel
 
 from docling.backend.latex_backend import LatexDocumentBackend
-from docling.datamodel.backend_options import LatexBackendOptions
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
-from docling.document_converter import DocumentConverter
+from docling.datamodel.document import InputDocument
 
 from ..test_data_gen_flag import GEN_TEST_DATA
-from ..verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
 LATEX_DATA_DIR = Path("./tests/data/latex/")

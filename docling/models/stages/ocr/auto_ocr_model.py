@@ -2,7 +2,7 @@ import logging
 import sys
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional, Type
+from typing import Optional
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -98,7 +98,10 @@ class OcrAutoModel(BaseOcrModel):
             if self._engine is None:
                 try:
                     import torch
-                    from rapidocr import EngineType, RapidOCR  # type: ignore
+                    from rapidocr import (  # type: ignore
+                        EngineType,
+                        RapidOCR,
+                    )
 
                     self._engine = RapidOcrModel(
                         enabled=self.enabled,
@@ -128,5 +131,5 @@ class OcrAutoModel(BaseOcrModel):
         yield from self._engine(conv_res, page_batch)
 
     @classmethod
-    def get_options_type(cls) -> Type[OcrOptions]:
+    def get_options_type(cls) -> type[OcrOptions]:
         return OcrAutoOptions

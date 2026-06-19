@@ -7,7 +7,7 @@ import tempfile
 from collections.abc import Iterable
 from pathlib import Path
 from subprocess import DEVNULL, PIPE, Popen
-from typing import List, Optional, Tuple, Type
+from typing import Optional
 
 import pandas as pd
 from docling_core.types.doc import BoundingBox, CoordOrigin
@@ -52,7 +52,7 @@ class TesseractOcrCliModel(BaseOcrModel):
 
         self._name: Optional[str] = None
         self._version: Optional[str] = None
-        self._tesseract_languages: Optional[List[str]] = None
+        self._tesseract_languages: Optional[list[str]] = None
         self._script_prefix: Optional[str] = None
         self._is_auto: bool = "auto" in self.options.lang
 
@@ -69,7 +69,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                     "Alternatively, Docling has support for other OCR engines. See the documentation."
                 )
 
-    def _get_name_and_version(self) -> Tuple[str, str]:
+    def _get_name_and_version(self) -> tuple[str, str]:
         if self._name is not None and self._version is not None:
             return self._name, self._version  # type: ignore
 
@@ -319,7 +319,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                 yield page
 
     @classmethod
-    def get_options_type(cls) -> Type[OcrOptions]:
+    def get_options_type(cls) -> type[OcrOptions]:
         return TesseractCliOcrOptions
 
 

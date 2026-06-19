@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any, ClassVar, Literal, Optional, Union
@@ -10,35 +9,24 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    field_validator,
 )
 from typing_extensions import deprecated
 
 from docling.datamodel import (
     asr_model_specs,
     stage_model_specs,
-    vlm_model_specs,
 )
 
 # Import the following for backwards compatibility
-from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.chart_extraction_options import (
-    ChartExtractionModelKind,
     ChartExtractionModelOptions,
 )
 from docling.datamodel.extraction_options import ExtractionPromptStyle
 from docling.datamodel.kserve_v2_options import KserveV2OptionsMixin
 from docling.datamodel.layout_model_specs import (
-    DOCLING_LAYOUT_EGRET_LARGE,
-    DOCLING_LAYOUT_EGRET_MEDIUM,
-    DOCLING_LAYOUT_EGRET_XLARGE,
     DOCLING_LAYOUT_HERON,
-    DOCLING_LAYOUT_HERON_101,
-    DOCLING_LAYOUT_V2,
     LayoutModelConfig,
-)
-from docling.datamodel.object_detection_engine_options import (
-    BaseObjectDetectionEngineOptions,
 )
 from docling.datamodel.picture_classification_options import (
     DocumentPictureClassifierOptions,
@@ -46,9 +34,7 @@ from docling.datamodel.picture_classification_options import (
 from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
-    InferenceFramework,
     InlineVlmOptions,
-    ResponseFormat,
 )
 from docling.datamodel.stage_model_specs import (
     ObjectDetectionModelSpec,
@@ -56,15 +42,8 @@ from docling.datamodel.stage_model_specs import (
     StagePresetMixin,
     VlmModelSpec,
 )
-from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
 from docling.datamodel.vlm_model_specs import (
-    GRANITE_VISION_4_1_TRANSFORMERS,
-    GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
-    GRANITE_VISION_TRANSFORMERS as granite_vision_vlm_conversion_options,
     NU_EXTRACT_2B_TRANSFORMERS,
-    SMOLDOCLING_MLX as smoldocling_vlm_mlx_conversion_options,
-    SMOLDOCLING_TRANSFORMERS as smoldocling_vlm_conversion_options,
-    VlmModelType,
 )
 from docling.models.inference_engines.object_detection.base import (
     ObjectDetectionEngineOptionsMixin,

@@ -7,7 +7,7 @@ any VLM engine (Transformers, MLX, API, etc.) through the unified engine interfa
 import logging
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional, Type, Union
+from typing import Optional, Union
 
 from PIL import Image
 
@@ -16,7 +16,6 @@ from docling.datamodel.pipeline_options import (
     PictureDescriptionBaseOptions,
     PictureDescriptionVlmEngineOptions,
 )
-from docling.datamodel.stage_model_specs import EngineModelConfig
 from docling.models.inference_engines.vlm import (
     BaseVlmEngine,
     VlmEngineInput,
@@ -58,7 +57,7 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
     """
 
     @classmethod
-    def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
+    def get_options_type(cls) -> type[PictureDescriptionBaseOptions]:
         return PictureDescriptionVlmEngineOptions
 
     def __init__(

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import numpy as np
 
@@ -141,8 +141,8 @@ class ApiKserveV2ImageClassificationEngine(HfImageClassificationEngineBase):
         )
 
     def predict_batch(
-        self, input_batch: List[ImageClassificationEngineInput]
-    ) -> List[ImageClassificationEngineOutput]:
+        self, input_batch: list[ImageClassificationEngineInput]
+    ) -> list[ImageClassificationEngineOutput]:
         """Run inference on a batch of images against a KServe v2 endpoint."""
         if not input_batch:
             return []

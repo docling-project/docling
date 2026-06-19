@@ -3,7 +3,7 @@ import sys
 import tempfile
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional, Type
+from typing import Optional
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
@@ -141,5 +141,5 @@ class OcrMacModel(BaseOcrModel):
                 yield page
 
     @classmethod
-    def get_options_type(cls) -> Type[OcrOptions]:
+    def get_options_type(cls) -> type[OcrOptions]:
         return OcrMacOptions

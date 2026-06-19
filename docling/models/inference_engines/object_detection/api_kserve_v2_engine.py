@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import numpy as np
 
@@ -164,8 +164,8 @@ class ApiKserveV2ObjectDetectionEngine(HfObjectDetectionEngineBase):
         )
 
     def predict_batch(
-        self, input_batch: List[ObjectDetectionEngineInput]
-    ) -> List[ObjectDetectionEngineOutput]:
+        self, input_batch: list[ObjectDetectionEngineInput]
+    ) -> list[ObjectDetectionEngineOutput]:
         """Run inference on a batch of images against a KServe v2 endpoint."""
         if not input_batch:
             return []
@@ -231,7 +231,7 @@ class ApiKserveV2ObjectDetectionEngine(HfObjectDetectionEngineBase):
                 f"expected {len(input_batch)}, got {len(labels_batch)}"
             )
 
-        batch_outputs: List[ObjectDetectionEngineOutput] = []
+        batch_outputs: list[ObjectDetectionEngineOutput] = []
         for idx, input_item in enumerate(input_batch):
             batch_outputs.append(
                 self._build_output(

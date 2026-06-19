@@ -411,7 +411,6 @@ def test_split_list_handles_none_and_delimiters():
 
 def test_cli_audio_auto_detection(tmp_path):
     """Test that CLI automatically detects audio files and sets ASR pipeline."""
-    from docling.datamodel.base_models import FormatToExtensions, InputFormat
 
     # Create a dummy audio file for testing
     audio_file = tmp_path / "test_audio.mp3"
@@ -431,7 +430,6 @@ def test_cli_audio_auto_detection(tmp_path):
 
 def test_cli_explicit_pipeline_not_overridden(tmp_path):
     """Test that explicit pipeline choice is not overridden by audio auto-detection."""
-    from docling.datamodel.base_models import FormatToExtensions, InputFormat
 
     # Create a dummy audio file for testing
     audio_file = tmp_path / "test_audio.mp3"

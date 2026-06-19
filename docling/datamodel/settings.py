@@ -1,13 +1,14 @@
 import sys
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Annotated, Iterator, Optional, Tuple
+from typing import Annotated, Optional
 
 from pydantic import AfterValidator, BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def _validate_page_range(v: Tuple[int, int]) -> Tuple[int, int]:
+def _validate_page_range(v: tuple[int, int]) -> tuple[int, int]:
     if v[0] < 1 or v[1] < v[0]:
         raise ValueError(
             "Invalid page range: start must be ≥ 1 and end must be ≥ start."
@@ -15,7 +16,7 @@ def _validate_page_range(v: Tuple[int, int]) -> Tuple[int, int]:
     return v
 
 
-PageRange = Annotated[Tuple[int, int], AfterValidator(_validate_page_range)]
+PageRange = Annotated[tuple[int, int], AfterValidator(_validate_page_range)]
 
 DEFAULT_PAGE_RANGE: PageRange = (1, sys.maxsize)
 

@@ -1,6 +1,5 @@
 import datetime
 import logging
-import re
 import sys
 import tempfile
 import time
@@ -8,7 +7,7 @@ import warnings
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Type
+from typing import Annotated
 from urllib.parse import urlparse
 
 # Check for CLI dependencies
@@ -940,7 +939,7 @@ def convert(  # noqa: C901
                 )
                 pipeline_options.images_scale = 2
             pdf_backend = normalize_pdf_backend(pdf_backend)
-            backend: Type[PdfDocumentBackend]
+            backend: type[PdfDocumentBackend]
             if pdf_backend == PdfBackend.DOCLING_PARSE:
                 backend = DoclingParseDocumentBackend  # type: ignore
             elif pdf_backend == PdfBackend.THREADED_DOCLING_PARSE:

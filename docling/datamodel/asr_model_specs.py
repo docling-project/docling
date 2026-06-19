@@ -1,18 +1,12 @@
 import logging
 from enum import Enum
 
-from pydantic import (
-    AnyUrl,
-)
-
-from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.pipeline_options_asr_model import (
     # AsrResponseFormat,
     # ApiAsrOptions,
     InferenceAsrFramework,
     InlineAsrMlxWhisperOptions,
     InlineAsrNativeWhisperOptions,
-    TransformersModelType,
 )
 
 _log = logging.getLogger(__name__)

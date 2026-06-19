@@ -1,7 +1,8 @@
 import logging
+from collections.abc import Iterable
 from io import BytesIO
 from pathlib import Path
-from typing import Iterable, List, Optional, Union
+from typing import Optional, Union
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import (
@@ -152,7 +153,7 @@ class ImageDocumentBackend(PdfDocumentBackend):
             )
 
         # Load frames eagerly for thread-safety across pages
-        self._frames: List[Image.Image] = []
+        self._frames: list[Image.Image] = []
         try:
             with Image.open(self.path_or_stream) as img:  # type: ignore[arg-type]
                 # Handle multi-frame and single-frame images

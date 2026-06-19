@@ -21,9 +21,10 @@ import threading
 import time
 import warnings
 from collections import defaultdict, deque
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Iterable, Sequence, cast
+from typing import Any, cast
 
 import numpy as np
 from docling_core.types.doc import (
@@ -46,7 +47,6 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import ThreadedPdfPipelineOptions
-from docling.datamodel.settings import settings
 from docling.models.factories import (
     get_layout_factory,
     get_ocr_factory,
@@ -69,7 +69,6 @@ from docling.models.stages.reading_order.readingorder_model import (
 )
 from docling.pipeline.base_pipeline import ConvertPipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
-from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
 

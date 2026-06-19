@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from collections.abc import Iterable
 from pathlib import Path
-from typing import List, Optional, Type, Union
+from typing import Optional, Union
 
 from docling_core.types.doc import (
     DescriptionMetaField,
@@ -66,8 +66,8 @@ class PictureDescriptionBaseModel(
                 yield element.item
             return
 
-        images: List[Image.Image] = []
-        elements: List[PictureItem] = []
+        images: list[Image.Image] = []
+        elements: list[PictureItem] = []
         for el in element_batch:
             assert isinstance(el.item, PictureItem)
             describe_image = True
@@ -113,14 +113,14 @@ class PictureDescriptionBaseModel(
 
     @classmethod
     @abstractmethod
-    def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
+    def get_options_type(cls) -> type[PictureDescriptionBaseOptions]:
         pass
 
 
 def _passes_classification(
     meta: Optional[PictureMeta],
-    allow: Optional[List[PictureClassificationLabel]],
-    deny: Optional[List[PictureClassificationLabel]],
+    allow: Optional[list[PictureClassificationLabel]],
+    deny: Optional[list[PictureClassificationLabel]],
     min_confidence: float,
 ) -> bool:
     if not allow and not deny:

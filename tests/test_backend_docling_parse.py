@@ -6,7 +6,6 @@ import pytest
 from docling_core.types.doc import CoordOrigin
 from PIL import Image, ImageDraw, ImageStat
 
-import docling.backend.docling_parse_backend as docling_parse_backend_module
 from docling.backend.docling_parse_backend import (
     DoclingParseDocumentBackend,
     DoclingParsePageBackend,

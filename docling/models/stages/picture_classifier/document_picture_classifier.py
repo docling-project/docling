@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -149,8 +149,8 @@ class DocumentPictureClassifier(
         if self.engine is None:
             raise RuntimeError("Picture classifier engine is not initialized.")
 
-        images: List[Union[Image.Image, np.ndarray]] = []
-        elements: List[PictureItem] = []
+        images: list[Union[Image.Image, np.ndarray]] = []
+        elements: list[PictureItem] = []
         for i, el in enumerate(element_batch):
             assert isinstance(el.item, PictureItem)
             elements.append(el.item)

@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle
 
@@ -7,7 +5,7 @@ CLIPPED_ORIENTATIONS = [0, 90, 180, 270]
 
 
 def rotate_bounding_box(
-    bbox: BoundingBox, angle: int, im_size: Tuple[int, int]
+    bbox: BoundingBox, angle: int, im_size: tuple[int, int]
 ) -> BoundingRectangle:
     # The box is left top width height in TOPLEFT coordinates
     # Bounding rectangle start with r_0 at the bottom left whatever the

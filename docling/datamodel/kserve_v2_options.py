@@ -1,7 +1,7 @@
 """Common KServe v2 API configuration options mixin."""
 
 import warnings
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Literal, Optional
 
 from pydantic import AliasChoices, BaseModel, Field, model_validator
 
@@ -45,12 +45,12 @@ class KserveV2OptionsMixin(BaseModel):
         ),
     )
 
-    headers: Dict[str, str] = Field(
+    headers: dict[str, str] = Field(
         default_factory=dict,
         description="Optional HTTP headers for authentication/routing when transport='http'.",
     )
 
-    grpc_metadata: Dict[str, str] = Field(
+    grpc_metadata: dict[str, str] = Field(
         default_factory=dict,
         description=(
             "Optional gRPC metadata for authentication/routing when transport='grpc'. "
@@ -72,7 +72,7 @@ class KserveV2OptionsMixin(BaseModel):
         description="Max send/receive gRPC message size in bytes.",
     )
 
-    grpc_channel_args: List[Tuple[str, Any]] = Field(
+    grpc_channel_args: list[tuple[str, Any]] = Field(
         default_factory=list,
         description=(
             "Extra gRPC channel args forwarded to the underlying channel. "
@@ -94,7 +94,7 @@ class KserveV2OptionsMixin(BaseModel):
         description="Per-request timeout in seconds for both HTTP and gRPC calls.",
     )
 
-    request_parameters: Dict[str, Any] = Field(
+    request_parameters: dict[str, Any] = Field(
         default_factory=dict,
         description="Optional top-level KServe v2 infer request parameters.",
     )

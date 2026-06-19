@@ -1,7 +1,7 @@
 import time
 from datetime import datetime, timezone
 from enum import Enum
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 import numpy as np
 from pydantic import BaseModel
@@ -20,8 +20,8 @@ class ProfilingScope(str, Enum):
 class ProfilingItem(BaseModel):
     scope: ProfilingScope
     count: int = 0
-    times: List[float] = []
-    start_timestamps: List[datetime] = []
+    times: list[float] = []
+    start_timestamps: list[datetime] = []
 
     def total(self) -> float:
         return np.sum(self.times)  # type: ignore

@@ -1,5 +1,4 @@
 import logging
-import sys
 import threading
 import time
 from collections.abc import Iterable
@@ -51,7 +50,11 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
 
         if self.enabled:
             try:
-                from mlx_vlm import generate, load, stream_generate  # type: ignore
+                from mlx_vlm import (  # type: ignore
+                    generate,
+                    load,
+                    stream_generate,
+                )
                 from mlx_vlm.prompt_utils import apply_chat_template  # type: ignore
                 from mlx_vlm.utils import load_config  # type: ignore
             except ImportError:

@@ -3,8 +3,6 @@ import os
 from pathlib import Path
 
 from docling.backend.asciidoc_backend import (
-    DEFAULT_IMAGE_HEIGHT,
-    DEFAULT_IMAGE_WIDTH,
     AsciiDocBackend,
 )
 from docling.datamodel.base_models import InputFormat

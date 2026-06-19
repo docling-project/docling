@@ -1,7 +1,7 @@
 import re
 from collections.abc import Iterable
 from pathlib import Path
-from typing import List, Literal, Optional, Tuple, Union
+from typing import Literal, Optional, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -158,7 +158,7 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
             )
         )
 
-    def _extract_code_language(self, input_string: str) -> Tuple[str, Optional[str]]:
+    def _extract_code_language(self, input_string: str) -> tuple[str, Optional[str]]:
         """Extracts a programming language from the beginning of a string.
 
         This function checks if the input string starts with a pattern of the form
@@ -304,9 +304,9 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
                 yield element.item
             return
 
-        labels: List[str] = []
-        images: List[Union[Image.Image, np.ndarray]] = []
-        elements: List[TextItem] = []
+        labels: list[str] = []
+        images: list[Union[Image.Image, np.ndarray]] = []
+        elements: list[TextItem] = []
         for el in element_batch:
             elements.append(el.item)  # type: ignore[arg-type]
             labels.append(el.item.label)  # type: ignore[attr-defined]

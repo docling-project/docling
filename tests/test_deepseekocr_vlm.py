@@ -1,8 +1,6 @@
 """Test DeepSeek OCR markdown parsing in VLM pipeline."""
 
-import json
 import os
-import sys
 from pathlib import Path
 
 import pytest
@@ -16,7 +14,6 @@ from docling.datamodel.base_models import (
     PagePredictions,
     VlmPrediction,
 )
-from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import VlmPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline

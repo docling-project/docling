@@ -3,13 +3,11 @@ import logging
 import time
 from pathlib import Path
 
-from docling_core.types.doc import ImageRefMode
 from tqdm import tqdm
 
 from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.document_converter import DocumentConverter, HTMLFormatOption
-from docling.utils.visualization import draw_clusters
 
 _log = logging.getLogger(__name__)
 

@@ -7,7 +7,7 @@ from collections.abc import Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from pathlib import Path
-from typing import Optional, Type, Union
+from typing import Optional, Union
 
 from pydantic import ConfigDict, model_validator, validate_call
 from typing_extensions import Self
@@ -54,7 +54,7 @@ class ExtractionFormatOption(BaseFormatOption):
         - `backend` is the document-opening backend used by `_DocumentConversionInput`.
     """
 
-    pipeline_cls: Type[BaseExtractionPipeline]
+    pipeline_cls: type[BaseExtractionPipeline]
 
     @model_validator(mode="after")
     def set_optional_field_default(self) -> Self:
@@ -71,7 +71,7 @@ def _get_default_extraction_option(fmt: InputFormat) -> ExtractionFormatOption:
     the VLM extractor. This duplication will be removed when we deduplicate
     the format registry between convert/extract.
     """
-    format_to_default_backend: dict[InputFormat, Type[AbstractDocumentBackend]] = {
+    format_to_default_backend: dict[InputFormat, type[AbstractDocumentBackend]] = {
         InputFormat.IMAGE: ImageDocumentBackend,
         InputFormat.PDF: PyPdfiumDocumentBackend,
     }
@@ -116,7 +116,7 @@ class DocumentExtractor:
 
         # Cache pipelines by (class, options-hash)
         self._initialized_pipelines: dict[
-            tuple[Type[BaseExtractionPipeline], str], BaseExtractionPipeline
+            tuple[type[BaseExtractionPipeline], str], BaseExtractionPipeline
         ] = {}
 
     # ---------------------------- Public API ---------------------------------

@@ -1,7 +1,7 @@
 import enum
 import logging
 from abc import ABCMeta
-from typing import Generic, Optional, Type, TypeVar
+from typing import Generic, Optional, TypeVar
 
 from pluggy import PluginManager
 from pydantic import BaseModel
@@ -28,8 +28,8 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
         self.plugin_name = plugin_name
         self.plugin_attr_name = plugin_attr_name
 
-        self._classes: dict[Type[BaseOptions], Type[A]] = {}
-        self._meta: dict[Type[BaseOptions], FactoryMeta] = {}
+        self._classes: dict[type[BaseOptions], type[A]] = {}
+        self._meta: dict[type[BaseOptions], FactoryMeta] = {}
 
     @property
     def registered_kind(self) -> list[str]:
@@ -74,7 +74,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
 
         return f"No class found with the name {kind!r}, known classes are:\n{msg_str}"
 
-    def register(self, cls: Type[A], plugin_name: str, plugin_module_name: str):
+    def register(self, cls: type[A], plugin_name: str, plugin_module_name: str):
         opt_type = cls.get_options_type()
 
         if opt_type in self._classes:

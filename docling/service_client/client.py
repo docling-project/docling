@@ -71,7 +71,6 @@ from docling.datamodel.service.targets import (
     ZipTarget,
 )
 from docling.datamodel.settings import DocumentLimits, PageRange
-from docling.service_client._scheduler import _run_bounded
 from docling.service_client.exceptions import (
     ArtifactDownloadError,
     ConversionError,
@@ -82,7 +81,6 @@ from docling.service_client.exceptions import (
     ServiceUnavailableError,
     TaskExecutionError,
     TaskNotFoundError,
-    TaskTimeoutError,
     UsageLimitExceededError,
 )
 from docling.service_client.job import ConversionJob, _JobHandlers
@@ -90,7 +88,6 @@ from docling.service_client.watchers import (
     PollingWatcher,
     StatusWatcher,
     WebSocketWatcher,
-    _poll_sleep_duration,
     is_terminal_task_status,
 )
 

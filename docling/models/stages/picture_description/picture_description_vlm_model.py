@@ -2,7 +2,7 @@ import sys
 import threading
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional, Type, Union
+from typing import Optional, Union
 
 from PIL import Image
 
@@ -25,7 +25,7 @@ class PictureDescriptionVlmModel(
     PictureDescriptionBaseModel, HuggingFaceModelDownloadMixin
 ):
     @classmethod
-    def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
+    def get_options_type(cls) -> type[PictureDescriptionBaseOptions]:
         return PictureDescriptionVlmOptions
 
     def __init__(

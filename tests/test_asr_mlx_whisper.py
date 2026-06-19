@@ -12,11 +12,8 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from docling.datamodel.asr_model_specs import (
     WHISPER_BASE,
     WHISPER_BASE_MLX,
-    WHISPER_LARGE,
     WHISPER_LARGE_MLX,
-    WHISPER_MEDIUM,
     WHISPER_SMALL,
-    WHISPER_TINY,
     WHISPER_TURBO,
 )
 from docling.datamodel.pipeline_options import AsrPipelineOptions

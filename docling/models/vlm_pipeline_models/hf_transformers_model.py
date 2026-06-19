@@ -5,7 +5,7 @@ import sys
 import time
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 import numpy as np
 from packaging import version

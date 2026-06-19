@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Callable, List, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typing import Any
@@ -28,10 +29,10 @@ class TableHelperMixin:
         self,
         n: LatexMacroNode,
         source_latex: str,
-        current_cell_nodes: List,
+        current_cell_nodes: list,
         finish_cell_fn: Callable[..., None],
         finish_row_fn: Callable[[], None],
-        parse_brace_args_fn: Callable[[str], List[str]],
+        parse_brace_args_fn: Callable[[str], list[str]],
     ):
         if n.macroname == "\\":  # Row break
             finish_row_fn()

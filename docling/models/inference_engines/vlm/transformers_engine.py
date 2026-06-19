@@ -6,11 +6,10 @@ import logging
 import sys
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import torch
 from packaging import version
-from PIL.Image import Image
 from transformers import (
     AutoModel,
     AutoModelForCausalLM,
@@ -296,7 +295,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             return None
         return getattr(self.processor, "tokenizer", None) or self.processor
 
-    def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
+    def predict_batch(self, input_batch: list[VlmEngineInput]) -> list[VlmEngineOutput]:
         """Run inference on a batch of inputs efficiently.
 
         This method processes multiple images in a single forward pass,

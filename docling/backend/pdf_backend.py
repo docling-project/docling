@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator
 from io import BytesIO
 from pathlib import Path
-from typing import ClassVar, Optional, Set, Union
+from typing import ClassVar, Optional, Union
 
 from docling_core.types.doc import BoundingBox, Size
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
@@ -87,7 +87,7 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
             yield self.load_page(page_index)
 
     @classmethod
-    def supported_formats(cls) -> Set[InputFormat]:
+    def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.PDF}
 
     @classmethod

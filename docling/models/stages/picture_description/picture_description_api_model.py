@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Optional, Type, Union
+from typing import Optional, Union
 
 from PIL import Image
 
@@ -19,7 +19,7 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
     # elements_batch_size = 4
 
     @classmethod
-    def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
+    def get_options_type(cls) -> type[PictureDescriptionBaseOptions]:
         return PictureDescriptionApiOptions
 
     def __init__(

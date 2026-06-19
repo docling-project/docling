@@ -5,8 +5,9 @@ implementations to avoid code duplication and ensure consistency.
 """
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 from PIL import Image
@@ -48,8 +49,8 @@ def normalize_image_to_pil(image: Union[Image.Image, np.ndarray]) -> Image.Image
 
 
 def preprocess_image_batch(
-    images: List[Union[Image.Image, np.ndarray]],
-) -> List[Image.Image]:
+    images: list[Union[Image.Image, np.ndarray]],
+) -> list[Image.Image]:
     """Preprocess a batch of images to RGB PIL Images.
 
     Args:
@@ -62,8 +63,8 @@ def preprocess_image_batch(
 
 
 def extract_generation_stoppers(
-    extra_config: Dict[str, Any],
-) -> List[GenerationStopper]:
+    extra_config: dict[str, Any],
+) -> list[GenerationStopper]:
     """Extract and instantiate GenerationStopper instances from config.
 
     This handles both GenerationStopper instances and classes, instantiating
@@ -75,7 +76,7 @@ def extract_generation_stoppers(
     Returns:
         List of GenerationStopper instances
     """
-    stoppers: List[GenerationStopper] = []
+    stoppers: list[GenerationStopper] = []
     custom_criteria = extra_config.get("custom_stopping_criteria", [])
 
     for criteria in custom_criteria:

@@ -16,7 +16,6 @@ from typing import (
     Annotated,
     Literal,
     Optional,
-    Type,
     Union,
 )
 
@@ -24,26 +23,18 @@ import filetype
 
 # DO NOT REMOVE; explicitly exposed from this location
 from docling_core.types.doc import (
-    DocItem,
     DocItemLabel,
     DoclingDocument,
-    PictureItem,
-    SectionHeaderItem,
-    TableItem,
-    TextItem,
 )
-from docling_core.types.doc.document import ListItem
 from docling_core.utils.file import (
     FileSizeLimitExceededError,
     resolve_remote_filename,
     resolve_source_to_stream,
 )
 from pydantic import AnyHttpUrl, BaseModel, Field, TypeAdapter, ValidationError
-from typing_extensions import deprecated
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
-    DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
 from docling.datamodel.backend_options import (
@@ -125,7 +116,7 @@ class InputDocument(BaseModel):
         self,
         path_or_stream: Union[BytesIO, Path],
         format: InputFormat,
-        backend: Type[AbstractDocumentBackend],
+        backend: type[AbstractDocumentBackend],
         backend_options: Optional[BackendOptions] = None,
         filename: Optional[str] = None,
         limits: Optional[DocumentLimits] = None,
@@ -226,7 +217,7 @@ class InputDocument(BaseModel):
 
     def _init_doc(
         self,
-        backend: Type[AbstractDocumentBackend],
+        backend: type[AbstractDocumentBackend],
         path_or_stream: Union[BytesIO, Path],
     ) -> None:
         if self.backend_options:
@@ -494,7 +485,7 @@ class _DocumentConversionInput(BaseModel):
             else:
                 obj = item
             format = self._guess_format(obj)
-            backend: Type[AbstractDocumentBackend]
+            backend: type[AbstractDocumentBackend]
             backend_options: Optional[BackendOptions] = None
             if not format or format not in format_options:
                 _log.error(

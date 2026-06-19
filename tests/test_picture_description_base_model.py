@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from types import SimpleNamespace
-from typing import ClassVar, List, Type
+from typing import ClassVar
 
 import pytest
 from docling_core.types.doc import (
@@ -40,7 +40,7 @@ class _ConfiguredPictureDescriptionModel(PictureDescriptionBaseModel):
         )
 
     @classmethod
-    def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
+    def get_options_type(cls) -> type[PictureDescriptionBaseOptions]:
         return _TestOptions
 
     def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
@@ -51,7 +51,7 @@ class _ConfiguredPictureDescriptionModel(PictureDescriptionBaseModel):
 class _BatchRecordingPictureDescriptionModel(_ConfiguredPictureDescriptionModel):
     def __init__(self, options: PictureDescriptionBaseOptions) -> None:
         super().__init__(options)
-        self.batch_sizes: List[int] = []
+        self.batch_sizes: list[int] = []
 
     def __call__(
         self,

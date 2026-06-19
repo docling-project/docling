@@ -30,7 +30,6 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     PictureDescriptionVlmEngineOptions,
-    PictureDescriptionVlmOptions,
 )
 from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
