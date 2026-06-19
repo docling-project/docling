@@ -42,6 +42,7 @@ def _el(
 
 _H = DocItemLabel.SECTION_HEADER
 _T = DocItemLabel.TEXT
+_PF = DocItemLabel.PAGE_FOOTER
 
 
 def test_side_headings_are_interleaved_with_their_paragraph():
@@ -72,6 +73,43 @@ def test_single_column_layout_is_unchanged():
     result = ReadingOrderModel._reorder_side_headings(predicted)
 
     assert [e.cid for e in result] == [0, 1, 2, 3]
+
+
+def test_real_world_full_width_line_does_not_block_interleaving():
+    """Regression for TechnicalSupplement.pdf page 1 (reported on PR #3648).
+
+    A full-width trademark line spans the whole page, so a naive "header is
+    disjoint from all body" guard misclassifies every left-margin header and the
+    page title ends up 4th. The geometry below is taken verbatim from that page
+    (bounding boxes only, no text), in the order the rule-based predictor emits
+    it: the left-column headers first, then the right column.
+    """
+    # cid: (label, left, right, bottom, top); bottom-left origin.
+    geom = {
+        0: (_H, 195.2, 470.0, 479.2, 511.6),  # page title (right column)
+        1: (_T, 195.7, 460.3, 466.5, 477.4),  # subtitle
+        2: (_H, 73.1, 183.1, 437.1, 447.8),  # "Package Contents"
+        3: (_T, 195.7, 512.9, 409.2, 447.5),
+        4: (_H, 55.8, 183.2, 392.4, 403.1),  # "Required Equipment"
+        5: (_T, 195.9, 513.4, 373.1, 401.6),
+        6: (_T, 196.1, 513.0, 343.1, 371.4),
+        7: (_T, 196.2, 513.5, 283.7, 341.5),
+        8: (_T, 196.4, 513.4, 253.7, 282.0),
+        9: (_H, 55.3, 183.9, 237.0, 247.7),  # "Installation Concepts"
+        10: (_T, 196.7, 513.8, 198.4, 246.1),
+        11: (_T, 196.9, 514.0, 139.3, 196.9),
+        13: (_T, 49.1, 512.5, 41.3, 60.8),  # full-width trademark line
+        12: (_PF, 197.9, 361.5, 62.0, 70.2),
+        14: (_PF, 279.4, 281.4, 14.6, 21.9),
+    }
+    els = {cid: _el(cid, *args) for cid, args in geom.items()}
+    predictor_order = [2, 4, 9, 0, 1, 3, 5, 6, 7, 8, 10, 11, 13, 12, 14]
+    predicted = [els[cid] for cid in predictor_order]
+
+    result = [e.cid for e in ReadingOrderModel._reorder_side_headings(predicted)]
+
+    # Title first, then each side-heading immediately before its paragraph(s).
+    assert result == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 12, 14]
 
 
 def test_true_two_column_layout_is_unchanged():

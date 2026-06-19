@@ -61,10 +61,13 @@ class ReadingOrderModel:
         side-heading to sit immediately before the body block it is row-aligned
         with, restoring ``header -> paragraph`` reading order.
 
-        A header is only treated as a side-heading when it is horizontally
-        disjoint from every body block (i.e. it lives in a margin rather than
-        heading a column), so single-column and ordinary multi-column layouts
-        are left untouched.
+        A header is treated as a side-heading only when it does *not* head a
+        body block directly below it (i.e. it does not start its own column) and
+        a body block sits row-aligned to its right. Ordinary single-column and
+        multi-column headers head the text beneath them, so they are left
+        untouched -- this holds even when a full-width element (footer, banner)
+        spans the page, which a simpler "disjoint from all body" test would trip
+        over.
         See https://github.com/docling-project/docling/issues/3643.
         """
         body_labels = ReadingOrderModel._SIDE_HEADING_BODY_LABELS
@@ -76,6 +79,9 @@ class ReadingOrderModel:
 
         anchor: dict[int, int] = {}  # header index -> body index it precedes
         for indices in page_to_indices.values():
+            if not indices:
+                continue
+            page_height = sorted_elements[indices[0]].page_size.height
             body_indices = [
                 i for i in indices if sorted_elements[i].label in body_labels
             ]
@@ -83,19 +89,34 @@ class ReadingOrderModel:
                 header = sorted_elements[i]
                 if header.label != DocItemLabel.SECTION_HEADER:
                     continue
-                # Ordinary headers share a column with body text (horizontal
-                # overlap); only margin headers are disjoint from all of it.
-                if any(
-                    header.overlaps_horizontally(sorted_elements[b])
+
+                header_height = header.t - header.b
+                header_width = max(header.r - header.l, 1.0)
+                header_center_x = 0.5 * (header.l + header.r)
+                # A header may sit slightly above its own text, so allow a small
+                # vertical gap before deciding it heads a column below.
+                gap = max(2.0 * header_height, 0.04 * page_height)
+
+                # Ordinary header: it heads a body block directly beneath it in
+                # its own column (wide horizontal overlap, small vertical gap).
+                # A distant full-width line (footer, banner) does not qualify.
+                heads_column_below = any(
+                    header.x_overlap_with(sorted_elements[b]) >= 0.5 * header_width
+                    and -1.0 <= (header.b - sorted_elements[b].t) <= gap
                     for b in body_indices
-                ):
+                )
+                if heads_column_below:
                     continue
-                # Attach to the nearest body block to the right on the same row.
-                min_overlap = 0.5 * (header.t - header.b)
+
+                # Side-heading: attach to the nearest row-aligned body block that
+                # starts to the right of the header's horizontal center. Using
+                # the center (not the right edge) tolerates a header that
+                # overhangs the body column by a few points.
+                min_overlap = 0.5 * header_height
                 best_body: int | None = None
                 for b in body_indices:
                     body = sorted_elements[b]
-                    if not header.is_strictly_left_of(body):
+                    if header_center_x >= body.l:
                         continue
                     if header.y_overlap_with(body) < min_overlap:
                         continue
