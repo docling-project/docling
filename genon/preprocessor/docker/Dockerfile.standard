@@ -50,16 +50,18 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TMPDIR=/app/tmp \
     HF_HOME=/app/.cache/huggingface \
     NLTK_DATA=/app/nltk_data
-# 이슈 #286 빌드 안정화 — python3.13 핀이 sid 를 끌어오는 캐스케이드로 sudo/systemd 가
-# sid 버전으로 당겨지는데, 두 패키지의 sid postinst 가 빌드 컨테이너에서 깨진다
-# (systemd: /etc/machine-id "Failed to enable units" / sudo: "Failed to read sudo.conf").
-# → 핀에서 sudo·systemd 를 sid 금지(Pin-Priority: -1)해 안정판 trixie 로 받는다.
+# 이슈 #286 빌드 안정화 — sudo/systemd 가 sid 버전으로 당겨지면 두 패키지의 sid postinst 가
+# 빌드 컨테이너에서 깨진다(systemd: /etc/machine-id / sudo: "Failed to read sudo.conf").
+# 주의: 기존 pin-python3.13 파일은 확장자 '.13' 탓에 apt 가 통째로 무시한다(이름 규칙 위반)
+#   → sid 억제 핀이 실제로 동작 안 함. 그 파일은 광범위 영향을 피하려 그대로 두고,
+#   제대로 읽히는 .pref 파일로 sudo·systemd 만 trixie(우선순위 1001)로 강제한다.
 # 추가로 sudo 의 `systemd | systemd-standalone-tmpfiles | systemd-tmpfiles` 의존은
 # 풀 systemd 대신 컨테이너 친화적 systemd-standalone-tmpfiles 로 충족시킨다.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     echo "deb http://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/sid.list && \
-    printf "Package: python3.13 python3.13-minimal libpython3.13 libpython3.13-minimal libpython3.13-stdlib\nPin: release a=sid\nPin-Priority: 990\n\nPackage: sudo systemd\nPin: release a=sid\nPin-Priority: -1\n\nPackage: *\nPin: release a=sid\nPin-Priority: 100\n" > /etc/apt/preferences.d/pin-python3.13 && \
+    printf "Package: python3.13 python3.13-minimal libpython3.13 libpython3.13-minimal libpython3.13-stdlib\nPin: release a=sid\nPin-Priority: 990\n\nPackage: *\nPin: release a=sid\nPin-Priority: 100\n" > /etc/apt/preferences.d/pin-python3.13 && \
+    printf "Package: sudo systemd\nPin: release n=trixie\nPin-Priority: 1001\n" > /etc/apt/preferences.d/force-trixie-sudo.pref && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
       net-tools \
