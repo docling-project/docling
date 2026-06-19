@@ -805,6 +805,15 @@ def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
     내부 구현은 `genon.preprocessor.converters.hwp_to_pdf` 모듈에 통합되어 있다.
     """
     from genon.preprocessor.converters.hwp_to_pdf import convert_hwp_to_pdf
+    # 이슈 #286 — 변환 backend(pdf_sdk/rhwp/libreoffice)가 전무하면(빌드 시 OFF) 변환 시도가
+    # 무의미하므로, PDF 직접 입력을 안내하는 warning 한 번만 남기고 None 을 반환한다.
+    if not _has_any_pdf_converter():
+        _log.warning(
+            "[convert_to_pdf] PDF 변환기(rhwp/LibreOffice/PDF SDK)가 설치되어 있지 않습니다 "
+            f"(이슈 #286). '{os.path.basename(file_path)}' 변환을 건너뜁니다. PDF 로 변환된 "
+            "파일을 입력하거나, 변환기를 포함해 전처리기 이미지를 다시 빌드하세요 (genon/README.md 참고)."
+        )
+        return None
     ext = os.path.splitext(file_path)[1].lower()
     is_hwp = ext in (".hwp", ".hwpx")
     if use_pdf_sdk:
@@ -812,6 +821,25 @@ def convert_to_pdf(file_path: str, use_pdf_sdk: bool = True) -> str | None:
     else:
         order = ["rhwp", "libreoffice"] if is_hwp else ["libreoffice"]
     return convert_hwp_to_pdf(file_path, order=order)
+
+
+def _has_any_pdf_converter() -> bool:
+    """PDF 변환 backend(pdf_sdk / rhwp / libreoffice) 가 하나라도 가용한지 확인 (이슈 #286).
+
+    빌드 시 INSTALL_LIBREOFFICE / INSTALL_RHWP 를 끄거나 PDF SDK 미포함(standard)이면
+    변환 backend 가 0개가 될 수 있다. 가용성 판단 자체가 불가하면(import 실패 등) True 를
+    반환해 기존 동작을 유지한다.
+    """
+    try:
+        from genon.preprocessor.converters.hwp_to_pdf.availability import (
+            libreoffice_available,
+            pdf_sdk_available,
+            rhwp_available,
+        )
+        return bool(pdf_sdk_available() or rhwp_available() or libreoffice_available())
+    except Exception:
+        return True
+
 
 def _get_pdf_path(file_path: str) -> str:
     """
