@@ -270,7 +270,12 @@ def _is_libreoffice_available() -> bool:
     try:
         from genon.preprocessor.converters.hwp_to_pdf.availability import libreoffice_available
         return bool(libreoffice_available())
-    except Exception:
+    except ImportError:
+        # facade 단일 파일 실행 등으로 모듈 import 가 안 되는 경우 → 기존 동작 유지(가용 가정)
+        return True
+    except Exception as exc:
+        # 가용성 probe 자체가 예기치 못하게 실패하면 로그만 남기고 파이프라인은 막지 않는다
+        _log.warning(f"[_is_libreoffice_available] LibreOffice 가용성 확인 실패: {exc}")
         return True
 
 

@@ -837,7 +837,12 @@ def _has_any_pdf_converter() -> bool:
             rhwp_available,
         )
         return bool(pdf_sdk_available() or rhwp_available() or libreoffice_available())
-    except Exception:
+    except ImportError:
+        # facade 단일 파일 실행 등으로 모듈 import 가 안 되는 경우 → 기존 동작 유지(가용 가정)
+        return True
+    except Exception as exc:
+        # 가용성 probe 자체가 예기치 못하게 실패하면 로그만 남기고 파이프라인은 막지 않는다
+        _log.warning(f"[_has_any_pdf_converter] PDF 변환기 가용성 확인 실패: {exc}")
         return True
 
 
