@@ -26,6 +26,8 @@ STRICT_BBOX_TOL_RATIO = 0.0025  # allow minor cross-platform layout variance
 FUZZY_BBOX_TOL_RATIO = (
     0.005  # OCR/image output varies more, but gross shifts should fail
 )
+STRICT_IMAGE_SIZE_TOL_RATIO = 0.015  # allow ~1.5% cross-platform image size variance
+FUZZY_IMAGE_SIZE_TOL_RATIO = 0.05  # OCR/image output varies more, allow ~5%
 
 
 class _TestPagesMeta(BaseModel):
@@ -171,13 +173,45 @@ def verify_table_v2(true_item: TableItem, pred_item: TableItem, fuzzy: bool):
 
 
 def verify_picture_image_v2(
-    true_image: PILImage.Image, pred_item: Optional[PILImage.Image]
-):
+    true_image: PILImage.Image, pred_item: Optional[PILImage.Image], fuzzy: bool = False
+) -> None:
+    """Compare image properties with optional fuzziness for cross-platform variance.
+
+    Args:
+        true_image: Ground truth image
+        pred_item: Predicted image
+        fuzzy: If True, allow larger size differences (e.g., OCR/image processing variance)
+
+    Note:
+        We don't compare image bytes as they can vary significantly across platforms even for visually identical images
+    """
     assert pred_item is not None, "predicted image is None"
-    assert true_image.size == pred_item.size
-    assert true_image.mode == pred_item.mode
-    # assert true_image.tobytes() == pred_item.tobytes()
-    return True
+
+    # Check image mode (should be exact)
+    assert true_image.mode == pred_item.mode, (
+        f"Image mode mismatch: {true_image.mode} vs {pred_item.mode}"
+    )
+
+    # Check image size with percentage-based tolerance
+    tol_ratio = FUZZY_IMAGE_SIZE_TOL_RATIO if fuzzy else STRICT_IMAGE_SIZE_TOL_RATIO
+    true_width, true_height = true_image.size
+    pred_width, pred_height = pred_item.size
+
+    # Calculate tolerance based on the true image dimensions
+    width_tol = max(1, int(true_width * tol_ratio))
+    height_tol = max(1, int(true_height * tol_ratio))
+
+    width_diff = abs(true_width - pred_width)
+    height_diff = abs(true_height - pred_height)
+
+    assert width_diff <= width_tol, (
+        f"Image width mismatch: {true_width} vs {pred_width} "
+        f"(diff: {width_diff}, tol: {width_tol} [{tol_ratio:.1%}])"
+    )
+    assert height_diff <= height_tol, (
+        f"Image height mismatch: {true_height} vs {pred_height} "
+        f"(diff: {height_diff}, tol: {height_tol} [{tol_ratio:.1%}])"
+    )
 
 
 def verify_docitems(
@@ -285,7 +319,7 @@ def verify_docitems(
             true_image = true_item.get_image(doc=doc_true)
             pred_image = pred_item.get_image(doc=doc_pred)
             if true_image is not None:
-                assert verify_picture_image_v2(true_image, pred_image), (
+                assert verify_picture_image_v2(true_image, pred_image, fuzzy=fuzzy), (
                     f"[{pdf_filename}] Picture image mismatch"
                 )
         # TODO: check picture annotations
