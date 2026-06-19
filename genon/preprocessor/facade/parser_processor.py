@@ -259,20 +259,17 @@ def _resolve_default_parser_config_path() -> str:
 # 헬퍼 함수 (from attachment_processor.py)
 # ============================================================
 
-def _has_any_pdf_converter() -> bool:
-    """PDF 변환 backend(pdf_sdk / rhwp / libreoffice) 가 하나라도 가용한지 확인 (이슈 #286).
+def _is_libreoffice_available() -> bool:
+    """LibreOffice 가 가용한지 확인 (이슈 #286).
 
-    빌드 시 INSTALL_LIBREOFFICE / INSTALL_RHWP 를 끄거나 PDF SDK 미포함(standard)이면
-    변환 backend 가 0개가 될 수 있다. 가용성 판단 자체가 불가하면(import 실패 등) True 를
-    반환해 기존 동작을 유지한다.
+    parser_processor 의 convert_to_pdf 는 soffice(LibreOffice) 단독 구현이라,
+    rhwp/pdf_sdk 와 무관하게 LibreOffice 가용성만 따져야 정확하다. 빌드 시
+    INSTALL_LIBREOFFICE 를 끄면 False. 가용성 판단 자체가 불가하면(import 실패 등)
+    True 를 반환해 기존 동작을 유지한다.
     """
     try:
-        from genon.preprocessor.converters.hwp_to_pdf.availability import (
-            libreoffice_available,
-            pdf_sdk_available,
-            rhwp_available,
-        )
-        return bool(pdf_sdk_available() or rhwp_available() or libreoffice_available())
+        from genon.preprocessor.converters.hwp_to_pdf.availability import libreoffice_available
+        return bool(libreoffice_available())
     except Exception:
         return True
 
@@ -282,11 +279,11 @@ def convert_to_pdf(file_path: str) -> str | None:
     LibreOffice로 PDF 변환을 시도한다.
     실패해도 예외를 던지지 않고 None을 반환한다.
     """
-    # 이슈 #286 — 변환 backend(LibreOffice 등)가 전무하면 변환 시도가 무의미하므로,
+    # 이슈 #286 — LibreOffice 가 없으면(이 함수는 soffice 단독 사용) 변환 시도가 무의미하므로,
     # PDF 직접 입력을 안내하는 warning 한 번만 남기고 None 을 반환한다.
-    if not _has_any_pdf_converter():
+    if not _is_libreoffice_available():
         _log.warning(
-            "[convert_to_pdf] PDF 변환기(rhwp/LibreOffice/PDF SDK)가 설치되어 있지 않습니다 "
+            "[convert_to_pdf] PDF 변환기(LibreOffice)가 설치되어 있지 않습니다 "
             f"(이슈 #286). '{os.path.basename(file_path)}' 변환을 건너뜁니다. PDF 로 변환된 "
             "파일을 입력하거나, 변환기를 포함해 전처리기 이미지를 다시 빌드하세요 (genon/README.md 참고)."
         )
@@ -1969,12 +1966,12 @@ class DocumentProcessor:
                     converted = convert_to_pdf(file_path)
                     if converted:
                         return self._parse_docling(converted, **kwargs)
-                    # 이슈 #286 — HWP SDK 도 실패하고 PDF 변환기마저 없으면, 원인을 명확히
-                    # 안내한다 (혼란스러운 SDK 에러 대신 PDF 직접 입력/재빌드 안내).
-                    if not _has_any_pdf_converter():
+                    # 이슈 #286 — HWP SDK 도 실패하고 LibreOffice(이 경로의 유일한 변환기)마저
+                    # 없으면, 원인을 명확히 안내한다 (혼란스러운 SDK 에러 대신 PDF 직접 입력/재빌드).
+                    if not _is_libreoffice_available():
                         raise GenosServiceException(
                             1,
-                            f"이 전처리기 이미지에는 PDF 변환기(rhwp/LibreOffice/PDF SDK)가 설치되어 "
+                            f"이 전처리기 이미지에는 PDF 변환기(LibreOffice)가 설치되어 "
                             f"있지 않아 '{os.path.basename(file_path)}' 처리에 실패했습니다. "
                             f"PDF 로 변환한 파일을 입력하거나, 변환기를 포함해 전처리기 이미지를 다시 "
                             f"빌드하세요 (genon/README.md 참고).",
