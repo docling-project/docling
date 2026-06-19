@@ -851,3 +851,37 @@ def test_text_after_drawingml_images(documents):
             "Skipping DrawingML text extraction test."
         )
         pytest.skip(f"Test document '{name}' not available")
+
+
+def test_sdt_table_parsing(tmp_path):
+    from docx import Document
+    from docx.oxml import OxmlElement
+
+    doc = Document()
+
+    table = doc.add_table(rows=2, cols=2)
+    table.cell(0, 0).text = "Feature"
+    table.cell(0, 1).text = "Action"
+
+    table.cell(1, 0).text = "Test"
+    table.cell(1, 1).text = "Verify"
+
+    tbl_xml = table._tbl
+
+    sdt = OxmlElement("w:sdt")
+    sdt_pr = OxmlElement("w:sdtPr")
+    sdt_content = OxmlElement("w:sdtContent")
+
+    sdt_content.append(tbl_xml)
+
+    sdt.append(sdt_pr)
+    sdt.append(sdt_content)
+
+    doc._body._element.append(sdt)
+
+    docx_path = tmp_path / "sdt_table.docx"
+    doc.save(docx_path)
+
+    conv_result = get_converter().convert(docx_path)
+
+    assert len(conv_result.document.tables) == 1

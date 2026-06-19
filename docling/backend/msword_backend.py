@@ -486,16 +486,27 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Check for the sdt containers, like table of contents
             elif tag_name == "sdt":
                 sdt_content = element.find(
-                    ".//w:sdtContent", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                    ".//w:sdtContent",
+                    namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
                 )
+
                 if sdt_content is not None:
-                    # Iterate paragraphs, runs, or text inside <w:sdtContent>.
-                    paragraphs = sdt_content.findall(
-                        ".//w:p", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-                    )
-                    for p in paragraphs:
-                        te = self._handle_text_elements(p, doc)
-                        added_elements.extend(te)
+                    for child in sdt_content:
+                        child_tag = etree.QName(child).localname
+
+                        if child_tag == "tbl":
+                            try:
+                                t = self._handle_tables(child, doc)
+                                added_elements.extend(t)
+                            except Exception:
+                                _log.debug(
+                                    "could not parse table inside sdt",
+                                    exc_info=True,
+                                )
+
+                        elif child_tag == "p":
+                            te = self._handle_text_elements(child, doc)
+                            added_elements.extend(te)
             # Check for Text
             elif tag_name == "p":
                 # "tcPr", "sectPr"
@@ -1985,7 +1996,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         num_rows = len(table.rows)
         num_cols = len(table.columns)
         _log.debug(f"Table grid with {num_rows} rows and {num_cols} columns")
-
         if num_rows == 1 and num_cols == 1:
             cell_element = table.rows[0].cells[0]
             # In case we have a table of only 1 cell, we consider it furniture
@@ -2000,7 +2010,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             data=data, parent=self.parents[level - 1], content_layer=self.content_layer
         )
         elem_ref.append(docling_table.get_ref())
-
         cell_set: set[CT_Tc] = set()
         for row_idx, row in enumerate(table.rows):
             _log.debug(f"Row index {row_idx} with {len(row.cells)} populated cells")
