@@ -1,3 +1,17 @@
+## [v2.104.0](https://github.com/docling-project/docling/releases/tag/v2.104.0) - 2026-06-19
+
+### Feature
+
+* **service:** Add ConfidenceScores to service response models ([#3651](https://github.com/docling-project/docling/issues/3651)) ([`166003b`](https://github.com/docling-project/docling/commit/166003b64aefd18447fed1513445facb33d732ce))
+* Add vLLM support for chandra/glm-ocr + dots bbox fix ([#3404](https://github.com/docling-project/docling/issues/3404)) ([`2c875ca`](https://github.com/docling-project/docling/commit/2c875ca0be3520f73e84acee1c5d7175206eb9a8))
+
+### Fix
+
+* **service:** Align DoclingServiceClient.convert_all arg names ([#3650](https://github.com/docling-project/docling/issues/3650)) ([`f38e222`](https://github.com/docling-project/docling/commit/f38e222964fdfa659b5d10cc399e83750b9ffa48))
+* Make explicit device selection fail hard when device unavailable ([#3606](https://github.com/docling-project/docling/issues/3606)) ([`3117bd1`](https://github.com/docling-project/docling/commit/3117bd1c76f94ed75bd3754a97b6fd8bb0609aa0))
+* #1649 Update RTX installation instructions for PyTorch ([#3644](https://github.com/docling-project/docling/issues/3644)) ([`f847b6c`](https://github.com/docling-project/docling/commit/f847b6ccc4859aeabe07a125fffac8d70b135826))
+* **xlsx:** Respect page_range in MsExcelDocumentBackend ([#3637](https://github.com/docling-project/docling/issues/3637)) ([`dc61cdd`](https://github.com/docling-project/docling/commit/dc61cdd505e4dcd511cac40f016cf39d4609889e))
+
 ## [v2.103.0](https://github.com/docling-project/docling/releases/tag/v2.103.0) - 2026-06-17
 
 ### Feature
