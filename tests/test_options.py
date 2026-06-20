@@ -193,6 +193,14 @@ def test_ocr_coverage_threshold(test_doc_path):
     assert len(doc_result.document.texts) == 0
 
 
+def test_convert_options_support_ocr_text_layer_skip():
+    from docling.datamodel.service.options import ConvertDocumentsOptions
+
+    options = ConvertDocumentsOptions(ocr_skip_text_layer_pages=True)
+
+    assert options.ocr_skip_text_layer_pages is True
+
+
 def test_parser_backends(test_doc_path):
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = False

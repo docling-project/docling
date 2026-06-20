@@ -20,6 +20,9 @@ from docling.models.base_model import BaseModelWithOptions, BasePageModel
 
 _log = logging.getLogger(__name__)
 
+_TEXT_LAYER_MIN_CELLS = 3
+_TEXT_LAYER_MIN_CHARS = 80
+
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     def __init__(
@@ -35,6 +38,18 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         self.enabled = enabled
         self.options = options
+
+    @staticmethod
+    def _has_sufficient_text_layer(page: Page) -> bool:
+        text_cells = [
+            cell for cell in page.cells if cell.text.strip() and not cell.from_ocr
+        ]
+        text_chars = sum(len(cell.text.strip()) for cell in text_cells)
+
+        return (
+            len(text_cells) >= _TEXT_LAYER_MIN_CELLS
+            and text_chars >= _TEXT_LAYER_MIN_CHARS
+        )
 
     # Computes the optimum amount and coordinates of rectangles to OCR on a given page
     def get_ocr_rects(self, page: Page) -> List[BoundingBox]:
@@ -90,6 +105,13 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             bitmap_rects = page._backend.get_bitmap_rects()
         else:
             bitmap_rects = []
+
+        if (
+            self.options.skip_text_layer_pages
+            and not self.options.force_full_page_ocr
+            and self._has_sufficient_text_layer(page)
+        ):
+            return []
 
         coverage, ocr_rects = find_ocr_rects(page.size, bitmap_rects)
 

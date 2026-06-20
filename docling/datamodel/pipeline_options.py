@@ -195,6 +195,13 @@ class OcrOptions(BaseOptions):
             examples=[0.05, 0.1],
         ),
     ] = 0.05
+    skip_text_layer_pages: Annotated[
+        bool,
+        Field(
+            description="If enabled, skip OCR on pages with enough native text cells.",
+            examples=[False],
+        ),
+    ] = False
 
 
 class OcrAutoOptions(OcrOptions):

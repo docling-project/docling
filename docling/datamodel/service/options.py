@@ -358,6 +358,16 @@ class ConvertDocumentsOptions(BaseModel):
         ),
     ] = False
 
+    ocr_skip_text_layer_pages: Annotated[
+        bool,
+        Field(
+            description=(
+                "If enabled, skip OCR on pages with enough native text cells. "
+                "Boolean. Optional, defaults to false."
+            ),
+        ),
+    ] = False
+
     ocr_engine: Annotated[
         str,
         Field(
