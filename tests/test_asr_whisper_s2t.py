@@ -260,7 +260,7 @@ class TestWhisperS2TModel:
             model = _WhisperS2TModel(
                 enabled=True,
                 artifacts_path=None,
-                accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CUDA),
+                accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
                 asr_options=asr_options,
             )
 
