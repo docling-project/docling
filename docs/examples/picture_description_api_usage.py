@@ -5,7 +5,11 @@
 # chat-completions endpoint, and prints the raw usage payload preserved on each
 # picture description metadata field.
 #
-# Run from the repository root:
+# Run from the repository root. The PDF argument is optional; when omitted, the
+# bundled test PDF at `tests/data/pdf/2206.01062.pdf` is used. The example exits
+# early without contacting any endpoint when neither
+# `PICTURE_DESCRIPTION_API_URL` nor `AZURE_API_BASE` is set, which keeps it safe
+# to run in environments without a configured VLM provider (for example CI).
 #
 # ```sh
 # python docs/examples/picture_description_api_usage.py path/to/input.pdf
@@ -160,6 +164,13 @@ def _extract_usage_payload(item: PictureItem) -> Any | None:
     return item.meta.description.get_custom_part().get(_USAGE_META_KEY)
 
 
+def _has_api_endpoint_configured() -> bool:
+    return bool(
+        os.environ.get("PICTURE_DESCRIPTION_API_URL")
+        or os.environ.get("AZURE_API_BASE")
+    )
+
+
 def run(input_pdf: Path) -> None:
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_picture_description = True
@@ -203,6 +214,9 @@ def run(input_pdf: Path) -> None:
     print(f"Pictures with usage payloads: {pictures_with_usage}")
 
 
+_DEFAULT_PDF = Path(__file__).resolve().parents[2] / "tests/data/pdf/2206.01062.pdf"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
@@ -213,9 +227,22 @@ def main() -> None:
     parser.add_argument(
         "pdf",
         type=Path,
-        help="Path to the input PDF.",
+        nargs="?",
+        default=_DEFAULT_PDF,
+        help=(
+            "Path to the input PDF. Defaults to the bundled test PDF at "
+            f"{_DEFAULT_PDF}."
+        ),
     )
     args = parser.parse_args()
+
+    if not _has_api_endpoint_configured():
+        _log.warning(
+            "Skipping: no picture description API endpoint configured. Set "
+            "PICTURE_DESCRIPTION_API_URL or AZURE_API_BASE (with the matching "
+            "credentials) to actually run this example."
+        )
+        return
 
     run(input_pdf=args.pdf)
 
