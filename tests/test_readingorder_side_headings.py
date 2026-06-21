@@ -124,3 +124,46 @@ def test_true_two_column_layout_is_unchanged():
     result = ReadingOrderModel._reorder_side_headings(predicted)
 
     assert [e.cid for e in result] == [0, 1, 2, 3]
+
+
+def test_stacked_side_headings_interleave():
+    # A big header and a smaller header stacked in the left column, both aligned
+    # to one paragraph, must both move ahead of that paragraph (top-to-bottom),
+    # across several rows. The predictor emits every left header first.
+    h2a = _el(0, _H, 80, 216, 720, 760)  # row 1, big header
+    h3a = _el(1, _H, 86, 216, 695, 712)  # row 1, smaller header below it
+    h3b = _el(2, _H, 90, 216, 560, 577)  # row 2 header
+    para_a = _el(3, _T, 246, 561, 690, 760)  # row 1 paragraph
+    para_b = _el(4, _T, 246, 561, 520, 590)  # row 2 paragraph
+    predicted = [h2a, h3a, h3b, para_a, para_b]
+
+    result = ReadingOrderModel._reorder_side_headings(predicted)
+
+    assert [e.cid for e in result] == [0, 1, 3, 2, 4]
+
+
+def test_tall_header_anchors_before_first_paragraph_line():
+    # A header taller than a single paragraph line must precede the FIRST line of
+    # a line-fragmented paragraph, not be inserted into the middle of it.
+    h = _el(0, _H, 80, 216, 674, 721)  # tall header (clach04's "larger header")
+    line1 = _el(1, _T, 246, 561, 710, 724)  # first line of the paragraph
+    line2 = _el(2, _T, 246, 561, 600, 705)  # remaining lines
+    # Predictor groups the lines, then the header chain would precede them.
+    predicted = [h, line1, line2]
+
+    result = ReadingOrderModel._reorder_side_headings(predicted)
+
+    assert [e.cid for e in result] == [0, 1, 2]
+
+
+def test_two_column_with_side_by_side_text_is_unchanged():
+    # A genuine two-column body: the left "header" is as wide as its column, so
+    # the width ratio rejects it and the columns are not interleaved.
+    lh = _el(0, _H, 50, 290, 480, 510)  # left-column header, column-width
+    lp = _el(1, _T, 50, 290, 300, 470)  # left-column body
+    rp = _el(2, _T, 310, 550, 300, 510)  # right-column body, same rows
+    predicted = [lh, lp, rp]
+
+    result = ReadingOrderModel._reorder_side_headings(predicted)
+
+    assert [e.cid for e in result] == [0, 1, 2]
