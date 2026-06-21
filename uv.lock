@@ -1863,7 +1863,7 @@ requires-dist = [
     { name = "typer", marker = "extra == 'cli'", specifier = ">=0.12.5,<0.27.0" },
     { name = "typer", marker = "extra == 'service-client'", specifier = ">=0.12.5,<0.27.0" },
     { name = "websockets", marker = "extra == 'service-client'", specifier = ">=14.0,<17.0" },
-    { name = "whisper-s2t-reborn", marker = "(platform_machine != 'arm64' and extra == 'format-audio') or (sys_platform != 'darwin' and extra == 'format-audio')", specifier = ">=1.6.0" },
+    { name = "whisper-s2t-reborn", marker = "(platform_machine != 'arm64' and extra == 'format-audio') or (sys_platform != 'darwin' and extra == 'format-audio')", specifier = ">=1.6.2" },
 ]
 provides-extras = ["convert-core", "extract-core", "format-pdf-pypdfium2", "format-pdf-docling", "format-pdf", "format-docx", "format-pptx", "format-xlsx", "format-office", "format-html", "format-markdown", "format-web", "format-latex", "format-email", "format-xml-xbrl", "format-html-render", "format-audio", "feat-ocr-rapidocr", "feat-ocr-rapidocr-onnx", "feat-ocr-easyocr", "feat-ocr-tesserocr", "feat-ocr-mac", "models-local", "models-remote", "models-onnxruntime", "models-vlm-inline", "feat-chunking", "service-client", "cli", "standard", "all"]
 
@@ -8741,7 +8741,7 @@ wheels = [
 
 [[package]]
 name = "whisper-s2t-reborn"
-version = "1.6.0"
+version = "1.6.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "av" },
@@ -8755,9 +8755,9 @@ dependencies = [
     { name = "torch" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/35/69/793da1bfbe83501b97a356025a3027b842f049b50a5d8179174985388cd6/whisper_s2t_reborn-1.6.0.tar.gz", hash = "sha256:73f00e77b30409b6f85b7b5a0a501070c43265cadb1934594c349608a23cf1d7", size = 1435378, upload-time = "2026-03-24T17:16:11.123Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f7/c7/fe703b204581764ecb6593dc7e3abbc3613f427b782aadf97f0b3aae26e1/whisper_s2t_reborn-1.6.2.tar.gz", hash = "sha256:dfcae8b1a2f345cce478dd76ffa925faedc74c5b299e2a3f028bde606435b19c", size = 1435986, upload-time = "2026-06-20T16:43:10.77Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/eb/30/574cd0abb4b68a99b114c7891a9cb90a48d210145adf065268df700666c9/whisper_s2t_reborn-1.6.0-py3-none-any.whl", hash = "sha256:5e79a7f4c34d9996ebb5a1e17efe800e72b07257650ff2b6be3daadfea2cdeb8", size = 1436848, upload-time = "2026-03-24T17:16:09.037Z" },
+    { url = "https://files.pythonhosted.org/packages/f7/bc/919958f777a7991df59f1c98bb575c33a23bf29e5ea0ae4c1ed311e07ce1/whisper_s2t_reborn-1.6.2-py3-none-any.whl", hash = "sha256:be29c74a2c8ee402da105264ec6a4f6a719ef72bcb36236a514f5830fcfe2efc", size = 1437495, upload-time = "2026-06-20T16:43:08.854Z" },
 ]
 
 [[package]]
