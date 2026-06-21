@@ -58,8 +58,10 @@ class _FakeClient:
             raise self.health_error
         return {"status": "ok"}
 
-    def convert_all(self, sources, options=None, **kwargs):
-        self.captured_sources = list(sources)
+    def convert_all(self, source=None, options=None, *, sources=None, **kwargs):
+        if source is None:
+            source = sources
+        self.captured_sources = list(source)
         self.captured_options = options
         return iter(
             [
