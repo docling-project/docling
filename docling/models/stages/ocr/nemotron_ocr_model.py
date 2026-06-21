@@ -94,9 +94,12 @@ class NemotronOcrModel(BaseOcrModel):
 
         if self.enabled:
             self.validate_runtime(accelerator_options=accelerator_options)
-
+            self._nemotron_checkpoint_files = []
             try:
+                from nemotron_ocr.inference.pipeline import CHECKPOINT_FILES
                 from nemotron_ocr.inference.pipeline_v2 import NemotronOCRV2
+
+                self._nemotron_checkpoint_files = CHECKPOINT_FILES
             except ImportError as exc:
                 raise ImportError(
                     "Nemotron OCR is not installed. Install the optional dependency "
@@ -108,12 +111,7 @@ class NemotronOcrModel(BaseOcrModel):
             language = resolve_nemotronocr_language(options.lang)
 
             # Initialize the model
-            model_dir = NemotronOcrModel._resolve_model_dir(
-                language, artifacts_path=artifacts_path
-            )
-            print(
-                f"Docling NemotronOcrModel: language={language}, model_dir={model_dir}"
-            )
+            model_dir = self._resolve_model_dir(language, artifacts_path=artifacts_path)
 
             self.reader = NemotronOCRV2(
                 model_dir=None if model_dir is None else str(model_dir),
@@ -159,9 +157,8 @@ class NemotronOcrModel(BaseOcrModel):
                 f"reports CUDA {cuda_version!r}."
             )
 
-    @staticmethod
     def _resolve_model_dir(
-        language: str, artifacts_path: Optional[Path]
+        self, language: str, artifacts_path: Optional[Path]
     ) -> Optional[Path]:
         if artifacts_path is None:
             return None
@@ -171,7 +168,9 @@ class NemotronOcrModel(BaseOcrModel):
             / nemotron_ocr_model_dir()
             / _NEMOTRON_OCR_LANG_TO_ARTIFACT_PATHS[language]
         )
-        if nemotron_lang_dir.exists():
+        if nemotron_lang_dir.is_dir() and all(
+            (nemotron_lang_dir / f).is_file() for f in self._nemotron_checkpoint_files
+        ):
             return nemotron_lang_dir
 
         available_dirs = []
@@ -181,8 +180,9 @@ class NemotronOcrModel(BaseOcrModel):
             )
 
         raise FileNotFoundError(
-            "Nemotron OCR artifacts not found in artifacts_path.\n"
+            "Nemotron OCR artifacts not found or incomplete in artifacts_path.\n"
             f"Expected location: {nemotron_lang_dir}\n"
+            f"Required files: {self._nemotron_checkpoint_files}\n"
             f"Available directories in {artifacts_path}: {available_dirs}\n"
             "Use `docling-tools models download nemotron_ocr` to pre-download "
             "the checkpoints or unset artifacts_path to allow the upstream "
