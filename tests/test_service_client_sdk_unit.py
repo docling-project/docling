@@ -1465,6 +1465,73 @@ def test_serialize_convert_options_omits_defaults_and_none() -> None:
     )
 
 
+def test_form_encode_options_jsonifies_nested_values() -> None:
+    encoded = DoclingServiceClient._form_encode_options(
+        {
+            "ocr_custom_config": {"kind": "rapidocr", "backend": "onnxruntime"},
+            "page_range": [3, 7],
+            "target_type": "inbody",
+        }
+    )
+    # Nested dicts become JSON strings the service can decode back...
+    assert encoded["ocr_custom_config"] == json.dumps(
+        {"kind": "rapidocr", "backend": "onnxruntime"}
+    )
+    # ...while primitives and primitive lists pass through unchanged.
+    assert encoded["page_range"] == [3, 7]
+    assert encoded["target_type"] == "inbody"
+
+
+def test_submit_file_jsonifies_nested_ocr_custom_config(tmp_path: Path) -> None:
+    captured: dict[str, object] = {}
+    sample = tmp_path / "sample.jpg"
+    sample.write_bytes(b"\xff\xd8\xff\xe0")  # JPEG magic bytes
+
+    def fake_request_with_retry(**kw: object) -> httpx.Response:
+        captured.update(kw)
+        return httpx.Response(
+            200,
+            json=_status_response("task-file-ocr", "pending").model_dump(mode="json"),
+        )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._request_with_retry = fake_request_with_retry  # type: ignore[method-assign]
+        client.submit(
+            source=str(sample),
+            target=InBodyTarget(),
+            options=ConvertDocumentsRequestOptions(
+                page_range=(3, 7),
+                ocr_custom_config={
+                    "kind": "rapidocr",
+                    "backend": "onnxruntime",
+                    "lang": ["en"],
+                },
+            ),
+        )
+
+    assert captured["path"] == "/v1/convert/file/async"
+    data = captured["data"]
+    assert isinstance(data, dict)
+    # The nested config is JSON-encoded because multipart cannot carry a dict...
+    assert json.loads(data["ocr_custom_config"]) == {
+        "kind": "rapidocr",
+        "backend": "onnxruntime",
+        "lang": ["en"],
+    }
+    # ...and primitive lists are still sent unchanged.
+    assert data["page_range"] == [3, 7]
+
+
+def test_options_decode_json_string_ocr_custom_config() -> None:
+    options = ConvertDocumentsRequestOptions(
+        ocr_custom_config='{"kind": "rapidocr", "backend": "onnxruntime"}'
+    )
+    assert options.ocr_custom_config == {
+        "kind": "rapidocr",
+        "backend": "onnxruntime",
+    }
+
+
 def test_submit_source_serializes_convert_options_without_defaults() -> None:
     captured: dict[str, object] = {}
 

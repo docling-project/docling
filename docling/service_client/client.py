@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import ipaddress
+import json
 import logging
 import mimetypes
 import re
@@ -268,6 +269,29 @@ class _BaseDoclingServiceClient:
             exclude_defaults=True,
             exclude_none=True,
         )
+
+    @staticmethod
+    def _form_encode_options(data: dict[str, Any]) -> dict[str, Any]:
+        """Make option values safe for ``multipart/form-data`` submission.
+
+        File uploads send each option as a form field, but multipart fields
+        accept only primitives or lists of primitives. Nested values (e.g.
+        ``ocr_custom_config``) are JSON-encoded so the service can rebuild
+        them; primitives and primitive lists are passed through unchanged.
+        """
+
+        def _is_primitive(value: Any) -> bool:
+            return value is None or isinstance(value, (str, int, float, bool))
+
+        encoded: dict[str, Any] = {}
+        for key, value in data.items():
+            if isinstance(value, dict) or (
+                isinstance(value, list) and not all(_is_primitive(v) for v in value)
+            ):
+                encoded[key] = json.dumps(value)
+            else:
+                encoded[key] = value
+        return encoded
 
     def _serialize_convert_request(
         self,
@@ -1132,7 +1156,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             response = self._request_with_retry(
                 method="POST",
                 path="/v1/convert/file/async",
-                data=data,
+                data=self._form_encode_options(data),
                 files=files,
                 headers=request_headers,
             )
@@ -1199,7 +1223,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             response = self._request_with_retry(
                 method="POST",
                 path=f"/v1/chunk/{chunker.value}/file/async",
-                data=data,
+                data=self._form_encode_options(data),
                 files=files,
             )
 

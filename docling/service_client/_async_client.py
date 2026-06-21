@@ -688,7 +688,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
                 async_client=async_client,
                 method="POST",
                 path="/v1/convert/file/async",
-                data=data,
+                data=self._form_encode_options(data),
                 files=files,
                 headers=request_headers,
             )
@@ -782,7 +782,7 @@ class AsyncDoclingServiceClient(_BaseDoclingServiceClient):
             response = await self._request_with_retry(
                 method="POST",
                 path=f"/v1/chunk/{chunker.value}/file/async",
-                data=data,
+                data=self._form_encode_options(data),
                 files=files,
             )
 
