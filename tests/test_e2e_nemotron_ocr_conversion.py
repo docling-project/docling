@@ -17,7 +17,10 @@ from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
-from docling.models.stages.ocr.nemotron_ocr_model import NemotronOcrModel
+from docling.models.stages.ocr.nemotron_ocr_model import (
+    NemotronOcrModel,
+    resolve_nemotronocr_language,
+)
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_conversion_result_v2
@@ -87,6 +90,35 @@ def get_converter(ocr_options: OcrOptions):
     )
 
     return converter
+
+
+@pytest.mark.parametrize(
+    ("req_languages", "expected"),
+    [
+        # No request -> english default
+        (None, "english"),
+        ([], "english"),
+        # English aliases (and case / whitespace / region-tag normalization)
+        (["en"], "english"),
+        (["eng"], "english"),
+        (["english"], "english"),
+        (["EN"], "english"),
+        (["English"], "english"),
+        (["  en  "], "english"),
+        (["en-US"], "english"),
+        (["en_US"], "english"),
+        (["en", "english", "eng"], "english"),
+        # Any non-english language maps to multilingual
+        (["de"], "multilingual"),
+        (["fr"], "multilingual"),
+        (["zh-CN"], "multilingual"),
+        # A single non-english language is enough to promote the whole request
+        (["en", "de"], "multilingual"),
+        (["de", "en"], "multilingual"),
+    ],
+)
+def test_nemotron_language_resolution(req_languages, expected):
+    assert resolve_nemotronocr_language(req_languages) == expected
 
 
 def test_e2e_nemotron_ocr_conversions():

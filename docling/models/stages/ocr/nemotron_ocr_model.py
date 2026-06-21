@@ -43,7 +43,7 @@ def nemotron_ocr_model_dir() -> str:
     return _NEMOTRON_OCR_REPO_ID.replace("/", "--")
 
 
-def _resolve_nemotronocr_language(req_languages: list[str] | None) -> str:
+def resolve_nemotronocr_language(req_languages: list[str] | None) -> str:
     r"""
     Map requested languages onto the nemotron-ocr language info
     """
@@ -105,11 +105,14 @@ class NemotronOcrModel(BaseOcrModel):
                 ) from exc
 
             # Resolve the request language
-            language = _resolve_nemotronocr_language(options.lang)
+            language = resolve_nemotronocr_language(options.lang)
 
             # Initialize the model
             model_dir = NemotronOcrModel._resolve_model_dir(
                 language, artifacts_path=artifacts_path
+            )
+            print(
+                f"Docling NemotronOcrModel: language={language}, model_dir={model_dir}"
             )
 
             self.reader = NemotronOCRV2(
