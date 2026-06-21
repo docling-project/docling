@@ -39,20 +39,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 69.99,
-            "t": 164.95,
-            "r": 526.64,
-            "b": 75.54,
+            "l": 88.5,
+            "t": 180.02,
+            "r": 524.74,
+            "b": 38.23,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            50
+            96
           ]
         }
       ],
-      "orig": "package Docling bundles PDF document conversion to",
-      "text": "package Docling bundles PDF document conversion to"
+      "orig": "Bockktd JSON and Markdownn in an easy selt contained Soriiis sundiie PDF aesummane converriie to",
+      "text": "Bockktd JSON and Markdownn in an easy selt contained Soriiis sundiie PDF aesummane converriie to"
     }
   ],
   "pictures": [],

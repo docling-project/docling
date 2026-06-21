@@ -39,10 +39,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 690.2,
-            "t": 521.13,
-            "r": 770.32,
-            "b": 86.27,
+            "l": 691.62,
+            "t": 523.27,
+            "r": 766.01,
+            "b": 88.13,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -51,8 +51,8 @@
           ]
         }
       ],
-      "orig": "package ISON and Markdown in an easy self contained Docling bundles PDF document conversion to",
-      "text": "package ISON and Markdown in an easy self contained Docling bundles PDF document conversion to"
+      "orig": "package JSON and Markdown in an easy self contained Docling bundles PDF document conversion to",
+      "text": "package JSON and Markdown in an easy self contained Docling bundles PDF document conversion to"
     }
   ],
   "pictures": [],
