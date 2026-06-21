@@ -340,10 +340,7 @@ class NemotronOcrOptions(OcrOptions):
     """Configuration for NVIDIA Nemotron OCR.
 
     Notes:
-        Nemotron OCR does not expose runtime language selection through its public
-        API. The `lang` field is kept only for compatibility with the shared OCR
-        options interface. Use the pipeline-level `artifacts_path` to point to
-        pre-downloaded checkpoint artifacts.
+        Use the pipeline-level `artifacts_path` to point to pre-downloaded checkpoint artifacts.
     """
 
     kind: ClassVar[Literal["nemotron-ocr"]] = "nemotron-ocr"
@@ -351,8 +348,7 @@ class NemotronOcrOptions(OcrOptions):
         list[str],
         Field(
             description=(
-                "Reserved for interface compatibility. Nemotron OCR does not expose "
-                "runtime language selection through its public API."
+                "List of OCR languages. nemotron-OCR-v2 supports 'english' and 'multilingual'"
             )
         ),
     ] = []
@@ -360,7 +356,7 @@ class NemotronOcrOptions(OcrOptions):
         Literal["word", "sentence", "paragraph"],
         Field(
             description=(
-                "Granularity requested from Nemotron OCR. `word` is the default "
+                "Granularity requested from Nemotron OCR. `sentence` is the default "
                 "because it maps most directly to Docling OCR cells."
             )
         ),

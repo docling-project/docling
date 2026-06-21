@@ -1,12 +1,14 @@
-import platform
-import sys
+import logging
 from pathlib import Path
 from typing import List, Tuple
 
 import pytest
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
-from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.datamodel.accelerator_options import (
+    AcceleratorDevice,
+    AcceleratorOptions,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
@@ -15,28 +17,36 @@ from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.models.stages.ocr.nemotron_ocr_model import NemotronOcrModel
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_conversion_result_v2
+
+_log = logging.getLogger(__name__)
 
 GENERATE_V2 = GEN_TEST_DATA
 
 
 def _nemotron_available() -> bool:
-    """Nemotron OCR only runs on Linux x86_64, Python 3.12 and CUDA 13.x."""
-    if sys.platform != "linux" or platform.machine() != "x86_64":
-        return False
-    if sys.version_info[:2] != (3, 12):
+    """Reuse the model's own runtime gate; only the package import is extra.
+
+    `NemotronOcrModel.validate_runtime` covers the OS/arch/Python/CUDA checks
+    but does not verify that the optional `nemotron_ocr` package is installed,
+    so that import is probed separately here.
+    """
+    try:
+        import nemotron_ocr.inference.pipeline_v2
+    except ImportError as exc:
+        _log.warning("Nemotron OCR package is not importable: %s", exc)
         return False
     try:
-        import torch
-        from nemotron_ocr.inference.pipeline_v2 import NemotronOCRV2
-    except ImportError:
+        NemotronOcrModel.validate_runtime(
+            AcceleratorOptions(device=AcceleratorDevice.AUTO)
+        )
+    except RuntimeError as exc:
+        _log.warning("Nemotron OCR runtime validation failed: %s", exc)
         return False
-    if not torch.cuda.is_available():
-        return False
-    cuda_version = torch.version.cuda
-    return cuda_version is not None and cuda_version.startswith("13.")
+    return True
 
 
 pytestmark = [

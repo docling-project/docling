@@ -25,6 +25,43 @@ from docling.utils.profiling import TimeRecorder
 _log = logging.getLogger(__name__)
 
 
+_NEMOTRON_OCR_REPO_ID = "nvidia/nemotron-ocr-v2"
+_NEMOTRON_OCR_COMMIT = "0e83e83f17943524b90afa6c0fd82ac2bc1a40ca"
+
+_NEMOTRON_OCR_ENGLISH = "english"
+_NEMOTRON_OCR_MULTILINGUAL = "multilingual"
+_NEMOTRON_OCR_ENGLISH_GROUP = ["en", "eng", "english"]
+
+# Mappings of nemotron language to the artifacts subdir
+_NEMOTRON_OCR_LANG_TO_ARTIFACT_PATHS = {
+    _NEMOTRON_OCR_ENGLISH: "v2_english",
+    _NEMOTRON_OCR_MULTILINGUAL: "v2_multilingual",
+}
+
+
+def nemotron_ocr_model_dir() -> str:
+    return _NEMOTRON_OCR_REPO_ID.replace("/", "--")
+
+
+def _resolve_nemotronocr_language(req_languages: list[str] | None) -> str:
+    r"""
+    Map requested languages onto the nemotron-ocr language info
+    """
+    if not req_languages:
+        # Use english by default
+        return _NEMOTRON_OCR_ENGLISH
+
+    # Map request language to nemotron language
+    for language in req_languages:
+        # "en-US" / "en_US" -> "en"
+        normalized = language.strip().lower().replace("_", "-").split("-")[0]
+
+        # Use the multilingual model to cover english and any non-english language
+        if normalized not in _NEMOTRON_OCR_ENGLISH_GROUP:
+            return _NEMOTRON_OCR_MULTILINGUAL
+    return _NEMOTRON_OCR_ENGLISH
+
+
 class NemotronOcrPrediction(TypedDict):
     """Exact prediction schema returned by `nemotron_ocr`."""
 
@@ -37,7 +74,7 @@ class NemotronOcrPrediction(TypedDict):
 
 
 class NemotronOcrModel(BaseOcrModel):
-    _repo_id = "nvidia/nemotron-ocr-v1"
+    r"""Wrapper for Nvidia's nemotron-ocr-v2 model"""
 
     def __init__(
         self,
@@ -56,7 +93,7 @@ class NemotronOcrModel(BaseOcrModel):
         self.scale = 3  # multiplier for 72 dpi == 216 dpi.
 
         if self.enabled:
-            self._validate_runtime(accelerator_options=accelerator_options)
+            self.validate_runtime(accelerator_options=accelerator_options)
 
             try:
                 from nemotron_ocr.inference.pipeline_v2 import NemotronOCRV2
@@ -67,18 +104,26 @@ class NemotronOcrModel(BaseOcrModel):
                     "Python 3.12 and CUDA 13.x."
                 ) from exc
 
-            model_dir = self._resolve_model_dir(artifacts_path=artifacts_path)
+            # Resolve the request language
+            language = _resolve_nemotronocr_language(options.lang)
+
+            # Initialize the model
+            model_dir = NemotronOcrModel._resolve_model_dir(
+                language, artifacts_path=artifacts_path
+            )
+
             self.reader = NemotronOCRV2(
-                model_dir=None if model_dir is None else str(model_dir)
+                model_dir=None if model_dir is None else str(model_dir),
+                lang=language,
             )
 
     @staticmethod
     def _fail_runtime(message: str) -> None:
-        _log.warning(message)
+        _log.error(message)
         raise RuntimeError(message)
 
     @classmethod
-    def _validate_runtime(cls, accelerator_options: AcceleratorOptions) -> None:
+    def validate_runtime(cls, accelerator_options: AcceleratorOptions) -> None:
         if sys.platform != "linux":
             cls._fail_runtime("Nemotron OCR is only supported on Linux.")
 
@@ -111,14 +156,20 @@ class NemotronOcrModel(BaseOcrModel):
                 f"reports CUDA {cuda_version!r}."
             )
 
-    @classmethod
-    def _resolve_model_dir(cls, artifacts_path: Optional[Path]) -> Optional[Path]:
+    @staticmethod
+    def _resolve_model_dir(
+        language: str, artifacts_path: Optional[Path]
+    ) -> Optional[Path]:
         if artifacts_path is None:
             return None
 
-        repo_cache_folder = cls._repo_id.replace("/", "--")
-        if (artifacts_path / repo_cache_folder).exists():
-            return artifacts_path / repo_cache_folder / "checkpoints"
+        nemotron_lang_dir = (
+            artifacts_path
+            / nemotron_ocr_model_dir()
+            / _NEMOTRON_OCR_LANG_TO_ARTIFACT_PATHS[language]
+        )
+        if nemotron_lang_dir.exists():
+            return nemotron_lang_dir
 
         available_dirs = []
         if artifacts_path.exists():
@@ -128,7 +179,7 @@ class NemotronOcrModel(BaseOcrModel):
 
         raise FileNotFoundError(
             "Nemotron OCR artifacts not found in artifacts_path.\n"
-            f"Expected location: {artifacts_path / repo_cache_folder / 'checkpoints'}\n"
+            f"Expected location: {nemotron_lang_dir}\n"
             f"Available directories in {artifacts_path}: {available_dirs}\n"
             "Use `docling-tools models download nemotron_ocr` to pre-download "
             "the checkpoints or unset artifacts_path to allow the upstream "
@@ -142,18 +193,17 @@ class NemotronOcrModel(BaseOcrModel):
         progress: bool = False,
     ) -> Path:
         if local_dir is None:
-            local_dir = (
-                settings.cache_dir
-                / "models"
-                / NemotronOcrModel._repo_id.replace("/", "--")
-            )
+            local_dir = settings.cache_dir / "models" / nemotron_ocr_model_dir()
 
         local_dir.mkdir(parents=True, exist_ok=True)
+
+        # The next command downloads the entire HF repo that contains artifacts for all languages
         return download_hf_model(
-            repo_id=NemotronOcrModel._repo_id,
+            repo_id=_NEMOTRON_OCR_REPO_ID,
             local_dir=local_dir,
             force=force,
             progress=progress,
+            revision=_NEMOTRON_OCR_COMMIT,
         )
 
     @staticmethod
@@ -220,7 +270,6 @@ class NemotronOcrModel(BaseOcrModel):
                             batch_start : batch_start + batch_size
                         ]
 
-                        high_res_images = []
                         image_arrays = []
                         # Image dimensions parallel to `batch_rects`, needed to
                         # map normalized predictions back to page coordinates.
@@ -229,7 +278,6 @@ class NemotronOcrModel(BaseOcrModel):
                             high_res_image = page._backend.get_page_image(
                                 scale=self.scale, cropbox=ocr_rect
                             )
-                            high_res_images.append(high_res_image)
                             image_arrays.append(numpy.array(high_res_image))
                             image_sizes.append(high_res_image.size)
 
@@ -242,9 +290,6 @@ class NemotronOcrModel(BaseOcrModel):
                             ),
                         )
 
-                        del high_res_images
-                        del image_arrays
-
                         # Convert the raw predictions to docling's OCR cells
                         for ocr_rect, (
                             image_width,
@@ -253,7 +298,7 @@ class NemotronOcrModel(BaseOcrModel):
                             batch_rects, image_sizes, batch_predictions
                         ):
                             cells = [
-                                self._prediction_to_cell(
+                                NemotronOcrModel._prediction_to_cell(
                                     prediction=prediction,
                                     index=index,
                                     ocr_rect=ocr_rect,
