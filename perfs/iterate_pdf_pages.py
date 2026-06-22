@@ -17,9 +17,9 @@ from typing import Any
 
 import psutil
 from docling_parse.pdf_parser import (
+    ContentConfig,
+    ContentLevel,
     DecodeConfig,
-    PageContentConfig,
-    PageItemLevel,
     RenderConfig,
 )
 
@@ -251,13 +251,13 @@ def _make_display_decode_config(
     )
 
 
-def _make_display_content_config() -> PageContentConfig:
-    return PageContentConfig(
-        char_cells=PageItemLevel.COMPUTE,
-        word_cells=PageItemLevel.MATERIALIZE,
-        line_cells=PageItemLevel.MATERIALIZE,
-        shapes=PageItemLevel.SKIP,
-        bitmaps=PageItemLevel.MATERIALIZE,
+def _make_display_content_config() -> ContentConfig:
+    return ContentConfig(
+        char_cells_content_level=ContentLevel.COMPUTE,
+        word_cells_content_level=ContentLevel.COMPUTE_AND_MATERIALIZE,
+        line_cells_content_level=ContentLevel.COMPUTE_AND_MATERIALIZE,
+        shapes_content_level=ContentLevel.SKIP,
+        bitmaps_content_level=ContentLevel.COMPUTE_AND_MATERIALIZE,
         include_bitmap_bytes=False,
     )
 
@@ -324,11 +324,26 @@ def _log_docling_parse_config(
         "Content config:\n%s",
         _format_config_table(
             [
-                ("char_cells", _display_level(content_config.char_cells)),
-                ("word_cells", _display_level(content_config.word_cells)),
-                ("line_cells", _display_level(content_config.line_cells)),
-                ("shapes", _display_level(content_config.shapes)),
-                ("bitmaps", _display_level(content_config.bitmaps)),
+                (
+                    "char_cells_content_level",
+                    _display_level(content_config.char_cells_content_level),
+                ),
+                (
+                    "word_cells_content_level",
+                    _display_level(content_config.word_cells_content_level),
+                ),
+                (
+                    "line_cells_content_level",
+                    _display_level(content_config.line_cells_content_level),
+                ),
+                (
+                    "shapes_content_level",
+                    _display_level(content_config.shapes_content_level),
+                ),
+                (
+                    "bitmaps_content_level",
+                    _display_level(content_config.bitmaps_content_level),
+                ),
                 ("include_bitmap_bytes", content_config.include_bitmap_bytes),
             ]
         ),

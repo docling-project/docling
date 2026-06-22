@@ -8,11 +8,11 @@ import pypdfium2 as pdfium
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
 from docling_parse.pdf_parser import (
+    ContentConfig,
+    ContentLevel,
     DecodeConfig,
     DoclingPdfParser,
     DoclingThreadedPdfParser,
-    PageContentConfig,
-    PageItemLevel,
     PageParseResult,
     PdfDocument,
     RenderConfig,
@@ -56,17 +56,19 @@ def _make_docling_parse_page_content_config(
     *,
     create_words: bool,
     create_textlines: bool,
-) -> PageContentConfig:
-    compute = PageItemLevel.COMPUTE
-    materialize = PageItemLevel.MATERIALIZE
-    skip = PageItemLevel.SKIP
+) -> ContentConfig:
+    compute = ContentLevel.COMPUTE
+    materialize = ContentLevel.COMPUTE_AND_MATERIALIZE
+    skip = ContentLevel.SKIP
 
-    return PageContentConfig(
-        char_cells=compute if (create_words or create_textlines) else skip,
-        word_cells=materialize if create_words else skip,
-        line_cells=materialize if create_textlines else skip,
-        shapes=skip,
-        bitmaps=materialize,
+    return ContentConfig(
+        char_cells_content_level=compute
+        if (create_words or create_textlines)
+        else skip,
+        word_cells_content_level=materialize if create_words else skip,
+        line_cells_content_level=materialize if create_textlines else skip,
+        shapes_content_level=skip,
+        bitmaps_content_level=materialize,
         include_bitmap_bytes=False,  # only need bitmap rectangles for OCR
     )
 

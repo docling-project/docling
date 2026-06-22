@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 from docling_core.types.doc import CoordOrigin
-from docling_parse.pdf_parser import PageItemLevel
+from docling_parse.pdf_parser import ContentLevel
 from PIL import Image, ImageDraw, ImageStat
 
 import docling.backend.docling_parse_backend as docling_parse_backend_module
@@ -425,15 +425,26 @@ def test_threaded_backend_uses_backend_option_thread_count(
     assert parser.parser_config is not None
     assert parser.parser_config.threads == 11
     assert parser.parser_config.page_content_config is not None
-    assert parser.parser_config.page_content_config.char_cells == PageItemLevel.COMPUTE
     assert (
-        parser.parser_config.page_content_config.word_cells == PageItemLevel.MATERIALIZE
+        parser.parser_config.page_content_config.char_cells_content_level
+        == ContentLevel.COMPUTE
     )
     assert (
-        parser.parser_config.page_content_config.line_cells == PageItemLevel.MATERIALIZE
+        parser.parser_config.page_content_config.word_cells_content_level
+        == ContentLevel.COMPUTE_AND_MATERIALIZE
     )
-    assert parser.parser_config.page_content_config.shapes == PageItemLevel.SKIP
-    assert parser.parser_config.page_content_config.bitmaps == PageItemLevel.MATERIALIZE
+    assert (
+        parser.parser_config.page_content_config.line_cells_content_level
+        == ContentLevel.COMPUTE_AND_MATERIALIZE
+    )
+    assert (
+        parser.parser_config.page_content_config.shapes_content_level
+        == ContentLevel.SKIP
+    )
+    assert (
+        parser.parser_config.page_content_config.bitmaps_content_level
+        == ContentLevel.COMPUTE_AND_MATERIALIZE
+    )
     assert parser.parser_config.page_content_config.include_bitmap_bytes is False
     assert parser.decode_config is not None
     assert parser.decode_config.enforce_same_font is True
