@@ -1785,6 +1785,29 @@ class GenOSVectorMetaBuilder:
         return GenOSVectorMeta.model_validate(payload)
 
 
+def _extract_docling_dict(obj):
+    """저장된 docling 아티팩트(dict)에서 DoclingDocument dict 를 추출한다.
+
+    허용 형태:
+      1) raw docling dict (DoclingDocument.model_dump 결과; schema_name/body 등 보유)
+      2) parser 반환 {"document": {...}, "usage": {...}}
+      3) 전체 envelope {"code":0,"data":{"document":{...}}}
+    """
+    if not isinstance(obj, dict):
+        raise GenosServiceException(1, "docling 문서 파일 형식을 인식할 수 없습니다.")
+    # 2) {"document": {...}}
+    if isinstance(obj.get("document"), dict):
+        return obj["document"]
+    # 3) {"data": {"document": {...}}}
+    data = obj.get("data")
+    if isinstance(data, dict) and isinstance(data.get("document"), dict):
+        return data["document"]
+    # 1) raw docling dict (DoclingDocument 직렬화 결과로 보이면 그대로)
+    if "body" in obj or "schema_name" in obj or "texts" in obj:
+        return obj
+    raise GenosServiceException(1, "docling 문서 파일 형식을 인식할 수 없습니다.")
+
+
 class DocumentProcessor:
 
     # main.py 가 이 프로세서가 /chunker API 전용임을 식별하는 데 사용.
@@ -2690,25 +2713,37 @@ class DocumentProcessor:
     async def __call__(self, request: Request, file_path: str = "", **kwargs: dict):
         """파싱(docling) 결과를 입력받아 청킹만 수행한다 (Chunk API, #284).
 
-        입력: kwargs["document"] (또는 "docling_document")
-              = parser_processor 의 output.format="docling" 출력
-                (DoclingDocument.model_dump(mode="json")) 을 요청 JSON 에 인라인 전달.
+        입력(우선순위):
+          1) kwargs["document"] (또는 "docling_document") = parser 의 output.format="docling"
+             출력(DoclingDocument.model_dump)을 요청 JSON 에 인라인 전달.
+          2) 인라인이 없으면 file_path 가 존재하는 .json 파일이면 그 파일에서 docling 문서를
+             로드한다. (raw docling dict / {"document":...} / {"code":0,"data":{"document":...}} 허용)
         출력: list[GenOSVectorMeta] (적재 인제스션(/run)과 동일 스키마).
 
         파싱/로딩/OCR/레이아웃/enrichment 은 앞단계(파싱 Activity)에서 이미 수행됐으므로
-        여기서는 호출하지 않는다. file_path 는 벡터 메타(file_path)용으로만 사용(선택).
+        여기서는 호출하지 않는다. file_path 는 벡터 메타(file_path)로도 사용된다.
         """
         runtime_level = kwargs.get('log_level')
         self.setup_logging(runtime_level if runtime_level is not None else self._log_level)
 
         _log.info(f"[chunker] file_path: {file_path}")
 
-        # 앞단계(파싱) 결과를 요청 JSON 에 인라인으로 전달받는다.
+        # 1) 인라인 우선: 앞단계(파싱) 결과를 요청 JSON 에 인라인으로 전달.
         doc_payload = kwargs.pop("document", None)
         if doc_payload is None:
             doc_payload = kwargs.pop("docling_document", None)
+        # 2) 인라인이 없으면 file_path 가 가리키는 .json 파일에서 로드(폴백).
+        if not doc_payload and file_path and file_path.lower().endswith(".json") and os.path.isfile(file_path):
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    doc_payload = _extract_docling_dict(json.load(f))
+            except GenosServiceException:
+                raise
+            except Exception as exc:
+                raise GenosServiceException(1, f"docling 문서 파일 로드 실패({file_path}): {exc}") from exc
         if not doc_payload:
-            raise GenosServiceException(1, "chunker API: 'document'(docling JSON) 입력이 필요합니다.")
+            raise GenosServiceException(
+                1, "chunker API: 'document'(인라인 docling JSON) 또는 file_path(.json) 입력이 필요합니다.")
 
         # docling 원본 JSON → DoclingDocument 복원 (parser output.format='docling' 와 round-trip).
         try:
@@ -2744,6 +2779,13 @@ class DocumentProcessor:
         vectors: list[dict] = await self.compose_vectors(
             document, chunks, file_path, request, **kwargs,
         )
+
+        # 벡터 file_path 메타를 입력 file_path 로 채운다(compose_vectors 는 변환 PDF 경우에만
+        # 세팅하므로, chunker 입력 경로(인라인 시 메타용 경로 / 파일 입력 시 .json 경로)를 반영).
+        if file_path:
+            for v in vectors:
+                if not getattr(v, "file_path", None):
+                    v.file_path = file_path
         return vectors
 
 
