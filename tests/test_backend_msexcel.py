@@ -568,3 +568,31 @@ def test_one_cell_anchor_image():
     assert prov.bbox.t == 1.0, f"Image top should be 1.0 (row 2), got {prov.bbox.t}"
     assert prov.bbox.r == 4.0, f"Image right should be 4.0, got {prov.bbox.r}"
     assert prov.bbox.b == 2.0, f"Image bottom should be 2.0, got {prov.bbox.b}"
+
+
+def test_find_data_tables_handles_a_filled_last_excel_row(tmp_path):
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1048576"] = "last row"
+    file_path = tmp_path / "test.xlsx"
+    workbook.save(file_path)
+
+    in_doc = InputDocument(
+        path_or_stream=file_path,
+        format=InputFormat.XLSX,
+        filename=file_path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=file_path)
+    doc: DoclingDocument = backend.convert()
+
+    tables = doc.tables
+    assert len(tables) == 1
+
+    table = tables[0]
+    print(table)
+    assert table.prov[0].bbox.t == 1048575
+    assert table.data.num_rows == 1
+    assert table.data.num_cols == 1
+    assert len(table.data.table_cells) == 1
+    assert table.data.table_cells[0].text == "last row"
