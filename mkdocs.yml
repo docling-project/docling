@@ -133,6 +133,7 @@ nav:
     - 🖼️ Picture annotation:
       - "Annotate picture with local VLM": _generated/examples/pictures_description.md
       - "Annotate picture with remote VLM": _generated/examples/pictures_description_api.md
+      - "Capture picture API usage": _generated/examples/picture_description_api_usage.md
     - 🔤 Enrichments:
       - "Code & formula": _generated/examples/code_formula_granite_docling.md
     - ✨ Enrichment development:
