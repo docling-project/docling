@@ -1495,18 +1495,19 @@ class HeadingHierarchyOptions(BaseModel):
 
     The layout model only flags regions as ``SECTION_HEADER`` without a level, so every
     heading produced by the PDF path defaults to ``level=1`` and the document hierarchy is
-    flattened. When ``enabled``, a post-assembly step in the reading-order stage assigns
-    ``SectionHeaderItem.level`` from (in precedence order) numbering, font style and -- once
-    the backend plumbing lands -- PDF bookmarks. The step only changes heading levels; it
-    never adds, removes or reorders items, and headings for which no signal applies keep
-    their current level.
+    flattened. When ``enabled``, :class:`HeadingHierarchyModel` runs right after the
+    reading-order model and assigns ``SectionHeaderItem.level`` from (in precedence order)
+    numbering and font style. The step only changes heading levels; it never adds, removes
+    or reorders items, and headings for which no signal applies keep their current level.
+
+    PDF bookmark/outline inference (the most authoritative signal) is planned as a separate
+    follow-up.
 
     Notes:
         - ``use_style`` requires the parsed PDF cells to still be available when the
-          reading-order stage runs, i.e. ``PdfPipelineOptions.generate_parsed_pages=True``.
-          Without them, style inference is silently skipped (numbering still applies).
-        - ``use_bookmarks`` is reserved for the PDF-outline signal and is a no-op until the
-          backend outline extraction is implemented (tracked as a follow-up).
+          heading-hierarchy step runs, i.e.
+          ``PdfPipelineOptions.generate_parsed_pages=True``. Without them, style inference is
+          silently skipped (numbering still applies).
     """
 
     enabled: Annotated[
@@ -1538,15 +1539,6 @@ class HeadingHierarchyOptions(BaseModel):
             )
         ),
     ] = True
-    use_bookmarks: Annotated[
-        bool,
-        Field(
-            description=(
-                "Use the PDF outline/bookmarks as an authoritative signal. Reserved for a "
-                "follow-up; currently a no-op until backend outline extraction is added."
-            )
-        ),
-    ] = False
     numbering_schemes: Annotated[
         Optional[list[str]],
         Field(

@@ -13,9 +13,8 @@ produced by the PDF path defaults to ``level=1`` and the document hierarchy is f
 2. **style** -- font size approximated from the parsed PDF cells, used only for headings
    that have no recognizable numbering.
 
-Bookmark / PDF-outline inference (the most authoritative signal) requires new backend
-plumbing and is intentionally left as a follow-up; :func:`_infer_from_bookmarks` is the
-extension point and currently a no-op.
+Bookmark / PDF-outline inference (the most authoritative signal) would require new backend
+plumbing and is planned as a separate follow-up.
 
 The model only ever rewrites heading levels -- it never adds, removes or reorders items. The
 core (:meth:`HeadingHierarchyModel.assign_heading_levels`) works on a bare
@@ -244,17 +243,6 @@ def _infer_from_style(
     return {i: ranked[size] for i, size in rounded.items()}
 
 
-def _infer_from_bookmarks(
-    headings: list[SectionHeaderItem], options: HeadingHierarchyOptions
-) -> dict[int, int]:
-    """Reserved: map heading index -> level from the PDF outline/bookmarks.
-
-    Authoritative when present, but the PDF backends do not yet surface the document
-    outline. This is the extension point for that follow-up; it is currently a no-op.
-    """
-    return {}
-
-
 class HeadingHierarchyModel:
     """Assigns ``SectionHeaderItem.level`` on an already-assembled ``DoclingDocument``.
 
@@ -288,9 +276,9 @@ class HeadingHierarchyModel:
     ) -> DoclingDocument:
         """Assign heading levels in place from the configured signals.
 
-        Numbering wins over style; bookmarks (once implemented) win over both. Headings with
-        no applicable signal keep their existing level. ``parsed_pages`` (page number ->
-        parsed page) is only needed for the style fallback.
+        Numbering wins over style. Headings with no applicable signal keep their existing
+        level. ``parsed_pages`` (page number -> parsed page) is only needed for the style
+        fallback.
         """
         headings = [
             item for item in document.texts if isinstance(item, SectionHeaderItem)
@@ -306,10 +294,6 @@ class HeadingHierarchyModel:
                 headings, parsed_pages, self.options
             ).items():
                 levels.setdefault(i, level)  # do not override a numbering-derived level
-        if self.options.use_bookmarks:
-            levels.update(
-                _infer_from_bookmarks(headings, self.options)
-            )  # authoritative
 
         for i, heading in enumerate(headings):
             level = levels.get(i)

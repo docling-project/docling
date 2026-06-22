@@ -116,9 +116,7 @@ def test_max_level_clamping_on_document():
     for text in ["1. A", "1.1 B", "1.1.1 C", "1.1.1.1 D"]:
         doc.add_heading(text=text)
     model = HeadingHierarchyModel(
-        options=HeadingHierarchyOptions(
-            use_style=False, use_bookmarks=False, max_level=2
-        )
+        options=HeadingHierarchyOptions(use_style=False, max_level=2)
     )
     model.assign_heading_levels(doc)
     assert [h.level for h in doc.texts] == [1, 2, 2, 2]
@@ -129,9 +127,7 @@ def test_assign_updates_document_levels_and_markdown():
     for text in ["I. Introduction", "1. Background", "2. Motivation", "II. Methods"]:
         doc.add_heading(text=text)
 
-    model = HeadingHierarchyModel(
-        options=HeadingHierarchyOptions(use_style=False, use_bookmarks=False)
-    )
+    model = HeadingHierarchyModel(options=HeadingHierarchyOptions(use_style=False))
     model.assign_heading_levels(doc)
 
     assert [h.level for h in doc.texts] == [1, 2, 2, 1]
@@ -207,9 +203,7 @@ def test_style_fallback_assigns_levels_by_font_size():
     )
 
     model = HeadingHierarchyModel(
-        options=HeadingHierarchyOptions(
-            use_numbering=False, use_style=True, use_bookmarks=False
-        )
+        options=HeadingHierarchyOptions(use_numbering=False, use_style=True)
     )
     model.assign_heading_levels(doc, parsed_pages={1: page})
 
