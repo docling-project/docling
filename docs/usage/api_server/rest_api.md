@@ -44,7 +44,7 @@ with DoclingServiceClient(url="http://localhost:5001") as client:
 print(result.document.export_to_markdown())
 ```
 
-`source` accepts an HTTP/HTTPS URL string, a local `pathlib.Path`, or a `DocumentStream`; use `convert_all([...])` to stream multiple conversion results. The `options` are the same [conversion options](#conversion-options-common) shown below. See the [examples](../../examples/index.md) for more recipes.
+`source` accepts an HTTP/HTTPS URL string, a local `pathlib.Path`, or a `DocumentStream`; for multiple inputs use `convert_all(source=[...])` to stream multiple conversion results. The `options` are the same [conversion options](#conversion-options-common) shown below. See the [examples](../../examples/index.md) for more recipes.
 
 ## Conversion options (common)
 

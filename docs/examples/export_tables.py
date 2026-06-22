@@ -23,14 +23,21 @@
 # %%
 
 import logging
+import os
 import time
 from pathlib import Path
 
 import pandas as pd
 
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.document_converter import DocumentConverter
 
 _log = logging.getLogger(__name__)
+
+# Under CI we limit the conversion to a representative page range to keep the
+# example fast; locally the full document is processed.
+IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")
+CI_PAGE_RANGE = (3, 4)
 
 
 def main():
@@ -44,7 +51,8 @@ def main():
 
     start_time = time.time()
 
-    conv_res = doc_converter.convert(input_doc_path)
+    page_range = CI_PAGE_RANGE if IS_CI else DEFAULT_PAGE_RANGE
+    conv_res = doc_converter.convert(input_doc_path, page_range=page_range)
 
     output_dir.mkdir(parents=True, exist_ok=True)
 

@@ -255,8 +255,8 @@ item-0 at level 0: unspecified: group _root_
       item-253 at level 3: unspecified: group rich_cell_group_1_0_1
         item-254 at level 4: picture
       item-255 at level 3: unspecified: group rich_cell_group_1_0_2
-        item-256 at level 4: text: Bufflehead
-        item-257 at level 4: inline: group group
+        item-256 at level 4: inline: group group
+          item-257 at level 5: text: Bufflehead
           item-258 at level 5: text: (
           item-259 at level 5: text: Bucephala albeola
           item-260 at level 5: text: )
@@ -822,7 +822,7 @@ item-0 at level 0: unspecified: group _root_
     item-807 at level 2: section_header: See also
       item-808 at level 3: list: group list
         item-809 at level 4: list_item: Birds portal
-        item-810 at level 4: picture
+          item-810 at level 5: picture
       item-811 at level 3: list: group list
         item-812 at level 4: list_item: Domestic duck
         item-813 at level 4: list_item: Duck as food
@@ -1424,32 +1424,32 @@ item-0 at level 0: unspecified: group _root_
           item-1409 at level 5: inline: group group
             item-1410 at level 6: text: Definitions
             item-1411 at level 6: text: from Wiktionary
-        item-1412 at level 4: picture
+          item-1412 at level 5: picture
         item-1413 at level 4: list_item: 
           item-1414 at level 5: inline: group group
             item-1415 at level 6: text: Media
             item-1416 at level 6: text: from Commons
-        item-1417 at level 4: picture
+          item-1417 at level 5: picture
         item-1418 at level 4: list_item: 
           item-1419 at level 5: inline: group group
             item-1420 at level 6: text: Quotations
             item-1421 at level 6: text: from Wikiquote
-        item-1422 at level 4: picture
+          item-1422 at level 5: picture
         item-1423 at level 4: list_item: 
           item-1424 at level 5: inline: group group
             item-1425 at level 6: text: Recipes
             item-1426 at level 6: text: from Wikibooks
-        item-1427 at level 4: picture
+          item-1427 at level 5: picture
         item-1428 at level 4: list_item: 
           item-1429 at level 5: inline: group group
             item-1430 at level 6: text: Taxa
             item-1431 at level 6: text: from Wikispecies
-        item-1432 at level 4: picture
+          item-1432 at level 5: picture
         item-1433 at level 4: list_item: 
           item-1434 at level 5: inline: group group
             item-1435 at level 6: text: Data
             item-1436 at level 6: text: from Wikidata
-        item-1437 at level 4: picture
+          item-1437 at level 5: picture
       item-1438 at level 3: list: group list
         item-1439 at level 4: list_item: 
           item-1440 at level 5: inline: group group

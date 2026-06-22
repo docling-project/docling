@@ -7,11 +7,11 @@ from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 
 import numpy as np
-from docling_core.types.doc import CoordOrigin, DocItemLabel
+from docling_core.types.doc import BoundingBox, CoordOrigin, DocItemLabel
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import BoundingBox, Cluster, LayoutPrediction, Page
+from docling.datamodel.base_models import Cluster, LayoutPrediction, Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import LayoutObjectDetectionOptions
 from docling.models.base_layout_model import BaseLayoutModel

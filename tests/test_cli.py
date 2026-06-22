@@ -1,4 +1,5 @@
 import base64
+import re
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -46,11 +47,27 @@ def _assert_markdown_embeds_png(path: Path, image_bytes: bytes | None = None) ->
     assert "data:image/png;base64" in content
     assert "Image not available" not in content
     if image_bytes is not None:
-        assert base64.b64encode(image_bytes).decode() in content
+        # Compare decoded pixel content rather than exact base64: docling
+        # re-encodes the PNG, so the byte stream (and its base64) differs even
+        # though the image is identical.
+        match = re.search(r"data:image/png;base64,([A-Za-z0-9+/=]+)", content)
+        assert match is not None
+        embedded = Image.open(BytesIO(base64.b64decode(match.group(1))))
+        expected = Image.open(BytesIO(image_bytes))
+        assert embedded.convert("RGBA").tobytes() == expected.convert("RGBA").tobytes()
 
 
 def test_cli_help():
+    # Top-level help lists the available commands and points agents at the
+    # remote command (the `convert` options live under `docling convert --help`).
     result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    assert "convert-remote" in result.output
+    assert "DOCLING_SERVICE_URL" in result.output
+
+
+def test_cli_convert_help():
+    result = runner.invoke(app, ["convert", "--help"])
     assert result.exit_code == 0
     assert "Input formats to" in result.output
     assert "all supported" in result.output
@@ -96,7 +113,7 @@ def test_cli_exports_doclang(tmp_path):
     converted = output / "input.dclg.xml"
     assert converted.exists()
     content = converted.read_text(encoding="utf-8")
-    assert "<doclang>" in content
+    assert re.search(r'<doclang version="\d+\.\d+">', content) is not None
     assert "DocLang CLI" in content
 
 
@@ -497,7 +514,9 @@ def test_cli_accepts_threaded_docling_parse_backend(
             assert len(input_doc_paths) == 1
             return []
 
-    monkeypatch.setattr("docling.cli.main.DocumentConverter", _FakeDocumentConverter)
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
 
     source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
     output = tmp_path / "out"
@@ -552,7 +571,9 @@ def test_cli_passes_accelerator_options_to_vlm_pipeline(
             assert len(input_doc_paths) == 1
             return []
 
-    monkeypatch.setattr("docling.cli.main.DocumentConverter", _FakeDocumentConverter)
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
 
     source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
     output = tmp_path / "out"

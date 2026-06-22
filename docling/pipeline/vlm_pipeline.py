@@ -46,6 +46,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
+    BaseVlmOptions,
     InferenceFramework,
     InlineVlmOptions,
     ResponseFormat,
@@ -91,7 +92,7 @@ class VlmPipeline(PaginatedPipeline):
         else:
             self._initialize_legacy_vlm_models(pipeline_options)
 
-        self.enrichment_pipe = [
+        self.enrichment_pipe: list = [
             # Other models working on `NodeItem` elements in the DoclingDocument
         ]
 
@@ -302,6 +303,12 @@ class VlmPipeline(PaginatedPipeline):
                     conv_res, InputFormat.HTML, HTMLDocumentBackend
                 )
 
+            elif response_format_legacy == ResponseFormat.CHANDRA_HTML:
+                conv_res.document = self._parse_chandra_html(conv_res)
+
+            elif response_format_legacy == ResponseFormat.DOTS_JSON:
+                conv_res.document = self._parse_dots_json(conv_res)
+
             else:
                 raise RuntimeError(
                     f"Unsupported VLM response format {response_format_legacy}"
@@ -510,6 +517,77 @@ class VlmPipeline(PaginatedPipeline):
         # Add page metadata and concatenate
         return self._add_page_metadata_and_concatenate(page_docs, conv_res)
 
+    def _parse_chandra_html(self, conv_res: ConversionResult) -> DoclingDocument:
+        """Parse chandra-ocr-2 HTML output into a DoclingDocument."""
+        from docling.utils.chandra_utils import parse_chandra_html
+
+        page_docs = []
+
+        for pg_idx, page in enumerate(conv_res.pages):
+            predicted_text = ""
+            if page.predictions.vlm_response:
+                predicted_text = page.predictions.vlm_response.text
+
+            assert page.size is not None
+
+            page_doc = parse_chandra_html(
+                content=predicted_text,
+                original_page_size=page.size,
+                page_no=pg_idx + 1,
+                filename=conv_res.input.file.name or "file",
+                page_image=page.image,
+            )
+            page_docs.append(page_doc)
+
+        return self._add_page_metadata_and_concatenate(page_docs, conv_res)
+
+    def _parse_dots_json(self, conv_res: ConversionResult) -> DoclingDocument:
+        """Parse dots.ocr / dots.mocr JSON output into a DoclingDocument."""
+        from docling.utils.dots_utils import parse_dots_json
+        from docling.utils.vlm_utils import compute_qwen2vl_image_size
+
+        vlm_options = self.pipeline_options.vlm_options
+        if isinstance(vlm_options, (VlmConvertOptions, BaseVlmOptions)):
+            vlm_scale = vlm_options.scale
+            vlm_max_size = vlm_options.max_size
+        else:
+            raise TypeError(
+                "DOTS JSON parsing requires VlmConvertOptions or BaseVlmOptions, "
+                f"got {type(vlm_options).__name__}."
+            )
+
+        page_docs = []
+
+        for pg_idx, page in enumerate(conv_res.pages):
+            predicted_text = ""
+            if page.predictions.vlm_response:
+                predicted_text = page.predictions.vlm_response.text
+
+            assert page.size is not None
+
+            inference_image = page.get_image(scale=vlm_scale, max_size=vlm_max_size)
+
+            model_image_size = None
+            if inference_image is not None:
+                model_image_size = compute_qwen2vl_image_size(
+                    width=inference_image.width,
+                    height=inference_image.height,
+                    scale=1.0,
+                    max_size=None,
+                )
+
+            page_doc = parse_dots_json(
+                content=predicted_text,
+                original_page_size=page.size,
+                page_no=pg_idx + 1,
+                filename=conv_res.input.file.name or "file",
+                page_image=page.image,
+                model_image_size=model_image_size,
+            )
+            page_docs.append(page_doc)
+
+        return self._add_page_metadata_and_concatenate(page_docs, conv_res)
+
     def _extract_code_block(self, text: str) -> str:
         """
         Extracts text from markdown code blocks (enclosed in triple backticks).
@@ -559,13 +637,15 @@ class VlmPipeline(PaginatedPipeline):
                 pg_width = 1
                 pg_height = 1
 
-            page_doc.add_page(
-                page_no=pg_idx + 1,
-                size=Size(width=pg_width, height=pg_height),
-                image=ImageRef.from_pil(image=page.image, dpi=72)
-                if page.image
-                else None,
-            )
+            page_no = pg_idx + 1
+            if page_no not in page_doc.pages:
+                page_doc.add_page(
+                    page_no=page_no,
+                    size=Size(width=pg_width, height=pg_height),
+                    image=ImageRef.from_pil(image=page.image, dpi=72)
+                    if page.image
+                    else None,
+                )
 
         # Concatenate all page documents to preserve hierarchy
         return DoclingDocument.concatenate(docs=page_docs)

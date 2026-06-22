@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 
 from docling.datamodel.base_models import InputFormat
@@ -11,13 +12,17 @@ from docling.document_converter import (
 
 _log = logging.getLogger(__name__)
 
+# Check if running in CI
+IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")
+
 
 def main():
     input_path = Path("tests/data/docx/word_sample.docx")
 
     pipeline_options = ConvertPipelineOptions()
     pipeline_options.do_picture_classification = True
-    pipeline_options.do_picture_description = True
+    # Picture description loads a VLM model; skip it under CI to keep runtime low.
+    pipeline_options.do_picture_description = not IS_CI
 
     doc_converter = DocumentConverter(
         format_options={

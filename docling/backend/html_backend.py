@@ -48,7 +48,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import ContentLayer, Formatting, ImageRef, Script
 from PIL import Image, UnidentifiedImageError
 from pydantic import AnyUrl, BaseModel, ValidationError
-from typing_extensions import override
+from typing_extensions import Self, override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
@@ -59,6 +59,10 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import OperationNotAllowed
 
 _log = logging.getLogger(__name__)
+
+# Sentinel character for explicit line breaks from <br> tags
+# Using Unicode Private Use Area to avoid conflicts with actual content
+_BR_SENTINEL = "\ue000"
 
 DEFAULT_IMAGE_WIDTH = 128
 DEFAULT_IMAGE_HEIGHT = 128
@@ -386,18 +390,37 @@ class AnnotatedTextList(list):
             )
         return simplified
 
-    def split_by_newline(self):
-        super_list = []
+    def split_by_newline(self) -> list[Self]:
+        """Split text elements on multiple consecutive line breaks (from <br> tags).
+
+        Single <br> tags are converted to newline characters (\n) within the same paragraph.
+        Multiple consecutive <br> tags (2+) create new paragraphs.
+        Regular newlines from HTML source formatting have already been
+        normalized to spaces during text extraction.
+        """
+        super_list: list[Self] = []
         active_annotated_text_list = AnnotatedTextList()
+        double_sentinel = _BR_SENTINEL + _BR_SENTINEL
+
         for el in self:
-            sub_texts = el.text.split("\n")
-            if len(sub_texts) == 1:
+            if _BR_SENTINEL not in el.text:
                 active_annotated_text_list.append(el)
-            else:
-                for text in sub_texts:
-                    sub_el = deepcopy(el)
-                    sub_el.text = text
-                    active_annotated_text_list.append(sub_el)
+                continue
+
+            # Split on 2+ consecutive sentinels (paragraph breaks)
+            sub_texts = el.text.split(double_sentinel)
+
+            for i, text in enumerate(sub_texts):
+                # Replace single sentinels with \n and strip spaces around newlines
+                text = text.replace(_BR_SENTINEL, "\n")
+                text = re.sub(r" *\n *", "\n", text)
+
+                sub_el = deepcopy(el)
+                sub_el.text = text
+                active_annotated_text_list.append(sub_el)
+
+                # Create new paragraph after each segment except the last
+                if i < len(sub_texts) - 1:
                     super_list.append(active_annotated_text_list)
                     active_annotated_text_list = AnnotatedTextList()
         if active_annotated_text_list:
@@ -528,10 +551,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         HTMLDocumentBackend._fix_invalid_paragraph_structure(self.soup)
 
         content = self.soup.body or self.soup
-        # normalize <br> tags
+
+        # normalize <br> tags - use sentinel to distinguish from source newlines
+        for text_node in content.find_all(string=True):
+            if _BR_SENTINEL in text_node:
+                text_node.replace_with(text_node.replace(_BR_SENTINEL, ""))
         for br in content("br"):
-            br.replace_with(NavigableString("\n"))
-        # set default content layer
+            br.replace_with(NavigableString(_BR_SENTINEL))
 
         # Furniture before the first heading rule, except for headers in tables
         header = None
@@ -1866,7 +1892,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     return AnnotatedTextList()
                 if self._is_checkbox_label_container(item.parent):
                     return AnnotatedTextList()
-            text = item.strip()
+
+            if keep_newlines:
+                text: str = item.strip()
+            else:
+                # For normal content, collapse newlines to spaces (HTML spec behavior)
+                # but preserve the sentinel character for explicit <br> tags
+                text = item.replace("\n", " ").replace("\r", " ")
+                text = " ".join(text.split())
+
             code = any(code_tag in self.format_tags for code_tag in _CODE_TAG_SET)
             source_tag_id = (
                 self._get_tag_id(item.parent) if isinstance(item.parent, Tag) else None
@@ -1904,7 +1938,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return AnnotatedTextList()
         if self._is_checkbox_label_tag(tag):
             return AnnotatedTextList()
-        if not ignore_list or (tag.name not in ["ul", "ol"]):
+        if not ignore_list or (tag.name not in ["ul", "ol", "dl"]):
             for child in tag:
                 if isinstance(child, Tag) and child.name in _FORMAT_TAG_MAP:
                     with self._use_format([child.name]):
@@ -2120,6 +2154,28 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.level = original_level
             self.parents = original_parents
 
+    @contextmanager
+    def _use_list_item_context(self, parent_item: RefItem | None) -> Iterator[None]:
+        """Set up context for processing nested content within a list item.
+
+        Args:
+            parent_item: The list item to use as parent for nested content.
+                If None, the context manager does nothing.
+
+        While the context manager is active, the hierarchy level is increased
+        and the parent is set. When exiting, the level and parent are restored.
+        """
+        if parent_item:
+            self.parents[self.level + 1] = parent_item
+            self.level += 1
+            try:
+                yield
+            finally:
+                self.parents[self.level + 1] = None
+                self.level -= 1
+        else:
+            yield
+
     def _handle_heading(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:
         added_ref = []
         tag_name = tag.name.lower()
@@ -2192,6 +2248,71 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if im_ref:
                     added_ref.append(im_ref)
         return added_ref
+
+    def _has_list_ancestor(self, elem: Tag, boundary: Tag) -> bool:
+        """Check if element has a list ancestor between itself and boundary.
+
+        Args:
+            elem: The element to check
+            boundary: The boundary element (typically the list item)
+
+        Returns:
+            True if a list ancestor exists, False otherwise
+        """
+        parent = elem.parent
+        while parent and parent != boundary:
+            if isinstance(parent, Tag) and parent.name in {"ul", "ol", "dl"}:
+                return True
+            parent = parent.parent
+        return False
+
+    def _process_nested_element(
+        self,
+        elem,
+        li: Tag,
+        doc: DoclingDocument,
+        processed_elements: set,
+    ) -> None:
+        """Process a single nested element within a list item.
+
+        Args:
+            elem: The element to process
+            li: The parent list item tag
+            doc: The DoclingDocument being built
+            processed_elements: Set of element IDs already processed
+        """
+        if id(elem) in processed_elements:
+            return
+        processed_elements.add(id(elem))
+
+        if isinstance(elem, Tag):
+            if elem.name == "img":
+                self._emit_image(elem, doc)
+            elif elem.name in {"ul", "ol", "dl"}:
+                # Only process top-level lists (not nested within other lists)
+                if not self._has_list_ancestor(elem, li):
+                    self._handle_block(elem, doc)
+                    self.parents[self.level + 1] = None
+            else:
+                # Recursively process children for other elements (like divs)
+                for child in elem.children:
+                    self._process_nested_element(child, li, doc, processed_elements)
+
+    def _process_list_item_nested_content(
+        self,
+        li: Tag,
+        doc: DoclingDocument,
+        processed_elements: set,
+    ) -> None:
+        """Process nested content (images, lists, etc.) within a list item in DOM order.
+
+        Args:
+            li: The list item tag
+            doc: The DoclingDocument being built
+            processed_elements: Set of element IDs already processed to avoid duplicates
+        """
+        for child in li.children:
+            self._process_nested_element(child, li, doc, processed_elements)
 
     def _add_list_item_with_content(
         self,
@@ -2308,7 +2429,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
             return list_item
 
-    def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:  # noqa: C901
+    def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:
         tag_name = tag.name.lower()
         start: Optional[int] = None
         name: str = ""
@@ -2336,6 +2457,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if is_ordered and start is not None:
             self.ctx.list_start_by_ref[list_group.self_ref] = start
         self.level += 1
+
+        # Track the number of list items added (not all children)
+        list_item_counter: int = 0
 
         # Handle description lists (<dl> with <dt> and <dd>)
         if is_description:
@@ -2365,34 +2489,44 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if current_dt_item:
                         self.parents[self.level + 1] = current_dt_item
 
-                        dd_count = 0
-                        for next_child in children[i + 1 :]:
-                            if isinstance(next_child, Tag):
-                                if next_child.name.lower() == "dd":
-                                    dd_count += 1
-                                elif next_child.name.lower() == "dt":
-                                    break
-
-                        if dd_count > 1:
+                elif child_name == "dd":
+                    has_nested_dl = child.find("dl", recursive=False) is not None
+                    if has_nested_dl:
+                        # Close current descriptions group before processing nested <dl>
+                        dd_group = None
+                        # If <dd> contains a nested <dl>, process it directly under the term item
+                        # Don't create a list item for the <dd> itself to avoid double indentation
+                        if current_dt_item:
+                            with self._use_list_item_context(current_dt_item):
+                                processed_elements = set()
+                                self._process_list_item_nested_content(
+                                    child, doc, processed_elements
+                                )
+                    else:
+                        # For regular <dd> without nested <dl>, create/use descriptions group
+                        if dd_group is None and current_dt_item:
                             dd_group = doc.add_list_group(
                                 name="descriptions",
                                 parent=current_dt_item,
                                 content_layer=self.content_layer,
                             )
 
-                elif child_name == "dd":
-                    dd_parent = dd_group or current_dt_item or list_group
+                        # dd_group should exist at this point (or fall back to list_group)
+                        dd_parent = dd_group or list_group
 
-                    self._add_list_item_with_content(
-                        tag=child,
-                        doc=doc,
-                        parent=dd_parent,
-                    )
+                        dd_item = self._add_list_item_with_content(
+                            tag=child,
+                            doc=doc,
+                            parent=dd_parent,
+                        )
 
-                    # Handle any images in the description
-                    for img_tag in child("img"):
-                        if isinstance(img_tag, Tag):
-                            self._emit_image(img_tag, doc)
+                        # Process nested content (images, lists, etc.) in the description
+                        content_parent = dd_item or dd_parent
+                        with self._use_list_item_context(content_parent):
+                            processed_elements = set()
+                            self._process_list_item_nested_content(
+                                child, doc, processed_elements
+                            )
 
             self.parents[self.level + 1] = None
             self.level -= 1
@@ -2409,11 +2543,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self._handle_block(li, doc)
 
             else:
-                # 1) determine the marker
-                if is_ordered and start is not None:
-                    marker = f"{start + len(list_group.children)}."
-                else:
-                    marker = ""
+                # 1) determine the marker using the counter
+                marker: str = (
+                    f"{start + list_item_counter}."
+                    if is_ordered and start is not None
+                    else ""
+                )
 
                 # 2) Find inputs and checkboxes in this <li>
                 inputs_in_li = [
@@ -2440,39 +2575,35 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     marker=marker,
                 )
 
+                # Increment counter only when a list item is actually added
+                if list_item:
+                    list_item_counter += 1
+
                 if list_item or inputs_in_li or custom_checkboxes_in_li:
-                    # If we created a list item, set it as parent for nested content
-                    if list_item:
-                        self.parents[self.level + 1] = list_item
+                    with self._use_list_item_context(list_item):
+                        # Handle inputs and checkboxes
+                        if inputs_in_li or custom_checkboxes_in_li:
+                            for input_tag in inputs_in_li:
+                                if isinstance(input_tag, Tag):
+                                    self._emit_input(input_tag, doc)
+                            for checkbox_tag in custom_checkboxes_in_li:
+                                if isinstance(checkbox_tag, Tag):
+                                    self._emit_custom_checkbox(checkbox_tag, doc)
 
-                    # Handle inputs and checkboxes
-                    if inputs_in_li or custom_checkboxes_in_li:
-                        self.level += 1
-                        for input_tag in inputs_in_li:
-                            if isinstance(input_tag, Tag):
-                                self._emit_input(input_tag, doc)
-                        for checkbox_tag in custom_checkboxes_in_li:
-                            if isinstance(checkbox_tag, Tag):
-                                self._emit_custom_checkbox(checkbox_tag, doc)
-                        self.level -= 1
-
-                    # 4) Recurse into any nested lists
-                    for sublist in li({"ul", "ol"}, recursive=False):
-                        if isinstance(sublist, Tag):
-                            self.level += 1
-                            self._handle_block(sublist, doc)
-                            self.parents[self.level + 1] = None
-                            self.level -= 1
+                        # 4) Process nested content (images, lists, etc.) in DOM order
+                        processed_elements = set()
+                        self._process_list_item_nested_content(
+                            li, doc, processed_elements
+                        )
                 else:
-                    # No content, but check for nested lists
-                    for sublist in li({"ul", "ol"}, recursive=False):
+                    # No content, but check for nested lists (including those wrapped in divs)
+                    for sublist in li({"ul", "ol", "dl"}):
                         if isinstance(sublist, Tag):
-                            self._handle_block(sublist, doc)
+                            # Check if this list has a ul/ol/dl ancestor within the current li
+                            has_list_ancestor = self._has_list_ancestor(sublist, li)
 
-                # 5) Extract any images under this <li>
-                for img_tag in li("img"):
-                    if isinstance(img_tag, Tag):
-                        self._emit_image(img_tag, doc)
+                            if not has_list_ancestor:
+                                self._handle_block(sublist, doc)
 
         self.parents[self.level + 1] = None
         self.level -= 1
@@ -4509,7 +4640,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             result: list[str] = []
 
             if isinstance(item, NavigableString):
-                result = [item]
+                text = str(item).replace(_BR_SENTINEL, "\n")
+                result = [text]
             elif isinstance(item, Tag):
                 tag = cast(Tag, item)
                 parts: list[str] = []

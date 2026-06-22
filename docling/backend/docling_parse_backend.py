@@ -5,9 +5,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union
 
 import pypdfium2 as pdfium
-from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
 from docling_parse.pdf_parser import (
+    ContentConfig,
+    ContentLevel,
+    DecodeConfig,
     DoclingPdfParser,
     DoclingThreadedPdfParser,
     PageParseResult,
@@ -15,7 +18,6 @@ from docling_parse.pdf_parser import (
     RenderConfig,
     ThreadedPdfParserConfig,
 )
-from docling_parse.pdf_parsers import DecodePageConfig
 from PIL import Image
 from pypdfium2 import PdfPage
 
@@ -29,7 +31,6 @@ from docling.datamodel.backend_options import (
     PdfBackendOptions,
     ThreadedDoclingParseBackendOptions,
 )
-from docling.datamodel.base_models import Size
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.utils.locks import pypdfium2_lock
 
@@ -41,27 +42,35 @@ _log = logging.getLogger(__name__)
 
 def _make_docling_parse_decode_config(
     *,
-    create_words: bool,
-    create_textlines: bool,
     release_native_memory_every_n_pages: int | None = None,
-) -> DecodePageConfig:
-    config = DecodePageConfig()
-    config.keep_char_cells = False
-    config.keep_shapes = False
-    config.keep_bitmaps = (
-        True  # we need to set this to True, otherwhise OCR will not work
-    )
-    config.create_word_cells = create_words
-    config.create_line_cells = create_textlines
-    config.enforce_same_font = True
-    config.materialize_bitmap_bytes = (
-        False  # don't need bitmap images, only rectangles.
-    )
+) -> DecodeConfig:
+    config = DecodeConfig(enforce_same_font=True)
 
     if release_native_memory_every_n_pages is not None:
         config.release_native_memory_every_n_pages = release_native_memory_every_n_pages
 
     return config
+
+
+def _make_docling_parse_page_content_config(
+    *,
+    create_words: bool,
+    create_textlines: bool,
+) -> ContentConfig:
+    compute = ContentLevel.COMPUTE
+    materialize = ContentLevel.COMPUTE_AND_MATERIALIZE
+    skip = ContentLevel.SKIP
+
+    return ContentConfig(
+        char_cells_content_level=compute
+        if (create_words or create_textlines)
+        else skip,
+        word_cells_content_level=materialize if create_words else skip,
+        line_cells_content_level=materialize if create_textlines else skip,
+        shapes_content_level=skip,
+        bitmaps_content_level=materialize,
+        include_bitmap_bytes=False,  # only need bitmap rectangles for OCR
+    )
 
 
 class DoclingParsePageBackend(ManagedPdfiumPageBackend):
@@ -105,18 +114,16 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
         if self._dpage is not None:
             return
 
-        # FIXME for the future: we will want to make this config a
-        # member of the class, i.e. self.config. Ultimately, we also
-        # should not need to keep the char's, but it seems no lines
-        # get created if we dont keep the chars. Updated version of
-        # docling-parse >v5.3.0 should fix this.
-        config = _make_docling_parse_decode_config(
+        content_config = _make_docling_parse_page_content_config(
             create_words=self._create_words,
             create_textlines=self._create_textlines,
         )
 
         assert self._dp_doc is not None
-        seg_page = self._dp_doc.get_page(self._page_no + 1, config=config)
+        seg_page = self._dp_doc.get_page(
+            self._page_no + 1,
+            content_config=content_config,
+        )
 
         # In Docling, all TextCell instances are expected with top-left origin.
         [
@@ -265,9 +272,12 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
         with pypdfium2_lock:
             self._pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
         self.parser = DoclingPdfParser(loglevel="fatal")
+        decode_config = _make_docling_parse_decode_config()
 
         self.dp_doc: Optional[PdfDocument] = self.parser.load(
-            path_or_stream=self.path_or_stream, password=password
+            path_or_stream=self.path_or_stream,
+            password=password,
+            decode_config=decode_config,
         )
         success = self.dp_doc is not None
 
@@ -458,9 +468,11 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             else 128
         )
         decode_config = _make_docling_parse_decode_config(
+            release_native_memory_every_n_pages=native_memory_release_interval,
+        )
+        content_config = _make_docling_parse_page_content_config(
             create_words=True,
             create_textlines=True,
-            release_native_memory_every_n_pages=native_memory_release_interval,
         )
 
         self.parser = DoclingThreadedPdfParser(
@@ -468,6 +480,7 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
                 loglevel="fatal",
                 threads=parser_threads,
                 render_config=render_config,
+                page_content_config=content_config,
             ),
             decode_config=decode_config,
         )
