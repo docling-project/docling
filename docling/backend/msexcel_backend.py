@@ -258,9 +258,21 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                             timestamp = None
                             if timestamp_str := comment.get("dT"):
                                 try:
-                                    timestamp = datetime.fromisoformat(
-                                        timestamp_str.replace("Z", "+00:00")
-                                    )
+                                    # Normalize timestamp for Python 3.10 compatibility
+                                    # xlsx uses fractional seconds with variable precision
+                                    normalized = timestamp_str.replace("Z", "+00:00")
+                                    if "." in normalized and "+" in normalized:
+                                        parts = normalized.split(".")
+                                        frac_and_tz = parts[1].split("+")
+                                        frac = frac_and_tz[0].ljust(6, "0")[:6]
+                                        normalized = (
+                                            f"{parts[0]}.{frac}+{frac_and_tz[1]}"
+                                        )
+                                    elif "." in normalized:
+                                        parts = normalized.split(".")
+                                        frac = parts[1].ljust(6, "0")[:6]
+                                        normalized = f"{parts[0]}.{frac}"
+                                    timestamp = datetime.fromisoformat(normalized)
                                 except Exception as e:
                                     _log.debug(
                                         f"Could not parse timestamp '{timestamp_str}': {e}"
