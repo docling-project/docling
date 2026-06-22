@@ -36,6 +36,7 @@ from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
     ErrorItem,
+    FailureCategory,
     FormatToExtensions,
     InputFormat,
     OutputFormat,
@@ -1535,6 +1536,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             limits=limits,
             error_message=message,
             status=ConversionStatus.SKIPPED,
+            category=FailureCategory.POLICY,
         )
 
     def _build_failed_conversion_result(
@@ -1543,6 +1545,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
         limits: DocumentLimits,
         error_message: str,
         status: ConversionStatus,
+        category: FailureCategory = FailureCategory.UNKNOWN,
     ) -> ConversionResult:
         input_doc = self._build_input_document(
             source_name=descriptor.source_name,
@@ -1554,6 +1557,7 @@ class DoclingServiceClient(_BaseDoclingServiceClient):
             component_type=DoclingComponentType.USER_INPUT,
             module_name="docling.service_client",
             error_message=error_message,
+            category=category,
         )
         return ConversionResult(
             input=input_doc,

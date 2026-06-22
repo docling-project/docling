@@ -54,12 +54,14 @@ from docling.datamodel.base_models import (
     DoclingComponentType,
     DocumentStream,
     ErrorItem,
+    FailureCategory,
     InputFormat,
 )
 from docling.datamodel.document import (
     ConversionResult,
     InputDocument,
     _DocumentConversionInput,
+    build_invalid_input_errors,
 )
 from docling.datamodel.pipeline_options import ConvertPipelineOptions, PipelineOptions
 from docling.datamodel.settings import (
@@ -676,6 +678,7 @@ class DocumentConverter:
                     component_type=DoclingComponentType.USER_INPUT,
                     module_name="",
                     error_message=error_message,
+                    category=FailureCategory.POLICY,
                 )
                 conv_res = ConversionResult(
                     input=in_doc, status=ConversionStatus.SKIPPED, errors=[error_item]
@@ -711,6 +714,7 @@ class DocumentConverter:
                 conv_res = ConversionResult(
                     input=in_doc,
                     status=ConversionStatus.FAILURE,
+                    errors=build_invalid_input_errors(in_doc),
                 )
 
         return conv_res

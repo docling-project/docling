@@ -150,7 +150,7 @@ def test_page_range(test_doc_path):
 
 
 def test_document_timeout(test_doc_path):
-    from docling.datamodel.base_models import ErrorCategory
+    from docling.datamodel.base_models import FailureCategory
 
     converter = DocumentConverter(
         format_options={
@@ -165,7 +165,7 @@ def test_document_timeout(test_doc_path):
     )
     # Verify timeout error is present
     assert result.has_timeout_errors(), "Expected timeout errors to be recorded"
-    assert any(e.category == ErrorCategory.TIMEOUT for e in result.errors), (
+    assert any(e.category == FailureCategory.TIMEOUT for e in result.errors), (
         "Expected at least one error with TIMEOUT category"
     )
 
@@ -185,6 +185,159 @@ def test_document_timeout(test_doc_path):
     assert result.has_timeout_errors(), (
         "Expected timeout errors to be recorded in legacy pipeline"
     )
+
+
+def test_invalid_input_over_max_file_size(test_doc_path):
+    from docling.datamodel.base_models import FailureCategory
+
+    converter = DocumentConverter()
+    result = converter.convert(test_doc_path, raises_on_error=False, max_file_size=10)
+    assert result.status == ConversionStatus.FAILURE
+    assert result.errors, "over-max_file_size must produce a non-empty errors list"
+    assert result.errors[0].category == FailureCategory.POLICY
+
+
+def test_invalid_input_over_max_num_pages(test_doc_path):
+    from docling.datamodel.base_models import FailureCategory
+
+    converter = DocumentConverter()
+    result = converter.convert(test_doc_path, raises_on_error=False, max_num_pages=1)
+    assert result.status == ConversionStatus.FAILURE
+    assert result.errors, "over-max_num_pages must produce a non-empty errors list"
+    assert result.errors[0].category == FailureCategory.POLICY
+
+
+def test_invalid_input_unreadable_source():
+    from io import BytesIO
+
+    from docling.datamodel.base_models import DocumentStream, FailureCategory
+
+    # Bytes that do not parse as any allowed format -> backend rejects them.
+    converter = DocumentConverter()
+    stream = DocumentStream(name="broken.pdf", stream=BytesIO(b"%PDF-1.4 not really"))
+    result = converter.convert(stream, raises_on_error=False)
+    assert result.status == ConversionStatus.FAILURE
+    assert result.errors, "unreadable source must produce a non-empty errors list"
+    assert result.errors[0].category == FailureCategory.BACKEND_FAILURE
+
+
+def test_invalid_input_unreachable_source():
+    """A source that cannot be resolved is SOURCE_UNAVAILABLE, no network needed."""
+    from docling.datamodel.base_models import FailureCategory
+
+    # Drive the source-resolution failure synthetically rather than relying on
+    # real DNS/network behavior for an "unreachable" URL.
+    with patch(
+        "docling.datamodel.document.resolve_source_to_stream",
+        side_effect=OSError("connection refused"),
+    ):
+        converter = DocumentConverter()
+        result = converter.convert("https://example.com/foo.pdf", raises_on_error=False)
+    assert result.status == ConversionStatus.FAILURE
+    assert result.errors, "unreachable source must produce a non-empty errors list"
+    assert result.errors[0].category == FailureCategory.SOURCE_UNAVAILABLE
+
+
+@pytest.mark.parametrize("exc", [RuntimeError("bad"), ValueError("Failed to decode")])
+def test_backend_parse_error_is_backend_failure(exc):
+    """RuntimeError/ValueError from backend init is the parse-failure signal.
+
+    All docling backends raise RuntimeError when the bytes are not a readable
+    document (PdfiumError is a subclass; office/text backends wrap their parser's
+    failure); a few parse paths still leak ValueError. Both map to BACKEND_FAILURE.
+    """
+    from io import BytesIO
+
+    from docling.backend.abstract_backend import AbstractDocumentBackend
+    from docling.datamodel.base_models import FailureCategory
+    from docling.datamodel.document import InputDocument, build_invalid_input_errors
+
+    class _ParseFailBackend(AbstractDocumentBackend):
+        def __init__(self, *args, **kwargs):
+            raise exc
+
+        def is_valid(self) -> bool:
+            return False
+
+        @classmethod
+        def supported_formats(cls):
+            return {InputFormat.PDF}
+
+        @classmethod
+        def supports_pagination(cls) -> bool:
+            return False
+
+        def unload(self):
+            pass
+
+    doc = InputDocument(
+        path_or_stream=BytesIO(b"anything"),
+        format=InputFormat.PDF,
+        backend=_ParseFailBackend,
+        filename="x.pdf",
+    )
+    assert doc.valid is False
+    assert (
+        build_invalid_input_errors(doc)[0].category == FailureCategory.BACKEND_FAILURE
+    )
+
+
+def test_internal_backend_error_is_not_masked_as_bad_input():
+    """A non-RuntimeError init failure (e.g. missing dep) is not BACKEND_FAILURE.
+
+    Such an exception is not the backends' bad-input signal, so it is left to
+    propagate rather than being silently recorded as a parse failure.
+    """
+    from io import BytesIO
+
+    from docling.backend.abstract_backend import AbstractDocumentBackend
+    from docling.datamodel.document import InputDocument
+
+    class _MissingDepBackend(AbstractDocumentBackend):
+        def __init__(self, *args, **kwargs):
+            raise ImportError("optional dependency 'foo' is not installed")
+
+        def is_valid(self) -> bool:
+            return False
+
+        @classmethod
+        def supported_formats(cls):
+            return {InputFormat.PDF}
+
+        @classmethod
+        def supports_pagination(cls) -> bool:
+            return False
+
+        def unload(self):
+            pass
+
+    with pytest.raises(ImportError):
+        InputDocument(
+            path_or_stream=BytesIO(b"anything"),
+            format=InputFormat.PDF,
+            backend=_MissingDepBackend,
+            filename="x.pdf",
+        )
+
+
+def test_page_error_carries_page_no(test_doc_path):
+    """Page-scoped errors set page_no rather than prefixing the message."""
+    from docling.datamodel.base_models import ErrorItem
+
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=PdfPipelineOptions(document_timeout=1)
+            )
+        }
+    )
+    result = converter.convert(test_doc_path)
+    # The timeout filters uninitialized pages, surfacing per-page parse errors.
+    page_errors = [e for e in result.errors if e.page_no is not None]
+    for err in page_errors:
+        assert isinstance(err, ErrorItem)
+        assert err.page_no >= 1
+        assert not err.error_message.startswith("Page ")
 
 
 def test_ocr_coverage_threshold(test_doc_path):

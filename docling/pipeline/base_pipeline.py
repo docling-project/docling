@@ -17,6 +17,7 @@ from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
     ErrorItem,
+    FailureCategory,
     Page,
 )
 from docling.datamodel.chart_extraction_options import (
@@ -297,17 +298,11 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                         _log.warning(timeout_msg)
 
                         # Add structured timeout error
-                        from docling.datamodel.base_models import (
-                            DoclingComponentType,
-                            ErrorCategory,
-                            ErrorItem,
-                        )
-
                         timeout_error = ErrorItem(
                             component_type=DoclingComponentType.PIPELINE,
                             module_name="base_pipeline",
                             error_message=timeout_msg,
-                            category=ErrorCategory.TIMEOUT,
+                            category=FailureCategory.TIMEOUT,
                         )
                         conv_res.errors.append(timeout_error)
                         conv_res.status = ConversionStatus.PARTIAL_SUCCESS
@@ -365,7 +360,9 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                     ErrorItem(
                         component_type=DoclingComponentType.DOCUMENT_BACKEND,
                         module_name=type(page._backend).__name__,
-                        error_message=f"Page {page.page_no} failed to parse.",
+                        error_message="Page failed to parse.",
+                        category=FailureCategory.BACKEND_FAILURE,
+                        page_no=page.page_no,
                     )
                 )
                 status = ConversionStatus.PARTIAL_SUCCESS

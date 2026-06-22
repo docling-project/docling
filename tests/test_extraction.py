@@ -106,3 +106,63 @@ def test_extraction_with_pydantic_class_template(
     assert len(result.pages) == 1
     assert result.pages[0].extracted_data["bill_no"] == "3139"
     assert result.pages[0].extracted_data["total"] == 3949.75
+
+
+def test_extraction_format_not_allowed_is_policy() -> None:
+    """A disallowed input format yields a SKIPPED result with a POLICY error."""
+    from docling.datamodel.base_models import ConversionStatus, FailureCategory
+
+    # Allow only PDF, then feed the JPEG sample so the format is rejected.
+    pdf_only = DocumentExtractor(allowed_formats=[InputFormat.PDF])
+    img = Path(__file__).parent / "data_scanned" / "qr_bill_example.jpg"
+    result = pdf_only.extract(
+        img, template='{"bill_no": "string"}', raises_on_error=False
+    )
+
+    assert result.status == ConversionStatus.SKIPPED
+    assert result.errors, "format-not-allowed must produce a non-empty errors list"
+    assert result.errors[0].category == FailureCategory.POLICY
+
+
+def test_extraction_pipeline_failure_is_categorized() -> None:
+    """A failing extraction pipeline records a PIPELINE/BACKEND_FAILURE ErrorItem."""
+    from docling.datamodel.base_models import (
+        ConversionStatus,
+        DoclingComponentType,
+        FailureCategory,
+    )
+    from docling.datamodel.extraction import ExtractionResult
+    from docling.datamodel.pipeline_options import PipelineOptions
+    from docling.pipeline.base_extraction_pipeline import BaseExtractionPipeline
+
+    class _FailingPipeline(BaseExtractionPipeline):
+        def _extract_data(self, ext_res, template=None):
+            raise RuntimeError("boom")
+
+        def _determine_status(self, ext_res):
+            return ConversionStatus.SUCCESS
+
+        @classmethod
+        def get_default_options(cls):
+            return PipelineOptions()
+
+    # Build a minimal valid InputDocument from the sample image.
+    img = Path(__file__).parent / "data_scanned" / "qr_bill_example.jpg"
+    from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
+    from docling.datamodel.document import InputDocument
+
+    input_doc = InputDocument(
+        path_or_stream=img,
+        format=InputFormat.IMAGE,
+        backend=DoclingParseV4DocumentBackend,
+        filename=img.name,
+    )
+
+    pipeline = _FailingPipeline(PipelineOptions())
+    result: ExtractionResult = pipeline.execute(input_doc, raises_on_error=False)
+
+    assert result.status == ConversionStatus.FAILURE
+    assert result.errors
+    err = result.errors[0]
+    assert err.component_type == DoclingComponentType.PIPELINE
+    assert err.category == FailureCategory.BACKEND_FAILURE

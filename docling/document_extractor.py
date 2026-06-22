@@ -21,11 +21,13 @@ from docling.datamodel.base_models import (
     DoclingComponentType,
     DocumentStream,
     ErrorItem,
+    FailureCategory,
     InputFormat,
 )
 from docling.datamodel.document import (
     InputDocument,
     _DocumentConversionInput,  # intentionally reused builder
+    build_invalid_input_errors,
 )
 from docling.datamodel.extraction import ExtractionResult, ExtractionTemplateType
 from docling.datamodel.pipeline_options import PipelineOptions
@@ -252,6 +254,7 @@ class DocumentExtractor:
                     component_type=DoclingComponentType.USER_INPUT,
                     module_name="",
                     error_message=error_message,
+                    category=FailureCategory.POLICY,
                 )
                 return ExtractionResult(
                     input=in_doc, status=ConversionStatus.SKIPPED, errors=[error_item]
@@ -267,7 +270,11 @@ class DocumentExtractor:
             if raises_on_error:
                 raise ConversionError(f"Input document {in_doc.file} is not valid.")
             else:
-                return ExtractionResult(input=in_doc, status=ConversionStatus.FAILURE)
+                return ExtractionResult(
+                    input=in_doc,
+                    status=ConversionStatus.FAILURE,
+                    errors=build_invalid_input_errors(in_doc),
+                )
 
         pipeline = self._get_pipeline(in_doc.format)
         if pipeline is None:

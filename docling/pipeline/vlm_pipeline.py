@@ -35,6 +35,7 @@ from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
     ErrorItem,
+    FailureCategory,
     InputFormat,
     Page,
     VlmStopReason,
@@ -249,7 +250,9 @@ class VlmPipeline(PaginatedPipeline):
                     ErrorItem(
                         component_type=DoclingComponentType.PIPELINE,
                         module_name=self.__class__.__name__,
-                        error_message=f"Page {page.page_no} has no VLM prediction.",
+                        error_message="No VLM prediction.",
+                        category=FailureCategory.GENERATION_FAILURE,
+                        page_no=page.page_no,
                     )
                 )
                 status = ConversionStatus.PARTIAL_SUCCESS
@@ -261,8 +264,10 @@ class VlmPipeline(PaginatedPipeline):
                     ErrorItem(
                         component_type=DoclingComponentType.PIPELINE,
                         module_name=self.__class__.__name__,
-                        error_message=f"Page {page.page_no} VLM output incomplete "
+                        error_message="VLM output incomplete "
                         f"(stop_reason={vlm_response.stop_reason.value}).",
+                        category=FailureCategory.GENERATION_FAILURE,
+                        page_no=page.page_no,
                     )
                 )
                 status = ConversionStatus.PARTIAL_SUCCESS
@@ -376,9 +381,9 @@ class VlmPipeline(PaginatedPipeline):
                         ErrorItem(
                             component_type=DoclingComponentType.PIPELINE,
                             module_name=self.__class__.__name__,
-                            error_message=(
-                                f"Page {page.page_no}: No <doclang> XML fragment found in VLM response."
-                            ),
+                            error_message="No <doclang> XML fragment found in VLM response.",
+                            category=FailureCategory.GENERATION_FAILURE,
+                            page_no=page.page_no,
                         )
                     )
                     conv_res.status = ConversionStatus.PARTIAL_SUCCESS
@@ -416,9 +421,9 @@ class VlmPipeline(PaginatedPipeline):
                     ErrorItem(
                         component_type=DoclingComponentType.PIPELINE,
                         module_name=self.__class__.__name__,
-                        error_message=(
-                            f"Page {idx + 1}: DoclangDeserializer failed: {exc}"
-                        ),
+                        error_message=f"DoclangDeserializer failed: {exc}",
+                        category=FailureCategory.BACKEND_FAILURE,
+                        page_no=idx + 1,
                     )
                 )
                 conv_res.status = ConversionStatus.PARTIAL_SUCCESS

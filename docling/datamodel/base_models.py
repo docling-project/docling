@@ -208,18 +208,35 @@ class VlmStopReason(str, Enum):
     UNSPECIFIED = "unspecified"  # Defaul none value
 
 
-class ErrorCategory(str, Enum):
-    """Categories of errors that can occur during document conversion.
+class FailureCategory(str, Enum):
+    """Shared category enum for both task-level and document/page-level errors.
 
-    This enum provides semantic categorization of errors to enable
-    downstream consumers to filter and handle specific error types.
+    A single enum is used for ``PublicFailureInfo.category`` (task scope) and
+    ``ErrorItem.category`` (document/page scope) so the jobkit bridge can assign
+    one to the other without translation. Some members are only meaningful at one
+    scope; that is intentional.
+
+    Task-scope members (produced for ``PublicFailureInfo``, not by pipeline code):
+        CAPACITY, TARGET_UNAVAILABLE, INTERNAL.
+
+    Document/page-scope members (produced for ``ErrorItem`` by pipelines/input):
+        BACKEND_FAILURE, GENERATION_FAILURE.
+
+    Shared members (used at both scopes):
+        POLICY, SOURCE_UNAVAILABLE, TIMEOUT.
+
+    UNKNOWN is the backward-compatible default for uncategorized errors; it is
+    distinct from INTERNAL (a known internal service defect).
     """
 
+    POLICY = "policy"
+    CAPACITY = "capacity"
+    SOURCE_UNAVAILABLE = "source_unavailable"
+    TARGET_UNAVAILABLE = "target_unavailable"
     TIMEOUT = "timeout"
-    PARSING_ERROR = "parsing_error"
-    MODEL_ERROR = "model_error"
-    RESOURCE_ERROR = "resource_error"
-    VALIDATION_ERROR = "validation_error"
+    INTERNAL = "internal"
+    BACKEND_FAILURE = "backend_failure"
+    GENERATION_FAILURE = "generation_failure"
     UNKNOWN = "unknown"
 
 
@@ -231,12 +248,15 @@ class ErrorItem(BaseModel):
         module_name: The module where the error occurred.
         error_message: Human-readable error description.
         category: Semantic category of the error for filtering.
+        page_no: 1-indexed page the error is attributable to, or None for
+            document-scoped errors.
     """
 
     component_type: DoclingComponentType
     module_name: str
     error_message: str
-    category: ErrorCategory = ErrorCategory.UNKNOWN
+    category: FailureCategory = FailureCategory.UNKNOWN
+    page_no: int | None = None
 
 
 class Cluster(BaseModel):

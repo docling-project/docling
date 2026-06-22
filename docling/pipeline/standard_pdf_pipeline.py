@@ -42,6 +42,7 @@ from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
     ErrorItem,
+    FailureCategory,
     Page,
 )
 from docling.datamodel.document import ConversionResult
@@ -824,18 +825,17 @@ class StandardPdfPipeline(ConvertPipeline):
         ]
         # Add error details from failed pages
         for page_no, error in proc.failed_pages:
-            page_label = f"Page {page_no}" if page_no > 0 else "Unknown page"
             error_msg = str(error) if error else ""
             error_item = ErrorItem(
                 component_type=DoclingComponentType.PIPELINE,
                 module_name=self.__class__.__name__,
-                error_message=f"{page_label}: {error_msg}" if error_msg else page_label,
+                error_message=error_msg or "Page failed to process.",
+                category=FailureCategory.BACKEND_FAILURE,
+                page_no=page_no if page_no > 0 else None,
             )
             conv_res.errors.append(error_item)
         if timeout_exceeded and proc.total_expected > 0:
             # Timeout exceeded: add structured error and set PARTIAL_SUCCESS
-            from docling.datamodel.base_models import ErrorCategory
-
             timeout_msg = (
                 f"Pipeline stage timeout: processed {len(proc.pages)}/{proc.total_expected} pages successfully, "
                 f"{len(proc.failed_pages)} pages failed or incomplete."
@@ -844,7 +844,7 @@ class StandardPdfPipeline(ConvertPipeline):
                 component_type=DoclingComponentType.PIPELINE,
                 module_name=self.__class__.__name__,
                 error_message=timeout_msg,
-                category=ErrorCategory.TIMEOUT,
+                category=FailureCategory.TIMEOUT,
             )
             conv_res.errors.append(timeout_error)
             conv_res.status = ConversionStatus.PARTIAL_SUCCESS
