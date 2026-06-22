@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-from typing import List, Tuple
 
 import pytest
 
@@ -124,18 +123,16 @@ def test_nemotron_language_resolution(req_languages, expected):
 def test_e2e_nemotron_ocr_conversions():
     pdf_paths = get_pdf_paths()
 
-    # Each engine config is verified against its own (namespaced) groundtruth so it
-    # does not clash with the shared `test_e2e_ocr_conversion` groundtruth.
-    engines: List[Tuple[OcrOptions, str, bool]] = [
-        (NemotronOcrOptions(), "nemotron-ocr", True),
-        (
-            NemotronOcrOptions(force_full_page_ocr=True),
-            "nemotron-ocr.full-page",
-            True,
-        ),
+    # Verify the default and the force-full-page Nemotron configurations. Each
+    # is checked against its own (namespaced) groundtruth so it does not clash
+    # with the shared `test_e2e_ocr_conversion` groundtruth.
+    configs: list[tuple[OcrOptions, str]] = [
+        (NemotronOcrOptions(), "nemotron-ocr"),
+        (NemotronOcrOptions(batch_size=4), "nemotron-ocr"),
+        (NemotronOcrOptions(force_full_page_ocr=True), "nemotron-ocr.full-page"),
     ]
 
-    for ocr_options, engine_suffix, supports_rotation in engines:
+    for ocr_options, engine_suffix in configs:
         print(
             f"Converting with ocr_engine: {ocr_options.kind}, "
             f"merge_level: {ocr_options.merge_level}, "
@@ -143,8 +140,6 @@ def test_e2e_nemotron_ocr_conversions():
         )
         converter = get_converter(ocr_options=ocr_options)
         for pdf_path in pdf_paths:
-            if not supports_rotation and "rotated" in pdf_path.name:
-                continue
             print(f"converting {pdf_path}")
 
             doc_result: ConversionResult = converter.convert(pdf_path)
