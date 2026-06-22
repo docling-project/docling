@@ -157,8 +157,8 @@ def test_tall_header_anchors_before_first_paragraph_line():
 
 
 def test_two_column_with_side_by_side_text_is_unchanged():
-    # A genuine two-column body: the left "header" is as wide as its column, so
-    # the width ratio rejects it and the columns are not interleaved.
+    # A genuine two-column body: the left header sits directly above its own
+    # column's body (left-aligned), so it heads a column and is not interleaved.
     lh = _el(0, _H, 50, 290, 480, 510)  # left-column header, column-width
     lp = _el(1, _T, 50, 290, 300, 470)  # left-column body
     rp = _el(2, _T, 310, 550, 300, 510)  # right-column body, same rows

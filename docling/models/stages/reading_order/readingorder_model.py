@@ -42,10 +42,21 @@ class ReadingOrderOptions(BaseModel):
 class ReadingOrderModel:
     # Flowing-text labels a left-margin section header can attach to (#3643).
     _SIDE_HEADING_BODY_LABELS = (DocItemLabel.TEXT, DocItemLabel.LIST_ITEM)
-    # A side-heading is a margin label, so it must be clearly narrower than the
-    # paragraph it attaches to. This ratio separates it from a genuine column,
-    # whose width is comparable to the neighbouring column (#3648).
-    _SIDE_HEADING_MAX_WIDTH_RATIO = 0.6
+    # Two blocks share a row when they overlap vertically by at least this
+    # fraction of the shorter block's height (#3648).
+    _SIDE_HEADING_MIN_ROW_OVERLAP = 0.5
+    # A section header that introduces a column sits directly above its own
+    # column's body; a side-heading does not. Two structural signals identify
+    # the body a header introduces, so that header is left untouched (#3648):
+    #   * left-edge alignment: a heading and its own paragraph share a left edge
+    #     within a few points (sub-pixel rendering jitter); a full-width rule
+    #     below a margin heading starts clearly further left.
+    _SIDE_HEADING_COLUMN_ALIGN_TOL = 3.0
+    #   * vertical proximity: a heading's body follows directly beneath it,
+    #     within a small multiple of the heading's own height. This catches
+    #     headings indented relative to their body, while still ignoring a
+    #     full-width line far below a margin heading.
+    _SIDE_HEADING_MAX_GAP_RATIO = 6.0
 
     def __init__(self, options: ReadingOrderOptions):
         self.options = options
@@ -65,17 +76,19 @@ class ReadingOrderModel:
         side-heading to sit immediately before the body block it is row-aligned
         with, restoring ``header -> paragraph`` reading order.
 
-        A header is treated as a side-heading when a body block sits row-aligned
-        to its right *and* the header is clearly narrower than that block (a
-        margin label rather than a column). The header is then placed before the
-        topmost line of that block, which keeps big multi-line headers and
-        line-fragmented paragraphs in order. Ordinary single-column headers have
-        no body to their right, and genuine column headers are about as wide as
-        their column, so both are left untouched.
+        A header is treated as a side-heading when it does *not* introduce a
+        column (no body text sits directly beneath it, left-aligned within its
+        own x-band) *and* a body block sits row-aligned to its right. The header
+        is then placed before the topmost line of that block, which keeps big
+        multi-line headers and line-fragmented paragraphs in order. Ordinary
+        single-column and true multi-column headers each sit above their own
+        column's body, so they are left untouched.
         See https://github.com/docling-project/docling/issues/3643 and #3648.
         """
         body_labels = ReadingOrderModel._SIDE_HEADING_BODY_LABELS
-        max_width_ratio = ReadingOrderModel._SIDE_HEADING_MAX_WIDTH_RATIO
+        min_row_overlap = ReadingOrderModel._SIDE_HEADING_MIN_ROW_OVERLAP
+        align_tol = ReadingOrderModel._SIDE_HEADING_COLUMN_ALIGN_TOL
+        max_gap_ratio = ReadingOrderModel._SIDE_HEADING_MAX_GAP_RATIO
 
         # Group element indices by page; relative order is otherwise preserved.
         page_to_indices: dict[int, list[int]] = {}
@@ -93,26 +106,41 @@ class ReadingOrderModel:
                     continue
 
                 header_height = header.t - header.b
-                header_width = header.r - header.l
-                header_center_x = 0.5 * (header.l + header.r)
 
-                # Among body blocks to the right that share the header's row,
-                # anchor before the topmost one. Comparing the row overlap to the
-                # smaller height keeps tall headers matching short paragraph
-                # lines; the width ratio rejects genuine columns.
+                # A header that introduces a column has body text in its own
+                # x-band directly beneath it; a side-heading does not (its column
+                # holds only headings, the body sits to the right). The body it
+                # introduces is recognised by sharing the header's left edge or
+                # by sitting directly below it. This structural test replaces the
+                # old width-ratio heuristic, which misfired on short in-column
+                # headings like "1 INTRODUCTION"; a full-width rule below a margin
+                # heading is neither left-aligned nor close, so it does not count.
+                heads_a_column = any(
+                    header.is_above(body)
+                    and header.overlaps_horizontally(body)
+                    and (
+                        abs(body.l - header.l) <= align_tol
+                        or (header.b - body.t) <= max_gap_ratio * header_height
+                    )
+                    for body in (sorted_elements[j] for j in body_indices)
+                )
+                if heads_a_column:
+                    continue
+
+                # Anchor before the topmost body block lying entirely to the
+                # header's right that shares its row. Comparing the row overlap
+                # to the shorter height keeps tall headers matching short
+                # paragraph lines.
                 best_top: float | None = None
                 best_body: int | None = None
                 for b in body_indices:
                     body = sorted_elements[b]
-                    if header_center_x >= body.l:
+                    if not header.is_strictly_left_of(body):
                         continue  # body must lie to the right of the header
                     body_height = body.t - body.b
                     overlap = header.y_overlap_with(body)
-                    if overlap < 0.5 * min(header_height, body_height):
+                    if overlap < min_row_overlap * min(header_height, body_height):
                         continue  # not on the same row
-                    body_width = body.r - body.l
-                    if body_width <= 0 or header_width > max_width_ratio * body_width:
-                        continue  # header as wide as a column -> not a label
                     if best_top is None or body.t > best_top:
                         best_top, best_body = body.t, b
                 if best_body is not None:
