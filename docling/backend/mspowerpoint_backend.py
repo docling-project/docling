@@ -483,6 +483,67 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             "level": lvl,
         }
 
+    def _get_shape_position(self, shape, attr: str) -> Optional[int]:
+        """Return a shape position attribute as an integer for ordering."""
+        try:
+            value = getattr(shape, attr)
+        except (AttributeError, ValueError, TypeError):
+            return None
+
+        if value is None:
+            return None
+
+        return int(value)
+
+    def _iter_shapes_by_position(self, shapes):
+        """Iterate shapes in visual top-to-bottom, left-to-right order.
+
+        PowerPoint stores shapes in creation/z-order, which can differ from the way
+        content is visually read on a slide. Sorting by position keeps split text
+        boxes, such as a subheading followed by its bullet textbox, adjacent in the
+        extracted document.
+        """
+        row_tolerance = 45720  # 0.05 inch in EMUs
+        fallback_position = 2**63 - 1
+        shape_infos = []
+
+        for index, shape in enumerate(shapes):
+            top = self._get_shape_position(shape, "top")
+            left = self._get_shape_position(shape, "left")
+            shape_infos.append(
+                (
+                    index,
+                    shape,
+                    top if top is not None else fallback_position,
+                    left if left is not None else fallback_position,
+                )
+            )
+
+        shape_infos.sort(key=lambda shape_info: (shape_info[2], shape_info[0]))
+
+        rows = []
+        current_row = []
+        current_row_top = None
+
+        for shape_info in shape_infos:
+            top = shape_info[2]
+            if current_row_top is None or top - current_row_top <= row_tolerance:
+                current_row.append(shape_info)
+                current_row_top = top if current_row_top is None else current_row_top
+            else:
+                rows.append(current_row)
+                current_row = [shape_info]
+                current_row_top = top
+
+        if current_row:
+            rows.append(current_row)
+
+        for row in rows:
+            for _, shape, _, _ in sorted(
+                row, key=lambda shape_info: (shape_info[3], shape_info[0])
+            ):
+                yield shape
+
     def _handle_text_elements(
         self, shape, parent_slide, slide_ind, doc: DoclingDocument, slide_size
     ):
@@ -743,13 +804,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
             def handle_groups(shape, parent_slide, slide_ind, doc, slide_size):
                 if _safe_shape_type(shape) == MSO_SHAPE_TYPE.GROUP:
-                    for groupedshape in shape.shapes:
+                    for groupedshape in self._iter_shapes_by_position(shape.shapes):
                         handle_shapes(
                             groupedshape, parent_slide, slide_ind, doc, slide_size
                         )
 
             # Loop through each shape in the slide
-            for shape in slide.shapes:
+            for shape in self._iter_shapes_by_position(slide.shapes):
                 handle_shapes(shape, parent_slide, slide_ind, doc, slide_size)
 
             # Handle notes slide

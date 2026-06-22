@@ -1,10 +1,13 @@
 from pathlib import Path
 
 import pytest
+from pptx import Presentation
+from pptx.oxml.xmlchemy import OxmlElement
+from pptx.util import Inches, Pt
 
+from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import ConversionResult, DoclingDocument
-from docling.document_converter import DocumentConverter
+from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -22,9 +25,22 @@ def get_pptx_paths():
 
 
 def get_converter():
+    from docling.document_converter import DocumentConverter
+
     converter = DocumentConverter(allowed_formats=[InputFormat.PPTX])
 
     return converter
+
+
+def convert_with_pptx_backend(pptx_path: Path) -> DoclingDocument:
+    in_doc = InputDocument(
+        path_or_stream=pptx_path,
+        format=InputFormat.PPTX,
+        backend=MsPowerpointDocumentBackend,
+    )
+
+    assert in_doc.valid
+    return in_doc._backend.convert()
 
 
 def test_e2e_pptx_conversions():
@@ -122,3 +138,162 @@ def test_pptx_page_range():
     assert "Second slide title" in pred_md
     assert "Test Table Slide" not in pred_md
     assert "List item4" not in pred_md
+
+
+def test_pptx_issue_2663_keeps_bullets_with_subheadings():
+    pptx_path = Path("./tests/data/pptx/powerpoint_issue_2663.pptx")
+
+    doc = convert_with_pptx_backend(pptx_path)
+    pred_md = doc.export_to_markdown()
+
+    key_benefits = pred_md.index("Key Benefits:")
+    benefit_bullet = pred_md.index("Open-source software is cost-effective")
+    last_benefit_bullet = pred_md.index("Offers flexibility")
+    considerations = pred_md.index("Considerations When Using Open-Source Software:")
+    first_consideration_bullet = pred_md.index("Open-source projects often rely")
+    last_consideration_bullet = pred_md.index("advanced technical expertise")
+
+    assert key_benefits < benefit_bullet < last_benefit_bullet < considerations
+    assert considerations < first_consideration_bullet < last_consideration_bullet
+
+
+def test_pptx_shapes_are_sorted_by_visual_position():
+    class FakeShape:
+        def __init__(self, name, top=None, left=None):
+            self.name = name
+            self.top = top
+            self.left = left
+
+    class BadPositionShape:
+        @property
+        def top(self):
+            raise ValueError("bad position")
+
+    backend = object.__new__(MsPowerpointDocumentBackend)
+
+    same_row_right = FakeShape("same-row-right", top=100, left=300)
+    lower_left = FakeShape("lower-left", top=200000, left=100)
+    same_row_left = FakeShape("same-row-left", top=1000, left=100)
+    unpositioned = FakeShape("unpositioned")
+
+    ordered_shapes = backend._iter_shapes_by_position(
+        [lower_left, same_row_right, unpositioned, same_row_left]
+    )
+
+    assert [shape.name for shape in ordered_shapes] == [
+        "same-row-left",
+        "same-row-right",
+        "lower-left",
+        "unpositioned",
+    ]
+    assert backend._get_shape_position(BadPositionShape(), "top") is None
+
+
+def test_pptx_split_list_textboxes_follow_visual_order(tmp_path):
+    """Visually ordered subheadings should keep their own following bullets."""
+
+    def add_textbox(slide, left, top, width, height, text, font_size=24):
+        textbox = slide.shapes.add_textbox(
+            Inches(left), Inches(top), Inches(width), Inches(height)
+        )
+        text_frame = textbox.text_frame
+        text_frame.clear()
+        paragraph = text_frame.paragraphs[0]
+        paragraph.text = text
+        paragraph.font.size = Pt(font_size)
+        return textbox
+
+    def mark_as_bullet(paragraph):
+        paragraph_properties = paragraph._p.get_or_add_pPr()
+        bullet = OxmlElement("a:buChar")
+        bullet.set("char", "\u2022")
+        paragraph_properties.insert(0, bullet)
+
+    def add_bullet_textbox(slide, left, top, width, height, items):
+        textbox = slide.shapes.add_textbox(
+            Inches(left), Inches(top), Inches(width), Inches(height)
+        )
+        text_frame = textbox.text_frame
+        text_frame.clear()
+
+        for index, item in enumerate(items):
+            paragraph = (
+                text_frame.paragraphs[0] if index == 0 else text_frame.add_paragraph()
+            )
+            paragraph.text = item
+            paragraph.font.size = Pt(18)
+            mark_as_bullet(paragraph)
+
+        return textbox
+
+    presentation = Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+
+    add_textbox(slide, 3.0, 0.4, 4.0, 0.5, "Open-Source Software", 32)
+    add_textbox(slide, 4.6, 1.4, 2.5, 0.4, "Introduction", 20)
+    add_textbox(slide, 0.9, 1.5, 3.0, 0.4, "Key Benefits:", 22)
+    add_bullet_textbox(
+        slide,
+        1.2,
+        2.1,
+        8.0,
+        1.6,
+        [
+            "Cost effective",
+            "Transparent community",
+        ],
+    )
+    # Add this textbox before its subheading to mimic PPTX creation/z-order that
+    # does not match the visual reading order.
+    add_bullet_textbox(
+        slide,
+        1.2,
+        5.2,
+        8.0,
+        1.2,
+        [
+            "Community support can vary",
+            "Maintenance requires expertise",
+        ],
+    )
+    add_textbox(slide, 0.9, 4.6, 6.0, 0.4, "Considerations:", 22)
+
+    pptx_path = tmp_path / "split_list_textboxes.pptx"
+    presentation.save(pptx_path)
+
+    doc = convert_with_pptx_backend(pptx_path)
+    pred_md = doc.export_to_markdown()
+
+    assert pred_md.index("Key Benefits:") < pred_md.index("Cost effective")
+    assert pred_md.index("Transparent community") < pred_md.index("Considerations:")
+    assert pred_md.index("Considerations:") < pred_md.index("Community support")
+    assert pred_md.index("Community support") < pred_md.index(
+        "Maintenance requires expertise"
+    )
+
+
+def test_pptx_grouped_shapes_follow_visual_order(tmp_path):
+    presentation = Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+
+    lower_textbox = slide.shapes.add_textbox(
+        Inches(1.0), Inches(2.0), Inches(4.0), Inches(0.5)
+    )
+    lower_textbox.text = "Lower grouped textbox"
+
+    upper_textbox = slide.shapes.add_textbox(
+        Inches(1.0), Inches(1.0), Inches(4.0), Inches(0.5)
+    )
+    upper_textbox.text = "Upper grouped textbox"
+
+    slide.shapes.add_group_shape([lower_textbox, upper_textbox])
+
+    pptx_path = tmp_path / "grouped_textboxes.pptx"
+    presentation.save(pptx_path)
+
+    doc = convert_with_pptx_backend(pptx_path)
+    pred_md = doc.export_to_markdown()
+
+    assert pred_md.index("Upper grouped textbox") < pred_md.index(
+        "Lower grouped textbox"
+    )
