@@ -141,6 +141,12 @@ format-latex = [
   'pylatexenc>=2.10,<3.0',
 ]
 
+# Experimental: Korean HWP/HWPX support via the early-stage (0.x) hangulang
+# wrapper around the rhwp parser core. API and output may change between releases.
+format-hwp = [
+  'hangulang>=0.1.0,<0.2.0',
+]
+
 format-email = [
   'docling-slim[format-html]',
   'mail-parser>=4.1.4,<5.0.0',

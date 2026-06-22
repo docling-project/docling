@@ -1573,6 +1573,9 @@ format-html = [
 format-html-render = [
     { name = "playwright" },
 ]
+format-hwp = [
+    { name = "hangulang" },
+]
 format-latex = [
     { name = "pylatexenc" },
 ]
@@ -1769,6 +1772,7 @@ requires-dist = [
     { name = "docling-slim", extras = ["standard", "models-vlm-inline", "format-audio", "format-html-render", "format-xml-xbrl", "models-remote", "models-onnxruntime", "feat-ocr-easyocr", "feat-ocr-tesserocr", "feat-ocr-mac"], marker = "extra == 'all'" },
     { name = "easyocr", marker = "extra == 'feat-ocr-easyocr'", specifier = ">=1.7,<2.0" },
     { name = "filetype", specifier = ">=1.2.0,<2.0.0" },
+    { name = "hangulang", marker = "extra == 'format-hwp'", specifier = ">=0.1.0,<0.2.0" },
     { name = "httpx", marker = "extra == 'service-client'", specifier = ">=0.28,<1.0.0" },
     { name = "huggingface-hub", marker = "extra == 'models-local'", specifier = ">=0.23,<2" },
     { name = "lxml", marker = "extra == 'format-html'", specifier = ">=4.0.0,<7.0.0" },
@@ -1819,7 +1823,7 @@ requires-dist = [
     { name = "typer", marker = "extra == 'service-client'", specifier = ">=0.12.5,<0.27.0" },
     { name = "websockets", marker = "extra == 'service-client'", specifier = ">=14.0,<17.0" },
 ]
-provides-extras = ["convert-core", "extract-core", "format-pdf-pypdfium2", "format-pdf-docling", "format-pdf", "format-docx", "format-pptx", "format-xlsx", "format-office", "format-html", "format-markdown", "format-web", "format-latex", "format-email", "format-xml-xbrl", "format-html-render", "format-audio", "feat-ocr-rapidocr", "feat-ocr-rapidocr-onnx", "feat-ocr-easyocr", "feat-ocr-tesserocr", "feat-ocr-mac", "models-local", "models-remote", "models-onnxruntime", "models-vlm-inline", "feat-chunking", "service-client", "cli", "standard", "all"]
+provides-extras = ["convert-core", "extract-core", "format-pdf-pypdfium2", "format-pdf-docling", "format-pdf", "format-docx", "format-pptx", "format-xlsx", "format-office", "format-html", "format-markdown", "format-web", "format-latex", "format-hwp", "format-email", "format-xml-xbrl", "format-html-render", "format-audio", "feat-ocr-rapidocr", "feat-ocr-rapidocr-onnx", "feat-ocr-easyocr", "feat-ocr-tesserocr", "feat-ocr-mac", "models-local", "models-remote", "models-onnxruntime", "models-vlm-inline", "feat-chunking", "service-client", "cli", "standard", "all"]
 
 [package.metadata.requires-dev]
 constraints = [
@@ -2475,6 +2479,17 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/01/ee/02a2c011bdab74c6fb3c75474d40b3052059d95df7e73351460c8588d963/h11-0.16.0.tar.gz", hash = "sha256:4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1", size = 101250, upload-time = "2025-04-24T03:35:25.427Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl", hash = "sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86", size = 37515, upload-time = "2025-04-24T03:35:24.344Z" },
+]
+
+[[package]]
+name = "hangulang"
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/41/d90fcbd4843024958a3bda14c58fd75d6aee6ba0e947a7da39eb3b820fad/hangulang-0.1.1.tar.gz", hash = "sha256:43fd0ee483e5d605b8731221774a3282d9a6dccfd0bdc8d90f4ec0111902e7ec", size = 4418777, upload-time = "2026-06-16T08:28:43.896Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d2/89/c84d8f704e4b67220fbb174fd26e5e02670131dba2ca47b4abec1b1be40f/hangulang-0.1.1-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:b64c69a8ba2716c8b78ae2e448c03707094492645112e0952b27fbd884fb2b47", size = 2567794, upload-time = "2026-06-16T08:28:38.83Z" },
+    { url = "https://files.pythonhosted.org/packages/23/44/66fb0c21a95812afccf91bb8100bb93c86060ad52822f55af8571d158707/hangulang-0.1.1-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a3d7fb4f5ed0e4aad9f985f26b137c96eba82b1e5d2fd78e8f41486c0db30513", size = 2949595, upload-time = "2026-06-16T08:28:40.968Z" },
+    { url = "https://files.pythonhosted.org/packages/67/70/044d34ccf72950c5c4807e45f71b57ecd911b0c45b52de56af6d2160240a/hangulang-0.1.1-cp310-abi3-win_amd64.whl", hash = "sha256:adf024ea761f698233e2e2311d5c1606ed46776d0915e689e48b1552f4bdb1f3", size = 2378016, upload-time = "2026-06-16T08:28:42.44Z" },
 ]
 
 [[package]]

@@ -24,6 +24,7 @@ from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.email_backend import EmailDocumentBackend
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.hwp_backend import HwpDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.backend.latex_backend import LatexDocumentBackend
@@ -42,6 +43,7 @@ from docling.datamodel.backend_options import (
     BackendOptions,
     EpubBackendOptions,
     HTMLBackendOptions,
+    HwpBackendOptions,
     LatexBackendOptions,
     MarkdownBackendOptions,
     MetsGbsBackendOptions,
@@ -114,6 +116,18 @@ class WordFormatOption(FormatOption):
 class PowerpointFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = MsPowerpointDocumentBackend
+
+
+class HwpFormatOption(FormatOption):
+    """Experimental format option for Korean HWP/HWPX documents.
+
+    Requires the optional ``hangulang`` dependency
+    (``pip install docling[format-hwp]``).
+    """
+
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = HwpDocumentBackend
+    backend_options: Optional[HwpBackendOptions] = None
 
 
 class MarkdownFormatOption(FormatOption):
@@ -216,6 +230,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.XLSX: ExcelFormatOption(),
         InputFormat.DOCX: WordFormatOption(),
         InputFormat.PPTX: PowerpointFormatOption(),
+        InputFormat.HWP: HwpFormatOption(),
         InputFormat.MD: MarkdownFormatOption(),
         InputFormat.ASCIIDOC: AsciiDocFormatOption(),
         InputFormat.HTML: HTMLFormatOption(),

@@ -47,6 +47,7 @@ Docling simplifies document processing, parsing diverse formats — including ad
 
 ### What's new
 
+- 🇰🇷 Parsing of Korean HWP/HWPX (Hangul Word Processor) documents (experimental)
 - 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
 - 📧 Parsing of email files (`.eml`, `.msg`)
 - 📚 Parsing of EPUB (Electronic Publication) files for e-books

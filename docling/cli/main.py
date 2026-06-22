@@ -771,6 +771,7 @@ def convert(  # noqa: C901
         ExcelFormatOption,
         FormatOption,
         HTMLFormatOption,
+        HwpFormatOption,
         LatexFormatOption,
         MarkdownFormatOption,
         PdfFormatOption,
@@ -1007,6 +1008,7 @@ def convert(  # noqa: C901
                 InputFormat.PPTX: PowerpointFormatOption(
                     pipeline_options=simple_format_option
                 ),
+                InputFormat.HWP: HwpFormatOption(pipeline_options=simple_format_option),
                 InputFormat.XLSX: ExcelFormatOption(
                     pipeline_options=simple_format_option
                 ),
