@@ -4,6 +4,15 @@ import traceback
 import time
 from pathlib import Path
 
+BASE_DIR = Path(__file__).resolve().parent
+# Put preprocessor src ahead of /app/src to avoid collisions like common.settings.
+for module_path in (BASE_DIR / 'genon' / 'preprocessor' / 'src',):
+    if module_path.is_dir():
+        module_path_str = str(module_path)
+        while module_path_str in sys.path:
+            sys.path.remove(module_path_str)
+        sys.path.insert(0, module_path_str)
+
 from fastapi import FastAPI, Request, Body
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -64,7 +73,7 @@ from genon.preprocessor.facade.chunking_processor import DocumentProcessor as Ch
 # config 는 resource/ 로 고정한다. (무인자 생성 시 facade 기본 해석기가 resource_dev/ 를
 # 우선하므로, resource_dev 유무와 무관하게 항상 출고용 resource/ 를 읽도록 config_path 를 명시.)
 # resource_dev 로 테스트하려면 아래 "resource" 를 "resource_dev" 로만 바꾸면 된다.
-RESOURCE_DIR = Path(__file__).resolve().parent / "genon" / "preprocessor" / "resource"
+RESOURCE_DIR = BASE_DIR / "genon" / "preprocessor" / "resource"
 
 
 def _cfg(name: str) -> str:

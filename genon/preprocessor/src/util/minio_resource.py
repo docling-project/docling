@@ -1,4 +1,3 @@
-from minio import Minio
 import os
 import time
 import errno
@@ -48,6 +47,8 @@ class FileLock:
 
 
 def download_resource_files(bucket_name: str, resource_id: int, path: str):
+    from minio import Minio
+
     os.makedirs(path, exist_ok=True)
 
     lock_file = os.path.join(path, ".download_resource_files.lock")
