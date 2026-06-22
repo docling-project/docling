@@ -393,6 +393,8 @@ class RapidOcrModel(BaseOcrModel):
                 "Global.font_path": font_path,
                 # Engine-level ONNXRuntime settings
                 "EngineConfig.onnxruntime.intra_op_num_threads": intra_op_num_threads,
+                # Engine-level OpenVINO settings
+                "EngineConfig.openvino.inference_num_threads": intra_op_num_threads,
                 # "Global.verbose": self.options.print_verbose,
                 # Detection model settings
                 "Det.model_path": det_model_path,

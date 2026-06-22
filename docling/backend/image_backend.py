@@ -3,7 +3,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Iterable, List, Optional, Union
 
-from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.page import (
     BoundingRectangle,
     PdfPageBoundaryType,
@@ -16,7 +16,7 @@ from PIL import Image
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
 from docling.datamodel.backend_options import PdfBackendOptions
-from docling.datamodel.base_models import InputFormat, Size
+from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)

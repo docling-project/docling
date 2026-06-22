@@ -171,7 +171,8 @@ class OcrOptions(BaseOptions):
     See Also:
         `OcrAutoOptions`: Automatic engine selection based on availability.
         `EasyOcrOptions`, `TesseractCliOcrOptions`, `TesseractOcrOptions`,
-        `RapidOcrOptions`, `OcrMacOptions`: Engine-specific configurations.
+        `RapidOcrOptions`, `OcrMacOptions`, `NemotronOcrOptions`: Engine-specific
+        configurations.
     """
 
     lang: Annotated[
@@ -333,6 +334,45 @@ class RapidOcrOptions(OcrOptions):
     model_config = ConfigDict(
         extra="forbid",
     )
+
+
+class NemotronOcrOptions(OcrOptions):
+    """Configuration for NVIDIA Nemotron OCR.
+
+    Notes:
+        Use the pipeline-level `artifacts_path` to point to pre-downloaded checkpoint artifacts.
+    """
+
+    kind: ClassVar[Literal["nemotron-ocr"]] = "nemotron-ocr"
+    lang: Annotated[
+        list[str],
+        Field(
+            description=(
+                "List of OCR languages. nemotron-OCR-v2 supports 'english' and 'multilingual'"
+            )
+        ),
+    ] = []
+    merge_level: Annotated[
+        Literal["word", "sentence", "paragraph"],
+        Field(
+            description=(
+                "Granularity requested from Nemotron OCR. `sentence` is the default "
+                "because it maps most directly to Docling OCR cells."
+            )
+        ),
+    ] = "sentence"
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    batch_size: Annotated[
+        int,
+        Field(
+            description=(
+                "Number of images within the same page to process. "
+                "In practice a batch>1 happens only with PDF inputs with many OCR rectangles."
+            )
+        ),
+    ] = 8
 
 
 class EasyOcrOptions(OcrOptions):
@@ -734,6 +774,17 @@ class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):
             )
         ),
     ] = ""
+    usage_response_key: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Response JSON key, or dotted path, whose value should be preserved as the raw usage payload "
+                "on picture description metadata. The default captures OpenAI-compatible `usage` objects. "
+                "Set to None to disable usage payload capture."
+            ),
+            examples=["usage", "providerUsage", "meta.usage"],
+        ),
+    ] = "usage"
 
 
 class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):

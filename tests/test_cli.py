@@ -1,4 +1,5 @@
 import base64
+import re
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -46,7 +47,14 @@ def _assert_markdown_embeds_png(path: Path, image_bytes: bytes | None = None) ->
     assert "data:image/png;base64" in content
     assert "Image not available" not in content
     if image_bytes is not None:
-        assert base64.b64encode(image_bytes).decode() in content
+        # Compare decoded pixel content rather than exact base64: docling
+        # re-encodes the PNG, so the byte stream (and its base64) differs even
+        # though the image is identical.
+        match = re.search(r"data:image/png;base64,([A-Za-z0-9+/=]+)", content)
+        assert match is not None
+        embedded = Image.open(BytesIO(base64.b64decode(match.group(1))))
+        expected = Image.open(BytesIO(image_bytes))
+        assert embedded.convert("RGBA").tobytes() == expected.convert("RGBA").tobytes()
 
 
 def test_cli_help():
@@ -105,7 +113,7 @@ def test_cli_exports_doclang(tmp_path):
     converted = output / "input.dclg.xml"
     assert converted.exists()
     content = converted.read_text(encoding="utf-8")
-    assert "<doclang>" in content
+    assert re.search(r'<doclang version="\d+\.\d+">', content) is not None
     assert "DocLang CLI" in content
 
 

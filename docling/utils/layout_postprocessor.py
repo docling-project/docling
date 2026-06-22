@@ -3,11 +3,11 @@ import logging
 import sys
 from collections import defaultdict
 
-from docling_core.types.doc import DocItemLabel, Size
+from docling_core.types.doc import BoundingBox, DocItemLabel, Size
 from docling_core.types.doc.page import TextCell
 from rtree import index
 
-from docling.datamodel.base_models import BoundingBox, Cluster, Page
+from docling.datamodel.base_models import Cluster, Page
 from docling.datamodel.pipeline_options import (
     LayoutObjectDetectionOptions,
     LayoutOptions,

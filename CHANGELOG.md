@@ -1,3 +1,20 @@
+## [v2.105.0](https://github.com/docling-project/docling/releases/tag/v2.105.0) - 2026-06-22
+
+### Feature
+
+* Capture picture description API usage ([#3632](https://github.com/docling-project/docling/issues/3632)) ([`0d629e4`](https://github.com/docling-project/docling/commit/0d629e41f9191651927b25026520db6d3b3bde05))
+* NVIDIA nemotron-ocr integration ([#3136](https://github.com/docling-project/docling/issues/3136)) ([`6e4a59b`](https://github.com/docling-project/docling/commit/6e4a59bfd490892774da27688a37d74a8a02c48f))
+
+### Fix
+
+* **service:** JSON-encode nested options for multipart file uploads ([#3672](https://github.com/docling-project/docling/issues/3672)) ([`dcee90c`](https://github.com/docling-project/docling/commit/dcee90c8af292a774e5ca9e4a165e7de5e99a34e))
+* **rapidocr:** Propagate num_threads to OpenVINO backend ([#3666](https://github.com/docling-project/docling/issues/3666)) ([`733a82e`](https://github.com/docling-project/docling/commit/733a82e3629d0a5180596d5f9bad95d3f0f01d06))
+* **asciidoc:** Fix empty cell handling ([#3664](https://github.com/docling-project/docling/issues/3664)) ([`f52db93`](https://github.com/docling-project/docling/commit/f52db930e9d69cd26aa965f8862ac7393e5e7bcb))
+* Upgrade starlette to 1.3.1 (CVE-2026-54283) ([#3673](https://github.com/docling-project/docling/issues/3673)) ([`e4fce9c`](https://github.com/docling-project/docling/commit/e4fce9cb0be8f42031620d88fe703fcad385d60a))
+* **service:** Fixes for Docling ConfidenceReport parsing in `ConversionResult` ([#3662](https://github.com/docling-project/docling/issues/3662)) ([`898dd73`](https://github.com/docling-project/docling/commit/898dd7330dc15a8c9d7294df1aea409e74cf396c))
+* **asciidoc:** Parse table cells with format specifiers ([#3647](https://github.com/docling-project/docling/issues/3647)) ([`7e0aed9`](https://github.com/docling-project/docling/commit/7e0aed97ac907e6f6ccc6dde73fe5c55e99382a4))
+* Resolving issue 3655 for rich tables in docx ([#3657](https://github.com/docling-project/docling/issues/3657)) ([`6fe4fc3`](https://github.com/docling-project/docling/commit/6fe4fc3b2a22321c68e9ff43b22e9ec7be3d3d4f))
+
 ## [v2.104.0](https://github.com/docling-project/docling/releases/tag/v2.104.0) - 2026-06-19
 
 ### Feature

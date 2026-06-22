@@ -1,4 +1,5 @@
 from collections import defaultdict
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Type, Union
@@ -249,8 +250,28 @@ class VlmPrediction(BaseModel):
     generated_tokens: list[VlmPredictionToken] = []
     generation_time: float = -1
     num_tokens: int | None = None
+    usage: Any | None = None
     stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
     input_prompt: str | None = None
+
+
+@dataclass(frozen=True)
+class ApiImageRequestResult:
+    """Image API response with optional provider usage metadata."""
+
+    text: str
+    num_tokens: int | None
+    stop_reason: VlmStopReason
+    usage: Any | None = None
+
+
+@dataclass(frozen=True)
+class ApiImageStreamingRequestResult:
+    """Streaming image API response with optional provider usage metadata."""
+
+    text: str
+    num_tokens: int | None
+    usage: Any | None = None
 
 
 class ContainerElement(
@@ -418,7 +439,7 @@ class OpenAiApiResponse(BaseModel):
     model: str | None = None  # returned by openai
     choices: list[OpenAiResponseChoice]
     created: int
-    usage: OpenAiResponseUsage
+    usage: OpenAiResponseUsage | None = None
 
 
 # Create a type alias for score values

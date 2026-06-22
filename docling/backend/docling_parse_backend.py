@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union
 
 import pypdfium2 as pdfium
-from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
 from docling_parse.pdf_parser import (
     DecodeConfig,
@@ -31,7 +31,6 @@ from docling.datamodel.backend_options import (
     PdfBackendOptions,
     ThreadedDoclingParseBackendOptions,
 )
-from docling.datamodel.base_models import Size
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.utils.locks import pypdfium2_lock
 
