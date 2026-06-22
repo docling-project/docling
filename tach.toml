@@ -342,6 +342,11 @@ depends_on = [
 ]
 
 [[modules]]
+path = "docling.models.stages.heading_hierarchy"
+layer = "models"
+depends_on = ["docling.datamodel"]
+
+[[modules]]
 path = "docling.models.stages.reading_order"
 layer = "models"
 depends_on = ["docling.datamodel", "docling.utils"]
@@ -480,6 +485,7 @@ depends_on = [
   "docling.datamodel",
   "docling.models.factories",
   "docling.models.stages.code_formula",
+  "docling.models.stages.heading_hierarchy",
   "docling.models.stages.page_assemble",
   "docling.models.stages.page_preprocessing",
   "docling.models.stages.reading_order",
@@ -502,6 +508,7 @@ depends_on = [
   "docling.models",
   "docling.models.factories",
   "docling.models.stages.code_formula",
+  "docling.models.stages.heading_hierarchy",
   "docling.models.stages.page_assemble",
   "docling.models.stages.page_preprocessing",
   "docling.models.stages.reading_order",
