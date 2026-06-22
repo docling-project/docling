@@ -88,12 +88,9 @@ def _append_memory_values(
 
 def load_points(
     metrics_file: Path,
-) -> tuple[list[int], dict[str, list[float]], dict[str, list[float]], list[int]]:
+) -> tuple[list[int], dict[str, list[float]]]:
     total_pages: list[int] = []
     loaded_metrics = _empty_series()
-    after_metrics = _empty_series()
-    doc_boundaries: list[int] = []
-    previous_pdf: str | None = None
 
     with metrics_file.open(encoding="utf-8") as fp:
         for line in fp:
@@ -106,23 +103,10 @@ def load_points(
             if event == "loaded":
                 memory_loaded = payload.get("memory_loaded_mb")
                 if isinstance(memory_loaded, dict):
-                    pdf_name = payload.get("pdf")
-                    if (
-                        isinstance(pdf_name, str)
-                        and previous_pdf is not None
-                        and pdf_name != previous_pdf
-                    ):
-                        doc_boundaries.append(total_page_no)
-                    if isinstance(pdf_name, str):
-                        previous_pdf = pdf_name
                     total_pages.append(total_page_no)
                     _append_memory_values(loaded_metrics, memory_loaded)
-            elif event == "after_unload":
-                memory_after = payload.get("memory_after_mb")
-                if isinstance(memory_after, dict):
-                    _append_memory_values(after_metrics, memory_after)
 
-    return total_pages, loaded_metrics, after_metrics, doc_boundaries
+    return total_pages, loaded_metrics
 
 
 def main() -> None:
@@ -141,26 +125,16 @@ def main() -> None:
     for label, metrics_file in _resolve_metrics_files(args.input_file):
         if not metrics_file.is_file():
             raise SystemExit(f"Metrics file does not exist: {metrics_file}")
-        total_pages, loaded_metrics, after_metrics, doc_boundaries = load_points(
-            metrics_file
-        )
+        total_pages, loaded_metrics = load_points(metrics_file)
         if total_pages:
-            loaded_runs.append(
-                (label, total_pages, loaded_metrics, after_metrics, doc_boundaries)
-            )
+            loaded_runs.append((label, total_pages, loaded_metrics))
 
     if not loaded_runs:
         raise SystemExit(f"No plotable data found in {args.input_file}")
 
     fig, ax = plt.subplots(1, 1, figsize=(12, 6))
 
-    for (
-        label,
-        total_pages,
-        loaded_metrics,
-        _after_metrics,
-        _doc_boundaries,
-    ) in loaded_runs:
+    for label, total_pages, loaded_metrics in loaded_runs:
         point_count = min(
             [len(total_pages)] + [len(values) for values in loaded_metrics.values()]
         )
