@@ -1,7 +1,0 @@
-# 빌드/문서 파일은 이미지(/app)에 넣지 않는다 (COPY ./ /app 에서 제외).
-build.sh
-build.config
-Dockerfile
-Dockerfile.gpu
-.dockerignore
-README.md

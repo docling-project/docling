@@ -1,85 +1,243 @@
-# ─────────────────────────────── runtime ─────────────────────────────────
-# NVIDIA CUDA 12.4 + cuDNN 런타임 이미지를 베이스로 사용하여 torch GPU 추론 지원.
-FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+# syntax=docker/dockerfile:1.7
+#
+# code-serving-doc-parser (GPU) — doc-parser 코드서빙 base 이미지 (nvidia/cuda runtime).
+#
+# 라이브러리 설치 방식은 genon/code-serving 과 동일: uv venv + uv pip install . → /app/.venv.
+# venv 는 slim builder 에서 만들고(GPU torch=cu124 wheel) nvidia/cuda runtime 으로 COPY.
+# 다운로드 아티팩트는 Dockerfile.standard 와 full parity (Dockerfile(CPU) 와 동일 구성).
+# build context = repo 루트. HWP_SDK_TOKEN 은 --secret.
+#
+# ⚠️ runtime base 가 ubuntu 22.04(jammy) 라 apt 패키지명/버전이 debian 과 다를 수 있다
+#    (특히 openjdk-21, libgdk-pixbuf). 첫 빌드 시 실패하면 해당 패키지명만 조정한다.
 
-# NOTE: Devops 요청에 따라 build-arg VERSION 값을 태그와 동일하게 입력, 추후 고도화 필요
-ARG VERSION=py3.12
+############################
+# 0) 공통 ARG
+############################
+ARG PY_VER=3.12.12
+ARG DEBIAN_DIST=trixie
+ARG H2ORESTART_URL="https://github.com/ebandal/H2Orestart/releases/latest/download/H2Orestart.oxt"
+ARG APP_VENV=/app/.venv
+ARG NLTK_PACKAGES=all
 ARG UID=1000
 ARG GID=1000
 ARG UNAME=genos
 ARG GNAME=genos
+ARG RHWP_GIT_URL=https://github.com/genonai/genos-rhwp.git
+ARG RHWP_GIT_REF=genos/main
+ARG DOCLING_PKG_VER=2.41.0
+ARG TORCH_CU_INDEX_URL=https://download.pytorch.org/whl/cu124
 
+############################
+# 1) Builder (slim) — venv 설치(genon/code-serving 방식) + GPU torch + docling-parse 패치
+############################
+FROM python:${PY_VER}-slim-${DEBIAN_DIST} AS builder
+ARG APP_VENV
+ARG TORCH_CU_INDEX_URL
 ENV DEBIAN_FRONTEND=noninteractive \
-    TZ=:Asia/Seoul \
-    VIRTUAL_ENV=/app/.venv \
-    PATH="/app/.venv/bin:$PATH" \
+    PIP_NO_CACHE_DIR=1 \
+    VIRTUAL_ENV=${APP_VENV} \
+    PATH="${APP_VENV}/bin:${PATH}" \
+    HOME=/app \
+    HF_HOME=/app/.cache/huggingface \
+    NLTK_DATA=/app/nltk_data
+
+RUN pip install uv
+
+WORKDIR /app
+COPY build-script/code-serving-doc-parser/pyproject.toml build-script/code-serving-doc-parser/uv.lock /app/
+
+# genon/code-serving 와 동일: uv venv --seed + uv pip install . → /app/.venv
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv venv --seed && \
+    uv pip install .
+
+# GPU torch(cu124) 재고정 (pyproject deps 가 끌어온 기본 torch 를 cu124 wheel 로 override)
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --python ${APP_VENV}/bin/python \
+      --reinstall-package torch --reinstall-package torchvision \
+      --index-url "${TORCH_CU_INDEX_URL}" \
+      torch torchvision
+
+# docling-parse 4.1.0 소스 패치 빌드 (#245) — /app/.venv 인터프리터로 설치(wheel 덮어씀)
+RUN apt-get update && apt-get install -y --no-install-recommends git g++ make zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+# 패치 헤더만 /tmp 로 (/app 오염 방지)
+COPY ./genon/preprocessor/resources/stream_fix_xobject_reload.h /tmp/stream_fix_xobject_reload.h
+RUN --mount=type=cache,target=/root/.cache/uv \
+    set -eux; \
+    uv pip install --python ${APP_VENV}/bin/python pybind11 cmake scikit-build-core poetry -q; \
+    git clone --depth 1 --branch v4.1.0 \
+      https://github.com/docling-project/docling-parse /tmp/docling-parse-4.1.0; \
+    cp /tmp/stream_fix_xobject_reload.h /tmp/docling-parse-4.1.0/src/v2/pdf_decoders/stream.h; \
+    sed -i 's|-DCMAKE_INSTALL_PREFIX=${EXTERNALS_PREFIX_PATH}|-DCMAKE_INSTALL_PREFIX=${EXTERNALS_PREFIX_PATH}\n        -DCXXOPTS_BUILD_EXAMPLES=OFF\n        -DCXXOPTS_BUILD_TESTS=OFF|' \
+      /tmp/docling-parse-4.1.0/cmake/extlib_cxxopts.cmake; \
+    sed -i 's|set(QPDF_EXTRA_CXX_FLAGS "-fPIC ")|set(QPDF_EXTRA_CXX_FLAGS "-fPIC -include cstdint -Wno-error")|' \
+      /tmp/docling-parse-4.1.0/cmake/extlib_qpdf_v11.cmake; \
+    sed -i 's|set(QPDF_EXTRA_C_FLAGS "-fPIC ")|set(QPDF_EXTRA_C_FLAGS "-fPIC -Wno-error")|' \
+      /tmp/docling-parse-4.1.0/cmake/extlib_qpdf_v11.cmake; \
+    sed -i 's|-DCMAKE_C_FLAGS=${ENV_ARCHFLAGS}|-DCMAKE_C_FLAGS=-Wno-error|' \
+      /tmp/docling-parse-4.1.0/cmake/extlib_jpeg.cmake; \
+    uv pip install --python ${APP_VENV}/bin/python --no-build-isolation /tmp/docling-parse-4.1.0/; \
+    uv pip install --python ${APP_VENV}/bin/python "docling-core[chunking]==2.62.0"; \
+    rm -rf /tmp/docling-parse-4.1.0
+
+############################
+# 2-1) HWP SDK / 2-2) 폰트 / 2-3) 모델 (CPU Dockerfile 과 동일)
+############################
+FROM builder AS sdk_artifacts
+RUN --mount=type=cache,target=${HF_HOME} \
+    --mount=type=secret,id=HWP_SDK_TOKEN \
+    HWP_SDK_TOKEN_VAL=$(cat /run/secrets/HWP_SDK_TOKEN) && \
+    mkdir -p /app/hwp_sdk && \
+    huggingface-cli download HeechanKim-Genon/hwp_sdk \
+      --repo-type dataset --local-dir /app/hwp_sdk \
+      --local-dir-use-symlinks False --token "${HWP_SDK_TOKEN_VAL}" && \
+    chmod +x /app/hwp_sdk/convtext
+
+FROM builder AS font_artifacts
+RUN --mount=type=cache,target=${HF_HOME} \
+    mkdir -p /app/extra_fonts && \
+    huggingface-cli download HeechanKim-Genon/additional_fonts \
+      --repo-type dataset --local-dir /app/extra_fonts --local-dir-use-symlinks False
+
+FROM rust:latest AS rhwp_builder
+ARG RHWP_GIT_URL
+ARG RHWP_GIT_REF
+WORKDIR /src
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    git clone --depth 1 --branch "${RHWP_GIT_REF}" "${RHWP_GIT_URL}" /src
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/src/target \
+    cargo build --release --bin rhwp \
+ && cp /src/target/release/rhwp /usr/local/bin/rhwp
+
+FROM builder AS models_artifacts
+ARG APP_VENV
+ARG NLTK_PACKAGES
+ARG DOCLING_PKG_VER
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --python ${APP_VENV}/bin/python "docling==${DOCLING_PKG_VER}"
+RUN --mount=type=cache,target=/root/.cache/models \
+    if [ ! -d /models ] || [ -z "$(ls -A /models)" ]; then docling-tools models download -o /models; fi
+RUN --mount=type=cache,target=${HF_HOME} \
+    mkdir -p /models/doc_parser_models && \
+    huggingface-cli download mncai/doc_parser_models --local-dir /models/doc_parser_models && \
+    huggingface-cli download mncai/doc_parser_models --include "sentence-transformers-all-MiniLM-L6-v2/*" \
+      --local-dir /models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2
+RUN --mount=type=cache,target=/root/.cache/nltk \
+    python - <<'PY'
+import os, nltk
+target = os.environ.get("NLTK_DATA", "/app/nltk_data")
+os.makedirs(target, exist_ok=True)
+packages = os.environ.get("NLTK_PACKAGES", "all")
+if packages == "all":
+    nltk.download("all", download_dir=target)
+else:
+    for pkg in [p.strip() for p in packages.split(",") if p.strip()]:
+        nltk.download(pkg, download_dir=target)
+PY
+RUN --mount=type=cache,target=/root/.cache/easyocr_korean \
+    mkdir -p /models/EasyOcr && \
+    if [ ! -f /root/.cache/easyocr_korean/korean_g2.zip ]; then \
+      curl -L -o /root/.cache/easyocr_korean/korean_g2.zip \
+        "https://github.com/JaidedAI/EasyOCR/releases/download/v1.3/korean_g2.zip"; \
+    fi; \
+    unzip -q -o /root/.cache/easyocr_korean/korean_g2.zip -d /models/EasyOcr
+
+############################
+# 3) Runtime — nvidia/cuda + 문서 apt + H2Orestart + 아티팩트 + harness
+############################
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04 AS runtime
+ARG APP_VENV
+ARG H2ORESTART_URL
+ARG UID
+ARG GID
+ARG UNAME
+ARG GNAME
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Asia/Seoul \
+    VIRTUAL_ENV=${APP_VENV} \
+    PATH="${APP_VENV}/bin:${PATH}" \
     NVIDIA_VISIBLE_DEVICES=all \
     NVIDIA_DRIVER_CAPABILITIES=compute,utility \
-    UV_TORCH_BACKEND=cu124 \
-    UV_NO_CACHE=1 \
-    UV_PYTHON_INSTALL_DIR=/opt/python \
-    VERSION=${VERSION}
+    HOME=/app \
+    XDG_CACHE_HOME=/app/.cache \
+    XDG_CONFIG_HOME=/app/.config \
+    XDG_DATA_HOME=/app/.local/share \
+    XDG_RUNTIME_DIR=/tmp/xdg \
+    TMPDIR=/app/tmp \
+    JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 \
+    HF_HOME=/app/.cache/huggingface \
+    NLTK_DATA=/app/nltk_data \
+    LANG=ko_KR.UTF-8 \
+    LC_ALL=ko_KR.UTF-8 \
+    LC_CTYPE=ko_KR.UTF-8 \
+    DOCLING_ARTIFACTS_PATH=/models \
+    DOC_PARSER_BUILD_VARIANT=standard \
+    RHWP_BIN=/usr/local/bin/rhwp
 
-# 시스템 패키지
-#  - 코드서빙 harness/런타임용: net-tools curl procps supervisor vim git ffmpeg sudo tzdata
-#  - facade(docling/easyocr/unstructured 등) 문서·OCR 처리용 (정본: preprocessor Dockerfile.standard):
-#    libreoffice/poppler/tesseract/pango/cairo/gdk-pixbuf/fonts-noto-cjk/libmagic1/libgl1/
-#    libspatialindex-c6/imagemagick
-RUN if [ -f /etc/apt/sources.list ]; then \
-        sed -i 's|http://|https://|g' /etc/apt/sources.list; \
-    fi && \
-    if [ -d /etc/apt/sources.list.d ]; then \
-        find /etc/apt/sources.list.d -type f \( -name "*.list" -o -name "*.sources" \) -exec sed -i 's|http://|https://|g' {} \;; \
-    fi && \
-    apt-get update -o Acquire::Retries=5 -o Acquire::http::Pipeline-Depth=0 && \
-    apt-get install -y --no-install-recommends --fix-missing \
-        net-tools curl procps supervisor vim git ffmpeg sudo tzdata \
-        build-essential \
-        libreoffice antiword poppler-utils \
-        tesseract-ocr tesseract-ocr-eng tesseract-ocr-kor \
-        libpango-1.0-0 libpangoft2-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 \
-        fonts-noto-cjk \
-        libmagic1 libgl1 libspatialindex-c6 imagemagick && \
-    ln -snf /usr/share/zoneinfo/${TZ#:} /etc/localtime && \
-    echo ${TZ#:} > /etc/timezone && \
-    rm -rf /var/lib/apt/lists/*
+# 문서/OCR/LibreOffice/Java/폰트 (ubuntu 22.04 jammy). openjdk-21/libgdk-pixbuf 명은 배포판에 따라 조정.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      net-tools curl wget fontconfig procps supervisor vim git sudo tzdata locales \
+      libmagic1 libmagic-dev \
+      libpango-1.0-0 libpangocairo-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 \
+      libffi-dev libgl1 \
+      libreoffice ffmpeg unzip \
+      openjdk-21-jre-headless ca-certificates-java \
+      libreoffice-java-common libreoffice-writer libreoffice-impress libreoffice-l10n-ko \
+      fonts-dejavu fonts-noto-cjk fonts-noto-cjk-extra fonts-nanum \
+      imagemagick poppler-utils \
+      tesseract-ocr tesseract-ocr-eng tesseract-ocr-kor \
+      libspatialindex-c6 \
+    && ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone \
+    && sed -i 's/# \(ko_KR.UTF-8\)/\1/' /etc/locale.gen && locale-gen \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /app/.cache/huggingface /app/nltk_data /app/tmp /tmp/xdg
 
-# uv 설치
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# LibreOffice H2Orestart 확장 + HCRBatang 폰트
+COPY ./genon/preprocessor/resources /tmp/resources
+RUN set -eux; \
+    mkdir -p /opt/h2orestart /usr/lib/libreoffice/share/extensions/h2orestart; \
+    wget -O /opt/h2orestart/H2Orestart.oxt "${H2ORESTART_URL}"; \
+    unzip -q -o /opt/h2orestart/H2Orestart.oxt -d /usr/lib/libreoffice/share/extensions/h2orestart; \
+    soffice --headless --nologo --nodefault --nofirststartwizard --terminate_after_init || true; \
+    mkdir -p /usr/share/fonts; \
+    tar zxf /tmp/resources/HCRBatang.ttf.tar.gz -C /usr/share/fonts/; \
+    fc-cache -f -v; \
+    rm -rf /tmp/resources
 
-# 사용자 생성 및 권한 설정
+# 사용자 생성 + 디렉토리
 RUN groupadd -g $GID $GNAME && \
     useradd --create-home --no-log-init -u $UID -g $GID $UNAME && \
     echo "$UNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
-    mkdir -p /var/log/supervisor /var/run/supervisor /app /opt && \
-    chown -R $UNAME:$GNAME /var/log/supervisor /var/run/supervisor /app /opt
+    mkdir -p /var/log/supervisor /var/run/supervisor /app/.cache/huggingface \
+      /app/.config/libreoffice /app/.cache/libreoffice /app/.local/share /app/tmp /tmp/xdg
 
 WORKDIR /app
 
-# uv로 venv 생성 + pyproject deps pre-bake + torch(cu124) 설치
-# VERSION(예: py3.12)에서 'py' 접두사를 제거해 uv에 전달 (예: 3.12)
-# build context = 이 폴더(build-script/code-serving-doc-parser). 모든 COPY 는 로컬 상대경로.
-# 의존성은 pyproject.toml(genon/preprocessor uv 정보 기반)에 모두 선언되어 있어
-# uv pip install . 로 빌드 시점에 pre-bake 된다 (별도 requirements.txt 없음).
-# torch cu124 는 마지막에 재설치해 pyproject deps 가 끌어온 CPU torch 를 GPU wheel 로 override.
-COPY ./pyproject.toml ./uv.lock /app/
-RUN uv venv --python "${VERSION#py}" --seed /app/.venv && \
-    uv pip install . && \
-    uv pip install numpy "pyannote.audio" && \
-    uv pip install --index-url https://download.pytorch.org/whl/cu124 torch torchaudio && \
-    chown -R $UID:$GID /app/.venv
+# venv (패치된 docling_parse + cu124 torch 포함) + 아티팩트
+COPY --from=builder ${APP_VENV} ${APP_VENV}
+COPY --from=sdk_artifacts /app/hwp_sdk /app/hwp_sdk
+COPY --from=rhwp_builder /usr/local/bin/rhwp /usr/local/bin/rhwp
+COPY --from=font_artifacts /app/extra_fonts /usr/share/fonts/additional
+RUN fc-cache -f -v
+COPY --from=models_artifacts /models /models
+COPY --from=models_artifacts /app/nltk_data /app/nltk_data
 
-# Supervisor 설정 복사
-COPY --chown=$UID:$GID ./supervisor/non-root-base.conf /etc/supervisor/supervisord.conf
-COPY --chown=$UID:$GID ./supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# hwp_sdk import 경로 (venv site-packages 심링크). python3.12 고정.
+RUN ln -s /app/hwp_sdk ${APP_VENV}/lib/python3.12/site-packages/hwp_sdk
 
-# 소스 코드 복사 (code-serving harness — 사용자 코드는 런타임에 /app/src/service 로 clone)
-COPY --chown=$UID:$GID ./ /app
+# 코드서빙 harness
+COPY build-script/code-serving-doc-parser/supervisor/non-root-base.conf /etc/supervisor/supervisord.conf
+COPY build-script/code-serving-doc-parser/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY build-script/code-serving-doc-parser/scripts /app/scripts
+COPY build-script/code-serving-doc-parser/src /app/src
+COPY build-script/code-serving-doc-parser/gunicorn /app/gunicorn
 
-# 불필요한 파일 삭제
-RUN rm -rf /app/src/service
+RUN rm -rf /app/src/service && chmod +x /app/scripts/*.sh
+RUN chown -R $UID:$GID /app /run /var/log /etc/supervisor /models /app/nltk_data
 
-# 사용자 전환
 USER $UID
-
 CMD ["supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]
