@@ -1,11 +1,11 @@
-"""Section-header level inference for the PDF/image reading-order stage.
+"""Section-header level inference for the PDF/image pipeline.
 
-The layout model classifies regions as ``SECTION_HEADER`` without a level, so every
-heading produced by the PDF path defaults to ``level=1`` and the document hierarchy is
-flattened (Roman-numeral parts and Arabic-numeral subsections collapse to the same depth).
+The layout model classifies regions as ``SECTION_HEADER`` without a level, so every heading
+produced by the PDF path defaults to ``level=1`` and the document hierarchy is flattened
+(Roman-numeral parts and Arabic-numeral subsections collapse to the same depth).
 
-This module assigns ``SectionHeaderItem.level`` *after* the reading-order document has been
-assembled, using -- in precedence order:
+:class:`HeadingHierarchyModel` runs right after the reading-order model and assigns
+``SectionHeaderItem.level`` using -- in precedence order:
 
 1. **numbering** -- legal/outline numbering such as ``PART I -> 1. -> 1.1 -> (a) -> (i)``.
    This is the primary signal: on legal/regulatory documents numbering is far more reliable
@@ -17,8 +17,10 @@ Bookmark / PDF-outline inference (the most authoritative signal) requires new ba
 plumbing and is intentionally left as a follow-up; :func:`_infer_from_bookmarks` is the
 extension point and currently a no-op.
 
-The whole step is opt-in (``HeadingHierarchyOptions.enabled``) and only ever rewrites
-heading levels -- it never adds, removes or reorders document items.
+The model only ever rewrites heading levels -- it never adds, removes or reorders items. The
+core (:meth:`HeadingHierarchyModel.assign_heading_levels`) works on a bare
+``DoclingDocument`` so it can be reused outside the pipeline; the font-based fallback simply
+needs the parsed pages passed in.
 """
 
 import re
@@ -27,6 +29,7 @@ from statistics import median
 
 from docling_core.types.doc import DoclingDocument
 from docling_core.types.doc.document import SectionHeaderItem
+from docling_core.types.doc.page import SegmentedPdfPage
 
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import HeadingHierarchyOptions
@@ -191,19 +194,21 @@ def _infer_from_numbering(
     return {i: key_to_level[key] for i, key in keys.items()}
 
 
-def _heading_font_size(item: SectionHeaderItem, pages_by_no: dict) -> float | None:
+def _heading_font_size(
+    item: SectionHeaderItem, parsed_pages: dict[int, SegmentedPdfPage]
+) -> float | None:
     """Median height of parsed PDF cells overlapping the heading, as a font-size proxy."""
     if not item.prov:
         return None
     prov = item.prov[0]
-    page = pages_by_no.get(prov.page_no)
-    if page is None or page.parsed_page is None:
+    parsed = parsed_pages.get(prov.page_no)
+    if parsed is None:
         return None
 
-    page_height = page.size.height
+    page_height = parsed.dimension.height
     hbox = prov.bbox.to_top_left_origin(page_height)
     heights: list[float] = []
-    for cell in page.parsed_page.textline_cells:
+    for cell in parsed.textline_cells:
         if not cell.text or not cell.text.strip():
             continue
         cbox = cell.rect.to_bounding_box().to_top_left_origin(page_height)
@@ -216,16 +221,15 @@ def _heading_font_size(item: SectionHeaderItem, pages_by_no: dict) -> float | No
 
 def _infer_from_style(
     headings: list[SectionHeaderItem],
-    conv_res: ConversionResult | None,
+    parsed_pages: dict[int, SegmentedPdfPage],
     options: HeadingHierarchyOptions,
 ) -> dict[int, int]:
     """Map heading index -> level from font size buckets (larger size = higher level)."""
-    if conv_res is None:
+    if not parsed_pages:
         return {}
-    pages_by_no = {page.page_no: page for page in conv_res.pages}
     sizes: dict[int, float] = {}
     for i, heading in enumerate(headings):
-        size = _heading_font_size(heading, pages_by_no)
+        size = _heading_font_size(heading, parsed_pages)
         if size is not None:
             sizes[i] = size
     if not sizes:
@@ -241,9 +245,7 @@ def _infer_from_style(
 
 
 def _infer_from_bookmarks(
-    headings: list[SectionHeaderItem],
-    conv_res: ConversionResult | None,
-    options: HeadingHierarchyOptions,
+    headings: list[SectionHeaderItem], options: HeadingHierarchyOptions
 ) -> dict[int, int]:
     """Reserved: map heading index -> level from the PDF outline/bookmarks.
 
@@ -253,33 +255,64 @@ def _infer_from_bookmarks(
     return {}
 
 
-def assign_heading_levels(
-    document: DoclingDocument,
-    conv_res: ConversionResult | None,
-    options: HeadingHierarchyOptions,
-) -> None:
-    """Assign ``SectionHeaderItem.level`` in place from the configured signals.
+class HeadingHierarchyModel:
+    """Assigns ``SectionHeaderItem.level`` on an already-assembled ``DoclingDocument``.
 
-    Numbering wins over style; bookmarks (when implemented) win over both. Headings with no
-    applicable signal keep their existing level. ``conv_res`` may be ``None`` when only
-    ``conv_res``-independent signals (numbering) are enabled.
+    Intended to run right after the reading-order model. It accepts a ``ConversionResult``
+    and returns the (in-place modified) ``DoclingDocument``. The core logic is exposed via
+    :meth:`assign_heading_levels`, which works on a bare ``DoclingDocument`` (plus optional
+    parsed pages for the style fallback) so it can be reused outside the pipeline.
     """
-    headings = [item for item in document.texts if isinstance(item, SectionHeaderItem)]
-    if not headings:
-        return
 
-    levels: dict[int, int] = {}
-    if options.use_numbering:
-        levels.update(_infer_from_numbering(headings, options))
-    if options.use_style:
-        for i, level in _infer_from_style(headings, conv_res, options).items():
-            levels.setdefault(i, level)  # do not override a numbering-derived level
-    if options.use_bookmarks:
-        levels.update(
-            _infer_from_bookmarks(headings, conv_res, options)
-        )  # authoritative
+    def __init__(self, options: HeadingHierarchyOptions):
+        self.options = options
 
-    for i, heading in enumerate(headings):
-        level = levels.get(i)
-        if level is not None:
-            heading.level = max(1, min(int(level), options.max_level))
+    def __call__(self, conv_res: ConversionResult) -> DoclingDocument:
+        document = conv_res.document
+        if not self.options.enabled:
+            return document
+
+        parsed_pages: dict[int, SegmentedPdfPage] = {}
+        if self.options.use_style:
+            parsed_pages = {
+                page.page_no: page.parsed_page
+                for page in conv_res.pages
+                if page.parsed_page is not None
+            }
+        return self.assign_heading_levels(document, parsed_pages=parsed_pages)
+
+    def assign_heading_levels(
+        self,
+        document: DoclingDocument,
+        parsed_pages: dict[int, SegmentedPdfPage] | None = None,
+    ) -> DoclingDocument:
+        """Assign heading levels in place from the configured signals.
+
+        Numbering wins over style; bookmarks (once implemented) win over both. Headings with
+        no applicable signal keep their existing level. ``parsed_pages`` (page number ->
+        parsed page) is only needed for the style fallback.
+        """
+        headings = [
+            item for item in document.texts if isinstance(item, SectionHeaderItem)
+        ]
+        if not headings:
+            return document
+
+        levels: dict[int, int] = {}
+        if self.options.use_numbering:
+            levels.update(_infer_from_numbering(headings, self.options))
+        if self.options.use_style and parsed_pages:
+            for i, level in _infer_from_style(
+                headings, parsed_pages, self.options
+            ).items():
+                levels.setdefault(i, level)  # do not override a numbering-derived level
+        if self.options.use_bookmarks:
+            levels.update(
+                _infer_from_bookmarks(headings, self.options)
+            )  # authoritative
+
+        for i, heading in enumerate(headings):
+            level = levels.get(i)
+            if level is not None:
+                heading.level = max(1, min(int(level), self.options.max_level))
+        return document

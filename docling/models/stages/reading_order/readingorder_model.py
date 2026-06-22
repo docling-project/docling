@@ -30,8 +30,6 @@ from docling.datamodel.base_models import (
     TextElement,
 )
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import HeadingHierarchyOptions
-from docling.models.stages.reading_order.heading_hierarchy import assign_heading_levels
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 
@@ -39,7 +37,6 @@ class ReadingOrderOptions(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
     model_names: str = ""  # e.g. "language;term;reference"
-    heading_hierarchy: HeadingHierarchyOptions = HeadingHierarchyOptions()
 
 
 class ReadingOrderModel:
@@ -468,10 +465,5 @@ class ReadingOrderModel:
                 el_to_footnotes_mapping,
                 el_merges_mapping,
             )
-
-            if self.options.heading_hierarchy.enabled:
-                assign_heading_levels(
-                    docling_doc, conv_res, self.options.heading_hierarchy
-                )
 
         return docling_doc

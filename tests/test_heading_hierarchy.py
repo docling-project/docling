@@ -2,13 +2,26 @@
 
 from types import SimpleNamespace
 
-from docling_core.types.doc import DoclingDocument
+from docling_core.types.doc import (
+    BoundingBox,
+    CoordOrigin,
+    DoclingDocument,
+    ProvenanceItem,
+)
+from docling_core.types.doc.page import (
+    BoundingRectangle,
+    PdfCellRenderingMode,
+    PdfPageBoundaryType,
+    PdfPageGeometry,
+    PdfTextCell,
+    SegmentedPdfPage,
+)
 
 from docling.datamodel.pipeline_options import HeadingHierarchyOptions
-from docling.models.stages.reading_order.heading_hierarchy import (
+from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
+    HeadingHierarchyModel,
     _infer_from_numbering,
     _parse_marker,
-    assign_heading_levels,
 )
 
 
@@ -102,13 +115,12 @@ def test_max_level_clamping_on_document():
     doc = DoclingDocument(name="t")
     for text in ["1. A", "1.1 B", "1.1.1 C", "1.1.1.1 D"]:
         doc.add_heading(text=text)
-    assign_heading_levels(
-        doc,
-        conv_res=None,
+    model = HeadingHierarchyModel(
         options=HeadingHierarchyOptions(
-            enabled=True, use_style=False, use_bookmarks=False, max_level=2
-        ),
+            use_style=False, use_bookmarks=False, max_level=2
+        )
     )
+    model.assign_heading_levels(doc)
     assert [h.level for h in doc.texts] == [1, 2, 2, 2]
 
 
@@ -117,16 +129,88 @@ def test_assign_updates_document_levels_and_markdown():
     for text in ["I. Introduction", "1. Background", "2. Motivation", "II. Methods"]:
         doc.add_heading(text=text)
 
-    assign_heading_levels(
-        doc,
-        conv_res=None,
-        options=HeadingHierarchyOptions(
-            enabled=True, use_style=False, use_bookmarks=False
-        ),
+    model = HeadingHierarchyModel(
+        options=HeadingHierarchyOptions(use_style=False, use_bookmarks=False)
     )
+    model.assign_heading_levels(doc)
 
     assert [h.level for h in doc.texts] == [1, 2, 2, 1]
     md = doc.export_to_markdown()
     assert "# I. Introduction" in md
     assert "## 1. Background" in md
     assert "# II. Methods" in md
+
+
+def _bbox(left, top, right, bottom):
+    return BoundingBox(
+        l=left, t=top, r=right, b=bottom, coord_origin=CoordOrigin.TOPLEFT
+    )
+
+
+def _cell(text, left, top, right, bottom):
+    return PdfTextCell(
+        index=0,
+        rect=BoundingRectangle.from_bounding_box(_bbox(left, top, right, bottom)),
+        text=text,
+        orig=text,
+        rendering_mode=PdfCellRenderingMode.FILL_TEXT,
+        widget=False,
+        font_key="F1",
+        font_name="Helvetica",
+    )
+
+
+def _segmented_page(cells, width=600, height=800):
+    full = _bbox(0, 0, width, height)
+    geometry = PdfPageGeometry(
+        angle=0,
+        boundary_type=PdfPageBoundaryType.CROP_BOX,
+        rect=BoundingRectangle.from_bounding_box(full),
+        art_bbox=full,
+        bleed_bbox=full,
+        crop_bbox=full,
+        media_bbox=full,
+        trim_bbox=full,
+    )
+    return SegmentedPdfPage(
+        dimension=geometry,
+        textline_cells=cells,
+        char_cells=[],
+        word_cells=[],
+        has_chars=False,
+        has_words=False,
+        has_lines=True,
+    )
+
+
+def test_style_fallback_assigns_levels_by_font_size():
+    # No numbering -> fall back to font size: the larger heading becomes the higher level.
+    doc = DoclingDocument(name="t")
+    doc.add_heading(
+        text="Overview",
+        prov=ProvenanceItem(
+            page_no=1,
+            charspan=(0, 8),
+            bbox=_bbox(100, 50, 300, 70),  # height 20
+        ),
+    )
+    doc.add_heading(
+        text="Details",
+        prov=ProvenanceItem(
+            page_no=1,
+            charspan=(0, 7),
+            bbox=_bbox(100, 88, 300, 100),  # height 12
+        ),
+    )
+    page = _segmented_page(
+        [_cell("Overview", 100, 50, 300, 70), _cell("Details", 100, 88, 300, 100)]
+    )
+
+    model = HeadingHierarchyModel(
+        options=HeadingHierarchyOptions(
+            use_numbering=False, use_style=True, use_bookmarks=False
+        )
+    )
+    model.assign_heading_levels(doc, parsed_pages={1: page})
+
+    assert [h.level for h in doc.texts] == [1, 2]
