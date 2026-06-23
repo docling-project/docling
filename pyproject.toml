@@ -169,11 +169,11 @@ format-audio = [
 # OCR ENGINES (feat-ocr-*)
 # ============================================================================
 feat-ocr-rapidocr = [
-  'rapidocr>=3.8,<4.0.0',
+  'rapidocr>=3.9.1,<4.0.0',
 ]
 
 feat-ocr-rapidocr-onnx = [
-  'rapidocr>=3.8,<4.0.0',
+  'rapidocr>=3.9.1,<4.0.0',
   'onnxruntime>=1.7.0,<2.0.0 ; python_version < "3.14"',
 ]
 
