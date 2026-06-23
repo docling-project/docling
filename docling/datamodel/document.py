@@ -14,7 +14,6 @@ from pathlib import Path, PurePath
 from typing import (
     TYPE_CHECKING,
     Annotated,
-    Any,
     Literal,
     NamedTuple,
     Optional,
@@ -34,7 +33,6 @@ from docling_core.types.doc import (
     TableItem,
     TextItem,
 )
-from docling_core.types.doc.document import ListItem
 from docling_core.utils.file import (
     FileSizeLimitExceededError,
     resolve_remote_filename,
@@ -48,11 +46,9 @@ from pydantic import (
     TypeAdapter,
     ValidationError,
 )
-from typing_extensions import deprecated
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
-    DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
 from docling.datamodel.backend_options import (
