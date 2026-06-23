@@ -460,8 +460,19 @@ def _add_odf_paragraph(
     odf_obj: OdfDocument | None,
 ) -> None:
     chart_count = _add_odf_charts(doc, element, parent, content_layer, odf_obj)
+    images = element.get_images()
+    image_count = _add_odf_images(
+        doc,
+        images,
+        parent,
+        content_layer,
+        odf_obj,
+        skip_object_replacements=chart_count > 0,
+    )
     runs = _odf_text_runs(element, odf_obj)
     text = _odf_text_from_runs(runs)
+    if image_count > 0 and _odf_text_is_generated_image_references(text, images):
+        return
     if chart_count > 0 and ("ObjectReplacements" in text or not text):
         return
 
@@ -727,12 +738,15 @@ def _odf_cell_is_rich(cell: Any) -> bool:
 def _image_ref_from_odf_image(
     odf_obj: OdfDocument | None, image: Any
 ) -> ImageRef | None:
+    image_url = _odf_image_href(image)
+    if not _odf_image_can_be_bitmap(image, image_url):
+        return None
+
     image_data: bytes | None = None
     get_data = getattr(image, "get_data", None)
     if callable(get_data):
         image_data = get_data()
 
-    image_url = getattr(image, "url", None)
     if image_data is None and odf_obj is not None and image_url:
         try:
             image_data = odf_obj.get_part(image_url)
@@ -748,7 +762,55 @@ def _image_ref_from_odf_image(
         return None
 
     pil_image = PILImage.open(BytesIO(image_data))
+    pil_image.load()
     return ImageRef.from_pil(image=pil_image, dpi=72)
+
+
+def _odf_image_href(image: Any) -> str | None:
+    return getattr(image, "url", None) or getattr(image, "attributes", {}).get(
+        "xlink:href"
+    )
+
+
+def _odf_image_can_be_bitmap(image: Any, image_url: str | None) -> bool:
+    mime_type = getattr(image, "attributes", {}).get("draw:mime-type")
+    if mime_type is not None:
+        return mime_type.startswith("image/") and mime_type != "image/svg+xml"
+
+    if image_url is None:
+        return True
+
+    suffix = Path(image_url).suffix.lower()
+    if suffix in {".pdf", ".svg", ".emf", ".wmf"}:
+        return False
+    return suffix in {
+        "",
+        ".bmp",
+        ".gif",
+        ".jpeg",
+        ".jpg",
+        ".png",
+        ".tif",
+        ".tiff",
+        ".webp",
+    }
+
+
+def _odf_text_is_generated_image_references(text: str, images: list[Any]) -> bool:
+    remaining = text.strip()
+    if not remaining:
+        return False
+
+    for image in images:
+        href = _odf_image_href(image)
+        if href is None:
+            continue
+        href = href.strip()
+        refs = {href, href.removeprefix("./")}
+        for ref in refs:
+            remaining = remaining.replace(f"({ref})", "")
+
+    return remaining.strip() == ""
 
 
 def _add_odf_images(
@@ -757,14 +819,88 @@ def _add_odf_images(
     parent: NodeItem,
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
-) -> None:
+    *,
+    skip_object_replacements: bool = False,
+) -> int:
+    image_count = 0
     for image in images:
+        image_url = _odf_image_href(image)
+        if skip_object_replacements and image_url is not None:
+            if image_url.removeprefix("./").startswith("ObjectReplacements/"):
+                continue
         try:
             image_ref = _image_ref_from_odf_image(odf_obj, image)
         except Exception as e:
             _log.debug("Could not extract OpenDocument image: %s", e)
             image_ref = None
+        if image_ref is None:
+            continue
         doc.add_picture(parent=parent, image=image_ref, content_layer=content_layer)
+        image_count += 1
+    return image_count
+
+
+def _add_odf_child(
+    doc: DoclingDocument,
+    element: Any,
+    *,
+    parent: NodeItem | None,
+    content_layer: ContentLayer | None,
+    odf_obj: OdfDocument | None,
+) -> _OdfListState | None:
+    if isinstance(element, Header):
+        _add_odf_heading(
+            doc,
+            element,
+            parent=parent,
+            content_layer=content_layer,
+            odf_obj=odf_obj,
+        )
+    elif isinstance(element, Paragraph) and not isinstance(element, Header):
+        _add_odf_paragraph(
+            doc,
+            element,
+            parent=parent,
+            content_layer=content_layer,
+            odf_obj=odf_obj,
+        )
+    elif isinstance(element, OdfList):
+        return _add_odf_list(
+            doc,
+            element,
+            parent=parent,
+            content_layer=content_layer,
+            odf_obj=odf_obj,
+            enumerated=False,
+            flatten_nested_text=False,
+        )
+    elif isinstance(element, OdfTable):
+        _add_table_from_odf(
+            doc,
+            element,
+            parent=parent,
+            content_layer=content_layer,
+            odf_obj=odf_obj,
+        )
+    elif isinstance(element, Frame):
+        chart_count = _add_odf_charts(doc, element, parent, content_layer, odf_obj)
+        _add_odf_images(
+            doc,
+            element.get_images(),
+            parent,
+            content_layer,
+            odf_obj,
+            skip_object_replacements=chart_count > 0,
+        )
+    else:
+        get_images = getattr(element, "get_images", None)
+        if callable(get_images):
+            _add_odf_images(doc, get_images(), parent, content_layer, odf_obj)
+        else:
+            _log.debug(
+                "Ignoring ODF element with tag: %s", getattr(element, "tag", None)
+            )
+    return None
 
 
 def _embedded_odf_content_path(href: str) -> str:
@@ -1006,44 +1142,13 @@ def _add_rich_cell_children(
     odf_obj: OdfDocument | None,
 ) -> None:
     for child in cell.children:
-        if isinstance(child, Header):
-            text = child.text_recursive.strip()
-            if text:
-                level = child.get_attribute_integer("text:outline-level") or 1
-                doc.add_heading(
-                    parent=parent,
-                    text=text,
-                    level=max(1, level),
-                    content_layer=content_layer,
-                )
-        elif isinstance(child, Paragraph):
-            text = child.text_recursive.strip()
-            if text:
-                doc.add_text(
-                    label=DocItemLabel.TEXT,
-                    parent=parent,
-                    text=text,
-                    content_layer=content_layer,
-                )
-        elif isinstance(child, OdfList):
-            _add_odf_list(
-                doc,
-                child,
-                parent=parent,
-                content_layer=content_layer,
-                odf_obj=odf_obj,
-                enumerated=False,
-            )
-        elif isinstance(child, OdfTable):
-            _add_table_from_odf(
-                doc,
-                child,
-                parent=parent,
-                content_layer=content_layer,
-                odf_obj=odf_obj,
-            )
-
-    _add_odf_images(doc, cell.get_images(), parent, content_layer, odf_obj)
+        _add_odf_child(
+            doc,
+            child,
+            parent=parent,
+            content_layer=content_layer,
+            odf_obj=odf_obj,
+        )
 
 
 def _add_table_from_odf(
@@ -1258,25 +1363,7 @@ class OdtDocumentBackend(_OdfBaseBackend):
     ) -> None:
         previous_list_state: _OdfListState | None = None
         for el in elements:
-            if isinstance(el, Header):
-                previous_list_state = None
-                _add_odf_heading(
-                    doc,
-                    el,
-                    parent=parent,
-                    content_layer=None,
-                    odf_obj=self.odf_obj,
-                )
-            elif isinstance(el, Paragraph) and not isinstance(el, Header):
-                previous_list_state = None
-                _add_odf_paragraph(
-                    doc,
-                    el,
-                    parent=parent,
-                    content_layer=None,
-                    odf_obj=self.odf_obj,
-                )
-            elif isinstance(el, OdfList):
+            if isinstance(el, OdfList):
                 previous_list_state = _add_odf_list(
                     doc,
                     el,
@@ -1287,17 +1374,15 @@ class OdtDocumentBackend(_OdfBaseBackend):
                     continued_state=previous_list_state,
                     flatten_nested_text=False,
                 )
-            elif isinstance(el, OdfTable):
+            else:
                 previous_list_state = None
-                _add_table_from_odf(
+                _add_odf_child(
                     doc,
                     el,
                     parent=parent,
                     odf_obj=self.odf_obj,
+                    content_layer=None,
                 )
-            else:
-                previous_list_state = None
-                _log.debug("Ignoring ODT element with tag: %s", el.tag)
 
 
 class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):

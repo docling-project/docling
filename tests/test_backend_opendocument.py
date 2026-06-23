@@ -490,6 +490,50 @@ def test_odt_text_document_embedded_chart():
     assert cell_texts[(4, 3)] == "6.2"
 
 
+def test_odt_text_document_embedded_bitmap_image():
+    path = Path("tests/data/odf/text_document_02.odt")
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    bitmap_pictures = [
+        item
+        for item in res.document.pictures
+        if isinstance(item, PictureItem)
+        and item.image is not None
+        and (item.meta is None or item.meta.tabular_chart is None)
+    ]
+
+    assert len(bitmap_pictures) == 1
+
+
+def test_odt_table_cell_image_creates_rich_cell_picture(tmp_path: Path):
+    image_path = tmp_path / "cell_image.png"
+    Image.new("RGB", (2, 2), "red").save(image_path)
+
+    path = tmp_path / "image_cell.odt"
+    doc = OdfDocument("text")
+    body = doc.body
+    body.clear()
+
+    table = Table("ImageCell", width=1, height=1)
+    cell = table.get_cell("A1")
+    image_ref = doc.add_file(str(image_path))
+    cell.append(Frame.image_frame(image_ref, size=("1cm", "1cm")))
+    table.set_cell("A1", cell)
+    body.append(table)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    table = res.document.tables[0]
+    cell = table.data.table_cells[0]
+    assert isinstance(cell, RichTableCell)
+
+    group = cell.ref.resolve(res.document)
+    child_items = [child.resolve(res.document) for child in group.children]
+    pictures = [item for item in child_items if isinstance(item, PictureItem)]
+    assert len(pictures) == 1
+    assert pictures[0].image is not None
+
+
 def test_odp_textbox_text_formatting(tmp_path: Path):
     path = tmp_path / "formatted_text.odp"
     doc = OdfDocument("presentation")
