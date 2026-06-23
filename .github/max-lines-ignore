@@ -18,6 +18,7 @@ CHANGELOG.md
 docling/backend/html_backend.py
 docling/backend/msword_backend.py
 docling/backend/xml/uspto_backend.py
+docling/backend/opendocument_backend.py
 docling/datamodel/pipeline_options.py
 docling/datamodel/service/options.py
 docling/datamodel/stage_model_specs.py
