@@ -151,6 +151,58 @@ gunzip -c doc-parser-preprocessor-2.1.5.tar.gz | docker load
 ```
    - `gpu`/`synap` 등 다른 조합이면 태그가 `:2.1.5-gpu-synap` 처럼 붙으니 파일명/명령어를 그에 맞게 바꾼다.
 
+## 코드서빙(code-serving) base 이미지 빌드 및 배포
+
+위 "전처리기 빌드 및 등록" 의 전처리기 이미지와는 **별개의 이미지**다. 코드서빙은 doc-parser facade 를
+GenOS **코드서빙** 기능으로 띄우는 경로이며, 동작 방식이 전처리기와 다르다.
+
+**동작 개요**
+
+- 시스템이 이 **base 이미지**를 띄운 뒤, 런타임에 git 소스를 `/app/src/service` 로 clone 하고
+  `main.py`(facade) 를 실행한다.
+- facade 의 무거운 deps 와 다운로드 아티팩트(모델/HWP SDK/rhwp/H2Orestart/폰트/NLTK/EasyOCR)는
+  콜드스타트 단축 + 에어갭(오프라인) 동작을 위해 **base 이미지에 빌드 시점에 pre-bake** 한다
+  (`Dockerfile.standard` 와 full parity).
+- 배포 후 게이트웨이로 호출하는 방법(`/health`·`/parser`·`/chunker` 등)은
+  [`preprocessor/facade/gitbook_doc/code_serving.md`](preprocessor/facade/gitbook_doc/code_serving.md) 참고.
+
+> 빌드 방식·pre-bake 아티팩트 목록·의존성 동기화 주의사항 등 상세는
+> [`build-script/code-serving-doc-parser/README.md`](../build-script/code-serving-doc-parser/README.md) 참고.
+
+### A. 토큰 설정 (1회, Git 미추적)
+
+HWP SDK 다운로드용 HF 토큰을 **전처리기 빌드와 동일한 파일**에 둔다 (이미 위 "전처리기 빌드 및 등록"
+1번을 수행했다면 재설정 불필요):
+
+```bash
+echo "HWP_SDK_TOKEN=hf_xxx" >> build-script/hf_private_token.env
+```
+
+### B. 설정 & 빌드
+
+1. [`build-script/code-serving-doc-parser/build.config`](../build-script/code-serving-doc-parser/build.config) 설정:
+   ```bash
+   HW_VARIANT=cpu      # cpu(python:3.12-slim) 또는 gpu(nvidia/cuda 12.4.1). 비우면 즉시 에러
+   IMAGE_VERSION=0.1.0 # 이미지 버전
+   PUSH_IMAGE=false    # 먼저 로컬 검증 후 true 로 push
+   ```
+2. 빌드 실행:
+   ```bash
+   bash build-script/code-serving-doc-parser/build.sh
+   ```
+   - 태그 규칙: `cpu` → `mnc.genos.io:30500/mnc/template-code-serving-doc-parser:<버전>`,
+     `gpu` → `.../template-code-serving-doc-parser-gpu:<버전>` (이미지명에 `-gpu` 접미사 자동 부착).
+   - `SMOKE_TEST=true`(기본) 면 빌드 직후 venv import + torch CPU/GPU variant 일치 + 아티팩트 존재 +
+     `docling_parse` 패치본이 `/app/.venv` 하위에 설치됐는지 검증한다 (실패 시 빌드 실패).
+   - 로컬 검증 후 `PUSH_IMAGE=true` 로 다시 실행하면 레지스트리에 push 된다.
+
+### C. GenOS 코드서빙 등록/배포
+
+- 위에서 빌드/푸시한 base 이미지를 GenOS **코드서빙** 기능에 등록하고, doc-parser git 소스(레포 URL/
+  commit)를 지정해 서빙을 생성한다. 런타임에 소스가 `/app/src/service` 로 clone 되고 `main.py` 가 실행된다.
+- 호출(게이트웨이 URL·엔드포인트·예시)은
+  [`preprocessor/facade/gitbook_doc/code_serving.md`](preprocessor/facade/gitbook_doc/code_serving.md) 참고.
+
 ## 로컬 테스트 (도커 빌드 없이 test.py 실행)
 
 도커를 거치지 않고 `genon/preprocessor/facade/test.py` 등을 로컬에서 바로 실행하려면, **HWP SDK · PDF SDK를 레포 최상위에 직접 다운로드**해야 한다. (코드가 `<repo_root>/hwp_sdk`, `<repo_root>/pdf_sdk` 경로를 자동으로 찾음)

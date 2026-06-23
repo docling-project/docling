@@ -127,31 +127,35 @@ async def preprocess(
     return await _run('preprocess', intelligent_processor, request, file_path, params)
 
 
-@app.post('/preprocess/attachment')
+# 코드서빙 게이트웨이({base}/api/gateway/code_serving/{id}/{route})는 route 를 단일 세그먼트로만
+# 포워딩하므로, 슬래시가 포함된 중첩 경로(/preprocess/xxx)는 게이트웨이로 호출되지 않는다.
+# 따라서 /parser·/chunker 처럼 평탄(단일 세그먼트) 경로(/preprocess_xxx)로 노출한다.
+
+@app.post('/preprocess_attachment')
 async def preprocess_attachment(
         request: Request,
         file_path: str = Body(..., embed=True),
         params: dict = Body(default_factory=dict)
 ):
-    return await _run('preprocess/attachment', attachment_processor, request, file_path, params)
+    return await _run('preprocess_attachment', attachment_processor, request, file_path, params)
 
 
-@app.post('/preprocess/intelligent')
+@app.post('/preprocess_intelligent')
 async def preprocess_intelligent(
         request: Request,
         file_path: str = Body(..., embed=True),
         params: dict = Body(default_factory=dict)
 ):
-    return await _run('preprocess/intelligent', intelligent_processor, request, file_path, params)
+    return await _run('preprocess_intelligent', intelligent_processor, request, file_path, params)
 
 
-@app.post('/preprocess/convert')
+@app.post('/preprocess_convert')
 async def preprocess_convert(
         request: Request,
         file_path: str = Body(..., embed=True),
         params: dict = Body(default_factory=dict)
 ):
-    return await _run('preprocess/convert', convert_processor, request, file_path, params)
+    return await _run('preprocess_convert', convert_processor, request, file_path, params)
 
 
 @app.post('/parser')
