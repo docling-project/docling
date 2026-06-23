@@ -38,6 +38,7 @@ from odfdo import (
     List as OdfList,
     ListItem,
     Paragraph,
+    Span,
     Style,
     Table,
 )
@@ -386,6 +387,92 @@ def test_odt_text_document_nested_lists():
     assert parent_group_2_1.parent == item_by_text["numbered list 2"].get_ref()
     assert parent_group_2_2_1.parent == item_by_text["bullet list 2.2"].get_ref()
     assert parent_group_3_0_1.parent == item_by_text["numbered list 3"].get_ref()
+
+
+def test_odt_text_document_title_and_subtitle():
+    path = Path("tests/data/odf/text_document_01.odt")
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+
+    titles = [item.text for item in res.document.texts if item.label == "title"]
+    level_1_headings = [
+        item.text
+        for item in res.document.texts
+        if item.label == "section_header" and item.level == 1
+    ]
+
+    assert titles == ["Title"]
+    assert level_1_headings == ["Subtitle", "heading level 1.0"]
+
+
+def test_odt_text_document_text_formatting():
+    path = Path("tests/data/odf/text_document_01.odt")
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    formatted_by_text = {
+        item.text: item.formatting for item in res.document.texts if item.formatting
+    }
+
+    assert formatted_by_text["Lorem Ipsum is not simply random text"].bold
+    assert formatted_by_text[
+        "a Latin professor at Hampden-Sydney College in Virginia"
+    ].italic
+    assert formatted_by_text[
+        "and going through the cites of the word in classical literature"
+    ].underline
+    assert formatted_by_text["The Extremes of Good and Evil"].strikethrough
+
+    markdown = res.document.export_to_markdown(compact_tables=True)
+    assert "**Lorem Ipsum is not simply random text**" in markdown
+    assert "*a Latin professor at Hampden-Sydney College in Virginia*" in markdown
+    assert "~~The Extremes of Good and Evil~~" in markdown
+
+
+def test_odp_textbox_text_formatting(tmp_path: Path):
+    path = tmp_path / "formatted_text.odp"
+    doc = OdfDocument("presentation")
+    body = doc.body
+    body.clear()
+
+    for name, props in {
+        "Bold": {"fo:font-weight": "bold"},
+        "Italic": {"fo:font-style": "italic"},
+        "Underline": {"style:text-underline-style": "solid"},
+        "Strike": {"style:text-line-through-style": "solid"},
+    }.items():
+        style = Style("text", name=name)
+        style.set_properties(props)
+        doc.insert_style(style)
+
+    paragraph = Paragraph()
+    paragraph.append(Span("bold", style="Bold"))
+    paragraph.append(Span(" "))
+    paragraph.append(Span("italic", style="Italic"))
+    paragraph.append(Span(" "))
+    paragraph.append(Span("underline", style="Underline"))
+    paragraph.append(Span(" "))
+    paragraph.append(Span("strike", style="Strike"))
+
+    page = DrawPage("page1", name="Slide One")
+    page.append(
+        Frame.text_frame(
+            paragraph,
+            size=("10cm", "5cm"),
+            position=("1cm", "1cm"),
+        )
+    )
+    body.append(page)
+    doc.save(str(path))
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path)
+    formatted_by_text = {
+        item.text: item.formatting for item in res.document.texts if item.formatting
+    }
+
+    assert formatted_by_text["bold"].bold
+    assert formatted_by_text["italic"].italic
+    assert formatted_by_text["underline"].underline
+    assert formatted_by_text["strike"].strikethrough
 
 
 def test_odp_nested_textbox_list(tmp_path: Path):

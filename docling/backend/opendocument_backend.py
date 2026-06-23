@@ -30,6 +30,7 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    Formatting,
     GroupLabel,
     ImageRef,
     NodeItem,
@@ -83,6 +84,12 @@ class _OdfListState:
     last_item: NodeItem | None
     enumerated: bool
     counter: int
+
+
+@dataclass
+class _OdfTextRun:
+    text: str
+    formatting: Formatting | None = None
 
 
 def _load_odf_document(
@@ -189,6 +196,276 @@ def _clean_odf_text_lines(text: str) -> list[str]:
     return [line for line in (line.strip() for line in text.splitlines()) if line]
 
 
+def _formatting_or_none(formatting: Formatting) -> Formatting | None:
+    return None if formatting == Formatting() else formatting
+
+
+def _copy_formatting(formatting: Formatting | None) -> Formatting:
+    if formatting is None:
+        return Formatting()
+    return formatting.model_copy()
+
+
+def _is_bold_weight(value: str) -> bool:
+    if value == "bold":
+        return True
+    if value in {"normal", ""}:
+        return False
+    try:
+        return int(value) >= 600
+    except ValueError:
+        return False
+
+
+def _formatting_from_odf_text_style(
+    odf_obj: OdfDocument | None,
+    style_name: str | None,
+    base_formatting: Formatting | None = None,
+) -> Formatting | None:
+    formatting = _copy_formatting(base_formatting)
+    if odf_obj is None or style_name is None:
+        return _formatting_or_none(formatting)
+
+    style = odf_obj.get_style("text", style_name)
+    if style is None:
+        return _formatting_or_none(formatting)
+
+    props = style.get_properties() or {}
+    font_weight = next(
+        (
+            props[name]
+            for name in (
+                "fo:font-weight",
+                "style:font-weight-asian",
+                "style:font-weight-complex",
+            )
+            if name in props
+        ),
+        None,
+    )
+    if font_weight is not None:
+        formatting.bold = _is_bold_weight(font_weight)
+
+    font_style = next(
+        (
+            props[name]
+            for name in (
+                "fo:font-style",
+                "style:font-style-asian",
+                "style:font-style-complex",
+            )
+            if name in props
+        ),
+        None,
+    )
+    if font_style is not None:
+        formatting.italic = font_style in {"italic", "oblique"}
+
+    underline_style = props.get("style:text-underline-style")
+    if underline_style is not None:
+        formatting.underline = underline_style != "none"
+
+    line_through = props.get("style:text-line-through-style") or props.get(
+        "style:text-line-through-type"
+    )
+    if line_through is not None:
+        formatting.strikethrough = line_through != "none"
+
+    return _formatting_or_none(formatting)
+
+
+def _odf_text_runs(
+    element: Any,
+    odf_obj: OdfDocument | None,
+    inherited_formatting: Formatting | None = None,
+) -> list[_OdfTextRun]:
+    style_name = getattr(element, "attributes", {}).get("text:style-name")
+    formatting = _formatting_from_odf_text_style(
+        odf_obj, style_name, inherited_formatting
+    )
+    tag = getattr(element, "tag", None)
+    if tag == "text:line-break":
+        text = getattr(element, "text", "\n") or "\n"
+        text_recursive = getattr(element, "text_recursive", "")
+        if text_recursive.startswith(text):
+            text = text_recursive
+        return [_OdfTextRun(text=text, formatting=formatting)]
+    if tag == "text:tab":
+        return [_OdfTextRun(text="\t", formatting=formatting)]
+
+    runs: list[_OdfTextRun] = []
+    text = getattr(element, "text", "")
+    if text:
+        runs.append(_OdfTextRun(text=text, formatting=formatting))
+
+    for child in getattr(element, "children", []):
+        runs.extend(_odf_text_runs(child, odf_obj, formatting))
+
+    if not runs and not getattr(element, "children", []):
+        text_recursive = getattr(element, "text_recursive", "")
+        if text_recursive:
+            runs.append(_OdfTextRun(text=text_recursive, formatting=formatting))
+
+    return runs
+
+
+def _normalize_odf_text_runs(runs: list[_OdfTextRun]) -> list[_OdfTextRun]:
+    merged_runs: list[_OdfTextRun] = []
+    for run in runs:
+        if run.text == "":
+            continue
+        if merged_runs and merged_runs[-1].formatting == run.formatting:
+            merged_runs[-1].text += run.text
+        else:
+            merged_runs.append(_OdfTextRun(text=run.text, formatting=run.formatting))
+
+    while merged_runs and merged_runs[0].text.strip() == "":
+        merged_runs.pop(0)
+    if merged_runs:
+        merged_runs[0].text = merged_runs[0].text.lstrip()
+
+    while merged_runs and merged_runs[-1].text.strip() == "":
+        merged_runs.pop()
+    if merged_runs:
+        merged_runs[-1].text = merged_runs[-1].text.rstrip()
+
+    return [run for run in merged_runs if run.text]
+
+
+def _odf_text_from_runs(runs: list[_OdfTextRun]) -> str:
+    runs = _normalize_odf_text_runs(runs)
+    return "".join(run.text for run in runs).strip()
+
+
+def _add_odf_text_runs(
+    doc: DoclingDocument,
+    runs: list[_OdfTextRun],
+    *,
+    label: DocItemLabel,
+    parent: NodeItem | None,
+    content_layer: ContentLayer | None,
+) -> NodeItem | None:
+    runs = _normalize_odf_text_runs(runs)
+    if not runs:
+        return None
+    if len(runs) == 1:
+        return doc.add_text(
+            label=label,
+            parent=parent,
+            text=runs[0].text,
+            content_layer=content_layer,
+            formatting=runs[0].formatting,
+        )
+
+    inline_group = doc.add_inline_group(parent=parent, content_layer=content_layer)
+    for run in runs:
+        doc.add_text(
+            label=label,
+            parent=inline_group,
+            text=run.text,
+            content_layer=content_layer,
+            formatting=run.formatting,
+        )
+    return inline_group
+
+
+def _add_odf_heading(
+    doc: DoclingDocument,
+    element: Header,
+    *,
+    parent: NodeItem | None,
+    content_layer: ContentLayer | None,
+    odf_obj: OdfDocument | None,
+) -> None:
+    level = element.get_attribute_integer("text:outline-level") or 1
+    runs = _odf_text_runs(element, odf_obj)
+    runs = _normalize_odf_text_runs(runs)
+    text = _odf_text_from_runs(runs)
+    if not text:
+        return
+    if len(runs) == 1:
+        doc.add_heading(
+            parent=parent,
+            text=text,
+            level=max(1, level),
+            content_layer=content_layer,
+            formatting=runs[0].formatting,
+        )
+        return
+
+    inline_group = doc.add_inline_group(parent=parent, content_layer=content_layer)
+    for run in runs:
+        doc.add_heading(
+            parent=inline_group,
+            text=run.text,
+            level=max(1, level),
+            content_layer=content_layer,
+            formatting=run.formatting,
+        )
+
+
+def _odf_paragraph_style_names(
+    odf_obj: OdfDocument | None, element: Paragraph
+) -> set[str]:
+    style_names: set[str] = set()
+    style_name = element.attributes.get("text:style-name")
+    if style_name is not None:
+        style_names.add(style_name)
+
+    if odf_obj is None or style_name is None:
+        return style_names
+
+    style = odf_obj.get_style("paragraph", style_name)
+    if style is None:
+        return style_names
+
+    parent_style_name = style.attributes.get("style:parent-style-name")
+    if parent_style_name is not None:
+        style_names.add(parent_style_name)
+    display_name = style.attributes.get("style:display-name")
+    if display_name is not None:
+        style_names.add(display_name)
+    return style_names
+
+
+def _add_odf_paragraph(
+    doc: DoclingDocument,
+    element: Paragraph,
+    *,
+    parent: NodeItem | None,
+    content_layer: ContentLayer | None,
+    odf_obj: OdfDocument | None,
+) -> None:
+    runs = _odf_text_runs(element, odf_obj)
+    style_names = _odf_paragraph_style_names(odf_obj, element)
+    if "Title" in style_names:
+        _add_odf_text_runs(
+            doc,
+            runs,
+            label=DocItemLabel.TITLE,
+            parent=parent,
+            content_layer=content_layer,
+        )
+    elif "Subtitle" in style_names:
+        text = _odf_text_from_runs(runs)
+        if text:
+            doc.add_heading(
+                parent=parent,
+                text=text,
+                level=1,
+                content_layer=content_layer,
+                formatting=runs[0].formatting if len(runs) == 1 else None,
+            )
+    else:
+        _add_odf_text_runs(
+            doc,
+            runs,
+            label=DocItemLabel.TEXT,
+            parent=parent,
+            content_layer=content_layer,
+        )
+
+
 def _odf_element_text_lines(element: Any) -> list[str]:
     if isinstance(element, OdfList):
         lines: list[str] = []
@@ -230,6 +507,26 @@ def _odf_list_item_content(
     if not text_parts and (flatten_nested_text or not nested):
         text_parts.extend(_clean_odf_text_lines(item.text_recursive))
     return " ".join(text_parts), nested
+
+
+def _odf_list_item_text_runs(
+    item: ListItem,
+    odf_obj: OdfDocument | None,
+    *,
+    flatten_nested_text: bool = True,
+) -> list[_OdfTextRun]:
+    runs: list[_OdfTextRun] = []
+    has_nested = False
+    for child in item.children:
+        if isinstance(child, OdfList):
+            has_nested = True
+        elif isinstance(child, Paragraph):
+            runs.extend(_odf_text_runs(child, odf_obj))
+    if not runs and (flatten_nested_text or not has_nested):
+        text = _odf_text_from_runs(_odf_text_runs(item, odf_obj))
+        if text:
+            runs.append(_OdfTextRun(text=text))
+    return _normalize_odf_text_runs(runs)
 
 
 def _odf_list_starts_with_empty_nested_item(
@@ -538,13 +835,39 @@ def _add_odf_list(
             if current_enumerated
             else ""
         )
-        item = doc.add_list_item(
-            marker=marker,
-            enumerated=current_enumerated,
-            parent=list_group,
-            text=text,
-            content_layer=content_layer,
+        runs = _odf_list_item_text_runs(
+            child,
+            odf_obj,
+            flatten_nested_text=flatten_nested_text,
         )
+        if len(runs) <= 1:
+            item = doc.add_list_item(
+                marker=marker,
+                enumerated=current_enumerated,
+                parent=list_group,
+                text=text,
+                content_layer=content_layer,
+                formatting=runs[0].formatting if runs else None,
+            )
+        else:
+            item = doc.add_list_item(
+                marker=marker,
+                enumerated=current_enumerated,
+                parent=list_group,
+                text="",
+                content_layer=content_layer,
+            )
+            inline_group = doc.add_inline_group(
+                parent=item, content_layer=content_layer
+            )
+            for run in runs:
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    parent=inline_group,
+                    text=run.text,
+                    content_layer=content_layer,
+                    formatting=run.formatting,
+                )
         previous_item = item
         for nested_list in nested:
             _add_odf_list(
@@ -827,15 +1150,22 @@ class OdtDocumentBackend(_OdfBaseBackend):
         for el in elements:
             if isinstance(el, Header):
                 previous_list_state = None
-                level = el.get_attribute_integer("text:outline-level") or 1
-                text = el.text_recursive.strip()
-                if text:
-                    doc.add_heading(parent=parent, text=text, level=max(1, level))
+                _add_odf_heading(
+                    doc,
+                    el,
+                    parent=parent,
+                    content_layer=None,
+                    odf_obj=self.odf_obj,
+                )
             elif isinstance(el, Paragraph) and not isinstance(el, Header):
                 previous_list_state = None
-                text = el.text_recursive.strip()
-                if text:
-                    doc.add_text(label=DocItemLabel.TEXT, parent=parent, text=text)
+                _add_odf_paragraph(
+                    doc,
+                    el,
+                    parent=parent,
+                    content_layer=None,
+                    odf_obj=self.odf_obj,
+                )
             elif isinstance(el, OdfList):
                 previous_list_state = _add_odf_list(
                     doc,
@@ -934,15 +1264,22 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
         for el in elements:
             if isinstance(el, Header):
                 previous_list_state = None
-                text = el.text_recursive.strip()
-                if text:
-                    level = el.get_attribute_integer("text:outline-level") or 1
-                    doc.add_heading(parent=parent, text=text, level=max(1, level))
+                _add_odf_heading(
+                    doc,
+                    el,
+                    parent=parent,
+                    content_layer=None,
+                    odf_obj=self.odf_obj,
+                )
             elif isinstance(el, Paragraph):
                 previous_list_state = None
-                text = el.text_recursive.strip()
-                if text:
-                    doc.add_text(label=DocItemLabel.TEXT, parent=parent, text=text)
+                _add_odf_text_runs(
+                    doc,
+                    _odf_text_runs(el, self.odf_obj),
+                    label=DocItemLabel.TEXT,
+                    parent=parent,
+                    content_layer=None,
+                )
             elif isinstance(el, OdfList):
                 previous_list_state = _add_odf_list(
                     doc,
