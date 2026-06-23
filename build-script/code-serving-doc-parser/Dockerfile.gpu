@@ -3,12 +3,14 @@
 # code-serving-doc-parser (GPU) — doc-parser 코드서빙 base 이미지 (nvidia/cuda runtime).
 #
 # 라이브러리 설치 방식은 genon/code-serving 과 동일: uv venv + uv pip install . → /app/.venv.
-# venv 는 slim builder 에서 만들고(GPU torch=cu124 wheel) nvidia/cuda runtime 으로 COPY.
+# venv 는 builder 에서 만들고(GPU torch=cu124 wheel) nvidia/cuda runtime 으로 COPY.
 # 다운로드 아티팩트는 Dockerfile.standard 와 full parity (Dockerfile(CPU) 와 동일 구성).
 # build context = repo 루트. HWP_SDK_TOKEN 은 --secret.
 #
-# ⚠️ runtime base 가 ubuntu 22.04(jammy) 라 apt 패키지명/버전이 debian 과 다를 수 있다
-#    (특히 openjdk-21, libgdk-pixbuf). 첫 빌드 시 실패하면 해당 패키지명만 조정한다.
+# ⚠️ builder/runtime 모두 ubuntu 22.04(jammy) 로 정렬해 glibc/libstdc++ ABI 를 일치시킨다.
+#    (slim-debian builder 로 만든 venv 의 python 심링크가 nvidia/cuda runtime 에서 dangling 되어
+#     스모크가 깨졌던 문제 해소. ubuntu 22.04 기본 python 은 3.10 이라 python3.12 는 deadsnakes 로 설치.)
+#    runtime apt 패키지명/버전은 debian 과 다를 수 있다(특히 openjdk-21, libgdk-pixbuf).
 
 ############################
 # 0) 공통 ARG
@@ -28,9 +30,12 @@ ARG DOCLING_PKG_VER=2.41.0
 ARG TORCH_CU_INDEX_URL=https://download.pytorch.org/whl/cu124
 
 ############################
-# 1) Builder (slim) — venv 설치(genon/code-serving 방식) + GPU torch + docling-parse 패치
+# 1) Builder (ubuntu 22.04 = runtime 과 동일 ABI) — venv 설치 + GPU torch + docling-parse 패치
 ############################
-FROM python:${PY_VER}-slim-${DEBIAN_DIST} AS builder
+# runtime(nvidia/cuda ...-ubuntu22.04) 과 동일 Ubuntu 베이스 → glibc/libstdc++ 정합.
+# torch 는 cu124 wheel 로 설치(컴파일 없음)하고 docling-parse 컴파일은 g++/make 만 필요하므로
+# 수 GB 짜리 nvidia/cuda devel 이미지 대신 경량 ubuntu:22.04 로 충분하다.
+FROM ubuntu:22.04 AS builder
 ARG APP_VENV
 ARG TORCH_CU_INDEX_URL
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -41,15 +46,24 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HF_HOME=/app/.cache/huggingface \
     NLTK_DATA=/app/nltk_data
 
-RUN pip install uv
+# python3.12 (deadsnakes; ubuntu 22.04 기본은 3.10) + uv(standalone → /usr/local/bin)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      software-properties-common ca-certificates curl git \
+    && add-apt-repository -y ppa:deadsnakes/ppa \
+    && apt-get update && apt-get install -y --no-install-recommends \
+      python3.12 python3.12-venv python3.12-dev \
+    && rm -rf /var/lib/apt/lists/*
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
 
 WORKDIR /app
 COPY build-script/code-serving-doc-parser/pyproject.toml build-script/code-serving-doc-parser/uv.lock /app/
 
 # genon/code-serving 와 동일: uv venv --seed + uv pip install . → /app/.venv
+# (시스템 기본 python3 가 3.10 이므로 --python python3.12 로 인터프리터를 명시.
+#  venv 의 bin/python 은 /usr/bin/python3.12 를 가리키며, runtime 에도 동일 경로로 존재한다.)
 RUN --mount=type=cache,target=/root/.cache/uv \
     rm -rf /app/tmp /app/nltk_data && \
-    uv venv --seed && \
+    uv venv --python python3.12 --seed && \
     uv pip install .
 
 # GPU torch(cu124) 재고정 (pyproject deps 가 끌어온 기본 torch 를 cu124 wheel 로 override)
@@ -188,8 +202,12 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HWP_SDK_DIR=/app/hwp_sdk
 
 # 문서/OCR/LibreOffice/Java/폰트 (ubuntu 22.04 jammy). openjdk-21/libgdk-pixbuf 명은 배포판에 따라 조정.
+# python3.12 는 deadsnakes 로 설치 → builder venv 의 bin/python(/usr/bin/python3.12) 심링크가 해소된다.
 RUN mkdir -p /app/tmp /tmp/xdg \
+    && apt-get update && apt-get install -y --no-install-recommends software-properties-common \
+    && add-apt-repository -y ppa:deadsnakes/ppa \
     && apt-get update && apt-get install -y --no-install-recommends \
+      python3.12 python3.12-venv \
       net-tools curl wget fontconfig procps supervisor vim git tzdata locales \
       libmagic1 libmagic-dev \
       libpango-1.0-0 libpangocairo-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 \
