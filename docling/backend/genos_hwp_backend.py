@@ -50,8 +50,10 @@ for mime in _HWP_MIMETYPES:
 # ------------------------------
 
 # --- [2. SDK 경로 및 환경 변수 등록] ---
-# 이 파일 위치 기준 hwp_sdk 폴더 계산
-SDK_DIR = Path(__file__).resolve().parent.parent.parent / "hwp_sdk"
+# HWP_SDK_DIR 환경변수 override 우선(코드서빙처럼 docling 위치가 /app/.venv 밖일 때).
+# 미설정 시 이 파일 위치 기준 hwp_sdk 폴더 계산(표준 빌드 하위호환). RHWP_BIN 패턴과 동일.
+_env_sdk = os.environ.get("HWP_SDK_DIR")
+SDK_DIR = Path(_env_sdk) if _env_sdk else Path(__file__).resolve().parent.parent.parent / "hwp_sdk"
 SDK_PATH_STR = str(SDK_DIR)
 
 if SDK_DIR.exists():

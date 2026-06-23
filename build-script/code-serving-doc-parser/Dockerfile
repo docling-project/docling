@@ -270,7 +270,8 @@ ENV VIRTUAL_ENV=${APP_VENV} \
     LC_CTYPE=ko_KR.UTF-8 \
     DOCLING_ARTIFACTS_PATH=/models \
     DOC_PARSER_BUILD_VARIANT=standard \
-    RHWP_BIN=/usr/local/bin/rhwp
+    RHWP_BIN=/usr/local/bin/rhwp \
+    HWP_SDK_DIR=/app/hwp_sdk
 
 WORKDIR /app
 
@@ -290,7 +291,9 @@ RUN fc-cache -f -v
 COPY --from=models_artifacts /models /models
 COPY --from=models_artifacts /app/nltk_data /app/nltk_data
 
-# hwp_sdk import 경로 (venv site-packages 심링크). python3.12 고정(slim 3.12.x).
+# hwp_sdk import 경로 (venv site-packages 심링크, 표준 빌드 파리티용). python3.12 고정(slim 3.12.x).
+# ⚠️ 코드서빙은 docling 을 /app/src/service(clone) 에서 import 하므로 이 심링크는 사용되지 않는다.
+#    코드서빙 런타임은 ENV HWP_SDK_DIR=/app/hwp_sdk 로 SDK 경로를 잡는다(genos_hwp_backend.py).
 RUN ln -s /app/hwp_sdk ${APP_VENV}/lib/python3.12/site-packages/hwp_sdk
 
 # 코드서빙 harness (genon/code-serving 와 동일 구성)
