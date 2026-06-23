@@ -2,6 +2,7 @@ import importlib
 import importlib.metadata
 import logging
 import sys
+import tempfile
 import time
 from collections.abc import Iterable
 from pathlib import Path
@@ -67,6 +68,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 AutoModelForCausalLM,
                 AutoModelForImageTextToText,
                 AutoProcessor,
+                AutoTokenizer,
                 BitsAndBytesConfig,
                 GenerationConfig,
             )
@@ -102,6 +104,10 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             self.use_cache = vlm_options.use_kv_cache
             self.max_new_tokens = vlm_options.max_new_tokens
             self.temperature = vlm_options.temperature
+            self.custom_inference = vlm_options.extra_generation_config.get(
+                "transformers_custom_inference"
+            )
+            self._raise_if_unlimited_ocr_without_cuda()
 
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
@@ -149,12 +155,21 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             ):
                 model_cls = AutoModelForImageTextToText
 
-            self.processor = AutoProcessor.from_pretrained(
-                artifacts_path,
-                trust_remote_code=vlm_options.trust_remote_code,
-                revision=vlm_options.revision,
-            )
-            self.processor.tokenizer.padding_side = "left"
+            if self.custom_inference == "unlimited_ocr":
+                self.processor = AutoTokenizer.from_pretrained(
+                    artifacts_path,
+                    trust_remote_code=vlm_options.trust_remote_code,
+                    revision=vlm_options.revision,
+                )
+            else:
+                self.processor = AutoProcessor.from_pretrained(
+                    artifacts_path,
+                    trust_remote_code=vlm_options.trust_remote_code,
+                    revision=vlm_options.revision,
+                )
+            tokenizer = getattr(self.processor, "tokenizer", None) or self.processor
+            if tokenizer is not None and hasattr(tokenizer, "padding_side"):
+                tokenizer.padding_side = "left"
 
             attn_implementation = (
                 "flash_attention_2"
@@ -173,7 +188,9 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 trust_remote_code=vlm_options.trust_remote_code,
                 revision=vlm_options.revision,
             )
-            if sys.version_info < (3, 14):
+            if self.custom_inference == "unlimited_ocr":
+                self.vlm_model.eval()
+            elif sys.version_info < (3, 14):
                 self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
             else:
                 self.vlm_model.eval()
@@ -181,6 +198,17 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             # Load generation config
             self.generation_config = GenerationConfig.from_pretrained(
                 artifacts_path, revision=vlm_options.revision
+            )
+
+    def _raise_if_unlimited_ocr_without_cuda(self) -> None:
+        if self.custom_inference == "unlimited_ocr" and not self.device.startswith(
+            "cuda"
+        ):
+            raise NotImplementedError(
+                "baidu/Unlimited-OCR inline Transformers inference requires a CUDA "
+                "device because the upstream model.infer implementation moves "
+                "tensors with .cuda(). Use a CUDA accelerator or an "
+                "OpenAI-compatible SGLang endpoint."
             )
 
     def __call__(
@@ -282,6 +310,10 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                     f"Number of prompts ({len(prompt)}) must match number of images ({len(pil_images)})"
                 )
             user_prompts = prompt
+
+        if self.custom_inference == "unlimited_ocr":
+            yield from self._process_images_with_unlimited_ocr(pil_images, user_prompts)
+            return
 
         # Use your prompt formatter verbatim
         if self.vlm_options.transformers_prompt_style == TransformersPromptStyle.NONE:
@@ -442,3 +474,66 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 stop_reason=VlmStopReason.UNSPECIFIED,
                 input_prompt=input_prompt,
             )
+
+    def _process_images_with_unlimited_ocr(
+        self, pil_images: list[Image], user_prompts: list[str]
+    ) -> Iterable[VlmPrediction]:
+        self._raise_if_unlimited_ocr_without_cuda()
+
+        base_size = int(
+            self.vlm_options.extra_generation_config.get(
+                "unlimited_ocr_base_size", 1024
+            )
+        )
+        image_size = int(
+            self.vlm_options.extra_generation_config.get(
+                "unlimited_ocr_image_size", 640
+            )
+        )
+        crop_mode = bool(
+            self.vlm_options.extra_generation_config.get(
+                "unlimited_ocr_crop_mode", True
+            )
+        )
+        no_repeat_ngram_size = int(
+            self.vlm_options.extra_generation_config.get(
+                "unlimited_ocr_no_repeat_ngram_size", 35
+            )
+        )
+        ngram_window = int(
+            self.vlm_options.extra_generation_config.get(
+                "unlimited_ocr_ngram_window", 128
+            )
+        )
+
+        start_time = time.time()
+        with tempfile.TemporaryDirectory(prefix="docling_unlimited_ocr_") as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            for index, (image, user_prompt) in enumerate(zip(pil_images, user_prompts)):
+                image_path = tmp_path / f"page_{index + 1:04d}.png"
+                output_path = tmp_path / f"output_{index + 1:04d}"
+                image.save(image_path)
+                prompt = user_prompt
+                if "<image>" not in prompt:
+                    prompt = f"<image>{prompt}"
+
+                result = self.vlm_model.infer(
+                    self.processor,
+                    prompt=prompt,
+                    image_file=str(image_path),
+                    output_path=str(output_path),
+                    base_size=base_size,
+                    image_size=image_size,
+                    crop_mode=crop_mode,
+                    save_results=False,
+                    eval_mode=True,
+                    max_length=self.max_new_tokens,
+                    no_repeat_ngram_size=no_repeat_ngram_size,
+                    ngram_window=ngram_window,
+                    temperature=self.temperature,
+                )
+                yield VlmPrediction(
+                    text="" if result is None else str(result),
+                    generation_time=(time.time() - start_time) / len(pil_images),
+                    stop_reason=VlmStopReason.UNSPECIFIED,
+                )
