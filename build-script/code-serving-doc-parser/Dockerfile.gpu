@@ -181,7 +181,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HWP_SDK_DIR=/app/hwp_sdk
 
 # 문서/OCR/LibreOffice/Java/폰트 (ubuntu 22.04 jammy). openjdk-21/libgdk-pixbuf 명은 배포판에 따라 조정.
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN mkdir -p /app/tmp /tmp/xdg \
+    && apt-get update && apt-get install -y --no-install-recommends \
       net-tools curl wget fontconfig procps supervisor vim git tzdata locales \
       libmagic1 libmagic-dev \
       libpango-1.0-0 libpangocairo-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 \
