@@ -1,5 +1,4 @@
 import glob
-import os
 from pathlib import Path
 
 from docling.backend.asciidoc_backend import (
@@ -9,6 +8,9 @@ from docling.backend.asciidoc_backend import (
 )
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+
+from .test_data_gen_flag import GEN_TEST_DATA
+from .verify_utils import verify_document, verify_export
 
 
 def _get_backend(fname):
@@ -87,29 +89,13 @@ def test_asciidocs_examples():
     fnames = sorted(glob.glob("./tests/data/asciidoc/*.asciidoc"))
 
     for fname in fnames:
-        print(f"reading {fname}")
+        in_path = Path(fname)
+        gt_path = Path("./tests/data/groundtruth/docling_v2/") / f"{in_path.name}"
 
-        bname = os.path.basename(fname)
-        gname = os.path.join("./tests/data/groundtruth/docling_v2/", bname + ".md")
-
-        doc_backend = _get_backend(Path(fname))
+        doc_backend = _get_backend(in_path)
         doc = doc_backend.convert()
 
-        pred_itdoc = doc._export_to_indented_text(max_text_len=16)
-        print("\n\n", pred_itdoc)
+        pred_md = doc.export_to_markdown(compact_tables=True)
 
-        pred_mddoc = doc.export_to_markdown(compact_tables=True)
-        print("\n\n", pred_mddoc)
-
-        if os.path.exists(gname):
-            with open(gname) as fr:
-                fr.read()
-
-            # assert pred_mddoc == true_mddoc, "pred_mddoc!=true_mddoc for asciidoc"
-        else:
-            with open(gname, "w") as fw:
-                fw.write(pred_mddoc)
-
-            # print("\n\n", doc.export_to_markdown())
-
-    assert True
+        # Verify markdown export
+        assert verify_export(pred_md, str(gt_path) + ".md", generate=GEN_TEST_DATA)
