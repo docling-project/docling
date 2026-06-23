@@ -103,18 +103,6 @@ layout_label_to_ds_type = {
 _EMPTY_DOCLING_DOC = DoclingDocument(name="dummy")
 
 
-def _is_backend_parse_error(exc: BaseException) -> bool:
-    """True when a backend-init exception means the bytes themselves are bad.
-
-    Document backends raise ``DocumentLoadError`` in their load path to signal
-    "cannot build a document from these bytes". Only that explicit signal is
-    treated as a parse failure; every other exception (a missing optional
-    dependency, a programming bug, resource exhaustion) is left to ``__init__``'s
-    handlers so an internal defect is not mislabeled as bad input.
-    """
-    return isinstance(exc, DocumentLoadError)
-
-
 class InputRejection(NamedTuple):
     """Why an input document was flagged invalid, captured where it is known.
 
@@ -318,7 +306,7 @@ class InputDocument(BaseModel):
             # Only a DocumentLoadError (bad input bytes) is tagged
             # BACKEND_FAILURE. Anything else (missing dependency, bug) is left to
             # __init__'s handlers so an internal defect is not mislabeled.
-            if not _is_backend_parse_error(exc):
+            if not isinstance(exc, DocumentLoadError):
                 raise
             self.valid = False
             self._rejection = InputRejection(
