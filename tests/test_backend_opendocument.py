@@ -747,7 +747,7 @@ def odf_documents(odf_paths) -> list[tuple[Path, DoclingDocument]]:
 
 
 def _test_e2e_odf_conversions_impl(odf_documents: list[tuple[Path, DoclingDocument]]):
-    """Test end-to-end ODF conversions including JSON, ITXT, and Markdown exports."""
+    """Test end-to-end ODF conversions including JSON, HTML, ITXT, and Markdown exports."""
     for gt_path, doc in odf_documents:
         # Export to Markdown
         pred_md: str = doc.export_to_markdown(compact_tables=True)
@@ -763,11 +763,11 @@ def _test_e2e_odf_conversions_impl(odf_documents: list[tuple[Path, DoclingDocume
             pred_itxt, str(gt_path) + ".itxt", generate=GENERATE, fuzzy=True
         ), f"export to indented-text failed on {gt_path}"
 
-        if gt_path.name.startswith("text_document_") and gt_path.suffix == ".odt":
-            pred_html: str = doc.export_to_html()
-            assert verify_export(
-                pred_html, str(gt_path) + ".html", generate=GENERATE
-            ), f"export to html failed on {gt_path}"
+        # Export to HTML
+        pred_html: str = doc.export_to_html()
+        assert verify_export(pred_html, str(gt_path) + ".html", generate=GENERATE), (
+            f"export to html failed on {gt_path}"
+        )
 
         # Verify DoclingDocument JSON
         assert verify_document(
