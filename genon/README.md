@@ -198,10 +198,16 @@ echo "HWP_SDK_TOKEN=hf_xxx" >> build-script/hf_private_token.env
 
 ### C. GenOS 코드서빙 등록/배포
 
-- 위에서 빌드/푸시한 base 이미지를 GenOS **코드서빙** 기능에 등록하고, doc-parser git 소스(레포 URL/
-  commit)를 지정해 서빙을 생성한다. 런타임에 소스가 `/app/src/service` 로 clone 되고 `main.py` 가 실행된다.
-- 호출(게이트웨이 URL·엔드포인트·예시)은
-  [`preprocessor/facade/gitbook_doc/code_serving.md`](preprocessor/facade/gitbook_doc/code_serving.md) 참고.
+- 위에서 빌드/푸시한 base 이미지를 GenOS 도커 이미지에 등록한다. 등록할 때 이미지 타입은 `Code_Serving`을 지정한다.
+- [genos docs - 코드서빙](https://genos-docs.gitbook.io/default/v1.8.6/basic-tutorials/guides/development/code_serving) 메뉴얼을 참고해서 코드서빙을 생성한다.
+  - 코드 서빙 생성 옵션 중 저장소 유형은 **Gitea** 를 선택한다.
+- 코드서빙에 적용할 코드를 코드서빙 생성시 함께 생성된 gitea 레포지터리에 등록한다.
+  - 우선 **코드 스페이스**를 생성한다. [genos docs - 코드스페이스](https://genos-docs.gitbook.io/default/v1.8.6/basic-tutorials/guides/development/code_space) 문서를 참조한다.
+  - 생성된 코드 스페이스 내에서 gitea 레포지터리를 clone 한다.
+  - doc_parser github debelop 브랜치 전체 코드를 gitea 레포지터리에 복사 후 gitea 레포지터리에서 commit/push 를 수행한다.
+  - 이 때 `genon/preprocessor/resource`의 yaml 파일을 실행환경에 맞게 수정한후 commit/push를 해야 한다.
+- 매뉴얼을 참고하여 GenOS **코드서빙** 의 리비전을 생성/배포하면, doc-parser가 등록된 gitea의  git 소스(레포 URL/commit)가 런타임에 `/app/src/service` 로 clone 되고 `main.py` 가 실행된다.
+- 호출(게이트웨이 URL·엔드포인트·예시)은 [`preprocessor/facade/gitbook_doc/code_serving.md`](preprocessor/facade/gitbook_doc/code_serving.md) 참고.
 
 ## 로컬 테스트 (도커 빌드 없이 test.py 실행)
 
