@@ -1,5 +1,6 @@
 import os
 import sys
+import asyncio
 import traceback
 import time
 from pathlib import Path
@@ -18,7 +19,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from logger import Logger
-from utils import make_failure_response, make_success_response
+from utils import make_success_response
 from config import cors_config
 from common.exception import GenosServiceException
 from common.settings import settings
@@ -32,23 +33,73 @@ app: FastAPI = FastAPI()
 cors_config(app)
 
 
+# ── 에러 응답 ────────────────────────────────────────────────────────────
+# 에러 분류 코드 — 일반 예외(Python 빌트인 등)를 카테고리로 매핑한다.
+# GenosServiceException 은 facade 가 부여한 error_code 를 그대로 보존한다.
+ERROR_CODE_INPUT = 'INPUT_ERROR'        # 잘못된 입력/파일 (FileNotFound, Value, Key, Type ...)
+ERROR_CODE_TIMEOUT = 'TIMEOUT_ERROR'    # 타임아웃
+ERROR_CODE_INTERNAL = 'INTERNAL_ERROR'  # 그 외 내부 오류
+
+_INPUT_EXC = (FileNotFoundError, IsADirectoryError, NotADirectoryError,
+              PermissionError, ValueError, KeyError, TypeError, IndexError)
+_TRACEBACK_TAIL_LINES = 8  # 응답에 포함할 traceback 마지막 N 줄 (운영 디버깅용 요약)
+
+
+def _classify_error(exc: Exception) -> str:
+    if isinstance(exc, (TimeoutError, asyncio.TimeoutError)):
+        return ERROR_CODE_TIMEOUT
+    if isinstance(exc, _INPUT_EXC):
+        return ERROR_CODE_INPUT
+    return ERROR_CODE_INTERNAL
+
+
+def _error_response(tag: str, file_path: str, exc: Exception, error_code=None) -> JSONResponse:
+    """모든 에러 경로의 응답 형태를 통일한다.
+
+    code 는 항상 1(실패 플래그), 기존 키(errMsg/error_code/error_msg/data)는 유지하고
+    컨텍스트(error_type/tag/file_path) 와 traceback 요약을 추가로 담는다.
+    """
+    etype = type(exc).__name__
+    raw_msg = getattr(exc, 'error_msg', None) or str(exc) or etype
+    if error_code is None:
+        error_code = _classify_error(exc)
+    # errMsg: 사람이 보는 메시지에 컨텍스트(엔드포인트·예외타입) 보강
+    err_msg = f'[{tag}] {etype}: {raw_msg}'
+    tb = traceback.format_exc()
+    tb_tail = (''.join(tb.splitlines(keepends=True)[-_TRACEBACK_TAIL_LINES:])
+               if tb and not tb.startswith('NoneType: None') else '')
+    return JSONResponse(
+        {
+            'code': 1,
+            'errMsg': err_msg,
+            'error_msg': err_msg,
+            'error_code': error_code,
+            'error_type': etype,      # 신규: 예외 클래스명
+            'tag': tag,               # 신규: 실패한 엔드포인트/단계
+            'file_path': file_path,   # 신규: 대상 파일
+            'data': None,
+            'traceback': tb_tail,     # 신규: traceback 마지막 N 줄 요약
+        },
+        status_code=200,
+    )
+
+
 @app.exception_handler(GenosServiceException)
 async def mlops_exception_handler(request, exc: GenosServiceException):
     logger.error(f"[GenosServiceException]: {exc.error_msg}")
-    return JSONResponse({'code': exc.error_code, 'errMsg': exc.error_msg, 'data': None, 'error_code': exc.error_code},
-                        status_code=200)
+    return _error_response('app', '', exc, error_code=exc.error_code)
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc: RequestValidationError):
     logger.error(f'[RequestValidationError]: {exc.errors()}')
-    return make_failure_response(str(exc))
+    return _error_response('app', '', exc, error_code=ERROR_CODE_INPUT)
 
 
 @app.exception_handler(Exception)
 async def exception_handler(request, exc: Exception):
     logger.error(f'[Exception]: {exc}')
-    return make_failure_response(str(exc))
+    return _error_response('app', '', exc)
 
 
 @app.get('/health')
@@ -104,13 +155,10 @@ async def _run(tag, processor, request, file_path, params, marker=None):
         return make_success_response(data=data)
     except GenosServiceException as e:
         logger.error(f'[{tag}] Error: "{file_path}"\n{traceback.format_exc()}\n')
-        return JSONResponse(
-            {'code': 1, 'errMsg': e.error_msg, 'data': None,
-             'error_code': e.error_code, 'error_msg': e.error_msg},
-            status_code=200)
+        return _error_response(tag, file_path, e, error_code=e.error_code)  # facade 코드 보존
     except Exception as e:
         logger.error(f'[{tag}] Error: "{file_path}"\n{traceback.format_exc()}\n')
-        return make_failure_response(str(e))
+        return _error_response(tag, file_path, e)  # 타입 기반 자동 분류
     finally:
         logger.info(f'[{tag}] End: "{file_path}" ({time.time() - pt:.2f} seconds)')
 
