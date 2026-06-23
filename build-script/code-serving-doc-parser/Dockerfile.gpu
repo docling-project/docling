@@ -60,7 +60,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
       torch torchvision
 
 # docling-parse 4.1.0 소스 패치 빌드 (#245) — /app/.venv 인터프리터로 설치(wheel 덮어씀)
-RUN apt-get update && apt-get install -y --no-install-recommends git g++ make zlib1g-dev \
+# git/g++/make/zlib: docling-parse 소스 빌드용.
+# libgl1/libglib2.0-0/libxcb1/libsm6/libxext6/libxrender1: models_artifacts(FROM builder)
+#   에서 docling 모델 다운로드 시 easyocr→cv2(opencv) import 가 dlopen 하는 시스템 라이브러리.
+#   slim builder 에는 없어 ImportError(libxcb.so.1) 발생 → 여기서 설치.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      git g++ make zlib1g-dev \
+      libgl1 libglib2.0-0 libxcb1 libsm6 libxext6 libxrender1 \
     && rm -rf /var/lib/apt/lists/*
 # 패치 헤더만 /tmp 로 (/app 오염 방지)
 COPY ./genon/preprocessor/resources/stream_fix_xobject_reload.h /tmp/stream_fix_xobject_reload.h
