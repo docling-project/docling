@@ -1,6 +1,9 @@
 import os
 import sys
+import json
+import shutil
 import asyncio
+import tempfile
 import traceback
 import time
 from pathlib import Path
@@ -14,7 +17,7 @@ for module_path in (BASE_DIR / 'genon' / 'preprocessor' / 'src',):
             sys.path.remove(module_path_str)
         sys.path.insert(0, module_path_str)
 
-from fastapi import FastAPI, Request, Body
+from fastapi import FastAPI, Request, Body, UploadFile, File, Form
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -213,6 +216,39 @@ async def parse(
         params: dict = Body(default_factory=dict)
 ):
     return await _run('parser', parser_processor, request, file_path, params, marker='IS_PARSER')
+
+
+# /parser 의 multipart 변형: 클라이언트 로컬 파일을 업로드받아 파싱한다.
+# 기존 /parser(JSON file_path)는 그대로 두고, 업로드 바이트를 임시 파일로 저장한 뒤
+# 그 경로를 동일한 parser_processor 에 넘겨 파서 내부 로직을 그대로 재사용한다.
+# parser 는 확장자로 형식을 판단하므로 업로드 원본 파일명의 확장자를 보존한다.
+@app.post('/parser_upload')
+async def parse_upload(
+        request: Request,
+        file: UploadFile = File(...),
+        params: str = Form('{}'),
+):
+    # params 는 multipart 폼 특성상 JSON 문자열로 받는다. 파싱 실패는 입력 오류로 처리.
+    try:
+        params_dict = json.loads(params) if params else {}
+        if not isinstance(params_dict, dict):
+            raise ValueError('params 는 JSON 객체여야 합니다.')
+    except (ValueError, TypeError) as e:
+        return _error_response('parser_upload', file.filename or '', e, error_code=ERROR_CODE_INPUT)
+
+    # 원본 파일명/확장자 보존 — 확장자가 파서의 형식 라우팅 기준이다.
+    safe_name = os.path.basename(file.filename or 'upload')
+    if not os.path.splitext(safe_name)[1]:
+        safe_name = 'upload'  # 확장자 없는 파일명은 그대로 두되 basename 만 사용
+    tmp_dir = tempfile.mkdtemp(prefix='parser_upload_')
+    tmp_path = os.path.join(tmp_dir, safe_name)
+    try:
+        contents = await file.read()
+        with open(tmp_path, 'wb') as f:
+            f.write(contents)
+        return await _run('parser_upload', parser_processor, request, tmp_path, params_dict, marker='IS_PARSER')
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 @app.post('/chunker')

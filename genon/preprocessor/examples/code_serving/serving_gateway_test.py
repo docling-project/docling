@@ -35,6 +35,14 @@ requests 등 외부 의존 없이 표준 라이브러리(urllib)만 사용한다
 
     # 4) 청킹만 (저장해둔 docling JSON 사용)
     python serving_gateway_test.py --mode chunker --doc-json /tmp/doc.json
+
+    # 5) 업로드 파싱 (클라이언트 로컬 파일 → multipart /parser_upload)
+    python serving_gateway_test.py --mode parser_upload \
+        --upload-file ./report.pdf --out-doc /tmp/doc.json
+
+    # 6) 업로드 → 청킹 E2E (--upload-file 지정 시 e2e 가 업로드 파싱을 사용)
+    python serving_gateway_test.py --mode e2e \
+        --upload-file ./report.pdf --out /tmp/chunks.json
 """
 from __future__ import annotations
 
@@ -43,6 +51,7 @@ import json
 import sys
 import urllib.request
 import urllib.error
+import uuid
 from pathlib import Path
 
 # health curl 에서 가져온 기본값. 필요 시 CLI 인자로 덮어쓴다.
@@ -80,15 +89,63 @@ def _request(args, method: str, route: str, payload: dict | None = None):
     except urllib.error.URLError as e:
         raise SystemExit(f"[{route}] 연결 실패: {e.reason}")
 
-    # health 처럼 envelope 가 아닌 응답은 그대로 반환.
+    return _check_envelope(route, body)
+
+
+def _check_envelope(route: str, body):
+    """전처리기 응답 envelope({"code":0,"data":...})를 검사해 data 를 반환한다.
+
+    health 처럼 envelope 가 아닌 응답은 그대로 반환하고, code!=0 이면 SystemExit.
+    """
     if not isinstance(body, dict) or "code" not in body:
         return body
-
-    # 전처리기 응답 envelope: {"code": 0, "data": ..., "errMsg": ...}
     if body.get("code") != 0:
         err = body.get("errMsg") or body.get("error_msg") or body
         raise SystemExit(f"[{route}] 요청 실패 (code={body.get('code')}): {err}")
     return body.get("data")
+
+
+def _encode_multipart(fields: dict, files: dict) -> tuple[bytes, str]:
+    """multipart/form-data 본문을 stdlib 만으로 인코딩한다.
+
+    fields: name -> str
+    files:  name -> (filename, bytes, content_type)
+    반환: (body, boundary)
+    """
+    boundary = "----doc-parser-" + uuid.uuid4().hex
+    buf = bytearray()
+    for name, value in fields.items():
+        buf += f"--{boundary}\r\n".encode()
+        buf += f'Content-Disposition: form-data; name="{name}"\r\n\r\n'.encode()
+        buf += str(value).encode("utf-8") + b"\r\n"
+    for name, (filename, content, ctype) in files.items():
+        buf += f"--{boundary}\r\n".encode()
+        buf += f'Content-Disposition: form-data; name="{name}"; filename="{filename}"\r\n'.encode()
+        buf += f"Content-Type: {ctype}\r\n\r\n".encode()
+        buf += content + b"\r\n"
+    buf += f"--{boundary}--\r\n".encode()
+    return bytes(buf), boundary
+
+
+def _request_multipart(args, route: str, fields: dict, files: dict):
+    """multipart/form-data 로 게이트웨이에 POST 하고 envelope 의 data 를 반환한다."""
+    url = _url(args, route)
+    body, boundary = _encode_multipart(fields, files)
+    headers = {
+        "Authorization": f"Bearer {args.auth_key}",
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+    }
+    req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=args.timeout) as resp:
+            body_json = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode("utf-8", errors="replace")
+        raise SystemExit(f"[{route}] HTTP {e.code} 오류: {detail}")
+    except urllib.error.URLError as e:
+        raise SystemExit(f"[{route}] 연결 실패: {e.reason}")
+
+    return _check_envelope(route, body_json)
 
 
 def _json_output_path(raw_path: str, default_filename: str) -> Path:
@@ -106,14 +163,11 @@ def do_health(args) -> int:
     return 0
 
 
-def do_parser(args) -> dict:
-    """파싱 서빙 호출 → DoclingDocument JSON(data.document) 반환."""
-    if not args.file_path:
-        raise SystemExit("--file-path 가 필요합니다(서버가 접근 가능한 경로).")
-    data = _request(
-        args, "POST", "parser",
-        payload={"file_path": args.file_path, "params": {}},
-    )
+def _handle_parser_data(args, data) -> dict:
+    """파싱 응답(data)에서 docling 문서를 추출·검증·출력하고(옵션 저장) 반환한다.
+
+    /parser 와 /parser_upload 가 공유한다.
+    """
     document = (data or {}).get("document")
     if not document:
         raise SystemExit(
@@ -128,6 +182,33 @@ def do_parser(args) -> dict:
             json.dump(document, f, ensure_ascii=False, indent=2)
         print(f"[parser] docling JSON 저장 → {out_doc_path}")
     return document
+
+
+def do_parser(args) -> dict:
+    """파싱 서빙 호출(서버 로컬 경로) → DoclingDocument JSON(data.document) 반환."""
+    if not args.file_path:
+        raise SystemExit("--file-path 가 필요합니다(서버가 접근 가능한 경로).")
+    data = _request(
+        args, "POST", "parser",
+        payload={"file_path": args.file_path, "params": {}},
+    )
+    return _handle_parser_data(args, data)
+
+
+def do_parser_upload(args) -> dict:
+    """업로드 파싱 호출(클라이언트 로컬 파일 → multipart /parser_upload) → 문서 반환."""
+    if not args.upload_file:
+        raise SystemExit("--upload-file 가 필요합니다(이 스크립트를 실행하는 로컬 파일 경로).")
+    path = Path(args.upload_file).expanduser()
+    if not path.is_file():
+        raise SystemExit(f"업로드할 파일이 없습니다: {path}")
+    print(f"[parser_upload] 업로드 → {path.name} ({path.stat().st_size} bytes)")
+    data = _request_multipart(
+        args, "parser_upload",
+        fields={"params": json.dumps({})},
+        files={"file": (path.name, path.read_bytes(), "application/octet-stream")},
+    )
+    return _handle_parser_data(args, data)
 
 
 def do_chunker(args, document: dict | None = None) -> list:
@@ -162,7 +243,8 @@ def do_chunker(args, document: dict | None = None) -> list:
 
 
 def do_e2e(args) -> int:
-    document = do_parser(args)
+    # --upload-file 가 있으면 업로드 파싱으로, 없으면 서버 로컬 경로 파싱으로 진행.
+    document = do_parser_upload(args) if args.upload_file else do_parser(args)
     do_chunker(args, document)
     return 0
 
@@ -172,13 +254,16 @@ def build_parser() -> argparse.ArgumentParser:
         description="main.py /health·/parser·/chunker 게이트웨이 테스트",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    p.add_argument("--mode", choices=["health", "parser", "chunker", "e2e"], default="e2e",
-                   help="실행 모드")
+    p.add_argument("--mode", choices=["health", "parser", "parser_upload", "chunker", "e2e"],
+                   default="e2e", help="실행 모드")
     p.add_argument("--base-url", default=DEFAULT_BASE_URL, help="게이트웨이 base URL")
     p.add_argument("--serving-id", default=DEFAULT_SERVING_ID, help="코드서빙 id")
     p.add_argument("--auth-key", default=DEFAULT_AUTH_KEY, help="Authorization: Bearer <key>")
     p.add_argument("--file-path", default="",
                    help="파싱할 문서 경로(서버 기준). parser/e2e 에 필요")
+    p.add_argument("--upload-file", default="",
+                   help="업로드할 로컬 파일 경로(스크립트 실행 호스트 기준). parser_upload 에 필요. "
+                        "e2e 에 지정하면 업로드 파싱을 사용")
     p.add_argument("--chunk-size", type=int, default=0,
                    help="청크 최대 크기(0=토큰/문자 기반 분할 안 함). 청킹 config 기본값을 덮어씀")
     p.add_argument("--doc-json", default=None, help="chunker 모드: 입력 docling JSON 파일 경로")
@@ -194,6 +279,9 @@ def main(argv=None) -> int:
         return do_health(args)
     if args.mode == "parser":
         do_parser(args)
+        return 0
+    if args.mode == "parser_upload":
+        do_parser_upload(args)
         return 0
     if args.mode == "chunker":
         do_chunker(args)
