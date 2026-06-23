@@ -56,6 +56,9 @@ from docling.models.factories import (
 from docling.models.stages.code_formula.code_formula_vlm_model import (
     CodeFormulaVlmModel,
 )
+from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
+    HeadingHierarchyModel,
+)
 from docling.models.stages.page_assemble.page_assemble_model import (
     PageAssembleModel,
     PageAssembleOptions,
@@ -518,6 +521,9 @@ class StandardPdfPipeline(ConvertPipeline):
         )
         self.assemble_model = PageAssembleModel(options=PageAssembleOptions())
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
+        self.heading_hierarchy_model = HeadingHierarchyModel(
+            options=self.pipeline_options.heading_hierarchy_options
+        )
 
         # --- optional enrichment ------------------------------------------------
         # Create a copy to avoid mutating pipeline_options in-place,
@@ -877,6 +883,7 @@ class StandardPdfPipeline(ConvertPipeline):
                 elements=elements, headers=headers, body=body
             )
             conv_res.document = self.reading_order_model(conv_res)
+            conv_res.document = self.heading_hierarchy_model(conv_res)
 
             # Generate page images in the output
             if self.pipeline_options.generate_page_images:
