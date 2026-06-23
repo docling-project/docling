@@ -143,7 +143,13 @@ ARG APP_VENV
 ARG NLTK_PACKAGES
 ARG DOCLING_PKG_VER
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --python ${APP_VENV}/bin/python "docling==${DOCLING_PKG_VER}"
+    uv pip install --python ${APP_VENV}/bin/python "docling==${DOCLING_PKG_VER}" \
+ && (uv pip uninstall --python ${APP_VENV}/bin/python opencv-python || true) \
+ && uv pip install --python ${APP_VENV}/bin/python --reinstall opencv-python-headless
+# ↑ docling 이 끌어온 opencv-python(full, Qt5 번들)을 headless 로 교체한다.
+#   헤드리스 ubuntu 빌더에는 Qt/xcb 런타임 라이브러리가 없어 easyocr→cv2 import 시
+#   ImportError(libQt5Core...so) 가 발생하기 때문. 이 stage venv 는 runtime 에 COPY 되지 않으므로
+#   영향 범위는 모델 다운로드 단계에 한정된다(런타임 OCR venv 는 builder 의 것 그대로).
 RUN --mount=type=cache,target=/root/.cache/models \
     if [ ! -d /models ] || [ -z "$(ls -A /models)" ]; then docling-tools models download -o /models; fi
 RUN --mount=type=cache,target=${HF_HOME} \
