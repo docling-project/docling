@@ -10,6 +10,7 @@ from docling_core.types.doc import (
     DoclingDocument,
     ProvenanceItem,
 )
+from docling_core.types.doc.document import SectionHeaderItem
 from docling_core.types.doc.page import (
     BoundingRectangle,
     PdfCellRenderingMode,
@@ -18,14 +19,15 @@ from docling_core.types.doc.page import (
     PdfTextCell,
     SegmentedPdfPage,
 )
-from docling_core.types.doc.document import SectionHeaderItem
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
-from docling.datamodel.pipeline_options import HeadingHierarchyOptions
-from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.datamodel.pipeline_options import (
+    HeadingHierarchyOptions,
+    PdfPipelineOptions,
+)
 from docling.datamodel.settings import DocumentLimits
 from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
