@@ -155,7 +155,7 @@ class ApiVlmEngine(BaseVlmEngine):
 
             if custom_stoppers:
                 # Streaming path with early abort support
-                generated_text, num_tokens = api_image_request_streaming(
+                api_response = api_image_request_streaming(
                     url=self.options.url,  # type: ignore[arg-type]
                     image=image,
                     prompt=input_data.prompt,
@@ -164,6 +164,8 @@ class ApiVlmEngine(BaseVlmEngine):
                     timeout=self.options.timeout,
                     **api_params,
                 )
+                generated_text = api_response.text
+                num_tokens = api_response.num_tokens
 
                 # Check if stopped by custom criteria
                 for stopper in custom_stoppers:
@@ -172,7 +174,7 @@ class ApiVlmEngine(BaseVlmEngine):
                         break
             else:
                 # Non-streaming path
-                generated_text, num_tokens, api_stop_reason = api_image_request(
+                api_response = api_image_request(
                     url=self.options.url,  # type: ignore[arg-type]
                     image=image,
                     prompt=input_data.prompt,
@@ -180,7 +182,9 @@ class ApiVlmEngine(BaseVlmEngine):
                     timeout=self.options.timeout,
                     **api_params,
                 )
-                stop_reason = api_stop_reason
+                generated_text = api_response.text
+                num_tokens = api_response.num_tokens
+                stop_reason = api_response.stop_reason
 
             generation_time = time.time() - request_start_time
 
@@ -190,6 +194,7 @@ class ApiVlmEngine(BaseVlmEngine):
                 metadata={
                     "generation_time": generation_time,
                     "num_tokens": num_tokens,
+                    "usage": api_response.usage,
                 },
             )
 

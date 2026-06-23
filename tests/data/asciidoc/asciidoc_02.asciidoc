@@ -67,3 +67,15 @@ image::images/example2.png[Example Image, width=200, height=150, align=center]
 |   |   |Col 3 |Col 4
 |Col 1 |Col 2 |Col 3 |Col 4
 |===
+
+.Table 5 with multiple empty cells
+|===
+|Column 1 Heading |Column 2 Heading |Column 3 Heading
+|Cell 1 | | Cell 3
+|Cell 4 ||   
+|Cell 7 ||
+|Cell 10|Cell 11|Cell 12|
+|| Cell 14 | Cell 15 |
+|| ||
+|Cell 19|Cell 20|Cell 21|
+|===

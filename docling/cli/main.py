@@ -41,15 +41,8 @@ from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
 from rich.console import Console
 
-from docling.backend.docling_parse_backend import (
-    DoclingParseDocumentBackend,
-    ThreadedDoclingParseDocumentBackend,
-)
-from docling.backend.image_backend import ImageDocumentBackend
-from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
-from docling.backend.pdf_backend import PdfDocumentBackend
-from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.cli.export_utils import (
+    _export_flags_from_formats,
     _is_empty_output,
     _should_generate_export_images,
     _split_list,
@@ -132,8 +125,6 @@ from docling.models.factories import (
     get_table_structure_factory,
 )
 from docling.models.factories.base_factory import BaseFactory
-from docling.pipeline.asr_pipeline import AsrPipeline
-from docling.pipeline.vlm_pipeline import VlmPipeline
 from docling.utils.profiling import ProfilingItem
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
@@ -240,11 +231,37 @@ DOCLING_ASCII_ART = r"""
 """
 
 
+class _DefaultCommandGroup(typer.core.TyperGroup):
+    """Route a bare ``docling <source>`` invocation to the ``convert`` command.
+
+    Historically the CLI exposed a single command, so Typer let users run
+    ``docling report.pdf`` without naming it. Adding a second command
+    (``convert-remote``) would otherwise force ``docling convert report.pdf``
+    on everyone. This group preserves the old behavior: when the first token is
+    not a known subcommand (nor the top-level ``--help``), it is treated as
+    arguments to ``convert``. ``docling --help`` still shows the command list.
+    """
+
+    default_command = "convert"
+
+    def parse_args(self, ctx, args):
+        if args and args[0] not in self.commands and args[0] not in ("--help", "-h"):
+            args = [self.default_command, *args]
+        return super().parse_args(ctx, args)
+
+
 app = typer.Typer(
     name="Docling",
+    cls=_DefaultCommandGroup,
     no_args_is_help=True,
     add_completion=False,
     pretty_exceptions_enable=False,
+    epilog=(
+        "Remote conversion: when installed with the `service-client` extra, "
+        "use `docling convert-remote` and read `docling convert-remote --help` "
+        "for authentication (DOCLING_SERVICE_URL / DOCLING_SERVICE_API_KEY), "
+        "supported options, and exit codes before invoking it."
+    ),
 )
 
 
@@ -310,6 +327,7 @@ def export_documents(
     export_txt: bool,
     export_doctags: bool,
     export_vtt: bool,
+    export_doclang: bool,
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
@@ -416,6 +434,13 @@ def export_documents(
                 fname = output_dir / f"{doc_filename}.vtt"
                 _log.info(f"writing WebVTT output to {fname}")
                 conv_res.document.save_as_vtt(filename=fname)
+
+            # Export DocLang format:
+            if export_doclang:
+                fname = output_dir / f"{doc_filename}.dclg.xml"
+                _log.info(f"writing DocLang output to {fname}")
+                with fname.open("w", encoding="utf-8") as fp:
+                    fp.write(conv_res.document.export_to_doclang())
 
             # Print profiling timings
             if print_timings:
@@ -744,6 +769,33 @@ def convert(  # noqa: C901
         ),
     ] = False,
 ):
+    # Heavy backend/converter/pipeline imports are deferred to here so the CLI
+    # (and `convert-remote`) stay importable without the local PDF stack
+    # (pypdfium2 / docling_parse). Only local `convert` needs them.
+    from docling.backend.docling_parse_backend import (
+        DoclingParseDocumentBackend,
+        ThreadedDoclingParseDocumentBackend,
+    )
+    from docling.backend.image_backend import ImageDocumentBackend
+    from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
+    from docling.backend.pdf_backend import PdfDocumentBackend
+    from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+    from docling.document_converter import (
+        AudioFormatOption,
+        DocumentConverter,
+        EpubFormatOption,
+        ExcelFormatOption,
+        FormatOption,
+        HTMLFormatOption,
+        LatexFormatOption,
+        MarkdownFormatOption,
+        PdfFormatOption,
+        PowerpointFormatOption,
+        WordFormatOption,
+    )
+    from docling.pipeline.asr_pipeline import AsrPipeline
+    from docling.pipeline.vlm_pipeline import VlmPipeline
+
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
     if verbose == 0:
@@ -851,14 +903,7 @@ def convert(  # noqa: C901
         if to_formats is None:
             to_formats = [OutputFormat.MARKDOWN]
 
-        export_json = OutputFormat.JSON in to_formats
-        export_yaml = OutputFormat.YAML in to_formats
-        export_html = OutputFormat.HTML in to_formats
-        export_html_split_page = OutputFormat.HTML_SPLIT_PAGE in to_formats
-        export_md = OutputFormat.MARKDOWN in to_formats
-        export_txt = OutputFormat.TEXT in to_formats
-        export_doctags = OutputFormat.DOCTAGS in to_formats
-        export_vtt = OutputFormat.VTT in to_formats
+        export_flags = _export_flags_from_formats(to_formats)
 
         ocr_factory = get_ocr_factory(allow_external_plugins=allow_external_plugins)
         ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
@@ -1013,6 +1058,7 @@ def convert(  # noqa: C901
 
         elif pipeline == ProcessingPipeline.VLM:
             pipeline_options = VlmPipelineOptions(
+                accelerator_options=accelerator_options,
                 enable_remote_services=enable_remote_services,
             )
 
@@ -1123,15 +1169,8 @@ def convert(  # noqa: C901
         export_documents(
             conv_results,
             output_dir=output,
-            export_json=export_json,
-            export_yaml=export_yaml,
-            export_html=export_html,
-            export_html_split_page=export_html_split_page,
+            **export_flags,
             show_layout=show_layout,
-            export_md=export_md,
-            export_txt=export_txt,
-            export_doctags=export_doctags,
-            export_vtt=export_vtt,
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,
@@ -1141,6 +1180,19 @@ def convert(  # noqa: C901
 
     _log.info(f"All documents were converted in {end_time:.2f} seconds.")
 
+
+# Register `convert-remote` only when the service-client extra is installed.
+# Imported here (after `app`, `export_documents`, and the source-collection
+# helpers are defined) so the command is attached before the click app is built
+# below.
+try:
+    from docling.cli.remote import register as _register_remote
+except ImportError:
+    _log.debug(
+        "Skipping `convert-remote` registration because service-client dependencies are unavailable."
+    )
+else:
+    _register_remote(app)
 
 click_app = typer.main.get_command(app)
 

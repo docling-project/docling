@@ -106,6 +106,8 @@ class ResponseFormat(str, Enum):
     HTML = "html"
     OTSL = "otsl"
     PLAINTEXT = "plaintext"
+    CHANDRA_HTML = "chandra_html"
+    DOTS_JSON = "dots_json"
 
 
 class InferenceFramework(str, Enum):

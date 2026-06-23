@@ -49,6 +49,12 @@
         },
         {
           "$ref": "#/texts/6"
+        },
+        {
+          "$ref": "#/texts/7"
+        },
+        {
+          "$ref": "#/texts/8"
         }
       ],
       "content_layer": "body",
@@ -62,22 +68,8 @@
       },
       "children": [
         {
-          "$ref": "#/texts/8"
-        },
-        {
           "$ref": "#/texts/9"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/2",
-      "parent": {
-        "$ref": "#/texts/1"
-      },
-      "children": [
+        },
         {
           "$ref": "#/texts/10"
         },
@@ -92,6 +84,9 @@
         },
         {
           "$ref": "#/texts/14"
+        },
+        {
+          "$ref": "#/texts/15"
         }
       ],
       "content_layer": "body",
@@ -99,7 +94,7 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/3",
+      "self_ref": "#/groups/2",
       "parent": {
         "$ref": "#/texts/1"
       },
@@ -109,18 +104,7 @@
         },
         {
           "$ref": "#/texts/17"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/4",
-      "parent": {
-        "$ref": "#/texts/1"
-      },
-      "children": [
+        },
         {
           "$ref": "#/texts/18"
         },
@@ -142,28 +126,20 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/5",
+      "self_ref": "#/groups/3",
       "parent": {
         "$ref": "#/texts/1"
       },
       "children": [
+        {
+          "$ref": "#/texts/23"
+        },
         {
           "$ref": "#/texts/24"
         },
         {
           "$ref": "#/texts/25"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/6",
-      "parent": {
-        "$ref": "#/texts/1"
-      },
-      "children": [
+        },
         {
           "$ref": "#/texts/26"
         },
@@ -175,9 +151,6 @@
         },
         {
           "$ref": "#/texts/29"
-        },
-        {
-          "$ref": "#/texts/30"
         }
       ],
       "content_layer": "body",
@@ -185,33 +158,40 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/7",
+      "self_ref": "#/groups/4",
       "parent": {
         "$ref": "#/texts/1"
       },
       "children": [
+        {
+          "$ref": "#/texts/30"
+        },
+        {
+          "$ref": "#/texts/31"
+        },
         {
           "$ref": "#/texts/32"
         },
         {
           "$ref": "#/texts/33"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/8",
-      "parent": {
-        "$ref": "#/texts/1"
-      },
-      "children": [
+        },
+        {
+          "$ref": "#/texts/34"
+        },
+        {
+          "$ref": "#/texts/35"
+        },
         {
           "$ref": "#/texts/36"
         },
         {
           "$ref": "#/texts/37"
+        },
+        {
+          "$ref": "#/texts/38"
+        },
+        {
+          "$ref": "#/texts/39"
         }
       ],
       "content_layer": "body",
@@ -219,14 +199,11 @@
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/9",
+      "self_ref": "#/groups/5",
       "parent": {
         "$ref": "#/texts/1"
       },
       "children": [
-        {
-          "$ref": "#/texts/39"
-        },
         {
           "$ref": "#/texts/40"
         },
@@ -235,18 +212,10 @@
         },
         {
           "$ref": "#/texts/42"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/10",
-      "parent": {
-        "$ref": "#/texts/1"
-      },
-      "children": [
+        },
+        {
+          "$ref": "#/texts/43"
+        },
         {
           "$ref": "#/texts/44"
         },
@@ -255,55 +224,12 @@
         },
         {
           "$ref": "#/texts/46"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/11",
-      "parent": {
-        "$ref": "#/texts/1"
-      },
-      "children": [
+        },
         {
           "$ref": "#/texts/47"
         },
         {
           "$ref": "#/texts/48"
-        },
-        {
-          "$ref": "#/texts/49"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/12",
-      "parent": {
-        "$ref": "#/texts/1"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/51"
-        },
-        {
-          "$ref": "#/texts/52"
-        },
-        {
-          "$ref": "#/texts/53"
-        },
-        {
-          "$ref": "#/texts/54"
-        },
-        {
-          "$ref": "#/texts/55"
-        },
-        {
-          "$ref": "#/texts/56"
         }
       ],
       "content_layer": "body",
@@ -334,16 +260,10 @@
           "$ref": "#/groups/0"
         },
         {
-          "$ref": "#/texts/7"
-        },
-        {
           "$ref": "#/groups/1"
         },
         {
           "$ref": "#/groups/2"
-        },
-        {
-          "$ref": "#/texts/15"
         },
         {
           "$ref": "#/groups/3"
@@ -352,49 +272,7 @@
           "$ref": "#/groups/4"
         },
         {
-          "$ref": "#/texts/23"
-        },
-        {
           "$ref": "#/groups/5"
-        },
-        {
-          "$ref": "#/groups/6"
-        },
-        {
-          "$ref": "#/texts/31"
-        },
-        {
-          "$ref": "#/groups/7"
-        },
-        {
-          "$ref": "#/texts/34"
-        },
-        {
-          "$ref": "#/texts/35"
-        },
-        {
-          "$ref": "#/groups/8"
-        },
-        {
-          "$ref": "#/texts/38"
-        },
-        {
-          "$ref": "#/groups/9"
-        },
-        {
-          "$ref": "#/texts/43"
-        },
-        {
-          "$ref": "#/groups/10"
-        },
-        {
-          "$ref": "#/groups/11"
-        },
-        {
-          "$ref": "#/texts/50"
-        },
-        {
-          "$ref": "#/groups/12"
         }
       ],
       "content_layer": "body",
@@ -474,25 +352,13 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". Notice that",
+      "text": ". Notice that"
     },
     {
       "self_ref": "#/texts/7",
       "parent": {
-        "$ref": "#/texts/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Notice that",
-      "text": "Notice that"
-    },
-    {
-      "self_ref": "#/texts/8",
-      "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -509,9 +375,9 @@
       }
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/8",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -521,9 +387,9 @@
       "text": "looks similar but carries additional semantic meaning."
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/9",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -533,9 +399,9 @@
       "text": "Here is an"
     },
     {
-      "self_ref": "#/texts/11",
+      "self_ref": "#/texts/10",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -552,9 +418,9 @@
       }
     },
     {
-      "self_ref": "#/texts/12",
+      "self_ref": "#/texts/11",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -564,9 +430,9 @@
       "text": "word and an"
     },
     {
-      "self_ref": "#/texts/13",
+      "self_ref": "#/texts/12",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -583,33 +449,21 @@
       }
     },
     {
+      "self_ref": "#/texts/13",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "example. Sometimes we combine them like",
+      "text": "example. Sometimes we combine them like"
+    },
+    {
       "self_ref": "#/texts/14",
       "parent": {
-        "$ref": "#/groups/2"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "example.",
-      "text": "example."
-    },
-    {
-      "self_ref": "#/texts/15",
-      "parent": {
-        "$ref": "#/texts/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Sometimes we combine them like",
-      "text": "Sometimes we combine them like"
-    },
-    {
-      "self_ref": "#/texts/16",
-      "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -626,9 +480,9 @@
       }
     },
     {
-      "self_ref": "#/texts/17",
+      "self_ref": "#/texts/15",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -638,9 +492,9 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/18",
+      "self_ref": "#/texts/16",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -650,9 +504,9 @@
       "text": "Now let's look at text that appears crossed out:"
     },
     {
-      "self_ref": "#/texts/19",
+      "self_ref": "#/texts/17",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -669,9 +523,9 @@
       }
     },
     {
-      "self_ref": "#/texts/20",
+      "self_ref": "#/texts/18",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -681,9 +535,9 @@
       "text": "and"
     },
     {
-      "self_ref": "#/texts/21",
+      "self_ref": "#/texts/19",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -700,33 +554,21 @@
       }
     },
     {
-      "self_ref": "#/texts/22",
+      "self_ref": "#/texts/20",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". You can also mix them:",
+      "text": ". You can also mix them:"
     },
     {
-      "self_ref": "#/texts/23",
+      "self_ref": "#/texts/21",
       "parent": {
-        "$ref": "#/texts/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "You can also mix them:",
-      "text": "You can also mix them:"
-    },
-    {
-      "self_ref": "#/texts/24",
-      "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -743,9 +585,9 @@
       }
     },
     {
-      "self_ref": "#/texts/25",
+      "self_ref": "#/texts/22",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -755,9 +597,9 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/26",
+      "self_ref": "#/texts/23",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -767,9 +609,9 @@
       "text": "To highlight insertions or underlines:"
     },
     {
-      "self_ref": "#/texts/27",
+      "self_ref": "#/texts/24",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -786,9 +628,9 @@
       }
     },
     {
-      "self_ref": "#/texts/28",
+      "self_ref": "#/texts/25",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -798,9 +640,9 @@
       "text": ","
     },
     {
-      "self_ref": "#/texts/29",
+      "self_ref": "#/texts/26",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -817,33 +659,21 @@
       }
     },
     {
-      "self_ref": "#/texts/30",
+      "self_ref": "#/texts/27",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": ". A combination could be:",
+      "text": ". A combination could be:"
     },
     {
-      "self_ref": "#/texts/31",
+      "self_ref": "#/texts/28",
       "parent": {
-        "$ref": "#/texts/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "A combination could be:",
-      "text": "A combination could be:"
-    },
-    {
-      "self_ref": "#/texts/32",
-      "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -860,9 +690,9 @@
       }
     },
     {
-      "self_ref": "#/texts/33",
+      "self_ref": "#/texts/29",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -872,33 +702,21 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/34",
+      "self_ref": "#/texts/30",
       "parent": {
-        "$ref": "#/texts/1"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Subscript and superscript examples:",
-      "text": "Subscript and superscript examples:"
+      "orig": "Subscript and superscript examples: Water is written as H",
+      "text": "Subscript and superscript examples: Water is written as H"
     },
     {
-      "self_ref": "#/texts/35",
+      "self_ref": "#/texts/31",
       "parent": {
-        "$ref": "#/texts/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Water is written as H",
-      "text": "Water is written as H"
-    },
-    {
-      "self_ref": "#/texts/36",
-      "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -915,33 +733,21 @@
       }
     },
     {
-      "self_ref": "#/texts/37",
+      "self_ref": "#/texts/32",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "O using sub.",
-      "text": "O using sub."
+      "orig": "O using sub. The mathematical expression x",
+      "text": "O using sub. The mathematical expression x"
     },
     {
-      "self_ref": "#/texts/38",
+      "self_ref": "#/texts/33",
       "parent": {
-        "$ref": "#/texts/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "The mathematical expression x",
-      "text": "The mathematical expression x"
-    },
-    {
-      "self_ref": "#/texts/39",
-      "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -958,9 +764,9 @@
       }
     },
     {
-      "self_ref": "#/texts/40",
+      "self_ref": "#/texts/34",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -970,9 +776,9 @@
       "text": "+ y"
     },
     {
-      "self_ref": "#/texts/41",
+      "self_ref": "#/texts/35",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -989,33 +795,21 @@
       }
     },
     {
-      "self_ref": "#/texts/42",
+      "self_ref": "#/texts/36",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "uses sup.",
-      "text": "uses sup."
+      "orig": "uses sup. They can also be combined: CO",
+      "text": "uses sup. They can also be combined: CO"
     },
     {
-      "self_ref": "#/texts/43",
+      "self_ref": "#/texts/37",
       "parent": {
-        "$ref": "#/texts/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "They can also be combined: CO",
-      "text": "They can also be combined: CO"
-    },
-    {
-      "self_ref": "#/texts/44",
-      "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -1032,9 +826,9 @@
       }
     },
     {
-      "self_ref": "#/texts/45",
+      "self_ref": "#/texts/38",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -1051,9 +845,9 @@
       }
     },
     {
-      "self_ref": "#/texts/46",
+      "self_ref": "#/texts/39",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -1063,9 +857,9 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/47",
+      "self_ref": "#/texts/40",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -1075,9 +869,9 @@
       "text": "Mixing several: This sentence has"
     },
     {
-      "self_ref": "#/texts/48",
+      "self_ref": "#/texts/41",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -1094,33 +888,21 @@
       }
     },
     {
-      "self_ref": "#/texts/49",
+      "self_ref": "#/texts/42",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",",
-      "text": ","
+      "orig": ", some",
+      "text": ", some"
     },
     {
-      "self_ref": "#/texts/50",
+      "self_ref": "#/texts/43",
       "parent": {
-        "$ref": "#/texts/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "some",
-      "text": "some"
-    },
-    {
-      "self_ref": "#/texts/51",
-      "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -1137,9 +919,9 @@
       }
     },
     {
-      "self_ref": "#/texts/52",
+      "self_ref": "#/texts/44",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -1149,9 +931,9 @@
       "text": ", and a formula like a"
     },
     {
-      "self_ref": "#/texts/53",
+      "self_ref": "#/texts/45",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -1168,9 +950,9 @@
       }
     },
     {
-      "self_ref": "#/texts/54",
+      "self_ref": "#/texts/46",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -1180,9 +962,9 @@
       "text": "+ b"
     },
     {
-      "self_ref": "#/texts/55",
+      "self_ref": "#/texts/47",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -1199,9 +981,9 @@
       }
     },
     {
-      "self_ref": "#/texts/56",
+      "self_ref": "#/texts/48",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",

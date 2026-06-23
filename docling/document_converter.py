@@ -39,6 +39,7 @@ from docling.backend.opendocument_backend import (
     OdtDocumentBackend,
 )
 from docling.backend.webvtt_backend import WebVTTDocumentBackend
+from docling.backend.xml.doclang_backend import DocLangDocumentBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
@@ -177,6 +178,11 @@ class XMLJatsFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = JatsDocumentBackend
 
 
+class XMLDocLangFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = DocLangDocumentBackend
+
+
 class XBRLFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = XBRLDocumentBackend
@@ -238,6 +244,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.HTML: HTMLFormatOption(),
         InputFormat.XML_USPTO: PatentUsptoFormatOption(),
         InputFormat.XML_JATS: XMLJatsFormatOption(),
+        InputFormat.XML_DOCLANG: XMLDocLangFormatOption(),
         InputFormat.XML_XBRL: XBRLFormatOption(),
         InputFormat.METS_GBS: FormatOption(
             pipeline_cls=StandardPdfPipeline, backend=MetsGbsDocumentBackend
@@ -542,23 +549,23 @@ class DocumentConverter:
     ) -> ConversionResult:
         """Convert a document given as a string using the specified format.
 
-        Only Markdown (`InputFormat.MD`) and HTML (`InputFormat.HTML`) formats
-        are supported. The content is wrapped in a `DocumentStream` and passed
-        to the main conversion pipeline.
+        Only Markdown (`InputFormat.MD`), HTML (`InputFormat.HTML`), and DocLang
+        (`InputFormat.XML_DOCLANG`) formats are supported. The content is wrapped
+        in a `DocumentStream` and passed to the main conversion pipeline.
 
         Args:
             content: The document content as a string.
             format: The format of the input content.
             name: The filename to associate with the document. If not provided, a
-                timestamp-based name is generated. The appropriate file extension (`md`
-                or `html`) is appended if missing.
+                timestamp-based name is generated. The appropriate file extension is
+                appended if missing.
 
         Returns:
             The conversion result, which contains a `DoclingDocument` in the `document`
                 attribute, and metadata about the conversion process.
 
         Raises:
-            ValueError: If format is neither `InputFormat.MD` nor `InputFormat.HTML`.
+            ValueError: If format is not supported by `convert_string`.
             ConversionError: An error occurred during conversion.
 
         Examples:
@@ -592,6 +599,14 @@ class DocumentConverter:
         elif format == InputFormat.HTML:
             if not name.endswith(".html"):
                 name += ".html"
+
+            buff = BytesIO(content.encode("utf-8"))
+            doc_stream = DocumentStream(name=name, stream=buff)
+
+            return self.convert(doc_stream)
+        elif format == InputFormat.XML_DOCLANG:
+            if not name.endswith((".dclg", ".dclg.xml")):
+                name += ".dclg.xml"
 
             buff = BytesIO(content.encode("utf-8"))
             doc_stream = DocumentStream(name=name, stream=buff)

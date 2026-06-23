@@ -87,6 +87,15 @@ class TaskExecutionError(DoclingServiceClientError):
         self.failure = failure
 
 
+class ArtifactDownloadError(DoclingServiceClientError):
+    """Raised when a presigned artifact cannot be downloaded or is too large.
+
+    Used by the high-level convert()/convert_all() materialization path. It is
+    normally caught internally and surfaced as a FAILURE ConversionResult, not
+    propagated to callers.
+    """
+
+
 class ConversionError(DoclingServiceClientError):
     """Raised when a single conversion completes with failure."""
 

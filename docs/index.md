@@ -35,17 +35,18 @@ Docling simplifies document processing, parsing diverse formats — including ad
 
 ## Features
 
-* 🗂️ Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, PPTX, XLSX, HTML, EPUB, WAV, MP3, WebVTT, email formats (EML, MSG), images (PNG, TIFF, JPEG, ...), LaTeX, plain text, and more
+* 🗂️ Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, PPTX, XLSX, HTML, EPUB, WAV, MP3, WebVTT, email formats (EML, MSG), images (PNG, TIFF, JPEG, ...), LaTeX, DocLang, plain text, and more
 * 📑 Advanced PDF understanding incl. page layout, reading order, table structure, code, formulas, image classification, and more
 * 🧬 Unified, expressive [DoclingDocument][docling_document] representation format
-* ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, WebVTT, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
-* 📜 Support of several application-specifc XML schemas incl. [USPTO](https://www.uspto.gov/patents) patents, [JATS](https://jats.nlm.nih.gov/) articles, and [XBRL](https://www.xbrl.org/) financial reports
+* ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, WebVTT, DocLang, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
+* 📜 Support of several application-specifc XML schemas incl. [DocLang](https://doclang.ai), [USPTO](https://www.uspto.gov/patents) patents, [JATS](https://jats.nlm.nih.gov/) articles, and [XBRL](https://www.xbrl.org/) financial reports
 * 🔒 Local execution capabilities for sensitive data and air-gapped environments
 * 🤖 Plug-and-play [integrations][integrations] incl. LangChain, LlamaIndex, Crew AI & Haystack for agentic AI
 * 🔍 Extensive OCR support for scanned PDFs and images
 * 👓 Support of several Visual Language Models ([GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M))
 * 🎙️ Audio support with Automatic Speech Recognition (ASR) models
 * 🔌 Connect to any agent using the [MCP server](https://docling-project.github.io/docling/usage/mcp/)
+* 🌐 Run Docling as a service with the [API server](https://docling-project.github.io/docling/usage/api_server/) (docling-serve)
 * 💻 Simple and convenient CLI
 
 ### What's new

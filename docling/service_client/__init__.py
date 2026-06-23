@@ -10,6 +10,7 @@ from docling.datamodel.service.responses import (
     PresignedUrlConvertResponse,
 )
 from docling.datamodel.service.targets import PresignedUrlTarget, S3Target
+from docling.service_client._async_client import AsyncDoclingServiceClient
 from docling.service_client.client import (
     DEFAULT_MAX_CONCURRENCY,
     MAX_CONCURRENCY_LIMIT,
@@ -20,6 +21,7 @@ from docling.service_client.client import (
     StatusWatcherKind,
 )
 from docling.service_client.exceptions import (
+    ArtifactDownloadError,
     ConversionError,
     DoclingServiceClientError,
     ResponseSchemaMismatchError,
@@ -32,12 +34,15 @@ from docling.service_client.exceptions import (
     TaskTimeoutError,
     UsageLimitExceededError,
 )
-from docling.service_client.job import ConversionJob
+from docling.service_client.job import AsyncConversionJob, ConversionJob
 
 __all__ = [
     "DEFAULT_MAX_CONCURRENCY",
     "MAX_CONCURRENCY_LIMIT",
     "AnyHttpSourceRequest",
+    "ArtifactDownloadError",
+    "AsyncConversionJob",
+    "AsyncDoclingServiceClient",
     "BatchSourceRequestItem",
     "ChunkerKind",
     "ConversionError",

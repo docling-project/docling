@@ -197,7 +197,7 @@ def test_native_and_mlx_transcribe_language_handling(monkeypatch, tmp_path):
     )
     with patch.dict("sys.modules", {"mlx_whisper": Mock()}):
         mm = _MlxWhisperModel(
-            True, None, AcceleratorOptions(device=AcceleratorDevice.MPS), opts_m
+            True, None, AcceleratorOptions(device=AcceleratorDevice.CPU), opts_m
         )
         mm.mlx_whisper = Mock()
         mm.mlx_whisper.transcribe.return_value = {"segments": []}
@@ -387,7 +387,7 @@ def test_mlx_whisper_reports_missing_ffmpeg_before_transcription(
         model = _MlxWhisperModel(
             enabled=True,
             artifacts_path=None,
-            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.MPS),
+            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
             asr_options=options,
         )
 
@@ -421,7 +421,7 @@ def test_mlx_run_success_and_failure(tmp_path):
             language="en",
         )
         model = _MlxWhisperModel(
-            True, None, AcceleratorOptions(device=AcceleratorDevice.MPS), opts
+            True, None, AcceleratorOptions(device=AcceleratorDevice.CPU), opts
         )
         model.mlx_whisper = Mock()
         model.mlx_whisper.transcribe.return_value = {
@@ -444,7 +444,7 @@ def test_mlx_run_success_and_failure(tmp_path):
             language="en",
         )
         model2 = _MlxWhisperModel(
-            True, None, AcceleratorOptions(device=AcceleratorDevice.MPS), opts2
+            True, None, AcceleratorOptions(device=AcceleratorDevice.CPU), opts2
         )
         model2.mlx_whisper = Mock()
         model2.mlx_whisper.transcribe.side_effect = RuntimeError("fail")
@@ -523,7 +523,7 @@ def test_mlx_whisper_handles_zero_duration_timestamps(tmp_path):
             language="en",
         )
         model = _MlxWhisperModel(
-            True, None, AcceleratorOptions(device=AcceleratorDevice.MPS), opts
+            True, None, AcceleratorOptions(device=AcceleratorDevice.CPU), opts
         )
         model.mlx_whisper = Mock()
 

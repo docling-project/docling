@@ -42,7 +42,7 @@ class VlmConvertModel(BasePageModel):
         self,
         enabled: bool,
         enable_remote_services: bool,
-        artifacts_path: Optional[Union[Path, str]],
+        artifacts_path: Union[Path, str] | None,
         options: VlmConvertOptions,
         accelerator_options: AcceleratorOptions,
     ):
@@ -108,31 +108,15 @@ class VlmConvertModel(BasePageModel):
             valid_pages = []
 
             for page in page_list:
-                if page.image is None:
+                image = page.get_image(
+                    scale=self.options.scale,
+                    max_size=self.options.max_size,
+                )
+                if image is None:
                     _log.warning(
                         f"Page {page.page_no} has no image, skipping VLM conversion"
                     )
                     continue
-
-                # Scale image if needed
-                image = page.image
-                if self.options.scale != 1.0:
-                    new_size = (
-                        int(image.width * self.options.scale),
-                        int(image.height * self.options.scale),
-                    )
-                    image = image.resize(new_size, PILImage.Resampling.LANCZOS)
-
-                # Apply max_size constraint if specified
-                if self.options.max_size is not None:
-                    max_dim = max(image.width, image.height)
-                    if max_dim > self.options.max_size:
-                        scale_factor = self.options.max_size / max_dim
-                        new_size = (
-                            int(image.width * scale_factor),
-                            int(image.height * scale_factor),
-                        )
-                        image = image.resize(new_size, PILImage.Resampling.LANCZOS)
 
                 images.append(image)
                 prompts.append(self.options.model_spec.prompt)
@@ -151,8 +135,9 @@ class VlmConvertModel(BasePageModel):
                     VlmEngineInput(
                         image=img,
                         prompt=prompt,
-                        temperature=0.0,  # Use from options if needed
-                        max_new_tokens=4096,  # Use from options if needed
+                        temperature=self.options.model_spec.temperature,
+                        max_new_tokens=self.options.model_spec.max_new_tokens,
+                        stop_strings=self.options.model_spec.stop_strings,
                     )
                     for img, prompt in zip(images, prompts)
                 ]
@@ -229,8 +214,9 @@ class VlmConvertModel(BasePageModel):
             VlmEngineInput(
                 image=img,
                 prompt=p,
-                temperature=0.0,
-                max_new_tokens=4096,
+                temperature=self.options.model_spec.temperature,
+                max_new_tokens=self.options.model_spec.max_new_tokens,
+                stop_strings=self.options.model_spec.stop_strings,
             )
             for img, p in zip(images, prompts)
         ]

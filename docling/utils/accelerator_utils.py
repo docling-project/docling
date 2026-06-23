@@ -2,6 +2,7 @@ import logging
 from typing import List, Optional
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.exceptions import AcceleratorDeviceNotAvailableError
 
 _log = logging.getLogger(__name__)
 
@@ -50,6 +51,14 @@ def decide_device(
             device = "xpu"
 
     elif accelerator_device.startswith("cuda"):
+        if (
+            supported_devices is not None
+            and AcceleratorDevice.CUDA not in supported_devices
+        ):
+            raise AcceleratorDeviceNotAvailableError(
+                f"CUDA is not supported by this model. Supported devices: {[d.value for d in supported_devices]}"
+            )
+
         if has_cuda:
             # if cuda device index specified extract device id
             parts = accelerator_device.split(":")
@@ -59,38 +68,64 @@ def decide_device(
                 if cuda_index < torch.cuda.device_count():
                     device = f"cuda:{cuda_index}"
                 else:
-                    _log.warning(
-                        "CUDA device 'cuda:%d' is not available. Fall back to 'CPU'.",
-                        cuda_index,
+                    raise AcceleratorDeviceNotAvailableError(
+                        f"CUDA device 'cuda:{cuda_index}' is not available. "
+                        f"Available CUDA devices: 0-{torch.cuda.device_count() - 1}"
                     )
             elif len(parts) == 1:  # just "cuda"
                 device = "cuda:0"
             else:
-                _log.warning(
-                    "Invalid CUDA device format '%s'. Fall back to 'CPU'",
-                    accelerator_device,
+                raise AcceleratorDeviceNotAvailableError(
+                    f"Invalid CUDA device format '{accelerator_device}'. "
+                    f"Use 'cuda' or 'cuda:N' where N is a valid device index."
                 )
         else:
-            _log.warning("CUDA is not available in the system. Fall back to 'CPU'")
+            raise AcceleratorDeviceNotAvailableError(
+                "CUDA is not available in the system. "
+                "Please ensure PyTorch with CUDA support is installed, or use --device auto/cpu."
+            )
 
     elif accelerator_device == AcceleratorDevice.MPS.value:
+        if (
+            supported_devices is not None
+            and AcceleratorDevice.MPS not in supported_devices
+        ):
+            raise AcceleratorDeviceNotAvailableError(
+                f"MPS is not supported by this model. Supported devices: {[d.value for d in supported_devices]}"
+            )
+
         if has_mps:
             device = "mps"
         else:
-            _log.warning("MPS is not available in the system. Fall back to 'CPU'")
+            raise AcceleratorDeviceNotAvailableError(
+                "MPS is not available in the system. "
+                "Please ensure you are running on Apple Silicon with MPS support, or use --device auto/cpu."
+            )
 
     elif accelerator_device == AcceleratorDevice.XPU.value:
+        if (
+            supported_devices is not None
+            and AcceleratorDevice.XPU not in supported_devices
+        ):
+            raise AcceleratorDeviceNotAvailableError(
+                f"XPU is not supported by this model. Supported devices: {[d.value for d in supported_devices]}"
+            )
+
         if has_xpu:
             device = "xpu"
         else:
-            _log.warning("XPU is not available in the system. Fall back to 'CPU'")
+            raise AcceleratorDeviceNotAvailableError(
+                "XPU is not available in the system. "
+                "Please ensure PyTorch with Intel XPU support is installed, or use --device auto/cpu."
+            )
 
     elif accelerator_device == AcceleratorDevice.CPU.value:
         device = "cpu"
 
     else:
-        _log.warning(
-            "Unknown device option '%s'. Fall back to 'CPU'", accelerator_device
+        raise AcceleratorDeviceNotAvailableError(
+            f"Unknown device option '{accelerator_device}'. "
+            f"Valid options are: auto, cpu, cuda, mps, xpu, or cuda:N"
         )
 
     _log.info("Accelerator device: '%s'", device)

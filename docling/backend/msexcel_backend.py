@@ -139,6 +139,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             options = MsExcelBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
 
+        self.page_range = in_doc.limits.page_range
+
         # Initialise the parents for the hierarchy
         self.max_levels = 10
 
@@ -242,6 +244,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 else None
             )
 
+            start_page, end_page = self.page_range
+
             page_no = 0
             # Iterate over all sheets
             for idx, name in enumerate(self.workbook.sheetnames):
@@ -249,7 +253,17 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     _log.debug(f"Skipping sheet {idx}: {name} (filtered out)")
                     continue
 
+                # Page numbers are 1-based positions within the (optionally filtered)
+                # set of sheets. Increment before the range check so selected sheets
+                # keep their original page numbers (e.g. page_range=(2, 4) -> 2, 3, 4).
                 page_no += 1
+                if page_no < start_page or page_no > end_page:
+                    _log.debug(
+                        f"Skipping sheet {idx}: {name} "
+                        f"(page {page_no} outside range {start_page}-{end_page})"
+                    )
+                    continue
+
                 _log.info(f"Processing sheet {idx}: {name} as page {page_no}")
 
                 sheet = self.workbook[name]

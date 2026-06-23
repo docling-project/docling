@@ -6,11 +6,11 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 import numpy as np
-from docling_core.types.doc import DocItemLabel
+from docling_core.types.doc import BoundingBox, DocItemLabel
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import BoundingBox, Cluster, LayoutPrediction, Page
+from docling.datamodel.base_models import Cluster, LayoutPrediction, Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_V2, LayoutModelConfig
 from docling.datamodel.pipeline_options import LayoutOptions

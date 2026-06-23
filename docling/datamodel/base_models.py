@@ -1,4 +1,5 @@
 from collections import defaultdict
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Type, Union
@@ -27,9 +28,11 @@ from pydantic import (
     ConfigDict,
     Field,
     FieldSerializationInfo,
+    PrivateAttr,
     computed_field,
     field_serializer,
     field_validator,
+    model_validator,
 )
 
 if TYPE_CHECKING:
@@ -81,6 +84,7 @@ class InputFormat(str, Enum):
     XML_USPTO = "xml_uspto"
     XML_JATS = "xml_jats"
     XML_XBRL = "xml_xbrl"
+    XML_DOCLANG = "xml_doclang"
     METS_GBS = "mets_gbs"
     JSON_DOCLING = "json_docling"
     AUDIO = "audio"
@@ -99,6 +103,7 @@ class OutputFormat(str, Enum):
     TEXT = "text"
     DOCTAGS = "doctags"
     VTT = "vtt"
+    DOCLANG = "doclang"
 
 
 FormatToExtensions: dict[InputFormat, list[str]] = {
@@ -109,6 +114,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.HTML: ["html", "htm", "xhtml"],
     InputFormat.XML_JATS: ["xml", "nxml"],
     InputFormat.XML_XBRL: ["xml", "xbrl"],
+    InputFormat.XML_DOCLANG: ["dclg", "dclg.xml"],
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
@@ -139,6 +145,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.HTML: ["text/html", "application/xhtml+xml"],
     InputFormat.XML_JATS: ["application/xml"],
     InputFormat.XML_XBRL: ["application/xml", "application/xhtml+xml"],
+    InputFormat.XML_DOCLANG: ["application/xml"],
     InputFormat.IMAGE: [
         "image/png",
         "image/jpeg",
@@ -261,8 +268,28 @@ class VlmPrediction(BaseModel):
     generated_tokens: list[VlmPredictionToken] = []
     generation_time: float = -1
     num_tokens: int | None = None
+    usage: Any | None = None
     stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
     input_prompt: str | None = None
+
+
+@dataclass(frozen=True)
+class ApiImageRequestResult:
+    """Image API response with optional provider usage metadata."""
+
+    text: str
+    num_tokens: int | None
+    stop_reason: VlmStopReason
+    usage: Any | None = None
+
+
+@dataclass(frozen=True)
+class ApiImageStreamingRequestResult:
+    """Streaming image API response with optional provider usage metadata."""
+
+    text: str
+    num_tokens: int | None
+    usage: Any | None = None
 
 
 class ContainerElement(
@@ -430,7 +457,7 @@ class OpenAiApiResponse(BaseModel):
     model: str | None = None  # returned by openai
     choices: list[OpenAiResponseChoice]
     created: int
-    usage: OpenAiResponseUsage
+    usage: OpenAiResponseUsage | None = None
 
 
 # Create a type alias for score values
@@ -519,10 +546,50 @@ class ConfidenceReport(PageConfidenceScores):
     pages: dict[int, PageConfidenceScores] = Field(
         default_factory=lambda: defaultdict(PageConfidenceScores)
     )
+    _mean_score_override: ScoreValue = PrivateAttr(default=np.nan)
+    _low_score_override: ScoreValue = PrivateAttr(default=np.nan)
+
+    @staticmethod
+    def _coerce_override_score(value: Any) -> ScoreValue:
+        if value is None:
+            return ScoreValue(np.nan)
+        if isinstance(value, str) and value.strip().lower() in {
+            "nan",
+            "null",
+            "none",
+            "",
+        }:
+            return ScoreValue(np.nan)
+        return ScoreValue(value)
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def _accept_flat_confidence_scores(cls, value, handler):
+        mean_override = ScoreValue(np.nan)
+        low_override = ScoreValue(np.nan)
+
+        if isinstance(value, dict):
+            mean_override = cls._coerce_override_score(value.get("mean_score"))
+            low_override = cls._coerce_override_score(value.get("low_score"))
+            value = dict(value)
+            value.pop("mean_score", None)
+            value.pop("low_score", None)
+            value.pop("mean_grade", None)
+            value.pop("low_grade", None)
+
+        model = handler(value)
+        if not model.pages:
+            model._mean_score_override = mean_override
+            model._low_score_override = low_override
+        return model
 
     @computed_field  # type: ignore
     @property
     def mean_score(self) -> ScoreValue:
+        if not np.isnan(self._mean_score_override):
+            return self._mean_score_override
+        if not self.pages:
+            return super().mean_score
         return ScoreValue(
             np.nanmean(
                 [c.mean_score for c in self.pages.values()],
@@ -532,6 +599,10 @@ class ConfidenceReport(PageConfidenceScores):
     @computed_field  # type: ignore
     @property
     def low_score(self) -> ScoreValue:
+        if not np.isnan(self._low_score_override):
+            return self._low_score_override
+        if not self.pages:
+            return super().low_score
         return ScoreValue(
             np.nanmean(
                 [c.low_score for c in self.pages.values()],
