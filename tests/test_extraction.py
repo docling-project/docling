@@ -124,7 +124,7 @@ def test_extraction_format_not_allowed_is_policy() -> None:
     assert result.errors[0].category == FailureCategory.POLICY
 
 
-def test_threaded_model_stage_failure_records_generation_category() -> None:
+def test_threaded_model_stage_failure_records_inference_category() -> None:
     from types import SimpleNamespace
 
     from docling.datamodel.base_models import (
@@ -162,6 +162,61 @@ def test_threaded_model_stage_failure_records_generation_category() -> None:
     assert result[0].failure.component_type == DoclingComponentType.MODEL
     assert result[0].failure.category == FailureCategory.INFERENCE_FAILURE
     assert result[0].failure.page_no == 1
+
+
+def test_threaded_model_stage_preserves_existing_failed_item_category() -> None:
+    from types import SimpleNamespace
+
+    from docling.datamodel.base_models import (
+        DoclingComponentType,
+        ErrorItem,
+        FailureCategory,
+        Page,
+    )
+    from docling.pipeline.standard_pdf_pipeline import (
+        ThreadedItem,
+        ThreadedPipelineStage,
+    )
+
+    def _raise(_conv_res, _pages):
+        raise RuntimeError("ocr failed")
+
+    prior_failure = ErrorItem(
+        component_type=DoclingComponentType.DOCUMENT_BACKEND,
+        module_name="preprocess",
+        error_message="Page 1 failed to parse.",
+        category=FailureCategory.BACKEND_FAILURE,
+        page_no=1,
+    )
+    stage = ThreadedPipelineStage(
+        name="ocr",
+        model=_raise,
+        batch_size=2,
+        batch_timeout=0.0,
+        queue_max_size=1,
+    )
+    already_failed = ThreadedItem(
+        payload=Page(page_no=1),
+        run_id=1,
+        page_no=1,
+        conv_res=SimpleNamespace(),
+        error=RuntimeError("Page 1 failed to parse."),
+        failure=prior_failure,
+        is_failed=True,
+    )
+    valid = ThreadedItem(
+        payload=Page(page_no=2),
+        run_id=1,
+        page_no=2,
+        conv_res=SimpleNamespace(),
+    )
+
+    result = stage._process_batch([already_failed, valid])
+
+    assert result[0].failure == prior_failure
+    assert result[0].error is already_failed.error
+    assert result[1].failure is not None
+    assert result[1].failure.category == FailureCategory.INFERENCE_FAILURE
 
 
 def test_standard_pipeline_integrate_preserves_failed_page_category() -> None:
@@ -203,6 +258,31 @@ def test_standard_pipeline_integrate_preserves_failed_page_category() -> None:
 
     assert conv_res.status == ConversionStatus.FAILURE
     assert conv_res.errors == [failure]
+
+
+def test_extraction_vlm_pipeline_runtime_failure_is_unknown() -> None:
+    from types import SimpleNamespace
+
+    from docling.datamodel.base_models import FailureCategory
+    from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
+
+    pipeline = ExtractionVlmPipeline.__new__(ExtractionVlmPipeline)
+
+    def _raise(_input_doc):
+        raise RuntimeError("image extraction failed")
+
+    pipeline._get_images_from_input = _raise
+    ext_res = SimpleNamespace(
+        input=SimpleNamespace(_backend=object()),
+        pages=[],
+        errors=[],
+        status=None,
+    )
+
+    result = pipeline._extract_data(ext_res)
+
+    assert result.errors
+    assert result.errors[0].category == FailureCategory.UNKNOWN
 
 
 def test_extraction_pipeline_failure_is_categorized() -> None:

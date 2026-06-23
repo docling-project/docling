@@ -323,7 +323,7 @@ class ThreadedPipelineStage:
                 ]
                 if len(pages_with_payloads) != len(good):
                     # Some items have None payloads, mark all as failed
-                    for it in items:
+                    for it in good:
                         it.is_failed = True
                         error = RuntimeError("Page payload is None")
                         it.error = error
@@ -369,7 +369,7 @@ class ThreadedPipelineStage:
                 _log.error(
                     "Stage %s failed for run %d: %s", self.name, rid, exc, exc_info=True
                 )
-                for it in items:
+                for it in good:
                     it.is_failed = True
                     it.error = exc
                     it.failure = _make_error_item(
