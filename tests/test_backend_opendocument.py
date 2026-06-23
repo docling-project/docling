@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 from docling_core.types.doc import (
+    ImageRefMode,
     PictureClassificationLabel,
     PictureItem,
     RichTableCell,
@@ -692,6 +693,51 @@ def test_odp_nested_textbox_list(tmp_path: Path):
     assert nested_group.parent == list_items[0].get_ref()
 
 
+def test_odp_presentation_with_mixed_slide_content():
+    path = Path("tests/data/odf/odf_presentation_02.odp")
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path)
+    doc = res.document
+
+    titles = [item.text for item in doc.texts if item.label == "title"]
+    assert titles == [
+        "Text",
+        "Chart",
+        "Table",
+        "Photo",
+        "Complex list",
+        "Table with pictures",
+    ]
+
+    assert any(
+        isinstance(item, TextItem)
+        and item.label == "text"
+        and item.text.startswith("Lorem ipsum dolor sit amet")
+        for item in doc.texts
+    )
+    assert any(
+        isinstance(item, PictureItem)
+        and item.meta is not None
+        and item.meta.tabular_chart is not None
+        for item in doc.pictures
+    )
+    slides = {group.name: group for group in doc.groups if group.name is not None}
+    assert any(
+        isinstance(item, PictureItem) and item.image is not None
+        for item, _level in doc.iterate_items(root=slides["slide-3"])
+    )
+    assert any(
+        isinstance(item, PictureItem) and item.image is not None
+        for item, _level in doc.iterate_items(root=slides["slide-5"])
+    )
+    assert any(
+        table.data.num_rows == 1
+        and table.data.num_cols == 1
+        and table.data.table_cells[0].text == ""
+        for table in doc.tables
+    )
+
+
 def test_odt_mime_detection_without_extension(odt_path: Path):
     # No filename extension forces the conversion pipeline to detect the format
     # by inspecting the zip contents (mimetype file).
@@ -764,7 +810,7 @@ def _test_e2e_odf_conversions_impl(odf_documents: list[tuple[Path, DoclingDocume
         ), f"export to indented-text failed on {gt_path}"
 
         # Export to HTML
-        pred_html: str = doc.export_to_html()
+        pred_html: str = doc.export_to_html(image_mode=ImageRefMode.EMBEDDED)
         assert verify_export(pred_html, str(gt_path) + ".html", generate=GENERATE), (
             f"export to html failed on {gt_path}"
         )

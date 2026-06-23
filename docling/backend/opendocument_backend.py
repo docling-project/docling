@@ -1445,34 +1445,114 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 label=GroupLabel.CHAPTER,
                 parent=None,
             )
-            doc.add_text(
-                label=DocItemLabel.TITLE,
-                parent=slide_group,
-                text=slide_name,
-            )
+            if not self._slide_has_visible_title(page):
+                doc.add_text(
+                    label=DocItemLabel.TITLE,
+                    parent=slide_group,
+                    text=slide_name,
+                )
             self._walk_slide(page, parent=slide_group, doc=doc)
         return doc
 
     def _walk_slide(
         self, page: DrawPage, parent: NodeItem, doc: DoclingDocument
     ) -> None:
-        for frame in page.get_frames():
-            for tbl in frame.get_elements("descendant::table:table"):
-                _add_table_from_odf(
-                    doc,
-                    tbl,
+        seen_text_content = False
+        for element in page.children:
+            if getattr(element, "tag", None) in {"anim:par", "presentation:notes"}:
+                continue
+            has_text = bool(
+                _clean_odf_text_lines(getattr(element, "text_recursive", ""))
+            )
+            is_title = self._is_slide_title_element(element, not seen_text_content)
+            if has_text:
+                seen_text_content = True
+            if isinstance(element, Frame):
+                self._walk_slide_frame(
+                    element,
                     parent=parent,
-                    odf_obj=self.odf_obj,
+                    doc=doc,
+                    is_title=is_title,
+                )
+            else:
+                self._walk_textbox_children(
+                    element.children,
+                    parent=parent,
+                    doc=doc,
+                    is_title=is_title,
                 )
 
-            for textbox in frame.get_elements("descendant::draw:text-box"):
-                self._walk_textbox_children(textbox.children, parent=parent, doc=doc)
+    @staticmethod
+    def _slide_has_visible_title(page: DrawPage) -> bool:
+        seen_text_content = False
+        for element in page.children:
+            if getattr(element, "tag", None) in {"anim:par", "presentation:notes"}:
+                continue
+            if OdpDocumentBackend._is_slide_title_element(
+                element, not seen_text_content
+            ):
+                return True
+            if _clean_odf_text_lines(getattr(element, "text_recursive", "")):
+                seen_text_content = True
+        return False
+
+    @staticmethod
+    def _is_slide_title_element(element: Any, is_first_text_content: bool) -> bool:
+        attrs = getattr(element, "attributes", {})
+        if attrs.get("presentation:class") == "title":
+            return True
+        return is_first_text_content and getattr(element, "tag", None) == (
+            "draw:custom-shape"
+        )
+
+    def _walk_slide_frame(
+        self,
+        frame: Frame,
+        parent: NodeItem,
+        doc: DoclingDocument,
+        *,
+        is_title: bool,
+    ) -> None:
+        chart_count = _add_odf_charts(
+            doc,
+            frame,
+            parent=parent,
+            content_layer=None,
+            odf_obj=self.odf_obj,
+        )
+
+        for tbl in frame.get_elements("descendant::table:table"):
+            _add_table_from_odf(
+                doc,
+                tbl,
+                parent=parent,
+                odf_obj=self.odf_obj,
+            )
+
+        _add_odf_images(
+            doc,
+            frame.get_images(),
+            parent,
+            None,
+            self.odf_obj,
+            skip_object_replacements=chart_count > 0,
+        )
+
+        for textbox in frame.get_elements("descendant::draw:text-box"):
+            self._walk_textbox_children(
+                textbox.children,
+                parent=parent,
+                doc=doc,
+                is_title=is_title,
+            )
 
     def _walk_textbox_children(
         self,
         elements: list[Any],
         parent: NodeItem,
         doc: DoclingDocument,
+        *,
+        is_title: bool = False,
     ) -> None:
         previous_list_state: _OdfListState | None = None
         for el in elements:
@@ -1490,7 +1570,7 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
                 _add_odf_text_runs(
                     doc,
                     _odf_text_runs(el, self.odf_obj),
-                    label=DocItemLabel.TEXT,
+                    label=DocItemLabel.TITLE if is_title else DocItemLabel.TEXT,
                     parent=parent,
                     content_layer=None,
                 )
