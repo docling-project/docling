@@ -123,13 +123,13 @@ def test_nemotron_language_resolution(req_languages, expected):
 def test_e2e_nemotron_ocr_conversions():
     pdf_paths = get_pdf_paths()
 
-    # Verify the default and the force-full-page Nemotron configurations. Each
-    # is checked against its own (namespaced) groundtruth so it does not clash
-    # with the shared `test_e2e_ocr_conversion` groundtruth.
     configs: list[tuple[OcrOptions, str]] = [
-        (NemotronOcrOptions(), "nemotron-ocr"),
-        (NemotronOcrOptions(batch_size=4), "nemotron-ocr"),
-        (NemotronOcrOptions(force_full_page_ocr=True), "nemotron-ocr.full-page"),
+        (NemotronOcrOptions(), "nemotron-ocr"),  # Default options
+        (NemotronOcrOptions(batch_size=2), "nemotron-ocr"),  # Lower batch_size
+        (
+            NemotronOcrOptions(force_full_page_ocr=True),
+            "nemotron-ocr.full-page",
+        ),  # Full page
     ]
 
     for ocr_options, engine_suffix in configs:

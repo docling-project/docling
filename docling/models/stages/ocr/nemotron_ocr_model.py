@@ -337,7 +337,6 @@ class NemotronOcrModel(BaseOcrModel):
 
         # OCR rectangles are accumulated across pages so that the model is fed full batches even
         # when individual pages contribute only a few rectangles
-        # prediction list per image.
         batch_size = max(1, self.options.batch_size)
         buffer: list[_BufferedRect] = []
 
