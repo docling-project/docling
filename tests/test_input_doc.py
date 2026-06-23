@@ -196,19 +196,19 @@ def test_guess_format(tmp_path):
     odfdo_available = importlib.util.find_spec("odfdo") is not None
     odf_cases = [
         (
-            Path("./tests/data/odf/odf_rich_cells.odt"),
+            Path("./tests/data/odf/text_document_01.odt"),
             InputFormat.ODT,
             OdtDocumentBackend,
             OdtFormatOption(),
         ),
         (
-            Path("./tests/data/odf/odf_table_with_title.ods"),
+            Path("./tests/data/odf/odf_table_with_title_01.ods"),
             InputFormat.ODS,
             OdsDocumentBackend,
             OdsFormatOption(),
         ),
         (
-            Path("./tests/data/odf/odf_presentation.odp"),
+            Path("./tests/data/odf/odf_presentation_01.odp"),
             InputFormat.ODP,
             OdpDocumentBackend,
             OdpFormatOption(),
