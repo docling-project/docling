@@ -278,7 +278,6 @@ WORKDIR /app
 # 사용자 생성 + 디렉토리/권한
 RUN groupadd -g $GID $GNAME && \
     useradd --create-home --no-log-init -u $UID -g $GID $UNAME && \
-    echo "$UNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     mkdir -p /var/log/supervisor /var/run/supervisor /app/.cache/huggingface \
       /app/.config/libreoffice /app/.cache/libreoffice /app/.local/share /app/tmp /tmp/xdg
 

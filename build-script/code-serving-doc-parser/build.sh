@@ -44,7 +44,8 @@ case "${HW_VARIANT}" in
     ;;
   gpu)
     DOCKERFILE_PATH="build-script/code-serving-doc-parser/Dockerfile.gpu"
-    IMAGE_TAG="${DOCKER_REGISTRY}/mnc/${IMAGE_NAME}:${IMAGE_VERSION}-gpu"
+    IMAGE_NAME="${IMAGE_NAME}-gpu"
+    IMAGE_TAG="${DOCKER_REGISTRY}/mnc/${IMAGE_NAME}:${IMAGE_VERSION}"
     ;;
   "")
     echo "[ERROR] HW_VARIANT 가 비어 있습니다."

@@ -82,6 +82,7 @@ else
       FIND_LINKS="--find-links $DESTINATION/packages"
     fi
     echo "[init.sh] requirements.txt detected, installing packages..."
+    # pip 은 PATH 상 /app/.venv/bin/pip (base deps 와 동일 venv) 로 해석된다.
     pip install $PIP_OPTS -r "$REQ_FILE" $FIND_LINKS 2>&1 || echo "[init.sh] WARNING: pip install failed"
     echo "[init.sh] Package installation completed."
   fi

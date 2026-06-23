@@ -48,6 +48,7 @@ COPY build-script/code-serving-doc-parser/pyproject.toml build-script/code-servi
 
 # genon/code-serving 와 동일: uv venv --seed + uv pip install . → /app/.venv
 RUN --mount=type=cache,target=/root/.cache/uv \
+    rm -rf /app/tmp /app/nltk_data && \
     uv venv --seed && \
     uv pip install .
 
@@ -181,7 +182,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # 문서/OCR/LibreOffice/Java/폰트 (ubuntu 22.04 jammy). openjdk-21/libgdk-pixbuf 명은 배포판에 따라 조정.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      net-tools curl wget fontconfig procps supervisor vim git sudo tzdata locales \
+      net-tools curl wget fontconfig procps supervisor vim git tzdata locales \
       libmagic1 libmagic-dev \
       libpango-1.0-0 libpangocairo-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 \
       libffi-dev libgl1 \
@@ -212,7 +213,6 @@ RUN set -eux; \
 # 사용자 생성 + 디렉토리
 RUN groupadd -g $GID $GNAME && \
     useradd --create-home --no-log-init -u $UID -g $GID $UNAME && \
-    echo "$UNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     mkdir -p /var/log/supervisor /var/run/supervisor /app/.cache/huggingface \
       /app/.config/libreoffice /app/.cache/libreoffice /app/.local/share /app/tmp /tmp/xdg
 
