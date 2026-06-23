@@ -17,6 +17,7 @@ Known gaps to improve:
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from typing import Any, cast
@@ -74,6 +75,14 @@ _INSTALL_HINT = (
     "The 'odfdo' package is required to process OpenDocument files. "
     "Install it with `pip install 'docling[opendocument]'`."
 )
+
+
+@dataclass
+class _OdfListState:
+    group: NodeItem
+    last_item: NodeItem | None
+    enumerated: bool
+    counter: int
 
 
 def _load_odf_document(
@@ -208,7 +217,9 @@ def _odf_element_text_lines(element: Any) -> list[str]:
     return _clean_odf_text_lines(element.text_recursive)
 
 
-def _odf_list_item_content(item: ListItem) -> tuple[str, list[OdfList]]:
+def _odf_list_item_content(
+    item: ListItem, *, flatten_nested_text: bool = True
+) -> tuple[str, list[OdfList]]:
     text_parts: list[str] = []
     nested: list[OdfList] = []
     for child in item.children:
@@ -216,17 +227,58 @@ def _odf_list_item_content(item: ListItem) -> tuple[str, list[OdfList]]:
             nested.append(child)
         elif isinstance(child, Paragraph):
             text_parts.extend(_clean_odf_text_lines(child.text_recursive))
-    if not text_parts:
+    if not text_parts and (flatten_nested_text or not nested):
         text_parts.extend(_clean_odf_text_lines(item.text_recursive))
     return " ".join(text_parts), nested
 
 
-def _odf_list_has_renderable_content(odf_list: OdfList) -> bool:
+def _odf_list_starts_with_empty_nested_item(
+    odf_list: OdfList, *, flatten_nested_text: bool
+) -> bool:
     for child in odf_list.children:
         if not isinstance(child, ListItem):
             continue
-        text, nested = _odf_list_item_content(child)
-        if text or any(_odf_list_has_renderable_content(item) for item in nested):
+        text, nested = _odf_list_item_content(
+            child, flatten_nested_text=flatten_nested_text
+        )
+        return text == "" and any(
+            _odf_list_has_renderable_content(
+                item, flatten_nested_text=flatten_nested_text
+            )
+            for item in nested
+        )
+    return False
+
+
+def _odf_list_has_direct_item_text(
+    odf_list: OdfList, *, flatten_nested_text: bool
+) -> bool:
+    for child in odf_list.children:
+        if not isinstance(child, ListItem):
+            continue
+        text, _nested = _odf_list_item_content(
+            child, flatten_nested_text=flatten_nested_text
+        )
+        if text:
+            return True
+    return False
+
+
+def _odf_list_has_renderable_content(
+    odf_list: OdfList, *, flatten_nested_text: bool = True
+) -> bool:
+    for child in odf_list.children:
+        if not isinstance(child, ListItem):
+            continue
+        text, nested = _odf_list_item_content(
+            child, flatten_nested_text=flatten_nested_text
+        )
+        if text or any(
+            _odf_list_has_renderable_content(
+                item, flatten_nested_text=flatten_nested_text
+            )
+            for item in nested
+        ):
             return True
     return False
 
@@ -398,23 +450,87 @@ def _add_odf_list(
     odf_obj: OdfDocument | None,
     enumerated: bool = False,
     level: int = 1,
-) -> None:
-    if not _odf_list_has_renderable_content(odf_list):
-        return
+    continued_state: _OdfListState | None = None,
+    flatten_nested_text: bool = True,
+) -> _OdfListState | None:
+    if not _odf_list_has_renderable_content(
+        odf_list, flatten_nested_text=flatten_nested_text
+    ):
+        return None
 
-    list_group = doc.add_list_group(
-        name="list", parent=parent, content_layer=content_layer
-    )
-    current_enumerated = _odf_list_level_is_enumerated(
+    style_enumerated = _odf_list_level_is_enumerated(
         odf_obj, odf_list, level, fallback=enumerated
     )
-    counter = _odf_list_start_value(odf_obj, odf_list, level) - 1
+    should_continue = (
+        continued_state is not None
+        and continued_state.last_item is not None
+        and _odf_list_starts_with_empty_nested_item(
+            odf_list, flatten_nested_text=flatten_nested_text
+        )
+    )
+    if not should_continue and not _odf_list_has_direct_item_text(
+        odf_list, flatten_nested_text=flatten_nested_text
+    ):
+        for child in odf_list.children:
+            if not isinstance(child, ListItem):
+                continue
+            _text, nested = _odf_list_item_content(
+                child, flatten_nested_text=flatten_nested_text
+            )
+            for nested_list in nested:
+                _add_odf_list(
+                    doc,
+                    nested_list,
+                    parent=parent,
+                    content_layer=content_layer,
+                    odf_obj=odf_obj,
+                    enumerated=style_enumerated,
+                    level=level + 1,
+                    flatten_nested_text=flatten_nested_text,
+                )
+        return None
+
+    if should_continue and continued_state is not None:
+        list_group = continued_state.group
+        current_enumerated = continued_state.enumerated
+        counter = continued_state.counter
+        previous_item = continued_state.last_item
+    else:
+        list_group = doc.add_list_group(
+            name="list", parent=parent, content_layer=content_layer
+        )
+        current_enumerated = style_enumerated
+        counter = _odf_list_start_value(odf_obj, odf_list, level) - 1
+        previous_item = None
+
     for child in odf_list.children:
         if not isinstance(child, ListItem):
             continue
-        text, nested = _odf_list_item_content(child)
-        nested = [item for item in nested if _odf_list_has_renderable_content(item)]
+        text, nested = _odf_list_item_content(
+            child, flatten_nested_text=flatten_nested_text
+        )
+        nested = [
+            item
+            for item in nested
+            if _odf_list_has_renderable_content(
+                item, flatten_nested_text=flatten_nested_text
+            )
+        ]
         if not text and not nested:
+            continue
+        if not text:
+            nested_parent = previous_item or list_group
+            for nested_list in nested:
+                _add_odf_list(
+                    doc,
+                    nested_list,
+                    parent=nested_parent,
+                    content_layer=content_layer,
+                    odf_obj=odf_obj,
+                    enumerated=style_enumerated,
+                    level=level + 1,
+                    flatten_nested_text=flatten_nested_text,
+                )
             continue
         counter += 1
         marker = (
@@ -429,6 +545,7 @@ def _add_odf_list(
             text=text,
             content_layer=content_layer,
         )
+        previous_item = item
         for nested_list in nested:
             _add_odf_list(
                 doc,
@@ -436,9 +553,16 @@ def _add_odf_list(
                 parent=item,
                 content_layer=content_layer,
                 odf_obj=odf_obj,
-                enumerated=current_enumerated,
+                enumerated=style_enumerated,
                 level=level + 1,
+                flatten_nested_text=flatten_nested_text,
             )
+    return _OdfListState(
+        group=list_group,
+        last_item=previous_item,
+        enumerated=current_enumerated,
+        counter=counter,
+    )
 
 
 def _add_rich_cell_children(
@@ -699,26 +823,32 @@ class OdtDocumentBackend(_OdfBaseBackend):
         parent: NodeItem | None,
         doc: DoclingDocument,
     ) -> None:
+        previous_list_state: _OdfListState | None = None
         for el in elements:
             if isinstance(el, Header):
+                previous_list_state = None
                 level = el.get_attribute_integer("text:outline-level") or 1
                 text = el.text_recursive.strip()
                 if text:
                     doc.add_heading(parent=parent, text=text, level=max(1, level))
             elif isinstance(el, Paragraph) and not isinstance(el, Header):
+                previous_list_state = None
                 text = el.text_recursive.strip()
                 if text:
                     doc.add_text(label=DocItemLabel.TEXT, parent=parent, text=text)
             elif isinstance(el, OdfList):
-                _add_odf_list(
+                previous_list_state = _add_odf_list(
                     doc,
                     el,
                     parent=parent,
                     content_layer=None,
                     odf_obj=self.odf_obj,
                     enumerated=False,
+                    continued_state=previous_list_state,
+                    flatten_nested_text=False,
                 )
             elif isinstance(el, OdfTable):
+                previous_list_state = None
                 _add_table_from_odf(
                     doc,
                     el,
@@ -726,6 +856,7 @@ class OdtDocumentBackend(_OdfBaseBackend):
                     odf_obj=self.odf_obj,
                 )
             else:
+                previous_list_state = None
                 _log.debug("Ignoring ODT element with tag: %s", el.tag)
 
 
@@ -799,24 +930,29 @@ class OdpDocumentBackend(_OdfBaseBackend, PaginatedDocumentBackend):
         parent: NodeItem,
         doc: DoclingDocument,
     ) -> None:
+        previous_list_state: _OdfListState | None = None
         for el in elements:
             if isinstance(el, Header):
+                previous_list_state = None
                 text = el.text_recursive.strip()
                 if text:
                     level = el.get_attribute_integer("text:outline-level") or 1
                     doc.add_heading(parent=parent, text=text, level=max(1, level))
             elif isinstance(el, Paragraph):
+                previous_list_state = None
                 text = el.text_recursive.strip()
                 if text:
                     doc.add_text(label=DocItemLabel.TEXT, parent=parent, text=text)
             elif isinstance(el, OdfList):
-                _add_odf_list(
+                previous_list_state = _add_odf_list(
                     doc,
                     el,
                     parent=parent,
                     content_layer=None,
                     odf_obj=self.odf_obj,
                     enumerated=False,
+                    continued_state=previous_list_state,
+                    flatten_nested_text=False,
                 )
 
 

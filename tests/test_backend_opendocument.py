@@ -357,6 +357,37 @@ def test_odt_ordered_nested_list(tmp_path: Path):
     assert nested_group.parent == list_items[0].get_ref()
 
 
+def test_odt_text_document_nested_lists():
+    path = Path("tests/data/odf/text_document_01.odt")
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    list_items = [
+        item
+        for item, _level in res.document.iterate_items()
+        if isinstance(item, TextItem) and item.label == "list_item"
+    ]
+
+    assert [(item.text, item.enumerated, item.marker) for item in list_items] == [
+        ("numbered list 1", True, "1."),
+        ("numbered list 2", True, "2."),
+        ("bullet list 2.1", False, ""),
+        ("bullet list 2.2", False, ""),
+        ("bullet list 2.2.1", False, ""),
+        ("bullet list 2.3", False, ""),
+        ("numbered list 3", True, "3."),
+        ("bullet list 3.0.1", False, ""),
+    ]
+
+    item_by_text = {item.text: item for item in list_items}
+    parent_group_2_1 = item_by_text["bullet list 2.1"].parent.resolve(res.document)
+    parent_group_2_2_1 = item_by_text["bullet list 2.2.1"].parent.resolve(res.document)
+    parent_group_3_0_1 = item_by_text["bullet list 3.0.1"].parent.resolve(res.document)
+
+    assert parent_group_2_1.parent == item_by_text["numbered list 2"].get_ref()
+    assert parent_group_2_2_1.parent == item_by_text["bullet list 2.2"].get_ref()
+    assert parent_group_3_0_1.parent == item_by_text["numbered list 3"].get_ref()
+
+
 def test_odp_nested_textbox_list(tmp_path: Path):
     path = tmp_path / "nested_list.odp"
     doc = OdfDocument("presentation")
