@@ -92,7 +92,7 @@ def test_page_truncated_length(pipeline: VlmPipeline) -> None:
     status = pipeline._determine_status(conv_res)
     assert status == ConversionStatus.PARTIAL_SUCCESS
     assert len(conv_res.errors) == 1
-    assert conv_res.errors[0].category == FailureCategory.GENERATION_FAILURE
+    assert conv_res.errors[0].category == FailureCategory.INFERENCE_FAILURE
     assert conv_res.errors[0].page_no == 2
 
 
@@ -105,7 +105,7 @@ def test_page_content_filtered(pipeline: VlmPipeline) -> None:
     status = pipeline._determine_status(conv_res)
     assert status == ConversionStatus.PARTIAL_SUCCESS
     assert len(conv_res.errors) == 1
-    assert conv_res.errors[0].category == FailureCategory.GENERATION_FAILURE
+    assert conv_res.errors[0].category == FailureCategory.INFERENCE_FAILURE
     assert conv_res.errors[0].page_no == 1
 
 
@@ -119,7 +119,7 @@ def test_page_no_vlm_response(pipeline: VlmPipeline) -> None:
     status = pipeline._determine_status(conv_res)
     assert status == ConversionStatus.PARTIAL_SUCCESS
     assert len(conv_res.errors) == 1
-    assert conv_res.errors[0].category == FailureCategory.GENERATION_FAILURE
+    assert conv_res.errors[0].category == FailureCategory.INFERENCE_FAILURE
     assert conv_res.errors[0].page_no == 2
 
 
@@ -156,7 +156,7 @@ def test_multiple_failures_accumulate_errors(pipeline: VlmPipeline) -> None:
     status = pipeline._determine_status(conv_res)
     assert status == ConversionStatus.PARTIAL_SUCCESS
     assert len(conv_res.errors) == 2
-    assert conv_res.errors[0].category == FailureCategory.GENERATION_FAILURE
+    assert conv_res.errors[0].category == FailureCategory.INFERENCE_FAILURE
     assert conv_res.errors[0].page_no == 1
-    assert conv_res.errors[1].category == FailureCategory.GENERATION_FAILURE
+    assert conv_res.errors[1].category == FailureCategory.INFERENCE_FAILURE
     assert conv_res.errors[1].page_no == 2

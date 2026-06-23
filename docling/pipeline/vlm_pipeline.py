@@ -250,7 +250,7 @@ class VlmPipeline(PaginatedPipeline):
                         component_type=DoclingComponentType.PIPELINE,
                         module_name=self.__class__.__name__,
                         error_message="No VLM prediction.",
-                        category=FailureCategory.GENERATION_FAILURE,
+                        category=FailureCategory.INFERENCE_FAILURE,
                         page_no=page.page_no,
                     )
                 )
@@ -265,7 +265,7 @@ class VlmPipeline(PaginatedPipeline):
                         module_name=self.__class__.__name__,
                         error_message="VLM output incomplete "
                         f"(stop_reason={vlm_response.stop_reason.value}).",
-                        category=FailureCategory.GENERATION_FAILURE,
+                        category=FailureCategory.INFERENCE_FAILURE,
                         page_no=page.page_no,
                     )
                 )
@@ -381,7 +381,7 @@ class VlmPipeline(PaginatedPipeline):
                             component_type=DoclingComponentType.PIPELINE,
                             module_name=self.__class__.__name__,
                             error_message="No <doclang> XML fragment found in VLM response.",
-                            category=FailureCategory.GENERATION_FAILURE,
+                            category=FailureCategory.INFERENCE_FAILURE,
                             page_no=page.page_no,
                         )
                     )

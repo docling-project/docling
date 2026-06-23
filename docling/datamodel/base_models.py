@@ -214,7 +214,7 @@ class FailureCategory(str, Enum):
     to the other without translation.
 
     Task-scope only: CAPACITY, TARGET_UNAVAILABLE, INTERNAL.
-    Document/page-scope only: BACKEND_FAILURE, GENERATION_FAILURE.
+    Document/page-scope only: BACKEND_FAILURE, INFERENCE_FAILURE.
     Shared: POLICY, SOURCE_UNAVAILABLE, TIMEOUT.
 
     UNKNOWN is the default for uncategorized errors, distinct from INTERNAL (a
@@ -228,7 +228,7 @@ class FailureCategory(str, Enum):
     TIMEOUT = "timeout"
     INTERNAL = "internal"
     BACKEND_FAILURE = "backend_failure"
-    GENERATION_FAILURE = "generation_failure"
+    INFERENCE_FAILURE = "inference_failure"
     UNKNOWN = "unknown"
 
 

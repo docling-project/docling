@@ -50,7 +50,7 @@ class BaseExtractionPipeline(ABC):
                 component_type=DoclingComponentType.PIPELINE,
                 module_name=self.__class__.__name__,
                 error_message=str(e),
-                category=FailureCategory.BACKEND_FAILURE,
+                category=FailureCategory.UNKNOWN,
             )
             ext_res.errors.append(error_item)
             if raises_on_error:

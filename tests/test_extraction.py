@@ -124,8 +124,89 @@ def test_extraction_format_not_allowed_is_policy() -> None:
     assert result.errors[0].category == FailureCategory.POLICY
 
 
+def test_threaded_model_stage_failure_records_generation_category() -> None:
+    from types import SimpleNamespace
+
+    from docling.datamodel.base_models import (
+        DoclingComponentType,
+        FailureCategory,
+        Page,
+    )
+    from docling.pipeline.standard_pdf_pipeline import (
+        ThreadedItem,
+        ThreadedPipelineStage,
+    )
+
+    def _raise(_conv_res, _pages):
+        raise RuntimeError("ocr failed")
+
+    stage = ThreadedPipelineStage(
+        name="ocr",
+        model=_raise,
+        batch_size=1,
+        batch_timeout=0.0,
+        queue_max_size=1,
+    )
+    item = ThreadedItem(
+        payload=Page(page_no=1),
+        run_id=1,
+        page_no=1,
+        conv_res=SimpleNamespace(),
+    )
+
+    result = stage._process_batch([item])
+
+    assert len(result) == 1
+    assert result[0].is_failed
+    assert result[0].failure is not None
+    assert result[0].failure.component_type == DoclingComponentType.MODEL
+    assert result[0].failure.category == FailureCategory.INFERENCE_FAILURE
+    assert result[0].failure.page_no == 1
+
+
+def test_standard_pipeline_integrate_preserves_failed_page_category() -> None:
+    from types import SimpleNamespace
+
+    from docling.datamodel.base_models import (
+        ConversionStatus,
+        DoclingComponentType,
+        ErrorItem,
+        FailureCategory,
+        Page,
+    )
+    from docling.pipeline.standard_pdf_pipeline import (
+        ProcessingResult,
+        StandardPdfPipeline,
+    )
+
+    pipeline = StandardPdfPipeline.__new__(StandardPdfPipeline)
+    pipeline.keep_images = False
+    pipeline.keep_backend = False
+    pipeline.pipeline_options = SimpleNamespace(generate_parsed_pages=False)
+
+    failure = ErrorItem(
+        component_type=DoclingComponentType.MODEL,
+        module_name="ocr",
+        error_message="ocr failed",
+        category=FailureCategory.INFERENCE_FAILURE,
+        page_no=1,
+    )
+    conv_res = SimpleNamespace(pages=[Page(page_no=1)], errors=[], status=None)
+
+    pipeline._integrate_results(
+        conv_res,
+        ProcessingResult(
+            failed_pages=[(1, RuntimeError("ocr failed"), failure)],
+            total_expected=1,
+        ),
+    )
+
+    assert conv_res.status == ConversionStatus.FAILURE
+    assert conv_res.errors == [failure]
+
+
 def test_extraction_pipeline_failure_is_categorized() -> None:
-    """A failing extraction pipeline records a PIPELINE/BACKEND_FAILURE ErrorItem."""
+    """A failing extraction pipeline records a PIPELINE/UNKNOWN ErrorItem."""
     from docling.datamodel.base_models import (
         ConversionStatus,
         DoclingComponentType,
@@ -165,4 +246,4 @@ def test_extraction_pipeline_failure_is_categorized() -> None:
     assert result.errors
     err = result.errors[0]
     assert err.component_type == DoclingComponentType.PIPELINE
-    assert err.category == FailureCategory.BACKEND_FAILURE
+    assert err.category == FailureCategory.UNKNOWN
