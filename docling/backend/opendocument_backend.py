@@ -471,6 +471,11 @@ def _add_odf_paragraph(
     )
     runs = _odf_text_runs(element, odf_obj)
     text = _odf_text_from_runs(runs)
+    if images:
+        stripped_text = _strip_odf_image_reference_text(text, images).strip()
+        if stripped_text != text:
+            runs = [_OdfTextRun(text=stripped_text)] if stripped_text else []
+            text = stripped_text
     if image_count > 0 and _odf_text_is_generated_image_references(text, images):
         return
     if chart_count > 0 and ("ObjectReplacements" in text or not text):
@@ -694,29 +699,42 @@ def _odf_cell_has_rich_content(cell: Any) -> bool:
     if _odf_cell_has_images(cell):
         return True
 
+    non_empty_paragraphs = 0
     for child in cell.children:
         if isinstance(child, OdfList):
             if _odf_list_has_renderable_content(child):
                 return True
-        elif isinstance(child, (Header, Paragraph)):
+        elif isinstance(child, Header):
             if _clean_odf_text_lines(child.text_recursive):
+                return True
+        elif isinstance(child, Paragraph):
+            if _clean_odf_text_lines(child.text_recursive):
+                non_empty_paragraphs += 1
+            if child.get_images():
                 return True
         elif isinstance(child, OdfTable):
             if _odf_table_has_content(child):
                 return True
 
-    return False
+    return non_empty_paragraphs > 1 or (cell.value is None and non_empty_paragraphs > 0)
 
 
-def _odf_cell_text(cell: Any) -> str:
-    if cell.value is not None:
-        return str(cell.value)
-
+def _odf_cell_child_text(cell: Any) -> str:
     lines: list[str] = []
     for child in cell.children:
         lines.extend(_odf_element_text_lines(child))
-    if lines:
-        return "\n".join(lines)
+    return "\n".join(lines)
+
+
+def _odf_cell_text(cell: Any) -> str:
+    child_text = _odf_cell_child_text(cell)
+    if _odf_cell_has_rich_content(cell):
+        return _strip_odf_image_reference_text(child_text, cell.get_images())
+
+    if cell.value is not None:
+        return str(cell.value)
+    if child_text:
+        return child_text
     if cell.children:
         return ""
 
@@ -732,7 +750,7 @@ def _odf_cell_has_content(cell: Any) -> bool:
 
 
 def _odf_cell_is_rich(cell: Any) -> bool:
-    return cell.value is None and _odf_cell_has_rich_content(cell)
+    return _odf_cell_has_rich_content(cell)
 
 
 def _image_ref_from_odf_image(
@@ -797,10 +815,11 @@ def _odf_image_can_be_bitmap(image: Any, image_url: str | None) -> bool:
 
 
 def _odf_text_is_generated_image_references(text: str, images: list[Any]) -> bool:
-    remaining = text.strip()
-    if not remaining:
-        return False
+    return _strip_odf_image_reference_text(text, images).strip() == ""
 
+
+def _strip_odf_image_reference_text(text: str, images: list[Any]) -> str:
+    remaining = text
     for image in images:
         href = _odf_image_href(image)
         if href is None:
@@ -810,7 +829,7 @@ def _odf_text_is_generated_image_references(text: str, images: list[Any]) -> boo
         for ref in refs:
             remaining = remaining.replace(f"({ref})", "")
 
-    return remaining.strip() == ""
+    return remaining
 
 
 def _add_odf_images(

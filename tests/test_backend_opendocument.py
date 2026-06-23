@@ -19,6 +19,7 @@ from docling_core.types.doc import (
     PictureItem,
     RichTableCell,
     Script,
+    TableItem,
     TextItem,
 )
 from PIL import Image
@@ -534,6 +535,80 @@ def test_odt_table_cell_image_creates_rich_cell_picture(tmp_path: Path):
     assert pictures[0].image is not None
 
 
+def _rich_cell_descendants(doc: DoclingDocument, cell: RichTableCell):
+    group = cell.ref.resolve(doc)
+    return [
+        item
+        for item, _level in doc.iterate_items(root=group)
+        if item.get_ref() != group.get_ref()
+    ]
+
+
+def test_odt_text_document_rich_table_cells():
+    path = Path("tests/data/odf/text_document_03.odt")
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    rich_cells = [
+        cell
+        for table in res.document.tables
+        for cell in table.data.table_cells
+        if isinstance(cell, RichTableCell)
+    ]
+
+    list_cell = next(
+        cell
+        for cell in rich_cells
+        if cell.text == "This is a list:\nA First\nA Second\nA Third"
+    )
+    list_descendants = _rich_cell_descendants(res.document, list_cell)
+    assert any(
+        isinstance(item, TextItem) and item.text == "This is a list:"
+        for item in list_descendants
+    )
+    assert [
+        item.text
+        for item in list_descendants
+        if getattr(item, "label", None) == "list_item"
+    ] == ["A First", "A Second", "A Third"]
+
+    multi_paragraph_cell = next(
+        cell
+        for cell in rich_cells
+        if cell.text == "This is a paragraph\nThis is another paragraph"
+    )
+    multi_paragraph_texts = [
+        item.text
+        for item in _rich_cell_descendants(res.document, multi_paragraph_cell)
+        if isinstance(item, TextItem)
+    ]
+    assert multi_paragraph_texts == [
+        "This is a paragraph",
+        "This is another paragraph",
+    ]
+
+    nested_table_cell = next(
+        cell for cell in rich_cells if cell.text.startswith("Rich cell\nA nested table")
+    )
+    assert any(
+        isinstance(item, TableItem)
+        for item in _rich_cell_descendants(res.document, nested_table_cell)
+    )
+
+    picture_cell = next(
+        cell for cell in rich_cells if cell.text == "Text and picture\nOwner avatar"
+    )
+    picture_descendants = _rich_cell_descendants(res.document, picture_cell)
+    assert any(
+        isinstance(item, TextItem) and item.text == "Text and picture"
+        for item in picture_descendants
+    )
+    assert any(
+        isinstance(item, PictureItem) and item.image is not None
+        for item in picture_descendants
+    )
+    assert all("(Pictures/" not in cell.text for cell in rich_cells)
+
+
 def test_odp_textbox_text_formatting(tmp_path: Path):
     path = tmp_path / "formatted_text.odp"
     doc = OdfDocument("presentation")
@@ -687,6 +762,12 @@ def _test_e2e_odf_conversions_impl(odf_documents: list[tuple[Path, DoclingDocume
         assert verify_export(
             pred_itxt, str(gt_path) + ".itxt", generate=GENERATE, fuzzy=True
         ), f"export to indented-text failed on {gt_path}"
+
+        if gt_path.name.startswith("text_document_") and gt_path.suffix == ".odt":
+            pred_html: str = doc.export_to_html()
+            assert verify_export(
+                pred_html, str(gt_path) + ".html", generate=GENERATE
+            ), f"export to html failed on {gt_path}"
 
         # Verify DoclingDocument JSON
         assert verify_document(
