@@ -144,6 +144,7 @@ class NemotronOcrModel(BaseOcrModel):
             self.reader = NemotronOCRV2(
                 model_dir=None if model_dir is None else str(model_dir),
                 lang=language,
+                detector_max_batch_size=self.options.batch_size,
             )
 
     @staticmethod
