@@ -49,7 +49,6 @@ JATS_DTD_URL: Final[list[str]] = ["JATS-journalpublishing", "JATS-archive"]
 DEFAULT_HEADER_ACKNOWLEDGMENTS: Final[str] = "Acknowledgments"
 DEFAULT_HEADER_ABSTRACT: Final[str] = "Abstract"
 DEFAULT_HEADER_FOOTNOTES: Final[str] = "Footnotes"
-DEFAULT_HEADER_KEYWORDS: Final[str] = "Keywords"
 DEFAULT_HEADER_REFERENCES: Final[str] = "References"
 DEFAULT_TEXT_ETAL: Final[str] = "et al."
 
