@@ -52,7 +52,6 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     ResponseFormat,
 )
-from docling.datamodel.settings import settings
 
 # VlmResponseFormat is actually ResponseFormat from pipeline_options_vlm_model
 # No need to import it separately as it's already imported above

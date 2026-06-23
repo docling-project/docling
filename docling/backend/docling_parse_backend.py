@@ -32,6 +32,7 @@ from docling.datamodel.backend_options import (
     ThreadedDoclingParseBackendOptions,
 )
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
+from docling.exceptions import DocumentLoadError
 from docling.utils.locks import pypdfium2_lock
 
 if TYPE_CHECKING:
@@ -269,20 +270,26 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
         password = (
             self.options.password.get_secret_value() if self.options.password else None
         )
-        with pypdfium2_lock:
-            self._pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
-        self.parser = DoclingPdfParser(loglevel="fatal")
-        decode_config = _make_docling_parse_decode_config()
+        self.dp_doc: Optional[PdfDocument]
+        try:
+            with pypdfium2_lock:
+                self._pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
+            self.parser = DoclingPdfParser(loglevel="fatal")
+            decode_config = _make_docling_parse_decode_config()
+            self.dp_doc = self.parser.load(
+                path_or_stream=self.path_or_stream,
+                password=password,
+                decode_config=decode_config,
+            )
+        except RuntimeError as e:
+            # pypdfium2 (PdfiumError) and docling-parse both signal unreadable
+            # bytes by raising RuntimeError; tag it as a load failure.
+            raise DocumentLoadError(
+                f"docling-parse could not load document {self.document_hash}."
+            ) from e
 
-        self.dp_doc: Optional[PdfDocument] = self.parser.load(
-            path_or_stream=self.path_or_stream,
-            password=password,
-            decode_config=decode_config,
-        )
-        success = self.dp_doc is not None
-
-        if not success:
-            raise RuntimeError(
+        if self.dp_doc is None:
+            raise DocumentLoadError(
                 f"docling-parse could not load document {self.document_hash}."
             )
 

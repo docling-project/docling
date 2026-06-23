@@ -56,7 +56,7 @@ from docling.backend.abstract_backend import (
 from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
-from docling.exceptions import OperationNotAllowed
+from docling.exceptions import DocumentLoadError, OperationNotAllowed
 
 _log = logging.getLogger(__name__)
 
@@ -478,7 +478,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self._raw_html_bytes = raw
             self.soup = BeautifulSoup(raw, "html.parser")
         except Exception as e:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 "Could not initialize HTML backend for file with "
                 f"hash {self.document_hash}."
             ) from e

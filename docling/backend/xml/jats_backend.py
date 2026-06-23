@@ -42,6 +42,7 @@ from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
@@ -140,7 +141,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     self.valid = True
                     return
         except Exception as exc:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 f"Could not initialize JATS backend for file with hash {self.document_hash}."
             ) from exc
 

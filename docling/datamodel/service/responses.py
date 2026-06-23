@@ -206,9 +206,7 @@ class ConvertedOutcomeCountsMixin(BaseModel):
     num_failed: int
 
 
-# FailureCategory is defined in base_models (the lower layer) and re-exported via
-# the import above so existing `from docling.datamodel.service.responses import
-# FailureCategory` callers keep working. ErrorItem and PublicFailureInfo share it.
+# FailureCategory lives in base_models; re-exported here for back-compat imports.
 
 
 class FailurePhase(str, enum.Enum):

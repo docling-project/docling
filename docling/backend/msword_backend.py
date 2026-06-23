@@ -47,6 +47,7 @@ from docling.backend.docx.drawingml.utils import (
 from docling.backend.docx.latex.omml import oMath2Latex
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
@@ -199,7 +200,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             else:
                 return None
         except Exception as e:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 f"MsWordDocumentBackend could not load document with hash {document_hash}"
             ) from e
 

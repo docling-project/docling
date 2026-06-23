@@ -239,16 +239,17 @@ def test_invalid_input_unreachable_source():
 
 
 def test_backend_parse_error_is_backend_failure():
-    """RuntimeError from backend init is the parse-failure signal."""
+    """DocumentLoadError from backend init is the parse-failure signal."""
     from io import BytesIO
 
     from docling.backend.abstract_backend import AbstractDocumentBackend
     from docling.datamodel.base_models import FailureCategory
     from docling.datamodel.document import InputDocument, build_invalid_input_errors
+    from docling.exceptions import DocumentLoadError
 
     class _ParseFailBackend(AbstractDocumentBackend):
         def __init__(self, *args, **kwargs):
-            raise RuntimeError("bad")
+            raise DocumentLoadError("these bytes are not a valid PDF")
 
         def is_valid(self) -> bool:
             return False
@@ -271,9 +272,50 @@ def test_backend_parse_error_is_backend_failure():
         filename="x.pdf",
     )
     assert doc.valid is False
-    assert (
-        build_invalid_input_errors(doc)[0].category == FailureCategory.BACKEND_FAILURE
+    error = build_invalid_input_errors(doc)[0]
+    assert error.category == FailureCategory.BACKEND_FAILURE
+    # The DocumentLoadError message is surfaced, not a generic placeholder.
+    assert error.error_message == "these bytes are not a valid PDF"
+
+
+def test_bare_runtime_error_from_backend_is_unknown():
+    """A bare RuntimeError is an internal defect, not the bad-input signal.
+
+    Only DocumentLoadError is treated as bad input. A bare RuntimeError is
+    caught by __init__'s handler and recorded as UNKNOWN, not BACKEND_FAILURE.
+    """
+    from io import BytesIO
+
+    from docling.backend.abstract_backend import AbstractDocumentBackend
+    from docling.datamodel.base_models import FailureCategory
+    from docling.datamodel.document import InputDocument, build_invalid_input_errors
+
+    class _BareRuntimeErrorBackend(AbstractDocumentBackend):
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError("internal defect")
+
+        def is_valid(self) -> bool:
+            return False
+
+        @classmethod
+        def supported_formats(cls):
+            return {InputFormat.PDF}
+
+        @classmethod
+        def supports_pagination(cls) -> bool:
+            return False
+
+        def unload(self):
+            pass
+
+    doc = InputDocument(
+        path_or_stream=BytesIO(b"anything"),
+        format=InputFormat.PDF,
+        backend=_BareRuntimeErrorBackend,
+        filename="x.pdf",
     )
+    assert doc.valid is False
+    assert build_invalid_input_errors(doc)[0].category == FailureCategory.UNKNOWN
 
 
 def test_backend_value_error_propagates():

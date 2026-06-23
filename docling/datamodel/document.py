@@ -74,6 +74,7 @@ from docling.datamodel.base_models import (
     Page,
 )
 from docling.datamodel.settings import DocumentLimits
+from docling.exceptions import DocumentLoadError
 from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash, safe_version
 
@@ -109,22 +110,13 @@ _EMPTY_DOCLING_DOC = DoclingDocument(name="dummy")
 def _is_backend_parse_error(exc: BaseException) -> bool:
     """True when a backend-init exception means the bytes themselves are bad.
 
-    Docling's document backends signal "cannot build a document from these
-    bytes" by raising ``RuntimeError`` (the PDF backends -- ``pypdfium2``'s
-    ``PdfiumError`` is a ``RuntimeError`` subclass and ``docling-parse``'s
-    ``load()`` raises ``RuntimeError`` -- and the office/text backends, which
-    wrap their parser's failure in an explicit ``RuntimeError``). Treat only
-    that established signal as a parse failure here. Backend ``ValueError`` is
-    too broad and has valid existing callers that expect it to propagate rather
-    than being converted into an invalid-input result.
-
-    Other exception types are *not* treated as bad input: they are left to
-    ``__init__``'s handlers, so a truly internal failure (e.g. an ``ImportError``
-    for a missing optional dependency) is not mislabeled and propagates as
-    before. The residual case -- an internal defect a backend has itself
-    collapsed into a ``RuntimeError`` -- is indistinguishable at this layer.
+    Document backends raise ``DocumentLoadError`` in their load path to signal
+    "cannot build a document from these bytes". Only that explicit signal is
+    treated as a parse failure; every other exception (a missing optional
+    dependency, a programming bug, resource exhaustion) is left to ``__init__``'s
+    handlers so an internal defect is not mislabeled as bad input.
     """
-    return isinstance(exc, RuntimeError)
+    return isinstance(exc, DocumentLoadError)
 
 
 class InputRejection(NamedTuple):
@@ -247,11 +239,9 @@ class InputDocument(BaseModel):
             _log.exception(
                 f"File {self.file.name} not found or cannot be opened.", exc_info=e
             )
-            # raise
         except RuntimeError as e:
-            # Backend parse failures arrive here already tagged BACKEND_FAILURE by
-            # _init_doc. Anything else reaching this branch -- e.g. the
-            # "Unexpected type" guard -- is an uncategorized local failure and
+            # Backend parse failures are already tagged BACKEND_FAILURE by
+            # _init_doc; anything else here (e.g. the "Unexpected type" guard)
             # falls back to UNKNOWN.
             self.valid = False
             self._rejection = self._rejection or InputRejection(
@@ -266,7 +256,6 @@ class InputDocument(BaseModel):
                 f"{self.file.name}",
                 exc_info=e,
             )
-            # raise
 
     @classmethod
     def create_invalid(
@@ -330,16 +319,14 @@ class InputDocument(BaseModel):
             else:
                 self._backend = backend(self, path_or_stream=path_or_stream)
         except Exception as exc:
-            # Only a known parse/format error (the backend acquired the bytes but
-            # cannot read them, D4) is tagged BACKEND_FAILURE. Any other exception
-            # -- missing dependency, programming bug, resource exhaustion -- is not
-            # a bad-input signal and is left to __init__'s handlers, which fall
-            # back to UNKNOWN rather than mislabeling an internal defect.
+            # Only a DocumentLoadError (bad input bytes) is tagged
+            # BACKEND_FAILURE. Anything else (missing dependency, bug) is left to
+            # __init__'s handlers so an internal defect is not mislabeled.
             if not _is_backend_parse_error(exc):
                 raise
             self.valid = False
             self._rejection = InputRejection(
-                message="The document backend could not parse the input.",
+                message=str(exc) or "The document backend could not parse the input.",
                 category=FailureCategory.BACKEND_FAILURE,
             )
             raise
@@ -355,10 +342,9 @@ class InputDocument(BaseModel):
 def build_invalid_input_errors(in_doc: "InputDocument") -> list[ErrorItem]:
     """Build the ErrorItem list for an invalid input document.
 
-    Surfaces the structured rejection reason captured during construction so an
-    invalid document reaches the user as a categorized error rather than a
-    FAILURE/SKIPPED with an empty errors list (the erased-error gap). Falls back
-    to a generic UNKNOWN entry if no reason was recorded.
+    Surfaces the rejection reason captured during construction so the document
+    reaches the user as a categorized error instead of an empty errors list.
+    Falls back to a generic UNKNOWN entry if no reason was recorded.
     """
     rejection = in_doc._rejection
     if rejection is None:
@@ -699,13 +685,13 @@ class _DocumentConversionInput(BaseModel):
 
     @staticmethod
     def _classify_source_error(exc: BaseException) -> InputRejection:
-        """Map a source-resolution failure to an InputRejection per D4.
+        """Map a source-resolution failure to an InputRejection.
 
-        HTTP status rejections are split the same way as the jobkit task path
-        (``_classify_http_status``): the policy status codes map to POLICY, every
-        other status or transport/acquisition failure maps to SOURCE_UNAVAILABLE.
-        The exception's ``response.status_code`` is read by duck-typing so this
-        stays free of a ``requests`` import.
+        Splits HTTP status rejections the same way as the jobkit task path
+        (``_classify_http_status``): policy status codes map to POLICY, every
+        other status or transport failure maps to SOURCE_UNAVAILABLE.
+        ``response.status_code`` is read by duck-typing to avoid a ``requests``
+        import.
         """
         response = getattr(exc, "response", None)
         status_code = getattr(response, "status_code", None)

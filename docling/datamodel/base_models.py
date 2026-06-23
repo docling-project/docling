@@ -209,24 +209,16 @@ class VlmStopReason(str, Enum):
 
 
 class FailureCategory(str, Enum):
-    """Shared category enum for both task-level and document/page-level errors.
+    """Error category shared by task-scope (``PublicFailureInfo``) and
+    document/page-scope (``ErrorItem``) errors, so the jobkit bridge can pass one
+    to the other without translation.
 
-    A single enum is used for ``PublicFailureInfo.category`` (task scope) and
-    ``ErrorItem.category`` (document/page scope) so the jobkit bridge can assign
-    one to the other without translation. Some members are only meaningful at one
-    scope; that is intentional.
+    Task-scope only: CAPACITY, TARGET_UNAVAILABLE, INTERNAL.
+    Document/page-scope only: BACKEND_FAILURE, GENERATION_FAILURE.
+    Shared: POLICY, SOURCE_UNAVAILABLE, TIMEOUT.
 
-    Task-scope members (produced for ``PublicFailureInfo``, not by pipeline code):
-        CAPACITY, TARGET_UNAVAILABLE, INTERNAL.
-
-    Document/page-scope members (produced for ``ErrorItem`` by pipelines/input):
-        BACKEND_FAILURE, GENERATION_FAILURE.
-
-    Shared members (used at both scopes):
-        POLICY, SOURCE_UNAVAILABLE, TIMEOUT.
-
-    UNKNOWN is the backward-compatible default for uncategorized errors; it is
-    distinct from INTERNAL (a known internal service defect).
+    UNKNOWN is the default for uncategorized errors, distinct from INTERNAL (a
+    known service defect).
     """
 
     POLICY = "policy"
