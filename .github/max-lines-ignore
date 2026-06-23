@@ -25,6 +25,7 @@ docling/datamodel/stage_model_specs.py
 docling/pipeline/standard_pdf_pipeline.py
 docling/service_client/_async_client.py
 docling/service_client/client.py
-tests/test_service_client_sdk_unit.py
 docling/cli/main.py
+tests/test_service_client_sdk_unit.py
+tests/test_backend_opendocument.py
 tests/test_backend_html.py
