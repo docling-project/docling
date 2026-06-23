@@ -34,12 +34,18 @@ from docling_core.types.doc import (
     GroupLabel,
     ImageRef,
     NodeItem,
+    PictureClassificationLabel,
+    PictureClassificationMetaField,
+    PictureClassificationPrediction,
+    PictureMeta,
     ProvenanceItem,
     RichTableCell,
+    Script,
     Size,
     TableCell,
     TableData,
     TableItem,
+    TabularChartMetaField,
 )
 from PIL import Image as PILImage
 from typing_extensions import override
@@ -76,6 +82,14 @@ _INSTALL_HINT = (
     "The 'odfdo' package is required to process OpenDocument files. "
     "Install it with `pip install 'docling[opendocument]'`."
 )
+
+_ODF_CHART_CLASS_TO_PICTURE_CLASSIFICATION = {
+    "chart:bar": PictureClassificationLabel.BAR_CHART,
+    "chart:line": PictureClassificationLabel.LINE_CHART,
+    "chart:circle": PictureClassificationLabel.PIE_CHART,
+    "chart:pie": PictureClassificationLabel.PIE_CHART,
+    "chart:scatter": PictureClassificationLabel.SCATTER_PLOT,
+}
 
 
 @dataclass
@@ -271,6 +285,15 @@ def _formatting_from_odf_text_style(
     if line_through is not None:
         formatting.strikethrough = line_through != "none"
 
+    text_position = props.get("style:text-position")
+    if text_position is not None:
+        if text_position.startswith("super"):
+            formatting.script = Script.SUPER
+        elif text_position.startswith("sub"):
+            formatting.script = Script.SUB
+        else:
+            formatting.script = Script.BASELINE
+
     return _formatting_or_none(formatting)
 
 
@@ -436,7 +459,12 @@ def _add_odf_paragraph(
     content_layer: ContentLayer | None,
     odf_obj: OdfDocument | None,
 ) -> None:
+    chart_count = _add_odf_charts(doc, element, parent, content_layer, odf_obj)
     runs = _odf_text_runs(element, odf_obj)
+    text = _odf_text_from_runs(runs)
+    if chart_count > 0 and ("ObjectReplacements" in text or not text):
+        return
+
     style_names = _odf_paragraph_style_names(odf_obj, element)
     if "Title" in style_names:
         _add_odf_text_runs(
@@ -737,6 +765,88 @@ def _add_odf_images(
             _log.debug("Could not extract OpenDocument image: %s", e)
             image_ref = None
         doc.add_picture(parent=parent, image=image_ref, content_layer=content_layer)
+
+
+def _embedded_odf_content_path(href: str) -> str:
+    return f"{href.removeprefix('./').rstrip('/')}/content.xml"
+
+
+def _odf_chart_classification(chart_content: Any) -> PictureClassificationLabel:
+    for chart in chart_content.get_elements("descendant::chart:chart"):
+        chart_class = chart.attributes.get("chart:class")
+        if chart_class in _ODF_CHART_CLASS_TO_PICTURE_CLASSIFICATION:
+            return _ODF_CHART_CLASS_TO_PICTURE_CLASSIFICATION[chart_class]
+
+    for series in chart_content.get_elements("descendant::chart:series"):
+        chart_class = series.attributes.get("chart:class")
+        if chart_class in _ODF_CHART_CLASS_TO_PICTURE_CLASSIFICATION:
+            return _ODF_CHART_CLASS_TO_PICTURE_CLASSIFICATION[chart_class]
+
+    return PictureClassificationLabel.OTHER_CHART
+
+
+def _chart_data_from_frame(
+    frame: Frame, odf_obj: OdfDocument | None
+) -> tuple[TableData, PictureClassificationLabel] | None:
+    if odf_obj is None:
+        return None
+
+    object_href: str | None = None
+    for child in frame.children:
+        if getattr(child, "tag", None) == "draw:object":
+            object_href = child.attributes.get("xlink:href")
+            break
+    if object_href is None:
+        return None
+
+    try:
+        chart_content = odf_obj.get_part(_embedded_odf_content_path(object_href))
+    except Exception:
+        return None
+    chart_classification = _odf_chart_classification(chart_content)
+    for table in chart_content.get_elements("descendant::table:table"):
+        if isinstance(table, OdfTable) and table.name == "local-table":
+            table_data = _table_data_from_odf(table)
+            if table_data is not None:
+                return table_data, chart_classification
+    return None
+
+
+def _add_odf_charts(
+    doc: DoclingDocument,
+    element: Any,
+    parent: NodeItem | None,
+    content_layer: ContentLayer | None,
+    odf_obj: OdfDocument | None,
+) -> int:
+    chart_count = 0
+    frames = [element] if isinstance(element, Frame) else []
+    get_frames = getattr(element, "get_frames", None)
+    if callable(get_frames):
+        frames.extend(get_frames())
+    else:
+        frames.extend(
+            child
+            for child in getattr(element, "children", [])
+            if isinstance(child, Frame)
+        )
+    for frame in frames:
+        chart_result = _chart_data_from_frame(frame, odf_obj)
+        if chart_result is None:
+            continue
+        chart_data, chart_classification = chart_result
+        chart = doc.add_picture(parent=parent, content_layer=content_layer)
+        chart.label = DocItemLabel.PICTURE
+        chart.meta = PictureMeta(
+            classification=PictureClassificationMetaField(
+                predictions=[
+                    PictureClassificationPrediction(class_name=chart_classification)
+                ]
+            ),
+            tabular_chart=TabularChartMetaField(chart_data=chart_data),
+        )
+        chart_count += 1
+    return chart_count
 
 
 def _add_odf_list(

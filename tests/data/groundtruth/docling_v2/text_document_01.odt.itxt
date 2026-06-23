@@ -28,4 +28,9 @@ item-0 at level 0: unspecified: group _root_
     item-27 at level 2: text: , discovered the undoubtable sou ... 3 of "de Finibus Bonorum et Malorum" (
     item-28 at level 2: text: The Extremes of Good and Evil
     item-29 at level 2: text: ) by Cicero, written in 45 BC.
-  item-30 at level 1: text: X2 + Y2 = Z
+  item-30 at level 1: inline: group group
+    item-31 at level 2: text: X
+    item-32 at level 2: text: 2
+    item-33 at level 2: text:  + Y
+    item-34 at level 2: text: 2
+    item-35 at level 2: text:  = Z

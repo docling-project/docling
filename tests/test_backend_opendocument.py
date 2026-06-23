@@ -14,7 +14,13 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import PictureItem, RichTableCell, TextItem
+from docling_core.types.doc import (
+    PictureClassificationLabel,
+    PictureItem,
+    RichTableCell,
+    Script,
+    TextItem,
+)
 from PIL import Image
 
 from docling.backend.opendocument_backend import (
@@ -426,6 +432,62 @@ def test_odt_text_document_text_formatting():
     assert "**Lorem Ipsum is not simply random text**" in markdown
     assert "*a Latin professor at Hampden-Sydney College in Virginia*" in markdown
     assert "~~The Extremes of Good and Evil~~" in markdown
+
+
+def test_odt_text_document_script_formatting():
+    path = Path("tests/data/odf/text_document_01.odt")
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    formula_runs = [
+        item for item in res.document.texts if item.text in {"X", "2", " + Y", " = Z"}
+    ]
+
+    assert [
+        (item.text, item.formatting.script if item.formatting else None)
+        for item in formula_runs
+    ] == [
+        ("X", None),
+        ("2", Script.SUPER),
+        (" + Y", None),
+        ("2", Script.SUB),
+        (" = Z", None),
+    ]
+
+
+def test_odt_text_document_embedded_chart():
+    path = Path("tests/data/odf/text_document_02.odt")
+
+    res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
+    charts = [
+        item
+        for item in res.document.pictures
+        if isinstance(item, PictureItem)
+        and item.meta is not None
+        and item.meta.tabular_chart is not None
+    ]
+
+    assert len(charts) == 1
+    chart = charts[0]
+    assert chart.label == "picture"
+    assert chart.meta is not None
+    assert chart.meta.classification is not None
+    assert (
+        chart.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.BAR_CHART
+    )
+    assert chart.meta.tabular_chart is not None
+
+    table_data = chart.meta.tabular_chart.chart_data
+    assert table_data.num_rows == 5
+    assert table_data.num_cols == 4
+    cell_texts = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+        for cell in table_data.table_cells
+    }
+    assert cell_texts[(0, 1)] == "Column 1"
+    assert cell_texts[(1, 0)] == "Row 1"
+    assert cell_texts[(1, 1)] == "9.1"
+    assert cell_texts[(4, 3)] == "6.2"
 
 
 def test_odp_textbox_text_formatting(tmp_path: Path):
