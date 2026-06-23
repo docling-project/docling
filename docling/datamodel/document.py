@@ -224,9 +224,9 @@ class InputDocument(BaseModel):
                 f"File {self.file.name} not found or cannot be opened.", exc_info=e
             )
         except RuntimeError as e:
-            # Backend parse failures are already tagged BACKEND_FAILURE by
-            # _init_doc; anything else here (e.g. the "Unexpected type" guard)
-            # falls back to UNKNOWN.
+            # Local RuntimeErrors (e.g. the "Unexpected type" guard) that aren't a
+            # backend bad-input signal; categorized UNKNOWN. (Backend parse
+            # failures are handled in _init_doc and don't reach here.)
             self.valid = False
             self._rejection = self._rejection or InputRejection(
                 message=(
@@ -303,9 +303,10 @@ class InputDocument(BaseModel):
             else:
                 self._backend = backend(self, path_or_stream=path_or_stream)
         except Exception as exc:
-            # Only a DocumentLoadError (bad input bytes) is tagged
-            # BACKEND_FAILURE. Anything else (missing dependency, bug) is left to
-            # __init__'s handlers so an internal defect is not mislabeled.
+            # A DocumentLoadError (bad input bytes) is recorded as a
+            # BACKEND_FAILURE rejection, like the is_valid() branch below.
+            # Anything else (missing dependency, bug) propagates so an internal
+            # defect is not mislabeled.
             if not isinstance(exc, DocumentLoadError):
                 raise
             self.valid = False
@@ -313,7 +314,7 @@ class InputDocument(BaseModel):
                 message=str(exc) or "The document backend could not parse the input.",
                 category=FailureCategory.BACKEND_FAILURE,
             )
-            raise
+            return
 
         if not self._backend.is_valid():
             self.valid = False
