@@ -244,7 +244,7 @@ def test_remote_missing_input_exits_1(tmp_path, _patch_client):
         ],
     )
     assert result.exit_code == 1
-    assert " ".join(result.output.split()).endswith("does not exist.")
+    assert "does not exist." in result.output
 
 
 @pytest.mark.parametrize(

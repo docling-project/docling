@@ -113,12 +113,10 @@ def _is_backend_parse_error(exc: BaseException) -> bool:
     bytes" by raising ``RuntimeError`` (the PDF backends -- ``pypdfium2``'s
     ``PdfiumError`` is a ``RuntimeError`` subclass and ``docling-parse``'s
     ``load()`` raises ``RuntimeError`` -- and the office/text backends, which
-    wrap their parser's failure in an explicit ``RuntimeError``). A few parse
-    paths still leak ``ValueError`` instead (e.g. docling-parse's "Failed to
-    decode page", which arguably should be a ``RuntimeError``); we treat those
-    as parse failures too rather than letting them abort the conversion. So a
-    ``RuntimeError`` or ``ValueError`` escaping backend construction is the
-    parse-failure signal (D4 -> BACKEND_FAILURE).
+    wrap their parser's failure in an explicit ``RuntimeError``). Treat only
+    that established signal as a parse failure here. Backend ``ValueError`` is
+    too broad and has valid existing callers that expect it to propagate rather
+    than being converted into an invalid-input result.
 
     Other exception types are *not* treated as bad input: they are left to
     ``__init__``'s handlers, so a truly internal failure (e.g. an ``ImportError``
@@ -126,7 +124,7 @@ def _is_backend_parse_error(exc: BaseException) -> bool:
     before. The residual case -- an internal defect a backend has itself
     collapsed into a ``RuntimeError`` -- is indistinguishable at this layer.
     """
-    return isinstance(exc, (RuntimeError, ValueError))
+    return isinstance(exc, RuntimeError)
 
 
 class InputRejection(NamedTuple):
@@ -250,11 +248,11 @@ class InputDocument(BaseModel):
                 f"File {self.file.name} not found or cannot be opened.", exc_info=e
             )
             # raise
-        except (RuntimeError, ValueError) as e:
+        except RuntimeError as e:
             # Backend parse failures arrive here already tagged BACKEND_FAILURE by
-            # _init_doc (RuntimeError or the occasional leaked ValueError). Anything
-            # else reaching this branch -- e.g. the "Unexpected type" guard -- is an
-            # uncategorized local failure and falls back to UNKNOWN.
+            # _init_doc. Anything else reaching this branch -- e.g. the
+            # "Unexpected type" guard -- is an uncategorized local failure and
+            # falls back to UNKNOWN.
             self.valid = False
             self._rejection = self._rejection or InputRejection(
                 message=(

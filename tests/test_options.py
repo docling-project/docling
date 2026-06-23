@@ -238,14 +238,8 @@ def test_invalid_input_unreachable_source():
     assert result.errors[0].category == FailureCategory.SOURCE_UNAVAILABLE
 
 
-@pytest.mark.parametrize("exc", [RuntimeError("bad"), ValueError("Failed to decode")])
-def test_backend_parse_error_is_backend_failure(exc):
-    """RuntimeError/ValueError from backend init is the parse-failure signal.
-
-    All docling backends raise RuntimeError when the bytes are not a readable
-    document (PdfiumError is a subclass; office/text backends wrap their parser's
-    failure); a few parse paths still leak ValueError. Both map to BACKEND_FAILURE.
-    """
+def test_backend_parse_error_is_backend_failure():
+    """RuntimeError from backend init is the parse-failure signal."""
     from io import BytesIO
 
     from docling.backend.abstract_backend import AbstractDocumentBackend
@@ -254,7 +248,7 @@ def test_backend_parse_error_is_backend_failure(exc):
 
     class _ParseFailBackend(AbstractDocumentBackend):
         def __init__(self, *args, **kwargs):
-            raise exc
+            raise RuntimeError("bad")
 
         def is_valid(self) -> bool:
             return False
@@ -280,6 +274,40 @@ def test_backend_parse_error_is_backend_failure(exc):
     assert (
         build_invalid_input_errors(doc)[0].category == FailureCategory.BACKEND_FAILURE
     )
+
+
+def test_backend_value_error_propagates():
+    """Backend ValueError is not rewritten into an invalid-input result."""
+    from io import BytesIO
+
+    from docling.backend.abstract_backend import AbstractDocumentBackend
+    from docling.datamodel.document import InputDocument
+
+    class _ValueErrorBackend(AbstractDocumentBackend):
+        def __init__(self, *args, **kwargs):
+            raise ValueError("backend limit exceeded")
+
+        def is_valid(self) -> bool:
+            return False
+
+        @classmethod
+        def supported_formats(cls):
+            return {InputFormat.PDF}
+
+        @classmethod
+        def supports_pagination(cls) -> bool:
+            return False
+
+        def unload(self):
+            pass
+
+    with pytest.raises(ValueError, match="backend limit exceeded"):
+        InputDocument(
+            path_or_stream=BytesIO(b"anything"),
+            format=InputFormat.PDF,
+            backend=_ValueErrorBackend,
+            filename="x.pdf",
+        )
 
 
 def test_internal_backend_error_is_not_masked_as_bad_input():
