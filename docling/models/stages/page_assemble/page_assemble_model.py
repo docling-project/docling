@@ -212,6 +212,25 @@ class PageAssembleModel(BasePageModel):
                             body.append(tbl)
                         elif cluster.label == LayoutModel.FIGURE_LABEL:
                             fig = None
+                            textlines = [
+                                cell.text.replace("\x02", "-").strip()
+                                for cell in cluster.cells
+                                if getattr(cell, "from_ocr", False)
+                                and len(cell.text.strip()) > 0
+                            ]
+                            if textlines:
+                                text = self.sanitize_text(textlines)
+                                text_el = TextElement(
+                                    label="text",
+                                    id=cluster.id,
+                                    text=text,
+                                    hyperlink=None,
+                                    page_no=page.page_no,
+                                    cluster=cluster,
+                                )
+                                elements.append(text_el)
+                                body.append(text_el)
+                                continue
                             if page.predictions.figures_classification:
                                 fig = page.predictions.figures_classification.figure_map.get(
                                     cluster.id, None
