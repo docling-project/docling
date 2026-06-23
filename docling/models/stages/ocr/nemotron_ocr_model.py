@@ -320,6 +320,9 @@ class NemotronOcrModel(BaseOcrModel):
             yield from page_batch
             return
 
+        # Ensure the "ocr" timing entry always exists, even for documents that produce no rectangles
+        TimeRecorder(conv_res, "ocr")
+
         # Pages currently in flight, kept in input order so they can be yielded in the same order
         pending: deque[_PageOcrState] = deque()
 
