@@ -46,10 +46,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     echo "deb http://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/sid.list && \
-    printf "Package: python3.13 python3.13-minimal libpython3.13 libpython3.13-minimal libpython3.13-stdlib\nPin: release a=sid\nPin-Priority: 990\n\nPackage: *\nPin: release a=sid\nPin-Priority: 100\n" > /etc/apt/preferences.d/pin-python3.13 && \
+    printf "Package: python3.13 python3.13-minimal libpython3.13 libpython3.13-minimal libpython3.13-stdlib\nPin: release n=sid\nPin-Priority: 990\n\nPackage: *\nPin: release n=sid\nPin-Priority: 100\n" > /etc/apt/preferences.d/pin-python3.13 && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-      net-tools curl wget fontconfig procps supervisor vim \
+      net-tools curl wget git fontconfig procps supervisor vim \
       libmagic1 libmagic-dev \
       libpango-1.0-0 libpangocairo-1.0-0 libcairo2 libgdk-pixbuf-xlib-2.0-0 \
       libffi-dev libgl1 \
@@ -59,8 +59,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       fonts-dejavu fonts-noto-cjk fonts-noto-cjk-extra fonts-nanum \
       imagemagick poppler-utils \
       tesseract-ocr tesseract-ocr-eng tesseract-ocr-kor \
-      sudo \
-      libspatialindex-c6 \
+      libspatialindex-dev \
     && apt-get install -y --no-install-recommends --only-upgrade \
       imagemagick imagemagick-7.q16 libmagickcore-7.q16-10 libmagickwand-7.q16-10 \
     && rm -rf /var/lib/apt/lists/* \
@@ -113,6 +112,7 @@ COPY build-script/code-serving-doc-parser/pyproject.toml build-script/code-servi
 
 # genon/code-serving 와 동일: uv venv --seed 로 /app/.venv 생성 후 uv pip install . 로 venv 에 설치.
 RUN --mount=type=cache,target=/root/.cache/uv \
+    rm -rf /app/tmp /app/nltk_data && \
     uv venv --seed && \
     uv pip install .
 

@@ -51,8 +51,8 @@ async def exception_handler(request, exc: Exception):
     return make_failure_response(str(exc))
 
 
-@app.get('/healthcheck')
-async def healthcheck() -> object:
+@app.get('/health')
+async def health() -> object:
     return {'status': 'ok'}
 
 
