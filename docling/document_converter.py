@@ -508,7 +508,7 @@ class DocumentConverter:
                     error_details = f" Errors: {'; '.join(error_messages)}"
                 raise ConversionError(
                     f"Conversion failed for: {conv_res.input.file} with status: "
-                    f"{conv_res.status}.{error_details}"
+                    f"{conv_res.status.value}.{error_details}"
                 )
             else:
                 yield conv_res

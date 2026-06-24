@@ -130,7 +130,7 @@ def test_extraction_format_not_allowed_with_exception_surfaces_error_details() -
 
     with pytest.raises(
         ConversionError,
-        match=r"Extraction failed for: .*qr_bill_example\.jpg with status: ConversionStatus\.SKIPPED\. Errors: File format not allowed: .*qr_bill_example\.jpg",
+        match=r"Extraction failed for: .*qr_bill_example\.jpg with status: skipped\. Errors: File format not allowed: .*qr_bill_example\.jpg",
     ):
         pdf_only.extract(img, template='{"bill_no": "string"}', raises_on_error=True)
 

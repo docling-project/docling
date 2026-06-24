@@ -247,7 +247,7 @@ def test_invalid_input_unreadable_source_with_exception_surfaces_error_details()
         ),
         pytest.raises(
             ConversionError,
-            match=r"Conversion failed for: broken\.pdf with status: ConversionStatus\.FAILURE\. Errors: docling-parse could not load document .*: bad trailer",
+            match=r"Conversion failed for: broken\.pdf with status: failure\. Errors: docling-parse could not load document .*: bad trailer",
         ),
     ):
         converter.convert(stream, raises_on_error=True)
@@ -275,7 +275,7 @@ def test_convert_unsupported_format_with_exception_surfaces_error_details():
 
     with pytest.raises(
         ConversionError,
-        match=r"Conversion failed for: input\.xyz with status: ConversionStatus\.SKIPPED\. Errors: File format not allowed: input\.xyz",
+        match=r"Conversion failed for: input\.xyz with status: skipped\. Errors: File format not allowed: input\.xyz",
     ):
         DocumentConverter().convert(
             DocumentStream(name="input.xyz", stream=BytesIO(b"xyz")),

@@ -181,7 +181,7 @@ class DocumentExtractor:
                     error_messages = [err.error_message for err in ext_res.errors]
                     error_details = f" Errors: {'; '.join(error_messages)}"
                 raise ConversionError(
-                    f"Extraction failed for: {ext_res.input.file} with status: {ext_res.status}.{error_details}"
+                    f"Extraction failed for: {ext_res.input.file} with status: {ext_res.status.value}.{error_details}"
                 )
             else:
                 yield ext_res
