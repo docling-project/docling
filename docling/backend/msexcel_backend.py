@@ -1,5 +1,6 @@
 import collections
 import logging
+from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from typing import Annotated, Any, Optional, Union, cast
@@ -39,6 +40,26 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
+
+
+# propose modification to docling core
+# slots prevents Python from creating dynamic dict for the object.
+# The number of attributes in FastCell becomes immutable at runtime.
+# TODO (docling-core):
+# - temporarly stored here, it should be useful for other docling objects that uses TableCell
+# - extend the types allowed AnyTableCell with [FastTableCell]
+# - from docling_core.
+@dataclass(slots=True)
+class FastTableCell:
+    text: str
+    row_span: int
+    col_span: int
+    start_row_offset_idx: int
+    end_row_offset_idx: int
+    start_col_offset_idx: int
+    end_col_offset_idx: int
+    column_header: bool = False
+    row_header: bool = False
 
 
 @dataclass
@@ -100,6 +121,23 @@ class ExcelTable(BaseModel):
     num_rows: int
     num_cols: int
     data: list[ExcelCell]
+
+
+# class CellBuilder:
+#     """Factory object to build TableCell or FastTableCell"""
+#     # Warning: This builder class in Python actually adds overhead at scale!
+#     # No compiler optimization is possible, and upacking **kwargs in python
+#     # is not free
+#     def __init__(self, options: MsExcelBackendOptions):
+#         self.table_cell_type = options.table_cell_type
+
+#     def build(self, **kwargs):
+#         if self.table_cell_type == "TableCell":
+#             return TableCell(**kwargs)
+#         elif self.table_cell_type == "FastTableCell":
+#             return FastTableCell(**kwargs)
+#         else:
+#             raise ValueError("Unrecognized cell type for msexcel_backend")
 
 
 class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
@@ -335,6 +373,15 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 isinstance(self.options, MsExcelBackendOptions)
                 and self.options.treat_singleton_as_text
             )
+            # Select the type of cell to be used
+            if self.options.table_cell_type == "TableCell":
+                cell_cls = TableCell
+            elif self.options.table_cell_type == "FastTableCell":
+                cell_cls = FastTableCell
+            else:  # This line is not needed, but present for clarity
+                raise ValueError(
+                    f"conversion from excel_cell to {self.options.table_cell_type} not valid."
+                )
 
             for excel_table in tables:
                 origin_col = excel_table.anchor[0]
@@ -368,8 +415,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                         table_cells=[],
                     )
 
+                    # cell_builder = CellBuilder(self.options)
+                    # Repeated multiple times TableCell is expensive (pydantic tax)
+                    # Use FastTableCell backend option to save memory/time if
+                    # pydantic validation is not needed
                     for excel_cell in excel_table.data:
-                        cell = TableCell(
+                        cell = cell_cls(
                             text=excel_cell.text,
                             row_span=excel_cell.row_span,
                             col_span=excel_cell.col_span,

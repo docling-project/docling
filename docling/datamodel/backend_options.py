@@ -215,6 +215,10 @@ class MsExcelBackendOptions(BaseBackendOptions):
     """Options specific to the MS Excel backend."""
 
     kind: Literal["xlsx"] = Field("xlsx", exclude=True, repr=False)
+    table_cell_type: Literal["TableCell", "FastTableCell"] = Field(
+        "TableCell",
+        description="Cell represation mode. Either pydantic (TableCell) or dataclass (FastTableCell)",
+    )
     treat_singleton_as_text: bool = Field(
         False,
         description=(
