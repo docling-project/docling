@@ -1,0 +1,280 @@
+# syntax=docker/dockerfile:1.7
+#
+# code-serving-doc-parser (GPU) — doc-parser 코드서빙 base 이미지 (nvidia/cuda runtime).
+#
+# 라이브러리 설치 방식은 genon/code-serving 과 동일: uv venv + uv pip install . → /app/.venv.
+# venv 는 builder 에서 만들고(GPU torch=cu124 wheel) nvidia/cuda runtime 으로 COPY.
+# 다운로드 아티팩트는 Dockerfile.standard 와 full parity (Dockerfile(CPU) 와 동일 구성).
+# build context = repo 루트. HWP_SDK_TOKEN 은 --secret.
+#
+# ⚠️ builder/runtime 모두 ubuntu 22.04(jammy) 로 정렬해 glibc/libstdc++ ABI 를 일치시킨다.
+#    (slim-debian builder 로 만든 venv 의 python 심링크가 nvidia/cuda runtime 에서 dangling 되어
+#     스모크가 깨졌던 문제 해소.) python3.12 는 uv 관리형(python-build-standalone)을 /opt/uv/python 에
+#    설치해 runtime 으로 COPY 한다 — deadsnakes PPA 는 빌드망 launchpad 차단으로 사용 불가.
+#    runtime apt 패키지명/버전은 debian 과 다를 수 있다(특히 openjdk-21, libgdk-pixbuf).
+
+############################
+# 0) 공통 ARG
+############################
+ARG PY_VER=3.12.12
+ARG DEBIAN_DIST=trixie
+ARG H2ORESTART_URL="https://github.com/ebandal/H2Orestart/releases/latest/download/H2Orestart.oxt"
+ARG APP_VENV=/app/.venv
+ARG NLTK_PACKAGES=all
+ARG UID=1000
+ARG GID=1000
+ARG UNAME=genos
+ARG GNAME=genos
+ARG RHWP_GIT_URL=https://github.com/genonai/genos-rhwp.git
+ARG RHWP_GIT_REF=genos/main
+ARG DOCLING_PKG_VER=2.41.0
+ARG TORCH_CU_INDEX_URL=https://download.pytorch.org/whl/cu124
+
+############################
+# 1) Builder (ubuntu 22.04 = runtime 과 동일 ABI) — venv 설치 + GPU torch + docling-parse 패치
+############################
+# runtime(nvidia/cuda ...-ubuntu22.04) 과 동일 Ubuntu 베이스 → glibc/libstdc++ 정합.
+# torch 는 cu124 wheel 로 설치(컴파일 없음)하고 docling-parse 컴파일은 g++/make 만 필요하므로
+# 수 GB 짜리 nvidia/cuda devel 이미지 대신 경량 ubuntu:22.04 로 충분하다.
+FROM ubuntu:22.04 AS builder
+ARG APP_VENV
+ARG TORCH_CU_INDEX_URL
+ENV DEBIAN_FRONTEND=noninteractive \
+    PIP_NO_CACHE_DIR=1 \
+    VIRTUAL_ENV=${APP_VENV} \
+    PATH="${APP_VENV}/bin:${PATH}" \
+    HOME=/app \
+    HF_HOME=/app/.cache/huggingface \
+    NLTK_DATA=/app/nltk_data
+
+# uv(standalone) + uv 관리형 python3.12 (python-build-standalone).
+# deadsnakes PPA 미사용 — 빌드망에서 launchpad 키서버 접근이 막혀 add-apt-repository(gpg import)가 실패한다.
+# 관리형 python 은 distro 독립(relocatable)이라 /opt/uv/python 을 그대로 runtime 에 COPY 하면
+# venv 의 bin/python 심링크가 해소되고, builder/runtime 모두 jammy 라 네이티브 확장 ABI 도 일치한다.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ca-certificates curl git \
+    && rm -rf /var/lib/apt/lists/*
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
+ENV UV_PYTHON_INSTALL_DIR=/opt/uv/python
+RUN uv python install 3.12
+
+WORKDIR /app
+COPY build-script/code-serving-doc-parser/pyproject.toml build-script/code-serving-doc-parser/uv.lock /app/
+
+# genon/code-serving 와 동일: uv venv --seed + uv pip install . → /app/.venv
+# (uv 관리형 python3.12 를 명시. venv 의 bin/python 은 /opt/uv/python/... 를 가리키며,
+#  runtime 에 동일 경로로 COPY 되므로 심링크가 해소된다.)
+RUN --mount=type=cache,target=/root/.cache/uv \
+    rm -rf /app/tmp /app/nltk_data && \
+    uv venv --python 3.12 --seed && \
+    uv pip install .
+
+# GPU torch(cu124) 재고정 (pyproject deps 가 끌어온 기본 torch 를 cu124 wheel 로 override)
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --python ${APP_VENV}/bin/python \
+      --reinstall-package torch --reinstall-package torchvision \
+      --index-url "${TORCH_CU_INDEX_URL}" \
+      torch torchvision
+
+# docling-parse 4.1.0 소스 패치 빌드 (#245) — /app/.venv 인터프리터로 설치(wheel 덮어씀)
+# git/g++/make/zlib: docling-parse 소스 빌드용.
+# curl/unzip: models_artifacts(FROM builder) 의 EasyOCR 한국어 모델 다운로드/압축해제용.
+# libgl1/libglib2.0-0/libxcb1/libsm6/libxext6/libxrender1: models_artifacts 에서
+#   docling 모델 다운로드 시 easyocr→cv2(opencv) import 가 dlopen 하는 시스템 라이브러리.
+#   slim builder 에는 없어 ImportError(libxcb.so.1) 발생 → 여기서 설치.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      git g++ make zlib1g-dev curl unzip \
+      libgl1 libglib2.0-0 libxcb1 libsm6 libxext6 libxrender1 \
+    && rm -rf /var/lib/apt/lists/*
+# 패치 헤더만 /tmp 로 (/app 오염 방지)
+COPY ./genon/preprocessor/resources/stream_fix_xobject_reload.h /tmp/stream_fix_xobject_reload.h
+RUN --mount=type=cache,target=/root/.cache/uv \
+    set -eux; \
+    uv pip install --python ${APP_VENV}/bin/python pybind11 cmake scikit-build-core poetry -q; \
+    git clone --depth 1 --branch v4.1.0 \
+      https://github.com/docling-project/docling-parse /tmp/docling-parse-4.1.0; \
+    cp /tmp/stream_fix_xobject_reload.h /tmp/docling-parse-4.1.0/src/v2/pdf_decoders/stream.h; \
+    sed -i 's|-DCMAKE_INSTALL_PREFIX=${EXTERNALS_PREFIX_PATH}|-DCMAKE_INSTALL_PREFIX=${EXTERNALS_PREFIX_PATH}\n        -DCXXOPTS_BUILD_EXAMPLES=OFF\n        -DCXXOPTS_BUILD_TESTS=OFF|' \
+      /tmp/docling-parse-4.1.0/cmake/extlib_cxxopts.cmake; \
+    sed -i 's|set(QPDF_EXTRA_CXX_FLAGS "-fPIC ")|set(QPDF_EXTRA_CXX_FLAGS "-fPIC -include cstdint -Wno-error")|' \
+      /tmp/docling-parse-4.1.0/cmake/extlib_qpdf_v11.cmake; \
+    sed -i 's|set(QPDF_EXTRA_C_FLAGS "-fPIC ")|set(QPDF_EXTRA_C_FLAGS "-fPIC -Wno-error")|' \
+      /tmp/docling-parse-4.1.0/cmake/extlib_qpdf_v11.cmake; \
+    sed -i 's|-DCMAKE_C_FLAGS=${ENV_ARCHFLAGS}|-DCMAKE_C_FLAGS=-Wno-error|' \
+      /tmp/docling-parse-4.1.0/cmake/extlib_jpeg.cmake; \
+    uv pip install --python ${APP_VENV}/bin/python --no-build-isolation /tmp/docling-parse-4.1.0/; \
+    uv pip install --python ${APP_VENV}/bin/python "docling-core[chunking]==2.62.0"; \
+    rm -rf /tmp/docling-parse-4.1.0
+
+############################
+# 2-1) HWP SDK / 2-2) 폰트 / 2-3) 모델 (CPU Dockerfile 과 동일)
+############################
+FROM builder AS sdk_artifacts
+RUN --mount=type=cache,target=${HF_HOME} \
+    --mount=type=secret,id=HWP_SDK_TOKEN \
+    HWP_SDK_TOKEN_VAL=$(cat /run/secrets/HWP_SDK_TOKEN) && \
+    mkdir -p /app/hwp_sdk && \
+    huggingface-cli download HeechanKim-Genon/hwp_sdk \
+      --repo-type dataset --local-dir /app/hwp_sdk \
+      --local-dir-use-symlinks False --token "${HWP_SDK_TOKEN_VAL}" && \
+    chmod +x /app/hwp_sdk/convtext
+
+FROM builder AS font_artifacts
+RUN --mount=type=cache,target=${HF_HOME} \
+    mkdir -p /app/extra_fonts && \
+    huggingface-cli download HeechanKim-Genon/additional_fonts \
+      --repo-type dataset --local-dir /app/extra_fonts --local-dir-use-symlinks False
+
+FROM rust:latest AS rhwp_builder
+ARG RHWP_GIT_URL
+ARG RHWP_GIT_REF
+WORKDIR /src
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    git clone --depth 1 --branch "${RHWP_GIT_REF}" "${RHWP_GIT_URL}" /src
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/src/target \
+    cargo build --release --bin rhwp \
+ && cp /src/target/release/rhwp /usr/local/bin/rhwp
+
+FROM builder AS models_artifacts
+ARG APP_VENV
+ARG NLTK_PACKAGES
+ARG DOCLING_PKG_VER
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --python ${APP_VENV}/bin/python "docling==${DOCLING_PKG_VER}" \
+ && (uv pip uninstall --python ${APP_VENV}/bin/python opencv-python || true) \
+ && uv pip install --python ${APP_VENV}/bin/python --reinstall opencv-python-headless
+# ↑ docling 이 끌어온 opencv-python(full, Qt5 번들)을 headless 로 교체한다.
+#   헤드리스 ubuntu 빌더에는 Qt/xcb 런타임 라이브러리가 없어 easyocr→cv2 import 시
+#   ImportError(libQt5Core...so) 가 발생하기 때문. 이 stage venv 는 runtime 에 COPY 되지 않으므로
+#   영향 범위는 모델 다운로드 단계에 한정된다(런타임 OCR venv 는 builder 의 것 그대로).
+RUN --mount=type=cache,target=/root/.cache/models \
+    if [ ! -d /models ] || [ -z "$(ls -A /models)" ]; then docling-tools models download -o /models; fi
+RUN --mount=type=cache,target=${HF_HOME} \
+    mkdir -p /models/doc_parser_models && \
+    huggingface-cli download mncai/doc_parser_models --local-dir /models/doc_parser_models && \
+    huggingface-cli download mncai/doc_parser_models --include "sentence-transformers-all-MiniLM-L6-v2/*" \
+      --local-dir /models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2
+RUN --mount=type=cache,target=/root/.cache/nltk \
+    python - <<'PY'
+import os, nltk
+target = os.environ.get("NLTK_DATA", "/app/nltk_data")
+os.makedirs(target, exist_ok=True)
+packages = os.environ.get("NLTK_PACKAGES", "all")
+if packages == "all":
+    nltk.download("all", download_dir=target)
+else:
+    for pkg in [p.strip() for p in packages.split(",") if p.strip()]:
+        nltk.download(pkg, download_dir=target)
+PY
+RUN --mount=type=cache,target=/root/.cache/easyocr_korean \
+    mkdir -p /models/EasyOcr && \
+    if [ ! -f /root/.cache/easyocr_korean/korean_g2.zip ]; then \
+      curl -L -o /root/.cache/easyocr_korean/korean_g2.zip \
+        "https://github.com/JaidedAI/EasyOCR/releases/download/v1.3/korean_g2.zip"; \
+    fi; \
+    unzip -q -o /root/.cache/easyocr_korean/korean_g2.zip -d /models/EasyOcr
+
+############################
+# 3) Runtime — nvidia/cuda + 문서 apt + H2Orestart + 아티팩트 + harness
+############################
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04 AS runtime
+ARG APP_VENV
+ARG H2ORESTART_URL
+ARG UID
+ARG GID
+ARG UNAME
+ARG GNAME
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Asia/Seoul \
+    VIRTUAL_ENV=${APP_VENV} \
+    PATH="${APP_VENV}/bin:${PATH}" \
+    NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+    HOME=/app \
+    XDG_CACHE_HOME=/app/.cache \
+    XDG_CONFIG_HOME=/app/.config \
+    XDG_DATA_HOME=/app/.local/share \
+    XDG_RUNTIME_DIR=/tmp/xdg \
+    TMPDIR=/app/tmp \
+    JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 \
+    HF_HOME=/app/.cache/huggingface \
+    NLTK_DATA=/app/nltk_data \
+    LANG=ko_KR.UTF-8 \
+    LC_ALL=ko_KR.UTF-8 \
+    LC_CTYPE=ko_KR.UTF-8 \
+    DOCLING_ARTIFACTS_PATH=/models \
+    DOC_PARSER_BUILD_VARIANT=standard \
+    RHWP_BIN=/usr/local/bin/rhwp \
+    HWP_SDK_DIR=/app/hwp_sdk
+
+# 문서/OCR/LibreOffice/Java/폰트 (ubuntu 22.04 jammy). openjdk-21/libgdk-pixbuf 명은 배포판에 따라 조정.
+# python3.12 은 builder 의 uv 관리형 python 을 /opt/uv/python 으로 COPY 해 제공한다(아래 COPY 참고).
+RUN mkdir -p /app/tmp /tmp/xdg \
+    && apt-get update && apt-get install -y --no-install-recommends \
+      net-tools curl wget fontconfig procps supervisor vim git tzdata locales \
+      libmagic1 libmagic-dev \
+      libpango-1.0-0 libpangocairo-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 \
+      libffi-dev libgl1 \
+      libreoffice ffmpeg unzip \
+      openjdk-21-jre-headless ca-certificates-java \
+      libreoffice-java-common libreoffice-writer libreoffice-impress libreoffice-l10n-ko \
+      fonts-dejavu fonts-noto-cjk fonts-noto-cjk-extra fonts-nanum \
+      imagemagick poppler-utils \
+      tesseract-ocr tesseract-ocr-eng tesseract-ocr-kor \
+      libspatialindex-c6 \
+    && ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone \
+    && sed -i 's/# \(ko_KR.UTF-8\)/\1/' /etc/locale.gen && locale-gen \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /app/.cache/huggingface /app/nltk_data /app/tmp /tmp/xdg
+
+# LibreOffice H2Orestart 확장 + HCRBatang 폰트
+COPY ./genon/preprocessor/resources /tmp/resources
+RUN set -eux; \
+    mkdir -p /opt/h2orestart /usr/lib/libreoffice/share/extensions/h2orestart; \
+    wget -O /opt/h2orestart/H2Orestart.oxt "${H2ORESTART_URL}"; \
+    unzip -q -o /opt/h2orestart/H2Orestart.oxt -d /usr/lib/libreoffice/share/extensions/h2orestart; \
+    soffice --headless --nologo --nodefault --nofirststartwizard --terminate_after_init || true; \
+    mkdir -p /usr/share/fonts; \
+    tar zxf /tmp/resources/HCRBatang.ttf.tar.gz -C /usr/share/fonts/; \
+    fc-cache -f -v; \
+    rm -rf /tmp/resources
+
+# 사용자 생성 + 디렉토리
+RUN groupadd -g $GID $GNAME && \
+    useradd --create-home --no-log-init -u $UID -g $GID $UNAME && \
+    mkdir -p /var/log/supervisor /var/run/supervisor /app/.cache/huggingface \
+      /app/.config/libreoffice /app/.cache/libreoffice /app/.local/share /app/tmp /tmp/xdg
+
+WORKDIR /app
+
+# uv 관리형 python3.12 (venv 의 bin/python 심링크 대상) — venv 보다 먼저 COPY.
+COPY --from=builder /opt/uv/python /opt/uv/python
+# venv (패치된 docling_parse + cu124 torch 포함) + 아티팩트
+COPY --from=builder ${APP_VENV} ${APP_VENV}
+COPY --from=sdk_artifacts /app/hwp_sdk /app/hwp_sdk
+COPY --from=rhwp_builder /usr/local/bin/rhwp /usr/local/bin/rhwp
+COPY --from=font_artifacts /app/extra_fonts /usr/share/fonts/additional
+RUN fc-cache -f -v
+COPY --from=models_artifacts /models /models
+COPY --from=models_artifacts /app/nltk_data /app/nltk_data
+
+# hwp_sdk import 경로 (venv site-packages 심링크, 표준 빌드 파리티용). python3.12 고정.
+# ⚠️ 코드서빙은 docling 을 /app/src/service(clone) 에서 import 하므로 이 심링크는 사용되지 않는다.
+#    코드서빙 런타임은 ENV HWP_SDK_DIR=/app/hwp_sdk 로 SDK 경로를 잡는다(genos_hwp_backend.py).
+RUN ln -s /app/hwp_sdk ${APP_VENV}/lib/python3.12/site-packages/hwp_sdk
+
+# 코드서빙 harness
+COPY build-script/code-serving-doc-parser/supervisor/non-root-base.conf /etc/supervisor/supervisord.conf
+COPY build-script/code-serving-doc-parser/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY build-script/code-serving-doc-parser/scripts /app/scripts
+COPY build-script/code-serving-doc-parser/src /app/src
+COPY build-script/code-serving-doc-parser/gunicorn /app/gunicorn
+
+RUN rm -rf /app/src/service && chmod +x /app/scripts/*.sh
+RUN chown -R $UID:$GID /app /run /var/log /etc/supervisor /models /app/nltk_data
+
+USER $UID
+CMD ["supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]

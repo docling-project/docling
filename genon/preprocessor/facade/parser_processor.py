@@ -1877,7 +1877,7 @@ class DocumentProcessor:
     @staticmethod
     def _normalize_output_format(value: Any) -> str:
         fmt = str(value).strip().lower()
-        if fmt not in {"json", "html", "markdown"}:
+        if fmt not in {"json", "html", "markdown", "docling"}:
             _log.warning(f"[DocumentProcessor] Invalid output.format '{value}', fallback to 'json'")
             return "json"
         return fmt
@@ -2234,6 +2234,15 @@ class DocumentProcessor:
         """Docling 경로의 최종 응답 생성."""
         output_format = getattr(self, "_output_format", "json")
         table_format = getattr(self, "_table_format", "html")
+
+        if output_format == "docling":
+            # 복원 가능한 DoclingDocument 원본 JSON(model_dump)을 그대로 반환.
+            # DoclingDocument.model_validate(data["document"]) 로 무손실 복원 가능 → Chunk API 입력.
+            # clear_coordinates / table_format 은 원본 보존을 위해 docling 포맷에서는 무시한다.
+            return {
+                "document": self._serialize_docling_document(doc),
+                "usage": {"pages": doc.num_pages()},
+            }
 
         if output_format == "json":
             result = self._docling_to_parse_format(doc, table_format=table_format)
