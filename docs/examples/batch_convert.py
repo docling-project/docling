@@ -1,5 +1,5 @@
 # %% [markdown]
-# Batch convert multiple PDF files and export results in several formats.
+# Batch convert multiple PDF files and export results in several formats with Docling or Docling Serve.
 
 # What this example does
 # - Loads a small set of sample PDFs.
@@ -7,14 +7,13 @@
 # - Writes outputs to `scratch/` in multiple formats (JSON, HTML, Markdown, text, doctags, YAML).
 
 # Prerequisites
-# - Install Docling and dependencies as described in the repository README.
+# - Install Docling or Docling Serve and dependencies as described in the repository README.
 # - Ensure you can import `docling` from your Python environment.
 # <!-- YAML export requires `PyYAML` (`pip install pyyaml`). -->
 
 # Input documents
-# - By default, this example uses a few PDFs from `tests/data/pdf/` in the repo.
-# - If you cloned without test data, or want to use your own files, edit
-#   `input_doc_paths` below to point to PDFs on your machine.
+# - Default set of sample PDFs.
+# - Update `input_doc_paths` to a desired list of file paths.
 
 # Notes
 # - Set `pipeline_options.generate_page_images = True` to include page images in HTML.
@@ -30,13 +29,15 @@ from collections.abc import Iterable
 from pathlib import Path
 
 import yaml
-from docling_core.types.doc import ImageRefMode
+from docling_core.types.doc.base import ImageRefMode
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.datamodel.pipeline_options import PdfBackend, PdfPipelineOptions
+from docling.datamodel.service.options import ConvertDocumentsOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.service_client import DoclingServiceClient
 
 _log = logging.getLogger(__name__)
 
@@ -143,6 +144,15 @@ def main():
     pipeline_options = PdfPipelineOptions()
     pipeline_options.generate_page_images = True
 
+    start_time = time.time()
+
+    ###########################################################################
+
+    # The two sections below are for either direct Docling usage or Docling Serve
+    # Uncomment exactly one section at a time
+
+    # Docling (local conversion)
+    # --------------------------------------
     doc_converter = DocumentConverter(
         format_options={
             InputFormat.PDF: PdfFormatOption(
@@ -150,15 +160,34 @@ def main():
             )
         }
     )
-
-    start_time = time.time()
-
-    # Convert all inputs. Set `raises_on_error=False` to keep processing other
-    # files even if one fails; errors are summarized after the run.
     conv_results = doc_converter.convert_all(
         input_doc_paths,
         raises_on_error=False,  # to let conversion run through all and examine results at the end
     )
+
+    # Docling Serve (remote conversion)
+    # --------------------------------------
+    # SERVE_URL = "http://localhost:5001"
+    # table_cell_matching = getattr(pipeline_options.table_structure_options, 'do_cell_matching', True) if pipeline_options.table_structure_options else True
+    # options = ConvertDocumentsOptions(
+    #     do_ocr=pipeline_options.do_ocr,
+    #     do_table_structure=pipeline_options.do_table_structure,
+    #     table_cell_matching=table_cell_matching,
+    #     ocr_lang=pipeline_options.ocr_options.lang if pipeline_options.do_ocr else None,
+    #     pdf_backend=PdfBackend.DOCLING_PARSE,
+    # )
+    # # Convert all inputs. Set `raises_on_error=False` to keep processing other
+    # # files even if one fails; errors are summarized after the run.
+    # conv_results = []
+    # with DoclingServiceClient(url=SERVE_URL) as client:
+    #     for input_doc_path in input_doc_paths:
+    #         try:
+    #             conv_result = client.convert(source=input_doc_path, options=options)
+    #             conv_results.append(conv_result)
+    #         except Exception as e:
+    #             _log.error(f"Failed to convert {input_doc_path}: {e}")
+    ###########################################################################
+
     # Write outputs to ./scratch and log a summary.
     _success_count, _partial_success_count, failure_count = export_documents(
         conv_results, output_dir=Path("scratch")
