@@ -10,7 +10,7 @@ from PIL import Image
 
 from docling.backend.abstract_backend import PaginatedDocumentBackend
 from docling.datamodel.backend_options import PdfBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import InputFormat, PdfOutlineItem
 from docling.datamodel.document import InputDocument
 
 
@@ -85,6 +85,15 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
     def iter_pages(self) -> Iterator[PdfPageBackend]:
         for page_index in range(self.page_count()):
             yield self.load_page(page_index)
+
+    def get_document_outline(self) -> list[PdfOutlineItem]:
+        """Return the PDF bookmark / table-of-contents outline.
+
+        A flat, document-ordered list where each entry carries its own depth (``level``). The
+        default returns an empty list; PDFium-backed backends override this with the real
+        outline. Backends without an embedded outline (e.g. OCR/image) keep the default.
+        """
+        return []
 
     @classmethod
     def supported_formats(cls) -> Set[InputFormat]:

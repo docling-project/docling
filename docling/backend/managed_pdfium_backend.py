@@ -7,13 +7,20 @@ from typing import TYPE_CHECKING, Optional, Union
 
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
 from docling.datamodel.backend_options import PdfBackendOptions
+from docling.datamodel.base_models import PdfOutlineItem
+from docling.utils.pdf_outline import extract_outline_from_pdfium
 
 if TYPE_CHECKING:
+    import pypdfium2 as pdfium
+
     from docling.datamodel.document import InputDocument
 
 
 class ManagedPdfiumDocumentBackend(PdfDocumentBackend, ABC):
     """Shared lifecycle management for PDFium-backed document backends."""
+
+    # Set by concrete subclasses to the open PDFium document; reset to None on close.
+    _pdoc: Optional[pdfium.PdfDocument]
 
     def __init__(
         self,
@@ -29,6 +36,16 @@ class ManagedPdfiumDocumentBackend(PdfDocumentBackend, ABC):
     @abstractmethod
     def _close_native_document(self) -> None:
         pass
+
+    def get_document_outline(self) -> list[PdfOutlineItem]:
+        """Extract the PDF outline from the open PDFium document.
+
+        Shared by both the pypdfium2 and docling-parse backends (both hold a PDFium handle),
+        so the bookmark signal is available under the default text backend too.
+        """
+        if self._pdoc is None:
+            return []
+        return extract_outline_from_pdfium(self._pdoc)
 
     def unload(self) -> None:
         if self._closed:

@@ -1551,13 +1551,16 @@ class HeadingHierarchyOptions(BaseModel):
     heading produced by the PDF path defaults to ``level=1`` and the document hierarchy is
     flattened. When ``enabled``, :class:`HeadingHierarchyModel` runs right after the
     reading-order model and assigns ``SectionHeaderItem.level`` from (in precedence order)
-    numbering and font style. The step only changes heading levels; it never adds, removes
-    or reorders items, and headings for which no signal applies keep their current level.
-
-    PDF bookmark/outline inference (the most authoritative signal) is planned as a separate
-    follow-up.
+    PDF bookmarks/ToC, numbering and font style. The step changes heading levels and may
+    promote a heading mis-classified as a list-item when it confidently matches a bookmark;
+    otherwise it never adds, removes or reorders items, and headings for which no signal
+    applies keep their current level.
 
     Notes:
+        - ``use_bookmarks`` reads the PDF outline surfaced on ``ConversionResult.pdf_outline``.
+          When a bookmark confidently matches a detected heading it is authoritative; entries
+          that match nothing fall back to numbering/style, so partial/noisy outlines never
+          degrade the numbering result.
         - ``use_style`` requires the parsed PDF cells to still be available when the
           heading-hierarchy step runs, i.e.
           ``PdfPipelineOptions.generate_parsed_pages=True``. Without them, style inference is
@@ -1574,12 +1577,24 @@ class HeadingHierarchyOptions(BaseModel):
             )
         ),
     ] = False
+    use_bookmarks: Annotated[
+        bool,
+        Field(
+            description=(
+                "Use the PDF bookmarks / table-of-contents (when present) as the authoritative "
+                "heading signal. Bookmarks are fuzzily matched to detected headings by title "
+                "and page; confident matches win over numbering and style, and a confidently "
+                "matched list-item is promoted to a heading. Unmatched entries fall back to "
+                "numbering/style."
+            )
+        ),
+    ] = True
     use_numbering: Annotated[
         bool,
         Field(
             description=(
                 "Use legal/outline numbering (e.g. PART I -> 1. -> 1.1 -> (a) -> (i), Roman "
-                "vs Arabic numerals) as the primary signal for heading level."
+                "vs Arabic numerals) as the primary signal for headings without a bookmark match."
             )
         ),
     ] = True
@@ -1612,6 +1627,18 @@ class HeadingHierarchyOptions(BaseModel):
             description="Maximum heading level to assign. Deeper levels are clamped.",
         ),
     ] = 6
+    bookmark_match_threshold: Annotated[
+        float,
+        Field(
+            ge=0.0,
+            le=1.0,
+            description=(
+                "Minimum normalized title-similarity (0..1) for a bookmark to be considered a "
+                "match to a detected heading/list-item. Below this, the bookmark is ignored and "
+                "the heading falls back to numbering/style. Higher = stricter."
+            ),
+        ),
+    ] = 0.8
 
 
 class PdfPipelineOptions(PaginatedPipelineOptions):
@@ -1767,8 +1794,8 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
         HeadingHierarchyOptions,
         Field(
             description=(
-                "Configuration for inferring section-header levels from numbering, font "
-                "style and (future) PDF bookmarks. Disabled by default; when enabled, the "
+                "Configuration for inferring section-header levels from PDF bookmarks, "
+                "numbering and font style. Disabled by default; when enabled, the "
                 "reading-order stage assigns SectionHeaderItem.level instead of leaving every "
                 "heading at level 1."
             )

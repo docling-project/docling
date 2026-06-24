@@ -61,6 +61,7 @@ from docling.datamodel.base_models import (
     InputFormat,
     MimeTypeToFormat,
     Page,
+    PdfOutlineItem,
 )
 from docling.datamodel.settings import DocumentLimits
 from docling.utils.profiling import ProfilingItem
@@ -431,6 +432,10 @@ class ConversionAssets(BaseModel):
 class ConversionResult(ConversionAssets):
     input: InputDocument
     assembled: AssembledUnit = AssembledUnit()
+
+    # PDF bookmark/ToC outline, surfaced from the backend for the heading-hierarchy stage.
+    # Transient: excluded from serialization so it never bloats the persisted output document.
+    pdf_outline: list[PdfOutlineItem] = Field(default_factory=list, exclude=True)
 
 
 class _DummyBackend(AbstractDocumentBackend):
