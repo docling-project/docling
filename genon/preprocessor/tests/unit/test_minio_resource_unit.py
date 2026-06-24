@@ -106,13 +106,17 @@ def test_file_lock_blocks_concurrent_acquire(tmp_path: Path):
 # ---------------------------------------------------------------------------
 
 def _patch_minio(monkeypatch, objects):
-    """`util.minio_resource.Minio`를 MagicMock으로 치환하고 반환."""
-    import util.minio_resource as mr
+    """`minio.Minio`를 MagicMock으로 치환하고 반환.
+
+    `download_resource_files`는 호출 시점에 `from minio import Minio`로
+    `minio.Minio`를 조회하므로(lazy import), 모듈 속성이 아닌 `minio.Minio`를 patch한다.
+    """
+    import minio
 
     minio_mock = MagicMock()
     minio_mock.list_objects.return_value = iter(objects)
     client_factory = MagicMock(return_value=minio_mock)
-    monkeypatch.setattr(mr, "Minio", client_factory)
+    monkeypatch.setattr(minio, "Minio", client_factory)
     return minio_mock, client_factory
 
 
