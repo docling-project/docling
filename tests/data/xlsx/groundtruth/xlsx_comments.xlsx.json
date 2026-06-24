@@ -55,8 +55,8 @@
         }
       ],
       "content_layer": "body",
-      "name": "sheet: Sheet1",
-      "label": "section"
+      "name": "Sheet1",
+      "label": "sheet"
     },
     {
       "self_ref": "#/groups/1",

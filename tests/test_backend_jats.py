@@ -26,6 +26,24 @@ def get_converter():
     return converter
 
 
+def convert_jats_body(body: str) -> DoclingDocument:
+    xml = f"""<!DOCTYPE article
+PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
+<article article-type="research-article">
+  <body>
+    {body}
+  </body>
+</article>
+"""
+    stream = DocumentStream(
+        name="body-test.nxml",
+        stream=BytesIO(xml.encode()),
+    )
+
+    conv_result: ConversionResult = get_converter().convert(stream)
+    return conv_result.document
+
+
 def convert_jats_article_meta(article_meta: str) -> DoclingDocument:
     xml = f"""<!DOCTYPE article
 PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
@@ -73,6 +91,32 @@ def test_jats_structured_abstract_sections_are_preserved():
     assert "## Abstract" in md
     assert "Background: Background text." in md
     assert "Methods: Methods text." in md
+
+
+def test_jats_footnotes_are_preserved():
+    doc = convert_jats_body(
+        """
+        <sec>
+          <title>Footnote Test</title>
+
+          <fn-group>
+                <fn id="fn1">
+                    <label>1</label>
+                    <p>First footnote</p>
+                </fn>
+
+                <fn id="fn2">
+                    <label>2</label>
+                    <p>Second footnote</p>
+                </fn>
+            </fn-group>
+        </sec>
+        """
+    )
+
+    md = doc.export_to_markdown()
+    assert "First footnote" in md
+    assert "Second footnote" in md
 
 
 @pytest.mark.parametrize(

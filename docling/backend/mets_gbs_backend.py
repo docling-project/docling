@@ -24,6 +24,7 @@ from PIL.Image import Image as PILImage
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
 from docling.datamodel.backend_options import MetsGbsBackendOptions
 from docling.datamodel.base_models import InputFormat
+from docling.exceptions import DocumentLoadError
 
 if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
@@ -247,7 +248,7 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
                         break
 
         if self.root_mets is None:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 f"METS GBS backend could not load document {self.document_hash}."
             )
 

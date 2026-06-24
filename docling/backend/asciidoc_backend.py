@@ -19,6 +19,7 @@ from docling_core.types.doc import (
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             self.valid = True
 
         except Exception as e:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 f"Could not initialize AsciiDoc backend for file with hash {self.document_hash}."
             ) from e
         return

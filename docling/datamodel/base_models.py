@@ -226,10 +226,47 @@ class VlmStopReason(str, Enum):
     UNSPECIFIED = "unspecified"  # Defaul none value
 
 
+class FailureCategory(str, Enum):
+    """Error category shared by task-scope (``PublicFailureInfo``) and
+    document/page-scope (``ErrorItem``) errors, so the jobkit bridge can pass one
+    to the other without translation.
+
+    Task-scope only: CAPACITY, TARGET_UNAVAILABLE, INTERNAL.
+    Document/page-scope only: BACKEND_FAILURE, INFERENCE_FAILURE.
+    Shared: POLICY, SOURCE_UNAVAILABLE, TIMEOUT.
+
+    UNKNOWN is the default for uncategorized errors, distinct from INTERNAL (a
+    known service defect).
+    """
+
+    POLICY = "policy"
+    CAPACITY = "capacity"
+    SOURCE_UNAVAILABLE = "source_unavailable"
+    TARGET_UNAVAILABLE = "target_unavailable"
+    TIMEOUT = "timeout"
+    INTERNAL = "internal"
+    BACKEND_FAILURE = "backend_failure"
+    INFERENCE_FAILURE = "inference_failure"
+    UNKNOWN = "unknown"
+
+
 class ErrorItem(BaseModel):
+    """Structured error information from document conversion.
+
+    Attributes:
+        component_type: The component that generated the error.
+        module_name: The module where the error occurred.
+        error_message: Human-readable error description.
+        category: Semantic category of the error for filtering.
+        page_no: 1-indexed page the error is attributable to, or None for
+            document-scoped errors.
+    """
+
     component_type: DoclingComponentType
     module_name: str
     error_message: str
+    category: FailureCategory = FailureCategory.UNKNOWN
+    page_no: int | None = None
 
 
 class Cluster(BaseModel):

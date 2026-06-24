@@ -40,6 +40,7 @@ from docling.backend.abstract_backend import (
 from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
@@ -174,7 +175,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         except Exception as e:
             self.valid = False
 
-            raise RuntimeError(
+            raise DocumentLoadError(
                 f"MsExcelDocumentBackend could not load document with hash {self.document_hash}"
             ) from e
 
@@ -392,8 +393,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
                 self.parents[0] = doc.add_group(
                     parent=None,
-                    label=GroupLabel.SECTION,
-                    name=f"sheet: {name}",
+                    label=GroupLabel.SHEET,
+                    name=name,
                     content_layer=self._get_sheet_content_layer(sheet),
                 )
                 doc = self._convert_sheet(doc, sheet, page_no)

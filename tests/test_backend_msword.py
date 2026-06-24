@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import pytest
 from docling_core.types.doc import DocItemLabel, GroupItem, TableItem
 from lxml import etree
+from PIL import Image
 
 import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
@@ -885,3 +886,25 @@ def test_text_after_drawingml_images(documents):
             "Skipping DrawingML text extraction test."
         )
         pytest.skip(f"Test document '{name}' not available")
+
+
+def test_invisible_spacer_logic():
+    backend = MsWordDocumentBackend.__new__(MsWordDocumentBackend)
+
+    assert backend._is_invisible_spacer(None) is False
+
+    # Test microscopic layout dot
+    tiny_img = Image.new("RGB", (4, 4))
+    assert backend._is_invisible_spacer(tiny_img) is True
+
+    # Test 100% transparent RGBA layout box (Alpha = 0)
+    trans_img = Image.new("RGBA", (50, 50), (255, 255, 255, 0))
+    assert backend._is_invisible_spacer(trans_img) is True
+
+    # Test pure white RGB layout box
+    white_img = Image.new("RGB", (50, 50), (255, 255, 255))
+    assert backend._is_invisible_spacer(white_img) is True
+
+    # Test normal, valid graphic
+    valid_img = Image.new("RGB", (50, 50), (100, 150, 200))
+    assert backend._is_invisible_spacer(valid_img) is False

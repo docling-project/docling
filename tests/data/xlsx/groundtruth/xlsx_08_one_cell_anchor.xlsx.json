@@ -40,8 +40,8 @@
         }
       ],
       "content_layer": "body",
-      "name": "sheet: Sheet1",
-      "label": "section"
+      "name": "Sheet1",
+      "label": "sheet"
     }
   ],
   "texts": [],
@@ -80,7 +80,7 @@
           "width": 100.0,
           "height": 80.0
         },
-        "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABQCAIAAABga0e4AAAAvklEQVR4nO3SsREAIAwDscD+O8MK+V6qXf35zLxh5y53iNV4ViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViBWIFYgViDW7H15OAGfth2TMAAAAABJRU5ErkJggg=="
+        "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABQCAIAAABga0e4AAAA6ElEQVR4Ae3BAQEAAAgCIPw/2i44IAj1NqHeJtTbhHqbUG8T6m1CvU2otwn1NqHeJtTbhHqbUG8T6m1CvU2otwn1NqHeJtTbhHqbUG8T6m1CvU2otwn1NqHeJtTbhHqbUG8T6m1CvU2otwn1NqHeJtTbhHqbUG8T6m1CvU2otwn1NqHeJtTbhHqbUG8T6m1CvU2otwn1NqHeJtTbhHqbUG8T6m1CvU2otwn1NqHeJtTbhHqbUG8T6m1CvU2otwn1NqHeJtTbhHqbUG8T6m1CvU2otwn1NqHeJtTbhHqbUG8T6m1CvU2otznWL1ABb8VPeQAAAABJRU5ErkJggg=="
       },
       "annotations": []
     }
