@@ -23,7 +23,7 @@ def test_convert_valid():
     cls = MarkdownDocumentBackend
 
     md_path = Path("tests") / "data" / "md"
-    relevant_paths = sorted((md_path / "regression").rglob("*.md"))
+    relevant_paths = sorted((md_path / "sources").rglob("*.md"))
     assert len(relevant_paths) > 0
 
     yaml_filter = ["inline_and_formatting", "mixed_without_h1"]

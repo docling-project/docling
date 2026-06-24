@@ -63,9 +63,9 @@ def main():
     settings.debug.profile_pipeline_timings = True
 
     data_folder = Path(__file__).parent / "../../tests/data"
-    # input_doc_path = data_folder / "pdf" / "regression" / "2305.03393v1.pdf"  # 14 pages
+    # input_doc_path = data_folder / "pdf" / "sources" / "2305.03393v1.pdf"  # 14 pages
     input_doc_path = (
-        data_folder / "pdf" / "regression" / "redp5110_sampled.pdf"
+        data_folder / "pdf" / "sources" / "redp5110_sampled.pdf"
     )  # 18 pages
 
     # Use the granite_docling preset with API runtime override for vLLM

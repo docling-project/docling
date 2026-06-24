@@ -35,7 +35,7 @@ def get_converter():
 
 
 def test_code_and_formula_conversion():
-    pdf_path = Path("tests/data/pdf/regression/code_and_formula.pdf")
+    pdf_path = Path("tests/data/pdf/sources/code_and_formula.pdf")
     converter = get_converter()
 
     print(f"converting {pdf_path}")
@@ -66,7 +66,7 @@ def test_code_and_formula_conversion():
 
 
 def test_formula_conversion_with_page_range():
-    pdf_path = Path("tests/data/pdf/regression/code_and_formula.pdf")
+    pdf_path = Path("tests/data/pdf/sources/code_and_formula.pdf")
     converter = get_converter()
 
     print(f"converting {pdf_path} with page range")

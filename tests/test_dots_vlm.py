@@ -9,13 +9,13 @@ from docling.utils.dots_utils import parse_dots_json
 
 def get_dots_test_paths():
     """Get all dots JSON test files."""
-    directory = Path("./tests/data/json_dots/regression/")
+    directory = Path("./tests/data/json_dots/sources/")
     return sorted(directory.glob("*.json"))
 
 
 def test_dots_simple_parsing():
     """Test dots JSON parsing produces expected document structure."""
-    path = Path("./tests/data/json_dots/regression/dots_simple.json")
+    path = Path("./tests/data/json_dots/sources/dots_simple.json")
     content = path.read_text()
     source = path.with_suffix(".source.txt").read_text()
 
@@ -50,7 +50,7 @@ def test_dots_simple_parsing():
 
 def test_dots_list_parsing():
     """Test dots JSON parsing handles real list-item predictions."""
-    path = Path("./tests/data/json_dots/regression/dots_list.json")
+    path = Path("./tests/data/json_dots/sources/dots_list.json")
     content = path.read_text()
     source = path.with_suffix(".source.txt").read_text()
 

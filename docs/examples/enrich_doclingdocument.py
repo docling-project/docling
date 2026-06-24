@@ -121,7 +121,7 @@ def enrich_document(
 
 def main():
     data_folder = Path(__file__).parent / "../../tests/data"
-    input_pdf_path = data_folder / "pdf/regression/2206.01062.pdf"
+    input_pdf_path = data_folder / "pdf/sources/2206.01062.pdf"
 
     input_doc_path = data_folder / "pdf/groundtruth/2206.01062.json"
 

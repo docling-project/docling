@@ -36,7 +36,7 @@ GENERATE = GEN_TEST_DATA
 @pytest.fixture(scope="module")
 def epub_paths() -> list[Path]:
     # Define the directory you want to search
-    directory = Path("./tests/data/epub/regression/")
+    directory = Path("./tests/data/epub/sources/")
 
     # List all epub files in the directory and its subdirectories
     epub_files = sorted(directory.rglob("*.epub"))
@@ -157,7 +157,7 @@ def test_epub_backend_with_image_options():
 
 def test_epub_content_combination():
     """Test that EPUB content from multiple files is properly combined."""
-    epub_path = Path("./tests/data/epub/regression/epub_purvis_poetry.epub")
+    epub_path = Path("./tests/data/epub/sources/epub_purvis_poetry.epub")
 
     converter = get_converter()
     result = converter.convert(epub_path)
@@ -173,7 +173,7 @@ def test_epub_content_combination():
 
 def test_epub_link_fixing():
     """Test that internal EPUB links are properly fixed after content combination."""
-    epub_path = Path("./tests/data/epub/regression/epub_purvis_poetry.epub")
+    epub_path = Path("./tests/data/epub/sources/epub_purvis_poetry.epub")
 
     converter = get_converter()
     result = converter.convert(epub_path)

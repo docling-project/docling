@@ -19,7 +19,7 @@ from docling.service_client import ChunkerKind, DoclingServiceClient
 
 load_dotenv()  # DOCLING_SERVICE_URL / DOCLING_SERVICE_API_KEY from env or a .env
 
-SOURCE = Path("tests/data/pdf/regression/2305.03393v1-pg9.pdf")
+SOURCE = Path("tests/data/pdf/sources/2305.03393v1-pg9.pdf")
 
 
 def main() -> None:

@@ -17,7 +17,7 @@ pytestmark = pytest.mark.cross_platform
 
 
 def test_e2e_vtt_conversions():
-    directory = Path("./tests/data/webvtt/regression/")
+    directory = Path("./tests/data/webvtt/sources/")
     vtt_paths = sorted(directory.rglob("*.vtt"))
     converter = DocumentConverter(allowed_formats=[InputFormat.VTT])
 

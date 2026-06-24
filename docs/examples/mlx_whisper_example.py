@@ -116,7 +116,7 @@ python mlx_whisper_example.py --model turbo
     parser.add_argument(
         "--audio",
         type=str,
-        help="Path to audio file for transcription (default: tests/data/audio/regression/sample_10s.mp3)",
+        help="Path to audio file for transcription (default: tests/data/audio/sources/sample_10s.mp3)",
     )
 
     parser.add_argument(
@@ -155,7 +155,7 @@ def main():
         else:
             print("Error: No audio file specified and default test file not found.")
             print(
-                "Please specify an audio file with --audio or ensure tests/data/audio/regression/sample_10s.mp3 exists."
+                "Please specify an audio file with --audio or ensure tests/data/audio/sources/sample_10s.mp3 exists."
             )
             sys.exit(1)
 

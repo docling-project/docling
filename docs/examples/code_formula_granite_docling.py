@@ -88,7 +88,7 @@ def extract_with_preset(preset_name: str, input_doc: Path):
 
 def main():
     """Main function to compare both presets."""
-    input_doc = Path("tests/data/pdf/regression/code_and_formula.pdf")
+    input_doc = Path("tests/data/pdf/sources/code_and_formula.pdf")
 
     if not input_doc.exists():
         print(f"Error: Input file not found: {input_doc}")

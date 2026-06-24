@@ -16,7 +16,7 @@ pytestmark = pytest.mark.cross_platform
 
 def get_csv_paths():
     # Define the directory you want to search
-    directory = Path("./tests/data/csv/regression/")
+    directory = Path("./tests/data/csv/sources/")
 
     # List all CSV files in the directory and its subdirectories
     return sorted(directory.rglob("*.csv"))
@@ -24,7 +24,7 @@ def get_csv_paths():
 
 def get_csv_path(name: str):
     # Return the matching CSV file path
-    return Path(f"./tests/data/csv/regression/{name}.csv")
+    return Path(f"./tests/data/csv/sources/{name}.csv")
 
 
 def get_converter():

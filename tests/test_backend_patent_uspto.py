@@ -17,7 +17,7 @@ from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import CONFID_PREC, COORD_PREC, verify_document
 
 GENERATE: bool = GEN_TEST_DATA
-DATA_PATH: Path = Path("./tests/data/uspto/regression/")
+DATA_PATH: Path = Path("./tests/data/uspto/sources/")
 GT_PATH: Path = Path("./tests/data/uspto/groundtruth/")
 
 

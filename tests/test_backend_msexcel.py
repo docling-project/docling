@@ -28,7 +28,7 @@ GENERATE = GEN_TEST_DATA
 
 def get_excel_paths():
     # Define the directory you want to search
-    directory = Path("./tests/data/xlsx/regression/")
+    directory = Path("./tests/data/xlsx/sources/")
 
     # List all Excel files in the directory and its subdirectories
     excel_files = sorted(directory.rglob("*.xlsx")) + sorted(directory.rglob("*.xlsm"))

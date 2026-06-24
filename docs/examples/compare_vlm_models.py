@@ -146,7 +146,7 @@ def convert(
 
 if __name__ == "__main__":
     sources = [
-        "tests/data/pdf/regression/2305.03393v1-pg9.pdf",
+        "tests/data/pdf/sources/2305.03393v1-pg9.pdf",
     ]
 
     out_path = Path("scratch")

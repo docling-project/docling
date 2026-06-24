@@ -35,7 +35,7 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 IMAGE_RESOLUTION_SCALE = 2.0
 
-input_doc_path = Path("./tests/data/pdf/regression/2206.01062.pdf")
+input_doc_path = Path("./tests/data/pdf/sources/2206.01062.pdf")
 
 # Configure pipeline with legacy VLM options
 pipeline_options = PdfPipelineOptions()

@@ -37,7 +37,7 @@ from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipel
 
 @pytest.fixture
 def test_doc_path():
-    return Path("./tests/data/pdf/regression/2206.01062.pdf")
+    return Path("./tests/data/pdf/sources/2206.01062.pdf")
 
 
 def get_converters_with_table_options():
@@ -468,7 +468,7 @@ def test_ocr_coverage_threshold(test_doc_path):
         }
     )
 
-    test_doc_path = Path("./tests/data/scanned/regression/ocr_test.pdf")
+    test_doc_path = Path("./tests/data/scanned/sources/ocr_test.pdf")
     doc_result: ConversionResult = converter.convert(test_doc_path)
 
     # this should have generated no results, since we set a very high threshold
@@ -507,7 +507,7 @@ def test_parser_backends(test_doc_path):
             }
         )
 
-        test_doc_path = Path("./tests/data/pdf/regression/code_and_formula.pdf")
+        test_doc_path = Path("./tests/data/pdf/sources/code_and_formula.pdf")
         doc_result: ConversionResult = converter.convert(test_doc_path)
 
         assert doc_result.status == ConversionStatus.SUCCESS

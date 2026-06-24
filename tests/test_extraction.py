@@ -38,10 +38,10 @@ def test_file_path() -> Path:
         Path(__file__).parent
         / "data"
         / "scanned"
-        / "regression"
+        / "sources"
         / "qr_bill_example.jpg"
     )
-    # return Path("tests/data/pdf/regression/code_and_formula.pdf")
+    # return Path("tests/data/pdf/sources/code_and_formula.pdf")
 
 
 @pytest.mark.skipif(
@@ -124,7 +124,7 @@ def test_extraction_format_not_allowed_is_policy() -> None:
         Path(__file__).parent
         / "data"
         / "scanned"
-        / "regression"
+        / "sources"
         / "qr_bill_example.jpg"
     )
     result = pdf_only.extract(
@@ -142,7 +142,7 @@ def test_extraction_format_not_allowed_with_exception_surfaces_error_details() -
         Path(__file__).parent
         / "data"
         / "scanned"
-        / "regression"
+        / "sources"
         / "qr_bill_example.jpg"
     )
 
@@ -341,7 +341,7 @@ def test_extraction_pipeline_failure_is_categorized() -> None:
         Path(__file__).parent
         / "data"
         / "scanned"
-        / "regression"
+        / "sources"
         / "qr_bill_example.jpg"
     )
     from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend

@@ -158,7 +158,7 @@ def test_e2e_nanonets_ocr2_conversion():
         }
     )
 
-    pdf_path = Path("./tests/data/pdf/regression/2206.01062.pdf")
+    pdf_path = Path("./tests/data/pdf/sources/2206.01062.pdf")
     conv_result = converter.convert(pdf_path)
     doc = conv_result.document
 

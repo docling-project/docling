@@ -17,7 +17,7 @@ pytestmark = pytest.mark.ml_pdf_model
 
 @pytest.fixture
 def test_doc_path():
-    return Path("./tests/data/pdf/regression/2206.01062.pdf")
+    return Path("./tests/data/pdf/sources/2206.01062.pdf")
 
 
 def _get_backend(pdf_doc):
@@ -32,7 +32,7 @@ def _get_backend(pdf_doc):
 
 
 def test_get_text_from_rect_rotated():
-    pdf_doc = Path("./tests/data/scanned/regression/sample_with_rotation_mismatch.pdf")
+    pdf_doc = Path("./tests/data/scanned/sources/sample_with_rotation_mismatch.pdf")
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = True
 
@@ -49,7 +49,7 @@ def test_get_text_from_rect_rotated():
 
 
 def test_text_cell_counts():
-    pdf_doc = Path("./tests/data/pdf/regression/redp5110_sampled.pdf")
+    pdf_doc = Path("./tests/data/pdf/sources/redp5110_sampled.pdf")
 
     doc_backend = _get_backend(pdf_doc)
 
@@ -99,7 +99,7 @@ def test_num_pages(test_doc_path):
 
 
 def test_merge_row():
-    pdf_doc = Path("./tests/data/pdf/regression/multi_page.pdf")
+    pdf_doc = Path("./tests/data/pdf/sources/multi_page.pdf")
 
     doc_backend = _get_backend(pdf_doc)
     page_backend: PyPdfiumPageBackend = doc_backend.load_page(4)

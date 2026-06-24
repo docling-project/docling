@@ -12,7 +12,7 @@
 # <!-- YAML export requires `PyYAML` (`pip install pyyaml`). -->
 
 # Input documents
-# - By default, this example uses a few PDFs from `tests/data/pdf/regression/` in the repo.
+# - By default, this example uses a few PDFs from `tests/data/pdf/sources/` in the repo.
 # - If you cloned without test data, or want to use your own files, edit
 #   `input_doc_paths` below to point to PDFs on your machine.
 
@@ -122,13 +122,13 @@ def main():
     # your own files.
     data_folder = Path(__file__).parent / "../../tests/data"
     input_doc_paths = [
-        data_folder / "pdf/regression/2206.01062.pdf",
-        data_folder / "pdf/regression/2203.01017v2.pdf",
-        data_folder / "pdf/regression/2305.03393v1.pdf",
-        data_folder / "pdf/regression/redp5110_sampled.pdf",
+        data_folder / "pdf/sources/2206.01062.pdf",
+        data_folder / "pdf/sources/2203.01017v2.pdf",
+        data_folder / "pdf/sources/2305.03393v1.pdf",
+        data_folder / "pdf/sources/redp5110_sampled.pdf",
     ]
 
-    # buf = BytesIO((data_folder / "pdf/regression/2206.01062.pdf").open("rb").read())
+    # buf = BytesIO((data_folder / "pdf/sources/2206.01062.pdf").open("rb").read())
     # docs = [DocumentStream(name="my_doc.pdf", stream=buf)]
     # input = DocumentConversionInput.from_streams(docs)
 

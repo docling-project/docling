@@ -14,7 +14,7 @@
 # - From the repo root: `python docs/examples/granite_vision_table_structure.py`
 #
 # Input document
-# - Defaults to `tests/data/pdf/regression/2206.01062.pdf`. Change `input_doc_path` as needed.
+# - Defaults to `tests/data/pdf/sources/2206.01062.pdf`. Change `input_doc_path` as needed.
 #
 # Notes
 # - The Granite Vision model (`ibm-granite/granite-vision-4.1-4b`) is downloaded
@@ -43,7 +43,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/regression/2206.01062.pdf"
+    input_doc_path = data_folder / "pdf/sources/2206.01062.pdf"
 
     # Configure pipeline to use Granite Vision for table structure
     pipeline_options = PdfPipelineOptions()

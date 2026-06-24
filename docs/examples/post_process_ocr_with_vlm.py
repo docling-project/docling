@@ -702,7 +702,7 @@ def main():
     p.add_argument(
         "--in",
         dest="in_path",
-        default="tests/data/pdf/regression/2305.03393v1-pg9.pdf",
+        default="tests/data/pdf/sources/2305.03393v1-pg9.pdf",
         required=False,
         help="Path to a PDF/JSON file or a folder of JSONs",
     )

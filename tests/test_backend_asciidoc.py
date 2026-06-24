@@ -86,7 +86,7 @@ def test_empty_table_does_not_crash():
 
 
 def test_asciidocs_examples():
-    fnames = sorted(glob.glob("./tests/data/asciidoc/regression/*.asciidoc"))
+    fnames = sorted(glob.glob("./tests/data/asciidoc/sources/*.asciidoc"))
 
     for fname in fnames:
         in_path = Path(fname)

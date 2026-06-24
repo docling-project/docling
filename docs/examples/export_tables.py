@@ -13,7 +13,7 @@
 # - Outputs are written to `scratch/`.
 #
 # Input document
-# - Defaults to `tests/data/pdf/regression/2206.01062.pdf`. Change `input_doc_path` as needed.
+# - Defaults to `tests/data/pdf/sources/2206.01062.pdf`. Change `input_doc_path` as needed.
 #
 # Notes
 # - `table.export_to_dataframe()` returns a pandas DataFrame for convenient export/processing.
@@ -44,7 +44,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/regression/2206.01062.pdf"
+    input_doc_path = data_folder / "pdf/sources/2206.01062.pdf"
     output_dir = Path("scratch")
 
     doc_converter = DocumentConverter()

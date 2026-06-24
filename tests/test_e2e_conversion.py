@@ -22,7 +22,7 @@ SKIP_E2E_TEST = ["skipped_1page.pdf", "skipped_2pages.pdf"]
 
 def get_pdf_paths():
     # Define the directory you want to search
-    directory = Path("./tests/data/pdf/regression/")
+    directory = Path("./tests/data/pdf/sources/")
 
     # List all PDF files in the directory and its subdirectories
     # Exclude PDFs that are tested separately for failure scenarios

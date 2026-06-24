@@ -54,13 +54,13 @@ IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")
 def main():
     input_paths = [
         Path("README.md"),
-        Path("tests/data/html/regression/wiki_duck.html"),
-        Path("tests/data/docx/regression/word_sample.docx"),
-        Path("tests/data/docx/regression/lorem_ipsum.docx"),
-        Path("tests/data/pptx/regression/powerpoint_sample.pptx"),
+        Path("tests/data/html/sources/wiki_duck.html"),
+        Path("tests/data/docx/sources/word_sample.docx"),
+        Path("tests/data/docx/sources/lorem_ipsum.docx"),
+        Path("tests/data/pptx/sources/powerpoint_sample.pptx"),
         Path(__file__).parent / "2305.03393v1-pg9-img.png",
-        Path("tests/data/pdf/regression/2206.01062.pdf"),
-        Path("tests/data/asciidoc/regression/asciidoc_01.asciidoc"),
+        Path("tests/data/pdf/sources/2206.01062.pdf"),
+        Path("tests/data/asciidoc/sources/asciidoc_01.asciidoc"),
     ]
 
     ## for defaults use:
