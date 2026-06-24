@@ -294,6 +294,7 @@ dev = [
   "nbqa~=1.9",
   "python-semantic-release~=7.32",
   "matplotlib>=3.10.9",
+  "memray>=1.19.3"
 ]
 
 docs = [
