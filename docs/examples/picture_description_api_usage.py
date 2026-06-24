@@ -214,7 +214,9 @@ def run(input_pdf: Path) -> None:
     print(f"Pictures with usage payloads: {pictures_with_usage}")
 
 
-_DEFAULT_PDF = Path(__file__).resolve().parents[2] / "tests/data/pdf/regression/2206.01062.pdf"
+_DEFAULT_PDF = (
+    Path(__file__).resolve().parents[2] / "tests/data/pdf/regression/2206.01062.pdf"
+)
 
 
 def main() -> None:

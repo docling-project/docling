@@ -66,9 +66,7 @@ def documents(docx_paths) -> list[tuple[Path, DoclingDocument]]:
     for docx_path in docx_paths:
         _log.debug(f"converting {docx_path}")
 
-        gt_path = (
-            docx_path.parent.parent / "groundtruth" / docx_path.name
-        )
+        gt_path = docx_path.parent.parent / "groundtruth" / docx_path.name
 
         conv_result: ConversionResult = converter.convert(docx_path)
 

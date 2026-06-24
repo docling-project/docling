@@ -142,9 +142,7 @@ def test_e2e_jats_conversions(use_stream=False):
     converter = get_converter()
 
     for jats_path in jats_paths:
-        gt_path = (
-            jats_path.parent.parent / "groundtruth" / jats_path.name
-        )
+        gt_path = jats_path.parent.parent / "groundtruth" / jats_path.name
         if use_stream:
             buf = BytesIO(jats_path.open("rb").read())
             stream = DocumentStream(name=jats_path.name, stream=buf)

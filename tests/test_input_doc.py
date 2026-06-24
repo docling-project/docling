@@ -167,23 +167,31 @@ def test_guess_format(tmp_path):
     assert dci._guess_format(doc_path) == InputFormat.PDF
 
     # Valid MS Office
-    buf = BytesIO(Path("./tests/data/docx/regression/lorem_ipsum.docx").open("rb").read())
+    buf = BytesIO(
+        Path("./tests/data/docx/regression/lorem_ipsum.docx").open("rb").read()
+    )
     stream = DocumentStream(name="lorem_ipsum.docx", stream=buf)
     assert dci._guess_format(stream) == InputFormat.DOCX
     doc_path = Path("./tests/data/docx/regression/lorem_ipsum.docx")
     assert dci._guess_format(doc_path) == InputFormat.DOCX
 
     # MS Office without file extension (ZIP introspection fallback)
-    buf = BytesIO(Path("./tests/data/docx/regression/lorem_ipsum.docx").open("rb").read())
+    buf = BytesIO(
+        Path("./tests/data/docx/regression/lorem_ipsum.docx").open("rb").read()
+    )
     stream = DocumentStream(name="abc123-def456", stream=buf)
     assert dci._guess_format(stream) == InputFormat.DOCX
 
-    buf = BytesIO(Path("./tests/data/pptx/regression/powerpoint_sample.pptx").open("rb").read())
+    buf = BytesIO(
+        Path("./tests/data/pptx/regression/powerpoint_sample.pptx").open("rb").read()
+    )
     stream = DocumentStream(name="upload_no_ext", stream=buf)
     assert dci._guess_format(stream) == InputFormat.PPTX
 
     docx_no_ext = temp_dir / "docx_no_ext"
-    docx_no_ext.write_bytes(Path("./tests/data/docx/regression/lorem_ipsum.docx").read_bytes())
+    docx_no_ext.write_bytes(
+        Path("./tests/data/docx/regression/lorem_ipsum.docx").read_bytes()
+    )
     assert dci._guess_format(docx_no_ext) == InputFormat.DOCX
 
     pptx_no_ext = temp_dir / "pptx_no_ext"
@@ -287,38 +295,50 @@ def test_guess_format(tmp_path):
     assert dci._guess_format(doc_path) == InputFormat.CSV
 
     # Valid XML USPTO patent
-    buf = BytesIO(Path("./tests/data/uspto/regression/ipa20110039701.xml").open("rb").read())
+    buf = BytesIO(
+        Path("./tests/data/uspto/regression/ipa20110039701.xml").open("rb").read()
+    )
     stream = DocumentStream(name="ipa20110039701.xml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_USPTO
     doc_path = Path("./tests/data/uspto/regression/ipa20110039701.xml")
     assert dci._guess_format(doc_path) == InputFormat.XML_USPTO
 
-    buf = BytesIO(Path("./tests/data/uspto/regression/pftaps057006474.txt").open("rb").read())
+    buf = BytesIO(
+        Path("./tests/data/uspto/regression/pftaps057006474.txt").open("rb").read()
+    )
     stream = DocumentStream(name="pftaps057006474.txt", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_USPTO
     doc_path = Path("./tests/data/uspto/regression/pftaps057006474.txt")
     assert dci._guess_format(doc_path) == InputFormat.XML_USPTO
 
     # Valid XML JATS
-    buf = BytesIO(Path("./tests/data/jats/regression/elife-56337.xml").open("rb").read())
+    buf = BytesIO(
+        Path("./tests/data/jats/regression/elife-56337.xml").open("rb").read()
+    )
     stream = DocumentStream(name="elife-56337.xml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_JATS
     doc_path = Path("./tests/data/jats/regression/elife-56337.xml")
     assert dci._guess_format(doc_path) == InputFormat.XML_JATS
 
-    buf = BytesIO(Path("./tests/data/jats/regression/elife-56337.nxml").open("rb").read())
+    buf = BytesIO(
+        Path("./tests/data/jats/regression/elife-56337.nxml").open("rb").read()
+    )
     stream = DocumentStream(name="elife-56337.nxml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_JATS
     doc_path = Path("./tests/data/jats/regression/elife-56337.nxml")
     assert dci._guess_format(doc_path) == InputFormat.XML_JATS
 
-    buf = BytesIO(Path("./tests/data/jats/regression/elife-56337.txt").open("rb").read())
+    buf = BytesIO(
+        Path("./tests/data/jats/regression/elife-56337.txt").open("rb").read()
+    )
     stream = DocumentStream(name="elife-56337.txt", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_JATS
     doc_path = Path("./tests/data/jats/regression/elife-56337.txt")
     assert dci._guess_format(doc_path) == InputFormat.XML_JATS
 
-    buf = BytesIO(Path("./tests/data/xbrl/regression/mlac-20251231.xml").open("rb").read())
+    buf = BytesIO(
+        Path("./tests/data/xbrl/regression/mlac-20251231.xml").open("rb").read()
+    )
     stream = DocumentStream(name="mlac-20251231.xml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_XBRL
     doc_path = Path("./tests/data/xbrl/regression/mlac-20251231.xml")
@@ -341,7 +361,9 @@ def test_guess_format(tmp_path):
     assert dci._guess_format(stream) == InputFormat.MD
 
     # Valid METS-GBS archive
-    mets_gbs_path = Path("./tests/data/mets_gbs/regression/32044009881525_select.tar.gz")
+    mets_gbs_path = Path(
+        "./tests/data/mets_gbs/regression/32044009881525_select.tar.gz"
+    )
     if mets_gbs_path.exists():
         assert dci._guess_format(mets_gbs_path) == InputFormat.METS_GBS
 
@@ -360,12 +382,16 @@ def test_guess_format(tmp_path):
     assert dci._guess_format(stream) == InputFormat.MD
 
     # Valid WebVTT
-    buf = BytesIO(Path("./tests/data/webvtt/regression/webvtt_example_01.vtt").open("rb").read())
+    buf = BytesIO(
+        Path("./tests/data/webvtt/regression/webvtt_example_01.vtt").open("rb").read()
+    )
     stream = DocumentStream(name="webvtt_example_01.vtt", stream=buf)
     assert dci._guess_format(stream) == InputFormat.VTT
 
     # Valid email
-    buf = BytesIO(Path("./tests/data/email/regression/eml_simple.eml").open("rb").read())
+    buf = BytesIO(
+        Path("./tests/data/email/regression/eml_simple.eml").open("rb").read()
+    )
     stream = DocumentStream(name="eml_simple.eml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.EMAIL
     doc_path = Path("./tests/data/email/regression/eml_simple.eml")

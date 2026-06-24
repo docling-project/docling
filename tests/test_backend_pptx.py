@@ -37,9 +37,7 @@ def test_e2e_pptx_conversions():
     for pptx_path in pptx_paths:
         # print(f"converting {pptx_path}")
 
-        gt_path = (
-            pptx_path.parent.parent / "groundtruth" / pptx_path.name
-        )
+        gt_path = pptx_path.parent.parent / "groundtruth" / pptx_path.name
 
         conv_result: ConversionResult = converter.convert(pptx_path)
 

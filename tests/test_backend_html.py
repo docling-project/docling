@@ -342,9 +342,7 @@ def test_e2e_html_conversions(html_paths):
     converter = get_converter()
 
     for html_path in html_paths:
-        gt_path = (
-            html_path.parent.parent / "groundtruth" / html_path.name
-        )
+        gt_path = html_path.parent.parent / "groundtruth" / html_path.name
 
         conv_result: ConversionResult = converter.convert(html_path)
 
@@ -444,9 +442,7 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
     assert res_remote.document == res_local.document
 
     # checking exported formats
-    gt_path = (
-        "tests/data/html/groundtruth/" + str(Path(source).stem) + "_images.html"
-    )
+    gt_path = "tests/data/html/groundtruth/" + str(Path(source).stem) + "_images.html"
     pred_md: str = res_local.document.export_to_markdown(compact_tables=True)
     assert verify_export(pred_md, gt_path + ".md", generate=GENERATE)
     assert verify_document(res_local.document, gt_path + ".json", GENERATE)
@@ -545,7 +541,9 @@ def test_fetch_remote_images(monkeypatch):
         pytest.warns(match="a bytes-like object is required"),
     ):
         res = converter.convert(source)
-        expected_path = os.path.abspath("tests/data/html/regression/example_image_01.png")
+        expected_path = os.path.abspath(
+            "tests/data/html/regression/example_image_01.png"
+        )
         mocked_open.assert_called_once_with(expected_path, "rb")
         assert res.document
 

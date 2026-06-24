@@ -69,9 +69,7 @@ def documents(epub_paths) -> list[tuple[Path, DoclingDocument]]:
     for epub_path in epub_paths:
         _log.debug(f"converting {epub_path}")
 
-        gt_path = (
-            epub_path.parent.parent / "groundtruth" / epub_path.name
-        )
+        gt_path = epub_path.parent.parent / "groundtruth" / epub_path.name
 
         conv_result: ConversionResult = converter.convert(epub_path)
 
