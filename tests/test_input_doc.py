@@ -167,18 +167,14 @@ def test_guess_format(tmp_path):
     assert dci._guess_format(doc_path) == InputFormat.PDF
 
     # Valid MS Office
-    buf = BytesIO(
-        Path("./tests/data/docx/sources/lorem_ipsum.docx").open("rb").read()
-    )
+    buf = BytesIO(Path("./tests/data/docx/sources/lorem_ipsum.docx").open("rb").read())
     stream = DocumentStream(name="lorem_ipsum.docx", stream=buf)
     assert dci._guess_format(stream) == InputFormat.DOCX
     doc_path = Path("./tests/data/docx/sources/lorem_ipsum.docx")
     assert dci._guess_format(doc_path) == InputFormat.DOCX
 
     # MS Office without file extension (ZIP introspection fallback)
-    buf = BytesIO(
-        Path("./tests/data/docx/sources/lorem_ipsum.docx").open("rb").read()
-    )
+    buf = BytesIO(Path("./tests/data/docx/sources/lorem_ipsum.docx").open("rb").read())
     stream = DocumentStream(name="abc123-def456", stream=buf)
     assert dci._guess_format(stream) == InputFormat.DOCX
 
@@ -312,33 +308,25 @@ def test_guess_format(tmp_path):
     assert dci._guess_format(doc_path) == InputFormat.XML_USPTO
 
     # Valid XML JATS
-    buf = BytesIO(
-        Path("./tests/data/jats/sources/elife-56337.xml").open("rb").read()
-    )
+    buf = BytesIO(Path("./tests/data/jats/sources/elife-56337.xml").open("rb").read())
     stream = DocumentStream(name="elife-56337.xml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_JATS
     doc_path = Path("./tests/data/jats/sources/elife-56337.xml")
     assert dci._guess_format(doc_path) == InputFormat.XML_JATS
 
-    buf = BytesIO(
-        Path("./tests/data/jats/sources/elife-56337.nxml").open("rb").read()
-    )
+    buf = BytesIO(Path("./tests/data/jats/sources/elife-56337.nxml").open("rb").read())
     stream = DocumentStream(name="elife-56337.nxml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_JATS
     doc_path = Path("./tests/data/jats/sources/elife-56337.nxml")
     assert dci._guess_format(doc_path) == InputFormat.XML_JATS
 
-    buf = BytesIO(
-        Path("./tests/data/jats/sources/elife-56337.txt").open("rb").read()
-    )
+    buf = BytesIO(Path("./tests/data/jats/sources/elife-56337.txt").open("rb").read())
     stream = DocumentStream(name="elife-56337.txt", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_JATS
     doc_path = Path("./tests/data/jats/sources/elife-56337.txt")
     assert dci._guess_format(doc_path) == InputFormat.XML_JATS
 
-    buf = BytesIO(
-        Path("./tests/data/xbrl/sources/mlac-20251231.xml").open("rb").read()
-    )
+    buf = BytesIO(Path("./tests/data/xbrl/sources/mlac-20251231.xml").open("rb").read())
     stream = DocumentStream(name="mlac-20251231.xml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_XBRL
     doc_path = Path("./tests/data/xbrl/sources/mlac-20251231.xml")
@@ -361,9 +349,7 @@ def test_guess_format(tmp_path):
     assert dci._guess_format(stream) == InputFormat.MD
 
     # Valid METS-GBS archive
-    mets_gbs_path = Path(
-        "./tests/data/mets_gbs/sources/32044009881525_select.tar.gz"
-    )
+    mets_gbs_path = Path("./tests/data/mets_gbs/sources/32044009881525_select.tar.gz")
     if mets_gbs_path.exists():
         assert dci._guess_format(mets_gbs_path) == InputFormat.METS_GBS
 
@@ -389,9 +375,7 @@ def test_guess_format(tmp_path):
     assert dci._guess_format(stream) == InputFormat.VTT
 
     # Valid email
-    buf = BytesIO(
-        Path("./tests/data/email/sources/eml_simple.eml").open("rb").read()
-    )
+    buf = BytesIO(Path("./tests/data/email/sources/eml_simple.eml").open("rb").read())
     stream = DocumentStream(name="eml_simple.eml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.EMAIL
     doc_path = Path("./tests/data/email/sources/eml_simple.eml")

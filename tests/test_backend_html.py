@@ -541,9 +541,7 @@ def test_fetch_remote_images(monkeypatch):
         pytest.warns(match="a bytes-like object is required"),
     ):
         res = converter.convert(source)
-        expected_path = os.path.abspath(
-            "tests/data/html/sources/example_image_01.png"
-        )
+        expected_path = os.path.abspath("tests/data/html/sources/example_image_01.png")
         mocked_open.assert_called_once_with(expected_path, "rb")
         assert res.document
 
