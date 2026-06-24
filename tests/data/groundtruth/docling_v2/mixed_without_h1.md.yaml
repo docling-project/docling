@@ -43,7 +43,7 @@ groups:
 key_value_items: []
 name: mixed_without_h1
 origin:
-  binary_hash: 8222250741625232160
+  binary_hash: 1004175075401466085
   filename: mixed_without_h1.md
   mimetype: text/html
 pages: {}
@@ -111,12 +111,12 @@ texts:
   enumerated: false
   label: list_item
   marker: ''
-  orig: 2 . strange
+  orig: 2. strange
   parent:
     $ref: '#/groups/1'
   prov: []
   self_ref: '#/texts/5'
-  text: 2 . strange
+  text: 2. strange
 - children: []
   content_layer: body
   label: text

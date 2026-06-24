@@ -6,8 +6,8 @@ This document identifies the edits needed for a PAS submission to ISO via ISO/IE
 
 The transformation of this technical draft for ISO compliance involves two phases:
 
-- **Phase 1** (Macro-Level Structural Realignment) fixes the document's main layout. It forces the strict standard clause order, removes forbidden company and author names, cuts out critiques of competing formats, and changes all casual requirement language or uppercase tokens into standard lowercase ISO verbal forms (shall, should, may).
-- **Phase 2** (Micro-Level Editorial Optimization) cleans up the small details required by the ISO House Style. This fixes layout bugs like ha nging paragraphs, adds spaces to large numbers (e.g., 65 535), writes out printable web links for physical paper copies, uses proper math subscript formatting, and limits all typography to standard fonts so it passes the final publishing system.
+- **Phase 1**(Macro-Level Structural Realignment) fixes the document's main layout. It forces the strict standard clause order, removes forbidden company and author names, cuts out critiques of competing formats, and changes all casual requirement language or uppercase tokens into standard lowercase ISO verbal forms (shall, should, may).
+- **Phase 2**(Micro-Level Editorial Optimization) cleans up the small details required by the ISO House Style. This fixes layout bugs like ha nging paragraphs, adds spaces to large numbers (e.g., 65 535), writes out printable web links for physical paper copies, uses proper math subscript formatting, and limits all typography to standard fonts so it passes the final publishing system.
 
 **Phase 1**
 

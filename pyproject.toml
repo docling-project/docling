@@ -55,6 +55,7 @@ dependencies = [
   'certifi>=2024.7.4',
   'pluggy>=1.0.0,<2.0.0',
   'tqdm>=4.65.0,<5.0.0',
+  "docling-core",
 ]
 
 [project.urls]
@@ -282,7 +283,8 @@ typecheck = [
 ]
 pr-fast-checks = [
   { include-group = "typecheck" },
-  "docling-core[chunking] (>=2.73.0,<3.0.0)",
+  # TODO: restore line below before merging
+  # "docling-core[chunking] (>=2.73.0,<3.0.0)",
   "pydantic (>=2.0.0,<3.0.0)",
   "pydantic-settings (>=2.3.0,<3.0.0)",
   "ruff==0.15.12",
@@ -345,7 +347,7 @@ members = ["packages/docling"]
 [tool.uv.sources]
 docling = { workspace = true }
 # docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "main" }
-# docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
+docling-core = { git = "ssh://git@github.com/docling-project/docling-core.git", rev = "f5298f893fd4e9dd63a0e304dd26c0180021b0b5" }
 
 [tool.uv]
 package = true
