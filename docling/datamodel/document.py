@@ -381,6 +381,29 @@ class ConversionAssets(BaseModel):
 
     document: DoclingDocument = _EMPTY_DOCLING_DOC
 
+    def has_errors(self, category: Optional[FailureCategory] = None) -> bool:
+        """Whether any error was recorded.
+
+        Args:
+            category: If given, only errors of this category count; otherwise
+                any recorded error qualifies.
+        """
+        if category is None:
+            return bool(self.errors)
+        return any(e.category == category for e in self.errors)
+
+    def has_timeout_errors(self) -> bool:
+        """Whether any error has category TIMEOUT."""
+        return self.has_errors(FailureCategory.TIMEOUT)
+
+    def has_inference_errors(self) -> bool:
+        """Whether any error has category INFERENCE_FAILURE."""
+        return self.has_errors(FailureCategory.INFERENCE_FAILURE)
+
+    def has_parse_errors(self) -> bool:
+        """Whether any error has category BACKEND_FAILURE (backend/parse failure)."""
+        return self.has_errors(FailureCategory.BACKEND_FAILURE)
+
     def save(
         self,
         *,
@@ -540,14 +563,6 @@ class ConversionAssets(BaseModel):
 class ConversionResult(ConversionAssets):
     input: InputDocument
     assembled: AssembledUnit = AssembledUnit()
-
-    def has_timeout_errors(self) -> bool:
-        """Check if conversion encountered timeout errors.
-
-        Returns:
-            True if any errors have category TIMEOUT, False otherwise.
-        """
-        return any(e.category == FailureCategory.TIMEOUT for e in self.errors)
 
 
 class _DummyBackend(AbstractDocumentBackend):
