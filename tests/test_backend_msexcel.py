@@ -3,7 +3,12 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import ContentLayer, TextItem
+from docling_core.transforms.serializer.markdown import MarkdownParams
+from docling_core.transforms.serializer.markdown_excel import (
+    MsExcelMarkdownDocSerializer,
+)
+from docling_core.types.doc import ContentLayer, GroupLabel, TextItem
+from docling_core.types.doc.document import DEFAULT_CONTENT_LAYERS
 from openpyxl import Workbook, load_workbook
 from openpyxl.comments import Comment
 
@@ -146,9 +151,18 @@ def test_e2e_excel_conversions(documents) -> None:
         included_content_layers = (
             set(ContentLayer) if gt_path.stem in "xlsx_comments" else None
         )
-        pred_md: str = doc.export_to_markdown(
-            compact_tables=True,
-            included_content_layers=included_content_layers,
+        my_layers = (
+            included_content_layers
+            if included_content_layers is not None
+            else DEFAULT_CONTENT_LAYERS
+        )
+        pred_md: str = (
+            MsExcelMarkdownDocSerializer(
+                doc=doc,
+                params=MarkdownParams(compact_tables=True, layers=my_layers),
+            )
+            .serialize()
+            .text
         )
         assert verify_export(
             pred_md,
@@ -231,8 +245,8 @@ def test_page_range_with_sheet_names() -> None:
     doc = converter.convert(path, page_range=(2, 3)).document
 
     assert set(doc.pages.keys()) == {2, 3}
-    sheet_groups = [g.name for g in doc.groups if g.name.startswith("sheet: ")]
-    assert sheet_groups == ["sheet: Sheet3", "sheet: Sheet4"]
+    sheet_groups = [g.name for g in doc.groups if g.label == GroupLabel.SHEET]
+    assert sheet_groups == ["Sheet3", "Sheet4"]
 
 
 def test_chartsheet(documents) -> None:
@@ -245,7 +259,7 @@ def test_chartsheet(documents) -> None:
     assert len(doc.pages) == 2
 
     # Chartseet content is for now ignored
-    assert doc.groups[1].name == "sheet: Duck Chart"
+    assert doc.groups[1].name == "Duck Chart"
     assert doc.pages[2].size.height == 0
     assert doc.pages[2].size.width == 0
 

@@ -40,8 +40,8 @@
         }
       ],
       "content_layer": "body",
-      "name": "sheet: Duck Observations",
-      "label": "section"
+      "name": "Duck Observations",
+      "label": "sheet"
     }
   ],
   "texts": [],
@@ -127,8 +127,8 @@
           "bbox": {
             "l": 1.0,
             "t": 3.0,
-            "r": 3.0,
-            "b": 10.0,
+            "r": 2.0,
+            "b": 9.0,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [

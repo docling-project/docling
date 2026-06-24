@@ -40,8 +40,8 @@
         }
       ],
       "content_layer": "body",
-      "name": "sheet: Duck Observations",
-      "label": "section"
+      "name": "Duck Observations",
+      "label": "sheet"
     },
     {
       "self_ref": "#/groups/1",
@@ -50,8 +50,8 @@
       },
       "children": [],
       "content_layer": "body",
-      "name": "sheet: Duck Chart",
-      "label": "section"
+      "name": "Duck Chart",
+      "label": "sheet"
     }
   ],
   "texts": [],
