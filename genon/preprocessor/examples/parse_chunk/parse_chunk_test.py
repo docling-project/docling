@@ -11,6 +11,11 @@ facade 의 DocumentProcessor 를 직접 import 해 호출하므로 uvicorn/게�
     python parse_chunk_test.py <doc.json> <output_dir> [--chunk-size N]
       - doc.json 은 parser(output.format=docling) 의 data.document, 또는 그 응답 전체({"document": ...}),
         또는 DoclingDocument.model_dump(mode="json") 결과 어느 쪽이든 허용.
+
+    # 비-docling 포맷(csv/xlsx/txt/md/ppt/pptx/이미지/오디오 등) → 파싱(parse-format)→공통 청킹
+    python parse_chunk_test.py <input.csv|dir> <output_dir> [--chunk-size N]
+      - parser 가 docling 을 못 만드는 포맷은 {"elements":[...]} parse-format 을 반환하고,
+        chunker 가 이를 legacy(attachment) 와 동일하게 공통 청킹한다.
 """
 import os
 import sys
@@ -37,7 +42,12 @@ mock_request = Request(scope={"type": "http"})
 
 # 파싱 경로(docling) 확장자 + docling JSON 입력
 PARSE_EXTENSIONS = {".pdf", ".docx", ".hwp", ".hwpx", ".html", ".htm"}
-SUPPORTED_EXTENSIONS = PARSE_EXTENSIONS | {".json"}
+# parser 가 docling 을 못 만드는 포맷 → parse-format({"elements":[...]}) → 공통 청킹
+NONDOCLING_EXTENSIONS = {
+    ".csv", ".xlsx", ".txt", ".md", ".ppt", ".pptx", ".doc",
+    ".jpg", ".jpeg", ".png", ".wav", ".mp3", ".m4a",
+}
+SUPPORTED_EXTENSIONS = PARSE_EXTENSIONS | NONDOCLING_EXTENSIONS | {".json"}
 
 # 지연 인스턴스화 (파싱이 필요할 때만 ParserProcessor 생성)
 _parser: ParserProcessor | None = None
@@ -68,18 +78,22 @@ def load_docling_json(path: Path) -> dict:
     return obj
 
 
-async def parse_to_docling(file_path: Path, kwargs: dict) -> dict | None:
-    """파싱(docling) 실행 → DoclingDocument dict. 비-docling 경로면 None."""
-    result = await get_parser()(mock_request, str(file_path), **kwargs)
-    if isinstance(result, dict) and isinstance(result.get("document"), dict):
-        return result["document"]
-    return None
+async def parse_document(file_path: Path, kwargs: dict) -> dict:
+    """파싱 실행 → parser 응답 dict 전체.
+
+    docling 경로면 {"document": {...}, ...}, 비-docling 경로면 {"elements": [...], ...}.
+    """
+    return await get_parser()(mock_request, str(file_path), **kwargs)
 
 
-async def chunk_docling(file_path: Path, doc_dict: dict, chunk_size: int) -> list[dict]:
-    """청킹 실행 → GenOSVectorMeta dict 리스트."""
+async def chunk_payload(file_path: Path, payload: dict, chunk_size: int) -> list[dict]:
+    """청킹 실행 → GenOSVectorMeta dict 리스트.
+
+    payload 는 docling({"document":...}) 또는 parse-format({"elements":...}) 어느 쪽이든 허용.
+    chunker 가 형태를 스스로 판별한다(file_path 확장자 무관).
+    """
     vectors = await get_chunker()(
-        mock_request, str(file_path), document=doc_dict, chunk_size=chunk_size
+        mock_request, str(file_path), document=payload, chunk_size=chunk_size
     )
     return [v.model_dump() if hasattr(v, "model_dump") else v for v in vectors]
 
@@ -115,24 +129,33 @@ async def process_one(file_path: Path, out_base: Path, chunk_size: int) -> None:
     is_json = file_path.suffix.lower() == ".json"
 
     if is_json:
-        doc_dict = load_docling_json(file_path)
+        # .json 입력은 docling JSON(청킹만) 으로 해석.
+        payload = load_docling_json(file_path)
         print("  [parse] skip (docling JSON 입력)")
     else:
         kwargs = {"org_filename": file_path.name, "log_level": 5}
-        doc_dict = await parse_to_docling(file_path, kwargs)
-        if doc_dict is None:
-            print(f"  [parse] docling 문서가 없어 청킹을 건너뜁니다 (비-docling 경로: {file_path.suffix}).")
-            return
-        save_json(out_base.with_suffix(".docling.json"), doc_dict)
+        payload = await parse_document(file_path, kwargs)
+        if isinstance(payload, dict) and isinstance(payload.get("document"), dict):
+            kind = "docling"
+            save_json(out_base.with_suffix(".docling.json"), payload["document"])
+        else:
+            kind = "parse"
+            n_elems = len(payload.get("elements", []) or []) if isinstance(payload, dict) else 0
+            save_json(out_base.with_suffix(".parse.json"), payload)
+            print(f"  [parse] parse-format ({n_elems} elements) → 공통 청킹")
 
-    vectors = await chunk_docling(file_path, doc_dict, chunk_size)
+    vectors = await chunk_payload(file_path, payload, chunk_size)
     save_json(out_base.with_suffix(".chunks.json"), vectors)
     print(f"  [chunk] {len(vectors)} chunks")
 
 
 def parse_args():
-    ap = argparse.ArgumentParser(description="in-process 파싱(docling)→청킹 테스트")
-    ap.add_argument("input_path", help="입력 파일/디렉터리 (PDF/DOCX/HWP/HWPX/HTML 또는 docling .json)")
+    ap = argparse.ArgumentParser(description="in-process 파싱→청킹 테스트(docling + parse-format 공통)")
+    ap.add_argument(
+        "input_path",
+        help="입력 파일/디렉터리 (docling: PDF/DOCX/HWP/HWPX/HTML 또는 docling .json | "
+             "parse-format: CSV/XLSX/TXT/MD/PPT/PPTX/이미지/오디오)",
+    )
     ap.add_argument("output_dir", help="결과 저장 디렉터리")
     ap.add_argument("--chunk-size", type=int, default=0, help="청크 최대 크기 (0=토큰/문자 분할 안 함)")
     return ap.parse_args()

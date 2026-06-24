@@ -8,13 +8,17 @@
     헤더: Authorization: Bearer <auth_key>
 
 흐름(E2E):
-    1) POST /parser  {file_path, params:{}}      → data.document = DoclingDocument JSON
+    1) POST /parser  {file_path, params:{}}
+         → docling 포맷:    data.document = DoclingDocument JSON
+         → 비-docling 포맷:  data.elements = parse-format(csv/xlsx/txt/md/ppt/이미지/오디오 등)
     2) POST /chunker {file_path, params:{document, chunk_size}} → data = 청크 리스트
+       (params.document 에 docling 문서 또는 parse-format(data) 어느 쪽이든 넣으면 chunker 가
+        형태를 스스로 판별해 청킹한다.)
 
 전제:
   - 단일 서빙(예: 139)이 /parser 와 /chunker 를 모두 노출한다.
-  - 파싱 서빙 config 가 output.format: "docling" 이어야 data.document 가 생기고
-    청킹 입력으로 쓸 수 있다.
+  - docling 포맷(pdf/docx/hwp/hwpx/html)은 파싱 서빙 config 가 output.format: "docling" 이어야
+    data.document 가 생긴다. 그 외 포맷은 자동으로 parse-format(data.elements)으로 반환된다.
   - /parser 의 file_path 는 *서빙 컨테이너 내부의 로컬 경로*다(MinIO 키 아님).
     게이트웨이로 파싱을 테스트하려면 서버가 접근 가능한 경로여야 한다.
 
@@ -164,24 +168,40 @@ def do_health(args) -> int:
 
 
 def _handle_parser_data(args, data) -> dict:
-    """파싱 응답(data)에서 docling 문서를 추출·검증·출력하고(옵션 저장) 반환한다.
+    """파싱 응답(data)을 검증·출력하고(옵션 저장) chunker 로 forward 할 payload 를 반환한다.
 
+    docling(`data.document`) 과 parse-format(`data.elements`; 비-docling 포맷) 모두 지원한다.
+    chunker 는 payload 형태를 스스로 판별하므로 두 경우 모두 그대로 넘기면 된다.
     /parser 와 /parser_upload 가 공유한다.
     """
-    document = (data or {}).get("document")
-    if not document:
-        raise SystemExit(
-            "파싱 응답에 data.document 가 없습니다. "
-            "파싱 서빙의 parser_processor_config.yaml 이 output.format: \"docling\" 인지 확인하세요."
-        )
-    pages = (data.get("usage") or {}).get("pages")
-    print(f"[parser] docling 문서 수신 — pages={pages}, top-level keys={list(document.keys())[:8]}")
-    if args.out_doc:
-        out_doc_path = _json_output_path(args.out_doc, "docling.json")
-        with open(out_doc_path, "w", encoding="utf-8") as f:
-            json.dump(document, f, ensure_ascii=False, indent=2)
-        print(f"[parser] docling JSON 저장 → {out_doc_path}")
-    return document
+    data = data or {}
+    document = data.get("document")
+    if document:
+        # docling 경로
+        pages = (data.get("usage") or {}).get("pages")
+        print(f"[parser] docling 문서 수신 — pages={pages}, top-level keys={list(document.keys())[:8]}")
+        if args.out_doc:
+            out_doc_path = _json_output_path(args.out_doc, "docling.json")
+            with open(out_doc_path, "w", encoding="utf-8") as f:
+                json.dump(document, f, ensure_ascii=False, indent=2)
+            print(f"[parser] docling JSON 저장 → {out_doc_path}")
+        return document
+
+    if isinstance(data.get("elements"), list):
+        # parse-format(비-docling) 경로 — data 전체(elements 포함)를 forward.
+        n_elems = len(data["elements"])
+        pages = (data.get("usage") or {}).get("pages")
+        print(f"[parser] parse-format 수신 — elements={n_elems}, pages={pages} (비-docling → 공통 청킹)")
+        if args.out_doc:
+            out_doc_path = _json_output_path(args.out_doc, "parse.json")
+            with open(out_doc_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            print(f"[parser] parse-format JSON 저장 → {out_doc_path}")
+        return data
+
+    raise SystemExit(
+        "파싱 응답에 data.document 도 data.elements 도 없습니다. 파싱 서빙 응답을 확인하세요."
+    )
 
 
 def do_parser(args) -> dict:

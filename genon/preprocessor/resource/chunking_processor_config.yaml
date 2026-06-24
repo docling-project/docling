@@ -21,6 +21,17 @@ chunking:
   tokenizer_path: "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
   tokenizer_id: "sentence-transformers/all-MiniLM-L6-v2"
 
+  # parse-format(비-docling) 입력의 일반 텍스트 splitter 기본값.
+  # 파서가 docling 을 못 만드는 포맷(csv/xlsx/txt/md/ppt/pptx/doc/이미지/오디오)은 parse-format
+  # ({"elements":[...]})으로 들어오며, 그 중 일반 텍스트는 RecursiveCharacterTextSplitter 로
+  # 분할한다. docling 경로(GenosSmartChunker, 위 chunk_size)와는 무관하며,
+  # audio([AUDIO])/csv·xlsx([DA]) 단일 벡터에는 적용되지 않는다.
+  # 우선순위: 호출 kwargs(chunk_size/generic_chunk_size, chunk_overlap/generic_chunk_overlap)
+  #           > 아래 값 > 코드 기본값(1000/100).
+  generic:
+    chunk_size: 1000     # 0 이하면 1000 으로 폴백
+    chunk_overlap: 100   # 음수면 100 으로 폴백
+
 # table_image
 # 표를 이미지로 잘라 저장하고 media_files 에 type='table_image' 로 기록할지 여부.
 # 청킹 단계에서는 입력 docling 문서에 이미 들어있는 이미지/표 참조를 활용한다.

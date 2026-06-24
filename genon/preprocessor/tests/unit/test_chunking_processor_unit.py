@@ -71,3 +71,83 @@ def test_chunker_missing_document_raises():
     chunker = cp.DocumentProcessor()
     with pytest.raises(cp.GenosServiceException):
         asyncio.run(chunker(request=None, file_path=""))
+
+
+# ----------------------------------------------------------------------
+# parse-format(비-docling) 공통 청킹 — parser 가 docling 을 못 만드는 포맷
+# (audio, csv/xlsx, ppt/pptx/doc, txt/json/md, 이미지) 연동.
+# 포맷은 file_path 확장자가 아니라 payload(element) 내용으로 판별한다.
+# ----------------------------------------------------------------------
+
+def test_classify_payload_shapes():
+    """payload 형태 판별: docling/parse-format/envelope/garbage."""
+    cp = pytest.importorskip("facade.chunking_processor")
+
+    assert cp._classify_payload({"document": {"x": 1}}) == ("docling", {"x": 1})
+    assert cp._classify_payload({"elements": [{"content": "a"}]}) == ("parse", [{"content": "a"}])
+    # docling 우선: parser docling 응답은 _normalize_response 로 빈 elements 도 함께 가질 수 있음
+    assert cp._classify_payload({"document": {"x": 1}, "elements": []})[0] == "docling"
+    # envelope
+    assert cp._classify_payload({"code": 0, "data": {"elements": [{"content": "a"}]}})[0] == "parse"
+    # raw docling dict
+    assert cp._classify_payload({"schema_name": "DoclingDocument", "body": {}})[0] == "docling"
+    with pytest.raises(cp.GenosServiceException):
+        cp._classify_payload({"unknown": 1})
+
+
+def test_chunker_parse_format_audio_single_vector():
+    """audio parse-format([AUDIO] 접두사) → 단일 벡터(분할 없음)."""
+    cp = pytest.importorskip("facade.chunking_processor")
+
+    transcript = "[AUDIO] 안녕하세요 모니모 음성 안내입니다. " * 50
+    elements = [{"category": "paragraph", "content": transcript, "coordinates": [], "id": 0, "page": 1}]
+
+    chunker = cp.DocumentProcessor()
+    vectors = asyncio.run(
+        chunker(request=None, file_path="/data/voice.json", document={"elements": elements})
+    )
+
+    assert len(vectors) == 1
+    assert vectors[0].text.startswith("[AUDIO]")
+
+
+def test_chunker_parse_format_tabular_da_vector():
+    """csv/xlsx parse-format(category=='table' 전부) → 단일 [DA] 벡터."""
+    cp = pytest.importorskip("facade.chunking_processor")
+
+    elements = [
+        {"category": "table", "content": "<table><tr><td>a</td></tr></table>", "page": 1, "id": 0},
+        {"category": "table", "content": "<table><tr><td>b</td></tr></table>", "page": 2, "id": 1},
+    ]
+
+    chunker = cp.DocumentProcessor()
+    vectors = asyncio.run(
+        chunker(request=None, file_path="/data/sheet.json", document={"elements": elements})
+    )
+
+    assert len(vectors) == 1
+    assert vectors[0].text.startswith("[DA] ")
+
+
+def test_chunker_parse_format_text_multi_chunk():
+    """텍스트 parse-format → RecursiveCharacterTextSplitter 다중 청킹, 인덱스 연속."""
+    cp = pytest.importorskip("facade.chunking_processor")
+
+    elements = [
+        {"category": "paragraph", "content": "가나다라마바사아자차카타파하 " * 20, "page": 1, "id": 0},
+        {"category": "paragraph", "content": "ABCDEFG HIJKLMN OPQRSTU " * 20, "page": 2, "id": 1},
+    ]
+
+    chunker = cp.DocumentProcessor()
+    vectors = asyncio.run(
+        chunker(
+            request=None, file_path="/data/note.json",
+            document={"elements": elements}, chunk_size=50, chunk_overlap=0,
+        )
+    )
+
+    assert len(vectors) >= 2
+    # i_chunk_on_doc 가 0..N-1 연속
+    assert [v.i_chunk_on_doc for v in vectors] == list(range(len(vectors)))
+    # page 메타가 1-based 로 보존(parser element page 그대로, +1 하지 않음)
+    assert set(v.i_page for v in vectors) <= {1, 2}
