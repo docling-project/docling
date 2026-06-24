@@ -30,9 +30,10 @@ ok "설정 로드 완료"
 : "${K8S_NAMESPACE:?}"
 : "${MARIADB_POD:?}"
 
-# ── IMAGE_TAG 조합 (register.config 의 세 값 기반, 이슈 #236) ──────────────────
+# ── IMAGE_TAG 조합 (register.config 값 기반, 이슈 #236/#286) ──────────────────
 #    기본 조합(cpu + standard) → ${IMAGE_VERSION}                       (접미사 생략)
 #    그 외 조합               → ${IMAGE_VERSION}-${HW_VARIANT}-${BUILD_VARIANT}
+#    rhwp/LibreOffice off 면 마지막에 -nolibre / -norhwp 가 더 붙는다 (이슈 #286).
 #    build-script/doc-parser-build.sh 와 동일한 태그 컨벤션.
 : "${IMAGE_VERSION:?IMAGE_VERSION 가 register.config 에 설정되지 않았습니다}"
 case "${BUILD_VARIANT:-}" in
@@ -43,12 +44,20 @@ case "${HW_VARIANT:-}" in
   gpu|cpu) ;;
   *) fail "HW_VARIANT 가 register.config 에 잘못 지정되었습니다 (gpu | cpu 만 허용). 현재: '${HW_VARIANT:-}'"; exit 1 ;;
 esac
+# rhwp/LibreOffice off 접미사 (기본 둘 다 true → 빈 문자열). build-script 와 동일 규칙.
+INSTALL_LIBREOFFICE="${INSTALL_LIBREOFFICE:-true}"
+INSTALL_RHWP="${INSTALL_RHWP:-true}"
+case "${INSTALL_LIBREOFFICE}" in true|false) ;; *) fail "INSTALL_LIBREOFFICE 는 true | false 만 허용됩니다. 현재: '${INSTALL_LIBREOFFICE}'"; exit 1 ;; esac
+case "${INSTALL_RHWP}" in true|false) ;; *) fail "INSTALL_RHWP 는 true | false 만 허용됩니다. 현재: '${INSTALL_RHWP}'"; exit 1 ;; esac
+CONV_SUFFIX=""
+if [[ "${INSTALL_LIBREOFFICE}" == "false" ]]; then CONV_SUFFIX="${CONV_SUFFIX}-nolibre"; fi
+if [[ "${INSTALL_RHWP}" == "false" ]]; then CONV_SUFFIX="${CONV_SUFFIX}-norhwp"; fi
 if [[ "${HW_VARIANT}" == "cpu" && "${BUILD_VARIANT}" == "standard" ]]; then
-  IMAGE_TAG="${IMAGE_VERSION}"
+  IMAGE_TAG="${IMAGE_VERSION}${CONV_SUFFIX}"
 else
-  IMAGE_TAG="${IMAGE_VERSION}-${HW_VARIANT}-${BUILD_VARIANT}"
+  IMAGE_TAG="${IMAGE_VERSION}-${HW_VARIANT}-${BUILD_VARIANT}${CONV_SUFFIX}"
 fi
-echo "[INFO] IMAGE_TAG = ${IMAGE_TAG} (version=${IMAGE_VERSION}, hw=${HW_VARIANT}, variant=${BUILD_VARIANT})"
+echo "[INFO] IMAGE_TAG = ${IMAGE_TAG} (version=${IMAGE_VERSION}, hw=${HW_VARIANT}, variant=${BUILD_VARIANT}, libreoffice=${INSTALL_LIBREOFFICE}, rhwp=${INSTALL_RHWP})"
 
 # synap 이미지는 등록 대상 환경에 따라 허용/차단이 달라진다 (standard 는 추가 확인 없이 진행).
 #   [1] 제논 사내 운영계 GenOS  → 사내 누구나 접근 가능 → 절대 등록 불가

@@ -20,6 +20,21 @@ PDF SDK의 사용 여부에 따라 `standard` 또는 `synap`로 분리됨.
 
 `BUILD_VARIANT` × `HW_VARIANT` 조합으로 최대 4종 이미지가 만들어진다. 최종 태그는 기본 조합(`cpu`+`standard`)이면 접미사 없이 `:${IMAGE_VERSION}` (예: `:1.3.6.3`), 그 외 조합은 `:${IMAGE_VERSION}-${HW_VARIANT}-${BUILD_VARIANT}` (예: `:1.3.6.3-gpu-synap`) — 이슈 #236. `HW_VARIANT` 도 비워두면 `doc-parser-build.sh` 가 에러로 중단된다.
 
+## rhwp / LibreOffice 설치 on/off (이슈 [#286](https://github.com/genonai/doc_parser/issues/286))
+
+두 Dockerfile 모두 `INSTALL_LIBREOFFICE` · `INSTALL_RHWP` 빌드 인자(`true` | `false`, 기본 `true`)로 해당 패키지를 빼고 빌드할 수 있다. rhwp/LibreOffice 를 쓰지 않는 사이트용.
+
+| 빌드 인자 | `false` 일 때 |
+|---|---|
+| `INSTALL_LIBREOFFICE` | LibreOffice + Java apt 패키지, H2Orestart 확장(`loext` 단계) 미설치 |
+| `INSTALL_RHWP` | rhwp 바이너리 미포함. `rhwp_builder_${INSTALL_RHWP}` stage alias 로 분기해 **Rust 빌드 stage 자체를 건너뜀** (`false` → 빈 `/rhwp_out/` 만 복사) |
+
+- 미설치 backend 는 런타임 chain 에서 자동 제외된다(아래 가용성 판정 참조). `standard` 에서 둘 다 `false` 면 변환 backend 가 0개가 되며, 영향은 전처리기별로 다르다:
+  - 적재형(지능형) — 비-PDF 입력을 내부 PDF 변환 후 파싱하므로 처리 불가 → "PDF 직접 입력/재빌드" 안내와 함께 실패.
+  - 첨부형/변환형/파싱형 — HWP 는 내장 HWP SDK, docx/ppt 는 원본 직접 파싱이라 변환 backend 없이도 동작(영향 적음).
+- `synap` 은 PDF SDK 가 남아 docx/ppt 등은 계속 변환된다.
+- **태그 반영** — off 면 태그 끝에 `-nolibre` / `-norhwp` 가 자동으로 붙어(둘 다 off → `-nolibre-norhwp`) 운영 이미지(둘 다 on)와 덮어쓰기 없이 구분된다. 둘 다 on(기본)이면 접미사 없음. `register.config` 에도 동일 값 필요. 빌드 시 `ai.genon.install.libreoffice` / `ai.genon.install.rhwp` OCI 라벨로도 기록됨. 설정/빌드 절차는 [`../../README.md` "A-2. (선택) rhwp / LibreOffice 제외 빌드"](../../README.md#a-2-선택-rhwp--libreoffice-제외-빌드-이슈-286) 참고.
+
 ## HWP → PDF 변환 chain (런타임 동작)
 
 `genon.preprocessor.converters.hwp_to_pdf.build_chain()` 이 가용한 backend 만 자동 등록한다. rhwp 는 이미지 안에 바이너리로 직접 포함되어 별도 외부 서비스 없이 동작한다.

@@ -27,11 +27,19 @@ ARG TORCH_CPU_INDEX_URL=https://download.pytorch.org/whl/cpu
 # 이슈 #199 후속 — rhwp 바이너리를 컨테이너에 직접 빌드해 넣기 위한 git ref
 ARG RHWP_GIT_URL=https://github.com/genonai/genos-rhwp.git
 ARG RHWP_GIT_REF=genos/main
+# 이슈 #286 — rhwp / LibreOffice 설치 여부 빌드 플래그 (true | false).
+#   INSTALL_LIBREOFFICE=false → LibreOffice/Java apt 패키지 및 H2Orestart 확장 미설치.
+#   INSTALL_RHWP=false        → rhwp 바이너리 빌드/포함 안 함 (Rust 빌드 stage 자체를 건너뜀).
+# 위 패키지를 쓰지 않는 사이트용. 두 값 모두 정확히 true/false 여야 한다
+# (rhwp 는 stage 이름 alias 로 분기하므로 다른 문자열이면 빌드가 깨진다).
+ARG INSTALL_LIBREOFFICE=true
+ARG INSTALL_RHWP=true
 
 ############################
 # 1) Base (APT + LibreOffice)
 ############################
 FROM python:${PY_VER}-slim-${DEBIAN_DIST} AS base
+ARG INSTALL_LIBREOFFICE
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
     HOME=/app \
@@ -42,10 +50,18 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TMPDIR=/app/tmp \
     HF_HOME=/app/.cache/huggingface \
     NLTK_DATA=/app/nltk_data
+# 이슈 #286 빌드 안정화 — sudo/systemd 가 sid 버전으로 당겨지면 두 패키지의 sid postinst 가
+# 빌드 컨테이너에서 깨진다(systemd: /etc/machine-id / sudo: "Failed to read sudo.conf").
+# 주의: 기존 pin-python3.13 파일은 확장자 '.13' 탓에 apt 가 통째로 무시한다(이름 규칙 위반)
+#   → sid 억제 핀이 실제로 동작 안 함. 그 파일은 광범위 영향을 피하려 그대로 두고,
+#   제대로 읽히는 .pref 파일로 sudo·systemd 만 trixie(우선순위 1001)로 강제한다.
+# 추가로 sudo 의 `systemd | systemd-standalone-tmpfiles | systemd-tmpfiles` 의존은
+# 풀 systemd 대신 컨테이너 친화적 systemd-standalone-tmpfiles 로 충족시킨다.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     echo "deb http://deb.debian.org/debian sid main" > /etc/apt/sources.list.d/sid.list && \
     printf "Package: python3.13 python3.13-minimal libpython3.13 libpython3.13-minimal libpython3.13-stdlib\nPin: release a=sid\nPin-Priority: 990\n\nPackage: *\nPin: release a=sid\nPin-Priority: 100\n" > /etc/apt/preferences.d/pin-python3.13 && \
+    printf "Package: sudo systemd\nPin: release n=trixie\nPin-Priority: 1001\n" > /etc/apt/preferences.d/force-trixie-sudo.pref && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
       net-tools \
@@ -63,15 +79,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       libgdk-pixbuf-xlib-2.0-0 \
       libffi-dev \
       libgl1 \
-      libreoffice \
       ffmpeg \
       unzip \
-      openjdk-21-jre-headless  \
-      ca-certificates-java  \
-      libreoffice-java-common \
-      libreoffice-writer \
-      libreoffice-impress \
-      libreoffice-l10n-ko \
       fonts-dejavu \
       fonts-noto-cjk \
       fonts-noto-cjk-extra \
@@ -82,6 +91,20 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       tesseract-ocr-eng \
       tesseract-ocr-kor \
       sudo \
+      systemd-standalone-tmpfiles \
+    && if [ "${INSTALL_LIBREOFFICE}" = "true" ]; then \
+         echo "[INFO] INSTALL_LIBREOFFICE=true — installing LibreOffice + Java stack" && \
+         apt-get install -y --no-install-recommends \
+           libreoffice \
+           libreoffice-java-common \
+           libreoffice-writer \
+           libreoffice-impress \
+           libreoffice-l10n-ko \
+           openjdk-21-jre-headless \
+           ca-certificates-java; \
+       else \
+         echo "[INFO] INSTALL_LIBREOFFICE=false — skipping LibreOffice/Java (이슈 #286)"; \
+       fi \
     && apt-get install -y --no-install-recommends --only-upgrade \
       imagemagick \
       imagemagick-7.q16 \
@@ -98,16 +121,22 @@ RUN sed -i 's/# \(ko_KR.UTF-8\)/\1/' /etc/locale.gen \
 ############################
 FROM base AS loext
 ARG H2ORESTART_URL
+ARG INSTALL_LIBREOFFICE
 COPY ./genon/preprocessor/resources /app
+# H2Orestart 는 LibreOffice 확장이라 LibreOffice 미설치 시 단계 자체를 건너뛴다 (이슈 #286)
 RUN --mount=type=cache,target=/opt/h2o_cache \
     set -eux; \
-    mkdir -p /opt/h2orestart /usr/lib/libreoffice/share/extensions/h2orestart; \
-    if [ ! -f /opt/h2o_cache/H2Orestart.oxt ]; then \
-      wget -O /opt/h2o_cache/H2Orestart.oxt "${H2ORESTART_URL}"; \
-    fi; \
-    cp /opt/h2o_cache/H2Orestart.oxt /opt/h2orestart/H2Orestart.oxt; \
-    unzip -q -o /opt/h2orestart/H2Orestart.oxt -d /usr/lib/libreoffice/share/extensions/h2orestart; \
-    soffice --headless --nologo --nodefault --nofirststartwizard --terminate_after_init
+    if [ "${INSTALL_LIBREOFFICE}" = "true" ]; then \
+      mkdir -p /opt/h2orestart /usr/lib/libreoffice/share/extensions/h2orestart; \
+      if [ ! -f /opt/h2o_cache/H2Orestart.oxt ]; then \
+        wget -O /opt/h2o_cache/H2Orestart.oxt "${H2ORESTART_URL}"; \
+      fi; \
+      cp /opt/h2o_cache/H2Orestart.oxt /opt/h2orestart/H2Orestart.oxt; \
+      unzip -q -o /opt/h2orestart/H2Orestart.oxt -d /usr/lib/libreoffice/share/extensions/h2orestart; \
+      soffice --headless --nologo --nodefault --nofirststartwizard --terminate_after_init; \
+    else \
+      echo "[INFO] INSTALL_LIBREOFFICE=false — skipping H2Orestart extension (이슈 #286)"; \
+    fi
 RUN set -eux; \
     mkdir -p /usr/share/fonts && \
     tar zxf /app/HCRBatang.ttf.tar.gz -C /usr/share/fonts/ && \
@@ -251,8 +280,13 @@ RUN --mount=type=cache,target=${HF_HOME} \
 # genonai/genos-rhwp 를 clone 해서 Rust multi-stage 로 빌드 후 rhwp 바이너리만
 # runtime 으로 COPY. Python 측은 subprocess 로 `/usr/local/bin/rhwp export-pdf` 호출.
 # Cargo cache mount 로 incremental build, 의존성 다운로드는 처음 1회만 무거움.
+#
+# 이슈 #286 — INSTALL_RHWP=false 면 stage alias 가 rhwp_builder_false(빈 산출물)로
+# 잡혀 Rust 빌드 자체를 건너뛴다. 두 stage 모두 /rhwp_out/ 디렉토리를 만들고,
+# runtime 은 그 "내용"을 /usr/local/bin/ 로 복사하므로 off 일 때는 아무것도 안 들어간다
+# (→ rhwp_available() == False → chain 에서 자동 제외).
 ############################
-FROM rust:latest AS rhwp_builder
+FROM rust:latest AS rhwp_builder_true
 ARG RHWP_GIT_URL
 ARG RHWP_GIT_REF
 WORKDIR /src
@@ -263,7 +297,15 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/src/target \
     cargo build --release --bin rhwp \
- && cp /src/target/release/rhwp /usr/local/bin/rhwp
+ && mkdir -p /rhwp_out \
+ && cp /src/target/release/rhwp /rhwp_out/rhwp
+
+# INSTALL_RHWP=false 일 때 선택되는 경량 stage (Rust 빌드 없이 빈 디렉토리만)
+FROM base AS rhwp_builder_false
+RUN mkdir -p /rhwp_out
+
+# INSTALL_RHWP(true|false) 값으로 위 두 stage 중 하나를 선택
+FROM rhwp_builder_${INSTALL_RHWP} AS rhwp_builder
 
 ############################
 # 4-3) 모델 아티팩트
@@ -343,7 +385,7 @@ ENV UV_PROJECT_ENVIRONMENT=${APP_VENV} \
     XDG_DATA_HOME=/app/.local/share \
     XDG_RUNTIME_DIR=/tmp/xdg \
     TMPDIR=/app/tmp \
-    JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 \
+    JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 \
     HF_HOME=/app/.cache/huggingface \
     NLTK_DATA=/app/nltk_data \
     LANG=ko_KR.UTF-8 \
@@ -352,6 +394,13 @@ ENV UV_PROJECT_ENVIRONMENT=${APP_VENV} \
     DOCLING_ARTIFACTS_PATH=/models \
     DOC_PARSER_BUILD_VARIANT=standard \
     RHWP_BIN=/usr/local/bin/rhwp
+
+# 이슈 #286 — 빌드 시 rhwp/LibreOffice 설치 여부를 이미지에 self-describing 으로 기록.
+# 태그 접미사(-nolibre/-norhwp)와 별개로 `docker inspect` 로도 확인 가능.
+ARG INSTALL_LIBREOFFICE
+ARG INSTALL_RHWP
+LABEL ai.genon.install.libreoffice="${INSTALL_LIBREOFFICE}" \
+      ai.genon.install.rhwp="${INSTALL_RHWP}"
 
 WORKDIR /app
 COPY ./genon/preprocessor/configs /app/configs
@@ -370,7 +419,8 @@ COPY ./genon/preprocessor/facade/enrichment /app/genon/preprocessor/facade/enric
 COPY --from=sdk_artifacts /app/hwp_sdk /app/hwp_sdk
 
 # 🔴 rhwp 바이너리 (이슈 #199 후속 — 컨테이너 내 바이너리, subprocess 호출)
-COPY --from=rhwp_builder /usr/local/bin/rhwp /usr/local/bin/rhwp
+# 이슈 #286 — /rhwp_out/ 내용을 복사. INSTALL_RHWP=false 면 빈 디렉토리라 아무것도 안 들어감.
+COPY --from=rhwp_builder /rhwp_out/ /usr/local/bin/
 
 # NOTE: PDF SDK 는 오픈소스 빌드의 본질적 차이로 의도적으로 포함하지 않음 (유료).
 

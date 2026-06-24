@@ -28,6 +28,8 @@ IMAGE_NAME="${IMAGE_NAME:-doc-parser-preprocessor}"
 IMAGE_VERSION="${IMAGE_VERSION:-latest}"
 BUILD_VARIANT="${BUILD_VARIANT:-}"
 HW_VARIANT="${HW_VARIANT:-}"
+INSTALL_LIBREOFFICE="${INSTALL_LIBREOFFICE:-true}"
+INSTALL_RHWP="${INSTALL_RHWP:-true}"
 APP_UID="${APP_UID:-1000}"
 APP_GID="${APP_GID:-1000}"
 APP_UNAME="${APP_UNAME:-genos}"
@@ -77,19 +79,60 @@ case "${HW_VARIANT}" in
     ;;
 esac
 
-# 최종 이미지 태그 (이슈 #236)
+# INSTALL_LIBREOFFICE / INSTALL_RHWP 분기 (이슈 #286 — rhwp/LibreOffice 설치 on/off)
+# Dockerfile 의 stage alias(rhwp_builder_${INSTALL_RHWP})·shell 조건이 정확히 true/false 를
+# 기대하므로 다른 값은 즉시 에러 처리한다.
+case "${INSTALL_LIBREOFFICE}" in
+  true|false) ;;
+  *)
+    echo "[ERROR] INSTALL_LIBREOFFICE 는 true 또는 false 만 허용됩니다 (현재: '${INSTALL_LIBREOFFICE}')."
+    exit 1
+    ;;
+esac
+case "${INSTALL_RHWP}" in
+  true|false) ;;
+  *)
+    echo "[ERROR] INSTALL_RHWP 는 true 또는 false 만 허용됩니다 (현재: '${INSTALL_RHWP}')."
+    exit 1
+    ;;
+esac
+
+# standard 에서 rhwp/LibreOffice 를 둘 다 끄면 변환 backend 가 0개 → 적재형(지능형)은 비-PDF 처리 불가.
+# (첨부형/변환형/파싱형은 HWP SDK·원본 파싱으로 동작, synap 은 PDF SDK 가 남아 해당 없음.)
+# 의도된 구성일 수 있으니 막지 않고 경고만.
+if [[ "${BUILD_VARIANT}" == "standard" && "${INSTALL_LIBREOFFICE}" == "false" && "${INSTALL_RHWP}" == "false" ]]; then
+  echo "[WARN] standard + INSTALL_LIBREOFFICE=false + INSTALL_RHWP=false 조합입니다."
+  echo "[WARN] 이 이미지에는 HWP/오피스 → PDF 변환 backend 가 전혀 없습니다. 영향은 전처리기별로 다릅니다:"
+  echo "[WARN]   - 적재형(지능형): 비-PDF 입력은 내부 PDF 변환이 필요 → 처리 불가. PDF 로 변환된 문서를 입력해야 함."
+  echo "[WARN]   - 첨부형/변환형/파싱형: HWP 는 내장 HWP SDK, docx/ppt 는 원본을 직접 파싱하므로 동작(영향 적음)."
+  echo "[WARN]   (의도된 구성이면 무시)"
+fi
+
+# rhwp/LibreOffice 를 끈 경우 태그 접미사 (이슈 #286)
+# 기본(둘 다 on)이면 빈 문자열 → 기존 태그 그대로. 끈 패키지만 명시적으로 붙인다
+# (off 이미지가 운영 이미지와 같은 태그로 push 돼 덮어쓰는 사고 방지).
+#   LibreOffice off → -nolibre / rhwp off → -norhwp / 둘 다 off → -nolibre-norhwp
+CONV_SUFFIX=""
+if [[ "${INSTALL_LIBREOFFICE}" == "false" ]]; then CONV_SUFFIX="${CONV_SUFFIX}-nolibre"; fi
+if [[ "${INSTALL_RHWP}" == "false" ]]; then CONV_SUFFIX="${CONV_SUFFIX}-norhwp"; fi
+
+# 최종 이미지 태그 (이슈 #236, #286)
 # 기본 조합(cpu + standard)은 가장 기본 산출물이므로 접미사 없이 ${IMAGE_VERSION} 만 사용.
 # 그 외 조합은 hw 먼저, variant 나중 순서로 접미사: ${IMAGE_VERSION}-${HW_VARIANT}-${BUILD_VARIANT}
+# 마지막으로 rhwp/LibreOffice off 면 ${CONV_SUFFIX} 가 더 붙는다.
 #   예) gpu+synap → :1.3.6.3-gpu-synap / cpu+standard → :1.3.6.3
+#       cpu+standard + 둘 다 off → :1.3.6.3-nolibre-norhwp
 if [[ "${HW_VARIANT}" == "cpu" && "${BUILD_VARIANT}" == "standard" ]]; then
-  IMAGE_TAG="${DOCKER_REGISTRY}/mnc/${IMAGE_NAME}:${IMAGE_VERSION}"
+  IMAGE_TAG="${DOCKER_REGISTRY}/mnc/${IMAGE_NAME}:${IMAGE_VERSION}${CONV_SUFFIX}"
 else
-  IMAGE_TAG="${DOCKER_REGISTRY}/mnc/${IMAGE_NAME}:${IMAGE_VERSION}-${HW_VARIANT}-${BUILD_VARIANT}"
+  IMAGE_TAG="${DOCKER_REGISTRY}/mnc/${IMAGE_NAME}:${IMAGE_VERSION}-${HW_VARIANT}-${BUILD_VARIANT}${CONV_SUFFIX}"
 fi
 
 echo "[INFO] ROOT_DIR        = ${ROOT_DIR}"
 echo "[INFO] BUILD_VARIANT   = ${BUILD_VARIANT}"
 echo "[INFO] HW_VARIANT      = ${HW_VARIANT}"
+echo "[INFO] INSTALL_LIBREOFFICE = ${INSTALL_LIBREOFFICE}"
+echo "[INFO] INSTALL_RHWP        = ${INSTALL_RHWP}"
 echo "[INFO] DOCKERFILE_PATH = ${DOCKERFILE_PATH}"
 echo "[INFO] IMAGE_TAG       = ${IMAGE_TAG}"
 echo "[INFO] UID:GID         = ${APP_UID}:${APP_GID} (${APP_UNAME}:${APP_GNAME})"
@@ -129,6 +172,8 @@ DOCKER_BUILDKIT=1 docker build \
   -t "${IMAGE_TAG}" \
   "${SECRET_ARGS[@]}" \
   --build-arg HW_VARIANT="${HW_VARIANT}" \
+  --build-arg INSTALL_LIBREOFFICE="${INSTALL_LIBREOFFICE}" \
+  --build-arg INSTALL_RHWP="${INSTALL_RHWP}" \
   --build-arg TORCH_CPU_INDEX_URL="${TORCH_CPU_INDEX_URL}" \
   --build-arg UID="${APP_UID}" \
   --build-arg GID="${APP_GID}" \
