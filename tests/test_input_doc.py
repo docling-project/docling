@@ -1,3 +1,4 @@
+import importlib.util
 from io import BytesIO
 from pathlib import Path
 
@@ -5,6 +6,11 @@ import pytest
 from pydantic import ValidationError
 
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.opendocument_backend import (
+    OdpDocumentBackend,
+    OdsDocumentBackend,
+    OdtDocumentBackend,
+)
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.backend_options import (
     BaseBackendOptions,
@@ -17,6 +23,9 @@ from docling.datamodel.settings import DocumentLimits
 from docling.document_converter import (
     HTMLFormatOption,
     ImageFormatOption,
+    OdpFormatOption,
+    OdsFormatOption,
+    OdtFormatOption,
     PdfFormatOption,
 )
 
@@ -182,6 +191,58 @@ def test_guess_format(tmp_path):
         Path("./tests/data/pptx/powerpoint_sample.pptx").read_bytes()
     )
     assert dci._guess_format(pptx_no_ext) == InputFormat.PPTX
+
+    # Valid OpenDocument formats
+    odfdo_available = importlib.util.find_spec("odfdo") is not None
+    odf_cases = [
+        (
+            Path("./tests/data/odf/text_document_01.odt"),
+            InputFormat.ODT,
+            OdtDocumentBackend,
+            OdtFormatOption(),
+        ),
+        (
+            Path("./tests/data/odf/odf_table_with_title_01.ods"),
+            InputFormat.ODS,
+            OdsDocumentBackend,
+            OdsFormatOption(),
+        ),
+        (
+            Path("./tests/data/odf/odf_presentation_01.odp"),
+            InputFormat.ODP,
+            OdpDocumentBackend,
+            OdpFormatOption(),
+        ),
+    ]
+
+    for doc_path, input_format, backend_cls, format_option in odf_cases:
+        assert dci._guess_format(doc_path) == input_format
+
+        stream = DocumentStream(
+            name=doc_path.name, stream=BytesIO(doc_path.read_bytes())
+        )
+        assert dci._guess_format(stream) == input_format
+
+        no_ext_path = temp_dir / f"{input_format.value}_no_ext"
+        no_ext_path.write_bytes(doc_path.read_bytes())
+        assert dci._guess_format(no_ext_path) == input_format
+
+        no_ext_stream = DocumentStream(
+            name=f"{input_format.value}_upload", stream=BytesIO(doc_path.read_bytes())
+        )
+        assert dci._guess_format(no_ext_stream) == input_format
+
+        assert format_option.backend is backend_cls
+
+        if odfdo_available:
+            docs = list(
+                _DocumentConversionInput(path_or_stream_iterator=[doc_path]).docs(
+                    {input_format: format_option}
+                )
+            )
+            assert len(docs) == 1
+            assert docs[0].format == input_format
+            assert isinstance(docs[0]._backend, backend_cls)
 
     # Plain ZIP (not Office) should not be detected as an Office format
     import zipfile as _zipfile

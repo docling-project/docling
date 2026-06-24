@@ -47,7 +47,8 @@ Docling simplifies document processing, parsing diverse formats — including ad
 
 ### What's new
 
-- 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
+- 📄 Parsing of ODF (OpenDocument Format) files for text documents (`.odt`), spreadsheets (`.ods`), and presentations (`.odp`)
+- � Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
 - 📧 Parsing of email files (`.eml`, `.msg`)
 - 📚 Parsing of EPUB (Electronic Publication) files for e-books
 - 📝 Parsing of plain-text files (`.txt`, `.text`) and Markdown supersets (`.qmd`, `.Rmd`)

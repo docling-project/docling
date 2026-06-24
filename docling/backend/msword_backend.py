@@ -2497,7 +2497,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             [author: Name (initials), time: ISO-timestamp]: comment text
 
         Examples:
-            [author: Jane Editor (JE), time: 2026-01-04T05:48:07+00:00]: Review this.
+            [author: Jane Editor (JE), time: 2026-01-04T05:48:07.000+00:00]: Review this.
             [author: John Doe]: Simple comment without timestamp.
 
         Args:
@@ -2518,7 +2518,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     author_str += f" ({comment.initials})"
                 metadata_parts.append(author_str)
             if comment.timestamp:
-                metadata_parts.append(f"time: {comment.timestamp.isoformat()}")
+                metadata_parts.append(
+                    f"time: {comment.timestamp.isoformat(timespec='milliseconds')}"
+                )
 
             metadata_prefix = ", ".join(metadata_parts)
             comment_text = comment.text.strip() if comment.text else ""

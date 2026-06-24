@@ -240,6 +240,41 @@ class MsExcelBackendOptions(BaseBackendOptions):
     )
 
 
+class OdsBackendOptions(BaseBackendOptions):
+    """Options specific to the ODS (OpenDocument Spreadsheet) backend."""
+
+    kind: Annotated[Literal["ods"], Field(exclude=True, repr=False)] = "ods"
+    treat_singleton_as_text: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to treat singleton cells (1x1 tables with empty neighboring "
+                "cells) as TextItem instead of TableItem."
+            )
+        ),
+    ] = False
+    gap_tolerance: Annotated[
+        int,
+        Field(
+            description=(
+                "The tolerance (in number of empty rows/columns) for merging nearby "
+                "data clusters into a single table. Default is 0 (strict)."
+            )
+        ),
+    ] = 0
+    sheet_names: Annotated[
+        Optional[list[str]],
+        Field(
+            description=(
+                "An optional list of sheet names to include in conversion. "
+                "When set, only sheets whose names appear in this list will be processed. "
+                "Sheet names are matched case-sensitively. "
+                "Set to None (default) to include all sheets."
+            )
+        ),
+    ] = None
+
+
 class LatexBackendOptions(BaseBackendOptions):
     """Options specific to the LaTeX backend."""
 
@@ -301,6 +336,7 @@ BackendOptions = Annotated[
         ThreadedDoclingParseBackendOptions,
         MetsGbsBackendOptions,
         MsExcelBackendOptions,
+        OdsBackendOptions,
         LatexBackendOptions,
         XBRLBackendOptions,
     ],

@@ -2,7 +2,7 @@ import logging
 import warnings
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Union
+from typing import Final, Optional, Union
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -37,16 +37,37 @@ _log = logging.getLogger(__name__)
 
 
 class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
+    """Backend for parsing PPTX documents.
+
+    Converts PPTX presentations into structured DoclingDocument format,
+    extracting text, tables, images, lists, and comments from slides.
+
+    Note:
+        Comments are extracted and added to the NOTES content layer. Unlike Word documents,
+            PPTX comments only contain position coordinates (x, y) and do not directly reference
+            specific shapes or text ranges. Therefore, comments are associated with their parent
+            slide group rather than specific document elements.
+    """
+
+    # XML namespaces for element lookup
+    NAMESPACES: Final[dict[str, str]] = {
+        "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+        "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
+        "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
+    }
+    # XML relationship types
+    COMMENT_REL = (
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
+    )
+    COMMENT_AUTHORS_REL = (
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/"
+        "commentAuthors"
+    )
+
     def __init__(
         self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
     ) -> None:
         super().__init__(in_doc, path_or_stream)
-        self.namespaces = {
-            "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
-            "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
-            "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
-        }
-        # Powerpoint file:
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
         self.page_range = in_doc.limits.page_range
 
@@ -109,9 +130,12 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         if self.pptx_obj:
+            # Build author map once for all comments
+            author_map = self._build_comment_author_map(self.pptx_obj)
+
             start_page, end_page = self.page_range
             doc = self._walk_linear(
-                self.pptx_obj, doc, start_page=start_page, end_page=end_page
+                self.pptx_obj, doc, author_map, start_page=start_page, end_page=end_page
             )
 
         return doc
@@ -151,7 +175,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 found, no `lvl` attribute exists, or the `lvl` attribute value is
                 invalid.
         """
-        pPr = paragraph.find("a:pPr", namespaces=self.namespaces)
+        pPr = paragraph.find("a:pPr", namespaces=self.NAMESPACES)
         if pPr is not None and "lvl" in pPr.attrib:
             try:
                 return int(pPr.get("lvl"))
@@ -182,21 +206,21 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             return (None, None, None)
 
         # Explicitly no bullet
-        if pPr.find("a:buNone", namespaces=self.namespaces) is not None:
+        if pPr.find("a:buNone", namespaces=self.NAMESPACES) is not None:
             return (False, "buNone", None)
 
         # Bullet character
-        buChar = pPr.find("a:buChar", namespaces=self.namespaces)
+        buChar = pPr.find("a:buChar", namespaces=self.NAMESPACES)
         if buChar is not None:
             return (True, "buChar", buChar.get("char"))
 
         # Auto numbering
-        buAuto = pPr.find("a:buAutoNum", namespaces=self.namespaces)
+        buAuto = pPr.find("a:buAutoNum", namespaces=self.NAMESPACES)
         if buAuto is not None:
             return (True, "buAutoNum", buAuto.get("type"))
 
         # Picture bullet
-        buBlip = pPr.find("a:buBlip", namespaces=self.namespaces)
+        buBlip = pPr.find("a:buBlip", namespaces=self.NAMESPACES)
         if buBlip is not None:
             return (True, "buBlip", "image")
 
@@ -219,7 +243,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         if lstStyle is None:
             return None
         tag = f"a:lvl{lvl + 1}pPr"
-        return lstStyle.find(tag, namespaces=self.namespaces)
+        return lstStyle.find(tag, namespaces=self.NAMESPACES)
 
     def _parse_bullet_from_text_body_list_style(
         self, txBody, lvl: int
@@ -242,7 +266,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         """
         if txBody is None:
             return (None, None, None)
-        lstStyle = txBody.find("a:lstStyle", namespaces=self.namespaces)
+        lstStyle = txBody.find("a:lstStyle", namespaces=self.NAMESPACES)
         lvl_pPr = self._find_level_properties_in_list_style(lstStyle, lvl)
         is_list, kind, detail = self._parse_bullet_from_paragraph_properties(lvl_pPr)
         return (is_list, kind, detail)
@@ -264,18 +288,18 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 or `p:otherStyle`) or None when no styles are defined.
         """
         txStyles = slide_master._element.find(
-            ".//p:txStyles", namespaces=self.namespaces
+            ".//p:txStyles", namespaces=self.NAMESPACES
         )
         if txStyles is None:
             return None
 
         if placeholder_type in (PP_PLACEHOLDER.BODY, PP_PLACEHOLDER.OBJECT):
-            return txStyles.find("p:bodyStyle", namespaces=self.namespaces)
+            return txStyles.find("p:bodyStyle", namespaces=self.NAMESPACES)
 
         if placeholder_type == PP_PLACEHOLDER.TITLE:
-            return txStyles.find("p:titleStyle", namespaces=self.namespaces)
+            return txStyles.find("p:titleStyle", namespaces=self.NAMESPACES)
 
-        return txStyles.find("p:otherStyle", namespaces=self.namespaces)
+        return txStyles.find("p:otherStyle", namespaces=self.NAMESPACES)
 
     def _parse_bullet_from_master_text_styles(
         self, slide_master, placeholder_type, lvl: int
@@ -302,7 +326,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         if style is None:
             return (None, None, None)
 
-        lvl_pPr = style.find(f".//a:lvl{lvl + 1}pPr", namespaces=self.namespaces)
+        lvl_pPr = style.find(f".//a:lvl{lvl + 1}pPr", namespaces=self.NAMESPACES)
         is_list, kind, detail = self._parse_bullet_from_paragraph_properties(lvl_pPr)
         return (is_list, kind, detail)
 
@@ -361,10 +385,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             return (False, "None")
 
         # Fallback to simpler check if shape is not available
-        if p.find(".//a:buChar", namespaces={"a": self.namespaces["a"]}) is not None:
+        if p.find(".//a:buChar", namespaces={"a": self.NAMESPACES["a"]}) is not None:
             return (True, "Bullet")
         elif (
-            p.find(".//a:buAutoNum", namespaces={"a": self.namespaces["a"]}) is not None
+            p.find(".//a:buAutoNum", namespaces={"a": self.NAMESPACES["a"]}) is not None
         ):
             return (True, "Numbered")
         elif paragraph.level > 0:
@@ -397,7 +421,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         lvl = self._get_paragraph_level(p)
 
         # 1) Direct paragraph properties
-        pPr = p.find("a:pPr", namespaces=self.namespaces)
+        pPr = p.find("a:pPr", namespaces=self.NAMESPACES)
         is_list, kind, detail = self._parse_bullet_from_paragraph_properties(pPr)
         if is_list is not None:
             return {
@@ -408,7 +432,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             }
 
         # 2) Shape-level lstStyle (txBody/a:lstStyle)
-        txBody = shape._element.find(".//p:txBody", namespaces=self.namespaces)
+        txBody = shape._element.find(".//p:txBody", namespaces=self.NAMESPACES)
         is_list, kind, detail = self._parse_bullet_from_text_body_list_style(
             txBody, lvl
         )
@@ -433,7 +457,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
             if layout_ph is not None:
                 layout_tx = layout_ph._element.find(
-                    ".//p:txBody", namespaces=self.namespaces
+                    ".//p:txBody", namespaces=self.NAMESPACES
                 )
                 is_list, kind, detail = self._parse_bullet_from_text_body_list_style(
                     layout_tx, lvl
@@ -679,6 +703,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         self,
         pptx_obj: presentation.Presentation,
         doc: DoclingDocument,
+        author_map: dict[str, tuple[str, str]],
         start_page: int = 1,
         end_page: Optional[int] = None,
     ) -> DoclingDocument:
@@ -772,4 +797,108 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                             content_layer=ContentLayer.NOTES,
                         )
 
+            # Extract comments for this slide
+            self._extract_slide_comments(
+                slide, slide_ind, author_map, doc, parent_slide
+            )
+
         return doc
+
+    def _build_comment_author_map(
+        self, pptx_obj: presentation.Presentation
+    ) -> dict[str, tuple[str, str]]:
+        """Build a map of comment author IDs to (name, initials).
+
+        Args:
+            pptx_obj: The PowerPoint presentation object.
+
+        Returns:
+            Dictionary mapping author ID to (name, initials) tuple.
+        """
+        author_map: dict[str, tuple[str, str]] = {}
+        try:
+            for rel in pptx_obj.part.rels.values():
+                if rel.reltype == self.COMMENT_AUTHORS_REL:
+                    root = etree.fromstring(rel.target_part.blob)
+                    author_map = {
+                        author_el.get("id", ""): (
+                            author_el.get("name", ""),
+                            author_el.get("initials", ""),
+                        )
+                        for author_el in root.findall(
+                            "p:cmAuthor", namespaces=self.NAMESPACES
+                        )
+                    }
+        except Exception as e:
+            _log.debug(f"Could not parse PPTX comment authors: {e}")
+        return author_map
+
+    def _extract_slide_comments(
+        self,
+        slide,
+        slide_idx: int,
+        author_map: dict[str, tuple[str, str]],
+        doc: DoclingDocument,
+        parent_slide,
+    ) -> None:
+        """Extract and add comments for a specific slide.
+
+        Args:
+            slide: The slide object to extract comments from.
+            slide_idx: Zero-based slide index.
+            author_map: Dictionary mapping author ID to (name, initials).
+            doc: The DoclingDocument to add comments to.
+            parent_slide: The parent slide group to link comments to.
+        """
+        try:
+            slide_part = slide.part
+        except Exception as e:
+            _log.debug(
+                f"Could not access slide part for slide {slide_idx + 1}, "
+                f"skipping comment extraction: {e}"
+            )
+            return
+
+        for rel in slide_part.rels.values():
+            if rel.reltype != self.COMMENT_REL:
+                continue
+            try:
+                root = etree.fromstring(rel.target_part.blob)
+                for cm in root.findall("p:cm", namespaces=self.NAMESPACES):
+                    author_id = cm.get("authorId", "")
+                    dt = cm.get("dt", "")
+                    text_el = cm.find("p:text", namespaces=self.NAMESPACES)
+                    raw_text = (
+                        (text_el.text or "").strip() if text_el is not None else ""
+                    )
+                    if not raw_text:
+                        continue
+
+                    name, initials = author_map.get(author_id, ("", ""))
+                    metadata_parts = []
+                    if name:
+                        author_str = f"author: {name}"
+                        if initials:
+                            author_str += f" ({initials})"
+                        metadata_parts.append(author_str)
+                    if dt:
+                        metadata_parts.append(f"time: {dt}")
+                    prefix = ", ".join(metadata_parts)
+                    full_text = f"[{prefix}]: {raw_text}" if prefix else raw_text
+
+                    comment_idx = cm.get("idx", str(slide_idx))
+                    comment_group = doc.add_group(
+                        label=GroupLabel.COMMENT_SECTION,
+                        name=f"comment-slide{slide_idx + 1}-{comment_idx}",
+                        content_layer=ContentLayer.NOTES,
+                    )
+                    doc.add_comment(
+                        text=full_text,
+                        targets=None,
+                        parent=comment_group,
+                    )
+                    _log.debug(
+                        f"Added PPTX comment slide {slide_idx + 1} idx={comment_idx}"
+                    )
+            except Exception as e:
+                _log.debug(f"Could not parse comments for slide {slide_idx}: {e}")

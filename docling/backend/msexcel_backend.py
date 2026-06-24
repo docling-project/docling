@@ -1,8 +1,10 @@
 import collections
 import logging
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from typing import Annotated, Any, Optional, Union, cast
+from zipfile import ZipFile
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -19,6 +21,7 @@ from docling_core.types.doc import (
     TableCell,
     TableData,
 )
+from lxml import etree
 from openpyxl import load_workbook
 from openpyxl.chartsheet.chartsheet import Chartsheet
 from openpyxl.drawing.image import Image
@@ -109,13 +112,20 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     Each worksheet is converted into a separate page.
     The following elements are parsed:
     - Cell contents, parsed as tables. If two groups of cells are disconnected
-    between each other, they will be parsed as two different tables.
+      between each other, they will be parsed as two different tables.
     - Images, parsed as PictureItem objects.
+    - Cell comments (notes), both old-style and Excel 365+ threaded comments.
 
     The DoclingDocument tables and pictures have their provenance information, including
     the position in their original Excel worksheet. The position is represented by a
     bounding box object with the cell indices as units (0-based index). The size of this
     bounding box is the number of columns and rows that the table or picture spans.
+
+    Limitations:
+        - Threaded comments (Excel 365+) are only extracted when the file is provided
+          as a Path. When provided as a BytesIO stream, threaded comments cannot be
+          extracted because the stream is consumed by openpyxl during initialization.
+          Old-style cell comments (notes) are always extracted regardless of input type.
     """
 
     @override
@@ -167,6 +177,116 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             raise RuntimeError(
                 f"MsExcelDocumentBackend could not load document with hash {self.document_hash}"
             ) from e
+
+    def _parse_threaded_comments(
+        self, sheet_name: str
+    ) -> dict[str, tuple[str, str, Optional[datetime]]]:
+        """Parse threaded comments from Excel XML for a specific sheet.
+
+        Returns a dict mapping cell coordinates to (author, text, timestamp) tuples.
+        Only works when path_or_stream is a Path (not BytesIO).
+
+        Security Note:
+            Uses secure XML parser configuration to prevent XXE attacks and validates
+            ZIP file paths to prevent zip-slip attacks.
+        """
+        threaded_comments: dict[str, tuple[str, str, Optional[datetime]]] = {}
+
+        # Only extract from Path objects (BytesIO is consumed by load_workbook)
+        if not isinstance(self.path_or_stream, Path):
+            return threaded_comments
+
+        # Namespace for threaded comments XML
+        ns = {
+            "tc": "http://schemas.microsoft.com/office/spreadsheetml/2018/threadedcomments"
+        }
+
+        try:
+            if isinstance(self.path_or_stream, BytesIO):
+                self.path_or_stream.seek(0)
+
+            with ZipFile(self.path_or_stream, "r") as zip_file:
+                if any(m.startswith("/") or ".." in m for m in zip_file.namelist()):
+                    _log.warning("Skipping file with unsafe ZIP paths")
+                    return threaded_comments
+
+                parser = etree.XMLParser(
+                    resolve_entities=False,
+                    load_dtd=False,
+                    no_network=True,
+                    dtd_validation=False,
+                )
+
+                person_map: dict[str, str] = {}
+                try:
+                    person_xml = zip_file.read("xl/persons/person.xml")
+                    person_tree = etree.fromstring(person_xml, parser=parser)
+                    person_map = {
+                        person.get("id"): person.get("displayName")
+                        for person in person_tree.findall(".//tc:person", namespaces=ns)
+                        if person.get("id") and person.get("displayName")
+                    }
+                except Exception as e:
+                    _log.debug(f"Could not parse person.xml: {e}")
+
+                sheet_num = next(
+                    (
+                        i
+                        for i, ws in enumerate(self.workbook.worksheets, 1)
+                        if ws.title == sheet_name
+                    ),
+                    None,
+                )
+                if sheet_num is None:
+                    return threaded_comments
+
+                threaded_file = f"xl/threadedComments/threadedComment{sheet_num}.xml"
+                try:
+                    threaded_xml = zip_file.read(threaded_file)
+                    threaded_tree = etree.fromstring(threaded_xml, parser=parser)
+
+                    for comment in threaded_tree.findall(
+                        ".//tc:threadedComment", namespaces=ns
+                    ):
+                        cell_ref = comment.get("ref")
+                        text_elem = comment.find("tc:text", namespaces=ns)
+
+                        if cell_ref and text_elem is not None:
+                            text = text_elem.text or ""
+                            author = person_map.get(comment.get("personId"), "Unknown")
+
+                            timestamp = None
+                            if timestamp_str := comment.get("dT"):
+                                try:
+                                    # Normalize timestamp for Python 3.10 compatibility
+                                    # xlsx uses fractional seconds with variable precision
+                                    normalized = timestamp_str.replace("Z", "+00:00")
+                                    if "." in normalized and "+" in normalized:
+                                        parts = normalized.split(".")
+                                        frac_and_tz = parts[1].split("+")
+                                        frac = frac_and_tz[0].ljust(6, "0")[:6]
+                                        normalized = (
+                                            f"{parts[0]}.{frac}+{frac_and_tz[1]}"
+                                        )
+                                    elif "." in normalized:
+                                        parts = normalized.split(".")
+                                        frac = parts[1].ljust(6, "0")[:6]
+                                        normalized = f"{parts[0]}.{frac}"
+                                    timestamp = datetime.fromisoformat(normalized)
+                                except Exception as e:
+                                    _log.debug(
+                                        f"Could not parse timestamp '{timestamp_str}': {e}"
+                                    )
+
+                            threaded_comments[cell_ref] = (author, text, timestamp)
+
+                except Exception as e:
+                    _log.debug(f"Could not parse {threaded_file}: {e}")
+
+        except Exception as e:
+            _log.debug(f"Could not parse threaded comments: {e}")
+
+        return threaded_comments
 
     @override
     def is_valid(self) -> bool:
@@ -318,6 +438,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     ) -> DoclingDocument:
         """Find all tables in an Excel sheet and attach them to a DoclingDocument.
 
+        Also extracts comments from cells and links them to their corresponding table cells.
+
         Args:
             doc: The DoclingDocument to be updated.
             sheet: The Excel worksheet to be parsed.
@@ -329,7 +451,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         if self.workbook is not None:
             content_layer = self._get_sheet_content_layer(sheet)
-            tables = self._find_data_tables(sheet)
+            tables, comment_map = self._find_data_tables(sheet)
 
             treat_singleton_as_text = (
                 isinstance(self.options, MsExcelBackendOptions)
@@ -401,6 +523,42 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                         content_layer=content_layer,
                     )
 
+            # Extract comments and link them to cells
+            for (row, col), (author, raw_text, timestamp) in comment_map.items():
+                metadata_parts = []
+                if author:
+                    metadata_parts.append(f"author: {author}")
+                if timestamp:
+                    timestamp_str = timestamp.isoformat(timespec="milliseconds")
+                    metadata_parts.append(f"time: {timestamp_str}")
+
+                if metadata_parts and raw_text:
+                    full_text = f"[{', '.join(metadata_parts)}]: {raw_text}"
+                elif metadata_parts:
+                    full_text = f"[{', '.join(metadata_parts)}]"
+                else:
+                    full_text = raw_text
+
+                cell_item = self._find_cell_item(doc, page_no, row, col)
+                targets = [cell_item] if cell_item else None
+
+                comment_group = doc.add_group(
+                    label=GroupLabel.COMMENT_SECTION,
+                    name=f"comment-{sheet.title}-{sheet.cell(row=row + 1, column=col + 1).coordinate}",
+                    content_layer=ContentLayer.NOTES,
+                )
+                doc.add_comment(
+                    text=full_text,
+                    targets=targets,
+                    parent=comment_group,
+                )
+
+                if not targets:
+                    _log.debug(
+                        f"Comment at {sheet.title}!{sheet.cell(row=row + 1, column=col + 1).coordinate} "
+                        f"has no cell item for linking"
+                    )
+
         return doc
 
     def _find_true_data_bounds(self, sheet: Worksheet) -> DataRegion:
@@ -445,20 +603,34 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         return DataRegion(min_row, max_row, min_col, max_col)
 
-    def _find_data_tables(self, sheet: Worksheet) -> list[ExcelTable]:
+    def _find_data_tables(
+        self, sheet: Worksheet
+    ) -> tuple[
+        list[ExcelTable], dict[tuple[int, int], tuple[str, str, Optional[datetime]]]
+    ]:
         """Find all compact rectangular data tables in an Excel worksheet.
+
+        Also collects comments from cells during the same iteration for efficiency.
 
         Args:
             sheet: The Excel worksheet to be parsed.
 
         Returns:
-            A list of ExcelTable objects representing the data tables.
+            A tuple containing:
+                - A list of ExcelTable objects representing the data tables
+                - A dict mapping (row, col) to (author, comment_text, timestamp) for cells with comments
         """
         bounds: DataRegion = self._find_true_data_bounds(
             sheet
         )  # The true data boundaries
         tables: list[ExcelTable] = []  # List to store found tables
         visited: set[tuple[int, int]] = set()  # Track already visited cells
+        comment_map: dict[
+            tuple[int, int], tuple[str, str, Optional[datetime]]
+        ] = {}  # Collect comments
+
+        # Parse threaded comments from XML (Excel 365+ format with proper author names and timestamps)
+        threaded_comments = self._parse_threaded_comments(sheet.title)
 
         # Limit scan to actual data bounds
         for ri, row in enumerate(
@@ -472,6 +644,27 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             start=bounds.min_row - 1,
         ):
             for rj, cell in enumerate(row, start=bounds.min_col - 1):
+                # Collect comment if present
+                if cell.comment is not None:
+                    author = cell.comment.author or ""
+                    raw_text = (
+                        str(cell.comment.text).strip() if cell.comment.text else ""
+                    )
+                    timestamp = None
+
+                    # Check if this is a threaded comment with better data in XML
+                    cell_coord = cell.coordinate
+                    if cell_coord in threaded_comments:
+                        author, raw_text, timestamp = threaded_comments[cell_coord]
+                    elif author.startswith("tc={") and "[Threaded comment]" in raw_text:
+                        # Fallback: extract from openpyxl's text if XML parsing failed
+                        if "Comment:\n" in raw_text:
+                            raw_text = raw_text.split("Comment:\n", 1)[1].strip()
+                        author = "Threaded comment"
+
+                    if raw_text:
+                        comment_map[(ri, rj)] = (author, raw_text, timestamp)
+
                 if cell.value is None or (ri, rj) in visited:
                     continue
 
@@ -482,7 +675,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 visited.update(visited_cells)  # Mark these cells as visited
                 tables.append(table_bounds)
 
-        return tables
+        return tables, comment_map
 
     def _find_table_bounds(
         self,
@@ -721,6 +914,35 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 bottom = max(bottom, bbox.b) if bottom != -1 else bbox.b
 
         return (right - left, bottom - top)
+
+    def _find_cell_item(
+        self, doc: DoclingDocument, page_no: int, row: int, col: int
+    ) -> Optional[DocItem]:
+        """Find the DocItem (table cell or text) at the given row/col position.
+
+        Args:
+            doc: The DoclingDocument to search.
+            page_no: The page number to search in.
+            row: Row index (0-based).
+            col: Column index (0-based).
+
+        Returns:
+            The DocItem at that position, or None if not found.
+        """
+        for item, _ in doc.iterate_items(page_no=page_no):
+            if not isinstance(item, DocItem):
+                continue
+
+            for prov in item.prov:
+                if prov.page_no != page_no:
+                    continue
+
+                bbox = prov.bbox
+                # Check if cell position is within this item's bounding box
+                if bbox.l <= col < bbox.r and bbox.t <= row < bbox.b:
+                    return item
+
+        return None
 
     @staticmethod
     def _get_sheet_content_layer(sheet: Worksheet) -> Optional[ContentLayer]:

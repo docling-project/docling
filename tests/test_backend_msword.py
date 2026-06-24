@@ -306,7 +306,7 @@ def test_handle_pictures(documents):
 def test_comments_extraction(documents):
     """Test the function _add_comments for extracting Word document comments."""
 
-    name = "word_comments.docx"
+    name = "docx_comments.docx"
     doc = next(item[1] for item in documents if item[0].name == name)
 
     # Find comment groups

@@ -117,6 +117,55 @@ def test_cli_exports_doclang(tmp_path):
     assert "DocLang CLI" in content
 
 
+def test_cli_from_odf_expands_to_open_document_formats(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured_allowed_formats: list[InputFormat] | None = None
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            nonlocal captured_allowed_formats
+            captured_allowed_formats = allowed_formats
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+        ) -> list[Any]:
+            assert input_doc_paths
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "tests/data/odf",
+            "--from",
+            "odf",
+            "--to",
+            "html",
+            "--output",
+            str(tmp_path / "out"),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_allowed_formats == [
+        InputFormat.ODT,
+        InputFormat.ODS,
+        InputFormat.ODP,
+    ]
+
+
 def test_cli_html_fetches_local_images_per_input(tmp_path):
     first_png = _png_bytes((255, 0, 0))
     second_png = _png_bytes((0, 0, 255))
