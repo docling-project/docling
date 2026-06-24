@@ -120,6 +120,7 @@ def test_rapidocr_model_initialization_uses_mobile_default_paths(
     [
         ("onnxruntime", "EngineConfig.onnxruntime.intra_op_num_threads"),
         ("openvino", "EngineConfig.openvino.inference_num_threads"),
+        ("paddle", "EngineConfig.paddle.cpu_math_library_num_threads"),
     ],
 )
 def test_rapidocr_num_threads_propagated_per_engine(
@@ -154,3 +155,40 @@ def test_rapidocr_num_threads_propagated_per_engine(
 
     # num_threads must reach the engine actually in use, not only ONNXRuntime.
     assert captured["params"][engine_key] == 4
+
+
+@pytest.mark.parametrize("backend", ["paddle", "torch"])
+def test_rapidocr_gpu_device_uses_cuda_ep_cfg_key(
+    monkeypatch: pytest.MonkeyPatch,
+    backend: str,
+):
+    captured: dict[str, object] = {}
+
+    class FakeEngineType(str, Enum):
+        ONNXRUNTIME = "onnxruntime"
+        OPENVINO = "openvino"
+        PADDLE = "paddle"
+        TORCH = "torch"
+
+    class FakeRapidOCR:
+        def __init__(self, params):
+            captured["params"] = params
+
+    monkeypatch.setitem(
+        sys.modules,
+        "rapidocr",
+        SimpleNamespace(EngineType=FakeEngineType, RapidOCR=FakeRapidOCR),
+    )
+
+    RapidOcrModel(
+        enabled=True,
+        artifacts_path=None,
+        options=RapidOcrOptions(backend=backend),
+        accelerator_options=AcceleratorOptions(device="cpu"),
+    )
+
+    params = captured["params"]
+    # The GPU device id must use the engine's real key; the legacy top-level
+    # `gpu_id` key is not read by RapidOCR (see #3049 for the torch fix).
+    assert f"EngineConfig.{backend}.cuda_ep_cfg.device_id" in params
+    assert f"EngineConfig.{backend}.gpu_id" not in params

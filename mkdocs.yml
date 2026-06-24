@@ -118,6 +118,7 @@ nav:
       - _generated/examples/backend_csv.md
       - _generated/examples/backend_xml_rag.md
       - _generated/examples/xbrl_conversion.md
+      - _generated/examples/epub_conversion.md
     - ✂️ Serialization & chunking:
       - _generated/examples/serialization.md
       - _generated/examples/hybrid_chunking.md

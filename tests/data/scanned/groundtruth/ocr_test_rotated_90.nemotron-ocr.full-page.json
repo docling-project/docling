@@ -39,10 +39,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 74.97,
+            "l": 74.94,
             "t": 504.42,
             "r": 124.04,
-            "b": 73.57,
+            "b": 73.56,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -54,7 +54,7 @@
           "page_no": 1,
           "bbox": {
             "l": 130.46,
-            "t": 153.5,
+            "t": 153.52,
             "r": 150.44,
             "b": 71.76,
             "coord_origin": "BOTTOMLEFT"
