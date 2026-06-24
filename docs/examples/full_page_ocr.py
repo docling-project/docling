@@ -22,7 +22,7 @@
 #   e.g., `EasyOcrOptions`, `TesseractOcrOptions`, `OcrMacOptions`, `RapidOcrOptions`.
 #
 # Input document
-# - Defaults to `tests/data/pdf/2206.01062.pdf`. Change `input_doc_path` as needed.
+# - Defaults to `tests/data/pdf/sources/2206.01062.pdf`. Change `input_doc_path` as needed.
 
 # %%
 
@@ -31,12 +31,14 @@ from pathlib import Path
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
+    NemotronOcrOptions,
     PdfPipelineOptions,
     TableStructureOptions,
     TesseractCliOcrOptions,
 )
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipeline
 
 # Under CI we limit the conversion to a representative page range to keep the
 # example fast; locally the full document is processed.
@@ -46,7 +48,7 @@ CI_PAGE_RANGE = (3, 4)
 
 def main():
     data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/2206.01062.pdf"
+    input_doc_path = data_folder / "pdf/sources/2206.01062.pdf"
 
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = True
@@ -56,8 +58,10 @@ def main():
     )
 
     # Any of the OCR options can be used: EasyOcrOptions, TesseractOcrOptions,
-    # TesseractCliOcrOptions, OcrMacOptions (macOS only), RapidOcrOptions
+    # TesseractCliOcrOptions, OcrMacOptions (macOS only), RapidOcrOptions,
+    # NemotronOcrOptions (Linux x86_64, Python 3.12, CUDA 13.x only)
     # ocr_options = EasyOcrOptions(force_full_page_ocr=True)
+    # ocr_options = NemotronOcrOptions(force_full_page_ocr=True)
     # ocr_options = TesseractOcrOptions(force_full_page_ocr=True)
     # ocr_options = OcrMacOptions(force_full_page_ocr=True)
     # ocr_options = RapidOcrOptions(force_full_page_ocr=True)
@@ -68,6 +72,7 @@ def main():
         format_options={
             InputFormat.PDF: PdfFormatOption(
                 pipeline_options=pipeline_options,
+                # pipeline_cls=LegacyStandardPdfPipeline,
             )
         }
     )

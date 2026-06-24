@@ -3,7 +3,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Iterable, List, Optional, Union
 
-from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.page import (
     BoundingRectangle,
     PdfPageBoundaryType,
@@ -16,8 +16,9 @@ from PIL import Image
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
 from docling.datamodel.backend_options import PdfBackendOptions
-from docling.datamodel.base_models import InputFormat, Size
+from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
@@ -170,7 +171,9 @@ class ImageDocumentBackend(PdfDocumentBackend):
             for frame in self._frames:
                 frame.close()
             self._frames = []
-            raise RuntimeError(f"Could not load image for document {self.file}") from e
+            raise DocumentLoadError(
+                f"Could not load image for document {self.file}"
+            ) from e
 
     def is_valid(self) -> bool:
         return len(self._frames) > 0

@@ -26,6 +26,8 @@ STRICT_BBOX_TOL_RATIO = 0.0025  # allow minor cross-platform layout variance
 FUZZY_BBOX_TOL_RATIO = (
     0.005  # OCR/image output varies more, but gross shifts should fail
 )
+STRICT_IMAGE_SIZE_TOL_RATIO = 0.015  # allow ~1.5% cross-platform image size variance
+FUZZY_IMAGE_SIZE_TOL_RATIO = 0.05  # OCR/image output varies more, allow ~5%
 
 
 class _TestPagesMeta(BaseModel):
@@ -171,12 +173,46 @@ def verify_table_v2(true_item: TableItem, pred_item: TableItem, fuzzy: bool):
 
 
 def verify_picture_image_v2(
-    true_image: PILImage.Image, pred_item: Optional[PILImage.Image]
-):
+    true_image: PILImage.Image, pred_item: Optional[PILImage.Image], fuzzy: bool = False
+) -> bool:
+    """Compare image properties with optional fuzziness for cross-platform variance.
+
+    Args:
+        true_image: Ground truth image
+        pred_item: Predicted image
+        fuzzy: If True, allow larger size differences (e.g., OCR/image processing variance)
+
+    Note:
+        We don't compare image bytes as they can vary significantly across platforms even for visually identical images
+    """
     assert pred_item is not None, "predicted image is None"
-    assert true_image.size == pred_item.size
-    assert true_image.mode == pred_item.mode
-    # assert true_image.tobytes() == pred_item.tobytes()
+
+    # Check image mode (should be exact)
+    assert true_image.mode == pred_item.mode, (
+        f"Image mode mismatch: {true_image.mode} vs {pred_item.mode}"
+    )
+
+    # Check image size with percentage-based tolerance
+    tol_ratio = FUZZY_IMAGE_SIZE_TOL_RATIO if fuzzy else STRICT_IMAGE_SIZE_TOL_RATIO
+    true_width, true_height = true_image.size
+    pred_width, pred_height = pred_item.size
+
+    width_diff = abs(true_width - pred_width)
+    height_diff = abs(true_height - pred_height)
+
+    # Calculate actual percentage differences
+    width_diff_ratio = width_diff / true_width if true_width > 0 else 0
+    height_diff_ratio = height_diff / true_height if true_height > 0 else 0
+
+    assert width_diff_ratio <= tol_ratio, (
+        f"Image width mismatch: {true_width} vs {pred_width} "
+        f"(diff: {width_diff} pixels, {width_diff_ratio:.1%} vs tolerance {tol_ratio:.1%})"
+    )
+    assert height_diff_ratio <= tol_ratio, (
+        f"Image height mismatch: {true_height} vs {pred_height} "
+        f"(diff: {height_diff} pixels, {height_diff_ratio:.1%} vs tolerance {tol_ratio:.1%})"
+    )
+
     return True
 
 
@@ -285,7 +321,7 @@ def verify_docitems(
             true_image = true_item.get_image(doc=doc_true)
             pred_image = pred_item.get_image(doc=doc_pred)
             if true_image is not None:
-                assert verify_picture_image_v2(true_image, pred_image), (
+                assert verify_picture_image_v2(true_image, pred_image, fuzzy=fuzzy), (
                     f"[{pdf_filename}] Picture image mismatch"
                 )
         # TODO: check picture annotations
@@ -341,11 +377,7 @@ def verify_conversion_result_v2(
 
     engine_suffix = "" if ocr_engine is None else f".{ocr_engine}"
 
-    gt_subpath = input_path.parent / "groundtruth" / "docling_v2" / input_path.name
-    if str(input_path.parent).endswith("pdf"):
-        gt_subpath = (
-            input_path.parent.parent / "groundtruth" / "docling_v2" / input_path.name
-        )
+    gt_subpath = input_path.parent.parent / "groundtruth" / input_path.name
 
     pages_path = gt_subpath.with_suffix(f"{engine_suffix}.pages.meta.json")
     json_path = gt_subpath.with_suffix(f"{engine_suffix}.json")

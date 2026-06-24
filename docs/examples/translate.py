@@ -58,7 +58,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/2206.01062.pdf"
+    input_doc_path = data_folder / "pdf/sources/2206.01062.pdf"
     output_dir = Path("scratch")  # ensure this directory exists before saving
     output_dir.mkdir(parents=True, exist_ok=True)
 

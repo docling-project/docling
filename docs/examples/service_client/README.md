@@ -21,7 +21,7 @@ pip install "docling-slim[service-client]"
 ```
 
 Run the examples **from the repository root** — they reference sample documents
-under `tests/data/pdf/` by relative path:
+under `tests/data/pdf/sources/` by relative path:
 
 ```
 uv run python docs/examples/service_client/convert.py

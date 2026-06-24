@@ -14,13 +14,13 @@ from ..test_data_gen_flag import GEN_TEST_DATA
 from ..verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
-LATEX_DATA_DIR = Path("./tests/data/latex/")
+LATEX_DATA_DIR = Path("./tests/data/latex/sources/")
 
 
 @pytest.fixture(scope="module")
 def latex_paths() -> list[Path]:
     """Find all LaTeX files in the test data directory."""
-    directory = Path("./tests/data/latex/")
+    directory = Path("./tests/data/latex/sources/")
     if not directory.exists():
         return []
 

@@ -36,6 +36,7 @@ from docling.datamodel.backend_options import (
 )
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
@@ -166,7 +167,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
             _log.debug(self.markdown)
         except Exception as e:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 f"Could not initialize MD backend for file with hash {self.document_hash}."
             ) from e
         return
