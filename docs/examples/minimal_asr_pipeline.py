@@ -20,7 +20,7 @@
 # - Keep `InputFormat.AUDIO` and `AsrPipeline` unchanged for a minimal setup.
 #
 # Input audio
-# - Defaults to `tests/data/audio/sample_10s.mp3`. Update `audio_path` to your own file if needed.
+# - Defaults to `tests/data/audio/regression/sample_10s.mp3`. Update `audio_path` to your own file if needed.
 
 # %%
 
@@ -79,7 +79,7 @@ def asr_pipeline_conversion(audio_path: Path) -> DoclingDocument:
 
 
 if __name__ == "__main__":
-    audio_path = Path("tests/data/audio/sample_10s.mp3")
+    audio_path = Path("tests/data/audio/regression/sample_10s.mp3")
 
     doc = asr_pipeline_conversion(audio_path=audio_path)
     print(doc.export_to_markdown())

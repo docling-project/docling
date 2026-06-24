@@ -37,7 +37,7 @@ CI_PAGE_RANGE = (3, 4)
 
 def main():
     data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/2206.01062.pdf"
+    input_doc_path = data_folder / "pdf/regression/2206.01062.pdf"
 
     # Explicitly set the accelerator
     # accelerator_options = AcceleratorOptions(

@@ -36,7 +36,7 @@ logging.basicConfig(level=logging.INFO)
 
 # Replace with a local path if preferred.
 # source = "https://ibm.biz/docling-page-with-table" # Example that shows no repetitions.
-source = "tests/data_scanned/old_newspaper.png"  # Example that creates repetitions.
+source = "tests/data/scanned/regression/old_newspaper.png"  # Example that creates repetitions.
 print(f"Processing document: {source}")
 
 ###### USING GRANITEDOCLING WITH CUSTOM REPETITION STOPPING (LEGACY)

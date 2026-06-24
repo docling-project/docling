@@ -6,7 +6,7 @@
 # picture description metadata field.
 #
 # Run from the repository root. The PDF argument is optional; when omitted, the
-# bundled test PDF at `tests/data/pdf/2206.01062.pdf` is used. The example exits
+# bundled test PDF at `tests/data/pdf/regression/2206.01062.pdf` is used. The example exits
 # early without contacting any endpoint when neither
 # `PICTURE_DESCRIPTION_API_URL` nor `AZURE_API_BASE` is set, which keeps it safe
 # to run in environments without a configured VLM provider (for example CI).
@@ -214,7 +214,7 @@ def run(input_pdf: Path) -> None:
     print(f"Pictures with usage payloads: {pictures_with_usage}")
 
 
-_DEFAULT_PDF = Path(__file__).resolve().parents[2] / "tests/data/pdf/2206.01062.pdf"
+_DEFAULT_PDF = Path(__file__).resolve().parents[2] / "tests/data/pdf/regression/2206.01062.pdf"
 
 
 def main() -> None:

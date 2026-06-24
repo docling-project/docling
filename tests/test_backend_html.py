@@ -76,7 +76,7 @@ def test_html_backend_options():
 
 
 def test_resolve_relative_path():
-    html_path = Path("./tests/data/html/example_01.html")
+    html_path = Path("./tests/data/html/regression/example_01.html")
     in_doc = InputDocument(
         path_or_stream=html_path,
         format=InputFormat.HTML,
@@ -140,7 +140,7 @@ def test_resolve_relative_path():
 
 
 def test_heading_levels():
-    in_path = Path("tests/data/html/wiki_duck.html")
+    in_path = Path("tests/data/html/regression/wiki_duck.html")
     in_doc = InputDocument(
         path_or_stream=in_path,
         format=InputFormat.HTML,
@@ -302,7 +302,7 @@ def test_unicode_characters():
 
 
 def test_extract_parent_hyperlinks():
-    html_path = Path("./tests/data/html/hyperlink_04.html")
+    html_path = Path("./tests/data/html/regression/hyperlink_04.html")
     in_doc = InputDocument(
         path_or_stream=html_path,
         format=InputFormat.HTML,
@@ -324,7 +324,7 @@ def test_extract_parent_hyperlinks():
 @pytest.fixture(scope="module")
 def html_paths() -> list[Path]:
     # Define the directory you want to search
-    directory = Path("./tests/data/html/")
+    directory = Path("./tests/data/html/regression/")
 
     # List all HTML files in the directory and its subdirectories
     html_files = sorted(directory.rglob("*.html"))
@@ -343,7 +343,7 @@ def test_e2e_html_conversions(html_paths):
 
     for html_path in html_paths:
         gt_path = (
-            html_path.parent.parent / "groundtruth" / "docling_v2" / html_path.name
+            html_path.parent.parent / "groundtruth" / html_path.name
         )
 
         conv_result: ConversionResult = converter.convert(html_path)
@@ -374,8 +374,8 @@ def test_e2e_html_conversions(html_paths):
 @patch("docling.backend.html_backend.requests.get")
 @patch("docling.backend.html_backend.open", new_callable=mock_open)
 def test_e2e_html_conversion_with_images(mock_local, mock_remote):
-    source = "tests/data/html/example_01.html"
-    image_path = "tests/data/html/example_image_01.png"
+    source = "tests/data/html/regression/example_01.html"
+    image_path = "tests/data/html/regression/example_image_01.png"
     with open(image_path, "rb") as f:
         img_bytes = f.read()
 
@@ -445,7 +445,7 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
 
     # checking exported formats
     gt_path = (
-        "tests/data/groundtruth/docling_v2/" + str(Path(source).stem) + "_images.html"
+        "tests/data/html/groundtruth/" + str(Path(source).stem) + "_images.html"
     )
     pred_md: str = res_local.document.export_to_markdown(compact_tables=True)
     assert verify_export(pred_md, gt_path + ".md", generate=GENERATE)
@@ -483,7 +483,7 @@ def test_html_furniture():
 
 
 def test_fetch_remote_images(monkeypatch):
-    source = "./tests/data/html/example_01.html"
+    source = "./tests/data/html/regression/example_01.html"
 
     # no image fetching: the image_fetch flag is False
     converter = _create_html_converter(
@@ -545,7 +545,7 @@ def test_fetch_remote_images(monkeypatch):
         pytest.warns(match="a bytes-like object is required"),
     ):
         res = converter.convert(source)
-        expected_path = os.path.abspath("tests/data/html/example_image_01.png")
+        expected_path = os.path.abspath("tests/data/html/regression/example_image_01.png")
         mocked_open.assert_called_once_with(expected_path, "rb")
         assert res.document
 
@@ -572,7 +572,7 @@ def test_fetch_remote_images_with_custom_headers():
         "docling.backend.html_backend.requests.Session.get"
     ) as mocked_session_get:
         mocked_session_get.return_value = _create_mock_response()
-        res = converter.convert("./tests/data/html/example_01.html")
+        res = converter.convert("./tests/data/html/regression/example_01.html")
         headers_arg = mocked_session_get.call_args[1].get("headers", {})
         assert headers_arg["Authorization"] == "Bearer test-token"
         assert headers_arg["X-API-Key"] == "test-api-key" and "Range" in headers_arg
@@ -920,7 +920,7 @@ def test_load_image_data_enforces_size_limit(monkeypatch):
                 yield b"x" * chunk_len
                 remaining -= chunk_len
 
-    html_path = Path("./tests/data/html/example_01.html")
+    html_path = Path("./tests/data/html/regression/example_01.html")
     in_doc = InputDocument(
         path_or_stream=html_path,
         format=InputFormat.HTML,
@@ -944,7 +944,7 @@ def test_load_image_data_enforces_size_limit(monkeypatch):
 
 def test_load_image_data_enforces_data_uri_size_limit():
     """Test that base64 data URIs are capped at the size limit."""
-    html_path = Path("./tests/data/html/example_01.html")
+    html_path = Path("./tests/data/html/regression/example_01.html")
     in_doc = InputDocument(
         path_or_stream=html_path,
         format=InputFormat.HTML,
@@ -967,7 +967,7 @@ def test_load_image_data_enforces_data_uri_size_limit():
 
 def test_anchor_fragment_links_with_source_uri():
     """Fragment-only hrefs must not be mangled when source_uri is set."""
-    html_path = Path("tests/data/html/hyperlink_06.html")
+    html_path = Path("tests/data/html/regression/hyperlink_06.html")
     in_doc = InputDocument(
         path_or_stream=html_path,
         format=InputFormat.HTML,
@@ -994,7 +994,7 @@ def test_anchor_fragment_links_with_source_uri():
 
 def test_path_traversal_blocked_in_resolve_relative_path():
     """Test that path traversal attempts are blocked."""
-    html_path = Path("./tests/data/html/example_01.html")
+    html_path = Path("./tests/data/html/regression/example_01.html")
     options = HTMLBackendOptions(enable_local_fetch=True, fetch_images=True)
     in_doc = InputDocument(
         path_or_stream=html_path,
@@ -1091,7 +1091,7 @@ def test_path_traversal_blocked_in_resolve_relative_path():
 
 def test_valid_local_paths_still_work():
     """Test that valid paths within the base directory still work."""
-    html_path = Path("./tests/data/html/example_01.html").resolve()
+    html_path = Path("./tests/data/html/regression/example_01.html").resolve()
     options = HTMLBackendOptions(enable_local_fetch=True, fetch_images=True)
     in_doc = InputDocument(
         path_or_stream=html_path,

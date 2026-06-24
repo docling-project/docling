@@ -41,7 +41,7 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 logging.basicConfig(level=logging.INFO)
 
 # Test document with images
-input_doc_path = Path("tests/data/pdf/2206.01062.pdf")
+input_doc_path = Path("tests/data/pdf/regression/2206.01062.pdf")
 
 # Check if running in CI
 IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")

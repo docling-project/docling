@@ -22,7 +22,7 @@
 #   e.g., `EasyOcrOptions`, `TesseractOcrOptions`, `OcrMacOptions`, `RapidOcrOptions`.
 #
 # Input document
-# - Defaults to `tests/data/pdf/2206.01062.pdf`. Change `input_doc_path` as needed.
+# - Defaults to `tests/data/pdf/regression/2206.01062.pdf`. Change `input_doc_path` as needed.
 
 # %%
 
@@ -48,7 +48,7 @@ CI_PAGE_RANGE = (3, 4)
 
 def main():
     data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/2206.01062.pdf"
+    input_doc_path = data_folder / "pdf/regression/2206.01062.pdf"
 
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = True

@@ -27,7 +27,7 @@ from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 
 pytestmark = pytest.mark.ml_pdf_model
 
-PDF_PATH = Path("tests/data/pdf/table_mislabeled_as_picture.pdf")
+PDF_PATH = Path("tests/data/pdf/regression/table_mislabeled_as_picture.pdf")
 IOU_THRESHOLD = 0.9
 
 

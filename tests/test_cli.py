@@ -82,7 +82,7 @@ def test_cli_version():
 
 
 def test_cli_convert(tmp_path):
-    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
+    source = "./tests/data/pdf/regression/2305.03393v1-pg9.pdf"
     output = tmp_path / "out"
     output.mkdir()
     result = runner.invoke(app, [source, "--output", str(output)])
@@ -148,7 +148,7 @@ def test_cli_from_odf_expands_to_open_document_formats(
     result = runner.invoke(
         app,
         [
-            "tests/data/odf",
+            "tests/data/odf/regression",
             "--from",
             "odf",
             "--to",
@@ -567,7 +567,7 @@ def test_cli_accepts_threaded_docling_parse_backend(
         "docling.document_converter.DocumentConverter", _FakeDocumentConverter
     )
 
-    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
+    source = "./tests/data/pdf/regression/2305.03393v1-pg9.pdf"
     output = tmp_path / "out"
 
     result = runner.invoke(
@@ -624,7 +624,7 @@ def test_cli_passes_accelerator_options_to_vlm_pipeline(
         "docling.document_converter.DocumentConverter", _FakeDocumentConverter
     )
 
-    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
+    source = "./tests/data/pdf/regression/2305.03393v1-pg9.pdf"
     output = tmp_path / "out"
 
     result = runner.invoke(

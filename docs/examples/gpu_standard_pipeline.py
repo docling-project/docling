@@ -40,8 +40,8 @@ def main():
     _log.setLevel(logging.INFO)
 
     data_folder = Path(__file__).parent / "../../tests/data"
-    # input_doc_path = data_folder / "pdf" / "2305.03393v1.pdf"  # 14 pages
-    input_doc_path = data_folder / "pdf" / "redp5110_sampled.pdf"  # 18 pages
+    # input_doc_path = data_folder / "pdf" / "regression" / "2305.03393v1.pdf"  # 14 pages
+    input_doc_path = data_folder / "pdf" / "regression" / "redp5110_sampled.pdf"  # 18 pages
 
     pipeline_options = ThreadedPdfPipelineOptions(
         accelerator_options=AcceleratorOptions(

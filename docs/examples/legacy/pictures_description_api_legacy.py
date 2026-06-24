@@ -125,7 +125,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     data_folder = Path(__file__).parent / "../../../tests/data"
-    input_doc_path = data_folder / "pdf/2206.01062.pdf"
+    input_doc_path = data_folder / "pdf/regression/2206.01062.pdf"
 
     pipeline_options = PdfPipelineOptions(
         enable_remote_services=True  # <-- this is required!

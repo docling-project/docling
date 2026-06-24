@@ -34,8 +34,8 @@ def extractor() -> DocumentExtractor:
 @pytest.fixture
 def test_file_path() -> Path:
     """Get the path to the test QR bill image."""
-    return Path(__file__).parent / "data_scanned" / "qr_bill_example.jpg"
-    # return Path("tests/data/pdf/code_and_formula.pdf")
+    return Path(__file__).parent / "data" / "scanned" / "regression" / "qr_bill_example.jpg"
+    # return Path("tests/data/pdf/regression/code_and_formula.pdf")
 
 
 @pytest.mark.skipif(

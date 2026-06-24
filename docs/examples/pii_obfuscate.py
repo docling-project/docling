@@ -321,7 +321,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/2206.01062.pdf"
+    input_doc_path = data_folder / "pdf/regression/2206.01062.pdf"
     output_dir = Path("scratch")  # ensure this directory exists before saving
 
     # Choose engine via CLI flag or env var (default: hf)

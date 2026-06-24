@@ -31,7 +31,7 @@ def _parse_args():
     parser.add_argument(
         "--input-file",
         type=str,
-        default="../../../tests/data/pdf/code_and_formula.pdf",
+        default="../../../tests/data/pdf/regression/code_and_formula.pdf",
         help="Path to a PDF file",
     )
     parser.add_argument(

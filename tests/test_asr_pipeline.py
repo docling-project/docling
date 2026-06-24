@@ -33,7 +33,7 @@ pytestmark = pytest.mark.ml_asr
 
 @pytest.fixture
 def test_audio_path():
-    return Path("./tests/data/audio/sample_10s.mp3")
+    return Path("./tests/data/audio/regression/sample_10s.mp3")
 
 
 def get_asr_converter():
@@ -83,7 +83,7 @@ def test_asr_pipeline_conversion(test_audio_path):
 @pytest.fixture
 def silent_audio_path():
     """Fixture to provide the path to a silent audio file."""
-    path = Path("./tests/data/audio/silent_1s.wav")
+    path = Path("./tests/data/audio/regression/silent_1s.wav")
     if not path.exists():
         pytest.skip("Silent audio file for testing not found at " + str(path))
     return path
@@ -113,7 +113,7 @@ def test_has_text_and_determine_status_helpers():
     pipeline = AsrPipeline(pipeline_options)
 
     # Create an empty ConversionResult with proper InputDocument
-    doc_path = Path("./tests/data/audio/sample_10s.mp3")
+    doc_path = Path("./tests/data/audio/regression/sample_10s.mp3")
 
     input_doc = InputDocument(
         path_or_stream=doc_path,
@@ -150,7 +150,7 @@ def test_is_backend_supported_noop_backend():
         pass
 
     # Create a proper NoOpBackend instance
-    doc_path = Path("./tests/data/audio/sample_10s.mp3")
+    doc_path = Path("./tests/data/audio/regression/sample_10s.mp3")
     input_doc = InputDocument(
         path_or_stream=doc_path,
         format=InputFormat.AUDIO,

@@ -24,7 +24,7 @@ from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 
 @pytest.fixture
 def test_doc_path():
-    return Path("./tests/data/pdf/2206.01062.pdf")
+    return Path("./tests/data/pdf/regression/2206.01062.pdf")
 
 
 def _get_backend(pdf_doc):
@@ -39,7 +39,7 @@ def _get_backend(pdf_doc):
 
 
 def test_text_cell_counts():
-    pdf_doc = Path("./tests/data/pdf/redp5110_sampled.pdf")
+    pdf_doc = Path("./tests/data/pdf/regression/redp5110_sampled.pdf")
 
     doc_backend = _get_backend(pdf_doc)
 

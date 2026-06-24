@@ -24,7 +24,7 @@
 #   - `from docling.datamodel.pipeline_options import TesseractOcrOptions, TesseractCliOcrOptions, OcrMacOptions`
 #
 # Input document
-# - Defaults to a single PDF from `tests/data/pdf/` in the repo.
+# - Defaults to a single PDF from `tests/data/pdf/regression/` in the repo.
 # - If you don't have the test data, update `input_doc_path` to a local PDF.
 #
 # Notes
@@ -54,7 +54,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/2206.01062.pdf"
+    input_doc_path = data_folder / "pdf/regression/2206.01062.pdf"
 
     ###########################################################################
 

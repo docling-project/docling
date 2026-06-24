@@ -63,7 +63,7 @@ pytestmark = [
 
 def get_pdf_paths():
     # Define the directory you want to search
-    directory = Path("./tests/data_scanned")
+    directory = Path("./tests/data/scanned/regression")
 
     # List all PDF files in the directory and its subdirectories
     pdf_files = sorted(directory.rglob("ocr_test*.pdf"))

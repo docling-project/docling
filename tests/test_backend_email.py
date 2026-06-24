@@ -10,7 +10,7 @@ from docling.document_converter import DocumentConverter
 
 
 def test_convert_email_backend_from_path():
-    in_path = Path("tests/data/email/eml_simple.eml")
+    in_path = Path("tests/data/email/regression/eml_simple.eml")
     in_doc = InputDocument(
         path_or_stream=in_path,
         format=InputFormat.EMAIL,
@@ -31,7 +31,7 @@ def test_convert_email_backend_from_path():
 
 
 def test_convert_email_backend_from_stream():
-    raw_email = Path("tests/data/email/eml_simple.eml").read_bytes()
+    raw_email = Path("tests/data/email/regression/eml_simple.eml").read_bytes()
     in_doc = InputDocument(
         path_or_stream=BytesIO(raw_email),
         format=InputFormat.EMAIL,
@@ -49,7 +49,7 @@ def test_convert_email_backend_from_stream():
 
 def test_email_document_converter():
     converter = DocumentConverter(allowed_formats=[InputFormat.EMAIL])
-    result = converter.convert(Path("tests/data/email/eml_simple.eml"))
+    result = converter.convert(Path("tests/data/email/regression/eml_simple.eml"))
 
     markdown = result.document.export_to_markdown()
     assert "Simple Email" in markdown
@@ -58,7 +58,7 @@ def test_email_document_converter():
 
 def test_email_with_attachment_excludes_encoded_content():
     """Test that base64-encoded attachment content is not included in the converted document."""
-    in_path = Path("tests/data/email/eml_with_attachment.eml")
+    in_path = Path("tests/data/email/regression/eml_with_attachment.eml")
     in_doc = InputDocument(
         path_or_stream=in_path,
         format=InputFormat.EMAIL,

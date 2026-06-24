@@ -17,8 +17,8 @@ from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import CONFID_PREC, COORD_PREC, verify_document
 
 GENERATE: bool = GEN_TEST_DATA
-DATA_PATH: Path = Path("./tests/data/uspto/")
-GT_PATH: Path = Path("./tests/data/groundtruth/docling_v2/")
+DATA_PATH: Path = Path("./tests/data/uspto/regression/")
+GT_PATH: Path = Path("./tests/data/uspto/groundtruth/")
 
 
 def _generate_groundtruth(doc: DoclingDocument, file_stem: str) -> None:

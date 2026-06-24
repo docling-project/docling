@@ -10,7 +10,7 @@ from docling.datamodel.document import InputDocument
 
 @pytest.fixture
 def test_doc_path():
-    return Path("tests/data/mets_gbs/32044009881525_select.tar.gz")
+    return Path("tests/data/mets_gbs/regression/32044009881525_select.tar.gz")
 
 
 def _get_backend(pdf_doc):

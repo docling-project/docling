@@ -33,7 +33,7 @@ def test_pdf_pipeline_assigns_heading_levels_from_existing_fixture(
     pipeline_options.heading_hierarchy_options = HeadingHierarchyOptions(enabled=True)
 
     input_document = InputDocument(
-        path_or_stream=Path("tests/data/pdf/2203.01017v2.pdf"),
+        path_or_stream=Path("tests/data/pdf/regression/2203.01017v2.pdf"),
         format=InputFormat.PDF,
         backend=DoclingParseDocumentBackend,
         limits=DocumentLimits(page_range=(1, 6)),

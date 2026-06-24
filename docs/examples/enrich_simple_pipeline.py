@@ -17,7 +17,7 @@ IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")
 
 
 def main():
-    input_path = Path("tests/data/docx/word_sample.docx")
+    input_path = Path("tests/data/docx/regression/word_sample.docx")
 
     pipeline_options = ConvertPipelineOptions()
     pipeline_options.do_picture_classification = True

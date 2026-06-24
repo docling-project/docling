@@ -16,7 +16,7 @@ pytestmark = pytest.mark.cross_platform
 
 def get_csv_paths():
     # Define the directory you want to search
-    directory = Path("./tests/data/csv/")
+    directory = Path("./tests/data/csv/regression/")
 
     # List all CSV files in the directory and its subdirectories
     return sorted(directory.rglob("*.csv"))
@@ -24,7 +24,7 @@ def get_csv_paths():
 
 def get_csv_path(name: str):
     # Return the matching CSV file path
-    return Path(f"./tests/data/csv/{name}.csv")
+    return Path(f"./tests/data/csv/regression/{name}.csv")
 
 
 def get_converter():
@@ -40,7 +40,7 @@ def test_e2e_valid_csv_conversions():
     for csv_path in valid_csv_paths:
         print(f"converting {csv_path}")
 
-        gt_path = csv_path.parent.parent / "groundtruth" / "docling_v2" / csv_path.name
+        gt_path = csv_path.parent.parent / "groundtruth" / csv_path.name
         if csv_path.stem in (
             "csv-too-few-columns",
             "csv-too-many-columns",

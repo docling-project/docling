@@ -32,7 +32,7 @@ IS_CI = bool(os.getenv("CI"))
 @pytest.fixture(scope="module")
 def docx_paths() -> list[Path]:
     # Define the directory you want to search
-    directory = Path("./tests/data/docx/")
+    directory = Path("./tests/data/docx/regression/")
 
     # List all docx files in the directory and its subdirectories
     docx_files = sorted(directory.rglob("*.docx"))
@@ -67,7 +67,7 @@ def documents(docx_paths) -> list[tuple[Path, DoclingDocument]]:
         _log.debug(f"converting {docx_path}")
 
         gt_path = (
-            docx_path.parent.parent / "groundtruth" / "docling_v2" / docx_path.name
+            docx_path.parent.parent / "groundtruth" / docx_path.name
         )
 
         conv_result: ConversionResult = converter.convert(docx_path)
@@ -390,7 +390,7 @@ def test_get_outline_level_from_style():
     """
     from docx import Document
 
-    docx_path = Path("./tests/data/docx/word_sample.docx")
+    docx_path = Path("./tests/data/docx/regression/word_sample.docx")
     in_doc = InputDocument(
         path_or_stream=docx_path,
         format=InputFormat.DOCX,
@@ -453,7 +453,7 @@ def test_external_image_references():
 
     See: https://github.com/docling-project/docling/issues/3113
     """
-    docx_path = Path("./tests/data/docx/docx_external_image.docx")
+    docx_path = Path("./tests/data/docx/regression/docx_external_image.docx")
     assert docx_path.exists(), f"Test file not found: {docx_path}"
 
     converter = get_converter()
@@ -519,7 +519,7 @@ def test_inline_sdt_references(tmp_path):
 
 def test_block_sdt_tables_are_extracted():
     """Test tables wrapped in block-level SDT content controls."""
-    docx_path = Path("./tests/data/docx/docx_rich_tables_01.docx")
+    docx_path = Path("./tests/data/docx/regression/docx_rich_tables_01.docx")
 
     conv_result = get_converter().convert(docx_path)
     doc = conv_result.document

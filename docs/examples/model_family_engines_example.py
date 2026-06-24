@@ -152,7 +152,7 @@ def main():
     logging.getLogger("docling").setLevel(logging.INFO)
 
     # Use a sample PDF from the test data (path relative to repo root)
-    input_doc_path = "tests/data/pdf/2206.01062.pdf"
+    input_doc_path = "tests/data/pdf/regression/2206.01062.pdf"
 
     # Run 1: ONNX Runtime Engine (if available in the current environment)
     if is_onnxruntime_available():

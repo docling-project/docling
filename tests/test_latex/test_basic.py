@@ -14,7 +14,7 @@ from ..test_data_gen_flag import GEN_TEST_DATA
 from ..verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
-LATEX_DATA_DIR = Path("./tests/data/latex/")
+LATEX_DATA_DIR = Path("./tests/data/latex/regression/")
 
 
 def test_latex_basic_conversion():
@@ -204,7 +204,7 @@ def test_e2e_latex_conversions(latex_paths):
         else:
             gt_name = f"{latex_path.parent.name}_{latex_path.name}"
 
-        gt_path = LATEX_DATA_DIR.parent / "groundtruth" / "docling_v2" / gt_name
+        gt_path = LATEX_DATA_DIR.parent / "groundtruth" / gt_name
 
         conv_result: ConversionResult = converter.convert(latex_path)
         doc: DoclingDocument = conv_result.document

@@ -16,7 +16,7 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 @pytest.fixture
 def test_doc_path():
-    return Path("./tests/data/pdf_password/2206.01062_pg3.pdf")
+    return Path("./tests/data/pdf_password/regression/2206.01062_pg3.pdf")
 
 
 @dataclass

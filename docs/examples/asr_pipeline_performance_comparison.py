@@ -136,14 +136,14 @@ python asr_pipeline_performance_comparison.py
 python asr_pipeline_performance_comparison.py --audio /path/to/your/audio.mp3
 
 # Use a different audio file from the tests directory
-python asr_pipeline_performance_comparison.py --audio tests/data/audio/another_sample.wav
+python asr_pipeline_performance_comparison.py --audio tests/data/audio/regression/another_sample.wav
         """,
     )
 
     parser.add_argument(
         "--audio",
         type=str,
-        help="Path to audio file for testing (default: tests/data/audio/sample_10s.mp3)",
+        help="Path to audio file for testing (default: tests/data/audio/regression/sample_10s.mp3)",
     )
 
     return parser.parse_args()

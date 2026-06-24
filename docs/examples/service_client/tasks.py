@@ -26,11 +26,11 @@ from docling.service_client import ConversionItem, DoclingServiceClient
 
 load_dotenv()  # DOCLING_SERVICE_URL / DOCLING_SERVICE_API_KEY from env or a .env
 
-SOURCE = Path("tests/data/pdf/2305.03393v1-pg9.pdf")
+SOURCE = Path("tests/data/pdf/regression/2305.03393v1-pg9.pdf")
 MANY = [
-    Path("tests/data/pdf/2305.03393v1-pg9.pdf"),
-    Path("tests/data/pdf/code_and_formula.pdf"),
-    Path("tests/data/pdf/picture_classification.pdf"),
+    Path("tests/data/pdf/regression/2305.03393v1-pg9.pdf"),
+    Path("tests/data/pdf/regression/code_and_formula.pdf"),
+    Path("tests/data/pdf/regression/picture_classification.pdf"),
 ]
 
 
