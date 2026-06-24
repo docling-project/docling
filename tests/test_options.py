@@ -10,7 +10,12 @@ from docling.backend.docling_parse_backend import (
 )
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
-from docling.datamodel.base_models import ConversionStatus, InputFormat, QualityGrade
+from docling.datamodel.base_models import (
+    ConversionStatus,
+    DocumentStream,
+    InputFormat,
+    QualityGrade,
+)
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.image_classification_engine_options import (
     ApiKserveV2ImageClassificationEngineOptions,
@@ -20,7 +25,11 @@ from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     TableFormerMode,
 )
-from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.document_converter import (
+    ConversionError,
+    DocumentConverter,
+    PdfFormatOption,
+)
 from docling.models.factories import get_ocr_factory
 from docling.models.stages.ocr.nemotron_ocr_model import NemotronOcrModel
 from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipeline
@@ -221,6 +230,29 @@ def test_invalid_input_unreadable_source():
     assert result.errors[0].category == FailureCategory.BACKEND_FAILURE
 
 
+def test_invalid_input_unreadable_source_with_exception_surfaces_error_details():
+    from io import BytesIO
+
+    import docling.backend.docling_parse_backend as docling_parse_backend_module
+    from docling.datamodel.base_models import DocumentStream
+
+    converter = DocumentConverter()
+    stream = DocumentStream(name="broken.pdf", stream=BytesIO(b"broken"))
+
+    with (
+        patch.object(
+            docling_parse_backend_module.pdfium,
+            "PdfDocument",
+            side_effect=RuntimeError("bad trailer"),
+        ),
+        pytest.raises(
+            ConversionError,
+            match=r"Conversion failed for: broken\.pdf with status: ConversionStatus\.FAILURE\. Errors: docling-parse could not load document .*: bad trailer",
+        ),
+    ):
+        converter.convert(stream, raises_on_error=True)
+
+
 def test_invalid_input_unreachable_source():
     """A source that cannot be resolved is SOURCE_UNAVAILABLE, no network needed."""
     from docling.datamodel.base_models import FailureCategory
@@ -236,6 +268,19 @@ def test_invalid_input_unreachable_source():
     assert result.status == ConversionStatus.FAILURE
     assert result.errors, "unreachable source must produce a non-empty errors list"
     assert result.errors[0].category == FailureCategory.SOURCE_UNAVAILABLE
+
+
+def test_convert_unsupported_format_with_exception_surfaces_error_details():
+    from io import BytesIO
+
+    with pytest.raises(
+        ConversionError,
+        match=r"Conversion failed for: input\.xyz with status: ConversionStatus\.SKIPPED\. Errors: File format not allowed: input\.xyz",
+    ):
+        DocumentConverter().convert(
+            DocumentStream(name="input.xyz", stream=BytesIO(b"xyz")),
+            raises_on_error=True,
+        )
 
 
 def test_backend_parse_error_is_backend_failure():

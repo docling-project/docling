@@ -176,8 +176,12 @@ class DocumentExtractor:
                 ConversionStatus.SUCCESS,
                 ConversionStatus.PARTIAL_SUCCESS,
             }:
+                error_details = ""
+                if ext_res.errors:
+                    error_messages = [err.error_message for err in ext_res.errors]
+                    error_details = f" Errors: {'; '.join(error_messages)}"
                 raise ConversionError(
-                    f"Extraction failed for: {ext_res.input.file} with status: {ext_res.status}"
+                    f"Extraction failed for: {ext_res.input.file} with status: {ext_res.status}.{error_details}"
                 )
             else:
                 yield ext_res
@@ -247,18 +251,15 @@ class DocumentExtractor:
             )
         else:
             error_message = f"File format not allowed: {in_doc.file}"
-            if raises_on_error:
-                raise ConversionError(error_message)
-            else:
-                error_item = ErrorItem(
-                    component_type=DoclingComponentType.USER_INPUT,
-                    module_name="",
-                    error_message=error_message,
-                    category=FailureCategory.POLICY,
-                )
-                return ExtractionResult(
-                    input=in_doc, status=ConversionStatus.SKIPPED, errors=[error_item]
-                )
+            error_item = ErrorItem(
+                component_type=DoclingComponentType.USER_INPUT,
+                module_name="",
+                error_message=error_message,
+                category=FailureCategory.POLICY,
+            )
+            return ExtractionResult(
+                input=in_doc, status=ConversionStatus.SKIPPED, errors=[error_item]
+            )
 
     def _execute_extraction_pipeline(
         self,
@@ -267,14 +268,11 @@ class DocumentExtractor:
         template: ExtractionTemplateType,
     ) -> ExtractionResult:
         if not in_doc.valid:
-            if raises_on_error:
-                raise ConversionError(f"Input document {in_doc.file} is not valid.")
-            else:
-                return ExtractionResult(
-                    input=in_doc,
-                    status=ConversionStatus.FAILURE,
-                    errors=build_invalid_input_errors(in_doc),
-                )
+            return ExtractionResult(
+                input=in_doc,
+                status=ConversionStatus.FAILURE,
+                errors=build_invalid_input_errors(in_doc),
+            )
 
         pipeline = self._get_pipeline(in_doc.format)
         if pipeline is None:

@@ -9,7 +9,7 @@ import pytest
 from pydantic import BaseModel, Field
 
 from docling.datamodel.base_models import InputFormat
-from docling.document_converter import DocumentConverter
+from docling.document_converter import ConversionError, DocumentConverter
 from docling.document_extractor import DocumentExtractor
 
 IS_CI = bool(os.getenv("CI"))
@@ -122,6 +122,17 @@ def test_extraction_format_not_allowed_is_policy() -> None:
     assert result.status == ConversionStatus.SKIPPED
     assert result.errors, "format-not-allowed must produce a non-empty errors list"
     assert result.errors[0].category == FailureCategory.POLICY
+
+
+def test_extraction_format_not_allowed_with_exception_surfaces_error_details() -> None:
+    pdf_only = DocumentExtractor(allowed_formats=[InputFormat.PDF])
+    img = Path(__file__).parent / "data_scanned" / "qr_bill_example.jpg"
+
+    with pytest.raises(
+        ConversionError,
+        match=r"Extraction failed for: .*qr_bill_example\.jpg with status: ConversionStatus\.SKIPPED\. Errors: File format not allowed: .*qr_bill_example\.jpg",
+    ):
+        pdf_only.extract(img, template='{"bill_no": "string"}', raises_on_error=True)
 
 
 def test_threaded_model_stage_failure_records_inference_category() -> None:

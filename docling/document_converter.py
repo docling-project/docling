@@ -671,18 +671,15 @@ class DocumentConverter:
             conv_res = self._execute_pipeline(in_doc, raises_on_error=raises_on_error)
         else:
             error_message = f"File format not allowed: {in_doc.file}"
-            if raises_on_error:
-                raise ConversionError(error_message)
-            else:
-                error_item = ErrorItem(
-                    component_type=DoclingComponentType.USER_INPUT,
-                    module_name="",
-                    error_message=error_message,
-                    category=FailureCategory.POLICY,
-                )
-                conv_res = ConversionResult(
-                    input=in_doc, status=ConversionStatus.SKIPPED, errors=[error_item]
-                )
+            error_item = ErrorItem(
+                component_type=DoclingComponentType.USER_INPUT,
+                module_name="",
+                error_message=error_message,
+                category=FailureCategory.POLICY,
+            )
+            conv_res = ConversionResult(
+                input=in_doc, status=ConversionStatus.SKIPPED, errors=[error_item]
+            )
 
         return conv_res
 
@@ -707,14 +704,11 @@ class DocumentConverter:
                         status=ConversionStatus.FAILURE,
                     )
         else:
-            if raises_on_error:
-                raise ConversionError(f"Input document {in_doc.file} is not valid.")
-            else:
-                _log.warning("Input document %s is not valid.", in_doc.file)
-                conv_res = ConversionResult(
-                    input=in_doc,
-                    status=ConversionStatus.FAILURE,
-                    errors=build_invalid_input_errors(in_doc),
-                )
+            _log.warning("Input document %s is not valid.", in_doc.file)
+            conv_res = ConversionResult(
+                input=in_doc,
+                status=ConversionStatus.FAILURE,
+                errors=build_invalid_input_errors(in_doc),
+            )
 
         return conv_res

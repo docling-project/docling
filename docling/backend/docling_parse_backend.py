@@ -284,6 +284,11 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
         except RuntimeError as e:
             # pypdfium2 (PdfiumError) and docling-parse both signal unreadable
             # bytes by raising RuntimeError; tag it as a load failure.
+            detail = str(e).strip()
+            if detail:
+                raise DocumentLoadError(
+                    f"docling-parse could not load document {self.document_hash}: {detail}"
+                ) from e
             raise DocumentLoadError(
                 f"docling-parse could not load document {self.document_hash}."
             ) from e

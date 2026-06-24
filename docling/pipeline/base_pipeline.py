@@ -81,6 +81,10 @@ class BasePipeline(ABC):
                 # From this stage, all operations should rely only on conv_res.output
                 conv_res = self._enrich_document(conv_res)
                 conv_res.status = self._determine_status(conv_res)
+                # A document that completed but recorded errors is not a clean
+                # success: never report SUCCESS while conv_res.errors is non-empty.
+                if conv_res.status == ConversionStatus.SUCCESS and conv_res.errors:
+                    conv_res.status = ConversionStatus.PARTIAL_SUCCESS
         except Exception as e:
             conv_res.status = ConversionStatus.FAILURE
             if not raises_on_error:
