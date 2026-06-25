@@ -143,6 +143,10 @@ class PromptManager:
                         default_config["max_context_tokens"] = api_config["max_context_tokens"]
                     if "completion_reserved_tokens" in api_config:
                         default_config["completion_reserved_tokens"] = api_config["completion_reserved_tokens"]
+                    if "thinking" in api_config:
+                        default_config["thinking"] = api_config["thinking"]
+                    if "thinking_dialect" in api_config:
+                        default_config["thinking_dialect"] = api_config["thinking_dialect"]
 
                 return default_config
             except KeyError:
@@ -176,6 +180,10 @@ class PromptManager:
                     config["max_context_tokens"] = api_config["max_context_tokens"]
                 if "completion_reserved_tokens" in api_config:
                     config["completion_reserved_tokens"] = api_config["completion_reserved_tokens"]
+                if "thinking" in api_config:
+                    config["thinking"] = api_config["thinking"]
+                if "thinking_dialect" in api_config:
+                    config["thinking_dialect"] = api_config["thinking_dialect"]
 
             return config
         except KeyError:
