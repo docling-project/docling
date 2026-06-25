@@ -1,3 +1,22 @@
+"""Configuration models for docling's automatic speech recognition (ASR) backends.
+
+This module defines the option classes that configure how audio is transcribed.
+``InlineAsrOptions`` is the shared base for locally-run models, specialized by:
+
+- ``InlineAsrNativeWhisperOptions``: OpenAI's native ``whisper`` (PyTorch), the
+  default backend, supported on CPU and CUDA.
+- ``InlineAsrMlxWhisperOptions``: ``mlx-whisper``, optimized for Apple Silicon.
+- ``InlineAsrWhisperS2TOptions``: WhisperS2T (CTranslate2), an optional,
+  experimental high-throughput backend installed via the ``format-audio`` extra.
+
+The concrete model presets, the ``AsrModelType`` enum, and the hardware-based
+auto-selection live in ``docling.datamodel.asr_model_specs``. The auto-selecting
+``WHISPER_*`` presets (the ASR pipeline default) use MLX Whisper on Apple Silicon
+when available and native Whisper otherwise. WhisperS2T is never auto-selected;
+use an explicit ``WHISPER_*_S2T`` preset to opt in (the ``*_MLX`` and ``*_NATIVE``
+presets likewise force those backends).
+"""
+
 from enum import Enum
 from typing import Annotated, Any, Literal, Optional, Union
 
