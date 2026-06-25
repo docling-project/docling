@@ -437,7 +437,7 @@ class _WhisperS2TModel:
             except ImportError:
                 raise ImportError(
                     "whisper_s2t is not installed. Please install it via "
-                    "`pip install 'whisper-s2t-reborn[pyav]>=1.6.2'`."
+                    "`pip install 'whisper-s2t-reborn[pyav]>=1.6.3'`."
                 )
 
             self.whisper_s2t = whisper_s2t
