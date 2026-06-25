@@ -89,3 +89,34 @@ def test_cross_type_overlaps_keeps_small_picture_inside_table() -> None:
 
     ids = {c.id for c in result}
     assert ids == {1, 2}
+
+
+def test_cross_type_overlaps_removes_kvregion_coinciding_with_table() -> None:
+    # A KEY_VALUE_REGION that nearly covers the same area as a TABLE should be
+    # dropped in favour of the TABLE. Previously this check was unreachable because
+    # TABLE is in WRAPPER_TYPES and therefore never appears in regular_clusters.
+    processor = object.__new__(LayoutPostprocessor)
+
+    table = _cluster(1, DocItemLabel.TABLE, (10, 10, 200, 150), confidence=0.85)
+    kvr = _cluster(
+        2, DocItemLabel.KEY_VALUE_REGION, (10, 10, 200, 150), confidence=0.80
+    )
+
+    result = processor._handle_cross_type_overlaps([table, kvr])
+
+    labels = {c.label for c in result}
+    assert DocItemLabel.TABLE in labels
+    assert DocItemLabel.KEY_VALUE_REGION not in labels
+
+
+def test_cross_type_overlaps_keeps_kvregion_not_overlapping_table() -> None:
+    # A KEY_VALUE_REGION on a different part of the page should not be affected.
+    processor = object.__new__(LayoutPostprocessor)
+
+    table = _cluster(1, DocItemLabel.TABLE, (10, 10, 200, 150))
+    kvr = _cluster(2, DocItemLabel.KEY_VALUE_REGION, (10, 300, 200, 450))
+
+    result = processor._handle_cross_type_overlaps([table, kvr])
+
+    ids = {c.id for c in result}
+    assert ids == {1, 2}

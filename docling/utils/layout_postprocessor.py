@@ -395,30 +395,29 @@ class LayoutPostprocessor:
         """
         clusters_to_remove = set()
 
+        # TABLE is part of WRAPPER_TYPES and therefore always ends up in special_clusters,
+        # never in regular_clusters. Build the list from special_clusters so the check
+        # below can actually find TABLE proposals to compare against.
+        tables = [c for c in special_clusters if c.label == DocItemLabel.TABLE]
+
         for wrapper in special_clusters:
             if wrapper.label not in self.WRAPPER_TYPES:
-                continue  # only treat KEY_VALUE_REGION for now.
+                continue
+            if wrapper.label == DocItemLabel.TABLE:
+                continue  # TABLE cannot be a candidate for removal here
 
-            for regular in self.regular_clusters:
-                if regular.label == DocItemLabel.TABLE:
-                    # Calculate overlap
-                    overlap_ratio = wrapper.bbox.intersection_over_self(regular.bbox)
-
-                    conf_diff = wrapper.confidence - regular.confidence
-
-                    # If wrapper is mostly overlapping with a TABLE, remove the wrapper
-                    if (
-                        overlap_ratio > 0.9 and conf_diff < 0.1
-                    ):  # self.OVERLAP_PARAMS["wrapper"]["conf_threshold"]):  # 80% overlap threshold
-                        clusters_to_remove.add(wrapper.id)
-                        break
+            for table in tables:
+                overlap_ratio = wrapper.bbox.intersection_over_self(table.bbox)
+                conf_diff = wrapper.confidence - table.confidence
+                if overlap_ratio > 0.9 and conf_diff < 0.1:
+                    clusters_to_remove.add(wrapper.id)
+                    break
 
         # The picture/table buckets are de-overlapped independently elsewhere, so a
         # region the layout model proposes as BOTH a PICTURE and a TABLE survives twice.
         # When a PICTURE nearly coincides with a TABLE (high IoU), keep the structured
         # TABLE and drop the PICTURE. IoU (not containment) is used so a genuine small
         # figure fully inside a large table region is not removed.
-        tables = [c for c in special_clusters if c.label == DocItemLabel.TABLE]
         for picture in special_clusters:
             if picture.label != DocItemLabel.PICTURE:
                 continue
