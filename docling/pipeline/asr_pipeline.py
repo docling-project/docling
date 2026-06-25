@@ -479,7 +479,7 @@ class _WhisperS2TModel:
                 "device": self.device,
                 "device_index": self.device_index,
                 "compute_type": compute_type,
-                "cpu_threads": asr_options.cpu_threads,
+                "cpu_threads": asr_options.num_threads,
                 "num_workers": asr_options.num_workers,
                 "asr_options": asr_opts,
             }

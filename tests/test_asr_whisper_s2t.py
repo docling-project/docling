@@ -38,7 +38,7 @@ class TestWhisperS2TOptions:
         assert options.batch_size == 8
         assert options.beam_size == 1
         assert options.word_timestamps is False
-        assert options.cpu_threads == 4
+        assert options.num_threads == AcceleratorOptions().num_threads
         assert options.num_workers == 1
         assert options.initial_prompt is None
 
@@ -63,7 +63,7 @@ class TestWhisperS2TOptions:
             batch_size=4,
             beam_size=5,
             word_timestamps=True,
-            cpu_threads=8,
+            num_threads=8,
             num_workers=2,
             initial_prompt="Meeting transcription:",
         )
@@ -75,7 +75,7 @@ class TestWhisperS2TOptions:
         assert options.batch_size == 4
         assert options.beam_size == 5
         assert options.word_timestamps is True
-        assert options.cpu_threads == 8
+        assert options.num_threads == 8
         assert options.num_workers == 2
         assert options.initial_prompt == "Meeting transcription:"
 

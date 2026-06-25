@@ -4,7 +4,7 @@ from typing import Annotated, Any, Literal, Union
 from pydantic import AnyUrl, BaseModel, Field, model_validator
 from typing_extensions import deprecated
 
-from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.pipeline_options_vlm_model import (
     # InferenceFramework,
     TransformersModelType,
@@ -357,14 +357,14 @@ class InlineAsrWhisperS2TOptions(InlineAsrOptions):
             )
         ),
     ] = False
-    cpu_threads: Annotated[
+    num_threads: Annotated[
         int,
         Field(
             description=(
                 "Number of CPU threads for inference. Only used when device is CPU."
             )
         ),
-    ] = 4
+    ] = AcceleratorOptions().num_threads
     num_workers: Annotated[
         int,
         Field(description=("Number of parallel workers for CTranslate2.")),
