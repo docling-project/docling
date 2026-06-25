@@ -43,11 +43,14 @@ layout:
     page_batch_size: 128
     max_completion_tokens: 16384
     model: "dots-mocr"          # 서빙 모델명
-    timeout: 3600               # VLM 요청 타임아웃(초)
+    timeout: 1200               # VLM 요청 타임아웃(초)
     retry_count: 2              # 비정상 VLM 응답 재시도 횟수
     temperature: 0.1            # 생성 temperature
     top_p: 0.9                  # 생성 top_p (0<top_p<=1)
     repetition_penalty: 1.15    # >1.0, 토큰 반복(degeneration) 억제
+    length_fallback_enabled: true  # 폭주(finish_reason=length)/타임아웃 감지 시 layout_only 보정 on/off
+    fallback_dpi: 200           # 보정 시 페이지 재렌더 DPI (dots.ocr 권장 200)
+    table_fallback_enabled: true   # dotsocr가 표 HTML을 못 준 빈 테이블을 TableFormer로 보강 (CPU ~1.7s/표)
 
 
 # ── PDF 파이프라인 ─────────────────────────────────────────────────────────────
