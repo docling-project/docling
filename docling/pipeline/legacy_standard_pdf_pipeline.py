@@ -23,6 +23,9 @@ from docling.models.stages.code_formula.code_formula_model import (
     CodeFormulaModel,
     CodeFormulaModelOptions,
 )
+from docling.models.stages.header_footer.header_footer_model import (
+    HeaderFooterModel,
+)
 from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
 )
@@ -58,6 +61,9 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
                 or self.pipeline_options.generate_table_images
             )
 
+        self.header_footer_model = HeaderFooterModel(
+            options=self.pipeline_options.header_footer_options
+        )
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
         self.heading_hierarchy_model = HeadingHierarchyModel(
             options=self.pipeline_options.heading_hierarchy_options
@@ -188,6 +194,7 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
             ):
                 conv_res._pdf_outline = conv_res.input._backend.get_document_outline()
 
+            conv_res = self.header_footer_model(conv_res)
             conv_res.document = self.reading_order_model(conv_res)
             conv_res.document = self.heading_hierarchy_model(conv_res)
 
