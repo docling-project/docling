@@ -946,9 +946,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return None
 
     @staticmethod
-    def _get_sheet_content_layer(sheet: Worksheet) -> Optional[ContentLayer]:
+    def _get_sheet_content_layer(sheet: Worksheet) -> ContentLayer:
         return (
-            None
+            ContentLayer.SHEET
             if sheet.sheet_state == Worksheet.SHEETSTATE_VISIBLE
             else ContentLayer.INVISIBLE
         )

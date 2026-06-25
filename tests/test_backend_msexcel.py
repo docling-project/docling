@@ -23,6 +23,7 @@ from .verify_utils import verify_document, verify_export
 
 _log = logging.getLogger(__name__)
 
+
 GENERATE = GEN_TEST_DATA
 
 
@@ -142,6 +143,40 @@ def test_comment_cell_coordinates(documents) -> None:
     assert any("G12" in name for name in comment_names), (
         "Expected threaded comment for cell G12"
     )
+
+
+def test_sheet_content_layer_and_html_export(documents) -> None:
+    """Sheet groups carry ContentLayer.SHEET and HTML export wraps them in <section>."""
+    from docling_core.transforms.serializer.html import HTMLDocSerializer
+    from docling_core.types.doc import GroupItem
+
+    doc = next(item for path, item in documents if path.stem == "xlsx_01")
+
+    sheet_groups = [
+        g
+        for g in doc.groups
+        if isinstance(g, GroupItem) and g.label == GroupLabel.SHEET
+    ]
+    assert len(sheet_groups) > 0, "Expected at least one sheet group"
+    allowed_layers = {ContentLayer.SHEET, ContentLayer.INVISIBLE}
+    for g in sheet_groups:
+        assert g.content_layer in allowed_layers, (
+            f"Sheet {g.name!r}: content_layer must be SHEET or INVISIBLE, got {g.content_layer!r}"
+        )
+    visible_sheets = [g for g in sheet_groups if g.content_layer == ContentLayer.SHEET]
+    assert len(visible_sheets) > 0, (
+        "Expected at least one visible sheet (ContentLayer.SHEET)"
+    )
+
+    html = HTMLDocSerializer(doc=doc).serialize().text
+    assert '<section data-page-name="Sheet1">' in html, "Missing Sheet1 section in HTML"
+    assert '<section data-page-name="Sheet2">' in html, "Missing Sheet2 section in HTML"
+    assert '<section data-page-name="Sheet3">' in html, "Missing Sheet3 section in HTML"
+
+    md = MsExcelMarkdownDocSerializer(doc=doc).serialize().text
+    assert "## Sheet1" in md, "Missing Sheet1 heading in Markdown"
+    assert "## Sheet2" in md, "Missing Sheet2 heading in Markdown"
+    assert "## Sheet3" in md, "Missing Sheet3 heading in Markdown"
 
 
 def test_e2e_excel_conversions(documents) -> None:
