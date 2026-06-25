@@ -365,10 +365,6 @@ class InlineAsrWhisperS2TOptions(InlineAsrOptions):
             )
         ),
     ] = AcceleratorOptions().num_threads
-    num_workers: Annotated[
-        int,
-        Field(description=("Number of parallel workers for CTranslate2.")),
-    ] = 1
     initial_prompt: Annotated[
         str | None,
         Field(

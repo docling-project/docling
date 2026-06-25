@@ -39,7 +39,6 @@ class TestWhisperS2TOptions:
         assert options.beam_size == 1
         assert options.word_timestamps is False
         assert options.num_threads == AcceleratorOptions().num_threads
-        assert options.num_workers == 1
         assert options.initial_prompt is None
 
     def test_whisper_s2t_supported_devices(self):
@@ -64,7 +63,6 @@ class TestWhisperS2TOptions:
             beam_size=5,
             word_timestamps=True,
             num_threads=8,
-            num_workers=2,
             initial_prompt="Meeting transcription:",
         )
 
@@ -76,7 +74,6 @@ class TestWhisperS2TOptions:
         assert options.beam_size == 5
         assert options.word_timestamps is True
         assert options.num_threads == 8
-        assert options.num_workers == 2
         assert options.initial_prompt == "Meeting transcription:"
 
 
