@@ -12,6 +12,7 @@ from docling_core.types import DoclingDocument
 from .base_enricher import BaseEnricher
 from .prompt_files import read_prompt_file
 from .prompt_template import PromptTemplate
+from .thinking import resolve_thinking_kwargs, strip_reasoning
 
 _log = logging.getLogger(__name__)
 
@@ -51,6 +52,8 @@ class CustomFieldsEnricher(BaseEnricher):
         variables: dict | None = None,
         template: dict | None = None,
         template_mode: str = "strict",
+        thinking: str | None = "off",
+        thinking_dialect: str = "standard",
     ):
         cfg = self._load_config(config_file, resource_path)
         prompt_cfg = cfg.get("prompt", {}) if isinstance(cfg.get("prompt"), dict) else {}
@@ -86,6 +89,13 @@ class CustomFieldsEnricher(BaseEnricher):
         self._parser_cfg = parser or cfg.get("parser", {}) or {}
         self._parser_callable = self._build_parser_callable()
         self._extract_pattern: str = self._parser_cfg.get("extract_pattern", "")
+
+        # thinking(추론) 모드. 기본 "off"(차단 토큰 전송). "auto"면 미전송(모델 자동 판단).
+        _thinking = thinking if thinking is not None else cfg.get("thinking")
+        self._thinking = str(_thinking or "off").strip().lower()
+        self._thinking_dialect = str(
+            thinking_dialect or cfg.get("thinking_dialect") or "standard"
+        ).strip().lower()
 
         cfg_pages = cfg.get("pages")
         self._pages: list[int] | None = pages or (cfg_pages if isinstance(cfg_pages, list) and cfg_pages else None)
@@ -271,11 +281,16 @@ class CustomFieldsEnricher(BaseEnricher):
             "temperature": self._temperature,
             "messages": messages,
         }
+        ctk = resolve_thinking_kwargs(self._thinking, self._thinking_dialect)
+        if ctk:
+            payload["chat_template_kwargs"] = ctk
         async with httpx.AsyncClient(timeout=self._timeout) as client:
             resp = await client.post(self._url, json=payload, headers=self._headers)
             resp.raise_for_status()
             data = resp.json()
-            return self._normalize_message_content(data["choices"][0]["message"]["content"])
+            message = data["choices"][0]["message"]
+            content = strip_reasoning(message)
+            return self._normalize_message_content(content)
 
     def _parse_with_custom_parser(self, llm_output: str, document: DoclingDocument, **kwargs) -> dict:
         try:

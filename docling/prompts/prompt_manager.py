@@ -7,6 +7,22 @@ from typing import Dict, Any, List, Optional
 
 _log = logging.getLogger(__name__)
 
+# thinking(추론) 토글 공유 헬퍼. enrichment 패키지의 단일 소스를 재사용한다.
+# 일부 로컬 테스트 환경에서는 facade import 가 깨질 수 있어(no-op 폴백) 레거시 경로를 보호한다.
+try:
+    from genon.preprocessor.facade.enrichment.thinking import (
+        resolve_thinking_kwargs,
+        strip_reasoning,
+    )
+except Exception:  # pragma: no cover - import 환경에 따른 폴백
+    def resolve_thinking_kwargs(mode, dialect="standard"):
+        return None
+
+    def strip_reasoning(message):
+        if isinstance(message, dict):
+            return (message.get("content") or "").strip()
+        return (message or "").strip()
+
 
 class LLMApiError(Exception):
     """OpenAI-compatible provider call error with raw response payload."""
@@ -262,6 +278,10 @@ class PromptManager:
             model_config["max_context_tokens"] = config["max_context_tokens"]
         if "completion_reserved_tokens" in config:
             model_config["completion_reserved_tokens"] = config["completion_reserved_tokens"]
+        if "thinking" in config:
+            model_config["thinking"] = config["thinking"]
+        if "thinking_dialect" in config:
+            model_config["thinking_dialect"] = config["thinking_dialect"]
 
         return model_config
 
@@ -445,7 +465,14 @@ class PromptManager:
                 payload["max_tokens"] = model_config["max_tokens"]
             if "repetition_penalty" in model_config:
                 payload["repetition_penalty"] = model_config["repetition_penalty"]
-            # payload["reasoning"] = {"enabled": False}  # 모델이 프롬프트를 완전히 이해하지 못하는 경우를 대비해, reasoning을 강제로 활성화하여 최대한 답변을 생성하도록 유도
+            # thinking(추론) 모드: 모델 chat template 에 맞는 chat_template_kwargs 주입.
+            # 미설정(None)이면 아무것도 보내지 않아 기존 동작을 보존한다.
+            ctk = resolve_thinking_kwargs(
+                model_config.get("thinking"),
+                model_config.get("thinking_dialect", "standard"),
+            )
+            if ctk:
+                payload["chat_template_kwargs"] = ctk
 
             if not self._run_prompt_precheck(
                 messages=messages,
@@ -480,9 +507,9 @@ class PromptManager:
             # 응답 파싱
             response_data = response.json()
 
-            # 응답에서 텍스트 추출
+            # 응답에서 텍스트 추출 (thinking 출력 분리/제거 후 본문만 반환)
             if "choices" in response_data and len(response_data["choices"]) > 0:
-                return response_data["choices"][0]["message"]["content"]
+                return strip_reasoning(response_data["choices"][0]["message"])
             else:
                 _log.error(f"예상하지 못한 응답 형식 ({category}): {response_data}")
                 return None

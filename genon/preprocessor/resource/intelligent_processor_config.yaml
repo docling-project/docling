@@ -84,6 +84,10 @@ enrichment:
         completion_reserved_tokens: 12000
       # 반복(degeneration) 억제. 미설정 시 미전송.
       repetition_penalty: 1.1
+      # thinking(추론) 모드. 미설정 시 기본 off(차단 토큰 전송). 모델 자동 판단은 thinking: auto.
+      # thinking: off | on | auto,  thinking_dialect: standard(enable_thinking) | hcx(force/skip_reasoning)
+      # thinking: off
+      # thinking_dialect: standard
       system_prompt_file: prompt_toc_default_system.md
       user_prompt_file: prompt_toc_default_user.md
       # 긴 문서 분할 TOC 추출(carry-over refine). enabled=true 면 길이와 무관하게 항상 분할 수행.
@@ -107,6 +111,10 @@ enrichment:
       output_fields: [created_date, authors]
       parser:
         type: json   # json(default) | python
+      # thinking(추론) 모드. 미설정 시 기본 off(차단 토큰 전송). 모델 자동 판단은 thinking: auto.
+      # thinking: off | on | auto,  thinking_dialect: standard(enable_thinking) | hcx(force/skip_reasoning)
+      # thinking: off
+      # thinking_dialect: standard
       system_prompt_file: prompt_metadata_default_system.md
       user_prompt_file: prompt_metadata_default_user.md
       precheck:

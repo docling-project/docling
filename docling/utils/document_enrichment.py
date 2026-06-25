@@ -144,6 +144,9 @@ class DocumentEnrichmentUtils:
                 toc_config["completion_reserved_tokens"] = (
                     self.enrichment_options.toc_completion_reserved_tokens
                 )
+            if self.enrichment_options.toc_thinking is not None:
+                toc_config["thinking"] = self.enrichment_options.toc_thinking
+                toc_config["thinking_dialect"] = self.enrichment_options.toc_thinking_dialect
 
             custom_api_configs["toc_extraction"] = toc_config
 
@@ -183,6 +186,9 @@ class DocumentEnrichmentUtils:
                 metadata_config["completion_reserved_tokens"] = (
                     self.enrichment_options.metadata_completion_reserved_tokens
                 )
+            if self.enrichment_options.metadata_thinking is not None:
+                metadata_config["thinking"] = self.enrichment_options.metadata_thinking
+                metadata_config["thinking_dialect"] = self.enrichment_options.metadata_thinking_dialect
 
             custom_api_configs["metadata_extraction"] = metadata_config
             custom_api_configs["document_checking"] = metadata_config # 문서 품질 검사도 같은 설정 사용

@@ -155,7 +155,8 @@ _DEFAULT_TOKENIZER_LOCAL_PATH = "/models/doc_parser_models/sentence-transformers
 _DEFAULT_TOKENIZER_ID = "sentence-transformers/all-MiniLM-L6-v2"
 
 # --- OCR (Paddle) ---
-OCR_ENDPOINT = "http://doc-parser-ocr-service:8080/ocr"
+# OCR_ENDPOINT = "http://doc-parser-ocr-service:8080/ocr" # bok
+OCR_ENDPOINT = "http://192.168.73.172:48080/ocr" # genon
 OCR_LANG = ["korean"]
 OCR_TEXT_SCORE = 0.3
 OCR_TABLE_CELL_TIMEOUT = 60          # 글리프 깨진 테이블 셀 재OCR HTTP timeout(초)
@@ -172,7 +173,8 @@ PDF_DO_CELL_MATCHING = True
 
 # --- Layout (genos dots-mocr VLM) ---
 LAYOUT_MODEL_TYPE = "genos_layout"        # "genos_layout" | "docling_layout"
-LAYOUT_ENDPOINT = "http://192.168.75.174:26001/v1/chat/completions"
+# LAYOUT_ENDPOINT = "http://192.168.75.174:26001/v1/chat/completions" # bok
+LAYOUT_ENDPOINT = "http://192.168.75.174:26001/v1/chat/completions" # genon
 LAYOUT_API_KEY = ""                       # k8s 내부 통신 시 불필요
 LAYOUT_MODEL = "dots-mocr"
 LAYOUT_PAGE_BATCH_SIZE = 128
@@ -192,17 +194,40 @@ CHUNK_TOKENIZER_TYPE = "char"        # "char"(문자 수) | "huggingface"(HF 토
 TOC_ENABLE = False                   # do_toc_enrichment
 METADATA_ENABLE = True               # extract_metadata
 ENRICH_API_PROVIDER = "custom"
-TOC_API_BASE_URL = "http://llmops-gateway-api-service:8080/serving/49/145/v1/chat/completions"        # oss-20b
-METADATA_API_BASE_URL = "http://llmops-gateway-api-service:8080/serving/49/145/v1/chat/completions"   # oss-20b
-TOC_API_KEY = "9e32423947fd4a5da07a28962fe88487"
-METADATA_API_KEY = "9e32423947fd4a5da07a28962fe88487"
-# (참고) 대체 엔드포인트: mistral = serving/1/118
+
+# bok
+# TOC_API_BASE_URL = "http://llmops-gateway-api-service:8080/serving/1/199/v1/chat/completions"        # mistral
+# METADATA_API_BASE_URL = "http://llmops-gateway-api-service:8080/serving/1/199/v1/chat/completions"   # mistral
+# TOC_API_KEY = "c941930d07bc4dbd9cbc2745ee906967"
+# METADATA_API_KEY = "c941930d07bc4dbd9cbc2745ee906967"
+# TOC_MODEL = "model"
+# METADATA_MODEL = "model"
+
+# genon qwen3.5
+TOC_API_BASE_URL = "https://genos.genon.ai/api/gateway/rep/serving/752/v1/chat/completions"
+METADATA_API_BASE_URL = "https://genos.genon.ai/api/gateway/rep/serving/752/v1/chat/completions"
+TOC_API_KEY = "d1a9e0acab6243019008a96cd8af868e"
+METADATA_API_KEY = "d1a9e0acab6243019008a96cd8af868e"
 TOC_MODEL = "model"
 METADATA_MODEL = "model"
+
+# genon hcx-seed test
+# TOC_API_BASE_URL = "http://localhost:26002/v1/chat/completions"
+# METADATA_API_BASE_URL = "http://localhost:26002/v1/chat/completions"
+# TOC_API_KEY = ""
+# METADATA_API_KEY = ""
+# TOC_MODEL = "hcx-seed"
+# METADATA_MODEL = "hcx-seed"
+
 TOC_TEMPERATURE = 0.0
 TOC_TOP_P = 0.00001
 TOC_SEED = 33
 TOC_MAX_TOKENS = 1000
+# thinking(추론) 모드. 기본 off(차단 토큰 전송). HyperCLOVAX(hcx) 서빙 시 dialect를 "hcx"로.
+TOC_THINKING = "off"                 # off(기본,차단) | on | auto(미전송, 모델 자동 판단)
+TOC_THINKING_DIALECT = "hcx"    # standard(enable_thinking) | hcx(force/skip_reasoning)
+METADATA_THINKING = "off"
+METADATA_THINKING_DIALECT = "hcx"
 # ===================================================================
 
 
@@ -1246,7 +1271,11 @@ class DocumentProcessor:
             toc_temperature=TOC_TEMPERATURE,
             toc_top_p=TOC_TOP_P,
             toc_seed=TOC_SEED,
-            toc_max_tokens=TOC_MAX_TOKENS
+            toc_max_tokens=TOC_MAX_TOKENS,
+            toc_thinking=TOC_THINKING,
+            toc_thinking_dialect=TOC_THINKING_DIALECT,
+            metadata_thinking=METADATA_THINKING,
+            metadata_thinking_dialect=METADATA_THINKING_DIALECT,
         )
 
     def _create_converters(self):

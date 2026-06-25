@@ -156,16 +156,24 @@ CHUNK_TOKENIZER_TYPE = "char"        # "char"(문자 수) | "huggingface"(HF 토
 TOC_ENABLE = False                   # do_toc_enrichment
 METADATA_ENABLE = True               # extract_metadata
 ENRICH_API_PROVIDER = "custom"
+
+# bok
 TOC_API_BASE_URL = "http://llmops-gateway-api-service:8080/serving/1/118/v1/chat/completions"        # internal
 METADATA_API_BASE_URL = "http://llmops-gateway-api-service:8080/serving/1/118/v1/chat/completions"   # internal
 TOC_API_KEY = "9e32423947fd4a5da07a28962fe88487"
 METADATA_API_KEY = "9e32423947fd4a5da07a28962fe88487"
 TOC_MODEL = "model"
 METADATA_MODEL = "model"
+
 TOC_TEMPERATURE = 0.0
 TOC_TOP_P = 0.00001
 TOC_SEED = 33
 TOC_MAX_TOKENS = 1000
+# thinking(추론) 모드. 기본 off(차단 토큰 전송). HyperCLOVAX(hcx) 서빙 시 dialect를 "hcx"로.
+TOC_THINKING = "off"                 # off(기본,차단) | on | auto(미전송, 모델 자동 판단)
+TOC_THINKING_DIALECT = "hcx"    # standard(enable_thinking) | hcx(force/skip_reasoning)
+METADATA_THINKING = "off"
+METADATA_THINKING_DIALECT = "hcx"
 # ===================================================================
 
 
@@ -1247,7 +1255,11 @@ class DocumentProcessor:
             toc_temperature=TOC_TEMPERATURE,
             toc_top_p=TOC_TOP_P,
             toc_seed=TOC_SEED,
-            toc_max_tokens=TOC_MAX_TOKENS
+            toc_max_tokens=TOC_MAX_TOKENS,
+            toc_thinking=TOC_THINKING,
+            toc_thinking_dialect=TOC_THINKING_DIALECT,
+            metadata_thinking=METADATA_THINKING,
+            metadata_thinking_dialect=METADATA_THINKING_DIALECT,
         )
 
         # 새로운 enriched result 받기

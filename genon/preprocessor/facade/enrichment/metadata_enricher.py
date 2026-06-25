@@ -10,6 +10,7 @@ from docling_core.types import DoclingDocument
 
 from .base_enricher import BaseEnricher
 from .prompt_template import PromptTemplate
+from .thinking import resolve_thinking_kwargs, strip_reasoning
 
 _log = logging.getLogger(__name__)
 
@@ -41,12 +42,17 @@ class MetadataEnricher(BaseEnricher):
         config_dir: Optional[Path] = None,
         variables: Optional[dict] = None,
         template_mode: str = "strict",
+        thinking: Optional[str] = "off",
+        thinking_dialect: str = "standard",
     ):
         self._url = url
         self._model = model
         self._max_tokens = max_tokens
         self._temperature = temperature
         self._timeout = timeout
+        # thinking(추론) 모드. 기본 "off"(차단 토큰 전송). "auto"면 미전송(모델 자동 판단).
+        self._thinking = str(thinking or "off").strip().lower()
+        self._thinking_dialect = str(thinking_dialect or "standard").strip().lower()
         self._system_prompt = (system_prompt or "").strip()
         self._user_prompt = (user_prompt or "").strip()
         self._output_fields = list(output_fields or [])
@@ -226,11 +232,16 @@ class MetadataEnricher(BaseEnricher):
             "temperature": self._temperature,
             "messages": messages,
         }
+        ctk = resolve_thinking_kwargs(self._thinking, self._thinking_dialect)
+        if ctk:
+            payload["chat_template_kwargs"] = ctk
         async with httpx.AsyncClient(timeout=self._timeout) as client:
             resp = await client.post(self._url, json=payload, headers=self._headers)
             resp.raise_for_status()
             data = resp.json()
-            return self._normalize_message_content(data["choices"][0]["message"]["content"])
+            message = data["choices"][0]["message"]
+            content = strip_reasoning(message)
+            return self._normalize_message_content(content)
 
     # ── 결과 저장 ─────────────────────────────────────────────────────────────
 

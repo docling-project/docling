@@ -1299,6 +1299,8 @@ class IntelligentDocumentProcessor:
                 config_dir=self._config_dir,
                 variables=ec.metadata.variables,
                 template_mode=ec.metadata.template_mode,
+                thinking=ec.metadata.thinking,
+                thinking_dialect=ec.metadata.thinking_dialect,
             )
             if MetadataEnricher is not None and ec.metadata.do_metadata and ec.metadata.has_custom_metadata
             else None
@@ -1334,6 +1336,10 @@ class IntelligentDocumentProcessor:
             metadata_completion_reserved_tokens=ec.metadata.precheck_completion_reserved_tokens,
             toc_system_prompt=ec.toc.system_prompt,
             toc_user_prompt=ec.toc.user_prompt,
+            toc_thinking=ec.toc.thinking,
+            toc_thinking_dialect=ec.toc.thinking_dialect,
+            metadata_thinking=ec.metadata.thinking,
+            metadata_thinking_dialect=ec.metadata.thinking_dialect,
         )
 
     @staticmethod

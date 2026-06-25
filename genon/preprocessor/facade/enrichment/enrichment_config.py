@@ -124,6 +124,20 @@ def _parse_optional_float(value: Any, key: str = "") -> Optional[float]:
         return None
 
 
+def _parse_thinking(opts: dict) -> "tuple[str, str]":
+    """enricher 블록에서 thinking / thinking_dialect 를 파싱한다.
+
+    thinking 미지정 → ("off", "standard"): 기본적으로 추론을 끈다(차단 토큰 전송).
+    아무것도 안 보내려면(모델 자동 판단) thinking: auto 로 명시.
+    """
+    raw = opts.get("thinking")
+    thinking = "off" if raw is None else str(raw).strip().lower()
+    dialect = str(opts.get("thinking_dialect", "standard") or "standard").strip().lower()
+    if dialect not in {"standard", "hcx"}:
+        dialect = "standard"
+    return thinking, dialect
+
+
 # enricher 이름 alias 매핑
 _ENRICHMENT_LIST_NAMES: dict[str, set[str]] = {
     "toc": {"toc", "toc_enricher"},
@@ -152,6 +166,10 @@ class _TocConfig:
     user_prompt: Optional[str] = None
     doc_type: str = "law"
     repetition_penalty: Optional[float] = None  # >1.0 반복(degeneration) 억제. None=미전송
+    # thinking(추론) 모드. 기본 "off"(차단 토큰 전송). "off"|"on"|"auto", dialect="standard"|"hcx"
+    # 아무것도 안 보내려면(모델 자동 판단) thinking="auto".
+    thinking: str = "off"
+    thinking_dialect: str = "standard"
     # Split (carry-over refine) TOC extraction, page-based. None = use code defaults.
     split_enabled: Optional[bool] = None
     split_pages_per_chunk: Optional[int] = None
@@ -180,6 +198,10 @@ class _MetadataConfig:
     has_custom_metadata: bool = False
     variables: dict = None
     template_mode: str = "strict"
+    # thinking(추론) 모드. 기본 "off"(차단 토큰 전송). "off"|"on"|"auto", dialect="standard"|"hcx"
+    # 아무것도 안 보내려면(모델 자동 판단) thinking="auto".
+    thinking: str = "off"
+    thinking_dialect: str = "standard"
 
     def __post_init__(self):
         if self.parser is None:
@@ -319,6 +341,9 @@ class EnrichmentConfig:
         if not isinstance(meta_pages, list) or not meta_pages:
             meta_pages = None
 
+        toc_thinking, toc_thinking_dialect = _parse_thinking(toc_opts)
+        meta_thinking, meta_thinking_dialect = _parse_thinking(metadata_opts)
+
         return cls(
             toc=_TocConfig(
                 do_toc=toc_enabled,
@@ -340,6 +365,8 @@ class EnrichmentConfig:
                 user_prompt=toc_user_prompt,
                 doc_type=str(toc_opts.get("doc_type", "law") or "law"),
                 repetition_penalty=_parse_optional_float(toc_opts.get("repetition_penalty")),
+                thinking=toc_thinking,
+                thinking_dialect=toc_thinking_dialect,
                 split_enabled=_parse_optional_bool(
                     _as_dict(toc_opts.get("split")).get("enabled")
                 ),
@@ -377,6 +404,8 @@ class EnrichmentConfig:
                 has_custom_metadata=meta_has_custom,
                 variables=meta_variables,
                 template_mode=meta_mode,
+                thinking=meta_thinking,
+                thinking_dialect=meta_thinking_dialect,
             ),
             image_description_cfg=image_desc_cfg,
             custom_fields_cfgs=custom_fields_cfgs,
@@ -463,6 +492,9 @@ class EnrichmentConfig:
         if not isinstance(meta_pages_d, list) or not meta_pages_d:
             meta_pages_d = None
 
+        toc_thinking, toc_thinking_dialect = _parse_thinking(toc_cfg)
+        meta_thinking, meta_thinking_dialect = _parse_thinking(meta_cfg)
+
         return cls(
             toc=_TocConfig(
                 do_toc=bool(cfg.get("do_toc", parent_cfg.get("do_toc", True))),
@@ -492,6 +524,8 @@ class EnrichmentConfig:
                 user_prompt=toc_up,
                 doc_type=str(toc_cfg.get("doc_type", parent_cfg.get("toc_doc_type", "law")) or "law"),
                 repetition_penalty=_parse_optional_float(toc_cfg.get("repetition_penalty")),
+                thinking=toc_thinking,
+                thinking_dialect=toc_thinking_dialect,
                 split_enabled=_parse_optional_bool(
                     _as_dict(toc_cfg.get("split")).get("enabled")
                 ),
@@ -540,6 +574,8 @@ class EnrichmentConfig:
                 has_custom_metadata=meta_has_custom,
                 variables=meta_variables,
                 template_mode=meta_mode,
+                thinking=meta_thinking,
+                thinking_dialect=meta_thinking_dialect,
             ),
             image_description_cfg=_as_dict(cfg.get("image_description")),
             custom_fields_cfgs=cf_list,
