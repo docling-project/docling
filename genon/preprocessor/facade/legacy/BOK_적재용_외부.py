@@ -224,9 +224,9 @@ TOC_TOP_P = 0.00001
 TOC_SEED = 33
 TOC_MAX_TOKENS = 1000
 # thinking(추론) 모드. 기본 off(차단 토큰 전송). HyperCLOVAX(hcx) 서빙 시 dialect를 "hcx"로.
-TOC_THINKING = "off"                 # off(기본,차단) | on | auto(미전송, 모델 자동 판단)
+TOC_THINKING = "auto"                 # off(기본,차단) | on | auto(미전송, 모델 자동 판단)
 TOC_THINKING_DIALECT = "hcx"    # standard(enable_thinking) | hcx(force/skip_reasoning)
-METADATA_THINKING = "off"
+METADATA_THINKING = "auto"
 METADATA_THINKING_DIALECT = "hcx"
 # ===================================================================
 
