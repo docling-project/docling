@@ -1,27 +1,14 @@
 import base64
 from io import BytesIO
-from typing import Annotated, Any
+from typing import Annotated
 
-from pydantic import AnyHttpUrl, BaseModel, Field, StrictStr
+from pydantic import BaseModel, Field, StrictStr
 
-from docling.datamodel.base_models import DocumentStream
+# HttpSource lives in the core datamodel so DocumentConverter can accept it as an
+# input source; re-exported here to keep the service-layer import path stable.
+from docling.datamodel.base_models import DocumentStream, HttpSource
 
-
-class HttpSource(BaseModel):
-    url: Annotated[
-        AnyHttpUrl,
-        Field(
-            description="HTTP url to process",
-            examples=["https://arxiv.org/pdf/2206.01062"],
-        ),
-    ]
-    headers: Annotated[
-        dict[str, Any],
-        Field(
-            description="Additional headers used to fetch the urls, "
-            "e.g. authorization, agent, etc"
-        ),
-    ] = {}
+__all__ = ["FileSource", "HttpSource", "S3Coordinates"]
 
 
 class FileSource(BaseModel):

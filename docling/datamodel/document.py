@@ -65,6 +65,7 @@ from docling.datamodel.base_models import (
     FailureCategory,
     FormatToExtensions,
     FormatToMimeType,
+    HttpSource,
     InputFormat,
     MimeTypeToFormat,
     Page,
@@ -585,7 +586,7 @@ class _DummyBackend(AbstractDocumentBackend):
 
 
 class _DocumentConversionInput(BaseModel):
-    path_or_stream_iterator: Iterable[Union[Path, str, DocumentStream]]
+    path_or_stream_iterator: Iterable[Union[Path, str, DocumentStream, HttpSource]]
     headers: Optional[dict[str, str]] = None
     limits: Optional[DocumentLimits] = DocumentLimits()
 
@@ -594,11 +595,24 @@ class _DocumentConversionInput(BaseModel):
         format_options: Mapping[InputFormat, "BaseFormatOption"],
     ) -> Iterable[InputDocument]:
         for item in self.path_or_stream_iterator:
-            if isinstance(item, str):
+            # `backend_input` is what backend_options_for_input() sees: the raw
+            # URL string (not the HttpSource model) so HTML source_uri resolution
+            # keeps working unchanged.
+            backend_input: Union[Path, str, DocumentStream]
+            if isinstance(item, (str, HttpSource)):
+                if isinstance(item, HttpSource):
+                    source_uri = str(item.url)
+                    # Per-source headers override the batch-wide headers; the
+                    # batch dict stays the base so the `headers` arg keeps working.
+                    req_headers = {**(self.headers or {}), **item.headers}
+                else:
+                    source_uri = item
+                    req_headers = self.headers
+                backend_input = source_uri
                 try:
                     obj = resolve_source_to_stream(
-                        item,
-                        self.headers,
+                        source_uri,
+                        req_headers,
                         max_file_size=self.limits.max_file_size,
                     )
                 except FileSizeLimitExceededError as exc:
@@ -626,13 +640,14 @@ class _DocumentConversionInput(BaseModel):
                     # covers all HTTP fetch errors without importing requests here.
                     _log.error("Failed to resolve input source %r: %s", item, exc)
                     yield self._build_invalid_input_document(
-                        name=self._filename_from_source(item),
+                        name=self._filename_from_source(source_uri),
                         format_options=format_options,
                         rejection=self._classify_source_error(exc),
                     )
                     continue
             else:
                 obj = item
+                backend_input = item
             format = self._guess_format(obj)
             backend: Type[AbstractDocumentBackend]
             backend_options: Optional[BackendOptions] = None
@@ -645,7 +660,7 @@ class _DocumentConversionInput(BaseModel):
             else:
                 options = format_options[format]
                 backend = options.backend
-                backend_options = options.backend_options_for_input(item)
+                backend_options = options.backend_options_for_input(backend_input)
 
             path_or_stream: Union[BytesIO, Path]
             if isinstance(obj, Path):
