@@ -21,24 +21,20 @@ _log = logging.getLogger(__name__)
 
 def _detect_hardware_and_libraries():
     """
-    Detect available hardware acceleration and installed ASR libraries.
+    Detect Apple Silicon MPS availability and whether mlx-whisper is installed.
 
     Returns:
-        tuple: (has_mps, has_cuda, has_mlx_whisper, has_whisper_s2t)
+        tuple: (has_mps, has_mlx_whisper)
             - has_mps: True if Apple Silicon MPS is available
-            - has_cuda: True if NVIDIA CUDA is available
             - has_mlx_whisper: True if mlx-whisper package is installed
-            - has_whisper_s2t: True if whisper-s2t-reborn package is installed
     """
-    # Check for hardware acceleration
+    # Check for Apple Silicon MPS
     try:
         import torch
 
         has_mps = torch.backends.mps.is_built() and torch.backends.mps.is_available()
-        has_cuda = torch.cuda.is_available()
     except ImportError:
         has_mps = False
-        has_cuda = False
 
     # Check if mlx-whisper is available
     try:
@@ -48,32 +44,23 @@ def _detect_hardware_and_libraries():
     except ImportError:
         has_mlx_whisper = False
 
-    # Check if whisper-s2t is available
-    try:
-        import whisper_s2t  # type: ignore
-
-        has_whisper_s2t = True
-    except ImportError:
-        has_whisper_s2t = False
-
-    return has_mps, has_cuda, has_mlx_whisper, has_whisper_s2t
+    return has_mps, has_mlx_whisper
 
 
 def _get_whisper_tiny_model():
     """
     Get the best Whisper Tiny model for the current hardware.
 
-    Auto-selection priority:
-    1. MLX Whisper on Apple Silicon (if MPS available + mlx-whisper installed)
-    2. WhisperS2T on CUDA (if CUDA available + whisper-s2t installed) - fastest for GPU
-    3. WhisperS2T on CPU (if whisper-s2t installed) - faster than native on CPU
-    4. Native Whisper (fallback)
-    """
-    has_mps, has_cuda, has_mlx_whisper, has_whisper_s2t = (
-        _detect_hardware_and_libraries()
-    )
+    Auto-selection:
+    - MLX Whisper on Apple Silicon (if MPS available + mlx-whisper installed)
+    - Native Whisper otherwise
 
-    # Priority 1: MLX on Apple Silicon
+    WhisperS2T is never auto-selected; use the explicit *_S2T model options to
+    opt into the experimental WhisperS2T backend.
+    """
+    has_mps, has_mlx_whisper = _detect_hardware_and_libraries()
+
+    # MLX on Apple Silicon
     if has_mps and has_mlx_whisper:
         return InlineAsrMlxWhisperOptions(
             repo_id="mlx-community/whisper-tiny-mlx",
@@ -86,31 +73,7 @@ def _get_whisper_tiny_model():
             compression_ratio_threshold=2.4,
         )
 
-    # Priority 2: WhisperS2T on CUDA (fastest for GPU inference)
-    if has_cuda and has_whisper_s2t:
-        return InlineAsrWhisperS2TOptions(
-            repo_id="tiny",
-            inference_framework=InferenceAsrFramework.WHISPER_S2T,
-            language="en",
-            task="transcribe",
-            torch_dtype="float16",
-            batch_size=16,
-            beam_size=1,
-        )
-
-    # Priority 3: WhisperS2T on CPU (still faster than native Whisper)
-    if has_whisper_s2t:
-        return InlineAsrWhisperS2TOptions(
-            repo_id="tiny",
-            inference_framework=InferenceAsrFramework.WHISPER_S2T,
-            language="en",
-            task="transcribe",
-            torch_dtype="float32",  # float32 is more reliable on CPU
-            batch_size=16,
-            beam_size=1,
-        )
-
-    # Priority 4: Native Whisper (fallback)
+    # Native Whisper (default)
     return InlineAsrNativeWhisperOptions(
         repo_id="tiny",
         inference_framework=InferenceAsrFramework.WHISPER,
@@ -131,17 +94,16 @@ def _get_whisper_small_model():
     """
     Get the best Whisper Small model for the current hardware.
 
-    Auto-selection priority:
-    1. MLX Whisper on Apple Silicon (if MPS available + mlx-whisper installed)
-    2. WhisperS2T on CUDA (if CUDA available + whisper-s2t installed) - fastest for GPU
-    3. WhisperS2T on CPU (if whisper-s2t installed) - faster than native on CPU
-    4. Native Whisper (fallback)
-    """
-    has_mps, has_cuda, has_mlx_whisper, has_whisper_s2t = (
-        _detect_hardware_and_libraries()
-    )
+    Auto-selection:
+    - MLX Whisper on Apple Silicon (if MPS available + mlx-whisper installed)
+    - Native Whisper otherwise
 
-    # Priority 1: MLX on Apple Silicon
+    WhisperS2T is never auto-selected; use the explicit *_S2T model options to
+    opt into the experimental WhisperS2T backend.
+    """
+    has_mps, has_mlx_whisper = _detect_hardware_and_libraries()
+
+    # MLX on Apple Silicon
     if has_mps and has_mlx_whisper:
         return InlineAsrMlxWhisperOptions(
             repo_id="mlx-community/whisper-small-mlx",
@@ -154,31 +116,7 @@ def _get_whisper_small_model():
             compression_ratio_threshold=2.4,
         )
 
-    # Priority 2: WhisperS2T on CUDA
-    if has_cuda and has_whisper_s2t:
-        return InlineAsrWhisperS2TOptions(
-            repo_id="small",
-            inference_framework=InferenceAsrFramework.WHISPER_S2T,
-            language="en",
-            task="transcribe",
-            torch_dtype="float16",
-            batch_size=8,
-            beam_size=1,
-        )
-
-    # Priority 3: WhisperS2T on CPU
-    if has_whisper_s2t:
-        return InlineAsrWhisperS2TOptions(
-            repo_id="small",
-            inference_framework=InferenceAsrFramework.WHISPER_S2T,
-            language="en",
-            task="transcribe",
-            torch_dtype="float32",
-            batch_size=8,
-            beam_size=1,
-        )
-
-    # Priority 4: Native Whisper (fallback)
+    # Native Whisper (default)
     return InlineAsrNativeWhisperOptions(
         repo_id="small",
         inference_framework=InferenceAsrFramework.WHISPER,
@@ -199,17 +137,16 @@ def _get_whisper_medium_model():
     """
     Get the best Whisper Medium model for the current hardware.
 
-    Auto-selection priority:
-    1. MLX Whisper on Apple Silicon (if MPS available + mlx-whisper installed)
-    2. WhisperS2T on CUDA (if CUDA available + whisper-s2t installed) - fastest for GPU
-    3. WhisperS2T on CPU (if whisper-s2t installed) - faster than native on CPU
-    4. Native Whisper (fallback)
-    """
-    has_mps, has_cuda, has_mlx_whisper, has_whisper_s2t = (
-        _detect_hardware_and_libraries()
-    )
+    Auto-selection:
+    - MLX Whisper on Apple Silicon (if MPS available + mlx-whisper installed)
+    - Native Whisper otherwise
 
-    # Priority 1: MLX on Apple Silicon
+    WhisperS2T is never auto-selected; use the explicit *_S2T model options to
+    opt into the experimental WhisperS2T backend.
+    """
+    has_mps, has_mlx_whisper = _detect_hardware_and_libraries()
+
+    # MLX on Apple Silicon
     if has_mps and has_mlx_whisper:
         return InlineAsrMlxWhisperOptions(
             repo_id="mlx-community/whisper-medium-mlx-8bit",
@@ -222,31 +159,7 @@ def _get_whisper_medium_model():
             compression_ratio_threshold=2.4,
         )
 
-    # Priority 2: WhisperS2T on CUDA
-    if has_cuda and has_whisper_s2t:
-        return InlineAsrWhisperS2TOptions(
-            repo_id="medium",
-            inference_framework=InferenceAsrFramework.WHISPER_S2T,
-            language="en",
-            task="transcribe",
-            torch_dtype="float16",
-            batch_size=6,
-            beam_size=1,
-        )
-
-    # Priority 3: WhisperS2T on CPU
-    if has_whisper_s2t:
-        return InlineAsrWhisperS2TOptions(
-            repo_id="medium",
-            inference_framework=InferenceAsrFramework.WHISPER_S2T,
-            language="en",
-            task="transcribe",
-            torch_dtype="float32",
-            batch_size=6,
-            beam_size=1,
-        )
-
-    # Priority 4: Native Whisper (fallback)
+    # Native Whisper (default)
     return InlineAsrNativeWhisperOptions(
         repo_id="medium",
         inference_framework=InferenceAsrFramework.WHISPER,
@@ -267,17 +180,16 @@ def _get_whisper_base_model():
     """
     Get the best Whisper Base model for the current hardware.
 
-    Auto-selection priority:
-    1. MLX Whisper on Apple Silicon (if MPS available + mlx-whisper installed)
-    2. WhisperS2T on CUDA (if CUDA available + whisper-s2t installed) - fastest for GPU
-    3. WhisperS2T on CPU (if whisper-s2t installed) - faster than native on CPU
-    4. Native Whisper (fallback)
-    """
-    has_mps, has_cuda, has_mlx_whisper, has_whisper_s2t = (
-        _detect_hardware_and_libraries()
-    )
+    Auto-selection:
+    - MLX Whisper on Apple Silicon (if MPS available + mlx-whisper installed)
+    - Native Whisper otherwise
 
-    # Priority 1: MLX on Apple Silicon
+    WhisperS2T is never auto-selected; use the explicit *_S2T model options to
+    opt into the experimental WhisperS2T backend.
+    """
+    has_mps, has_mlx_whisper = _detect_hardware_and_libraries()
+
+    # MLX on Apple Silicon
     if has_mps and has_mlx_whisper:
         return InlineAsrMlxWhisperOptions(
             repo_id="mlx-community/whisper-base-mlx",
@@ -290,31 +202,7 @@ def _get_whisper_base_model():
             compression_ratio_threshold=2.4,
         )
 
-    # Priority 2: WhisperS2T on CUDA
-    if has_cuda and has_whisper_s2t:
-        return InlineAsrWhisperS2TOptions(
-            repo_id="base",
-            inference_framework=InferenceAsrFramework.WHISPER_S2T,
-            language="en",
-            task="transcribe",
-            torch_dtype="float16",
-            batch_size=12,
-            beam_size=1,
-        )
-
-    # Priority 3: WhisperS2T on CPU
-    if has_whisper_s2t:
-        return InlineAsrWhisperS2TOptions(
-            repo_id="base",
-            inference_framework=InferenceAsrFramework.WHISPER_S2T,
-            language="en",
-            task="transcribe",
-            torch_dtype="float32",
-            batch_size=12,
-            beam_size=1,
-        )
-
-    # Priority 4: Native Whisper (fallback)
+    # Native Whisper (default)
     return InlineAsrNativeWhisperOptions(
         repo_id="base",
         inference_framework=InferenceAsrFramework.WHISPER,
@@ -335,19 +223,16 @@ def _get_whisper_large_model():
     """
     Get the best Whisper Large model for the current hardware.
 
-    Auto-selection priority:
-    1. MLX Whisper on Apple Silicon (if MPS available + mlx-whisper installed)
-    2. WhisperS2T on CUDA (if CUDA available + whisper-s2t installed) - fastest for GPU
-    3. WhisperS2T on CPU (if whisper-s2t installed) - faster than native on CPU
-    4. Native Whisper (fallback)
+    Auto-selection:
+    - MLX Whisper on Apple Silicon (if MPS available + mlx-whisper installed)
+    - Native Whisper otherwise
 
-    Note: For S2T, uses large-v3 which is the latest large model variant.
+    WhisperS2T is never auto-selected; use the explicit *_S2T model options to
+    opt into the experimental WhisperS2T backend.
     """
-    has_mps, has_cuda, has_mlx_whisper, has_whisper_s2t = (
-        _detect_hardware_and_libraries()
-    )
+    has_mps, has_mlx_whisper = _detect_hardware_and_libraries()
 
-    # Priority 1: MLX on Apple Silicon
+    # MLX on Apple Silicon
     if has_mps and has_mlx_whisper:
         return InlineAsrMlxWhisperOptions(
             repo_id="mlx-community/whisper-large-mlx-8bit",
@@ -360,31 +245,7 @@ def _get_whisper_large_model():
             compression_ratio_threshold=2.4,
         )
 
-    # Priority 2: WhisperS2T on CUDA
-    if has_cuda and has_whisper_s2t:
-        return InlineAsrWhisperS2TOptions(
-            repo_id="large-v3",
-            inference_framework=InferenceAsrFramework.WHISPER_S2T,
-            language="en",
-            task="transcribe",
-            torch_dtype="float16",
-            batch_size=4,
-            beam_size=1,
-        )
-
-    # Priority 3: WhisperS2T on CPU
-    if has_whisper_s2t:
-        return InlineAsrWhisperS2TOptions(
-            repo_id="large-v3",
-            inference_framework=InferenceAsrFramework.WHISPER_S2T,
-            language="en",
-            task="transcribe",
-            torch_dtype="float32",
-            batch_size=4,
-            beam_size=1,
-        )
-
-    # Priority 4: Native Whisper (fallback)
+    # Native Whisper (default)
     return InlineAsrNativeWhisperOptions(
         repo_id="large",
         inference_framework=InferenceAsrFramework.WHISPER,
@@ -405,20 +266,16 @@ def _get_whisper_turbo_model():
     """
     Get the best Whisper Turbo model for the current hardware.
 
-    Auto-selection priority:
-    1. MLX Whisper on Apple Silicon (if MPS available + mlx-whisper installed)
-    2. WhisperS2T on CUDA (if CUDA available + whisper-s2t installed) - fastest for GPU
-    3. WhisperS2T on CPU (if whisper-s2t installed) - faster than native on CPU
-    4. Native Whisper (fallback)
+    Auto-selection:
+    - MLX Whisper on Apple Silicon (if MPS available + mlx-whisper installed)
+    - Native Whisper otherwise
 
-    Note: Turbo is a distilled model optimized for speed. For S2T, we use
-    large-v3-turbo which is the native turbo model supported by whisper-s2t-reborn.
+    WhisperS2T is never auto-selected; use the explicit *_S2T model options to
+    opt into the experimental WhisperS2T backend.
     """
-    has_mps, has_cuda, has_mlx_whisper, has_whisper_s2t = (
-        _detect_hardware_and_libraries()
-    )
+    has_mps, has_mlx_whisper = _detect_hardware_and_libraries()
 
-    # Priority 1: MLX on Apple Silicon
+    # MLX on Apple Silicon
     if has_mps and has_mlx_whisper:
         return InlineAsrMlxWhisperOptions(
             repo_id="mlx-community/whisper-turbo",
@@ -431,31 +288,7 @@ def _get_whisper_turbo_model():
             compression_ratio_threshold=2.4,
         )
 
-    # Priority 2: WhisperS2T on CUDA (using large-v3-turbo)
-    if has_cuda and has_whisper_s2t:
-        return InlineAsrWhisperS2TOptions(
-            repo_id="large-v3-turbo",
-            inference_framework=InferenceAsrFramework.WHISPER_S2T,
-            language="en",
-            task="transcribe",
-            torch_dtype="float16",
-            batch_size=6,
-            beam_size=1,
-        )
-
-    # Priority 3: WhisperS2T on CPU
-    if has_whisper_s2t:
-        return InlineAsrWhisperS2TOptions(
-            repo_id="large-v3-turbo",
-            inference_framework=InferenceAsrFramework.WHISPER_S2T,
-            language="en",
-            task="transcribe",
-            torch_dtype="float32",
-            batch_size=6,
-            beam_size=1,
-        )
-
-    # Priority 4: Native Whisper (fallback)
+    # Native Whisper (default)
     return InlineAsrNativeWhisperOptions(
         repo_id="turbo",
         inference_framework=InferenceAsrFramework.WHISPER,
@@ -768,10 +601,9 @@ WHISPER_LARGE_V3_TURBO_S2T = InlineAsrWhisperS2TOptions(
 #
 # Priority order:
 #   1. MLX Whisper - Used on Apple Silicon when mlx-whisper is installed
-#   2. WhisperS2T (CUDA) - Used when CUDA GPU and whisper-s2t are available
-#   3. WhisperS2T (CPU) - Used when whisper-s2t is available but no GPU
-#   4. Native Whisper - Fallback when no optimized backends are available
+#   2. Native Whisper - Default on all other hardware
 #
+# WhisperS2T is an optional, experimental backend and is never auto-selected.
 # Use the explicit _MLX, _NATIVE, or _S2T variants if you need to force a
 # specific implementation regardless of hardware detection.
 # =============================================================================

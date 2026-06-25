@@ -80,8 +80,10 @@ class TestWhisperS2TOptions:
 class TestWhisperS2TAutoSelection:
     """Test auto-selection logic for WhisperS2T in asr_model_specs."""
 
-    def test_auto_select_s2t_cuda(self, monkeypatch):
-        """CUDA + whisper_s2t installed (no MPS) -> should select WhisperS2T with float16."""
+    def test_auto_select_never_uses_s2t(self, monkeypatch):
+        """WhisperS2T must never be auto-selected, even when it is installed
+        alongside CUDA: the auto-selecting WHISPER_* models stay on native
+        Whisper. WhisperS2T is opt-in only, via the explicit *_S2T options."""
         from docling.datamodel import asr_model_specs as specs
 
         class _MpsOff:
@@ -106,51 +108,6 @@ class TestWhisperS2TAutoSelection:
         if "mlx_whisper" in sys.modules:
             monkeypatch.delitem(sys.modules, "mlx_whisper")
 
-        for getter, expected_repo in [
-            (specs._get_whisper_tiny_model, "tiny"),
-            (specs._get_whisper_small_model, "small"),
-            (specs._get_whisper_base_model, "base"),
-            (specs._get_whisper_medium_model, "medium"),
-            (specs._get_whisper_large_model, "large-v3"),
-            (specs._get_whisper_turbo_model, "large-v3-turbo"),
-        ]:
-            model = getter()
-            assert model.inference_framework == InferenceAsrFramework.WHISPER_S2T, (
-                f"{getter.__name__} did not select WHISPER_S2T"
-            )
-            assert model.repo_id == expected_repo, (
-                f"{getter.__name__} repo_id={model.repo_id}, expected {expected_repo}"
-            )
-            assert model.torch_dtype == "float16", (
-                f"{getter.__name__} should use float16 on CUDA"
-            )
-
-    def test_auto_select_s2t_cpu_fallback(self, monkeypatch):
-        """No MPS, no CUDA, but whisper_s2t installed -> S2T with float32 (CPU)."""
-        from docling.datamodel import asr_model_specs as specs
-
-        class _MpsOff:
-            def is_built(self):
-                return False
-
-            def is_available(self):
-                return False
-
-        class _CudaOff:
-            def is_available(self):
-                return False
-
-        class _Torch:
-            class backends:
-                mps = _MpsOff()
-
-            cuda = _CudaOff()
-
-        monkeypatch.setitem(sys.modules, "torch", _Torch())
-        monkeypatch.setitem(sys.modules, "whisper_s2t", object())
-        if "mlx_whisper" in sys.modules:
-            monkeypatch.delitem(sys.modules, "mlx_whisper")
-
         for getter in [
             specs._get_whisper_tiny_model,
             specs._get_whisper_small_model,
@@ -160,11 +117,9 @@ class TestWhisperS2TAutoSelection:
             specs._get_whisper_turbo_model,
         ]:
             model = getter()
-            assert model.inference_framework == InferenceAsrFramework.WHISPER_S2T, (
-                f"{getter.__name__} did not select WHISPER_S2T on CPU"
-            )
-            assert model.torch_dtype == "float32", (
-                f"{getter.__name__} should use float32 on CPU"
+            assert model.inference_framework == InferenceAsrFramework.WHISPER, (
+                f"{getter.__name__} must not auto-select WhisperS2T "
+                f"(got {model.inference_framework})"
             )
 
     def test_auto_select_native_fallback_no_s2t(self, monkeypatch):
