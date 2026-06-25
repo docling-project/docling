@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Annotated, Any, Literal, Union
+from typing import Annotated, Any, Literal, Optional, Union
 
 from pydantic import AnyUrl, BaseModel, Field, model_validator
 from typing_extensions import deprecated
@@ -97,7 +97,7 @@ class InlineAsrOptions(BaseAsrOptions):
         ),
     ] = 30.0
     torch_dtype: Annotated[
-        str | None,
+        Optional[str],
         Field(
             description=(
                 "PyTorch data type for model weights. Options: `float32`, "
@@ -320,7 +320,7 @@ class InlineAsrWhisperS2TOptions(InlineAsrOptions):
         ),
     ] = "transcribe"
     torch_dtype: Annotated[
-        str | None,
+        Optional[str],
         Field(
             description=(
                 "Computation precision for CTranslate2. Options: `float32`, "
@@ -366,7 +366,7 @@ class InlineAsrWhisperS2TOptions(InlineAsrOptions):
         ),
     ] = AcceleratorOptions().num_threads
     initial_prompt: Annotated[
-        str | None,
+        Optional[str],
         Field(
             description=(
                 "Optional text prompt to condition the transcription style or "
