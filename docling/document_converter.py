@@ -69,6 +69,7 @@ from docling.datamodel.document import (
     build_invalid_input_errors,
 )
 from docling.datamodel.pipeline_options import ConvertPipelineOptions, PipelineOptions
+from docling.datamodel.progress import ProgressCallback
 from docling.datamodel.settings import (
     DEFAULT_PAGE_RANGE,
     DocumentLimits,
@@ -294,6 +295,7 @@ class DocumentConverter:
         self,
         allowed_formats: Optional[list[InputFormat]] = None,
         format_options: Optional[dict[InputFormat, FormatOption]] = None,
+        progress_callback: Optional[ProgressCallback] = None,
     ) -> None:
         """Initialize the converter based on format preferences.
 
@@ -301,6 +303,16 @@ class DocumentConverter:
             allowed_formats: List of allowed input formats. By default, any
                 format supported by Docling is allowed.
             format_options: Dictionary of format-specific options.
+            progress_callback: Optional callable invoked with page-level
+                progress events (``PageStartedProgress``,
+                ``PageCompletedProgress``, ``DocumentCompletedProgress``)
+                during conversion. The callback must be thread-safe: the
+                default PDF pipeline processes pages on a background thread, so
+                it is invoked from multiple threads even for a single document,
+                and concurrent conversions
+                (``settings.perf.doc_batch_concurrency > 1``) add further
+                concurrency. Exceptions raised by the callback are logged and
+                suppressed so they cannot interrupt conversion.
 
         Examples:
             Create a converter with default settings (all formats allowed):
@@ -328,6 +340,7 @@ class DocumentConverter:
         self.allowed_formats: list[InputFormat] = (
             allowed_formats if allowed_formats is not None else list(InputFormat)
         )
+        self.progress_callback: Optional[ProgressCallback] = progress_callback
 
         # Normalize format options: ensure IMAGE format uses ImageDocumentBackend
         # for backward compatibility (old code might use PdfFormatOption or other backends for images)
@@ -712,7 +725,11 @@ class DocumentConverter:
         if in_doc.valid:
             pipeline = self._get_pipeline(in_doc.format)
             if pipeline is not None:
-                conv_res = pipeline.execute(in_doc, raises_on_error=raises_on_error)
+                conv_res = pipeline.execute(
+                    in_doc,
+                    raises_on_error=raises_on_error,
+                    progress_callback=self.progress_callback,
+                )
             else:
                 if raises_on_error:
                     raise ConversionError(

@@ -23,7 +23,7 @@ import warnings
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Iterable, Sequence, cast
+from typing import Any, Callable, Iterable, Optional, Sequence, cast
 
 import numpy as np
 from docling_core.types.doc import (
@@ -47,6 +47,11 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import ThreadedPdfPipelineOptions
+from docling.datamodel.progress import (
+    PageCompletedProgress,
+    PageStartedProgress,
+    ProgressCallback,
+)
 from docling.datamodel.settings import settings
 from docling.models.factories import (
     get_layout_factory,
@@ -761,7 +766,11 @@ class StandardPdfPipeline(ConvertPipeline):
             )
         )
 
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+    def _build_document(
+        self,
+        conv_res: ConversionResult,
+        progress_callback: Optional[ProgressCallback] = None,
+    ) -> ConversionResult:
         """Stream-build the document with a dedicated producer thread.
 
         Note: If a worker thread gets stuck in a blocking call (model inference or PDF backend
@@ -817,6 +826,12 @@ class StandardPdfPipeline(ConvertPipeline):
                     except Exception:
                         if page_backend.is_valid():
                             raise
+                    self._emit_progress(
+                        progress_callback,
+                        PageStartedProgress(
+                            page_no=page.page_no, total_pages=total_pages
+                        ),
+                    )
                     if not ctx.first_stage.input_queue.put(
                         ThreadedItem(
                             payload=page,
@@ -864,9 +879,25 @@ class StandardPdfPipeline(ConvertPipeline):
                     if itm.is_failed or itm.error:
                         error = itm.error or RuntimeError("unknown error")
                         proc.failed_pages.append((itm.page_no, error, itm.failure))
+                        self._emit_progress(
+                            progress_callback,
+                            PageCompletedProgress(
+                                page_no=itm.page_no,
+                                total_pages=total_pages,
+                                success=False,
+                            ),
+                        )
                     else:
                         assert itm.payload is not None
                         proc.pages.append(itm.payload)
+                        self._emit_progress(
+                            progress_callback,
+                            PageCompletedProgress(
+                                page_no=itm.payload.page_no,
+                                total_pages=total_pages,
+                                success=True,
+                            ),
+                        )
 
                 # Failure safety - downstream closed early
                 if not out_batch and ctx.output_queue.closed:
@@ -895,6 +926,15 @@ class StandardPdfPipeline(ConvertPipeline):
                                 for page_no in missing_page_nos
                             ]
                         )
+                        for page_no in missing_page_nos:
+                            self._emit_progress(
+                                progress_callback,
+                                PageCompletedProgress(
+                                    page_no=page_no,
+                                    total_pages=total_pages,
+                                    success=False,
+                                ),
+                            )
                     break
 
             # Mark remaining pages as failed if timeout occurred
@@ -916,6 +956,14 @@ class StandardPdfPipeline(ConvertPipeline):
                                 page_no=page_no,
                             ),
                         )
+                    )
+                    self._emit_progress(
+                        progress_callback,
+                        PageCompletedProgress(
+                            page_no=page_no,
+                            total_pages=total_pages,
+                            success=False,
+                        ),
                     )
         finally:
             for st in ctx.stages:
