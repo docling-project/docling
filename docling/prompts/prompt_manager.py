@@ -19,9 +19,12 @@ except Exception:  # pragma: no cover - import 환경에 따른 폴백
         return None
 
     def strip_reasoning(message):
+        import re
         if isinstance(message, dict):
-            return (message.get("content") or "").strip()
-        return (message or "").strip()
+            content = (message.get("content") or "").strip()
+        else:
+            content = (message or "").strip()
+        return re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL | re.IGNORECASE).strip()
 
 
 class LLMApiError(Exception):
