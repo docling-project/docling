@@ -1,5 +1,6 @@
 """Tests for PDF-bookmark / ToC heading inference and list-item promotion."""
 
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -12,7 +13,9 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import ListItem, SectionHeaderItem
 
-from docling.datamodel.base_models import PdfOutlineItem
+from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.datamodel.base_models import InputFormat, PdfOutlineItem
+from docling.datamodel.document import InputDocument
 from docling.datamodel.pipeline_options import HeadingHierarchyOptions
 from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
@@ -220,3 +223,29 @@ def test_call_reads_outline_from_conversion_result():
         1,
         2,
     ]  # hierarchy comes solely from bookmarks
+
+
+# --------------------------------------------------------------------- real PDF
+
+
+def test_backend_extracts_nested_outline_from_sample_pdf():
+    # End-to-end check of PdfDocumentBackend.get_document_outline() against a committed PDF
+    # carrying a nested bookmark tree (PART -> section -> subsection across 3 pages).
+    pdf = Path("./tests/data/pdf/bookmark_sample.pdf")
+    in_doc = InputDocument(
+        path_or_stream=pdf, format=InputFormat.PDF, backend=PyPdfiumDocumentBackend
+    )
+    outline = in_doc._backend.get_document_outline()
+
+    assert [(o.title, o.level, o.page_no) for o in outline] == [
+        ("PART I - DEFINITIONS", 0, 1),
+        ("1. Interpretation", 1, 1),
+        ("2. Construction of Terms", 1, 1),
+        ("PART II - OBLIGATIONS", 0, 2),
+        ("3. Payment Terms", 1, 2),
+        ("3.1 Payment Schedule", 2, 2),
+        ("4. Termination", 1, 3),
+        ("PART III - MISCELLANEOUS", 0, 3),
+    ]
+    # XYZ destinations carry a vertical target, captured as a top-left-origin y_top.
+    assert all(o.y_top is not None and o.y_top > 0 for o in outline)
