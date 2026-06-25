@@ -79,6 +79,7 @@ from docling.backend.genos_msword_backend import GenosMsWordDocumentBackend
 from docling.backend.genos_hwp_backend import GenosHwpDocumentBackend
 from docling.backend.hwp_backend import HwpDocumentBackend
 from docling.backend.xml.hwpx_backend import HwpxDocumentBackend
+from docling.exceptions import HwpConversionError
 
 try:
     from genos_utils import upload_files
@@ -1399,6 +1400,16 @@ class HwpProcessor:
         conv_result: ConversionResult = converter.convert(Path(file_path).resolve(), raises_on_error=True)
         return conv_result.document
 
+    @staticmethod
+    def _hwp_sdk_text_is_empty(document: DoclingDocument) -> bool:
+        """GenosHwp SDK 결과 문서에 본문 텍스트가 전혀 없는지 판단(레거시 폴백 트리거용).
+
+        SDK 가 exit 0 으로 "성공"해도 본문을 한 글자도 못 뽑는 경우가 있다(일부 .hwp/.hwpx;
+        DRM/암호화 등). 텍스트 run 이 하나도 없으면 True. (convert_processor 와 형평성)
+        """
+        texts = getattr(document, "texts", None) or []
+        return not any((getattr(t, "text", "") or "").strip() for t in texts)
+
     def split_documents(self, document: DoclingDocument, **kwargs: dict):
         """chunker_type에 따라 HybridChunker 또는 RecursiveCharacterTextSplitter로 분할.
 
@@ -1519,6 +1530,28 @@ class HwpProcessor:
                     raise sdk_err
             else:
                 raise
+
+        # 1-b. SDK 가 예외 없이(exit 0) 끝났어도 본문 텍스트가 비어 있으면(빈 doc_items 로
+        #      다운스트림이 깨지거나 무의미한 표 청크만 나오는 경우) 레거시 백엔드로 폴백한다.
+        #      그래도 본문을 못 얻으면 예외로 올려 DocumentProcessor.__call__ 의 PDF 변환 폴백에
+        #      위임한다. (convert_processor 와 형평성 — convert 는 GenosSmartChunker 예외로 잡히지만
+        #      attachment 는 recursive splitter 라 예외가 안 나므로 여기서 명시적으로 처리한다.)
+        if ext in ('.hwp', '.hwpx') and self._hwp_sdk_text_is_empty(document):
+            backend_name = "HwpDocumentBackend" if ext == '.hwp' else "HwpxDocumentBackend"
+            _log.warning(f"[HwpProcessor] GenosHwp SDK 결과에 본문 텍스트가 없어 {backend_name} 폴백 시도: {file_path}")
+            fallback_doc = None
+            try:
+                fallback_doc = self.load_documents(file_path, **dict(kwargs, use_hwp_sdk=False))
+            except Exception as fallback_err:
+                _log.warning(f"[HwpProcessor] {backend_name} 폴백 실패, 상위 PDF 폴백으로 위임: {fallback_err}")
+            if fallback_doc is not None and not self._hwp_sdk_text_is_empty(fallback_doc):
+                _log.info(f"[HwpProcessor] {backend_name} 폴백 성공(본문 텍스트 확보)")
+                document = fallback_doc
+            else:
+                _log.info(f"[HwpProcessor] {backend_name} 폴백으로도 본문 복구 실패, 상위 PDF 폴백으로 위임")
+                raise HwpConversionError(
+                    f"HWP/HWPX SDK 결과가 비어 있고 레거시 백엔드로도 본문 복구 실패: {file_path}"
+                )
 
         # 2. 이미지 참조 경로 설정
         artifacts_dir, reference_path = self.get_paths(file_path)

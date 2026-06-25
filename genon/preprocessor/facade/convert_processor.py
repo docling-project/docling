@@ -41,6 +41,9 @@ from langchain_core.documents import Document
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.backend.genos_msword_backend import GenosMsWordDocumentBackend
+# HWP/HWPX 레거시 백엔드 (GenosHwp SDK 실패 시 폴백용; olefile/xml 순수 파이썬, SDK 미사용)
+from docling.backend.hwp_backend import HwpDocumentBackend
+from docling.backend.xml.hwpx_backend import HwpxDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.pipeline.simple_pipeline import SimplePipeline
 # from docling.datamodel.document import ConversionStatus
@@ -62,12 +65,14 @@ from docling.document_converter import (
     DocumentConverter,
     PdfFormatOption,
     FormatOption,
-    WordFormatOption
+    WordFormatOption,
+    HwpxFormatOption
 )
 from docling.datamodel.pipeline_options import DataEnrichmentOptions
 from docling.prompts.prompt_manager import LLMApiError
 from docling.utils.document_enrichment import enrich_document, check_document
 from docling.datamodel.document import ConversionResult
+from docling.exceptions import HwpConversionError
 from docling_core.transforms.chunker import (
     BaseChunk,
     BaseChunker,
@@ -2248,8 +2253,84 @@ class DocumentProcessor:
             conv_result: ConversionResult = self.ocr_second_converter.convert(file_path, raises_on_error=True)
         return conv_result.document
 
+    def _load_hwp_with_legacy_backend(self, file_path: str, **kwargs: dict) -> DoclingDocument:
+        """HWP/HWPX 레거시 백엔드(SDK 미사용) 전용 변환 — GenosHwp SDK 폴백용.
+
+        HWP/HWPX 는 docling 기본 백엔드(GenosHwpDocumentBackend=convtext SDK)로 처리되는데,
+        SDK 가 UNSUPPORTED_TYPE(exit code 3) 등으로 실패할 때 이 메서드로 폴백한다.
+        .hwp → HwpDocumentBackend, .hwpx → HwpxDocumentBackend (둘 다 olefile/xml 기반
+        순수 파이썬이라 SDK 의존이 없음). attachment_processor.HwpProcessor 의 폴백과 동일 구성.
+        """
+        pipeline_options = PipelineOptions()
+        pipeline_options.save_images = kwargs.get('save_images', True)
+        converter = DocumentConverter(
+            format_options={
+                InputFormat.HWP: HwpxFormatOption(
+                    pipeline_options=pipeline_options,
+                    backend=HwpDocumentBackend,
+                ),
+                InputFormat.XML_HWPX: HwpxFormatOption(
+                    pipeline_options=pipeline_options,
+                    backend=HwpxDocumentBackend,
+                ),
+            }
+        )
+        conv_result: ConversionResult = converter.convert(
+            Path(file_path).resolve(), raises_on_error=True
+        )
+        return conv_result.document
+
+    @staticmethod
+    def _hwp_sdk_text_is_empty(document: DoclingDocument) -> bool:
+        """GenosHwp SDK 결과 문서에 본문 텍스트가 전혀 없는지 판단(레거시 폴백 트리거용).
+
+        SDK 가 exit 0 으로 "성공"해도 본문을 한 글자도 못 뽑는 경우가 있다(일부 .hwp/.hwpx).
+        이때 doc_items 가 비어 다운스트림 GenosSmartChunker 의 DocMeta(min_length=1) 검증이
+        깨진다(too_short). 텍스트 run 이 하나도 없으면 True.
+        """
+        texts = getattr(document, "texts", None) or []
+        return not any((getattr(t, "text", "") or "").strip() for t in texts)
+
     def load_documents(self, file_path: str, **kwargs: dict) -> DoclingDocument:
-        return self.load_documents_with_docling(file_path, **kwargs)
+        ext = os.path.splitext(file_path)[-1].lower()
+        is_hwp = ext in ('.hwp', '.hwpx')
+        backend_name = "HwpDocumentBackend" if ext == '.hwp' else "HwpxDocumentBackend"
+        try:
+            document = self.load_documents_with_docling(file_path, **kwargs)
+        except Exception as sdk_err:
+            # (1) GenosHwp SDK 가 예외로 실패(예: exit code 3) → HWP/HWPX 만 레거시 폴백.
+            if not is_hwp:
+                raise
+            _log.warning(f"[DocumentProcessor] GenosHwp SDK 변환 실패: {sdk_err}")
+            try:
+                _log.info(f"[DocumentProcessor] {backend_name}로 폴백 시도: {file_path}")
+                document = self._load_hwp_with_legacy_backend(file_path, **kwargs)
+                _log.info(f"[DocumentProcessor] {backend_name} 폴백 성공")
+                return document
+            except Exception as fallback_err:
+                _log.warning(f"[DocumentProcessor] {backend_name} 폴백도 실패: {fallback_err}")
+                raise sdk_err
+
+        # (2) SDK 가 예외 없이(exit 0) 끝났지만 본문 텍스트가 비어 있으면(빈 doc_items 로
+        #     다운스트림 DocMeta 검증이 깨지는 케이스) 레거시 백엔드로 폴백 시도한다.
+        #     폴백 결과도 비었거나 폴백이 실패하면 원 SDK 결과를 그대로 유지(무회귀).
+        if is_hwp and self._hwp_sdk_text_is_empty(document):
+            _log.warning(
+                f"[DocumentProcessor] GenosHwp SDK 결과에 본문 텍스트가 없어 {backend_name} 폴백 시도: {file_path}"
+            )
+            try:
+                fallback_doc = self._load_hwp_with_legacy_backend(file_path, **kwargs)
+                if not self._hwp_sdk_text_is_empty(fallback_doc):
+                    _log.info(f"[DocumentProcessor] {backend_name} 폴백 성공(본문 텍스트 확보)")
+                    return fallback_doc
+                _log.info(f"[DocumentProcessor] {backend_name} 폴백 결과도 비어 상위 PDF 폴백으로 위임")
+            except Exception as fallback_err:
+                _log.warning(f"[DocumentProcessor] {backend_name} 폴백 실패, 상위 PDF 폴백으로 위임: {fallback_err}")
+            # SDK·레거시 모두 본문을 못 얻음 → 예외로 올려 __call__ 의 PDF 변환 폴백에 위임한다.
+            raise HwpConversionError(
+                f"HWP/HWPX SDK 결과가 비어 있고 레거시 백엔드로도 본문 복구 실패: {file_path}"
+            )
+        return document
 
     def get_loader_langchain(self, file_path: str, use_pdf_sdk: bool = True):
         """PPT 파일용 langchain 로더"""
@@ -2829,6 +2910,24 @@ class DocumentProcessor:
         logging.getLogger().setLevel(level)
 
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
+        # HWP/HWPX: docling(SDK + 레거시 백엔드) 처리가 전체 실패하면 PDF 변환으로 최종 폴백한다.
+        # attachment_processor.DocumentProcessor.__call__ 의 PDF 폴백과 동일 취지 —
+        # convert_to_pdf 는 rhwp ↔ LibreOffice HWP→PDF 체인이며, 변환된 PDF 를 PDF 경로로 재처리한다.
+        # (헌법.hwp 처럼 SDK 가 exit 3 으로 거부하거나 02.hwp 처럼 빈 결과를 내는 경우를 살린다.)
+        ext = Path(file_path).suffix.lower()
+        if ext in ('.hwp', '.hwpx'):
+            try:
+                return await self._process_request(request, file_path, **kwargs)
+            except Exception as hwp_err:
+                _log.warning(f"[DocumentProcessor] HWP/HWPX 처리 실패, PDF 변환 폴백 시도: {hwp_err}")
+                converted = convert_to_pdf(file_path, use_pdf_sdk=kwargs.get('use_pdf_sdk', True))
+                if converted:
+                    _log.info(f"[DocumentProcessor] PDF 변환 성공, PDF 경로로 재처리: {converted}")
+                    return await self._process_request(request, converted, **kwargs)
+                raise hwp_err
+        return await self._process_request(request, file_path, **kwargs)
+
+    async def _process_request(self, request: Request, file_path: str, **kwargs: dict):
         runtime_level = kwargs.get('log_level')
         self.setup_logging(runtime_level if runtime_level is not None else self._log_level)
 
