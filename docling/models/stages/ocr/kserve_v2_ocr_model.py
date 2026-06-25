@@ -11,7 +11,12 @@ from docling_core.types.doc.page import BoundingRectangle, TextCell
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import Page
+from docling.datamodel.base_models import (
+    DoclingComponentType,
+    ErrorItem,
+    FailureCategory,
+    Page,
+)
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.kserve_transport_utils import resolve_kserve_transport_base_url
 from docling.datamodel.pipeline_options import KserveV2OcrOptions, OcrOptions
@@ -249,6 +254,18 @@ class KserveV2OcrModel(BaseOcrModel):
                             page.page_no,
                             rect_idx,
                             str(e),
+                        )
+                        # Record the failure but keep the page: the page still
+                        # yields, and conv_res.errors carries the INFERENCE_FAILURE
+                        # (which downgrades the document to PARTIAL_SUCCESS).
+                        conv_res.errors.append(
+                            ErrorItem(
+                                component_type=DoclingComponentType.MODEL,
+                                module_name=type(self).__name__,
+                                error_message=str(e) or e.__class__.__name__,
+                                category=FailureCategory.INFERENCE_FAILURE,
+                                page_no=page.page_no,
+                            )
                         )
                         # Continue processing other rectangles
 

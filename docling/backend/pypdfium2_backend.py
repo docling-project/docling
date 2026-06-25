@@ -26,6 +26,7 @@ from docling.backend.managed_pdfium_backend import (
 )
 from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import PdfOutlineItem
+from docling.exceptions import DocumentLoadError
 from docling.utils.locks import pypdfium2_lock
 from docling.utils.pdf_outline import extract_outline_from_pdfium
 
@@ -424,7 +425,7 @@ class PyPdfiumDocumentBackend(ManagedPdfiumDocumentBackend):
             with pypdfium2_lock:
                 self._pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
         except PdfiumError as e:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 f"pypdfium could not load document with hash {self.document_hash}"
             ) from e
 

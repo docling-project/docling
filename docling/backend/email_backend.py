@@ -12,6 +12,7 @@ from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
             self.valid = self.mail is not None
         except Exception as exc:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 f"Could not initialize email backend for file with hash {self.document_hash}."
             ) from exc
 

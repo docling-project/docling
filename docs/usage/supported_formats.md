@@ -10,6 +10,7 @@ Below you can find a listing of all supported input and output formats.
 |--------|-------------|
 | PDF | |
 | DOCX, XLSX, PPTX | Default formats in MS Office 2007+, based on Office Open XML |
+| ODT, ODS, ODP | OpenDocument Format for text documents, spreadsheets, and presentations |
 | EPUB | Electronic Publication format for e-books |
 | Markdown | |
 | AsciiDoc | Human-readable, plain-text markup language for structured technical content |

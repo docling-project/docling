@@ -7,7 +7,12 @@ from typing import TYPE_CHECKING, Annotated, Literal, Optional
 from docling_core.types.doc.document import DoclingDocument
 from pydantic import AliasChoices, AnyUrl, BaseModel, ConfigDict, Field
 
-from docling.datamodel.base_models import ConversionStatus, ErrorItem, QualityGrade
+from docling.datamodel.base_models import (
+    ConversionStatus,
+    ErrorItem,
+    FailureCategory,
+    QualityGrade,
+)
 from docling.datamodel.service.tasks import TaskProcessingMeta, TaskType
 from docling.utils.profiling import ProfilingItem
 
@@ -201,13 +206,7 @@ class ConvertedOutcomeCountsMixin(BaseModel):
     num_failed: int
 
 
-class FailureCategory(str, enum.Enum):
-    POLICY = "policy"
-    CAPACITY = "capacity"
-    SOURCE_UNAVAILABLE = "source_unavailable"
-    TARGET_UNAVAILABLE = "target_unavailable"
-    TIMEOUT = "timeout"
-    INTERNAL = "internal"
+# FailureCategory lives in base_models; re-exported here for back-compat imports.
 
 
 class FailurePhase(str, enum.Enum):

@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import pytest
 from docling_core.types.doc import DocItemLabel, GroupItem, TableItem
 from lxml import etree
+from PIL import Image
 
 import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
@@ -32,7 +33,7 @@ IS_CI = bool(os.getenv("CI"))
 @pytest.fixture(scope="module")
 def docx_paths() -> list[Path]:
     # Define the directory you want to search
-    directory = Path("./tests/data/docx/")
+    directory = Path("./tests/data/docx/sources/")
 
     # List all docx files in the directory and its subdirectories
     docx_files = sorted(directory.rglob("*.docx"))
@@ -66,9 +67,7 @@ def documents(docx_paths) -> list[tuple[Path, DoclingDocument]]:
     for docx_path in docx_paths:
         _log.debug(f"converting {docx_path}")
 
-        gt_path = (
-            docx_path.parent.parent / "groundtruth" / "docling_v2" / docx_path.name
-        )
+        gt_path = docx_path.parent.parent / "groundtruth" / docx_path.name
 
         conv_result: ConversionResult = converter.convert(docx_path)
 
@@ -390,7 +389,7 @@ def test_get_outline_level_from_style():
     """
     from docx import Document
 
-    docx_path = Path("./tests/data/docx/word_sample.docx")
+    docx_path = Path("./tests/data/docx/sources/word_sample.docx")
     in_doc = InputDocument(
         path_or_stream=docx_path,
         format=InputFormat.DOCX,
@@ -453,7 +452,7 @@ def test_external_image_references():
 
     See: https://github.com/docling-project/docling/issues/3113
     """
-    docx_path = Path("./tests/data/docx/docx_external_image.docx")
+    docx_path = Path("./tests/data/docx/sources/docx_external_image.docx")
     assert docx_path.exists(), f"Test file not found: {docx_path}"
 
     converter = get_converter()
@@ -519,7 +518,7 @@ def test_inline_sdt_references(tmp_path):
 
 def test_block_sdt_tables_are_extracted():
     """Test tables wrapped in block-level SDT content controls."""
-    docx_path = Path("./tests/data/docx/docx_rich_tables_01.docx")
+    docx_path = Path("./tests/data/docx/sources/docx_rich_tables_01.docx")
 
     conv_result = get_converter().convert(docx_path)
     doc = conv_result.document
@@ -887,3 +886,25 @@ def test_text_after_drawingml_images(documents):
             "Skipping DrawingML text extraction test."
         )
         pytest.skip(f"Test document '{name}' not available")
+
+
+def test_invisible_spacer_logic():
+    backend = MsWordDocumentBackend.__new__(MsWordDocumentBackend)
+
+    assert backend._is_invisible_spacer(None) is False
+
+    # Test microscopic layout dot
+    tiny_img = Image.new("RGB", (4, 4))
+    assert backend._is_invisible_spacer(tiny_img) is True
+
+    # Test 100% transparent RGBA layout box (Alpha = 0)
+    trans_img = Image.new("RGBA", (50, 50), (255, 255, 255, 0))
+    assert backend._is_invisible_spacer(trans_img) is True
+
+    # Test pure white RGB layout box
+    white_img = Image.new("RGB", (50, 50), (255, 255, 255))
+    assert backend._is_invisible_spacer(white_img) is True
+
+    # Test normal, valid graphic
+    valid_img = Image.new("RGB", (50, 50), (100, 150, 200))
+    assert backend._is_invisible_spacer(valid_img) is False

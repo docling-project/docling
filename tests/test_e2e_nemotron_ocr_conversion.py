@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import List, Tuple
+from typing import Optional
 
 import pytest
 
@@ -61,22 +61,17 @@ pytestmark = [
 ]
 
 
-def get_pdf_paths():
-    # Define the directory you want to search
-    directory = Path("./tests/data_scanned")
-
-    # List all PDF files in the directory and its subdirectories
-    pdf_files = sorted(directory.rglob("ocr_test*.pdf"))
-
-    return pdf_files
-
-
-def get_converter(ocr_options: OcrOptions):
+def get_converter(ocr_options: OcrOptions, ocr_batch_size: Optional[int] = None):
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = True
     pipeline_options.do_table_structure = True
     pipeline_options.table_structure_options.do_cell_matching = True
     pipeline_options.ocr_options = ocr_options
+    # The threaded pipeline delivers pages to the OCR stage in groups of
+    # `ocr_batch_size`. Raising it lets a single OCR batch span several pages,
+    # which is required to exercise cross-page batching in NemotronOcrModel.
+    if ocr_batch_size is not None:
+        pipeline_options.ocr_batch_size = ocr_batch_size
     # Nemotron OCR requires a CUDA accelerator.
     pipeline_options.accelerator_options.device = AcceleratorDevice.CUDA
 
@@ -122,20 +117,21 @@ def test_nemotron_language_resolution(req_languages, expected):
 
 
 def test_e2e_nemotron_ocr_conversions():
-    pdf_paths = get_pdf_paths()
+    directory = Path("./tests/data/scanned/sources")
 
-    # Each engine config is verified against its own (namespaced) groundtruth so it
-    # does not clash with the shared `test_e2e_ocr_conversion` groundtruth.
-    engines: List[Tuple[OcrOptions, str, bool]] = [
-        (NemotronOcrOptions(), "nemotron-ocr", True),
+    # List all PDF files in the directory and its subdirectories
+    pdf_paths = sorted(directory.rglob("ocr_test*.pdf"))
+
+    configs: list[tuple[OcrOptions, str]] = [
+        (NemotronOcrOptions(), "nemotron-ocr"),  # Default options
+        (NemotronOcrOptions(batch_size=3), "nemotron-ocr"),  # Lower batch_size
         (
             NemotronOcrOptions(force_full_page_ocr=True),
             "nemotron-ocr.full-page",
-            True,
-        ),
+        ),  # Full page
     ]
 
-    for ocr_options, engine_suffix, supports_rotation in engines:
+    for ocr_options, engine_suffix in configs:
         print(
             f"Converting with ocr_engine: {ocr_options.kind}, "
             f"merge_level: {ocr_options.merge_level}, "
@@ -143,8 +139,6 @@ def test_e2e_nemotron_ocr_conversions():
         )
         converter = get_converter(ocr_options=ocr_options)
         for pdf_path in pdf_paths:
-            if not supports_rotation and "rotated" in pdf_path.name:
-                continue
             print(f"converting {pdf_path}")
 
             doc_result: ConversionResult = converter.convert(pdf_path)
@@ -156,3 +150,37 @@ def test_e2e_nemotron_ocr_conversions():
                 ocr_engine=engine_suffix,
                 fuzzy=True,
             )
+
+
+def test_e2e_nemotron_ocr_multipage_batching():
+    """Exercise cross-page batching and the per-page redistribution of results."""
+    pdf_path = Path("./tests/data/scanned/sources/nemotron_multipage.pdf")
+
+    # Reference GT is generated with batch_size=1
+    # During test the batch_size is chosen not to divide the number of pages, to ensure batches
+    # that span across pages
+    batch_size = 1 if GENERATE_V2 else 3
+
+    configs: list[tuple[OcrOptions, str]] = [
+        (NemotronOcrOptions(batch_size=batch_size), "nemotron-ocr"),
+        (
+            NemotronOcrOptions(batch_size=batch_size, force_full_page_ocr=True),
+            "nemotron-ocr.full-page",
+        ),
+    ]
+
+    for ocr_options, engine_suffix in configs:
+        print(
+            f"Converting multi-page with batch_size: {ocr_options.batch_size}, "
+            f"force_full_page_ocr: {ocr_options.force_full_page_ocr}"
+        )
+        converter = get_converter(ocr_options=ocr_options, ocr_batch_size=batch_size)
+        doc_result: ConversionResult = converter.convert(pdf_path)
+
+        verify_conversion_result_v2(
+            input_path=pdf_path,
+            doc_result=doc_result,
+            generate=GENERATE_V2,
+            ocr_engine=engine_suffix,
+            fuzzy=True,
+        )

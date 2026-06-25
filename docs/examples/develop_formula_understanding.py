@@ -94,7 +94,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/code_and_formula.pdf"
+    input_doc_path = data_folder / "pdf/sources/code_and_formula.pdf"
 
     pipeline_options = ExampleFormulaUnderstandingPipelineOptions()
     pipeline_options.do_formula_understanding = True

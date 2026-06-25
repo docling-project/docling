@@ -47,11 +47,20 @@ from docling.backend.docx.drawingml.utils import (
 from docling.backend.docx.latex.omml import oMath2Latex
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
 
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
+    """Backend for parsing Microsoft Word (.docx) documents.
+
+    Note:
+        Images with a total area (width * height) less than or equal to
+        `SPACER_IMAGE_AREA_THRESHOLD` (default: 25px) are considered layout
+        artifacts (such as invisible spacers) and are discarded during parsing.
+    """
+
     _W_NS: Final[str] = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
     _W_NS_CLARK: Final[str] = f"{{{_W_NS}}}"
 
@@ -67,6 +76,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         "a14": "http://schemas.microsoft.com/office/drawing/2010/main",
         "w14": "http://schemas.microsoft.com/office/word/2010/wordml",
     }
+
+    SPACER_IMAGE_AREA_THRESHOLD: Final[int] = (
+        25  # Images with an area (w*h) below this are dropped as layout artifacts
+    )
 
     @override
     def __init__(self, in_doc: "InputDocument", path_or_stream: BytesIO | Path) -> None:
@@ -132,6 +145,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         )
         if self.docx_obj:
             self.valid = True
+            self.current_part = self.docx_obj.part
             # Build comment mappings after loading document
             self._extract_comment_ranges()
 
@@ -199,7 +213,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             else:
                 return None
         except Exception as e:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 f"MsWordDocumentBackend could not load document with hash {document_hash}"
             ) from e
 
@@ -367,10 +381,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 textbox_elements = txbx_xpath(element)
 
                 # No modern textboxes found, check for alternate/legacy textbox formats
-                if not textbox_elements and tag_name in ["drawing", "pict"]:
+                if not textbox_elements:
                     # Additional checks for textboxes in DrawingML and VML formats
                     alt_txbx_xpath = etree.XPath(
-                        ".//wps:txbx//w:p|.//w10:wrap//w:p|.//a:p//a:t",
+                        ".//wps:txbx//w:p|.//w10:wrap//w:p|.//v:textbox//w:txbxContent//w:p",
                         namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
                     )
                     textbox_elements = alt_txbx_xpath(element)
@@ -489,8 +503,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     "./w:sdtContent", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
                 )
                 if sdt_content is not None:
-                    _, sdt_elements = self._walk_linear(sdt_content, doc)
-                    added_elements.extend(sdt_elements)
+                    # Recursively walk the SDT content to catch textboxes, tables, and nested structures
+                    _, te = self._walk_linear(sdt_content, doc)
+                    added_elements.extend(te)
             # Check for Text
             elif tag_name == "p":
                 # "tcPr", "sectPr"
@@ -500,6 +515,31 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 _log.debug(f"Ignoring element in DOCX with tag: {tag_name}")
 
         return doc, added_elements
+
+    def _is_invisible_spacer(self, pil_image: Image.Image | None) -> bool:
+        """Check if an image is an invisible layout spacer rather than a meaningful graphic."""
+        if pil_image is None:
+            return False
+
+        # Filter tiny spacer images
+        if pil_image.width * pil_image.height <= self.SPACER_IMAGE_AREA_THRESHOLD:
+            return True
+
+        try:
+            extrema = pil_image.getextrema()
+            if extrema is not None:
+                if pil_image.mode in ("RGBA", "LA"):
+                    # extrema[-1] is the Alpha channel. If max alpha is 0, it is 100% invisible.
+                    if extrema[-1][1] == 0:
+                        return True
+                elif pil_image.mode == "RGB":
+                    # If all channels are exactly 255, it is a pure white spacing box.
+                    if extrema == ((255, 255), (255, 255), (255, 255)):
+                        return True
+        except Exception:
+            pass  # pragma: no cover
+
+        return False
 
     def _str_to_int(self, s: str | None, default: int | None = 0) -> int | None:
         if s is None:
@@ -802,10 +842,59 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return label, None
 
     @classmethod
-    def _get_format_from_run(cls, run: Run) -> Formatting | None:
-        # The .bold and .italic properties are booleans, but .underline can be an enum
-        # like WD_UNDERLINE.THICK (value 6), so we need to convert it to a boolean
-        is_bold = run.bold or False
+    def _get_format_from_run(
+        cls, run: Run, paragraph: Paragraph | None = None
+    ) -> Formatting | None:
+        is_bold = run.bold
+
+        if not is_bold:
+            try:
+                # Check the raw XML of the run itself for <w:b> tags
+                if hasattr(run, "_element") and run._element is not None:
+                    b_tags = run._element.xpath(".//w:b | .//w:bCs")
+                    for b in b_tags:
+                        val = b.get(
+                            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
+                        )
+                        if val not in ["0", "false"]:
+                            is_bold = True
+                            break
+
+                # Check the paragraph's direct formatting properties
+                if (
+                    not is_bold
+                    and hasattr(run, "_parent")
+                    and hasattr(run._parent, "_element")
+                ):
+                    pPr_b = run._parent._element.xpath(
+                        "./w:pPr/w:rPr/w:b | ./w:pPr/w:rPr/w:bCs"
+                    )
+                    for b in pPr_b:
+                        val = b.get(
+                            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
+                        )
+                        if val not in ["0", "false"]:
+                            is_bold = True
+                            break
+
+                # Recursively climb the paragraph's Master Style Sheet
+                if (
+                    not is_bold
+                    and paragraph is not None
+                    and getattr(paragraph, "style", None)
+                ):
+                    current_style = paragraph.style
+                    while current_style is not None:
+                        if hasattr(current_style, "font") and current_style.font.bold:
+                            is_bold = True
+                            break
+
+                        current_style = getattr(current_style, "base_style", None)
+            except Exception:
+                pass
+
+        is_bold = is_bold or False
+
         is_italic = run.italic or False
         is_strikethrough = run.font.strike or False
         # Convert any non-None underline value to True
@@ -840,7 +929,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         content: list[tuple[str, Formatting | None, AnyUrl | Path | None]] = []
 
-        for child in paragraph._p:
+        def _get_children_recursive(node):
+            for child in node:
+                tag_name = etree.QName(child).localname
+                if tag_name in {"smartTag", "customXml", "ins", "fldSimple"}:
+                    yield from _get_children_recursive(child)
+                else:
+                    yield child
+
+        for child in _get_children_recursive(paragraph._p):
             tag_name = etree.QName(child).localname
 
             if tag_name == "sdt":
@@ -858,7 +955,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
                 )
                 fmt = (
-                    self._get_format_from_run(Run(runs[0], paragraph)) if runs else None
+                    self._get_format_from_run(Run(runs[0], paragraph), paragraph)
+                    if runs
+                    else None
                 )
                 content.append((text, fmt, None))
                 continue
@@ -877,7 +976,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     (
                         item.text,
                         (
-                            self._get_format_from_run(item.runs[0])
+                            self._get_format_from_run(item.runs[0], paragraph)
                             if item.runs and len(item.runs) > 0
                             else None
                         ),
@@ -885,7 +984,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     )
                 )
             elif isinstance(item, Run):
-                content.append((item.text, self._get_format_from_run(item), None))
+                content.append(
+                    (item.text, self._get_format_from_run(item, paragraph), None)
+                )
 
         return content
 
@@ -2170,8 +2271,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         """
         image_data: bytes | None = None
         rId = element.get(rel_attr)
-        if rId and rId in self.docx_obj.part.rels:
-            rel = self.docx_obj.part.rels[rId]
+        active_part = getattr(self, "current_part", self.docx_obj.part)
+        if rId and rId in active_part.rels:
+            rel = active_part.rels[rId]
             if rel.is_external:
                 warnings.warn(
                     f"Skipping external {image_type} reference: {rel.target_ref}",
@@ -2189,6 +2291,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         parent: NodeItem | None,
         pil_image: Image.Image | None,
+        is_spacer: bool = False,
     ) -> RefItem:
         """Add a picture element to the document.
 
@@ -2196,22 +2299,24 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             doc: The DoclingDocument being constructed
             parent: Parent node for the picture
             pil_image: PIL Image object, or None for placeholder
+            is_spacer: Flag indicating whether the parsed image is a layout spacer artifact to be excluded
 
         Returns:
             Reference to the added picture element
         """
+        target_layer = ContentLayer.INVISIBLE if is_spacer else self.content_layer
         if pil_image is not None:
             p = doc.add_picture(
                 parent=parent,
                 image=ImageRef.from_pil(image=pil_image, dpi=72),
                 caption=None,
-                content_layer=self.content_layer,
+                content_layer=target_layer,
             )
         else:
             p = doc.add_picture(
                 parent=parent,
                 caption=None,
-                content_layer=self.content_layer,
+                content_layer=target_layer,
             )
         return p.get_ref()
 
@@ -2327,7 +2432,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         _log.warning(f"Warning: image cannot be loaded by Pillow: {e}")
                         pil_image = None
 
-                if pil_image is None and image is not None:
+                if pil_image is None and image is not None and image_data is not None:
                     _log.debug(
                         "Direct PIL loading failed, trying DOCX conversion via LibreOffice"
                     )
@@ -2335,7 +2440,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         image, ["drawing", "pict"]
                     )
 
-                elem_ref.append(self._add_picture_to_doc(doc, parent, pil_image))
+                is_spacer = self._is_invisible_spacer(pil_image)
+                elem_ref.append(
+                    self._add_picture_to_doc(
+                        doc, parent, pil_image, is_spacer=is_spacer
+                    )
+                )
+
         return elem_ref
 
     def _handle_vml_pictures(
@@ -2394,7 +2505,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         )
                         pil_image = None
 
-                    if pil_image is None:
+                    if pil_image is None and image_data is not None:
                         pil_image = self._convert_elements_via_docx(
                             imagedata, ["object", "pict"]
                         )
@@ -2404,7 +2515,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                                 "Install LibreOffice for better VML/EMF/WMF support."
                             )
 
-                elem_ref.append(self._add_picture_to_doc(doc, parent, pil_image))
+                is_spacer = self._is_invisible_spacer(pil_image)
+                elem_ref.append(
+                    self._add_picture_to_doc(
+                        doc, parent, pil_image, is_spacer=is_spacer
+                    )
+                )
+
         return elem_ref
 
     def _handle_drawingml(self, doc: DoclingDocument, drawingml_els: Any):
@@ -2425,7 +2542,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if pil_image is None:
                 raise UnidentifiedImageError
 
-            self._add_picture_to_doc(doc, parent, pil_image)
+            is_spacer = self._is_invisible_spacer(pil_image)
+            self._add_picture_to_doc(doc, parent, pil_image, is_spacer=is_spacer)
+
         except (UnidentifiedImageError, OSError):
             _log.warning("Warning: DrawingML image cannot be loaded by Pillow")
             self._add_picture_to_doc(doc, parent, None)
@@ -2447,6 +2566,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         current_layer = self.content_layer
         base_parent = self.parents[0]
         self.content_layer = ContentLayer.FURNITURE
+
+        txbx_xpath = etree.XPath(
+            ".//w:txbxContent|.//v:textbox//w:p|.//wps:txbx//w:p|.//a:p//a:t",
+            namespaces=self._BLIP_NAMESPACES,
+        )
         for sec_idx, section in enumerate(docx_obj.sections):
             if sec_idx > 0 and not section.different_first_page_header_footer:
                 continue
@@ -2459,13 +2583,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             par = [txt for txt in (par.text.strip() for par in hdr.paragraphs) if txt]
             tables = hdr.tables
             has_blip = self._has_blip(hdr._element)
-            if par or tables or has_blip:
+            has_txbx = len(txbx_xpath(hdr._element)) > 0
+
+            if par or tables or has_blip or has_txbx:
                 self.parents[0] = doc.add_group(
                     label=GroupLabel.SECTION,
                     name="page header",
                     content_layer=self.content_layer,
                 )
+                self.current_part = hdr.part
                 self._walk_linear(hdr._element, doc)
+                self.current_part = self.docx_obj.part
 
             ftr = (
                 section.first_page_footer
@@ -2475,13 +2603,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             par = [txt for txt in (par.text.strip() for par in ftr.paragraphs) if txt]
             tables = ftr.tables
             has_blip = self._has_blip(ftr._element)
-            if par or tables or has_blip:
+            has_txbx = len(txbx_xpath(ftr._element)) > 0
+
+            if par or tables or has_blip or has_txbx:
                 self.parents[0] = doc.add_group(
                     label=GroupLabel.SECTION,
                     name="page footer",
                     content_layer=self.content_layer,
                 )
+                self.current_part = ftr.part
                 self._walk_linear(ftr._element, doc)
+                self.current_part = self.docx_obj.part
 
         self.content_layer = current_layer
         self.parents[0] = base_parent

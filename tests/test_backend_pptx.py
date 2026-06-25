@@ -17,7 +17,7 @@ GENERATE = GEN_TEST_DATA
 
 def get_pptx_paths():
     # Define the directory you want to search
-    directory = Path("./tests/data/pptx/")
+    directory = Path("./tests/data/pptx/sources/")
 
     # List all PPTX files in the directory and its subdirectories
     pptx_files = sorted(directory.rglob("*.pptx"))
@@ -37,9 +37,7 @@ def test_e2e_pptx_conversions():
     for pptx_path in pptx_paths:
         # print(f"converting {pptx_path}")
 
-        gt_path = (
-            pptx_path.parent.parent / "groundtruth" / "docling_v2" / pptx_path.name
-        )
+        gt_path = pptx_path.parent.parent / "groundtruth" / pptx_path.name
 
         conv_result: ConversionResult = converter.convert(pptx_path)
 
@@ -74,7 +72,7 @@ def test_comments_extraction() -> None:
     """Test comprehensive comment extraction including metadata, authors, and slide distribution."""
 
     converter = get_converter()
-    path = Path("./tests/data/pptx/powerpoint_comments.pptx")
+    path = Path("./tests/data/pptx/sources/powerpoint_comments.pptx")
     doc: DoclingDocument = converter.convert(path).document
 
     assert doc.num_pages() == 3, f"Expected 3 slides, got {doc.num_pages()}"
@@ -133,7 +131,7 @@ def test_comments_extraction() -> None:
 
 def test_comments_respect_page_range() -> None:
     """Test that comments are only extracted for slides within page_range."""
-    path = Path("./tests/data/pptx/powerpoint_comments.pptx")
+    path = Path("./tests/data/pptx/sources/powerpoint_comments.pptx")
     converter = get_converter()
 
     doc: DoclingDocument = converter.convert(path, page_range=(1, 1)).document
@@ -176,7 +174,7 @@ def test_pptx_unrecognized_shape_type():
     Ref: https://github.com/docling-project/docling/issues/3308
     """
     converter = get_converter()
-    pptx_path = Path("./tests/data/pptx/powerpoint_unrecognized_shape.pptx")
+    pptx_path = Path("./tests/data/pptx/sources/powerpoint_unrecognized_shape.pptx")
 
     conv_result: ConversionResult = converter.convert(pptx_path)
     doc: DoclingDocument = conv_result.document
@@ -203,7 +201,7 @@ def test_pptx_malformed_picture_shapes():
     extract text from the slides.
     """
     converter = get_converter()
-    pptx_path = Path("./tests/data/pptx/powerpoint_malformed_pictures.pptx")
+    pptx_path = Path("./tests/data/pptx/sources/powerpoint_malformed_pictures.pptx")
 
     with pytest.warns(UserWarning, match="Skipping malformed picture shape"):
         conv_result: ConversionResult = converter.convert(pptx_path)
@@ -218,7 +216,7 @@ def test_pptx_malformed_picture_shapes():
 
 def test_pptx_page_range():
     converter = get_converter()
-    pptx_path = Path("./tests/data/pptx/powerpoint_sample.pptx")
+    pptx_path = Path("./tests/data/pptx/sources/powerpoint_sample.pptx")
 
     conv_result: ConversionResult = converter.convert(pptx_path, page_range=(2, 2))
 

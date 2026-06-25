@@ -1,0 +1,104 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section_header: Table with rich cells
+  item-2 at level 1: table with [4x2]
+    item-3 at level 2: unspecified: group rich_cell_group_0_0_1
+      item-4 at level 3: text: This is a list:
+      item-5 at level 3: list: group list
+        item-6 at level 4: list_item: A First
+        item-7 at level 4: list_item: A Second
+        item-8 at level 4: list_item: A Third
+    item-9 at level 2: unspecified: group rich_cell_group_0_1_1
+      item-10 at level 3: text: This is a formatted list:
+      item-11 at level 3: list: group list
+        item-12 at level 4: list_item: 
+          item-13 at level 5: inline: group group
+            item-14 at level 6: text: B 
+            item-15 at level 6: text: First
+        item-16 at level 4: list_item: 
+          item-17 at level 5: inline: group group
+            item-18 at level 6: text: B 
+            item-19 at level 6: text: Second
+        item-20 at level 4: list_item: 
+          item-21 at level 5: inline: group group
+            item-22 at level 6: text: B 
+            item-23 at level 6: text: Third
+    item-24 at level 2: unspecified: group rich_cell_group_0_0_2
+      item-25 at level 3: text: First Paragraph
+
+Second Paragraph
+      item-26 at level 3: text: Third paragraph before a numbered list
+      item-27 at level 3: list: group list
+        item-28 at level 4: list_item: Number one
+        item-29 at level 4: list_item: Number two
+        item-30 at level 4: list_item: Number three
+    item-31 at level 2: unspecified: group rich_cell_group_0_0_3
+      item-32 at level 3: text: This is a paragraph
+      item-33 at level 3: text: This is another paragraph
+  item-34 at level 1: section_header: Table with nested table
+  item-35 at level 1: text: Before table
+  item-36 at level 1: table with [3x2]
+    item-37 at level 2: unspecified: group rich_cell_group_1_0_2
+      item-38 at level 3: table with [2x3]
+    item-39 at level 2: unspecified: group rich_cell_group_2_1_2
+      item-40 at level 3: text: Rich cell
+A nested table
+      item-41 at level 3: table with [2x3]
+  item-42 at level 1: inline: group group
+    item-43 at level 2: text: After table with 
+    item-44 at level 2: text: bold
+    item-45 at level 2: text: underline
+    item-46 at level 2: text: strikethrough
+    item-47 at level 2: text: italic
+  item-48 at level 1: section_header: Table with pictures
+  item-49 at level 1: table with [3x2]
+    item-50 at level 2: unspecified: group rich_cell_group_4_1_1
+      item-51 at level 3: picture
+      item-52 at level 3: text: Owner avatar
+    item-53 at level 2: unspecified: group rich_cell_group_4_0_2
+      item-54 at level 3: text: Text and picture
+      item-55 at level 3: picture
+      item-56 at level 3: text: Owner avatar
+  item-57 at level 1: section_header: Lists with same numId in different cells
+  item-58 at level 1: table with [2x1]
+    item-59 at level 2: unspecified: group rich_cell_group_5_0_0
+      item-60 at level 3: list: group list
+        item-61 at level 4: list_item: Cell 1 item 1
+        item-62 at level 4: list_item: Cell 1 item 2
+    item-63 at level 2: unspecified: group rich_cell_group_5_0_1
+      item-64 at level 3: list: group list
+        item-65 at level 4: list_item: Cell 2 item 1
+        item-66 at level 4: list_item: Cell 2 item 2
+  item-67 at level 1: section_header: Lists with different numIds in different cells
+  item-68 at level 1: table with [2x1]
+    item-69 at level 2: unspecified: group rich_cell_group_6_0_0
+      item-70 at level 3: list: group list
+        item-71 at level 4: list_item: Cell 1 item 1
+        item-72 at level 4: list_item: Cell 1 item 2
+    item-73 at level 2: unspecified: group rich_cell_group_6_0_1
+      item-74 at level 3: list: group list
+        item-75 at level 4: list_item: Cell 2 item 1
+        item-76 at level 4: list_item: Cell 2 item 2
+  item-77 at level 1: section_header: Multiple columns with lists
+  item-78 at level 1: table with [2x2]
+    item-79 at level 2: unspecified: group rich_cell_group_7_0_0
+      item-80 at level 3: list: group list
+        item-81 at level 4: list_item: R1C1 item 1
+        item-82 at level 4: list_item: R1C1 item 2
+    item-83 at level 2: unspecified: group rich_cell_group_7_1_0
+      item-84 at level 3: list: group list
+        item-85 at level 4: list_item: R1C2 item 1
+        item-86 at level 4: list_item: R1C2 item 2
+    item-87 at level 2: unspecified: group rich_cell_group_7_0_1
+      item-88 at level 3: list: group list
+        item-89 at level 4: list_item: R2C1 item 1
+        item-90 at level 4: list_item: R2C1 item 2
+    item-91 at level 2: unspecified: group rich_cell_group_7_1_1
+      item-92 at level 3: list: group list
+        item-93 at level 4: list_item: R2C2 item 1
+        item-94 at level 4: list_item: R2C2 item 2
+  item-95 at level 1: section_header: Mixed content - list and regular text in different cells
+  item-96 at level 1: table with [2x1]
+    item-97 at level 2: unspecified: group rich_cell_group_8_0_0
+      item-98 at level 3: list: group list
+        item-99 at level 4: list_item: List item 1
+        item-100 at level 4: list_item: List item 2

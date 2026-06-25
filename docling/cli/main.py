@@ -103,6 +103,22 @@ from docling.datamodel.pipeline_options import (
     normalize_pdf_backend,
 )
 from docling.datamodel.settings import settings
+from docling.document_converter import (
+    AudioFormatOption,
+    DocumentConverter,
+    EpubFormatOption,
+    ExcelFormatOption,
+    FormatOption,
+    HTMLFormatOption,
+    LatexFormatOption,
+    MarkdownFormatOption,
+    OdpFormatOption,
+    OdsFormatOption,
+    OdtFormatOption,
+    PdfFormatOption,
+    PowerpointFormatOption,
+    WordFormatOption,
+)
 from docling.models.factories import (
     get_layout_factory,
     get_ocr_factory,
@@ -169,6 +185,27 @@ def _iter_input_paths_from_directory(
         if path not in seen_paths:
             seen_paths.add(path)
             yield path
+
+
+def _expand_from_formats(from_formats: list[str] | None) -> list[InputFormat]:
+    if from_formats is None:
+        return list(InputFormat)
+
+    expanded_formats: list[InputFormat] = []
+    for from_format in from_formats:
+        normalized_format = from_format.lower()
+        if normalized_format == "odf":
+            expanded_formats.extend([InputFormat.ODT, InputFormat.ODS, InputFormat.ODP])
+            continue
+        try:
+            expanded_formats.append(InputFormat(normalized_format))
+        except ValueError:
+            choices = ", ".join([format.value for format in InputFormat] + ["odf"])
+            raise typer.BadParameter(
+                f"{from_format!r} is not one of {choices}"
+            ) from None
+
+    return list(dict.fromkeys(expanded_formats))
 
 
 ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
@@ -497,10 +534,10 @@ def convert(  # noqa: C901
             help="PDF files to convert. Can be local file / directory paths or URL.",
         ),
     ],
-    from_formats: list[InputFormat] = typer.Option(
+    from_formats: list[str] = typer.Option(
         None,
         "--from",
-        help="Input formats to accept. Defaults to all supported formats.",
+        help="Input formats to accept. Use 'odf' for odt, ods, and odp. Defaults to all supported formats.",
     ),
     to_formats: list[OutputFormat] = typer.Option(
         None, "--to", help="Specify output formats. Defaults to Markdown."
@@ -795,8 +832,7 @@ def convert(  # noqa: C901
     settings.debug.visualize_ocr = debug_visualize_ocr
     settings.perf.page_batch_size = page_batch_size
 
-    if from_formats is None:
-        from_formats = list(InputFormat)
+    from_formats = _expand_from_formats(from_formats)
 
     parsed_headers: dict[str, str] | None = None
     if headers is not None:
@@ -1010,6 +1046,9 @@ def convert(  # noqa: C901
                 InputFormat.XLSX: ExcelFormatOption(
                     pipeline_options=simple_format_option
                 ),
+                InputFormat.ODT: OdtFormatOption(pipeline_options=simple_format_option),
+                InputFormat.ODP: OdpFormatOption(pipeline_options=simple_format_option),
+                InputFormat.ODS: OdsFormatOption(pipeline_options=simple_format_option),
                 InputFormat.HTML: HTMLFormatOption(
                     pipeline_options=simple_format_option,
                     backend_options=html_backend_options,

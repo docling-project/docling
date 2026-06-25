@@ -1,7 +1,9 @@
 import logging
 import platform
 import sys
+from collections import deque
 from collections.abc import Iterable, Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional, Type, TypedDict, cast
 
@@ -73,6 +75,32 @@ class NemotronOcrPrediction(TypedDict):
     lower: float
 
 
+@dataclass
+class _PageOcrState:
+    """Tracks the OCR progress of a single page while its rectangles are being
+    processed in batches that may span several pages."""
+
+    page: Page
+    ocr_rects: list[BoundingBox]
+    # Number of valid OCR rectangles still awaiting a prediction. A page is
+    # fully processed once this reaches zero.
+    remaining: int
+    # Whether this page should run through OCR post-processing on completion.
+    # Pages with an invalid backend are passed through untouched.
+    needs_ocr: bool
+    cells: list[TextCell] = field(default_factory=list)
+
+
+@dataclass
+class _BufferedRect:
+    """A single OCR rectangle queued for inference, tied back to its page."""
+
+    state: _PageOcrState
+    ocr_rect: BoundingBox
+    image: numpy.ndarray
+    image_size: tuple[int, int]
+
+
 class NemotronOcrModel(BaseOcrModel):
     r"""Wrapper for Nvidia's nemotron-ocr-v2 model"""
 
@@ -116,6 +144,7 @@ class NemotronOcrModel(BaseOcrModel):
             self.reader = NemotronOCRV2(
                 model_dir=None if model_dir is None else str(model_dir),
                 lang=language,
+                detector_max_batch_size=self.options.batch_size,
             )
 
     @staticmethod
@@ -244,6 +273,47 @@ class NemotronOcrModel(BaseOcrModel):
             ),
         )
 
+    def _run_buffer(
+        self, conv_res: ConversionResult, buffer: list[_BufferedRect]
+    ) -> None:
+        r"""Run the model over a buffer of OCR rectangles (possibly spanning
+        multiple pages) and attach the resulting cells back to their pages."""
+        if not buffer:
+            return
+
+        image_arrays = [entry.image for entry in buffer]
+
+        # Run the model to get the raw predictions. `self.reader` accepts a
+        # list of images and returns one prediction list per image.
+        with TimeRecorder(conv_res, "ocr"):
+            batch_predictions = cast(
+                Sequence[Sequence[NemotronOcrPrediction]],
+                self.reader(
+                    image_arrays,
+                    merge_level=self.options.merge_level,
+                ),
+            )
+
+        # Convert the raw predictions to docling's OCR cells and route them to
+        # the page they belong to.
+        for entry, raw_predictions in zip(buffer, batch_predictions):
+            image_width, image_height = entry.image_size
+            cells = [
+                NemotronOcrModel._prediction_to_cell(
+                    prediction=prediction,
+                    index=index,
+                    ocr_rect=entry.ocr_rect,
+                    image_width=image_width,
+                    image_height=image_height,
+                    scale=self.scale,
+                )
+                for index, prediction in enumerate(raw_predictions)
+            ]
+            entry.state.cells.extend(cells)
+            entry.state.remaining -= 1
+
+        buffer.clear()
+
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -251,74 +321,72 @@ class NemotronOcrModel(BaseOcrModel):
             yield from page_batch
             return
 
+        # Ensure the "ocr" timing entry always exists, even for documents that produce no rectangles
+        TimeRecorder(conv_res, "ocr")
+
+        # Pages currently in flight, kept in input order so they can be yielded in the same order
+        pending: deque[_PageOcrState] = deque()
+
+        def drain_completed() -> Iterable[Page]:
+            # Yield pages from the front of the queue while they are fully processed
+            while pending and pending[0].remaining == 0:
+                state = pending.popleft()
+                if state.needs_ocr:
+                    self.post_process_cells(state.cells, state.page)
+                    if settings.debug.visualize_ocr:
+                        self.draw_ocr_rects_and_cells(
+                            conv_res, state.page, state.ocr_rects
+                        )
+                yield state.page
+
+        # OCR rectangles are accumulated across pages so that the model is fed full batches even
+        # when individual pages contribute only a few rectangles
+        batch_size = max(1, self.options.batch_size)
+        buffer: list[_BufferedRect] = []
+
         for page in page_batch:
             assert page._backend is not None
             if not page._backend.is_valid():
-                yield page
-            else:
-                with TimeRecorder(conv_res, "ocr"):
-                    ocr_rects = self.get_ocr_rects(page)
+                # Add invalid pages in the queue so output order matches input order
+                pending.append(
+                    _PageOcrState(page=page, ocr_rects=[], remaining=0, needs_ocr=False)
+                )
+                yield from drain_completed()
+                continue
 
-                    # Process the OCR rectangles in batches of at most
-                    # `batch_size` images. `self.reader` accepts a list of
-                    # images and returns one prediction list per image.
-                    all_ocr_cells = []
-                    valid_rects = [
-                        ocr_rect for ocr_rect in ocr_rects if ocr_rect.area() != 0
-                    ]
-                    batch_size = max(1, self.options.batch_size)
+            ocr_rects = self.get_ocr_rects(page)
+            valid_rects = [ocr_rect for ocr_rect in ocr_rects if ocr_rect.area() != 0]
+            state = _PageOcrState(
+                page=page,
+                ocr_rects=ocr_rects,
+                remaining=len(valid_rects),
+                needs_ocr=True,
+            )
+            pending.append(state)
 
-                    for batch_start in range(0, len(valid_rects), batch_size):
-                        batch_rects = valid_rects[
-                            batch_start : batch_start + batch_size
-                        ]
+            for ocr_rect in valid_rects:
+                high_res_image = page._backend.get_page_image(
+                    scale=self.scale, cropbox=ocr_rect
+                )
+                buffer.append(
+                    _BufferedRect(
+                        state=state,
+                        ocr_rect=ocr_rect,
+                        image=numpy.array(high_res_image),
+                        image_size=high_res_image.size,
+                    )
+                )
 
-                        image_arrays = []
-                        # Image dimensions parallel to `batch_rects`, needed to
-                        # map normalized predictions back to page coordinates.
-                        image_sizes = []
-                        for ocr_rect in batch_rects:
-                            high_res_image = page._backend.get_page_image(
-                                scale=self.scale, cropbox=ocr_rect
-                            )
-                            image_arrays.append(numpy.array(high_res_image))
-                            image_sizes.append(high_res_image.size)
+                if len(buffer) >= batch_size:
+                    self._run_buffer(conv_res, buffer)
+                    yield from drain_completed()
 
-                        # Run the model to get the raw predictions
-                        batch_predictions = cast(
-                            Sequence[Sequence[NemotronOcrPrediction]],
-                            self.reader(
-                                image_arrays,
-                                merge_level=self.options.merge_level,
-                            ),
-                        )
+            # A page without any valid rectangles is complete right away.
+            yield from drain_completed()
 
-                        # Convert the raw predictions to docling's OCR cells
-                        for ocr_rect, (
-                            image_width,
-                            image_height,
-                        ), raw_predictions in zip(
-                            batch_rects, image_sizes, batch_predictions
-                        ):
-                            cells = [
-                                NemotronOcrModel._prediction_to_cell(
-                                    prediction=prediction,
-                                    index=index,
-                                    ocr_rect=ocr_rect,
-                                    image_width=image_width,
-                                    image_height=image_height,
-                                    scale=self.scale,
-                                )
-                                for index, prediction in enumerate(raw_predictions)
-                            ]
-                            all_ocr_cells.extend(cells)
-
-                    self.post_process_cells(all_ocr_cells, page)
-
-                if settings.debug.visualize_ocr:
-                    self.draw_ocr_rects_and_cells(conv_res, page, ocr_rects)
-
-                yield page
+        # Flush any remaining rectangles that did not fill a full batch.
+        self._run_buffer(conv_res, buffer)
+        yield from drain_completed()
 
     @classmethod
     def get_options_type(cls) -> Type[OcrOptions]:
