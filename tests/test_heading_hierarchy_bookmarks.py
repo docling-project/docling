@@ -21,7 +21,12 @@ from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
     _match_score,
 )
-from docling.utils.pdf_outline import extract_outline_from_pdfium
+from docling.utils.pdf_outline import (
+    extract_outline_from_pdfium,
+    outline_from_docling_parse,
+)
+
+SAMPLE_PDF = Path("./tests/data/pdf/bookmark_sample.pdf")
 
 
 def _bbox(top: float) -> BoundingBox:
@@ -228,24 +233,45 @@ def test_call_reads_outline_from_conversion_result():
 # --------------------------------------------------------------------- real PDF
 
 
-def test_backend_extracts_nested_outline_from_sample_pdf():
-    # End-to-end check of PdfDocumentBackend.get_document_outline() against a committed PDF
-    # carrying a nested bookmark tree (PART -> section -> subsection across 3 pages).
-    pdf = Path("./tests/data/pdf/bookmark_sample.pdf")
+# Expected outline tree shared by both backend extractors (pypdfium2 adds page/position).
+EXPECTED_OUTLINE = [
+    ("PART I - DEFINITIONS", 0),
+    ("1. Interpretation", 1),
+    ("2. Construction of Terms", 1),
+    ("PART II - OBLIGATIONS", 0),
+    ("3. Payment Terms", 1),
+    ("3.1 Payment Schedule", 2),
+    ("4. Termination", 1),
+    ("PART III - MISCELLANEOUS", 0),
+]
+
+
+def test_pypdfium_backend_outline_from_sample_pdf():
+    # pypdfium2 backend: rich extraction with title, depth, target page and vertical position.
     in_doc = InputDocument(
-        path_or_stream=pdf, format=InputFormat.PDF, backend=PyPdfiumDocumentBackend
+        path_or_stream=SAMPLE_PDF,
+        format=InputFormat.PDF,
+        backend=PyPdfiumDocumentBackend,
     )
     outline = in_doc._backend.get_document_outline()
 
-    assert [(o.title, o.level, o.page_no) for o in outline] == [
-        ("PART I - DEFINITIONS", 0, 1),
-        ("1. Interpretation", 1, 1),
-        ("2. Construction of Terms", 1, 1),
-        ("PART II - OBLIGATIONS", 0, 2),
-        ("3. Payment Terms", 1, 2),
-        ("3.1 Payment Schedule", 2, 2),
-        ("4. Termination", 1, 3),
-        ("PART III - MISCELLANEOUS", 0, 3),
-    ]
+    assert [(o.title, o.level) for o in outline] == EXPECTED_OUTLINE
+    assert [o.page_no for o in outline] == [1, 1, 1, 2, 2, 2, 3, 3]
     # XYZ destinations carry a vertical target, captured as a top-left-origin y_top.
     assert all(o.y_top is not None and o.y_top > 0 for o in outline)
+
+
+def test_docling_parse_native_outline_from_sample_pdf():
+    # docling-parse backends use the native get_table_of_contents() (no pypdfium2). It carries
+    # titles + hierarchy only, so page_no/y_top are None. Loaded via the parser directly because
+    # the same tree drives DoclingParseDocumentBackend.get_document_outline().
+    from docling_parse.pdf_parser import DoclingPdfParser
+
+    dp_doc = DoclingPdfParser(loglevel="fatal").load(str(SAMPLE_PDF))
+    try:
+        outline = outline_from_docling_parse(dp_doc)
+    finally:
+        dp_doc.unload()
+
+    assert [(o.title, o.level) for o in outline] == EXPECTED_OUTLINE
+    assert all(o.page_no is None and o.y_top is None for o in outline)

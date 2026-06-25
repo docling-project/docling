@@ -25,7 +25,9 @@ from docling.backend.managed_pdfium_backend import (
     ManagedPdfiumPageBackend,
 )
 from docling.datamodel.backend_options import PdfBackendOptions
+from docling.datamodel.base_models import PdfOutlineItem
 from docling.utils.locks import pypdfium2_lock
+from docling.utils.pdf_outline import extract_outline_from_pdfium
 
 
 def get_pdf_page_geometry(
@@ -436,6 +438,12 @@ class PyPdfiumDocumentBackend(ManagedPdfiumDocumentBackend):
 
     def is_valid(self) -> bool:
         return self.page_count() > 0
+
+    def get_document_outline(self) -> list[PdfOutlineItem]:
+        """Extract the PDF outline from the pypdfium2 document (title, depth, page, position)."""
+        if self._pdoc is None:
+            return []
+        return extract_outline_from_pdfium(self._pdoc)
 
     def _close_native_document(self) -> None:
         with pypdfium2_lock:
