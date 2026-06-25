@@ -417,6 +417,18 @@ enrichment:
 | `split.pages_per_chunk` / `split.page_overlap` | `100` / `1` | 청크당 페이지 수 / 청크 경계 중복 페이지 수 |
 | `split.carryover_max_tokens` | `1500` | 다음 청크에 주입할 누적 목차(outline) 토큰 상한 |
 | `repetition_penalty` | — | 토큰 반복(degeneration) 억제(>1.0). 게이트웨이/vLLM 지원 시에만, 미설정 시 미전송 |
+| `thinking` | `off` | 추론(thinking) 모드. `off`(기본, 차단 토큰 전송) \| `on` \| `auto`(미전송, 모델 자동 판단) |
+| `thinking_dialect` | `standard` | 추론 토글 키 방언. `standard`(`enable_thinking`) \| `hcx`(`force_reasoning`/`skip_reasoning`) |
+
+##### thinking(추론) 모드
+
+`thinking` / `thinking_dialect` 는 **toc·metadata 양쪽 enricher에 동일하게 적용**됩니다. 모델별로 추론 토글 키 이름이 달라 `thinking_dialect` 로 흡수합니다.
+
+- `off`(기본) → `chat_template_kwargs` 에 `{"enable_thinking": false}`(hcx 면 `{"skip_reasoning": true}`) 전송 — 추론 비활성화, 빠른 응답.
+- `on` → `{"enable_thinking": true}`(hcx 면 `{"force_reasoning": true}`) 전송 — 추론 활성화.
+- `auto` → `chat_template_kwargs` 미전송 — 모델 기본 동작에 맡김(기존 동작 보존).
+- `thinking_dialect`: HyperCLOVAX-SEED-Think 등 **hcx 계열 서빙은 `hcx`**, Qwen3/GLM/DeepSeek 등 그 외는 `standard`(기본).
+- 추론이 켜진 응답에 섞인 `<think>...</think>` 블록은 자동 제거되어 본문만 저장됩니다.
 
 ##### 분할(Split) TOC 추출 — 긴 문서 대응
 
@@ -461,6 +473,7 @@ enrichment:
 | `precheck.*` | toc 와 동일 | 컨텍스트 사전 검사 |
 | `system_prompt_file` / `user_prompt_file` | `.md` 파일 | 프롬프트 파일 경로(권장). `system_prompt_file` 생략 시 built-in default system prompt |
 | `system_prompt` / `user_prompt` | (YAML 본문) | inline 프롬프트(`*_file` 미지정 시 fallback). 커스텀 신호(이들/`*_file`/`output_fields`/`parser`) 중 하나라도 있으면 facade custom enricher, 모두 없으면 docling 내장 |
+| `thinking` / `thinking_dialect` | `off` / `standard` | 추론(thinking) 모드 / 방언. toc 와 동일(위 "thinking(추론) 모드" 참고) |
 
 **`field_transforms` — 추출 키를 벡터 메타 필드로 매핑/변환**
 

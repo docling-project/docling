@@ -2,6 +2,15 @@
 
 BOK(한국은행) JSON 형식의 내부 문서를 처리하여 벡터 데이터베이스에 적재하기 위한 전처리기입니다. 조직 내부 메타데이터(팀, 부서)를 추출하고 문서 구조를 보존합니다.
 
+> ### 📌 BOK 패치(v2) 안내
+>
+> 한국은행(BOK) 운영용 최신 facade는 **`BOK_적재용_내부.py`**입니다. 아래 본문은 구버전 코드 흐름을 설명하며, v2 facade는 다음이 다릅니다.
+>
+> - **설정 위치 이동**: 엔드포인트·모델·thinking 등을 `DataEnrichmentOptions` 인자가 아니라 **모듈 상단 설정 상수**(예: `TOC_*`, `METADATA_*`)로 분리했습니다.
+> - **thinking(추론) 모드**: `TOC_THINKING = "auto"` / `TOC_THINKING_DIALECT = "hcx"`, `METADATA_THINKING = "auto"` / `METADATA_THINKING_DIALECT = "hcx"` (`BOK_적재용_내부.py:172-176`). HyperCLOVAX-SEED(hcx) 서빙에서는 `auto`로 두어야 결과가 정상입니다. 동작 매트릭스는 [gitbook_doc/intelligent_processor.md 의 "thinking(추론) 모드"](../gitbook_doc/intelligent_processor.md) 와 동일합니다(`off`→차단, `on`→강제, `auto`→미전송, dialect `hcx`는 `force_reasoning`/`skip_reasoning` 키 사용).
+> - **dotsocr 배치 크기**: 내부 facade는 BOK JSON 입력을 직접 받아 레이아웃(dotsocr) 단계를 거치지 않으므로 `LAYOUT_PAGE_BATCH_SIZE` 설정이 없습니다(외부/규정 facade에만 존재).
+> - **청킹**: `GenosSmartChunker`(v2) 사용.
+
 ## 🔧 공통 컴포넌트
 
 ### GenOSVectorMeta

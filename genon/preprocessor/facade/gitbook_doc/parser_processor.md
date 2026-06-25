@@ -374,6 +374,7 @@ whisper:
 | `toc.split` | `pages_per_chunk` / `page_overlap` | `100` / `1` | 청크당 페이지 수 / 청크 경계 중복 페이지 수 |
 | `toc.split` | `carryover_max_tokens` | `1500` | 다음 청크에 주입할 누적 목차(outline) 토큰 상한 |
 | `toc` | `repetition_penalty` | — | 토큰 반복(degeneration) 억제(>1.0). 게이트웨이/vLLM 지원 시에만, 미설정 시 미전송 |
+| `toc` | `thinking` / `thinking_dialect` | `off` / `standard` | 추론(thinking) 모드 / 방언. 아래 [thinking(추론) 모드](#thinking추론-모드) 참고 |
 | `metadata` | `url` | `""` | 메타데이터 추출 LLM API URL |
 | `metadata` | `api_key` | `""` | LLM API 인증 키 |
 | `metadata` | `model` | `"model"` | 메타데이터 추출 모델명 |
@@ -386,6 +387,7 @@ whisper:
 | `metadata` | `system_prompt` / `user_prompt` | — | inline 프롬프트(`*_file` 미지정 시 fallback). `user_prompt` 의 `{{raw_text}}` 치환 |
 | `metadata.parser` | `type` | `"json"` | 파서 종류. `json`(자동 fallback 파싱) / `python`(외부 파일). `python`이면 `file`/`callable` 필요 |
 | `metadata.field_transforms` | — | 내장 기본값 | 추출 키 → 벡터 메타 필드/타입 변환 목록(선택). 아래 [메타데이터 enricher](#메타데이터-enricher) 참고 |
+| `metadata` | `thinking` / `thinking_dialect` | `off` / `standard` | 추론(thinking) 모드 / 방언. 아래 [thinking(추론) 모드](#thinking추론-모드) 참고 |
 | `metadata.precheck` | `enabled` / `max_context_tokens` / `completion_reserved_tokens` | `/ 128000 / 12000` | TOC와 동일 의미 |
 | `image_description` | `url` | `""` | 이미지 설명 VLM API URL |
 | `image_description` | `api_key` | `""` | 이미지 설명 VLM API 키 |
@@ -429,6 +431,16 @@ whisper:
   첫 추출/이어쓰기를 모두 처리합니다(`<previous_outline>` 비면 전체 추출, 있으면 새 항목만 이어쓰기).
 - **주의**: 컨텍스트에 들어가는 문서는 OFF 유지 권장. `page_overlap>0` 은 경계 누락을 줄이나 중복이 일부 남을 수
   있어(중복이 문제면 `0` 권장), 매우 긴 청크는 토큰 소진 시 스킵될 수 있습니다.
+
+#### thinking(추론) 모드
+
+`thinking` / `thinking_dialect` 는 `toc`·`metadata` enricher에 동일하게 지정합니다. 모델별로 추론 토글 키 이름이 달라 `thinking_dialect` 로 흡수합니다.
+
+- `off`(기본) → `chat_template_kwargs` 에 `{"enable_thinking": false}`(hcx 면 `{"skip_reasoning": true}`) 전송 — 추론 비활성화, 빠른 응답.
+- `on` → `{"enable_thinking": true}`(hcx 면 `{"force_reasoning": true}`) 전송 — 추론 활성화.
+- `auto` → `chat_template_kwargs` 미전송 — 모델 기본 동작에 맡김(기존 동작 보존).
+- `thinking_dialect`: HyperCLOVAX-SEED-Think 등 **hcx 계열 서빙은 `hcx`**, Qwen3/GLM/DeepSeek 등 그 외는 `standard`(기본).
+- 추론이 켜진 응답에 섞인 `<think>...</think>` 블록은 자동 제거되어 본문만 저장됩니다.
 
 **출력 / Whisper**
 
