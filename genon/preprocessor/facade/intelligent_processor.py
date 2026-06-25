@@ -82,6 +82,145 @@ def _has_any_pdf_converter() -> bool:
         return True
 
 
+# 지원 포맷의 매직 헤더(allowlist). 각 값은 아래 공식 출처로 근거 확인 + 실제 샘플로 검증함.
+#   - 정본 매직 DB: file/file(libmagic) magic/Magdir — 실제 본 모듈이 쓰는 python-magic의 DB.
+#     (PDF=Magdir/pdf "%PDF-", PNG/GIF=Magdir/images, JPEG=Magdir/jpeg 0xffd8ff, ZIP=Magdir/msooxml "PK\3\4")
+#   - 포맷 공식 스펙: PDF=ISO 32000(%PDF-), PNG=W3C PNG/RFC2083(89 50 4E 47 0D 0A 1A 0A),
+#     ZIP=PKWARE APPNOTE(local file header 0x04034b50), OLE2/CFB=[MS-CFB] §2.2 Header(D0CF11E0A1B11AE1).
+# zip(PK)=docx/xlsx/pptx/hwpx, OLE2(d0cf..)=hwp/doc/ppt/xls(레거시).
+_KNOWN_MAGIC_PREFIXES = (
+    b"%PDF-",                                # pdf
+    b"\x89PNG\r\n\x1a\n",                    # png
+    b"\xff\xd8\xff",                         # jpeg/jpg
+    b"GIF87a", b"GIF89a",                    # gif
+    b"BM",                                    # bmp
+    b"II*\x00", b"MM\x00*",                  # tiff
+    b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08",  # zip 계열(ooxml/hwpx)
+    b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1",     # OLE2/CFB(hwp5/doc/ppt/xls)
+    b"ID3",                                   # mp3(id3v2)
+    b"RIFF",                                  # wav/avi/webp
+    b"OggS",                                  # ogg
+    b"fLaC",                                  # flac
+    b"\x1f\x8b",                             # gzip
+    b"7z\xbc\xaf\x27\x1c",                  # 7z
+    b"Rar!\x1a\x07",                        # rar
+    b"<?xml",                                 # xml
+)
+
+# 텍스트로 봐줄 수 없는 제어 바이트(탭/개행/CR/FF 제외). 텍스트 파일엔 거의 없음.
+_TEXT_ALLOWED_CTRL = {0x09, 0x0A, 0x0C, 0x0D}
+
+
+def _looks_like_text(head: bytes) -> bool:
+    """csv/txt/json/md/html 등 매직넘버 없는 텍스트 파일인지 휴리스틱 판정.
+    NUL 이 있거나 제어문자 비율이 높으면 바이너리(=텍스트 아님)."""
+    if not head:
+        return False
+    if b"\x00" in head:
+        return False
+    ctrl = sum(
+        1 for c in head if (c < 0x20 and c not in _TEXT_ALLOWED_CTRL) or c == 0x7F
+    )
+    return (ctrl / len(head)) < 0.05
+
+
+def _is_encrypted_pdf(file_path: str) -> bool:
+    """PDF /Encrypt(비밀번호/DRM 암호화) 여부. ISO 32000 기준, pypdf is_encrypted 사용."""
+    try:
+        from pypdf import PdfReader
+
+        return bool(PdfReader(file_path).is_encrypted)
+    except Exception:
+        return False  # 파싱 실패는 여기서 단정 안 함(후속 단계에서 처리)
+
+
+def _is_encrypted_office(file_path: str) -> bool:
+    """암호화된 OOXML(docx/xlsx/pptx)은 OLE2 컨테이너의 'EncryptedPackage' 스트림으로
+    저장된다(MS-OFFCRYPTO). olefile 로 그 스트림 존재를 확인."""
+    try:
+        import olefile
+
+        if not olefile.isOleFile(file_path):
+            return False
+        ole = olefile.OleFileIO(file_path)
+        try:
+            return ole.exists("EncryptedPackage")
+        finally:
+            ole.close()
+    except Exception:
+        return False
+
+
+def _is_protected_hwp(file_path: str) -> bool:
+    """암호화/배포용(DRM) HWP 감지. HWP 5.0 'FileHeader' 스트림(OLE2 내, 256B)의
+    flags(offset 36, uint32 LE) bit1=password, bit2=distribution(배포용/DRM).
+    이런 HWP 는 본문 스트림이 암호화돼 변환기가 정상 처리 못 함. (근거: HWP 5.0 스펙)"""
+    try:
+        import olefile
+        import struct
+
+        if not olefile.isOleFile(file_path):
+            return False
+        ole = olefile.OleFileIO(file_path)
+        try:
+            if not ole.exists("FileHeader"):
+                return False
+            data = ole.openstream("FileHeader").read()
+            if len(data) < 40 or data[:17] != b"HWP Document File":
+                return False
+            flags = struct.unpack("<I", data[36:40])[0]
+            return bool(flags & 0x02) or bool(flags & 0x04)  # password or distribution(DRM)
+        finally:
+            ole.close()
+    except Exception:
+        return False
+
+
+def _detect_unsupported_file(file_path: str) -> str | None:
+    """입력 파일이 정상 처리 가능한지 판정(이슈 #278). 차단 사유 문자열 또는 정상이면 None.
+
+    근거(공식):
+    - 포맷 인식: 매직헤더 allowlist (file/file libmagic 정본 DB + 각 포맷 공식 스펙).
+      _KNOWN_MAGIC_PREFIXES 위 주석에 출처 명시. 확장자와 무관하게 실제 바이트로 본다.
+    - 암호화 자체는 바이트 패턴으로 못 본다(암호문=고엔트로피 랜덤). 포맷별 구조로 판정:
+      PDF=/Encrypt(pypdf is_encrypted, ISO 32000), Office=OLE2의 EncryptedPackage(MS-OFFCRYPTO),
+      HWP=FileHeader flags(HWP 5.0 스펙).
+    - Fasoo 등 독점 DRM은 표준 감지법이 없다 → 알려진 매직헤더에 안 맞고 텍스트도 아닌
+      바이너리(=고엔트로피 garbage)로 걸러낸다.
+    """
+    try:
+        with open(file_path, "rb") as f:
+            head = f.read(512)
+    except Exception:
+        return None  # 읽기 실패는 여기서 판단 안 함(후속 단계에서 처리)
+    if not head:
+        return "빈 파일"
+
+    is_pdf = head.startswith(b"%PDF-")
+    is_ole2 = head.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1")
+    # ── Layer 1: 알려진 포맷 매직헤더인가 ──
+    known = (
+        is_pdf
+        or is_ole2
+        or head[4:8] == b"ftyp"  # mp4/mov/m4a (ISO-BMFF, offset 4)
+        or (len(head) >= 2 and head[0] == 0xFF and (head[1] & 0xE0) == 0xE0)  # mp3 frame sync
+        or any(head.startswith(sig) for sig in _KNOWN_MAGIC_PREFIXES)
+    )
+    if not known:
+        if _looks_like_text(head):
+            return None  # csv/txt/json/md/html 등 텍스트 파일
+        return "지원하지 않거나 손상된 파일(DRM 암호화 등)"
+
+    # ── Layer 2: 알려진 포맷이지만 비밀번호/암호화된 경우 ──
+    if is_pdf and _is_encrypted_pdf(file_path):
+        return "암호화된 PDF 문서"
+    if is_ole2 and _is_encrypted_office(file_path):
+        return "암호화된 Office 문서"
+    if is_ole2 and _is_protected_hwp(file_path):
+        return "암호화/배포용(DRM) HWP 문서"
+    return None
+
+
 # docling imports
 
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
@@ -1986,7 +2125,7 @@ class DocumentProcessor:
             genos_layout_cfg.get("timeout"), "layout.genos_layout.timeout"
         )
         if layout_timeout is None or layout_timeout <= 0:
-            layout_timeout = 3600
+            layout_timeout = 1200
         layout_retry_count = _parse_optional_int(
             genos_layout_cfg.get("retry_count"), "layout.genos_layout.retry_count"
         )
@@ -2008,12 +2147,32 @@ class DocumentProcessor:
         )
         if layout_repetition_penalty is None or layout_repetition_penalty <= 0:
             layout_repetition_penalty = 1.15
+        layout_length_fallback = _parse_optional_bool(
+            genos_layout_cfg.get("length_fallback_enabled"),
+            "layout.genos_layout.length_fallback_enabled",
+        )
+        if layout_length_fallback is None:
+            layout_length_fallback = True
+        layout_fallback_dpi = _parse_optional_int(
+            genos_layout_cfg.get("fallback_dpi"), "layout.genos_layout.fallback_dpi"
+        )
+        if layout_fallback_dpi is None or layout_fallback_dpi <= 0:
+            layout_fallback_dpi = 200
+        layout_table_fallback = _parse_optional_bool(
+            genos_layout_cfg.get("table_fallback_enabled"),
+            "layout.genos_layout.table_fallback_enabled",
+        )
+        if layout_table_fallback is None:
+            layout_table_fallback = True
         self.pipe_line_options.layout_options.genos_layout_options.model = layout_model
         self.pipe_line_options.layout_options.genos_layout_options.timeout = layout_timeout
         self.pipe_line_options.layout_options.genos_layout_options.retry_count = layout_retry_count
         self.pipe_line_options.layout_options.genos_layout_options.temperature = layout_temperature
         self.pipe_line_options.layout_options.genos_layout_options.top_p = layout_top_p
         self.pipe_line_options.layout_options.genos_layout_options.repetition_penalty = layout_repetition_penalty
+        self.pipe_line_options.layout_options.genos_layout_options.length_fallback_enabled = layout_length_fallback
+        self.pipe_line_options.layout_options.genos_layout_options.fallback_dpi = layout_fallback_dpi
+        self.pipe_line_options.layout_options.genos_layout_options.table_fallback_enabled = layout_table_fallback
 
         self.pipe_line_options.do_table_structure = True
         self.pipe_line_options.table_structure_options.do_cell_matching = True
@@ -2521,6 +2680,27 @@ class DocumentProcessor:
 
         return False
 
+    def check_empty_text(self, document: DoclingDocument) -> bool:
+        """텍스트 클러스터(박스)는 있는데 그 텍스트가 전부 비어 있는 페이지가 있는지 확인.
+
+        length 폴백(layout_only)이나 텍스트레이어 부재 등으로 박스만 있고 텍스트가
+        안 채워진 페이지를 잡아 강제 OCR 로 보낸다(이슈 #278 B-2).
+        """
+        from collections import defaultdict
+        page_item_count: dict = defaultdict(int)
+        page_text_len: dict = defaultdict(int)
+        for item, level in document.iterate_items():
+            if isinstance(item, TextItem) and hasattr(item, 'prov') and item.prov:
+                page_no = item.prov[0].page_no
+                page_item_count[page_no] += 1
+                page_text_len[page_no] += len((item.text or "").strip())
+        for page_no, n_items in page_item_count.items():
+            # 텍스트 아이템이 있는데 그 페이지 텍스트 총량이 0 → 비어있는 페이지
+            if n_items > 0 and page_text_len[page_no] == 0:
+                _log.info(f"[intelligent] page {page_no} 텍스트가 비어있음 → 강제 OCR 필요")
+                return True
+        return False
+
     def check_appendix_keywords(self, content: str, appendix_list: list) -> str: # !! appendix feature (2025-09-30, geonhee kim) !!
         if not content or not appendix_list:
             return ""
@@ -2728,6 +2908,18 @@ class DocumentProcessor:
         _log.info(f"file_path: {file_path}")
         _log.info(f"kwargs: {kwargs}")
 
+        # 비정상 파일 사전 감지(이슈 #278): 지원 포맷 매직헤더에 하나도 안 맞고 텍스트도
+        # 아니면(=DRM 암호화/손상 바이너리) 변환 시 garbage PDF → VLM 무한 출력/행을
+        # 유발하므로 변환 전에 컷한다. 확장자와 무관하게 실제 헤더로 판정.
+        bad_reason = _detect_unsupported_file(file_path)
+        if bad_reason:
+            _log.warning(
+                f"[intelligent] 비정상 파일 감지({bad_reason}) — 처리 중단: {file_path}"
+            )
+            raise GenosServiceException(
+                1, f"{bad_reason} 입니다. 정상 문서로 다시 업로드하세요: {os.path.basename(file_path)}"
+            )
+
         # 입력이 PDF가 아닐 때 동작:
         # - auto_convert_to_pdf=True (default): PDF SDK/LibreOffice 로 자동 변환 후 진입
         # - auto_convert_to_pdf=False: 변환 없이 그대로 진행 (변경 전 동작; PDF 가정)
@@ -2761,7 +2953,7 @@ class DocumentProcessor:
         else:
             document: DoclingDocument = self.load_documents(file_path, **kwargs)
             if self.ocr_mode == "auto":
-                if not check_document(document, self.enrichment_options) or self.check_glyphs(document):
+                if not check_document(document, self.enrichment_options) or self.check_glyphs(document) or self.check_empty_text(document):
                     # OCR이 필요하다고 판단되면 OCR 수행
                     document: DoclingDocument = self.load_documents_with_docling_ocr(file_path, **kwargs)
 

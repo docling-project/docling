@@ -392,11 +392,20 @@ class GenosLayoutOptions(BaseModel):
     api_key: str = ""
     model: str = "dots-mocr"
     max_completion_tokens: int = 16384
-    timeout: int = 3600
+    # per-request 타임아웃(초). 3600 은 과도 → 1200(20분)으로 축소.
+    # 큐 대기 시간까지 포함되므로 너무 짧으면 정상 다(多)페이지 문서가 죽을 수 있어
+    # 500~600 은 위험. 출력 잘림은 max_completion_tokens 가 정하지 timeout 이 아님.
+    timeout: int = 1200
     retry_count: int = 2  # Number of retries on abnormal VLM responses
     temperature: float = 0.1
     top_p: float = 0.9
     repetition_penalty: float = 1.15  # >1.0 to suppress VLM token-repetition degeneration
+    # 폭주(timeout/length) 감지 시 layout_only 보정 on/off
+    length_fallback_enabled: bool = True
+    # 보정 시 페이지 재렌더 DPI (dots.ocr 권장 200, 상한 11,289,600px)
+    fallback_dpi: int = 200
+    # dotsocr 가 표 HTML 을 못 준 빈 테이블을 TableFormer 로 채울지 (CPU ~1.7s/표)
+    table_fallback_enabled: bool = True
 
 
 class LayoutOptions(BaseLayoutOptions):

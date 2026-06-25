@@ -128,6 +128,17 @@ class GenosDotsOCRLayoutModel(BasePageModel):
         self.repetition_penalty = getattr(
             self.dotsocr_options, "repetition_penalty", 1.15
         )
+        # finish_reason=="length"(VLM 무한 출력) 감지 시 보정 경로 on/off + 재렌더 DPI.
+        # 보정: layout_only 프롬프트로 박스만 받고(폭주 없음) PaddleOCR로 텍스트 채움.
+        self.length_fallback_enabled = bool(
+            getattr(self.dotsocr_options, "length_fallback_enabled", True)
+        )
+        self.fallback_dpi = getattr(self.dotsocr_options, "fallback_dpi", 200) or 200
+        # 빈 테이블(dotsocr 이 표 HTML 미제공)을 TableFormer 로 채울지. CPU latency ~1.7s/표.
+        self.table_fallback_enabled = bool(
+            getattr(self.dotsocr_options, "table_fallback_enabled", True)
+        )
+        self._tableformer_model = "unset"  # lazy init sentinel
 
     def _use_dotsocr_table_structure(self) -> bool:
         return (
@@ -633,85 +644,78 @@ class GenosDotsOCRLayoutModel(BasePageModel):
             # 바이트 스트림을 base64로 인코딩
             base64_image = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
-            total_attempts = self.retry_count + 1
-            response = None
+            # VLM 호출은 1회만 한다(이전의 retry 루프 제거). 통합 프롬프트가 실패하는
+            # 두 경우 — (a) read timeout(엔드포인트 살아있는데 응답이 느림=무한출력/행),
+            # (b) finish_reason=="length"(토큰 상한까지 폭주) — 에는 같은 프롬프트로
+            # 재시도해봐야 또 폭주하므로, 텍스트를 안 받아쓰는 layout_only 로 폴백한다.
+            # 연결 실패/HTTP 오류 등은 layout_only 도 같은 엔드포인트라 소용없으니 그대로 전파(raise).
             result = None
             usage = None
+            finish_reason = None
+            do_fallback = False
             _vlm_started_at = time.monotonic()
-            for attempt in range(1, total_attempts + 1):
-                try:
-                    response_text, usage = call_vlm_server(
-                        prompt=prompt,
-                        base64_image=base64_image,
-                        url=self.dotocr_endpoint,
-                        api_key=self.api_key,
-                        model=self.model,
-                        max_completion_tokens=self.max_completion_tokens,
-                        timeout=self.timeout,
-                        temperature=self.temperature,
-                        top_p=self.top_p,
-                        repetition_penalty=self.repetition_penalty,
-                    )
-                    if not isinstance(response_text, str) or not response_text.strip():
-                        raise ValueError("Empty VLM response text")
-
-                    # _log.debug(f"dotsocr raw response (page={page.page_no}, attempt={attempt}): {response_text}")
-                    response = _parse_vlm_json_response(response_text)
-                except Exception:
-                    if attempt >= total_attempts:
-                        raise
-                    _log.warning(
-                        "DotsOCR layout request failed (page=%s, attempt=%d/%d). Retrying...",
-                        page.page_no,
-                        attempt,
-                        total_attempts,
-                        exc_info=True,
-                    )
-                    continue
-
-                result = _extract_layout_result_items(response)
-                if isinstance(result, list):
-                    if attempt > 1:
-                        _log.info(
-                            "DotsOCR layout request recovered after retry (page=%s, attempt=%d/%d).",
-                            page.page_no,
-                            attempt,
-                            total_attempts,
-                        )
-                    break
-
-                if attempt < total_attempts:
-                    _log.warning(
-                        "Unexpected VLM response schema (page=%s, attempt=%d/%d). Retrying. Parsed type=%s; value=%r",
-                        page.page_no,
-                        attempt,
-                        total_attempts,
-                        type(response).__name__,
-                        response,
-                    )
-                    continue
-
-                _log.warning(
-                    "Unexpected VLM response schema after retries (page=%s, attempts=%d). Falling back to empty predictions. Parsed type=%s; value=%r",
-                    page.page_no,
-                    total_attempts,
-                    type(response).__name__,
-                    response,
+            try:
+                response_text, usage, finish_reason = call_vlm_server(
+                    prompt=prompt,
+                    base64_image=base64_image,
+                    url=self.dotocr_endpoint,
+                    api_key=self.api_key,
+                    model=self.model,
+                    max_completion_tokens=self.max_completion_tokens,
+                    timeout=self.timeout,
+                    temperature=self.temperature,
+                    top_p=self.top_p,
+                    repetition_penalty=self.repetition_penalty,
                 )
+                if not isinstance(response_text, str) or not response_text.strip():
+                    raise ValueError("Empty VLM response text")
+                response = _parse_vlm_json_response(response_text)
+                result = _extract_layout_result_items(response)
+                if not isinstance(result, list):
+                    _log.warning(
+                        "Unexpected VLM response schema (page=%s). Falling back to empty predictions. type=%s",
+                        page.page_no,
+                        type(response).__name__,
+                    )
+                    result = []
+                if finish_reason == "length":
+                    # 토큰 상한까지 폭주 → 응답이 잘려있음. layout_only 폴백.
+                    do_fallback = True
+            except VLMReadTimeout:
+                _log.warning(
+                    "DotsOCR read timeout (page=%s) → layout_only 폴백", page.page_no
+                )
+                do_fallback = True
                 result = []
+            # (그 외 예외: 연결실패/HTTP/파싱 오류 → 전파 → load_documents 2차 컨버터)
 
             assert isinstance(result, list)
             _vlm_elapsed = time.monotonic() - _vlm_started_at
             _record_stage_elapsed(conv_res, "dotsocr_vlm_call", _vlm_elapsed)
             if isinstance(usage, dict):
                 _log.info(
-                    "DotsOCR VLM usage (page=%s): prompt_tokens=%s, completion_tokens=%s, total_tokens=%s, elapsed=%.3fs",
+                    "DotsOCR VLM usage (page=%s): finish_reason=%s, prompt_tokens=%s, completion_tokens=%s, total_tokens=%s, elapsed=%.3fs",
                     page.page_no,
+                    finish_reason,
                     usage.get("prompt_tokens"),
                     usage.get("completion_tokens"),
                     usage.get("total_tokens"),
                     _vlm_elapsed,
                 )
+
+            # 폴백: layout_only 로 박스만 다시 얻는다(텍스트 미생성 → 폭주 불가).
+            # 텍스트는 다운스트림(PDF text metadata, 글리프/빈페이지 시 force-OCR)이 채우고,
+            # 빈 표는 후처리에서 TableFormer 가 채운다. → 여기선 박스 구조만 확보.
+            if self.length_fallback_enabled and do_fallback:
+                _log.warning(
+                    "DotsOCR 폭주 감지 (page=%s, finish_reason=%s) → layout_only 보정",
+                    page.page_no,
+                    finish_reason,
+                )
+                fb_result, fb_image = self._layout_only_fallback(conv_res, page)
+                if fb_result is not None:
+                    result = fb_result
+                    page_image = fb_image  # 이후 bbox 리스케일이 이 이미지 기준이 되도록 교체
 
             _parse_started_at = time.monotonic()
             clusters = []
@@ -922,6 +926,12 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                     clusters=processed_clusters,
                     table_html_by_cluster_id=raw_table_html_by_cluster_id,
                 )
+                # 폭주 폴백 등으로 dotsocr 가 표 HTML 을 못 준 빈 테이블은 TableFormer 로 채운다.
+                # (dotsocr 가 준 표는 그대로 두고, 비어있는 것만 보강)
+                if self.table_fallback_enabled:
+                    self._fill_empty_tables_with_tableformer(
+                        conv_res, page, processed_clusters
+                    )
                 _record_stage_elapsed(
                     conv_res,
                     "dotsocr_table_build",
@@ -945,6 +955,111 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                 )
 
         return page
+
+    # ── 폭주(timeout/length) 보정 ────────────────────────────────────────────
+    def _layout_only_fallback(self, conv_res: ConversionResult, page: Page):
+        """통합 프롬프트가 폭주(timeout/length)했을 때: 페이지를 fallback_dpi 로 재렌더 →
+        layout_only 프롬프트로 박스(bbox+category)만 확보(텍스트 미생성 → 폭주 불가).
+        텍스트는 다운스트림(PDF metadata, force-OCR)이, 빈 표는 후처리 TableFormer 가 채운다.
+        반환: (items, fb_image) 또는 실패 시 (None, None)."""
+        try:
+            scale = float(self.fallback_dpi) / 72.0
+            fb_image = page.get_image(scale=scale)
+            if fb_image is None:
+                return None, None
+            buf = io.BytesIO()
+            fb_image.save(buf, format="PNG")
+            buf.seek(0)
+            fb_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+            text, _usage, _fr = call_vlm_server(
+                prompt=prompt_layout_only,
+                base64_image=fb_b64,
+                url=self.dotocr_endpoint,
+                api_key=self.api_key,
+                model=self.model,
+                max_completion_tokens=self.max_completion_tokens,
+                timeout=self.timeout,
+                temperature=self.temperature,
+                top_p=self.top_p,
+                repetition_penalty=self.repetition_penalty,
+            )
+            items = _extract_layout_result_items(_parse_vlm_json_response(text))
+            if not isinstance(items, list):
+                return None, None
+            _log.info(
+                "폭주 보정 완료 (page=%s): layout_only %d박스 (텍스트는 다운스트림이 채움)",
+                page.page_no,
+                len(items),
+            )
+            return items, fb_image
+        except Exception:
+            _log.warning(
+                "폭주 보정 실패 (page=%s) → 원본 결과 유지", page.page_no, exc_info=True
+            )
+            return None, None
+
+    def _get_tableformer(self):
+        """TableStructureModel(TableFormer) lazy 생성. 생성 실패 시 None."""
+        if self._tableformer_model != "unset":
+            return self._tableformer_model
+        self._tableformer_model = None
+        try:
+            from docling.models.table_structure_model import TableStructureModel
+
+            self._tableformer_model = TableStructureModel(
+                enabled=True,
+                artifacts_path=getattr(self.pipeline_options, "artifacts_path", None),
+                options=self.pipeline_options.table_structure_options,
+                accelerator_options=self.pipeline_options.accelerator_options,
+            )
+        except Exception:
+            _log.warning("TableFormer 생성 실패 → 빈 테이블 보강 생략", exc_info=True)
+            self._tableformer_model = None
+        return self._tableformer_model
+
+    def _fill_empty_tables_with_tableformer(
+        self, conv_res: ConversionResult, page: Page, clusters: list
+    ) -> None:
+        """dotsocr 가 표 HTML 을 못 준 빈 테이블 클러스터만 TableFormer 로 채운다(in-place).
+        dotsocr 가 준 표(이미 table_map 에 있음)는 건드리지 않는다."""
+        ts = page.predictions.tablestructure
+        if ts is None:
+            return
+        empty_tables = [
+            c
+            for c in clusters
+            if c.label in self.TABLE_LABELS and c.id not in ts.table_map
+        ]
+        if not empty_tables:
+            return
+        tf = self._get_tableformer()
+        if tf is None:
+            return
+        # TableStructureModel.__call__ 은 page.predictions.layout.clusters 의 TABLE 들을
+        # 전부 재예측하고 tablestructure 를 새로 만든다. 그래서 빈 테이블만 남기고 호출 →
+        # 결과를 dotsocr tablestructure 에 merge → 원래 상태 복원.
+        saved_layout = page.predictions.layout
+        saved_ts = ts
+        try:
+            page.predictions.layout = LayoutPrediction(clusters=empty_tables)
+            list(tf(conv_res, [page]))  # generator 소비 → page.predictions.tablestructure 채움
+            tf_ts = page.predictions.tablestructure
+            n = 0
+            if tf_ts is not None:
+                for cid, tbl in tf_ts.table_map.items():
+                    saved_ts.table_map[cid] = tbl
+                    n += 1
+            _log.info(
+                "빈 테이블 %d개 TableFormer 보강 (page=%s)", n, page.page_no
+            )
+        except Exception:
+            _log.warning(
+                "TableFormer 빈 테이블 보강 실패 (page=%s)", page.page_no, exc_info=True
+            )
+        finally:
+            page.predictions.layout = saved_layout
+            page.predictions.tablestructure = saved_ts
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
@@ -1005,6 +1120,15 @@ prompt = """Please output the layout information from the PDF image, including e
 5. Final Output: The entire output must be a single JSON object.
 """
 
+# layout_only: dots.ocr 공식 prompt_layout_only_en (텍스트 미생성 → 무한 출력 불가).
+# finish_reason=="length" 보정 경로에서 사용. 텍스트는 PaddleOCR 로 따로 채운다.
+prompt_layout_only = """Please output the layout information from this PDF image, including each layout's bbox and its category. The bbox should be in the format [x1, y1, x2, y2]. The layout categories for the PDF document include ['Caption', 'Footnote', 'Formula', 'List-item', 'Page-footer', 'Page-header', 'Picture', 'Section-header', 'Table', 'Text', 'Title']. Do not output the corresponding text. The layout result should be in JSON format."""
+
+
+class VLMReadTimeout(Exception):
+    """VLM 응답이 read timeout 내 안 옴(엔드포인트는 살아있음). 폴백 트리거용."""
+
+
 def call_vlm_server(
     prompt: str,
     base64_image: str,
@@ -1016,7 +1140,7 @@ def call_vlm_server(
     temperature: float = 0.1,
     top_p: float = 0.9,
     repetition_penalty: float = 1.15,
-) -> tuple[str, dict | None]:
+) -> tuple[str, dict | None, str | None]:
     image_data_url = f"data:image/png;base64,{base64_image}"
     prompt_with_image_token = f"<|img|><|imgpad|><|endofimg|>{prompt}"
 
@@ -1065,7 +1189,13 @@ def call_vlm_server(
         response.raise_for_status()
         data = response.json()
         usage = data.get("usage") if isinstance(data, dict) else None
-        return data["choices"][0]["message"]["content"], usage
+        choice0 = data["choices"][0]
+        # finish_reason: "stop"=정상 종료 / "length"=상한까지 무한 출력(degeneration 신호)
+        return choice0["message"]["content"], usage, choice0.get("finish_reason")
+    except requests.exceptions.ReadTimeout as e:
+        # 엔드포인트는 살아있는데 응답이 timeout 내 안 옴(=무한 출력/행 정황).
+        # 연결 자체 실패(ConnectionError/ConnectTimeout)와 구분해 폴백 분기에 쓴다.
+        raise VLMReadTimeout(f"VLM read timeout: {e}") from e
     except requests.exceptions.RequestException as e:
         raise RuntimeError(f"HTTP 요청 오류: {e}") from e
     except KeyError as e:
