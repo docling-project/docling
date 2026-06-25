@@ -481,6 +481,11 @@ class DataEnrichmentOptions(BaseModel):
     toc_seed: Optional[int] = None
     toc_max_tokens: Optional[int] = None
     toc_repetition_penalty: Optional[float] = None  # >1.0 suppresses repetition/degeneration loops
+    # Thinking(reasoning) mode. Default "off" (send the disable token).
+    # thinking: "off"|"on"|"auto", dialect: "standard"(enable_thinking) | "hcx"(force/skip_reasoning)
+    # Use "auto" to send nothing (let the model decide).
+    toc_thinking: Optional[str] = "off"
+    toc_thinking_dialect: str = "standard"
     # Preflight prompt-token guard options (TOC)
     toc_precheck_enabled: Optional[bool] = None
     toc_max_context_tokens: Optional[int] = None
@@ -509,6 +514,9 @@ class DataEnrichmentOptions(BaseModel):
     metadata_top_p: Optional[float] = None
     metadata_seed: Optional[int] = None
     metadata_max_tokens: Optional[int] = None
+    # Thinking(reasoning) mode. Default "off" (send the disable token). "auto" = send nothing.
+    metadata_thinking: Optional[str] = "off"
+    metadata_thinking_dialect: str = "standard"
     # Preflight prompt-token guard options (Metadata)
     metadata_precheck_enabled: Optional[bool] = None
     metadata_max_context_tokens: Optional[int] = None

@@ -2,6 +2,15 @@
 
 외부 PDF 문서를 처리하여 벡터 데이터베이스에 적재하기 위한 전처리기입니다. OCR 자동 판단 기능과 PaddleOCR을 통해 스캔 문서와 디지털 문서를 모두 처리합니다.
 
+> ### 📌 BOK 패치(v2) 안내
+>
+> 한국은행(BOK) 운영용 최신 facade는 **`BOK_적재용_외부.py`**(규정 문서용은 `BOK_적재용_규정.py`)입니다. 아래 본문은 구버전 코드 흐름을 설명하며, v2 facade는 다음이 다릅니다.
+>
+> - **설정 위치 이동**: 엔드포인트·모델·thinking 등을 `DataEnrichmentOptions` 인자가 아니라 **모듈 상단 설정 상수**(예: `LAYOUT_*`, `TOC_*`, `METADATA_*`)로 분리했습니다.
+> - **dotsocr 레이아웃 배치 크기**: `LAYOUT_PAGE_BATCH_SIZE = 24` (`BOK_적재용_외부.py:180`, 적용 `:1244`). 한국은행 환경에 맞춰 조정한 값입니다.
+> - **thinking(추론) 모드**: `TOC_THINKING = "auto"` / `TOC_THINKING_DIALECT = "hcx"`, `METADATA_THINKING = "auto"` / `METADATA_THINKING_DIALECT = "hcx"` (`BOK_적재용_외부.py:226-230`). HyperCLOVAX-SEED(hcx) 서빙에서는 `auto`로 두어야 결과가 정상입니다. 동작 매트릭스는 [gitbook_doc/convert_processor.md 의 "thinking(추론) 모드"](../gitbook_doc/convert_processor.md) 와 동일합니다(`off`→차단, `on`→강제, `auto`→미전송, dialect `hcx`는 `force_reasoning`/`skip_reasoning` 키 사용).
+> - **청킹**: `GenosSmartChunker`(v2) 사용.
+
 ## 🔧 공통 컴포넌트
 
 ### GenOSVectorMeta

@@ -1063,11 +1063,12 @@ class DocumentProcessor:
 
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
         import tempfile
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as temp_file:
-            json.dump(kwargs, temp_file, ensure_ascii=False, indent=2)
-            temp_file_path = temp_file.name
-
+        temp_file_path = None
         try:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as temp_file:
+                json.dump(kwargs, temp_file, ensure_ascii=False, indent=2)
+                temp_file_path = temp_file.name
+
             document: DoclingDocument = self.load_documents(temp_file_path, **kwargs)
 
             output_path, output_file = os.path.split(file_path)
@@ -1112,7 +1113,7 @@ class DocumentProcessor:
 
         finally:
             # 임시 파일 삭제
-            if os.path.exists(temp_file_path):
+            if temp_file_path and os.path.exists(temp_file_path):
                 os.unlink(temp_file_path)
 
 

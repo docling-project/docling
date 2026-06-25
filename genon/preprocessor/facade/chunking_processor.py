@@ -2381,7 +2381,19 @@ class DocumentProcessor:
         appendix_info = kwargs.get('appendix', '')
         appendix_list = []
         if isinstance(appendix_info, str):
-            appendix_list = [item.strip() for item in json.loads(appendix_info) if item.strip()] if appendix_info else []
+            if appendix_info:
+                try:
+                    parsed = json.loads(appendix_info)
+                    if isinstance(parsed, list):
+                        appendix_list = [item.strip() for item in parsed if isinstance(item, str) and item.strip()]
+                    elif isinstance(parsed, str):
+                        appendix_list = [parsed.strip()] if parsed.strip() else []
+                    else:
+                        appendix_list = []
+                except json.JSONDecodeError:
+                    appendix_list = [appendix_info.strip()] if appendix_info.strip() else []
+            else:
+                appendix_list = []
         elif isinstance(appendix_info, list):
             appendix_list = appendix_info
         else:
@@ -2575,10 +2587,12 @@ class DocumentProcessor:
                 continue
 
             appendix_clean = appendix.replace('.pdf', '').lower().strip()
+            appendix_clean_no_space = re.sub(r"\s+", "", appendix_clean)
 
             # If any found pattern exists in appendix filename, it's a match
             for pattern in found_patterns:
-                if pattern.lower().strip() in appendix_clean:
+                pattern_no_space = re.sub(r"\s+", "", pattern).lower()
+                if pattern_no_space in appendix_clean_no_space:
                     matched_appendices.append(appendix)
                     break  # Prevent duplicates
 
