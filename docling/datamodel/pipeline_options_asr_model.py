@@ -171,6 +171,26 @@ class InlineAsrNativeWhisperOptions(InlineAsrOptions):
             )
         ),
     ] = True
+    beam_size: Annotated[
+        Optional[int],
+        Field(
+            description=(
+                "Beam size for decoding. `None` uses greedy decoding (whisper's "
+                "default); a value >= 1 enables beam search, which is more "
+                "robust against runaway repetition on long-form audio."
+            )
+        ),
+    ] = None
+    condition_on_previous_text: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to feed the model's previous output as a prompt for "
+                "the next window. whisper's default is `True`; setting `False` "
+                "can reduce repetition loops on long or difficult audio."
+            )
+        ),
+    ] = True
 
 
 class InlineAsrMlxWhisperOptions(InlineAsrOptions):

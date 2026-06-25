@@ -216,6 +216,8 @@ class _NativeWhisperModel:
             self.verbose = asr_options.verbose
             self.timestamps = asr_options.timestamps
             self.word_timestamps = asr_options.word_timestamps
+            self.beam_size = asr_options.beam_size
+            self.condition_on_previous_text = asr_options.condition_on_previous_text
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
         # Access the file path from the backend, similar to other pipelines
@@ -273,7 +275,11 @@ class _NativeWhisperModel:
 
     def transcribe(self, fpath: Path) -> list[_ConversationItem]:
         result = self.model.transcribe(
-            str(fpath), verbose=self.verbose, word_timestamps=self.word_timestamps
+            str(fpath),
+            verbose=self.verbose,
+            word_timestamps=self.word_timestamps,
+            beam_size=self.beam_size,
+            condition_on_previous_text=self.condition_on_previous_text,
         )
 
         convo: list[_ConversationItem] = []
