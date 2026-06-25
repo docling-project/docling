@@ -31,7 +31,7 @@ uv add "docling[asr]"
 ```
 
 !!! note "WhisperS2T on Linux with CUDA"
-    The optional WhisperS2T backend uses CTranslate2, which loads NVIDIA's cuDNN and cuBLAS shared libraries at runtime. On Linux, if WhisperS2T model loading fails because those libraries cannot be found, add them to your `LD_LIBRARY_PATH`. When cuDNN/cuBLAS are installed from pip wheels (e.g. `nvidia-cudnn-cu12`, `nvidia-cublas-cu12`), the shared libraries live under the `nvidia/cudnn/lib` and `nvidia/cublas/lib` directories inside your environment's `site-packages`.
+    The optional WhisperS2T backend uses CTranslate2, which loads NVIDIA's cuBLAS shared library at runtime. On Linux, if WhisperS2T model loading fails because the library cannot be found, add it to your `LD_LIBRARY_PATH`. When cuBLAS is installed from a pip wheel (e.g. `nvidia-cublas-cu12`), the shared library lives under the `nvidia/cublas/lib` directory inside your environment's `site-packages`.
 
 ## Basic usage
 
