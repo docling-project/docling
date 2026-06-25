@@ -53,7 +53,6 @@ DEFAULT_HEADER_FOOTNOTES: Final[str] = "Footnotes"
 DEFAULT_HEADER_REFERENCES: Final[str] = "References"
 DEFAULT_TEXT_ETAL: Final[str] = "et al."
 
-
 class Abstract(TypedDict):
     label: str
     content: str
@@ -627,6 +626,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         return
 
+    def _get_inline_equation(self, node: etree._Element) -> str | None:
+        tex_math = node.find("tex-math")
+        if tex_math is None or not tex_math.text:
+            return None
+        math_parts = tex_math.text.split("$$")
+        return math_parts[1] if len(math_parts) == 3 else tex_math.text.strip()
+
     def _add_figure_captions(
         self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
     ) -> None:
@@ -884,6 +890,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         skip_tags = ["term"]
         flush_tags = ["ack", "sec", "list", "boxed-text", "disp-formula", "fig"]
         new_parent: NodeItem = parent
+        inline_segments: list[tuple[DocItemLabel, str]] = []
         node_text: str = (
             node.text.replace("\n", " ")
             if (node.tag not in skip_tags and node.text)
@@ -961,7 +968,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 self._add_equation(doc, parent, child)
                 stop_walk = True
             elif child.tag == "inline-formula":
-                # TODO: address inline formulas when supported by docling-core
+                formula = self._get_inline_equation(child) if node.tag == "p" else None
+                if formula is not None:
+                    if node_text.strip():
+                        inline_segments.append((DocItemLabel.TEXT, node_text.strip()))
+                        node_text = ""
+                    inline_segments.append((DocItemLabel.FORMULA, formula))
                 stop_walk = True
 
             # step into child
@@ -976,8 +988,19 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             node_text += child.tail.replace("\n", " ") if child.tail else ""
 
         # create paragraph
-        if node.tag == "p" and node_text.strip():
-            doc.add_text(label=DocItemLabel.TEXT, text=node_text.strip(), parent=parent)
+        if node.tag == "p":
+            if node_text.strip():
+                inline_segments.append((DocItemLabel.TEXT, node_text.strip()))
+            if inline_segments:
+                # Wrap in an inline group only when several segments flow together
+                # (e.g. text + formula); a single segment is added directly.
+                container = (
+                    doc.add_inline_group(parent=parent)
+                    if len(inline_segments) > 1
+                    else parent
+                )
+                for label, text in inline_segments:
+                    doc.add_text(label=label, text=text, parent=container)
             return ""
         else:
             # backpropagate the text
