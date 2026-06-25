@@ -34,7 +34,7 @@ class TestWhisperS2TOptions:
         assert options.repo_id == "tiny"
         assert options.language == "en"
         assert options.task == "transcribe"
-        assert options.compute_type == "float16"
+        assert options.torch_dtype == "float16"
         assert options.batch_size == 8
         assert options.beam_size == 1
         assert options.word_timestamps is False
@@ -59,7 +59,7 @@ class TestWhisperS2TOptions:
             repo_id="large-v3",
             language="fr",
             task="translate",
-            compute_type="float32",
+            torch_dtype="float32",
             batch_size=4,
             beam_size=5,
             word_timestamps=True,
@@ -71,7 +71,7 @@ class TestWhisperS2TOptions:
         assert options.repo_id == "large-v3"
         assert options.language == "fr"
         assert options.task == "translate"
-        assert options.compute_type == "float32"
+        assert options.torch_dtype == "float32"
         assert options.batch_size == 4
         assert options.beam_size == 5
         assert options.word_timestamps is True
@@ -124,7 +124,7 @@ class TestWhisperS2TAutoSelection:
             assert model.repo_id == expected_repo, (
                 f"{getter.__name__} repo_id={model.repo_id}, expected {expected_repo}"
             )
-            assert model.compute_type == "float16", (
+            assert model.torch_dtype == "float16", (
                 f"{getter.__name__} should use float16 on CUDA"
             )
 
@@ -166,7 +166,7 @@ class TestWhisperS2TAutoSelection:
             assert model.inference_framework == InferenceAsrFramework.WHISPER_S2T, (
                 f"{getter.__name__} did not select WHISPER_S2T on CPU"
             )
-            assert model.compute_type == "float32", (
+            assert model.torch_dtype == "float32", (
                 f"{getter.__name__} should use float32 on CPU"
             )
 
@@ -253,7 +253,7 @@ class TestWhisperS2TModel:
                 inference_framework=InferenceAsrFramework.WHISPER_S2T,
                 language="en",
                 task="transcribe",
-                compute_type="float16",
+                torch_dtype="float16",
                 batch_size=16,
                 beam_size=1,
             )
@@ -591,7 +591,7 @@ class TestWhisperS2TModel:
                 inference_framework=InferenceAsrFramework.WHISPER_S2T,
                 language="en",
                 task="transcribe",
-                compute_type="float16",
+                torch_dtype="float16",
             )
             _WhisperS2TModel(
                 enabled=True,
@@ -619,7 +619,7 @@ class TestWhisperS2TModel:
                 inference_framework=InferenceAsrFramework.WHISPER_S2T,
                 language="en",
                 task="transcribe",
-                compute_type="bfloat16",
+                torch_dtype="bfloat16",
             )
             _WhisperS2TModel(
                 enabled=True,
@@ -647,7 +647,7 @@ class TestWhisperS2TModel:
                     inference_framework=InferenceAsrFramework.WHISPER_S2T,
                     language="en",
                     task="transcribe",
-                    compute_type=compute_type,
+                    torch_dtype=compute_type,
                 )
                 _WhisperS2TModel(
                     enabled=True,

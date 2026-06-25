@@ -93,7 +93,7 @@ def _get_whisper_tiny_model():
             inference_framework=InferenceAsrFramework.WHISPER_S2T,
             language="en",
             task="transcribe",
-            compute_type="float16",
+            torch_dtype="float16",
             batch_size=16,
             beam_size=1,
         )
@@ -105,7 +105,7 @@ def _get_whisper_tiny_model():
             inference_framework=InferenceAsrFramework.WHISPER_S2T,
             language="en",
             task="transcribe",
-            compute_type="float32",  # float32 is more reliable on CPU
+            torch_dtype="float32",  # float32 is more reliable on CPU
             batch_size=16,
             beam_size=1,
         )
@@ -161,7 +161,7 @@ def _get_whisper_small_model():
             inference_framework=InferenceAsrFramework.WHISPER_S2T,
             language="en",
             task="transcribe",
-            compute_type="float16",
+            torch_dtype="float16",
             batch_size=8,
             beam_size=1,
         )
@@ -173,7 +173,7 @@ def _get_whisper_small_model():
             inference_framework=InferenceAsrFramework.WHISPER_S2T,
             language="en",
             task="transcribe",
-            compute_type="float32",
+            torch_dtype="float32",
             batch_size=8,
             beam_size=1,
         )
@@ -229,7 +229,7 @@ def _get_whisper_medium_model():
             inference_framework=InferenceAsrFramework.WHISPER_S2T,
             language="en",
             task="transcribe",
-            compute_type="float16",
+            torch_dtype="float16",
             batch_size=6,
             beam_size=1,
         )
@@ -241,7 +241,7 @@ def _get_whisper_medium_model():
             inference_framework=InferenceAsrFramework.WHISPER_S2T,
             language="en",
             task="transcribe",
-            compute_type="float32",
+            torch_dtype="float32",
             batch_size=6,
             beam_size=1,
         )
@@ -297,7 +297,7 @@ def _get_whisper_base_model():
             inference_framework=InferenceAsrFramework.WHISPER_S2T,
             language="en",
             task="transcribe",
-            compute_type="float16",
+            torch_dtype="float16",
             batch_size=12,
             beam_size=1,
         )
@@ -309,7 +309,7 @@ def _get_whisper_base_model():
             inference_framework=InferenceAsrFramework.WHISPER_S2T,
             language="en",
             task="transcribe",
-            compute_type="float32",
+            torch_dtype="float32",
             batch_size=12,
             beam_size=1,
         )
@@ -367,7 +367,7 @@ def _get_whisper_large_model():
             inference_framework=InferenceAsrFramework.WHISPER_S2T,
             language="en",
             task="transcribe",
-            compute_type="float16",
+            torch_dtype="float16",
             batch_size=4,
             beam_size=1,
         )
@@ -379,7 +379,7 @@ def _get_whisper_large_model():
             inference_framework=InferenceAsrFramework.WHISPER_S2T,
             language="en",
             task="transcribe",
-            compute_type="float32",
+            torch_dtype="float32",
             batch_size=4,
             beam_size=1,
         )
@@ -438,7 +438,7 @@ def _get_whisper_turbo_model():
             inference_framework=InferenceAsrFramework.WHISPER_S2T,
             language="en",
             task="transcribe",
-            compute_type="float16",
+            torch_dtype="float16",
             batch_size=6,
             beam_size=1,
         )
@@ -450,7 +450,7 @@ def _get_whisper_turbo_model():
             inference_framework=InferenceAsrFramework.WHISPER_S2T,
             language="en",
             task="transcribe",
-            compute_type="float32",
+            torch_dtype="float32",
             batch_size=6,
             beam_size=1,
         )
@@ -621,7 +621,7 @@ WHISPER_TINY_S2T = InlineAsrWhisperS2TOptions(
     inference_framework=InferenceAsrFramework.WHISPER_S2T,
     language="en",
     task="transcribe",
-    compute_type="float16",
+    torch_dtype="float16",
     batch_size=16,
     beam_size=1,
 )
@@ -631,7 +631,7 @@ WHISPER_TINY_EN_S2T = InlineAsrWhisperS2TOptions(
     inference_framework=InferenceAsrFramework.WHISPER_S2T,
     language="en",
     task="transcribe",
-    compute_type="float16",
+    torch_dtype="float16",
     batch_size=16,
     beam_size=1,
 )
@@ -642,7 +642,7 @@ WHISPER_BASE_S2T = InlineAsrWhisperS2TOptions(
     inference_framework=InferenceAsrFramework.WHISPER_S2T,
     language="en",
     task="transcribe",
-    compute_type="float16",
+    torch_dtype="float16",
     batch_size=12,
     beam_size=1,
 )
@@ -652,7 +652,7 @@ WHISPER_BASE_EN_S2T = InlineAsrWhisperS2TOptions(
     inference_framework=InferenceAsrFramework.WHISPER_S2T,
     language="en",
     task="transcribe",
-    compute_type="float16",
+    torch_dtype="float16",
     batch_size=12,
     beam_size=1,
 )
@@ -663,7 +663,7 @@ WHISPER_SMALL_S2T = InlineAsrWhisperS2TOptions(
     inference_framework=InferenceAsrFramework.WHISPER_S2T,
     language="en",
     task="transcribe",
-    compute_type="float16",
+    torch_dtype="float16",
     batch_size=8,
     beam_size=1,
 )
@@ -673,7 +673,7 @@ WHISPER_SMALL_EN_S2T = InlineAsrWhisperS2TOptions(
     inference_framework=InferenceAsrFramework.WHISPER_S2T,
     language="en",
     task="transcribe",
-    compute_type="float16",
+    torch_dtype="float16",
     batch_size=8,
     beam_size=1,
 )
@@ -683,7 +683,7 @@ WHISPER_DISTIL_SMALL_EN_S2T = InlineAsrWhisperS2TOptions(
     inference_framework=InferenceAsrFramework.WHISPER_S2T,
     language="en",
     task="transcribe",
-    compute_type="float16",
+    torch_dtype="float16",
     batch_size=10,
     beam_size=1,
 )
@@ -694,7 +694,7 @@ WHISPER_MEDIUM_S2T = InlineAsrWhisperS2TOptions(
     inference_framework=InferenceAsrFramework.WHISPER_S2T,
     language="en",
     task="transcribe",
-    compute_type="float16",
+    torch_dtype="float16",
     batch_size=6,
     beam_size=1,
 )
@@ -704,7 +704,7 @@ WHISPER_MEDIUM_EN_S2T = InlineAsrWhisperS2TOptions(
     inference_framework=InferenceAsrFramework.WHISPER_S2T,
     language="en",
     task="transcribe",
-    compute_type="float16",
+    torch_dtype="float16",
     batch_size=6,
     beam_size=1,
 )
@@ -714,7 +714,7 @@ WHISPER_DISTIL_MEDIUM_EN_S2T = InlineAsrWhisperS2TOptions(
     inference_framework=InferenceAsrFramework.WHISPER_S2T,
     language="en",
     task="transcribe",
-    compute_type="float16",
+    torch_dtype="float16",
     batch_size=8,
     beam_size=1,
 )
@@ -725,7 +725,7 @@ WHISPER_LARGE_V3_S2T = InlineAsrWhisperS2TOptions(
     inference_framework=InferenceAsrFramework.WHISPER_S2T,
     language="en",
     task="transcribe",
-    compute_type="float16",
+    torch_dtype="float16",
     batch_size=4,
     beam_size=1,
 )
@@ -735,7 +735,7 @@ WHISPER_DISTIL_LARGE_V3_S2T = InlineAsrWhisperS2TOptions(
     inference_framework=InferenceAsrFramework.WHISPER_S2T,
     language="en",
     task="transcribe",
-    compute_type="float16",
+    torch_dtype="float16",
     batch_size=6,
     beam_size=1,
 )
@@ -745,7 +745,7 @@ WHISPER_DISTIL_LARGE_V3_5_S2T = InlineAsrWhisperS2TOptions(
     inference_framework=InferenceAsrFramework.WHISPER_S2T,
     language="en",
     task="transcribe",
-    compute_type="float16",
+    torch_dtype="float16",
     batch_size=6,
     beam_size=1,
 )
@@ -755,7 +755,7 @@ WHISPER_LARGE_V3_TURBO_S2T = InlineAsrWhisperS2TOptions(
     inference_framework=InferenceAsrFramework.WHISPER_S2T,
     language="en",
     task="transcribe",
-    compute_type="float16",
+    torch_dtype="float16",
     batch_size=6,
     beam_size=1,
 )

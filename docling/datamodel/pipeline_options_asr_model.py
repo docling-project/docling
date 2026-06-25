@@ -319,8 +319,8 @@ class InlineAsrWhisperS2TOptions(InlineAsrOptions):
             examples=["transcribe", "translate"],
         ),
     ] = "transcribe"
-    compute_type: Annotated[
-        str,
+    torch_dtype: Annotated[
+        str | None,
         Field(
             description=(
                 "Computation precision for CTranslate2. Options: `float32`, "

@@ -460,7 +460,7 @@ class _WhisperS2TModel:
             # inference. Coerce to float32 when running on CPU so that the
             # explicit *_S2T presets (which default to float16 for CUDA
             # performance) do not fail at model load on CPU-only installs.
-            compute_type = asr_options.compute_type
+            compute_type = asr_options.torch_dtype
             if self.device == "cpu" and compute_type in ("float16", "bfloat16"):
                 _log.warning(
                     f"compute_type='{compute_type}' is not supported by "
