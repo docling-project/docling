@@ -17,7 +17,11 @@ def warn_if_macros(path_or_stream: Union[BytesIO, Path]) -> None:
     """
     try:
         with zipfile.ZipFile(path_or_stream) as zf:
-            has_macros = any(_VBA_MARKER in name for name in zf.namelist())
+            names = zf.namelist()
+            if any(n.startswith("/") or ".." in n for n in names):
+                _log.warning("Skipping macro check: archive contains unsafe ZIP entry paths.")
+                return
+            has_macros = any(_VBA_MARKER in name for name in names)
         if has_macros:
             _log.warning(
                 "Macro-enabled content detected (%s found in archive). "
@@ -25,7 +29,7 @@ def warn_if_macros(path_or_stream: Union[BytesIO, Path]) -> None:
                 "file may contain active content.",
                 _VBA_MARKER,
             )
-    except (zipfile.BadZipFile, Exception):
+    except (zipfile.BadZipFile, OSError, ValueError):
         pass  # best-effort; the backend's own loader surfaces real errors
     finally:
         if isinstance(path_or_stream, BytesIO):

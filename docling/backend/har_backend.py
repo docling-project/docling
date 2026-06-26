@@ -13,6 +13,8 @@ from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
+_MAX_HAR_BYTES = 100 * 1024 * 1024  # 100 MB
+_MAX_ENTRIES = 10_000
 # ponytail: hard cap on inline body previews; raise if downstream needs full bodies
 _MAX_BODY_CHARS = 2000
 
@@ -36,9 +38,15 @@ class HarDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream)
         try:
             if isinstance(self.path_or_stream, BytesIO):
-                raw = self.path_or_stream.getvalue().decode("utf-8")
+                buf = self.path_or_stream.getvalue()
+                if len(buf) > _MAX_HAR_BYTES:
+                    raise ValueError("HAR stream exceeds size limit")
+                raw = buf.decode("utf-8")
             else:
-                raw = Path(self.path_or_stream).read_text("utf-8")
+                path = Path(self.path_or_stream)
+                if path.stat().st_size > _MAX_HAR_BYTES:
+                    raise ValueError("HAR file exceeds size limit")
+                raw = path.read_text("utf-8")
             self._har: dict = json.loads(raw)
             self.valid = True
         except Exception as e:
@@ -80,6 +88,12 @@ class HarDocumentBackend(DeclarativeDocumentBackend):
         if not entries:
             _log.warning("HAR file contains no entries.")
             return doc
+
+        if len(entries) > _MAX_ENTRIES:
+            _log.warning(
+                "HAR contains %d entries; truncating to %d.", len(entries), _MAX_ENTRIES
+            )
+            entries = entries[:_MAX_ENTRIES]
 
         doc.add_title(text=self.file.name or "HTTP Archive")
 
