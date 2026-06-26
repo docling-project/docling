@@ -19,7 +19,9 @@ def warn_if_macros(path_or_stream: Union[BytesIO, Path]) -> None:
         with zipfile.ZipFile(path_or_stream) as zf:
             names = zf.namelist()
             if any(n.startswith("/") or ".." in n for n in names):
-                _log.warning("Skipping macro check: archive contains unsafe ZIP entry paths.")
+                _log.warning(
+                    "Skipping macro check: archive contains unsafe ZIP entry paths."
+                )
                 return
             has_macros = any(_VBA_MARKER in name for name in names)
         if has_macros:
