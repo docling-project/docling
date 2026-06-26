@@ -118,6 +118,18 @@ class BaseTableStructureOptions(BaseOptions):
         `TableStructureOptions`: Default TableFormer-based implementation.
     """
 
+    try_table_on_picture: Annotated[
+        bool,
+        Field(
+            description=(
+                "Also run table structure recognition on regions the layout model labeled as pictures, "
+                "keeping the result only when it resolves to a real table. Recovers tables that are "
+                "misclassified as images because their rows embed icons or diagrams. Disabled by default "
+                "because it runs the table model on every picture, which increases processing time."
+            )
+        ),
+    ] = False
+
 
 class TableStructureOptions(BaseTableStructureOptions):
     """Options for the table structure (TableFormer V1)."""

@@ -19,7 +19,11 @@ from docling.datamodel.base_models import Cluster, Page, Table, TableStructurePr
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import TableStructureV2Options
 from docling.datamodel.settings import settings
-from docling.models.base_table_model import BaseTableStructureModel
+from docling.models.base_table_model import (
+    BaseTableStructureModel,
+    is_table_like,
+    table_candidate_labels,
+)
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
@@ -378,6 +382,9 @@ class TableStructureModelV2(BaseTableStructureModel):
                 table_prediction = TableStructurePrediction()
                 page.predictions.tablestructure = table_prediction
 
+                candidate_labels = table_candidate_labels(
+                    self.options.try_table_on_picture
+                )
                 in_tables = [
                     (
                         cluster,
@@ -389,8 +396,7 @@ class TableStructureModelV2(BaseTableStructureModel):
                         ],
                     )
                     for cluster in page.predictions.layout.clusters
-                    if cluster.label
-                    in [DocItemLabel.TABLE, DocItemLabel.DOCUMENT_INDEX]
+                    if cluster.label in candidate_labels
                 ]
 
                 if not in_tables:
@@ -453,6 +459,12 @@ class TableStructureModelV2(BaseTableStructureModel):
                             element["bbox"]["token"] = text_piece
                         tc = TableCell.model_validate(element)
                         table_cells.append(tc)
+
+                    # Only promote a picture to a table when a real grid was found.
+                    if table_cluster.label == DocItemLabel.PICTURE:
+                        if not is_table_like(num_rows, num_cols):
+                            continue
+                        table_cluster.label = DocItemLabel.TABLE
 
                     tbl = Table(
                         otsl_seq=otsl_seq,

@@ -14,7 +14,11 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from docling.datamodel.base_models import Page, Table, TableStructurePrediction
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import GraniteVisionTableStructureOptions
-from docling.models.base_table_model import BaseTableStructureModel
+from docling.models.base_table_model import (
+    BaseTableStructureModel,
+    is_table_like,
+    table_candidate_labels,
+)
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
@@ -248,10 +252,13 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
                 table_prediction = TableStructurePrediction()
                 page.predictions.tablestructure = table_prediction
 
+                candidate_labels = table_candidate_labels(
+                    self.options.try_table_on_picture
+                )
                 clusters = [
                     c
                     for c in page.predictions.layout.clusters
-                    if c.label in (DocItemLabel.TABLE, DocItemLabel.DOCUMENT_INDEX)
+                    if c.label in candidate_labels
                 ]
 
                 if not clusters or not self.enabled:
@@ -327,6 +334,12 @@ class GraniteVisionTableStructureModel(BaseTableStructureModel):
                             f"Failed to parse OTSL output for table cluster {cluster.id}: {exc}"
                         )
                         otsl_seq, table_cells, num_rows, num_cols = [], [], 0, 0
+
+                    # Only promote a picture to a table when a real grid was found.
+                    if cluster.label == DocItemLabel.PICTURE:
+                        if not is_table_like(num_rows, num_cols):
+                            continue
+                        cluster.label = DocItemLabel.TABLE
 
                     tbl = Table(
                         otsl_seq=otsl_seq,

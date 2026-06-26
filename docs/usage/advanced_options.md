@@ -131,6 +131,23 @@ doc_converter = DocumentConverter(
 )
 ```
 
+You can recover tables that the layout model labels as pictures, which happens when a table's rows embed icons or small diagrams. With `try_table_on_picture` enabled, the table structure model also runs on picture regions and keeps the result only when it resolves to a real table. It is disabled by default because it runs the table model on every picture, which increases processing time.
+
+```python
+from docling.datamodel.base_models import InputFormat
+from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+
+pipeline_options = PdfPipelineOptions(do_table_structure=True)
+pipeline_options.table_structure_options.try_table_on_picture = True  # recover tables misclassified as pictures
+
+doc_converter = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+    }
+)
+```
+
 
 ## Impose limits on the document size
 
