@@ -1189,7 +1189,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         top: float = -1.0
         right: float = -1.0
         bottom: float = -1.0
-        for item, _ in doc.iterate_items(traverse_pictures=True, page_no=page_no):
+        for item, _ in doc.iterate_items(
+            traverse_pictures=True,
+            page_no=page_no,
+            included_content_layers=set(ContentLayer),
+        ):
             if not isinstance(item, DocItem):
                 continue
             for provenance in item.prov:

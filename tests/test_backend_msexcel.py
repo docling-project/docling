@@ -233,7 +233,8 @@ def test_pages(documents) -> None:
     assert doc.pages.get(1).size.as_tuple() == (3.0, 7.0)
     assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
-    assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
+    # Sheet4 is hidden (ContentLayer.INVISIBLE) but still has real content
+    assert doc.pages.get(4).size.as_tuple() == (1.0, 2.0)
 
 
 def test_page_range() -> None:
@@ -251,7 +252,8 @@ def test_page_range() -> None:
     # original page numbering is preserved, so sizes match the full-document ones
     assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
-    assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
+    # Sheet4 is hidden (ContentLayer.INVISIBLE) but still has real content
+    assert doc.pages.get(4).size.as_tuple() == (1.0, 2.0)
 
 
 def test_page_range_with_sheet_names() -> None:
@@ -389,8 +391,9 @@ def test_inflated_rows_handling(documents) -> None:
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0), (
         f"Page 3 should be 13x36 cells, got {doc.pages.get(3).size.as_tuple()}"
     )
-    assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0), (
-        f"Page 4 should be 0x0 cells (empty), got {doc.pages.get(4).size.as_tuple()}"
+    # Sheet4 is hidden (ContentLayer.INVISIBLE) but still has real content
+    assert doc.pages.get(4).size.as_tuple() == (1.0, 2.0), (
+        f"Page 4 should be 1x2 cells (hidden sheet), got {doc.pages.get(4).size.as_tuple()}"
     )
 
     _log.info(
@@ -483,7 +486,8 @@ def test_bytesio_stream():
     assert doc.pages.get(1).size.as_tuple() == (3.0, 7.0)
     assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
-    assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
+    # Sheet4 is hidden (ContentLayer.INVISIBLE) but still has real content
+    assert doc.pages.get(4).size.as_tuple() == (1.0, 2.0)
 
 
 def test_edge_cases_merging() -> None:
