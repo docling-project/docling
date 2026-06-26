@@ -45,7 +45,12 @@ from docling.datamodel.base_models import (
     Page,
 )
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import ThreadedPdfPipelineOptions
+from docling.datamodel.pipeline_options import (
+    LayoutObjectDetectionOptions,
+    LayoutOptions,
+    LayoutPostprocessorOptions,
+    ThreadedPdfPipelineOptions,
+)
 from docling.datamodel.settings import settings
 from docling.models.factories import (
     get_layout_factory,
@@ -57,6 +62,9 @@ from docling.models.stages.code_formula.code_formula_vlm_model import (
 )
 from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     HeadingHierarchyModel,
+)
+from docling.models.stages.layout.layout_postprocessing_model import (
+    LayoutPostprocessingModel,
 )
 from docling.models.stages.page_assemble.page_assemble_model import (
     PageAssembleModel,
@@ -508,6 +516,23 @@ class StandardPdfPipeline(ConvertPipeline):
             accelerator_options=self.pipeline_options.accelerator_options,
             enable_remote_services=self.pipeline_options.enable_remote_services,
         )
+
+        # Interim solution: Create LayoutPostprocessorOptions from the layout_option parameters
+        lo = self.pipeline_options.layout_options
+        create_orphan = (
+            lo.create_orphan_clusters
+            if isinstance(lo, (LayoutOptions, LayoutObjectDetectionOptions))
+            else False
+        )
+        self.layout_postprocessing_model = LayoutPostprocessingModel(
+            options=LayoutPostprocessorOptions(
+                skip_cell_assignment=lo.skip_cell_assignment,
+                keep_empty_clusters=lo.keep_empty_clusters,
+                create_orphan_clusters=create_orphan,
+                run_postprocessor=self.layout_model.requires_layout_postprocessing,
+            )
+        )
+
         table_factory = get_table_structure_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )
@@ -610,6 +635,14 @@ class StandardPdfPipeline(ConvertPipeline):
             queue_max_size=opts.queue_max_size,
             timed_out_run_ids=timed_out_run_ids,
         )
+        layout_postprocess = ThreadedPipelineStage(
+            name="layout_postprocess",
+            model=self.layout_postprocessing_model,
+            batch_size=1,
+            batch_timeout=opts.batch_polling_interval_seconds,
+            queue_max_size=opts.queue_max_size,
+            timed_out_run_ids=timed_out_run_ids,
+        )
         table = ThreadedPipelineStage(
             name="table",
             model=self.table_model,
@@ -632,11 +665,12 @@ class StandardPdfPipeline(ConvertPipeline):
         output_q = ThreadedQueue(opts.queue_max_size)
         preprocess.add_output_queue(ocr.input_queue)  # PDF parsing
         ocr.add_output_queue(layout.input_queue)  # OCR
-        layout.add_output_queue(table.input_queue)  # Layout + layout post-processing
+        layout.add_output_queue(layout_postprocess.input_queue)  # Layout prediction
+        layout_postprocess.add_output_queue(table.input_queue)  # Layout post-processing
         table.add_output_queue(assemble.input_queue)  # Table model
         assemble.add_output_queue(output_q)  # Assembly
 
-        stages = [preprocess, ocr, layout, table, assemble]
+        stages = [preprocess, ocr, layout, layout_postprocess, table, assemble]
         return RunContext(
             stages=stages,
             first_stage=preprocess,

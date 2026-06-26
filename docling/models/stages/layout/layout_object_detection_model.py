@@ -6,7 +6,6 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 
-import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin, DocItemLabel
 from PIL import Image
 
@@ -21,7 +20,6 @@ from docling.models.inference_engines.object_detection import (
     ObjectDetectionEngineOutput,
     create_object_detection_engine,
 )
-from docling.utils.layout_postprocessor import LayoutPostprocessor
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
@@ -113,22 +111,10 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
                     engine_output=engine_output,
                 )
 
-                processed_clusters, _ = LayoutPostprocessor(
-                    page=page,
-                    clusters=clusters,
-                    options=self.options,
-                ).postprocess()
-
-                layout_prediction = LayoutPrediction(clusters=processed_clusters)
+                # Emit raw clusters; post-processing and layout_score are
+                # handled by the downstream LayoutPostprocessingModel stage.
+                layout_prediction = LayoutPrediction(clusters=clusters)
                 page.predictions.layout = layout_prediction
-
-                if processed_clusters:
-                    layout_scores = [c.confidence for c in processed_clusters]
-                    conv_res.confidence.pages[page.page_no].layout_score = float(
-                        np.mean(layout_scores)
-                    )
-                else:
-                    conv_res.confidence.pages[page.page_no].layout_score = 0.0
 
                 predictions.append(layout_prediction)
 

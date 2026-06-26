@@ -6,27 +6,25 @@ from typing import Type
 
 from docling.datamodel.base_models import LayoutPrediction, Page
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import BaseLayoutOptions
+from docling.datamodel.pipeline_options import BaseLayoutPostprocessorOptions
 from docling.models.base_model import BaseModelWithOptions, BasePageModel
 
 
-class BaseLayoutModel(BasePageModel, BaseModelWithOptions, ABC):
-    """Shared interface for layout models."""
-
-    requires_layout_postprocessing: bool = True
+class BaseLayoutPostprocessingModel(BasePageModel, BaseModelWithOptions, ABC):
+    """Shared interface for layout post-processing stages."""
 
     @classmethod
     @abstractmethod
-    def get_options_type(cls) -> Type[BaseLayoutOptions]:
-        """Return the options type supported by this layout model."""
+    def get_options_type(cls) -> Type[BaseLayoutPostprocessorOptions]:
+        """Return the options type supported by this post-processing model."""
 
     @abstractmethod
-    def predict_layout(
+    def postprocess_layout(
         self,
         conv_res: ConversionResult,
         pages: Sequence[Page],
     ) -> Sequence[LayoutPrediction]:
-        """Produce layout predictions for the provided pages."""
+        """Finalize raw layout predictions for the provided pages."""
 
     def __call__(
         self,
@@ -34,7 +32,7 @@ class BaseLayoutModel(BasePageModel, BaseModelWithOptions, ABC):
         page_batch: Iterable[Page],
     ) -> Iterable[Page]:
         pages = list(page_batch)
-        predictions = self.predict_layout(conv_res, pages)
+        predictions = self.postprocess_layout(conv_res, pages)
 
         for page, prediction in zip(pages, predictions):
             page.predictions.layout = prediction

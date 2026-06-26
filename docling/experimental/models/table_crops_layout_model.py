@@ -26,6 +26,8 @@ class TableCropsLayoutModel(BaseLayoutModel):
     This model is internal and not part of the stable public interface.
     """
 
+    requires_layout_postprocessing: bool = False
+
     def __init__(
         self,
         artifacts_path: Optional[Path],
@@ -57,8 +59,6 @@ class TableCropsLayoutModel(BaseLayoutModel):
 
             clusters = self._build_page_clusters(page)
             prediction = LayoutPrediction(clusters=clusters)
-
-            self._update_confidence(conv_res, page, clusters)
 
             layout_predictions.append(prediction)
 
@@ -94,9 +94,3 @@ class TableCropsLayoutModel(BaseLayoutModel):
                 clusters = []
 
         return clusters
-
-    def _update_confidence(
-        self, conv_res: ConversionResult, page: Page, clusters: list[Cluster]
-    ) -> None:
-        """Populate the layout confidence score for the page."""
-        conv_res.confidence.pages[page.page_no].layout_score = 1.0

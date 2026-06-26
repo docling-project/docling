@@ -1492,6 +1492,64 @@ LayoutObjectDetectionOptions.register_preset(
 )
 
 
+class BaseLayoutPostprocessorOptions(BaseOptions):
+    """Algorithm parameters consumed by ``LayoutPostprocessor``.
+
+    These controls drive the post-processing of raw layout clusters
+    (cell assignment, empty-cluster handling, orphan-cluster creation).
+    They are decoupled from the layout (prediction) options so the
+    post-processing stage and the predictor models can evolve
+    independently.
+    """
+
+    keep_empty_clusters: Annotated[
+        bool,
+        Field(
+            description=(
+                "Retain empty clusters in layout analysis results. When False, clusters without content are removed."
+            )
+        ),
+    ] = False
+    skip_cell_assignment: Annotated[
+        bool,
+        Field(
+            description=(
+                "Skip assignment of cells to clusters during layout post-processing. When True, cells are detected "
+                "but not associated with clusters."
+            )
+        ),
+    ] = False
+    create_orphan_clusters: Annotated[
+        bool,
+        Field(
+            description=(
+                "Create clusters for orphaned elements not assigned to any structure."
+            )
+        ),
+    ] = True
+
+
+class LayoutPostprocessorOptions(BaseLayoutPostprocessorOptions):
+    """Stage options for ``LayoutPostprocessingModel``.
+
+    Extends the algorithm parameters with the stage-level toggle
+    ``run_postprocessor``. When disabled, the stage only computes the
+    layout confidence score and leaves the raw clusters untouched
+    (used by the table-crops layout model).
+    """
+
+    kind: ClassVar[str] = "layout_postprocessor"
+    run_postprocessor: Annotated[
+        bool,
+        Field(
+            description=(
+                "Run the layout post-processor. When False, raw clusters are passed through unchanged and only the "
+                "layout confidence score is computed."
+            )
+        ),
+    ] = True
+
+
 class AsrPipelineOptions(PipelineOptions):
     """Configuration options for the Automatic Speech Recognition (ASR) pipeline.
 

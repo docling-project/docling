@@ -1,8 +1,11 @@
+from pathlib import Path, PurePath
+
 from docling_core.types.doc import DocItemLabel
 from PIL import Image, ImageDraw, ImageFont
 from PIL.ImageFont import FreeTypeFont
 
-from docling.datamodel.base_models import Cluster
+from docling.datamodel.base_models import Cluster, Page
+from docling.datamodel.settings import settings
 
 
 def draw_clusters(
@@ -83,3 +86,53 @@ def draw_clusters(
                 fill=(0, 0, 0, 255),  # Solid black
                 font=font,
             )
+
+
+def draw_clusters_and_cells_side_by_side(
+    input_file: PurePath,
+    page: Page,
+    clusters: list[Cluster],
+    mode_prefix: str,
+    show: bool = False,
+) -> None:
+    """
+    Draws a page image side by side with clusters filtered into two categories:
+    - Left: Clusters excluding FORM, KEY_VALUE_REGION, and PICTURE.
+    - Right: Clusters including FORM, KEY_VALUE_REGION, and PICTURE.
+    Includes label names and confidence scores for each cluster.
+    """
+    assert page.image is not None
+    assert page.size is not None
+    scale_x = page.image.width / page.size.width
+    scale_y = page.image.height / page.size.height
+
+    # Filter clusters for left and right images
+    exclude_labels = {
+        DocItemLabel.FORM,
+        DocItemLabel.KEY_VALUE_REGION,
+        DocItemLabel.PICTURE,
+    }
+    left_clusters = [c for c in clusters if c.label not in exclude_labels]
+    right_clusters = [c for c in clusters if c.label in exclude_labels]
+    # Create a deep copy of the original image for both sides
+    left_image = page.image.copy()
+    right_image = page.image.copy()
+
+    # Draw clusters on both images
+    draw_clusters(left_image, left_clusters, scale_x, scale_y)
+    draw_clusters(right_image, right_clusters, scale_x, scale_y)
+    # Combine the images side by side
+    combined_width = left_image.width * 2
+    combined_height = left_image.height
+    combined_image = Image.new("RGB", (combined_width, combined_height))
+    combined_image.paste(left_image, (0, 0))
+    combined_image.paste(right_image, (left_image.width, 0))
+    if show:
+        combined_image.show()
+    else:
+        out_path: Path = (
+            Path(settings.debug.debug_output_path) / f"debug_{input_file.stem}"
+        )
+        out_path.mkdir(parents=True, exist_ok=True)
+        out_file = out_path / f"{mode_prefix}_layout_page_{page.page_no:05}.png"
+        combined_image.save(str(out_file), format="png")
