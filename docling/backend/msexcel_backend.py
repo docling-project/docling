@@ -1185,10 +1185,16 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     def _find_page_size(
         doc: DoclingDocument, page_no: PositiveInt
     ) -> tuple[float, float]:
-        left: float = -1.0
-        top: float = -1.0
-        right: float = -1.0
-        bottom: float = -1.0
+        """Return (width, height) for the given page in cell-index units.
+
+        Width and height are the maximum ``r`` and ``b`` bbox coordinates seen
+        across all items on the page, regardless of content layer.  Because
+        bboxes use ``CoordOrigin.TOPLEFT`` with the sheet origin at ``(0, 0)``,
+        the page extent equals the largest right/bottom value — not the span
+        between the leftmost/topmost and rightmost/bottommost edges.
+        """
+        width: float = 0.0
+        height: float = 0.0
         for item, _ in doc.iterate_items(
             traverse_pictures=True,
             page_no=page_no,
@@ -1197,13 +1203,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if not isinstance(item, DocItem):
                 continue
             for provenance in item.prov:
-                bbox = provenance.bbox
-                left = min(left, bbox.l) if left != -1 else bbox.l
-                right = max(right, bbox.r) if right != -1 else bbox.r
-                top = min(top, bbox.t) if top != -1 else bbox.t
-                bottom = max(bottom, bbox.b) if bottom != -1 else bbox.b
+                if provenance.page_no != page_no:
+                    continue
+                width = max(width, provenance.bbox.r)
+                height = max(height, provenance.bbox.b)
 
-        return (right - left, bottom - top)
+        return (width, height)
 
     def _find_cell_item(
         self, doc: DoclingDocument, page_no: int, row: int, col: int

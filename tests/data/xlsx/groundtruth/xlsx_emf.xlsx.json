@@ -100,7 +100,7 @@
           "bbox": {
             "l": 1.0,
             "t": 1.0,
-            "r": 3.0,
+            "r": 4.0,
             "b": 10.0,
             "coord_origin": "TOPLEFT"
           },
@@ -138,7 +138,7 @@
           "bbox": {
             "l": 1.0,
             "t": 1.0,
-            "r": 2.0,
+            "r": 3.0,
             "b": 10.0,
             "coord_origin": "TOPLEFT"
           },
@@ -176,7 +176,7 @@
           "bbox": {
             "l": 1.0,
             "t": 1.0,
-            "r": 2.0,
+            "r": 3.0,
             "b": 10.0,
             "coord_origin": "TOPLEFT"
           },
@@ -217,7 +217,7 @@
             "l": 1.0,
             "t": 11.0,
             "r": 3.0,
-            "b": 12.0,
+            "b": 13.0,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
@@ -362,8 +362,8 @@
           "bbox": {
             "l": 1.0,
             "t": 11.0,
-            "r": 2.0,
-            "b": 12.0,
+            "r": 3.0,
+            "b": 13.0,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
@@ -508,8 +508,8 @@
           "bbox": {
             "l": 1.0,
             "t": 11.0,
-            "r": 2.0,
-            "b": 12.0,
+            "r": 3.0,
+            "b": 13.0,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
@@ -646,22 +646,22 @@
   "pages": {
     "1": {
       "size": {
-        "width": 3.0,
-        "height": 12.0
+        "width": 4.0,
+        "height": 13.0
       },
       "page_no": 1
     },
     "2": {
       "size": {
-        "width": 2.0,
-        "height": 12.0
+        "width": 3.0,
+        "height": 13.0
       },
       "page_no": 2
     },
     "3": {
       "size": {
-        "width": 2.0,
-        "height": 12.0
+        "width": 3.0,
+        "height": 13.0
       },
       "page_no": 3
     }
