@@ -23,7 +23,10 @@ from docling.datamodel.base_models import PdfOutlineItem
 from docling.utils.locks import pypdfium2_lock
 
 if TYPE_CHECKING:
-    from docling_parse.pdf_parser import PdfDocument as DoclingParsePdfDocument
+    from docling_parse.pdf_parser import (
+        PdfDocument as DoclingParsePdfDocument,
+        PdfTableOfContents,
+    )
 
 _log = logging.getLogger(__name__)
 
@@ -108,15 +111,22 @@ def outline_from_docling_parse(
     level 0, matching the pypdfium2 extractor). The native outline exposes only the title and
     the tree structure -- no target page or vertical position -- so ``page_no`` and ``y_top``
     are left ``None`` and the heading matcher falls back to title-only matching.
+
+    ``get_table_of_contents()`` returns ``None`` for PDFs without an embedded outline, in which
+    case an empty list is returned.
     """
+    toc = dp_doc.get_table_of_contents()
+    if toc is None:
+        return []
+
     items: list[PdfOutlineItem] = []
 
-    def _walk(node: object, level: int) -> None:
-        for child in node.children:  # type: ignore[attr-defined]
+    def _walk(node: PdfTableOfContents, level: int) -> None:
+        for child in node.children or []:
             title = (child.text or child.orig or "").strip()
             if title:
                 items.append(PdfOutlineItem(title=title, level=level))
             _walk(child, level + 1)
 
-    _walk(dp_doc.get_table_of_contents(), 0)
+    _walk(toc, 0)
     return items

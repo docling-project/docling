@@ -275,3 +275,26 @@ def test_docling_parse_native_outline_from_sample_pdf():
 
     assert [(o.title, o.level) for o in outline] == EXPECTED_OUTLINE
     assert all(o.page_no is None and o.y_top is None for o in outline)
+
+
+def test_outline_empty_for_pdf_without_bookmarks(tmp_path):
+    # Regression: docling-parse's get_table_of_contents() returns None for PDFs with no
+    # outline; the native flattener must return [] rather than crashing on None.children.
+    reportlab_canvas = pytest.importorskip("reportlab.pdfgen.canvas")
+    import pypdfium2 as pdfium
+    from docling_parse.pdf_parser import DoclingPdfParser
+
+    path = tmp_path / "no_outline.pdf"
+    c = reportlab_canvas.Canvas(str(path))
+    c.drawString(72, 720, "No bookmarks here")
+    c.showPage()
+    c.save()
+
+    pdoc = pdfium.PdfDocument(str(path))
+    assert extract_outline_from_pdfium(pdoc) == []
+
+    dp_doc = DoclingPdfParser(loglevel="fatal").load(str(path))
+    try:
+        assert outline_from_docling_parse(dp_doc) == []
+    finally:
+        dp_doc.unload()
