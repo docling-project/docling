@@ -7,6 +7,7 @@ from typing import List, Optional, Union
 
 import numpy as np
 from docling_core.types.doc import BoundingBox, DocItemLabel
+from docling_core.types.doc.page import TextCell
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
@@ -217,6 +218,8 @@ class LayoutModel(BaseLayoutModel):
                 )
 
             # Apply postprocessing
+            processed_clusters: List[Cluster]
+            processed_cells: List[TextCell]
             processed_clusters, processed_cells = LayoutPostprocessor(
                 page, clusters, self.options
             ).postprocess()
@@ -231,11 +234,17 @@ class LayoutModel(BaseLayoutModel):
                 )
 
                 conv_res.confidence.pages[page.page_no].layout_score = float(
-                    np.mean([c.confidence for c in processed_clusters])
+                    np.mean([p_cluster.confidence for p_cluster in processed_clusters])
                 )
 
                 conv_res.confidence.pages[page.page_no].ocr_score = float(
-                    np.mean([c.confidence for c in processed_cells if c.from_ocr])
+                    np.mean(
+                        [
+                            p_cell.confidence
+                            for p_cell in processed_cells
+                            if p_cell.from_ocr
+                        ]
+                    )
                 )
 
             prediction = LayoutPrediction(clusters=processed_clusters)
