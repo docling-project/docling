@@ -38,9 +38,33 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
     # Computes the optimum amount and coordinates of rectangles to OCR on a given page
     def get_ocr_rects(self, page: Page) -> List[BoundingBox]:
+        r"""
+        Compute the rectangles that should be OCRed on a given page.
+
+        The bitmap rects of the page (the bboxes with the pictures inside the page
+        of a programmatic PDF; empty if the page does not come from a programmatic
+        PDF) are turned into candidate OCR regions and their page coverage via the
+        following algorithm:
+
+        1. Rasterize the bitmap rects into a blank binary black-white image.
+           - The background is black and the rects are white.
+        2. Apply a small binary dilation on the rects.
+        3. Identify the bounding boxes around the "white" regions of the binary image.
+        4. Compute the coverage as the ratio of white pixels in the dilated image to
+           the page area.
+        5. Return the coverage and the discovered bboxes.
+
+        The coverage then decides which rectangles are returned:
+        - If ``force_full_page_ocr`` is set, or the coverage exceeds both the
+          bitmap-coverage threshold and ``bitmap_area_threshold``, a single
+          full-page rectangle is returned.
+        - Else if the coverage exceeds ``bitmap_area_threshold``, the individual
+          discovered bboxes are returned.
+        - Otherwise the bitmap coverage is too low and no rectangles are returned.
+        """
         from scipy.ndimage import binary_dilation, find_objects, label
 
-        BITMAP_COVERAGE_TRESHOLD = 0.75
+        BITMAP_COVERAGE_THRESHOLD = 0.75
         assert page.size is not None
 
         def find_ocr_rects(size, bitmap_rects):
@@ -64,9 +88,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             np_image = binary_dilation(np_image > 0, structure=structure)
 
             # Find the connected components
-            labeled_image, num_features = label(
-                np_image > 0
-            )  # Label black (0 value) regions
+            labeled_image, num_features = label(np_image > 0)  # Label white regions
 
             # Find enclosing bounding boxes for each connected component.
             slices = find_objects(labeled_image)
@@ -95,7 +117,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         # return full-page rectangle if page is dominantly covered with bitmaps
         if self.options.force_full_page_ocr or coverage > max(
-            BITMAP_COVERAGE_TRESHOLD, self.options.bitmap_area_threshold
+            BITMAP_COVERAGE_THRESHOLD, self.options.bitmap_area_threshold
         ):
             return [
                 BoundingBox(
