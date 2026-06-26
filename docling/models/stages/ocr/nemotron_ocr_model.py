@@ -332,7 +332,7 @@ class NemotronOcrModel(BaseOcrModel):
             while pending and pending[0].remaining == 0:
                 state = pending.popleft()
                 if state.needs_ocr:
-                    self.post_process_cells(state.cells, state.page)
+                    self.post_process_cells(state.cells, state.page, conv_res)
                     if settings.debug.visualize_ocr:
                         self.draw_ocr_rects_and_cells(
                             conv_res, state.page, state.ocr_rects

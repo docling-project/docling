@@ -139,7 +139,12 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         return filtered_ocr_cells
 
-    def post_process_cells(self, ocr_cells: List[TextCell], page: Page) -> None:
+    def post_process_cells(
+        self,
+        ocr_cells: List[TextCell],
+        page: Page,
+        conv_res: ConversionResult,
+    ) -> None:
         r"""
         Post-process the OCR cells and update the page object.
         Updates parsed_page.textline_cells directly since page.cells is now read-only.
@@ -169,6 +174,12 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             ]
             page.parsed_page.has_words = len(page.parsed_page.word_cells) > 0
             page.parsed_page.has_chars = len(page.parsed_page.char_cells) > 0
+
+        ocr_confidences = [c.confidence for c in final_cells if c.from_ocr]
+        if ocr_confidences:
+            conv_res.confidence.pages[page.page_no].ocr_score = float(
+                np.mean(ocr_confidences)
+            )
 
     def _combine_cells(
         self, existing_cells: List[TextCell], ocr_cells: List[TextCell]

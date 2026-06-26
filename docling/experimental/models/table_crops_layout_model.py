@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import warnings
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Optional
 
-import numpy as np
 from docling_core.types.doc import BoundingBox, DocItemLabel
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
@@ -100,17 +98,5 @@ class TableCropsLayoutModel(BaseLayoutModel):
     def _update_confidence(
         self, conv_res: ConversionResult, page: Page, clusters: list[Cluster]
     ) -> None:
-        """Populate layout and OCR confidence scores for the page."""
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                "Mean of empty slice|invalid value encountered in scalar divide",
-                RuntimeWarning,
-                "numpy",
-            )
-
-            conv_res.confidence.pages[page.page_no].layout_score = 1.0
-
-            ocr_cells = [cell for cell in page.cells if cell.from_ocr]
-            ocr_confidence = float(np.mean([cell.confidence for cell in ocr_cells]))
-            conv_res.confidence.pages[page.page_no].ocr_score = ocr_confidence
+        """Populate the layout confidence score for the page."""
+        conv_res.confidence.pages[page.page_no].layout_score = 1.0

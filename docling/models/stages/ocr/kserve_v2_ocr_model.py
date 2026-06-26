@@ -256,7 +256,7 @@ class KserveV2OcrModel(BaseOcrModel):
                         del high_res_image
 
                 # Post-process the cells (inherited from BaseOcrModel)
-                self.post_process_cells(all_ocr_cells, page)
+                self.post_process_cells(all_ocr_cells, page, conv_res)
 
             # DEBUG code:
             if settings.debug.visualize_ocr:

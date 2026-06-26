@@ -113,7 +113,7 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
                     engine_output=engine_output,
                 )
 
-                processed_clusters, processed_cells = LayoutPostprocessor(
+                processed_clusters, _ = LayoutPostprocessor(
                     page=page,
                     clusters=clusters,
                     options=self.options,
@@ -129,13 +129,6 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
                     )
                 else:
                     conv_res.confidence.pages[page.page_no].layout_score = 0.0
-
-                if processed_cells:
-                    ocr_scores = [c.confidence for c in processed_cells if c.from_ocr]
-                    if ocr_scores:
-                        conv_res.confidence.pages[page.page_no].ocr_score = float(
-                            np.mean(ocr_scores)
-                        )
 
                 predictions.append(layout_prediction)
 
