@@ -1,11 +1,15 @@
 import collections
 import logging
+import shutil
+import warnings
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Annotated, Any, Optional, Union, cast
+from tempfile import mkdtemp
+from typing import Annotated, Any, Callable, Optional, Union, cast
 from zipfile import ZipFile
 
+import pypdfium2
 from docling_core.types.doc import (
     BoundingBox,
     ContentLayer,
@@ -25,10 +29,17 @@ from lxml import etree
 from openpyxl import load_workbook
 from openpyxl.chartsheet.chartsheet import Chartsheet
 from openpyxl.drawing.image import Image
-from openpyxl.drawing.spreadsheet_drawing import OneCellAnchor, TwoCellAnchor
+from openpyxl.drawing.spreadsheet_drawing import (
+    OneCellAnchor,
+    SpreadsheetDrawing,
+    TwoCellAnchor,
+)
+from openpyxl.packaging.relationship import get_dependents, get_rels_path
 from openpyxl.styles import PatternFill
 from openpyxl.worksheet.worksheet import Worksheet
-from PIL import Image as PILImage
+from openpyxl.xml.constants import IMAGE_NS
+from openpyxl.xml.functions import fromstring as openpyxl_fromstring
+from PIL import Image as PILImage, UnidentifiedImageError
 from pydantic import BaseModel, Field, NonNegativeInt, PositiveInt
 from pydantic.dataclasses import dataclass
 from typing_extensions import override
@@ -36,6 +47,10 @@ from typing_extensions import override
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
+)
+from docling.backend.docx.drawingml.utils import (
+    crop_whitespace,
+    get_libreoffice_cmd,
 )
 from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -159,17 +174,35 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         for i in range(-1, self.max_levels):
             self.parents[i] = None
 
+        # Lazy-initialized LibreOffice converter for EMF/WMF images
+        self.xlsx_to_pdf_converter: Callable | None = None
+        self.xlsx_to_pdf_converter_init: bool = False
+
         self.workbook = None
         try:
-            if isinstance(self.path_or_stream, BytesIO):
-                self.workbook = load_workbook(
-                    filename=self.path_or_stream, data_only=True
+            # Suppress the openpyxl warning for WMF/EMF images being dropped:
+            # those formats are handled separately via LibreOffice conversion.
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message=r".* image format is not supported so the image is being dropped",
+                    category=UserWarning,
+                    module=r"openpyxl\.reader\.drawings",
                 )
-
-            elif isinstance(self.path_or_stream, Path):
-                self.workbook = load_workbook(
-                    filename=str(self.path_or_stream), data_only=True
+                warnings.filterwarnings(
+                    "ignore",
+                    message=r"The image .* will be removed because it cannot be read",
+                    category=UserWarning,
+                    module=r"openpyxl\.reader\.drawings",
                 )
+                if isinstance(self.path_or_stream, BytesIO):
+                    self.workbook = load_workbook(
+                        filename=self.path_or_stream, data_only=True
+                    )
+                elif isinstance(self.path_or_stream, Path):
+                    self.workbook = load_workbook(
+                        filename=str(self.path_or_stream), data_only=True
+                    )
 
             self.valid = self.workbook is not None
         except Exception as e:
@@ -429,10 +462,42 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         if isinstance(sheet, Worksheet):
             doc = self._find_tables_in_sheet(doc, sheet, page_no)
             doc = self._find_images_in_sheet(doc, sheet, page_no)
+            self._sort_sheet_children_by_position(doc, page_no)
 
         # TODO: parse charts in sheet
 
         return doc
+
+    def _sort_sheet_children_by_position(
+        self, doc: DoclingDocument, page_no: int
+    ) -> None:
+        """Sort the current sheet group's direct children by top-row position.
+
+        Tables are added before images during sheet conversion.  When an image
+        sits above a table on the sheet (smaller row index), it would otherwise
+        appear after the table in the exported document.  Sorting the sheet
+        group's children by their ``bbox.t`` corrects the visual order.
+
+        Children without provenance on the current page sort to the end.
+
+        Args:
+            doc: The DoclingDocument whose current sheet group is sorted in place.
+            page_no: The 1-based page number of the sheet being processed.
+        """
+        sheet_group = self.parents[0]
+        if sheet_group is None:
+            return
+
+        def _top_row(ref: Any) -> float:
+            item = ref.resolve(doc)
+            if item is None:
+                return float("inf")
+            for prov in getattr(item, "prov", []):
+                if prov.page_no == page_no:
+                    return prov.bbox.t
+            return float("inf")
+
+        sheet_group.children.sort(key=_top_row)
 
     def _find_tables_in_sheet(
         self, doc: DoclingDocument, sheet: Worksheet, page_no: int
@@ -843,6 +908,237 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             table_cells,
         )
 
+    @staticmethod
+    def _anchor_to_tuple(anchor: Any) -> tuple[int, int, int, int]:
+        """Convert an openpyxl anchor object to a (left_col, top_row, right_col, bottom_row) tuple.
+
+        Args:
+            anchor: A TwoCellAnchor, OneCellAnchor, or unknown anchor type.
+
+        Returns:
+            A 4-tuple suitable for BoundingBox.from_tuple.
+        """
+        if isinstance(anchor, TwoCellAnchor):
+            return (
+                anchor._from.col,
+                anchor._from.row,
+                anchor.to.col + 1,
+                anchor.to.row + 1,
+            )
+        if isinstance(anchor, OneCellAnchor):
+            return (
+                anchor._from.col,
+                anchor._from.row,
+                anchor._from.col + 1,
+                anchor._from.row + 1,
+            )
+        return (0, 0, 0, 0)
+
+    def _get_libreoffice_converter(self) -> Callable | None:
+        """Lazily initialize and return a LibreOffice converter callable.
+
+        The converter accepts ``(input_path: Path, output_path: Path)`` and
+        converts the input file to PDF at the given output path.
+
+        Returns:
+            A converter callable, or None when LibreOffice is not available.
+        """
+        if self.xlsx_to_pdf_converter_init:
+            return self.xlsx_to_pdf_converter
+
+        self.xlsx_to_pdf_converter_init = True
+        libreoffice_cmd = get_libreoffice_cmd()
+        if libreoffice_cmd is None:
+            _log.debug(
+                "LibreOffice not found — EMF/WMF images in XLSX will be skipped."
+            )
+            self.xlsx_to_pdf_converter = None
+            return None
+
+        import subprocess
+
+        def _convert(input_path: Path, output_path: Path) -> None:
+            subprocess.run(
+                [
+                    libreoffice_cmd,
+                    "--headless",
+                    "--convert-to",
+                    "pdf",
+                    "--outdir",
+                    str(output_path.parent),
+                    str(input_path),
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=True,
+            )
+            # LibreOffice names the output after the input stem
+            expected = output_path.parent / (input_path.stem + ".pdf")
+            if expected != output_path:
+                expected.rename(output_path)
+
+        self.xlsx_to_pdf_converter = _convert
+        return self.xlsx_to_pdf_converter
+
+    def _convert_emf_to_pil(self, image_bytes: bytes) -> PILImage.Image | None:
+        """Convert a raw EMF or WMF image to a PIL Image via LibreOffice.
+
+        LibreOffice can convert standalone ``.emf``/``.wmf`` files to PDF
+        directly — no DOCX or XLSX wrapper is needed.  The raw bytes are
+        written to a temp file, converted to PDF, and the first page is
+        rendered with pypdfium2.
+
+        Args:
+            image_bytes: Raw EMF or WMF image data.
+
+        Returns:
+            A PIL Image, or None if LibreOffice is unavailable or conversion fails.
+        """
+        converter = self._get_libreoffice_converter()
+        if converter is None:
+            return None
+
+        # WMF placeable magic: D7 CD C6 9A; everything else we treat as EMF.
+        suffix = ".wmf" if image_bytes[:4] == b"\xd7\xcd\xc6\x9a" else ".emf"
+        temp_dir = Path(mkdtemp())
+        try:
+            input_path = temp_dir / f"image{suffix}"
+            output_path = temp_dir / "image.pdf"
+            input_path.write_bytes(image_bytes)
+            converter(input_path, output_path)
+            if not output_path.exists():
+                _log.debug("LibreOffice produced no PDF output for %s", input_path.name)
+                return None
+            pdf = pypdfium2.PdfDocument(str(output_path))
+            page = pdf[0]
+            pil_image = crop_whitespace(page.render(scale=2).to_pil())
+            page.close()
+            pdf.close()
+            return pil_image
+        except Exception as exc:
+            _log.debug("EMF/WMF conversion via LibreOffice failed: %s", exc)
+            return None
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def _find_unsupported_images_in_sheet(
+        self, doc: DoclingDocument, sheet: Worksheet, page_no: int
+    ) -> DoclingDocument:
+        """Find EMF/WMF images dropped by openpyxl and add them via LibreOffice.
+
+        openpyxl silently drops WMF images and raises ``OSError`` for EMF
+        images (which PIL cannot decode natively).  This method re-parses the
+        drawing relationships for the sheet directly from the XLSX zip archive
+        and converts those unsupported images using LibreOffice.
+
+        Args:
+            doc: The DoclingDocument to be updated.
+            sheet: The Excel worksheet to be parsed.
+            page_no: The dense (1-based) page number for this sheet in the output document.
+
+        Returns:
+            The updated DoclingDocument.
+        """
+        # drawing rels are stored on the worksheet object by openpyxl
+        drawing_paths: list[str] = [
+            rel.target
+            for rel in sheet._rels.find(SpreadsheetDrawing._rel_type)  # type: ignore[attr-defined]
+        ]
+        if not drawing_paths:
+            return doc
+
+        content_layer = self._get_sheet_content_layer(sheet)
+
+        if isinstance(self.path_or_stream, BytesIO):
+            self.path_or_stream.seek(0)
+
+        try:
+            with ZipFile(self.path_or_stream, "r") as zf:
+                for drawing_path in drawing_paths:
+                    doc = self._process_drawing_for_unsupported_images(
+                        doc, zf, drawing_path, page_no, content_layer
+                    )
+        except Exception as exc:
+            _log.debug("Could not scan drawing files for unsupported images: %s", exc)
+
+        return doc
+
+    def _process_drawing_for_unsupported_images(
+        self,
+        doc: DoclingDocument,
+        zf: ZipFile,
+        drawing_path: str,
+        page_no: int,
+        content_layer: Optional[ContentLayer],
+    ) -> DoclingDocument:
+        """Scan one drawing XML file and convert any EMF/WMF blips found.
+
+        Args:
+            doc: The DoclingDocument to update.
+            zf: Open ZipFile for the xlsx archive.
+            drawing_path: Absolute path inside the zip to the drawing XML.
+            page_no: Page number (1-based) for provenance.
+            content_layer: ContentLayer for added pictures.
+
+        Returns:
+            The updated DoclingDocument.
+        """
+        if drawing_path not in zf.namelist():
+            return doc
+
+        tree = openpyxl_fromstring(zf.read(drawing_path))
+        try:
+            drawing = SpreadsheetDrawing.from_tree(tree)
+        except TypeError:
+            return doc
+
+        rels_path = get_rels_path(drawing_path)
+        if rels_path not in zf.namelist():
+            return doc
+        deps = get_dependents(zf, rels_path)
+
+        for rel in drawing._blip_rels:
+            dep = deps.get(rel.embed)
+            if dep.Type != IMAGE_NS or dep.target not in zf.namelist():
+                continue
+
+            image_bytes = zf.read(dep.target)
+
+            # Skip images PIL can already handle — openpyxl already added those.
+            try:
+                pil_probe = PILImage.open(BytesIO(image_bytes))
+                probe_buf = BytesIO()
+                pil_probe.save(probe_buf, format="PNG")
+                continue  # PIL succeeded; openpyxl took care of this one
+            except (UnidentifiedImageError, OSError):
+                pass
+
+            pil_image = self._convert_emf_to_pil(image_bytes)
+            if pil_image is None:
+                _log.warning(
+                    "Could not convert unsupported image '%s'. "
+                    "Install LibreOffice for EMF/WMF support in XLSX files.",
+                    dep.target,
+                )
+                continue
+
+            doc.add_picture(
+                parent=self.parents[0],
+                image=ImageRef.from_pil(image=pil_image, dpi=72),
+                caption=None,
+                prov=ProvenanceItem(
+                    page_no=page_no,
+                    charspan=(0, 0),
+                    bbox=BoundingBox.from_tuple(
+                        self._anchor_to_tuple(rel.anchor),
+                        origin=CoordOrigin.TOPLEFT,
+                    ),
+                ),
+                content_layer=content_layer,
+            )
+
+        return doc
+
     def _find_images_in_sheet(
         self, doc: DoclingDocument, sheet: Worksheet, page_no: int
     ) -> DoclingDocument:
@@ -858,26 +1154,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
         if self.workbook is not None:
             content_layer = self._get_sheet_content_layer(sheet)
-            # Iterate over byte images in the sheet
+            # Images that PIL can read are already loaded by openpyxl into sheet._images
             for item in sheet._images:  # type: ignore[attr-defined]
                 try:
                     image: Image = cast(Image, item)
                     pil_image = PILImage.open(image.ref)  # type: ignore[arg-type]
-                    anchor = (0, 0, 0, 0)
-                    if isinstance(image.anchor, TwoCellAnchor):
-                        anchor = (
-                            image.anchor._from.col,
-                            image.anchor._from.row,
-                            image.anchor.to.col + 1,
-                            image.anchor.to.row + 1,
-                        )
-                    elif isinstance(image.anchor, OneCellAnchor):
-                        anchor = (
-                            image.anchor._from.col,
-                            image.anchor._from.row,
-                            image.anchor._from.col + 1,
-                            image.anchor._from.row + 1,
-                        )
                     doc.add_picture(
                         parent=self.parents[0],
                         image=ImageRef.from_pil(image=pil_image, dpi=72),
@@ -886,13 +1167,17 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                             page_no=page_no,
                             charspan=(0, 0),
                             bbox=BoundingBox.from_tuple(
-                                anchor, origin=CoordOrigin.TOPLEFT
+                                self._anchor_to_tuple(image.anchor),
+                                origin=CoordOrigin.TOPLEFT,
                             ),
                         ),
                         content_layer=content_layer,
                     )
                 except Exception:
                     _log.error("could not extract the image from excel sheets")
+
+            # EMF/WMF images are silently dropped by openpyxl; handle them separately
+            doc = self._find_unsupported_images_in_sheet(doc, sheet, page_no)
 
         return doc
 
