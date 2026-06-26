@@ -1179,7 +1179,10 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             for item in sheet._images:  # type: ignore[attr-defined]
                 try:
                     image: Image = cast(Image, item)
-                    pil_image = PILImage.open(image.ref)  # type: ignore[arg-type]
+                    ref = image.ref
+                    pil_image = (
+                        ref if isinstance(ref, PILImage.Image) else PILImage.open(ref)
+                    )
                     doc.add_picture(
                         parent=self.parent,
                         image=ImageRef.from_pil(image=pil_image, dpi=72),
