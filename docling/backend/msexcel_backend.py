@@ -8,7 +8,7 @@ from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Annotated, Any, Callable, Final, Optional, Union, cast
+from typing import Annotated, Any, Callable, Final, cast
 from zipfile import ZipFile
 
 import pypdfium2
@@ -173,8 +173,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     def __init__(
         self,
         in_doc: "InputDocument",
-        path_or_stream: Union[BytesIO, Path],
-        options: Optional[MsExcelBackendOptions] = None,
+        path_or_stream: BytesIO | Path,
+        options: MsExcelBackendOptions | None = None,
     ) -> None:
         """Initialize the MsExcelDocumentBackend object.
 
@@ -235,7 +235,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
     def _parse_threaded_comments(
         self, sheet_name: str
-    ) -> dict[str, tuple[str, str, Optional[datetime]]]:
+    ) -> dict[str, tuple[str, str, datetime | None]]:
         """Parse threaded comments from Excel XML for a specific sheet.
 
         Returns a dict mapping cell coordinates to (author, text, timestamp) tuples.
@@ -245,7 +245,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             Uses secure XML parser configuration to prevent XXE attacks and validates
             ZIP file paths to prevent zip-slip attacks.
         """
-        threaded_comments: dict[str, tuple[str, str, Optional[datetime]]] = {}
+        threaded_comments: dict[str, tuple[str, str, datetime | None]] = {}
 
         # Only extract from Path objects (BytesIO is consumed by load_workbook)
         if not isinstance(self.path_or_stream, Path):
@@ -351,7 +351,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     @override
     def page_count(self) -> int:
         if self.is_valid() and self.workbook:
-            sheet_names_filter: Optional[list[str]] = (
+            sheet_names_filter: list[str] | None = (
                 self.options.sheet_names
                 if isinstance(self.options, MsExcelBackendOptions)
                 else None
@@ -408,7 +408,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
 
         if self.workbook is not None:
-            sheet_names_filter: Optional[list[str]] = (
+            sheet_names_filter: list[str] | None = (
                 self.options.sheet_names
                 if isinstance(self.options, MsExcelBackendOptions)
                 else None
@@ -463,7 +463,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return doc
 
     def _convert_sheet(
-        self, doc: DoclingDocument, sheet: Union[Worksheet, Chartsheet], page_no: int
+        self, doc: DoclingDocument, sheet: Worksheet | Chartsheet, page_no: int
     ) -> DoclingDocument:
         """Parse an Excel worksheet and attach its structure to a DoclingDocument
 
@@ -688,7 +688,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     def _find_data_tables(
         self, sheet: Worksheet
     ) -> tuple[
-        list[ExcelTable], dict[tuple[int, int], tuple[str, str, Optional[datetime]]]
+        list[ExcelTable], dict[tuple[int, int], tuple[str, str, datetime | None]]
     ]:
         """Find all compact rectangular data tables in an Excel worksheet.
 
@@ -708,7 +708,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         tables: list[ExcelTable] = []  # List to store found tables
         visited: set[tuple[int, int]] = set()  # Track already visited cells
         comment_map: dict[
-            tuple[int, int], tuple[str, str, Optional[datetime]]
+            tuple[int, int], tuple[str, str, datetime | None]
         ] = {}  # Collect comments
 
         # Parse threaded comments from XML (Excel 365+ format with proper author names and timestamps)
@@ -1090,7 +1090,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         zf: ZipFile,
         drawing_path: str,
         page_no: int,
-        content_layer: Optional[ContentLayer],
+        content_layer: ContentLayer | None,
     ) -> DoclingDocument:
         """Scan one drawing XML file and convert any EMF/WMF blips found.
 
@@ -1233,7 +1233,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
     def _find_cell_item(
         self, doc: DoclingDocument, page_no: int, row: int, col: int
-    ) -> Optional[DocItem]:
+    ) -> DocItem | None:
         """Find the DocItem (table cell or text) at the given row/col position.
 
         Args:
@@ -1261,7 +1261,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return None
 
     @staticmethod
-    def _get_sheet_content_layer(sheet: Worksheet) -> Optional[ContentLayer]:
+    def _get_sheet_content_layer(sheet: Worksheet) -> ContentLayer | None:
         return (
             None
             if sheet.sheet_state == Worksheet.SHEETSTATE_VISIBLE
