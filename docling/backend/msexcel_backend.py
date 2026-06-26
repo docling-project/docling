@@ -1,12 +1,14 @@
 import collections
 import logging
+import posixpath
 import shutil
+import subprocess
 import warnings
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Annotated, Any, Callable, Optional, Union, cast
+from typing import Annotated, Any, Callable, Final, Optional, Union, cast
 from zipfile import ZipFile
 
 import pypdfium2
@@ -39,7 +41,6 @@ from openpyxl.packaging.relationship import get_dependents, get_rels_path
 from openpyxl.styles import PatternFill
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.xml.constants import IMAGE_NS
-from openpyxl.xml.functions import fromstring as openpyxl_fromstring
 from PIL import Image as PILImage, UnidentifiedImageError
 from pydantic import BaseModel, Field, NonNegativeInt, PositiveInt
 from pydantic.dataclasses import dataclass
@@ -59,6 +60,20 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
+
+
+# Safe XML parser — prevents XXE, DTD-over-network, and entity-expansion attacks.
+_SAFE_XML_PARSER: Final = etree.XMLParser(
+    resolve_entities=False,
+    load_dtd=False,
+    no_network=True,
+    dtd_validation=False,
+)
+
+
+def _has_unsafe_zip_paths(namelist: list[str]) -> bool:
+    """Return True if any ZIP member name is absolute or contains a path traversal."""
+    return any(m.startswith("/") or ".." in m for m in namelist)
 
 
 @dataclass
@@ -144,6 +159,15 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
           extracted because the stream is consumed by openpyxl during initialization.
           Old-style cell comments (notes) are always extracted regardless of input type.
     """
+
+    # Maximum seconds to wait for a single LibreOffice EMF/WMF conversion.
+    # Raise this value if conversions time out on unusually large or complex files.
+    LIBREOFFICE_TIMEOUT_S: Final[int] = 60
+
+    # Maximum uncompressed byte sizes accepted when reading members from the XLSX zip.
+    # These caps guard against decompression-bomb payloads in drawing XML / image files.
+    _MAX_DRAWING_BYTES: Final[int] = 10 * 1024 * 1024  # 10 MB
+    _MAX_IMAGE_BYTES: Final[int] = 50 * 1024 * 1024  # 50 MB
 
     @override
     def __init__(
@@ -237,21 +261,14 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 self.path_or_stream.seek(0)
 
             with ZipFile(self.path_or_stream, "r") as zip_file:
-                if any(m.startswith("/") or ".." in m for m in zip_file.namelist()):
+                if _has_unsafe_zip_paths(zip_file.namelist()):
                     _log.warning("Skipping file with unsafe ZIP paths")
                     return threaded_comments
-
-                parser = etree.XMLParser(
-                    resolve_entities=False,
-                    load_dtd=False,
-                    no_network=True,
-                    dtd_validation=False,
-                )
 
                 person_map: dict[str, str] = {}
                 try:
                     person_xml = zip_file.read("xl/persons/person.xml")
-                    person_tree = etree.fromstring(person_xml, parser=parser)
+                    person_tree = etree.fromstring(person_xml, parser=_SAFE_XML_PARSER)
                     person_map = {
                         person.get("id"): person.get("displayName")
                         for person in person_tree.findall(".//tc:person", namespaces=ns)
@@ -274,7 +291,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 threaded_file = f"xl/threadedComments/threadedComment{sheet_num}.xml"
                 try:
                     threaded_xml = zip_file.read(threaded_file)
-                    threaded_tree = etree.fromstring(threaded_xml, parser=parser)
+                    threaded_tree = etree.fromstring(
+                        threaded_xml, parser=_SAFE_XML_PARSER
+                    )
 
                     for comment in threaded_tree.findall(
                         ".//tc:threadedComment", namespaces=ns
@@ -952,8 +971,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             self.xlsx_to_pdf_converter = None
             return None
 
-        import subprocess
-
         def _convert(input_path: Path, output_path: Path) -> None:
             subprocess.run(
                 [
@@ -968,6 +985,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 check=True,
+                timeout=self.LIBREOFFICE_TIMEOUT_S,
             )
             # LibreOffice names the output after the input stem
             expected = output_path.parent / (input_path.stem + ".pdf")
@@ -1051,6 +1069,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         try:
             with ZipFile(self.path_or_stream, "r") as zf:
+                if _has_unsafe_zip_paths(zf.namelist()):
+                    _log.warning(
+                        "Skipping EMF/WMF scan: XLSX archive contains unsafe ZIP paths"
+                    )
+                    return doc
+
                 for drawing_path in drawing_paths:
                     doc = self._process_drawing_for_unsupported_images(
                         doc, zf, drawing_path, page_no, content_layer
@@ -1083,7 +1107,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         if drawing_path not in zf.namelist():
             return doc
 
-        tree = openpyxl_fromstring(zf.read(drawing_path))
+        tree = etree.fromstring(zf.read(drawing_path), parser=_SAFE_XML_PARSER)
         try:
             drawing = SpreadsheetDrawing.from_tree(tree)
         except TypeError:
