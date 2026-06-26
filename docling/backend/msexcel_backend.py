@@ -18,6 +18,7 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    GroupItem,
     GroupLabel,
     ImageRef,
     ProvenanceItem,
@@ -167,12 +168,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         self.page_range = in_doc.limits.page_range
 
-        # Initialise the parents for the hierarchy
-        self.max_levels = 10
-
-        self.parents: dict[int, Any] = {}
-        for i in range(-1, self.max_levels):
-            self.parents[i] = None
+        # Current sheet group; set at the start of each sheet conversion
+        self.parent: GroupItem | None = None
 
         # Lazy-initialized LibreOffice converter for EMF/WMF images
         self.xlsx_to_pdf_converter: Callable | None = None
@@ -424,7 +421,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 # do not rely on sheet.max_column, sheet.max_row if there are images
                 page = doc.add_page(page_no=page_no, size=Size(width=0, height=0))
 
-                self.parents[0] = doc.add_group(
+                self.parent = doc.add_group(
                     parent=None,
                     label=GroupLabel.SHEET,
                     name=name,
@@ -484,7 +481,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             doc: The DoclingDocument whose current sheet group is sorted in place.
             page_no: The 1-based page number of the sheet being processed.
         """
-        sheet_group = self.parents[0]
+        sheet_group = self.parent
         if sheet_group is None:
             return
 
@@ -533,7 +530,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     doc.add_text(
                         text=excel_table.data[0].text,
                         label=DocItemLabel.TEXT,
-                        parent=self.parents[0],
+                        parent=self.parent,
                         prov=ProvenanceItem(
                             page_no=page_no,
                             charspan=(0, 0),
@@ -572,7 +569,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
                     doc.add_table(
                         data=table_data,
-                        parent=self.parents[0],
+                        parent=self.parent,
                         prov=ProvenanceItem(
                             page_no=page_no,
                             charspan=(0, 0),
@@ -1123,7 +1120,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 continue
 
             doc.add_picture(
-                parent=self.parents[0],
+                parent=self.parent,
                 image=ImageRef.from_pil(image=pil_image, dpi=72),
                 caption=None,
                 prov=ProvenanceItem(
@@ -1160,7 +1157,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     image: Image = cast(Image, item)
                     pil_image = PILImage.open(image.ref)  # type: ignore[arg-type]
                     doc.add_picture(
-                        parent=self.parents[0],
+                        parent=self.parent,
                         image=ImageRef.from_pil(image=pil_image, dpi=72),
                         caption=None,
                         prov=ProvenanceItem(
