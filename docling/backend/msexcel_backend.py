@@ -41,6 +41,7 @@ from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.office_utils import warn_if_macros
 
 _log = logging.getLogger(__name__)
 
@@ -160,6 +161,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             self.parents[i] = None
 
         self.workbook = None
+        warn_if_macros(self.path_or_stream)
         try:
             if isinstance(self.path_or_stream, BytesIO):
                 self.workbook = load_workbook(
