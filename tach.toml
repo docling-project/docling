@@ -342,6 +342,11 @@ depends_on = [
 ]
 
 [[modules]]
+path = "docling.models.stages.header_footer"
+layer = "models"
+depends_on = ["docling.datamodel"]
+
+[[modules]]
 path = "docling.models.stages.heading_hierarchy"
 layer = "models"
 depends_on = ["docling.datamodel"]
