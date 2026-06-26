@@ -663,9 +663,9 @@ class StandardPdfPipeline(ConvertPipeline):
 
         # wire stages
         output_q = ThreadedQueue(opts.queue_max_size)
-        preprocess.add_output_queue(ocr.input_queue)  # PDF parsing
-        ocr.add_output_queue(layout.input_queue)  # OCR
-        layout.add_output_queue(layout_postprocess.input_queue)  # Layout prediction
+        preprocess.add_output_queue(layout.input_queue)  # PDF parsing
+        layout.add_output_queue(ocr.input_queue)  # Layout prediction
+        ocr.add_output_queue(layout_postprocess.input_queue)  # OCR
         layout_postprocess.add_output_queue(table.input_queue)  # Layout post-processing
         table.add_output_queue(assemble.input_queue)  # Table model
         assemble.add_output_queue(output_q)  # Assembly
