@@ -10,6 +10,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    SecretStr,
     field_validator,
 )
 from typing_extensions import deprecated
@@ -171,8 +172,8 @@ class OcrOptions(BaseOptions):
     See Also:
         `OcrAutoOptions`: Automatic engine selection based on availability.
         `EasyOcrOptions`, `TesseractCliOcrOptions`, `TesseractOcrOptions`,
-        `RapidOcrOptions`, `OcrMacOptions`, `NemotronOcrOptions`: Engine-specific
-        configurations.
+        `RapidOcrOptions`, `OcrMacOptions`, `NemotronOcrOptions`,
+        `MistralOcrOptions`: Engine-specific configurations.
     """
 
     lang: Annotated[
@@ -373,6 +374,99 @@ class NemotronOcrOptions(OcrOptions):
             )
         ),
     ] = 8
+
+
+class MistralOcrOptions(OcrOptions):
+    """Configuration for Mistral OCR API.
+
+    Notes:
+        This engine calls the Mistral OCR endpoint. Provide `api_key` directly,
+        or set the environment variable named by `api_key_env_var`.
+    """
+
+    kind: ClassVar[Literal["mistral_ocr"]] = "mistral_ocr"
+    lang: Annotated[
+        list[str],
+        Field(
+            description=(
+                "Requested OCR languages. Mistral OCR handles language detection "
+                "server-side; the values are kept for API consistency."
+            )
+        ),
+    ] = []
+    model: Annotated[
+        str,
+        Field(description="Mistral OCR model identifier."),
+    ] = "mistral-ocr-4-0"
+    api_key: Annotated[
+        Optional[SecretStr],
+        Field(
+            default=None,
+            description=(
+                "Mistral API key. If omitted, the engine reads the environment "
+                "variable configured by api_key_env_var."
+            ),
+            exclude=True,
+            repr=False,
+        ),
+    ] = None
+    api_key_env_var: Annotated[
+        str,
+        Field(description="Environment variable used to read the Mistral API key."),
+    ] = "MISTRAL_API_KEY"
+    url: Annotated[
+        str,
+        Field(description="Mistral OCR endpoint URL."),
+    ] = "https://api.mistral.ai/v1/ocr"
+    scale: Annotated[
+        float,
+        Field(
+            description=(
+                "Image scale multiplier for OCR processing. Higher values increase "
+                "resolution before sending page crops to Mistral OCR."
+            ),
+            gt=0.0,
+        ),
+    ] = 2.0
+    timeout: Annotated[
+        float,
+        Field(description="HTTP request timeout in seconds.", gt=0.0),
+    ] = 120.0
+    table_format: Annotated[
+        Literal["html", "markdown"],
+        Field(description="Table format requested from Mistral OCR."),
+    ] = "html"
+    confidence_scores_granularity: Annotated[
+        Literal["page", "word"],
+        Field(description="Confidence score granularity requested from Mistral OCR."),
+    ] = "word"
+    include_image_base64: Annotated[
+        bool,
+        Field(
+            description=(
+                "Request extracted image payloads separately from markdown text. "
+                "This keeps image blocks out of OCR text cells while preserving "
+                "Mistral's image extraction in the API response."
+            )
+        ),
+    ] = True
+    image_limit: Annotated[
+        int | None,
+        Field(
+            default=None,
+            description="Maximum number of images Mistral OCR should extract per page.",
+            ge=0,
+        ),
+    ] = None
+    image_min_size: Annotated[
+        int | None,
+        Field(
+            default=None,
+            description="Minimum image size in pixels for Mistral OCR extraction.",
+            ge=0,
+        ),
+    ] = None
+    model_config = ConfigDict(extra="forbid")
 
 
 class EasyOcrOptions(OcrOptions):

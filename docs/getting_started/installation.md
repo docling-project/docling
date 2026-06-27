@@ -96,6 +96,7 @@ the following engines.
 | ------ | ------------ | ----- |
 | [EasyOCR](https://github.com/JaidedAI/EasyOCR) | `easyocr` extra or via `pip install easyocr`. | `EasyOcrOptions` |
 | [Nemotron OCR](https://huggingface.co/nvidia/nemotron-ocr-v1) | `feat-ocr-nemotron` extra. Supported only on Linux x86_64 with Python 3.12 and CUDA 13.x. See installation note below. | `NemotronOcrOptions` |
+| [Mistral OCR](https://docs.mistral.ai/capabilities/document/) | Built in. Requires a Mistral API key via `MISTRAL_API_KEY` or `MistralOcrOptions(api_key=...)`. | `MistralOcrOptions` |
 | Tesseract | System dependency. See description for Tesseract and Tesserocr below.  | `TesseractOcrOptions` |
 | Tesseract CLI | System dependency. See description below. | `TesseractCliOcrOptions` |
 | OcrMac | System dependency. See description below. | `OcrMacOptions` |

@@ -2,6 +2,7 @@ def ocr_engines():
     from docling.models.stages.ocr.auto_ocr_model import OcrAutoModel
     from docling.models.stages.ocr.easyocr_model import EasyOcrModel
     from docling.models.stages.ocr.kserve_v2_ocr_model import KserveV2OcrModel
+    from docling.models.stages.ocr.mistral_ocr_model import MistralOcrModel
     from docling.models.stages.ocr.nemotron_ocr_model import NemotronOcrModel
     from docling.models.stages.ocr.ocr_mac_model import OcrMacModel
     from docling.models.stages.ocr.rapid_ocr_model import RapidOcrModel
@@ -13,6 +14,7 @@ def ocr_engines():
             OcrAutoModel,
             EasyOcrModel,
             KserveV2OcrModel,
+            MistralOcrModel,
             NemotronOcrModel,
             OcrMacModel,
             RapidOcrModel,

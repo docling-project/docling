@@ -304,6 +304,11 @@ depends_on = [
 ]
 
 [[modules]]
+path = "docling.models.stages.ocr.mistral_ocr_model"
+layer = "core"
+depends_on = ["docling.datamodel", "docling.models", "docling.utils"]
+
+[[modules]]
 path = "docling.models.stages.page_assemble"
 layer = "models"
 depends_on = [
