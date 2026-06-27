@@ -191,9 +191,6 @@ class _NativeWhisperModel:
 
             self.asr_options = asr_options
             self.max_tokens = asr_options.max_new_tokens
-            self.temperature = asr_options.temperature
-            self.beam_size = asr_options.beam_size
-            self.condition_on_previous_text = asr_options.condition_on_previous_text
 
             self.device = decide_device(
                 accelerator_options.device,
@@ -218,6 +215,7 @@ class _NativeWhisperModel:
             self.verbose = asr_options.verbose
             self.timestamps = asr_options.timestamps
             self.word_timestamps = asr_options.word_timestamps
+            self.language = asr_options.language
             self.beam_size = asr_options.beam_size
             self.condition_on_previous_text = asr_options.condition_on_previous_text
             self.temperature = asr_options.temperature
@@ -280,9 +278,11 @@ class _NativeWhisperModel:
         result = self.model.transcribe(
             str(fpath),
             verbose=self.verbose,
+            language=self.language,
             word_timestamps=self.word_timestamps,
             beam_size=self.beam_size,
             condition_on_previous_text=self.condition_on_previous_text,
+            temperature=self.temperature,
         )
 
         convo: list[_ConversationItem] = []

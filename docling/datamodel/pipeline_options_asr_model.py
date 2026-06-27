@@ -175,17 +175,19 @@ class InlineAsrNativeWhisperOptions(InlineAsrOptions):
         Optional[int],
         Field(
             description=(
-                "Number of beams to use for beam search decoding. When unset, "
-                "Whisper uses its default decoding behavior."
+                "Beam size for decoding. Defaults to `1` to enable beam search and "
+                "avoid Whisper's greedy decoding path on long-form audio. Set to `None` "
+                "to use Whisper's greedy decoding default."
             )
         ),
     ] = None
     condition_on_previous_text: Annotated[
-        bool,
+        Optional[bool],
         Field(
             description=(
-                "Whether to provide the previous output of the model as a prompt "
-                "for the next window. When unset, Whisper uses its default."
+                "Whether to feed the model's previous output as a prompt for the next "
+                "window. Defaults to `False` to reduce repetition loops on long or "
+                "difficult audio. Set to `True` to match Whisper's default behavior."
             )
         ),
     ] = None
