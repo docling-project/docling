@@ -149,6 +149,7 @@ format-latex = [
 format-email = [
   'docling-slim[format-html]',
   'mail-parser>=4.1.4,<5.0.0',
+  'extract-msg>=0.48.0,<1.0.0',
 ]
 
 format-xml-xbrl = [
@@ -441,6 +442,7 @@ allowed-unresolved-imports = [
   "docling_ibm_models.**",
   "docling_parse.**",
   "easyocr.**",
+  "extract_msg.**",
   "filetype.**",
   "huggingface_hub.**",
   "lxml.**",

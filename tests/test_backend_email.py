@@ -3,9 +3,10 @@ from pathlib import Path
 
 from docling_core.types.doc import DocItemLabel, TextItem
 
-from docling.backend.email_backend import EmailDocumentBackend
-from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import InputDocument
+from docling.backend.email_backend import _OLE2_MAGIC, EmailDocumentBackend
+from docling.datamodel.backend_options import EmailBackendOptions
+from docling.datamodel.base_models import DocumentStream, InputFormat
+from docling.datamodel.document import InputDocument, _DocumentConversionInput
 from docling.document_converter import DocumentConverter
 
 
@@ -87,6 +88,61 @@ def test_email_with_attachment_excludes_encoded_content():
     # Verify decoded attachment content is also NOT in the document
     assert "This is a test attachment file." not in markdown
     assert "It contains some dummy content." not in markdown
+
+
+def test_email_attachments_listed_when_enabled():
+    """With include_attachments=True, attachment metadata is surfaced (no payload)."""
+    in_path = Path("tests/data/email/sources/eml_with_attachment.eml")
+    in_doc = InputDocument(
+        path_or_stream=in_path,
+        format=InputFormat.EMAIL,
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=in_path,
+        options=EmailBackendOptions(include_attachments=True),
+    )
+
+    markdown = backend.convert().export_to_markdown()
+
+    # Body is still present, plus an attachments section listing the file.
+    assert "This email contains an attachment." in markdown
+    assert "Attachments" in markdown
+    assert "test.txt (text/plain" in markdown
+
+    # The attachment payload itself (encoded or decoded) is still never inlined.
+    assert "bnRlbnQuCg==" not in markdown
+    assert "This is a test attachment file." not in markdown
+
+
+def test_email_attachments_excluded_by_default():
+    """Without the opt-in flag, no attachment section is added."""
+    in_path = Path("tests/data/email/sources/eml_with_attachment.eml")
+    in_doc = InputDocument(
+        path_or_stream=in_path,
+        format=InputFormat.EMAIL,
+        backend=EmailDocumentBackend,
+    )
+    backend = EmailDocumentBackend(in_doc=in_doc, path_or_stream=in_path)
+
+    markdown = backend.convert().export_to_markdown()
+
+    assert "This email contains an attachment." in markdown
+    assert "Attachments" not in markdown
+    assert "test.txt" not in markdown
+
+
+def test_msg_extension_is_detected_as_email():
+    """Outlook `.msg` files (OLE2 container) route to the EMAIL format by extension."""
+    dci = _DocumentConversionInput(path_or_stream_iterator=[])
+
+    # OLE2 magic alone is not recognized by `filetype`, so routing relies on the
+    # newly registered `.msg` extension / `application/vnd.ms-outlook` mime type.
+    stream = DocumentStream(
+        name="message.msg", stream=BytesIO(_OLE2_MAGIC + b"\x00" * 512)
+    )
+    assert dci._guess_format(stream) == InputFormat.EMAIL
 
 
 def test_email_backend_preserves_body_paragraphs_and_date():

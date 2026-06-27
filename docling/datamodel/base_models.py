@@ -128,7 +128,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.AUDIO: ["wav", "mp3", "m4a", "aac", "ogg", "flac", "mp4", "avi", "mov"],
     InputFormat.VTT: ["vtt"],
     InputFormat.LATEX: ["tex", "latex"],
-    InputFormat.EMAIL: ["eml"],
+    InputFormat.EMAIL: ["eml", "msg"],
     InputFormat.EPUB: ["epub"],
 }
 
@@ -194,7 +194,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     ],
     InputFormat.VTT: ["text/vtt"],
     InputFormat.LATEX: ["text/x-tex", "application/x-tex", "text/x-latex"],
-    InputFormat.EMAIL: ["message/rfc822"],
+    InputFormat.EMAIL: ["message/rfc822", "application/vnd.ms-outlook"],
     InputFormat.EPUB: ["application/epub+zip"],
 }
 

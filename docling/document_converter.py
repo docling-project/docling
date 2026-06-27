@@ -45,6 +45,7 @@ from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import (
     BackendOptions,
+    EmailBackendOptions,
     EpubBackendOptions,
     HTMLBackendOptions,
     LatexBackendOptions,
@@ -224,6 +225,7 @@ class LatexFormatOption(FormatOption):
 class EmailFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = EmailDocumentBackend
+    backend_options: Optional[EmailBackendOptions] = None
 
 
 class EpubFormatOption(FormatOption):

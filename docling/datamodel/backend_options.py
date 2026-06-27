@@ -136,6 +136,20 @@ class MarkdownBackendOptions(BaseBackendOptions):
     )
 
 
+class EmailBackendOptions(BaseBackendOptions):
+    """Options specific to the email backend (`.eml` and `.msg`)."""
+
+    kind: Literal["email"] = Field("email", exclude=True, repr=False)
+    include_attachments: bool = Field(
+        False,
+        description=(
+            "List the attachments found in the email (filename and media type) as a "
+            "dedicated section in the converted document. Attachment payloads are "
+            "never inlined into the document."
+        ),
+    )
+
+
 class EpubBackendOptions(BaseBackendOptions):
     """Options specific to the EPUB backend."""
 
@@ -329,6 +343,7 @@ class XBRLBackendOptions(BaseBackendOptions):
 BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
+        EmailBackendOptions,
         EpubBackendOptions,
         HTMLBackendOptions,
         MarkdownBackendOptions,
