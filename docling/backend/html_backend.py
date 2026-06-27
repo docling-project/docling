@@ -569,11 +569,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if len(clean_headers):
             header = clean_headers[0]
         # Set starting content layer
-        self.content_layer = (
-            ContentLayer.BODY
-            if (not self.options.infer_furniture) or (header is None)
-            else ContentLayer.FURNITURE
-        )
+        if (not self.options.infer_furniture) or (header is None):
+            self.content_layer = ContentLayer.BODY
+        elif self.options.pre_heading_content_layer is not None:
+            self.content_layer = self.options.pre_heading_content_layer
+        else:
+            self.content_layer = ContentLayer.FURNITURE
         # reset context
         self.ctx = _Context()
         self._render_visibility_cache.clear()
