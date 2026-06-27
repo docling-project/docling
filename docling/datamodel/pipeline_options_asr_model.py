@@ -171,6 +171,24 @@ class InlineAsrNativeWhisperOptions(InlineAsrOptions):
             )
         ),
     ] = True
+    beam_size: Annotated[
+        Optional[int],
+        Field(
+            description=(
+                "Number of beams to use for beam search decoding. When unset, "
+                "Whisper uses its default decoding behavior."
+            )
+        ),
+    ] = None
+    condition_on_previous_text: Annotated[
+        bool,
+        Field(
+            description=(
+                "Whether to provide the previous output of the model as a prompt "
+                "for the next window. When unset, Whisper uses its default."
+            )
+        ),
+    ] = None
 
 
 class InlineAsrMlxWhisperOptions(InlineAsrOptions):
