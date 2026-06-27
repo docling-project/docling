@@ -205,6 +205,37 @@ def test_native_and_mlx_transcribe_language_handling(monkeypatch, tmp_path):
         mm.mlx_whisper.transcribe.assert_called()
 
 
+def test_native_whisper_passes_decode_options_to_transcribe(tmp_path):
+    """Native Whisper forwards decoding options to whisper.transcribe."""
+    from docling.pipeline.asr_pipeline import _NativeWhisperModel
+
+    opts = InlineAsrNativeWhisperOptions(
+        repo_id="tiny",
+        word_timestamps=False,
+        beam_size=3,
+        condition_on_previous_text=False,
+    )
+
+    with patch.dict("sys.modules", {"whisper": Mock()}):
+        model = _NativeWhisperModel(
+            enabled=True,
+            artifacts_path=None,
+            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+            asr_options=opts,
+        )
+
+    model.model = Mock()
+    model.model.transcribe.return_value = {"segments": []}
+
+    model.transcribe(tmp_path / "sample.wav")
+
+    model.model.transcribe.assert_called_once()
+    call_kwargs = model.model.transcribe.call_args.kwargs
+
+    assert call_kwargs["beam_size"] == 3
+    assert call_kwargs["condition_on_previous_text"] is False
+
+
 def test_native_init_with_artifacts_path_and_device_logging(tmp_path):
     """Cover _NativeWhisperModel init path with artifacts_path passed."""
     from docling.pipeline.asr_pipeline import _NativeWhisperModel
