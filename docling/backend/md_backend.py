@@ -15,6 +15,7 @@ from docling_core.types.doc import (
     DoclingDocument,
     DocumentOrigin,
     Formatting,
+    ImageRef,
     ListItem,
     NodeItem,
     TableCell,
@@ -169,6 +170,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self.in_table = False
         self.md_table_buffer: list[str] = []
         self._html_blocks: int = 0
+        self._image_backend: Optional[HTMLDocumentBackend] = None
 
         try:
             if isinstance(self.path_or_stream, BytesIO):
@@ -459,7 +461,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     hyperlink=hyperlink,
                 )
 
-            doc.add_picture(parent=parent_item, caption=fig_caption)
+            image_ref = self._load_image_ref(element.dest)
+            doc.add_picture(parent=parent_item, image=image_ref, caption=fig_caption)
 
         elif isinstance(element, marko.inline.Emphasis):
             _log.debug(" - Emphasis: %s", element.children)
@@ -628,6 +631,51 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
+
+    def _get_image_backend(self) -> HTMLDocumentBackend:
+        """Lazily build an HTML backend used only to load image data.
+
+        The HTML backend already implements resolving and decoding image
+        sources (``data:`` URIs, local files, and remote URLs) together with the
+        relevant safety limits, so the Markdown backend reuses it instead of
+        duplicating that logic. The same option mapping is used for embedded
+        HTML blocks (see ``convert``).
+        """
+        if self._image_backend is None:
+            md_options = cast(MarkdownBackendOptions, self.options)
+            html_options = HTMLBackendOptions(
+                enable_local_fetch=md_options.enable_local_fetch,
+                enable_remote_fetch=md_options.enable_remote_fetch,
+                fetch_images=md_options.fetch_images,
+                source_uri=md_options.source_uri,
+                max_image_data_base64_bytes=md_options.max_image_data_base64_bytes,
+            )
+            stream = BytesIO(b"<html><body></body></html>")
+            in_doc = InputDocument(
+                path_or_stream=stream,
+                format=InputFormat.HTML,
+                backend=HTMLDocumentBackend,
+                filename=self.file.name,
+                backend_options=html_options,
+            )
+            self._image_backend = HTMLDocumentBackend(
+                in_doc=in_doc,
+                path_or_stream=stream,
+                options=html_options,
+            )
+        return self._image_backend
+
+    def _load_image_ref(self, dest: str) -> Optional[ImageRef]:
+        """Resolve and decode a Markdown image source into an ``ImageRef``.
+
+        Returns ``None`` when image loading is disabled, the source is empty, or
+        the image cannot be loaded. Loading is delegated to the HTML backend.
+        """
+        if not cast(MarkdownBackendOptions, self.options).fetch_images or not dest:
+            return None
+        backend = self._get_image_backend()
+        src_loc = backend._resolve_relative_path(dest)
+        return backend._create_image_ref(src_loc)
 
     def is_valid(self) -> bool:
         return self.valid

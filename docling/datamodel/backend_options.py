@@ -134,6 +134,10 @@ class MarkdownBackendOptions(BaseBackendOptions):
             "will use it to resolve relative paths in the markdown document."
         ),
     )
+    max_image_data_base64_bytes: PositiveInt = Field(
+        20 * 1024 * 1024,  # 20 MB
+        description="The maximum number of base64 data bytes that the backend will accept.",
+    )
 
 
 class EpubBackendOptions(BaseBackendOptions):
