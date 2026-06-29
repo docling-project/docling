@@ -5,7 +5,8 @@
 # - Shows the three track_changes modes: accept, reject, raw.
 # - "accept" (default) includes inserted text and drops deleted text — the final document.
 # - "reject" includes deleted text and drops inserted text — the original document.
-# - "raw" includes both; insertions are underlined, deletions are struck-through.
+# - "raw" includes both; text items carry change_type="inserted" or change_type="deleted"
+#   so serializers and downstream consumers can decide how to render them.
 #
 # Prerequisites
 # - Install Docling with DOCX support: `pip install "docling[format-docx]"`

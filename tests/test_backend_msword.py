@@ -517,31 +517,23 @@ def test_track_changes_raw():
     assert "Deleted paragraph." in text
 
 
-def test_track_changes_raw_formatting():
-    """'raw' mode: inserted text gets underline, deleted text gets strikethrough."""
-    from docling_core.types.doc.document import Formatting
-
+def test_track_changes_raw_change_type():
+    """'raw' mode: inserted text carries change_type='inserted', deleted text 'deleted'."""
     doc = _convert_track_changes("raw")
 
-    inserted_underlined = False
-    deleted_strikethrough = False
+    found_inserted = False
+    found_deleted = False
     for item, _ in doc.iterate_items():
         if not isinstance(item, TextItem):
             continue
-        fmt: Formatting | None = item.formatting
-        if fmt is None:
-            continue
-        if "world" in item.text and fmt.underline:
-            inserted_underlined = True
-        if "earth" in item.text and fmt.strikethrough:
-            deleted_strikethrough = True
+        ct = item.change_type
+        if "world" in item.text and ct == "inserted":
+            found_inserted = True
+        if "earth" in item.text and ct == "deleted":
+            found_deleted = True
 
-    assert inserted_underlined, (
-        "Inserted text must have underline formatting in raw mode"
-    )
-    assert deleted_strikethrough, (
-        "Deleted text must have strikethrough formatting in raw mode"
-    )
+    assert found_inserted, "Inserted text must have change_type='inserted' in raw mode"
+    assert found_deleted, "Deleted text must have change_type='deleted' in raw mode"
 
 
 def test_track_changes_default_is_accept():

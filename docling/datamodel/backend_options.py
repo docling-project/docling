@@ -221,7 +221,8 @@ class MsWordBackendOptions(BaseBackendOptions):
             "How to handle tracked changes (revisions) in DOCX documents. "
             "'accept': include inserted text, exclude deleted text (final document). "
             "'reject': exclude inserted text, include deleted text (original document). "
-            "'raw': include both; inserted text is underlined, deleted text is struck-through."
+            "'raw': include both; text items carry change_type='inserted' or change_type='deleted' "
+            "so serializers and downstream consumers can render them appropriately."
         ),
     )
 

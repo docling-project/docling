@@ -931,11 +931,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _iter_paragraph_content(
         self, paragraph: Paragraph
-    ) -> list[tuple[str, Formatting | None, AnyUrl | Path | None]]:
+    ) -> list[tuple[str, Formatting | None, AnyUrl | Path | None, str | None]]:
         if not hasattr(paragraph, "_p"):
             return []
 
-        content: list[tuple[str, Formatting | None, AnyUrl | Path | None]] = []
+        content: list[
+            tuple[str, Formatting | None, AnyUrl | Path | None, str | None]
+        ] = []
         track_changes = (
             self.options.track_changes
             if isinstance(self.options, MsWordBackendOptions)
@@ -972,7 +974,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if runs
                     else None
                 )
-                content.append((text, fmt, None))
+                content.append((text, fmt, None, None))
                 continue
 
             # Tracked insertion: w:ins wraps runs of newly added text.
@@ -980,21 +982,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # In "reject" mode we skip it (revert to original).
             if tag_name == "ins":
                 if track_changes in ("accept", "raw"):
+                    change_type = "inserted" if track_changes == "raw" else None
                     for run_elem in child.iterchildren(f"{self._W_NS_CLARK}r"):
                         run = Run(run_elem, paragraph)
                         if not run.text:
                             continue
                         fmt = self._get_format_from_run(run)
-                        if track_changes == "raw":
-                            # Underline marks the text as an unaccepted insertion.
-                            fmt = Formatting(
-                                bold=fmt.bold if fmt else False,
-                                italic=fmt.italic if fmt else False,
-                                underline=True,
-                                strikethrough=fmt.strikethrough if fmt else False,
-                                script=fmt.script if fmt else Script.BASELINE,
-                            )
-                        content.append((run.text, fmt, None))
+                        content.append((run.text, fmt, None, change_type))
                 continue
 
             # Tracked deletion: w:del wraps runs whose text uses w:delText.
@@ -1002,6 +996,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # In "accept" (default) mode we skip it (keep the final document).
             if tag_name == "del":
                 if track_changes in ("reject", "raw"):
+                    change_type = "deleted" if track_changes == "raw" else None
                     for run_elem in child.iterchildren(f"{self._W_NS_CLARK}r"):
                         del_texts = run_elem.findall(f"{self._W_NS_CLARK}delText")
                         text = "".join(dt.text or "" for dt in del_texts)
@@ -1009,16 +1004,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                             continue
                         run = Run(run_elem, paragraph)
                         fmt = self._get_format_from_run(run)
-                        if track_changes == "raw":
-                            # Strikethrough marks the text as a pending deletion.
-                            fmt = Formatting(
-                                bold=fmt.bold if fmt else False,
-                                italic=fmt.italic if fmt else False,
-                                underline=fmt.underline if fmt else False,
-                                strikethrough=True,
-                                script=fmt.script if fmt else Script.BASELINE,
-                            )
-                        content.append((text, fmt, None))
+                        content.append((text, fmt, None, change_type))
                 continue
 
             if tag_name not in {"r", "hyperlink"}:
@@ -1040,11 +1026,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                             else None
                         ),
                         self._get_hyperlink_target(item),
+                        None,
                     )
                 )
             elif isinstance(item, Run):
                 content.append(
-                    (item.text, self._get_format_from_run(item, paragraph), None)
+                    (item.text, self._get_format_from_run(item, paragraph), None, None)
                 )
 
         return content
@@ -1055,51 +1042,64 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return "".join(
             text
-            for text, _format, _hyperlink in self._iter_paragraph_content(paragraph)
+            for text, _format, _hyperlink, _change_type in self._iter_paragraph_content(
+                paragraph
+            )
         )
 
     def _get_paragraph_elements(self, paragraph: Paragraph):
         """
-        Extract paragraph elements along with their formatting and hyperlink
+        Extract paragraph elements along with their formatting, hyperlink and change_type.
         """
 
         # for now retain empty paragraphs for backwards compatibility:
         if self._get_paragraph_text(paragraph).strip() == "":
-            return [("", None, None)]
+            return [("", None, None, None)]
 
         paragraph_elements: list[
-            tuple[str, Formatting | None, AnyUrl | Path | None]
+            tuple[str, Formatting | None, AnyUrl | Path | None, str | None]
         ] = []
         group_text = ""
         previous_format = None
+        previous_change_type = None
         last_format = None
+        last_change_type = None
 
-        # Iterate over the runs of the paragraph and group them by format
-        for text, format, hyperlink in self._iter_paragraph_content(paragraph):
+        # Iterate over the runs of the paragraph and group them by format and change_type
+        for text, format, hyperlink, change_type in self._iter_paragraph_content(
+            paragraph
+        ):
             last_format = format
+            last_change_type = change_type
 
-            if (len(text.strip()) and format != previous_format) or (
-                hyperlink is not None
-            ):
-                # If the style changes for a non empty text, add the previous group
+            if (
+                len(text.strip())
+                and (format != previous_format or change_type != previous_change_type)
+            ) or (hyperlink is not None):
+                # If the style or change_type changes for a non-empty text, flush the group
                 if len(group_text.strip()) > 0:
                     paragraph_elements.append(
-                        (group_text.strip(), previous_format, None)
+                        (group_text.strip(), previous_format, None, previous_change_type)
                     )
                 group_text = ""
 
                 # If there is a hyperlink, add it immediately
                 if hyperlink is not None:
-                    paragraph_elements.append((text.strip(), format, hyperlink))
+                    paragraph_elements.append(
+                        (text.strip(), format, hyperlink, change_type)
+                    )
                     text = ""
                 else:
                     previous_format = format
+                    previous_change_type = change_type
 
             group_text += text
 
-        # Format the last group
+        # Flush the last group
         if len(group_text.strip()) > 0:
-            paragraph_elements.append((group_text.strip(), last_format, None))
+            paragraph_elements.append(
+                (group_text.strip(), last_format, None, last_change_type)
+            )
 
         return paragraph_elements
 
@@ -1660,7 +1660,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 prev_parent=self.parents.get(level - 1),
                 paragraph_elements=paragraph_elements,
             )
-            for text, format, hyperlink in paragraph_elements:
+            for text, format, hyperlink, change_type in paragraph_elements:
                 # Clean checkbox symbols from text if this is a checkbox item
                 clean_text = (
                     self._clean_checkbox_symbols(text) if checkbox_label else text
@@ -1677,6 +1677,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     formatting=format,
                     hyperlink=hyperlink,
                     content_layer=self.content_layer,
+                    change_type=change_type,
                 )
                 elem_ref.append(text_item.get_ref())
 
@@ -1780,7 +1781,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return elem_ref
 
         if len(elements) == 1:
-            text, format, hyperlink = elements[0]
+            text, format, hyperlink, change_type = elements[0]
             if text:
                 doc.add_list_item(
                     marker=marker,
@@ -1798,7 +1799,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 text="",
             )
             new_parent = doc.add_inline_group(parent=new_item)
-            for text, format, hyperlink in elements:
+            for text, format, hyperlink, change_type in elements:
                 if text:
                     doc.add_text(
                         label=DocItemLabel.TEXT,
@@ -1807,6 +1808,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         formatting=format,
                         hyperlink=hyperlink,
                         content_layer=self.content_layer,
+                        change_type=change_type,
                     )
         return elem_ref
 
