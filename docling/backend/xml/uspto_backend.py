@@ -67,6 +67,7 @@ from typing_extensions import Self, TypedDict, override
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
@@ -112,7 +113,7 @@ class PatentUsptoDocumentBackend(DeclarativeDocumentBackend):
                             self._set_parser(line)
                         self.patent_content += line
         except Exception as exc:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 f"Could not initialize USPTO backend for file with hash {self.document_hash}."
             ) from exc
 

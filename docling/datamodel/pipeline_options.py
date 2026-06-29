@@ -171,7 +171,8 @@ class OcrOptions(BaseOptions):
     See Also:
         `OcrAutoOptions`: Automatic engine selection based on availability.
         `EasyOcrOptions`, `TesseractCliOcrOptions`, `TesseractOcrOptions`,
-        `RapidOcrOptions`, `OcrMacOptions`: Engine-specific configurations.
+        `RapidOcrOptions`, `OcrMacOptions`, `NemotronOcrOptions`: Engine-specific
+        configurations.
     """
 
     lang: Annotated[
@@ -333,6 +334,45 @@ class RapidOcrOptions(OcrOptions):
     model_config = ConfigDict(
         extra="forbid",
     )
+
+
+class NemotronOcrOptions(OcrOptions):
+    """Configuration for NVIDIA Nemotron OCR.
+
+    Notes:
+        Use the pipeline-level `artifacts_path` to point to pre-downloaded checkpoint artifacts.
+    """
+
+    kind: ClassVar[Literal["nemotron-ocr"]] = "nemotron-ocr"
+    lang: Annotated[
+        list[str],
+        Field(
+            description=(
+                "List of OCR languages. nemotron-OCR-v2 supports 'english' and 'multilingual'"
+            )
+        ),
+    ] = []
+    merge_level: Annotated[
+        Literal["word", "sentence", "paragraph"],
+        Field(
+            description=(
+                "Granularity requested from Nemotron OCR. `sentence` is the default "
+                "because it maps most directly to Docling OCR cells."
+            )
+        ),
+    ] = "sentence"
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    batch_size: Annotated[
+        int,
+        Field(
+            description=(
+                "Number of images within the same page to process. "
+                "In practice a batch>1 happens only with PDF inputs with many OCR rectangles."
+            )
+        ),
+    ] = 8
 
 
 class EasyOcrOptions(OcrOptions):
@@ -734,6 +774,17 @@ class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):
             )
         ),
     ] = ""
+    usage_response_key: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Response JSON key, or dotted path, whose value should be preserved as the raw usage payload "
+                "on picture description metadata. The default captures OpenAI-compatible `usage` objects. "
+                "Set to None to disable usage payload capture."
+            ),
+            examples=["usage", "providerUsage", "meta.usage"],
+        ),
+    ] = "usage"
 
 
 class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):
@@ -967,6 +1018,9 @@ VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOLPHIN)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GLMOCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_LIGHTONOCR)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_FALCON_OCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_CHANDRA_OCR2)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOTS_OCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOTS_MOCR)
 
 # Register PictureDescription presets (for new runtime-based implementation)
 PictureDescriptionVlmEngineOptions.register_preset(
@@ -1119,8 +1173,10 @@ class PipelineOptions(BaseOptions):
         Field(
             description=(
                 "Maximum processing time in seconds before aborting document conversion. When exceeded, the pipeline "
-                "stops processing and returns partial results with PARTIAL_SUCCESS status. If None, no timeout is "
-                "enforced. Recommended: 90-120 seconds for production systems."
+                "stops processing and returns partial results with PARTIAL_SUCCESS status. Timeout errors are recorded "
+                "in ConversionResult.errors with category=TIMEOUT and descriptive error messages. "
+                "Use ConversionResult.has_timeout_errors() to detect timeouts. If None, no timeout is enforced. "
+                "Recommended: 90-120 seconds for production systems."
             ),
             examples=[10.0, 20.0],
         ),
@@ -1490,6 +1546,76 @@ class VlmExtractionPipelineOptions(PipelineOptions):
     ] = ExtractionPromptStyle.NUEXTRACT
 
 
+class HeadingHierarchyOptions(BaseModel):
+    """Options for inferring section-header levels in the PDF/image pipeline.
+
+    The layout model only flags regions as ``SECTION_HEADER`` without a level, so every
+    heading produced by the PDF path defaults to ``level=1`` and the document hierarchy is
+    flattened. When ``enabled``, :class:`HeadingHierarchyModel` runs right after the
+    reading-order model and assigns ``SectionHeaderItem.level`` from (in precedence order)
+    numbering and font style. The step only changes heading levels; it never adds, removes
+    or reorders items, and headings for which no signal applies keep their current level.
+
+    PDF bookmark/outline inference (the most authoritative signal) is planned as a separate
+    follow-up.
+
+    Notes:
+        - ``use_style`` requires the parsed PDF cells to still be available when the
+          heading-hierarchy step runs, i.e.
+          ``PdfPipelineOptions.generate_parsed_pages=True``. Without them, style inference is
+          silently skipped (numbering still applies).
+    """
+
+    enabled: Annotated[
+        bool,
+        Field(
+            description=(
+                "Enable inference of section-header levels for the PDF/image pipeline. When "
+                "disabled (default), all detected headings remain at level 1 (unchanged "
+                "behavior)."
+            )
+        ),
+    ] = False
+    use_numbering: Annotated[
+        bool,
+        Field(
+            description=(
+                "Use legal/outline numbering (e.g. PART I -> 1. -> 1.1 -> (a) -> (i), Roman "
+                "vs Arabic numerals) as the primary signal for heading level."
+            )
+        ),
+    ] = True
+    use_style: Annotated[
+        bool,
+        Field(
+            description=(
+                "Use font size (approximated from parsed PDF cell heights) as a fallback for "
+                "headings without recognizable numbering. Requires "
+                "`generate_parsed_pages=True`."
+            )
+        ),
+    ] = True
+    numbering_schemes: Annotated[
+        Optional[list[str]],
+        Field(
+            description=(
+                "Optional override of the numbering-scheme precedence (highest level first). "
+                "Known schemes: 'part', 'chapter', 'article', 'roman_u', 'arabic', "
+                "'alpha_u', 'alpha_l', 'roman_l'. When None, a default legal/regulatory "
+                "ordering is used."
+            )
+        ),
+    ] = None
+    max_level: Annotated[
+        int,
+        Field(
+            ge=1,
+            le=100,
+            description="Maximum heading level to assign. Deeper levels are clamped.",
+        ),
+    ] = 6
+
+
 class PdfPipelineOptions(PaginatedPipelineOptions):
     """Configuration options for the PDF document processing pipeline.
 
@@ -1639,6 +1765,17 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = False
+    heading_hierarchy_options: Annotated[
+        HeadingHierarchyOptions,
+        Field(
+            description=(
+                "Configuration for inferring section-header levels from numbering, font "
+                "style and (future) PDF bookmarks. Disabled by default; when enabled, the "
+                "reading-order stage assigns SectionHeaderItem.level instead of leaving every "
+                "heading at level 1."
+            )
+        ),
+    ] = HeadingHierarchyOptions()
 
     ### Arguments for threaded PDF pipeline with batching and backpressure control
 

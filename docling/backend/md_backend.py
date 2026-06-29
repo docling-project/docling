@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import re
 import warnings
@@ -8,9 +10,6 @@ from io import BytesIO
 from pathlib import Path
 from typing import Literal, Optional, Union, cast
 
-import marko
-import marko.element
-import marko.inline
 from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
@@ -22,7 +21,6 @@ from docling_core.types.doc import (
     TableData,
     TextItem,
 )
-from marko import Markdown
 from pydantic import AnyUrl, BaseModel, Field, TypeAdapter
 from typing_extensions import Annotated, override
 
@@ -36,8 +34,32 @@ from docling.datamodel.backend_options import (
 )
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
+
+# marko is only installed by the `format-markdown` extra, but DocumentConverter
+# imports every backend eagerly. Importing it at module load would therefore
+# break `import docling` on installs that omit the extra (the slim packages in
+# particular). Guard the imports like the opendocument and xbrl backends do, and
+# surface the failure only when Markdown is actually parsed.
+# See https://github.com/docling-project/docling/issues/3613.
+_MARKO_AVAILABLE: bool = False
+_MARKO_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    import marko
+    import marko.element
+    import marko.inline
+    from marko import Markdown
+
+    _MARKO_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _MARKO_IMPORT_ERROR = e
 
 _log = logging.getLogger(__name__)
+
+_INSTALL_HINT = (
+    "The 'marko' package is required to process Markdown files. "
+    "Install it with `pip install 'docling[format-markdown]'`."
+)
 
 _MARKER_BODY = "DOCLING_DOC_MD_HTML_EXPORT"
 _START_MARKER = f"#_#_{_MARKER_BODY}_START_#_#"
@@ -129,6 +151,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         path_or_stream: Union[BytesIO, Path],
         options: Optional[MarkdownBackendOptions] = None,
     ):
+        # Raised first so a missing optional dependency gives an actionable
+        # message rather than a NameError when marko is dereferenced below.
+        if not _MARKO_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _MARKO_IMPORT_ERROR
         if options is None:
             options = MarkdownBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
@@ -166,7 +192,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
             _log.debug(self.markdown)
         except Exception as e:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 f"Could not initialize MD backend for file with hash {self.document_hash}."
             ) from e
         return

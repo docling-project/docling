@@ -3,7 +3,14 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from openpyxl import load_workbook
+from docling_core.transforms.serializer.markdown import MarkdownParams
+from docling_core.transforms.serializer.markdown_excel import (
+    MsExcelMarkdownDocSerializer,
+)
+from docling_core.types.doc import ContentLayer, GroupLabel, TextItem
+from docling_core.types.doc.document import DEFAULT_CONTENT_LAYERS
+from openpyxl import Workbook, load_workbook
+from openpyxl.comments import Comment
 
 from docling.backend.msexcel_backend import MsExcelDocumentBackend
 from docling.datamodel.backend_options import MsExcelBackendOptions
@@ -21,7 +28,7 @@ GENERATE = GEN_TEST_DATA
 
 def get_excel_paths():
     # Define the directory you want to search
-    directory = Path("./tests/data/xlsx/")
+    directory = Path("./tests/data/xlsx/sources/")
 
     # List all Excel files in the directory and its subdirectories
     excel_files = sorted(directory.rglob("*.xlsx")) + sorted(directory.rglob("*.xlsm"))
@@ -44,9 +51,7 @@ def documents() -> list[tuple[Path, DoclingDocument]]:
     for excel_path in excel_paths:
         _log.debug(f"converting {excel_path}")
 
-        gt_path = (
-            excel_path.parent.parent / "groundtruth" / "docling_v2" / excel_path.name
-        )
+        gt_path = excel_path.parent.parent / "groundtruth" / excel_path.name
 
         conv_result: ConversionResult = converter.convert(excel_path)
 
@@ -58,10 +63,110 @@ def documents() -> list[tuple[Path, DoclingDocument]]:
     return documents
 
 
+def test_comments_extraction(documents) -> None:
+    """Test that cell comments are extracted into the NOTES content layer."""
+    from docling_core.types.doc import GroupItem
+
+    doc = next(item for path, item in documents if path.stem == "xlsx_comments")
+
+    comment_groups = [
+        g
+        for g in doc.groups
+        if isinstance(g, GroupItem) and g.name.startswith("comment-")
+    ]
+    assert len(comment_groups) == 4, (
+        f"Expected 4 comment groups (2 notes + 2 threaded), got {len(comment_groups)}"
+    )
+
+    comment_texts = [
+        t.text
+        for t in doc.texts
+        if isinstance(t, TextItem) and t.content_layer == ContentLayer.NOTES
+    ]
+
+    # Check for old-style notes
+    assert any("John Reviewer" in t for t in comment_texts), (
+        "Expected 'John Reviewer' in comment texts"
+    )
+    assert any("Jane Editor" in t for t in comment_texts), (
+        "Expected 'Jane Editor' in comment texts"
+    )
+    assert any("Why Python" in t for t in comment_texts), (
+        "Expected comment body text content"
+    )
+
+    # Check for threaded comments with author and timestamp
+    assert any("Marcus Sterling" in t and "time:" in t for t in comment_texts), (
+        "Expected threaded comment with author Marcus Sterling and timestamp"
+    )
+    assert any("Jane Smith" in t and "time:" in t for t in comment_texts), (
+        "Expected threaded comment with author Jane Smith and timestamp"
+    )
+    assert any("never thought it would be so low" in t for t in comment_texts), (
+        "Expected threaded comment reply text"
+    )
+    assert any("Maximum number of ducks" in t for t in comment_texts), (
+        "Expected threaded comment text"
+    )
+
+    for group in comment_groups:
+        assert group.content_layer == ContentLayer.NOTES, (
+            "Comments should be in NOTES content layer"
+        )
+
+
+def test_comment_cell_coordinates(documents) -> None:
+    """Test that comment names include cell coordinates."""
+    from docling_core.types.doc import GroupItem
+
+    doc = next(item for path, item in documents if path.stem == "xlsx_comments")
+
+    comment_groups = [
+        g
+        for g in doc.groups
+        if isinstance(g, GroupItem) and g.name.startswith("comment-")
+    ]
+
+    # Should have 4 comments (2 notes + 2 threaded)
+    assert len(comment_groups) == 4, (
+        f"Expected 4 comment groups, got {len(comment_groups)}"
+    )
+
+    # Verify comment names include cell coordinates
+    comment_names = [g.name for g in comment_groups]
+    assert any("A1" in name for name in comment_names), "Expected comment for cell A1"
+    assert any("B2" in name for name in comment_names), "Expected comment for cell B2"
+    assert any("F7" in name for name in comment_names), (
+        "Expected threaded comment for cell F7"
+    )
+    assert any("G12" in name for name in comment_names), (
+        "Expected threaded comment for cell G12"
+    )
+
+
 def test_e2e_excel_conversions(documents) -> None:
     for gt_path, doc in documents:
-        pred_md: str = doc.export_to_markdown(compact_tables=True)
-        assert verify_export(pred_md, str(gt_path) + ".md", GENERATE), "export to md"
+        included_content_layers = (
+            set(ContentLayer) if gt_path.stem in "xlsx_comments" else None
+        )
+        my_layers = (
+            included_content_layers
+            if included_content_layers is not None
+            else DEFAULT_CONTENT_LAYERS
+        )
+        pred_md: str = (
+            MsExcelMarkdownDocSerializer(
+                doc=doc,
+                params=MarkdownParams(compact_tables=True, layers=my_layers),
+            )
+            .serialize()
+            .text
+        )
+        assert verify_export(
+            pred_md,
+            str(gt_path) + ".md",
+            GENERATE,
+        ), "export to md"
 
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
@@ -103,6 +208,45 @@ def test_pages(documents) -> None:
     assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
 
 
+def test_page_range() -> None:
+    """Test that page_range selects a contiguous subset of sheets.
+
+    xlsx_01.xlsx has 4 sheets. Converting with page_range=(2, 4) should yield
+    only sheets 2-4, keeping their original page numbers (2, 3, 4).
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_01")
+
+    converter = get_converter()
+    doc = converter.convert(path, page_range=(2, 4)).document
+
+    assert set(doc.pages.keys()) == {2, 3, 4}
+    # original page numbering is preserved, so sizes match the full-document ones
+    assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
+    assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
+    assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
+
+
+def test_page_range_with_sheet_names() -> None:
+    """Test that page_range applies to the sheet_names-filtered set.
+
+    With sheet_names dropping "Sheet2", the filtered sequence is
+    [Sheet1, Sheet3, Sheet4] at positions 1, 2, 3. page_range=(2, 3) then
+    selects Sheet3 and Sheet4 (pages 2 and 3 of the filtered set).
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_01")
+
+    options = MsExcelBackendOptions(sheet_names=["Sheet1", "Sheet3", "Sheet4"])
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+    doc = converter.convert(path, page_range=(2, 3)).document
+
+    assert set(doc.pages.keys()) == {2, 3}
+    sheet_groups = [g.name for g in doc.groups if g.label == GroupLabel.SHEET]
+    assert sheet_groups == ["Sheet3", "Sheet4"]
+
+
 def test_chartsheet(documents) -> None:
     """Test the conversion of Chartsheets.
 
@@ -113,7 +257,7 @@ def test_chartsheet(documents) -> None:
     assert len(doc.pages) == 2
 
     # Chartseet content is for now ignored
-    assert doc.groups[1].name == "sheet: Duck Chart"
+    assert doc.groups[1].name == "Duck Chart"
     assert doc.pages[2].size.height == 0
     assert doc.pages[2].size.width == 0
 
@@ -436,3 +580,31 @@ def test_one_cell_anchor_image():
     assert prov.bbox.t == 1.0, f"Image top should be 1.0 (row 2), got {prov.bbox.t}"
     assert prov.bbox.r == 4.0, f"Image right should be 4.0, got {prov.bbox.r}"
     assert prov.bbox.b == 2.0, f"Image bottom should be 2.0, got {prov.bbox.b}"
+
+
+def test_find_data_tables_handles_a_filled_last_excel_row(tmp_path):
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet["A1048576"] = "last row"
+    file_path = tmp_path / "test.xlsx"
+    workbook.save(file_path)
+
+    in_doc = InputDocument(
+        path_or_stream=file_path,
+        format=InputFormat.XLSX,
+        filename=file_path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=file_path)
+    doc: DoclingDocument = backend.convert()
+
+    tables = doc.tables
+    assert len(tables) == 1
+
+    table = tables[0]
+    print(table)
+    assert table.prov[0].bbox.t == 1048575
+    assert table.data.num_rows == 1
+    assert table.data.num_cols == 1
+    assert len(table.data.table_cells) == 1
+    assert table.data.table_cells[0].text == "last row"

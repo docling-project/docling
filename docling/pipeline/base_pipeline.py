@@ -17,6 +17,7 @@ from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
     ErrorItem,
+    FailureCategory,
     Page,
 )
 from docling.datamodel.chart_extraction_options import (
@@ -80,6 +81,10 @@ class BasePipeline(ABC):
                 # From this stage, all operations should rely only on conv_res.output
                 conv_res = self._enrich_document(conv_res)
                 conv_res.status = self._determine_status(conv_res)
+                # A document that completed but recorded errors is not a clean
+                # success: never report SUCCESS while conv_res.errors is non-empty.
+                if conv_res.status == ConversionStatus.SUCCESS and conv_res.errors:
+                    conv_res.status = ConversionStatus.PARTIAL_SUCCESS
         except Exception as e:
             conv_res.status = ConversionStatus.FAILURE
             if not raises_on_error:
@@ -290,9 +295,20 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                         self.pipeline_options.document_timeout is not None
                         and total_elapsed_time > self.pipeline_options.document_timeout
                     ):
-                        _log.warning(
-                            f"Document processing time ({total_elapsed_time:.3f} seconds) exceeded the specified timeout of {self.pipeline_options.document_timeout:.3f} seconds"
+                        timeout_msg = (
+                            f"Document processing timeout: exceeded {self.pipeline_options.document_timeout:.3f}s limit "
+                            f"after {total_elapsed_time:.3f}s. Processed {total_pages_processed}/{len(conv_res.pages)} pages."
                         )
+                        _log.warning(timeout_msg)
+
+                        # Add structured timeout error
+                        timeout_error = ErrorItem(
+                            component_type=DoclingComponentType.PIPELINE,
+                            module_name="base_pipeline",
+                            error_message=timeout_msg,
+                            category=FailureCategory.TIMEOUT,
+                        )
+                        conv_res.errors.append(timeout_error)
                         conv_res.status = ConversionStatus.PARTIAL_SUCCESS
                         break
                     total_pages_processed += len(page_batch)
@@ -348,7 +364,9 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                     ErrorItem(
                         component_type=DoclingComponentType.DOCUMENT_BACKEND,
                         module_name=type(page._backend).__name__,
-                        error_message=f"Page {page.page_no} failed to parse.",
+                        error_message="Page failed to parse.",
+                        category=FailureCategory.BACKEND_FAILURE,
+                        page_no=page.page_no,
                     )
                 )
                 status = ConversionStatus.PARTIAL_SUCCESS

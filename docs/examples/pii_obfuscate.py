@@ -38,9 +38,15 @@ from tabulate import tabulate
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
 _log = logging.getLogger(__name__)
+
+# Under CI we limit the conversion to a representative page range to keep the
+# example fast; locally the full document is processed.
+IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")
+CI_PAGE_RANGE = (3, 4)
 
 IMAGE_RESOLUTION_SCALE = 2.0
 HF_MODEL = "dslim/bert-base-NER"  # Swap with another HF NER/PII model if desired, eg https://huggingface.co/urchade/gliner_multi_pii-v1 looks very promising too!
@@ -315,7 +321,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/2206.01062.pdf"
+    input_doc_path = data_folder / "pdf/sources/2206.01062.pdf"
     output_dir = Path("scratch")  # ensure this directory exists before saving
 
     # Choose engine via CLI flag or env var (default: hf)
@@ -343,7 +349,8 @@ def main():
         }
     )
 
-    conv_res = doc_converter.convert(input_doc_path)
+    page_range = CI_PAGE_RANGE if IS_CI else DEFAULT_PAGE_RANGE
+    conv_res = doc_converter.convert(input_doc_path, page_range=page_range)
     conv_doc = conv_res.document
     doc_filename = conv_res.input.file.name
 

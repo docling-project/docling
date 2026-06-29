@@ -13,7 +13,11 @@ from docling_core.types.doc import PictureItem, RichTableCell
 from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
 
-from docling.backend.html_backend import HTMLDocumentBackend, _validate_url_safety
+from docling.backend.html_backend import (
+    _BR_SENTINEL,
+    HTMLDocumentBackend,
+    _validate_url_safety,
+)
 from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
@@ -72,7 +76,7 @@ def test_html_backend_options():
 
 
 def test_resolve_relative_path():
-    html_path = Path("./tests/data/html/example_01.html")
+    html_path = Path("./tests/data/html/sources/example_01.html")
     in_doc = InputDocument(
         path_or_stream=html_path,
         format=InputFormat.HTML,
@@ -136,7 +140,7 @@ def test_resolve_relative_path():
 
 
 def test_heading_levels():
-    in_path = Path("tests/data/html/wiki_duck.html")
+    in_path = Path("tests/data/html/sources/wiki_duck.html")
     in_doc = InputDocument(
         path_or_stream=in_path,
         format=InputFormat.HTML,
@@ -218,6 +222,69 @@ def test_ordered_lists():
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
 
 
+def test_description_lists():
+    """Test that HTML description lists (<dl>, <dt>, <dd>) are properly parsed."""
+    test_set: list[tuple[bytes, str]] = []
+
+    # Simple description list
+    test_set.append(
+        (
+            b"<html><body><dl><dt>Coffee</dt><dd>Black hot drink</dd><dt>Milk</dt><dd>White cold drink</dd></dl></body></html>",
+            "- **Coffee**\n    - Black hot drink\n- **Milk**\n    - White cold drink",
+        )
+    )
+
+    # Description list with multiple descriptions per term
+    test_set.append(
+        (
+            b"<html><body><dl><dt>Python</dt><dd>A high-level programming language</dd><dd>Known for simplicity</dd></dl></body></html>",
+            "- **Python**\n    - A high-level programming language\n    - Known for simplicity",
+        )
+    )
+
+    # Description list with formatting in terms
+    test_set.append(
+        (
+            b"<html><body><dl><dt><strong>HTML</strong></dt><dd>HyperText Markup Language</dd></dl></body></html>",
+            "- **HTML**\n    - HyperText Markup Language",
+        )
+    )
+
+    # Edge case: Empty description list
+    test_set.append(
+        (
+            b"<html><body><dl></dl></body></html>",
+            "",
+        )
+    )
+
+    # Edge case: Description list with dd without dt (discouraged but valid HTML)
+    test_set.append(
+        (
+            b"<html><body><dl><dd>Orphan description 1</dd><dd>Orphan description 2</dd></dl></body></html>",
+            "- Orphan description 1\n- Orphan description 2",
+        )
+    )
+
+    for idx, pair in enumerate(test_set):
+        in_doc = InputDocument(
+            path_or_stream=BytesIO(pair[0]),
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            filename="test",
+        )
+        backend = HTMLDocumentBackend(
+            in_doc=in_doc,
+            path_or_stream=BytesIO(pair[0]),
+        )
+        doc: DoclingDocument = backend.convert()
+        assert doc
+        markdown_output = doc.export_to_markdown()
+        assert markdown_output == pair[1], (
+            f"Error in case {idx}: expected '{pair[1]}', got '{markdown_output}'"
+        )
+
+
 def test_unicode_characters():
     raw_html = "<html><body><h1>Hello World!</h1></body></html>".encode()  # noqa: RUF001
     in_doc = InputDocument(
@@ -235,7 +302,7 @@ def test_unicode_characters():
 
 
 def test_extract_parent_hyperlinks():
-    html_path = Path("./tests/data/html/hyperlink_04.html")
+    html_path = Path("./tests/data/html/sources/hyperlink_04.html")
     in_doc = InputDocument(
         path_or_stream=html_path,
         format=InputFormat.HTML,
@@ -257,7 +324,7 @@ def test_extract_parent_hyperlinks():
 @pytest.fixture(scope="module")
 def html_paths() -> list[Path]:
     # Define the directory you want to search
-    directory = Path("./tests/data/html/")
+    directory = Path("./tests/data/html/sources/")
 
     # List all HTML files in the directory and its subdirectories
     html_files = sorted(directory.rglob("*.html"))
@@ -275,15 +342,19 @@ def test_e2e_html_conversions(html_paths):
     converter = get_converter()
 
     for html_path in html_paths:
-        gt_path = (
-            html_path.parent.parent / "groundtruth" / "docling_v2" / html_path.name
-        )
+        gt_path = html_path.parent.parent / "groundtruth" / html_path.name
 
         conv_result: ConversionResult = converter.convert(html_path)
 
         doc: DoclingDocument = conv_result.document
 
         pred_md: str = doc.export_to_markdown(compact_tables=True)
+
+        # Verify no sentinel characters leak into markdown output
+        assert _BR_SENTINEL not in pred_md, (
+            f"Sentinel character found in markdown output for {html_path.name}"
+        )
+
         assert verify_export(pred_md, str(gt_path) + ".md", generate=GENERATE), (
             "export to md"
         )
@@ -301,8 +372,8 @@ def test_e2e_html_conversions(html_paths):
 @patch("docling.backend.html_backend.requests.get")
 @patch("docling.backend.html_backend.open", new_callable=mock_open)
 def test_e2e_html_conversion_with_images(mock_local, mock_remote):
-    source = "tests/data/html/example_01.html"
-    image_path = "tests/data/html/example_image_01.png"
+    source = "tests/data/html/sources/example_01.html"
+    image_path = "tests/data/html/sources/example_image_01.png"
     with open(image_path, "rb") as f:
         img_bytes = f.read()
 
@@ -371,9 +442,7 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
     assert res_remote.document == res_local.document
 
     # checking exported formats
-    gt_path = (
-        "tests/data/groundtruth/docling_v2/" + str(Path(source).stem) + "_images.html"
-    )
+    gt_path = "tests/data/html/groundtruth/" + str(Path(source).stem) + "_images.html"
     pred_md: str = res_local.document.export_to_markdown(compact_tables=True)
     assert verify_export(pred_md, gt_path + ".md", generate=GENERATE)
     assert verify_document(res_local.document, gt_path + ".json", GENERATE)
@@ -410,7 +479,7 @@ def test_html_furniture():
 
 
 def test_fetch_remote_images(monkeypatch):
-    source = "./tests/data/html/example_01.html"
+    source = "./tests/data/html/sources/example_01.html"
 
     # no image fetching: the image_fetch flag is False
     converter = _create_html_converter(
@@ -472,7 +541,7 @@ def test_fetch_remote_images(monkeypatch):
         pytest.warns(match="a bytes-like object is required"),
     ):
         res = converter.convert(source)
-        expected_path = os.path.abspath("tests/data/html/example_image_01.png")
+        expected_path = os.path.abspath("tests/data/html/sources/example_image_01.png")
         mocked_open.assert_called_once_with(expected_path, "rb")
         assert res.document
 
@@ -499,7 +568,7 @@ def test_fetch_remote_images_with_custom_headers():
         "docling.backend.html_backend.requests.Session.get"
     ) as mocked_session_get:
         mocked_session_get.return_value = _create_mock_response()
-        res = converter.convert("./tests/data/html/example_01.html")
+        res = converter.convert("./tests/data/html/sources/example_01.html")
         headers_arg = mocked_session_get.call_args[1].get("headers", {})
         assert headers_arg["Authorization"] == "Bearer test-token"
         assert headers_arg["X-API-Key"] == "test-api-key" and "Range" in headers_arg
@@ -847,7 +916,7 @@ def test_load_image_data_enforces_size_limit(monkeypatch):
                 yield b"x" * chunk_len
                 remaining -= chunk_len
 
-    html_path = Path("./tests/data/html/example_01.html")
+    html_path = Path("./tests/data/html/sources/example_01.html")
     in_doc = InputDocument(
         path_or_stream=html_path,
         format=InputFormat.HTML,
@@ -871,7 +940,7 @@ def test_load_image_data_enforces_size_limit(monkeypatch):
 
 def test_load_image_data_enforces_data_uri_size_limit():
     """Test that base64 data URIs are capped at the size limit."""
-    html_path = Path("./tests/data/html/example_01.html")
+    html_path = Path("./tests/data/html/sources/example_01.html")
     in_doc = InputDocument(
         path_or_stream=html_path,
         format=InputFormat.HTML,
@@ -894,7 +963,7 @@ def test_load_image_data_enforces_data_uri_size_limit():
 
 def test_anchor_fragment_links_with_source_uri():
     """Fragment-only hrefs must not be mangled when source_uri is set."""
-    html_path = Path("tests/data/html/hyperlink_06.html")
+    html_path = Path("tests/data/html/sources/hyperlink_06.html")
     in_doc = InputDocument(
         path_or_stream=html_path,
         format=InputFormat.HTML,
@@ -921,7 +990,7 @@ def test_anchor_fragment_links_with_source_uri():
 
 def test_path_traversal_blocked_in_resolve_relative_path():
     """Test that path traversal attempts are blocked."""
-    html_path = Path("./tests/data/html/example_01.html")
+    html_path = Path("./tests/data/html/sources/example_01.html")
     options = HTMLBackendOptions(enable_local_fetch=True, fetch_images=True)
     in_doc = InputDocument(
         path_or_stream=html_path,
@@ -1018,7 +1087,7 @@ def test_path_traversal_blocked_in_resolve_relative_path():
 
 def test_valid_local_paths_still_work():
     """Test that valid paths within the base directory still work."""
-    html_path = Path("./tests/data/html/example_01.html").resolve()
+    html_path = Path("./tests/data/html/sources/example_01.html").resolve()
     options = HTMLBackendOptions(enable_local_fetch=True, fetch_images=True)
     in_doc = InputDocument(
         path_or_stream=html_path,
@@ -1034,3 +1103,152 @@ def test_valid_local_paths_still_work():
     resolved = html_doc._resolve_relative_path("example_image_01.png")
     assert "tests/data/html" in resolved
     assert "example_image_01.png" in resolved
+
+
+def test_html_newline_handling():
+    """Test that HTML newlines are handled correctly per HTML spec.
+
+    This test verifies:
+    1. Newlines in HTML source within <p> tags are collapsed to spaces (HTML spec)
+    2. Explicit <br> tags create line breaks
+    3. <pre> blocks preserve newlines
+    """
+    converter = get_converter()
+
+    # Paragraph newlines should be collapsed
+    html_paragraph = """<!DOCTYPE html>
+<html>
+<body>
+<p>
+This document provides information about data processing that
+can be performed using the application programming interface
+(<a title="API">API</a>). This is a web-based service.
+</p>
+</body>
+</html>"""
+
+    result = converter.convert_string(html_paragraph, InputFormat.HTML)
+    markdown = result.document.export_to_markdown()
+
+    assert "data processing that can be performed" in markdown, (
+        "Text should be continuous in markdown"
+    )
+    assert "\n\ncan be performed" not in markdown, (
+        "Source newlines should not create paragraph breaks"
+    )
+
+    # Test 2: Single <br> tags should create line breaks within same paragraph
+    html_single_br = """<!DOCTYPE html>
+<html>
+<body>
+<p>foo<br>bar</p>
+</body>
+</html>"""
+
+    result = converter.convert_string(html_single_br, InputFormat.HTML)
+    markdown = result.document.export_to_markdown()
+
+    # Single <br> should result in one paragraph with newline
+    assert "foo\nbar" in markdown or "foo  \nbar" in markdown, (
+        "Single <br> should create line break within same paragraph"
+    )
+    # Should NOT create separate paragraphs
+    assert "\n\nbar" not in markdown, (
+        "Single <br> should not create separate paragraphs"
+    )
+
+    # Test 3: Multiple consecutive <br> tags should create separate paragraphs
+    html_double_br = """<!DOCTYPE html>
+<html>
+<body>
+<p>foo<br><br>bar</p>
+</body>
+</html>"""
+
+    result = converter.convert_string(html_double_br, InputFormat.HTML)
+    markdown = result.document.export_to_markdown()
+
+    # Double <br> should create separate paragraphs
+    paragraphs = [p.strip() for p in markdown.split("\n\n") if p.strip()]
+    assert len(paragraphs) >= 2, (
+        f"Expected at least 2 paragraphs from double <br>, got {len(paragraphs)}"
+    )
+    assert any("foo" in p for p in paragraphs), "First paragraph should contain 'foo'"
+    assert any("bar" in p for p in paragraphs), "Second paragraph should contain 'bar'"
+
+    # <pre> blocks should preserve newlines
+    html_pre = """<!DOCTYPE html>
+<html>
+<body>
+<pre>
+Line 1
+Line 2
+Line 3
+</pre>
+</body>
+</html>"""
+
+    result = converter.convert_string(html_pre, InputFormat.HTML)
+    markdown = result.document.export_to_markdown()
+
+    assert "Line 1" in markdown
+    assert "Line 2" in markdown
+    assert "Line 3" in markdown
+
+    # Verify behavior applies to other tags (address, summary, td)
+    html_other_tags = """<!DOCTYPE html>
+<html>
+<body>
+<address>Street 1<br>City</address>
+<details><summary>Title<br>Subtitle</summary></details>
+<table>
+<tr><td>Cell 1<br>Line 2</td></tr>
+<tr><td>Cell A<br><br>Cell B</td></tr>
+</table>
+</body>
+</html>"""
+
+    result = converter.convert_string(html_other_tags, InputFormat.HTML)
+    markdown = result.document.export_to_markdown()
+    doc = result.document
+
+    assert "Street 1\nCity" in markdown or "Street 1  \nCity" in markdown, (
+        "Single <br> in <address> should create line break within same item"
+    )
+
+    assert "Title\nSubtitle" in markdown or "Title  \nSubtitle" in markdown, (
+        "Single <br> in <summary> should create line break within same item"
+    )
+
+    table_found = False
+    if doc.tables:
+        cells = doc.tables[0].data.table_cells
+        for cell in cells:
+            if cell.text and "Cell 1" in cell.text:
+                assert "\n" in cell.text, (
+                    f"Single <br> in <td> should create newline in cell text. Got: {cell.text!r}"
+                )
+                table_found = True
+                break
+
+    assert table_found, "Should have found table with Cell 1"
+
+    # Pre-existing sentinel characters should be cleaned up
+    html_with_sentinel = f"""<!DOCTYPE html>
+<html>
+<body>
+<p>
+Text with pre-existing sentinel{_BR_SENTINEL}character should be cleaned.
+</p>
+</body>
+</html>"""
+
+    result = converter.convert_string(html_with_sentinel, InputFormat.HTML)
+    markdown = result.document.export_to_markdown()
+
+    assert _BR_SENTINEL not in markdown, (
+        "Pre-existing sentinel characters should be cleaned up"
+    )
+    assert "sentinelcharacter" in markdown or "sentinel character" in markdown, (
+        "Text should still be present after sentinel cleanup"
+    )

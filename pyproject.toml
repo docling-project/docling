@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.102.2"  # DO NOT EDIT, updated automatically
+version = "2.107.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -48,7 +48,7 @@ requires-python = '>=3.10,<4.0'
 # MINIMAL BASE (8 packages) - ~50MB
 dependencies = [
   'pydantic>=2.0.0,<3.0.0',
-  'docling-core>=2.80.0,<3.0.0',
+  'docling-core>=2.84.0,<3.0.0',
   'pydantic-settings>=2.3.0,<3.0.0',
   'filetype>=1.2.0,<2.0.0',
   'requests>=2.32.2,<3.0.0',
@@ -98,7 +98,7 @@ format-pdf-pypdfium2 = [
 
 format-pdf-docling = [
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
-  'docling-parse>=6.2.0,<7.0.0',
+  'docling-parse>=7.0.0,<8.0.0',
 ]
 
 format-pdf = [
@@ -120,6 +120,11 @@ format-xlsx = [
 
 format-office = [
   'docling-slim[format-docx,format-pptx,format-xlsx]',
+]
+
+# --- OpenDocument Formats (ODT, ODS, ODP) ---
+format-opendocument = [
+  'odfdo>=3.22.0,<4.0.0',
 ]
 
 # --- Web Formats (web = html + markdown) ---
@@ -189,6 +194,10 @@ feat-ocr-mac = [
   'ocrmac>=1.0.0,<2.0.0 ; sys_platform == "darwin"',
 ]
 
+feat-ocr-nemotron = [
+  'nemotron-ocr>=2.0.0 ; python_version == "3.12" and sys_platform == "linux" and platform_machine == "x86_64"',
+]
+
 # ============================================================================
 # MODELS
 # ============================================================================
@@ -232,12 +241,21 @@ feat-chunking = [
 service-client = [
   'httpx>=0.28,<1.0.0',
   'websockets>=14.0,<17.0',
+  'typer>=0.12.5,<0.27.0',
+  'rich>=13.0.0',
+  # Best-effort .env loading for `docling convert-remote`; the command still
+  # works (flags + env vars) if this is absent.
+  'python-dotenv~=1.0',
 ]
 
 cli = [
   'typer>=0.12.5,<0.27.0',
   'rich>=13.0.0',
+  # Best-effort .env loading for `docling convert-remote`; the command still
+  # works (flags + env vars) if this is absent.
+  'python-dotenv~=1.0',
 ]
+
 
 # ============================================================================
 # CONVENIENCE BUNDLES
@@ -326,12 +344,16 @@ members = ["packages/docling"]
 
 [tool.uv.sources]
 docling = { workspace = true }
+# docling-parse = { git = "https://github.com/docling-project/docling-parse", rev = "main" }
 # docling-core = { git = "https://github.com/docling-project/docling-core/", rev = "main" }
-
 
 [tool.uv]
 package = true
 default-groups = "all"
+
+override-dependencies = [
+  "grpcio>=1.75.1"
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["docling"]
@@ -346,6 +368,7 @@ markers = [
   "ml_vlm: VLM and picture-description tests that download or execute vision-language model code.",
   "ml_asr: ASR tests that download or execute speech model code.",
   "cross_platform: Lightweight smoke tests run on Windows and macOS workflow-dispatch lanes.",
+  "external_service: Tests that require a real external service and are excluded from CI.",
 ]
 
 [tool.ruff]
@@ -422,6 +445,8 @@ allowed-unresolved-imports = [
   "huggingface_hub.**",
   "lxml.**",
   "mlx_vlm.**",
+  "nemotron_ocr.**",
+  "nemotron_ocr_cpp.**",
   "networkx.**",
   "ocrmac.**",
   "onnxruntime.**",

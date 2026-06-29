@@ -147,7 +147,7 @@ class ApiVlmModel(BaseVlmPageModel):
                     # Skip non-GenerationStopper criteria (should have been caught in validation)
 
                 # Streaming path with early abort support
-                page_tags, num_tokens = api_image_request_streaming(
+                api_response = api_image_request_streaming(
                     image=image,
                     prompt=prompt_text,
                     url=self.vlm_options.url,
@@ -156,9 +156,11 @@ class ApiVlmModel(BaseVlmPageModel):
                     generation_stoppers=instantiated_stoppers,
                     **self.params,
                 )
+                page_tags = api_response.text
+                num_tokens = api_response.num_tokens
             else:
                 # Non-streaming fallback (existing behavior)
-                page_tags, num_tokens, stop_reason = api_image_request(
+                api_response = api_image_request(
                     image=image,
                     prompt=prompt_text,
                     url=self.vlm_options.url,
@@ -166,12 +168,16 @@ class ApiVlmModel(BaseVlmPageModel):
                     headers=self.vlm_options.headers,
                     **self.params,
                 )
+                page_tags = api_response.text
+                num_tokens = api_response.num_tokens
+                stop_reason = api_response.stop_reason
 
             page_tags = self.vlm_options.decode_response(page_tags)
             input_prompt = prompt_text if self.vlm_options.track_input_prompt else None
             return VlmPrediction(
                 text=page_tags,
                 num_tokens=num_tokens,
+                usage=api_response.usage,
                 stop_reason=stop_reason,
                 input_prompt=input_prompt,
             )

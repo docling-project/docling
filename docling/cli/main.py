@@ -41,15 +41,8 @@ from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
 from rich.console import Console
 
-from docling.backend.docling_parse_backend import (
-    DoclingParseDocumentBackend,
-    ThreadedDoclingParseDocumentBackend,
-)
-from docling.backend.image_backend import ImageDocumentBackend
-from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
-from docling.backend.pdf_backend import PdfDocumentBackend
-from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.cli.export_utils import (
+    _export_flags_from_formats,
     _is_empty_output,
     _should_generate_export_images,
     _split_list,
@@ -119,6 +112,9 @@ from docling.document_converter import (
     HTMLFormatOption,
     LatexFormatOption,
     MarkdownFormatOption,
+    OdpFormatOption,
+    OdsFormatOption,
+    OdtFormatOption,
     PdfFormatOption,
     PowerpointFormatOption,
     WordFormatOption,
@@ -129,8 +125,6 @@ from docling.models.factories import (
     get_table_structure_factory,
 )
 from docling.models.factories.base_factory import BaseFactory
-from docling.pipeline.asr_pipeline import AsrPipeline
-from docling.pipeline.vlm_pipeline import VlmPipeline
 from docling.utils.profiling import ProfilingItem
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
@@ -193,6 +187,27 @@ def _iter_input_paths_from_directory(
             yield path
 
 
+def _expand_from_formats(from_formats: list[str] | None) -> list[InputFormat]:
+    if from_formats is None:
+        return list(InputFormat)
+
+    expanded_formats: list[InputFormat] = []
+    for from_format in from_formats:
+        normalized_format = from_format.lower()
+        if normalized_format == "odf":
+            expanded_formats.extend([InputFormat.ODT, InputFormat.ODS, InputFormat.ODP])
+            continue
+        try:
+            expanded_formats.append(InputFormat(normalized_format))
+        except ValueError:
+            choices = ", ".join([format.value for format in InputFormat] + ["odf"])
+            raise typer.BadParameter(
+                f"{from_format!r} is not one of {choices}"
+            ) from None
+
+    return list(dict.fromkeys(expanded_formats))
+
+
 ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
 ocr_engines_enum_internal = ocr_factory_internal.get_enum()
 
@@ -237,11 +252,37 @@ DOCLING_ASCII_ART = r"""
 """
 
 
+class _DefaultCommandGroup(typer.core.TyperGroup):
+    """Route a bare ``docling <source>`` invocation to the ``convert`` command.
+
+    Historically the CLI exposed a single command, so Typer let users run
+    ``docling report.pdf`` without naming it. Adding a second command
+    (``convert-remote``) would otherwise force ``docling convert report.pdf``
+    on everyone. This group preserves the old behavior: when the first token is
+    not a known subcommand (nor the top-level ``--help``), it is treated as
+    arguments to ``convert``. ``docling --help`` still shows the command list.
+    """
+
+    default_command = "convert"
+
+    def parse_args(self, ctx, args):
+        if args and args[0] not in self.commands and args[0] not in ("--help", "-h"):
+            args = [self.default_command, *args]
+        return super().parse_args(ctx, args)
+
+
 app = typer.Typer(
     name="Docling",
+    cls=_DefaultCommandGroup,
     no_args_is_help=True,
     add_completion=False,
     pretty_exceptions_enable=False,
+    epilog=(
+        "Remote conversion: when installed with the `service-client` extra, "
+        "use `docling convert-remote` and read `docling convert-remote --help` "
+        "for authentication (DOCLING_SERVICE_URL / DOCLING_SERVICE_API_KEY), "
+        "supported options, and exit codes before invoking it."
+    ),
 )
 
 
@@ -493,10 +534,10 @@ def convert(  # noqa: C901
             help="PDF files to convert. Can be local file / directory paths or URL.",
         ),
     ],
-    from_formats: list[InputFormat] = typer.Option(
+    from_formats: list[str] = typer.Option(
         None,
         "--from",
-        help="Input formats to accept. Defaults to all supported formats.",
+        help="Input formats to accept. Use 'odf' for odt, ods, and odp. Defaults to all supported formats.",
     ),
     to_formats: list[OutputFormat] = typer.Option(
         None, "--to", help="Specify output formats. Defaults to Markdown."
@@ -749,6 +790,33 @@ def convert(  # noqa: C901
         ),
     ] = False,
 ):
+    # Heavy backend/converter/pipeline imports are deferred to here so the CLI
+    # (and `convert-remote`) stay importable without the local PDF stack
+    # (pypdfium2 / docling_parse). Only local `convert` needs them.
+    from docling.backend.docling_parse_backend import (
+        DoclingParseDocumentBackend,
+        ThreadedDoclingParseDocumentBackend,
+    )
+    from docling.backend.image_backend import ImageDocumentBackend
+    from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
+    from docling.backend.pdf_backend import PdfDocumentBackend
+    from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+    from docling.document_converter import (
+        AudioFormatOption,
+        DocumentConverter,
+        EpubFormatOption,
+        ExcelFormatOption,
+        FormatOption,
+        HTMLFormatOption,
+        LatexFormatOption,
+        MarkdownFormatOption,
+        PdfFormatOption,
+        PowerpointFormatOption,
+        WordFormatOption,
+    )
+    from docling.pipeline.asr_pipeline import AsrPipeline
+    from docling.pipeline.vlm_pipeline import VlmPipeline
+
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
     if verbose == 0:
@@ -764,8 +832,7 @@ def convert(  # noqa: C901
     settings.debug.visualize_ocr = debug_visualize_ocr
     settings.perf.page_batch_size = page_batch_size
 
-    if from_formats is None:
-        from_formats = list(InputFormat)
+    from_formats = _expand_from_formats(from_formats)
 
     parsed_headers: dict[str, str] | None = None
     if headers is not None:
@@ -856,15 +923,7 @@ def convert(  # noqa: C901
         if to_formats is None:
             to_formats = [OutputFormat.MARKDOWN]
 
-        export_json = OutputFormat.JSON in to_formats
-        export_yaml = OutputFormat.YAML in to_formats
-        export_html = OutputFormat.HTML in to_formats
-        export_html_split_page = OutputFormat.HTML_SPLIT_PAGE in to_formats
-        export_md = OutputFormat.MARKDOWN in to_formats
-        export_txt = OutputFormat.TEXT in to_formats
-        export_doctags = OutputFormat.DOCTAGS in to_formats
-        export_vtt = OutputFormat.VTT in to_formats
-        export_doclang = OutputFormat.DOCLANG in to_formats
+        export_flags = _export_flags_from_formats(to_formats)
 
         ocr_factory = get_ocr_factory(allow_external_plugins=allow_external_plugins)
         ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
@@ -987,6 +1046,9 @@ def convert(  # noqa: C901
                 InputFormat.XLSX: ExcelFormatOption(
                     pipeline_options=simple_format_option
                 ),
+                InputFormat.ODT: OdtFormatOption(pipeline_options=simple_format_option),
+                InputFormat.ODP: OdpFormatOption(pipeline_options=simple_format_option),
+                InputFormat.ODS: OdsFormatOption(pipeline_options=simple_format_option),
                 InputFormat.HTML: HTMLFormatOption(
                     pipeline_options=simple_format_option,
                     backend_options=html_backend_options,
@@ -1016,6 +1078,7 @@ def convert(  # noqa: C901
 
         elif pipeline == ProcessingPipeline.VLM:
             pipeline_options = VlmPipelineOptions(
+                accelerator_options=accelerator_options,
                 enable_remote_services=enable_remote_services,
             )
 
@@ -1126,16 +1189,8 @@ def convert(  # noqa: C901
         export_documents(
             conv_results,
             output_dir=output,
-            export_json=export_json,
-            export_yaml=export_yaml,
-            export_html=export_html,
-            export_html_split_page=export_html_split_page,
+            **export_flags,
             show_layout=show_layout,
-            export_md=export_md,
-            export_txt=export_txt,
-            export_doctags=export_doctags,
-            export_vtt=export_vtt,
-            export_doclang=export_doclang,
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,
@@ -1145,6 +1200,19 @@ def convert(  # noqa: C901
 
     _log.info(f"All documents were converted in {end_time:.2f} seconds.")
 
+
+# Register `convert-remote` only when the service-client extra is installed.
+# Imported here (after `app`, `export_documents`, and the source-collection
+# helpers are defined) so the command is attached before the click app is built
+# below.
+try:
+    from docling.cli.remote import register as _register_remote
+except ImportError:
+    _log.debug(
+        "Skipping `convert-remote` registration because service-client dependencies are unavailable."
+    )
+else:
+    _register_remote(app)
 
 click_app = typer.main.get_command(app)
 

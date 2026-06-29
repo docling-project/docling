@@ -1,4 +1,5 @@
 import base64
+import re
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -10,9 +11,10 @@ from typer.testing import CliRunner
 
 from docling.cli.export_utils import _should_generate_export_images, _split_list
 from docling.cli.main import app
+from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import InputFormat, OutputFormat
-from docling.datamodel.pipeline_options import PdfBackend
+from docling.datamodel.pipeline_options import PdfBackend, VlmPipelineOptions
 from docling.document_converter import PdfFormatOption
 
 runner = CliRunner()
@@ -45,11 +47,27 @@ def _assert_markdown_embeds_png(path: Path, image_bytes: bytes | None = None) ->
     assert "data:image/png;base64" in content
     assert "Image not available" not in content
     if image_bytes is not None:
-        assert base64.b64encode(image_bytes).decode() in content
+        # Compare decoded pixel content rather than exact base64: docling
+        # re-encodes the PNG, so the byte stream (and its base64) differs even
+        # though the image is identical.
+        match = re.search(r"data:image/png;base64,([A-Za-z0-9+/=]+)", content)
+        assert match is not None
+        embedded = Image.open(BytesIO(base64.b64decode(match.group(1))))
+        expected = Image.open(BytesIO(image_bytes))
+        assert embedded.convert("RGBA").tobytes() == expected.convert("RGBA").tobytes()
 
 
 def test_cli_help():
+    # Top-level help lists the available commands and points agents at the
+    # remote command (the `convert` options live under `docling convert --help`).
     result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    assert "convert-remote" in result.output
+    assert "DOCLING_SERVICE_URL" in result.output
+
+
+def test_cli_convert_help():
+    result = runner.invoke(app, ["convert", "--help"])
     assert result.exit_code == 0
     assert "Input formats to" in result.output
     assert "all supported" in result.output
@@ -64,7 +82,7 @@ def test_cli_version():
 
 
 def test_cli_convert(tmp_path):
-    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
     output = tmp_path / "out"
     output.mkdir()
     result = runner.invoke(app, [source, "--output", str(output)])
@@ -95,8 +113,57 @@ def test_cli_exports_doclang(tmp_path):
     converted = output / "input.dclg.xml"
     assert converted.exists()
     content = converted.read_text(encoding="utf-8")
-    assert "<doclang>" in content
+    assert re.search(r'<doclang version="\d+\.\d+">', content) is not None
     assert "DocLang CLI" in content
+
+
+def test_cli_from_odf_expands_to_open_document_formats(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured_allowed_formats: list[InputFormat] | None = None
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            nonlocal captured_allowed_formats
+            captured_allowed_formats = allowed_formats
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+        ) -> list[Any]:
+            assert input_doc_paths
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "tests/data/odf/sources",
+            "--from",
+            "odf",
+            "--to",
+            "html",
+            "--output",
+            str(tmp_path / "out"),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_allowed_formats == [
+        InputFormat.ODT,
+        InputFormat.ODS,
+        InputFormat.ODP,
+    ]
 
 
 def test_cli_html_fetches_local_images_per_input(tmp_path):
@@ -496,9 +563,11 @@ def test_cli_accepts_threaded_docling_parse_backend(
             assert len(input_doc_paths) == 1
             return []
 
-    monkeypatch.setattr("docling.cli.main.DocumentConverter", _FakeDocumentConverter)
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
 
-    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
     output = tmp_path / "out"
 
     result = runner.invoke(
@@ -522,3 +591,58 @@ def test_cli_accepts_threaded_docling_parse_backend(
     assert captured_backend_options is not None
     assert captured_backend_options.parser_threads == 7
     assert captured_backend_options.release_native_memory_every_n_pages == 64
+
+
+def test_cli_passes_accelerator_options_to_vlm_pipeline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured_pipeline_options: VlmPipelineOptions | None = None
+
+    class _FakeDocumentConverter:
+        def __init__(
+            self,
+            *,
+            allowed_formats: list[InputFormat],
+            format_options: dict[InputFormat, PdfFormatOption],
+        ) -> None:
+            nonlocal captured_pipeline_options
+            pdf_option = format_options[InputFormat.PDF]
+            assert format_options[InputFormat.IMAGE] is pdf_option
+            assert isinstance(pdf_option.pipeline_options, VlmPipelineOptions)
+            captured_pipeline_options = pdf_option.pipeline_options
+
+        def convert_all(
+            self,
+            input_doc_paths: list[Path],
+            headers: dict[str, str] | None = None,
+            raises_on_error: bool = False,
+        ) -> list[Any]:
+            assert len(input_doc_paths) == 1
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            source,
+            "--output",
+            str(output),
+            "--pipeline",
+            "vlm",
+            "--device",
+            "cpu",
+            "--num-threads",
+            "7",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured_pipeline_options is not None
+    assert captured_pipeline_options.accelerator_options.device == AcceleratorDevice.CPU
+    assert captured_pipeline_options.accelerator_options.num_threads == 7

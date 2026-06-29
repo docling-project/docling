@@ -8,7 +8,8 @@ from pathlib import Path
 
 ML_MARKERS = ("ml_ocr", "ml_pdf_model", "ml_vlm", "ml_asr")
 CROSS_PLATFORM_MARKER = "cross_platform"
-CI_FILE_MARKERS = (*ML_MARKERS, CROSS_PLATFORM_MARKER)
+EXTERNAL_SERVICE_MARKER = "external_service"
+CI_FILE_MARKERS = (*ML_MARKERS, CROSS_PLATFORM_MARKER, EXTERNAL_SERVICE_MARKER)
 SUITE_MARKERS = {
     "ocr": "ml_ocr",
     "pdf-model": "ml_pdf_model",
@@ -124,7 +125,11 @@ def run_matrix(args: argparse.Namespace) -> None:
 def run_core_ignore_args(args: argparse.Namespace) -> None:
     discovered = discover_test_markers(args.repo_root)
     marked_paths = sorted(
-        {path for marker in ML_MARKERS for path in discovered[marker]}
+        {
+            path
+            for marker in (*ML_MARKERS, EXTERNAL_SERVICE_MARKER)
+            for path in discovered[marker]
+        }
     )
     for path in marked_paths:
         print(f"--ignore={path.as_posix()}")

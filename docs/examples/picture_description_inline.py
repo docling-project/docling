@@ -33,6 +33,7 @@ from docling.datamodel.pipeline_options import (
     PictureDescriptionVlmOptions,
 )
 from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
+from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.datamodel.stage_model_specs import VlmModelSpec
 from docling.datamodel.vlm_engine_options import AutoInlineVlmEngineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
@@ -40,7 +41,7 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 logging.basicConfig(level=logging.INFO)
 
 # Test document with images
-input_doc_path = Path("tests/data/pdf/2206.01062.pdf")
+input_doc_path = Path("tests/data/pdf/sources/2206.01062.pdf")
 
 # Check if running in CI
 IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")
@@ -63,7 +64,8 @@ converter = DocumentConverter(
     }
 )
 
-result = converter.convert(input_doc_path)
+page_range = (3, 4) if IS_CI else DEFAULT_PAGE_RANGE
+result = converter.convert(input_doc_path, page_range=page_range)
 
 # Print picture descriptions
 for element, _level in result.document.iterate_items():
@@ -111,44 +113,49 @@ else:
     print("=" * 60)
 
 
-###### EXAMPLE 3: Without presets - manually configuring model and runtime
+###### EXAMPLE 3: Without presets - manually configuring model and runtime (skipped in CI)
 
-print("\n" + "=" * 60)
-print("Example 3: Manual configuration without presets")
-print("=" * 60)
+if not IS_CI:
+    print("\n" + "=" * 60)
+    print("Example 3: Manual configuration without presets")
+    print("=" * 60)
 
-# You can manually configure the model spec and runtime options without using presets
+    # You can manually configure the model spec and runtime options without using presets
 
-pipeline_options = PdfPipelineOptions()
-pipeline_options.do_picture_description = True
-pipeline_options.picture_description_options = PictureDescriptionVlmEngineOptions(
-    model_spec=VlmModelSpec(
-        name="SmolVLM-256M-Custom",
-        default_repo_id="HuggingFaceTB/SmolVLM-256M-Instruct",
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.do_picture_description = True
+    pipeline_options.picture_description_options = PictureDescriptionVlmEngineOptions(
+        model_spec=VlmModelSpec(
+            name="SmolVLM-256M-Custom",
+            default_repo_id="HuggingFaceTB/SmolVLM-256M-Instruct",
+            prompt="Provide a detailed technical description of this image, focusing on any diagrams, charts, or technical content.",
+            response_format=ResponseFormat.PLAINTEXT,
+        ),
+        engine_options=AutoInlineVlmEngineOptions(),
         prompt="Provide a detailed technical description of this image, focusing on any diagrams, charts, or technical content.",
-        response_format=ResponseFormat.PLAINTEXT,
-    ),
-    engine_options=AutoInlineVlmEngineOptions(),
-    prompt="Provide a detailed technical description of this image, focusing on any diagrams, charts, or technical content.",
-)
+    )
 
-converter = DocumentConverter(
-    format_options={
-        InputFormat.PDF: PdfFormatOption(
-            pipeline_options=pipeline_options,
-        )
-    }
-)
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=pipeline_options,
+            )
+        }
+    )
 
-result = converter.convert(input_doc_path)
+    result = converter.convert(input_doc_path)
 
-for element, _level in result.document.iterate_items():
-    if isinstance(element, PictureItem):
-        print(
-            f"Picture {element.self_ref}\n"
-            f"Caption: {element.caption_text(doc=result.document)}\n"
-            f"Meta: {element.meta}"
-        )
+    for element, _level in result.document.iterate_items():
+        if isinstance(element, PictureItem):
+            print(
+                f"Picture {element.self_ref}\n"
+                f"Caption: {element.caption_text(doc=result.document)}\n"
+                f"Meta: {element.meta}"
+            )
+else:
+    print("\n" + "=" * 60)
+    print("Example 3: Skipped (running in CI environment)")
+    print("=" * 60)
 
 
 # %% [markdown]

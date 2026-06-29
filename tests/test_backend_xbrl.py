@@ -51,7 +51,7 @@ def xbrl_paths() -> list[tuple[Path, Path]]:
 
 def test_e2e_xbrl_conversions(xbrl_paths, use_stream=False):
     for report, taxonomy in xbrl_paths:
-        gt_path = report.parent.parent / "groundtruth" / "docling_v2" / report.name
+        gt_path = report.parent.parent / "groundtruth" / report.name
 
         backend_options = XBRLBackendOptions(enable_local_fetch=True, taxonomy=taxonomy)
         # set enable_remote_fetch to download the necessary external taxonomy files in web cache

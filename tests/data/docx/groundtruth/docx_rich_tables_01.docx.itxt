@@ -1,0 +1,48 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: text: Changes to the DOCLANG Core Spec
+  item-2 at level 1: text: Last Updated: 2026-06-18
+  item-3 at level 1: text: 
+  item-4 at level 1: text: This document identifies the edi ... S submission to ISO via ISO/IEC JTC/1.
+  item-5 at level 1: text: The transformation of this techn ... or ISO compliance involves two phases:
+  item-6 at level 1: list: group list
+    item-7 at level 2: list_item: 
+      item-8 at level 3: inline: group group
+        item-9 at level 4: text: Phase 1
+        item-10 at level 4: text: (Macro-Level Structural Realignm ... ISO verbal forms (shall, should, may).
+    item-11 at level 2: list_item: 
+      item-12 at level 3: inline: group group
+        item-13 at level 4: text: Phase 2
+        item-14 at level 4: text: (Micro-Level Editorial Optimizat ... it passes the final publishing system.
+  item-15 at level 1: text: 
+  item-16 at level 1: text: Phase 1
+  item-17 at level 1: table with [24x3]
+    item-18 at level 2: unspecified: group rich_cell_group_1_0_0
+      item-19 at level 3: text: Feature
+    item-20 at level 2: unspecified: group rich_cell_group_1_1_0
+      item-21 at level 3: text: Action Needed
+    item-22 at level 2: unspecified: group rich_cell_group_1_2_0
+      item-23 at level 3: text: Comment/Links
+    item-24 at level 2: unspecified: group rich_cell_group_1_1_1
+      item-25 at level 3: text: Reorganize into the mandatory sequence:
+      item-26 at level 3: text: • Foreword (Mandatory, unnumbered)
+      item-27 at level 3: text: • Introduction (Optional, unnumbered)
+      item-28 at level 3: text: • 1 Scope (Mandatory, Clause 1)
+      item-29 at level 3: text: • 2 Normative references (Mandatory, Clause 2)
+      item-30 at level 3: text: • 3 Terms and definitions (Mandatory, Clause 3)
+      item-31 at level 3: text: • 4 Symbols and abbreviated terms (Mandatory, Clause 4)
+      item-32 at level 3: text: • 5 Conformance (Mandatory, Clause 5)
+      item-33 at level 3: text: • 6 Technical Clauses...
+      item-34 at level 3: text: • Annex A (normative)
+      item-35 at level 3: text: • Annex B/C (informative)
+      item-36 at level 3: text: • Bibliography (Mandatory, absolute end)
+      item-37 at level 3: text: 
+  item-38 at level 1: text: 
+  item-39 at level 1: text: Phase 2
+  item-40 at level 1: table with [24x3]
+    item-41 at level 2: unspecified: group rich_cell_group_2_0_0
+      item-42 at level 3: text: Feature
+    item-43 at level 2: unspecified: group rich_cell_group_2_1_0
+      item-44 at level 3: text: Action Needed
+    item-45 at level 2: unspecified: group rich_cell_group_2_2_0
+      item-46 at level 3: text: Comment/Links
+  item-47 at level 1: text: 

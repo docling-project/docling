@@ -16,11 +16,11 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 
 _TEST_FILES = [
-    "tests/data/pdf/2203.01017v2.pdf",
-    "tests/data/pdf/2206.01062.pdf",
-    "tests/data/pdf/2305.03393v1.pdf",
+    "tests/data/pdf/sources/2203.01017v2.pdf",
+    "tests/data/pdf/sources/2206.01062.pdf",
+    "tests/data/pdf/sources/2305.03393v1.pdf",
 ]
-_SINGLE_FILE = "tests/data/pdf/2206.01062.pdf"
+_SINGLE_FILE = "tests/data/pdf/sources/2206.01062.pdf"
 
 pytestmark = pytest.mark.ml_pdf_model
 

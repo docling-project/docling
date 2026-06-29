@@ -7,12 +7,11 @@ The test file 'epub_purvis_poetry.epub' is sourced from Standard Ebooks
 high-quality, carefully formatted public domain ebooks.
 
 The source text "Poetry" by Sarah Louisa Forten Purvis is in the public domain
-in the United States. Standard Ebooks dedicates the entirety of their ebook
-files, including markup, cover art, and formatting, to the public domain via
+in the United States. The cover art has been dedicated as CC0 by the Smithsonian.
+Standard Ebooks dedicates the rest of their ebook files to the public domain via
 the CC0 1.0 Universal Public Domain Dedication.
 
-For more information about Standard Ebooks and their public domain dedication,
-visit: https://standardebooks.org/about
+For more information about Standard Ebooks visit: https://standardebooks.org/about
 """
 
 import logging
@@ -36,7 +35,7 @@ GENERATE = GEN_TEST_DATA
 @pytest.fixture(scope="module")
 def epub_paths() -> list[Path]:
     # Define the directory you want to search
-    directory = Path("./tests/data/epub/")
+    directory = Path("./tests/data/epub/sources/")
 
     # List all epub files in the directory and its subdirectories
     epub_files = sorted(directory.rglob("*.epub"))
@@ -69,9 +68,7 @@ def documents(epub_paths) -> list[tuple[Path, DoclingDocument]]:
     for epub_path in epub_paths:
         _log.debug(f"converting {epub_path}")
 
-        gt_path = (
-            epub_path.parent.parent / "groundtruth" / "docling_v2" / epub_path.name
-        )
+        gt_path = epub_path.parent.parent / "groundtruth" / epub_path.name
 
         conv_result: ConversionResult = converter.convert(epub_path)
 
@@ -159,7 +156,7 @@ def test_epub_backend_with_image_options():
 
 def test_epub_content_combination():
     """Test that EPUB content from multiple files is properly combined."""
-    epub_path = Path("./tests/data/epub/epub_purvis_poetry.epub")
+    epub_path = Path("./tests/data/epub/sources/epub_purvis_poetry.epub")
 
     converter = get_converter()
     result = converter.convert(epub_path)
@@ -175,7 +172,7 @@ def test_epub_content_combination():
 
 def test_epub_link_fixing():
     """Test that internal EPUB links are properly fixed after content combination."""
-    epub_path = Path("./tests/data/epub/epub_purvis_poetry.epub")
+    epub_path = Path("./tests/data/epub/sources/epub_purvis_poetry.epub")
 
     converter = get_converter()
     result = converter.convert(epub_path)
