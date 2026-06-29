@@ -1,6 +1,7 @@
 import logging
 import re
 import warnings
+import zipfile
 from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
@@ -50,6 +51,70 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
+
+# Strict (ISO/IEC 29500 "Strict") OOXML files use the purl.oclc.org namespaces
+# defined in Part 1, while python-docx only understands the Transitional
+# (Part 4) "schemas.openxmlformats.org/.../2006/..." namespaces. The two
+# variants are otherwise equivalent, so a Strict package is normalized to
+# Transitional in memory before being handed to python-docx.
+_STRICT_OOXML_NS_PREFIX: Final[str] = "http://purl.oclc.org/ooxml/"
+_TRANSITIONAL_NS_HOST: Final[str] = "http://schemas.openxmlformats.org/"
+
+# Strict namespaces whose Transitional form does not follow the regular
+# "insert /2006 after the first segment" rule (see _strict_ns_to_transitional).
+# Mirrors the canonical mapping in the Open XML SDK (NamespaceIdMap).
+_STRICT_OOXML_NS_OVERRIDES: Final[dict[str, str]] = {
+    "http://purl.oclc.org/ooxml/descriptions/base": "http://descriptions.openxmlformats.org/description/base",
+    "http://purl.oclc.org/ooxml/descriptions/full": "http://descriptions.openxmlformats.org/description/full",
+    "http://purl.oclc.org/ooxml/officeDocument/relationships/customXml": "http://schemas.openxmlformats.org/officeDocument/2006/customXml",
+    "http://purl.oclc.org/ooxml/officeDocument/relationships/metadata/thumbnail": "http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail",
+}
+
+_STRICT_OOXML_NS_RE: Final = re.compile(
+    r"http://purl\.oclc\.org/ooxml/[A-Za-z0-9_./-]+"
+)
+
+
+def _strict_ns_to_transitional(strict_ns: str) -> str:
+    """Map a single Strict OOXML namespace/relationship URI to its Transitional form."""
+    if strict_ns in _STRICT_OOXML_NS_OVERRIDES:
+        return _STRICT_OOXML_NS_OVERRIDES[strict_ns]
+    rest = strict_ns[len(_STRICT_OOXML_NS_PREFIX) :]
+    # A handful of property namespaces are camelCase in Strict but hyphenated
+    # in Transitional.
+    rest = rest.replace("extendedProperties", "extended-properties")
+    rest = rest.replace("customProperties", "custom-properties")
+    segment, separator, tail = rest.partition("/")
+    if not separator:
+        return f"{_TRANSITIONAL_NS_HOST}{segment}/2006"
+    return f"{_TRANSITIONAL_NS_HOST}{segment}/2006/{tail}"
+
+
+def _normalize_strict_ooxml(stream: BytesIO) -> BytesIO:
+    """Rewrite a Strict OOXML .docx stream to Transitional namespaces in memory.
+
+    Transitional packages (and anything that is not a Strict OOXML zip) are
+    returned unchanged so the regular python-docx loading path is untouched.
+    """
+    raw = stream.getvalue()
+    with zipfile.ZipFile(BytesIO(raw)) as source:
+        names = source.namelist()
+        is_strict = any(b"purl.oclc.org/ooxml" in source.read(name) for name in names)
+        if not is_strict:
+            stream.seek(0)
+            return stream
+        normalized = BytesIO()
+        with zipfile.ZipFile(normalized, "w", zipfile.ZIP_DEFLATED) as target:
+            for info in source.infolist():
+                content = source.read(info.filename)
+                if info.filename.endswith((".xml", ".rels")):
+                    content = _STRICT_OOXML_NS_RE.sub(
+                        lambda match: _strict_ns_to_transitional(match.group(0)),
+                        content.decode("utf-8"),
+                    ).encode("utf-8")
+                target.writestr(info, content)
+    normalized.seek(0)
+    return normalized
 
 
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
@@ -207,9 +272,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     ) -> DocxDocument:
         try:
             if isinstance(path_or_stream, BytesIO):
-                return Document(path_or_stream)
+                return Document(_normalize_strict_ooxml(path_or_stream))
             elif isinstance(path_or_stream, Path):
-                return Document(str(path_or_stream))
+                return Document(
+                    _normalize_strict_ooxml(BytesIO(path_or_stream.read_bytes()))
+                )
             else:
                 return None
         except Exception as e:
