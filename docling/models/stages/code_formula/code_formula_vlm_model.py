@@ -30,6 +30,7 @@ from docling.models.inference_engines.vlm import (
     VlmEngineInput,
     create_vlm_engine,
 )
+from docling.utils.code_language import detect_code_language
 
 _log = logging.getLogger(__name__)
 
@@ -284,6 +285,8 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
             if isinstance(item, CodeItem):
                 output_text, code_language = self._extract_code_language(output_text)
                 item.code_language = self._get_code_language_enum(code_language)
+                if item.code_language == CodeLanguageLabel.UNKNOWN:
+                    item.code_language = detect_code_language(output_text)
             item.text = output_text
 
             yield item

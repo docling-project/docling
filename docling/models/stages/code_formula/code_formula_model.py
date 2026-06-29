@@ -20,6 +20,7 @@ from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.code_language import detect_code_language
 
 
 class CodeFormulaModelOptions(BaseModel):
@@ -339,6 +340,8 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
             if isinstance(item, CodeItem):
                 output, code_language = self._extract_code_language(output)
                 item.code_language = self._get_code_language_enum(code_language)
+                if item.code_language == CodeLanguageLabel.UNKNOWN:
+                    item.code_language = detect_code_language(output)
             item.text = output
 
             yield item

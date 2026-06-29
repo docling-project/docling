@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
 from bs4.element import PreformattedString
 from docling_core.types.doc import (
     BoundingBox,
+    CodeLanguageLabel,
     CoordOrigin,
     DocItem,
     DocItemLabel,
@@ -53,6 +54,7 @@ from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.code_language import detect_code_language, normalize_code_language
 
 _log = logging.getLogger(__name__)
 
@@ -125,6 +127,8 @@ _PARA_BREAKERS = {
 }
 
 _CODE_TAG_SET: Final = {"code", "kbd", "samp"}
+
+_LANGUAGE_CLASSES: Final = ("language-", "lang-")
 
 _FORMAT_TAG_MAP: Final = {
     "b": {"bold": True},
@@ -2678,6 +2682,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 tag, find_parent_annotation=True, keep_newlines=True
             )
             annotated_texts = text_list.simplify_text_elements()
+            language_hint = self._code_language_hint(tag)
             with self._use_inline_group(annotated_texts, doc) as inline_ref:
                 for annotated_text in annotated_texts:
                     text_clean = HTMLDocumentBackend._clean_unicode(
@@ -2691,6 +2696,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     docling_code2 = doc.add_code(
                         parent=self.parents[self.level],
                         text=text_clean,
+                        code_language=detect_code_language(
+                            text_clean, hint=language_hint
+                        ),
                         content_layer=self.content_layer,
                         formatting=annotated_text.formatting,
                         hyperlink=annotated_text.hyperlink,
@@ -3011,6 +3019,24 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if isinstance(classes, str):
             return {classes}
         return {str(value) for value in classes if isinstance(value, str)}
+
+    @staticmethod
+    def _code_language_hint(tag: Tag) -> Optional[str]:
+        """Pick the language class a highlighter set on the ``<pre>`` or ``<code>``.
+
+        A ``language-``/``lang-`` prefixed class is preferred so an unrelated
+        utility class on the same element cannot outrank a real hint.
+        """
+        tokens: set[str] = set()
+        for element in (tag, *tag.find_all("code")):
+            tokens |= HTMLDocumentBackend._get_tag_classes(element)
+
+        prefixed = sorted(t for t in tokens if t.lower().startswith(_LANGUAGE_CLASSES))
+        bare = sorted(tokens - set(prefixed))
+        for token in (*prefixed, *bare):
+            if normalize_code_language(token) is not CodeLanguageLabel.UNKNOWN:
+                return token
+        return None
 
     @staticmethod
     def _has_inline_display_style(tag: Tag) -> bool:
