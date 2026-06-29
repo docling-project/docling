@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path, PurePath
 from typing import Annotated, Literal, Optional, Union
 
@@ -19,6 +20,13 @@ class DeclarativeBackendOptions(BaseBackendOptions):
     """Default backend options for a declarative document backend."""
 
     kind: Literal["declarative"] = Field("declarative", exclude=True, repr=False)
+
+
+class HTMLContentLayerDetectionStrategy(str, Enum):
+    """Strategy for assigning HTML content layers."""
+
+    AUTO = "auto"
+    BODY_ONLY = "body_only"
 
 
 class HTMLBackendOptions(BaseBackendOptions):
@@ -100,7 +108,20 @@ class HTMLBackendOptions(BaseBackendOptions):
         True, description="Add the HTML title tag as furniture in the DoclingDocument."
     )
     infer_furniture: bool = Field(
-        True, description="Infer all the content before the first header as furniture."
+        True,
+        description=(
+            "With AUTO content layer detection, infer all the content before the "
+            "first header as furniture."
+        ),
+    )
+    content_layer_detection_strategy: HTMLContentLayerDetectionStrategy = Field(
+        HTMLContentLayerDetectionStrategy.AUTO,
+        description=(
+            "Strategy for assigning content layers while parsing HTML. AUTO "
+            "preserves the existing heading-based furniture inference; BODY_ONLY "
+            "starts parsed body content in the BODY layer and disables pre-heading "
+            "furniture inference."
+        ),
     )
     max_image_data_base64_bytes: PositiveInt = Field(
         20 * 1024 * 1024,  # 20 MB

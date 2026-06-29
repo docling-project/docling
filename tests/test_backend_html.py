@@ -18,7 +18,10 @@ from docling.backend.html_backend import (
     HTMLDocumentBackend,
     _validate_url_safety,
 )
-from docling.datamodel.backend_options import HTMLBackendOptions
+from docling.datamodel.backend_options import (
+    HTMLBackendOptions,
+    HTMLContentLayerDetectionStrategy,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
     ConversionResult,
@@ -61,6 +64,10 @@ def test_html_backend_options():
     assert options.kind == "html"
     assert not options.fetch_images
     assert options.source_uri is None
+    assert (
+        options.content_layer_detection_strategy
+        == HTMLContentLayerDetectionStrategy.AUTO
+    )
 
     url = "http://example.com"
     source_location = AnyUrl(url=url)
@@ -71,8 +78,86 @@ def test_html_backend_options():
     options = HTMLBackendOptions(source_uri=source_location)
     assert options.source_uri == source_location
 
+    options = HTMLBackendOptions(
+        content_layer_detection_strategy=HTMLContentLayerDetectionStrategy.BODY_ONLY
+    )
+    assert (
+        options.content_layer_detection_strategy
+        == HTMLContentLayerDetectionStrategy.BODY_ONLY
+    )
+
     with pytest.raises(ValidationError, match="Input is not a valid path"):
         HTMLBackendOptions(source_uri=12345)
+
+    with pytest.raises(ValidationError, match=r"auto|body_only"):
+        HTMLBackendOptions(content_layer_detection_strategy="notes")
+
+
+def _make_html_doc(html: bytes, options: HTMLBackendOptions) -> DoclingDocument:
+    """Helper to convert raw HTML bytes with the given backend options."""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test.html",
+    )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(html),
+        options=options,
+    )
+    return backend.convert()
+
+
+_HTML_WITH_HEADING = b"""<html><body>
+<p>Before heading</p>
+<h1>Title</h1>
+<p>After heading</p>
+</body></html>"""
+
+
+def _collect_text_layers(doc: DoclingDocument) -> list[tuple[str, ContentLayer]]:
+    all_layers = {ContentLayer.FURNITURE, ContentLayer.BODY}
+    return [
+        (item.text, item.content_layer)
+        for item, _level in doc.iterate_items(included_content_layers=all_layers)
+        if hasattr(item, "text")
+    ]
+
+
+def test_html_backend_body_only_content_layer_detection_strategy():
+    doc = _make_html_doc(
+        _HTML_WITH_HEADING,
+        HTMLBackendOptions(
+            content_layer_detection_strategy=HTMLContentLayerDetectionStrategy.BODY_ONLY
+        ),
+    )
+    assert _collect_text_layers(doc) == [
+        ("Before heading", ContentLayer.BODY),
+        ("Title", ContentLayer.BODY),
+        ("After heading", ContentLayer.BODY),
+    ]
+
+
+def test_html_backend_infer_furniture_false_uses_body_layer():
+    doc = _make_html_doc(
+        _HTML_WITH_HEADING,
+        HTMLBackendOptions(infer_furniture=False),
+    )
+    assert _collect_text_layers(doc) == [
+        ("Before heading", ContentLayer.BODY),
+        ("Title", ContentLayer.BODY),
+        ("After heading", ContentLayer.BODY),
+    ]
+
+
+def test_html_backend_auto_content_layer_detection_strategy_preserves_inference():
+    doc = _make_html_doc(_HTML_WITH_HEADING, HTMLBackendOptions())
+    assert _collect_text_layers(doc) == [
+        ("Before heading", ContentLayer.FURNITURE),
+        ("Title", ContentLayer.BODY),
+        ("After heading", ContentLayer.BODY),
+    ]
 
 
 def test_resolve_relative_path():
