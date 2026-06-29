@@ -947,7 +947,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         def _get_children_recursive(node):
             for child in node:
                 tag_name = etree.QName(child).localname
-                if tag_name in {"smartTag", "customXml", "ins", "fldSimple"}:
+                if tag_name in {"smartTag", "customXml", "fldSimple"}:
                     yield from _get_children_recursive(child)
                 else:
                     yield child
