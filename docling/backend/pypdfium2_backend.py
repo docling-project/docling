@@ -115,11 +115,13 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         pdfium_doc: pdfium.PdfDocument,
         document_hash: str,
         page_no: int,
+        create_word_cells: bool = False,
     ):
         super().__init__()
         self._page_no = page_no
         # Note: lock applied by the caller
         self.valid = True  # No better way to tell from pypdfium.
+        self.create_word_cells = create_word_cells
         self._ppage: pdfium.PdfPage | None = None
         try:
             self._ppage = pdfium_doc[page_no]
@@ -142,15 +144,13 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
         assert self._ppage is not None, "Page backend was unloaded."
         return self._ppage
 
-    def _compute_text_cells(self) -> List[TextCell]:
-        """Compute text cells from pypdfium."""
+    def _get_raw_text_fragments(self) -> List[TextCell]:
+        """Return sub-word-level text fragments directly from pypdfium2."""
         with pypdfium2_lock:
             if not self.text_page:
                 self.text_page = self._require_page().get_textpage()
 
         cells = []
-        cell_counter = 0
-
         page_size = self.get_size()
 
         with pypdfium2_lock:
@@ -160,7 +160,7 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
                 x0, y0, x1, y1 = rect
                 cells.append(
                     TextCell(
-                        index=cell_counter,
+                        index=i,
                         text=text_piece,
                         orig=text_piece,
                         from_ocr=False,
@@ -175,106 +175,127 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
                         ).to_top_left_origin(page_size.height),
                     )
                 )
-                cell_counter += 1
 
-        # PyPdfium2 produces very fragmented cells, with sub-word level boundaries, in many PDFs.
-        # The cell merging code below is to clean this up.
-        def merge_horizontal_cells(
-            cells: List[TextCell],
-            horizontal_threshold_factor: float = 1.0,
-            vertical_threshold_factor: float = 0.5,
-        ) -> List[TextCell]:
-            if not cells:
-                return []
+        return cells
 
-            def group_rows(cells: List[TextCell]) -> List[List[TextCell]]:
-                rows = []
-                current_row = [cells[0]]
-                row_top = cells[0].rect.to_bounding_box().t
-                row_bottom = cells[0].rect.to_bounding_box().b
-                row_height = cells[0].rect.to_bounding_box().height
+    def _merge_cells(
+        self,
+        cells: List[TextCell],
+        horizontal_threshold_factor: float = 1.0,
+        vertical_threshold_factor: float = 0.5,
+    ) -> List[TextCell]:
+        """Merge text fragments into cells using configurable thresholds.
 
-                for cell in cells[1:]:
-                    vertical_threshold = row_height * vertical_threshold_factor
-                    if (
-                        abs(cell.rect.to_bounding_box().t - row_top)
-                        <= vertical_threshold
-                        and abs(cell.rect.to_bounding_box().b - row_bottom)
-                        <= vertical_threshold
-                    ):
-                        current_row.append(cell)
-                        row_top = min(row_top, cell.rect.to_bounding_box().t)
-                        row_bottom = max(row_bottom, cell.rect.to_bounding_box().b)
-                        row_height = row_bottom - row_top
-                    else:
-                        rows.append(current_row)
-                        current_row = [cell]
-                        row_top = cell.rect.to_bounding_box().t
-                        row_bottom = cell.rect.to_bounding_box().b
-                        row_height = cell.rect.to_bounding_box().height
+        Use horizontal_threshold_factor=1.0 for textline-level merging and
+        horizontal_threshold_factor=0.3 for word-level merging.
+        """
+        if not cells:
+            return []
 
-                if current_row:
+        page_size = self.get_size()
+
+        def group_rows(cells: List[TextCell]) -> List[List[TextCell]]:
+            rows = []
+            current_row = [cells[0]]
+            row_top = cells[0].rect.to_bounding_box().t
+            row_bottom = cells[0].rect.to_bounding_box().b
+            row_height = cells[0].rect.to_bounding_box().height
+
+            for cell in cells[1:]:
+                vertical_threshold = row_height * vertical_threshold_factor
+                if (
+                    abs(cell.rect.to_bounding_box().t - row_top) <= vertical_threshold
+                    and abs(cell.rect.to_bounding_box().b - row_bottom)
+                    <= vertical_threshold
+                ):
+                    current_row.append(cell)
+                    row_top = min(row_top, cell.rect.to_bounding_box().t)
+                    row_bottom = max(row_bottom, cell.rect.to_bounding_box().b)
+                    row_height = row_bottom - row_top
+                else:
                     rows.append(current_row)
+                    current_row = [cell]
+                    row_top = cell.rect.to_bounding_box().t
+                    row_bottom = cell.rect.to_bounding_box().b
+                    row_height = cell.rect.to_bounding_box().height
 
-                return rows
+            if current_row:
+                rows.append(current_row)
 
-            def merge_row(row: List[TextCell]) -> List[TextCell]:
-                merged = []
-                current_group = [row[0]]
+            return rows
 
-                for cell in row[1:]:
-                    prev_cell = current_group[-1]
-                    avg_height = (
-                        prev_cell.rect.height + cell.rect.to_bounding_box().height
-                    ) / 2
-                    if (
-                        cell.rect.to_bounding_box().l
-                        - prev_cell.rect.to_bounding_box().r
-                        <= avg_height * horizontal_threshold_factor
-                    ):
-                        current_group.append(cell)
-                    else:
-                        merged.append(merge_group(current_group))
-                        current_group = [cell]
+        def merge_row(row: List[TextCell]) -> List[TextCell]:
+            merged = []
+            current_group = [row[0]]
 
-                if current_group:
+            for cell in row[1:]:
+                prev_cell = current_group[-1]
+                avg_height = (
+                    prev_cell.rect.height + cell.rect.to_bounding_box().height
+                ) / 2
+                if (
+                    cell.rect.to_bounding_box().l - prev_cell.rect.to_bounding_box().r
+                    <= avg_height * horizontal_threshold_factor
+                ):
+                    current_group.append(cell)
+                else:
                     merged.append(merge_group(current_group))
+                    current_group = [cell]
 
-                return merged
+            if current_group:
+                merged.append(merge_group(current_group))
 
-            def merge_group(group: List[TextCell]) -> TextCell:
-                if len(group) == 1:
-                    return group[0]
+            return merged
 
-                merged_bbox = BoundingBox(
-                    l=min(cell.rect.to_bounding_box().l for cell in group),
-                    t=min(cell.rect.to_bounding_box().t for cell in group),
-                    r=max(cell.rect.to_bounding_box().r for cell in group),
-                    b=max(cell.rect.to_bounding_box().b for cell in group),
-                )
+        def merge_group(group: List[TextCell]) -> TextCell:
+            if len(group) == 1:
+                return group[0]
 
-                assert self.text_page is not None
-                bbox = merged_bbox.to_bottom_left_origin(page_size.height)
-                with pypdfium2_lock:
-                    merged_text = self.text_page.get_text_bounded(*bbox.as_tuple())
+            merged_bbox = BoundingBox(
+                l=min(cell.rect.to_bounding_box().l for cell in group),
+                t=min(cell.rect.to_bounding_box().t for cell in group),
+                r=max(cell.rect.to_bounding_box().r for cell in group),
+                b=max(cell.rect.to_bounding_box().b for cell in group),
+            )
 
-                return TextCell(
-                    index=group[0].index,
-                    text=merged_text,
-                    orig=merged_text,
-                    rect=BoundingRectangle.from_bounding_box(merged_bbox),
-                    from_ocr=False,
-                )
+            assert self.text_page is not None
+            bbox = merged_bbox.to_bottom_left_origin(page_size.height)
+            with pypdfium2_lock:
+                merged_text = self.text_page.get_text_bounded(*bbox.as_tuple())
 
-            rows = group_rows(cells)
-            merged_cells = [cell for row in rows for cell in merge_row(row)]
+            return TextCell(
+                index=group[0].index,
+                text=merged_text,
+                orig=merged_text,
+                rect=BoundingRectangle.from_bounding_box(merged_bbox),
+                from_ocr=False,
+            )
 
-            for i, cell in enumerate(merged_cells, 1):
-                cell.index = i
+        rows = group_rows(cells)
+        merged_cells = [cell for row in rows for cell in merge_row(row)]
 
-            return merged_cells
+        for i, cell in enumerate(merged_cells, 1):
+            cell.index = i
 
-        return merge_horizontal_cells(cells)
+        return merged_cells
+
+    def _compute_text_cells(self) -> List[TextCell]:
+        """Compute textline-level text cells from pypdfium."""
+        # PyPdfium2 produces very fragmented cells, with sub-word level boundaries,
+        # in many PDFs. Merge them into textlines with a generous threshold.
+        return self._merge_cells(
+            self._get_raw_text_fragments(), horizontal_threshold_factor=1.0
+        )
+
+    def _compute_word_cells(self) -> List[TextCell]:
+        """Compute word-level text cells from pypdfium.
+
+        Uses a tight horizontal merge threshold so sub-word fragments are
+        combined within a word but adjacent words remain separate.
+        """
+        return self._merge_cells(
+            self._get_raw_text_fragments(), horizontal_threshold_factor=0.3
+        )
 
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         AREA_THRESHOLD = 0  # 32 * 32
@@ -335,18 +356,16 @@ class PyPdfiumPageBackend(ManagedPdfiumPageBackend):
             return None
 
         text_cells = self._compute_text_cells()
-
-        # Get the PDF page geometry from pypdfium2
+        word_cells = self._compute_word_cells() if self.create_word_cells else []
         dimension = get_pdf_page_geometry(self._require_page())
 
-        # Create SegmentedPdfPage
         return SegmentedPdfPage(
             dimension=dimension,
             textline_cells=text_cells,
             char_cells=[],
-            word_cells=[],
-            has_textlines=len(text_cells) > 0,
-            has_words=False,
+            word_cells=word_cells,
+            has_lines=len(text_cells) > 0,
+            has_words=len(word_cells) > 0,
             has_chars=False,
         )
 
@@ -433,7 +452,12 @@ class PyPdfiumDocumentBackend(ManagedPdfiumDocumentBackend):
 
     def load_page(self, page_no: int) -> PyPdfiumPageBackend:
         with pypdfium2_lock:
-            return PyPdfiumPageBackend(self._pdoc, self.document_hash, page_no)
+            return PyPdfiumPageBackend(
+                self._pdoc,
+                self.document_hash,
+                page_no,
+                create_word_cells=self.options.create_word_cells,
+            )
 
     def is_valid(self) -> bool:
         return self.page_count() > 0
