@@ -191,7 +191,7 @@ CHUNK_MERGE_PEERS = True
 CHUNK_TOKENIZER_TYPE = "char"        # "char"(문자 수) | "huggingface"(HF 토큰)
 
 # --- Enrichment (metadata only; TOC off) ---
-TOC_ENABLE = False                   # do_toc_enrichment
+TOC_ENABLE = True                   # do_toc_enrichment
 METADATA_ENABLE = True               # extract_metadata
 ENRICH_API_PROVIDER = "custom"
 
@@ -290,7 +290,7 @@ class GenosSmartChunker(BaseChunker):
         processed_refs = set()
 
         # 모든 아이템 순회
-        for item, level in dl_doc.iterate_items(included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}):
+        for item, level in dl_doc.iterate_items(included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}, traverse_pictures=True):
             if hasattr(item, 'self_ref'):
                 processed_refs.add(item.self_ref)
 

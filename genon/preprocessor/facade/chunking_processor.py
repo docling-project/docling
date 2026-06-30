@@ -870,7 +870,7 @@ class GenosSmartChunker(BaseChunker):
         processed_refs = set()
 
         # 모든 아이템 순회
-        for item, level in dl_doc.iterate_items(included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}):
+        for item, level in dl_doc.iterate_items(included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}, traverse_pictures=True):
             if hasattr(item, 'self_ref'):
                 processed_refs.add(item.self_ref)
 
