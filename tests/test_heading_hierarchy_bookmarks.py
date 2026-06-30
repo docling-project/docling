@@ -22,7 +22,7 @@ from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     _match_score,
 )
 from docling.utils.pdf_outline import (
-    PdfOutlineItem,
+    _PdfOutlineItem,
     extract_outline_from_pdfium,
     outline_from_docling_parse,
 )
@@ -92,9 +92,9 @@ def test_bookmark_promotes_listitem_and_sets_levels():
     doc.add_heading(text="Conclusion", prov=_prov(2, "Conclusion", 50))
 
     outline = [
-        PdfOutlineItem(title="Introduction", level=0, page_no=1),
-        PdfOutlineItem(title="Definitions", level=1, page_no=1),
-        PdfOutlineItem(title="Conclusion", level=0, page_no=2),
+        _PdfOutlineItem(title="Introduction", level=0, page_no=1),
+        _PdfOutlineItem(title="Definitions", level=1, page_no=1),
+        _PdfOutlineItem(title="Conclusion", level=0, page_no=2),
     ]
     _model().assign_heading_levels(doc, outline=outline)
 
@@ -119,8 +119,8 @@ def test_bookmark_overrides_numbering():
     doc.add_heading(text="1. Scope", prov=_prov(1, "1. Scope", 120))
 
     outline = [
-        PdfOutlineItem(title="Preamble", level=0, page_no=1),
-        PdfOutlineItem(title="Scope", level=1, page_no=1),
+        _PdfOutlineItem(title="Preamble", level=0, page_no=1),
+        _PdfOutlineItem(title="Scope", level=1, page_no=1),
     ]
     _model().assign_heading_levels(doc, outline=outline)
 
@@ -134,7 +134,7 @@ def test_unmatched_bookmark_falls_back_to_numbering():
     doc.add_heading(text="1. Scope", prov=_prov(1, "1. Scope", 40))
     doc.add_heading(text="1.1 Definitions", prov=_prov(1, "1.1 Definitions", 120))
 
-    outline = [PdfOutlineItem(title="Totally Unrelated Bookmark", level=0, page_no=1)]
+    outline = [_PdfOutlineItem(title="Totally Unrelated Bookmark", level=0, page_no=1)]
     _model().assign_heading_levels(doc, outline=outline)
 
     assert [h.level for h in doc.texts] == [1, 2]  # numbering still applies
@@ -147,7 +147,7 @@ def test_wrong_page_bookmark_does_not_match():
     doc.add_page(page_no=2, size=Size(width=600, height=800))
     doc.add_heading(text="Scope", prov=_prov(1, "Scope", 40))
 
-    outline = [PdfOutlineItem(title="Scope", level=0, page_no=2)]
+    outline = [_PdfOutlineItem(title="Scope", level=0, page_no=2)]
     _model().assign_heading_levels(doc, outline=outline)
 
     # No numbering, no style, no matched bookmark -> level unchanged.
@@ -161,8 +161,8 @@ def test_use_bookmarks_false_ignores_outline():
     doc.add_heading(text="Beta", prov=_prov(1, "Beta", 120))
 
     outline = [
-        PdfOutlineItem(title="Alpha", level=0, page_no=1),
-        PdfOutlineItem(title="Beta", level=1, page_no=1),
+        _PdfOutlineItem(title="Alpha", level=0, page_no=1),
+        _PdfOutlineItem(title="Beta", level=1, page_no=1),
     ]
     model = _model(use_numbering=False, use_bookmarks=False)
     model.assign_heading_levels(doc, outline=outline)
@@ -214,8 +214,8 @@ def test_call_reads_outline_from_conversion_result():
         document=doc,
         pages=[],
         pdf_outline=[
-            PdfOutlineItem(title="Alpha", level=0, page_no=1),
-            PdfOutlineItem(title="Beta", level=1, page_no=1),
+            _PdfOutlineItem(title="Alpha", level=0, page_no=1),
+            _PdfOutlineItem(title="Beta", level=1, page_no=1),
         ],
     )
 

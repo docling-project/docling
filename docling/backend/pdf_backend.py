@@ -12,7 +12,7 @@ from docling.backend.abstract_backend import PaginatedDocumentBackend
 from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
-from docling.utils.pdf_outline import PdfOutlineItem
+from docling.utils.pdf_outline import _PdfOutlineItem
 
 
 class PdfPageBackend(ABC):
@@ -87,7 +87,7 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
         for page_index in range(self.page_count()):
             yield self.load_page(page_index)
 
-    def get_document_outline(self) -> list[PdfOutlineItem]:
+    def get_document_outline(self) -> list[_PdfOutlineItem]:
         """Return the PDF bookmark / table-of-contents outline.
 
         A flat, document-ordered list where each entry carries its own depth (``level``). The

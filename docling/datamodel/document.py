@@ -71,7 +71,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.settings import DocumentLimits
 from docling.exceptions import DocumentLoadError
-from docling.utils.pdf_outline import PdfOutlineItem
+from docling.utils.pdf_outline import _PdfOutlineItem
 from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash, safe_version
 
@@ -567,7 +567,7 @@ class ConversionResult(ConversionAssets):
 
     # PDF bookmark/ToC outline, surfaced from the backend for the heading-hierarchy stage.
     # Transient: excluded from serialization so it never bloats the persisted output document.
-    pdf_outline: list[PdfOutlineItem] = Field(default_factory=list, exclude=True)
+    pdf_outline: list[_PdfOutlineItem] = Field(default_factory=list, exclude=True)
 
 
 class _DummyBackend(AbstractDocumentBackend):

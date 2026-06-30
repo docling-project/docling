@@ -36,7 +36,7 @@ from docling_core.types.doc.page import SegmentedPdfPage
 
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import HeadingHierarchyOptions
-from docling.utils.pdf_outline import PdfOutlineItem
+from docling.utils.pdf_outline import _PdfOutlineItem
 
 # Default precedence of numbering schemes, highest hierarchy level first. ``dotted`` shares
 # the ``arabic`` rank and is ordered below it by its segment depth (1.1 below 1.).
@@ -308,7 +308,7 @@ def _item_page_and_top(
 
 def _infer_from_bookmarks(
     document: DoclingDocument,
-    outline: list[PdfOutlineItem],
+    outline: list[_PdfOutlineItem],
     options: HeadingHierarchyOptions,
 ) -> dict[int, int]:
     """Match the PDF outline to detected headings/list-items and return authoritative levels.
@@ -424,7 +424,7 @@ class HeadingHierarchyModel:
         self,
         document: DoclingDocument,
         parsed_pages: dict[int, SegmentedPdfPage] | None = None,
-        outline: list[PdfOutlineItem] | None = None,
+        outline: list[_PdfOutlineItem] | None = None,
     ) -> DoclingDocument:
         """Assign heading levels in place from the configured signals.
 

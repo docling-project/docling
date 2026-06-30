@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 _log = logging.getLogger(__name__)
 
 
-class PdfOutlineItem(BaseModel):
+class _PdfOutlineItem(BaseModel):
     """A single PDF bookmark / table-of-contents entry (internal).
 
     Internal data-passing structure between a PDF backend's ``get_document_outline()`` and the
@@ -72,14 +72,14 @@ def _dest_top_pdf(dest: pdfium.PdfDest) -> tuple[int | None, float | None]:
     return page_index, y_pdf
 
 
-def extract_outline_from_pdfium(pdoc: pdfium.PdfDocument) -> list[PdfOutlineItem]:
-    """Extract the outline as a flat, document-ordered list of :class:`PdfOutlineItem`.
+def extract_outline_from_pdfium(pdoc: pdfium.PdfDocument) -> list[_PdfOutlineItem]:
+    """Extract the outline as a flat, document-ordered list of :class:`_PdfOutlineItem`.
 
     Vertical positions are converted to top-left origin (matching ``DocItem`` provenance) using
     the target page height. Returns an empty list when the document has no outline or it cannot
     be read.
     """
-    items: list[PdfOutlineItem] = []
+    items: list[_PdfOutlineItem] = []
     page_heights: dict[int, float] = {}
 
     with pypdfium2_lock:
@@ -112,7 +112,7 @@ def extract_outline_from_pdfium(pdoc: pdfium.PdfDocument) -> list[PdfOutlineItem
                         y_top = page_heights[page_index] - y_pdf
 
             items.append(
-                PdfOutlineItem(
+                _PdfOutlineItem(
                     title=title, level=int(bm.level), page_no=page_no, y_top=y_top
                 )
             )
@@ -122,8 +122,8 @@ def extract_outline_from_pdfium(pdoc: pdfium.PdfDocument) -> list[PdfOutlineItem
 
 def outline_from_docling_parse(
     dp_doc: DoclingParsePdfDocument,
-) -> list[PdfOutlineItem]:
-    """Flatten docling-parse's native table-of-contents into ordered ``PdfOutlineItem``\\ s.
+) -> list[_PdfOutlineItem]:
+    """Flatten docling-parse's native table-of-contents into ordered ``_PdfOutlineItem``\\ s.
 
     Walks the ``PdfTableOfContents`` tree returned by ``PdfDocument.get_table_of_contents()``,
     depth-first, assigning each node a 0-based ``level`` from its depth (top-level entries at
@@ -138,13 +138,13 @@ def outline_from_docling_parse(
     if toc is None:
         return []
 
-    items: list[PdfOutlineItem] = []
+    items: list[_PdfOutlineItem] = []
 
     def _walk(node: PdfTableOfContents, level: int) -> None:
         for child in node.children or []:
             title = (child.text or child.orig or "").strip()
             if title:
-                items.append(PdfOutlineItem(title=title, level=level))
+                items.append(_PdfOutlineItem(title=title, level=level))
             _walk(child, level + 1)
 
     _walk(toc, 0)

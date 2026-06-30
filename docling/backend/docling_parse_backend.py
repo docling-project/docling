@@ -34,7 +34,7 @@ from docling.datamodel.backend_options import (
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.exceptions import DocumentLoadError
 from docling.utils.locks import pypdfium2_lock
-from docling.utils.pdf_outline import PdfOutlineItem, outline_from_docling_parse
+from docling.utils.pdf_outline import _PdfOutlineItem, outline_from_docling_parse
 
 if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
@@ -329,7 +329,7 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
     def is_valid(self) -> bool:
         return self.page_count() > 0
 
-    def get_document_outline(self) -> list[PdfOutlineItem]:
+    def get_document_outline(self) -> list[_PdfOutlineItem]:
         """Extract the outline via docling-parse's native table-of-contents (no pypdfium2)."""
         if self.dp_doc is None:
             return []
@@ -515,7 +515,7 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
     def page_count(self) -> int:
         return self.parser.page_count(self.doc_key)
 
-    def get_document_outline(self) -> list[PdfOutlineItem]:
+    def get_document_outline(self) -> list[_PdfOutlineItem]:
         """Extract the outline via docling-parse (this backend holds no pypdfium2 handle).
 
         The threaded parser exposes no table-of-contents accessor, so a lightweight lazy
