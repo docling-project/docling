@@ -186,7 +186,7 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
                 and hh_opts.use_bookmarks
                 and isinstance(conv_res.input._backend, PdfDocumentBackend)
             ):
-                conv_res.pdf_outline = conv_res.input._backend.get_document_outline()
+                conv_res._pdf_outline = conv_res.input._backend.get_document_outline()
 
             conv_res.document = self.reading_order_model(conv_res)
             conv_res.document = self.heading_hierarchy_model(conv_res)

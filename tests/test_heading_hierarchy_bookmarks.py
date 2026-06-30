@@ -205,7 +205,8 @@ def test_extract_outline_from_generated_pdf(tmp_path):
 
 
 def test_call_reads_outline_from_conversion_result():
-    # __call__ must pull the outline off ConversionResult.pdf_outline and honor use_bookmarks.
+    # __call__ must pull the outline off ConversionResult._pdf_outline, honor use_bookmarks, and
+    # reset the transient outline to None once consumed.
     doc = DoclingDocument(name="t")
     doc.add_page(page_no=1, size=Size(width=600, height=800))
     doc.add_heading(text="Alpha", prov=_prov(1, "Alpha", 40))
@@ -213,7 +214,7 @@ def test_call_reads_outline_from_conversion_result():
     conv_res = SimpleNamespace(
         document=doc,
         pages=[],
-        pdf_outline=[
+        _pdf_outline=[
             _PdfOutlineItem(title="Alpha", level=0, page_no=1),
             _PdfOutlineItem(title="Beta", level=1, page_no=1),
         ],
@@ -229,6 +230,7 @@ def test_call_reads_outline_from_conversion_result():
         1,
         2,
     ]  # hierarchy comes solely from bookmarks
+    assert conv_res._pdf_outline is None  # released after consumption
 
 
 # --------------------------------------------------------------------- real PDF

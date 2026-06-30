@@ -778,7 +778,7 @@ class StandardPdfPipeline(ConvertPipeline):
         # backend is still open. Only extracted when bookmark inference is actually enabled.
         hh_opts = self.pipeline_options.heading_hierarchy_options
         if hh_opts.enabled and hh_opts.use_bookmarks:
-            conv_res.pdf_outline = backend.get_document_outline()
+            conv_res._pdf_outline = backend.get_document_outline()
 
         expected_page_nos = self._get_expected_page_nos(conv_res)
         if not expected_page_nos:

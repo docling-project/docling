@@ -415,10 +415,14 @@ class HeadingHierarchyModel:
                 for page in conv_res.pages
                 if page.parsed_page is not None
             }
-        outline = conv_res.pdf_outline if self.options.use_bookmarks else None
-        return self.assign_heading_levels(
-            document, parsed_pages=parsed_pages, outline=outline
-        )
+        outline = conv_res._pdf_outline if self.options.use_bookmarks else None
+        try:
+            return self.assign_heading_levels(
+                document, parsed_pages=parsed_pages, outline=outline
+            )
+        finally:
+            # Release the transient outline once consumed.
+            conv_res._pdf_outline = None
 
     def assign_heading_levels(
         self,

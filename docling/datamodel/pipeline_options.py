@@ -1559,7 +1559,7 @@ class HeadingHierarchyOptions(BaseModel):
     applies keep their current level.
 
     Notes:
-        - ``use_bookmarks`` reads the PDF outline surfaced on ``ConversionResult.pdf_outline``.
+        - ``use_bookmarks`` reads the PDF outline surfaced on ``ConversionResult._pdf_outline``.
           When a bookmark confidently matches a detected heading it is authoritative; entries
           that match nothing fall back to numbering/style, so partial/noisy outlines never
           degrade the numbering result.

@@ -566,8 +566,9 @@ class ConversionResult(ConversionAssets):
     assembled: AssembledUnit = AssembledUnit()
 
     # PDF bookmark/ToC outline, surfaced from the backend for the heading-hierarchy stage.
-    # Transient: excluded from serialization so it never bloats the persisted output document.
-    pdf_outline: list[_PdfOutlineItem] = Field(default_factory=list, exclude=True)
+    # Private transient plumbing: a Pydantic private attr (not a model field, never serialized);
+    # the heading stage resets it to None once consumed.
+    _pdf_outline: Optional[list[_PdfOutlineItem]] = PrivateAttr(default=None)
 
 
 class _DummyBackend(AbstractDocumentBackend):
