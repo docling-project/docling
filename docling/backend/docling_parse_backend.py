@@ -34,7 +34,10 @@ from docling.datamodel.backend_options import (
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.exceptions import DocumentLoadError
 from docling.utils.locks import pypdfium2_lock
-from docling.utils.pdf_outline import _PdfOutlineItem, outline_from_docling_parse
+from docling.utils.pdf_outline import (
+    _PdfOutlineItem,
+    extract_outline_from_docling_parse,
+)
 
 if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
@@ -333,7 +336,7 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
         """Extract the outline via docling-parse's native table-of-contents (no pypdfium2)."""
         if self.dp_doc is None:
             return []
-        return outline_from_docling_parse(self.dp_doc)
+        return extract_outline_from_docling_parse(self.dp_doc)
 
     def _close_native_document(self) -> None:
         if self.dp_doc is not None:
@@ -532,7 +535,7 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         if dp_doc is None:
             return []
         try:
-            return outline_from_docling_parse(dp_doc)
+            return extract_outline_from_docling_parse(dp_doc)
         finally:
             dp_doc.unload()
 

@@ -23,8 +23,8 @@ from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
 )
 from docling.utils.pdf_outline import (
     _PdfOutlineItem,
+    extract_outline_from_docling_parse,
     extract_outline_from_pdfium,
-    outline_from_docling_parse,
 )
 
 SAMPLE_PDF = Path("./tests/data/pdf/bookmark_sample.pdf")
@@ -270,7 +270,7 @@ def test_docling_parse_native_outline_from_sample_pdf():
 
     dp_doc = DoclingPdfParser(loglevel="fatal").load(str(SAMPLE_PDF))
     try:
-        outline = outline_from_docling_parse(dp_doc)
+        outline = extract_outline_from_docling_parse(dp_doc)
     finally:
         dp_doc.unload()
 
@@ -296,6 +296,6 @@ def test_outline_empty_for_pdf_without_bookmarks(tmp_path):
 
     dp_doc = DoclingPdfParser(loglevel="fatal").load(str(path))
     try:
-        assert outline_from_docling_parse(dp_doc) == []
+        assert extract_outline_from_docling_parse(dp_doc) == []
     finally:
         dp_doc.unload()

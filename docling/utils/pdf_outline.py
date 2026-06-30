@@ -5,7 +5,7 @@ extractors are provided so each backend uses its own native capability:
 
 * :func:`extract_outline_from_pdfium` -- for the pypdfium2 backend. Returns the richest data:
   title, depth, target page and vertical position.
-* :func:`outline_from_docling_parse` -- for the docling-parse backends, using their native
+* :func:`extract_outline_from_docling_parse` -- for the docling-parse backends, using their native
   ``get_table_of_contents()`` (no pypdfium2 dependency). The native outline carries titles and
   hierarchy only, so page number and position are left unset.
 """
@@ -120,7 +120,7 @@ def extract_outline_from_pdfium(pdoc: pdfium.PdfDocument) -> list[_PdfOutlineIte
     return items
 
 
-def outline_from_docling_parse(
+def extract_outline_from_docling_parse(
     dp_doc: DoclingParsePdfDocument,
 ) -> list[_PdfOutlineItem]:
     """Flatten docling-parse's native table-of-contents into ordered ``_PdfOutlineItem``\\ s.
