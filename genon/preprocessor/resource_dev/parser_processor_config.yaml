@@ -168,3 +168,13 @@ whisper:
   timestamp_granularities: "word"
   chunk_sec: 29
   chunk_overlap_ms: 300  # 청크 간 겹침(ms). 전사 경계 품질 노브. 기본 300
+
+# 엑셀(xlsx/xlsm)·csv 처리 (이슈 #288). 출력은 parse-JSON(시트당 HTML 표) 유지.
+xlsx:
+  # tabular(기본): openpyxl 로 병합셀 unmerge+forward-fill 후 시트→HTML 표(병합 헤더 보존).
+  # docling: docling MsExcel/Csv 백엔드로 DoclingDocument 생성 후 parse-JSON 직렬화.
+  processing_mode: "tabular"
+  # 헤더 행(0-based). 상단에 병합 제목행이 있으면 1 등으로 조정.
+  header_row: 0
+  # csv 인코딩. 비우면 chardet 자동감지 후 utf-8 폴백.
+  encoding: ""

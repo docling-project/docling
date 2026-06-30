@@ -947,6 +947,10 @@ def _resolve_default_intelligent_config_path() -> str:
 _DEFAULT_TOKENIZER_LOCAL_PATH = "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
 _DEFAULT_TOKENIZER_ID = "sentence-transformers/all-MiniLM-L6-v2"
 
+# PDF 변환에서 제외(직접 처리)할 엑셀 계열 포맷(이슈 #288).
+# PDF 변환 시 한 행이 페이지 경계로 쪼개지는 논리 오류가 생기므로 변환하지 않고 직접 처리한다.
+_XLSX_DIRECT_EXTS = {".xlsx", ".xlsm"}
+
 
 def _resolve_tokenizer(chunking_cfg: dict):
     """chunking config 로부터 토크나이저를 결정한다.
@@ -1984,6 +1988,23 @@ class DocumentProcessor:
         # 청크 최대 크기(GenosSmartChunker.max_tokens) 기본값. kwargs 의 chunk_size 가 우선.
         self._chunk_size = _parse_optional_int(chunking_cfg.get("chunk_size"), "chunking.chunk_size")
 
+        # xlsx(엑셀) 직접 처리 설정(이슈 #288). PDF 변환 없이 xlsx 를 처리해 행 분할 버그 방지.
+        #   processing_mode: docling(기본)=MsExcel 백엔드로 DoclingDocument 후 기존 파이프라인 /
+        #                    tabular=데이터 행마다 1청크 + 컬럼 헤더→메타(병합셀 unmerge+ffill)
+        xlsx_cfg = _as_dict(cfg.get("xlsx"))
+        xlsx_mode = str(xlsx_cfg.get("processing_mode", "docling")).strip().lower()
+        if xlsx_mode not in {"docling", "tabular"}:
+            _log.warning(
+                f"[DocumentProcessor] Unknown xlsx.processing_mode '{xlsx_mode}', fallback to 'docling'."
+            )
+            xlsx_mode = "docling"
+        self._xlsx_cfg = {
+            "processing_mode": xlsx_mode,
+            "header_row": _parse_optional_int(xlsx_cfg.get("header_row"), "xlsx.header_row") or 0,
+            "encoding": (str(xlsx_cfg.get("encoding")).strip() or None),
+            "intercept_csv": bool(_parse_optional_bool(xlsx_cfg.get("intercept_csv"), "xlsx.intercept_csv")),
+        }
+
         # OCR 엔드포인트는 ocr.paddle.ocr_endpoint 가 정식 위치.
         # 구버전 호환: ocr.ocr_endpoint(상위) / 최상위 ocr_endpoint 도 폴백으로 인식.
         paddle_cfg = _as_dict(ocr_cfg.get("paddle"))
@@ -2901,65 +2922,96 @@ class DocumentProcessor:
         # root logger level 적용
         logging.getLogger().setLevel(level)
 
-    async def __call__(self, request: Request, file_path: str, **kwargs: dict):
-        runtime_level = kwargs.get('log_level')
-        self.setup_logging(runtime_level if runtime_level is not None else self._log_level)
-
-        _log.info(f"file_path: {file_path}")
-        _log.info(f"kwargs: {kwargs}")
-
-        # 비정상 파일 사전 감지(이슈 #278): 지원 포맷 매직헤더에 하나도 안 맞고 텍스트도
-        # 아니면(=DRM 암호화/손상 바이너리) 변환 시 garbage PDF → VLM 무한 출력/행을
-        # 유발하므로 변환 전에 컷한다. 확장자와 무관하게 실제 헤더로 판정.
-        bad_reason = _detect_unsupported_file(file_path)
-        if bad_reason:
-            _log.warning(
-                f"[intelligent] 비정상 파일 감지({bad_reason}) — 처리 중단: {file_path}"
-            )
+    def _convert_to_pdf(self, file_path: str, **kwargs: dict) -> tuple[str, str]:
+        """비-PDF 입력을 PDF SDK/LibreOffice 로 변환. (변환된 file_path, converted_pdf_path) 반환."""
+        # 변환 backend(pdf_sdk/rhwp/libreoffice)가 전무하면(이슈 #286 — 빌드 시 OFF)
+        # 변환 시도 자체가 무의미하므로, PDF 직접 입력을 안내하며 즉시 중단한다.
+        if not _has_any_pdf_converter():
             raise GenosServiceException(
-                1, f"{bad_reason} 입니다. 정상 문서로 다시 업로드하세요: {os.path.basename(file_path)}"
+                1,
+                f"이 전처리기 이미지에는 PDF 변환기(rhwp/LibreOffice/PDF SDK)가 설치되어 "
+                f"있지 않아 '{os.path.basename(file_path)}' 를 PDF 로 변환할 수 없습니다. "
+                f"PDF 로 변환한 파일을 입력하거나, 변환기를 포함해 전처리기 이미지를 다시 "
+                f"빌드하세요 (genon/README.md 참고).",
             )
+        _log.info(f"[intelligent] Non-PDF input — auto-converting to PDF: {file_path}")
+        use_sdk = kwargs.get('use_pdf_sdk', True)
+        converted = convert_to_pdf(file_path, use_pdf_sdk=use_sdk)
+        if (not converted or not os.path.exists(converted)) and use_sdk:
+            _log.warning(f"[intelligent] SDK conversion failed → fallback to LibreOffice")
+            converted = convert_to_pdf(file_path, use_pdf_sdk=False)
+        if not converted or not os.path.exists(converted):
+            raise GenosServiceException(1, f"PDF 변환 실패: {file_path}")
+        _log.info(f"[intelligent] Converted PDF: {converted}")
+        return converted, converted
 
-        # 입력이 PDF가 아닐 때 동작:
-        # - auto_convert_to_pdf=True (default): PDF SDK/LibreOffice 로 자동 변환 후 진입
-        # - auto_convert_to_pdf=False: 변환 없이 그대로 진행 (변경 전 동작; PDF 가정)
-        converted_pdf_path: Optional[str] = None
-        if kwargs.get('auto_convert_to_pdf', True) and not _is_pdf(file_path):
-            # 변환 backend(pdf_sdk/rhwp/libreoffice)가 전무하면(이슈 #286 — 빌드 시 OFF)
-            # 변환 시도 자체가 무의미하므로, PDF 직접 입력을 안내하며 즉시 중단한다.
-            if not _has_any_pdf_converter():
-                raise GenosServiceException(
-                    1,
-                    f"이 전처리기 이미지에는 PDF 변환기(rhwp/LibreOffice/PDF SDK)가 설치되어 "
-                    f"있지 않아 '{os.path.basename(file_path)}' 를 PDF 로 변환할 수 없습니다. "
-                    f"PDF 로 변환한 파일을 입력하거나, 변환기를 포함해 전처리기 이미지를 다시 "
-                    f"빌드하세요 (genon/README.md 참고).",
-                )
-            _log.info(f"[intelligent] Non-PDF input — auto-converting to PDF: {file_path}")
-            use_sdk = kwargs.get('use_pdf_sdk', True)
-            converted = convert_to_pdf(file_path, use_pdf_sdk=use_sdk)
-            if (not converted or not os.path.exists(converted)) and use_sdk:
-                _log.warning(f"[intelligent] SDK conversion failed → fallback to LibreOffice")
-                converted = convert_to_pdf(file_path, use_pdf_sdk=False)
-            if not converted or not os.path.exists(converted):
-                raise GenosServiceException(1, f"PDF 변환 실패: {file_path}")
-            file_path = converted
-            converted_pdf_path = converted
-            _log.info(f"[intelligent] Converted PDF: {file_path}")
+    async def _process_xlsx(self, request: Request, file_path: str, **kwargs: dict):
+        """xlsx/csv 직접 처리(이슈 #288): PDF 변환 없이 처리해 행 분할 버그 방지.
+          - tabular: 데이터 행마다 1청크(벡터)로 만들어 즉시 반환
+          - docling(기본): MsExcel 백엔드로 DoclingDocument 생성 후 공유 파이프라인으로 합류
+        """
+        from genon.preprocessor.converters.xlsx_processor import (
+            build_docling_document,
+            build_tabular_vectors,
+        )
+        if self._xlsx_cfg["processing_mode"] == "tabular":
+            _log.info(f"[intelligent] xlsx tabular 직접 처리: {file_path}")
+            vectors = build_tabular_vectors(
+                file_path,
+                header_row=self._xlsx_cfg["header_row"],
+                encoding=self._xlsx_cfg["encoding"],
+            )
+            if not vectors:
+                raise GenosServiceException(1, f"chunk length is 0")
+            return vectors
 
-        # ocr_mode: "force"=무조건 전체 OCR / "auto"=휴리스틱 기반 재OCR / "disable"=OCR 안 함
+        _log.info(f"[intelligent] xlsx docling 직접 처리(PDF 변환 생략): {file_path}")
+        try:
+            document = build_docling_document(
+                file_path, save_images=kwargs.get('save_images', False)
+            )
+        except Exception as e:
+            raise GenosServiceException(
+                1, f"xlsx 처리 실패: {os.path.basename(file_path)} ({e})"
+            )
+        # openpyxl 텍스트라 글리프 깨짐이 없고 렌더 PDF 도 없으므로 테이블셀 재OCR 은 생략.
+        return await self._document_to_vectors(
+            document, file_path, request,
+            converted_pdf_path=None, ocr_table_cells=False, **kwargs
+        )
+
+    async def _process_pdf(self, request: Request, file_path: str,
+                           converted_pdf_path: Optional[str], **kwargs: dict):
+        """PDF(또는 PDF 로 변환된) 입력을 docling 으로 로딩 후 공유 파이프라인으로 처리."""
+        document = self._load_document(file_path, **kwargs)
+        return await self._document_to_vectors(
+            document, file_path, request,
+            converted_pdf_path=converted_pdf_path, ocr_table_cells=True, **kwargs
+        )
+
+    def _load_document(self, file_path: str, **kwargs: dict) -> DoclingDocument:
+        """ocr_mode 에 따라 docling 문서를 로딩한다.
+        "force"=무조건 전체 OCR / "auto"=휴리스틱 기반 재OCR / "disable"=OCR 안 함
+        """
         if self.ocr_mode == "force":
-            document: DoclingDocument = self.load_documents_with_docling_ocr(file_path, **kwargs)
-        else:
-            document: DoclingDocument = self.load_documents(file_path, **kwargs)
-            if self.ocr_mode == "auto":
-                if not check_document(document, self.enrichment_options) or self.check_glyphs(document) or self.check_empty_text(document):
-                    # OCR이 필요하다고 판단되면 OCR 수행
-                    document: DoclingDocument = self.load_documents_with_docling_ocr(file_path, **kwargs)
+            return self.load_documents_with_docling_ocr(file_path, **kwargs)
+        document: DoclingDocument = self.load_documents(file_path, **kwargs)
+        if self.ocr_mode == "auto":
+            if not check_document(document, self.enrichment_options) or self.check_glyphs(document) or self.check_empty_text(document):
+                # OCR이 필요하다고 판단되면 OCR 수행
+                document = self.load_documents_with_docling_ocr(file_path, **kwargs)
+        return document
 
+    async def _document_to_vectors(self, document: DoclingDocument, file_path: str,
+                                   request: Request, *, converted_pdf_path: Optional[str],
+                                   ocr_table_cells: bool, **kwargs: dict) -> list:
+        """DoclingDocument → enrichment → 청킹 → 벡터 생성(공유 파이프라인).
+
+        ocr_table_cells: 글리프 깨진 테이블 셀 재OCR 수행 여부(xlsx 직접 처리는 False).
+        """
         # 글리프 깨진 텍스트가 있는 테이블에 대해서만 OCR 수행 (청크토큰 8k이상 발생 방지)
-        if self.ocr_mode != "disable" and self.ocr_endpoint:
-            document: DoclingDocument = self.ocr_all_table_cells(document, file_path)
+        if ocr_table_cells and self.ocr_mode != "disable" and self.ocr_endpoint:
+            document = self.ocr_all_table_cells(document, file_path)
 
         output_path, output_file = os.path.split(file_path)
         filename, _ = os.path.splitext(output_file)
@@ -3071,6 +3123,48 @@ class DocumentProcessor:
         """
 
         return vectors
+
+    async def __call__(self, request: Request, file_path: str, **kwargs: dict):
+        runtime_level = kwargs.get('log_level')
+        self.setup_logging(runtime_level if runtime_level is not None else self._log_level)
+
+        _log.info(f"file_path: {file_path}")
+        _log.info(f"kwargs: {kwargs}")
+
+        # 비정상 파일 사전 감지(이슈 #278): 지원 포맷 매직헤더에 하나도 안 맞고 텍스트도
+        # 아니면(=DRM 암호화/손상 바이너리) 변환 시 garbage PDF → VLM 무한 출력/행을
+        # 유발하므로 변환 전에 컷한다. 확장자와 무관하게 실제 헤더로 판정.
+        bad_reason = _detect_unsupported_file(file_path)
+        if bad_reason:
+            _log.warning(
+                f"[intelligent] 비정상 파일 감지({bad_reason}) — 처리 중단: {file_path}"
+            )
+            raise GenosServiceException(
+                1, f"{bad_reason} 입니다. 정상 문서로 다시 업로드하세요: {os.path.basename(file_path)}"
+            )
+
+        ext = os.path.splitext(file_path)[1].lower()
+
+        # 직접 처리(PDF 변환 없이) 가능한 포맷을 명시적으로 지정한다(이슈 #288).
+        # openpyxl/docling 기반이라 .xlsx/.xlsm 만 지원하며, csv 는 intercept_csv 옵션이 켜졌을
+        # 때만 직접 처리한다. (.xls/.xlsb 는 미지원 → 아래 PDF 변환 경로로 처리)
+        # 이 집합을 변환 가드와 디스패치 양쪽에서 동일하게 써서 "직접 처리 포맷 == 변환 제외 포맷"
+        # 불변식을 유지한다.
+        xlsx_direct_exts = set(_XLSX_DIRECT_EXTS)
+        if self._xlsx_cfg["intercept_csv"]:
+            xlsx_direct_exts.add(".csv")
+
+        # 직접 처리 포맷이 아니고 PDF 도 아니면 PDF 로 변환한다.
+        # - auto_convert_to_pdf=True (default): PDF SDK/LibreOffice 로 자동 변환 후 진입
+        # - auto_convert_to_pdf=False: 변환 없이 그대로 진행 (변경 전 동작; PDF 가정)
+        converted_pdf_path: Optional[str] = None
+        if ext not in xlsx_direct_exts and kwargs.get('auto_convert_to_pdf', True) and not _is_pdf(file_path):
+            file_path, converted_pdf_path = self._convert_to_pdf(file_path, **kwargs)
+
+        # 포맷별 처리: 직접 처리 가능 포맷은 xlsx 핸들러, 그 외는 PDF(docling) 처리.
+        if ext in xlsx_direct_exts:
+            return await self._process_xlsx(request, file_path, **kwargs)
+        return await self._process_pdf(request, file_path, converted_pdf_path, **kwargs)
 
 
 class GenosServiceException(Exception):

@@ -772,6 +772,11 @@ def _resolve_default_convert_config_path() -> str:
 _DEFAULT_TOKENIZER_LOCAL_PATH = "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
 _DEFAULT_TOKENIZER_ID = "sentence-transformers/all-MiniLM-L6-v2"
 
+# tabular 모드로 직접 처리(행=벡터)할 엑셀 계열 포맷(이슈 #288).
+# docling 모드(기본)에서는 xlsx 가 self.converter 의 docling 기본 백엔드(MsExcel)로 처리되므로
+# 별도 인터셉트 없이 기존 경로를 그대로 탄다.
+_XLSX_DIRECT_EXTS = {".xlsx", ".xlsm"}
+
 
 def _resolve_tokenizer(chunking_cfg: dict):
     """chunking config 로부터 토크나이저를 결정한다.
@@ -1862,6 +1867,23 @@ class DocumentProcessor:
         # 청크 최대 크기(GenosSmartChunker.max_tokens) 기본값. kwargs 의 chunk_size 가 우선.
         self._chunk_size = _parse_optional_int(chunking_cfg.get("chunk_size"), "chunking.chunk_size")
 
+        # xlsx(엑셀) 처리 설정(이슈 #288).
+        #   docling(기본): xlsx 를 docling MsExcel 백엔드로 처리(현행) → 기존 청킹/벡터 파이프라인.
+        #   tabular: 데이터 행마다 1청크(벡터) + 컬럼 헤더→메타(병합셀 unmerge+forward-fill).
+        xlsx_cfg = _as_dict(cfg.get("xlsx"))
+        xlsx_mode = str(xlsx_cfg.get("processing_mode", "docling")).strip().lower()
+        if xlsx_mode not in {"docling", "tabular"}:
+            _log.warning(
+                f"[DocumentProcessor] Unknown xlsx.processing_mode '{xlsx_mode}', fallback to 'docling'."
+            )
+            xlsx_mode = "docling"
+        self._xlsx_cfg = {
+            "processing_mode": xlsx_mode,
+            "header_row": _parse_optional_int(xlsx_cfg.get("header_row"), "xlsx.header_row") or 0,
+            "encoding": (str(xlsx_cfg.get("encoding")).strip() or None),
+            "intercept_csv": bool(_parse_optional_bool(xlsx_cfg.get("intercept_csv"), "xlsx.intercept_csv")),
+        }
+
         # OCR 엔드포인트는 ocr.paddle.ocr_endpoint 가 정식 위치.
         # 구버전 호환: ocr.ocr_endpoint(상위) / 최상위 ocr_endpoint 도 폴백으로 인식.
         paddle_cfg = _as_dict(ocr_cfg.get("paddle"))
@@ -2915,6 +2937,168 @@ class DocumentProcessor:
         # root logger level 적용
         logging.getLogger().setLevel(level)
 
+    async def _process_request(self, request: Request, file_path: str, **kwargs: dict):
+        runtime_level = kwargs.get('log_level')
+        self.setup_logging(runtime_level if runtime_level is not None else self._log_level)
+
+        _log.info(f"file_path: {file_path}")
+        _log.info(f"kwargs: {kwargs}")
+
+        ext = Path(file_path).suffix.lower()
+
+        # 직접 처리 가능한 엑셀 계열 포맷(이슈 #288). csv 는 intercept_csv 옵션 시 포함.
+        xlsx_direct_exts = set(_XLSX_DIRECT_EXTS)
+        if self._xlsx_cfg["intercept_csv"]:
+            xlsx_direct_exts.add(".csv")
+
+        # 포맷별 처리: 엑셀 계열은 직접 처리, ppt 는 langchain, 그 외는 docling.
+        if ext in xlsx_direct_exts:
+            return await self._process_xlsx(request, file_path, **kwargs)
+        if ext == ".ppt":
+            return await self._process_ppt(request, file_path, **kwargs)
+        return await self._process_docling(request, file_path, **kwargs)
+
+    async def _process_xlsx(self, request: Request, file_path: str, **kwargs: dict):
+        """xlsx/csv 직접 처리(이슈 #288): PDF 변환 없이 처리해 행 분할 버그 방지.
+          - tabular: 데이터 행마다 1청크(벡터)로 만들어 즉시 반환
+          - docling(기본): MsExcel 백엔드로 DoclingDocument 생성 후 공유 파이프라인으로 합류
+        """
+        from genon.preprocessor.converters.xlsx_processor import (
+            build_docling_document,
+            build_tabular_vectors,
+        )
+        if self._xlsx_cfg["processing_mode"] == "tabular":
+            _log.info(f"[DocumentProcessor] xlsx tabular 직접 처리: {file_path}")
+            vectors = build_tabular_vectors(
+                file_path,
+                header_row=self._xlsx_cfg["header_row"],
+                encoding=self._xlsx_cfg["encoding"],
+            )
+            if not vectors:
+                raise GenosServiceException("1", f"chunk length is 0")
+            return vectors
+
+        _log.info(f"[DocumentProcessor] xlsx docling 직접 처리: {file_path}")
+        try:
+            document = build_docling_document(
+                file_path, save_images=kwargs.get('save_images', False)
+            )
+        except Exception as e:
+            raise GenosServiceException(
+                "1", f"xlsx 처리 실패: {os.path.basename(file_path)} ({e})"
+            )
+        # openpyxl 텍스트라 글리프 깨짐이 없고 렌더 PDF 도 없으므로 테이블셀 재OCR 은 생략.
+        return await self._document_to_vectors(
+            document, file_path, request, ocr_table_cells=False, **kwargs
+        )
+
+    async def _process_ppt(self, request: Request, file_path: str, **kwargs: dict):
+        """PPT(.ppt)는 langchain 로더로 처리하고 페이지 이미지 메타를 부착한다."""
+        documents = self.load_documents_langchain(file_path, **kwargs)
+        chunks = self.split_documents_langchain(documents, **kwargs)
+
+        pdf_path = _get_pdf_path(file_path)
+        page_image_meta = {}
+        try:
+            page_image_meta = await self._extract_page_images(pdf_path, request)
+        except:
+            pass
+
+        vectors = self.compose_vectors_langchain(chunks, file_path, **kwargs)
+        for v in vectors:
+            if v.i_page in page_image_meta:
+                v.media_files = json.dumps(page_image_meta[v.i_page], ensure_ascii=False)
+            else:
+                v.media_files = json.dumps([])
+        return vectors
+
+    async def _process_docling(self, request: Request, file_path: str, **kwargs: dict):
+        """PDF/DOCX/PPTX/HWP/기타를 docling 으로 로딩 후 공유 파이프라인으로 처리."""
+        ext = Path(file_path).suffix.lower()
+        document = self._load_document(file_path, **kwargs)
+
+        # DOCX/PPTX 는 미리보기용 PDF 아티팩트를 생성한다(부수효과; 처리 결과엔 미사용).
+        if ext in ['.docx', '.pptx']:
+            convert_to_pdf(file_path, use_pdf_sdk=kwargs.get('use_pdf_sdk', True))
+
+        return await self._document_to_vectors(
+            document, file_path, request, ocr_table_cells=(ext == '.pdf'), **kwargs
+        )
+
+    def _load_document(self, file_path: str, **kwargs: dict) -> DoclingDocument:
+        """docling 문서 로딩. pdf 는 ocr_mode 분기, 그 외 포맷은 기본 백엔드로 로딩한다.
+        ocr_mode: "force"=무조건 전체 OCR / "auto"=휴리스틱 기반 재OCR / "disable"=OCR 안 함
+        """
+        ext = Path(file_path).suffix.lower()
+        if ext != '.pdf':
+            return self.load_documents(file_path, **kwargs)
+
+        if self.ocr_mode == "force":
+            return self.load_documents_with_docling_ocr(file_path, **kwargs)
+        document: DoclingDocument = self.load_documents(file_path, **kwargs)
+        if self.ocr_mode == "auto":
+            if not check_document(document, self.enrichment_options) or self.check_glyphs(document):
+                # OCR이 필요하다고 판단되면 OCR 수행
+                document = self.load_documents_with_docling_ocr(file_path, **kwargs)
+        return document
+
+    async def _document_to_vectors(self, document: DoclingDocument, file_path: str,
+                                   request: Request, *, ocr_table_cells: bool, **kwargs: dict) -> list:
+        """DoclingDocument → enrichment → 청킹 → 벡터 생성(공유 파이프라인).
+
+        ocr_table_cells: 글리프 깨진 테이블 셀 재OCR 수행 여부(pdf 만 True).
+        """
+        # 글리프 깨진 텍스트가 있는 테이블에 대해서만 OCR 수행 (청크토큰 8k이상 발생 방지)
+        if ocr_table_cells and self.ocr_mode != "disable" and self.ocr_endpoint:
+            document = self.ocr_all_table_cells(document, file_path)
+
+        output_path, output_file = os.path.split(file_path)
+        filename, _ = os.path.splitext(output_file)
+        artifacts_dir = Path(f"{output_path}/{filename}")
+        if artifacts_dir.is_absolute():
+            reference_path = None
+        else:
+            reference_path = artifacts_dir.parent
+
+        document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
+
+        # 표 이미지 저장 옵션이 켜진 경우, picture 와 동일하게 표 영역을 PNG 로 저장하고
+        # TableItem.image.uri 를 설정한다(_with_pictures_refs 미러).
+        if self.table_image_enabled:
+            self._save_table_images(document, image_dir=artifacts_dir, reference_path=reference_path)
+
+        document = self.enrichment(document, **kwargs)
+        enrichment_kwargs = dict(kwargs)
+        enrichment_kwargs["_enrichment_context"] = {}
+        try:
+            document = self.enrich_image_descriptions(document, **enrichment_kwargs)
+        except Exception as exc:
+            _log.warning(f"[DocumentProcessor] facade image enrichment skipped: {exc}")
+        try:
+            document = await self.enrich_metadata(document, **enrichment_kwargs)
+        except Exception as exc:
+            _log.warning(f"[DocumentProcessor] metadata enrichment skipped: {exc}")
+        try:
+            document = await self.enrich_custom_fields(document, **enrichment_kwargs)
+        except Exception as exc:
+            _log.warning(f"[DocumentProcessor] custom_fields enrichment skipped: {exc}")
+
+        # Extract Chunk from DoclingDocument
+        chunks: List[DocChunk] = self.split_documents(document, **kwargs)
+
+        if len(chunks) >= 1:
+            vectors: list[dict] = await self.compose_vectors(
+                document,
+                chunks,
+                file_path,
+                request,
+                **enrichment_kwargs,
+            )
+        else:
+            raise GenosServiceException("1", f"chunk length is 0")
+
+        return vectors
+
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
         # HWP/HWPX: docling(SDK + 레거시 백엔드) 처리가 전체 실패하면 PDF 변환으로 최종 폴백한다.
         # attachment_processor.DocumentProcessor.__call__ 의 PDF 폴백과 동일 취지 —
@@ -2932,127 +3116,6 @@ class DocumentProcessor:
                     return await self._process_request(request, converted, **kwargs)
                 raise hwp_err
         return await self._process_request(request, file_path, **kwargs)
-
-    async def _process_request(self, request: Request, file_path: str, **kwargs: dict):
-        runtime_level = kwargs.get('log_level')
-        self.setup_logging(runtime_level if runtime_level is not None else self._log_level)
-
-        _log.info(f"file_path: {file_path}")
-        _log.info(f"kwargs: {kwargs}")
-
-        ext = Path(file_path).suffix.lower()
-        enrichment_context: dict[str, Any] = {}
-
-        # PPT 파일은 langchain으로 처리
-        if ext in ['.ppt']:
-            documents = self.load_documents_langchain(file_path, **kwargs)
-            # await assert_cancelled(request)
-
-            chunks = self.split_documents_langchain(documents, **kwargs)
-            # await assert_cancelled(request)
-
-            pdf_path = _get_pdf_path(file_path)
-            page_image_meta = {}
-            try:
-                page_image_meta = await self._extract_page_images(pdf_path, request)
-            except:
-                pass
-            # await assert_cancelled(request)
-
-            vectors = self.compose_vectors_langchain(chunks, file_path, **kwargs)
-
-            for v in vectors:
-                if v.i_page in page_image_meta:
-                    v.media_files = json.dumps(page_image_meta[v.i_page], ensure_ascii=False)
-                else:
-                    v.media_files = json.dumps([])
-
-            return vectors
-
-        # 기존 docling 처리 (PDF, DOCX 등)
-        else:
-            if ext in ['.pdf']:
-                # ocr_mode: "force"=무조건 전체 OCR / "auto"=휴리스틱 기반 재OCR / "disable"=OCR 안 함
-                if self.ocr_mode == "force":
-                    document: DoclingDocument = self.load_documents_with_docling_ocr(file_path, **kwargs)
-                else:
-                    document: DoclingDocument = self.load_documents(file_path, **kwargs)
-                    if self.ocr_mode == "auto":
-                        if not check_document(document, self.enrichment_options) or self.check_glyphs(document):
-                            # OCR이 필요하다고 판단되면 OCR 수행
-                            document: DoclingDocument = self.load_documents_with_docling_ocr(file_path, **kwargs)
-                # 글리프 깨진 텍스트가 있는 테이블에 대해서만 OCR 수행 (청크토큰 8k이상 발생 방지)
-                if self.ocr_mode != "disable" and self.ocr_endpoint:
-                    document: DoclingDocument = self.ocr_all_table_cells(document, file_path)
-            else:
-                document: DoclingDocument = self.load_documents(file_path, **kwargs)
-
-            # DOCX 파일만 PDF로 변환 (PPT는 위에서 처리됨)
-            if ext in ['.docx','.pptx']:
-                convert_to_pdf(file_path, use_pdf_sdk=kwargs.get('use_pdf_sdk', True))
-
-            output_path, output_file = os.path.split(file_path)
-            filename, _ = os.path.splitext(output_file)
-            artifacts_dir = Path(f"{output_path}/{filename}")
-            if artifacts_dir.is_absolute():
-                reference_path = None
-            else:
-                reference_path = artifacts_dir.parent
-
-            document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
-
-            # 표 이미지 저장 옵션이 켜진 경우, picture 와 동일하게 표 영역을 PNG 로 저장하고
-            # TableItem.image.uri 를 설정한다(_with_pictures_refs 미러).
-            if self.table_image_enabled:
-                self._save_table_images(document, image_dir=artifacts_dir, reference_path=reference_path)
-
-            document = self.enrichment(document, **kwargs)
-            enrichment_kwargs = dict(kwargs)
-            enrichment_kwargs["_enrichment_context"] = enrichment_context
-            try:
-                document = self.enrich_image_descriptions(document, **enrichment_kwargs)
-            except Exception as exc:
-                _log.warning(f"[DocumentProcessor] facade image enrichment skipped: {exc}")
-            try:
-                document = await self.enrich_metadata(document, **enrichment_kwargs)
-            except Exception as exc:
-                _log.warning(f"[DocumentProcessor] metadata enrichment skipped: {exc}")
-            try:
-                document = await self.enrich_custom_fields(document, **enrichment_kwargs)
-            except Exception as exc:
-                _log.warning(f"[DocumentProcessor] custom_fields enrichment skipped: {exc}")
-
-            # Extract Chunk from DoclingDocument
-            chunks: List[DocChunk] = self.split_documents(document, **kwargs)
-            # await assert_cancelled(request)
-
-            vectors = []
-            if len(chunks) >= 1:
-                vectors: list[dict] = await self.compose_vectors(
-                    document,
-                    chunks,
-                    file_path,
-                    request,
-                    **enrichment_kwargs,
-                )
-            else:
-                raise GenosServiceException("1", f"chunk length is 0")
-
-            """
-            # 미디어 파일 업로드 방법
-            media_files = [
-                { 'path': '/tmp/graph.jpg', 'name': 'graph.jpg', 'type': 'image' },
-                { 'path': '/result/1/graph.jpg', 'name': '1/graph.jpg', 'type': 'image' },
-            ]
-            # 업로드 요청 시에는 path, name 필요
-            file_list = [{k: v for k, v in file.items() if k != 'type'} for file in media_files]
-            await upload_files(file_list, request=request)
-            # 메타에 저장시에는 name, type 필요
-            meta = [{k: v for k, v in file.items() if k != 'path'} for file in media_files]
-            vectors[0].media_files = meta
-            """
-
-            return vectors
 
 
 class GenosServiceException(Exception):

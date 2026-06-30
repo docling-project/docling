@@ -1283,6 +1283,22 @@ class IntelligentDocumentProcessor:
         if artifacts_path:
             self.pipe_line_options.artifacts_path = Path(artifacts_path)
 
+        # xlsx(엑셀) 처리 설정(이슈 #288). 출력은 parse-JSON(시트당 HTML 표) 유지.
+        #   tabular(기본): openpyxl 로 병합셀 unmerge+forward-fill 후 시트→HTML 표(병합 헤더 보존).
+        #   docling: docling MsExcel 백엔드로 DoclingDocument 생성 후 parse-JSON 직렬화.
+        xlsx_cfg = _as_dict(cfg.get("xlsx"))
+        xlsx_mode = str(xlsx_cfg.get("processing_mode", "tabular")).strip().lower()
+        if xlsx_mode not in {"docling", "tabular"}:
+            _log.warning(
+                f"[DocumentProcessor] Unknown xlsx.processing_mode '{xlsx_mode}', fallback to 'tabular'."
+            )
+            xlsx_mode = "tabular"
+        self._xlsx_cfg = {
+            "processing_mode": xlsx_mode,
+            "header_row": _parse_optional_int(xlsx_cfg.get("header_row"), "xlsx.header_row") or 0,
+            "encoding": (str(xlsx_cfg.get("encoding")).strip() or None),
+        }
+
         self.simple_pipeline_options = PipelineOptions()
         self.simple_pipeline_options.save_images = False
 
@@ -2015,9 +2031,28 @@ class DocumentProcessor:
                 pass
 
     def _parse_tabular(self, file_path: str) -> dict:
-        ext = os.path.splitext(file_path)[-1].lower()
-        loader = TabularLoader(file_path, ext)
-        return loader.data_dict
+        """xlsx/csv → {"data":[{"sheet_name","data_rows":[{col:val}]}]} (이슈 #288).
+
+        openpyxl 로 병합셀을 unmerge + forward-fill 하여 병합 헤더/그룹 값 유실을 막는다.
+        header_row(0-based) 행을 컬럼으로, 그 아래 비어있지 않은 행을 데이터 행으로 본다.
+        """
+        from genon.preprocessor.converters.xlsx_processor import load_sheets
+
+        sheets = load_sheets(file_path, encoding=self._xlsx_cfg["encoding"])
+        hr = self._xlsx_cfg["header_row"]
+        data: list[dict] = []
+        for name, rows in sheets.items():
+            if len(rows) <= hr:
+                data.append({"sheet_name": name, "data_rows": []})
+                continue
+            headers = [(h.strip() or f"col_{i}") for i, h in enumerate(rows[hr])]
+            data_rows = [
+                dict(zip(headers, r))
+                for r in rows[hr + 1:]
+                if any(c.strip() for c in r)
+            ]
+            data.append({"sheet_name": name, "data_rows": data_rows})
+        return {"data": data}
 
     def _parse_other(self, file_path: str, **kwargs) -> list:
         return self._generic.load_documents(file_path, **kwargs)
@@ -2406,7 +2441,13 @@ class DocumentProcessor:
             text = self._parse_audio(file_path, **kwargs)
             return self._normalize_response(self._audio_to_parse_format(text))
 
-        if ext in (".csv", ".xlsx"):
+        if ext in (".csv", ".xlsx", ".xlsm"):
+            # docling 모드: MsExcel/Csv 백엔드로 DoclingDocument 생성 후 parse-JSON 직렬화.
+            if self._xlsx_cfg["processing_mode"] == "docling":
+                from genon.preprocessor.converters.xlsx_processor import build_docling_document
+                doc = build_docling_document(file_path)
+                return self._normalize_response(self._build_docling_response(doc))
+            # tabular 모드(기본): openpyxl 병합셀 처리 → 시트당 HTML 표.
             data_dict = self._parse_tabular(file_path)
             return self._normalize_response(self._tabular_to_parse_format(data_dict))
 

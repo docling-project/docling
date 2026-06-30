@@ -150,6 +150,19 @@ chunking:
   tokenizer_path: "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
   tokenizer_id: "sentence-transformers/all-MiniLM-L6-v2"
 
+# 엑셀(xlsx/xlsm) 처리 (이슈 #288).
+xlsx:
+  # docling(기본): xlsx 를 docling MsExcel 백엔드로 처리(현행) → 기존 청킹/벡터 파이프라인.
+  # tabular: 데이터 행마다 1청크 + 컬럼 헤더→셀 값 메타데이터(병합셀 unmerge+forward-fill).
+  #   ※ Weaviate 키 규칙(/[_A-Za-z][_0-9A-Za-z]*/)상 한글 헤더는 메타 KEY 에서 제외되고 값은 text 에 유지된다.
+  processing_mode: "docling"
+  # tabular 모드 헤더 행(0-based). 상단에 병합 제목행이 있으면 1 등으로 조정.
+  header_row: 0
+  # csv tabular 인코딩. 비우면 chardet 자동감지 후 utf-8 폴백.
+  encoding: ""
+  # csv 도 tabular 로 가로챌지 여부. false(기본)=기존 docling 경로 유지.
+  intercept_csv: false
+
 # 모델 경로 (다운로드된 기본값 사용; 미지정 시 현행 동작 유지)
 models:
   # docling 모델(TableFormer 등) 로컬 경로. 비우면 docling 기본 캐시 사용(현행).
