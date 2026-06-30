@@ -66,9 +66,15 @@ class MinioConfig(BaseSettings):
     class Config(BaseConfig):
         pass
 
-    MINIO_ENDPOINT: str
-    MINIO_ACCESS_KEY: str
-    MINIO_SECRET_KEY: str
+    MINIO_ENDPOINT: Optional[str] = None
+    MINIO_ACCESS_KEY: Optional[str] = None
+    MINIO_SECRET_KEY: Optional[str] = None
+
+    def is_configured(self) -> bool:
+        return all(
+            isinstance(val, str) and val.strip()
+            for val in [self.MINIO_ENDPOINT, self.MINIO_ACCESS_KEY, self.MINIO_SECRET_KEY]
+        )
 
 
 settings = Settings()

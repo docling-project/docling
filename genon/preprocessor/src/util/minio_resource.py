@@ -49,6 +49,17 @@ class FileLock:
 def download_resource_files(bucket_name: str, resource_id: int, path: str):
     from minio import Minio
 
+    # MinIO 환경변수는 사용 시점에만 검증한다 (모듈 import 시점이 아님).
+    # PREPROCESSOR_ID 가 있어도 MINIO_* 가 미설정이면 다운로드를 건너뛰고
+    # 부팅을 계속한다 (MinIO 미사용 환경 / 시크릿 오설정 대응).
+    minio_config = MinioConfig()
+    if not minio_config.is_configured():
+        logger.warning(
+            f"MINIO_* 환경변수 미설정 — 리소스 다운로드를 건너뜁니다. "
+            f"(resource_id={resource_id})"
+        )
+        return
+
     os.makedirs(path, exist_ok=True)
 
     lock_file = os.path.join(path, ".download_resource_files.lock")
@@ -56,8 +67,6 @@ def download_resource_files(bucket_name: str, resource_id: int, path: str):
     with FileLock(lock_file, timeout_sec=3600):
         logger.info(f'Acquired lock: {lock_file} (pid={os.getpid()})')
 
-        # MinIO 환경변수는 사용 시점에만 검증한다 (모듈 import 시점이 아님).
-        minio_config = MinioConfig()
         minio_client = Minio(
             endpoint=minio_config.MINIO_ENDPOINT,
             access_key=minio_config.MINIO_ACCESS_KEY,

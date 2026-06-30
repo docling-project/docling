@@ -218,6 +218,28 @@ def test_download_resource_files_propagates_exception(tmp_path: Path, monkeypatc
 
 
 @pytest.mark.unit
+def test_download_resource_files_skips_when_minio_not_configured(tmp_path: Path, monkeypatch):
+    """PREPROCESSOR_ID 가 있어도 MINIO_* 미설정이면 예외 없이 건너뛴다."""
+    from util.minio_resource import download_resource_files
+
+    # autouse fixture 가 set 한 MINIO_* 를 제거 (PREPROCESSOR_ID 는 유지)
+    monkeypatch.delenv("MINIO_ENDPOINT", raising=False)
+    monkeypatch.delenv("MINIO_ACCESS_KEY", raising=False)
+    monkeypatch.delenv("MINIO_SECRET_KEY", raising=False)
+
+    dest = tmp_path / "resource"
+    _, factory = _patch_minio(monkeypatch, [_make_obj("226/resource/a.txt")])
+
+    # 예외 없이 반환
+    download_resource_files(bucket_name="preprocessor", resource_id=226, path=str(dest))
+
+    # MinIO 클라이언트 미생성, 디렉터리/lock 미생성
+    factory.assert_not_called()
+    assert not dest.exists()
+    assert not (dest / ".download_resource_files.lock").exists()
+
+
+@pytest.mark.unit
 def test_download_resource_files_ignores_empty_relative_path(tmp_path: Path, monkeypatch):
     """prefix와 object_name이 정확히 일치해 rel_path가 비는 경우 스킵."""
     from util.minio_resource import download_resource_files
