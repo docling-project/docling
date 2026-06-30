@@ -69,10 +69,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         ocr_bboxes: List[BoundingBox] = [
             layout_bbox
             for layout_bbox in layout_bboxes
-            if any(
-                layout_bbox.intersection_area_with(pdf_bbox) > 0
-                for pdf_bbox in pdf_bboxes
-            )
+            if any(layout_bbox.overlaps(pdf_bbox) for pdf_bbox in pdf_bboxes)
         ]
         return ocr_bboxes
 
@@ -135,22 +132,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                 x0, y0, x1, y1 = rect.as_tuple()
                 x0, y0, x1, y1 = round(x0), round(y0), round(x1), round(y1)
                 draw.rectangle([(x0, y0), (x1, y1)], fill=1)
-
-            #######################################################################################
-            # Debug: Dump the image as a file
-            # enable `pipeline_options.do_ocr = True` in tests/test_e2e_conversion.py
-            # from datetime import datetime
-
-            # viz_root = Path(
-            #     "/Users/nli/docling/ocr_layout_pipelines_refactoring/viz_ocr_rect/"
-            # )
-            # tmp_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-            # tmp_fn = viz_root / tmp_filename
-            # image.save(
-            #     str(tmp_fn),
-            #     format="png",
-            # )
-            #######################################################################################
 
             np_image = np.array(image)
 
@@ -293,8 +274,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         return combined
 
     def draw_ocr_rects_and_cells(self, conv_res, page, ocr_rects, show: bool = False):
-        # ToDecide: If we want to have all drawing functions in docling/utils/visualization.py
-        #           or even inside docling-core
         image = copy.deepcopy(page.image)
         scale_x = image.width / page.size.width
         scale_y = image.height / page.size.height
@@ -338,6 +317,50 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
             out_file = out_path / f"ocr_page_{page.page_no:05}.png"
             image.save(str(out_file), format="png")
+
+        ###########################################################################################
+        # Debug:
+        import json
+
+        layout_bboxes = self._get_cluster_ocr_rects(page)
+        pdf_bboxes = self._get_pdf_ocr_rects(page)
+
+        def get_non_overlapping(
+            check_bboxes: List[BoundingBox],
+            reference_bboxes: List[BoundingBox],
+        ) -> int:
+            r"""Return the number of non-overlapping bboxes"""
+            non_overlapping = 0
+            for c_bbox in check_bboxes:
+                overlaps = False
+                for r_bbox in reference_bboxes:
+                    if c_bbox.overlaps(r_bbox):
+                        overlaps = True
+                        break
+                if not overlaps:
+                    non_overlapping += 1
+            return non_overlapping
+
+        # Compute the layout_bboxes that do NOT overlap with any pdf_bbox and vice versa
+        non_overlapping_layout_bboxes = get_non_overlapping(layout_bboxes, pdf_bboxes)
+        non_overlapping_pdf_bboxes = get_non_overlapping(pdf_bboxes, layout_bboxes)
+
+        rects_report = {
+            "layout_bboxes": len(layout_bboxes),
+            "pdf_bboxes": len(pdf_bboxes),
+            "non_overlapping_layout_bboxes": non_overlapping_layout_bboxes,
+            "non_overlapping_pdf_bboxes": non_overlapping_pdf_bboxes,
+        }
+
+        # Create a report and save it as a json file
+        out_path: Path = (
+            Path(settings.debug.debug_output_path) / f"debug_{conv_res.input.file.stem}"
+        )
+        out_path.mkdir(parents=True, exist_ok=True)
+        out_file = out_path / f"rects_{page.page_no:05}.json"
+        with open(out_file, "w") as fd:
+            json.dump(rects_report, fd)
+        ###########################################################################################
 
     @abstractmethod
     def __call__(
