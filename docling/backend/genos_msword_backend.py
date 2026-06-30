@@ -82,9 +82,9 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         self.level = 0
         self.listIter = 0
         # Header/Footer context flag: None | 'hdr' | 'ftr'
-        # TODO: Restore and Edit Header/Footer logic
-        # self._in_hf = None
-        self._seen_sectpr_ids = set()
+        # 머리말/꼬리말 콘텐츠를 walk 하는 동안에만 설정되어 텍스트 라벨을
+        # PAGE_HEADER/PAGE_FOOTER 로 지정하는 데 쓰인다.
+        self._in_hf: Optional[str] = None
         self.history: dict[str, Any] = {
             "names": [None],
             "levels": [None],
@@ -178,12 +178,19 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         # 🔁 document.xml(body)만 시작점으로 순차 처리
         assert self.docx_obj is not None
         body_el = self.docx_obj.element.body
+
+        # 머리말/꼬리말은 pagination 이 없는 출력에 그 자리로 넣을 수 없으므로
+        # 머리말은 본문 맨 앞, 꼬리말은 본문 맨 뒤에 distinct 내용만 1회 배치한다(이슈 #56).
+        self._emit_headers_or_footers(self.docx_obj, doc, "header")
+
         doc = self._walk_linear(
             body=body_el,
             docx_obj=self.docx_obj,
             doc=doc,
             owner_part=self.docx_obj.part,  # ← 현재 XML의 소유 파트
         )
+
+        self._emit_headers_or_footers(self.docx_obj, doc, "footer")
 
         doc.pages[1] = doc.add_page(page_no=1, size=Size(width=595, height=842))
         return doc
@@ -514,6 +521,32 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             underline=has_underline,
         )
         
+    def _text_label(self) -> DocItemLabel:
+        """현재 머리말/꼬리말 컨텍스트(`_in_hf`)에 맞는 텍스트 라벨을 반환.
+
+        본문이면 PARAGRAPH, 머리말이면 PAGE_HEADER, 꼬리말이면 PAGE_FOOTER.
+        """
+        if self._in_hf == "hdr":
+            return DocItemLabel.PAGE_HEADER
+        if self._in_hf == "ftr":
+            return DocItemLabel.PAGE_FOOTER
+        return DocItemLabel.PARAGRAPH
+
+    @staticmethod
+    def _is_noise_hf_text(text: str) -> bool:
+        """머리말/꼬리말에서 버려야 할 노이즈인지 판정.
+
+        - 빈 문단(공백만)
+        - 순수 페이지번호(예: '3', '- 12 -', 'iv') — 의미 없는 반복 텍스트
+        """
+        t = (text or "").strip()
+        if not t:
+            return True
+        # 아라비아/로마 숫자 페이지번호 (앞뒤 대시·공백·점 허용)
+        if re.fullmatch(r"[\-–—.\s]*(\d{1,4}|[ivxlcdmIVXLCDM]{1,7})[\-–—.\s]*", t):
+            return True
+        return False
+
     # 클래스 내부에 유틸 추가
     def _resolve_part_by_rid(self, owner_part, rId):
         """
@@ -524,52 +557,104 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             return None
         rel = owner_part.rels.get(rId)
         return getattr(rel, "target_part", None) if rel else None
-    # TODO: Restore and Edit Header/Footer logic
-    # def _is_owner_header_footer(self, owner_part) -> bool:
-    #     try:
-    #         pn = getattr(owner_part, "partname", None)
-    #         if pn is None:
-    #             return False
-    #         pn_str = str(pn).lower()
-    #         return "/word/header" in pn_str or "/word/footer" in pn_str
-    #     except Exception:
-    #         return False
-    # def _process_header_footer_refs(self, sectPr_el, docx_obj, doc, owner_part):
-    #     """
-    #     sectPr 안의 w:headerReference / w:footerReference 태그를 만나는 순서대로 처리.
-    #     각 reference의 r:id를 현재 owner_part.rels에서 해석해 header/footer 파트를 로드,
-    #     해당 파트의 루트 엘리먼트를 _walk_linear 로 순회한다.
-    #     """
-    #     ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
-    #         "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
-    #
-    #     # sectPr 자식들을 "등장 순서"대로 순회하며 header/footerReference를 만나는 즉시 처리
-    #     for child in sectPr_el.iterchildren():
-    #         lname = etree.QName(child).localname
-    #         if lname in ("headerReference", "footerReference"):
-    #             rid = child.get("{%s}id" % ns["r"])  # r:id
-    #             target_part = self._resolve_part_by_rid(owner_part, rid)
-    #             if not target_part:
-    #                 continue
-    #
-    #             root_el = getattr(target_part, "_element", None)  # headerX.xml / footerY.xml 루트
-    #             if root_el is None:
-    #                 continue
-    #             
-    #             # 헤더/푸터 컨텍스트 설정
-    #             original_hf = self._in_hf
-    #             self._in_hf = 'hdr' if lname == 'headerReference' else 'ftr'
-    #             
-    #             try:
-    #                 # header/footer의 내부도 "그 자리에서" 순차 파싱
-    #                 self._walk_linear(
-    #                     body=root_el,
-    #                     docx_obj=docx_obj,
-    #                     doc=doc,
-    #                     owner_part=target_part,
-    #                 )
-    #             finally:
-    #                 self._in_hf = original_hf
+
+    def _hf_content_signature(self, root_el, owner_part) -> str:
+        """머리말/꼬리말 파트의 내용 시그니처(렌더 텍스트 + 이미지)를 만든다.
+
+        partname 이 달라도 실제 콘텐츠가 같으면 동일 시그니처가 나오도록 하여
+        섹션·페이지마다 반복되는 동일 머리말/꼬리말을 1회만 출력하기 위함.
+        내용이 없으면 빈 문자열을 반환한다.
+        """
+        ns = {
+            "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+            "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+            "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+        }
+        try:
+            texts = [t.text for t in root_el.findall(".//w:t", namespaces=ns) if t.text]
+        except Exception:
+            texts = []
+        text_sig = "".join(texts).strip()
+
+        img_sigs: List[str] = []
+        try:
+            for blip in root_el.findall(".//a:blip", namespaces=ns):
+                rid = blip.get("{%s}embed" % ns["r"]) or blip.get("{%s}link" % ns["r"])
+                target = self._resolve_part_by_rid(owner_part, rid)
+                pn = str(getattr(target, "partname", "")) if target else (rid or "")
+                if pn:
+                    img_sigs.append(pn)
+        except Exception:
+            pass
+
+        if not text_sig and not img_sigs:
+            return ""
+        return text_sig + ("|IMG:" + ",".join(sorted(img_sigs)) if img_sigs else "")
+
+    def _emit_headers_or_footers(
+        self, docx_obj: DocxDocument, doc: DoclingDocument, kind: str
+    ) -> None:
+        """문서의 모든 머리말('header') 또는 꼬리말('footer') 콘텐츠를 1회 emit.
+
+        DOCX 의 머리말/꼬리말은 페이지 단위 요소라 pagination 이 없는 출력
+        (md/html 등)에는 그 자리에 넣을 수 없다. 따라서 머리말은 문서 맨 앞,
+        꼬리말은 문서 맨 뒤에 모아서 distinct 콘텐츠만 1회씩 배치한다(이슈 #56).
+        default/first/even 등 모든 변형 파트를 대상으로 하되 내용이 같으면 dedup.
+        """
+        try:
+            rels = docx_obj.part.rels
+        except Exception:
+            return
+
+        reltype_suffix = "/" + kind  # '/header' 또는 '/footer'
+        parts = []
+        for rel in rels.values():
+            try:
+                if getattr(rel, "is_external", False):
+                    continue
+                if str(rel.reltype).endswith(reltype_suffix):
+                    parts.append(rel.target_part)
+            except Exception:
+                continue
+        if not parts:
+            return
+
+        # 머리말/꼬리말 콘텐츠를 격리된 부모 계층 아래에서 walk 하기 위해 스냅샷 후 복원
+        saved_parents = dict(self.parents)
+        saved_in_hf = self._in_hf
+        self._in_hf = "hdr" if kind == "header" else "ftr"
+
+        group = None
+        seen_sigs: set[str] = set()
+        try:
+            for part in parts:
+                root = getattr(part, "element", None)
+                if root is None:
+                    root = getattr(part, "_element", None)
+                if root is None:
+                    continue
+                sig = self._hf_content_signature(root, part)
+                if not sig or sig in seen_sigs:  # 빈 내용 또는 중복 → skip
+                    continue
+                seen_sigs.add(sig)
+
+                if group is None:
+                    group = doc.add_group(
+                        label=GroupLabel.SECTION, parent=None, name=kind
+                    )
+                # 이 파트 내용이 group 아래에 귀속되도록 부모 계층을 재설정
+                for k in list(self.parents.keys()):
+                    self.parents[k] = None
+                self.parents[0] = group
+
+                self._walk_linear(
+                    body=root, docx_obj=docx_obj, doc=doc, owner_part=part
+                )
+        finally:
+            self.parents.clear()
+            self.parents.update(saved_parents)
+            self._in_hf = saved_in_hf
+
     def _walk_linear(
         self,
         body: BaseOxmlElement,
@@ -579,32 +664,8 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
     ) -> DoclingDocument:
         if owner_part is None:
             owner_part = docx_obj.part
-        # Header/Footer 루트일 경우 섹션 그룹 컨텍스트를 열어준다
-        header_footer_ctx_opened = False
-        original_parent_for_hf = None
-        # TODO: Restore and Edit Header/Footer logic
-        # try:
-        #     root_local = etree.QName(body).localname
-        # except Exception:
-        #     root_local = None
-        # if root_local in ("hdr", "ftr"):
-        #     level = self._get_level()
-        #     group_name = "header" if root_local == "hdr" else "footer"
-        #     hf_group = doc.add_group(
-        #         label=GroupLabel.SECTION,
-        #         parent=self.parents.get(level - 1),
-        #         name=group_name,
-        #     )
-        #     original_parent_for_hf = self.parents.get(level)
-        #     # 또한 level-1 부모도 임시로 헤더/푸터 그룹으로 덮어써서 내부 추가물이 그룹에 귀속되도록 함
-        #     original_parent_for_hf_m1 = self.parents.get(level - 1)
-        #     self.parents[level - 1] = hf_group
-        #     self.parents[level] = hf_group
-        #     header_footer_ctx_opened = True
-        #     try:
-        #         print(f"[HF] enter {group_name}")
-        #     except Exception:
-        #         pass
+        # 머리말/꼬리말은 _emit_headers_or_footers 가 그룹/부모 계층을 미리 잡고
+        # 이 함수를 호출하므로 여기서는 별도 hdr/ftr 분기를 두지 않는다(이슈 #56, B안).
         for element in body:
 
             # Check for Inline Images (blip elements)
@@ -633,29 +694,6 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                 # skip the rest (Fallback)
                 continue
             tag_name = etree.QName(element).localname
-            # 1) body 직속 sectPr (드물지만 존재)
-            sectprs = []
-            if tag_name == "sectPr":
-                sectprs = [element]
-
-            # 2) 일반 케이스: 문단 pPr 안의 sectPr
-            elif tag_name == "p":
-                sectprs = element.findall("./w:pPr/w:sectPr", namespaces=namespaces)
-
-            # 3) 만난 순서대로 전부 처리 (중복 방지)
-            for sectPr_el in sectprs:
-                sid = id(sectPr_el)
-                if sid in self._seen_sectpr_ids:
-                    continue
-                self._seen_sectpr_ids.add(sid)
-
-                # TODO: Restore and Edit Header/Footer logic
-                # self._process_header_footer_refs(
-                #     sectPr_el=sectPr_el,
-                #     docx_obj=docx_obj,
-                #     doc=doc,
-                #     owner_part=owner_part,
-                # )
             # Check for shape content (including textboxes and other shapes)
             # Only process if the element hasn't been processed before
             element_id = id(element)
@@ -696,13 +734,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                                     name="shape-text",
                                 )
                                 doc.add_text(
-                                    label=(
-                                        # TODO: Restore and Edit Header/Footer logic
-                                        # DocItemLabel.PAGE_HEADER if self._in_hf == 'hdr'
-                                        # else DocItemLabel.PAGE_FOOTER if self._in_hf == 'ftr'
-                                        # else 
-                                        DocItemLabel.PARAGRAPH
-                                    ),
+                                    label=self._text_label(),
                                     parent=shape_group,
                                     text=text_content,
                                     prov=ProvenanceItem(
@@ -728,12 +760,6 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             # Check for Tables - Use enhanced table processing
             if element.tag.endswith("tbl"):
                 try:
-                    # TODO: Restore and Edit Header/Footer logic
-                    # if header_footer_ctx_opened:
-                    #     try:
-                    #         print("[HF] handle table")
-                    #     except Exception:
-                    #         pass
                     # header/footer 내부 테이블 이미지를 위해 owner_part 전달
                     self._handle_tables_enhanced(element, docx_obj, doc, owner_part=owner_part)
                 except Exception as e:
@@ -741,82 +767,23 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
 
             elif drawing_blip:
                 # 소유 파트를 넘겨서 rId 해석이 올바르게 header/footer에서도 작동
-                # TODO: Restore and Edit Header/Footer logic
-                # if header_footer_ctx_opened:
-                #     try:
-                #         print("[HF] handle image (blip)", drawing_blip)
-                #     except Exception:
-                #         pass
                 self._handle_pictures(owner_part, docx_obj, drawing_blip, doc)
                 # 이미지 뒤 텍스트 처리
                 if (tag_name in ["p"]
                     and (element.find(".//w:t", namespaces=namespaces) is not None or element.find(".//w:instrText", namespaces=namespaces) is not None)):
-                    # TODO: Restore and Edit Header/Footer logic
-                    # if header_footer_ctx_opened:
-                    #     try:
-                    #         texts = [t.text for t in element.findall(".//w:t", namespaces=namespaces) if t.text]
-                    #         instrs = [t.text for t in element.findall(".//w:instrText", namespaces=namespaces) if t.text]
-                    #         fldchars = [fc.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fldCharType") for fc in element.findall(".//w:fldChar", namespaces=namespaces)]
-                    #         parts = []
-                    #         if texts:
-                    #             parts.append(" ".join(texts))
-                    #         if instrs:
-                    #             parts.append(f"[instr] {' '.join(instrs)}")
-                    #         if fldchars:
-                    #             parts.append(f"[fld] {','.join([c for c in fldchars if c])}")
-                    #         joined = " | ".join(parts)
-                    #         preview = (joined[:80] + ("…" if len(joined) > 80 else "")) if joined else ""
-                    #        
-                    #     except Exception:
-                    #         pass
-                    self._handle_text_elements(element, docx_obj, doc)    
-                              
+                    self._handle_text_elements(element, docx_obj, doc)
+
             # Check for the sdt containers, like table of contents
             elif tag_name in ["sdt"]:
                 sdt_content = element.find(".//w:sdtContent", namespaces=namespaces)
                 if sdt_content is not None:
-                    # TODO: Restore and Edit Header/Footer logic
-                    # if header_footer_ctx_opened:
-                    #     try:
-                    #         print("[HF] handle sdt content")
-                    #     except Exception:
-                    #         pass
                     paragraphs = sdt_content.findall(".//w:p", namespaces=namespaces)
                     for p in paragraphs:
                         self._handle_text_elements(p, docx_obj, doc)
             # Check for Text
             elif tag_name in ["p"]:
-                # "tcPr", "sectPr"
-                # TODO: Restore and Edit Header/Footer logic
-                # if header_footer_ctx_opened:
-                #     try:
-                #         texts = [t.text for t in element.findall(".//w:t", namespaces=namespaces) if t.text]
-                #         instrs = [t.text for t in element.findall(".//w:instrText", namespaces=namespaces) if t.text]
-                #         fldchars = [fc.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fldCharType") for fc in element.findall(".//w:fldChar", namespaces=namespaces)]
-                #         parts = []
-                #         if texts:
-                #             parts.append(" ".join(texts))
-                #         if instrs:
-                #             parts.append(f"[instr] {' '.join(instrs)}")
-                #         if fldchars:
-                #             parts.append(f"[fld] {','.join([c for c in fldchars if c])}")
-                #         joined = " | ".join(parts)
-                #         preview = (joined[:80] + ("…" if len(joined) > 80 else "")) if joined else ""
-                #     except Exception:
-                #         pass
                 self._handle_text_elements(element, docx_obj, doc)
-                
-        # Header/Footer 컨텍스트 닫기
-        # TODO: Restore and Edit Header/Footer logic
-        # if header_footer_ctx_opened:
-        #     level = self._get_level()
-        #     self.parents[level] = original_parent_for_hf
-        #     # level-1 부모 복원
-        #     try:
-        #         self.parents[level - 1] = original_parent_for_hf_m1
-        #     except Exception:
-        #         pass
-        return doc 
+        return doc
 
     def _extract_image_from_drawing(
         self, drawing_el: BaseOxmlElement, docx_obj: DocxDocument
@@ -858,8 +825,6 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         # 이 element 가 mc:Fallback 계층 안이라면 스킵
         if owner_part is None:
             owner_part = docx_obj.part
-        # TODO: Restore and Edit Header/Footer logic
-        # hf_only = self._is_owner_header_footer(owner_part)
         if element.getparent() is not None and etree.QName(element.getparent()).localname == "Fallback":
             return
 
@@ -885,12 +850,6 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                     self._processed_table_contents = set()
                 
                 if table_content_hash in self._processed_table_contents:
-                    # TODO: Restore and Edit Header/Footer logic
-                    # if hf_only:
-                    #     try:
-                    #         print("[HF][tbl] skip: duplicate content in AlternateContent")
-                    #     except Exception:
-                    #         pass
                     return
                 
                 self._processed_table_contents.add(table_content_hash)
@@ -992,12 +951,6 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
 
                     # 만약 버퍼에 뭔가 담겼다면, TableData에 추가하지 않고 continue
                     if (r_idx, c_idx) in cell_buffer:
-                        # TODO: Restore and Edit Header/Footer logic
-                        # if hf_only:
-                        #     try:
-                        #         print(f"[HF][tbl] cell({r_idx},{c_idx}) buffered-only (skip TableData)")
-                        #     except Exception:
-                        #         pass
                         continue
                     
                 # 5) 일반 셀: TableData 에 추가
@@ -1053,12 +1006,6 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         if data.table_cells:
             # parent 보정: 여전히 None 이면 최상위에 붙여 중단을 방지
             if parent is None:
-                # TODO: Restore and Edit Header/Footer logic
-                # if self._is_owner_header_footer(owner_part):
-                #     try:
-                #         print("[HF][tbl] warn: parent None, attaching table at document root")
-                #     except Exception:
-                #         pass
                 parent = self.parents.get(0)
             doc.add_table(data=data, parent=parent, prov=ProvenanceItem(
                 page_no=1,
@@ -1234,6 +1181,23 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         """
         Check if text content is duplicate based on hash.
         """
+        # 머리말/꼬리말은 본문과 별개로 다룬다(이슈 #56). 본문 중복억제 집합과
+        # 분리된 전용 집합을 써서: ①본문은 머리말/꼬리말에 의해 억제되지 않고
+        # (본문 손실 방지) ②머리말/꼬리말끼리의 중복(여러 섹션의 동일 줄)만 제거한다.
+        if self._in_hf:
+            t = (text or "").strip()
+            if not t:
+                return False
+            # 본문과 달리 짧은 라벨('부제1' 등)도 dedup 한다. 여러 섹션에 반복되는
+            # 동일 머리말/꼬리말 줄을 합치기 위함(빈값·페이지번호는 노이즈 필터가 선처리).
+            h = self._get_text_content_hash(t)
+            if not hasattr(self, "_hf_seen_text"):
+                self._hf_seen_text = set()
+            if h in self._hf_seen_text:
+                return True
+            self._hf_seen_text.add(h)
+            return False
+
         if not text or len(text.strip()) < 5:  # Skip very short texts
             return False
             
@@ -1592,13 +1556,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             # Check for duplicate content before adding
                 if not self._is_duplicate_content(full_text):
                     doc.add_text(
-                        label=(
-                            # TODO: Restore and Edit Header/Footer logic
-                            # DocItemLabel.PAGE_HEADER if self._in_hf == 'hdr'
-                            # else DocItemLabel.PAGE_FOOTER if self._in_hf == 'ftr'
-                            # else 
-                            DocItemLabel.PARAGRAPH
-                        ),
+                        label=self._text_label(),
                         text=full_text,
                         parent=shape_group,
                     prov=ProvenanceItem(
@@ -1720,6 +1678,11 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         if numid == 0:
             numid = None
 
+        # 머리말/꼬리말 컨텍스트에서는 빈 문단·순수 페이지번호를 버려 노이즈를 막는다(이슈 #56).
+        if self._in_hf and self._is_noise_hf_text(text):
+            self._update_history(p_style_id, p_level, numid, ilevel)
+            return
+
         # Handle lists
         if (
             numid is not None
@@ -1829,13 +1792,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
 
                     if len(pre_eq_text) > 0:
                         doc.add_text(
-                            label=(
-                                # TODO: Restore and Edit Header/Footer logic
-                                # DocItemLabel.PAGE_HEADER if self._in_hf == 'hdr'
-                                # else DocItemLabel.PAGE_FOOTER if self._in_hf == 'ftr'
-                                # else 
-                                DocItemLabel.PARAGRAPH
-                            ),
+                            label=self._text_label(),
                             parent=inline_equation,
                             text=pre_eq_text,
                             prov=ProvenanceItem(
@@ -1857,13 +1814,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 if len(text_tmp) > 0:
                     doc.add_text(
-                        label=(
-                            # TODO: Restore and Edit Header/Footer logic
-                            # DocItemLabel.PAGE_HEADER if self._in_hf == 'hdr'
-                            # else DocItemLabel.PAGE_FOOTER if self._in_hf == 'ftr'
-                            # else 
-                            DocItemLabel.PARAGRAPH
-                        ),
+                        label=self._text_label(),
                         parent=inline_equation,
                         text=text_tmp.strip(),
                         prov=ProvenanceItem(
@@ -1895,13 +1846,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                 # Check for duplicate content before adding
                 if not self._is_duplicate_content(text):
                     doc.add_text(
-                        label=(
-                            # TODO: Restore and Edit Header/Footer logic
-                            # DocItemLabel.PAGE_HEADER if self._in_hf == 'hdr'
-                            # else DocItemLabel.PAGE_FOOTER if self._in_hf == 'ftr'
-                            # else 
-                            DocItemLabel.PARAGRAPH
-                        ),
+                        label=self._text_label(),
                         parent=parent,
                         text=text,
                         formatting=format,
@@ -1928,13 +1873,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                 # Check for duplicate content before adding
                 if not self._is_duplicate_content(text):
                     doc.add_text(
-                        label=(
-                            # TODO: Restore and Edit Header/Footer logic
-                            # DocItemLabel.PAGE_HEADER if self._in_hf == 'hdr'
-                            # else DocItemLabel.PAGE_FOOTER if self._in_hf == 'ftr'
-                            # else 
-                            DocItemLabel.PARAGRAPH
-                        ),
+                        label=self._text_label(),
                         parent=parent,
                         text=text,
                         formatting=format,
