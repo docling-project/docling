@@ -11,10 +11,13 @@ from pathlib import Path
 from typing import Literal, Optional, Union, cast
 
 from docling_core.types.doc import (
+    DocItem,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
     Formatting,
+    GroupItem,
+    GroupLabel,
     ListItem,
     NodeItem,
     TableCell,
@@ -170,6 +173,13 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self.md_table_buffer: list[str] = []
         self._html_blocks: int = 0
 
+        # Initialize hierarchy tracking (similar to HTML backend)
+        self.max_levels = 10
+        self.level = 0
+        self.parents: dict[int, Optional[Union[DocItem, GroupItem]]] = {}
+        for i in range(self.max_levels):
+            self.parents[i] = None
+
         try:
             if isinstance(self.path_or_stream, BytesIO):
                 text_stream = self.path_or_stream.getvalue().decode("utf-8")
@@ -281,21 +291,55 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         formatting: Optional[Formatting] = None,
         hyperlink: Optional[Union[AnyUrl, Path]] = None,
     ):
+        """
+        Create a heading item with proper hierarchy tracking.
+        Similar to HTML backend's _handle_heading method.
+        """
+        # Level 1 headings become titles and reset hierarchy
         if level == 1:
+            for key in self.parents.keys():
+                self.parents[key] = None
+            self.level = 0
             item = doc.add_title(
                 text=text,
                 parent=parent_item,
                 formatting=formatting,
                 hyperlink=hyperlink,
             )
+            self.parents[self.level + 1] = item
         else:
+            # Adjust level for heading (level 2+ in markdown becomes level 1+ in docling)
+            adjusted_level = level - 1
+            
+            if adjusted_level > self.level:
+                # Add invisible section groups for skipped levels
+                for i in range(self.level, adjusted_level):
+                    _log.debug(f"Adding invisible section group to level {i}")
+                    self.parents[i + 1] = doc.add_group(
+                        name=f"section-{i + 1}",
+                        label=GroupLabel.SECTION,
+                        parent=self.parents[i],
+                    )
+                self.level = adjusted_level
+            elif adjusted_level < self.level:
+                # Remove tail - clear deeper levels when going back up
+                for key in self.parents.keys():
+                    if key > adjusted_level + 1:
+                        _log.debug(f"Clearing parent at level {key}")
+                        self.parents[key] = None
+                self.level = adjusted_level
+            
+            # Create heading with proper parent from hierarchy
             item = doc.add_heading(
                 text=text,
-                level=level - 1,
-                parent=parent_item,
+                level=self.level,
+                parent=self.parents[self.level],
                 formatting=formatting,
                 hyperlink=hyperlink,
             )
+            self.parents[self.level + 1] = item
+        
+        self.level += 1
         return item
 
     def _flush_creation_stack(
@@ -338,17 +382,17 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     list_last_item_by_ref[parent_ref] = cast(ListItem, parent_item)
 
             elif isinstance(to_create, _HeadingCreationPayload):
-                # Not keeping as parent_item as logic for correctly tracking
-                # that not implemented yet (section components not captured
-                # as heading children in marko)
-                self._create_heading_item(
+                # Create heading with hierarchy tracking
+                heading_item = self._create_heading_item(
                     doc=doc,
-                    parent_item=parent_item,
+                    parent_item=None,  # Hierarchy is managed internally
                     text=snippet_text,
                     level=to_create.level,
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
+                # Update parent_item to be the current section for subsequent content
+                parent_item = self.parents.get(self.level, None)
 
         return parent_item
 
@@ -367,6 +411,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         parent_item: Optional[NodeItem] = None,
         formatting: Optional[Formatting] = None,
         hyperlink: Optional[Union[AnyUrl, Path]] = None,
+        use_hierarchy: bool = True,
     ):
         if element in visited:
             return
@@ -385,14 +430,19 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             )
 
             if len(element.children) > 1:  # inline group will be created further down
-                parent_item = self._create_heading_item(
+                heading_item = self._create_heading_item(
                     doc=doc,
-                    parent_item=parent_item,
+                    parent_item=parent_item if not use_hierarchy else None,
                     text="",
                     level=element.level,
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
+                # When using hierarchy, content should be children of the heading's section
+                if use_hierarchy:
+                    parent_item = self.parents.get(self.level, None)
+                else:
+                    parent_item = heading_item
             else:
                 creation_stack.append(_HeadingCreationPayload(level=element.level))
 
@@ -627,6 +677,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     parent_item=parent_item,
                     formatting=formatting,
                     hyperlink=hyperlink,
+                    use_hierarchy=True,
                 )
 
     def is_valid(self) -> bool:
@@ -670,6 +721,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 creation_stack=[],
                 list_ordered_flag_by_ref={},
                 list_last_item_by_ref={},
+                use_hierarchy=True,
             )
             self._close_table(doc=doc)  # handle any last hanging table
 
