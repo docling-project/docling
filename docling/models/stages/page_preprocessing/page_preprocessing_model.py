@@ -90,14 +90,11 @@ class PagePreprocessingModel(BasePageModel):
 
         # DEBUG code:
         def draw_text_boxes(image, cells, show: bool = False):
-            draw = ImageDraw.Draw(image.copy())
+            image = image.copy()
+            draw = ImageDraw.Draw(image)
             for c in cells:
-                x0, y0, x1, y1 = (
-                    c.to_bounding_box().l,
-                    c.to_bounding_box().t,
-                    c.to_bounding_box().r,
-                    c.to_bounding_box().b,
-                )
+                bbox = c.to_bounding_box()
+                x0, y0, x1, y1 = (bbox.l, bbox.t, bbox.r, bbox.b)
 
                 draw.rectangle([(x0, y0), (x1, y1)], outline="red")
             if show:
