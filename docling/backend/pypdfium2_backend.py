@@ -25,10 +25,9 @@ from docling.backend.managed_pdfium_backend import (
     ManagedPdfiumPageBackend,
 )
 from docling.datamodel.backend_options import PdfBackendOptions
-from docling.datamodel.base_models import PdfOutlineItem
 from docling.exceptions import DocumentLoadError
 from docling.utils.locks import pypdfium2_lock
-from docling.utils.pdf_outline import extract_outline_from_pdfium
+from docling.utils.pdf_outline import PdfOutlineItem, extract_outline_from_pdfium
 
 
 def get_pdf_page_geometry(

@@ -68,10 +68,10 @@ from docling.datamodel.base_models import (
     InputFormat,
     MimeTypeToFormat,
     Page,
-    PdfOutlineItem,
 )
 from docling.datamodel.settings import DocumentLimits
 from docling.exceptions import DocumentLoadError
+from docling.utils.pdf_outline import PdfOutlineItem
 from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash, safe_version
 

@@ -10,8 +10,9 @@ from PIL import Image
 
 from docling.backend.abstract_backend import PaginatedDocumentBackend
 from docling.datamodel.backend_options import PdfBackendOptions
-from docling.datamodel.base_models import InputFormat, PdfOutlineItem
+from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.utils.pdf_outline import PdfOutlineItem
 
 
 class PdfPageBackend(ABC):

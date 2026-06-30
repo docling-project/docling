@@ -34,9 +34,9 @@ from docling_core.types.doc import DoclingDocument
 from docling_core.types.doc.document import ListItem, SectionHeaderItem
 from docling_core.types.doc.page import SegmentedPdfPage
 
-from docling.datamodel.base_models import PdfOutlineItem
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import HeadingHierarchyOptions
+from docling.utils.pdf_outline import PdfOutlineItem
 
 # Default precedence of numbering schemes, highest hierarchy level first. ``dotted`` shares
 # the ``arabic`` rank and is ordered below it by its segment depth (1.1 below 1.).

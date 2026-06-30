@@ -14,7 +14,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import ListItem, SectionHeaderItem
 
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
-from docling.datamodel.base_models import InputFormat, PdfOutlineItem
+from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.datamodel.pipeline_options import HeadingHierarchyOptions
 from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
@@ -22,6 +22,7 @@ from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
     _match_score,
 )
 from docling.utils.pdf_outline import (
+    PdfOutlineItem,
     extract_outline_from_pdfium,
     outline_from_docling_parse,
 )

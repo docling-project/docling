@@ -403,23 +403,6 @@ class ItemAndImageEnrichmentElement(BaseModel):
     image: Image
 
 
-class PdfOutlineItem(BaseModel):
-    """A single PDF bookmark / table-of-contents entry.
-
-    Extracted from the PDF outline and used as the authoritative heading-hierarchy signal.
-    The list is kept flat and in document order; each entry carries its own ``level`` so no
-    tree structure is needed for matching.
-    """
-
-    title: str
-    # 0-based depth as reported by the PDF outline; compressed to contiguous levels downstream.
-    level: int
-    # 1-based target page; None when the bookmark has no page destination.
-    page_no: int | None = None
-    # Top-left-origin vertical position of the target, when derivable from the destination view.
-    y_top: float | None = None
-
-
 class Page(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 

@@ -31,11 +31,10 @@ from docling.datamodel.backend_options import (
     PdfBackendOptions,
     ThreadedDoclingParseBackendOptions,
 )
-from docling.datamodel.base_models import PdfOutlineItem
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.exceptions import DocumentLoadError
 from docling.utils.locks import pypdfium2_lock
-from docling.utils.pdf_outline import outline_from_docling_parse
+from docling.utils.pdf_outline import PdfOutlineItem, outline_from_docling_parse
 
 if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument

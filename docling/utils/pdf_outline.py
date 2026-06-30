@@ -17,9 +17,9 @@ from typing import TYPE_CHECKING
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
+from pydantic import BaseModel
 from pypdfium2._helpers.misc import PdfiumError
 
-from docling.datamodel.base_models import PdfOutlineItem
 from docling.utils.locks import pypdfium2_lock
 
 if TYPE_CHECKING:
@@ -29,6 +29,25 @@ if TYPE_CHECKING:
     )
 
 _log = logging.getLogger(__name__)
+
+
+class PdfOutlineItem(BaseModel):
+    """A single PDF bookmark / table-of-contents entry (internal).
+
+    Internal data-passing structure between a PDF backend's ``get_document_outline()`` and the
+    heading-hierarchy stage; not part of the public datamodel or the serialized output. The list
+    is kept flat and in document order; each entry carries its own ``level`` so no tree structure
+    is needed for matching.
+    """
+
+    title: str
+    # 0-based depth as reported by the PDF outline; compressed to contiguous levels downstream.
+    level: int
+    # 1-based target page; None when the entry has no resolvable page (e.g. docling-parse ToC).
+    page_no: int | None = None
+    # Top-left-origin vertical position of the target, when derivable from the destination view.
+    y_top: float | None = None
+
 
 # Destination view modes whose coordinates carry a usable vertical (top) position, mapped to
 # the index of that coordinate within the position tuple. Coordinates are in PDF space
