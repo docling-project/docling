@@ -571,7 +571,14 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
         }
         try:
-            texts = [t.text for t in root_el.findall(".//w:t", namespaces=ns) if t.text]
+            # w:t(일반 텍스트) + a:t(도형/텍스트박스 텍스트) 모두 수집.
+            # a:t 만 있는 머리말/꼬리말이 빈 시그니처로 통째 skip 되는 것을 방지.
+            texts = [
+                t.text
+                for xpath in (".//w:t", ".//a:t")
+                for t in root_el.findall(xpath, namespaces=ns)
+                if t.text
+            ]
         except Exception:
             texts = []
         text_sig = "".join(texts).strip()
@@ -619,10 +626,22 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         if not parts:
             return
 
-        # 머리말/꼬리말 콘텐츠를 격리된 부모 계층 아래에서 walk 하기 위해 스냅샷 후 복원
+        # 머리말/꼬리말 walk 는 본문 파서가 쓰는 인스턴스 상태(목록/헤딩/번호/히스토리)를
+        # 함께 변경한다. 머리말은 본문보다 먼저 emit 되므로, 격리하지 않으면 본문 첫 문단이
+        # 머리말의 목록·번호 상태를 물려받아 잘못 중첩/번호 매겨질 수 있다(이슈 #56).
+        # → 관련 상태를 전부 스냅샷 후 finally 에서 복원한다.
         saved_parents = dict(self.parents)
         saved_in_hf = self._in_hf
+        saved_level = self.level
+        saved_list_iter = self.listIter
+        saved_level_at_new_list = self.level_at_new_list
+        saved_numbered_headers = dict(self.numbered_headers)
+        saved_history = {k: list(v) for k, v in self.history.items()}
+        saved_num_counters = dict(getattr(self, "_num_counters_by_numid", {}))
+
         self._in_hf = "hdr" if kind == "header" else "ftr"
+        # 머리말/꼬리말끼리만 dedup 하고, 머리말↔꼬리말 간에는 격리한다(매 호출마다 초기화).
+        self._hf_seen_text = set()
 
         group = None
         seen_sigs: set[str] = set()
@@ -654,6 +673,16 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents.clear()
             self.parents.update(saved_parents)
             self._in_hf = saved_in_hf
+            self.level = saved_level
+            self.listIter = saved_list_iter
+            self.level_at_new_list = saved_level_at_new_list
+            self.numbered_headers.clear()
+            self.numbered_headers.update(saved_numbered_headers)
+            for k, v in saved_history.items():
+                self.history[k] = list(v)
+            if hasattr(self, "_num_counters_by_numid"):
+                self._num_counters_by_numid.clear()
+                self._num_counters_by_numid.update(saved_num_counters)
 
     def _walk_linear(
         self,
@@ -725,7 +754,11 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                             text_content = " ".join(
                                 [t.text for t in shape_text_elements if t.text]
                             )
-                            if text_content.strip():
+                            # 머리말/꼬리말의 도형 텍스트도 노이즈(빈값·페이지번호) 필터 적용
+                            if (
+                                text_content.strip()
+                                and not (self._in_hf and self._is_noise_hf_text(text_content))
+                            ):
                                 # Create a paragraph-like element to process with standard handler
                                 level = self._get_level()
                                 shape_group = doc.add_group(
@@ -886,7 +919,8 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             cell_element = table.rows[0].cells[0]
             # In case we have a table of only 1 cell, we consider it furniture
             # And proceed processing the content of the cell as though it's in the document body
-            self._walk_linear(cell_element._element, docx_obj, doc)
+            # owner_part 전파: 머리말/꼬리말 표 안 이미지의 rId 가 올바른 파트에서 해석되도록
+            self._walk_linear(cell_element._element, docx_obj, doc, owner_part=owner_part)
             return
         # 2) 순수 TableData를 쌓을 객체
         data = TableData(num_rows=num_rows, num_cols=num_cols)
@@ -999,7 +1033,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                         continue
                 elif typ == "table":
                     # 중첩 테이블(가장 안쪽)만 실제 TableData로 재귀 처리
-                    self._handle_tables_enhanced(payload, docx_obj, doc)
+                    self._handle_tables_enhanced(payload, docx_obj, doc, owner_part=owner_part)
                     continue
 
         # 7) TableData 형태로 출력 (중첩 없는 가장 바깥쪽만)
@@ -1552,7 +1586,12 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                     _log.debug(f"Could not parse paragraph in shape: {e}")
 
         # If we have text but no structured content, add it as plain text
-        if full_text and not table_elements and not para_elements:
+        if (
+            full_text
+            and not table_elements
+            and not para_elements
+            and not (self._in_hf and self._is_noise_hf_text(full_text))
+        ):
             # Check for duplicate content before adding
                 if not self._is_duplicate_content(full_text):
                     doc.add_text(
@@ -1680,7 +1719,34 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # 머리말/꼬리말 컨텍스트에서는 빈 문단·순수 페이지번호를 버려 노이즈를 막는다(이슈 #56).
         if self._in_hf and self._is_noise_hf_text(text):
-            self._update_history(p_style_id, p_level, numid, ilevel)
+            return
+
+        # 머리말/꼬리말 문단은 목록/제목/헤딩 분기를 타지 않고 항상 PAGE_HEADER/PAGE_FOOTER
+        # 평문으로 emit 한다. 이유: ①본문 구조(번호·헤딩 계층)를 오염시키지 않고
+        # ②downstream 이 furniture 로 인식하는 라벨을 일관되게 부여하기 위함(이슈 #56).
+        if self._in_hf:
+            level = self._get_level()
+            parent = self._create_or_reuse_parent(
+                doc=doc,
+                prev_parent=self.parents.get(level - 1),
+                paragraph_elements=paragraph_elements,
+            )
+            for t, fmt, link in paragraph_elements:
+                if not t or not t.strip():
+                    continue
+                if not self._is_duplicate_content(t):
+                    doc.add_text(
+                        label=self._text_label(),
+                        parent=parent,
+                        text=t,
+                        formatting=fmt,
+                        hyperlink=link,
+                        prov=ProvenanceItem(
+                            page_no=1,
+                            bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                            charspan=(0, 0),
+                        ),
+                    )
             return
 
         # Handle lists
