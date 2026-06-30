@@ -175,9 +175,9 @@ class InlineAsrNativeWhisperOptions(InlineAsrOptions):
         Optional[int],
         Field(
             description=(
-                "Beam size for decoding. Defaults to `1` to enable beam search and "
-                "avoid Whisper's greedy decoding path on long-form audio. Set to `None` "
-                "to use Whisper's greedy decoding default."
+                "Beam size for beam search decoding. When `None` (the default), "
+                "Whisper uses greedy decoding. Set to a positive integer (e.g. `5`) "
+                "to enable beam search, which can improve accuracy at the cost of speed."
             )
         ),
     ] = None
@@ -186,8 +186,9 @@ class InlineAsrNativeWhisperOptions(InlineAsrOptions):
         Field(
             description=(
                 "Whether to feed the model's previous output as a prompt for the next "
-                "window. Defaults to `False` to reduce repetition loops on long or "
-                "difficult audio. Set to `True` to match Whisper's default behavior."
+                "window. When `None` (the default), Whisper's default of `True` is used. "
+                "Set to `False` to reduce repetition loops on long or difficult audio, "
+                "at the risk of inconsistent text across windows."
             )
         ),
     ] = None
