@@ -3,12 +3,16 @@ from pathlib import Path
 
 import pytest
 
-from docling.backend.abstract_backend import AbstractDocumentBackend
+from docling.backend.abstract_backend import (
+    AbstractDocumentBackend,
+    PaginatedDocumentBackend,
+)
 from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import PipelineOptions
 from docling.document_converter import ConversionError, DocumentConverter, FormatOption
 from docling.pipeline.base_pipeline import BasePipeline
+from docling.pipeline.simple_pipeline import SimplePipeline
 
 pytestmark = pytest.mark.cross_platform
 
@@ -134,6 +138,56 @@ def test_convert_unloads_input_backend_when_pipeline_initialization_fails():
             raises_on_error=True,
         )
 
+    assert len(backends) == 1
+    assert backends[0].unload_calls == 1
+    assert stream.closed
+
+
+def test_convert_unloads_input_backend_when_document_is_rejected_after_opening():
+    backends = []
+
+    class TrackingPaginatedBackend(PaginatedDocumentBackend):
+        def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path):
+            super().__init__(in_doc, path_or_stream)
+            self.unload_calls = 0
+            backends.append(self)
+
+        def is_valid(self) -> bool:
+            return True
+
+        def page_count(self) -> int:
+            return 2
+
+        def unload(self):
+            self.unload_calls += 1
+            return super().unload()
+
+        @classmethod
+        def supports_pagination(cls) -> bool:
+            return True
+
+        @classmethod
+        def supported_formats(cls) -> set[InputFormat]:
+            return {InputFormat.MD}
+
+    stream = BytesIO(b"# Hello")
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.MD],
+        format_options={
+            InputFormat.MD: FormatOption(
+                pipeline_cls=SimplePipeline,
+                backend=TrackingPaginatedBackend,
+            )
+        },
+    )
+
+    result = converter.convert(
+        DocumentStream(name="test.md", stream=stream),
+        raises_on_error=False,
+        max_num_pages=1,
+    )
+
+    assert result.status == ConversionStatus.FAILURE
     assert len(backends) == 1
     assert backends[0].unload_calls == 1
     assert stream.closed
