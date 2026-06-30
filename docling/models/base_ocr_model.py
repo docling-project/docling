@@ -304,7 +304,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # Draw OCR rectangles as yellow filled rect
         for rect in ocr_rects:
             x0, y0, x1, y1 = rect.as_tuple()
-            y0 *= scale_x
+            y0 *= scale_y
             y1 *= scale_y
             x0 *= scale_x
             x1 *= scale_x
@@ -315,7 +315,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # Draw OCR and programmatic cells
         for tc in page.cells:
             x0, y0, x1, y1 = tc.rect.to_bounding_box().as_tuple()
-            y0 *= scale_x
+            y0 *= scale_y
             y1 *= scale_y
             x0 *= scale_x
             x1 *= scale_x
