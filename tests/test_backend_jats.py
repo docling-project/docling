@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 from docling_core.types.doc import DocItemLabel, DoclingDocument, GroupLabel
+from docling_core.types.doc.document import Script
 
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult
@@ -108,32 +109,77 @@ def _inline_group_items(doc: DoclingDocument) -> list[list]:
         pytest.param(
             "The mass energy relation <inline-formula><tex-math>$$E=mc^2$$</tex-math></inline-formula> is famous.",
             [
-                (DocItemLabel.TEXT, "The mass energy relation"),
-                (DocItemLabel.FORMULA, "E=mc^2"),
-                (DocItemLabel.TEXT, "is famous."),
+                (DocItemLabel.TEXT, "The mass energy relation", None),
+                (DocItemLabel.FORMULA, "E=mc^2", None),
+                (DocItemLabel.TEXT, "is famous.", None),
             ],
             id="text-formula-text",
         ),
         pytest.param(
             "Given <inline-formula><tex-math>$$a^2$$</tex-math></inline-formula> and <inline-formula><tex-math>$$b^2$$</tex-math></inline-formula> we sum.",
             [
-                (DocItemLabel.TEXT, "Given"),
-                (DocItemLabel.FORMULA, "a^2"),
-                (DocItemLabel.TEXT, "and"),
-                (DocItemLabel.FORMULA, "b^2"),
-                (DocItemLabel.TEXT, "we sum."),
+                (DocItemLabel.TEXT, "Given", None),
+                (DocItemLabel.FORMULA, "a^2", None),
+                (DocItemLabel.TEXT, "and", None),
+                (DocItemLabel.FORMULA, "b^2", None),
+                (DocItemLabel.TEXT, "we sum.", None),
             ],
             id="multiple-formulas",
         ),
         pytest.param(
-            # tex-math is not always wrapped in $$...$$ in real JATS files
-            "The relation <inline-formula><tex-math>E=mc^2</tex-math></inline-formula> holds.",
+            # loose text inside <inline-formula> around the <tex-math> is preserved
+            "The relation <inline-formula>foo <tex-math>$$E=mc^2$$</tex-math> bar</inline-formula> holds.",
             [
-                (DocItemLabel.TEXT, "The relation"),
-                (DocItemLabel.FORMULA, "E=mc^2"),
-                (DocItemLabel.TEXT, "holds."),
+                (DocItemLabel.TEXT, "The relation", None),
+                (DocItemLabel.TEXT, "foo", None),
+                (DocItemLabel.FORMULA, "E=mc^2", None),
+                (DocItemLabel.TEXT, "bar", None),
+                (DocItemLabel.TEXT, "holds.", None),
             ],
-            id="bare-tex-math",
+            id="text-inside-inline-formula",
+        ),
+        pytest.param(
+            "We use <inline-formula><italic>x</italic> <tex-math>$$a^2$$</tex-math></inline-formula> here.",
+            [
+                (DocItemLabel.TEXT, "We use", None),
+                (DocItemLabel.TEXT, "x", (False, True, False, False, Script.BASELINE)),
+                (DocItemLabel.FORMULA, "a^2", None),
+                (DocItemLabel.TEXT, "here.", None),
+            ],
+            id="italic-inside-formula",
+        ),
+        pytest.param(
+            "Index <inline-formula>x<sub>i</sub> <tex-math>$$x_i$$</tex-math></inline-formula> shown.",
+            [
+                (DocItemLabel.TEXT, "Index", None),
+                (DocItemLabel.TEXT, "x", None),
+                (DocItemLabel.TEXT, "i", (False, False, False, False, Script.SUB)),
+                (DocItemLabel.FORMULA, "x_i", None),
+                (DocItemLabel.TEXT, "shown.", None),
+            ],
+            id="subscript-inside-formula",
+        ),
+        pytest.param(
+            "Take <inline-formula><bold><italic>v</italic></bold> <tex-math>$$v$$</tex-math></inline-formula> next.",
+            [
+                (DocItemLabel.TEXT, "Take", None),
+                (DocItemLabel.TEXT, "v", (True, True, False, False, Script.BASELINE)),
+                (DocItemLabel.FORMULA, "v", None),
+                (DocItemLabel.TEXT, "next.", None),
+            ],
+            id="nested-emphasis-inside-formula",
+        ),
+        pytest.param(
+            "Compare <italic>lhs</italic> <inline-formula><tex-math>$$a$$</tex-math> rhs</inline-formula> and <inline-formula><tex-math>$$b$$</tex-math></inline-formula> now.",
+            [
+                (DocItemLabel.TEXT, "Compare lhs", None),
+                (DocItemLabel.FORMULA, "a", None),
+                (DocItemLabel.TEXT, "rhs", None),
+                (DocItemLabel.TEXT, "and", None),
+                (DocItemLabel.FORMULA, "b", None),
+                (DocItemLabel.TEXT, "now.", None),
+            ],
+            id="formula-with-surrounding-elements",
         ),
     ],
 )
@@ -142,7 +188,7 @@ def test_jats_inline_formula_is_grouped(paragraph, expected):
 
     groups = _inline_group_items(doc)
     assert len(groups) == 1
-    assert [(item.label, item.text) for item in groups[0]] == expected
+    assert [_formatting_tuple(item) for item in groups[0]] == expected
 
 
 @pytest.mark.parametrize(
@@ -168,6 +214,31 @@ def test_jats_inline_formula_is_not_grouped(paragraph, expected_formulas):
     assert _inline_group_items(doc) == []
     formulas = [t.text for t in doc.texts if t.label == DocItemLabel.FORMULA]
     assert formulas == expected_formulas
+
+
+def _formatting_tuple(item) -> tuple:
+    """Compact, comparable view of a text item's formatting."""
+    f = item.formatting
+    if f is None:
+        return (item.label, item.text, None)
+    return (
+        item.label,
+        item.text,
+        (f.bold, f.italic, f.underline, f.strikethrough, f.script),
+    )
+
+
+def test_jats_inline_formula_styled_content_markdown_rendering():
+    doc = convert_jats_body(
+        "<sec><title>T</title>"
+        "<p>Use <inline-formula><italic>x</italic> "
+        "<tex-math>$$a^2$$</tex-math></inline-formula> now.</p>"
+        "</sec>"
+    )
+
+    md = doc.export_to_markdown()
+    assert "*x*" in md
+    assert "a^2" in md
 
 
 def test_jats_footnotes_are_preserved():

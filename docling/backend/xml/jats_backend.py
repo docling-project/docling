@@ -35,7 +35,9 @@ from docling_core.types.doc import (
     TableData,
     TextItem,
 )
+from docling_core.types.doc.document import Formatting, Script
 from lxml import etree
+from pydantic import BaseModel
 from typing_extensions import TypedDict, override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -52,6 +54,21 @@ DEFAULT_HEADER_ABSTRACT: Final[str] = "Abstract"
 DEFAULT_HEADER_FOOTNOTES: Final[str] = "Footnotes"
 DEFAULT_HEADER_REFERENCES: Final[str] = "References"
 DEFAULT_TEXT_ETAL: Final[str] = "et al."
+
+_JATS_FORMAT_TAG_MAP: Final[dict[str, dict[str, object]]] = {
+    "bold": {"bold": True},
+    "italic": {"italic": True},
+    "underline": {"underline": True},
+    "strike": {"strikethrough": True},
+    "sub": {"script": Script.SUB},
+    "sup": {"script": Script.SUPER},
+}
+
+
+class InlineSegment(BaseModel):
+    label: DocItemLabel
+    text: str
+    formatting: Formatting | None = None
 
 
 class Abstract(TypedDict):
@@ -619,20 +636,121 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     def _add_equation(
         self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
     ) -> None:
-        math_text = node.text
-        math_parts = math_text.split("$$")
-        if len(math_parts) == 3:
-            math_formula = math_parts[1]
-            doc.add_text(label=DocItemLabel.FORMULA, text=math_formula, parent=parent)
+        formula = JatsDocumentBackend._extract_tex_math(node)
+        if formula:
+            doc.add_text(label=DocItemLabel.FORMULA, text=formula, parent=parent)
 
         return
 
-    def _get_inline_equation(self, node: etree._Element) -> str | None:
-        tex_math = node.find("tex-math")
-        if tex_math is None or not tex_math.text:
+    @staticmethod
+    def _extract_tex_math(node: etree._Element) -> str | None:
+        if not node.text:
             return None
-        math_parts = tex_math.text.split("$$")
-        return math_parts[1] if len(math_parts) == 3 else tex_math.text.strip()
+        math_parts = node.text.split("$$")
+        return math_parts[1] if len(math_parts) == 3 else None
+
+    @staticmethod
+    def _merge_formatting(formatting: Formatting | None, tag: str) -> Formatting | None:
+        if tag not in _JATS_FORMAT_TAG_MAP:
+            return formatting
+        base = formatting.model_copy() if formatting else Formatting()
+        return base.model_copy(update=_JATS_FORMAT_TAG_MAP[tag])
+
+    @staticmethod
+    def _get_styled_text(
+        node: etree._Element, formatting: Formatting | None = None
+    ) -> list[InlineSegment]:
+        current = JatsDocumentBackend._merge_formatting(formatting, node.tag)
+        segments: list[InlineSegment] = []
+        if node.text:
+            text = node.text.replace("\n", " ")
+            if text:
+                segments.append(
+                    InlineSegment(
+                        label=DocItemLabel.TEXT, text=text, formatting=current
+                    )
+                )
+        for child in node:
+            if isinstance(child.tag, str):
+                segments.extend(JatsDocumentBackend._get_styled_text(child, current))
+            if child.tail:
+                tail = child.tail.replace("\n", " ")
+                if tail:
+                    segments.append(
+                        InlineSegment(
+                            label=DocItemLabel.TEXT, text=tail, formatting=current
+                        )
+                    )
+        return segments
+
+    @staticmethod
+    def _strip_segments(segments: list[InlineSegment]) -> list[InlineSegment]:
+        stripped: list[InlineSegment] = []
+        for segment in segments:
+            text = segment.text.strip()
+            if text:
+                stripped.append(segment.model_copy(update={"text": text}))
+        return stripped
+
+    @staticmethod
+    def _walk_inline_formula(
+        node: etree._Element, formatting: Formatting | None = None
+    ) -> list[InlineSegment]:
+        current = JatsDocumentBackend._merge_formatting(formatting, node.tag)
+        segments: list[InlineSegment] = []
+        if node.text:
+            text = node.text.replace("\n", " ")
+            if text:
+                segments.append(
+                    InlineSegment(
+                        label=DocItemLabel.TEXT, text=text, formatting=current
+                    )
+                )
+        for child in node:
+            tag = child.tag
+            if not isinstance(tag, str) or tag.endswith("}math"):
+                # Skip nodes with no inline content: comments / processing
+                # instructions, and MathML.
+                pass
+            elif tag == "tex-math":
+                formula = JatsDocumentBackend._extract_tex_math(child)
+                if formula is not None:
+                    segments.append(
+                        InlineSegment(label=DocItemLabel.FORMULA, text=formula)
+                    )
+            elif tag in _JATS_FORMAT_TAG_MAP:
+                segments.extend(JatsDocumentBackend._get_styled_text(child, current))
+            else:
+                segments.extend(
+                    JatsDocumentBackend._walk_inline_formula(child, current)
+                )
+            if child.tail:
+                tail = child.tail.replace("\n", " ")
+                if tail:
+                    segments.append(
+                        InlineSegment(
+                            label=DocItemLabel.TEXT, text=tail, formatting=current
+                        )
+                    )
+        return segments
+
+    @staticmethod
+    def _get_inline_formula_segments(
+        node: etree._Element, pending_text: str
+    ) -> tuple[list[InlineSegment], str]:
+        child_segments = JatsDocumentBackend._strip_segments(
+            JatsDocumentBackend._walk_inline_formula(node)
+        )
+        if not child_segments:
+            return [], pending_text
+        segments: list[InlineSegment] = []
+        if pending_text.strip():
+            segments.append(
+                InlineSegment(label=DocItemLabel.TEXT, text=pending_text.strip())
+            )
+            pending_text = ""
+        segments.extend(child_segments)
+        return segments, pending_text
 
     def _add_figure_captions(
         self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
@@ -891,7 +1009,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         skip_tags = ["term"]
         flush_tags = ["ack", "sec", "list", "boxed-text", "disp-formula", "fig"]
         new_parent: NodeItem = parent
-        inline_segments: list[tuple[DocItemLabel, str]] = []
+        inline_segments: list[InlineSegment] = []
         node_text: str = (
             node.text.replace("\n", " ")
             if (node.tag not in skip_tags and node.text)
@@ -969,12 +1087,15 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 self._add_equation(doc, parent, child)
                 stop_walk = True
             elif child.tag == "inline-formula":
-                formula = self._get_inline_equation(child) if node.tag == "p" else None
-                if formula is not None:
-                    if node_text.strip():
-                        inline_segments.append((DocItemLabel.TEXT, node_text.strip()))
-                        node_text = ""
-                    inline_segments.append((DocItemLabel.FORMULA, formula))
+                # Inline formulas are only rendered inline within a paragraph;
+                # their content is converted to styled inline segments.
+                if node.tag == "p":
+                    new_segments, node_text = (
+                        JatsDocumentBackend._get_inline_formula_segments(
+                            child, node_text
+                        )
+                    )
+                    inline_segments.extend(new_segments)
                 stop_walk = True
 
             # step into child
@@ -991,17 +1112,22 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         # create paragraph
         if node.tag == "p":
             if node_text.strip():
-                inline_segments.append((DocItemLabel.TEXT, node_text.strip()))
+                inline_segments.append(
+                    InlineSegment(label=DocItemLabel.TEXT, text=node_text.strip())
+                )
             if inline_segments:
-                # Wrap in an inline group only when several segments flow together
-                # (e.g. text + formula); a single segment is added directly.
                 container = (
                     doc.add_inline_group(parent=parent)
                     if len(inline_segments) > 1
                     else parent
                 )
-                for label, text in inline_segments:
-                    doc.add_text(label=label, text=text, parent=container)
+                for segment in inline_segments:
+                    doc.add_text(
+                        label=segment.label,
+                        text=segment.text,
+                        formatting=segment.formatting,
+                        parent=container,
+                    )
             return ""
         else:
             # backpropagate the text
