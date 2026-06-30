@@ -766,7 +766,7 @@
             "l": 0.0,
             "t": 1.0,
             "r": 7.0,
-            "b": 4.0,
+            "b": 5.0,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
@@ -2487,7 +2487,7 @@
     "2": {
       "size": {
         "width": 7.0,
-        "height": 4.0
+        "height": 5.0
       },
       "page_no": 2
     },

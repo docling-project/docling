@@ -2,7 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Type, Union
+from typing import TYPE_CHECKING, Annotated, Any, Optional, Type, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -23,6 +23,7 @@ from docling_core.types.io import (
 # DO NOT REMOVE; explicitly exposed from this location
 from PIL.Image import Image
 from pydantic import (
+    AnyHttpUrl,
     AnyUrl,
     BaseModel,
     ConfigDict,
@@ -41,6 +42,30 @@ if TYPE_CHECKING:
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.datamodel.pipeline_options import PipelineOptions
+
+
+class HttpSource(BaseModel):
+    """A remote document source: a URL bundled with the headers used to fetch it.
+
+    Lives in the core datamodel (alongside ``DocumentStream``) so the converter
+    can accept it as an input; the serving layer subclasses it for its request
+    schema.
+    """
+
+    url: Annotated[
+        AnyHttpUrl,
+        Field(
+            description="HTTP url to process",
+            examples=["https://arxiv.org/pdf/2206.01062"],
+        ),
+    ]
+    headers: Annotated[
+        dict[str, Any],
+        Field(
+            description="Additional headers used to fetch the urls, "
+            "e.g. authorization, agent, etc"
+        ),
+    ] = {}
 
 
 class BaseFormatOption(BaseModel):

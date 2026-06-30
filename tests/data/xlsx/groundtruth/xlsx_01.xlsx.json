@@ -3666,8 +3666,8 @@
           "bbox": {
             "l": 0.0,
             "t": 0.0,
-            "r": 0.0,
-            "b": 0.0,
+            "r": 1.0,
+            "b": 2.0,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
@@ -3773,8 +3773,8 @@
     },
     "4": {
       "size": {
-        "width": 0.0,
-        "height": 0.0
+        "width": 1.0,
+        "height": 2.0
       },
       "page_no": 4
     }

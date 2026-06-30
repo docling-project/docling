@@ -60,6 +60,7 @@ from docling.datamodel.base_models import (
     DocumentStream,
     ErrorItem,
     FailureCategory,
+    HttpSource,
     InputFormat,
 )
 from docling.datamodel.document import (
@@ -401,7 +402,7 @@ class DocumentConverter:
     @validate_call(config=ConfigDict(strict=True))
     def convert(
         self,
-        source: Union[Path, str, DocumentStream],  # TODO review naming
+        source: Union[Path, str, DocumentStream, HttpSource],  # TODO review naming
         headers: Optional[dict[str, str]] = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
@@ -414,10 +415,11 @@ class DocumentConverter:
         content), use the `convert_string` method.
 
         Args:
-            source: Source of input document given as file path, URL, or
-                DocumentStream.
+            source: Source of input document given as file path, URL,
+                DocumentStream, or HttpSource (a URL bundled with its own headers).
             headers: Optional headers given as a dictionary of string key-value pairs,
-                in case of URL input source.
+                in case of URL input source. Ignored for HttpSource inputs, which
+                carry their own headers (these override the batch headers per key).
             raises_on_error: Whether to raise an error on the first conversion failure.
                 If False, errors are captured in the ConversionResult objects.
             max_num_pages: Maximum number of pages accepted per document.
@@ -465,7 +467,9 @@ class DocumentConverter:
     @validate_call(config=ConfigDict(strict=True))
     def convert_all(
         self,
-        source: Iterable[Union[Path, str, DocumentStream]],  # TODO review naming
+        source: Iterable[
+            Union[Path, str, DocumentStream, HttpSource]
+        ],  # TODO review naming
         headers: Optional[dict[str, str]] = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
@@ -476,9 +480,10 @@ class DocumentConverter:
 
         Args:
             source: Source of input documents given as an iterable of file paths, URLs,
-                or DocumentStreams.
+                DocumentStreams, or HttpSources (a URL bundled with its own headers).
             headers: Optional headers given as a (single) dictionary of string
-                key-value pairs, in case of URL input source.
+                key-value pairs, in case of URL input source. Per-source HttpSource
+                headers override these (merged per key) for that source only.
             raises_on_error: Whether to raise an error on the first conversion failure.
             max_num_pages: Maximum number of pages accepted per document.
                 Documents exceeding this number will not be converted.

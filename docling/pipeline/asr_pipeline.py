@@ -670,7 +670,7 @@ class AsrPipeline(BasePipeline):
         return AsrPipelineOptions()
 
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
-        _log.info(f"start _build_document in AsrPipeline: {conv_res.input.file}")
+        _log.info("Transcribing audio document %s.", conv_res.input.file.name)
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
             self._model.run(conv_res=conv_res)
 
