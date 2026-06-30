@@ -323,6 +323,20 @@ def test_extract_parent_hyperlinks():
     assert str(annotated_text_list[0].hyperlink) == a_tag.get("href")
 
 
+def test_code_language_hint_prefers_prefixed_class():
+    # A language- class wins over a bare class even when the bare class is itself
+    # a known language token, so a highlighter's real hint is not outranked by an
+    # unrelated utility class that happens to look like a language.
+    soup = BeautifulSoup(
+        '<pre class="bash"><code class="language-python">x = 1</code></pre>',
+        "html.parser",
+    )
+    assert HTMLDocumentBackend._code_language_hint(soup.pre) == "language-python"
+
+    plain = BeautifulSoup("<pre><code>x = 1</code></pre>", "html.parser")
+    assert HTMLDocumentBackend._code_language_hint(plain.pre) is None
+
+
 @pytest.fixture(scope="module")
 def html_paths() -> list[Path]:
     # Define the directory you want to search

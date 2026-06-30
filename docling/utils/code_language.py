@@ -9,7 +9,6 @@ than ``UNKNOWN``.
 
 import json
 import re
-from typing import Optional
 
 from docling_core.types.doc import CodeLanguageLabel
 
@@ -78,9 +77,12 @@ _PHP_RE = re.compile(r"<\?php\b")
 _HTML_RE = re.compile(
     r"<!doctype\s+html\b|</(html|head|body)>|<(head|body)[\s>]", re.IGNORECASE
 )
-_DOCKERFILE_FROM_RE = re.compile(r"^\s*FROM\s+\S+", re.IGNORECASE | re.MULTILINE)
+# Line-anchored patterns use ``^[ \t]*`` rather than ``^\s*``: under re.MULTILINE
+# a leading ``\s`` also matches newlines, so on a block with long blank runs it
+# backtracks quadratically while re-anchoring at every line.
+_DOCKERFILE_FROM_RE = re.compile(r"^[ \t]*FROM\s+\S+", re.IGNORECASE | re.MULTILINE)
 _DOCKERFILE_DIRECTIVE_RE = re.compile(
-    r"^\s*(RUN|CMD|COPY|ADD|ENTRYPOINT|WORKDIR|ENV|EXPOSE)\b",
+    r"^[ \t]*(RUN|CMD|COPY|ADD|ENTRYPOINT|WORKDIR|ENV|EXPOSE)\b",
     re.IGNORECASE | re.MULTILINE,
 )
 _CPP_RE = re.compile(r"\bstd::|\bcout\b|\btemplate\s*<|\bnamespace\b")
@@ -95,7 +97,7 @@ _CONTENT_RULES = (
     (
         CodeLanguageLabel.GO,
         re.compile(
-            r"^\s*package\s+main\b|\bfunc\s+\(\w+\s+\*?\w+\)|\bfmt\.(Print|Println|Printf)\b",
+            r"^[ \t]*package\s+main\b|\bfunc\s+\(\w+\s+\*?\w+\)|\bfmt\.(Print|Println|Printf)\b",
             re.MULTILINE,
         ),
     ),
@@ -108,8 +110,8 @@ _CONTENT_RULES = (
     (
         CodeLanguageLabel.PYTHON,
         re.compile(
-            r"^\s*def\s+\w+\s*\([^\n]*\)\s*(->[^\n:]+)?:"
-            r"|^\s*elif\b|\b__name__\b|^\s*from\s+\S+\s+import\b",
+            r"^[ \t]*def\s+\w+\s*\([^\n]*\)\s*(->[^\n:]+)?:"
+            r"|^[ \t]*elif\b|\b__name__\b|^[ \t]*from\s+\S+\s+import\b",
             re.MULTILINE,
         ),
     ),
@@ -128,16 +130,22 @@ _CONTENT_RULES = (
     ),
     (
         CodeLanguageLabel.SQL,
+        # SELECT may wrap onto its own lines, so each gap allows one line break
+        # before the next keyword. The gaps are tempered (each stops at the next
+        # keyword) so a long line of repeated keywords cannot make the engine
+        # re-pivot and backtrack quadratically, and re.DOTALL is avoided for the
+        # same reason and because it would let a match span unrelated prose lines.
         re.compile(
-            r"^\s*select\b.*\bfrom\b.*(\bwhere\b|\bjoin\b|\bgroup\s+by\b"
-            r"|\border\s+by\b|;)"
-            r"|^\s*insert\s+into\s+\w+\s*(\(|values\b|select\b)"
-            r"|^\s*update\s+\w+\s+set\b.*="
-            r"|^\s*delete\s+from\s+\w+\s*(\bwhere\b|;)"
-            r"|^\s*create\s+(table|view|index|database)\s+(if\s+not\s+exists\s+)?"
+            r"^[ \t]*select\b(?:(?!\bfrom\b)[^\n])*(?:\n[ \t]*)?\bfrom\b"
+            r"(?:(?!\bwhere\b|\bjoin\b|\bgroup\s+by\b|\border\s+by\b|;)[^\n])*"
+            r"(?:\n[ \t]*)?(\bwhere\b|\bjoin\b|\bgroup\s+by\b|\border\s+by\b|;)"
+            r"|^[ \t]*insert\s+into\s+\w+\s*(\(|values\b|select\b)"
+            r"|^[ \t]*update\s+\w+\s+set\b[^\n]*?="
+            r"|^[ \t]*delete\s+from\s+\w+\s*(\bwhere\b|;)"
+            r"|^[ \t]*create\s+(table|view|index|database)\s+(if\s+not\s+exists\s+)?"
             r"\w+\s*(\(|as\b)"
-            r"|^\s*alter\s+table\s+\w+\s+(add|drop|modify|alter|rename)\b"
-            r"|^\s*drop\s+(table|view|index|database)\s+(if\s+exists\s+)?\w+\s*;",
+            r"|^[ \t]*alter\s+table\s+\w+\s+(add|drop|modify|alter|rename)\b"
+            r"|^[ \t]*drop\s+(table|view|index|database)\s+(if\s+exists\s+)?\w+\s*;",
             re.IGNORECASE | re.MULTILINE,
         ),
     ),
@@ -158,7 +166,18 @@ _CONTENT_RULES = (
 )
 
 
-def normalize_code_language(hint: Optional[str]) -> CodeLanguageLabel:
+def normalize_code_language(hint: str | None) -> CodeLanguageLabel:
+    """Resolve an explicit language token to a ``CodeLanguageLabel``.
+
+    Args:
+        hint: A language token carried by the source, such as a Markdown fence
+            info string or an HTML ``language-``/``lang-`` class. Common
+            aliases (``py``, ``golang``, ``c++``, ``yml``, ...) are recognized.
+
+    Returns:
+        The matching ``CodeLanguageLabel``, or ``CodeLanguageLabel.UNKNOWN`` if
+        the hint is empty or not recognized.
+    """
     if not hint:
         return CodeLanguageLabel.UNKNOWN
 
@@ -174,8 +193,23 @@ def normalize_code_language(hint: Optional[str]) -> CodeLanguageLabel:
     return _ALIASES.get(token, CodeLanguageLabel.UNKNOWN)
 
 
-def detect_code_language(text: str, hint: Optional[str] = None) -> CodeLanguageLabel:
-    """An explicit ``hint`` wins over content analysis."""
+def detect_code_language(text: str, hint: str | None = None) -> CodeLanguageLabel:
+    """Detect the programming language of a code block.
+
+    An explicit ``hint`` is trusted over the content; otherwise the language is
+    inferred from ``text`` using conservative, high-precision markers, and an
+    ambiguous snippet stays ``CodeLanguageLabel.UNKNOWN`` rather than risk a
+    wrong label.
+
+    Args:
+        text: The contents of the code block.
+        hint: An optional language token to normalize first, as accepted by
+            ``normalize_code_language``.
+
+    Returns:
+        The detected ``CodeLanguageLabel``, or ``CodeLanguageLabel.UNKNOWN``
+        when no language can be determined with confidence.
+    """
     label = normalize_code_language(hint)
     if label is not CodeLanguageLabel.UNKNOWN:
         return label

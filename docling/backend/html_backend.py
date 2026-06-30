@@ -54,7 +54,11 @@ from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
-from docling.utils.code_language import detect_code_language, normalize_code_language
+from docling.utils.code_language import (
+    _HINT_PREFIXES,
+    detect_code_language,
+    normalize_code_language,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -127,8 +131,6 @@ _PARA_BREAKERS = {
 }
 
 _CODE_TAG_SET: Final = {"code", "kbd", "samp"}
-
-_LANGUAGE_CLASSES: Final = ("language-", "lang-")
 
 _FORMAT_TAG_MAP: Final = {
     "b": {"bold": True},
@@ -3021,7 +3023,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return {str(value) for value in classes if isinstance(value, str)}
 
     @staticmethod
-    def _code_language_hint(tag: Tag) -> Optional[str]:
+    def _code_language_hint(tag: Tag) -> str | None:
         """Pick the language class a highlighter set on the ``<pre>`` or ``<code>``.
 
         A ``language-``/``lang-`` prefixed class is preferred so an unrelated
@@ -3031,7 +3033,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for element in (tag, *tag.find_all("code")):
             tokens |= HTMLDocumentBackend._get_tag_classes(element)
 
-        prefixed = sorted(t for t in tokens if t.lower().startswith(_LANGUAGE_CLASSES))
+        prefixed = sorted(t for t in tokens if t.lower().startswith(_HINT_PREFIXES))
         bare = sorted(tokens - set(prefixed))
         for token in (*prefixed, *bare):
             if normalize_code_language(token) is not CodeLanguageLabel.UNKNOWN:

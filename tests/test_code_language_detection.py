@@ -1,3 +1,6 @@
+import threading
+import time
+
 import pytest
 from docling_core.types.doc import CodeLanguageLabel
 
@@ -14,6 +17,7 @@ CSHARP_HELLO = 'using System;\n\nConsole.WriteLine("hi");\n'
 C_HELLO = '#include <stdio.h>\n\nint main() {\n    printf("hi");\n}\n'
 CPP_HELLO = '#include <iostream>\n\nint main() {\n    std::cout << "hi";\n}\n'
 SQL_QUERY = "SELECT id, name FROM users WHERE active = 1;"
+SQL_MULTILINE = "SELECT id, name\nFROM users\nWHERE active = 1"
 TS_INTERFACE = "interface User {\n    name: string;\n    age: number;\n}\n"
 JS_SNIPPET = "const add = (a, b) => a + b;\nconsole.log(add(1, 2));\n"
 PHP_SNIPPET = '<?php echo "hi"; ?>'
@@ -34,6 +38,7 @@ BASH_SCRIPT = "#!/bin/bash\nset -euo pipefail\necho hello\n"
         (C_HELLO, CodeLanguageLabel.C),
         (CPP_HELLO, CodeLanguageLabel.C_PLUS_PLUS),
         (SQL_QUERY, CodeLanguageLabel.SQL),
+        (SQL_MULTILINE, CodeLanguageLabel.SQL),
         (TS_INTERFACE, CodeLanguageLabel.TYPESCRIPT),
         (JS_SNIPPET, CodeLanguageLabel.JAVASCRIPT),
         (PHP_SNIPPET, CodeLanguageLabel.PHP),
@@ -69,10 +74,49 @@ def test_detect_from_content(text, expected):
         "public enum Color { RED, GREEN, BLUE }",
         # SQL embedded in a string literal is not a SQL document.
         'cur.execute("select id from users where active = 1")',
+        # Multi-line prose must not read as SQL just because a line opens with a
+        # keyword and a later line happens to carry from/where/order by/=.
+        "Select the items you want to keep.\nGet them out from the cupboard.\n"
+        "This is where things get tricky.",
+        "Select a plan that fits.\nChoose from our tiers.\nWe will join you shortly.",
+        "Update your set of preferences soon.\nThe answer = yes.",
     ],
 )
 def test_ambiguous_content_stays_unknown(text):
     assert detect_code_language(text) == CodeLanguageLabel.UNKNOWN
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        # A line of repeated keywords is the bait for polynomial backtracking:
+        # untempered ".*" gaps around the `from` pivot would re-scan the tail
+        # for every `from`. The tempered gaps keep this linear.
+        "select " + "from " * 40000,
+        # Many SELECT line-start anchors under re.MULTILINE.
+        "select x from y\n" * 40000,
+        # A literal line followed by a long blank run: a leading `\s` in a
+        # line-anchored rule would swallow the blanks and go quadratic.
+        "FROM ubuntu\n" + "\n" * 40000,
+        "def f():\n" + "\n" * 40000,
+    ],
+)
+def test_detection_stays_linear_on_large_input(text):
+    result: list[CodeLanguageLabel] = []
+
+    def _run() -> None:
+        result.append(detect_code_language(text))
+
+    worker = threading.Thread(target=_run, daemon=True)
+    t0 = time.monotonic()
+    worker.start()
+    worker.join(timeout=10.0)
+    elapsed = time.monotonic() - t0
+
+    assert not worker.is_alive(), (
+        f"detect_code_language() still running after {elapsed:.1f}s on a large block."
+    )
+    assert isinstance(result[0], CodeLanguageLabel)
 
 
 @pytest.mark.parametrize(
