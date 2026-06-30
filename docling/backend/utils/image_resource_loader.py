@@ -34,6 +34,19 @@ _log = logging.getLogger(__name__)
 
 
 def validate_url_safety(url: str) -> None:
+    """Reject URLs that resolve to a non-public IP address.
+
+    Guards against SSRF by requiring the URL's host to resolve to a globally
+    routable address. Private, loopback, link-local, reserved, multicast, and
+    unspecified addresses are refused.
+
+    Args:
+        url: The URL whose host is validated.
+
+    Raises:
+        ValueError: If the URL has no hostname, the hostname cannot be
+            resolved, or it resolves to a restricted (non-global) IP address.
+    """
     parsed = urlparse(url)
     hostname = parsed.hostname
 

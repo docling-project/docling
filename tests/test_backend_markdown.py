@@ -201,10 +201,7 @@ def _png_data_uri(width: int, height: int) -> str:
 
 
 def test_convert_embedded_base64_image():
-    """Embedded base64 image data must be decoded when fetch_images is enabled.
-
-    Regression test for https://github.com/docling-project/docling/issues/1305.
-    """
+    """Embedded base64 image data must be decoded when fetch_images is enabled."""
     markdown = f"# Title\n\n![alt]({_png_data_uri(7, 5)})\n"
 
     doc = _convert_markdown(markdown, MarkdownBackendOptions(fetch_images=True))

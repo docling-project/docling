@@ -29,7 +29,7 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
 from docling.backend.html_backend import HTMLDocumentBackend
-from docling.backend.image_resource_loader import ImageResourceLoader
+from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import (
     HTMLBackendOptions,
     MarkdownBackendOptions,
