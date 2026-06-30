@@ -16,7 +16,9 @@ from pydantic import AnyUrl, ValidationError
 from docling.backend.html_backend import (
     _BR_SENTINEL,
     HTMLDocumentBackend,
-    _validate_url_safety,
+)
+from docling.backend.image_resource_loader import (
+    validate_url_safety as _validate_url_safety,
 )
 from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -369,8 +371,8 @@ def test_e2e_html_conversions(html_paths):
         assert verify_document(doc, str(gt_path) + ".json", GENERATE)
 
 
-@patch("docling.backend.html_backend.requests.get")
-@patch("docling.backend.html_backend.open", new_callable=mock_open)
+@patch("docling.backend.image_resource_loader.requests.get")
+@patch("docling.backend.image_resource_loader.open", new_callable=mock_open)
 def test_e2e_html_conversion_with_images(mock_local, mock_remote):
     source = "tests/data/html/sources/example_01.html"
     image_path = "tests/data/html/sources/example_image_01.png"
@@ -400,7 +402,7 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
 
     # fetching image remotely - need to mock Session.get instead of requests.get
     with patch(
-        "docling.backend.html_backend.requests.Session.get"
+        "docling.backend.image_resource_loader.requests.Session.get"
     ) as mocked_session_get:
         mock_resp = Mock()
         mock_resp.status_code = 200
@@ -485,7 +487,7 @@ def test_fetch_remote_images(monkeypatch):
     converter = _create_html_converter(
         HTMLBackendOptions(fetch_images=False, source_uri="http://example.com")
     )
-    with patch("docling.backend.html_backend.requests.get") as mocked_get:
+    with patch("docling.backend.image_resource_loader.requests.get") as mocked_get:
         res = converter.convert(source)
         mocked_get.assert_not_called()
     assert res.document
@@ -493,7 +495,7 @@ def test_fetch_remote_images(monkeypatch):
     # no image fetching: the source location is False and enable_local_fetch is False
     converter = _create_html_converter(HTMLBackendOptions(fetch_images=True))
     with (
-        patch("docling.backend.html_backend.requests.get") as mocked_get,
+        patch("docling.backend.image_resource_loader.requests.get") as mocked_get,
         pytest.warns(
             match="Fetching local resources is only allowed when set explicitly"
         ),
@@ -507,7 +509,7 @@ def test_fetch_remote_images(monkeypatch):
         HTMLBackendOptions(fetch_images=True, source_uri="http://example.com")
     )
     with (
-        patch("docling.backend.html_backend.requests.get") as mocked_get,
+        patch("docling.backend.image_resource_loader.requests.get") as mocked_get,
         pytest.warns(
             match="Fetching remote resources is only allowed when set explicitly"
         ),
@@ -523,7 +525,7 @@ def test_fetch_remote_images(monkeypatch):
         )
     )
     with patch(
-        "docling.backend.html_backend.requests.Session.get"
+        "docling.backend.image_resource_loader.requests.Session.get"
     ) as mocked_session_get:
         mocked_session_get.return_value = _create_mock_response()
         res = converter.convert(source)
@@ -537,7 +539,7 @@ def test_fetch_remote_images(monkeypatch):
         )
     )
     with (
-        patch("docling.backend.html_backend.open") as mocked_open,
+        patch("docling.backend.image_resource_loader.open") as mocked_open,
         pytest.warns(match="a bytes-like object is required"),
     ):
         res = converter.convert(source)
@@ -565,7 +567,7 @@ def test_fetch_remote_images_with_custom_headers():
 
     converter = _create_html_converter(backend_options)
     with patch(
-        "docling.backend.html_backend.requests.Session.get"
+        "docling.backend.image_resource_loader.requests.Session.get"
     ) as mocked_session_get:
         mocked_session_get.return_value = _create_mock_response()
         res = converter.convert("./tests/data/html/sources/example_01.html")
