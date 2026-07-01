@@ -22,10 +22,34 @@ _log = logging.getLogger(__name__)
 
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
-    OCR_CLUSTER_LABELS = [
+    PICTURE_LIKE_CLUSTER_LABELS = [
         DocItemLabel.CHART,
         DocItemLabel.PICTURE,
         DocItemLabel.HANDWRITTEN_TEXT,
+    ]
+    TEXT_LIKE_CLUSTER_LABELS = [
+        DocItemLabel.CAPTION,
+        DocItemLabel.FOOTNOTE,
+        DocItemLabel.LIST_ITEM,
+        DocItemLabel.PAGE_FOOTER,
+        DocItemLabel.PAGE_HEADER,
+        DocItemLabel.SECTION_HEADER,
+        DocItemLabel.TEXT,
+        DocItemLabel.TITLE,
+        DocItemLabel.DOCUMENT_INDEX,
+        DocItemLabel.CHECKBOX_SELECTED,
+        DocItemLabel.CHECKBOX_UNSELECTED,
+        DocItemLabel.FORM,
+        DocItemLabel.KEY_VALUE_REGION,
+        DocItemLabel.HANDWRITTEN_TEXT,
+        DocItemLabel.PARAGRAPH,
+        DocItemLabel.REFERENCE,
+        DocItemLabel.FIELD_REGION,
+        DocItemLabel.FIELD_HEADING,
+        DocItemLabel.FIELD_ITEM,
+        DocItemLabel.FIELD_KEY,
+        DocItemLabel.FIELD_VALUE,
+        DocItemLabel.FIELD_HINT,
     ]
 
     def __init__(
@@ -54,24 +78,23 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             if len(ocr_bboxes) == 0:
                 ocr_bboxes = self._get_pdf_ocr_rects(page)
         elif self.options.mode == OcrMode.LAYOUT_AND_PDF:
-            ocr_bboxes = self._filter_by_intersection(
+            ocr_bboxes = self._combine_clusters_and_cells(
                 self._get_cluster_ocr_rects(page), self._get_pdf_ocr_rects(page)
             )
         return ocr_bboxes
 
-    def _filter_by_intersection(
+    def _combine_clusters_and_cells(
         self, layout_bboxes: List[BoundingBox], pdf_bboxes: List[BoundingBox]
     ) -> List[BoundingBox]:
         r"""
-        Keep only the layout bboxes that intersect with at least one PDF bbox.
-        A layout bbox that does not intersect with any PDF bbox is dropped.
+        Return the text-class of layout detections that do NOT overlap with any PDF cell
         """
-        ocr_bboxes: List[BoundingBox] = [
+        clusters_without_pdf = [
             layout_bbox
             for layout_bbox in layout_bboxes
-            if any(layout_bbox.overlaps(pdf_bbox) for pdf_bbox in pdf_bboxes)
+            if not any(layout_bbox.overlaps(pdf_bbox) for pdf_bbox in pdf_bboxes)
         ]
-        return ocr_bboxes
+        return clusters_without_pdf
 
     def _get_cluster_ocr_rects(self, page: Page) -> List[BoundingBox]:
         r"""
@@ -87,7 +110,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         cluster_bboxes = [
             cluster.bbox
             for cluster in page.predictions.layout.clusters
-            if cluster.label in self.OCR_CLUSTER_LABELS
+            if cluster.label in self.PICTURE_LIKE_CLUSTER_LABELS
         ]
         return cluster_bboxes
 
