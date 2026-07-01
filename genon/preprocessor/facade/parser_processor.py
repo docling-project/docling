@@ -2150,6 +2150,22 @@ class DocumentProcessor:
         return getattr(item, "text", "") or ""
 
     @staticmethod
+    def _docling_sheet_prefix(item, doc) -> str:
+        """xlsx docling 표의 부모 그룹(name='sheet: X')에서 시트명을 뽑아 '시트명: X\\n' 접두 생성.
+        시트 그룹이 없으면 '' 반환(비-xlsx 문서엔 실질 미적용)."""
+        try:
+            parent = item.parent.resolve(doc) if getattr(item, "parent", None) else None
+            name = getattr(parent, "name", None)
+        except Exception:
+            name = None
+        if not name:
+            return ""
+        if name.startswith("sheet: "):
+            name = name[len("sheet: "):]
+        name = name.strip()
+        return f"시트명: {name}\n" if name else ""
+
+    @staticmethod
     def _docling_to_parse_format(doc: DoclingDocument, table_format: str = "html") -> dict:
         """DoclingDocument → sample_result.json 호환 출력 포맷."""
         elements = []
@@ -2195,6 +2211,8 @@ class DocumentProcessor:
                     doc=doc,
                     table_format=table_format,
                 )
+                # xlsx docling 표면 시트명 접두 추가(비-xlsx 는 "" 라 영향 없음).
+                text = DocumentProcessor._docling_sheet_prefix(item, doc) + text
             else:
                 text = getattr(item, "text", "") or ""
 
@@ -2357,17 +2375,19 @@ class DocumentProcessor:
 
     @staticmethod
     def _sheet_to_html(sheet: dict) -> str:
-        """시트 dict → HTML table 문자열."""
+        """시트 dict → HTML table 문자열(시트명 접두 포함)."""
+        name = str(sheet.get("sheet_name", "") or "").strip()
+        prefix = f"시트명: {name}\n" if name else ""
         data_rows = sheet.get("data_rows", [])
         if not data_rows:
-            return f"<table></table>"
+            return f"{prefix}<table></table>"
         cols = list(data_rows[0].keys())
         header = "".join(f"<th>{c}</th>" for c in cols)
         rows_html = "".join(
             "<tr>" + "".join(f"<td>{row.get(c, '')}</td>" for c in cols) + "</tr>"
             for row in data_rows
         )
-        return f"<table><tr>{header}</tr>{rows_html}</table>"
+        return f"{prefix}<table><tr>{header}</tr>{rows_html}</table>"
 
     @staticmethod
     def _tabular_to_parse_format(data_dict: dict) -> dict:
