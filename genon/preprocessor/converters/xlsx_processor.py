@@ -232,7 +232,7 @@ def _sheet_grid_and_merges(ws) -> tuple[list[list[str]], list[tuple[int, int, in
 
 
 def _load_sheets_with_merges(
-    file_path: str, encoding: Optional[str]
+    file_path: str, encoding: Optional[str] = None
 ) -> dict[str, tuple[list[list[str]], list[tuple[int, int, int, int]]]]:
     if is_csv(file_path):
         return {"table_1": (_csv_rows(file_path, encoding), [])}
@@ -348,7 +348,6 @@ def load_tables(
     file_path: str,
     *,
     header_row: int = 0,
-    encoding: Optional[str] = None,
     multi_table: bool = False,
 ) -> list[dict]:
     """xlsx/csv 를 표 블록 목록으로 감지·추출한다(출력 형태에 중립 — 벡터/HTML 공용).
@@ -362,7 +361,7 @@ def load_tables(
     멀티헤더 자동 판정(_detect_header)·복수표 분리(_split_blocks) 적용.
     header_row>0 이면 레거시 단일헤더(그 인덱스) 강제.
     """
-    sheets = _load_sheets_with_merges(file_path, encoding)
+    sheets = _load_sheets_with_merges(file_path)
     tables: list[dict] = []
 
     for sheet_idx, (sheet_name, (rows, merges)) in enumerate(sheets.items(), start=1):
@@ -414,7 +413,6 @@ def build_tabular_vectors(
     file_path: str,
     *,
     header_row: int = 0,
-    encoding: Optional[str] = None,
     multi_table: bool = False,
     reg_date: Optional[str] = None,
 ) -> list[GenOSVectorMeta]:
@@ -425,7 +423,7 @@ def build_tabular_vectors(
     헤더(한글 등)는 `_stable_key` 로 `field_<hash>` alias, 원본명은 `column_map`(JSON) 에 보존한다.
     """
     reg_date = reg_date or (datetime.now().isoformat(timespec="seconds") + "Z")
-    tables = load_tables(file_path, header_row=header_row, encoding=encoding, multi_table=multi_table)
+    tables = load_tables(file_path, header_row=header_row, multi_table=multi_table)
 
     n_chunk_of_doc = sum(len(t["data_rows"]) for t in tables)
     if n_chunk_of_doc == 0:

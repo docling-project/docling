@@ -1283,21 +1283,23 @@ class IntelligentDocumentProcessor:
         if artifacts_path:
             self.pipe_line_options.artifacts_path = Path(artifacts_path)
 
-        # xlsx(엑셀) 처리 설정(이슈 #288). 출력은 parse-JSON(시트당 HTML 표) 유지.
+        # xlsx(엑셀) 처리 설정(이슈 #288). formats.xlsx 아래에 둔다. 출력은 parse-JSON(시트당 HTML 표).
         #   tabular(기본): openpyxl 로 병합셀 unmerge+forward-fill 후 시트→HTML 표(병합 헤더 보존).
         #   docling: docling MsExcel 백엔드로 DoclingDocument 생성 후 parse-JSON 직렬화.
-        xlsx_cfg = _as_dict(cfg.get("xlsx"))
+        #   tabular.{header_row, multi_table}: tabular 모드 전용 세부 옵션
+        formats_cfg = _as_dict(cfg.get("formats"))
+        xlsx_cfg = _as_dict(formats_cfg.get("xlsx"))
+        tabular_cfg = _as_dict(xlsx_cfg.get("tabular"))
         xlsx_mode = str(xlsx_cfg.get("processing_mode", "tabular")).strip().lower()
         if xlsx_mode not in {"docling", "tabular"}:
             _log.warning(
-                f"[DocumentProcessor] Unknown xlsx.processing_mode '{xlsx_mode}', fallback to 'tabular'."
+                f"[DocumentProcessor] Unknown formats.xlsx.processing_mode '{xlsx_mode}', fallback to 'tabular'."
             )
             xlsx_mode = "tabular"
         self._xlsx_cfg = {
             "processing_mode": xlsx_mode,
-            "header_row": _parse_optional_int(xlsx_cfg.get("header_row"), "xlsx.header_row") or 0,
-            "encoding": (str(xlsx_cfg.get("encoding")).strip() or None),
-            "multi_table": bool(_parse_optional_bool(xlsx_cfg.get("multi_table"), "xlsx.multi_table")),
+            "header_row": _parse_optional_int(tabular_cfg.get("header_row"), "formats.xlsx.tabular.header_row") or 0,
+            "multi_table": bool(_parse_optional_bool(tabular_cfg.get("multi_table"), "formats.xlsx.tabular.multi_table")),
         }
 
         self.simple_pipeline_options = PipelineOptions()
@@ -2044,7 +2046,6 @@ class DocumentProcessor:
         tables = load_tables(
             file_path,
             header_row=self._xlsx_cfg["header_row"],
-            encoding=self._xlsx_cfg["encoding"],
             multi_table=self._xlsx_cfg["multi_table"],
         )
         data: list[dict] = []

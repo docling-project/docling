@@ -2,6 +2,20 @@ defaults:
   # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
   log_level: 4
 
+# 포맷별 처리 옵션(포맷마다 하위에 옵션 지정). 필요 시 다른 포맷 섹션 추가 가능.
+formats:
+  # 엑셀(xlsx/xlsm)·csv 처리 (이슈 #288). 출력은 parse-JSON(시트당 HTML 표) 유지.
+  xlsx:
+    # tabular(기본): openpyxl 로 병합셀 unmerge+forward-fill 후 시트→HTML 표(병합 헤더 보존).
+    # docling: docling MsExcel/Csv 백엔드로 DoclingDocument 생성 후 parse-JSON 직렬화.
+    processing_mode: "tabular"
+    # tabular 모드 전용 옵션
+    tabular:
+      # 헤더 행(0-based). 0=자동판정(제목행 스킵/멀티헤더 flatten), >0=단일헤더 강제.
+      header_row: 0
+      # 1시트에 표가 여러 개(빈 행으로 분리)면 표별로 분리(멀티헤더 자동감지 포함). false(기본)=시트=1표.
+      multi_table: false
+
 ocr:
   ocr_mode: "auto" # "auto"(default), "force", "disable"
 
@@ -143,15 +157,3 @@ whisper:
   timestamp_granularities: "word"
   chunk_sec: 29
   chunk_overlap_ms: 300  # 청크 간 겹침(ms)
-
-# 엑셀(xlsx/xlsm)·csv 처리 (이슈 #288). 출력은 parse-JSON(시트당 HTML 표) 유지.
-xlsx:
-  # tabular(기본): openpyxl 로 병합셀 unmerge+forward-fill 후 시트→HTML 표(병합 헤더 보존).
-  # docling: docling MsExcel/Csv 백엔드로 DoclingDocument 생성 후 parse-JSON 직렬화.
-  processing_mode: "tabular"
-  # 헤더 행(0-based). 상단에 병합 제목행이 있으면 1 등으로 조정.
-  header_row: 0
-  # csv 인코딩. 비우면 chardet 자동감지 후 utf-8 폴백.
-  encoding: ""
-  # 1시트에 표가 여러 개(빈 행으로 분리)면 표별로 분리(멀티헤더 자동감지 포함). false(기본)=시트=1표.
-  multi_table: false

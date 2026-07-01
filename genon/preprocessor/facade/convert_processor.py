@@ -775,7 +775,7 @@ _DEFAULT_TOKENIZER_ID = "sentence-transformers/all-MiniLM-L6-v2"
 # tabular 모드로 직접 처리(행=벡터)할 엑셀 계열 포맷(이슈 #288).
 # docling 모드(기본)에서는 xlsx 가 self.converter 의 docling 기본 백엔드(MsExcel)로 처리되므로
 # 별도 인터셉트 없이 기존 경로를 그대로 탄다.
-_XLSX_DIRECT_EXTS = {".xlsx", ".xlsm"}
+_XLSX_DIRECT_EXTS = {".xlsx", ".xlsm", ".csv"}
 
 
 def _resolve_tokenizer(chunking_cfg: dict):
@@ -2009,22 +2009,23 @@ class DocumentProcessor:
         # 청크 최대 크기(GenosSmartChunker.max_tokens) 기본값. kwargs 의 chunk_size 가 우선.
         self._chunk_size = _parse_optional_int(chunking_cfg.get("chunk_size"), "chunking.chunk_size")
 
-        # xlsx(엑셀) 처리 설정(이슈 #288).
+        # xlsx(엑셀) 처리 설정(이슈 #288). formats.xlsx 아래에 둔다(포맷별 옵션 컨테이너).
         #   docling(기본): xlsx 를 docling MsExcel 백엔드로 처리(현행) → 기존 청킹/벡터 파이프라인.
-        #   tabular: 데이터 행마다 1청크(벡터) + 컬럼 헤더→메타(병합셀 unmerge+forward-fill).
-        xlsx_cfg = _as_dict(cfg.get("xlsx"))
+        #   tabular: 데이터 행마다 1벡터 + 컬럼 헤더→메타(병합셀 unmerge+forward-fill).
+        #   tabular.{header_row, multi_table}: tabular 모드 전용 세부 옵션
+        formats_cfg = _as_dict(cfg.get("formats"))
+        xlsx_cfg = _as_dict(formats_cfg.get("xlsx"))
+        tabular_cfg = _as_dict(xlsx_cfg.get("tabular"))
         xlsx_mode = str(xlsx_cfg.get("processing_mode", "docling")).strip().lower()
         if xlsx_mode not in {"docling", "tabular"}:
             _log.warning(
-                f"[DocumentProcessor] Unknown xlsx.processing_mode '{xlsx_mode}', fallback to 'docling'."
+                f"[DocumentProcessor] Unknown formats.xlsx.processing_mode '{xlsx_mode}', fallback to 'docling'."
             )
             xlsx_mode = "docling"
         self._xlsx_cfg = {
             "processing_mode": xlsx_mode,
-            "header_row": _parse_optional_int(xlsx_cfg.get("header_row"), "xlsx.header_row") or 0,
-            "encoding": (str(xlsx_cfg.get("encoding")).strip() or None),
-            "intercept_csv": bool(_parse_optional_bool(xlsx_cfg.get("intercept_csv"), "xlsx.intercept_csv")),
-            "multi_table": bool(_parse_optional_bool(xlsx_cfg.get("multi_table"), "xlsx.multi_table")),
+            "header_row": _parse_optional_int(tabular_cfg.get("header_row"), "formats.xlsx.tabular.header_row") or 0,
+            "multi_table": bool(_parse_optional_bool(tabular_cfg.get("multi_table"), "formats.xlsx.tabular.multi_table")),
         }
 
         # OCR 엔드포인트는 ocr.paddle.ocr_endpoint 가 정식 위치.
@@ -3089,13 +3090,9 @@ class DocumentProcessor:
 
         ext = Path(file_path).suffix.lower()
 
-        # 직접 처리 가능한 엑셀 계열 포맷(이슈 #288). csv 는 intercept_csv 옵션 시 포함.
-        xlsx_direct_exts = set(_XLSX_DIRECT_EXTS)
-        if self._xlsx_cfg["intercept_csv"]:
-            xlsx_direct_exts.add(".csv")
-
+        # 직접 처리 가능한 엑셀 계열 포맷(이슈 #288): xlsx/xlsm + csv(본질적 tabular 이라 항상 직접 처리).
         # 포맷별 처리: 엑셀 계열은 직접 처리, ppt 는 langchain, 그 외는 docling.
-        if ext in xlsx_direct_exts:
+        if ext in _XLSX_DIRECT_EXTS:
             return await self._process_xlsx(request, file_path, **kwargs)
         if ext == ".ppt":
             return await self._process_ppt(request, file_path, **kwargs)
@@ -3115,7 +3112,6 @@ class DocumentProcessor:
             vectors = build_tabular_vectors(
                 file_path,
                 header_row=self._xlsx_cfg["header_row"],
-                encoding=self._xlsx_cfg["encoding"],
                 multi_table=self._xlsx_cfg["multi_table"],
             )
             if not vectors:

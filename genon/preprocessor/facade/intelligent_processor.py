@@ -949,7 +949,7 @@ _DEFAULT_TOKENIZER_ID = "sentence-transformers/all-MiniLM-L6-v2"
 
 # PDF 변환에서 제외(직접 처리)할 엑셀 계열 포맷(이슈 #288).
 # PDF 변환 시 한 행이 페이지 경계로 쪼개지는 논리 오류가 생기므로 변환하지 않고 직접 처리한다.
-_XLSX_DIRECT_EXTS = {".xlsx", ".xlsm"}
+_XLSX_DIRECT_EXTS = {".xlsx", ".xlsm", ".csv"}
 
 
 def _resolve_tokenizer(chunking_cfg: dict):
@@ -2130,22 +2130,23 @@ class DocumentProcessor:
         # 청크 최대 크기(GenosSmartChunker.max_tokens) 기본값. kwargs 의 chunk_size 가 우선.
         self._chunk_size = _parse_optional_int(chunking_cfg.get("chunk_size"), "chunking.chunk_size")
 
-        # xlsx(엑셀) 직접 처리 설정(이슈 #288). PDF 변환 없이 xlsx 를 처리해 행 분할 버그 방지.
+        # xlsx(엑셀) 직접 처리 설정(이슈 #288). formats.xlsx 아래에 둔다(포맷별 옵션 컨테이너).
         #   processing_mode: docling(기본)=MsExcel 백엔드로 DoclingDocument 후 기존 파이프라인 /
-        #                    tabular=데이터 행마다 1청크 + 컬럼 헤더→메타(병합셀 unmerge+ffill)
-        xlsx_cfg = _as_dict(cfg.get("xlsx"))
+        #                    tabular=데이터 행마다 1벡터 + 컬럼 헤더→메타(병합셀 unmerge+ffill)
+        #   tabular.{header_row, multi_table}: tabular 모드 전용 세부 옵션
+        formats_cfg = _as_dict(cfg.get("formats"))
+        xlsx_cfg = _as_dict(formats_cfg.get("xlsx"))
+        tabular_cfg = _as_dict(xlsx_cfg.get("tabular"))
         xlsx_mode = str(xlsx_cfg.get("processing_mode", "docling")).strip().lower()
         if xlsx_mode not in {"docling", "tabular"}:
             _log.warning(
-                f"[DocumentProcessor] Unknown xlsx.processing_mode '{xlsx_mode}', fallback to 'docling'."
+                f"[DocumentProcessor] Unknown formats.xlsx.processing_mode '{xlsx_mode}', fallback to 'docling'."
             )
             xlsx_mode = "docling"
         self._xlsx_cfg = {
             "processing_mode": xlsx_mode,
-            "header_row": _parse_optional_int(xlsx_cfg.get("header_row"), "xlsx.header_row") or 0,
-            "encoding": (str(xlsx_cfg.get("encoding")).strip() or None),
-            "intercept_csv": bool(_parse_optional_bool(xlsx_cfg.get("intercept_csv"), "xlsx.intercept_csv")),
-            "multi_table": bool(_parse_optional_bool(xlsx_cfg.get("multi_table"), "xlsx.multi_table")),
+            "header_row": _parse_optional_int(tabular_cfg.get("header_row"), "formats.xlsx.tabular.header_row") or 0,
+            "multi_table": bool(_parse_optional_bool(tabular_cfg.get("multi_table"), "formats.xlsx.tabular.multi_table")),
         }
 
         # OCR 엔드포인트는 ocr.paddle.ocr_endpoint 가 정식 위치.
@@ -3102,7 +3103,6 @@ class DocumentProcessor:
             vectors = build_tabular_vectors(
                 file_path,
                 header_row=self._xlsx_cfg["header_row"],
-                encoding=self._xlsx_cfg["encoding"],
                 multi_table=self._xlsx_cfg["multi_table"],
             )
             if not vectors:
@@ -3290,24 +3290,21 @@ class DocumentProcessor:
 
         ext = os.path.splitext(file_path)[1].lower()
 
-        # 직접 처리(PDF 변환 없이) 가능한 포맷을 명시적으로 지정한다(이슈 #288).
-        # openpyxl/docling 기반이라 .xlsx/.xlsm 만 지원하며, csv 는 intercept_csv 옵션이 켜졌을
-        # 때만 직접 처리한다. (.xls/.xlsb 는 미지원 → 아래 PDF 변환 경로로 처리)
+        # 직접 처리(PDF 변환 없이) 가능한 포맷(이슈 #288): 엑셀 계열(xlsx/xlsm) + csv.
+        # csv 는 본질적으로 tabular 이므로 항상 직접 처리한다(PDF 변환 시 행 분할 문제 방지).
+        # (.xls/.xlsb 는 openpyxl/docling 미지원 → 아래 PDF 변환 경로로 처리)
         # 이 집합을 변환 가드와 디스패치 양쪽에서 동일하게 써서 "직접 처리 포맷 == 변환 제외 포맷"
         # 불변식을 유지한다.
-        xlsx_direct_exts = set(_XLSX_DIRECT_EXTS)
-        if self._xlsx_cfg["intercept_csv"]:
-            xlsx_direct_exts.add(".csv")
 
         # 직접 처리 포맷이 아니고 PDF 도 아니면 PDF 로 변환한다.
         # - auto_convert_to_pdf=True (default): PDF SDK/LibreOffice 로 자동 변환 후 진입
         # - auto_convert_to_pdf=False: 변환 없이 그대로 진행 (변경 전 동작; PDF 가정)
         converted_pdf_path: Optional[str] = None
-        if ext not in xlsx_direct_exts and kwargs.get('auto_convert_to_pdf', True) and not _is_pdf(file_path):
+        if ext not in _XLSX_DIRECT_EXTS and kwargs.get('auto_convert_to_pdf', True) and not _is_pdf(file_path):
             file_path, converted_pdf_path = self._convert_to_pdf(file_path, **kwargs)
 
         # 포맷별 처리: 직접 처리 가능 포맷은 xlsx 핸들러, 그 외는 PDF(docling) 처리.
-        if ext in xlsx_direct_exts:
+        if ext in _XLSX_DIRECT_EXTS:
             return await self._process_xlsx(request, file_path, **kwargs)
         return await self._process_pdf(request, file_path, converted_pdf_path, **kwargs)
 

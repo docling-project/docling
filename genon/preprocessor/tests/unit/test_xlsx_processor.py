@@ -306,11 +306,10 @@ def test_docling_single_page_no_row_split():
 # e2e (intelligent_processor 두 모드)                                           #
 # --------------------------------------------------------------------------- #
 def _make_e2e_config(tmp_path: Path, processing_mode: str) -> str:
-    """출고 config 복사 + enrichment 비활성 + xlsx.processing_mode 지정."""
+    """출고 config 복사 + enrichment 비활성 + formats.xlsx.processing_mode 지정."""
     cfg = yaml.safe_load(_CONFIG.read_text(encoding="utf-8"))
     cfg["enrichment"] = []  # 네트워크/LLM 호출 차단
-    cfg.setdefault("xlsx", {})
-    cfg["xlsx"]["processing_mode"] = processing_mode
+    cfg.setdefault("formats", {}).setdefault("xlsx", {})["processing_mode"] = processing_mode
     out = tmp_path / "intelligent_processor_config.yaml"
     out.write_text(yaml.safe_dump(cfg, allow_unicode=True), encoding="utf-8")
     return str(out)

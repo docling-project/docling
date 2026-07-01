@@ -2,6 +2,23 @@ defaults:
   # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
   log_level: 4
 
+# 포맷별 처리 옵션(포맷마다 하위에 옵션 지정). 필요 시 다른 포맷 섹션 추가 가능.
+formats:
+  # 엑셀(xlsx/xlsm) 직접 처리 (이슈 #288). PDF 변환 없이 처리해 한 행이 페이지 경계로
+  # 쪼개지는 논리 오류를 원천 방지한다.
+  xlsx:
+    # docling(기본): MsExcel 백엔드로 DoclingDocument 생성 후 기존 청킹/벡터 파이프라인.
+    # tabular: 데이터 행마다 1벡터 + 컬럼 헤더→셀 값 메타데이터(병합셀 unmerge+forward-fill).
+    #   ※ Weaviate property 규칙(/[_A-Za-z][_0-9A-Za-z]*/)상 한글 헤더는 field_<hash> 로 alias 되고
+    #      원본명은 column_map 에 보존된다.
+    processing_mode: "docling"
+    # tabular 모드 전용 옵션
+    tabular:
+      # 헤더 행(0-based). 0=자동판정(제목행 스킵/멀티헤더 flatten), >0=단일헤더 강제.
+      header_row: 0
+      # 1시트에 표가 여러 개(빈 행으로 분리)면 표별로 분리. false(기본)=시트=1표.
+      multi_table: false
+
 ocr:
   # OCR 수행 모드. "auto"(default)=휴리스틱 기반 재OCR / "force"=무조건 전체 OCR / "disable"=OCR 안 함
   ocr_mode: "auto"
@@ -193,22 +210,6 @@ chunking:
   # 없으면 tokenizer_id(HF) 로 폴백 (외부 네트워크 차단 환경 대비)
   tokenizer_path: "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
   tokenizer_id: "sentence-transformers/all-MiniLM-L6-v2"
-
-# 엑셀(xlsx/xlsm) 직접 처리 (이슈 #288). PDF 변환 없이 처리해 한 행이 페이지 경계로
-# 쪼개지는 논리 오류를 원천 방지한다.
-xlsx:
-  # docling(기본): MsExcel 백엔드로 DoclingDocument 생성 후 기존 청킹/벡터 파이프라인.
-  # tabular: 데이터 행마다 1청크 + 컬럼 헤더→셀 값 메타데이터(병합셀 unmerge+forward-fill).
-  #   ※ Weaviate 키 규칙(/[_A-Za-z][_0-9A-Za-z]*/)상 한글 헤더는 메타 KEY 에서 제외되고 값은 text 에 유지된다.
-  processing_mode: "docling"
-  # tabular 모드 헤더 행(0-based). 상단에 병합 제목행이 있으면 1 등으로 조정.
-  header_row: 0
-  # csv tabular 인코딩. 비우면 chardet 자동감지 후 utf-8 폴백.
-  encoding: ""
-  # csv 도 이 경로로 가로챌지 여부. false(기본)=기존 PDF 변환 경로 유지.
-  intercept_csv: false
-  # tabular 모드: 1시트에 표가 여러 개(빈 행으로 분리)면 표별로 분리 처리. false(기본)=시트=1표.
-  multi_table: false
 
 # 모델 경로 (다운로드된 기본값 사용; 미지정 시 현행 동작 유지)
 models:
