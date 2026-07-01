@@ -26,6 +26,7 @@ RAG 지식베이스 구축을 위한 **품질 최우선** 전처리기입니다.
     - [3.3 레이아웃 설정](#33-레이아웃-설정)
       - [`repetition_penalty` 사용 가이드](#repetition_penalty-사용-가이드)
     - [3.4 PDF 파이프라인 설정](#34-pdf-파이프라인-설정)
+      - [3.4.2 xlsx(엑셀) 직접 처리 (`formats.xlsx`)](#342-xlsx엑셀-직접-처리-formatsxlsx)
     - [3.5 Enrichment 설정](#35-enrichment-설정)
       - [toc](#toc)
       - [metadata](#metadata)
@@ -67,6 +68,7 @@ RAG 지식베이스 구축을 위한 **품질 최우선** 전처리기입니다.
 
 - **PDF 우선** — 입력이 PDF 면 그대로 단일 Docling 파이프라인으로 처리합니다.
 - **비-PDF 자동 변환** — HWP / DOCX / PPTX / 이미지 등 비-PDF 입력은 `__call__` 진입부에서 `_is_pdf()`(매직 헤더 `%PDF-`) 검사 후 PDF 로 자동 변환(`auto_convert_to_pdf=True` 기본)하여 동일 파이프라인에 진입합니다.
+- **xlsx/csv 직접 처리** — `.xlsx`/`.xlsm`/`.csv` 는 PDF 변환 없이 직접 처리합니다(행 분할 버그 방지). 자세한 내용은 [3.4.2](#342-xlsx엑셀-직접-처리-formatsxlsx) 참고.
 
 ### 핵심 특징
 
@@ -145,6 +147,14 @@ RAG 지식베이스 구축을 위한 **품질 최우선** 전처리기입니다.
 defaults:
   # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
   log_level: 4
+
+# 포맷별 처리 옵션(자세한 설명은 3.4.2 참고). xlsx 는 PDF 변환 없이 직접 처리.
+formats:
+  xlsx:
+    processing_mode: "docling"    # "docling"(default) | "tabular"
+    tabular:                      # tabular 모드에서만 사용
+      header_row: 0               # 0=자동판정 | >0=단일헤더 강제
+      multi_table: false          # true 면 1시트 복수표(빈 행 분리) 분리
 
 ocr:
   ocr_mode: "auto"            # "auto"(default) | "force" | "disable"
@@ -359,6 +369,41 @@ docling PDF 파싱 성능/품질 노브입니다.
 - 청크 내 표 텍스트(MD/HTML)는 **그대로 유지**됩니다(하이브리드).
 
 > **주의** — 표 이미지는 페이지 이미지를 잘라 만들므로, `enable: true` 이면 `pdf_pipeline.generate_page_images` 가 내부적으로 **강제 `true`** 로 보정됩니다(별도 설정 불필요).
+
+### 3.4.2 xlsx(엑셀) 직접 처리 (`formats.xlsx`)
+
+`.xlsx`/`.xlsm`(및 `.csv`)는 **PDF 변환 없이 직접 처리**합니다(이슈 #288). 기존에는 xlsx 를 LibreOffice 로 PDF 변환 후 파싱했는데, 엑셀 페이지 레이아웃에 따라 **한 행의 데이터가 여러 페이지로 쪼개지는** 논리 오류가 있었습니다. 직접 처리는 이를 원천 차단합니다. `.csv` 도 본질적으로 tabular 이므로 항상 직접 처리됩니다(PDF 변환 안 함).
+
+처리 방식은 `formats.xlsx.processing_mode` 로 선택합니다.
+
+| 키 | 값 | 기본 | 설명 |
+|----|----|------|------|
+| `formats.xlsx.processing_mode` | `docling` \| `tabular` | `docling` | 처리 방식 선택 |
+| `formats.xlsx.tabular.header_row` | int | `0` | (tabular) 헤더 행. `0`=자동판정, `>0`=해당 행을 단일 헤더로 강제 |
+| `formats.xlsx.tabular.multi_table` | bool | `false` | (tabular) 한 시트에 표가 여러 개(빈 행으로 분리)면 표별로 분리 |
+
+**docling 모드 (기본)** — MsExcel 백엔드로 `DoclingDocument` 를 만들어 **기존 청킹/벡터 파이프라인**을 그대로 태웁니다(시트=1페이지).
+- **표마다 별도 청크**로 분리합니다.
+- 표가 `chunking.chunk_size` 를 초과하면 **행(row) 단위로 분할**하고, 분할된 각 청크에 **헤더 행을 반복 포함**합니다(제목행 + 컬럼명행 자동 판정).
+- 각 청크 텍스트 앞에 **`시트명: <시트명>`** 접두를 붙입니다.
+
+**tabular 모드** — 데이터 **행마다 1벡터**를 만들고, 각 컬럼 값을 **최상단 스칼라 property** 로 부여해 벡터 DB 에서 컬럼 단위 `where` 필터가 가능하게 합니다.
+- 병합셀은 openpyxl 로 **unmerge + forward-fill** 하여 병합 헤더 유실을 방지합니다.
+- **멀티헤더 자동 판정**: 전열 병합 제목행은 컨텍스트로만(키 제외), 부분 병합 계층 헤더는 `상위_하위` 로 flatten, 그 아래 컬럼명행을 헤더로 사용합니다.
+- **컬럼 키 규칙**: Weaviate property 명 규칙(`/[_A-Za-z][_0-9A-Za-z]*/`)상 ASCII 헤더는 그대로 키로 쓰고, 한글 등 비-ASCII 헤더는 **`field_<sha256[:8]>`** 로 alias 합니다(같은 헤더 텍스트는 파일이 달라도 동일 키 → 컬렉션 전체 필터 안정). 원본 헤더명은 **`column_map`**(JSON 문자열) 메타에 보존합니다.
+- `multi_table: true` 면 한 시트의 복수 표(빈 행 분리)를 표별로 분리해 각각 헤더를 재판정합니다.
+
+```yaml
+formats:
+  xlsx:
+    processing_mode: "docling"    # 표 단위 청크 + 행 분할(헤더 반복) + 시트명 접두
+    # processing_mode: "tabular"  # 행=벡터 + 컬럼 필터 메타(field_/column_map)
+    tabular:
+      header_row: 0
+      multi_table: false
+```
+
+> **참고** — `.xls`/`.xlsb`(구형/바이너리 엑셀)는 openpyxl/docling 이 못 읽으므로 직접 처리 대상이 아니며, 기존대로 PDF 변환 경로로 처리됩니다.
 
 ### 3.5 Enrichment 설정
 
