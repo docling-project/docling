@@ -73,10 +73,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             ocr_bboxes = self._get_cluster_ocr_rects(page)
         elif self.options.mode == OcrMode.PDF_ONLY:
             ocr_bboxes = self._get_pdf_ocr_rects(page)
-        elif self.options.mode == OcrMode.LAYOUT_OR_PDF:
-            ocr_bboxes = self._get_cluster_ocr_rects(page)
-            if len(ocr_bboxes) == 0:
-                ocr_bboxes = self._get_pdf_ocr_rects(page)
         elif self.options.mode == OcrMode.LAYOUT_AND_PDF:
             ocr_bboxes = self._combine_clusters_and_cells(
                 self._get_cluster_ocr_rects(page), self._get_pdf_ocr_rects(page)

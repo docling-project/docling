@@ -97,7 +97,6 @@ class OcrMode(str, Enum):
 
     LAYOUT_ONLY = "layout_only"
     PDF_ONLY = "pdf_only"
-    LAYOUT_OR_PDF = "layout_or_pdf"
     LAYOUT_AND_PDF = "layout_and_pdf"
 
 
