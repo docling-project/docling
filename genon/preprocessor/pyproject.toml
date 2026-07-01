@@ -5,9 +5,9 @@ description = ""
 authors = [{ name = "Seunghyun Nam", email = "seunghyun.nam@genon.ai" }]
 requires-python = '>=3.11,<4.0'
 dependencies = [
-    "docling-core==2.62.0",
+    "docling-core==2.85.0",
     "docling-ibm-models==3.10.3",
-    "docling-parse==4.1.0",
+    "docling-parse==7.3.0",
     "python-multipart==0.0.22",
     "gunicorn==23.0.0",
     "uvicorn==0.21.1",

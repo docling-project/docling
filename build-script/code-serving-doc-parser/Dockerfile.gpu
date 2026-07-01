@@ -31,11 +31,11 @@ ARG DOCLING_PKG_VER=2.41.0
 ARG TORCH_CU_INDEX_URL=https://download.pytorch.org/whl/cu124
 
 ############################
-# 1) Builder (ubuntu 22.04 = runtime 과 동일 ABI) — venv 설치 + GPU torch + docling-parse 패치
+# 1) Builder (ubuntu 22.04 = runtime 과 동일 ABI) — venv 설치 + GPU torch
 ############################
 # runtime(nvidia/cuda ...-ubuntu22.04) 과 동일 Ubuntu 베이스 → glibc/libstdc++ 정합.
-# torch 는 cu124 wheel 로 설치(컴파일 없음)하고 docling-parse 컴파일은 g++/make 만 필요하므로
-# 수 GB 짜리 nvidia/cuda devel 이미지 대신 경량 ubuntu:22.04 로 충분하다.
+# torch 는 cu124 wheel 로 설치(컴파일 없음)하므로 수 GB 짜리 nvidia/cuda devel 이미지 대신
+# 경량 ubuntu:22.04 로 충분하다.
 FROM ubuntu:22.04 AS builder
 ARG APP_VENV
 ARG TORCH_CU_INDEX_URL
@@ -76,35 +76,15 @@ RUN --mount=type=cache,target=/root/.cache/uv \
       --index-url "${TORCH_CU_INDEX_URL}" \
       torch torchvision
 
-# docling-parse 4.1.0 소스 패치 빌드 (#245) — /app/.venv 인터프리터로 설치(wheel 덮어씀)
-# git/g++/make/zlib: docling-parse 소스 빌드용.
-# curl/unzip: models_artifacts(FROM builder) 의 EasyOCR 한국어 모델 다운로드/압축해제용.
+# models_artifacts(FROM builder) 에서 필요한 시스템 라이브러리 설치.
+# curl/unzip: EasyOCR 한국어 모델 다운로드/압축해제용.
 # libgl1/libglib2.0-0/libxcb1/libsm6/libxext6/libxrender1: models_artifacts 에서
 #   docling 모델 다운로드 시 easyocr→cv2(opencv) import 가 dlopen 하는 시스템 라이브러리.
 #   slim builder 에는 없어 ImportError(libxcb.so.1) 발생 → 여기서 설치.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      git g++ make zlib1g-dev curl unzip \
+      curl unzip \
       libgl1 libglib2.0-0 libxcb1 libsm6 libxext6 libxrender1 \
     && rm -rf /var/lib/apt/lists/*
-# 패치 헤더만 /tmp 로 (/app 오염 방지)
-COPY ./genon/preprocessor/resources/stream_fix_xobject_reload.h /tmp/stream_fix_xobject_reload.h
-RUN --mount=type=cache,target=/root/.cache/uv \
-    set -eux; \
-    uv pip install --python ${APP_VENV}/bin/python pybind11 cmake scikit-build-core poetry -q; \
-    git clone --depth 1 --branch v4.1.0 \
-      https://github.com/docling-project/docling-parse /tmp/docling-parse-4.1.0; \
-    cp /tmp/stream_fix_xobject_reload.h /tmp/docling-parse-4.1.0/src/v2/pdf_decoders/stream.h; \
-    sed -i 's|-DCMAKE_INSTALL_PREFIX=${EXTERNALS_PREFIX_PATH}|-DCMAKE_INSTALL_PREFIX=${EXTERNALS_PREFIX_PATH}\n        -DCXXOPTS_BUILD_EXAMPLES=OFF\n        -DCXXOPTS_BUILD_TESTS=OFF|' \
-      /tmp/docling-parse-4.1.0/cmake/extlib_cxxopts.cmake; \
-    sed -i 's|set(QPDF_EXTRA_CXX_FLAGS "-fPIC ")|set(QPDF_EXTRA_CXX_FLAGS "-fPIC -include cstdint -Wno-error")|' \
-      /tmp/docling-parse-4.1.0/cmake/extlib_qpdf_v11.cmake; \
-    sed -i 's|set(QPDF_EXTRA_C_FLAGS "-fPIC ")|set(QPDF_EXTRA_C_FLAGS "-fPIC -Wno-error")|' \
-      /tmp/docling-parse-4.1.0/cmake/extlib_qpdf_v11.cmake; \
-    sed -i 's|-DCMAKE_C_FLAGS=${ENV_ARCHFLAGS}|-DCMAKE_C_FLAGS=-Wno-error|' \
-      /tmp/docling-parse-4.1.0/cmake/extlib_jpeg.cmake; \
-    uv pip install --python ${APP_VENV}/bin/python --no-build-isolation /tmp/docling-parse-4.1.0/; \
-    uv pip install --python ${APP_VENV}/bin/python "docling-core[chunking]==2.62.0"; \
-    rm -rf /tmp/docling-parse-4.1.0
 
 ############################
 # 2-1) HWP SDK / 2-2) 폰트 / 2-3) 모델 (CPU Dockerfile 과 동일)

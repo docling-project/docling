@@ -3,7 +3,7 @@
 # code-serving-doc-parser (CPU) — doc-parser 코드서빙 base 이미지.
 #
 # 라이브러리 설치 방식은 genon/code-serving 과 동일: `uv venv --seed` + `uv pip install .` → /app/.venv.
-# 다운로드 아티팩트(모델/HWP SDK/rhwp/H2Orestart/폰트/NLTK/EasyOCR/docling-parse 패치)는
+# 다운로드 아티팩트(모델/HWP SDK/rhwp/H2Orestart/폰트/NLTK/EasyOCR)는
 # genon/preprocessor/docker/Dockerfile.standard 와 full parity 로 복제한다.
 #
 # build context = repo 루트 (build-script/code-serving-doc-parser/build.sh 가 ROOT_DIR=repo 루트 사용).
@@ -70,7 +70,7 @@ RUN sed -i 's/# \(ko_KR.UTF-8\)/\1/' /etc/locale.gen \
 
 ############################
 # 2) LibreOffice 확장 + HCRBatang 폰트 (Dockerfile.standard 와 동일)
-#    resources 에서 H2Orestart 패치 헤더(stream_fix_xobject_reload.h)/HCRBatang 폰트가 들어온다.
+#    resources 에서 HCRBatang 폰트가 들어온다.
 ############################
 FROM base AS loext
 ARG H2ORESTART_URL
@@ -133,37 +133,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     else \
       echo "[INFO] HW_VARIANT=${HW_VARIANT} — keeping torch as-is"; \
     fi
-
-############################
-# 3-1) docling-parse 4.1.0 소스 패치 빌드 (이슈 #245)
-#  - 패치를 /app/.venv 의 venv 인터프리터로 설치 → wheel 설치본을 덮어쓴다 (런타임 venv 와 동일 위치).
-############################
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
-      git g++ make zlib1g-dev \
-    && rm -rf /var/lib/apt/lists/*
-# 패치 헤더만 /tmp 로 (─ /app 오염 방지)
-COPY ./genon/preprocessor/resources/stream_fix_xobject_reload.h /tmp/stream_fix_xobject_reload.h
-RUN --mount=type=cache,target=/root/.cache/uv \
-    set -eux; \
-    uv pip install --python ${APP_VENV}/bin/python \
-      pybind11 cmake scikit-build-core poetry -q; \
-    git clone --depth 1 --branch v4.1.0 \
-      https://github.com/docling-project/docling-parse /tmp/docling-parse-4.1.0; \
-    cp /tmp/stream_fix_xobject_reload.h \
-      /tmp/docling-parse-4.1.0/src/v2/pdf_decoders/stream.h; \
-    sed -i 's|-DCMAKE_INSTALL_PREFIX=${EXTERNALS_PREFIX_PATH}|-DCMAKE_INSTALL_PREFIX=${EXTERNALS_PREFIX_PATH}\n        -DCXXOPTS_BUILD_EXAMPLES=OFF\n        -DCXXOPTS_BUILD_TESTS=OFF|' \
-      /tmp/docling-parse-4.1.0/cmake/extlib_cxxopts.cmake; \
-    sed -i 's|set(QPDF_EXTRA_CXX_FLAGS "-fPIC ")|set(QPDF_EXTRA_CXX_FLAGS "-fPIC -include cstdint -Wno-error")|' \
-      /tmp/docling-parse-4.1.0/cmake/extlib_qpdf_v11.cmake; \
-    sed -i 's|set(QPDF_EXTRA_C_FLAGS "-fPIC ")|set(QPDF_EXTRA_C_FLAGS "-fPIC -Wno-error")|' \
-      /tmp/docling-parse-4.1.0/cmake/extlib_qpdf_v11.cmake; \
-    sed -i 's|-DCMAKE_C_FLAGS=${ENV_ARCHFLAGS}|-DCMAKE_C_FLAGS=-Wno-error|' \
-      /tmp/docling-parse-4.1.0/cmake/extlib_jpeg.cmake; \
-    uv pip install --python ${APP_VENV}/bin/python --no-build-isolation /tmp/docling-parse-4.1.0/; \
-    uv pip install --python ${APP_VENV}/bin/python "docling-core[chunking]==2.62.0"; \
-    rm -rf /tmp/docling-parse-4.1.0
 
 ############################
 # 4-1) HWP SDK (HF private, 무료 자산) — Dockerfile.standard 와 동일

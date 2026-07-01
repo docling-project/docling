@@ -15,9 +15,9 @@ requires-python = ">=3.11,<4.0"
 # ⚠️ preprocessor / repo 루트 docling 의 deps 가 바뀌면 이 목록도 동기화할 것.
 dependencies = [
     # ── docling 계열 (docling 패키지 자체는 제외) ──────────────────────────────
-    "docling-core[chunking]==2.62.0",
+    "docling-core[chunking]==2.85.0",
     "docling-ibm-models==3.10.3",
-    "docling-parse==4.1.0",
+    "docling-parse==7.3.0",
     # ── 코드서빙 harness (src/common, src/log_watcher) ────────────────────────
     "fastapi>=0.115.12",
     "starlette>=0.52.1",
@@ -54,7 +54,7 @@ dependencies = [
     "markdown==3.8.2",
     "markdown2>=2.5.4",
     "marko>=2.1.2,<3.0.0",
-    "lxml>=4.0.0,<6.0.0",
+    "lxml>=6.0.2,<7.0.0",
     "beautifulsoup4>=4.12.3,<5.0.0",
     "pylatexenc>=2.10,<3.0",
     "opencv-python>=4.11.0.86",
