@@ -3,13 +3,14 @@ import logging
 from abc import abstractmethod
 from collections.abc import Iterable
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Type
+from typing import List, Optional, Type
 
 import numpy as np
-from docling_core.types.doc import BoundingBox, CoordOrigin, DocItemLabel
+from docling_core.types.doc import BoundingBox, CoordOrigin, DocItemLabel, Size
 from docling_core.types.doc.page import TextCell
 from PIL import Image, ImageDraw
 from rtree import index
+from scipy.ndimage import binary_dilation, find_objects, label
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -22,6 +23,7 @@ _log = logging.getLogger(__name__)
 
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
+    MAXOUT_COVERAGE_THRESHOLD = 0.75
     PICTURE_LIKE_CLUSTER_LABELS = [
         DocItemLabel.CHART,
         DocItemLabel.PICTURE,
@@ -60,25 +62,42 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         options: OcrOptions,
         accelerator_options: AcceleratorOptions,
     ):
-        # Make sure any delay/error from import occurs on ocr model init and not first use
-        from scipy.ndimage import binary_dilation, find_objects, label
-
         self.enabled = enabled
         self.options = options
 
     def get_ocr_rects(self, page: Page) -> List[BoundingBox]:
-        r""" """
-        ocr_bboxes: List[BoundingBox]
-        if self.options.mode == OcrMode.LAYOUT_ONLY:
-            ocr_bboxes = self._get_cluster_ocr_rects(page)
-        elif self.options.mode == OcrMode.PDF_ONLY:
-            ocr_bboxes = self._get_pdf_ocr_rects(page)
+        r"""
+        Produce the input rects for the OCR according to the logic for each OcrMode
+        """
+        assert page.size is not None
+
+        # If `force_full_page_ocr` is set, just return a big bbox covering the entire page
+        if self.options.force_full_page_ocr:
+            return [
+                BoundingBox(
+                    l=0,
+                    t=0,
+                    r=page.size.width,
+                    b=page.size.height,
+                    coord_origin=CoordOrigin.TOPLEFT,
+                )
+            ]
+
+        # Compute the OCR rects according to the mode
+        ocr_rects: List[BoundingBox]
+        if self.options.mode == OcrMode.PDF_ONLY:
+            ocr_rects = self._get_pdf_ocr_rects(page)
+        elif self.options.mode == OcrMode.LAYOUT_ONLY:
+            ocr_rects = self._get_cluster_ocr_rects(page)
         elif self.options.mode == OcrMode.LAYOUT_AND_PDF:
-            ocr_bboxes = self._combine_clusters_and_cells(page)
-        return ocr_bboxes
+            ocr_rects = self._combine_clusters_and_cells(page)
+        return ocr_rects
 
     def _combine_clusters_and_cells(self, page: Page) -> List[BoundingBox]:
-        r""" """
+        r"""
+        Combine the layout detections and the programmatic PDF cells and produce a list of bboxes
+        to feed in OCR
+        """
         if page.predictions.layout is None or page._backend is None:
             return []
 
@@ -108,107 +127,103 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                 if len(intersecting_pdf_cells) == 0:
                     ocr_rects.append(cluster.bbox)
 
+        # Deduplicate
+        _, ocr_rects = self._deduplicate_rects(page.size, ocr_rects, dilation_size=0)
+
         return ocr_rects
 
     def _get_cluster_ocr_rects(self, page: Page) -> List[BoundingBox]:
         r"""
-        Compute OCR rectangles from the layout clusters of a page.
-
-        Clusters labeled as charts, pictures, or handwritten text are turned into
-        OCR regions, using the cluster bounding box directly. Returns an empty list
-        if the page has no layout prediction yet.
+        Compute OCR rectangles coming ONLY from the layout clusters of a page.
         """
         if page.predictions.layout is None:
             return []
 
-        cluster_bboxes = [
+        cluster_rects = [
             cluster.bbox
             for cluster in page.predictions.layout.clusters
             if cluster.label in self.PICTURE_LIKE_CLUSTER_LABELS
         ]
-        return cluster_bboxes
 
-    def _get_pdf_ocr_rects(self, page: Page) -> List[BoundingBox]:
+        # Deduplicate
+        _, ocr_rects = self._deduplicate_rects(
+            page.size, cluster_rects, dilation_size=0
+        )
+
+        return ocr_rects
+
+    def _deduplicate_rects(
+        self, size: Size, rects: Iterable[BoundingBox], dilation_size: int = 20
+    ) -> tuple[float, list[BoundingBox]]:
         r"""
-        Compute the rectangles that should be OCRed on a given page.
+        Deduplicate the given rects and compute the coverage ratio defined as sum(rects)/image_size
 
-        The bitmap rects of the page (the bboxes with the pictures inside the page
-        of a programmatic PDF; empty if the page does not come from a programmatic
-        PDF) are turned into candidate OCR regions and their page coverage via the
-        following algorithm:
-
-        1. Rasterize the bitmap rects into a blank binary black-white image.
+        1. Rasterize the rects into a blank binary black-white image.
            - The background is black and the rects are white.
         2. Apply a small binary dilation on the rects.
         3. Identify the bounding boxes around the "white" regions of the binary image.
         4. Compute the coverage as the ratio of white pixels in the dilated image to
            the page area.
         5. Return the coverage and the discovered bboxes.
-
-        The coverage then decides which rectangles are returned:
-        - If ``force_full_page_ocr`` is set, or the coverage exceeds both the
-          bitmap-coverage threshold and ``bitmap_area_threshold``, a single
-          full-page rectangle is returned.
-        - Else if the coverage exceeds ``bitmap_area_threshold``, the individual
-          discovered bboxes are returned.
-        - Otherwise the bitmap coverage is too low and no rectangles are returned.
         """
-        from scipy.ndimage import binary_dilation, find_objects, label
+        image = Image.new(
+            "1", (round(size.width), round(size.height))
+        )  # '1' mode is binary
 
-        BITMAP_COVERAGE_THRESHOLD = 0.75
-        assert page.size is not None
+        # Draw all bitmap rects into a binary image
+        draw = ImageDraw.Draw(image)
+        for rect in rects:
+            x0, y0, x1, y1 = rect.as_tuple()
+            x0, y0, x1, y1 = round(x0), round(y0), round(x1), round(y1)
+            draw.rectangle([(x0, y0), (x1, y1)], fill=1)
 
-        def find_ocr_rects(size, bitmap_rects):
-            image = Image.new(
-                "1", (round(size.width), round(size.height))
-            )  # '1' mode is binary
+        np_image = np.array(image)
 
-            # Draw all bitmap rects into a binary image
-            draw = ImageDraw.Draw(image)
-            for rect in bitmap_rects:
-                x0, y0, x1, y1 = rect.as_tuple()
-                x0, y0, x1, y1 = round(x0), round(y0), round(x1), round(y1)
-                draw.rectangle([(x0, y0), (x1, y1)], fill=1)
-
-            np_image = np.array(image)
-
-            # Dilate the image by 10 pixels to merge nearby bitmap rectangles
-            structure = np.ones(
-                (20, 20)
-            )  # Create a 20x20 structure element (10 pixels in all directions)
+        if dilation_size > 0:
+            # Grow the rects by dilation_size / 2 pixels in all directions.
+            structure = np.ones((dilation_size, dilation_size))
             np_image = binary_dilation(np_image > 0, structure=structure)
 
-            # Find the connected components
-            labeled_image, num_features = label(np_image > 0)  # Label white regions
+        # Find the connected components
+        labeled_image, _ = label(np_image > 0)  # Label white regions
 
-            # Find enclosing bounding boxes for each connected component.
-            slices = find_objects(labeled_image)
-            bounding_boxes = [
-                BoundingBox(
-                    l=slc[1].start,
-                    t=slc[0].start,
-                    r=slc[1].stop - 1,
-                    b=slc[0].stop - 1,
-                    coord_origin=CoordOrigin.TOPLEFT,
-                )
-                for slc in slices
-            ]
+        # Find enclosing bounding boxes for each connected component.
+        slices = find_objects(labeled_image)
+        bounding_boxes = [
+            BoundingBox(
+                l=slc[1].start,
+                t=slc[0].start,
+                r=slc[1].stop - 1,
+                b=slc[0].stop - 1,
+                coord_origin=CoordOrigin.TOPLEFT,
+            )
+            for slc in slices
+        ]
 
-            # Compute area fraction on page covered by bitmaps
-            area_frac = np.sum(np_image > 0) / (size.width * size.height)
+        # Compute area fraction on page covered by bitmaps
+        area_frac = np.sum(np_image > 0) / (size.width * size.height)
+        return (area_frac, bounding_boxes)  # fraction covered  # boxes
 
-            return (area_frac, bounding_boxes)  # fraction covered  # boxes
+    def _get_pdf_ocr_rects(self, page: Page) -> List[BoundingBox]:
+        r"""
+        Compute the OCR rectangles coming ONLY from the programmatic PDF cells
 
-        if page._backend is not None:
-            bitmap_rects = page._backend.get_bitmap_rects()
-        else:
-            bitmap_rects = []
+        1. Deduplicate the bitmap rects.
+        2. If coverage > MAXOUT_COVERAGE_THRESHOLD, return a single bbox covering the entire page.
+        3. Else if coverage > `bitmap_area_threshold`, return the deduplicated rects.
+        4. Otherwise return an empty list.
+        """
+        assert page.size is not None
+        if page._backend is None:
+            return []
 
-        coverage, ocr_rects = find_ocr_rects(page.size, bitmap_rects)
+        # Get the programmatic PDF cells and deduplicate them
+        bitmap_rects = page._backend.get_bitmap_rects()
+        coverage, ocr_rects = self._deduplicate_rects(page.size, bitmap_rects)
 
         # return full-page rectangle if page is dominantly covered with bitmaps
-        if self.options.force_full_page_ocr or coverage > max(
-            BITMAP_COVERAGE_THRESHOLD, self.options.bitmap_area_threshold
+        if coverage > max(
+            BaseOcrModel.MAXOUT_COVERAGE_THRESHOLD, self.options.bitmap_area_threshold
         ):
             return [
                 BoundingBox(
@@ -222,35 +237,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # return individual rectangles if the bitmap coverage is above the threshold
         elif coverage > self.options.bitmap_area_threshold:
             return ocr_rects
-        else:  # overall coverage of bitmaps is too low, drop all bitmap rectangles.
-            return []
 
-    # Filters OCR cells by dropping any OCR cell that intersects with an existing programmatic cell.
-    def _filter_ocr_cells(
-        self, ocr_cells: List[TextCell], programmatic_cells: List[TextCell]
-    ) -> List[TextCell]:
-        # Create R-tree index for programmatic cells
-        p = index.Property()
-        p.dimension = 2
-        idx = index.Index(properties=p)
-        for i, cell in enumerate(programmatic_cells):
-            idx.insert(i, cell.rect.to_bounding_box().as_tuple())
-
-        def is_overlapping_with_existing_cells(ocr_cell):
-            # Query the R-tree to get overlapping rectangles
-            possible_matches_index = list(
-                idx.intersection(ocr_cell.rect.to_bounding_box().as_tuple())
-            )
-
-            return (
-                len(possible_matches_index) > 0
-            )  # this is a weak criterion but it works.
-
-        filtered_ocr_cells = [
-            rect for rect in ocr_cells if not is_overlapping_with_existing_cells(rect)
-        ]
-
-        return filtered_ocr_cells
+        # Overall coverage of bitmaps is too low, drop all bitmap rectangles.
+        return []
 
     def post_process_cells(
         self,
@@ -297,7 +286,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     def _combine_cells(
         self, existing_cells: List[TextCell], ocr_cells: List[TextCell]
     ) -> List[TextCell]:
-        """Combine existing and OCR cells with filtering and re-indexing."""
+        r"""Combine existing and OCR cells with filtering and re-indexing."""
         if self.options.force_full_page_ocr:
             combined = ocr_cells
         else:
@@ -309,6 +298,35 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             cell.index = i
 
         return combined
+
+    def _filter_ocr_cells(
+        self, ocr_cells: List[TextCell], programmatic_cells: List[TextCell]
+    ) -> List[TextCell]:
+        r"""
+        Filter OCR cells by dropping any OCR cell that intersects with a programmatic PDF cell
+        """
+        # Create R-tree index for programmatic cells
+        p = index.Property()
+        p.dimension = 2
+        idx = index.Index(properties=p)
+        for i, cell in enumerate(programmatic_cells):
+            idx.insert(i, cell.rect.to_bounding_box().as_tuple())
+
+        def is_overlapping_with_existing_cells(ocr_cell):
+            # Query the R-tree to get overlapping rectangles
+            possible_matches_index = list(
+                idx.intersection(ocr_cell.rect.to_bounding_box().as_tuple())
+            )
+
+            return (
+                len(possible_matches_index) > 0
+            )  # this is a weak criterion but it works.
+
+        filtered_ocr_cells = [
+            rect for rect in ocr_cells if not is_overlapping_with_existing_cells(rect)
+        ]
+
+        return filtered_ocr_cells
 
     def draw_ocr_rects_and_cells(self, conv_res, page, ocr_rects, show: bool = False):
         image = copy.deepcopy(page.image)
