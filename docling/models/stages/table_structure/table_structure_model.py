@@ -227,6 +227,7 @@ class TableStructureModel(BaseTableStructureModel):
                 for table_cluster, tbl_box in in_tables:
                     # Check if word-level cells are available from backend:
                     sp = page._backend.get_segmented_page()
+                    using_word_cells = False
                     if sp is not None:
                         tcells = sp.get_cells_in_bbox(
                             cell_unit=TextCellUnit.WORD,
@@ -235,6 +236,8 @@ class TableStructureModel(BaseTableStructureModel):
                         if len(tcells) == 0:
                             # In case word-level cells yield empty
                             tcells = table_cluster.cells
+                        else:
+                            using_word_cells = True
                     else:
                         # Otherwise - we use normal (line/phrase) cells
                         tcells = table_cluster.cells
@@ -283,6 +286,77 @@ class TableStructureModel(BaseTableStructureModel):
                         .get("prediction", {})
                         .get("rs_seq", [])
                     )
+
+                    # docling-side workaround for the edge case, main root cause is in TFPredictor
+                    # model doesn't see the last row because it's at the very bottom edge of the crop
+                    if (
+                        self.do_cell_matching
+                        and using_word_cells
+                        and tokens
+                        and table_cells
+                    ):
+                        matched_ids = {
+                            str(k)
+                            for k in table_out["predict_details"]
+                            .get("matches", {})
+                            .keys()
+                        }
+                        cells_bottom = max(
+                            (tc.bbox.b for tc in table_cells if tc.bbox is not None),
+                            default=0.0,
+                        )
+                        unmatched = []
+                        if cells_bottom > 0.0:
+                            for tok in tokens:
+                                if str(tok["id"]) in matched_ids:
+                                    continue
+                                tok_bbox = BoundingBox.model_validate(
+                                    tok["bbox"]
+                                ).scaled(1 / self.scale)
+                                if (
+                                    tok_bbox.t > cells_bottom
+                                    and tok_bbox.b <= table_cluster.bbox.b
+                                ):
+                                    unmatched.append((tok, tok_bbox))
+                        if len(unmatched) > 1:
+                            centres = sorted((tb.t + tb.b) / 2.0 for _, tb in unmatched)
+                            median_centre = centres[len(centres) // 2]
+                            avg_height = sum(tb.b - tb.t for _, tb in unmatched) / len(
+                                unmatched
+                            )
+                            coherent = all(
+                                abs((tb.t + tb.b) / 2.0 - median_centre) <= avg_height
+                                for _, tb in unmatched
+                            )
+                            if not coherent:
+                                unmatched = []
+                        if unmatched:
+                            extra_row_idx = num_rows
+                            num_cols = max(num_cols, 1)
+                            for col_idx, (tok, tok_bbox) in enumerate(unmatched):
+                                table_cells.append(
+                                    TableCell(
+                                        text=tok["text"],
+                                        bbox=tok_bbox,
+                                        row_span=1,
+                                        col_span=1,
+                                        start_row_offset_idx=extra_row_idx,
+                                        end_row_offset_idx=extra_row_idx + 1,
+                                        start_col_offset_idx=col_idx % num_cols,
+                                        end_col_offset_idx=(col_idx % num_cols) + 1,
+                                        column_header=False,
+                                        row_header=False,
+                                        row_section=False,
+                                    )
+                                )
+                            num_rows += 1
+                            _log.debug(
+                                "Recovered %d unmatched token(s) into extra row %d "
+                                "for table cluster id=%d",
+                                len(unmatched),
+                                extra_row_idx,
+                                table_cluster.id,
+                            )
 
                     tbl = Table(
                         otsl_seq=otsl_seq,
