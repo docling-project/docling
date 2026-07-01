@@ -292,7 +292,7 @@ class GenosSmartChunker(BaseChunker):
         processed_refs = set()
 
         # 모든 아이템 순회
-        for item, level in dl_doc.iterate_items(included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}):
+        for item, level in dl_doc.iterate_items(included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}, traverse_pictures=True):
             if hasattr(item, 'self_ref'):
                 processed_refs.add(item.self_ref)
 
@@ -1903,86 +1903,81 @@ async def assert_cancelled(request: Request):
 # enrichment 프롬프트
 #-----------------------------------------------------------------
 
-# intelligent_processor 기본 TOC 프롬프트 (resource/prompt_toc_default_{system,user}.md)
-# docling enrich_document 가 {{raw_text}}/{{prior_toc}} 를 {raw_text}/{prior_toc} 로 정규화 후 주입
-toc_system_prompt = 'You are an expert at generating table of contents (목차) from Korean documents. You specialize in regulatory documents, terms of service, contracts, and mixed-format documents that combine formal regulatory structures with general section headers. When a previous outline is provided, you continue extracting only the newly appearing items without repeating analysis or already-listed entries.'
-toc_user_prompt = """The following is the table of contents accumulated so far (the higher-level structure extracted from earlier parts of the document; it may be empty):
+# 규정용 프롬프트
+toc_system_prompt = "당신은 규정/규칙/지침과 같은 한국어 문서에서 **목차**를 생성하는 전문가입니다."
+toc_user_prompt = """주어진 법령문서 텍스트에서 문서제목, 장/절/조, 부칙, 부록/별지/별표의 제목을 추출한다.
 
-<previous_outline>
-{{prior_toc}}
-</previous_outline>
+## 단계별 추론 (CoT 방식)
+1. 문서제목은 chunk 초반에서 제목 후보를 탐색하고 나열한다.
+2. 문서제목 가능성이 높은 문구를 하나 선택하고 `TITLE:<문서제목>` 형식으로 기록한다.
+    - 단, 제목으로 보이는 문구가 없으면 `TITLE:` 로 기록
+3. 모든 "제x조(...)" 패턴을 모두 탐색하고 나열한다.
+    - 반복적 패턴(재등록, 재재등록 등) 생성을 피한다.
+4. 나머지 장/절, 부칙, 부록/별지/별표의 패턴을 모두 탐색하고 나열한다.
+    - "제x장","제x절"
+    - "부칙 <제xxx호, YYYY. MM. DD>(...)" 또는 "부칙 (YYYY. MM. DD)(...)"
+    - "부록", "<별지>", "<별표>", "[별지 ...] <개정 YYYY.MM.DD>", "[별표 ...] <개정 YYYY.MM.DD>"
+    - 본문의 리스트 항목이 탐색되는 것을 피한다. ("①", "②","①(...)", "②(...)", "1.", "가." 등)
+5. 탐색된 모든 항목을 재검토하여 패턴에 맞는 항목만 남긴다.
+6. 남겨진 항목을 문서내 순서대로 나열한 후 계층관계를 분석한다.
+    - 1, 1.1, 1.1.1 등으로 표현
+    - 부칙 하위에 나오는 조는 부칙의 하위로 둔다.
+7. 분석된 계층관계가 올바른지 재검토한다.
+    - 장/절/조는 "조"까지만 남긴다.
 
-Here is the Korean document you need to analyze:
+## 주의사항
+- 반드시 chunk 내부에서 보이는 내용만 처리한다.
+- 목차가 있으면 참고만하고 반드시 본문에서 추출한다.
 
-<document>
-{{raw_text}}
-</document>
+## 출력 형식
+- 첫 줄: `TITLE:<문서제목>`, (없으면 `TITLE:` 만 출력)
+- 이후 줄: 장/절/조, 부칙, 부록/별지/별표 제목
+- 일반 텍스트 형식으로 출력한다.
+- 원문의 텍스트를 그대로 출력한다.
 
-## Operating Mode (decide first)
+## Few-shot 예시
 
-- **If <previous_outline> is empty (first-extraction mode)**: Work through the 'Analysis Process' below inside `<analysis>` tags, then output the table of contents for the entire document in `<toc>`. Include `TITLE:`.
-- **If <previous_outline> has content (continuation mode)**: This `<document>` is a **continuing later part** of a longer document. Follow these rules:
-  - Do **not** output `<analysis>`, explanations, or reasoning. Output only the `<toc>...</toc>` block.
-  - Output only the structural items that **newly appear** in this document. Do not repeat items already present in `<previous_outline>`.
-  - This `<document>` may continue a chapter/section that already appears in `<previous_outline>`. Even when a parent chapter/section is already listed, you **MUST still extract every article/sub-item (제x조, 항목 등) that is not yet in the outline**. Do **not** skip articles merely because their parent section already appears — resume from the last item in `<previous_outline>` and continue in document order until the end of this `<document>`.
-  - Numbering may restart from 1; do not worry if it differs from the numbering or order in `<previous_outline>` (the final numbering is reassigned in post-processing).
-  - Omit `TITLE:` (it is already in the accumulated outline).
-  - If there are no new items to extract, output `<toc></toc>`.
+### 예시 1 (중간 chunk)
 
-Your task is to extract and organize all structural elements from this document into a hierarchical table of contents. Korean documents often have mixed structures where some sections follow formal regulatory patterns (제x장/절/관/조) while others use general section numbering and headers.
+#### 입력
 
-## Analysis Process
+인원보안 규정
 
-Before generating the final table of contents, work through the document systematically in `<analysis>` tags. It's OK for this section to be quite long. Follow these steps:
+에 과다한 비용을 요한다고 인정하는 경우 또는 당행이 공종별 목적물을 관계법령에 따른 내구연한(耐久年限)이나 설계상의 구조내력을 초과하여사용한 것을 원인으로 하여 하자가 발생하였다고 인정하는 경우에는 그러하지 아니하다.
 
-1. **Document Title Extraction**: Quote the main document title exactly as it appears at the beginning of the document.
+제18조 (자격등록 확인) 세칙 제52조에 따라 하자검사를 하는 자는...
+제19조 (자격등록 및 갱신등록의 거부) 하자보수보증금률을 정하여야 한다...
+제5장 인원보안
+제1절 보안책임
+제30조(보안책임자) 보안담당은...
+제30조의2 (자격등록 및 갱신등록의 거부) 하자보수보증금을 직접 사용하고자 할 때에는...
+부칙 (2022. 1. 2)
+제4조(조사절차) 계약담당은 제1항의 보증채무 이행 대금, ...
+제7조(조사결과 보고) 락률 산정은 다음 각 호의 산식에따른다. ...
+[별지 제6호 서식] 여비정산신청서
+[별표 1] <개정 2026.2.11>
+<별표 2> 회계장부의 보존연한표
+[별지 제1호 서식]<개정 2022.04.25> 보안심사(실무)위원회 회의록
 
-2. **Structural Marker Identification**: Scan through the document and quote all the key structural markers you find, such as:
-   - Formal regulatory patterns: 제x장, 제x절, 제x관, 제x조
-   - General section patterns: numbered headers (1., 2., etc.), lettered headers (가., 나., etc.)
-   - Special sections: 부칙, 별지, 별표, etc.
+#### 출력
 
-3. **Systematic Section Extraction**: Work through the document from beginning to end, extracting each structural element in order:
-   - For each main section, quote the exact title as it appears
-   - For each subsection, quote the exact title and note which main section it belongs under
-   - For each article/item, quote the exact title and note its parent section
-   - Include any appendices, attachments, and addenda
+TITLE:인원보안 규정
+1. 제18조 (자격등록 확인)
+2. 제19조 (자격등록 및 갱신등록의 거부)
+3. 제5장 인원보안
+3.1. 제1절 보안책임
+3.1.1. 제30조(보안책임자)
+3.1.2. 제30조의2 (자격등록 및 갱신등록의 거부)
+4. 부칙 (2022. 1. 2)
+4.1. 제4조(조사절차)
+4.2. 제7조(조사결과 보고)
+5. [별지 제6호 서식] 여비정산신청서
+6. [별표 1] <개정 2026.2.11>
+7. [별표 2] 회계장부의 보존연한표
+8. [별지 제1호 서식]<개정 2022.04.25> 보안심사(실무)위원회 회의록
 
-4. **Hierarchy Building**: For each extracted element, explicitly note:
-   - What level it should be at (main section, subsection, sub-subsection, etc.)
-   - What its parent section is (if any)
-   - What numbering it should receive in the final TOC (1., 1.1., 1.1.1., etc.)
+---
 
-5. **Structure Verification**: Review your extracted elements to ensure:
-   - All structural elements are captured in document order
-   - The hierarchy makes logical sense
-   - No elements are duplicated or missed
-
-## Output Requirements
-
-After your analysis, generate the table of contents with this exact format:
-
-```
-<toc>
-TITLE:<document title>
-1. <first main section title>
-1.1. <first subsection title>
-1.1.1. <first sub-subsection title>
-1.2. <second subsection title>
-2. <second main section title>
-2.1. <subsection under second main section>
-3. <third main section title>
-</toc>
-```
-
-## Formatting Guidelines
-
-- Start with `TITLE:` followed by the document title
-- Use hierarchical decimal numbering (1, 1.1, 1.1.1, etc.)
-- Follow each number with a space and the original title exactly as it appears
-- Maintain the document's logical hierarchy
-- Include appendices, attachments, and addenda as separate top-level items
-- Extract titles exactly as they appear - do not include explanatory content
-- Handle both formal regulatory structures and general section headers
-- Wrap the entire table of contents in `<toc></toc>` tags
+## 실제 작업할 입력
+{raw_text}
 """
