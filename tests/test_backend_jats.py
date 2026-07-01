@@ -25,25 +25,6 @@ def get_converter():
     converter = DocumentConverter(allowed_formats=[InputFormat.XML_JATS])
     return converter
 
-
-def convert_jats_body(body: str) -> DoclingDocument:
-    xml = f"""<!DOCTYPE article
-PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
-<article article-type="research-article">
-  <body>
-    {body}
-  </body>
-</article>
-"""
-    stream = DocumentStream(
-        name="body-test.nxml",
-        stream=BytesIO(xml.encode()),
-    )
-
-    conv_result: ConversionResult = get_converter().convert(stream)
-    return conv_result.document
-
-
 def convert_jats_article_meta(article_meta: str) -> DoclingDocument:
     xml = f"""<!DOCTYPE article
 PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
@@ -129,6 +110,21 @@ def test_jats_nested_lists_are_preserved():
               </list>
             </list-item>
           </list>
+        </sec>
+        """
+    )
+
+    md = doc.export_to_markdown()
+
+    assert "- Item 1" in md
+    assert "Subitem A" in md
+
+    # Nested item should not be flattened into the parent item
+    assert (
+        "Item 1                                                   Subitem A" not in md
+    )
+
+
 def _inline_group_items(doc: DoclingDocument) -> list[list]:
     """Return the resolved child items of every INLINE group, in document order."""
     return [
