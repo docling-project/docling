@@ -214,40 +214,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     fi
 
 ############################
-# 3-1) docling-parse 4.1.0 패치 빌드 (이슈 #245)
-# O(N²) XObject 재로딩 fix: stream_fix_xobject_reload.h → stream.h
-# 패치 파일은 loext 단계에서 /app/stream_fix_xobject_reload.h 로 복사됨
-############################
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
-      git g++ make zlib1g-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN --mount=type=cache,target=/root/.cache/uv \
-    set -eux; \
-    uv pip install --python /app/.venv/bin/python \
-      pybind11 cmake scikit-build-core poetry -q; \
-    git clone --depth 1 --branch v4.1.0 \
-      https://github.com/docling-project/docling-parse \
-      /tmp/docling-parse-4.1.0; \
-    cp /app/stream_fix_xobject_reload.h \
-      /tmp/docling-parse-4.1.0/src/v2/pdf_decoders/stream.h; \
-    sed -i 's|-DCMAKE_INSTALL_PREFIX=${EXTERNALS_PREFIX_PATH}|-DCMAKE_INSTALL_PREFIX=${EXTERNALS_PREFIX_PATH}\n        -DCXXOPTS_BUILD_EXAMPLES=OFF\n        -DCXXOPTS_BUILD_TESTS=OFF|' \
-      /tmp/docling-parse-4.1.0/cmake/extlib_cxxopts.cmake; \
-    sed -i 's|set(QPDF_EXTRA_CXX_FLAGS "-fPIC ")|set(QPDF_EXTRA_CXX_FLAGS "-fPIC -include cstdint -Wno-error")|' \
-      /tmp/docling-parse-4.1.0/cmake/extlib_qpdf_v11.cmake; \
-    sed -i 's|set(QPDF_EXTRA_C_FLAGS "-fPIC ")|set(QPDF_EXTRA_C_FLAGS "-fPIC -Wno-error")|' \
-      /tmp/docling-parse-4.1.0/cmake/extlib_qpdf_v11.cmake; \
-    sed -i 's|-DCMAKE_C_FLAGS=${ENV_ARCHFLAGS}|-DCMAKE_C_FLAGS=-Wno-error|' \
-      /tmp/docling-parse-4.1.0/cmake/extlib_jpeg.cmake; \
-    uv pip install --python /app/.venv/bin/python \
-      --no-build-isolation /tmp/docling-parse-4.1.0/; \
-    uv pip install --python /app/.venv/bin/python \
-      "docling-core==2.62.0"; \
-    rm -rf /tmp/docling-parse-4.1.0
-
-############################
 # 4-1) HWP SDK 아티팩트 (오픈소스/엔터프라이즈 공통 — HWP SDK는 무료)
 ############################
 FROM builder AS sdk_artifacts
