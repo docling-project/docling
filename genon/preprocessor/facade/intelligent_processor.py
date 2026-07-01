@@ -1251,15 +1251,22 @@ class GenosSmartChunker(BaseChunker):
         # 동일 annotation 중복 주입 방지
         return "\n".join(dict.fromkeys(texts))
 
+    @staticmethod
+    def _resolve_table_format(kwargs: dict) -> str:
+        """표 직렬화 형식 결정: table_format(html|markdown) 우선, 없으면 레거시 export_to_html(1/0)."""
+        fmt = kwargs.get("table_format")
+        if fmt is None:
+            return "html" if kwargs.get("export_to_html", 1) == 1 else "markdown"
+        fmt = str(fmt).strip().lower()
+        return "markdown" if fmt == "markdown" else "html"
+
     def _extract_table_text(self, table_item: TableItem, dl_doc: DoclingDocument, **kwargs) -> str:
         """테이블에서 텍스트를 추출하는 일반화된 메서드"""
         try:
-            # 먼저 export_to_markdown 시도
-            export_to_html = kwargs.get('export_to_html', 1)
-            if export_to_html == 1:
-                table_text = table_item.export_to_html(dl_doc)
-            else:
+            if self._resolve_table_format(kwargs) == "markdown":
                 table_text = table_item.export_to_markdown(dl_doc)
+            else:
+                table_text = table_item.export_to_html(dl_doc)
             if table_text and table_text.strip():
                 return table_text
         except Exception:
@@ -1317,6 +1324,16 @@ class GenosSmartChunker(BaseChunker):
             attrs = f' colspan="{cell.col_span}"' if cell.col_span > 1 else ""
             cells.append(f"<{tag}{attrs}>{_html.escape((cell.text or '').strip())}</{tag}>")
         return "<tr>" + "".join(cells) + "</tr>"
+
+    @staticmethod
+    def _render_table_row_md(row: list, num_cols: int) -> str:
+        """grid 한 행을 markdown 표 행 `| c1 | c2 | ... |` 로 렌더(파이프는 이스케이프).
+        markdown 은 colspan/rowspan 미지원이라 num_cols 전 컬럼을 그대로 낸다."""
+        cells = []
+        for j in range(num_cols):
+            text = (row[j].text or "").strip().replace("|", "\\|").replace("\n", " ")
+            cells.append(text)
+        return "| " + " | ".join(cells) + " |"
 
     @staticmethod
     def _sheet_prefix(table_item: TableItem, dl_doc: DoclingDocument) -> str:
@@ -1382,20 +1399,30 @@ class GenosSmartChunker(BaseChunker):
         heading = ", ".join(merged[l] for l in sorted(merged)) if merged else ""
         prefix = (heading + ", ") if heading else ""
 
-        header_inner = "".join(self._render_table_row_html(r, num_cols) for r in header_rows)
+        # table_format 에 맞춰 헤더/데이터 행을 렌더하고 버킷을 감싼다(html | markdown).
+        if self._resolve_table_format(kwargs) == "markdown":
+            render_row = self._render_table_row_md
+            header_block = [render_row(r, num_cols) for r in header_rows]
+            header_block.append("| " + " | ".join(["---"] * num_cols) + " |")
 
-        def wrap(inner: str) -> str:
-            return sheet_prefix + prefix + "<table><tbody>" + header_inner + inner + "</tbody></table>"
+            def wrap(data_rendered: list) -> str:
+                return sheet_prefix + prefix + "\n".join(header_block + data_rendered)
+        else:
+            render_row = self._render_table_row_html
+            header_inner = "".join(render_row(r, num_cols) for r in header_rows)
+
+            def wrap(data_rendered: list) -> str:
+                return sheet_prefix + prefix + "<table><tbody>" + header_inner + "".join(data_rendered) + "</tbody></table>"
 
         texts: list[str] = []
-        cur = ""
+        cur: list[str] = []
         for r in data_rows:
-            tr = self._render_table_row_html(r, num_cols)
-            if cur and self._count_tokens(wrap(cur + tr)) > self.max_tokens:
+            rr = render_row(r, num_cols)
+            if cur and self._count_tokens(wrap(cur + [rr])) > self.max_tokens:
                 texts.append(wrap(cur))
-                cur = tr
+                cur = [rr]
             else:
-                cur += tr
+                cur.append(rr)
         if cur:
             texts.append(wrap(cur))
         return texts or [single]
@@ -2149,6 +2176,16 @@ class DocumentProcessor:
             "multi_table": bool(_parse_optional_bool(tabular_cfg.get("multi_table"), "formats.xlsx.tabular.multi_table")),
         }
 
+        # 표 텍스트 직렬화 형식(청크 text 내 docling 표 표현). "html"(default) | "markdown".
+        output_cfg = _as_dict(cfg.get("output"))
+        table_format = str(output_cfg.get("table_format", "html")).strip().lower()
+        if table_format not in {"html", "markdown"}:
+            _log.warning(
+                f"[DocumentProcessor] Unknown output.table_format '{table_format}', fallback to 'html'."
+            )
+            table_format = "html"
+        self._table_format = table_format
+
         # OCR 엔드포인트는 ocr.paddle.ocr_endpoint 가 정식 위치.
         # 구버전 호환: ocr.ocr_endpoint(상위) / 최상위 ocr_endpoint 도 폴백으로 인식.
         paddle_cfg = _as_dict(ocr_cfg.get("paddle"))
@@ -2602,6 +2639,8 @@ class DocumentProcessor:
             tokenizer_type = self._tokenizer_type,
         )
 
+        # 표 직렬화 형식(html|markdown)을 청커로 전달(런타임 kwarg 가 있으면 우선).
+        kwargs.setdefault("table_format", self._table_format)
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
         for chunk in chunks:
             if chunk.meta.doc_items[0].prov:

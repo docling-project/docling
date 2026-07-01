@@ -27,6 +27,7 @@ RAG 지식베이스 구축을 위한 **품질 최우선** 전처리기입니다.
       - [`repetition_penalty` 사용 가이드](#repetition_penalty-사용-가이드)
     - [3.4 PDF 파이프라인 설정](#34-pdf-파이프라인-설정)
       - [3.4.2 xlsx(엑셀) 직접 처리 (`formats.xlsx`)](#342-xlsx엑셀-직접-처리-formatsxlsx)
+      - [3.4.3 표 텍스트 형식 (`output.table_format`)](#343-표-텍스트-형식-outputtable_format)
     - [3.5 Enrichment 설정](#35-enrichment-설정)
       - [toc](#toc)
       - [metadata](#metadata)
@@ -197,6 +198,9 @@ pdf_pipeline:
 
 table_image:
   enable: false                  # true 면 모든 표를 이미지로 저장 + media_files 기록
+
+output:
+  table_format: "html"           # 청크 text 내 docling 표 직렬화 형식. "html"(default) | "markdown"
 
 # 청킹(GenosSmartChunker) 설정
 chunking:
@@ -404,6 +408,23 @@ formats:
 ```
 
 > **참고** — `.xls`/`.xlsb`(구형/바이너리 엑셀)는 openpyxl/docling 이 못 읽으므로 직접 처리 대상이 아니며, 기존대로 PDF 변환 경로로 처리됩니다.
+
+### 3.4.3 표 텍스트 형식 (`output.table_format`)
+
+청크 `text` 안에 표(TableItem)를 직렬화하는 형식을 선택합니다. docling 모드의 모든 표(PDF/DOCX/HWP/xlsx-docling)에 적용됩니다.
+
+| 키 | 값 | 기본 | 설명 |
+|----|----|------|------|
+| `output.table_format` | `html` \| `markdown` | `html` | `html`=`<table>…`, `markdown`=`\| c1 \| c2 \|` 파이프 표 |
+
+- `markdown` 이면 표를 `export_to_markdown` 으로 직렬화하고, xlsx 의 oversized 표 **행 분할 청크**도 markdown 표 행(헤더 반복 + `\| --- \|` 구분선)으로 렌더합니다.
+- tabular 모드(행=벡터)는 이 옵션과 무관합니다(자체 파이프 표현 사용).
+- 런타임 kwarg 로 `table_format`(또는 레거시 `export_to_html` 1/0)을 주면 config 보다 우선합니다.
+
+```yaml
+output:
+  table_format: "html"    # 또는 "markdown"
+```
 
 ### 3.5 Enrichment 설정
 

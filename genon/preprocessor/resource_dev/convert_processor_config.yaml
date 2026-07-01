@@ -83,6 +83,10 @@ pdf_pipeline:
 table_image:
   enable: false           # true 면 모든 표를 이미지로 저장 + media_files 기록
 
+# 표 텍스트 직렬화 형식(청크 text 내 docling 표 표현). tabular 모드(행=벡터)는 무관.
+output:
+  table_format: "html"   # "html"(default) | "markdown"
+
 # ── enrichment ────────────────────────────────────────────────────────────────
 # 각 항목은 {이름: {옵션}} 형식의 list.
 # 비활성화 방법: ① 항목 삭제  ② 항목 주석 처리  ③ enable: false 추가 (설정 보존)
