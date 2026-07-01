@@ -2,10 +2,8 @@ defaults:
   # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
   log_level: 4
 
-# 포맷별 처리 옵션(포맷마다 하위에 옵션 지정). 필요 시 다른 포맷 섹션 추가 가능.
 formats:
-  # 엑셀(xlsx/xlsm) 직접 처리 (이슈 #288). PDF 변환 없이 처리해 한 행이 페이지 경계로
-  # 쪼개지는 논리 오류를 원천 방지한다.
+  # 엑셀(xlsx/xlsm), csv는 PDF 변환 없이 처리
   xlsx:
     # docling(기본): MsExcel 백엔드로 DoclingDocument 생성 후 기존 청킹/벡터 파이프라인.
     # tabular: 데이터 행마다 1벡터 + 컬럼 헤더→셀 값 메타데이터(병합셀 unmerge+forward-fill).

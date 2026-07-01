@@ -2,9 +2,8 @@ defaults:
   # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
   log_level: 4
 
-# 포맷별 처리 옵션(포맷마다 하위에 옵션 지정). 필요 시 다른 포맷 섹션 추가 가능.
 formats:
-  # 엑셀(xlsx/xlsm)·csv 처리 (이슈 #288). 출력은 parse-JSON(시트당 HTML 표) 유지.
+  # 엑셀(xlsx/xlsm), csv는 PDF 변환 없이 처리
   xlsx:
     # tabular(기본): openpyxl 로 병합셀 unmerge+forward-fill 후 시트→HTML 표(병합 헤더 보존).
     # docling: docling MsExcel/Csv 백엔드로 DoclingDocument 생성 후 parse-JSON 직렬화.
