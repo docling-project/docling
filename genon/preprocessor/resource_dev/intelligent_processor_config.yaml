@@ -207,6 +207,8 @@ xlsx:
   encoding: ""
   # csv 도 이 경로로 가로챌지 여부. false(기본)=기존 PDF 변환 경로 유지.
   intercept_csv: false
+  # tabular 모드: 1시트에 표가 여러 개(빈 행으로 분리)면 표별로 분리 처리. false(기본)=시트=1표.
+  multi_table: false
 
 # 모델 경로 (다운로드된 기본값 사용; 미지정 시 현행 동작 유지)
 models:

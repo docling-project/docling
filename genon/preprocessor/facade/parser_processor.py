@@ -1297,6 +1297,7 @@ class IntelligentDocumentProcessor:
             "processing_mode": xlsx_mode,
             "header_row": _parse_optional_int(xlsx_cfg.get("header_row"), "xlsx.header_row") or 0,
             "encoding": (str(xlsx_cfg.get("encoding")).strip() or None),
+            "multi_table": bool(_parse_optional_bool(xlsx_cfg.get("multi_table"), "xlsx.multi_table")),
         }
 
         self.simple_pipeline_options = PipelineOptions()
@@ -2031,27 +2032,30 @@ class DocumentProcessor:
                 pass
 
     def _parse_tabular(self, file_path: str) -> dict:
-        """xlsx/csv → {"data":[{"sheet_name","data_rows":[{col:val}]}]} (이슈 #288).
+        """xlsx/csv → {"data":[{"sheet_name","title","data_rows":[{col:val}]}]} (이슈 #288).
 
-        openpyxl 로 병합셀을 unmerge + forward-fill 하여 병합 헤더/그룹 값 유실을 막는다.
-        header_row(0-based) 행을 컬럼으로, 그 아래 비어있지 않은 행을 데이터 행으로 본다.
+        표 감지(멀티헤더 자동 + 1시트 복수표)는 xlsx_processor.load_tables 에 위임한다.
+        - 제목행은 title 로(컨텍스트), 계층 헤더는 `상위_하위` flatten, 그 아래 컬럼명행이 leaf.
+        - multi_table=True 면 빈 행 기준 복수 표를 표별로 분리.
+        헤더명(원본, 한글 가능)을 그대로 key 로 쓴다(HTML 셀 내용 — Weaviate 키 제약 무관).
         """
-        from genon.preprocessor.converters.xlsx_processor import load_sheets
+        from genon.preprocessor.converters.xlsx_processor import load_tables
 
-        sheets = load_sheets(file_path, encoding=self._xlsx_cfg["encoding"])
-        hr = self._xlsx_cfg["header_row"]
+        tables = load_tables(
+            file_path,
+            header_row=self._xlsx_cfg["header_row"],
+            encoding=self._xlsx_cfg["encoding"],
+            multi_table=self._xlsx_cfg["multi_table"],
+        )
         data: list[dict] = []
-        for name, rows in sheets.items():
-            if len(rows) <= hr:
-                data.append({"sheet_name": name, "data_rows": []})
-                continue
-            headers = [(h.strip() or f"col_{i}") for i, h in enumerate(rows[hr])]
-            data_rows = [
-                dict(zip(headers, r))
-                for r in rows[hr + 1:]
-                if any(c.strip() for c in r)
-            ]
-            data.append({"sheet_name": name, "data_rows": data_rows})
+        for t in tables:
+            headers = t["headers"]
+            data_rows = [dict(zip(headers, values)) for values in t["data_rows"]]
+            data.append({
+                "sheet_name": t["sheet_name"],
+                "title": t["title"],
+                "data_rows": data_rows,
+            })
         return {"data": data}
 
     def _parse_other(self, file_path: str, **kwargs) -> list:
@@ -2375,9 +2379,12 @@ class DocumentProcessor:
 
     @staticmethod
     def _sheet_to_html(sheet: dict) -> str:
-        """시트 dict → HTML table 문자열(시트명 접두 포함)."""
+        """시트(표) dict → HTML table 문자열(시트명 + 제목 컨텍스트 접두 포함)."""
         name = str(sheet.get("sheet_name", "") or "").strip()
+        title = str(sheet.get("title", "") or "").strip()
         prefix = f"시트명: {name}\n" if name else ""
+        if title:
+            prefix += f"{title}\n"
         data_rows = sheet.get("data_rows", [])
         if not data_rows:
             return f"{prefix}<table></table>"

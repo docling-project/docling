@@ -2145,6 +2145,7 @@ class DocumentProcessor:
             "header_row": _parse_optional_int(xlsx_cfg.get("header_row"), "xlsx.header_row") or 0,
             "encoding": (str(xlsx_cfg.get("encoding")).strip() or None),
             "intercept_csv": bool(_parse_optional_bool(xlsx_cfg.get("intercept_csv"), "xlsx.intercept_csv")),
+            "multi_table": bool(_parse_optional_bool(xlsx_cfg.get("multi_table"), "xlsx.multi_table")),
         }
 
         # OCR 엔드포인트는 ocr.paddle.ocr_endpoint 가 정식 위치.
@@ -3102,6 +3103,7 @@ class DocumentProcessor:
                 file_path,
                 header_row=self._xlsx_cfg["header_row"],
                 encoding=self._xlsx_cfg["encoding"],
+                multi_table=self._xlsx_cfg["multi_table"],
             )
             if not vectors:
                 raise GenosServiceException(1, f"chunk length is 0")

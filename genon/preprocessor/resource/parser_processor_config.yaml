@@ -153,3 +153,5 @@ xlsx:
   header_row: 0
   # csv 인코딩. 비우면 chardet 자동감지 후 utf-8 폴백.
   encoding: ""
+  # 1시트에 표가 여러 개(빈 행으로 분리)면 표별로 분리(멀티헤더 자동감지 포함). false(기본)=시트=1표.
+  multi_table: false

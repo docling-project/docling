@@ -14,6 +14,8 @@
 # 충돌 회피 + tabular 전용 사용 시 docling 미로딩).
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 import os
 import re
@@ -35,7 +37,7 @@ _VALID_KEY_RE = re.compile(r"^[_A-Za-z][_0-9A-Za-z]*$")
 _RESERVED_FIELDS = {
     "text", "n_char", "n_word", "n_line", "i_page", "e_page",
     "i_chunk_on_page", "n_chunk_of_page", "i_chunk_on_doc", "n_chunk_of_doc",
-    "n_page", "reg_date", "chunk_bboxes", "media_files",
+    "n_page", "reg_date", "chunk_bboxes", "media_files", "column_map",
 }
 
 
@@ -87,6 +89,22 @@ def _row_to_pipe(values: list) -> str:
 
 def _is_valid_key(key: str) -> bool:
     return bool(key) and key not in _RESERVED_FIELDS and bool(_VALID_KEY_RE.match(key))
+
+
+def _stable_key(name: str) -> str:
+    """헤더 텍스트 → Weaviate property 필터에 쓸 안정적 ASCII 키.
+
+    같은 헤더 텍스트는 어느 파일에서든 같은 키가 되도록 결정적으로 생성한다.
+      - ASCII 규칙(_is_valid_key) 통과(영문 헤더 등) → 그대로(가독성 유지)
+      - 그 외(한글·공백·기호 등) → 'field_' + sha256(header)[:8]
+      - 빈 헤더 → '' (호출부에서 위치기반 col_N 로 폴백)
+    """
+    name = (name or "").strip()
+    if not name:
+        return ""
+    if _is_valid_key(name):
+        return name
+    return "field_" + hashlib.sha256(name.encode("utf-8")).hexdigest()[:8]
 
 
 # ------------------------------------------------------------------ #
@@ -193,71 +211,268 @@ def _is_empty_row(row: list[str]) -> bool:
     return all(not c.strip() for c in row)
 
 
+def _sheet_grid_and_merges(ws) -> tuple[list[list[str]], list[tuple[int, int, int, int]]]:
+    """시트를 (2D 문자열 행, 병합범위 목록)으로 로드한다.
+
+    병합범위는 unmerge 이전에 0-based `(r0, c0, r1, c1)`(포함) 로 캡처한 뒤, 값은 unmerge +
+    forward-fill 하여 반환한다. 병합정보는 멀티헤더(제목/계층) 판정에 사용한다.
+    """
+    merges = [
+        (rng.min_row - 1, rng.min_col - 1, rng.max_row - 1, rng.max_col - 1)
+        for rng in ws.merged_cells.ranges
+    ]
+    for rng in list(ws.merged_cells.ranges):
+        top_left = ws.cell(row=rng.min_row, column=rng.min_col).value
+        ws.unmerge_cells(str(rng))
+        for r in range(rng.min_row, rng.max_row + 1):
+            for c in range(rng.min_col, rng.max_col + 1):
+                ws.cell(row=r, column=c).value = top_left
+    rows = [[_cell_str(v) for v in row] for row in ws.iter_rows(values_only=True)]
+    return rows, merges
+
+
+def _load_sheets_with_merges(
+    file_path: str, encoding: Optional[str]
+) -> dict[str, tuple[list[list[str]], list[tuple[int, int, int, int]]]]:
+    if is_csv(file_path):
+        return {"table_1": (_csv_rows(file_path, encoding), [])}
+
+    import openpyxl
+
+    wb = openpyxl.load_workbook(file_path, data_only=True)
+    return {name: _sheet_grid_and_merges(wb[name]) for name in wb.sheetnames}
+
+
+def _split_blocks(
+    rows: list[list[str]],
+    merges: list[tuple[int, int, int, int]],
+    multi_table: bool,
+) -> list[tuple[list[list[str]], list[tuple[int, int, int, int]]]]:
+    """시트를 표 블록으로 분리한다. multi_table 이면 완전 빈 행 run 을 구분자로, 아니면 1블록."""
+    if not multi_table:
+        return [(rows, merges)]
+
+    spans: list[tuple[int, int]] = []
+    start: Optional[int] = None
+    for i, r in enumerate(rows):
+        if not _is_empty_row(r):
+            if start is None:
+                start = i
+        elif start is not None:
+            spans.append((start, i))
+            start = None
+    if start is not None:
+        spans.append((start, len(rows)))
+
+    result = []
+    for a, b in spans:
+        brows = rows[a:b]
+        bmerges = [
+            (r0 - a, c0, r1 - a, c1)
+            for (r0, c0, r1, c1) in merges
+            if r0 >= a and r1 < b
+        ]
+        result.append((brows, bmerges))
+    return result
+
+
+def _detect_header(
+    brows: list[list[str]],
+    bmerges: list[tuple[int, int, int, int]],
+    used_cols: list[int],
+    header_row_override: int,
+) -> tuple[list[int], list[int], int, int]:
+    """블록의 헤더 구조를 자동 판정한다(병합 기반).
+
+    반환: (title_rows, group_rows, leaf_idx, data_start)
+      - title_rows: 단일 수평 병합만으로 구성된 제목행(키 제외, 컨텍스트).
+      - group_rows: 수평 병합이 있는 계층 헤더행(상위 레벨).
+      - leaf_idx: 컬럼명행(수평 병합 없는 첫 행).
+    header_row_override>0 이면 자동판정 대신 그 인덱스를 leaf 로 강제(레거시 단일헤더).
+    """
+    n = len(brows)
+    if header_row_override and header_row_override > 0:
+        leaf = min(header_row_override, n - 1)
+        return [], [], leaf, leaf + 1
+
+    hmerge_rows: dict[int, list[tuple[int, int]]] = {}
+    for (r0, c0, r1, c1) in bmerges:
+        if c1 > c0:  # 수평 span
+            for r in range(r0, r1 + 1):
+                hmerge_rows.setdefault(r, []).append((c0, c1))
+
+    title_rows: list[int] = []
+    group_rows: list[int] = []
+    leaf_idx: Optional[int] = None
+    i = 0
+    while i < n:
+        row = brows[i]
+        ne = [c for c in used_cols if c < len(row) and row[c].strip()]
+        if not ne:
+            i += 1
+            continue
+        hms = hmerge_rows.get(i, [])
+        if len(hms) == 1:
+            mc0, mc1 = hms[0]
+            if all(mc0 <= c <= mc1 for c in ne):  # 단일 병합이 모든 내용 커버 → 제목행
+                title_rows.append(i)
+                i += 1
+                continue
+        if hms:  # 수평 병합 있음 → 계층 헤더행
+            group_rows.append(i)
+            i += 1
+            continue
+        leaf_idx = i  # 병합 없는 첫 행 → 컬럼명행
+        break
+
+    if leaf_idx is None:
+        if i < n:
+            leaf_idx = i
+        elif group_rows:
+            leaf_idx = group_rows.pop()
+        elif title_rows:
+            leaf_idx = title_rows.pop()
+        else:
+            leaf_idx = 0
+    return title_rows, group_rows, leaf_idx, leaf_idx + 1
+
+
+def _row_first_text(row: list[str]) -> str:
+    for v in row:
+        if v.strip():
+            return v.strip()
+    return ""
+
+
+def load_tables(
+    file_path: str,
+    *,
+    header_row: int = 0,
+    encoding: Optional[str] = None,
+    multi_table: bool = False,
+) -> list[dict]:
+    """xlsx/csv 를 표 블록 목록으로 감지·추출한다(출력 형태에 중립 — 벡터/HTML 공용).
+
+    각 블록 dict:
+      - sheet_name, sheet_index(1-based)
+      - title: 제목행 텍스트(컨텍스트; 키 아님)
+      - headers: used_cols 순서의 flatten 헤더명(계층 병합은 `상위_하위`)
+      - data_rows: [[used_cols 순서의 셀 값 ...], ...] (비어있지 않은 데이터 행)
+
+    멀티헤더 자동 판정(_detect_header)·복수표 분리(_split_blocks) 적용.
+    header_row>0 이면 레거시 단일헤더(그 인덱스) 강제.
+    """
+    sheets = _load_sheets_with_merges(file_path, encoding)
+    tables: list[dict] = []
+
+    for sheet_idx, (sheet_name, (rows, merges)) in enumerate(sheets.items(), start=1):
+        for brows, bmerges in _split_blocks(rows, merges, multi_table):
+            if not brows:
+                continue
+            used_cols = sorted({c for r in brows for c in range(len(r)) if r[c].strip()})
+            if not used_cols:
+                continue
+
+            title_rows, group_rows, leaf_idx, data_start = _detect_header(
+                brows, bmerges, used_cols, header_row
+            )
+            data_rows = [r for r in brows[data_start:] if not _is_empty_row(r)]
+            if not data_rows:
+                continue
+
+            # 컬럼별 헤더명(계층 flatten). title 은 제외.
+            headers: list[str] = []
+            for c in used_cols:
+                parts = []
+                for g in group_rows:
+                    v = brows[g][c].strip() if c < len(brows[g]) else ""
+                    if v:
+                        parts.append(v)
+                lv = brows[leaf_idx][c].strip() if leaf_idx < len(brows) and c < len(brows[leaf_idx]) else ""
+                if lv:
+                    parts.append(lv)
+                headers.append("_".join(parts))
+
+            title_text = " / ".join(
+                dict.fromkeys(
+                    _row_first_text(brows[t]) for t in title_rows if _row_first_text(brows[t])
+                )
+            )
+            values_rows = [[(r[c] if c < len(r) else "") for c in used_cols] for r in data_rows]
+            tables.append({
+                "sheet_name": sheet_name,
+                "sheet_index": sheet_idx,
+                "title": title_text,
+                "headers": headers,
+                "data_rows": values_rows,
+            })
+
+    return tables
+
+
 def build_tabular_vectors(
     file_path: str,
     *,
     header_row: int = 0,
     encoding: Optional[str] = None,
+    multi_table: bool = False,
     reg_date: Optional[str] = None,
 ) -> list[GenOSVectorMeta]:
-    """데이터 행마다 1청크(GenOSVectorMeta)를 만든다.
+    """데이터 행마다 1벡터(GenOSVectorMeta). 표 감지는 load_tables 에 위임하고, 여기서는 벡터 메타
+    계층(헤더 기반 안정 키·column_map·page/chunk 필드)만 담당한다.
 
-    - 병합셀은 unmerge + forward-fill 로 헤더/그룹 값 유실 방지.
-    - header_row(0-based) 행을 컬럼 키로, 그 아래 비어있지 않은 행을 데이터 행으로 사용.
-    - 컬럼 헤더 중 Weaviate 키 규칙(/[_A-Za-z][_0-9A-Za-z]*/)에 맞는 것만 메타 KEY 로 부여하고,
-      그 외(한글 등)는 키에서 제외하되 값은 text 에 그대로 포함해 데이터 손실을 막는다.
+    각 컬럼 값을 최상단 스칼라 property 로 부여(Weaviate where 필터 가능). Weaviate 키 규칙에 안 맞는
+    헤더(한글 등)는 `_stable_key` 로 `field_<hash>` alias, 원본명은 `column_map`(JSON) 에 보존한다.
     """
     reg_date = reg_date or (datetime.now().isoformat(timespec="seconds") + "Z")
-    sheets = _load_sheets(file_path, encoding)
+    tables = load_tables(file_path, header_row=header_row, encoding=encoding, multi_table=multi_table)
 
-    # (sheet_idx, sheet_name, headers, valid_key_cols, data_rows)
-    prepared: list[tuple[int, str, list[str], list[int], list[list[str]]]] = []
-    dropped_headers: set[str] = set()
-
-    for sheet_idx, (sheet_name, rows) in enumerate(sheets.items(), start=1):
-        if len(rows) <= header_row:
-            continue
-        headers = rows[header_row]
-        data_rows = [r for r in rows[header_row + 1:] if not _is_empty_row(r)]
-        if not data_rows:
-            continue
-
-        valid_key_cols: list[int] = []
-        for col_idx, h in enumerate(headers):
-            key = h.strip()
-            if _is_valid_key(key):
-                valid_key_cols.append(col_idx)
-            elif key:
-                dropped_headers.add(key)
-        prepared.append((sheet_idx, sheet_name, headers, valid_key_cols, data_rows))
-
-    if dropped_headers:
-        _log.warning(
-            "[xlsx] Weaviate 키 규칙에 맞지 않아 메타 KEY 에서 제외(값은 text 유지): %s",
-            sorted(dropped_headers),
-        )
-
-    n_chunk_of_doc = sum(len(d) for _, _, _, _, d in prepared)
+    n_chunk_of_doc = sum(len(t["data_rows"]) for t in tables)
     if n_chunk_of_doc == 0:
         _log.warning(f"[xlsx] tabular 청크 없음: {file_path}")
         return []
+    n_page = max((t["sheet_index"] for t in tables), default=0)
 
-    n_page = len(sheets)
     vectors: list[GenOSVectorMeta] = []
     chunk_doc_idx = 0
 
-    for sheet_idx, sheet_name, headers, valid_key_cols, data_rows in prepared:
+    for table in tables:
+        sheet_name = table["sheet_name"]
+        sheet_idx = table["sheet_index"]
+        title_text = table["title"]
+        headers = table["headers"]
+        data_rows = table["data_rows"]
+
+        # 헤더 기반 안정 키(같은 헤더=같은 키) + column_map(원본명 보존). 표 내 충돌만 suffix.
+        keys: list[str] = []
+        column_map: dict[str, str] = {}
+        used_keys: set[str] = set()
+        for i, name in enumerate(headers):
+            key = _stable_key(name) or f"col_{i + 1}"
+            base, k = key, 2
+            while key in used_keys:
+                key = f"{base}_{k}"
+                k += 1
+            used_keys.add(key)
+            keys.append(key)
+            if name:
+                column_map[key] = name
+        column_map_json = json.dumps(column_map, ensure_ascii=False)
         header_line = _row_to_pipe(headers)
-        for row_idx, row in enumerate(data_rows):
-            text = f"시트명: {sheet_name}\n{header_line}\n{_row_to_pipe(row)}"
-            row_meta = {
-                headers[c].strip(): (row[c] if c < len(row) else "")
-                for c in valid_key_cols
-            }
+
+        for row_idx, values in enumerate(data_rows):
+            text_parts = [f"시트명: {sheet_name}"]
+            if title_text:
+                text_parts.append(title_text)
+            text_parts.append(header_line)
+            text_parts.append(_row_to_pipe(values))
+            text = "\n".join(text_parts)
+
+            row_fields = {keys[i]: values[i] for i in range(len(keys))}
             vectors.append(
                 GenOSVectorMeta.model_validate(
                     {
-                        **row_meta,
+                        **row_fields,
                         "text": text,
                         "n_char": len(text),
                         "n_word": len(text.split()),
@@ -272,6 +487,7 @@ def build_tabular_vectors(
                         "reg_date": reg_date,
                         "chunk_bboxes": ".",
                         "media_files": ".",
+                        "column_map": column_map_json,
                     }
                 )
             )
