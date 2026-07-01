@@ -74,23 +74,41 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         elif self.options.mode == OcrMode.PDF_ONLY:
             ocr_bboxes = self._get_pdf_ocr_rects(page)
         elif self.options.mode == OcrMode.LAYOUT_AND_PDF:
-            ocr_bboxes = self._combine_clusters_and_cells(
-                self._get_cluster_ocr_rects(page), self._get_pdf_ocr_rects(page)
-            )
+            ocr_bboxes = self._combine_clusters_and_cells(page)
         return ocr_bboxes
 
-    def _combine_clusters_and_cells(
-        self, layout_bboxes: List[BoundingBox], pdf_bboxes: List[BoundingBox]
-    ) -> List[BoundingBox]:
-        r"""
-        Return the text-class of layout detections that do NOT overlap with any PDF cell
-        """
-        clusters_without_pdf = [
-            layout_bbox
-            for layout_bbox in layout_bboxes
-            if not any(layout_bbox.overlaps(pdf_bbox) for pdf_bbox in pdf_bboxes)
-        ]
-        return clusters_without_pdf
+    def _combine_clusters_and_cells(self, page: Page) -> List[BoundingBox]:
+        r""" """
+        if page.predictions.layout is None or page._backend is None:
+            return []
+
+        # Create an R-tree for the pdf cells with text
+        p = index.Property()
+        p.dimension = 2
+        spatial_index = index.Index(properties=p)
+        for i, text_cell in enumerate(page._backend.get_text_cells()):
+            txt = text_cell.text
+            if txt is None or txt.strip() == "":
+                continue
+            spatial_index.insert(i, text_cell.rect.to_bounding_box().as_tuple())
+
+        # Iterate over the clusters to pickup the OCR rects
+        ocr_rects: List[BoundingBox] = []
+        for cluster in page.predictions.layout.clusters:
+            # Add all picture-like layout bboxes
+            if cluster.label in self.PICTURE_LIKE_CLUSTER_LABELS:
+                ocr_rects.append(cluster.bbox)
+                continue
+
+            # Add the text-like layout bboxes that do not overlap with pdf cells that have content
+            if cluster.label in self.TEXT_LIKE_CLUSTER_LABELS:
+                intersecting_pdf_cells = list(
+                    spatial_index.intersection(cluster.bbox.as_tuple())
+                )
+                if len(intersecting_pdf_cells) == 0:
+                    ocr_rects.append(cluster.bbox)
+
+        return ocr_rects
 
     def _get_cluster_ocr_rects(self, page: Page) -> List[BoundingBox]:
         r"""
@@ -337,49 +355,49 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             out_file = out_path / f"ocr_page_{page.page_no:05}.png"
             image.save(str(out_file), format="png")
 
-        ###########################################################################################
-        # Debug:
-        import json
-
-        layout_bboxes = self._get_cluster_ocr_rects(page)
-        pdf_bboxes = self._get_pdf_ocr_rects(page)
-
-        def get_non_overlapping(
-            check_bboxes: List[BoundingBox],
-            reference_bboxes: List[BoundingBox],
-        ) -> int:
-            r"""Return the number of non-overlapping bboxes"""
-            non_overlapping = 0
-            for c_bbox in check_bboxes:
-                overlaps = False
-                for r_bbox in reference_bboxes:
-                    if c_bbox.overlaps(r_bbox):
-                        overlaps = True
-                        break
-                if not overlaps:
-                    non_overlapping += 1
-            return non_overlapping
-
-        # Compute the layout_bboxes that do NOT overlap with any pdf_bbox and vice versa
-        non_overlapping_layout_bboxes = get_non_overlapping(layout_bboxes, pdf_bboxes)
-        non_overlapping_pdf_bboxes = get_non_overlapping(pdf_bboxes, layout_bboxes)
-
-        rects_report = {
-            "layout_bboxes": len(layout_bboxes),
-            "pdf_bboxes": len(pdf_bboxes),
-            "non_overlapping_layout_bboxes": non_overlapping_layout_bboxes,
-            "non_overlapping_pdf_bboxes": non_overlapping_pdf_bboxes,
-        }
-
-        # Create a report and save it as a json file
-        out_path: Path = (
-            Path(settings.debug.debug_output_path) / f"debug_{conv_res.input.file.stem}"
-        )
-        out_path.mkdir(parents=True, exist_ok=True)
-        out_file = out_path / f"rects_{page.page_no:05}.json"
-        with open(out_file, "w") as fd:
-            json.dump(rects_report, fd)
-        ###########################################################################################
+        # #########################################################################################
+        # # Debug:
+        # import json
+        #
+        # layout_bboxes = self._get_cluster_ocr_rects(page)
+        # pdf_bboxes = self._get_pdf_ocr_rects(page)
+        #
+        # def get_non_overlapping(
+        #     check_bboxes: List[BoundingBox],
+        #     reference_bboxes: List[BoundingBox],
+        # ) -> int:
+        #     r"""Return the number of non-overlapping bboxes"""
+        #     non_overlapping = 0
+        #     for c_bbox in check_bboxes:
+        #         overlaps = False
+        #         for r_bbox in reference_bboxes:
+        #             if c_bbox.overlaps(r_bbox):
+        #                 overlaps = True
+        #                 break
+        #         if not overlaps:
+        #             non_overlapping += 1
+        #     return non_overlapping
+        #
+        # # Compute the layout_bboxes that do NOT overlap with any pdf_bbox and vice versa
+        # non_overlapping_layout_bboxes = get_non_overlapping(layout_bboxes, pdf_bboxes)
+        # non_overlapping_pdf_bboxes = get_non_overlapping(pdf_bboxes, layout_bboxes)
+        #
+        # rects_report = {
+        #     "layout_bboxes": len(layout_bboxes),
+        #     "pdf_bboxes": len(pdf_bboxes),
+        #     "non_overlapping_layout_bboxes": non_overlapping_layout_bboxes,
+        #     "non_overlapping_pdf_bboxes": non_overlapping_pdf_bboxes,
+        # }
+        #
+        # # Create a report and save it as a json file
+        # out_path: Path = (
+        #     Path(settings.debug.debug_output_path) / f"debug_{conv_res.input.file.stem}"
+        # )
+        # out_path.mkdir(parents=True, exist_ok=True)
+        # out_file = out_path / f"rects_{page.page_no:05}.json"
+        # with open(out_file, "w") as fd:
+        #     json.dump(rects_report, fd)
+        # #########################################################################################
 
     @abstractmethod
     def __call__(
