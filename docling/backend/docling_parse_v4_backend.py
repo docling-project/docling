@@ -7,7 +7,12 @@ from typing import TYPE_CHECKING, Optional, Union
 import pypdfium2 as pdfium
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
-from docling_parse.pdf_parser import DoclingPdfParser, PdfDocument
+from docling_parse.pdf_parser import (
+    ContentConfig,
+    ContentLevel,
+    DoclingPdfParser,
+    PdfDocument,
+)
 from PIL import Image
 from pypdfium2 import PdfPage
 
@@ -157,10 +162,21 @@ class DoclingParseV4DocumentBackend(PdfDocumentBackend):
         self, page_no: int, create_words: bool = True, create_textlines: bool = True
     ) -> DoclingParseV4PageBackend:
         with pypdfium2_lock:
+            content_config = ContentConfig(
+                word_cells_content_level=(
+                    ContentLevel.COMPUTE_AND_MATERIALIZE
+                    if create_words
+                    else ContentLevel.SKIP
+                ),
+                line_cells_content_level=(
+                    ContentLevel.COMPUTE_AND_MATERIALIZE
+                    if create_textlines
+                    else ContentLevel.SKIP
+                ),
+            )
             seg_page = self.dp_doc.get_page(
                 page_no + 1,
-                create_words=create_words,
-                create_textlines=create_textlines,
+                content_config=content_config,
             )
 
             # In Docling, all TextCell instances are expected with top-left origin.
