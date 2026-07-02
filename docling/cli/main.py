@@ -353,6 +353,7 @@ def export_documents(
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
+    export_chunks: bool = False,
     chunker_type: str = "hybrid",
     chunk_max_tokens: Optional[int] = None,
     chunk_tokenizer: str = "sentence-transformers/all-MiniLM-L6-v2",
