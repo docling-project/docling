@@ -82,6 +82,9 @@ def _has_any_pdf_converter() -> bool:
         return True
 
 
+# ── 비정상/암호화 파일 사전 감지 (이슈 #278/#307) ─────────────────────────────
+# 이 블록은 parser/convert/attachment_processor 에도 복제되어 있다(단일 파일 배포 구조).
+# 수정 시 네 파일 동기화 필요.
 # 지원 포맷의 매직 헤더(allowlist). 각 값은 아래 공식 출처로 근거 확인 + 실제 샘플로 검증함.
 #   - 정본 매직 DB: file/file(libmagic) magic/Magdir — 실제 본 모듈이 쓰는 python-magic의 DB.
 #     (PDF=Magdir/pdf "%PDF-", PNG/GIF=Magdir/images, JPEG=Magdir/jpeg 0xffd8ff, ZIP=Magdir/msooxml "PK\3\4")
