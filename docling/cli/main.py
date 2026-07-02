@@ -349,7 +349,7 @@ def export_documents(
     export_doctags: bool,
     export_vtt: bool,
     export_doclang: bool,
-    export_chunks: bool,
+    export_chunks: bool = False,
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
