@@ -13,9 +13,9 @@ from pathlib import Path
 import pytest
 import yaml
 
-# 실샘플(해진공 더미) — facade/excel 아래 위치
+# 실샘플(해진공 더미) — sample_files 아래 위치
 _PREPROC = Path(__file__).resolve().parents[2]  # genon/preprocessor
-_SAMPLE = _PREPROC / "facade" / "excel" / "해진공_엑셀_샘플파일.xlsx"
+_SAMPLE = _PREPROC / "sample_files" / "xlsx_sample_2.xlsx"
 _CONFIG = _PREPROC / "resource" / "intelligent_processor_config.yaml"
 
 
