@@ -1593,8 +1593,9 @@ class IntelligentDocumentProcessor:
 
     def ocr_all_table_cells(self, document: DoclingDocument, pdf_path) -> DoclingDocument:
         """글리프 깨진 텍스트가 있는 테이블에 대해서만 OCR을 수행합니다."""
-        import fitz as _fitz
+        import io as _io
         import base64 as _base64
+        from PIL import Image as _Image
 
         def post_ocr_bytes(img_bytes: bytes, timeout=60) -> dict:
             HEADERS = {"Accept": "application/json", "Content-Type": "application/json"}
@@ -1622,10 +1623,10 @@ class IntelligentDocumentProcessor:
             return rec_texts[:n], rec_scores[:n], rec_boxes[:n]
 
         try:
-            doc = _fitz.open(pdf_path)
-
             for table_idx, table_item in enumerate(document.tables):
                 if not table_item.data or not table_item.data.table_cells:
+                    continue
+                if not table_item.prov:
                     continue
 
                 b_ocr = False
@@ -1637,37 +1638,65 @@ class IntelligentDocumentProcessor:
                 if b_ocr is False:
                     continue
 
+                # docling 이 이미 렌더해 둔 페이지 이미지(generate_page_images=True)를
+                # 재사용해 셀 영역을 crop 한다. PyMuPDF 재렌더(get_pixmap)는 일부 PDF 에서
+                # 네이티브 크래시(SIGSEGV, worker code 139)를 유발하므로 사용하지 않는다.
+                page_no = table_item.prov[0].page_no
+                page = document.pages.get(page_no)
+                if page is None or page.size is None or page.image is None:
+                    continue
+                page_image = page.image.pil_image
+                if page_image is None:
+                    continue
+                W, H = page_image.size
+
                 for cell_idx, cell in enumerate(table_item.data.table_cells):
-                    if not table_item.prov:
+                    try:
+                        if cell.bbox is None:
+                            continue
+
+                        # docling 셀 bbox(BOTTOMLEFT) → 페이지 이미지 픽셀 좌표(TOPLEFT)
+                        crop = (
+                            cell.bbox
+                            .to_top_left_origin(page_height=page.size.height)
+                            .scale_to_size(old_size=page.size, new_size=page.image.size)
+                        )
+                        x0, y0, x1, y1 = crop.as_tuple()
+                        # 정규화 + 페이지 경계 클램프 + degenerate skip
+                        x0, x1 = sorted((x0, x1))
+                        y0, y1 = sorted((y0, y1))
+                        x0 = max(0, min(x0, W)); x1 = max(0, min(x1, W))
+                        y0 = max(0, min(y0, H)); y1 = max(0, min(y1, H))
+                        if (x1 - x0) < 1 or (y1 - y0) < 1:
+                            continue
+
+                        cell_img = page_image.crop((x0, y0, x1, y1))
+
+                        # 아주 작은 셀은 OCR 가독성을 위해 확대(기존 target_height=20, ≤4x)
+                        ch = y1 - y0
+                        zoom = min(max(20.0 / ch, 1.0), 4.0) if ch > 0 else 1.0
+                        if zoom > 1.0:
+                            cell_img = cell_img.resize(
+                                (max(1, round((x1 - x0) * zoom)), max(1, round(ch * zoom))),
+                                _Image.LANCZOS,
+                            )
+
+                        buf = _io.BytesIO()
+                        cell_img.save(buf, format="PNG")
+                        img_data = buf.getvalue()
+
+                        result = post_ocr_bytes(img_data, timeout=self._table_cell_ocr_timeout)
+                        rec_texts, rec_scores, rec_boxes = extract_ocr_fields(result)
+
+                        cell.text = ""
+                        for t in rec_texts:
+                            if len(cell.text) > 0:
+                                cell.text += " "
+                            cell.text += t if t else ""
+                    except Exception as cell_err:
+                        # 한 셀 실패가 나머지 셀/표를 막지 않도록 격리
+                        print(f"OCR cell processing failed (table={table_idx}, cell={cell_idx}): {cell_err}")
                         continue
-
-                    page_no = table_item.prov[0].page_no - 1
-                    bbox = cell.bbox
-
-                    page = doc.load_page(page_no)
-                    cell_bbox = _fitz.Rect(
-                        bbox.l, min(bbox.t, bbox.b),
-                        bbox.r, max(bbox.t, bbox.b)
-                    )
-
-                    bbox_height = cell_bbox.height
-                    target_height = 20
-                    zoom_factor = target_height / bbox_height if bbox_height > 0 else 1.0
-                    zoom_factor = min(zoom_factor, 4.0)
-                    zoom_factor = max(zoom_factor, 1)
-
-                    mat = _fitz.Matrix(zoom_factor, zoom_factor)
-                    pix = page.get_pixmap(matrix=mat, clip=cell_bbox)
-                    img_data = pix.tobytes("png")
-
-                    result = post_ocr_bytes(img_data, timeout=self._table_cell_ocr_timeout)
-                    rec_texts, rec_scores, rec_boxes = extract_ocr_fields(result)
-
-                    cell.text = ""
-                    for t in rec_texts:
-                        if len(cell.text) > 0:
-                            cell.text += " "
-                        cell.text += t if t else ""
         except Exception as e:
             print(f"OCR processing failed: {e}")
             pass
