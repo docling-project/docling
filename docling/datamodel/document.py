@@ -352,6 +352,11 @@ def build_invalid_input_errors(in_doc: "InputDocument") -> list[ErrorItem]:
         )
     ]
 
+    @property
+    def backend(self) -> AbstractDocumentBackend:
+        """Backend instance used to read and parse this input document."""
+        return self._backend
+
 
 class DocumentFormat(str, Enum):
     V2 = "v2"
