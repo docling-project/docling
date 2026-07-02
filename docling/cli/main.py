@@ -8,7 +8,7 @@ import warnings
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Type
+from typing import Annotated, Optional, Type
 from urllib.parse import urlparse
 
 # Check for CLI dependencies
@@ -366,6 +366,10 @@ def export_documents(
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
+    export_chunks: bool = False,
+    chunker_type: str = "hybrid",
+    chunk_max_tokens: Optional[int] = None,
+    chunk_tokenizer: str = "sentence-transformers/all-MiniLM-L6-v2",
 ):
     success_count = 0
     failure_count = 0
@@ -476,6 +480,76 @@ def export_documents(
                 _log.info(f"writing DocLang output to {fname}")
                 with fname.open("w", encoding="utf-8") as fp:
                     fp.write(conv_res.document.export_to_doclang())
+            # Export Chunks format:
+            if export_chunks:
+                import json as _json
+
+                from docling_core.transforms.chunker.hierarchical_chunker import (
+                    HierarchicalChunker,
+                )
+                from docling_core.transforms.chunker.hybrid_chunker import (
+                    HybridChunker,
+                )
+                from docling_core.transforms.chunker.tokenizer.huggingface import (
+                    HuggingFaceTokenizer,
+                )
+
+                if chunker_type == "hierarchical":
+                    chunker_obj = HierarchicalChunker()
+                else:  # default: hybrid
+                    hf_tok = HuggingFaceTokenizer.from_pretrained(
+                        model_name=chunk_tokenizer,
+                        max_tokens=chunk_max_tokens,  # None => tokenizer's own limit
+                    )
+                    chunker_obj = HybridChunker(tokenizer=hf_tok)
+
+                from docling_core.transforms.chunker.hierarchical_chunker import (
+                    DocChunk,
+                )
+
+                fname = output_dir / f"{doc_filename}.chunks.jsonl"
+                _log.info(f"writing Chunks output to {fname}")
+                with fname.open("w", encoding="utf-8") as fp:
+                    for i, chunk in enumerate(
+                        chunker_obj.chunk(dl_doc=conv_res.document)
+                    ):
+                        doc_chunk = DocChunk.model_validate(chunk)
+                        page_numbers = sorted(
+                            {
+                                prov.page_no
+                                for item in doc_chunk.meta.doc_items
+                                for prov in item.prov
+                            }
+                        )
+                        metadata = {}
+                        if doc_chunk.meta.origin:
+                            metadata["origin"] = doc_chunk.meta.origin.model_dump(
+                                mode="json"
+                            )
+                        metadata["has_image"] = any(
+                            item.self_ref.startswith("#/pictures/")
+                            for item in doc_chunk.meta.doc_items
+                        )
+                        num_tokens: int | None = None
+                        if isinstance(chunker_obj, HybridChunker):
+                            num_tokens = chunker_obj.tokenizer.count_tokens(
+                                chunker_obj.contextualize(doc_chunk)
+                            )
+                        chunk_record = {
+                            "filename": doc_filename,
+                            "chunk_index": i,
+                            "text": chunker_obj.contextualize(doc_chunk),
+                            "raw_text": doc_chunk.text,
+                            "num_tokens": num_tokens,
+                            "headings": doc_chunk.meta.headings,
+                            "captions": doc_chunk.meta.captions,
+                            "doc_items": [
+                                item.self_ref for item in doc_chunk.meta.doc_items
+                            ],
+                            "page_numbers": page_numbers,
+                            "metadata": metadata,
+                        }
+                        fp.write(_json.dumps(chunk_record, ensure_ascii=False) + "\n")
 
             # Print profiling timings
             if print_timings:
@@ -555,6 +629,21 @@ def convert(  # noqa: C901
     ),
     to_formats: list[OutputFormat] = typer.Option(
         None, "--to", help="Specify output formats. Defaults to Markdown."
+    ),
+    chunker_type: str = typer.Option(
+        "hybrid",
+        "--chunker",
+        help="Chunker to use with '--to chunks': 'hybrid' or 'hierarchical'.",
+    ),
+    chunk_max_tokens: Optional[int] = typer.Option(
+        None,
+        "--max-tokens",
+        help="Max tokens per chunk. Defaults to the tokenizer's own limit.",
+    ),
+    chunk_tokenizer: str = typer.Option(
+        "sentence-transformers/all-MiniLM-L6-v2",
+        "--tokenizer",
+        help="HuggingFace tokenizer model name/path. Determines token counting and default max-tokens.",
     ),
     show_layout: Annotated[
         bool,
@@ -1238,6 +1327,9 @@ def convert(  # noqa: C901
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,
+            chunker_type=chunker_type,
+            chunk_max_tokens=chunk_max_tokens,
+            chunk_tokenizer=chunk_tokenizer,
         )
 
         end_time = time.time() - start_time
