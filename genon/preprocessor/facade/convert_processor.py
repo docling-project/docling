@@ -54,6 +54,9 @@ def _looks_like_text(head: bytes) -> bool:
     NUL 이 있거나 제어문자 비율이 높으면 바이너리(=텍스트 아님)."""
     if not head:
         return False
+    # UTF-16/32 텍스트는 NUL 바이트가 흔하므로 BOM 이면 먼저 텍스트로 인정.
+    if head.startswith((b"\xff\xfe", b"\xfe\xff")):  # UTF-16 LE/BE (UTF-32 BOM 도 이 prefix로 시작)
+        return True
     if b"\x00" in head:
         return False
     ctrl = sum(

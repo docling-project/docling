@@ -6,6 +6,7 @@ import requests
 import copy
 import logging
 import re
+import threading
 import time
 import warnings
 from collections.abc import Iterable
@@ -139,6 +140,7 @@ class GenosDotsOCRLayoutModel(BasePageModel):
             getattr(self.dotsocr_options, "table_fallback_enabled", True)
         )
         self._tableformer_model = "unset"  # lazy init sentinel
+        self._tableformer_lock = threading.Lock()
 
     def _use_dotsocr_table_structure(self) -> bool:
         return (
@@ -669,18 +671,21 @@ class GenosDotsOCRLayoutModel(BasePageModel):
                 )
                 if not isinstance(response_text, str) or not response_text.strip():
                     raise ValueError("Empty VLM response text")
-                response = _parse_vlm_json_response(response_text)
-                result = _extract_layout_result_items(response)
-                if not isinstance(result, list):
-                    _log.warning(
-                        "Unexpected VLM response schema (page=%s). Falling back to empty predictions. type=%s",
-                        page.page_no,
-                        type(response).__name__,
-                    )
-                    result = []
                 if finish_reason == "length":
-                    # 토큰 상한까지 폭주 → 응답이 잘려있음. layout_only 폴백.
+                    # 토큰 상한까지 폭주 → 응답이 잘려있음(JSON도 truncate).
+                    # 파싱하면 깨진 JSON에서 예외가 날 수 있으니 건너뛰고 바로 layout_only 폴백.
                     do_fallback = True
+                    result = []
+                else:
+                    response = _parse_vlm_json_response(response_text)
+                    result = _extract_layout_result_items(response)
+                    if not isinstance(result, list):
+                        _log.warning(
+                            "Unexpected VLM response schema (page=%s). Falling back to empty predictions. type=%s",
+                            page.page_no,
+                            type(response).__name__,
+                        )
+                        result = []
             except VLMReadTimeout:
                 _log.warning(
                     "DotsOCR read timeout (page=%s) → layout_only 폴백", page.page_no
@@ -1000,23 +1005,30 @@ class GenosDotsOCRLayoutModel(BasePageModel):
             return None, None
 
     def _get_tableformer(self):
-        """TableStructureModel(TableFormer) lazy 생성. 생성 실패 시 None."""
+        """TableStructureModel(TableFormer) lazy 생성. 생성 실패 시 None.
+
+        페이지가 동시 처리되므로 lock + 더블체크로 생성한다. (락 없이 None 중간상태를
+        다른 워커가 보면 그 페이지의 빈 테이블 보강을 영구히 건너뛰게 됨)"""
         if self._tableformer_model != "unset":
             return self._tableformer_model
-        self._tableformer_model = None
-        try:
-            from docling.models.table_structure_model import TableStructureModel
+        with self._tableformer_lock:
+            if self._tableformer_model != "unset":
+                return self._tableformer_model
+            model = None
+            try:
+                from docling.models.table_structure_model import TableStructureModel
 
-            self._tableformer_model = TableStructureModel(
-                enabled=True,
-                artifacts_path=getattr(self.pipeline_options, "artifacts_path", None),
-                options=self.pipeline_options.table_structure_options,
-                accelerator_options=self.pipeline_options.accelerator_options,
-            )
-        except Exception:
-            _log.warning("TableFormer 생성 실패 → 빈 테이블 보강 생략", exc_info=True)
-            self._tableformer_model = None
-        return self._tableformer_model
+                model = TableStructureModel(
+                    enabled=True,
+                    artifacts_path=getattr(self.pipeline_options, "artifacts_path", None),
+                    options=self.pipeline_options.table_structure_options,
+                    accelerator_options=self.pipeline_options.accelerator_options,
+                )
+            except Exception:
+                _log.warning("TableFormer 생성 실패 → 빈 테이블 보강 생략", exc_info=True)
+                model = None
+            self._tableformer_model = model
+            return self._tableformer_model
 
     def _fill_empty_tables_with_tableformer(
         self, conv_res: ConversionResult, page: Page, clusters: list
