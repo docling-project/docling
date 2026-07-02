@@ -478,6 +478,11 @@ depends_on = [
 ]
 
 [[modules]]
+path = "docling.pipeline.reading_order_utils"
+layer = "pipeline"
+depends_on = []
+
+[[modules]]
 path = "docling.pipeline.standard_pdf_pipeline"
 layer = "pipeline"
 depends_on = [
@@ -490,6 +495,7 @@ depends_on = [
   "docling.models.stages.page_preprocessing",
   "docling.models.stages.reading_order",
   "docling.pipeline.base_pipeline",
+  "docling.pipeline.reading_order_utils",
   "docling.utils",
 ]
 
