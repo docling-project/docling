@@ -682,7 +682,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             title_cell.col != 0
             or title_cell.row_span != 1
             or title_cell.col_span <= 1
-            or title_cell.col_span >= table.num_cols
+            or title_cell.col_span > table.num_cols
         ):
             return None, table
 
