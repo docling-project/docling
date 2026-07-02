@@ -40,10 +40,131 @@ class ReadingOrderOptions(BaseModel):
 
 
 class ReadingOrderModel:
+    # Flowing-text labels a left-margin section header can attach to (#3643).
+    _SIDE_HEADING_BODY_LABELS = (DocItemLabel.TEXT, DocItemLabel.LIST_ITEM)
+    # Two blocks share a row when they overlap vertically by at least this
+    # fraction of the shorter block's height (#3648).
+    _SIDE_HEADING_MIN_ROW_OVERLAP = 0.5
+    # A section header that introduces a column sits directly above its own
+    # column's body; a side-heading does not. Two structural signals identify
+    # the body a header introduces, so that header is left untouched (#3648):
+    #   * left-edge alignment: a heading and its own paragraph share a left edge
+    #     within a few points (sub-pixel rendering jitter); a full-width rule
+    #     below a margin heading starts clearly further left.
+    _SIDE_HEADING_COLUMN_ALIGN_TOL = 3.0
+    #   * vertical proximity: a heading's body follows directly beneath it,
+    #     within a small multiple of the heading's own height. This catches
+    #     headings indented relative to their body, while still ignoring a
+    #     full-width line far below a margin heading.
+    _SIDE_HEADING_MAX_GAP_RATIO = 6.0
+
     def __init__(self, options: ReadingOrderOptions):
         self.options = options
         self.ro_model = ReadingOrderPredictor()
         self.list_item_processor = ListItemMarkerProcessor()
+
+    @staticmethod
+    def _reorder_side_headings(
+        sorted_elements: list[ReadingOrderPageElement],
+    ) -> list[ReadingOrderPageElement]:
+        """Re-interleave left-margin section headers with their body block.
+
+        The rule-based predictor reads a full column top-to-bottom before moving
+        right, so a "side-heading" layout (narrow ``SECTION_HEADER``s in a left
+        column, paragraphs in a right column) is emitted as every header first
+        and then every paragraph. This pass detects that pattern and moves each
+        side-heading to sit immediately before the body block it is row-aligned
+        with, restoring ``header -> paragraph`` reading order.
+
+        A header is treated as a side-heading when it does *not* introduce a
+        column (no body text sits directly beneath it, left-aligned within its
+        own x-band) *and* a body block sits row-aligned to its right. The header
+        is then placed before the topmost line of that block, which keeps big
+        multi-line headers and line-fragmented paragraphs in order. Ordinary
+        single-column and true multi-column headers each sit above their own
+        column's body, so they are left untouched.
+        See https://github.com/docling-project/docling/issues/3643 and #3648.
+        """
+        body_labels = ReadingOrderModel._SIDE_HEADING_BODY_LABELS
+        min_row_overlap = ReadingOrderModel._SIDE_HEADING_MIN_ROW_OVERLAP
+        align_tol = ReadingOrderModel._SIDE_HEADING_COLUMN_ALIGN_TOL
+        max_gap_ratio = ReadingOrderModel._SIDE_HEADING_MAX_GAP_RATIO
+
+        # Group element indices by page; relative order is otherwise preserved.
+        page_to_indices: dict[int, list[int]] = {}
+        for idx, el in enumerate(sorted_elements):
+            page_to_indices.setdefault(el.page_no, []).append(idx)
+
+        anchor: dict[int, int] = {}  # header index -> body index it precedes
+        for indices in page_to_indices.values():
+            body_indices = [
+                i for i in indices if sorted_elements[i].label in body_labels
+            ]
+            for i in indices:
+                header = sorted_elements[i]
+                if header.label != DocItemLabel.SECTION_HEADER:
+                    continue
+
+                header_height = header.t - header.b
+
+                # A header that introduces a column has body text in its own
+                # x-band directly beneath it; a side-heading does not (its column
+                # holds only headings, the body sits to the right). The body it
+                # introduces is recognised by sharing the header's left edge or
+                # by sitting directly below it. This structural test replaces the
+                # old width-ratio heuristic, which misfired on short in-column
+                # headings like "1 INTRODUCTION"; a full-width rule below a margin
+                # heading is neither left-aligned nor close, so it does not count.
+                heads_a_column = any(
+                    header.is_above(body)
+                    and header.overlaps_horizontally(body)
+                    and (
+                        abs(body.l - header.l) <= align_tol
+                        or (header.b - body.t) <= max_gap_ratio * header_height
+                    )
+                    for body in (sorted_elements[j] for j in body_indices)
+                )
+                if heads_a_column:
+                    continue
+
+                # Anchor before the topmost body block lying entirely to the
+                # header's right that shares its row. Comparing the row overlap
+                # to the shorter height keeps tall headers matching short
+                # paragraph lines.
+                best_top: float | None = None
+                best_body: int | None = None
+                for b in body_indices:
+                    body = sorted_elements[b]
+                    if not header.is_strictly_left_of(body):
+                        continue  # body must lie to the right of the header
+                    body_height = body.t - body.b
+                    overlap = header.y_overlap_with(body)
+                    if overlap < min_row_overlap * min(header_height, body_height):
+                        continue  # not on the same row
+                    if best_top is None or body.t > best_top:
+                        best_top, best_body = body.t, b
+                if best_body is not None:
+                    anchor[i] = best_body
+
+        if not anchor:
+            return sorted_elements
+
+        # body index -> headers to place before it (higher on the page first)
+        headers_before: dict[int, list[int]] = {}
+        for header_idx, body_idx in anchor.items():
+            headers_before.setdefault(body_idx, []).append(header_idx)
+        for header_list in headers_before.values():
+            header_list.sort(key=lambda i: sorted_elements[i].t, reverse=True)
+
+        moved = set(anchor)
+        reordered: list[ReadingOrderPageElement] = []
+        for idx, el in enumerate(sorted_elements):
+            if idx in moved:
+                continue  # emitted right before its anchor body block
+            for header_idx in headers_before.get(idx, []):
+                reordered.append(sorted_elements[header_idx])
+            reordered.append(el)
+        return reordered
 
     def _assembled_to_readingorder_elements(
         self, conv_res: ConversionResult
@@ -448,6 +569,9 @@ class ReadingOrderModel:
             sorted_elements = self.ro_model.predict_reading_order(
                 page_elements=page_elements
             )
+            # Re-interleave left-margin section headers with the body block on
+            # their right (side-heading layouts, see #3643).
+            sorted_elements = self._reorder_side_headings(sorted_elements)
             el_to_captions_mapping = self.ro_model.predict_to_captions(
                 sorted_elements=sorted_elements
             )

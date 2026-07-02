@@ -1,0 +1,11 @@
+<doctag><text><loc_98><loc_75><loc_163><loc_83>Package List</text>
+<section_header_level_1><loc_188><loc_37><loc_380><loc_46>FIELD SERVICE SUPPLEMENT</section_header_level_1>
+<text><loc_188><loc_51><loc_325><loc_57>Quick reference for bench technicians</text>
+<text><loc_188><loc_76><loc_419><loc_115>Your service kit should contain this supplement, a printed checklist, and the sealed calibration certificate. Confirm that all three items are present before you begin, and report any missing component to the depot using the form on the checklist. Do not start a service call with an incomplete kit.</text>
+<section_header_level_1><loc_93><loc_134><loc_163><loc_141>Requirements</section_header_level_1>
+<text><loc_188><loc_135><loc_433><loc_182>A workstation able to run the diagnostic console is needed, along with the standard probe kit for this revision and a calibrated torque driver. A colour monitor is required so that the fault codes can be read during the bench checks. Use a grounded bench supply, and keep the capacitor discharge tool within reach before any panel on the chassis is opened for inspection.</text>
+<section_header_level_1><loc_71><loc_201><loc_163><loc_208>Setup and Checks</section_header_level_1>
+<text><loc_188><loc_202><loc_419><loc_249>Remove the four access screws and lift the cover clear, then inspect the ribbon cable for wear along its full length. Reseat the main connector, refit the cover, and torque the screws to the value printed on the chassis label. Restore power, run the self-test, and record the result in the maintenance log before returning the unit to service.</text>
+<page_footer><loc_41><loc_460><loc_353><loc_464>Part 12-345  -  Revision B  -  Internal use only. All product names are trademarks of their respective owners.</page_footer>
+<page_footer><loc_248><loc_471><loc_252><loc_476>1</page_footer>
+</doctag>
