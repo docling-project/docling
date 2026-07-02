@@ -24,7 +24,7 @@ _log = logging.getLogger(__name__)
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     MAXOUT_COVERAGE_THRESHOLD = 0.75
-    SPARSE_CLUSTER_LABELS = [
+    SPARSE_LABELS = [
         DocItemLabel.PICTURE,
         DocItemLabel.CHART,
         DocItemLabel.TABLE,
@@ -32,7 +32,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         DocItemLabel.KEY_VALUE_REGION,
         DocItemLabel.FORM,
     ]
-    DENSE_CLUSTER_LABELS = [
+    DENSE_LABELS = [
         DocItemLabel.CAPTION,
         DocItemLabel.FOOTNOTE,
         DocItemLabel.LIST_ITEM,
@@ -141,8 +141,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             return []
 
         # Get the cluster rects that may have text
-        text_candidate_labels = set(BaseOcrModel.SPARSE_CLUSTER_LABELS) | set(
-            BaseOcrModel.DENSE_CLUSTER_LABELS
+        text_candidate_labels = set(BaseOcrModel.SPARSE_LABELS) | set(
+            BaseOcrModel.DENSE_LABELS
         )
         cluster_rects = [
             cluster.bbox
@@ -188,9 +188,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # Iterate over the clusters to pick up the OCR rects
         ocr_rects: List[BoundingBox] = []
         for cluster in page.predictions.layout.clusters:
-            if cluster.label in self.SPARSE_CLUSTER_LABELS:
+            if cluster.label in self.SPARSE_LABELS:
                 threshold = self.options.sparse_cell_coverage_threshold
-            elif cluster.label in self.DENSE_CLUSTER_LABELS:
+            elif cluster.label in self.DENSE_LABELS:
                 threshold = self.options.dense_cell_coverage_threshold
             else:
                 # Unknown label: OCR it to be safe.
