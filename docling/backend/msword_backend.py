@@ -90,6 +90,10 @@ _STRICT_OOXML_NS_OVERRIDES: Final[dict[str, str]] = {
     "http://purl.oclc.org/ooxml/officeDocument/relationships/metadata/thumbnail": "http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail",
 }
 
+# The character class deliberately excludes percent-encoding (%XX), '+', and '#'
+# because all OOXML namespace and relationship URIs defined in ISO/IEC 29500 are
+# plain ASCII paths with no encoding.  Any occurrence of those characters in a
+# part file is not an OOXML namespace URI and must not be rewritten.
 _STRICT_OOXML_NS_RE: Final = re.compile(
     r"http://purl\.oclc\.org/ooxml/[A-Za-z0-9_./-]+"
 )
@@ -152,6 +156,14 @@ def _normalize_strict_ooxml(archive: zipfile.ZipFile) -> BytesIO:
         for info in archive.infolist():
             if not _is_safe_zip_member(info.filename):
                 raise SecurityError(f"ZIP slip attempt: {info.filename}")
+            # info.file_size comes from the ZIP central directory and can be set
+            # to 0 by a crafted archive while the actual payload inflates to an
+            # arbitrarily large size.  The checks below therefore act as a fast
+            # fail for well-formed archives (the common case) rather than as a
+            # hard guarantee against a determined adversary.  Python's zipfile
+            # module provides no API to cap the number of bytes actually
+            # decompressed by read(), so a fully reliable defence would require
+            # a streaming decompressor with an explicit byte budget.
             if info.file_size > _MAX_MEMBER_UNCOMPRESSED_SIZE:
                 raise SecurityError(
                     f"Refusing to expand oversized OOXML part: {info.filename}"
