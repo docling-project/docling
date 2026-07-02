@@ -48,7 +48,7 @@ from docling.backend.docx.drawingml.utils import (
 from docling.backend.docx.latex.omml import oMath2Latex
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
-from docling.exceptions import DocumentLoadError
+from docling.exceptions import DocumentLoadError, SecurityError
 
 _log = logging.getLogger(__name__)
 
@@ -59,6 +59,21 @@ _log = logging.getLogger(__name__)
 # Transitional in memory before being handed to python-docx.
 _STRICT_OOXML_NS_PREFIX: Final[str] = "http://purl.oclc.org/ooxml/"
 _TRANSITIONAL_NS_HOST: Final[str] = "http://schemas.openxmlformats.org/"
+
+# Substring that only appears in Strict packages. Used both to classify an
+# archive and to skip parts that need no rewriting.
+_STRICT_OOXML_MARKER: Final[bytes] = b"purl.oclc.org/ooxml"
+
+# The OPC package root relationships part. Its officeDocument relationship type
+# carries the Strict marker in a Strict package, which is exactly why python-docx
+# fails to open such files. Reading this one tiny member is enough to tell Strict
+# from Transitional without walking the whole archive.
+_OOXML_ROOT_RELS: Final[str] = "_rels/.rels"
+
+# Bounds used while decompressing a Strict package, to guard against zip bombs.
+# Legitimate .docx parts are far smaller than these caps.
+_MAX_MEMBER_UNCOMPRESSED_SIZE: Final[int] = 512 * 1024 * 1024  # 512 MiB per part
+_MAX_TOTAL_UNCOMPRESSED_SIZE: Final[int] = 2 * 1024 * 1024 * 1024  # 2 GiB per package
 
 # Strict namespaces whose Transitional form does not follow the regular
 # "insert /2006 after the first segment" rule (see _strict_ns_to_transitional).
@@ -90,29 +105,69 @@ def _strict_ns_to_transitional(strict_ns: str) -> str:
     return f"{_TRANSITIONAL_NS_HOST}{segment}/2006/{tail}"
 
 
-def _normalize_strict_ooxml(stream: BytesIO) -> BytesIO:
-    """Rewrite a Strict OOXML .docx stream to Transitional namespaces in memory.
+def _is_strict_ooxml(archive: zipfile.ZipFile) -> bool:
+    """Cheaply decide whether an open .docx archive is a Strict OOXML package.
 
-    Transitional packages (and anything that is not a Strict OOXML zip) are
-    returned unchanged so the regular python-docx loading path is untouched.
+    Only the small package root relationships part (``_rels/.rels``) is read, so
+    the common Transitional case does not pay for decompressing the whole file.
     """
-    raw = stream.getvalue()
-    with zipfile.ZipFile(BytesIO(raw)) as source:
-        names = source.namelist()
-        is_strict = any(b"purl.oclc.org/ooxml" in source.read(name) for name in names)
-        if not is_strict:
-            stream.seek(0)
-            return stream
-        normalized = BytesIO()
-        with zipfile.ZipFile(normalized, "w", zipfile.ZIP_DEFLATED) as target:
-            for info in source.infolist():
-                content = source.read(info.filename)
-                if info.filename.endswith((".xml", ".rels")):
-                    content = _STRICT_OOXML_NS_RE.sub(
-                        lambda match: _strict_ns_to_transitional(match.group(0)),
-                        content.decode("utf-8"),
-                    ).encode("utf-8")
-                target.writestr(info, content)
+    try:
+        with archive.open(_OOXML_ROOT_RELS) as root_rels:
+            # Root relationships are a few hundred bytes; cap the read anyway so
+            # a hostile archive cannot force a large allocation during detection.
+            return _STRICT_OOXML_MARKER in root_rels.read(_MAX_MEMBER_UNCOMPRESSED_SIZE)
+    except KeyError:
+        # No root relationships: not a well-formed OOXML package. Let python-docx
+        # deal with it on the unchanged path.
+        return False
+
+
+def _is_safe_zip_member(name: str) -> bool:
+    """Return whether a zip member name stays inside the archive root.
+
+    Guards against zip-slip: absolute paths, drive-letter paths and ``..``
+    traversal are rejected.
+    """
+    normalized = name.replace("\\", "/")
+    if normalized.startswith("/") or (len(normalized) > 1 and normalized[1] == ":"):
+        return False
+    return not any(part == ".." for part in normalized.split("/"))
+
+
+def _normalize_strict_ooxml(archive: zipfile.ZipFile) -> BytesIO:
+    """Rewrite an open Strict OOXML package to Transitional namespaces in memory.
+
+    Only XML/relationship parts that actually carry a Strict namespace are
+    decoded and rewritten; every other member (images, fonts, ...) is copied
+    through with its original compression, avoiding a needless decode pass. Each
+    member is decompressed exactly once. The archive is validated against
+    zip-slip and zip-bomb attacks while it is read.
+    """
+    normalized = BytesIO()
+    total_uncompressed = 0
+    with zipfile.ZipFile(normalized, "w", zipfile.ZIP_DEFLATED) as target:
+        for info in archive.infolist():
+            if not _is_safe_zip_member(info.filename):
+                raise SecurityError(f"ZIP slip attempt: {info.filename}")
+            if info.file_size > _MAX_MEMBER_UNCOMPRESSED_SIZE:
+                raise SecurityError(
+                    f"Refusing to expand oversized OOXML part: {info.filename}"
+                )
+            total_uncompressed += info.file_size
+            if total_uncompressed > _MAX_TOTAL_UNCOMPRESSED_SIZE:
+                raise SecurityError(
+                    "Refusing to expand OOXML package exceeding the uncompressed size limit"
+                )
+            content = archive.read(info.filename)
+            if (
+                info.filename.endswith((".xml", ".rels"))
+                and _STRICT_OOXML_MARKER in content
+            ):
+                content = _STRICT_OOXML_NS_RE.sub(
+                    lambda match: _strict_ns_to_transitional(match.group(0)),
+                    content.decode("utf-8"),
+                ).encode("utf-8")
+            target.writestr(info, content)
     normalized.seek(0)
     return normalized
 
@@ -271,14 +326,27 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         path_or_stream: BytesIO | Path, document_hash: str
     ) -> DocxDocument:
         try:
-            if isinstance(path_or_stream, BytesIO):
-                return Document(_normalize_strict_ooxml(path_or_stream))
-            elif isinstance(path_or_stream, Path):
-                return Document(
-                    _normalize_strict_ooxml(BytesIO(path_or_stream.read_bytes()))
-                )
+            # Classify the package by reading a single small member from the ZIP
+            # central directory. Only a Strict package is rewritten; Transitional
+            # files keep the original, byte-identical load path. When loading from
+            # a Path, the archive is opened lazily from disk so a Transitional file
+            # is never slurped into memory just to be classified.
+            if isinstance(path_or_stream, Path):
+                with zipfile.ZipFile(path_or_stream) as archive:
+                    if _is_strict_ooxml(archive):
+                        return Document(_normalize_strict_ooxml(archive))
+                return Document(str(path_or_stream))
+            elif isinstance(path_or_stream, BytesIO):
+                with zipfile.ZipFile(path_or_stream) as archive:
+                    if _is_strict_ooxml(archive):
+                        return Document(_normalize_strict_ooxml(archive))
+                path_or_stream.seek(0)
+                return Document(path_or_stream)
             else:
                 return None
+        except SecurityError:
+            # Surface malicious input loudly instead of masking it as a load error.
+            raise
         except Exception as e:
             raise DocumentLoadError(
                 f"MsWordDocumentBackend could not load document with hash {document_hash}"
