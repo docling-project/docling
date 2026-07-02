@@ -504,7 +504,6 @@ def export_documents(
                     for chunk_dict in chunks_out:
                         fp.write(_json.dumps(chunk_dict, ensure_ascii=False) + "\n")
 
-
             # Print profiling timings
             if print_timings:
                 table = rich.table.Table(title=f"Profiling Summary, {doc_filename}")
