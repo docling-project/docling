@@ -1,0 +1,31 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: Release notes
+  item-2 at level 1: inline: group group
+    item-3 at level 2: text: We shipped a 
+    item-4 at level 2: text: new
+    item-5 at level 2: text:  parser. See the 
+    item-6 at level 2: text: docs
+    item-7 at level 2: text:  for details.
+  item-8 at level 1: section_header: Highlights
+  item-9 at level 1: list: group list
+    item-10 at level 2: list_item: Faster conversion
+    item-11 at level 2: list_item: Fewer allocations
+      item-12 at level 3: list: group list
+        item-13 at level 4: list_item: Nested detail
+  item-14 at level 1: list: group list
+    item-15 at level 2: list_item: First step
+    item-16 at level 2: list_item: Second step
+  item-17 at level 1: list: group list
+    item-18 at level 2: checkbox_selected: Write tests
+    item-19 at level 2: checkbox_unselected: Ship it
+  item-20 at level 1: text: Old caveat
+  item-21 at level 1: code: print("hello")
+  item-22 at level 1: table with [2x2]
+    item-23 at level 2: unspecified: group table_cell
+      item-24 at level 3: text: alpha
+    item-25 at level 2: unspecified: group table_cell
+      item-26 at level 3: text: 1
+      item-27 at level 3: text: primary
+  item-28 at level 1: caption: Architecture diagram
+  item-29 at level 1: picture
+    item-29 at level 2: caption: Architecture diagram

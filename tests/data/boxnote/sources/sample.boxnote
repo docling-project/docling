@@ -1,0 +1,185 @@
+{
+  "version": 1,
+  "schema_version": 1,
+  "last_edit_timestamp": 1700000000000,
+  "doc": {
+    "type": "doc",
+    "attrs": {
+      "table_of_contents": {
+        "enabled": false,
+        "allowedLevels": [1, 2, 3]
+      }
+    },
+    "content": [
+      {
+        "type": "heading",
+        "attrs": {"level": 1},
+        "content": [{"type": "text", "text": "Release notes"}]
+      },
+      {
+        "type": "paragraph",
+        "content": [
+          {"type": "text", "text": "We shipped a "},
+          {"type": "text", "marks": [{"type": "strong"}], "text": "new"},
+          {"type": "text", "text": " parser. See the "},
+          {
+            "type": "text",
+            "marks": [{"type": "link", "attrs": {"href": "https://example.com/docs"}}],
+            "text": "docs"
+          },
+          {"type": "text", "text": " for details."}
+        ]
+      },
+      {
+        "type": "heading",
+        "attrs": {"level": 2},
+        "content": [{"type": "text", "text": "Highlights"}]
+      },
+      {
+        "type": "bullet_list",
+        "content": [
+          {
+            "type": "list_item",
+            "content": [
+              {"type": "paragraph", "content": [{"type": "text", "text": "Faster conversion"}]}
+            ]
+          },
+          {
+            "type": "list_item",
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {"type": "text", "marks": [{"type": "em"}], "text": "Fewer"},
+                  {"type": "text", "text": " allocations"}
+                ]
+              },
+              {
+                "type": "bullet_list",
+                "content": [
+                  {
+                    "type": "list_item",
+                    "content": [
+                      {"type": "paragraph", "content": [{"type": "text", "text": "Nested detail"}]}
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "ordered_list",
+        "attrs": {"order": 1},
+        "content": [
+          {
+            "type": "list_item",
+            "content": [
+              {"type": "paragraph", "content": [{"type": "text", "text": "First step"}]}
+            ]
+          },
+          {
+            "type": "list_item",
+            "content": [
+              {"type": "paragraph", "content": [{"type": "text", "text": "Second step"}]}
+            ]
+          }
+        ]
+      },
+      {
+        "type": "check_list",
+        "content": [
+          {
+            "type": "check_list_item",
+            "attrs": {"checked": true},
+            "content": [
+              {"type": "paragraph", "content": [{"type": "text", "text": "Write tests"}]}
+            ]
+          },
+          {
+            "type": "check_list_item",
+            "attrs": {"checked": false},
+            "content": [
+              {"type": "paragraph", "content": [{"type": "text", "text": "Ship it"}]}
+            ]
+          }
+        ]
+      },
+      {
+        "type": "blockquote",
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [{"type": "text", "marks": [{"type": "strikethrough"}], "text": "Old caveat"}]
+          }
+        ]
+      },
+      {
+        "type": "code_block",
+        "attrs": {"language": "python"},
+        "content": [{"type": "text", "text": "print(\"hello\")"}]
+      },
+      {
+        "type": "table",
+        "content": [
+          {
+            "type": "table_row",
+            "content": [
+              {
+                "type": "table_header",
+                "attrs": {"colspan": 1, "rowspan": 1},
+                "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Name"}]}]
+              },
+              {
+                "type": "table_header",
+                "attrs": {"colspan": 1, "rowspan": 1},
+                "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Value"}]}]
+              }
+            ]
+          },
+          {
+            "type": "table_row",
+            "content": [
+              {
+                "type": "table_cell",
+                "attrs": {"colspan": 1, "rowspan": 1},
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "marks": [{"type": "link", "attrs": {"href": "https://example.com/alpha"}}],
+                        "text": "alpha"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "table_cell",
+                "attrs": {"colspan": 1, "rowspan": 1},
+                "content": [
+                  {"type": "paragraph", "content": [{"type": "text", "text": "1"}]},
+                  {
+                    "type": "paragraph",
+                    "content": [{"type": "text", "marks": [{"type": "em"}], "text": "primary"}]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "image",
+        "attrs": {
+          "fileName": "diagram.png",
+          "alt": "Architecture diagram",
+          "boxSharedLink": "https://app.box.com/s/example"
+        }
+      }
+    ]
+  }
+}
