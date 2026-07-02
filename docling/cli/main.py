@@ -501,11 +501,11 @@ def export_documents(
                     ):
                         doc_chunk = DocChunk.model_validate(chunk)
                         page_numbers = sorted(
-                            set(
+                            {
                                 prov.page_no
                                 for item in doc_chunk.meta.doc_items
                                 for prov in item.prov
-                            )
+                            }
                         )
                         metadata = {}
                         if doc_chunk.meta.origin:
