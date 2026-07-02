@@ -185,6 +185,18 @@ class OcrOptions(BaseOptions):
         configurations.
     """
 
+    mode: Annotated[
+        OcrMode,
+        Field(
+            description="Which document regions to feed as input to the OCR",
+            examples=[
+                OcrMode.LAYOUT_ONLY,
+                OcrMode.PDF_ONLY,
+                OcrMode.LAYOUT_AND_PDF,
+            ],
+        ),
+    ] = OcrMode.LAYOUT_AND_PDF
+
     lang: Annotated[
         list[str],
         Field(
@@ -202,21 +214,10 @@ class OcrOptions(BaseOptions):
     bitmap_area_threshold: Annotated[
         float,
         Field(
-            description="Percentage of the page area for a bitmap to be processed with OCR.",
+            description="Percentage of the page area for a PDF bitmap to be processed with OCR.",
             examples=[0.05, 0.1],
         ),
     ] = 0.05
-    mode: Annotated[
-        OcrMode,
-        Field(
-            description="Which document regions to feed as input to the OCR",
-            examples=[
-                OcrMode.LAYOUT_ONLY,
-                OcrMode.PDF_ONLY,
-                OcrMode.LAYOUT_AND_PDF,
-            ],
-        ),
-    ] = OcrMode.LAYOUT_AND_PDF
 
 
 class OcrAutoOptions(OcrOptions):

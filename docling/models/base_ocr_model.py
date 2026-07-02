@@ -25,9 +25,8 @@ _log = logging.getLogger(__name__)
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     MAXOUT_COVERAGE_THRESHOLD = 0.75
     PICTURE_LIKE_CLUSTER_LABELS = [
-        DocItemLabel.CHART,
         DocItemLabel.PICTURE,
-        DocItemLabel.HANDWRITTEN_TEXT,
+        DocItemLabel.CHART,
     ]
     TEXT_LIKE_CLUSTER_LABELS = [
         DocItemLabel.CAPTION,
@@ -68,10 +67,11 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     def get_ocr_rects(self, page: Page) -> List[BoundingBox]:
         r"""
         Produce the input rects for the OCR according to the logic for each OcrMode
+        If `force_full_page_ocr` is set, return a big bbox covering the entire page
         """
         assert page.size is not None
 
-        # If `force_full_page_ocr` is set, just return a big bbox covering the entire page
+        # If `force_full_page_ocr` is set, return a big bbox covering the entire page
         if self.options.force_full_page_ocr:
             return [
                 BoundingBox(
@@ -93,6 +93,63 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             ocr_rects = self._combine_clusters_and_cells(page)
         return ocr_rects
 
+    def _get_pdf_ocr_rects(self, page: Page) -> List[BoundingBox]:
+        r"""
+        Compute the OCR rectangles coming ONLY from the programmatic PDF cells
+
+        1. Deduplicate the bitmap rects.
+        2. If coverage > MAXOUT_COVERAGE_THRESHOLD, return a single bbox covering the entire page.
+        3. Else if coverage > `bitmap_area_threshold`, return the deduplicated rects.
+        4. Otherwise return an empty list.
+        """
+        if page._backend is None:
+            return []
+
+        # Get the programmatic PDF cells and deduplicate them
+        bitmap_rects = page._backend.get_bitmap_rects()
+        coverage, ocr_rects = self._deduplicate_rects(page.size, bitmap_rects)
+
+        # return full-page rectangle if page is dominantly covered with bitmaps
+        if coverage > max(
+            BaseOcrModel.MAXOUT_COVERAGE_THRESHOLD, self.options.bitmap_area_threshold
+        ):
+            return [
+                BoundingBox(
+                    l=0,
+                    t=0,
+                    r=page.size.width,
+                    b=page.size.height,
+                    coord_origin=CoordOrigin.TOPLEFT,
+                )
+            ]
+        # return individual rectangles if the bitmap coverage is above the threshold
+        elif coverage > self.options.bitmap_area_threshold:
+            return ocr_rects
+
+        # Overall coverage of bitmaps is too low, drop all bitmap rectangles.
+        return []
+
+    def _get_cluster_ocr_rects(self, page: Page) -> List[BoundingBox]:
+        r"""
+        Compute OCR rectangles coming ONLY from the layout clusters of a page.
+        """
+        if page.predictions.layout is None:
+            return []
+
+        # Get the picture-like clusters
+        cluster_rects = [
+            cluster.bbox
+            for cluster in page.predictions.layout.clusters
+            if cluster.label in self.PICTURE_LIKE_CLUSTER_LABELS
+        ]
+
+        # Deduplicate
+        _, ocr_rects = self._deduplicate_rects(
+            page.size, cluster_rects, dilation_size=0
+        )
+
+        return ocr_rects
+
     def _combine_clusters_and_cells(self, page: Page) -> List[BoundingBox]:
         r"""
         Combine the layout detections and the programmatic PDF cells and produce a list of bboxes
@@ -101,7 +158,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         if page.predictions.layout is None or page._backend is None:
             return []
 
-        # Create an R-tree for the pdf cells with text
+        # Create an R-tree for the pdf cells that have text
         p = index.Property()
         p.dimension = 2
         spatial_index = index.Index(properties=p)
@@ -129,26 +186,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         # Deduplicate
         _, ocr_rects = self._deduplicate_rects(page.size, ocr_rects, dilation_size=0)
-
-        return ocr_rects
-
-    def _get_cluster_ocr_rects(self, page: Page) -> List[BoundingBox]:
-        r"""
-        Compute OCR rectangles coming ONLY from the layout clusters of a page.
-        """
-        if page.predictions.layout is None:
-            return []
-
-        cluster_rects = [
-            cluster.bbox
-            for cluster in page.predictions.layout.clusters
-            if cluster.label in self.PICTURE_LIKE_CLUSTER_LABELS
-        ]
-
-        # Deduplicate
-        _, ocr_rects = self._deduplicate_rects(
-            page.size, cluster_rects, dilation_size=0
-        )
 
         return ocr_rects
 
@@ -203,43 +240,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # Compute area fraction on page covered by bitmaps
         area_frac = np.sum(np_image > 0) / (size.width * size.height)
         return (area_frac, bounding_boxes)  # fraction covered  # boxes
-
-    def _get_pdf_ocr_rects(self, page: Page) -> List[BoundingBox]:
-        r"""
-        Compute the OCR rectangles coming ONLY from the programmatic PDF cells
-
-        1. Deduplicate the bitmap rects.
-        2. If coverage > MAXOUT_COVERAGE_THRESHOLD, return a single bbox covering the entire page.
-        3. Else if coverage > `bitmap_area_threshold`, return the deduplicated rects.
-        4. Otherwise return an empty list.
-        """
-        assert page.size is not None
-        if page._backend is None:
-            return []
-
-        # Get the programmatic PDF cells and deduplicate them
-        bitmap_rects = page._backend.get_bitmap_rects()
-        coverage, ocr_rects = self._deduplicate_rects(page.size, bitmap_rects)
-
-        # return full-page rectangle if page is dominantly covered with bitmaps
-        if coverage > max(
-            BaseOcrModel.MAXOUT_COVERAGE_THRESHOLD, self.options.bitmap_area_threshold
-        ):
-            return [
-                BoundingBox(
-                    l=0,
-                    t=0,
-                    r=page.size.width,
-                    b=page.size.height,
-                    coord_origin=CoordOrigin.TOPLEFT,
-                )
-            ]
-        # return individual rectangles if the bitmap coverage is above the threshold
-        elif coverage > self.options.bitmap_area_threshold:
-            return ocr_rects
-
-        # Overall coverage of bitmaps is too low, drop all bitmap rectangles.
-        return []
 
     def post_process_cells(
         self,
@@ -372,50 +372,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
             out_file = out_path / f"ocr_page_{page.page_no:05}.png"
             image.save(str(out_file), format="png")
-
-        # #########################################################################################
-        # # Debug:
-        # import json
-        #
-        # layout_bboxes = self._get_cluster_ocr_rects(page)
-        # pdf_bboxes = self._get_pdf_ocr_rects(page)
-        #
-        # def get_non_overlapping(
-        #     check_bboxes: List[BoundingBox],
-        #     reference_bboxes: List[BoundingBox],
-        # ) -> int:
-        #     r"""Return the number of non-overlapping bboxes"""
-        #     non_overlapping = 0
-        #     for c_bbox in check_bboxes:
-        #         overlaps = False
-        #         for r_bbox in reference_bboxes:
-        #             if c_bbox.overlaps(r_bbox):
-        #                 overlaps = True
-        #                 break
-        #         if not overlaps:
-        #             non_overlapping += 1
-        #     return non_overlapping
-        #
-        # # Compute the layout_bboxes that do NOT overlap with any pdf_bbox and vice versa
-        # non_overlapping_layout_bboxes = get_non_overlapping(layout_bboxes, pdf_bboxes)
-        # non_overlapping_pdf_bboxes = get_non_overlapping(pdf_bboxes, layout_bboxes)
-        #
-        # rects_report = {
-        #     "layout_bboxes": len(layout_bboxes),
-        #     "pdf_bboxes": len(pdf_bboxes),
-        #     "non_overlapping_layout_bboxes": non_overlapping_layout_bboxes,
-        #     "non_overlapping_pdf_bboxes": non_overlapping_pdf_bboxes,
-        # }
-        #
-        # # Create a report and save it as a json file
-        # out_path: Path = (
-        #     Path(settings.debug.debug_output_path) / f"debug_{conv_res.input.file.stem}"
-        # )
-        # out_path.mkdir(parents=True, exist_ok=True)
-        # out_file = out_path / f"rects_{page.page_no:05}.json"
-        # with open(out_file, "w") as fd:
-        #     json.dump(rects_report, fd)
-        # #########################################################################################
 
     @abstractmethod
     def __call__(
