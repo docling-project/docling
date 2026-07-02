@@ -1381,10 +1381,6 @@ class GenosSmartChunker(BaseChunker):
         if not grid or not num_cols:
             return [single]
 
-        # 세로 병합(row_span>1)이 있으면 row 분할이 구조를 깨뜨리므로 분할하지 않는다.
-        if any(getattr(c, "row_span", 1) > 1 for r in grid for c in r):
-            return [single]
-
         # 헤더 행 수: 선두의 연속된 헤더 플래그 행 + 바로 다음 행(컬럼명 추정)
         flag_n = 0
         for row in grid:
@@ -1399,6 +1395,11 @@ class GenosSmartChunker(BaseChunker):
 
         header_rows = grid[:header_n]
         data_rows = grid[header_n:]
+
+        # 세로 병합(row_span>1)이 데이터 행에 있으면 row 분할이 구조를 깨뜨리므로 분할하지 않는다.
+        # (헤더 영역의 세로병합은 헤더 블록이 매 청크에 통째로 반복되므로 무해)
+        if any(getattr(c, "row_span", 1) > 1 for r in data_rows for c in r):
+            return [single]
 
         # heading 접두(_generate_section_text_with_heading 과 동일 규칙). xlsx 는 보통 공백.
         merged = {lvl: t for lvl, t in (h_short or {}).items() if t}
