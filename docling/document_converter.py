@@ -711,26 +711,37 @@ class DocumentConverter:
 
         return conv_res
 
+    def _unload_input_document(self, in_doc: InputDocument) -> None:
+        backend = getattr(in_doc, "_backend", None)
+        if backend is not None:
+            backend.unload()
+
     def _execute_pipeline(
         self, in_doc: InputDocument, raises_on_error: bool
     ) -> ConversionResult:
         if in_doc.valid:
-            pipeline = self._get_pipeline(in_doc.format)
-            if pipeline is not None:
-                conv_res = pipeline.execute(in_doc, raises_on_error=raises_on_error)
-            else:
-                if raises_on_error:
-                    raise ConversionError(
-                        f"No pipeline could be initialized for {in_doc.file}."
-                    )
+            pipeline_started = False
+            try:
+                pipeline = self._get_pipeline(in_doc.format)
+                if pipeline is not None:
+                    pipeline_started = True
+                    conv_res = pipeline.execute(in_doc, raises_on_error=raises_on_error)
                 else:
-                    _log.warning(
-                        "No pipeline could be initialized for %s.", in_doc.file
-                    )
-                    conv_res = ConversionResult(
-                        input=in_doc,
-                        status=ConversionStatus.FAILURE,
-                    )
+                    if raises_on_error:
+                        raise ConversionError(
+                            f"No pipeline could be initialized for {in_doc.file}."
+                        )
+                    else:
+                        _log.warning(
+                            "No pipeline could be initialized for %s.", in_doc.file
+                        )
+                        conv_res = ConversionResult(
+                            input=in_doc,
+                            status=ConversionStatus.FAILURE,
+                        )
+            finally:
+                if not pipeline_started:
+                    self._unload_input_document(in_doc)
         else:
             _log.warning("Input document %s is not valid.", in_doc.file)
             conv_res = ConversionResult(
