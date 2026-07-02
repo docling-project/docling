@@ -489,20 +489,53 @@ def export_documents(
                     )
                     chunker_obj = HybridChunker(tokenizer=hf_tok)
 
-                chunks_out = []
-                for chunk in chunker_obj.chunk(dl_doc=conv_res.document):
-                    chunks_out.append(
-                        {
-                            **chunk.export_json_dict(),
-                            "contextualized_text": chunker_obj.contextualize(chunk),
-                        }
-                    )
+                from docling_core.transforms.chunker.hierarchical_chunker import (
+                    DocChunk,
+                )
 
                 fname = output_dir / f"{doc_filename}.chunks.jsonl"
                 _log.info(f"writing Chunks output to {fname}")
                 with fname.open("w", encoding="utf-8") as fp:
-                    for chunk_dict in chunks_out:
-                        fp.write(_json.dumps(chunk_dict, ensure_ascii=False) + "\n")
+                    for i, chunk in enumerate(
+                        chunker_obj.chunk(dl_doc=conv_res.document)
+                    ):
+                        doc_chunk = DocChunk.model_validate(chunk)
+                        page_numbers = sorted(
+                            set(
+                                prov.page_no
+                                for item in doc_chunk.meta.doc_items
+                                for prov in item.prov
+                            )
+                        )
+                        metadata = {}
+                        if doc_chunk.meta.origin:
+                            metadata["origin"] = doc_chunk.meta.origin.model_dump(
+                                mode="json"
+                            )
+                        metadata["has_image"] = any(
+                            item.self_ref.startswith("#/pictures/")
+                            for item in doc_chunk.meta.doc_items
+                        )
+                        num_tokens: int | None = None
+                        if isinstance(chunker_obj, HybridChunker):
+                            num_tokens = chunker_obj.tokenizer.count_tokens(
+                                chunker_obj.contextualize(doc_chunk)
+                            )
+                        chunk_record = {
+                            "filename": doc_filename,
+                            "chunk_index": i,
+                            "text": chunker_obj.contextualize(doc_chunk),
+                            "raw_text": doc_chunk.text,
+                            "num_tokens": num_tokens,
+                            "headings": doc_chunk.meta.headings,
+                            "captions": doc_chunk.meta.captions,
+                            "doc_items": [
+                                item.self_ref for item in doc_chunk.meta.doc_items
+                            ],
+                            "page_numbers": page_numbers,
+                            "metadata": metadata,
+                        }
+                        fp.write(_json.dumps(chunk_record, ensure_ascii=False) + "\n")
 
             # Print profiling timings
             if print_timings:
