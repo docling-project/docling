@@ -2378,6 +2378,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     text = text.replace("<eq>", "$").replace("</eq>", "$")
 
                 provs_in_cell: list[RefItem] = []
+                ref_for_rich_cell: RefItem | None = None
                 rich_table_cell: bool = self._is_rich_table_cell(cell)
 
                 if rich_table_cell:
@@ -2398,6 +2399,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         docling_table,
                         content_layer=self.content_layer,
                     )
+
+                if rich_table_cell and ref_for_rich_cell is not None:
                     new_cell = RichTableCell(
                         text=text,
                         row_span=1,
