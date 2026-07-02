@@ -95,9 +95,14 @@ class OcrMode(str, Enum):
     How to generate the input for the OCR model
     """
 
-    LAYOUT_ONLY = "layout_only"
-    PDF_ONLY = "pdf_only"
-    LAYOUT_AND_PDF = "layout_and_pdf"
+    # Only bitmaps embedded inside a programmatic PDF. No layout information is used.
+    PDF_BITMAPS_ONLY = "pdf_bitmaps_only"
+
+    # Layout detections which can bear text. No PDF information is needed/used.
+    LAYOUT_DETECTIONS = "layout_detections"
+
+    # Layout detections, without the ones that overlap with text-bearing pdf cells
+    LAYOUT_DETECTIONS_WITHOUT_PDF_TEXT = "layout_without_pdf_text"
 
 
 class TableFormerMode(str, Enum):
@@ -190,12 +195,12 @@ class OcrOptions(BaseOptions):
         Field(
             description="Which document regions to feed as input to the OCR",
             examples=[
-                OcrMode.LAYOUT_ONLY,
-                OcrMode.PDF_ONLY,
-                OcrMode.LAYOUT_AND_PDF,
+                OcrMode.LAYOUT_DETECTIONS,
+                OcrMode.PDF_BITMAPS_ONLY,
+                OcrMode.LAYOUT_DETECTIONS_WITHOUT_PDF_TEXT,
             ],
         ),
-    ] = OcrMode.LAYOUT_AND_PDF
+    ] = OcrMode.LAYOUT_DETECTIONS_WITHOUT_PDF_TEXT
 
     lang: Annotated[
         list[str],
@@ -214,10 +219,33 @@ class OcrOptions(BaseOptions):
     bitmap_area_threshold: Annotated[
         float,
         Field(
-            description="Percentage of the page area for a PDF bitmap to be processed with OCR.",
+            description=(
+                "Percentage of the page area for a PDF bitmap to be processed with OCR."
+                "It is used when OcrMode is PDF_BITMAPS_ONLY"
+            ),
             examples=[0.05, 0.1],
         ),
     ] = 0.05
+    sparse_cell_coverage_threshold: Annotated[
+        float,
+        Field(
+            description=(
+                "A sparse layout detection is omitted from the OCR rects if its coverage with"
+                "textual PDF cells is more than this threshold"
+            ),
+            examples=[],
+        ),
+    ] = 0.05
+    dense_cell_coverage_threshold: Annotated[
+        float,
+        Field(
+            description=(
+                "A dense layout detection is omitted from the OCR rects if its coverage with "
+                "textual PDF cells is more than this threshold"
+            ),
+            examples=[],
+        ),
+    ] = 0.80
 
 
 class OcrAutoOptions(OcrOptions):

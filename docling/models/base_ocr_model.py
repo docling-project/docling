@@ -24,11 +24,15 @@ _log = logging.getLogger(__name__)
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     MAXOUT_COVERAGE_THRESHOLD = 0.75
-    PICTURE_LIKE_CLUSTER_LABELS = [
+    SPARSE_CLUSTER_LABELS = [
         DocItemLabel.PICTURE,
         DocItemLabel.CHART,
+        DocItemLabel.TABLE,
+        DocItemLabel.DOCUMENT_INDEX,
+        DocItemLabel.KEY_VALUE_REGION,
+        DocItemLabel.FORM,
     ]
-    TEXT_LIKE_CLUSTER_LABELS = [
+    DENSE_CLUSTER_LABELS = [
         DocItemLabel.CAPTION,
         DocItemLabel.FOOTNOTE,
         DocItemLabel.LIST_ITEM,
@@ -37,11 +41,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         DocItemLabel.SECTION_HEADER,
         DocItemLabel.TEXT,
         DocItemLabel.TITLE,
-        DocItemLabel.DOCUMENT_INDEX,
         DocItemLabel.CHECKBOX_SELECTED,
         DocItemLabel.CHECKBOX_UNSELECTED,
-        DocItemLabel.FORM,
-        DocItemLabel.KEY_VALUE_REGION,
         DocItemLabel.HANDWRITTEN_TEXT,
         DocItemLabel.PARAGRAPH,
         DocItemLabel.REFERENCE,
@@ -51,6 +52,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         DocItemLabel.FIELD_KEY,
         DocItemLabel.FIELD_VALUE,
         DocItemLabel.FIELD_HINT,
+        DocItemLabel.MARKER,
+        # DocItemLabel.FORMULA
+        # DocItemLabel.CODE
     ]
 
     def __init__(
@@ -85,15 +89,15 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         # Compute the OCR rects according to the mode
         ocr_rects: List[BoundingBox]
-        if self.options.mode == OcrMode.PDF_ONLY:
-            ocr_rects = self._get_pdf_ocr_rects(page)
-        elif self.options.mode == OcrMode.LAYOUT_ONLY:
-            ocr_rects = self._get_cluster_ocr_rects(page)
-        elif self.options.mode == OcrMode.LAYOUT_AND_PDF:
-            ocr_rects = self._combine_clusters_and_cells(page)
+        if self.options.mode == OcrMode.PDF_BITMAPS_ONLY:
+            ocr_rects = self._find_pdf_ocr_rects(page)
+        elif self.options.mode == OcrMode.LAYOUT_DETECTIONS:
+            ocr_rects = self._find_layout_ocr_rects(page)
+        elif self.options.mode == OcrMode.LAYOUT_DETECTIONS_WITHOUT_PDF_TEXT:
+            ocr_rects = self._find_layout_ocr_rects_without_pdf_text(page)
         return ocr_rects
 
-    def _get_pdf_ocr_rects(self, page: Page) -> List[BoundingBox]:
+    def _find_pdf_ocr_rects(self, page: Page) -> List[BoundingBox]:
         r"""
         Compute the OCR rectangles coming ONLY from the programmatic PDF cells
 
@@ -129,18 +133,21 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # Overall coverage of bitmaps is too low, drop all bitmap rectangles.
         return []
 
-    def _get_cluster_ocr_rects(self, page: Page) -> List[BoundingBox]:
+    def _find_layout_ocr_rects(self, page: Page) -> List[BoundingBox]:
         r"""
         Compute OCR rectangles coming ONLY from the layout clusters of a page.
         """
         if page.predictions.layout is None:
             return []
 
-        # Get the picture-like clusters
+        # Get the cluster rects that may have text
+        text_candidate_labels = set(BaseOcrModel.SPARSE_CLUSTER_LABELS) | set(
+            BaseOcrModel.DENSE_CLUSTER_LABELS
+        )
         cluster_rects = [
             cluster.bbox
             for cluster in page.predictions.layout.clusters
-            if cluster.label in self.PICTURE_LIKE_CLUSTER_LABELS
+            if cluster.label in text_candidate_labels
         ]
 
         # Deduplicate
@@ -150,44 +157,95 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         return ocr_rects
 
-    def _combine_clusters_and_cells(self, page: Page) -> List[BoundingBox]:
+    def _find_layout_ocr_rects_without_pdf_text(self, page: Page) -> List[BoundingBox]:
         r"""
-        Combine the layout detections and the programmatic PDF cells and produce a list of bboxes
-        to feed in OCR
-        """
-        if page.predictions.layout is None or page._backend is None:
-            return []
+        Compute OCR rectangles from the layout detections, dropping detections that
+        are already sufficiently covered by text-bearing programmatic PDF cells.
 
-        # Create an R-tree for the pdf cells that have text
+        A layout detection is omitted from the OCR rects when its coverage by
+        text-bearing PDF cells is above a per-category threshold:
+        """
+        # If there is no page.backend, this equals to _find_layout_ocr_rects()
+        if page._backend is None or page.predictions.layout is None:
+            return self._find_layout_ocr_rects(page)
+
+        assert page.size is not None
+
+        # Collect the text-bearing PDF cell bboxes (top-left origin) and index them
+        # in an R-tree to quickly find the cells overlapping each layout detection.
         p = index.Property()
         p.dimension = 2
         spatial_index = index.Index(properties=p)
-        for i, text_cell in enumerate(page._backend.get_text_cells()):
+        text_cell_bboxes: List[BoundingBox] = []
+        for text_cell in page._backend.get_text_cells():
             txt = text_cell.text
             if txt is None or txt.strip() == "":
                 continue
-            spatial_index.insert(i, text_cell.rect.to_bounding_box().as_tuple())
+            bbox = text_cell.rect.to_bounding_box().to_top_left_origin(page.size.height)
+            spatial_index.insert(len(text_cell_bboxes), bbox.as_tuple())
+            text_cell_bboxes.append(bbox)
 
-        # Iterate over the clusters to pickup the OCR rects
+        # Iterate over the clusters to pick up the OCR rects
         ocr_rects: List[BoundingBox] = []
         for cluster in page.predictions.layout.clusters:
-            # Add all picture-like layout bboxes
-            if cluster.label in self.PICTURE_LIKE_CLUSTER_LABELS:
+            if cluster.label in self.SPARSE_CLUSTER_LABELS:
+                threshold = self.options.sparse_cell_coverage_threshold
+            elif cluster.label in self.DENSE_CLUSTER_LABELS:
+                threshold = self.options.dense_cell_coverage_threshold
+            else:
+                # Unknown label: OCR it to be safe.
                 ocr_rects.append(cluster.bbox)
                 continue
 
-            # Add the text-like layout bboxes that do not overlap with pdf cells that have content
-            if cluster.label in self.TEXT_LIKE_CLUSTER_LABELS:
-                intersecting_pdf_cells = list(
-                    spatial_index.intersection(cluster.bbox.as_tuple())
-                )
-                if len(intersecting_pdf_cells) == 0:
-                    ocr_rects.append(cluster.bbox)
+            # Compute the coverage of the cluster's bbox with text-bearing PDF cells.
+            cluster_bbox = cluster.bbox.to_top_left_origin(page.size.height)
+            candidate_bboxes = [
+                text_cell_bboxes[i]
+                for i in spatial_index.intersection(cluster_bbox.as_tuple())
+            ]
+            coverage = self._compute_coverage(cluster_bbox, candidate_bboxes)
+
+            # Only OCR the detection if it is not already covered by PDF text.
+            if coverage < threshold:
+                ocr_rects.append(cluster.bbox)
 
         # Deduplicate
         _, ocr_rects = self._deduplicate_rects(page.size, ocr_rects, dilation_size=0)
 
         return ocr_rects
+
+    def _compute_coverage(
+        self, bbox: BoundingBox, text_cell_bboxes: List[BoundingBox]
+    ) -> float:
+        r"""
+        Compute the fraction of `bbox`'s area that is covered by the given
+        text-bearing PDF cell bboxes.
+
+        The clipped intersections are rasterized into a binary mask so that
+        overlapping cells are counted once (and the result stays within [0, 1]).
+        All bboxes must share `bbox`'s coordinate origin.
+        """
+        if not text_cell_bboxes or bbox.area() <= 0:
+            return 0.0
+
+        width = max(round(bbox.width), 1)
+        height = max(round(bbox.height), 1)
+
+        mask = Image.new("1", (width, height))  # '1' mode is binary
+        draw = ImageDraw.Draw(mask)
+        for cell_bbox in text_cell_bboxes:
+            intersection = bbox.get_intersection_bbox(cell_bbox)
+            if intersection is None:
+                continue
+            # Translate the intersection into the mask's local top-left coordinates.
+            x0 = round(intersection.l - bbox.l)
+            y0 = round(intersection.t - bbox.t)
+            x1 = round(intersection.r - bbox.l)
+            y1 = round(intersection.b - bbox.t)
+            draw.rectangle([(x0, y0), (x1, y1)], fill=1)
+
+        covered_pixels = int(np.count_nonzero(np.asarray(mask)))
+        return covered_pixels / (width * height)
 
     def _deduplicate_rects(
         self, size: Size, rects: Iterable[BoundingBox], dilation_size: int = 20
