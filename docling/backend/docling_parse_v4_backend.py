@@ -1,6 +1,4 @@
 import logging
-import multiprocessing as mp
-import queue
 from collections.abc import Iterable
 from io import BytesIO
 from pathlib import Path
@@ -21,37 +19,6 @@ if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
-
-_PAGE_LOAD_TIMEOUT_SECS = 120  # 2 minutes per page
-
-
-def _page_worker_main(
-    req_queue: mp.Queue,
-    resp_queue: mp.Queue,
-    path_or_stream: Union[str, bytes],
-) -> None:
-    """Persistent worker process: loads PDF once, serves page requests until sentinel."""
-    try:
-        from docling_parse.pdf_parser import DoclingPdfParser
-
-        parser = DoclingPdfParser(loglevel="fatal")
-        target = BytesIO(path_or_stream) if isinstance(path_or_stream, bytes) else Path(path_or_stream)
-        doc = parser.load(path_or_stream=target)
-        resp_queue.put(("ready", None))
-    except Exception as e:
-        resp_queue.put(("init_error", str(e)))
-        return
-
-    while True:
-        request = req_queue.get()
-        if request is None:  # sentinel — shut down
-            break
-        page_no, create_words, create_textlines = request
-        try:
-            seg_page = doc.get_page(page_no + 1, create_words=create_words, create_textlines=create_textlines)
-            resp_queue.put(("ok", seg_page))
-        except Exception as e:
-            resp_queue.put(("error", str(e)))
 
 
 class DoclingParseV4PageBackend(PdfPageBackend):
@@ -175,28 +142,6 @@ class DoclingParseV4DocumentBackend(PdfDocumentBackend):
                 f"docling-parse v4 could not load document {self.document_hash}."
             )
 
-        worker_target: Union[str, bytes] = (
-            self.path_or_stream.getvalue()
-            if isinstance(self.path_or_stream, BytesIO)
-            else str(self.path_or_stream)
-        )
-        self._req_queue: mp.Queue = mp.Queue()
-        self._resp_queue: mp.Queue = mp.Queue()
-        self._worker = mp.Process(
-            target=_page_worker_main,
-            args=(self._req_queue, self._resp_queue, worker_target),
-            daemon=True,
-        )
-        self._worker.start()
-        try:
-            status, msg = self._resp_queue.get(timeout=30)
-            if status != "ready":
-                raise RuntimeError(f"docling-parse worker init failed: {msg}")
-        except queue.Empty:
-            self._worker.kill()
-            raise RuntimeError("docling-parse worker timed out during init.")
-        self._worker_alive = True
-
     def page_count(self) -> int:
         # return len(self._pdoc)  # To be replaced with docling-parse API
 
@@ -208,67 +153,40 @@ class DoclingParseV4DocumentBackend(PdfDocumentBackend):
 
         return len_2
 
-    def _kill_worker(self) -> None:
-        self._worker_alive = False
-        if self._worker.is_alive():
-            self._worker.terminate()
-            self._worker.join(timeout=5)
-            if self._worker.is_alive():
-                self._worker.kill()
-                self._worker.join()
-
     def load_page(
         self, page_no: int, create_words: bool = True, create_textlines: bool = True
-    ) -> PdfPageBackend:
-        from docling.backend.pypdfium2_backend import PyPdfiumPageBackend
-
-        if not self._worker_alive:
-            with pypdfium2_lock:
-                return PyPdfiumPageBackend(self._pdoc, self.document_hash, page_no)
-
-        self._req_queue.put((page_no, create_words, create_textlines))
-        try:
-            status, result = self._resp_queue.get(timeout=_PAGE_LOAD_TIMEOUT_SECS)
-        except queue.Empty:
-            _log.warning(
-                f"docling-parse worker timed out on page {page_no + 1} "
-                f"(>{_PAGE_LOAD_TIMEOUT_SECS}s). Killing worker, switching to pdfium."
-            )
-            self._kill_worker()
-            with pypdfium2_lock:
-                return PyPdfiumPageBackend(self._pdoc, self.document_hash, page_no)
-
-        if status == "error":
-            _log.warning(
-                f"docling-parse worker error on page {page_no + 1}: {result}. "
-                "Falling back to pdfium backend."
-            )
-            with pypdfium2_lock:
-                return PyPdfiumPageBackend(self._pdoc, self.document_hash, page_no)
-
-        seg_page: SegmentedPdfPage = result
-
-        # In Docling, all TextCell instances are expected with top-left origin.
-        [tc.to_top_left_origin(seg_page.dimension.height) for tc in seg_page.textline_cells]
-        [tc.to_top_left_origin(seg_page.dimension.height) for tc in seg_page.char_cells]
-        [tc.to_top_left_origin(seg_page.dimension.height) for tc in seg_page.word_cells]
-
+    ) -> DoclingParseV4PageBackend:
         with pypdfium2_lock:
-            return DoclingParseV4PageBackend(seg_page, self._pdoc[page_no])
+            seg_page = self.dp_doc.get_page(
+                page_no + 1,
+                create_words=create_words,
+                create_textlines=create_textlines,
+            )
+
+            # In Docling, all TextCell instances are expected with top-left origin.
+            [
+                tc.to_top_left_origin(seg_page.dimension.height)
+                for tc in seg_page.textline_cells
+            ]
+            [
+                tc.to_top_left_origin(seg_page.dimension.height)
+                for tc in seg_page.char_cells
+            ]
+            [
+                tc.to_top_left_origin(seg_page.dimension.height)
+                for tc in seg_page.word_cells
+            ]
+
+            return DoclingParseV4PageBackend(
+                seg_page,
+                self._pdoc[page_no],
+            )
 
     def is_valid(self) -> bool:
         return self.page_count() > 0
 
     def unload(self):
         super().unload()
-        # Shut down the persistent worker process
-        if self._worker_alive:
-            try:
-                self._req_queue.put(None)  # sentinel
-                self._worker.join(timeout=5)
-            except Exception:
-                pass
-            self._kill_worker()
         # Unload docling-parse document first
         if self.dp_doc is not None:
             self.dp_doc.unload()
