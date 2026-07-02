@@ -71,7 +71,8 @@ DEFAULT_HEADER_FOOTNOTES: Final[str] = "Footnotes"
 DEFAULT_HEADER_REFERENCES: Final[str] = "References"
 DEFAULT_TEXT_ETAL: Final[str] = "et al."
 
-_JATS_FORMAT_TAG_MAP: Final[dict[str, dict[str, object]]] = {
+# Maps JATS formatting tags to docling-core formatting attributes.
+_JATS_FORMAT_TAG_MAP: Final[dict[str, dict[str, bool | Script]]] = {
     "bold": {"bold": True},
     "italic": {"italic": True},
     "underline": {"underline": True},
@@ -665,7 +666,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         if not node.text:
             return None
         math_parts = node.text.split("$$")
-        return math_parts[1] if len(math_parts) == 3 else None
+        return math_parts[1] if len(math_parts) == 3 else node.text.strip()
 
     @staticmethod
     def _merge_formatting(formatting: Formatting | None, tag: str) -> Formatting | None:
