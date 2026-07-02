@@ -27,6 +27,18 @@ def get_converter():
     return converter
 
 
+def _formatting_tuple(item) -> tuple:
+    """Compact, comparable view of a text item's formatting."""
+    f = item.formatting
+    if f is None:
+        return (item.label, item.text, None)
+    return (
+        item.label,
+        item.text,
+        (f.bold, f.italic, f.underline, f.strikethrough, f.script),
+    )
+
+
 def convert_jats_body(body: str) -> DoclingDocument:
     xml = f"""<!DOCTYPE article
 PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
@@ -139,6 +151,16 @@ def _inline_group_items(doc: DoclingDocument) -> list[list]:
             id="text-inside-inline-formula",
         ),
         pytest.param(
+            # tex-math is not always wrapped in $$...$$ in real JATS files
+            "The relation <inline-formula><tex-math>E=mc^2</tex-math></inline-formula> holds.",
+            [
+                (DocItemLabel.TEXT, "The relation", None),
+                (DocItemLabel.FORMULA, "E=mc^2", None),
+                (DocItemLabel.TEXT, "holds.", None),
+            ],
+            id="bare-tex-math",
+        ),
+        pytest.param(
             "We use <inline-formula><italic>x</italic> <tex-math>$$a^2$$</tex-math></inline-formula> here.",
             [
                 (DocItemLabel.TEXT, "We use", None),
@@ -214,18 +236,6 @@ def test_jats_inline_formula_is_not_grouped(paragraph, expected_formulas):
     assert _inline_group_items(doc) == []
     formulas = [t.text for t in doc.texts if t.label == DocItemLabel.FORMULA]
     assert formulas == expected_formulas
-
-
-def _formatting_tuple(item) -> tuple:
-    """Compact, comparable view of a text item's formatting."""
-    f = item.formatting
-    if f is None:
-        return (item.label, item.text, None)
-    return (
-        item.label,
-        item.text,
-        (f.bold, f.italic, f.underline, f.strikethrough, f.script),
-    )
 
 
 def test_jats_inline_formula_styled_content_markdown_rendering():
