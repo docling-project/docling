@@ -541,10 +541,32 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             )
 
             for excel_table in tables:
+                title_cell, excel_table = self._split_leading_section_label(excel_table)
                 origin_col = excel_table.anchor[0]
                 origin_row = excel_table.anchor[1]
                 num_rows = excel_table.num_rows
                 num_cols = excel_table.num_cols
+                if title_cell is not None:
+                    doc.add_text(
+                        text=title_cell.text,
+                        label=DocItemLabel.TEXT,
+                        parent=self.parent,
+                        prov=ProvenanceItem(
+                            page_no=page_no,
+                            charspan=(0, 0),
+                            bbox=BoundingBox.from_tuple(
+                                (
+                                    origin_col + title_cell.col,
+                                    origin_row - 1,
+                                    origin_col + title_cell.col + title_cell.col_span,
+                                    origin_row,
+                                ),
+                                origin=CoordOrigin.TOPLEFT,
+                            ),
+                        ),
+                        content_layer=content_layer,
+                    )
+
                 if treat_singleton_as_text and len(excel_table.data) == 1:
                     doc.add_text(
                         text=excel_table.data[0].text,
@@ -642,6 +664,56 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     )
 
         return doc
+
+    def _split_leading_section_label(
+        self, table: ExcelTable
+    ) -> tuple[ExcelCell | None, ExcelTable]:
+        """Split a merged section label from an adjacent data table."""
+        if table.num_rows < 2 or table.num_cols < 2:
+            return None, table
+
+        first_row_cells = [cell for cell in table.data if cell.row == 0]
+        first_row_text_cells = [cell for cell in first_row_cells if cell.text.strip()]
+        if len(first_row_text_cells) != 1:
+            return None, table
+
+        title_cell = first_row_text_cells[0]
+        if (
+            title_cell.col != 0
+            or title_cell.row_span != 1
+            or title_cell.col_span <= 1
+            or title_cell.col_span > table.num_cols
+        ):
+            return None, table
+
+        second_row_header_cells = [
+            cell
+            for cell in table.data
+            if cell.row == 1 and cell.text.strip() and cell.col_span == 1
+        ]
+        if len(second_row_header_cells) < 2:
+            return None, table
+
+        data = [
+            ExcelCell(
+                row=cell.row - 1,
+                col=cell.col,
+                text=cell.text,
+                row_span=cell.row_span,
+                col_span=cell.col_span,
+            )
+            for cell in table.data
+            if cell.row > 0
+        ]
+        return (
+            title_cell,
+            ExcelTable(
+                anchor=(table.anchor[0], table.anchor[1] + 1),
+                num_rows=table.num_rows - 1,
+                num_cols=table.num_cols,
+                data=data,
+            ),
+        )
 
     def _find_true_data_bounds(self, sheet: Worksheet) -> DataRegion:
         """Find the true data boundaries (min/max rows and columns) in a worksheet.
