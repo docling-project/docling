@@ -1881,6 +1881,9 @@ class DocumentProcessor:
         cfg = _load_config(config_path)
         self._intel = IntelligentDocumentProcessor(cfg, config_path=config_path)
 
+        # xlsx/csv 처리 설정은 intel 프로세서가 동일 config에서 이미 파싱함 → 재사용
+        self._xlsx_cfg = self._intel._xlsx_cfg
+
         defaults_cfg = _as_dict(cfg.get("defaults"))
         log_level = _parse_optional_int(defaults_cfg.get("log_level"), "defaults.log_level")
         if log_level is None:
