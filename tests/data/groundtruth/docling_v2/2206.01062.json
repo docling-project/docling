@@ -18714,6 +18714,7 @@
         ],
         "num_rows": 14,
         "num_cols": 12,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -23733,6 +23734,7 @@
         ],
         "num_rows": 14,
         "num_cols": 6,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -26765,6 +26767,7 @@
         ],
         "num_rows": 13,
         "num_cols": 5,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -29236,6 +29239,7 @@
         ],
         "num_rows": 14,
         "num_cols": 5,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -30735,10 +30739,10 @@
               "b": 227.48,
               "coord_origin": "TOPLEFT"
             },
-            "row_span": 2,
+            "row_span": 5,
             "col_span": 1,
             "start_row_offset_idx": 2,
-            "end_row_offset_idx": 4,
+            "end_row_offset_idx": 7,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
             "text": "PubLayNet (PLN)",
@@ -30763,7 +30767,7 @@
             "end_col_offset_idx": 2,
             "text": "Figure",
             "column_header": false,
-            "row_header": true,
+            "row_header": false,
             "row_section": false,
             "fillable": false
           },
@@ -30843,7 +30847,7 @@
             "end_col_offset_idx": 2,
             "text": "Sec-header",
             "column_header": false,
-            "row_header": true,
+            "row_header": false,
             "row_section": false,
             "fillable": false
           },
@@ -30923,7 +30927,7 @@
             "end_col_offset_idx": 2,
             "text": "Table",
             "column_header": false,
-            "row_header": true,
+            "row_header": false,
             "row_section": false,
             "fillable": false
           },
@@ -31003,7 +31007,7 @@
             "end_col_offset_idx": 2,
             "text": "Text",
             "column_header": false,
-            "row_header": true,
+            "row_header": false,
             "row_section": false,
             "fillable": false
           },
@@ -31083,7 +31087,7 @@
             "end_col_offset_idx": 2,
             "text": "total",
             "column_header": false,
-            "row_header": true,
+            "row_header": false,
             "row_section": false,
             "fillable": false
           },
@@ -31183,7 +31187,7 @@
             "end_col_offset_idx": 2,
             "text": "Figure",
             "column_header": false,
-            "row_header": true,
+            "row_header": false,
             "row_section": false,
             "fillable": false
           },
@@ -31263,7 +31267,7 @@
             "end_col_offset_idx": 2,
             "text": "Table",
             "column_header": false,
-            "row_header": true,
+            "row_header": false,
             "row_section": false,
             "fillable": false
           },
@@ -31343,7 +31347,7 @@
             "end_col_offset_idx": 2,
             "text": "total",
             "column_header": false,
-            "row_header": true,
+            "row_header": false,
             "row_section": false,
             "fillable": false
           },
@@ -31443,7 +31447,7 @@
             "end_col_offset_idx": 2,
             "text": "Figure",
             "column_header": false,
-            "row_header": true,
+            "row_header": false,
             "row_section": false,
             "fillable": false
           },
@@ -31523,7 +31527,7 @@
             "end_col_offset_idx": 2,
             "text": "Sec-header",
             "column_header": false,
-            "row_header": true,
+            "row_header": false,
             "row_section": false,
             "fillable": false
           },
@@ -31603,7 +31607,7 @@
             "end_col_offset_idx": 2,
             "text": "Table",
             "column_header": false,
-            "row_header": true,
+            "row_header": false,
             "row_section": false,
             "fillable": false
           },
@@ -31683,7 +31687,7 @@
             "end_col_offset_idx": 2,
             "text": "Text",
             "column_header": false,
-            "row_header": true,
+            "row_header": false,
             "row_section": false,
             "fillable": false
           },
@@ -31763,7 +31767,7 @@
             "end_col_offset_idx": 2,
             "text": "total",
             "column_header": false,
-            "row_header": true,
+            "row_header": false,
             "row_section": false,
             "fillable": false
           },
@@ -31830,6 +31834,7 @@
         ],
         "num_rows": 15,
         "num_cols": 5,
+        "orientation": "rot_0",
         "grid": [
           [
             {
@@ -32030,10 +32035,10 @@
                 "b": 227.48,
                 "coord_origin": "TOPLEFT"
               },
-              "row_span": 2,
+              "row_span": 5,
               "col_span": 1,
               "start_row_offset_idx": 2,
-              "end_row_offset_idx": 4,
+              "end_row_offset_idx": 7,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
               "text": "PubLayNet (PLN)",
@@ -32058,7 +32063,7 @@
               "end_col_offset_idx": 2,
               "text": "Figure",
               "column_header": false,
-              "row_header": true,
+              "row_header": false,
               "row_section": false,
               "fillable": false
             },
@@ -32132,10 +32137,10 @@
                 "b": 227.48,
                 "coord_origin": "TOPLEFT"
               },
-              "row_span": 2,
+              "row_span": 5,
               "col_span": 1,
               "start_row_offset_idx": 2,
-              "end_row_offset_idx": 4,
+              "end_row_offset_idx": 7,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
               "text": "PubLayNet (PLN)",
@@ -32160,7 +32165,7 @@
               "end_col_offset_idx": 2,
               "text": "Sec-header",
               "column_header": false,
-              "row_header": true,
+              "row_header": false,
               "row_section": false,
               "fillable": false
             },
@@ -32227,15 +32232,22 @@
           ],
           [
             {
-              "row_span": 1,
+              "bbox": {
+                "l": 78.53,
+                "t": 219.68,
+                "r": 142.56,
+                "b": 227.48,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 5,
               "col_span": 1,
-              "start_row_offset_idx": 4,
-              "end_row_offset_idx": 5,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 7,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "",
+              "text": "PubLayNet (PLN)",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -32255,7 +32267,7 @@
               "end_col_offset_idx": 2,
               "text": "Table",
               "column_header": false,
-              "row_header": true,
+              "row_header": false,
               "row_section": false,
               "fillable": false
             },
@@ -32322,15 +32334,22 @@
           ],
           [
             {
-              "row_span": 1,
+              "bbox": {
+                "l": 78.53,
+                "t": 219.68,
+                "r": 142.56,
+                "b": 227.48,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 5,
               "col_span": 1,
-              "start_row_offset_idx": 5,
-              "end_row_offset_idx": 6,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 7,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "",
+              "text": "PubLayNet (PLN)",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -32350,7 +32369,7 @@
               "end_col_offset_idx": 2,
               "text": "Text",
               "column_header": false,
-              "row_header": true,
+              "row_header": false,
               "row_section": false,
               "fillable": false
             },
@@ -32417,15 +32436,22 @@
           ],
           [
             {
-              "row_span": 1,
+              "bbox": {
+                "l": 78.53,
+                "t": 219.68,
+                "r": 142.56,
+                "b": 227.48,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 5,
               "col_span": 1,
-              "start_row_offset_idx": 6,
+              "start_row_offset_idx": 2,
               "end_row_offset_idx": 7,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "",
+              "text": "PubLayNet (PLN)",
               "column_header": false,
-              "row_header": false,
+              "row_header": true,
               "row_section": false,
               "fillable": false
             },
@@ -32445,7 +32471,7 @@
               "end_col_offset_idx": 2,
               "text": "total",
               "column_header": false,
-              "row_header": true,
+              "row_header": false,
               "row_section": false,
               "fillable": false
             },
@@ -32547,7 +32573,7 @@
               "end_col_offset_idx": 2,
               "text": "Figure",
               "column_header": false,
-              "row_header": true,
+              "row_header": false,
               "row_section": false,
               "fillable": false
             },
@@ -32649,7 +32675,7 @@
               "end_col_offset_idx": 2,
               "text": "Table",
               "column_header": false,
-              "row_header": true,
+              "row_header": false,
               "row_section": false,
               "fillable": false
             },
@@ -32751,7 +32777,7 @@
               "end_col_offset_idx": 2,
               "text": "total",
               "column_header": false,
-              "row_header": true,
+              "row_header": false,
               "row_section": false,
               "fillable": false
             },
@@ -32853,7 +32879,7 @@
               "end_col_offset_idx": 2,
               "text": "Figure",
               "column_header": false,
-              "row_header": true,
+              "row_header": false,
               "row_section": false,
               "fillable": false
             },
@@ -32955,7 +32981,7 @@
               "end_col_offset_idx": 2,
               "text": "Sec-header",
               "column_header": false,
-              "row_header": true,
+              "row_header": false,
               "row_section": false,
               "fillable": false
             },
@@ -33050,7 +33076,7 @@
               "end_col_offset_idx": 2,
               "text": "Table",
               "column_header": false,
-              "row_header": true,
+              "row_header": false,
               "row_section": false,
               "fillable": false
             },
@@ -33145,7 +33171,7 @@
               "end_col_offset_idx": 2,
               "text": "Text",
               "column_header": false,
-              "row_header": true,
+              "row_header": false,
               "row_section": false,
               "fillable": false
             },
@@ -33240,7 +33266,7 @@
               "end_col_offset_idx": 2,
               "text": "total",
               "column_header": false,
-              "row_header": true,
+              "row_header": false,
               "row_section": false,
               "fillable": false
             },
