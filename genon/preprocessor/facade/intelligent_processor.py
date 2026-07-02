@@ -82,6 +82,9 @@ def _has_any_pdf_converter() -> bool:
         return True
 
 
+# ── 비정상/암호화 파일 사전 감지 (이슈 #278/#307) ─────────────────────────────
+# 이 블록은 parser/convert/attachment_processor 에도 복제되어 있다(단일 파일 배포 구조).
+# 수정 시 네 파일 동기화 필요.
 # 지원 포맷의 매직 헤더(allowlist). 각 값은 아래 공식 출처로 근거 확인 + 실제 샘플로 검증함.
 #   - 정본 매직 DB: file/file(libmagic) magic/Magdir — 실제 본 모듈이 쓰는 python-magic의 DB.
 #     (PDF=Magdir/pdf "%PDF-", PNG/GIF=Magdir/images, JPEG=Magdir/jpeg 0xffd8ff, ZIP=Magdir/msooxml "PK\3\4")
@@ -116,6 +119,9 @@ def _looks_like_text(head: bytes) -> bool:
     NUL 이 있거나 제어문자 비율이 높으면 바이너리(=텍스트 아님)."""
     if not head:
         return False
+    # UTF-16/32 텍스트는 NUL 바이트가 흔하므로 BOM 이면 먼저 텍스트로 인정.
+    if head.startswith((b"\xff\xfe", b"\xfe\xff")):  # UTF-16 LE/BE (UTF-32 BOM 도 이 prefix로 시작)
+        return True
     if b"\x00" in head:
         return False
     ctrl = sum(
@@ -2893,7 +2899,7 @@ class DocumentProcessor:
         from collections import defaultdict
         page_item_count: dict = defaultdict(int)
         page_text_len: dict = defaultdict(int)
-        for item, level in document.iterate_items():
+        for item, _level in document.iterate_items():
             if isinstance(item, TextItem) and hasattr(item, 'prov') and item.prov:
                 page_no = item.prov[0].page_no
                 page_item_count[page_no] += 1
@@ -3342,7 +3348,7 @@ class DocumentProcessor:
                 f"[intelligent] 비정상 파일 감지({bad_reason}) — 처리 중단: {file_path}"
             )
             raise GenosServiceException(
-                1, f"{bad_reason} 입니다. 정상 문서로 다시 업로드하세요: {os.path.basename(file_path)}"
+                "1", f"{bad_reason} 입니다. 정상 문서로 다시 업로드하세요: {os.path.basename(file_path)}"
             )
 
         ext = os.path.splitext(file_path)[1].lower()
