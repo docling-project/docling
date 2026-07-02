@@ -87,6 +87,7 @@ from docling.datamodel.backend_options import (
     EpubBackendOptions,
     HTMLBackendOptions,
     LatexBackendOptions,
+    MsWordBackendOptions,
     PdfBackendOptions,
     ThreadedDoclingParseBackendOptions,
 )
@@ -654,6 +655,18 @@ def convert(  # noqa: C901
     pdf_password: Annotated[
         str | None, typer.Option(..., help="Password for protected PDF documents")
     ] = None,
+    docx_track_changes: Annotated[
+        str,
+        typer.Option(
+            "--docx-track-changes",
+            help=(
+                "How to handle tracked changes in DOCX documents. "
+                "'accept': include insertions, drop deletions (final document). "
+                "'reject': drop insertions, include deletions (original document). "
+                "'raw': include both; insertions underlined, deletions struck-through."
+            ),
+        ),
+    ] = "accept",
     table_mode: Annotated[
         TableFormerMode,
         typer.Option(..., help="The mode to use in the table structure model."),
@@ -1052,7 +1065,10 @@ def convert(  # noqa: C901
                 InputFormat.IMAGE: image_format_option,
                 InputFormat.METS_GBS: mets_gbs_format_option,
                 InputFormat.DOCX: WordFormatOption(
-                    pipeline_options=simple_format_option
+                    pipeline_options=simple_format_option,
+                    backend_options=MsWordBackendOptions(
+                        track_changes=docx_track_changes  # type: ignore[arg-type]
+                    ),
                 ),
                 InputFormat.PPTX: PowerpointFormatOption(
                     pipeline_options=simple_format_option
