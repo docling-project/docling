@@ -15,7 +15,10 @@ from docling.backend.docling_parse_backend import (
     ThreadedDoclingParsePageBackend,
 )
 from docling.backend.pdf_backend import PdfDocumentBackend
-from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
+from docling.datamodel.backend_options import (
+    PdfBackendOptions,
+    ThreadedDoclingParseBackendOptions,
+)
 from docling.datamodel.base_models import BoundingBox, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.datamodel.settings import DocumentLimits
@@ -245,6 +248,84 @@ class _FakePdfiumDocument:
         return None
 
 
+class _FakePdfDocument:
+    def number_of_pages(self) -> int:
+        return 5
+
+    def unload(self) -> None:
+        return None
+
+
+class _FakeDoclingPdfParser:
+    created: "_FakeDoclingPdfParser | None" = None
+
+    def __init__(self, loglevel: str) -> None:
+        self.loglevel = loglevel
+        self.decode_config = None
+        _FakeDoclingPdfParser.created = self
+
+    def load(self, *, path_or_stream, password=None, decode_config=None):
+        self.path_or_stream = path_or_stream
+        self.password = password
+        self.decode_config = decode_config
+        return _FakePdfDocument()
+
+
+def test_docling_parse_backend_uses_default_same_font_enforcement(
+    test_doc_path, monkeypatch: pytest.MonkeyPatch
+):
+    _FakeDoclingPdfParser.created = None
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.DoclingPdfParser",
+        _FakeDoclingPdfParser,
+    )
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.pdfium.PdfDocument",
+        _FakePdfiumDocument,
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.PDF,
+        backend=DoclingParseDocumentBackend,
+    )
+
+    parser = _FakeDoclingPdfParser.created
+    assert parser is not None
+    assert parser.decode_config is not None
+    assert parser.decode_config.enforce_same_font is True
+
+    in_doc._backend.unload()
+
+
+def test_docling_parse_backend_uses_backend_option_same_font_enforcement(
+    test_doc_path, monkeypatch: pytest.MonkeyPatch
+):
+    _FakeDoclingPdfParser.created = None
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.DoclingPdfParser",
+        _FakeDoclingPdfParser,
+    )
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.pdfium.PdfDocument",
+        _FakePdfiumDocument,
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.PDF,
+        backend=DoclingParseDocumentBackend,
+        backend_options=PdfBackendOptions(enforce_same_font=False),
+    )
+
+    parser = _FakeDoclingPdfParser.created
+    assert parser is not None
+    assert parser.decode_config is not None
+    assert parser.decode_config.enforce_same_font is False
+
+    in_doc._backend.unload()
+
+
 def test_threaded_backend_iterates_requested_pages_and_unloads(
     test_doc_path, monkeypatch: pytest.MonkeyPatch
 ):
@@ -449,6 +530,33 @@ def test_threaded_backend_uses_backend_option_thread_count(
     assert parser.decode_config is not None
     assert parser.decode_config.enforce_same_font is True
     assert parser.decode_config.release_native_memory_every_n_pages == 128
+
+    in_doc._backend.unload()
+
+
+def test_threaded_backend_uses_backend_option_same_font_enforcement(
+    test_doc_path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.DoclingThreadedPdfParser",
+        _FakeThreadedParser,
+    )
+    monkeypatch.setattr(
+        "docling.backend.docling_parse_backend.pdfium.PdfDocument",
+        _FakePdfiumDocument,
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+        backend_options=ThreadedDoclingParseBackendOptions(enforce_same_font=False),
+    )
+
+    parser = _FakeThreadedParser.created
+    assert parser is not None
+    assert parser.decode_config is not None
+    assert parser.decode_config.enforce_same_font is False
 
     in_doc._backend.unload()
 
