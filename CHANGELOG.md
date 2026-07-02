@@ -1,3 +1,43 @@
+## [v2.108.0](https://github.com/docling-project/docling/releases/tag/v2.108.0) - 2026-07-01
+
+### Feature
+
+* Add fast ASR backend ([#2938](https://github.com/docling-project/docling/issues/2938)) ([`ed6a702`](https://github.com/docling-project/docling/commit/ed6a7025c395cc2044213e790a9801c6175733cc))
+* **xlsx:** EMF/WMF image support via LibreOffice ([#3714](https://github.com/docling-project/docling/issues/3714)) ([`6395151`](https://github.com/docling-project/docling/commit/6395151e271277d4a154e7e7f01c71fd72829482))
+* Accept HttpSource as a convert source for per-source headers ([#3695](https://github.com/docling-project/docling/issues/3695)) ([`d0a8b4a`](https://github.com/docling-project/docling/commit/d0a8b4a159d52d3377c4972638289f4d595576e8))
+* **jats/inline-formula:** Render inline tex-math formulas in paragraphs ([#3696](https://github.com/docling-project/docling/issues/3696)) ([`c7b1734`](https://github.com/docling-project/docling/commit/c7b1734217fcb958688589b70c27147cab86a9ae))
+
+### Fix
+
+* **md:** Load embedded base64 images in Markdown backend ([#3725](https://github.com/docling-project/docling/issues/3725)) ([`d876cbc`](https://github.com/docling-project/docling/commit/d876cbcf232e52a28f335eb2efb7e94ad4904f51))
+* **asr:** Log active audio filename in AsrPipeline._build_document ([#3535](https://github.com/docling-project/docling/issues/3535)) ([`8d747a3`](https://github.com/docling-project/docling/commit/8d747a354f1068d2092bed24f8283988d8553608))
+* **backend:** Guard optional email and markdown imports for slim installs ([#3702](https://github.com/docling-project/docling/issues/3702)) ([`2b9fda8`](https://github.com/docling-project/docling/commit/2b9fda890a1a2c2d9f83916fcce4cdc00e8c3943))
+
+### Documentation
+
+* Correct the explanation of the SE licence ([#3706](https://github.com/docling-project/docling/issues/3706)) ([`e0ea753`](https://github.com/docling-project/docling/commit/e0ea75380867903b8f2483833adcbe132b144e5f))
+* Clarify example EPUB’s licence ([#3705](https://github.com/docling-project/docling/issues/3705)) ([`13d78a2`](https://github.com/docling-project/docling/commit/13d78a25878609fdc7faec33bae9d1ff0690518b))
+
+## [v2.107.0](https://github.com/docling-project/docling/releases/tag/v2.107.0) - 2026-06-24
+
+### Feature
+
+* Structured error categorization and typed backend load errors ([#3623](https://github.com/docling-project/docling/issues/3623)) ([`4ecde00`](https://github.com/docling-project/docling/commit/4ecde0090bcbdbc85a61a8527221882750483b8b))
+* **xlsx:** Render sheet names as headings in markdown export ([#3635](https://github.com/docling-project/docling/issues/3635)) ([`eb0db6b`](https://github.com/docling-project/docling/commit/eb0db6b1227e25c52463acf03effbc15236d8682))
+* **jats:** Support fn-group footnotes ([#3636](https://github.com/docling-project/docling/issues/3636)) ([`17f105e`](https://github.com/docling-project/docling/commit/17f105e26d19b466d51d5458e51c433005030554))
+* Improve nemotron's batching and auto-selection ([#3674](https://github.com/docling-project/docling/issues/3674)) ([`2ec93e1`](https://github.com/docling-project/docling/commit/2ec93e1cddcef5e73d2385bf83e7e5f37301581e))
+* Add OpenDocument backend support and improve ODF image/table handling ([#3480](https://github.com/docling-project/docling/issues/3480)) ([`e2afe38`](https://github.com/docling-project/docling/commit/e2afe38196f6071ca2f3be0a4d6f3bad01997e32))
+* Add comment extraction support for xlsx and pptx ([#3675](https://github.com/docling-project/docling/issues/3675)) ([`a572a12`](https://github.com/docling-project/docling/commit/a572a12eb00f21364711ba4a20d86c6790aa3f12))
+
+### Fix
+
+* **docx:** Resolve layout spacer artifacts, missing header images, and metadata extraction ([#3556](https://github.com/docling-project/docling/issues/3556)) ([`f50c54b`](https://github.com/docling-project/docling/commit/f50c54b391e2b2d45d3da40bee1bc8d28482d190))
+* **rapidocr:** Propagate num_threads and fix GPU device key for the paddle backend ([#3682](https://github.com/docling-project/docling/issues/3682)) ([`f4e6a15`](https://github.com/docling-project/docling/commit/f4e6a1514a538c8b1d1850218d6a666cb36d90e9))
+
+### Documentation
+
+* Fix README typos and epub example ([#3691](https://github.com/docling-project/docling/issues/3691)) ([`a4bf626`](https://github.com/docling-project/docling/commit/a4bf62640daee5bf5122addbd81ab9bb1e158c43))
+
 ## [v2.106.0](https://github.com/docling-project/docling/releases/tag/v2.106.0) - 2026-06-23
 
 ### Feature

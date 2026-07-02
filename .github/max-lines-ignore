@@ -7,10 +7,7 @@
 
 [silent]
 docs/examples/data/**
-tests/data/groundtruth/**
-tests/data/uspto/**
-tests/data_scanned/groundtruth/**
-tests/data/webp/groundtruth/**
+tests/data/**
 
 [warn]
 .plans/active/docling-slim.md

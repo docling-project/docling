@@ -20,7 +20,7 @@
 # - `ImageRefMode`: choose `EMBEDDED` or `REFERENCED` when saving Markdown/HTML.
 #
 # Input document
-# - Defaults to `tests/data/pdf/2206.01062.pdf`. Change `input_doc_path` as needed.
+# - Defaults to `tests/data/pdf/sources/2206.01062.pdf`. Change `input_doc_path` as needed.
 
 # %%
 
@@ -50,7 +50,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/2206.01062.pdf"
+    input_doc_path = data_folder / "pdf/sources/2206.01062.pdf"
     output_dir = Path("scratch")
 
     # Keep page/element images so they can be exported. The `images_scale` controls

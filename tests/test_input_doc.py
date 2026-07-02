@@ -31,7 +31,7 @@ from docling.document_converter import (
 
 
 def test_in_doc_from_valid_path():
-    test_doc_path = Path("./tests/data/pdf/2206.01062.pdf")
+    test_doc_path = Path("./tests/data/pdf/sources/2206.01062.pdf")
     doc = _make_input_doc(test_doc_path)
     assert doc.valid is True
     assert doc.backend_options is None
@@ -46,7 +46,7 @@ def test_in_doc_from_invalid_path():
 
 
 def test_in_doc_from_valid_buf():
-    buf = BytesIO(Path("./tests/data/pdf/2206.01062.pdf").open("rb").read())
+    buf = BytesIO(Path("./tests/data/pdf/sources/2206.01062.pdf").open("rb").read())
     stream = DocumentStream(name="my_doc.pdf", stream=buf)
 
     doc = _make_input_doc_from_stream(stream)
@@ -62,7 +62,7 @@ def test_in_doc_from_invalid_buf():
 
 
 def test_in_doc_with_page_range():
-    test_doc_path = Path("./tests/data/pdf/2206.01062.pdf")
+    test_doc_path = Path("./tests/data/pdf/sources/2206.01062.pdf")
     limits = DocumentLimits()
     limits.page_range = (1, 10)
 
@@ -96,7 +96,7 @@ def test_in_doc_with_page_range():
 
 
 def test_in_doc_with_backend_options():
-    test_doc_path = Path("./tests/data/html/example_01.html")
+    test_doc_path = Path("./tests/data/html/sources/example_01.html")
     doc = InputDocument(
         path_or_stream=test_doc_path,
         format=InputFormat.HTML,
@@ -160,35 +160,39 @@ def test_guess_format(tmp_path):
     temp_dir.mkdir()
 
     # Valid PDF
-    buf = BytesIO(Path("./tests/data/pdf/2206.01062.pdf").open("rb").read())
+    buf = BytesIO(Path("./tests/data/pdf/sources/2206.01062.pdf").open("rb").read())
     stream = DocumentStream(name="my_doc.pdf", stream=buf)
     assert dci._guess_format(stream) == InputFormat.PDF
-    doc_path = Path("./tests/data/pdf/2206.01062.pdf")
+    doc_path = Path("./tests/data/pdf/sources/2206.01062.pdf")
     assert dci._guess_format(doc_path) == InputFormat.PDF
 
     # Valid MS Office
-    buf = BytesIO(Path("./tests/data/docx/lorem_ipsum.docx").open("rb").read())
+    buf = BytesIO(Path("./tests/data/docx/sources/lorem_ipsum.docx").open("rb").read())
     stream = DocumentStream(name="lorem_ipsum.docx", stream=buf)
     assert dci._guess_format(stream) == InputFormat.DOCX
-    doc_path = Path("./tests/data/docx/lorem_ipsum.docx")
+    doc_path = Path("./tests/data/docx/sources/lorem_ipsum.docx")
     assert dci._guess_format(doc_path) == InputFormat.DOCX
 
     # MS Office without file extension (ZIP introspection fallback)
-    buf = BytesIO(Path("./tests/data/docx/lorem_ipsum.docx").open("rb").read())
+    buf = BytesIO(Path("./tests/data/docx/sources/lorem_ipsum.docx").open("rb").read())
     stream = DocumentStream(name="abc123-def456", stream=buf)
     assert dci._guess_format(stream) == InputFormat.DOCX
 
-    buf = BytesIO(Path("./tests/data/pptx/powerpoint_sample.pptx").open("rb").read())
+    buf = BytesIO(
+        Path("./tests/data/pptx/sources/powerpoint_sample.pptx").open("rb").read()
+    )
     stream = DocumentStream(name="upload_no_ext", stream=buf)
     assert dci._guess_format(stream) == InputFormat.PPTX
 
     docx_no_ext = temp_dir / "docx_no_ext"
-    docx_no_ext.write_bytes(Path("./tests/data/docx/lorem_ipsum.docx").read_bytes())
+    docx_no_ext.write_bytes(
+        Path("./tests/data/docx/sources/lorem_ipsum.docx").read_bytes()
+    )
     assert dci._guess_format(docx_no_ext) == InputFormat.DOCX
 
     pptx_no_ext = temp_dir / "pptx_no_ext"
     pptx_no_ext.write_bytes(
-        Path("./tests/data/pptx/powerpoint_sample.pptx").read_bytes()
+        Path("./tests/data/pptx/sources/powerpoint_sample.pptx").read_bytes()
     )
     assert dci._guess_format(pptx_no_ext) == InputFormat.PPTX
 
@@ -196,19 +200,19 @@ def test_guess_format(tmp_path):
     odfdo_available = importlib.util.find_spec("odfdo") is not None
     odf_cases = [
         (
-            Path("./tests/data/odf/text_document_01.odt"),
+            Path("./tests/data/odf/sources/text_document_01.odt"),
             InputFormat.ODT,
             OdtDocumentBackend,
             OdtFormatOption(),
         ),
         (
-            Path("./tests/data/odf/odf_table_with_title_01.ods"),
+            Path("./tests/data/odf/sources/odf_table_with_title_01.ods"),
             InputFormat.ODS,
             OdsDocumentBackend,
             OdsFormatOption(),
         ),
         (
-            Path("./tests/data/odf/odf_presentation_01.odp"),
+            Path("./tests/data/odf/sources/odf_presentation_01.odp"),
             InputFormat.ODP,
             OdpDocumentBackend,
             OdpFormatOption(),
@@ -257,10 +261,10 @@ def test_guess_format(tmp_path):
     assert dci._guess_format(stream) is None
 
     # Valid HTML
-    buf = BytesIO(Path("./tests/data/html/wiki_duck.html").open("rb").read())
+    buf = BytesIO(Path("./tests/data/html/sources/wiki_duck.html").open("rb").read())
     stream = DocumentStream(name="wiki_duck.html", stream=buf)
     assert dci._guess_format(stream) == InputFormat.HTML
-    doc_path = Path("./tests/data/html/wiki_duck.html")
+    doc_path = Path("./tests/data/html/sources/wiki_duck.html")
     assert dci._guess_format(doc_path) == InputFormat.HTML
 
     html_str = (  # HTML starting with a script
@@ -271,57 +275,61 @@ def test_guess_format(tmp_path):
     assert dci._guess_format(stream) == InputFormat.HTML
 
     # Valid MD
-    buf = BytesIO(Path("./tests/data/md/wiki.md").open("rb").read())
+    buf = BytesIO(Path("./tests/data/md/sources/wiki.md").open("rb").read())
     stream = DocumentStream(name="wiki.md", stream=buf)
     assert dci._guess_format(stream) == InputFormat.MD
-    doc_path = Path("./tests/data/md/wiki.md")
+    doc_path = Path("./tests/data/md/sources/wiki.md")
     assert dci._guess_format(doc_path) == InputFormat.MD
 
     # Valid CSV
-    buf = BytesIO(Path("./tests/data/csv/csv-comma.csv").open("rb").read())
+    buf = BytesIO(Path("./tests/data/csv/sources/csv-comma.csv").open("rb").read())
     stream = DocumentStream(name="csv-comma.csv", stream=buf)
     assert dci._guess_format(stream) == InputFormat.CSV
     stream = DocumentStream(name="test-comma", stream=buf)
     assert dci._guess_format(stream) == InputFormat.CSV
-    doc_path = Path("./tests/data/csv/csv-comma.csv")
+    doc_path = Path("./tests/data/csv/sources/csv-comma.csv")
     assert dci._guess_format(doc_path) == InputFormat.CSV
 
     # Valid XML USPTO patent
-    buf = BytesIO(Path("./tests/data/uspto/ipa20110039701.xml").open("rb").read())
+    buf = BytesIO(
+        Path("./tests/data/uspto/sources/ipa20110039701.xml").open("rb").read()
+    )
     stream = DocumentStream(name="ipa20110039701.xml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_USPTO
-    doc_path = Path("./tests/data/uspto/ipa20110039701.xml")
+    doc_path = Path("./tests/data/uspto/sources/ipa20110039701.xml")
     assert dci._guess_format(doc_path) == InputFormat.XML_USPTO
 
-    buf = BytesIO(Path("./tests/data/uspto/pftaps057006474.txt").open("rb").read())
+    buf = BytesIO(
+        Path("./tests/data/uspto/sources/pftaps057006474.txt").open("rb").read()
+    )
     stream = DocumentStream(name="pftaps057006474.txt", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_USPTO
-    doc_path = Path("./tests/data/uspto/pftaps057006474.txt")
+    doc_path = Path("./tests/data/uspto/sources/pftaps057006474.txt")
     assert dci._guess_format(doc_path) == InputFormat.XML_USPTO
 
     # Valid XML JATS
-    buf = BytesIO(Path("./tests/data/jats/elife-56337.xml").open("rb").read())
+    buf = BytesIO(Path("./tests/data/jats/sources/elife-56337.xml").open("rb").read())
     stream = DocumentStream(name="elife-56337.xml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_JATS
-    doc_path = Path("./tests/data/jats/elife-56337.xml")
+    doc_path = Path("./tests/data/jats/sources/elife-56337.xml")
     assert dci._guess_format(doc_path) == InputFormat.XML_JATS
 
-    buf = BytesIO(Path("./tests/data/jats/elife-56337.nxml").open("rb").read())
+    buf = BytesIO(Path("./tests/data/jats/sources/elife-56337.nxml").open("rb").read())
     stream = DocumentStream(name="elife-56337.nxml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_JATS
-    doc_path = Path("./tests/data/jats/elife-56337.nxml")
+    doc_path = Path("./tests/data/jats/sources/elife-56337.nxml")
     assert dci._guess_format(doc_path) == InputFormat.XML_JATS
 
-    buf = BytesIO(Path("./tests/data/jats/elife-56337.txt").open("rb").read())
+    buf = BytesIO(Path("./tests/data/jats/sources/elife-56337.txt").open("rb").read())
     stream = DocumentStream(name="elife-56337.txt", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_JATS
-    doc_path = Path("./tests/data/jats/elife-56337.txt")
+    doc_path = Path("./tests/data/jats/sources/elife-56337.txt")
     assert dci._guess_format(doc_path) == InputFormat.XML_JATS
 
-    buf = BytesIO(Path("./tests/data/xbrl/mlac-20251231.xml").open("rb").read())
+    buf = BytesIO(Path("./tests/data/xbrl/sources/mlac-20251231.xml").open("rb").read())
     stream = DocumentStream(name="mlac-20251231.xml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.XML_XBRL
-    doc_path = Path("./tests/data/xbrl/mlac-20251231.xml")
+    doc_path = Path("./tests/data/xbrl/sources/mlac-20251231.xml")
     assert dci._guess_format(doc_path) == InputFormat.XML_XBRL
 
     # Valid XML, non-supported flavor
@@ -341,7 +349,7 @@ def test_guess_format(tmp_path):
     assert dci._guess_format(stream) == InputFormat.MD
 
     # Valid METS-GBS archive
-    mets_gbs_path = Path("./tests/data/mets_gbs/32044009881525_select.tar.gz")
+    mets_gbs_path = Path("./tests/data/mets_gbs/sources/32044009881525_select.tar.gz")
     if mets_gbs_path.exists():
         assert dci._guess_format(mets_gbs_path) == InputFormat.METS_GBS
 
@@ -360,15 +368,17 @@ def test_guess_format(tmp_path):
     assert dci._guess_format(stream) == InputFormat.MD
 
     # Valid WebVTT
-    buf = BytesIO(Path("./tests/data/webvtt/webvtt_example_01.vtt").open("rb").read())
+    buf = BytesIO(
+        Path("./tests/data/webvtt/sources/webvtt_example_01.vtt").open("rb").read()
+    )
     stream = DocumentStream(name="webvtt_example_01.vtt", stream=buf)
     assert dci._guess_format(stream) == InputFormat.VTT
 
     # Valid email
-    buf = BytesIO(Path("./tests/data/email/eml_simple.eml").open("rb").read())
+    buf = BytesIO(Path("./tests/data/email/sources/eml_simple.eml").open("rb").read())
     stream = DocumentStream(name="eml_simple.eml", stream=buf)
     assert dci._guess_format(stream) == InputFormat.EMAIL
-    doc_path = Path("./tests/data/email/eml_simple.eml")
+    doc_path = Path("./tests/data/email/sources/eml_simple.eml")
     assert dci._guess_format(doc_path) == InputFormat.EMAIL
 
     # Valid Docling JSON
@@ -411,7 +421,7 @@ def _make_input_doc_from_stream(doc_stream):
 
 
 def test_tiff_two_pages():
-    tiff_path = Path("./tests/data/tiff/2206.01062.tif")
+    tiff_path = Path("./tests/data/tiff/sources/2206.01062.tif")
     doc = InputDocument(
         path_or_stream=tiff_path,
         format=InputFormat.IMAGE,

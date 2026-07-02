@@ -2,7 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Type, Union
+from typing import TYPE_CHECKING, Annotated, Any, Optional, Type, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -23,6 +23,7 @@ from docling_core.types.io import (
 # DO NOT REMOVE; explicitly exposed from this location
 from PIL.Image import Image
 from pydantic import (
+    AnyHttpUrl,
     AnyUrl,
     BaseModel,
     ConfigDict,
@@ -41,6 +42,30 @@ if TYPE_CHECKING:
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.datamodel.pipeline_options import PipelineOptions
+
+
+class HttpSource(BaseModel):
+    """A remote document source: a URL bundled with the headers used to fetch it.
+
+    Lives in the core datamodel (alongside ``DocumentStream``) so the converter
+    can accept it as an input; the serving layer subclasses it for its request
+    schema.
+    """
+
+    url: Annotated[
+        AnyHttpUrl,
+        Field(
+            description="HTTP url to process",
+            examples=["https://arxiv.org/pdf/2206.01062"],
+        ),
+    ]
+    headers: Annotated[
+        dict[str, Any],
+        Field(
+            description="Additional headers used to fetch the urls, "
+            "e.g. authorization, agent, etc"
+        ),
+    ] = {}
 
 
 class BaseFormatOption(BaseModel):
@@ -226,10 +251,47 @@ class VlmStopReason(str, Enum):
     UNSPECIFIED = "unspecified"  # Defaul none value
 
 
+class FailureCategory(str, Enum):
+    """Error category shared by task-scope (``PublicFailureInfo``) and
+    document/page-scope (``ErrorItem``) errors, so the jobkit bridge can pass one
+    to the other without translation.
+
+    Task-scope only: CAPACITY, TARGET_UNAVAILABLE, INTERNAL.
+    Document/page-scope only: BACKEND_FAILURE, INFERENCE_FAILURE.
+    Shared: POLICY, SOURCE_UNAVAILABLE, TIMEOUT.
+
+    UNKNOWN is the default for uncategorized errors, distinct from INTERNAL (a
+    known service defect).
+    """
+
+    POLICY = "policy"
+    CAPACITY = "capacity"
+    SOURCE_UNAVAILABLE = "source_unavailable"
+    TARGET_UNAVAILABLE = "target_unavailable"
+    TIMEOUT = "timeout"
+    INTERNAL = "internal"
+    BACKEND_FAILURE = "backend_failure"
+    INFERENCE_FAILURE = "inference_failure"
+    UNKNOWN = "unknown"
+
+
 class ErrorItem(BaseModel):
+    """Structured error information from document conversion.
+
+    Attributes:
+        component_type: The component that generated the error.
+        module_name: The module where the error occurred.
+        error_message: Human-readable error description.
+        category: Semantic category of the error for filtering.
+        page_no: 1-indexed page the error is attributable to, or None for
+            document-scoped errors.
+    """
+
     component_type: DoclingComponentType
     module_name: str
     error_message: str
+    category: FailureCategory = FailureCategory.UNKNOWN
+    page_no: int | None = None
 
 
 class Cluster(BaseModel):

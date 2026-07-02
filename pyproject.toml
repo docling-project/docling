@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.106.0"  # DO NOT EDIT, updated automatically
+version = "2.108.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -95,7 +95,6 @@ extract-core = [
 format-pdf-pypdfium2 = [
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
 ]
-
 format-pdf-docling = [
   'pypdfium2>=4.30.0,!=4.30.1,<6.0.0',
   'docling-parse>=7.0.0,<8.0.0',
@@ -163,6 +162,7 @@ format-audio = [
   'mlx-whisper>=0.4.3 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
   'openai-whisper>=20250625',
   'numba>=0.63.0',
+  'whisper-s2t-reborn>=1.6.3,<2 ; sys_platform != "darwin" or platform_machine != "arm64"',
 ]
 
 # ============================================================================

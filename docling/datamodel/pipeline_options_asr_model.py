@@ -1,10 +1,29 @@
+"""Configuration models for docling's automatic speech recognition (ASR) backends.
+
+This module defines the option classes that configure how audio is transcribed.
+``InlineAsrOptions`` is the shared base for locally-run models, specialized by:
+
+- ``InlineAsrNativeWhisperOptions``: OpenAI's native ``whisper`` (PyTorch), the
+  default backend, supported on CPU and CUDA.
+- ``InlineAsrMlxWhisperOptions``: ``mlx-whisper``, optimized for Apple Silicon.
+- ``InlineAsrWhisperS2TOptions``: WhisperS2T (CTranslate2), an optional,
+  experimental high-throughput backend installed via the ``format-audio`` extra.
+
+The concrete model presets, the ``AsrModelType`` enum, and the hardware-based
+auto-selection live in ``docling.datamodel.asr_model_specs``. The auto-selecting
+``WHISPER_*`` presets (the ASR pipeline default) use MLX Whisper on Apple Silicon
+when available and native Whisper otherwise. WhisperS2T is never auto-selected;
+use an explicit ``WHISPER_*_S2T`` preset to opt in (the ``*_MLX`` and ``*_NATIVE``
+presets likewise force those backends).
+"""
+
 from enum import Enum
 from typing import Annotated, Any, Literal, Optional, Union
 
-from pydantic import AnyUrl, BaseModel, Field
+from pydantic import AnyUrl, BaseModel, Field, model_validator
 from typing_extensions import deprecated
 
-from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.pipeline_options_vlm_model import (
     # InferenceFramework,
     TransformersModelType,
@@ -29,6 +48,7 @@ class InferenceAsrFramework(str, Enum):
     MLX = "mlx"
     # TRANSFORMERS = "transformers" # disabled for now
     WHISPER = "whisper"
+    WHISPER_S2T = "whisper_s2t"
 
 
 class InlineAsrOptions(BaseAsrOptions):
@@ -262,3 +282,140 @@ class InlineAsrMlxWhisperOptions(InlineAsrOptions):
             )
         ),
     ] = 2.4
+
+
+# English-only WhisperS2T models (cannot transcribe non-English audio)
+_ENGLISH_ONLY_S2T_REPOS = frozenset(
+    {
+        "tiny.en",
+        "base.en",
+        "small.en",
+        "medium.en",
+        "distil-small.en",
+        "distil-medium.en",
+        "distil-large-v3",
+        "distil-large-v3.5",
+    }
+)
+
+# Models without translate-to-English capability (English-only + turbo)
+_NO_TRANSLATE_S2T_REPOS = _ENGLISH_ONLY_S2T_REPOS | {"large-v3-turbo"}
+
+
+class InlineAsrWhisperS2TOptions(InlineAsrOptions):
+    """Configuration for WhisperS2T (CTranslate2-based) high-speed ASR.
+
+    Uses whisper_s2t library with CTranslate2 backend for fast inference
+    on CPU and CUDA devices. Requires whisper-s2t-reborn package.
+    """
+
+    inference_framework: Annotated[
+        InferenceAsrFramework,
+        Field(
+            description=(
+                "Inference framework for ASR. Uses WhisperS2T with CTranslate2 "
+                "backend for optimized high-speed inference."
+            )
+        ),
+    ] = InferenceAsrFramework.WHISPER_S2T
+    language: Annotated[
+        str,
+        Field(
+            description=(
+                "Language code for transcription. Use ISO 639-1 codes "
+                "(e.g., `en`, `es`, `fr`)."
+            ),
+            examples=["en", "es", "fr", "de", "ja", "zh"],
+        ),
+    ] = "en"
+    task: Annotated[
+        str,
+        Field(
+            description=(
+                "ASR task type. `transcribe` converts speech to text in the "
+                "same language. `translate` converts speech to English text."
+            ),
+            examples=["transcribe", "translate"],
+        ),
+    ] = "transcribe"
+    torch_dtype: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Computation precision for CTranslate2. Options: `float32`, "
+                "`float16`, `bfloat16`. Lower precision increases speed and "
+                "reduces memory. bfloat16 requires compute capability >= 8.6."
+            ),
+            examples=["float32", "float16", "bfloat16"],
+        ),
+    ] = "float16"
+    batch_size: Annotated[
+        int,
+        Field(
+            description=(
+                "Number of audio segments to process in parallel. Higher values "
+                "increase throughput but require more VRAM."
+            )
+        ),
+    ] = 8
+    beam_size: Annotated[
+        int,
+        Field(
+            description=(
+                "Beam size for beam search decoding. 1 = greedy decoding (fastest), "
+                "higher values (e.g., 5) may improve accuracy at cost of speed."
+            )
+        ),
+    ] = 1
+    word_timestamps: Annotated[
+        bool,
+        Field(
+            description=(
+                "Generate word-level timestamps. Requires an additional alignment "
+                "model and increases processing time."
+            )
+        ),
+    ] = False
+    num_threads: Annotated[
+        int,
+        Field(
+            description=(
+                "Number of CPU threads for inference. Only used when device is CPU."
+            )
+        ),
+    ] = AcceleratorOptions().num_threads
+    initial_prompt: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Optional text prompt to condition the transcription style or "
+                "provide context. Useful for domain-specific vocabulary."
+            )
+        ),
+    ] = None
+    supported_devices: Annotated[
+        list[AcceleratorDevice],
+        Field(description=("Hardware accelerators supported by WhisperS2T.")),
+    ] = [
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+    ]
+
+    @model_validator(mode="after")
+    def _validate_repo_capabilities(self) -> "InlineAsrWhisperS2TOptions":
+        # Reject non-English language for English-only repos
+        if self.repo_id in _ENGLISH_ONLY_S2T_REPOS and self.language != "en":
+            raise ValueError(
+                f"Model `{self.repo_id}` is English-only and does not support "
+                f"language `{self.language}`. Set language='en' or choose a "
+                f"multilingual model (e.g., `tiny`, `base`, `small`, `medium`, "
+                f"`large-v3`)."
+            )
+        # Reject translate task for repos without translate capability
+        if self.repo_id in _NO_TRANSLATE_S2T_REPOS and self.task == "translate":
+            raise ValueError(
+                f"Model `{self.repo_id}` does not support the `translate` task. "
+                f"Set task='transcribe' or choose a multilingual model with "
+                f"translation capability (e.g., `large-v3`)."
+            )
+        return self

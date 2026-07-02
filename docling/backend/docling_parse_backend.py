@@ -32,7 +32,12 @@ from docling.datamodel.backend_options import (
     ThreadedDoclingParseBackendOptions,
 )
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
+from docling.exceptions import DocumentLoadError
 from docling.utils.locks import pypdfium2_lock
+from docling.utils.pdf_outline import (
+    _PdfOutlineItem,
+    extract_outline_from_docling_parse,
+)
 
 if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
@@ -269,20 +274,31 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
         password = (
             self.options.password.get_secret_value() if self.options.password else None
         )
-        with pypdfium2_lock:
-            self._pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
-        self.parser = DoclingPdfParser(loglevel="fatal")
-        decode_config = _make_docling_parse_decode_config()
+        self.dp_doc: Optional[PdfDocument]
+        try:
+            with pypdfium2_lock:
+                self._pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
+            self.parser = DoclingPdfParser(loglevel="fatal")
+            decode_config = _make_docling_parse_decode_config()
+            self.dp_doc = self.parser.load(
+                path_or_stream=self.path_or_stream,
+                password=password,
+                decode_config=decode_config,
+            )
+        except RuntimeError as e:
+            # pypdfium2 (PdfiumError) and docling-parse both signal unreadable
+            # bytes by raising RuntimeError; tag it as a load failure.
+            detail = str(e).strip()
+            if detail:
+                raise DocumentLoadError(
+                    f"docling-parse could not load document {self.document_hash}: {detail}"
+                ) from e
+            raise DocumentLoadError(
+                f"docling-parse could not load document {self.document_hash}."
+            ) from e
 
-        self.dp_doc: Optional[PdfDocument] = self.parser.load(
-            path_or_stream=self.path_or_stream,
-            password=password,
-            decode_config=decode_config,
-        )
-        success = self.dp_doc is not None
-
-        if not success:
-            raise RuntimeError(
+        if self.dp_doc is None:
+            raise DocumentLoadError(
                 f"docling-parse could not load document {self.document_hash}."
             )
 
@@ -315,6 +331,12 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
 
     def is_valid(self) -> bool:
         return self.page_count() > 0
+
+    def get_document_outline(self) -> list[_PdfOutlineItem]:
+        """Extract the outline via docling-parse's native table-of-contents (no pypdfium2)."""
+        if self.dp_doc is None:
+            return []
+        return extract_outline_from_docling_parse(self.dp_doc)
 
     def _close_native_document(self) -> None:
         if self.dp_doc is not None:
@@ -495,6 +517,27 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
 
     def page_count(self) -> int:
         return self.parser.page_count(self.doc_key)
+
+    def get_document_outline(self) -> list[_PdfOutlineItem]:
+        """Extract the outline via docling-parse (this backend holds no pypdfium2 handle).
+
+        The threaded parser exposes no table-of-contents accessor, so a lightweight lazy
+        docling-parse document is loaded purely to read the (cheap, structure-only) outline.
+        """
+        password = (
+            self.options.password.get_secret_value() if self.options.password else None
+        )
+        if isinstance(self.path_or_stream, BytesIO):
+            self.path_or_stream.seek(0)
+        dp_doc = DoclingPdfParser(loglevel="fatal").load(
+            path_or_stream=self.path_or_stream, lazy=True, password=password
+        )
+        if dp_doc is None:
+            return []
+        try:
+            return extract_outline_from_docling_parse(dp_doc)
+        finally:
+            dp_doc.unload()
 
     def load_page(self, page_no: int) -> PdfPageBackend:
         raise NotImplementedError(

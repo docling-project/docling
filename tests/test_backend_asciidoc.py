@@ -86,11 +86,11 @@ def test_empty_table_does_not_crash():
 
 
 def test_asciidocs_examples():
-    fnames = sorted(glob.glob("./tests/data/asciidoc/*.asciidoc"))
+    fnames = sorted(glob.glob("./tests/data/asciidoc/sources/*.asciidoc"))
 
     for fname in fnames:
         in_path = Path(fname)
-        gt_path = Path("./tests/data/groundtruth/docling_v2/") / f"{in_path.name}"
+        gt_path = Path("./tests/data/asciidoc/groundtruth/") / f"{in_path.name}"
 
         doc_backend = _get_backend(in_path)
         doc = doc_backend.convert()

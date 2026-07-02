@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import re
 import warnings
@@ -8,21 +10,18 @@ from io import BytesIO
 from pathlib import Path
 from typing import Literal, Optional, Union, cast
 
-import marko
-import marko.element
-import marko.inline
 from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
     Formatting,
+    ImageRef,
     ListItem,
     NodeItem,
     TableCell,
     TableData,
     TextItem,
 )
-from marko import Markdown
 from pydantic import AnyUrl, BaseModel, Field, TypeAdapter
 from typing_extensions import Annotated, override
 
@@ -30,14 +29,39 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import (
     HTMLBackendOptions,
     MarkdownBackendOptions,
 )
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
+
+# marko is only installed by the `format-markdown` extra, but DocumentConverter
+# imports every backend eagerly. Importing it at module load would therefore
+# break `import docling` on installs that omit the extra (the slim packages in
+# particular). Guard the imports like the opendocument and xbrl backends do, and
+# surface the failure only when Markdown is actually parsed.
+# See https://github.com/docling-project/docling/issues/3613.
+_MARKO_AVAILABLE: bool = False
+_MARKO_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    import marko
+    import marko.element
+    import marko.inline
+    from marko import Markdown
+
+    _MARKO_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _MARKO_IMPORT_ERROR = e
 
 _log = logging.getLogger(__name__)
+
+_INSTALL_HINT = (
+    "The 'marko' package is required to process Markdown files. "
+    "Install it with `pip install 'docling[format-markdown]'`."
+)
 
 _MARKER_BODY = "DOCLING_DOC_MD_HTML_EXPORT"
 _START_MARKER = f"#_#_{_MARKER_BODY}_START_#_#"
@@ -129,6 +153,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         path_or_stream: Union[BytesIO, Path],
         options: Optional[MarkdownBackendOptions] = None,
     ):
+        # Raised first so a missing optional dependency gives an actionable
+        # message rather than a NameError when marko is dereferenced below.
+        if not _MARKO_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _MARKO_IMPORT_ERROR
         if options is None:
             options = MarkdownBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
@@ -143,6 +171,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self.in_table = False
         self.md_table_buffer: list[str] = []
         self._html_blocks: int = 0
+        self._image_loader: Optional[ImageResourceLoader] = None
 
         try:
             if isinstance(self.path_or_stream, BytesIO):
@@ -166,7 +195,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
             _log.debug(self.markdown)
         except Exception as e:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 f"Could not initialize MD backend for file with hash {self.document_hash}."
             ) from e
         return
@@ -433,7 +462,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     hyperlink=hyperlink,
                 )
 
-            doc.add_picture(parent=parent_item, caption=fig_caption)
+            image_ref = self._load_image_ref(element.dest)
+            doc.add_picture(parent=parent_item, image=image_ref, caption=fig_caption)
 
         elif isinstance(element, marko.inline.Emphasis):
             _log.debug(" - Emphasis: %s", element.children)
@@ -602,6 +632,37 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
+
+    def _get_image_loader(self) -> ImageResourceLoader:
+        """Lazily build the shared image-resource loader.
+
+        Resolving and decoding image sources (``data:`` URIs, local files, and
+        remote URLs) together with the relevant safety limits is shared with the
+        HTML backend through :class:`ImageResourceLoader`, so that logic is not
+        duplicated here.
+        """
+        if self._image_loader is None:
+            md_options = cast(MarkdownBackendOptions, self.options)
+            self._image_loader = ImageResourceLoader(
+                enable_local_fetch=md_options.enable_local_fetch,
+                enable_remote_fetch=md_options.enable_remote_fetch,
+                max_image_data_base64_bytes=md_options.max_image_data_base64_bytes,
+            )
+        return self._image_loader
+
+    def _load_image_ref(self, dest: str) -> Optional[ImageRef]:
+        """Resolve and decode a Markdown image source into an ``ImageRef``.
+
+        Returns ``None`` when image loading is disabled, the source is empty, or
+        the image cannot be loaded.
+        """
+        md_options = cast(MarkdownBackendOptions, self.options)
+        if not md_options.fetch_images or not dest:
+            return None
+        base_path = (
+            str(md_options.source_uri) if md_options.source_uri is not None else None
+        )
+        return self._get_image_loader().load_image_ref(dest, base_path)
 
     def is_valid(self) -> bool:
         return self.valid

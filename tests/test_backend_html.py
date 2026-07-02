@@ -16,7 +16,9 @@ from pydantic import AnyUrl, ValidationError
 from docling.backend.html_backend import (
     _BR_SENTINEL,
     HTMLDocumentBackend,
-    _validate_url_safety,
+)
+from docling.backend.utils.image_resource_loader import (
+    validate_url_safety as _validate_url_safety,
 )
 from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -76,7 +78,7 @@ def test_html_backend_options():
 
 
 def test_resolve_relative_path():
-    html_path = Path("./tests/data/html/example_01.html")
+    html_path = Path("./tests/data/html/sources/example_01.html")
     in_doc = InputDocument(
         path_or_stream=html_path,
         format=InputFormat.HTML,
@@ -140,7 +142,7 @@ def test_resolve_relative_path():
 
 
 def test_heading_levels():
-    in_path = Path("tests/data/html/wiki_duck.html")
+    in_path = Path("tests/data/html/sources/wiki_duck.html")
     in_doc = InputDocument(
         path_or_stream=in_path,
         format=InputFormat.HTML,
@@ -302,7 +304,7 @@ def test_unicode_characters():
 
 
 def test_extract_parent_hyperlinks():
-    html_path = Path("./tests/data/html/hyperlink_04.html")
+    html_path = Path("./tests/data/html/sources/hyperlink_04.html")
     in_doc = InputDocument(
         path_or_stream=html_path,
         format=InputFormat.HTML,
@@ -324,7 +326,7 @@ def test_extract_parent_hyperlinks():
 @pytest.fixture(scope="module")
 def html_paths() -> list[Path]:
     # Define the directory you want to search
-    directory = Path("./tests/data/html/")
+    directory = Path("./tests/data/html/sources/")
 
     # List all HTML files in the directory and its subdirectories
     html_files = sorted(directory.rglob("*.html"))
@@ -342,9 +344,7 @@ def test_e2e_html_conversions(html_paths):
     converter = get_converter()
 
     for html_path in html_paths:
-        gt_path = (
-            html_path.parent.parent / "groundtruth" / "docling_v2" / html_path.name
-        )
+        gt_path = html_path.parent.parent / "groundtruth" / html_path.name
 
         conv_result: ConversionResult = converter.convert(html_path)
 
@@ -371,11 +371,11 @@ def test_e2e_html_conversions(html_paths):
         assert verify_document(doc, str(gt_path) + ".json", GENERATE)
 
 
-@patch("docling.backend.html_backend.requests.get")
-@patch("docling.backend.html_backend.open", new_callable=mock_open)
+@patch("docling.backend.utils.image_resource_loader.requests.get")
+@patch("docling.backend.utils.image_resource_loader.open", new_callable=mock_open)
 def test_e2e_html_conversion_with_images(mock_local, mock_remote):
-    source = "tests/data/html/example_01.html"
-    image_path = "tests/data/html/example_image_01.png"
+    source = "tests/data/html/sources/example_01.html"
+    image_path = "tests/data/html/sources/example_image_01.png"
     with open(image_path, "rb") as f:
         img_bytes = f.read()
 
@@ -402,7 +402,7 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
 
     # fetching image remotely - need to mock Session.get instead of requests.get
     with patch(
-        "docling.backend.html_backend.requests.Session.get"
+        "docling.backend.utils.image_resource_loader.requests.Session.get"
     ) as mocked_session_get:
         mock_resp = Mock()
         mock_resp.status_code = 200
@@ -444,9 +444,7 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
     assert res_remote.document == res_local.document
 
     # checking exported formats
-    gt_path = (
-        "tests/data/groundtruth/docling_v2/" + str(Path(source).stem) + "_images.html"
-    )
+    gt_path = "tests/data/html/groundtruth/" + str(Path(source).stem) + "_images.html"
     pred_md: str = res_local.document.export_to_markdown(compact_tables=True)
     assert verify_export(pred_md, gt_path + ".md", generate=GENERATE)
     assert verify_document(res_local.document, gt_path + ".json", GENERATE)
@@ -483,13 +481,15 @@ def test_html_furniture():
 
 
 def test_fetch_remote_images(monkeypatch):
-    source = "./tests/data/html/example_01.html"
+    source = "./tests/data/html/sources/example_01.html"
 
     # no image fetching: the image_fetch flag is False
     converter = _create_html_converter(
         HTMLBackendOptions(fetch_images=False, source_uri="http://example.com")
     )
-    with patch("docling.backend.html_backend.requests.get") as mocked_get:
+    with patch(
+        "docling.backend.utils.image_resource_loader.requests.get"
+    ) as mocked_get:
         res = converter.convert(source)
         mocked_get.assert_not_called()
     assert res.document
@@ -497,7 +497,7 @@ def test_fetch_remote_images(monkeypatch):
     # no image fetching: the source location is False and enable_local_fetch is False
     converter = _create_html_converter(HTMLBackendOptions(fetch_images=True))
     with (
-        patch("docling.backend.html_backend.requests.get") as mocked_get,
+        patch("docling.backend.utils.image_resource_loader.requests.get") as mocked_get,
         pytest.warns(
             match="Fetching local resources is only allowed when set explicitly"
         ),
@@ -511,7 +511,7 @@ def test_fetch_remote_images(monkeypatch):
         HTMLBackendOptions(fetch_images=True, source_uri="http://example.com")
     )
     with (
-        patch("docling.backend.html_backend.requests.get") as mocked_get,
+        patch("docling.backend.utils.image_resource_loader.requests.get") as mocked_get,
         pytest.warns(
             match="Fetching remote resources is only allowed when set explicitly"
         ),
@@ -527,7 +527,7 @@ def test_fetch_remote_images(monkeypatch):
         )
     )
     with patch(
-        "docling.backend.html_backend.requests.Session.get"
+        "docling.backend.utils.image_resource_loader.requests.Session.get"
     ) as mocked_session_get:
         mocked_session_get.return_value = _create_mock_response()
         res = converter.convert(source)
@@ -541,11 +541,11 @@ def test_fetch_remote_images(monkeypatch):
         )
     )
     with (
-        patch("docling.backend.html_backend.open") as mocked_open,
+        patch("docling.backend.utils.image_resource_loader.open") as mocked_open,
         pytest.warns(match="a bytes-like object is required"),
     ):
         res = converter.convert(source)
-        expected_path = os.path.abspath("tests/data/html/example_image_01.png")
+        expected_path = os.path.abspath("tests/data/html/sources/example_image_01.png")
         mocked_open.assert_called_once_with(expected_path, "rb")
         assert res.document
 
@@ -569,10 +569,10 @@ def test_fetch_remote_images_with_custom_headers():
 
     converter = _create_html_converter(backend_options)
     with patch(
-        "docling.backend.html_backend.requests.Session.get"
+        "docling.backend.utils.image_resource_loader.requests.Session.get"
     ) as mocked_session_get:
         mocked_session_get.return_value = _create_mock_response()
-        res = converter.convert("./tests/data/html/example_01.html")
+        res = converter.convert("./tests/data/html/sources/example_01.html")
         headers_arg = mocked_session_get.call_args[1].get("headers", {})
         assert headers_arg["Authorization"] == "Bearer test-token"
         assert headers_arg["X-API-Key"] == "test-api-key" and "Range" in headers_arg
@@ -920,7 +920,7 @@ def test_load_image_data_enforces_size_limit(monkeypatch):
                 yield b"x" * chunk_len
                 remaining -= chunk_len
 
-    html_path = Path("./tests/data/html/example_01.html")
+    html_path = Path("./tests/data/html/sources/example_01.html")
     in_doc = InputDocument(
         path_or_stream=html_path,
         format=InputFormat.HTML,
@@ -944,7 +944,7 @@ def test_load_image_data_enforces_size_limit(monkeypatch):
 
 def test_load_image_data_enforces_data_uri_size_limit():
     """Test that base64 data URIs are capped at the size limit."""
-    html_path = Path("./tests/data/html/example_01.html")
+    html_path = Path("./tests/data/html/sources/example_01.html")
     in_doc = InputDocument(
         path_or_stream=html_path,
         format=InputFormat.HTML,
@@ -967,7 +967,7 @@ def test_load_image_data_enforces_data_uri_size_limit():
 
 def test_anchor_fragment_links_with_source_uri():
     """Fragment-only hrefs must not be mangled when source_uri is set."""
-    html_path = Path("tests/data/html/hyperlink_06.html")
+    html_path = Path("tests/data/html/sources/hyperlink_06.html")
     in_doc = InputDocument(
         path_or_stream=html_path,
         format=InputFormat.HTML,
@@ -994,7 +994,7 @@ def test_anchor_fragment_links_with_source_uri():
 
 def test_path_traversal_blocked_in_resolve_relative_path():
     """Test that path traversal attempts are blocked."""
-    html_path = Path("./tests/data/html/example_01.html")
+    html_path = Path("./tests/data/html/sources/example_01.html")
     options = HTMLBackendOptions(enable_local_fetch=True, fetch_images=True)
     in_doc = InputDocument(
         path_or_stream=html_path,
@@ -1089,9 +1089,66 @@ def test_path_traversal_blocked_in_resolve_relative_path():
         html_doc._load_image_data("image.png")
 
 
+def _make_html_backend(options=None):
+    html_path = Path("./tests/data/html/sources/example_01.html")
+    in_doc = InputDocument(
+        path_or_stream=html_path,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    return HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=html_path,
+        options=options or HTMLBackendOptions(),
+    )
+
+
+def test_browser_request_block_reason_policy():
+    """Render-mode request filtering: scheme allow-list plus remote-fetch gating."""
+    backend = _make_html_backend(HTMLBackendOptions(enable_remote_fetch=False))
+
+    # data:/file: schemes are always allowed during rendering
+    assert (
+        backend._get_browser_request_block_reason("data:image/png;base64,AAAA") is None
+    )
+    assert backend._get_browser_request_block_reason("file:///tmp/page.html") is None
+
+    # remote requests are blocked while remote fetch is disabled
+    reason = backend._get_browser_request_block_reason("http://example.com/img.png")
+    assert reason is not None and "remote fetch is disabled" in reason
+
+    # a non-remote, non-allowlisted scheme is refused
+    assert "is not allowed" in (
+        backend._get_browser_request_block_reason("gopher://example.com/x") or ""
+    )
+
+    # remote requests are permitted once remote fetch is enabled
+    backend = _make_html_backend(HTMLBackendOptions(enable_remote_fetch=True))
+    assert (
+        backend._get_browser_request_block_reason("http://example.com/img.png") is None
+    )
+
+
+def test_coerce_base_url():
+    backend = _make_html_backend()
+
+    # Remote and file:// URLs are passed through unchanged
+    assert (
+        backend._coerce_base_url("http://example.com/a.html")
+        == "http://example.com/a.html"
+    )
+    assert backend._coerce_base_url("file:///tmp/a.html") == "file:///tmp/a.html"
+
+    # A local filesystem path is normalized to a file URI
+    assert backend._coerce_base_url(
+        "tests/data/html/sources/example_01.html"
+    ).startswith("file://")
+
+
 def test_valid_local_paths_still_work():
     """Test that valid paths within the base directory still work."""
-    html_path = Path("./tests/data/html/example_01.html").resolve()
+    html_path = Path("./tests/data/html/sources/example_01.html").resolve()
     options = HTMLBackendOptions(enable_local_fetch=True, fetch_images=True)
     in_doc = InputDocument(
         path_or_stream=html_path,

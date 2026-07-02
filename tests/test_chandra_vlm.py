@@ -9,13 +9,13 @@ from docling.utils.chandra_utils import parse_chandra_html
 
 def get_chandra_test_paths():
     """Get all chandra HTML test files."""
-    directory = Path("./tests/data/html_chandra/")
+    directory = Path("./tests/data/html_chandra/sources/")
     return sorted(directory.glob("*.html"))
 
 
 def test_chandra_simple_parsing():
     """Test chandra HTML parsing produces expected document structure."""
-    path = Path("./tests/data/html_chandra/chandra_simple.html")
+    path = Path("./tests/data/html_chandra/sources/chandra_simple.html")
     content = path.read_text()
     source = path.with_suffix(".source.txt").read_text()
 
@@ -48,7 +48,7 @@ def test_chandra_simple_parsing():
 
 def test_chandra_multiblock_parsing():
     """Test chandra parsing with a saved figure prediction."""
-    path = Path("./tests/data/html_chandra/chandra_multiblock.html")
+    path = Path("./tests/data/html_chandra/sources/chandra_multiblock.html")
     content = path.read_text()
     source = path.with_suffix(".source.txt").read_text()
 
@@ -152,7 +152,7 @@ def test_chandra_table_parsing():
 
 def test_chandra_list_group_prediction_sample():
     """Test a saved chandra prediction containing list groups."""
-    path = Path("./tests/data/html_chandra/chandra_list_group.html")
+    path = Path("./tests/data/html_chandra/sources/chandra_list_group.html")
     content = path.read_text()
     source = path.with_suffix(".source.txt").read_text()
 

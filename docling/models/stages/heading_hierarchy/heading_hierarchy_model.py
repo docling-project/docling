@@ -7,31 +7,36 @@ produced by the PDF path defaults to ``level=1`` and the document hierarchy is f
 :class:`HeadingHierarchyModel` runs right after the reading-order model and assigns
 ``SectionHeaderItem.level`` using -- in precedence order:
 
-1. **numbering** -- legal/outline numbering such as ``PART I -> 1. -> 1.1 -> (a) -> (i)``.
-   This is the primary signal: on legal/regulatory documents numbering is far more reliable
-   than styling, which is often uniform.
-2. **style** -- font size approximated from the parsed PDF cells, used only for headings
-   that have no recognizable numbering.
+1. **bookmarks** -- the PDF outline / table-of-contents, when present. This is the most
+   authoritative signal: the outline is the document's own declared hierarchy. Bookmarks are
+   fuzzily matched (title + page) to detected headings; a confidently matched heading takes
+   the bookmark's depth, and a confidently matched *list-item* is promoted to a heading
+   (layout models often mis-classify a heading as a list-item).
+2. **numbering** -- legal/outline numbering such as ``PART I -> 1. -> 1.1 -> (a) -> (i)``.
+   The primary signal for headings without a bookmark match: on legal/regulatory documents
+   numbering is far more reliable than styling, which is often uniform.
+3. **style** -- font size approximated from the parsed PDF cells, used only for headings
+   that have neither a bookmark match nor recognizable numbering.
 
-Bookmark / PDF-outline inference (the most authoritative signal) would require new backend
-plumbing and is planned as a separate follow-up.
-
-The model only ever rewrites heading levels -- it never adds, removes or reorders items. The
-core (:meth:`HeadingHierarchyModel.assign_heading_levels`) works on a bare
-``DoclingDocument`` so it can be reused outside the pipeline; the font-based fallback simply
-needs the parsed pages passed in.
+Apart from promoting a confidently bookmark-matched list-item, the model only rewrites heading
+levels -- it never adds, removes or reorders items. The core
+(:meth:`HeadingHierarchyModel.assign_heading_levels`) works on a bare ``DoclingDocument`` so it
+can be reused outside the pipeline; the outline drives bookmark inference and the parsed pages
+drive the style fallback.
 """
 
 import re
 from dataclasses import dataclass
+from difflib import SequenceMatcher
 from statistics import median
 
 from docling_core.types.doc import DoclingDocument
-from docling_core.types.doc.document import SectionHeaderItem
+from docling_core.types.doc.document import ListItem, SectionHeaderItem
 from docling_core.types.doc.page import SegmentedPdfPage
 
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import HeadingHierarchyOptions
+from docling.utils.pdf_outline import _PdfOutlineItem
 
 # Default precedence of numbering schemes, highest hierarchy level first. ``dotted`` shares
 # the ``arabic`` rank and is ordered below it by its segment depth (1.1 below 1.).
@@ -243,6 +248,149 @@ def _infer_from_style(
     return {i: ranked[size] for i, size in rounded.items()}
 
 
+# --------------------------------------------------------------------------------- bookmarks
+
+# Leading numbering marker stripped before fuzzy-matching a title, so a bookmark "Definitions"
+# matches an on-page heading "1.1 Definitions" (and vice-versa).
+_LEADING_MARKER = re.compile(
+    r"^\s*(?:"
+    r"(?:part|title|book|chapter|article|section|clause|schedule|annex|appendix|rule)"
+    r"\b[\s.:]*[0-9ivxlcdm]*"
+    r"|§+\s*[0-9.]+"
+    r"|\(?[0-9]+(?:\.[0-9]+)*[).]?"
+    r"|\(?[A-Za-z]{1,2}[).]"
+    r")[\s.:)\-]*",
+    re.IGNORECASE,
+)
+
+
+def _norm(text: str) -> str:
+    """Lower-case, collapse whitespace and trim outer punctuation for matching."""
+    s = re.sub(r"\s+", " ", (text or "").lower()).strip()
+    # Trim leading/trailing punctuation (incl. unicode dash variants) and underscores.
+    return re.sub(r"^[\W_]+|[\W_]+$", "", s)
+
+
+def _strip_marker(text: str) -> str:
+    return _LEADING_MARKER.sub("", text or "", count=1)
+
+
+def _match_score(cand_text: str, bm_title: str) -> float:
+    """Fuzzy similarity in 0..1 between a detected heading and a bookmark title.
+
+    Both strings are compared with and without their leading numbering marker (bookmarks often
+    omit or carry a different marker), and containment of one normalized title in the other
+    boosts the score (bookmarks are frequently truncated).
+    """
+    variants_a = {_norm(cand_text), _norm(_strip_marker(cand_text))} - {""}
+    variants_b = {_norm(bm_title), _norm(_strip_marker(bm_title))} - {""}
+    best = 0.0
+    for a in variants_a:
+        for b in variants_b:
+            best = max(best, SequenceMatcher(None, a, b).ratio())
+            if len(a) >= 4 and len(b) >= 4 and (a in b or b in a):
+                best = max(best, 0.92)
+    return best
+
+
+def _item_page_and_top(
+    item: SectionHeaderItem | ListItem, document: DoclingDocument
+) -> tuple[int | None, float | None]:
+    """Return ``(1-based page, top-left-origin top)`` for a text item, when derivable."""
+    if not item.prov:
+        return None, None
+    prov = item.prov[0]
+    page = document.pages.get(prov.page_no)
+    if page is not None and page.size is not None:
+        return prov.page_no, prov.bbox.to_top_left_origin(page.size.height).t
+    return prov.page_no, None
+
+
+def _infer_from_bookmarks(
+    document: DoclingDocument,
+    outline: list[_PdfOutlineItem],
+    options: HeadingHierarchyOptions,
+) -> dict[int, int]:
+    """Match the PDF outline to detected headings/list-items and return authoritative levels.
+
+    Returns ``id(item) -> level`` for every confidently matched heading (existing or promoted).
+    A matched list-item is promoted to a ``SectionHeaderItem`` in place. The mapping is keyed by
+    object identity so it survives the ``texts`` reshuffling that promotion causes.
+    """
+    candidates: list[SectionHeaderItem | ListItem] = [
+        item
+        for item in document.texts
+        if isinstance(item, (SectionHeaderItem, ListItem))
+    ]
+    if not candidates:
+        return {}
+
+    info = [(item, *_item_page_and_top(item, document)) for item in candidates]
+    claimed: set[int] = set()
+    matches: list[tuple[SectionHeaderItem | ListItem, int]] = []
+
+    for bm in outline:
+        title = (bm.title or "").strip()
+        if not title:
+            continue
+        threshold = options.bookmark_match_threshold
+        if bm.page_no is None:
+            threshold = min(1.0, threshold + 0.1)  # cross-page match must be stronger
+
+        best_idx: int | None = None
+        best_score = 0.0
+        best_dist = float("inf")
+        for idx, (item, page_no, top) in enumerate(info):
+            if idx in claimed:
+                continue
+            if bm.page_no is not None and page_no is not None and page_no != bm.page_no:
+                continue
+            score = _match_score(item.text, title)
+            if score < threshold:
+                continue
+            dist = (
+                abs(top - bm.y_top)
+                if (top is not None and bm.y_top is not None)
+                else float("inf")
+            )
+            if score > best_score + 1e-6 or (
+                abs(score - best_score) <= 1e-6 and dist < best_dist
+            ):
+                best_idx, best_score, best_dist = idx, score, dist
+        if best_idx is not None:
+            claimed.add(best_idx)
+            matches.append((info[best_idx][0], bm.level))
+
+    if not matches:
+        return {}
+
+    # Compress the raw bookmark depths actually used into contiguous 1-based levels.
+    used_levels = sorted({lvl for _, lvl in matches})
+    level_map = {lvl: i + 1 for i, lvl in enumerate(used_levels)}
+
+    result: dict[int, int] = {}
+    for item, raw_level in matches:
+        level = level_map[raw_level]
+        if isinstance(item, ListItem):
+            # Promote a mis-classified list-item: same content/position, now a heading.
+            heading = SectionHeaderItem(
+                self_ref=item.self_ref,  # reassigned by replace_item's insert
+                parent=item.parent,
+                content_layer=item.content_layer,
+                prov=item.prov,
+                orig=item.orig,
+                text=item.text,
+                formatting=item.formatting,
+                hyperlink=item.hyperlink,
+                level=level,
+            )
+            document.replace_item(new_item=heading, old_item=item)
+            result[id(heading)] = level
+        else:
+            result[id(item)] = level
+    return result
+
+
 class HeadingHierarchyModel:
     """Assigns ``SectionHeaderItem.level`` on an already-assembled ``DoclingDocument``.
 
@@ -267,19 +415,34 @@ class HeadingHierarchyModel:
                 for page in conv_res.pages
                 if page.parsed_page is not None
             }
-        return self.assign_heading_levels(document, parsed_pages=parsed_pages)
+        outline = conv_res._pdf_outline if self.options.use_bookmarks else None
+        try:
+            return self.assign_heading_levels(
+                document, parsed_pages=parsed_pages, outline=outline
+            )
+        finally:
+            # Release the transient outline once consumed.
+            conv_res._pdf_outline = None
 
     def assign_heading_levels(
         self,
         document: DoclingDocument,
         parsed_pages: dict[int, SegmentedPdfPage] | None = None,
+        outline: list[_PdfOutlineItem] | None = None,
     ) -> DoclingDocument:
         """Assign heading levels in place from the configured signals.
 
-        Numbering wins over style. Headings with no applicable signal keep their existing
-        level. ``parsed_pages`` (page number -> parsed page) is only needed for the style
-        fallback.
+        Precedence: bookmarks (when confidently matched) > numbering > style. The bookmark pass
+        may promote a mis-classified list-item to a heading. Headings with no applicable signal
+        keep their existing level. ``parsed_pages`` (page number -> parsed page) is only needed
+        for the style fallback; ``outline`` (PDF bookmarks) for bookmark inference.
         """
+        # Bookmark pass first: it may promote list-items, changing the set of headings, so it
+        # has to run before the heading list is collected.
+        bookmark_levels: dict[int, int] = {}
+        if self.options.use_bookmarks and outline:
+            bookmark_levels = _infer_from_bookmarks(document, outline, self.options)
+
         headings = [
             item for item in document.texts if isinstance(item, SectionHeaderItem)
         ]
@@ -287,13 +450,19 @@ class HeadingHierarchyModel:
             return document
 
         levels: dict[int, int] = {}
+        # Bookmarks are authoritative: seed levels first so numbering/style cannot override them.
+        for i, heading in enumerate(headings):
+            level = bookmark_levels.get(id(heading))
+            if level is not None:
+                levels[i] = level
         if self.options.use_numbering:
-            levels.update(_infer_from_numbering(headings, self.options))
+            for i, level in _infer_from_numbering(headings, self.options).items():
+                levels.setdefault(i, level)  # do not override a bookmark-derived level
         if self.options.use_style and parsed_pages:
             for i, level in _infer_from_style(
                 headings, parsed_pages, self.options
             ).items():
-                levels.setdefault(i, level)  # do not override a numbering-derived level
+                levels.setdefault(i, level)  # do not override bookmark/numbering levels
 
         for i, heading in enumerate(headings):
             level = levels.get(i)

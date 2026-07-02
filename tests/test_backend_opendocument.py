@@ -3,7 +3,7 @@
 This module includes two types of tests:
 1. Unit tests with fixtures built on the fly using `odfdo` to keep the suite
    small and make inputs obvious from the code.
-2. End-to-end tests using binary ODF files from tests/data/odf/ to verify
+2. End-to-end tests using binary ODF files from tests/data/odf/sources/ to verify
    complete conversion workflows including JSON, ITXT, and Markdown exports.
 """
 
@@ -367,7 +367,7 @@ def test_odt_ordered_nested_list(tmp_path: Path):
 
 
 def test_odt_text_document_nested_lists():
-    path = Path("tests/data/odf/text_document_01.odt")
+    path = Path("tests/data/odf/sources/text_document_01.odt")
 
     res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
     list_items = [
@@ -398,7 +398,7 @@ def test_odt_text_document_nested_lists():
 
 
 def test_odt_text_document_title_and_subtitle():
-    path = Path("tests/data/odf/text_document_01.odt")
+    path = Path("tests/data/odf/sources/text_document_01.odt")
 
     res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
 
@@ -414,7 +414,7 @@ def test_odt_text_document_title_and_subtitle():
 
 
 def test_odt_text_document_text_formatting():
-    path = Path("tests/data/odf/text_document_01.odt")
+    path = Path("tests/data/odf/sources/text_document_01.odt")
 
     res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
     formatted_by_text = {
@@ -437,7 +437,7 @@ def test_odt_text_document_text_formatting():
 
 
 def test_odt_text_document_script_formatting():
-    path = Path("tests/data/odf/text_document_01.odt")
+    path = Path("tests/data/odf/sources/text_document_01.odt")
 
     res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
     formula_runs = [
@@ -457,7 +457,7 @@ def test_odt_text_document_script_formatting():
 
 
 def test_odt_text_document_embedded_chart():
-    path = Path("tests/data/odf/text_document_02.odt")
+    path = Path("tests/data/odf/sources/text_document_02.odt")
 
     res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
     charts = [
@@ -493,7 +493,7 @@ def test_odt_text_document_embedded_chart():
 
 
 def test_odt_text_document_embedded_bitmap_image():
-    path = Path("tests/data/odf/text_document_02.odt")
+    path = Path("tests/data/odf/sources/text_document_02.odt")
 
     res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
     bitmap_pictures = [
@@ -546,7 +546,7 @@ def _rich_cell_descendants(doc: DoclingDocument, cell: RichTableCell):
 
 
 def test_odt_text_document_rich_table_cells():
-    path = Path("tests/data/odf/text_document_03.odt")
+    path = Path("tests/data/odf/sources/text_document_03.odt")
 
     res = DocumentConverter(allowed_formats=[InputFormat.ODT]).convert(path)
     rich_cells = [
@@ -694,7 +694,7 @@ def test_odp_nested_textbox_list(tmp_path: Path):
 
 
 def test_odp_presentation_with_mixed_slide_content():
-    path = Path("tests/data/odf/odf_presentation_02.odp")
+    path = Path("tests/data/odf/sources/odf_presentation_02.odp")
 
     res = DocumentConverter(allowed_formats=[InputFormat.ODP]).convert(path)
     doc = res.document
@@ -760,7 +760,7 @@ def test_invalid_odf_document_type(tmp_path: Path, odt_path: Path):
 @pytest.fixture(scope="module")
 def odf_paths() -> list[Path]:
     """Collect all ODF files from tests/data/odf directory."""
-    directory = Path("./tests/data/odf/")
+    directory = Path("./tests/data/odf/sources/")
 
     # List all ODF files (odt, ods, odp) in the directory
     odf_files = sorted(directory.glob("*.od[tsp]"))
@@ -780,7 +780,7 @@ def odf_documents(odf_paths) -> list[tuple[Path, DoclingDocument]]:
     for odf_path in odf_paths:
         _log.debug(f"converting {odf_path}")
 
-        gt_path = odf_path.parent.parent / "groundtruth" / "docling_v2" / odf_path.name
+        gt_path = odf_path.parent.parent / "groundtruth" / odf_path.name
 
         conv_result: ConversionResult = converter.convert(odf_path)
 

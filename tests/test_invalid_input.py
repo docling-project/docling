@@ -11,7 +11,7 @@ pytestmark = pytest.mark.cross_platform
 
 
 def get_pdf_path():
-    pdf_path = Path("./tests/data/pdf/2305.03393v1-pg9.pdf")
+    pdf_path = Path("./tests/data/pdf/sources/2305.03393v1-pg9.pdf")
     return pdf_path
 
 

@@ -26,7 +26,7 @@ pytestmark = pytest.mark.ml_ocr
 
 def get_webp_paths():
     # Define the directory you want to search
-    directory = Path("./tests/data/webp/")
+    directory = Path("./tests/data/webp/sources/")
 
     # List all WEBP files in the directory and its subdirectories
     webp_files = sorted(directory.rglob("*.webp"))

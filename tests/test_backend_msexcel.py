@@ -3,10 +3,22 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import ContentLayer, TextItem
+from docling_core.transforms.serializer.markdown import MarkdownParams
+from docling_core.transforms.serializer.markdown_excel import (
+    MsExcelMarkdownDocSerializer,
+)
+from docling_core.types.doc import (
+    ContentLayer,
+    GroupLabel,
+    PictureItem,
+    TableItem,
+    TextItem,
+)
+from docling_core.types.doc.document import DEFAULT_CONTENT_LAYERS
 from openpyxl import Workbook, load_workbook
 from openpyxl.comments import Comment
 
+from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msexcel_backend import MsExcelDocumentBackend
 from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -21,12 +33,24 @@ _log = logging.getLogger(__name__)
 GENERATE = GEN_TEST_DATA
 
 
+@pytest.fixture(scope="module")
+def libreoffice_available() -> bool:
+    """Return True when a working LibreOffice installation is detected."""
+    try:
+        return get_libreoffice_cmd(raise_if_unavailable=True) is not None
+    except Exception:
+        return False
+
+
 def get_excel_paths():
     # Define the directory you want to search
-    directory = Path("./tests/data/xlsx/")
+    directory = Path("./tests/data/xlsx/sources/")
 
-    # List all Excel files in the directory and its subdirectories
-    excel_files = sorted(directory.rglob("*.xlsx")) + sorted(directory.rglob("*.xlsm"))
+    # List all Excel files in the directory and its subdirectories.
+    # Exclude ~$ prefixed lock files created by Excel when a file is open.
+    excel_files = sorted(
+        f for f in directory.rglob("*.xlsx") if not f.name.startswith("~$")
+    ) + sorted(f for f in directory.rglob("*.xlsm") if not f.name.startswith("~$"))
     return excel_files
 
 
@@ -46,9 +70,7 @@ def documents() -> list[tuple[Path, DoclingDocument]]:
     for excel_path in excel_paths:
         _log.debug(f"converting {excel_path}")
 
-        gt_path = (
-            excel_path.parent.parent / "groundtruth" / "docling_v2" / excel_path.name
-        )
+        gt_path = excel_path.parent.parent / "groundtruth" / excel_path.name
 
         conv_result: ConversionResult = converter.convert(excel_path)
 
@@ -141,14 +163,32 @@ def test_comment_cell_coordinates(documents) -> None:
     )
 
 
-def test_e2e_excel_conversions(documents) -> None:
+def test_e2e_excel_conversions(documents, libreoffice_available) -> None:
     for gt_path, doc in documents:
+        # xlsx_emf.xlsx contains EMF images that require LibreOffice to render.
+        # Skip its groundtruth comparison when LibreOffice is not available.
+        if gt_path.stem == "xlsx_emf" and not libreoffice_available:
+            _log.info(
+                "Skipping groundtruth comparison for %s: LibreOffice not available",
+                gt_path.name,
+            )
+            continue
+
         included_content_layers = (
             set(ContentLayer) if gt_path.stem in "xlsx_comments" else None
         )
-        pred_md: str = doc.export_to_markdown(
-            compact_tables=True,
-            included_content_layers=included_content_layers,
+        my_layers = (
+            included_content_layers
+            if included_content_layers is not None
+            else DEFAULT_CONTENT_LAYERS
+        )
+        pred_md: str = (
+            MsExcelMarkdownDocSerializer(
+                doc=doc,
+                params=MarkdownParams(compact_tables=True, layers=my_layers),
+            )
+            .serialize()
+            .text
         )
         assert verify_export(
             pred_md,
@@ -193,7 +233,8 @@ def test_pages(documents) -> None:
     assert doc.pages.get(1).size.as_tuple() == (3.0, 7.0)
     assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
-    assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
+    # Sheet4 is hidden (ContentLayer.INVISIBLE) but still has real content
+    assert doc.pages.get(4).size.as_tuple() == (1.0, 2.0)
 
 
 def test_page_range() -> None:
@@ -211,7 +252,8 @@ def test_page_range() -> None:
     # original page numbering is preserved, so sizes match the full-document ones
     assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
-    assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
+    # Sheet4 is hidden (ContentLayer.INVISIBLE) but still has real content
+    assert doc.pages.get(4).size.as_tuple() == (1.0, 2.0)
 
 
 def test_page_range_with_sheet_names() -> None:
@@ -231,8 +273,8 @@ def test_page_range_with_sheet_names() -> None:
     doc = converter.convert(path, page_range=(2, 3)).document
 
     assert set(doc.pages.keys()) == {2, 3}
-    sheet_groups = [g.name for g in doc.groups if g.name.startswith("sheet: ")]
-    assert sheet_groups == ["sheet: Sheet3", "sheet: Sheet4"]
+    sheet_groups = [g.name for g in doc.groups if g.label == GroupLabel.SHEET]
+    assert sheet_groups == ["Sheet3", "Sheet4"]
 
 
 def test_chartsheet(documents) -> None:
@@ -245,7 +287,7 @@ def test_chartsheet(documents) -> None:
     assert len(doc.pages) == 2
 
     # Chartseet content is for now ignored
-    assert doc.groups[1].name == "sheet: Duck Chart"
+    assert doc.groups[1].name == "Duck Chart"
     assert doc.pages[2].size.height == 0
     assert doc.pages[2].size.width == 0
 
@@ -349,8 +391,9 @@ def test_inflated_rows_handling(documents) -> None:
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0), (
         f"Page 3 should be 13x36 cells, got {doc.pages.get(3).size.as_tuple()}"
     )
-    assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0), (
-        f"Page 4 should be 0x0 cells (empty), got {doc.pages.get(4).size.as_tuple()}"
+    # Sheet4 is hidden (ContentLayer.INVISIBLE) but still has real content
+    assert doc.pages.get(4).size.as_tuple() == (1.0, 2.0), (
+        f"Page 4 should be 1x2 cells (hidden sheet), got {doc.pages.get(4).size.as_tuple()}"
     )
 
     _log.info(
@@ -443,7 +486,8 @@ def test_bytesio_stream():
     assert doc.pages.get(1).size.as_tuple() == (3.0, 7.0)
     assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
-    assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
+    # Sheet4 is hidden (ContentLayer.INVISIBLE) but still has real content
+    assert doc.pages.get(4).size.as_tuple() == (1.0, 2.0)
 
 
 def test_edge_cases_merging() -> None:
@@ -596,3 +640,60 @@ def test_find_data_tables_handles_a_filled_last_excel_row(tmp_path):
     assert table.data.num_cols == 1
     assert len(table.data.table_cells) == 1
     assert table.data.table_cells[0].text == "last row"
+
+
+def test_emf_images_in_xlsx(libreoffice_available):
+    """Test that EMF images embedded in XLSX files are extracted via LibreOffice.
+
+    The test file xlsx_emf.xlsx contains three sheets:
+      - 'Raster in emf'  - a raster image stored as EMF (openpyxl drops these)
+      - 'Vector in emf'  - a vector image stored as EMF (openpyxl drops these)
+      - 'Raster in webp' - a regular PNG image (openpyxl handles these normally)
+
+    On every sheet the image sits above a small table (image at rows 1-10,
+    table at rows 11-13), so the picture must appear before the table in the
+    exported document.
+
+    Requires LibreOffice for the EMF sheets; skipped when it is not installed.
+    """
+    if not libreoffice_available:
+        pytest.skip("LibreOffice is not installed — EMF conversion cannot be tested")
+
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_emf")
+
+    converter = get_converter()
+    conv_result = converter.convert(path)
+    doc = conv_result.document
+
+    # Three sheets → three pages, each with one picture and one table
+    assert doc.num_pages() == 3
+
+    pictures = list(doc.pictures)
+    tables = list(doc.tables)
+    assert len(pictures) == 3, (
+        f"Expected 3 pictures (one per sheet), got {len(pictures)}"
+    )
+    assert len(tables) == 3, f"Expected 3 tables (one per sheet), got {len(tables)}"
+
+    # All pictures must carry image data (i.e. not be empty placeholders)
+    for pic in pictures:
+        assert pic.image is not None, (
+            f"Picture on page {pic.prov[0].page_no} has no image data"
+        )
+
+    # On every page the picture must come before the table in document order
+    items_by_page: dict[int, list] = {}
+    for item, _ in doc.iterate_items(traverse_pictures=True):
+        if not item.prov:
+            continue
+        page_no = item.prov[0].page_no
+        items_by_page.setdefault(page_no, []).append(item)
+
+    for page_no, items in items_by_page.items():
+        pic_indices = [i for i, it in enumerate(items) if isinstance(it, PictureItem)]
+        tbl_indices = [i for i, it in enumerate(items) if isinstance(it, TableItem)]
+        assert pic_indices and tbl_indices, f"Page {page_no} missing picture or table"
+        assert max(pic_indices) < min(tbl_indices), (
+            f"Page {page_no}: picture (idx {pic_indices}) should come before "
+            f"table (idx {tbl_indices}) in document order"
+        )

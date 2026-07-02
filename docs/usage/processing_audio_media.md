@@ -2,7 +2,7 @@
 
 Docling's ASR (Automatic Speech Recognition) pipeline lets you convert audio and video files into a structured [`DoclingDocument`](../concepts/docling_document.md) — the same intermediate representation used for PDFs, DOCX files, and everything else. From there you can export to Markdown, JSON, HTML, or DocTags, and plug the result directly into RAG pipelines, summarizers, or search indexes.
 
-Under the hood, Docling uses [Whisper Turbo](https://github.com/openai/whisper) for transcription. On Apple Silicon it automatically selects `mlx-whisper` for optimized local inference; on all other hardware it falls back to native Whisper. You don't configure this — it just picks the right backend.
+Under the hood, Docling transcribes with [OpenAI Whisper](https://github.com/openai/whisper). By default the pipeline auto-selects the best backend for your hardware — `mlx-whisper` on Apple Silicon and native Whisper everywhere else — so the [basic example](#basic-usage) below needs no configuration. To change the model size, force a particular backend, or opt into the faster experimental WhisperS2T backend, see [Choosing an ASR model and backend](#choosing-an-asr-model-and-backend).
 
 ## Supported formats
 
@@ -29,6 +29,9 @@ Or with `uv`:
 ```bash
 uv add "docling[asr]"
 ```
+
+!!! note "WhisperS2T on Linux with CUDA"
+    The optional WhisperS2T backend uses CTranslate2, which loads NVIDIA's cuBLAS shared library at runtime. On Linux, if WhisperS2T model loading fails because the library cannot be found, add it to your `LD_LIBRARY_PATH`. When cuBLAS is installed from a pip wheel (e.g. `nvidia-cublas-cu12`), the shared library lives under the `nvidia/cublas/lib` directory inside your environment's `site-packages`.
 
 ## Basic usage
 
@@ -157,17 +160,117 @@ results = retriever.invoke("What did we decide about the auth service in Q3?")
 
 See the [LangChain integration guide](../integrations/langchain.md) for more details on `DoclingLoader` options.
 
-## Customizing the ASR model
+## Choosing an ASR model and backend
 
-`asr_model_specs.WHISPER_TURBO` is the default and recommended starting point — it balances speed and accuracy for most use cases. To use a different model size, pass an alternative spec from `docling.datamodel.asr_model_specs`:
+Docling ships three interchangeable ASR backends, all installed by the `asr` extra shown above:
+
+| Backend | Library | Hardware | Notes |
+|---------|---------|----------|-------|
+| **Native Whisper** | `openai-whisper` (PyTorch) | CPU, CUDA | Default; broadest compatibility |
+| **MLX Whisper** | `mlx-whisper` | Apple Silicon (MPS) | Optimized for M-series Macs |
+| **WhisperS2T** | `whisper-s2t-reborn` (CTranslate2) | CPU, CUDA | Optional & experimental; batched decoding for high throughput |
+
+### Automatic backend selection
+
+The auto-selecting presets — `WHISPER_TINY`, `WHISPER_BASE`, `WHISPER_SMALL`, `WHISPER_MEDIUM`, `WHISPER_LARGE`, and `WHISPER_TURBO` — pick a backend for you based on the hardware they detect, in this priority order:
+
+1. **MLX Whisper** — on Apple Silicon, when `mlx-whisper` is installed.
+2. **Native Whisper** — on all other hardware.
+
+WhisperS2T is **never** auto-selected; you opt into it explicitly (see below).
+
+This is why the [Basic usage](#basic-usage) example needs no hardware-specific code — `asr_model_specs.WHISPER_TURBO` runs on MLX on a Mac and on native Whisper on Linux and Windows. `WHISPER_TURBO` is a good default; to change the model size, swap in another auto-selecting preset:
 
 ```python
 from docling.datamodel import asr_model_specs
 
-pipeline_options.asr_options = asr_model_specs.WHISPER_LARGE_V3
+pipeline_options.asr_options = asr_model_specs.WHISPER_LARGE
 ```
 
-Available specs depend on your installed version. Check `dir(asr_model_specs)` for the full list.
+### Forcing a specific backend
+
+Each size also has explicit variants that bypass hardware detection, suffixed `_NATIVE`, `_MLX`, and `_S2T`. Use them to pin a backend regardless of platform:
+
+```python
+from docling.datamodel import asr_model_specs
+
+# Native OpenAI Whisper (CPU / CUDA)
+pipeline_options.asr_options = asr_model_specs.WHISPER_TURBO_NATIVE
+
+# MLX (Apple Silicon)
+pipeline_options.asr_options = asr_model_specs.WHISPER_TURBO_MLX
+```
+
+The rest of the setup — the `DocumentConverter` from [Basic usage](#basic-usage) — is unchanged.
+
+### WhisperS2T: high-throughput transcription
+
+WhisperS2T runs Whisper through [CTranslate2](https://github.com/OpenNMT/CTranslate2) with batched, VAD-segmented decoding. On CPU and CUDA it is typically the fastest backend and uses less VRAM than native Whisper at the larger model sizes, which makes it well suited to transcribing large batches of files. It is **experimental** and opt-in — select a `_S2T` preset:
+
+```python
+from docling.datamodel import asr_model_specs
+
+pipeline_options.asr_options = asr_model_specs.WHISPER_LARGE_V3_S2T
+```
+
+Available `_S2T` presets:
+
+| Preset | HuggingFace model | Multilingual? |
+|--------|-------------------|---------------|
+| `WHISPER_TINY_S2T` | `tiny` | yes |
+| `WHISPER_TINY_EN_S2T` | `tiny.en` | English-only |
+| `WHISPER_BASE_S2T` | `base` | yes |
+| `WHISPER_BASE_EN_S2T` | `base.en` | English-only |
+| `WHISPER_SMALL_S2T` | `small` | yes |
+| `WHISPER_SMALL_EN_S2T` | `small.en` | English-only |
+| `WHISPER_DISTIL_SMALL_EN_S2T` | `distil-small.en` | English-only |
+| `WHISPER_MEDIUM_S2T` | `medium` | yes |
+| `WHISPER_MEDIUM_EN_S2T` | `medium.en` | English-only |
+| `WHISPER_DISTIL_MEDIUM_EN_S2T` | `distil-medium.en` | English-only |
+| `WHISPER_LARGE_V3_S2T` | `large-v3` | yes |
+| `WHISPER_DISTIL_LARGE_V3_S2T` | `distil-large-v3` | English-only |
+| `WHISPER_DISTIL_LARGE_V3_5_S2T` | `distil-large-v3.5` | English-only |
+| `WHISPER_LARGE_V3_TURBO_S2T` | `large-v3-turbo` | yes (no `translate`) |
+
+The English-only presets reject a non-`en` language and the `translate` task; `large-v3-turbo` is multilingual but does not support `translate`. For multilingual transcription or speech translation, use a multilingual preset such as `WHISPER_LARGE_V3_S2T`.
+
+To tune throughput and accuracy, construct the options directly instead of using a preset:
+
+```python
+from docling.datamodel.pipeline_options_asr_model import (
+    InferenceAsrFramework,
+    InlineAsrWhisperS2TOptions,
+)
+
+pipeline_options.asr_options = InlineAsrWhisperS2TOptions(
+    repo_id="large-v3",
+    inference_framework=InferenceAsrFramework.WHISPER_S2T,
+    language="en",
+    torch_dtype="float16",  # float32 | float16 | bfloat16
+    batch_size=8,           # higher = more throughput, more VRAM
+    beam_size=1,            # 1 = greedy (fastest); higher may improve accuracy
+)
+```
+
+!!! note "WhisperS2T is not available on Apple Silicon"
+    The `whisper-s2t-reborn` dependency installs only on non-Apple-Silicon platforms, so `_S2T` presets can't be used on M-series Macs — use the native or MLX backends there. On Linux with CUDA, see the [cuBLAS note](#installation) above if model loading fails.
+
+### From the command line
+
+The `docling` CLI selects any preset with `--asr-model` (values are the lower-case preset names). Audio and video inputs route to the ASR pipeline automatically, so no extra flag is required:
+
+```bash
+# auto-selecting default
+docling --to md --asr-model whisper_turbo recording.mp3
+
+# force native Whisper
+docling --to md --asr-model whisper_turbo_native recording.mp3
+
+# WhisperS2T, distilled large-v3
+docling --to md --asr-model whisper_distil_large_v3_s2t recording.mp3
+```
+
+See the [CLI reference](../reference/cli.md) for the complete list of `--asr-model` values.
 
 ## Limitations
 
