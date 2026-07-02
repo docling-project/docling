@@ -533,7 +533,7 @@ class RapidOcrModel(BaseOcrModel):
                             all_ocr_cells.extend(cells)
 
                     # Post-process the cells
-                    self.post_process_cells(all_ocr_cells, page)
+                    self.post_process_cells(all_ocr_cells, page, conv_res)
 
                 # DEBUG code:
                 if settings.debug.visualize_ocr:

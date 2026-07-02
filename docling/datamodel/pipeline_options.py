@@ -90,6 +90,21 @@ class BaseOptions(BaseModel):
     kind: ClassVar[str]
 
 
+class OcrMode(str, Enum):
+    r"""
+    How to generate the input for the OCR model
+    """
+
+    # Only bitmaps embedded inside a programmatic PDF. No layout information is used.
+    PDF_BITMAPS_ONLY = "pdf_bitmaps_only"
+
+    # Layout detections which can bear text. No PDF information is needed/used.
+    LAYOUT_DETECTIONS = "layout_detections"
+
+    # Layout detections, without the ones that overlap with text-bearing pdf cells
+    LAYOUT_DETECTIONS_WITHOUT_PDF_TEXT = "layout_without_pdf_text"
+
+
 class TableFormerMode(str, Enum):
     """Operating modes for TableFormer table structure extraction model.
 
@@ -175,6 +190,18 @@ class OcrOptions(BaseOptions):
         configurations.
     """
 
+    mode: Annotated[
+        OcrMode,
+        Field(
+            description="Which document regions to feed as input to the OCR",
+            examples=[
+                OcrMode.LAYOUT_DETECTIONS,
+                OcrMode.PDF_BITMAPS_ONLY,
+                OcrMode.LAYOUT_DETECTIONS_WITHOUT_PDF_TEXT,
+            ],
+        ),
+    ] = OcrMode.LAYOUT_DETECTIONS_WITHOUT_PDF_TEXT
+
     lang: Annotated[
         list[str],
         Field(
@@ -192,10 +219,33 @@ class OcrOptions(BaseOptions):
     bitmap_area_threshold: Annotated[
         float,
         Field(
-            description="Percentage of the page area for a bitmap to be processed with OCR.",
+            description=(
+                "Percentage of the page area for a PDF bitmap to be processed with OCR."
+                "It is used when OcrMode is PDF_BITMAPS_ONLY"
+            ),
             examples=[0.05, 0.1],
         ),
     ] = 0.05
+    sparse_cell_coverage_threshold: Annotated[
+        float,
+        Field(
+            description=(
+                "A sparse layout detection is omitted from the OCR rects if its coverage with"
+                "textual PDF cells is more than this threshold"
+            ),
+            examples=[],
+        ),
+    ] = 0.05
+    dense_cell_coverage_threshold: Annotated[
+        float,
+        Field(
+            description=(
+                "A dense layout detection is omitted from the OCR rects if its coverage with "
+                "textual PDF cells is more than this threshold"
+            ),
+            examples=[],
+        ),
+    ] = 0.80
 
 
 class OcrAutoOptions(OcrOptions):
@@ -1492,6 +1542,64 @@ class LayoutObjectDetectionOptions(
 LayoutObjectDetectionOptions.register_preset(
     stage_model_specs.OBJECT_DETECTION_LAYOUT_HERON
 )
+
+
+class BaseLayoutPostprocessorOptions(BaseOptions):
+    """Algorithm parameters consumed by ``LayoutPostprocessor``.
+
+    These controls drive the post-processing of raw layout clusters
+    (cell assignment, empty-cluster handling, orphan-cluster creation).
+    They are decoupled from the layout (prediction) options so the
+    post-processing stage and the predictor models can evolve
+    independently.
+    """
+
+    keep_empty_clusters: Annotated[
+        bool,
+        Field(
+            description=(
+                "Retain empty clusters in layout analysis results. When False, clusters without content are removed."
+            )
+        ),
+    ] = False
+    skip_cell_assignment: Annotated[
+        bool,
+        Field(
+            description=(
+                "Skip assignment of cells to clusters during layout post-processing. When True, cells are detected "
+                "but not associated with clusters."
+            )
+        ),
+    ] = False
+    create_orphan_clusters: Annotated[
+        bool,
+        Field(
+            description=(
+                "Create clusters for orphaned elements not assigned to any structure."
+            )
+        ),
+    ] = True
+
+
+class LayoutPostprocessorOptions(BaseLayoutPostprocessorOptions):
+    """Stage options for ``LayoutPostprocessingModel``.
+
+    Extends the algorithm parameters with the stage-level toggle
+    ``run_postprocessor``. When disabled, the stage only computes the
+    layout confidence score and leaves the raw clusters untouched
+    (used by the table-crops layout model).
+    """
+
+    kind: ClassVar[str] = "layout_postprocessor"
+    run_postprocessor: Annotated[
+        bool,
+        Field(
+            description=(
+                "Run the layout post-processor. When False, raw clusters are passed through unchanged and only the "
+                "layout confidence score is computed."
+            )
+        ),
+    ] = True
 
 
 class AsrPipelineOptions(PipelineOptions):
