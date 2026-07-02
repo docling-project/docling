@@ -317,6 +317,40 @@ def test_cli_html_image_headers_require_remote_fetch(tmp_path):
     )
 
 
+def test_cli_default_verbosity_logs_per_file_progress(tmp_path):
+    """At default verbosity (-v not given), the CLI must still surface
+    which input file is currently being converted. Regression for #3467
+    where multi-file batches (e.g. directories of audio) gave no per-file
+    feedback at default verbosity.
+    """
+    import logging
+
+    progress_logger = logging.getLogger("docling.pipeline.base_pipeline")
+    converter_logger = logging.getLogger("docling.document_converter")
+    saved_progress_level = progress_logger.level
+    saved_converter_level = converter_logger.level
+    progress_logger.setLevel(logging.WARNING)
+    converter_logger.setLevel(logging.WARNING)
+    try:
+        sources = [
+            "./tests/data/md/blocks.md",
+            "./tests/data/md/duck.md",
+        ]
+        output = tmp_path / "out"
+        output.mkdir()
+
+        result = runner.invoke(app, [*sources, "--output", str(output)])
+        assert result.exit_code == 0
+
+        # After default-verbosity invocation, per-file progress loggers must
+        # be enabled at INFO so the "Processing document <name>" line fires.
+        assert progress_logger.isEnabledFor(logging.INFO)
+        assert converter_logger.isEnabledFor(logging.INFO)
+    finally:
+        progress_logger.setLevel(saved_progress_level)
+        converter_logger.setLevel(saved_converter_level)
+
+
 def test_export_documents_marks_empty_markdown_as_failure(tmp_path):
     from docling.cli.main import export_documents
     from docling.datamodel.base_models import ConversionStatus, InputFormat
