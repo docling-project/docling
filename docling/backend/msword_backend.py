@@ -75,6 +75,11 @@ _OOXML_ROOT_RELS: Final[str] = "_rels/.rels"
 _MAX_MEMBER_UNCOMPRESSED_SIZE: Final[int] = 512 * 1024 * 1024  # 512 MiB per part
 _MAX_TOTAL_UNCOMPRESSED_SIZE: Final[int] = 2 * 1024 * 1024 * 1024  # 2 GiB per package
 
+# The OPC root relationships part (_rels/.rels) is a few hundred bytes in any
+# well-formed OOXML package.  A tight cap prevents a hostile archive from
+# forcing a large allocation during the cheap Strict-detection read.
+_MAX_ROOT_RELS_SIZE: Final[int] = 64 * 1024  # 64 KiB
+
 # Strict namespaces whose Transitional form does not follow the regular
 # "insert /2006 after the first segment" rule (see _strict_ns_to_transitional).
 # Mirrors the canonical mapping in the Open XML SDK (NamespaceIdMap).
@@ -113,9 +118,7 @@ def _is_strict_ooxml(archive: zipfile.ZipFile) -> bool:
     """
     try:
         with archive.open(_OOXML_ROOT_RELS) as root_rels:
-            # Root relationships are a few hundred bytes; cap the read anyway so
-            # a hostile archive cannot force a large allocation during detection.
-            return _STRICT_OOXML_MARKER in root_rels.read(_MAX_MEMBER_UNCOMPRESSED_SIZE)
+            return _STRICT_OOXML_MARKER in root_rels.read(_MAX_ROOT_RELS_SIZE)
     except KeyError:
         # No root relationships: not a well-formed OOXML package. Let python-docx
         # deal with it on the unchanged path.
