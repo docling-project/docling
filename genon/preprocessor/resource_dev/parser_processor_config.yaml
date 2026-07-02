@@ -2,6 +2,19 @@ defaults:
   # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
   log_level: 4
 
+formats:
+  # 엑셀(xlsx/xlsm), csv는 PDF 변환 없이 처리
+  xlsx:
+    # tabular(기본): openpyxl 로 병합셀 unmerge+forward-fill 후 시트→HTML 표(병합 헤더 보존).
+    # docling: docling MsExcel/Csv 백엔드로 DoclingDocument 생성 후 parse-JSON 직렬화.
+    processing_mode: "tabular"
+    # tabular 모드 전용 옵션
+    tabular:
+      # 헤더 행(0-based). 0=자동판정(제목행 스킵/멀티헤더 flatten), >0=단일헤더 강제.
+      header_row: 0
+      # 1시트에 표가 여러 개(빈 행으로 분리)면 표별로 분리(멀티헤더 자동감지 포함). false(기본)=시트=1표.
+      multi_table: false
+
 ocr:
   ocr_mode: "auto" # "auto"(default), "force", "disable"
 

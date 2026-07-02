@@ -2,6 +2,21 @@ defaults:
   # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
   log_level: 4
 
+formats:
+  # 엑셀(xlsx/xlsm), csv는 PDF 변환 없이 처리
+  xlsx:
+    # docling(기본): MsExcel 백엔드로 DoclingDocument 생성 후 기존 청킹/벡터 파이프라인.
+    # tabular: 데이터 행마다 1벡터 + 컬럼 헤더→셀 값 메타데이터(병합셀 unmerge+forward-fill).
+    #   ※ Weaviate property 규칙(/[_A-Za-z][_0-9A-Za-z]*/)상 한글 헤더는 field_<hash> 로 alias 되고
+    #      원본명은 column_map 에 보존된다.
+    processing_mode: "docling"
+    # tabular 모드 전용 옵션
+    tabular:
+      # 헤더 행(0-based). 0=자동판정(제목행 스킵/멀티헤더 flatten), >0=단일헤더 강제.
+      header_row: 0
+      # 1시트에 표가 여러 개(빈 행으로 분리)면 표별로 분리. false(기본)=시트=1표.
+      multi_table: false
+
 ocr:
   # OCR 수행 모드. "auto"(default)=휴리스틱 기반 재OCR / "force"=무조건 전체 OCR / "disable"=OCR 안 함
   ocr_mode: "auto"
@@ -69,6 +84,10 @@ pdf_pipeline:
 # 청크 내 표 텍스트(MD/HTML)는 그대로 유지되는 하이브리드 방식이다.
 table_image:
   enable: false           # true 면 모든 표를 이미지로 저장 + media_files 기록
+
+# 표 텍스트 직렬화 형식(청크 text 내 docling 표 표현). tabular 모드(행=벡터)는 무관.
+output:
+  table_format: "html"   # "html"(default) | "markdown"
 
 # ── enrichment ────────────────────────────────────────────────────────────────
 # 각 항목은 {이름: {옵션}} 형식의 list.

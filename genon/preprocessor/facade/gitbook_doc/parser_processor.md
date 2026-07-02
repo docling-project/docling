@@ -114,6 +114,16 @@ defaults:
   log_level: 4
 
 # ───────────────────────────────────────────────
+# 포맷별 처리 옵션 (xlsx/csv — "지원 파일 형식 > CSV / XLSX" 참고)
+# ───────────────────────────────────────────────
+formats:
+  xlsx:
+    processing_mode: "tabular"    # "tabular"(default) | "docling"
+    tabular:                      # tabular 모드에서만 사용
+      header_row: 0               # 0=자동판정 | >0=단일헤더 강제
+      multi_table: false          # true 면 1시트 복수표(빈 행 분리) 분리
+
+# ───────────────────────────────────────────────
 # OCR 설정 (PDF 파이프라인에서 사용)
 # ───────────────────────────────────────────────
 ocr:
@@ -647,7 +657,7 @@ filename: 보고서.pdf
 | `.pdf`, `.html`, `.htm` | IntelligentDocumentProcessor | 문서 구조 그대로 | Layout 모델 서버, OCR 서버(선택) |
 | `.hwp`, `.hwpx` | HwpDocumentLoader | 문서 구조 그대로 | GenosHwpDocumentBackend (HWP SDK) |
 | `.docx` | DocxDocumentLoader | 문서 구조 그대로 | GenosMsWordDocumentBackend |
-| `.csv`, `.xlsx` | TabularLoader | `table` (HTML) | pandas, openpyxl, chardet |
+| `.csv`, `.xlsx`, `.xlsm` | `load_tables`(openpyxl 병합셀) / `formats.xlsx.processing_mode` (`tabular` 기본 \| `docling`) | `table` (HTML) | openpyxl, chardet |
 | `.doc`, `.ppt`, `.pptx`, `.txt`, `.json`, `.md`, `.jpg`, `.jpeg`, `.png` | GenericDocumentLoader (Langchain) | `paragraph` | LibreOffice (`soffice`), unstructured 라이브러리 |
 
 > **청킹(Chunk API) 연계**: docling 경로(`.pdf/.html/.htm/.docx/.hwp/.hwpx`)는 `output.format: docling`
@@ -715,12 +725,23 @@ GenosHwpDocumentBackend  →  HwpDocumentBackend/HwpxDocumentBackend  →  Libre
 
 ### CSV / XLSX
 
-**처리 클래스:** `TabularLoader`
+**처리 함수:** `xlsx_processor.load_tables` (converters) — 출력은 시트/표별 HTML `table` element (parse-JSON).
+
+`.xlsx`/`.xlsm`/`.csv` 는 PDF 변환 없이 직접 처리하며, `formats.xlsx.processing_mode` 로 방식을 선택합니다.
+
+- **tabular (기본)** — openpyxl 로 병합셀을 **unmerge + forward-fill** 하여 병합 헤더 유실을 방지하고, 시트(또는 표)별로 HTML `table` element 를 생성합니다.
+  - **멀티헤더 자동 판정**: 전열 병합 제목행은 표 상단 컨텍스트로만 두고, 부분 병합 계층 헤더는 `상위_하위` 로 flatten 하여 컬럼 헤더(`<th>`)로 사용합니다.
+  - **시트명·제목 컨텍스트**: 각 표 `content` 앞에 `시트명: <시트명>`(+ 제목행이 있으면 제목)을 붙입니다.
+  - `formats.xlsx.tabular.multi_table: true` 면 한 시트의 복수 표(빈 행 분리)를 표별 element 로 분리합니다. `header_row`(0=자동/>0=단일헤더 강제)로 헤더 판정을 제어합니다.
+- **docling** — docling MsExcel/Csv 백엔드로 `DoclingDocument` 를 만든 뒤 parse-JSON 으로 직렬화합니다(`output.format: docling` 이면 원본 DoclingDocument JSON 반환).
 
 **전제조건:**
-- **Python 패키지:** `pandas`, `openpyxl`(xlsx용), `chardet`(csv 인코딩 감지용)
-- CSV는 인코딩 자동 감지 (chardet → utf-8 → cp949 → euc-kr 순)
-- XLSX는 시트 단위로 처리하며 시트별 element 생성
+- **Python 패키지:** `openpyxl`(xlsx 병합셀 처리), `chardet`(csv 인코딩 자동 감지)
+- CSV 는 chardet 로 인코딩 자동 감지 후 utf-8 폴백
+- XLSX 는 시트(및 `multi_table` 시 표) 단위로 element 생성
+
+> 참고: parser 출력은 parse-JSON(HTML 표)이라 벡터 메타가 없습니다. 컬럼 단위 필터용 stable-key/`column_map`
+> 는 적재용(intelligent/convert)의 tabular 벡터에만 적용됩니다. parser 의 HTML `<th>` 는 원본 헤더명(한글 포함)을 그대로 사용합니다.
 
 ---
 
@@ -927,17 +948,16 @@ Docling 파이프라인(PDF/HTML/HWP/HWPX/DOCX) 출력 기준:
 
 ### CSV/XLSX `content` 형식
 
-시트 데이터가 HTML 테이블 형태로 `content`에 저장됩니다.
+시트(또는 표) 데이터가 **시트명 접두 + HTML 테이블** 형태로 `content`에 저장됩니다. 병합셀은 unmerge + forward-fill 되어 병합 헤더가 보존됩니다.
 
-```html
-<table>
-  <tr><th>컬럼1</th><th>컬럼2</th></tr>
-  <tr><td>값1</td><td>값2</td></tr>
-</table>
+```text
+시트명: Sheet1
+<table><tr><th>컬럼1</th><th>컬럼2</th></tr><tr><td>값1</td><td>값2</td></tr></table>
 ```
 
-- XLSX는 시트 단위로 element가 생성되며, `page` 값은 시트 순서(1-based)
-- `usage.pages`는 시트 수
+- 상단에 제목행(전열 병합)이 있으면 시트명 다음 줄에 제목이 컨텍스트로 함께 포함됩니다.
+- 계층(부분 병합) 헤더는 `상위_하위` 로 flatten 되어 `<th>` 로 렌더됩니다.
+- 기본은 시트 단위로 element 가 생성되며 `page` 는 element 순번(1-based). `formats.xlsx.tabular.multi_table: true` 면 **한 시트에서 표별로 여러 element** 가 생성됩니다.
 
 ---
 
@@ -987,8 +1007,8 @@ Docling 파이프라인(PDF/HTML/HWP/HWPX/DOCX) 출력 기준:
 
 | 예외 | 원인 | 동작 |
 |------|------|------|
-| `ValueError: Any columns cannot be converted...` | 모든 컬럼을 문자열로 변환할 수 없는 경우 | 예외 발생 |
-| 인코딩 오류 | chardet 감지 실패 | utf-8 → cp949 → euc-kr → iso-8859-1 순서로 재시도 |
+| openpyxl 로드 실패 | 파일 손상, 비-xlsx(예: `.xls`) | 예외 발생(구형 `.xls`/`.xlsb` 는 미지원) |
+| CSV 인코딩 오류 | chardet 감지 실패 | utf-8 로 폴백(`errors="ignore"`) |
 
 #### 기타 포맷 (GenericDocumentLoader)
 

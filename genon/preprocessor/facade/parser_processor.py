@@ -1283,6 +1283,25 @@ class IntelligentDocumentProcessor:
         if artifacts_path:
             self.pipe_line_options.artifacts_path = Path(artifacts_path)
 
+        # xlsx(엑셀) 처리 설정(이슈 #288). formats.xlsx 아래에 둔다. 출력은 parse-JSON(시트당 HTML 표).
+        #   tabular(기본): openpyxl 로 병합셀 unmerge+forward-fill 후 시트→HTML 표(병합 헤더 보존).
+        #   docling: docling MsExcel 백엔드로 DoclingDocument 생성 후 parse-JSON 직렬화.
+        #   tabular.{header_row, multi_table}: tabular 모드 전용 세부 옵션
+        formats_cfg = _as_dict(cfg.get("formats"))
+        xlsx_cfg = _as_dict(formats_cfg.get("xlsx"))
+        tabular_cfg = _as_dict(xlsx_cfg.get("tabular"))
+        xlsx_mode = str(xlsx_cfg.get("processing_mode", "tabular")).strip().lower()
+        if xlsx_mode not in {"docling", "tabular"}:
+            _log.warning(
+                f"[DocumentProcessor] Unknown formats.xlsx.processing_mode '{xlsx_mode}', fallback to 'tabular'."
+            )
+            xlsx_mode = "tabular"
+        self._xlsx_cfg = {
+            "processing_mode": xlsx_mode,
+            "header_row": _parse_optional_int(tabular_cfg.get("header_row"), "formats.xlsx.tabular.header_row") or 0,
+            "multi_table": bool(_parse_optional_bool(tabular_cfg.get("multi_table"), "formats.xlsx.tabular.multi_table")),
+        }
+
         self.simple_pipeline_options = PipelineOptions()
         self.simple_pipeline_options.save_images = False
 
@@ -1862,6 +1881,9 @@ class DocumentProcessor:
         cfg = _load_config(config_path)
         self._intel = IntelligentDocumentProcessor(cfg, config_path=config_path)
 
+        # xlsx/csv 처리 설정은 intel 프로세서가 동일 config에서 이미 파싱함 → 재사용
+        self._xlsx_cfg = self._intel._xlsx_cfg
+
         defaults_cfg = _as_dict(cfg.get("defaults"))
         log_level = _parse_optional_int(defaults_cfg.get("log_level"), "defaults.log_level")
         if log_level is None:
@@ -2015,9 +2037,30 @@ class DocumentProcessor:
                 pass
 
     def _parse_tabular(self, file_path: str) -> dict:
-        ext = os.path.splitext(file_path)[-1].lower()
-        loader = TabularLoader(file_path, ext)
-        return loader.data_dict
+        """xlsx/csv → {"data":[{"sheet_name","title","data_rows":[{col:val}]}]} (이슈 #288).
+
+        표 감지(멀티헤더 자동 + 1시트 복수표)는 xlsx_processor.load_tables 에 위임한다.
+        - 제목행은 title 로(컨텍스트), 계층 헤더는 `상위_하위` flatten, 그 아래 컬럼명행이 leaf.
+        - multi_table=True 면 빈 행 기준 복수 표를 표별로 분리.
+        헤더명(원본, 한글 가능)을 그대로 key 로 쓴다(HTML 셀 내용 — Weaviate 키 제약 무관).
+        """
+        from genon.preprocessor.converters.xlsx_processor import load_tables
+
+        tables = load_tables(
+            file_path,
+            header_row=self._xlsx_cfg["header_row"],
+            multi_table=self._xlsx_cfg["multi_table"],
+        )
+        data: list[dict] = []
+        for t in tables:
+            headers = t["headers"]
+            data_rows = [dict(zip(headers, values)) for values in t["data_rows"]]
+            data.append({
+                "sheet_name": t["sheet_name"],
+                "title": t["title"],
+                "data_rows": data_rows,
+            })
+        return {"data": data}
 
     def _parse_other(self, file_path: str, **kwargs) -> list:
         return self._generic.load_documents(file_path, **kwargs)
@@ -2115,6 +2158,22 @@ class DocumentProcessor:
         return getattr(item, "text", "") or ""
 
     @staticmethod
+    def _docling_sheet_prefix(item, doc) -> str:
+        """xlsx docling 표의 부모 그룹(name='sheet: X')에서 시트명을 뽑아 '시트명: X\\n' 접두 생성.
+        시트 그룹이 없으면 '' 반환(비-xlsx 문서엔 실질 미적용)."""
+        try:
+            parent = item.parent.resolve(doc) if getattr(item, "parent", None) else None
+            name = getattr(parent, "name", None)
+        except Exception:
+            name = None
+        if not name:
+            return ""
+        if name.startswith("sheet: "):
+            name = name[len("sheet: "):]
+        name = name.strip()
+        return f"시트명: {name}\n" if name else ""
+
+    @staticmethod
     def _docling_to_parse_format(doc: DoclingDocument, table_format: str = "html") -> dict:
         """DoclingDocument → sample_result.json 호환 출력 포맷."""
         elements = []
@@ -2160,6 +2219,8 @@ class DocumentProcessor:
                     doc=doc,
                     table_format=table_format,
                 )
+                # xlsx docling 표면 시트명 접두 추가(비-xlsx 는 "" 라 영향 없음).
+                text = DocumentProcessor._docling_sheet_prefix(item, doc) + text
             else:
                 text = getattr(item, "text", "") or ""
 
@@ -2322,17 +2383,22 @@ class DocumentProcessor:
 
     @staticmethod
     def _sheet_to_html(sheet: dict) -> str:
-        """시트 dict → HTML table 문자열."""
+        """시트(표) dict → HTML table 문자열(시트명 + 제목 컨텍스트 접두 포함)."""
+        name = str(sheet.get("sheet_name", "") or "").strip()
+        title = str(sheet.get("title", "") or "").strip()
+        prefix = f"시트명: {name}\n" if name else ""
+        if title:
+            prefix += f"{title}\n"
         data_rows = sheet.get("data_rows", [])
         if not data_rows:
-            return f"<table></table>"
+            return f"{prefix}<table></table>"
         cols = list(data_rows[0].keys())
         header = "".join(f"<th>{c}</th>" for c in cols)
         rows_html = "".join(
             "<tr>" + "".join(f"<td>{row.get(c, '')}</td>" for c in cols) + "</tr>"
             for row in data_rows
         )
-        return f"<table><tr>{header}</tr>{rows_html}</table>"
+        return f"{prefix}<table><tr>{header}</tr>{rows_html}</table>"
 
     @staticmethod
     def _tabular_to_parse_format(data_dict: dict) -> dict:
@@ -2406,7 +2472,13 @@ class DocumentProcessor:
             text = self._parse_audio(file_path, **kwargs)
             return self._normalize_response(self._audio_to_parse_format(text))
 
-        if ext in (".csv", ".xlsx"):
+        if ext in (".csv", ".xlsx", ".xlsm"):
+            # docling 모드: MsExcel/Csv 백엔드로 DoclingDocument 생성 후 parse-JSON 직렬화.
+            if self._xlsx_cfg["processing_mode"] == "docling":
+                from genon.preprocessor.converters.xlsx_processor import build_docling_document
+                doc = build_docling_document(file_path)
+                return self._normalize_response(self._build_docling_response(doc))
+            # tabular 모드(기본): openpyxl 병합셀 처리 → 시트당 HTML 표.
             data_dict = self._parse_tabular(file_path)
             return self._normalize_response(self._tabular_to_parse_format(data_dict))
 

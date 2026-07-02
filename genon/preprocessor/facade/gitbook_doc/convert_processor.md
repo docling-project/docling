@@ -15,6 +15,8 @@
    - 3.2 [OCR 설정](#32-ocr-설정)
    - 3.3 [레이아웃 설정](#33-레이아웃-설정)
    - 3.4 [PDF 파이프라인 설정](#34-pdf-파이프라인-설정)
+     - 3.4.2 [xlsx(엑셀) 직접 처리 (`formats.xlsx`)](#342-xlsx엑셀-직접-처리-formatsxlsx)
+     - 3.4.3 [표 텍스트 형식 (`output.table_format`)](#343-표-텍스트-형식-outputtable_format)
    - 3.5 [Enrichment 설정](#35-enrichment-설정)
    - 3.6 [사이트 적용 시 필수 수정 항목](#36-사이트-적용-시-필수-수정-항목)
    - 3.7 [자주 쓰는 튜닝 시나리오](#37-자주-쓰는-튜닝-시나리오)
@@ -125,6 +127,14 @@ defaults:
   # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
   log_level: 4
 
+# 포맷별 처리 옵션(자세한 설명은 3.4.2 참고). xlsx 는 PDF 변환 없이 직접 처리.
+formats:
+  xlsx:
+    processing_mode: "docling"    # "docling"(default) | "tabular"
+    tabular:                      # tabular 모드에서만 사용
+      header_row: 0               # 0=자동판정 | >0=단일헤더 강제
+      multi_table: false          # true 면 1시트 복수표(빈 행 분리) 분리
+
 ocr:
   # OCR 수행 모드. "auto"(default)=휴리스틱 기반 재OCR / "force"=무조건 전체 OCR / "disable"=OCR 안 함
   # (PDF 입력에만 적용. DOCX/기타 포맷은 ocr_mode 무관)
@@ -181,6 +191,9 @@ pdf_pipeline:
 
 table_image:
   enable: false                      # true 면 모든 표를 이미지로 저장 + media_files 기록
+
+output:
+  table_format: "html"              # 청크 text 내 docling 표 직렬화 형식. "html"(default) | "markdown"
 
 # 청킹(GenosSmartChunker) 설정
 chunking:
@@ -372,6 +385,58 @@ enrichment:
 `enable: true` 면 문서 내 모든 `TableItem` 을 페이지 이미지에서 bbox 로 잘라 artifacts 디렉터리에 `table_*.png` 로 저장하고, 각 표를 `media_files` 에 `{name, type:'table_image', ref}` 로 추가합니다(`ref` 는 `chunk_bboxes` 의 해당 표 엔트리와 동일 → 조인 가능). 청크 내 표 텍스트(MD/HTML)는 그대로 유지됩니다(하이브리드).
 
 > **주의** — 표 이미지는 페이지 이미지를 잘라 만들므로, `enable: true` 이면 `pdf_pipeline.generate_page_images` 가 내부적으로 **강제 `true`** 로 보정됩니다(별도 설정 불필요).
+
+---
+
+### 3.4.2 xlsx(엑셀) 직접 처리 (`formats.xlsx`)
+
+`.xlsx`/`.xlsm`(및 `.csv`)는 **PDF 변환 없이 직접 처리**합니다(이슈 #288). `formats.xlsx.processing_mode` 로 방식을 선택합니다.
+
+| 키 | 값 | 기본 | 설명 |
+|----|----|------|------|
+| `formats.xlsx.processing_mode` | `docling` \| `tabular` | `docling` | 처리 방식 선택 |
+| `formats.xlsx.tabular.header_row` | int | `0` | (tabular) 헤더 행. `0`=자동판정, `>0`=단일 헤더 강제 |
+| `formats.xlsx.tabular.multi_table` | bool | `false` | (tabular) 1시트 복수표(빈 행 분리)를 표별로 분리 |
+
+**docling 모드 (기본)** — MsExcel 백엔드로 `DoclingDocument` 를 만들어 기존 청킹/벡터 파이프라인으로 처리합니다(시트=1페이지).
+- **표마다 별도 청크**로 분리하고, 표가 `chunking.chunk_size` 를 초과하면 **행(row) 단위로 분할**하며 분할된 각 청크에 **헤더 행을 반복 포함**합니다.
+- 각 청크 텍스트 앞에 **`시트명: <시트명>`** 접두를 붙입니다.
+
+**tabular 모드** — 데이터 **행마다 1벡터**를 만들고 각 컬럼 값을 **최상단 스칼라 property** 로 부여해 벡터 DB 컬럼 필터를 지원합니다.
+- 병합셀 openpyxl unmerge + forward-fill, **멀티헤더 자동 판정**(전열 병합 제목행은 컨텍스트, 부분 병합 계층 헤더는 `상위_하위` flatten).
+- 컬럼 키는 ASCII 헤더는 그대로, 한글 등 비-ASCII 는 **`field_<sha256[:8]>`** alias(파일 간 안정) + 원본명은 **`column_map`**(JSON) 보존.
+- `multi_table: true` 면 복수 표를 표별로 분리해 헤더 재판정.
+
+```yaml
+formats:
+  xlsx:
+    processing_mode: "docling"    # 표 단위 청크 + 행 분할(헤더 반복) + 시트명 접두
+    # processing_mode: "tabular"  # 행=벡터 + 컬럼 필터 메타(field_/column_map)
+    tabular:
+      header_row: 0
+      multi_table: false
+```
+
+> **참고** — 기존에도 convert 는 xlsx 를 docling MsExcel 백엔드로 처리했으나, 위 설정으로 표 단위 청킹·행 분할·시트명 접두가 명시적으로 적용되고 tabular 모드를 선택할 수 있습니다. `.xls`/`.xlsb`(구형/바이너리)는 openpyxl/docling 미지원이라 PDF 변환 경로로 처리됩니다.
+
+---
+
+### 3.4.3 표 텍스트 형식 (`output.table_format`)
+
+청크 `text` 안에 표(TableItem)를 직렬화하는 형식을 선택합니다. docling 모드의 모든 표(PDF/DOCX/HWP/xlsx-docling)에 적용됩니다.
+
+| 키 | 값 | 기본 | 설명 |
+|----|----|------|------|
+| `output.table_format` | `html` \| `markdown` | `html` | `html`=`<table>…`, `markdown`=`\| c1 \| c2 \|` 파이프 표 |
+
+- `markdown` 이면 표를 `export_to_markdown` 으로 직렬화하고, xlsx 의 oversized 표 **행 분할 청크**도 markdown 표 행(헤더 반복 + `\| --- \|` 구분선)으로 렌더합니다.
+- tabular 모드(행=벡터)는 이 옵션과 무관합니다(자체 파이프 표현 사용).
+- 런타임 kwarg 로 `table_format`(또는 레거시 `export_to_html` 1/0)을 주면 config 보다 우선합니다.
+
+```yaml
+output:
+  table_format: "html"    # 또는 "markdown"
+```
 
 ---
 

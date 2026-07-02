@@ -1136,6 +1136,122 @@ class GenosSmartChunker(BaseChunker):
 
         return ""
 
+    @staticmethod
+    def _doc_has_sheet_groups(dl_doc) -> bool:
+        """DoclingDocument 가 xlsx 유래인지(그룹명 'sheet: X' 존재) 자동 감지."""
+        try:
+            for g in getattr(dl_doc, "groups", None) or []:
+                name = getattr(g, "name", None)
+                if isinstance(name, str) and name.startswith("sheet: "):
+                    return True
+        except Exception:
+            pass
+        return False
+
+    @staticmethod
+    def _render_table_row_html(row: list, num_cols: int) -> str:
+        """grid 한 행을 <tr>..</tr> HTML 로 렌더(docling HTMLTableSerializer 형식 모방).
+        colspan 중복 셀은 제거하고 헤더 계열 셀은 <th>, 그 외는 <td> 로 낸다.
+        (row_span==1 전제 — 호출부에서 세로 병합 표는 분할하지 않음)
+        """
+        import html as _html
+        cells = []
+        for j in range(num_cols):
+            cell = row[j]
+            if cell.start_col_offset_idx != j:  # colspan 으로 이미 렌더된 셀 스킵
+                continue
+            is_header = bool(
+                getattr(cell, "column_header", False)
+                or getattr(cell, "row_header", False)
+                or getattr(cell, "row_section", False)
+            )
+            tag = "th" if is_header else "td"
+            attrs = f' colspan="{cell.col_span}"' if cell.col_span > 1 else ""
+            cells.append(f"<{tag}{attrs}>{_html.escape((cell.text or '').strip())}</{tag}>")
+        return "<tr>" + "".join(cells) + "</tr>"
+
+    @staticmethod
+    def _sheet_prefix(table_item: TableItem, dl_doc: DoclingDocument) -> str:
+        """xlsx docling 표의 부모 그룹(name='sheet: X')에서 시트명을 뽑아 '시트명: X\\n' 접두 생성.
+        시트 그룹이 없으면 '' 반환(PDF 등 비-xlsx 문서엔 실질 미적용)."""
+        try:
+            parent = table_item.parent.resolve(dl_doc) if getattr(table_item, "parent", None) else None
+            name = getattr(parent, "name", None)
+        except Exception:
+            name = None
+        if not name:
+            return ""
+        if name.startswith("sheet: "):
+            name = name[len("sheet: "):]
+        name = name.strip()
+        return f"시트명: {name}\n" if name else ""
+
+    def _table_item_to_texts(self, table_item: TableItem, dl_doc: DoclingDocument,
+                             h_short: dict, **kwargs) -> list[str]:
+        """표를 청크 텍스트 목록으로 변환. chunk_size(max_tokens) 초과 시 row 단위로 분할하고
+        각 분할 청크에 헤더 행(선두 column_header 행 + 다음 컬럼명 행)을 반복 포함한다.
+
+        미초과(또는 max_tokens<=0)면 현행과 동일하게 단일 청크(docling export_to_html) 1개를 반환.
+        모든 청크(단일/분할)에 시트명 접두(`시트명: X\\n`)를 붙인다.
+        """
+        sheet_prefix = self._sheet_prefix(table_item, dl_doc)
+        single = sheet_prefix + self._generate_section_text_with_heading([table_item], [h_short], dl_doc, **kwargs)
+
+        if self.max_tokens is None or self.max_tokens <= 0:
+            return [single]
+        if self._count_tokens(single) <= self.max_tokens:
+            return [single]
+
+        try:
+            grid = table_item.data.grid
+            num_cols = table_item.data.num_cols
+        except Exception:
+            return [single]
+        if not grid or not num_cols:
+            return [single]
+
+        # 세로 병합(row_span>1)이 있으면 row 분할이 구조를 깨뜨리므로 분할하지 않는다.
+        if any(getattr(c, "row_span", 1) > 1 for r in grid for c in r):
+            return [single]
+
+        # 헤더 행 수: 선두의 연속된 헤더 플래그 행 + 바로 다음 행(컬럼명 추정)
+        flag_n = 0
+        for row in grid:
+            if any(getattr(c, "column_header", False) or getattr(c, "row_header", False)
+                   or getattr(c, "row_section", False) for c in row):
+                flag_n += 1
+            else:
+                break
+        header_n = flag_n + 1
+        if header_n >= len(grid):  # 데이터 행이 없음 → 분할 불가
+            return [single]
+
+        header_rows = grid[:header_n]
+        data_rows = grid[header_n:]
+
+        # heading 접두(_generate_section_text_with_heading 과 동일 규칙). xlsx 는 보통 공백.
+        merged = {lvl: t for lvl, t in (h_short or {}).items() if t}
+        heading = ", ".join(merged[l] for l in sorted(merged)) if merged else ""
+        prefix = (heading + ", ") if heading else ""
+
+        header_inner = "".join(self._render_table_row_html(r, num_cols) for r in header_rows)
+
+        def wrap(inner: str) -> str:
+            return sheet_prefix + prefix + "<table><tbody>" + header_inner + inner + "</tbody></table>"
+
+        texts: list[str] = []
+        cur = ""
+        for r in data_rows:
+            tr = self._render_table_row_html(r, num_cols)
+            if cur and self._count_tokens(wrap(cur + tr)) > self.max_tokens:
+                texts.append(wrap(cur))
+                cur = tr
+            else:
+                cur += tr
+        if cur:
+            texts.append(wrap(cur))
+        return texts or [single]
+
     def _extract_used_headers(self, header_info_list: list[dict]) -> Optional[list[str]]:
         """헤더 정보 리스트에서 실제 사용되는 모든 헤더들을 level 순서대로 추출하고 ', '로 연결"""
         if not header_info_list:
@@ -1400,6 +1516,44 @@ class GenosSmartChunker(BaseChunker):
                 items_group = [it for it in items_group if it is not None]
 
             return items_group
+
+        # ================================================================
+        # 표 단위 청크 분리 (xlsx docling: table_as_chunk kwarg 또는 xlsx-origin 자동감지)
+        #   각 TableItem 을 독립 청크로(초과 시 row 분할+헤더 반복+시트명), 사이 비표 아이템은 별도 청크.
+        #   chunk_size(max_tokens) 와 무관하게 표가 병합되지 않도록 토큰 단계 이전에 확정 반환한다.
+        # ================================================================
+        if kwargs.get("table_as_chunk") or self._doc_has_sheet_groups(dl_doc):
+            table_chunks: list[DocChunk] = []
+            buf_items: list[DocItem] = []
+            buf_short: list[dict] = []
+
+            def _flush_buf():
+                if buf_items:
+                    text = self._generate_section_text_with_heading(buf_items, buf_short, dl_doc, **kwargs)
+                    # 빈 문서 방어용 "." placeholder 등 무의미한 텍스트 run 은 청크로 만들지 않는다.
+                    if text and text.strip() and text.strip() != ".":
+                        ch = get_current_chunk(doc_chunk, [text], list(buf_short), list(buf_items))
+                        if ch:
+                            table_chunks.append(ch)
+                    buf_items.clear()
+                    buf_short.clear()
+
+            for i, item in enumerate(items):
+                h_short = header_short_info_list[i] if i < len(header_short_info_list) else {}
+                if isinstance(item, TableItem):
+                    _flush_buf()
+                    # 행이 많아 chunk_size 를 초과하는 표는 row 단위로 분할(각 청크에 헤더 반복 포함).
+                    for text in self._table_item_to_texts(item, dl_doc, h_short, **kwargs):
+                        ch = get_current_chunk(doc_chunk, [text], [h_short], [item])
+                        if ch:
+                            table_chunks.append(ch)
+                else:
+                    buf_items.append(item)
+                    buf_short.append(h_short)
+            _flush_buf()
+
+            if table_chunks:
+                return table_chunks
 
         # ================================================================
         # 1단계: 섹션 헤더 기준으로 분할
