@@ -52,51 +52,36 @@ from docling.exceptions import DocumentLoadError, SecurityError
 
 _log = logging.getLogger(__name__)
 
-# Strict (ISO/IEC 29500 "Strict") OOXML files use the purl.oclc.org namespaces
-# defined in Part 1, while python-docx only understands the Transitional
-# (Part 4) "schemas.openxmlformats.org/.../2006/..." namespaces. The two
-# variants are otherwise equivalent, so a Strict package is normalized to
-# Transitional in memory before being handed to python-docx.
 _STRICT_OOXML_NS_PREFIX: Final[str] = "http://purl.oclc.org/ooxml/"
 _TRANSITIONAL_NS_HOST: Final[str] = "http://schemas.openxmlformats.org/"
 
-# Substring that only appears in Strict packages. Used both to classify an
-# archive and to skip parts that need no rewriting.
 _STRICT_OOXML_MARKER: Final[bytes] = b"purl.oclc.org/ooxml"
+"""Byte string present in every Strict OOXML part that carries a Strict namespace URI."""
 
-# The OPC package root relationships part. Its officeDocument relationship type
-# carries the Strict marker in a Strict package, which is exactly why python-docx
-# fails to open such files. Reading this one tiny member is enough to tell Strict
-# from Transitional without walking the whole archive.
 _OOXML_ROOT_RELS: Final[str] = "_rels/.rels"
+"""OPC root relationships part; its ``officeDocument`` type identifies Strict vs Transitional."""
 
-# Bounds used while decompressing a Strict package, to guard against zip bombs.
-# Legitimate .docx parts are far smaller than these caps.
-_MAX_MEMBER_UNCOMPRESSED_SIZE: Final[int] = 512 * 1024 * 1024  # 512 MiB per part
-_MAX_TOTAL_UNCOMPRESSED_SIZE: Final[int] = 2 * 1024 * 1024 * 1024  # 2 GiB per package
-
-# The OPC root relationships part (_rels/.rels) is a few hundred bytes in any
-# well-formed OOXML package.  A tight cap prevents a hostile archive from
-# forcing a large allocation during the cheap Strict-detection read.
 _MAX_ROOT_RELS_SIZE: Final[int] = 64 * 1024  # 64 KiB
+"""Read cap for ``_rels/.rels`` during Strict detection (the part is typically ~500 bytes)."""
 
-# Strict namespaces whose Transitional form does not follow the regular
-# "insert /2006 after the first segment" rule (see _strict_ns_to_transitional).
-# Mirrors the canonical mapping in the Open XML SDK (NamespaceIdMap).
+_MAX_MEMBER_UNCOMPRESSED_SIZE: Final[int] = 512 * 1024 * 1024  # 512 MiB
+"""Per-member uncompressed size cap applied during Strict-to-Transitional rewriting."""
+
+_MAX_TOTAL_UNCOMPRESSED_SIZE: Final[int] = 2 * 1024 * 1024 * 1024  # 2 GiB
+"""Total uncompressed size cap for all members during Strict-to-Transitional rewriting."""
+
 _STRICT_OOXML_NS_OVERRIDES: Final[dict[str, str]] = {
     "http://purl.oclc.org/ooxml/descriptions/base": "http://descriptions.openxmlformats.org/description/base",
     "http://purl.oclc.org/ooxml/descriptions/full": "http://descriptions.openxmlformats.org/description/full",
     "http://purl.oclc.org/ooxml/officeDocument/relationships/customXml": "http://schemas.openxmlformats.org/officeDocument/2006/customXml",
     "http://purl.oclc.org/ooxml/officeDocument/relationships/metadata/thumbnail": "http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail",
 }
+"""Strict namespace URIs whose Transitional equivalents are irregular (Open XML SDK NamespaceIdMap)."""
 
-# The character class deliberately excludes percent-encoding (%XX), '+', and '#'
-# because all OOXML namespace and relationship URIs defined in ISO/IEC 29500 are
-# plain ASCII paths with no encoding.  Any occurrence of those characters in a
-# part file is not an OOXML namespace URI and must not be rewritten.
 _STRICT_OOXML_NS_RE: Final = re.compile(
     r"http://purl\.oclc\.org/ooxml/[A-Za-z0-9_./-]+"
 )
+"""Matches Strict OOXML namespace/relationship URIs."""
 
 
 def _strict_ns_to_transitional(strict_ns: str) -> str:
@@ -104,8 +89,6 @@ def _strict_ns_to_transitional(strict_ns: str) -> str:
     if strict_ns in _STRICT_OOXML_NS_OVERRIDES:
         return _STRICT_OOXML_NS_OVERRIDES[strict_ns]
     rest = strict_ns[len(_STRICT_OOXML_NS_PREFIX) :]
-    # A handful of property namespaces are camelCase in Strict but hyphenated
-    # in Transitional.
     rest = rest.replace("extendedProperties", "extended-properties")
     rest = rest.replace("customProperties", "custom-properties")
     segment, separator, tail = rest.partition("/")
@@ -156,14 +139,6 @@ def _normalize_strict_ooxml(archive: zipfile.ZipFile) -> BytesIO:
         for info in archive.infolist():
             if not _is_safe_zip_member(info.filename):
                 raise SecurityError(f"ZIP slip attempt: {info.filename}")
-            # info.file_size comes from the ZIP central directory and can be set
-            # to 0 by a crafted archive while the actual payload inflates to an
-            # arbitrarily large size.  The checks below therefore act as a fast
-            # fail for well-formed archives (the common case) rather than as a
-            # hard guarantee against a determined adversary.  Python's zipfile
-            # module provides no API to cap the number of bytes actually
-            # decompressed by read(), so a fully reliable defence would require
-            # a streaming decompressor with an explicit byte budget.
             if info.file_size > _MAX_MEMBER_UNCOMPRESSED_SIZE:
                 raise SecurityError(
                     f"Refusing to expand oversized OOXML part: {info.filename}"
@@ -190,10 +165,16 @@ def _normalize_strict_ooxml(archive: zipfile.ZipFile) -> BytesIO:
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
     """Backend for parsing Microsoft Word (.docx) documents.
 
+    Both Transitional (ISO/IEC 29500-4) and Strict (ISO/IEC 29500-1) ``.docx``
+    packages are supported. Strict packages use ``purl.oclc.org`` namespace URIs
+    that ``python-docx`` does not recognise; they are normalised to their
+    Transitional equivalents in memory before parsing. Transitional files are
+    handed to ``python-docx`` unchanged.
+
     Note:
-        Images with a total area (width * height) less than or equal to
-        `SPACER_IMAGE_AREA_THRESHOLD` (default: 25px) are considered layout
-        artifacts (such as invisible spacers) and are discarded during parsing.
+        Images with a total area (width x height) less than or equal to
+        `SPACER_IMAGE_AREA_THRESHOLD` (default: 25 px2) are treated as invisible
+        layout spacers and discarded during parsing.
     """
 
     _W_NS: Final[str] = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -212,9 +193,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         "w14": "http://schemas.microsoft.com/office/word/2010/wordml",
     }
 
-    SPACER_IMAGE_AREA_THRESHOLD: Final[int] = (
-        25  # Images with an area (w*h) below this are dropped as layout artifacts
-    )
+    SPACER_IMAGE_AREA_THRESHOLD: Final[int] = 25
+    """Images with an area (w*h) below this are dropped as layout artifacts."""
 
     @override
     def __init__(self, in_doc: "InputDocument", path_or_stream: BytesIO | Path) -> None:
@@ -341,11 +321,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         path_or_stream: BytesIO | Path, document_hash: str
     ) -> DocxDocument:
         try:
-            # Classify the package by reading a single small member from the ZIP
-            # central directory. Only a Strict package is rewritten; Transitional
-            # files keep the original, byte-identical load path. When loading from
-            # a Path, the archive is opened lazily from disk so a Transitional file
-            # is never slurped into memory just to be classified.
             if isinstance(path_or_stream, Path):
                 with zipfile.ZipFile(path_or_stream) as archive:
                     if _is_strict_ooxml(archive):
@@ -360,7 +335,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             else:
                 return None
         except SecurityError:
-            # Surface malicious input loudly instead of masking it as a load error.
             raise
         except Exception as e:
             raise DocumentLoadError(
