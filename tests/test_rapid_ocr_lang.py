@@ -31,7 +31,7 @@ def _install_fake_rapidocr(
     monkeypatch.setitem(sys.modules, "rapidocr", fake_module)
 
 
-def test_rapidocr_uses_english_mobile_assets(monkeypatch, tmp_path: Path) -> None:
+def test_rapidocr_uses_english_default_assets(monkeypatch, tmp_path: Path) -> None:
     captured_params: list[dict[str, object]] = []
     _install_fake_rapidocr(monkeypatch, captured_params)
 
@@ -45,14 +45,12 @@ def test_rapidocr_uses_english_mobile_assets(monkeypatch, tmp_path: Path) -> Non
     assert len(captured_params) == 1
     params = captured_params[0]
     assert params["Det.model_path"] == (
-        tmp_path / "RapidOcr" / "onnx/PP-OCRv4/det/en_PP-OCRv3_det_mobile.onnx"
+        tmp_path / "RapidOcr" / "onnx/PP-OCRv6/det/PP-OCRv6_det_small.onnx"
     )
     assert params["Rec.model_path"] == (
-        tmp_path / "RapidOcr" / "onnx/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile.onnx"
+        tmp_path / "RapidOcr" / "onnx/PP-OCRv6/rec/PP-OCRv6_rec_small.onnx"
     )
-    assert params["Rec.rec_keys_path"] == (
-        tmp_path / "RapidOcr" / "paddle/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile/en_dict.txt"
-    )
+    assert params["Rec.rec_keys_path"] is None
 
 
 def test_rapidocr_defaults_to_chinese_mobile_assets(
@@ -83,9 +81,7 @@ def test_rapidocr_defaults_to_chinese_mobile_assets(
     )
 
 
-def test_download_models_uses_language_specific_mobile_paths(
-    monkeypatch, tmp_path: Path
-) -> None:
+def test_download_models_uses_default_onnx_paths(monkeypatch, tmp_path: Path) -> None:
     downloaded_urls: list[str] = []
 
     def fake_download_url_with_progress(url: str, *, progress: bool) -> BytesIO:
@@ -105,12 +101,10 @@ def test_download_models_uses_language_specific_mobile_paths(
         force=True,
     )
 
-    assert any("en_PP-OCRv3_det_mobile.onnx" in url for url in downloaded_urls)
-    assert any("en_PP-OCRv4_rec_mobile.onnx" in url for url in downloaded_urls)
-    assert (tmp_path / "onnx/PP-OCRv4/det/en_PP-OCRv3_det_mobile.onnx").exists()
-    assert (
-        tmp_path / "paddle/PP-OCRv4/rec/en_PP-OCRv4_rec_mobile/en_dict.txt"
-    ).exists()
+    assert any("PP-OCRv6_det_small.onnx" in url for url in downloaded_urls)
+    assert any("PP-OCRv6_rec_small.onnx" in url for url in downloaded_urls)
+    assert (tmp_path / "onnx/PP-OCRv6/det/PP-OCRv6_det_small.onnx").exists()
+    assert (tmp_path / "onnx/PP-OCRv6/rec/PP-OCRv6_rec_small.onnx").exists()
 
 
 def test_model_downloader_fetches_both_rapidocr_language_sets(
@@ -150,7 +144,7 @@ def test_model_downloader_fetches_both_rapidocr_language_sets(
     }
 
 
-def test_rapidocr_uses_latin_mobile_assets(monkeypatch, tmp_path: Path) -> None:
+def test_rapidocr_uses_latin_default_assets(monkeypatch, tmp_path: Path) -> None:
     captured_params: list[dict[str, object]] = []
     _install_fake_rapidocr(monkeypatch, captured_params)
 
@@ -164,13 +158,9 @@ def test_rapidocr_uses_latin_mobile_assets(monkeypatch, tmp_path: Path) -> None:
     assert len(captured_params) == 1
     params = captured_params[0]
     assert params["Rec.model_path"] == (
-        tmp_path / "RapidOcr" / "onnx/PP-OCRv4/rec/latin_PP-OCRv3_rec_mobile.onnx"
+        tmp_path / "RapidOcr" / "onnx/PP-OCRv6/rec/PP-OCRv6_rec_small.onnx"
     )
-    assert params["Rec.rec_keys_path"] == (
-        tmp_path
-        / "RapidOcr"
-        / "paddle/PP-OCRv4/rec/latin_PP-OCRv3_rec_mobile/latin_dict.txt"
-    )
+    assert params["Rec.rec_keys_path"] is None
 
 
 def test_resolve_language_aliases_and_groups(caplog) -> None:

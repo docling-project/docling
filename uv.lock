@@ -1875,8 +1875,8 @@ requires-dist = [
     { name = "python-dotenv", marker = "extra == 'service-client'", specifier = "~=1.0" },
     { name = "python-pptx", marker = "extra == 'format-pptx'", specifier = ">=1.0.2,<2.0.0" },
     { name = "qwen-vl-utils", marker = "extra == 'models-vlm-inline'", specifier = ">=0.0.11" },
-    { name = "rapidocr", marker = "extra == 'feat-ocr-rapidocr'", specifier = ">=3.8,<4.0.0" },
-    { name = "rapidocr", marker = "extra == 'feat-ocr-rapidocr-onnx'", specifier = ">=3.8,<4.0.0" },
+    { name = "rapidocr", marker = "extra == 'feat-ocr-rapidocr'", specifier = ">=3.9.1,<4.0.0" },
+    { name = "rapidocr", marker = "extra == 'feat-ocr-rapidocr-onnx'", specifier = ">=3.9.1,<4.0.0" },
     { name = "requests", specifier = ">=2.32.2,<3.0.0" },
     { name = "rich", marker = "extra == 'cli'", specifier = ">=13.0.0" },
     { name = "rich", marker = "extra == 'service-client'", specifier = ">=13.0.0" },
@@ -6841,7 +6841,7 @@ wheels = [
 
 [[package]]
 name = "rapidocr"
-version = "3.8.4"
+version = "3.9.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorlog" },
@@ -6858,7 +6858,7 @@ dependencies = [
     { name = "tqdm" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f3/26/387eca0137a3507ea62acedd2b2903697223cbca2f8561f7c63b47ec3ad2/rapidocr-3.8.4-py3-none-any.whl", hash = "sha256:1a8400df99ea2348a6d1902d1c6fa64c29edcf56b3c58cecd4cf1e5ff51b7ae2", size = 15018555, upload-time = "2026-06-15T08:55:07.979Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/23/e8d7251c53137b5b66d89e85cb0bc3e6bcfaec9527f29b477ec04389c8b2/rapidocr-3.9.1-py3-none-any.whl", hash = "sha256:600885e4e94e0b427abad394fccb0ec1d3c9118a215ca435bf7680aeae0e292b", size = 27274755, upload-time = "2026-07-02T13:37:00.827Z" },
 ]
 
 [[package]]
