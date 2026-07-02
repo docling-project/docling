@@ -48,6 +48,7 @@ from docling.backend.docx.latex.omml import oMath2Latex
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.office_utils import warn_if_macros
 
 _log = logging.getLogger(__name__)
 
@@ -140,6 +141,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Track text items created from each paragraph element
         self.paragraph_to_items: dict[int, list[RefItem]] = {}
 
+        warn_if_macros(self.path_or_stream)
         self.docx_obj = self.load_msword_file(
             path_or_stream=self.path_or_stream, document_hash=self.document_hash
         )

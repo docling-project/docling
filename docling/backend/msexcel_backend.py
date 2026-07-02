@@ -58,6 +58,7 @@ from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.office_utils import warn_if_macros
 
 _log = logging.getLogger(__name__)
 
@@ -200,6 +201,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         self.xlsx_to_pdf_converter_init: bool = False
 
         self.workbook = None
+        warn_if_macros(self.path_or_stream)
         try:
             # Suppress the openpyxl warning for WMF/EMF images being dropped:
             # those formats are handled separately via LibreOffice conversion.

@@ -33,6 +33,7 @@ from docling.backend.abstract_backend import (
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.office_utils import warn_if_macros
 
 _log = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         self.pptx_obj: Optional[presentation.Presentation] = None
         self.valid: bool = False
+        warn_if_macros(self.path_or_stream)
         try:
             if isinstance(self.path_or_stream, BytesIO):
                 self.pptx_obj = Presentation(self.path_or_stream)
