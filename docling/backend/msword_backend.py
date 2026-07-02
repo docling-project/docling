@@ -9,6 +9,7 @@ from typing import Any, Callable, Final
 from urllib.parse import urlparse
 
 from docling_core.types.doc import (
+    CodeItem,
     ContentLayer,
     DocItem,
     DocItemLabel,
@@ -27,9 +28,10 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import FineRef, Formatting, Script
 from docx import Document
 from docx.document import Document as DocxDocument
+from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml.table import CT_Tc
 from docx.oxml.xmlchemy import BaseOxmlElement
-from docx.styles.style import ParagraphStyle
+from docx.styles.style import BaseStyle, ParagraphStyle
 from docx.table import Table, _Cell
 from docx.text.hyperlink import Hyperlink
 from docx.text.paragraph import Paragraph
@@ -79,6 +81,75 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     SPACER_IMAGE_AREA_THRESHOLD: Final[int] = (
         25  # Images with an area (w*h) below this are dropped as layout artifacts
+    )
+
+    # Style names/ids that mark code, per pandoc's docx reader ("Source
+    # Code") and LibreOffice/HTML equivalents. Matched exactly (case-folded),
+    # never by substring: "Unicode" or "Area Code" are not code, and caption
+    # styles like "Listing" are left out.
+    _CODE_STYLE_NAMES: Final[frozenset[str]] = frozenset(
+        {
+            "source code",
+            "code",
+            "code block",
+            "code listing",
+            "html preformatted",
+            "preformatted text",
+            "preformatted",
+            "verbatim",
+        }
+    )
+    _CODE_STYLE_IDS: Final[frozenset[str]] = frozenset(
+        {
+            "sourcecode",
+            "source_code",
+            "code",
+            "codeblock",
+            "codelisting",
+            "htmlpreformatted",
+            "preformattedtext",
+            "preformatted",
+            "verbatim",
+        }
+    )
+    # Defensive cap against malformed/cyclic base_style inheritance chains.
+    _MAX_STYLE_INHERITANCE_DEPTH: Final[int] = 10
+
+    # Fallback font signal: a paragraph counts as code when (nearly) every
+    # character sits in one of these monospaced families and the text looks
+    # code-like (see _is_code_by_font).
+    _MONOSPACE_FONTS: Final[frozenset[str]] = frozenset(
+        {
+            "consolas",
+            "courier",
+            "courier new",
+            "lucida console",
+            "menlo",
+            "monaco",
+            "dejavu sans mono",
+            "andale mono",
+            "liberation mono",
+            "sf mono",
+        }
+    )
+    _MONOSPACE_CHAR_RATIO: Final[float] = 0.9
+    # Punctuation that separates code from monospaced prose. Parentheses,
+    # brackets and lone semicolons are excluded -- phone numbers, citations
+    # and legal clauses use them freely. ASCII only, by design.
+    _CODE_INDICATIVE_CHARS: Final[frozenset[str]] = frozenset("{};=<>")
+    # An empty call "set()" or a call whose arguments carry code-ish
+    # characters "print(sys.argv)". Plain word(word) shapes like "party(ies)"
+    # stay prose.
+    _CODE_CALL_PATTERN: Final[re.Pattern[str]] = re.compile(
+        r"[A-Za-z_]\((?:\s*\)|[^)]*[\d,._='\"][^)]*\))"
+    )
+    # A keyword-led definition/control line, e.g. "def fib(n):". Prose labels
+    # such as "Enclosed item(s):" never start with a language keyword.
+    _CODE_DEF_PATTERN: Final[re.Pattern[str]] = re.compile(
+        r"^(?:async\s+)?"
+        r"(?:def|class|if|elif|while|for|with|except|catch|switch"
+        r"|function|func|fn|sub|proc)"
+        r"\s+[\w.]+\(.*\)\s*:$"
     )
 
     @override
@@ -139,6 +210,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.paragraph_comment_map: dict[int, list[str]] = {}
         # Track text items created from each paragraph element
         self.paragraph_to_items: dict[int, list[RefItem]] = {}
+        # True when the previous sibling item is a code block; lets indented,
+        # punctuation-free continuation lines stay in the block.
+        self._prev_sibling_is_code: bool = False
+        # Forces the next code paragraph to start a fresh block; set at
+        # boundaries that add no item of their own (1x1 tables, headers).
+        self._force_new_code_block: bool = False
+        # Blank code paragraphs are buffered so a block never ends in them.
+        self._pending_code_blank_lines: int = 0
+        # The document default style's font is not evidence of code.
+        self._default_paragraph_style: BaseStyle | None = None
 
         self.docx_obj = self.load_msword_file(
             path_or_stream=self.path_or_stream, document_hash=self.document_hash
@@ -146,6 +227,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if self.docx_obj:
             self.valid = True
             self.current_part = self.docx_obj.part
+            self._default_paragraph_style = self.docx_obj.styles.default(
+                WD_STYLE_TYPE.PARAGRAPH
+            )
             # Build comment mappings after loading document
             self._extract_comment_ranges()
 
@@ -793,17 +877,193 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return style_label, None
 
+    def _last_child_item(
+        self, doc: DoclingDocument, parent: NodeItem | None
+    ) -> NodeItem | None:
+        """Return the last child of a container.
+
+        Args:
+            doc: The document being built.
+            parent: The container to inspect; None means the document body.
+
+        Returns:
+            The resolved last child item, or None if the container is empty.
+        """
+        container = parent if parent is not None else doc.body
+        if not container.children:
+            return None
+        return container.children[-1].resolve(doc)
+
+    def _is_code_style(self, style: ParagraphStyle | None) -> bool:
+        """Return True if a style marks its paragraphs as code.
+
+        Mirrors pandoc's docx reader: the style itself or any ancestor in its
+        ``base_style`` chain may carry the code style name/id.
+
+        Args:
+            style: The already-resolved paragraph style (resolving it is
+                expensive, so callers do it once).
+
+        Returns:
+            True if the style chain marks the paragraph as code.
+        """
+        depth = 0
+        while style is not None and depth < self._MAX_STYLE_INHERITANCE_DEPTH:
+            name = (style.name or "").strip().lower()
+            style_id = (style.style_id or "").strip().lower()
+            if name in self._CODE_STYLE_NAMES or style_id in self._CODE_STYLE_IDS:
+                return True
+            # A malformed basedOn chain can hop to a style type (e.g. a
+            # numbering style) that lacks this attribute; getattr keeps
+            # the walk safe.
+            style = getattr(style, "base_style", None)
+            depth += 1
+        return False
+
+    def _is_in_table_cell(self, paragraph: Paragraph) -> bool:
+        """Return True if the paragraph sits inside a table cell."""
+        return bool(paragraph._p.xpath("ancestor::w:tc"))
+
+    def _effective_style_font(self, style: ParagraphStyle | None) -> str:
+        """Return the case-folded font family a style resolves to.
+
+        Walks the ``base_style`` chain; used as the fallback font for runs
+        whose own ``run.font.name`` is None because the typeface is inherited
+        from the paragraph style. The document-default style is excluded: a
+        paragraph left on it carries no author intent, so a Courier document
+        theme is not code evidence.
+
+        Args:
+            style: The already-resolved paragraph style to walk.
+
+        Returns:
+            The lowercased font family name, or "" if none applies.
+        """
+        default_style = self._default_paragraph_style
+        depth = 0
+        while style is not None and depth < self._MAX_STYLE_INHERITANCE_DEPTH:
+            if default_style is not None and style.element is default_style.element:
+                return ""
+            # A malformed basedOn chain can hop to a style type (e.g. a
+            # numbering style) that lacks these attributes; getattr keeps
+            # the walk safe.
+            font = getattr(style, "font", None)
+            font_name = getattr(font, "name", None)
+            if font_name:
+                return font_name.strip().lower()
+            style = getattr(style, "base_style", None)
+            depth += 1
+        return ""
+
+    def _monospaced_char_counts(
+        self, paragraph: Paragraph, style_font: str
+    ) -> tuple[int, int]:
+        """Count how much of the paragraph text is set in a monospaced font.
+
+        Scans every run in the paragraph element, including runs nested
+        inside hyperlinks, tracked insertions, smart tags and field results
+        (all omitted by ``paragraph.runs``), so a proportional-font span in
+        any of them cannot slip past the all-monospace check.
+
+        Args:
+            paragraph: The paragraph to scan.
+            style_font: The paragraph style's resolved font, used when a run
+                inherits its typeface (``run.font.name`` is None) instead of
+                setting it directly.
+
+        Returns:
+            A (monospaced_char_count, total_char_count) tuple.
+        """
+        # Deleted-text runs (w:del) carry w:delText rather than w:t, so their
+        # run.text is empty and the filter drops them.
+        runs = [
+            run
+            for r_el in paragraph._p.xpath(".//w:r")
+            if (run := Run(r_el, paragraph)).text.strip()
+        ]
+        mono_chars = 0
+        total_chars = 0
+        for run in runs:
+            run_len = len(run.text.strip())
+            total_chars += run_len
+            font_name = (run.font.name or "").strip().lower() or style_font
+            if font_name in self._MONOSPACE_FONTS:
+                mono_chars += run_len
+        return mono_chars, total_chars
+
+    def _is_code_by_font(
+        self, paragraph: Paragraph, style: ParagraphStyle | None
+    ) -> bool:
+        """Return True if the paragraph reads as code set in a monospaced font.
+
+        Lower-precision fallback used only when the style name doesn't already
+        mark the paragraph as code: (nearly) every run must resolve to a
+        monospaced font and the text must look code-like.
+
+        Args:
+            paragraph: The paragraph to classify.
+            style: The already-resolved paragraph style, passed in to avoid
+                re-reading the expensive ``paragraph.style`` property.
+
+        Returns:
+            True if the font fallback classifies the paragraph as code.
+        """
+        # Ordered cheapest-first: ordinary prose exits before the numbering
+        # lookup and the per-run font scan. In headers/footers only the
+        # explicit style tier applies.
+        if self.content_layer == ContentLayer.FURNITURE:
+            return False
+
+        lowered_style = (style.name or "").lower() if style else ""
+        if any(kw in lowered_style for kw in ("caption", "figure", "table", "label")):
+            return False
+
+        raw_text = paragraph.text
+        stripped_text = raw_text.strip()
+        if not stripped_text or re.match(
+            r"^(figure|table|listing)\s+\d", stripped_text, re.IGNORECASE
+        ):
+            return False
+
+        # The text must carry a code signal, or be an indented line directly
+        # continuing a block ("    return a" stays inside; isolated
+        # monospaced prose does not).
+        strong_hits = {ch for ch in stripped_text if ch in self._CODE_INDICATIVE_CHARS}
+        # Semicolons alone are prose; statements carry a second signal, and
+        # terminator-only lines like "listen 80;" survive via continuation.
+        has_code_char = (
+            bool(strong_hits - {";"})
+            or self._CODE_CALL_PATTERN.search(stripped_text) is not None
+            or self._CODE_DEF_PATTERN.search(stripped_text) is not None
+        )
+        is_code_continuation = self._prev_sibling_is_code and raw_text[:1].isspace()
+        if not has_code_char and not is_code_continuation:
+            return False
+
+        # Never reclassify a list item; an explicit code style still wins.
+        numid, ilevel = self._get_numId_and_ilvl(paragraph)
+        if numid and ilevel is not None:
+            return False
+
+        style_font = self._effective_style_font(style)
+        mono_chars, total_chars = self._monospaced_char_counts(paragraph, style_font)
+        if total_chars == 0 or mono_chars / total_chars < self._MONOSPACE_CHAR_RATIO:
+            return False
+
+        return not self._is_in_table_cell(paragraph)
+
     def _get_label_and_level(self, paragraph: Paragraph) -> tuple[str, int | None]:
-        if paragraph.style is None:
+        # Resolve the style once: python-docx's ``paragraph.style`` scans all
+        # styles on every access, so re-reading it per predicate is costly.
+        style = paragraph.style
+        if style is None:
             return "Normal", None
 
-        label: str = paragraph.style.style_id
-        name: str = paragraph.style.name or ""
+        label: str = style.style_id
+        name: str = style.name or ""
         base_style_label: str | None = None
         base_style_name: str | None = None
-        if isinstance(
-            base_style := getattr(paragraph.style, "base_style", None), ParagraphStyle
-        ):
+        if isinstance(base_style := getattr(style, "base_style", None), ParagraphStyle):
             base_style_label = base_style.style_id
             base_style_name = base_style.name
 
@@ -838,6 +1098,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 return self._get_heading_and_level(base_style_label)
             if base_style_name and "heading" in base_style_name.lower():
                 return self._get_heading_and_level(base_style_name)
+
+        if self._is_code_style(style) or self._is_code_by_font(paragraph, style):
+            return "Code", None
 
         return label, None
 
@@ -1455,6 +1718,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         if text is None:
             return elem_ref
+        # Kept unstripped: code blocks preserve leading indentation.
+        raw_paragraph_text = text
         text = text.strip()
 
         # Track the paragraph element ID for comment linking
@@ -1467,6 +1732,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Common styles for bullet and numbered lists.
         # "List Bullet", "List Number", "List Paragraph"
         # Identify whether list is a numbered list or not
+        self._prev_sibling_is_code = isinstance(
+            self._last_child_item(doc, self.parents[self._get_level() - 1]), CodeItem
+        )
         p_style_id, p_level = self._get_label_and_level(paragraph)
         numid, ilevel = self._get_numId_and_ilvl(paragraph)
 
@@ -1477,7 +1745,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if (
             numid is not None
             and ilevel is not None
-            and p_style_id not in ["Title", "Heading"]
+            and p_style_id not in ["Title", "Heading", "Code"]
         ):
             # Check if this is actually a numbered list by examining the numFmt
             is_numbered = self._is_numbered_list(numid, ilevel)
@@ -1504,10 +1772,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._update_history(p_style_id, p_level, numid, ilevel)
             return elem_ref
         elif (
-            numid is None
-            and self._prev_numid() is not None
+            self._prev_numid() is not None
             and p_style_id not in ["Title", "Heading"]
-        ):  # Close list
+            and (numid is None or p_style_id == "Code")
+        ):  # Close list. A Code paragraph after a list must close it even if it
+            # carries a stray/inherited numId, then be re-parented at body level
+            # by the Code branch below (otherwise it nests inside the ListGroup).
             self.last_numid = self._prev_numid()
             # Store the list group and its parent for potential reuse
             if self.level_at_new_list and self.level_at_new_list in self.parents:
@@ -1593,6 +1863,49 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     equations=equations,
                     elem_ref=elem_ref,
                 )
+
+        elif p_style_id == "Code" and not checkbox_label:
+            # Code-styled checkboxes fall through to the text branch,
+            # keeping their label.
+            level = self._get_level()
+            parent = self.parents[level - 1]
+            code_text = raw_paragraph_text.rstrip()
+            # Merge into the previous code block only when it is the parent's
+            # last child (any intervening element breaks the block), the most
+            # recent text item (a resumed list adds items without touching
+            # this parent), and in the same content layer.
+            last_item = self._last_child_item(doc, parent)
+            merge_target = None if self._force_new_code_block else last_item
+            if (
+                isinstance(merge_target, CodeItem)
+                and merge_target.content_layer == self.content_layer
+                and doc.texts
+                and doc.texts[-1] is merge_target
+            ):
+                if code_text:
+                    joiner = "\n" * (self._pending_code_blank_lines + 1)
+                    merge_target.text = f"{merge_target.text}{joiner}{code_text}"
+                    merge_target.orig = f"{merge_target.orig}{joiner}{code_text}"
+                    self._pending_code_blank_lines = 0
+                else:
+                    # Buffered: written only if more code follows, so a
+                    # block never ends in blank lines.
+                    self._pending_code_blank_lines += 1
+                elem_ref.append(merge_target.get_ref())
+                self._force_new_code_block = False
+            elif text:
+                # Start a new block, but never on a leading blank paragraph.
+                self._pending_code_blank_lines = 0
+                code_item = doc.add_code(
+                    text=code_text,
+                    orig=code_text,
+                    parent=parent,
+                    content_layer=self.content_layer,
+                )
+                elem_ref.append(code_item.get_ref())
+                self._force_new_code_block = False
+            # A blank that neither starts nor extends a block leaves the
+            # barrier armed.
 
         else:
             level = self._get_level()
@@ -2087,7 +2400,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # In case we have a table of only 1 cell, we consider it furniture
             # And proceed processing the content of the cell as though it's in the document body
             self._clear_list_group_cache()
+            # Still a code-block boundary: outside code must not merge with
+            # code inside the cell.
+            self._force_new_code_block = True
             self._walk_linear(cell_element._element, doc)
+            self._force_new_code_block = True
             return elem_ref
 
         data = TableData(num_rows=num_rows, num_cols=num_cols)
@@ -2137,6 +2454,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     text = text.replace("<eq>", "$").replace("</eq>", "$")
 
                 provs_in_cell: list[RefItem] = []
+                ref_for_rich_cell: RefItem | None = None
                 rich_table_cell: bool = self._is_rich_table_cell(cell)
 
                 if rich_table_cell:
@@ -2156,7 +2474,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         content_layer=self.content_layer,
                     )
 
-                if rich_table_cell:
+                if rich_table_cell and ref_for_rich_cell is not None:
                     rich_cell = RichTableCell(
                         text=text,
                         row_span=spanned_idx - row_idx,
@@ -2252,6 +2570,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     fm = MsWordDocumentBackend._get_format_from_run(item)
                     if fm != Formatting():
                         return True
+
+        # Walk a non-empty code-styled cell as rich content so it can emit a
+        # CodeItem; the font fallback never fires inside cells.
+        if paragraphs:
+            first_para = Paragraph(paragraphs[0], self.docx_obj)
+            if first_para.text.strip() and self._is_code_style(first_para.style):
+                return True
 
         # All checks passed: plain text only
         return False
@@ -2591,6 +2916,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     name="page header",
                     content_layer=self.content_layer,
                 )
+                # Each header/footer part is its own code-block scope.
+                self._force_new_code_block = True
+                self._pending_code_blank_lines = 0
                 self.current_part = hdr.part
                 self._walk_linear(hdr._element, doc)
                 self.current_part = self.docx_obj.part
@@ -2611,10 +2939,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     name="page footer",
                     content_layer=self.content_layer,
                 )
+                self._force_new_code_block = True
+                self._pending_code_blank_lines = 0
                 self.current_part = ftr.part
                 self._walk_linear(ftr._element, doc)
                 self.current_part = self.docx_obj.part
 
+        self._force_new_code_block = True
+        self._pending_code_blank_lines = 0
         self.content_layer = current_layer
         self.parents[0] = base_parent
 
