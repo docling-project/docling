@@ -20,6 +20,9 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import TableStructureV2Options
 from docling.datamodel.settings import settings
 from docling.models.base_table_model import BaseTableStructureModel
+from docling.models.stages.table_structure.table_structure_reconciler import (
+    reconcile_table_structure,
+)
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
@@ -451,8 +454,35 @@ class TableStructureModelV2(BaseTableStructureModel):
                             else:
                                 text_piece = page._backend.get_text_in_rect(bbox)
                             element["bbox"]["token"] = text_piece
+
                         tc = TableCell.model_validate(element)
                         table_cells.append(tc)
+
+                    reconciliation_result = reconcile_table_structure(
+                        table_cells,
+                        num_rows=num_rows,
+                        num_cols=num_cols,
+                        otsl_seq=otsl_seq,
+                        text_cells=table_cluster.cells,
+                        table_bbox=getattr(table_cluster, "bbox", None),
+                        enable_undersegmentation_fallback=True,
+                        enable_overspan_fallback=False,
+                        allow_same_row_count=False,
+                        allow_column_count_growth=True,
+                        enable_column_reconciliation=True,
+                        enable_row_boundary_reconciliation=True,
+                        enable_row_span_reconciliation=True,
+                    )
+                    if reconciliation_result.diagnostics.valid:
+                        table_cells = reconciliation_result.table_cells
+                        num_rows = reconciliation_result.num_rows
+                        num_cols = reconciliation_result.num_cols
+                        otsl_seq = reconciliation_result.otsl_seq
+                    else:
+                        _log.debug(
+                            "TableFormerV2 reconciliation produced an invalid "
+                            "candidate; keeping model output."
+                        )
 
                     tbl = Table(
                         otsl_seq=otsl_seq,
