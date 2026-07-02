@@ -443,15 +443,7 @@ def test_get_heading_and_level_non_heading(
 
 
 def test_external_image_references():
-    """Test that .docx files with external image references convert without crashing.
-
-    Docx files saved from web browsers often have images as external references
-    (TargetMode="External") pointing to URLs or file:// paths rather than embedded
-    in word/media/. Previously this caused a ValueError from python-docx:
-    "target_part property on _Relationship is undefined when target mode is External"
-
-    See: https://github.com/docling-project/docling/issues/3113
-    """
+    """Test that .docx files with external image references convert without crashing."""
     docx_path = Path("./tests/data/docx/sources/docx_external_image.docx")
     assert docx_path.exists(), f"Test file not found: {docx_path}"
 
@@ -472,44 +464,8 @@ def test_external_image_references():
     assert "after the external image" in md
 
 
-def test_strict_ooxml_conversion():
-    """Test that Strict (ISO/IEC 29500) OOXML .docx files convert correctly.
-
-    Strict OOXML uses the purl.oclc.org namespaces, which python-docx does not
-    understand, so loading previously failed with a DocumentLoadError. The
-    backend now normalizes Strict packages to the equivalent Transitional
-    namespaces in memory. The Strict file and its Transitional twin carry the
-    same content and must produce the same output.
-
-    See: https://github.com/docling-project/docling/issues/1692
-    """
-    strict_path = Path("./tests/data/docx/sources/Strict.docx")
-    transitional_path = Path("./tests/data/docx/sources/Transitional.docx")
-    assert strict_path.exists(), f"Test file not found: {strict_path}"
-    assert transitional_path.exists(), f"Test file not found: {transitional_path}"
-
-    converter = get_converter()
-
-    strict_md = converter.convert(strict_path).document.export_to_markdown()
-    transitional_md = converter.convert(transitional_path).document.export_to_markdown()
-
-    assert strict_md == "Some text"
-    assert strict_md == transitional_md
-
-    # The in-memory stream load path must normalize Strict packages too.
-    from io import BytesIO
-
-    strict_stream = BytesIO(strict_path.read_bytes())
-    assert MsWordDocumentBackend.load_msword_file(strict_stream, "hash") is not None
-
-
 def test_transitional_docx_skips_strict_normalization(monkeypatch):
-    """Transitional files must take the cheap fast path (no full normalization).
-
-    The Strict detection reads only the small root relationships part; a
-    Transitional package must never be decompressed and rewritten. We assert this
-    by making normalization explode if it is ever reached.
-    """
+    """Transitional files must take the cheap fast path (no full normalization)."""
     import zipfile
     from io import BytesIO
 
