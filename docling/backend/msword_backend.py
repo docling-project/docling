@@ -912,6 +912,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         )
 
     def _get_hyperlink_target(self, hyperlink: Hyperlink) -> AnyUrl | Path | None:
+        """Resolve a hyperlink's address to a URL or a local path.
+
+        Addresses without a URL scheme are treated as (relative) filesystem
+        paths. Addresses with a scheme are parsed as URLs.
+
+        Malformed URLs (e.g. an address containing spaces) are handled
+        gracefully: the invalid target is dropped and ``None`` is returned so
+        that the link text is still preserved and conversion of the rest of the
+        document continues. This avoids a single bad hyperlink aborting the
+        whole conversion.
+
+        Returns:
+            An ``AnyUrl`` for a valid URL, a ``Path`` for a scheme-less address,
+            or ``None`` when there is no address or the URL is malformed.
+        """
         if hyperlink.address:
             if not urlparse(hyperlink.address).scheme:
                 return Path(hyperlink.address)
