@@ -42,22 +42,25 @@
         "$ref": "#/pictures/0"
       },
       {
-        "$ref": "#/texts/13"
+        "$ref": "#/texts/18"
       },
       {
-        "$ref": "#/texts/14"
+        "$ref": "#/texts/19"
       },
       {
-        "$ref": "#/texts/15"
+        "$ref": "#/texts/20"
       },
       {
-        "$ref": "#/texts/16"
+        "$ref": "#/texts/21"
       },
       {
-        "$ref": "#/texts/17"
+        "$ref": "#/texts/22"
       },
       {
-        "$ref": "#/pictures/1"
+        "$ref": "#/texts/23"
+      },
+      {
+        "$ref": "#/texts/24"
       },
       {
         "$ref": "#/texts/25"
@@ -312,6 +315,141 @@
         {
           "page_no": 1,
           "bbox": {
+            "l": 479.14,
+            "t": 98.75,
+            "r": 531.17,
+            "b": 91.99,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            13
+          ]
+        }
+      ],
+      "orig": "Tightened nut",
+      "text": "Tightened nut"
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/pictures/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 474.37,
+            "t": 239.59,
+            "r": 535.23,
+            "b": 232.83,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            15
+          ]
+        }
+      ],
+      "orig": "Untightened nut",
+      "text": "Untightened nut"
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/pictures/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 434.62,
+            "t": 193.95,
+            "r": 497.47,
+            "b": 187.14,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            17
+          ]
+        }
+      ],
+      "orig": "Threaded nut core",
+      "text": "Threaded nut core"
+    },
+    {
+      "self_ref": "#/texts/11",
+      "parent": {
+        "$ref": "#/pictures/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 448.55,
+            "t": 218.46,
+            "r": 507.69,
+            "b": 211.65,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            16
+          ]
+        }
+      ],
+      "orig": "Locking shoulder",
+      "text": "Locking shoulder"
+    },
+    {
+      "self_ref": "#/texts/12",
+      "parent": {
+        "$ref": "#/pictures/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 424.78,
+            "t": 107.66,
+            "r": 452.1,
+            "b": 100.86,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            6
+          ]
+        }
+      ],
+      "orig": "Keyway",
+      "text": "Keyway"
+    },
+    {
+      "self_ref": "#/texts/13",
+      "parent": {
+        "$ref": "#/pictures/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
             "l": 102.42,
             "t": 184.01,
             "r": 161.32,
@@ -328,7 +466,7 @@
       "text": "Boots aircraft nut"
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/14",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -355,7 +493,7 @@
       "text": "Flexloc nut"
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/15",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -382,7 +520,7 @@
       "text": "Fiber locknut"
     },
     {
-      "self_ref": "#/texts/11",
+      "self_ref": "#/texts/16",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -409,7 +547,7 @@
       "text": "Elastic stop nut"
     },
     {
-      "self_ref": "#/texts/12",
+      "self_ref": "#/texts/17",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -436,7 +574,34 @@
       "text": "Elastic anchor nut"
     },
     {
-      "self_ref": "#/texts/13",
+      "self_ref": "#/texts/18",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "caption",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 321.0,
+            "t": 71.74,
+            "r": 481.65,
+            "b": 63.73,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            46
+          ]
+        }
+      ],
+      "orig": "Figure 7-27. Stainless steel self-locking nut.",
+      "text": "Figure 7-27. Stainless steel self-locking nut."
+    },
+    {
+      "self_ref": "#/texts/19",
       "parent": {
         "$ref": "#/body"
       },
@@ -463,7 +628,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/14",
+      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/body"
       },
@@ -491,7 +656,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/15",
+      "self_ref": "#/texts/21",
       "parent": {
         "$ref": "#/body"
       },
@@ -518,7 +683,7 @@
       "text": "The stainless steel self-locking nut may be spun on and off by hand as its locking action takes places only when the nut is seated against a solid surface and tightened. The nut consists of two parts: a case with a beveled locking shoulder and key and a thread insert with a locking shoulder and slotted keyway. Until the nut is tightened, it spins on the bolt  easily,  because  the  threaded  insert  is  the  proper  size for the bolt. However, when the nut is seated against a solid surface and tightened, the locking shoulder of the insert is pulled downward and wedged against the locking shoulder of the case. This action compresses the threaded insert and causes it to clench the bolt tightly. The cross-sectional view in Figure 7-27 shows how the key of the case fits into the slotted keyway of the insert so that when the case is turned, the threaded insert is turned with it. Note that the slot is wider than the key. This permits the slot to be narrowed and the insert to be compressed when the nut is tightened."
     },
     {
-      "self_ref": "#/texts/16",
+      "self_ref": "#/texts/22",
       "parent": {
         "$ref": "#/body"
       },
@@ -546,7 +711,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/17",
+      "self_ref": "#/texts/23",
       "parent": {
         "$ref": "#/body"
       },
@@ -573,90 +738,9 @@
       "text": "The elastic  stop  nut  is  a  standard  nut  with  the  height increased  to  accommodate  a  fiber  locking  collar.  This"
     },
     {
-      "self_ref": "#/texts/18",
+      "self_ref": "#/texts/24",
       "parent": {
-        "$ref": "#/pictures/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "caption",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 321.0,
-            "t": 71.74,
-            "r": 481.65,
-            "b": 63.73,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            46
-          ]
-        }
-      ],
-      "orig": "Figure 7-27. Stainless steel self-locking nut.",
-      "text": "Figure 7-27. Stainless steel self-locking nut."
-    },
-    {
-      "self_ref": "#/texts/19",
-      "parent": {
-        "$ref": "#/pictures/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 479.14,
-            "t": 98.75,
-            "r": 531.17,
-            "b": 91.99,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            13
-          ]
-        }
-      ],
-      "orig": "Tightened nut",
-      "text": "Tightened nut"
-    },
-    {
-      "self_ref": "#/texts/20",
-      "parent": {
-        "$ref": "#/pictures/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 474.37,
-            "t": 239.59,
-            "r": 535.23,
-            "b": 232.83,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            15
-          ]
-        }
-      ],
-      "orig": "Untightened nut",
-      "text": "Untightened nut"
-    },
-    {
-      "self_ref": "#/texts/21",
-      "parent": {
-        "$ref": "#/pictures/1"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -679,87 +763,6 @@
       ],
       "orig": "Nut case",
       "text": "Nut case"
-    },
-    {
-      "self_ref": "#/texts/22",
-      "parent": {
-        "$ref": "#/pictures/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 434.62,
-            "t": 193.95,
-            "r": 497.47,
-            "b": 187.14,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            17
-          ]
-        }
-      ],
-      "orig": "Threaded nut core",
-      "text": "Threaded nut core"
-    },
-    {
-      "self_ref": "#/texts/23",
-      "parent": {
-        "$ref": "#/pictures/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 448.55,
-            "t": 218.46,
-            "r": 507.69,
-            "b": 211.65,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            16
-          ]
-        }
-      ],
-      "orig": "Locking shoulder",
-      "text": "Locking shoulder"
-    },
-    {
-      "self_ref": "#/texts/24",
-      "parent": {
-        "$ref": "#/pictures/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 424.78,
-            "t": 107.66,
-            "r": 452.1,
-            "b": 100.86,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            6
-          ]
-        }
-      ],
-      "orig": "Keyway",
-      "text": "Keyway"
     },
     {
       "self_ref": "#/texts/25",
@@ -813,6 +816,21 @@
         },
         {
           "$ref": "#/texts/12"
+        },
+        {
+          "$ref": "#/texts/13"
+        },
+        {
+          "$ref": "#/texts/14"
+        },
+        {
+          "$ref": "#/texts/15"
+        },
+        {
+          "$ref": "#/texts/16"
+        },
+        {
+          "$ref": "#/texts/17"
         }
       ],
       "content_layer": "body",
@@ -821,10 +839,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 70.54,
-            "t": 243.17,
-            "r": 310.1,
-            "b": 79.25,
+            "l": 68.92,
+            "t": 240.55,
+            "r": 594.0,
+            "b": 78.45,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -836,61 +854,6 @@
       "captions": [
         {
           "$ref": "#/texts/7"
-        }
-      ],
-      "references": [],
-      "footnotes": [],
-      "annotations": []
-    },
-    {
-      "self_ref": "#/pictures/1",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/18"
-        },
-        {
-          "$ref": "#/texts/19"
-        },
-        {
-          "$ref": "#/texts/20"
-        },
-        {
-          "$ref": "#/texts/21"
-        },
-        {
-          "$ref": "#/texts/22"
-        },
-        {
-          "$ref": "#/texts/23"
-        },
-        {
-          "$ref": "#/texts/24"
-        }
-      ],
-      "content_layer": "body",
-      "label": "picture",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 320.57,
-            "t": 352.11,
-            "r": 559.39,
-            "b": 80.7,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            0
-          ]
-        }
-      ],
-      "captions": [
-        {
-          "$ref": "#/texts/18"
         }
       ],
       "references": [],

@@ -303,7 +303,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
@@ -321,8 +321,7 @@
         }
       ],
       "orig": "The Evolution of the Word Processor",
-      "text": "The Evolution of the Word Processor",
-      "level": 1
+      "text": "The Evolution of the Word Processor"
     },
     {
       "self_ref": "#/texts/1",
@@ -358,7 +357,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
@@ -376,8 +375,7 @@
         }
       ],
       "orig": "Pre-Digital Era (19th - Early 20th Century)",
-      "text": "Pre-Digital Era (19th - Early 20th Century)",
-      "level": 1
+      "text": "Pre-Digital Era (19th - Early 20th Century)"
     },
     {
       "self_ref": "#/texts/3",
@@ -440,7 +438,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
@@ -458,8 +456,7 @@
         }
       ],
       "orig": "The Birth of Word Processing (1960s - 1970s)",
-      "text": "The Birth of Word Processing (1960s - 1970s)",
-      "level": 1
+      "text": "The Birth of Word Processing (1960s - 1970s)"
     },
     {
       "self_ref": "#/texts/6",
@@ -580,7 +577,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
@@ -598,8 +595,7 @@
         }
       ],
       "orig": "The Rise of Personal Computers (1980s)",
-      "text": "The Rise of Personal Computers (1980s)",
-      "level": 1
+      "text": "The Rise of Personal Computers (1980s)"
     },
     {
       "self_ref": "#/texts/11",
@@ -720,7 +716,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 2,
@@ -738,8 +734,7 @@
         }
       ],
       "orig": "The Modern Era (1990s - Present)",
-      "text": "The Modern Era (1990s - Present)",
-      "level": 1
+      "text": "The Modern Era (1990s - Present)"
     },
     {
       "self_ref": "#/texts/16",
@@ -862,7 +857,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 2,
@@ -880,8 +875,7 @@
         }
       ],
       "orig": "Future of Word Processing",
-      "text": "Future of Word Processing",
-      "level": 1
+      "text": "Future of Word Processing"
     },
     {
       "self_ref": "#/texts/21",
@@ -944,7 +938,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 3,
@@ -962,8 +956,7 @@
         }
       ],
       "orig": "Specialized Word Processing Tools",
-      "text": "Specialized Word Processing Tools",
-      "level": 1
+      "text": "Specialized Word Processing Tools"
     },
     {
       "self_ref": "#/texts/24",
@@ -1086,7 +1079,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 3,
@@ -1104,8 +1097,7 @@
         }
       ],
       "orig": "Key Features That Changed Word Processing",
-      "text": "Key Features That Changed Word Processing",
-      "level": 1
+      "text": "Key Features That Changed Word Processing"
     },
     {
       "self_ref": "#/texts/29",
@@ -1286,7 +1278,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 3,
@@ -1304,8 +1296,7 @@
         }
       ],
       "orig": "The Cultural Impact of Word Processors",
-      "text": "The Cultural Impact of Word Processors",
-      "level": 1
+      "text": "The Cultural Impact of Word Processors"
     },
     {
       "self_ref": "#/texts/36",
@@ -1428,7 +1419,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 4,
@@ -1446,8 +1437,7 @@
         }
       ],
       "orig": "Word Processors in a Post-Digital Era",
-      "text": "Word Processors in a Post-Digital Era",
-      "level": 1
+      "text": "Word Processors in a Post-Digital Era"
     },
     {
       "self_ref": "#/texts/41",
@@ -1628,7 +1618,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 4,
@@ -1646,8 +1636,7 @@
         }
       ],
       "orig": "A Glimpse Into the Future",
-      "text": "A Glimpse Into the Future",
-      "level": 1
+      "text": "A Glimpse Into the Future"
     },
     {
       "self_ref": "#/texts/48",

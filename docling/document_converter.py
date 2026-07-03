@@ -20,7 +20,10 @@ from docling.backend.abstract_backend import (
 )
 from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.csv_backend import CsvDocumentBackend
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_backend import (
+    DoclingParseDocumentBackend,
+    ThreadedDoclingParseDocumentBackend,
+)
 from docling.backend.email_backend import EmailDocumentBackend
 from docling.backend.epub_backend import EpubDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
@@ -199,7 +202,7 @@ class ImageFormatOption(FormatOption):
 
 class PdfFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
-    backend: Type[AbstractDocumentBackend] = DoclingParseDocumentBackend
+    backend: Type[AbstractDocumentBackend] = ThreadedDoclingParseDocumentBackend
     backend_options: Optional[PdfBackendOptions] = None
 
 
