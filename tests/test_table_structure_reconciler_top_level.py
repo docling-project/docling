@@ -212,6 +212,236 @@ def test_reconcile_rejects_unsafe_same_shape_text_swap(monkeypatch):
     assert "incumbent_preserved" in result.notes
 
 
+def test_reconcile_rejects_span_changing_candidate_that_moves_unrelated_text(
+    monkeypatch,
+):
+    baseline_cells = [
+        model_cell(start_row=0, end_row=1, start_col=0, end_col=1, text="A"),
+        model_cell(start_row=0, end_row=1, start_col=1, end_col=2, text="B"),
+    ]
+    span_changing_swapped_cells = [
+        model_cell(start_row=0, end_row=1, start_col=0, end_col=2, text="B"),
+        model_cell(start_row=1, end_row=2, start_col=0, end_col=1, text="A"),
+    ]
+
+    def force_overspan_detection(*args, **kwargs):
+        return True
+
+    def force_span_changing_swapped_fallback(
+        cells,
+        num_rows,
+        num_cols,
+        otsl_seq,
+        **kwargs,
+    ):
+        return (
+            span_changing_swapped_cells,
+            num_rows,
+            num_cols,
+            list(otsl_seq),
+            reconciler_module.validate_table_topology(
+                span_changing_swapped_cells,
+                num_rows,
+                num_cols,
+            ),
+        )
+
+    monkeypatch.setattr(
+        reconciler_module,
+        "looks_overspanned_by_text_geometry",
+        force_overspan_detection,
+    )
+    monkeypatch.setattr(
+        reconciler_module,
+        "infer_table_from_text_geometry",
+        force_span_changing_swapped_fallback,
+    )
+
+    result = reconcile_table_structure(
+        baseline_cells,
+        num_rows=2,
+        num_cols=2,
+        otsl_seq=["fcel", "fcel", "nl", "fcel", "ecel", "nl"],
+        text_cells=[geometry_text_cell("A", row=0, col=0)],
+        **V1_PRODUCTION_RECONCILIATION_FLAGS,
+    )
+
+    observed = [
+        (
+            cell.start_row_offset_idx,
+            cell.end_row_offset_idx,
+            cell.start_col_offset_idx,
+            cell.end_col_offset_idx,
+            cell.text,
+        )
+        for cell in result.table_cells
+    ]
+    baseline = [
+        (
+            cell.start_row_offset_idx,
+            cell.end_row_offset_idx,
+            cell.start_col_offset_idx,
+            cell.end_col_offset_idx,
+            cell.text,
+        )
+        for cell in baseline_cells
+    ]
+
+    assert observed == baseline
+    assert "incumbent_preserved" in result.notes
+
+
+def test_reconcile_rejects_duplicate_text_span_change_when_movement_is_ambiguous(
+    monkeypatch,
+):
+    baseline_cells = [
+        model_cell(start_row=0, end_row=1, start_col=0, end_col=1, text="09:00"),
+        model_cell(start_row=1, end_row=2, start_col=0, end_col=1, text="09:00"),
+    ]
+    ambiguous_duplicate_cells = [
+        model_cell(start_row=0, end_row=1, start_col=0, end_col=2, text="09:00"),
+        model_cell(start_row=1, end_row=2, start_col=1, end_col=2, text="09:00"),
+    ]
+
+    def force_overspan_detection(*args, **kwargs):
+        return True
+
+    def force_duplicate_fallback(cells, num_rows, num_cols, otsl_seq, **kwargs):
+        return (
+            ambiguous_duplicate_cells,
+            num_rows,
+            num_cols,
+            list(otsl_seq),
+            reconciler_module.validate_table_topology(
+                ambiguous_duplicate_cells,
+                num_rows,
+                num_cols,
+            ),
+        )
+
+    monkeypatch.setattr(
+        reconciler_module,
+        "looks_overspanned_by_text_geometry",
+        force_overspan_detection,
+    )
+    monkeypatch.setattr(
+        reconciler_module,
+        "infer_table_from_text_geometry",
+        force_duplicate_fallback,
+    )
+
+    result = reconcile_table_structure(
+        baseline_cells,
+        num_rows=2,
+        num_cols=2,
+        otsl_seq=["fcel", "ecel", "nl", "fcel", "ecel", "nl"],
+        text_cells=[geometry_text_cell("09:00", row=0, col=0)],
+        **V1_PRODUCTION_RECONCILIATION_FLAGS,
+    )
+
+    observed = [
+        (
+            cell.start_row_offset_idx,
+            cell.end_row_offset_idx,
+            cell.start_col_offset_idx,
+            cell.end_col_offset_idx,
+            cell.text,
+        )
+        for cell in result.table_cells
+    ]
+    baseline = [
+        (
+            cell.start_row_offset_idx,
+            cell.end_row_offset_idx,
+            cell.start_col_offset_idx,
+            cell.end_col_offset_idx,
+            cell.text,
+        )
+        for cell in baseline_cells
+    ]
+
+    assert observed == baseline
+    assert "incumbent_preserved" in result.notes
+
+
+def test_reconcile_rejects_token_preserving_merge_split_corruption(
+    monkeypatch,
+):
+    baseline_cells = [
+        model_cell(start_row=0, end_row=1, start_col=0, end_col=1, text="Owner"),
+        model_cell(start_row=0, end_row=1, start_col=1, end_col=2, text="Window"),
+    ]
+    merged_cells = [
+        model_cell(
+            start_row=0,
+            end_row=1,
+            start_col=0,
+            end_col=2,
+            text="Owner Window",
+        ),
+    ]
+
+    def force_overspan_detection(*args, **kwargs):
+        return True
+
+    def force_merge_split_fallback(cells, num_rows, num_cols, otsl_seq, **kwargs):
+        return (
+            merged_cells,
+            num_rows,
+            num_cols,
+            list(otsl_seq),
+            reconciler_module.validate_table_topology(
+                merged_cells,
+                num_rows,
+                num_cols,
+            ),
+        )
+
+    monkeypatch.setattr(
+        reconciler_module,
+        "looks_overspanned_by_text_geometry",
+        force_overspan_detection,
+    )
+    monkeypatch.setattr(
+        reconciler_module,
+        "infer_table_from_text_geometry",
+        force_merge_split_fallback,
+    )
+
+    result = reconcile_table_structure(
+        baseline_cells,
+        num_rows=1,
+        num_cols=2,
+        otsl_seq=["fcel", "fcel", "nl"],
+        text_cells=[geometry_text_cell("Owner", row=0, col=0)],
+        **V1_PRODUCTION_RECONCILIATION_FLAGS,
+    )
+
+    observed = [
+        (
+            cell.start_row_offset_idx,
+            cell.end_row_offset_idx,
+            cell.start_col_offset_idx,
+            cell.end_col_offset_idx,
+            cell.text,
+        )
+        for cell in result.table_cells
+    ]
+    baseline = [
+        (
+            cell.start_row_offset_idx,
+            cell.end_row_offset_idx,
+            cell.start_col_offset_idx,
+            cell.end_col_offset_idx,
+            cell.text,
+        )
+        for cell in baseline_cells
+    ]
+
+    assert observed == baseline
+    assert "incumbent_preserved" in result.notes
+
+
 def test_reconcile_accepts_same_shape_topology_repair_when_spans_change():
     cells = [
         model_cell(start_row=4, end_row=7, start_col=3, end_col=4, text="Broad topic"),

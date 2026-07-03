@@ -190,6 +190,98 @@ def _coverage_ratio(diagnostics: object) -> float | None:
     return float(value)
 
 
+def _span_local_normalized_cell_text(cell: object) -> str:
+    return " ".join(str(getattr(cell, "text", "") or "").split())
+
+
+def _span_local_safe_int_or_none(value: object) -> int | None:
+    try:
+        return int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+
+
+def _span_local_cell_rect(
+    cell: object,
+) -> tuple[int | None, int | None, int | None, int | None]:
+    return (
+        _span_local_safe_int_or_none(getattr(cell, "start_row_offset_idx", None)),
+        _span_local_safe_int_or_none(getattr(cell, "end_row_offset_idx", None)),
+        _span_local_safe_int_or_none(getattr(cell, "start_col_offset_idx", None)),
+        _span_local_safe_int_or_none(getattr(cell, "end_col_offset_idx", None)),
+    )
+
+
+def _span_local_rect_contains(
+    outer: tuple[int | None, int | None, int | None, int | None],
+    inner: tuple[int | None, int | None, int | None, int | None],
+) -> bool:
+    if None in outer or None in inner:
+        return False
+
+    outer_start_row, outer_end_row, outer_start_col, outer_end_col = outer
+    inner_start_row, inner_end_row, inner_start_col, inner_end_col = inner
+
+    return (
+        outer_start_row <= inner_start_row
+        and inner_end_row <= outer_end_row
+        and outer_start_col <= inner_start_col
+        and inner_end_col <= outer_end_col
+    )
+
+
+def _span_local_text_rects_by_value(
+    cells: list[object],
+) -> dict[str, list[tuple[int | None, int | None, int | None, int | None]]]:
+    rects_by_text: dict[
+        str,
+        list[tuple[int | None, int | None, int | None, int | None]],
+    ] = {}
+
+    for cell in cells:
+        text = _span_local_normalized_cell_text(cell)
+        if not text:
+            continue
+
+        rects_by_text.setdefault(text, []).append(_span_local_cell_rect(cell))
+
+    return {text: sorted(rects) for text, rects in rects_by_text.items()}
+
+
+def _same_shape_text_slot_changes_are_span_local(
+    *,
+    baseline_cells: list[object],
+    candidate_cells: list[object],
+) -> bool:
+    baseline_rects_by_text = _span_local_text_rects_by_value(baseline_cells)
+    candidate_rects_by_text = _span_local_text_rects_by_value(candidate_cells)
+
+    for text, baseline_rects in baseline_rects_by_text.items():
+        candidate_rects = candidate_rects_by_text.get(text)
+
+        if candidate_rects is None:
+            return False
+
+        if baseline_rects == candidate_rects:
+            continue
+
+        if len(baseline_rects) != 1 or len(candidate_rects) != 1:
+            return False
+
+        baseline_rect = baseline_rects[0]
+        candidate_rect = candidate_rects[0]
+
+        if _span_local_rect_contains(candidate_rect, baseline_rect):
+            continue
+
+        if _span_local_rect_contains(baseline_rect, candidate_rect):
+            continue
+
+        return False
+
+    return True
+
+
 def accept_reconciled_table_challenger(
     *,
     baseline_cells: list[object],
@@ -249,15 +341,18 @@ def accept_reconciled_table_challenger(
     # Same-shape repairs must not move text between logical slots.
     # Token multiset preservation is sufficient for grid-growth repairs, but
     # same-shape changes need stricter slot-level protection.
-    if (
-        grid_same_shape
-        and _has_same_shape_text_slot_regression(
+    if grid_same_shape and _has_same_shape_text_slot_regression(
+        baseline_cells=baseline_cells,
+        candidate_cells=candidate_cells,
+    ):
+        if not allow_same_shape_text_slot_change:
+            return reject("text_slot_regression")
+
+        if not _same_shape_text_slot_changes_are_span_local(
             baseline_cells=baseline_cells,
             candidate_cells=candidate_cells,
-        )
-        and not allow_same_shape_text_slot_change
-    ):
-        return reject("text_slot_regression")
+        ):
+            return reject("text_slot_regression")
 
     # Header row/column indices are directly comparable only when grid shape is
     # stable. Grid-growth repairs may shift coordinates while preserving text.
