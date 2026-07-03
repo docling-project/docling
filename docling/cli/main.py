@@ -440,7 +440,7 @@ def _export_markdown_format(
     conv_res.document.save_as_markdown(filename=fname, image_mode=image_export_mode)
     if _is_empty_output(fname):
         error_message = (
-            "Markdown export produced empty output for " f"{conv_res.input.file.name}"
+            f"Markdown export produced empty output for {conv_res.input.file.name}"
         )
         _log.error(error_message)
         conv_res.errors.append(
@@ -574,13 +574,19 @@ def export_documents(
             doc_filename = conv_res.input.file.stem
 
             if export_json:
-                _export_json_format(conv_res, output_dir, doc_filename, image_export_mode)
+                _export_json_format(
+                    conv_res, output_dir, doc_filename, image_export_mode
+                )
 
             if export_yaml:
-                _export_yaml_format(conv_res, output_dir, doc_filename, image_export_mode)
+                _export_yaml_format(
+                    conv_res, output_dir, doc_filename, image_export_mode
+                )
 
             if export_html:
-                _export_html_format(conv_res, output_dir, doc_filename, image_export_mode)
+                _export_html_format(
+                    conv_res, output_dir, doc_filename, image_export_mode
+                )
 
             if export_html_split_page:
                 _export_html_split_page_format(
