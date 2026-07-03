@@ -2118,18 +2118,25 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 spanned_idx = row_idx
                 spanned_tc: CT_Tc | None = cell._tc
+                # Absolute grid column of the current cell. `_Row.cells` is indexed
+                # from the first cell actually present, so in a row that starts late
+                # via `w:gridBefore` the positional index is offset from the grid
+                # column by `grid_cols_before`.
+                grid_col = row.grid_cols_before + col_idx
                 while spanned_tc == cell._tc:
                     spanned_idx += 1
                     if spanned_idx < num_rows:
-                        # A later row may be shorter than the current one (e.g. it
-                        # starts late via `w:gridBefore` or ends early via
-                        # `w:gridAfter`), so `_Row.cells` returns fewer entries.
-                        # Guard the positional lookup to avoid an IndexError that
-                        # would abort parsing of the whole table.
-                        spanned_cells = table.rows[spanned_idx].cells
+                        # Map the grid column back to a positional index in the
+                        # later row, which may start late (`w:gridBefore`) or end
+                        # early (`w:gridAfter`) and therefore not contain this grid
+                        # column at all. Bounds-checking also avoids an IndexError
+                        # that would otherwise abort parsing of the whole table.
+                        spanned_row = table.rows[spanned_idx]
+                        spanned_cells = spanned_row.cells
+                        spanned_col = grid_col - spanned_row.grid_cols_before
                         spanned_tc = (
-                            spanned_cells[col_idx]._tc
-                            if col_idx < len(spanned_cells)
+                            spanned_cells[spanned_col]._tc
+                            if 0 <= spanned_col < len(spanned_cells)
                             else None
                         )
                     else:

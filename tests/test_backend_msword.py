@@ -607,6 +607,57 @@ def test_table_row_with_grid_before_is_preserved(tmp_path):
     assert b2.start_row_offset_idx == 1
 
 
+def test_vertical_merge_across_grid_before_row_keeps_row_span(tmp_path):
+    """A vertical merge must keep its row span across a row that starts late.
+
+    ``_Row.cells`` is indexed from the first cell present, so the same grid
+    column maps to different positional indices in rows with different
+    ``grid_cols_before``. The vertical-merge scan must map by grid column, not
+    by raw position, or a cell merged down a column loses its span when the row
+    below starts late.
+
+    See: https://github.com/docling-project/docling/issues/3739
+    """
+    from docx import Document
+    from docx.oxml.ns import qn
+
+    # 3-column table; grid column 2 is merged across rows 0-1, and row 1 starts
+    # late (gridBefore=2):
+    #   grid col:   0    1    2
+    #   row 0:    [A ] [B ] [M ]   (M spans rows 0-1)
+    #   row 1:     .    .   [M ]   (gridBefore=2)
+    docx_path = tmp_path / "vmerge_grid_before.docx"
+    doc = Document()
+    table = doc.add_table(rows=2, cols=3)
+    table.style = "Table Grid"
+    table.cell(0, 0).text = "A"
+    table.cell(0, 1).text = "B"
+    table.cell(0, 2).text = "M"
+    table.cell(1, 0).text = "x0"
+    table.cell(1, 1).text = "x1"
+    table.cell(1, 2).text = "y2"
+    table.cell(0, 2).merge(table.cell(1, 2))  # vertical merge, grid column 2
+    tr = table.rows[1]._tr
+    tr.get_or_add_trPr().append(tr.makeelement(qn("w:gridBefore"), {qn("w:val"): "2"}))
+    for tc in tr.findall(qn("w:tc"))[:2]:
+        tr.remove(tc)  # drop the two leading cells -> row starts late
+    doc.save(docx_path)
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    table_item = in_doc._backend.convert().tables[0]
+
+    merged = next(
+        cell for cell in table_item.data.table_cells if cell.text.startswith("M")
+    )
+    assert merged.start_col_offset_idx == 2
+    assert merged.start_row_offset_idx == 0
+    assert merged.row_span == 2
+
+
 def test_list_counter_and_enum_marker(docx_paths):
     """Test list counter increment, sub-level reset, marker building, and sequence reset."""
     docx_path = docx_paths[0]
