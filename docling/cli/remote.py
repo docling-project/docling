@@ -16,9 +16,9 @@ from typing import Annotated, Optional
 
 import typer
 from docling_core.types.doc import ImageRefMode
-from docling.cli.main import ChunkerType
 
 from docling.cli.export_utils import _export_flags_from_formats, _split_list
+from docling.cli.main import ChunkerType
 from docling.datamodel.base_models import InputFormat, OutputFormat
 from docling.datamodel.pipeline_options import ProcessingPipeline
 from docling.datamodel.service.options import (
