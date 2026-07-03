@@ -2097,35 +2097,52 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         )
         elem_ref.append(docling_table.get_ref())
 
-        cell_set: set[CT_Tc] = set()
+        # Reconstruct the table's layout grid keyed by *true* grid coordinates.
+        #
+        # ``_Row.cells`` returns only the cells actually present in a row, so a
+        # row that starts late (``w:gridBefore``) or ends early
+        # (``w:gridAfter``) yields fewer entries than the table is wide, and its
+        # entries are offset from the grid columns they occupy. ``_Row.cells``
+        # already expands horizontal spans (one entry per grid column) and
+        # resolves ``vMerge="continue"`` cells to their root cell, so placing
+        # its entries at consecutive grid columns starting at
+        # ``grid_cols_before`` rebuilds the full grid, with ``None`` marking the
+        # positions ``gridBefore``/``gridAfter`` leave empty.
+        grid: list[list[_Cell | None]] = [[None] * num_cols for _ in range(num_rows)]
         for row_idx, row in enumerate(table.rows):
-            _log.debug(f"Row index {row_idx} with {len(row.cells)} populated cells")
-            col_idx = 0
-            while col_idx < num_cols:
-                # Handle merged cells: row may have fewer cells than num_cols
-                if col_idx >= len(row.cells):
-                    break
-                cell: _Cell = row.cells[col_idx]
-                _log.debug(
-                    f" col {col_idx} grid_span {cell.grid_span} grid_cols_before {row.grid_cols_before}"
-                )
-                if cell is None or cell._tc in cell_set:
-                    _log.debug("  skipped since repeated content")
-                    col_idx += cell.grid_span
-                    continue
-                else:
-                    cell_set.add(cell._tc)
+            grid_col = row.grid_cols_before
+            for cell in row.cells:
+                if grid_col < num_cols:
+                    grid[row_idx][grid_col] = cell
+                grid_col += 1
 
-                spanned_idx = row_idx
-                spanned_tc: CT_Tc | None = cell._tc
-                while spanned_tc == cell._tc:
-                    spanned_idx += 1
-                    spanned_tc = (
-                        table.rows[spanned_idx].cells[col_idx]._tc
-                        if spanned_idx < num_rows
-                        else None
-                    )
-                _log.debug(f"  spanned before row {spanned_idx}")
+        seen: set[CT_Tc] = set()
+        for row_idx in range(num_rows):
+            for col_idx in range(num_cols):
+                cell = grid[row_idx][col_idx]
+                # ``None`` is an empty gridBefore/gridAfter position; a repeated
+                # ``_tc`` is a cell already emitted as part of a horizontal or
+                # vertical span.
+                if cell is None or cell._tc in seen:
+                    continue
+                seen.add(cell._tc)
+
+                # A cell occupies ``grid_span`` columns horizontally. For the
+                # row span, scan straight down the same grid column while it is
+                # backed by the same ``_tc``. Indexing by true grid column (not
+                # by position within the row) keeps this correct even when the
+                # merge crosses a row that starts late via ``gridBefore``.
+                col_span = cell.grid_span
+                row_span = 1
+                while row_idx + row_span < num_rows:
+                    below = grid[row_idx + row_span][col_idx]
+                    if below is None or below._tc is not cell._tc:
+                        break
+                    row_span += 1
+                _log.debug(
+                    f"Table cell at grid ({row_idx},{col_idx}) "
+                    f"row_span {row_span} col_span {col_span}"
+                )
 
                 # Detect equations in cell text
                 text, equations = self._handle_equations_in_text(
@@ -2145,9 +2162,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 _log.debug(f"Table cell {row_idx},{col_idx} rich? {rich_table_cell}")
 
                 if len(provs_in_cell) > 0:
-                    # Cell has multiple elements, we need to group them
-                    rich_table_cell = True
-                    group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{row.grid_cols_before + row_idx}"
+                    # Cell holds multiple elements: group them and point a
+                    # RichTableCell at that group.
+                    group_name = (
+                        f"rich_cell_group_{len(doc.tables)}_{col_idx}_{row_idx}"
+                    )
                     ref_for_rich_cell = MsWordDocumentBackend._group_cell_elements(
                         group_name,
                         doc,
@@ -2155,36 +2174,36 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         docling_table,
                         content_layer=self.content_layer,
                     )
-
-                if rich_table_cell:
-                    rich_cell = RichTableCell(
-                        text=text,
-                        row_span=spanned_idx - row_idx,
-                        col_span=cell.grid_span,
-                        start_row_offset_idx=row.grid_cols_before + row_idx,
-                        end_row_offset_idx=row.grid_cols_before + spanned_idx,
-                        start_col_offset_idx=col_idx,
-                        end_col_offset_idx=col_idx + cell.grid_span,
-                        column_header=row.grid_cols_before + row_idx == 0,
-                        row_header=False,
-                        ref=ref_for_rich_cell,  # points to an artificial group around children
+                    doc.add_table_cell(
+                        table_item=docling_table,
+                        cell=RichTableCell(
+                            text=text,
+                            row_span=row_span,
+                            col_span=col_span,
+                            start_row_offset_idx=row_idx,
+                            end_row_offset_idx=row_idx + row_span,
+                            start_col_offset_idx=col_idx,
+                            end_col_offset_idx=col_idx + col_span,
+                            column_header=row_idx == 0,
+                            row_header=False,
+                            ref=ref_for_rich_cell,  # group around the cell's children
+                        ),
                     )
-                    doc.add_table_cell(table_item=docling_table, cell=rich_cell)
-                    col_idx += cell.grid_span
                 else:
-                    simple_cell = TableCell(
-                        text=text,
-                        row_span=spanned_idx - row_idx,
-                        col_span=cell.grid_span,
-                        start_row_offset_idx=row.grid_cols_before + row_idx,
-                        end_row_offset_idx=row.grid_cols_before + spanned_idx,
-                        start_col_offset_idx=col_idx,
-                        end_col_offset_idx=col_idx + cell.grid_span,
-                        column_header=row.grid_cols_before + row_idx == 0,
-                        row_header=False,
+                    doc.add_table_cell(
+                        table_item=docling_table,
+                        cell=TableCell(
+                            text=text,
+                            row_span=row_span,
+                            col_span=col_span,
+                            start_row_offset_idx=row_idx,
+                            end_row_offset_idx=row_idx + row_span,
+                            start_col_offset_idx=col_idx,
+                            end_col_offset_idx=col_idx + col_span,
+                            column_header=row_idx == 0,
+                            row_header=False,
+                        ),
                     )
-                    doc.add_table_cell(table_item=docling_table, cell=simple_cell)
-                    col_idx += cell.grid_span
         return elem_ref
 
     def _has_blip(self, element: BaseOxmlElement) -> bool:

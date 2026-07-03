@@ -552,6 +552,131 @@ def test_block_sdt_tables_are_extracted():
     assert phase_2_idx < table_idxs[1]
 
 
+def _table_with_grid_before(
+    tmp_path,
+    *,
+    rows,
+    cols,
+    texts,
+    late_row,
+    grid_before,
+    merge=None,
+    filename="grid_before.docx",
+):
+    """Build a docx table where ``late_row`` starts ``grid_before`` columns late.
+
+    ``texts`` maps ``(row, col)`` grid positions to strings; ``merge`` optionally
+    vertically merges ``((r0, c), (r1, c))`` before the leading cells of
+    ``late_row`` are dropped to realize the ``w:gridBefore``.
+    """
+    from docx import Document
+    from docx.oxml.ns import qn
+
+    doc = Document()
+    table = doc.add_table(rows=rows, cols=cols)
+    table.style = "Table Grid"
+    for (r, c), txt in texts.items():
+        table.cell(r, c).text = txt
+    if merge is not None:
+        (r0, c0), (r1, c1) = merge
+        table.cell(r0, c0).merge(table.cell(r1, c1))
+
+    tr = table.rows[late_row]._tr
+    tr.get_or_add_trPr().append(
+        tr.makeelement(qn("w:gridBefore"), {qn("w:val"): str(grid_before)})
+    )
+    for tc in tr.findall(qn("w:tc"))[:grid_before]:  # drop leading cells
+        tr.remove(tc)
+
+    docx_path = tmp_path / filename
+    doc.save(docx_path)
+    return docx_path
+
+
+def _convert(docx_path):
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    return in_doc._backend.convert()
+
+
+def test_table_row_with_grid_before_is_preserved(tmp_path):
+    """Rows that start late via ``w:gridBefore`` must not drop cells.
+
+    ``_Row.cells`` returns only the cells actually present, so a ``gridBefore``
+    row is shorter than the grid width. The vertical-merge scan used to index
+    that shorter row positionally and raise ``IndexError``, which
+    ``_walk_linear`` swallowed at DEBUG level, aborting the whole table. On top
+    of that, ``grid_cols_before`` (a column count) was used as a row offset,
+    shifting a late-starting cell down a row instead of right a column.
+
+    See https://github.com/docling-project/docling/issues/3739
+    """
+    # 2x2; row 1 starts late (gridBefore=1). Its only remaining cell is B2:
+    #   grid col:   0    1
+    #   row 0:    [A1] [B1]
+    #   row 1:     .   [B2]
+    docx_path = _table_with_grid_before(
+        tmp_path,
+        rows=2,
+        cols=2,
+        texts={(0, 0): "A1", (0, 1): "B1", (1, 1): "B2"},
+        late_row=1,
+        grid_before=1,
+    )
+    doc = _convert(docx_path)
+
+    assert len(doc.tables) == 1
+    by_text = {c.text: c for c in doc.tables[0].data.table_cells}
+
+    # No cell dropped, table not aborted.
+    assert {"A1", "B1", "B2"}.issubset(by_text)
+    # B1 stays at grid (0, 1); B2 is shifted RIGHT into (1, 1), not DOWN.
+    b1, b2 = by_text["B1"], by_text["B2"]
+    assert (b1.start_row_offset_idx, b1.start_col_offset_idx) == (0, 1)
+    assert (b2.start_row_offset_idx, b2.start_col_offset_idx) == (1, 1)
+    assert b1.column_header and not b2.column_header
+
+
+def test_vertical_merge_survives_grid_before_row(tmp_path):
+    """A vertical merge must keep its row span across a row that starts late.
+
+    The merge scan is now indexed by true grid column instead of by position
+    within the (shorter) ``gridBefore`` row, so a cell merged down a column is
+    no longer truncated to a single row when the row below starts late.
+    """
+    # 3 cols; grid col 2 is vertically merged across rows 0-1, row 1 starts late:
+    #   grid col:   0    1    2
+    #   row 0:    [P] [Q] [X]     X = top of a 2-row vertical merge
+    #   row 1:     .   .  [X]     gridBefore=2; X continues the merge
+    docx_path = _table_with_grid_before(
+        tmp_path,
+        rows=2,
+        cols=3,
+        texts={(0, 0): "P", (0, 1): "Q", (0, 2): "X", (1, 0): "a", (1, 1): "b"},
+        late_row=1,
+        grid_before=2,
+        merge=((0, 2), (1, 2)),
+        filename="vmerge_grid_before.docx",
+    )
+    doc = _convert(docx_path)
+
+    cells = doc.tables[0].data.table_cells
+    by_pos = {(c.start_row_offset_idx, c.start_col_offset_idx): c for c in cells}
+
+    # First row is intact (no IndexError abort).
+    assert by_pos[(0, 0)].text == "P"
+    assert by_pos[(0, 1)].text == "Q"
+
+    # X spans both rows at grid column 2 (row_span was wrongly 1 before).
+    merged = by_pos[(0, 2)]
+    assert merged.text.startswith("X")
+    assert merged.row_span == 2
+    assert merged.end_row_offset_idx == 2
+
+
 def test_list_counter_and_enum_marker(docx_paths):
     """Test list counter increment, sub-level reset, marker building, and sequence reset."""
     docx_path = docx_paths[0]
