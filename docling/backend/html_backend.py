@@ -1865,7 +1865,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return AnnotatedTextList()
         if self._is_checkbox_label_tag(tag):
             return AnnotatedTextList()
-        if not ignore_list or (tag.name not in ["ul", "ol", "dl"]):
+        if not ignore_list or (tag.name not in ["ul", "ol", "dl", "table"]):
             for child in tag:
                 if isinstance(child, Tag) and child.name in _FORMAT_TAG_MAP:
                     with self._use_format([child.name]):
@@ -2220,6 +2220,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if not self._has_list_ancestor(elem, li):
                     self._handle_block(elem, doc)
                     self.parents[self.level + 1] = None
+            elif elem.name == "table":
+                # Dispatch nested tables to the block handler so they are parsed
+                # as tables instead of being flattened into the list item text.
+                self._handle_block(elem, doc)
+                self.parents[self.level + 1] = None
             else:
                 # Recursively process children for other elements (like divs)
                 for child in elem.children:
