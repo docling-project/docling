@@ -923,6 +923,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         document continues. This avoids a single bad hyperlink aborting the
         whole conversion.
 
+        Args:
+            hyperlink: The DOCX hyperlink whose address should be resolved.
+
         Returns:
             An ``AnyUrl`` for a valid URL, a ``Path`` for a scheme-less address,
             or ``None`` when there is no address or the URL is malformed.
@@ -933,8 +936,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             try:
                 return AnyUrl(hyperlink.address)
             except ValidationError:
-                # A single malformed URL (e.g. containing spaces) must not abort
-                # the whole conversion; drop the link target but keep the text.
                 _log.warning(
                     "Skipping malformed hyperlink address: %r", hyperlink.address
                 )
