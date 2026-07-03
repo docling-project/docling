@@ -53,9 +53,10 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         DocItemLabel.FIELD_VALUE,
         DocItemLabel.FIELD_HINT,
         DocItemLabel.MARKER,
-        # DocItemLabel.FORMULA
-        # DocItemLabel.CODE
+        DocItemLabel.FORMULA,
+        DocItemLabel.CODE,
     ]
+    FILTER_OUT_OVERLAPPING_CLUSTERS: bool = False
 
     def __init__(
         self,
@@ -201,6 +202,16 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         - Keep all clusters with "dense" labels.
         - Keep a "sparse" cluster only if no "dense" cluster overlaps.
         """
+        filtered_clusters: List[Cluster] = []
+
+        # Check if to skip any overlapping filtering
+        if not BaseOcrModel.FILTER_OUT_OVERLAPPING_CLUSTERS:
+            valid_labels = set(BaseOcrModel.SPARSE_LABELS) | set(
+                BaseOcrModel.DENSE_LABELS
+            )
+            filtered_clusters = [c for c in clusters if c.label in valid_labels]
+            return filtered_clusters
+
         # Build an index for the dense bboxes
         p = index.Property()
         p.dimension = 2
@@ -214,7 +225,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             idx_id += 1
 
         # Select only the non-overlapping sparse bboxes
-        filtered_clusters: List[Cluster] = []
         for cluster in clusters:
             if cluster.label in self.DENSE_LABELS:
                 filtered_clusters.append(cluster)

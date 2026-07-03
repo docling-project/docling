@@ -95,6 +95,9 @@ class OcrMode(str, Enum):
     How to generate the input for the OCR model
     """
 
+    # Force OCR to work on the full page
+    FORCE_FULL_PAGE_OCR = "force_full_page_ocr"
+
     # Only bitmaps embedded inside a programmatic PDF. No layout information is used.
     PDF_BITMAPS_ONLY = "pdf_bitmaps_only"
 
@@ -195,8 +198,9 @@ class OcrOptions(BaseOptions):
         Field(
             description="Which document regions to feed as input to the OCR",
             examples=[
-                OcrMode.LAYOUT_DETECTIONS,
+                OcrMode.FORCE_FULL_PAGE_OCR,
                 OcrMode.PDF_BITMAPS_ONLY,
+                OcrMode.LAYOUT_DETECTIONS,
                 OcrMode.LAYOUT_DETECTIONS_WITHOUT_PDF_TEXT,
             ],
         ),
@@ -226,6 +230,8 @@ class OcrOptions(BaseOptions):
             examples=[0.05, 0.1],
         ),
     ] = 0.05
+
+    # Need to calibrate the default value
     sparse_cell_coverage_threshold: Annotated[
         float,
         Field(
@@ -236,16 +242,6 @@ class OcrOptions(BaseOptions):
             examples=[],
         ),
     ] = 0.30
-    # dense_cell_coverage_threshold: Annotated[
-    #     float,
-    #     Field(
-    #         description=(
-    #             "A dense layout detection is omitted from the OCR rects if its coverage with "
-    #             "textual PDF cells is more than this threshold"
-    #         ),
-    #         examples=[],
-    #     ),
-    # ] = 0.50
 
 
 class OcrAutoOptions(OcrOptions):
