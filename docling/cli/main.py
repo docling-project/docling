@@ -626,7 +626,7 @@ def convert(  # noqa: C901
         "--chunker",
         help="Chunker to use with '--to chunks'.",
     ),
-    chunk_max_tokens: Optional[int] = typer.Option(
+    chunk_max_tokens: int | None = typer.Option(
         None,
         "--max-tokens",
         help="Max tokens per chunk. Defaults to the tokenizer's own limit.",
