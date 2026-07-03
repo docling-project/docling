@@ -235,17 +235,17 @@ class OcrOptions(BaseOptions):
             ),
             examples=[],
         ),
-    ] = 0.05
-    dense_cell_coverage_threshold: Annotated[
-        float,
-        Field(
-            description=(
-                "A dense layout detection is omitted from the OCR rects if its coverage with "
-                "textual PDF cells is more than this threshold"
-            ),
-            examples=[],
-        ),
-    ] = 0.80
+    ] = 0.30
+    # dense_cell_coverage_threshold: Annotated[
+    #     float,
+    #     Field(
+    #         description=(
+    #             "A dense layout detection is omitted from the OCR rects if its coverage with "
+    #             "textual PDF cells is more than this threshold"
+    #         ),
+    #         examples=[],
+    #     ),
+    # ] = 0.50
 
 
 class OcrAutoOptions(OcrOptions):

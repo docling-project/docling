@@ -13,7 +13,7 @@ from rtree import index
 from scipy.ndimage import binary_dilation, find_objects, label
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import Page
+from docling.datamodel.base_models import Cluster, Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import OcrMode, OcrOptions
 from docling.datamodel.settings import settings
@@ -111,7 +111,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         # Get the programmatic PDF cells and deduplicate them
         bitmap_rects = page._backend.get_bitmap_rects()
-        coverage, ocr_rects = self._deduplicate_rects(page.size, bitmap_rects)
+        coverage, ocr_rects = self._deduplicate_rects(page.size, bitmap_rects, 20)
 
         # return full-page rectangle if page is dominantly covered with bitmaps
         if coverage > max(
@@ -135,25 +135,19 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
     def _find_layout_ocr_rects(self, page: Page) -> List[BoundingBox]:
         r"""
-        Compute OCR rectangles coming ONLY from the layout clusters of a page.
+        1. Filter the layout clusters accoring to the dense/sparse logic.
+        2. Deduplicate.
         """
         if page.predictions.layout is None:
             return []
 
-        # Get the cluster rects that may have text
-        text_candidate_labels = set(BaseOcrModel.SPARSE_LABELS) | set(
-            BaseOcrModel.DENSE_LABELS
-        )
-        cluster_rects = [
-            cluster.bbox
-            for cluster in page.predictions.layout.clusters
-            if cluster.label in text_candidate_labels
+        # Filter the layout detections to get the initial ocr_rects
+        ocr_rects = [
+            c.bbox for c in self._filter_clusters(page.predictions.layout.clusters)
         ]
 
-        # Deduplicate
-        _, ocr_rects = self._deduplicate_rects(
-            page.size, cluster_rects, dilation_size=0
-        )
+        # Deduplicate the ocr_rects
+        _, ocr_rects = self._deduplicate_rects(page.size, ocr_rects)
 
         return ocr_rects
 
@@ -162,57 +156,77 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         Compute OCR rectangles from the layout detections, dropping detections that
         are already sufficiently covered by text-bearing programmatic PDF cells.
 
-        A layout detection is omitted from the OCR rects when its coverage by
-        text-bearing PDF cells is above a per-category threshold:
+        1. Filter the layout clusters accoring to the dense/sparse logic.
+        2. Build the ocr_rects out of:
+           a. The dense clusters that do not overlap with any PDF cell with text.
+           b. The filtered sparse clusters that are covered by cells less than a threshold.
         """
         # If there is no page.backend, this equals to _find_layout_ocr_rects()
-        if page._backend is None or page.predictions.layout is None:
+        if page._backend is None:
             return self._find_layout_ocr_rects(page)
+        if page.predictions.layout is None:
+            return []
 
-        assert page.size is not None
-
-        # Collect the text-bearing PDF cell bboxes (top-left origin) and index them
-        # in an R-tree to quickly find the cells overlapping each layout detection.
+        # Create an R-tree index with the text-bearing PDF cell bboxes
         p = index.Property()
         p.dimension = 2
-        spatial_index = index.Index(properties=p)
-        text_cell_bboxes: List[BoundingBox] = []
-        for text_cell in page._backend.get_text_cells():
-            txt = text_cell.text
+        cells_index = index.Index(properties=p)
+        cell_bboxes: List[BoundingBox] = []
+        for cell in page._backend.get_text_cells():
+            txt = cell.text
             if txt is None or txt.strip() == "":
                 continue
-            bbox = text_cell.rect.to_bounding_box().to_top_left_origin(page.size.height)
-            spatial_index.insert(len(text_cell_bboxes), bbox.as_tuple())
-            text_cell_bboxes.append(bbox)
+            cell_bbox = cell.rect.to_bounding_box()
+            cells_index.insert(len(cell_bboxes), cell_bbox.as_tuple())
+            cell_bboxes.append(cell_bbox)
 
         # Iterate over the clusters to pick up the OCR rects
         ocr_rects: List[BoundingBox] = []
-        for cluster in page.predictions.layout.clusters:
-            if cluster.label in self.SPARSE_LABELS:
-                threshold = self.options.sparse_cell_coverage_threshold
-            elif cluster.label in self.DENSE_LABELS:
-                threshold = self.options.dense_cell_coverage_threshold
-            else:
-                # Unknown label: OCR it to be safe.
-                ocr_rects.append(cluster.bbox)
-                continue
-
-            # Compute the coverage of the cluster's bbox with text-bearing PDF cells.
-            cluster_bbox = cluster.bbox.to_top_left_origin(page.size.height)
-            candidate_bboxes = [
-                text_cell_bboxes[i]
-                for i in spatial_index.intersection(cluster_bbox.as_tuple())
+        for cluster in self._filter_clusters(page.predictions.layout.clusters):
+            candidate_cell_bboxes = [
+                cell_bboxes[i]
+                for i in cells_index.intersection(cluster.bbox.as_tuple())
             ]
-            coverage = self._compute_coverage(cluster_bbox, candidate_bboxes)
-
-            # Only OCR the detection if it is not already covered by PDF text.
-            if coverage < threshold:
+            if cluster.label in self.SPARSE_LABELS:
+                coverage = self._compute_coverage(cluster.bbox, candidate_cell_bboxes)
+                if coverage < self.options.sparse_cell_coverage_threshold:
+                    ocr_rects.append(cluster.bbox)
+            elif len(candidate_cell_bboxes) == 0:
                 ocr_rects.append(cluster.bbox)
 
-        # Deduplicate
-        _, ocr_rects = self._deduplicate_rects(page.size, ocr_rects, dilation_size=0)
-
+        # Deduplicate the ocr_rects
+        _, ocr_rects = self._deduplicate_rects(page.size, ocr_rects)
         return ocr_rects
+
+    def _filter_clusters(self, clusters: List[Cluster]) -> List[Cluster]:
+        r"""
+        - Keep all clusters with "dense" labels.
+        - Keep a "sparse" cluster only if no "dense" cluster overlaps.
+        """
+        # Build an index for the dense bboxes
+        p = index.Property()
+        p.dimension = 2
+        dense_idx = index.Index(properties=p)
+        idx_id = 0
+        for cluster in clusters:
+            if cluster.label in self.SPARSE_LABELS:
+                continue
+            tuple_bbox = cluster.bbox.as_tuple()
+            dense_idx.insert(idx_id, tuple_bbox)
+            idx_id += 1
+
+        # Select only the non-overlapping sparse bboxes
+        filtered_clusters: List[Cluster] = []
+        for cluster in clusters:
+            if cluster.label in self.DENSE_LABELS:
+                filtered_clusters.append(cluster)
+                continue
+            tuple_bbox = cluster.bbox.as_tuple()
+            overlapping_dense_bboxes = list(dense_idx.intersection(tuple_bbox))
+            if len(overlapping_dense_bboxes) == 0:
+                filtered_clusters.append(cluster)
+
+        return filtered_clusters
 
     def _compute_coverage(
         self, bbox: BoundingBox, text_cell_bboxes: List[BoundingBox]
@@ -248,17 +262,16 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         return covered_pixels / (width * height)
 
     def _deduplicate_rects(
-        self, size: Size, rects: Iterable[BoundingBox], dilation_size: int = 20
+        self, size: Size, rects: Iterable[BoundingBox], dilation_size=0
     ) -> tuple[float, list[BoundingBox]]:
         r"""
         Deduplicate the given rects and compute the coverage ratio defined as sum(rects)/image_size
 
         1. Rasterize the rects into a blank binary black-white image.
            - The background is black and the rects are white.
-        2. Apply a small binary dilation on the rects.
+        2. Optionally apply a small binary dilation on the rects.
         3. Identify the bounding boxes around the "white" regions of the binary image.
-        4. Compute the coverage as the ratio of white pixels in the dilated image to
-           the page area.
+        4. Compute the coverage as the ratio of white pixels in the image to the page area.
         5. Return the coverage and the discovered bboxes.
         """
         image = Image.new(
@@ -321,10 +334,10 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         page.parsed_page.textline_cells = final_cells
         page.parsed_page.has_lines = len(final_cells) > 0
 
-        # When force_full_page_ocr is used, PDF-extracted word/char cells are
-        # unreliable. Filter out cells where from_ocr=False, keeping any OCR-
-        # generated cells. This ensures downstream components (e.g., table
-        # structure model) fall back to OCR-extracted textline cells.
+        # When force_full_page_ocr is used, PDF-extracted word/char cells are unreliable.
+        # Filter out cells where from_ocr=False, keeping any OCR generated cells.
+        # This ensures downstream components (e.g., table structure model) fall back to
+        # OCR-extracted textline cells.
         if self.options.force_full_page_ocr:
             page.parsed_page.word_cells = [
                 c for c in page.parsed_page.word_cells if c.from_ocr
@@ -387,6 +400,11 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         return filtered_ocr_cells
 
     def draw_ocr_rects_and_cells(self, conv_res, page, ocr_rects, show: bool = False):
+        r"""
+        - OCR input rects: Yellow panes
+        - OCR detected text: Magenta bboxes
+        - PDF text: Gray bboxes
+        """
         image = copy.deepcopy(page.image)
         scale_x = image.width / page.size.width
         scale_y = image.height / page.size.height
