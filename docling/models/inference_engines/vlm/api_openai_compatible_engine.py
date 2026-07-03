@@ -121,7 +121,7 @@ class ApiVlmEngine(BaseVlmEngine):
             # Prepare API parameters: engine defaults first, then user/model
             # params override. This allows users to set Azure-specific params
             # like max_completion_tokens or override temperature (#3112).
-            
+
             # Priority: model_spec defaults < request generation settings < user params
             api_params: dict[str, object] = {}
 
@@ -150,7 +150,6 @@ class ApiVlmEngine(BaseVlmEngine):
             )
             request_start_time = time.time()
             stop_reason = "unspecified"
-
 
             if custom_stoppers:
                 # Streaming path with early abort support
