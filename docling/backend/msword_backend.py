@@ -36,7 +36,7 @@ from docx.text.paragraph import Paragraph
 from docx.text.run import Run
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
-from pydantic import AnyUrl
+from pydantic import AnyUrl, ValidationError
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -913,11 +913,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _get_hyperlink_target(self, hyperlink: Hyperlink) -> AnyUrl | Path | None:
         if hyperlink.address:
-            return (
-                AnyUrl(hyperlink.address)
-                if urlparse(hyperlink.address).scheme
-                else Path(hyperlink.address)
-            )
+            if not urlparse(hyperlink.address).scheme:
+                return Path(hyperlink.address)
+            try:
+                return AnyUrl(hyperlink.address)
+            except ValidationError:
+                # A single malformed URL (e.g. containing spaces) must not abort
+                # the whole conversion; drop the link target but keep the text.
+                _log.warning(
+                    "Skipping malformed hyperlink address: %r", hyperlink.address
+                )
+                return None
 
         return None
 

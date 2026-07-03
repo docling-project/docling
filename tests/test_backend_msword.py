@@ -908,3 +908,52 @@ def test_invisible_spacer_logic():
     # Test normal, valid graphic
     valid_img = Image.new("RGB", (50, 50), (100, 150, 200))
     assert backend._is_invisible_spacer(valid_img) is False
+
+
+def test_malformed_hyperlink_does_not_abort_conversion(tmp_path):
+    """A single malformed hyperlink address (e.g. containing a space) must not
+    raise a pydantic ValidationError that aborts the whole DOCX conversion.
+
+    Regression test: previously ``_get_hyperlink_target`` called
+    ``AnyUrl(address)`` unguarded, so any address with a scheme but invalid
+    contents crashed the pipeline.
+    """
+    from docx import Document
+    from docx.opc.constants import RELATIONSHIP_TYPE as RT
+    from docx.oxml.ns import qn
+
+    doc = Document()
+    para = doc.add_paragraph("Before link. ")
+    # Ordinary real-world URL that happens to contain a space -> AnyUrl rejects it.
+    r_id = doc.part.relate_to(
+        "http://exa mple.com/bad url", RT.HYPERLINK, is_external=True
+    )
+    hyperlink = etree.SubElement(para._p, qn("w:hyperlink"))
+    hyperlink.set(qn("r:id"), r_id)
+    run = etree.SubElement(hyperlink, qn("w:r"))
+    etree.SubElement(run, qn("w:t")).text = "click me"
+    doc.add_paragraph("After link.")
+
+    docx_path = tmp_path / "malformed_hyperlink.docx"
+    doc.save(docx_path)
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    result = in_doc._backend.convert()
+
+    # Conversion succeeds and the link's visible text is preserved.
+    md = result.export_to_markdown()
+    assert "click me" in md
+    assert "Before link." in md
+    assert "After link." in md
+
+    # The broken link target is dropped rather than crashing the run.
+    hyperlinks = [
+        item.hyperlink
+        for item, _ in result.iterate_items()
+        if isinstance(item, TextItem) and item.hyperlink is not None
+    ]
+    assert hyperlinks == []
