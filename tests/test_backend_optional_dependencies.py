@@ -58,31 +58,6 @@ def test_converter_constructs_without_optional_backend_dependency(
     assert result.returncode == 0, result.stderr
 
 
-def test_email_backend_reports_missing_dependency_with_install_hint() -> None:
-    # Using a backend whose optional dependency is absent must fail with an
-    # actionable ImportError that names the extra to install, not a NameError or
-    # an error mislabeled as a corrupt-document failure.
-    body = (
-        "from pathlib import Path\n"
-        "from docling.backend.email_backend import EmailDocumentBackend\n"
-        "from docling.datamodel.base_models import InputFormat\n"
-        "from docling.datamodel.document import InputDocument\n"
-        f"path = Path({str(_EML_SAMPLE)!r})\n"
-        "try:\n"
-        "    InputDocument(\n"
-        "        path_or_stream=path, format=InputFormat.EMAIL, backend=EmailDocumentBackend\n"
-        "    )\n"
-        "except ImportError as exc:\n"
-        "    assert 'format-email' in str(exc), str(exc)\n"
-        "    print('actionable-error-raised')\n"
-        "else:\n"
-        "    raise AssertionError('expected ImportError when mail-parser is missing')\n"
-    )
-    result = _run_with_blocked_module("mailparser", body)
-    assert result.returncode == 0, result.stderr
-    assert "actionable-error-raised" in result.stdout
-
-
 @pytest.mark.parametrize(
     ("blocked_module", "backend_import", "backend_class", "sample", "fmt", "extra"),
     [
