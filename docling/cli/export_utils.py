@@ -11,14 +11,6 @@ _OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING = frozenset(
         OutputFormat.DOCTAGS,
         OutputFormat.VTT,
         OutputFormat.DOCLANG,
-    }
-)
-_OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING = frozenset(
-    {
-        OutputFormat.TEXT,
-        OutputFormat.DOCTAGS,
-        OutputFormat.VTT,
-        OutputFormat.DOCLANG,
         OutputFormat.CHUNKS,
     }
 )
