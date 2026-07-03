@@ -63,21 +63,17 @@ class ApiVlmEngine(BaseVlmEngine):
                 "pipeline_options.enable_remote_services=True."
             )
 
-        # Merge model_config extra_config (which contains API params from model spec)
-        # with runtime options params. Runtime options take precedence.
+        # Store model-spec api_params and user params separately so that the
+        # correct priority order can be applied in predict_batch:
+        #   model_spec defaults < request-level generation settings < user params
         if model_config and "api_params" in model_config.extra_config:
-            # Model spec provides API params (e.g., model name)
-            model_api_params = model_config.extra_config["api_params"]
-
-            # Only use model spec params if user hasn't provided any params
-            # This prevents conflicts when users provide custom params (e.g., model_id for watsonx)
-            if not self.options.params:
-                self.merged_params = model_api_params.copy()
-            else:
-                # User provided params - use them as-is (don't merge with model spec)
-                self.merged_params = self.options.params.copy()
+            self.model_api_params: dict = model_config.extra_config["api_params"].copy()
         else:
-            self.merged_params = self.options.params.copy()
+            self.model_api_params = {}
+
+        # User-supplied params always win; if provided, model-spec defaults are
+        # not mixed in (prevents conflicts for vendor-specific keys like model_id).
+        self.user_params: dict = self.options.params.copy()
 
     def initialize(self) -> None:
         """Initialize the API engine.
@@ -125,33 +121,36 @@ class ApiVlmEngine(BaseVlmEngine):
             # Prepare API parameters: engine defaults first, then user/model
             # params override. This allows users to set Azure-specific params
             # like max_completion_tokens or override temperature (#3112).
-            api_params: dict[str, object] = {
-                "temperature": input_data.temperature,
-            }
+            
+            # Priority: model_spec defaults < request generation settings < user params
+            api_params: dict[str, object] = {}
 
-            # Add max_tokens if specified
+            # 1. Start with model-spec defaults (lowest priority)
+            if not self.user_params:
+                api_params.update(self.model_api_params)
+
+            # 2. Request-level generation settings override model defaults
+            api_params["temperature"] = input_data.temperature
             if input_data.max_new_tokens:
                 api_params["max_tokens"] = input_data.max_new_tokens
 
-            # User/model spec params take precedence over engine defaults
-            api_params.update(self.merged_params)
+            # 3. User params override everything
+            api_params.update(self.user_params)
 
-            # If user specified max_completion_tokens, remove conflicting
-            # max_tokens (required for Azure OpenAI compatibility)
+            # Azure OpenAI compatibility: max_completion_tokens excludes max_tokens
             if "max_completion_tokens" in api_params:
                 api_params.pop("max_tokens", None)
 
-            # Add stop strings if specified
-            if input_data.stop_strings:
+            # Add stop strings only if user hasn't provided a stop param
+            if input_data.stop_strings and "stop" not in self.user_params:
                 api_params["stop"] = input_data.stop_strings
-
             # Extract custom stopping criteria using shared utility
             custom_stoppers = extract_generation_stoppers(
                 input_data.extra_generation_config
             )
-
             request_start_time = time.time()
             stop_reason = "unspecified"
+
 
             if custom_stoppers:
                 # Streaming path with early abort support
