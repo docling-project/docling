@@ -306,6 +306,11 @@ def test_guess_format(tmp_path):
     assert dci._guess_format(stream) == InputFormat.XML_USPTO
     doc_path = Path("./tests/data/uspto/sources/pftaps057006474.txt")
     assert dci._guess_format(doc_path) == InputFormat.XML_USPTO
+    stream = DocumentStream(
+        name="pftaps057006474.txt",
+        stream=BytesIO(b"PATN\nWKU  057006474\n"),
+    )
+    assert dci._guess_format(stream) == InputFormat.XML_USPTO
 
     # Valid XML JATS
     buf = BytesIO(Path("./tests/data/jats/sources/elife-56337.xml").open("rb").read())
