@@ -10,6 +10,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Annotated, Type
 from urllib.parse import urlparse
+from docling.datamodel.service.responses import ChunkedDocumentResultItem
 
 # Check for CLI dependencies
 try:
@@ -521,27 +522,33 @@ def export_documents(
                             item.self_ref.startswith("#/pictures/")
                             for item in doc_chunk.meta.doc_items
                         )
+                        contextualized = chunker_obj.contextualize(doc_chunk)
                         num_tokens: int | None = None
                         if isinstance(chunker_obj, HybridChunker):
                             num_tokens = chunker_obj.tokenizer.count_tokens(
-                                chunker_obj.contextualize(doc_chunk)
+                                contextualized
                             )
-                        chunk_record = {
-                            "filename": doc_filename,
-                            "chunk_index": i,
-                            "text": chunker_obj.contextualize(doc_chunk),
-                            "raw_text": doc_chunk.text,
-                            "num_tokens": num_tokens,
-                            "headings": doc_chunk.meta.headings,
-                            "captions": doc_chunk.meta.captions,
-                            "doc_items": [
+                        chunk_record = ChunkedDocumentResultItem(
+                            filename=doc_filename,
+                            chunk_index=i,
+                            text=contextualized,
+                            raw_text=doc_chunk.text,
+                            num_tokens=num_tokens,
+                            headings=doc_chunk.meta.headings,
+                            captions=doc_chunk.meta.captions,
+                            doc_items=[
                                 item.self_ref for item in doc_chunk.meta.doc_items
                             ],
-                            "page_numbers": page_numbers,
-                            "metadata": metadata,
-                        }
-                        fp.write(_json.dumps(chunk_record, ensure_ascii=False) + "\n")
-
+                            page_numbers=page_numbers,
+                            metadata=metadata,
+                        )
+                        fp.write(
+                            _json.dumps(
+                                chunk_record.model_dump(mode="json"),
+                                ensure_ascii=False,
+                            )
+                            + "\n"
+                        )
             # Print profiling timings
             if print_timings:
                 table = rich.table.Table(title=f"Profiling Summary, {doc_filename}")
