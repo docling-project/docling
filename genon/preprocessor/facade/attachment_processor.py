@@ -2013,6 +2013,20 @@ class DocumentProcessor:
         if not documents:
             raise Exception('Empty document')
 
+        # 모든 페이지에 추출 가능한 텍스트/설명이 없는 경우(이미지 기반 PPT 등): 페이지별 sentinel('.')
+        # 을 이어붙이지 않고, 페이지 전 범위를 span 하는 단일 빈 텍스트('') 청크로 반환한다.
+        if all(doc.page_content.strip() in ("", ".") for doc in documents):
+            last_page = documents[-1].metadata.get('page', 0)
+            self.page_chunk_counts[0] += 1
+            return [Document(
+                page_content="",
+                metadata={
+                    'source': documents[0].metadata.get('source'),
+                    'page': 0,
+                    'end_page': last_page,
+                },
+            )]
+
         # chunk_size 우선순위: kwargs['chunk_size'] > chunking.generic.chunk_size(generic_chunk_size).
         # 값이 없거나 <=0 이면 1 page = 1 chunk, 있으면 연속 페이지를 그 길이까지 결합.
         chunk_size = _parse_optional_int(kwargs.get('chunk_size'), 'chunk_size')
