@@ -552,6 +552,61 @@ def test_block_sdt_tables_are_extracted():
     assert phase_2_idx < table_idxs[1]
 
 
+def test_table_row_with_grid_before_is_preserved(tmp_path):
+    """Rows that start late via ``w:gridBefore`` must not drop cells.
+
+    python-docx's ``_Row.cells`` returns only the cells actually present, so a
+    ``gridBefore`` row is shorter than the grid width. The vertical-merge scan
+    used to index that shorter row positionally and raise ``IndexError``, which
+    ``_walk_linear`` swallowed at DEBUG level, aborting the whole table. In
+    addition, ``grid_cols_before`` (a column count) was applied as a row offset,
+    shifting late-starting cells down instead of right.
+
+    See: https://github.com/docling-project/docling/issues/3739
+    """
+    from docx import Document
+    from docx.oxml.ns import qn
+
+    # Build a 2x2 table whose 2nd row starts late (gridBefore=1):
+    #   grid col:   0    1
+    #   row 0:    [A1] [B1]
+    #   row 1:     .   [B2]   <- gridBefore=1, leading cell removed
+    docx_path = tmp_path / "grid_before.docx"
+    doc = Document()
+    table = doc.add_table(rows=2, cols=2)
+    table.style = "Table Grid"
+    for (r, c), txt in {
+        (0, 0): "A1",
+        (0, 1): "B1",
+        (1, 0): "A2",
+        (1, 1): "B2",
+    }.items():
+        table.cell(r, c).text = txt
+    tr = table.rows[1]._tr
+    tr.get_or_add_trPr().append(tr.makeelement(qn("w:gridBefore"), {qn("w:val"): "1"}))
+    tr.remove(tr.findall(qn("w:tc"))[0])  # drop leading cell -> row starts late
+    doc.save(docx_path)
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    result = in_doc._backend.convert()
+
+    assert len(result.tables) == 1
+    table_item = result.tables[0]
+
+    # The table must not be aborted: all populated cells survive.
+    cell_texts = {cell.text for cell in table_item.data.table_cells}
+    assert {"A1", "B1", "B2"}.issubset(cell_texts)
+
+    # B2 belongs at grid column 1 (grid_cols_before shifts it right, not down).
+    b2 = next(cell for cell in table_item.data.table_cells if cell.text == "B2")
+    assert b2.start_col_offset_idx == 1
+    assert b2.start_row_offset_idx == 1
+
+
 def test_list_counter_and_enum_marker(docx_paths):
     """Test list counter increment, sub-level reset, marker building, and sequence reset."""
     docx_path = docx_paths[0]

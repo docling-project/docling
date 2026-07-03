@@ -2120,11 +2120,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 spanned_tc: CT_Tc | None = cell._tc
                 while spanned_tc == cell._tc:
                     spanned_idx += 1
-                    spanned_tc = (
-                        table.rows[spanned_idx].cells[col_idx]._tc
-                        if spanned_idx < num_rows
-                        else None
-                    )
+                    if spanned_idx < num_rows:
+                        # A later row may be shorter than the current one (e.g. it
+                        # starts late via `w:gridBefore` or ends early via
+                        # `w:gridAfter`), so `_Row.cells` returns fewer entries.
+                        # Guard the positional lookup to avoid an IndexError that
+                        # would abort parsing of the whole table.
+                        spanned_cells = table.rows[spanned_idx].cells
+                        spanned_tc = (
+                            spanned_cells[col_idx]._tc
+                            if col_idx < len(spanned_cells)
+                            else None
+                        )
+                    else:
+                        spanned_tc = None
                 _log.debug(f"  spanned before row {spanned_idx}")
 
                 # Detect equations in cell text
@@ -2147,7 +2156,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 if len(provs_in_cell) > 0:
                     # Cell has multiple elements, we need to group them
                     rich_table_cell = True
-                    group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{row.grid_cols_before + row_idx}"
+                    group_name = f"rich_cell_group_{len(doc.tables)}_{row.grid_cols_before + col_idx}_{row_idx}"
                     ref_for_rich_cell = MsWordDocumentBackend._group_cell_elements(
                         group_name,
                         doc,
@@ -2161,11 +2170,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         text=text,
                         row_span=spanned_idx - row_idx,
                         col_span=cell.grid_span,
-                        start_row_offset_idx=row.grid_cols_before + row_idx,
-                        end_row_offset_idx=row.grid_cols_before + spanned_idx,
-                        start_col_offset_idx=col_idx,
-                        end_col_offset_idx=col_idx + cell.grid_span,
-                        column_header=row.grid_cols_before + row_idx == 0,
+                        start_row_offset_idx=row_idx,
+                        end_row_offset_idx=spanned_idx,
+                        start_col_offset_idx=row.grid_cols_before + col_idx,
+                        end_col_offset_idx=row.grid_cols_before
+                        + col_idx
+                        + cell.grid_span,
+                        column_header=row_idx == 0,
                         row_header=False,
                         ref=ref_for_rich_cell,  # points to an artificial group around children
                     )
@@ -2176,11 +2187,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         text=text,
                         row_span=spanned_idx - row_idx,
                         col_span=cell.grid_span,
-                        start_row_offset_idx=row.grid_cols_before + row_idx,
-                        end_row_offset_idx=row.grid_cols_before + spanned_idx,
-                        start_col_offset_idx=col_idx,
-                        end_col_offset_idx=col_idx + cell.grid_span,
-                        column_header=row.grid_cols_before + row_idx == 0,
+                        start_row_offset_idx=row_idx,
+                        end_row_offset_idx=spanned_idx,
+                        start_col_offset_idx=row.grid_cols_before + col_idx,
+                        end_col_offset_idx=row.grid_cols_before
+                        + col_idx
+                        + cell.grid_span,
+                        column_header=row_idx == 0,
                         row_header=False,
                     )
                     doc.add_table_cell(table_item=docling_table, cell=simple_cell)
