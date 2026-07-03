@@ -560,10 +560,10 @@ def export_documents(
     export_doctags: bool,
     export_vtt: bool,
     export_doclang: bool,
-    export_dclx: bool,
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
+    export_dclx: bool = False,
 ):
     success_count = 0
     failure_count = 0
