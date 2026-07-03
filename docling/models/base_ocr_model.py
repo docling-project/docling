@@ -136,7 +136,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     def _find_layout_ocr_rects(self, page: Page) -> List[BoundingBox]:
         r"""
         1. Filter the layout clusters accoring to the dense/sparse logic.
-        2. Deduplicate.
+        2. Deduplicate the candidate ocr_rects.
         """
         if page.predictions.layout is None:
             return []
@@ -153,13 +153,11 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
     def _find_layout_ocr_rects_without_pdf_text(self, page: Page) -> List[BoundingBox]:
         r"""
-        Compute OCR rectangles from the layout detections, dropping detections that
-        are already sufficiently covered by text-bearing programmatic PDF cells.
-
         1. Filter the layout clusters accoring to the dense/sparse logic.
         2. Build the ocr_rects out of:
            a. The dense clusters that do not overlap with any PDF cell with text.
            b. The filtered sparse clusters that are covered by cells less than a threshold.
+        3. Deduplicate the candidate ocr_rects.
         """
         # If there is no page.backend, this equals to _find_layout_ocr_rects()
         if page._backend is None:
