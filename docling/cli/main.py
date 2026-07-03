@@ -8,7 +8,7 @@ import warnings
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Optional, Type
+from typing import Annotated, Type
 from urllib.parse import urlparse
 
 # Check for CLI dependencies
@@ -359,7 +359,7 @@ def export_documents(
     image_export_mode: ImageRefMode,
     export_chunks: bool = False,
     chunker_type: ChunkerType = ChunkerType.HYBRID,
-    chunk_max_tokens: Optional[int] = None,
+    chunk_max_tokens: int | None = None,
     chunk_tokenizer: str = "sentence-transformers/all-MiniLM-L6-v2",
 ):
     success_count = 0
