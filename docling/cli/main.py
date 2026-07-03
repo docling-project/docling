@@ -8,7 +8,7 @@ import warnings
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Type
+from typing import Annotated, Type, cast
 from urllib.parse import urlparse
 from docling.datamodel.service.responses import ChunkedDocumentResultItem
 
@@ -366,6 +366,31 @@ def export_documents(
     success_count = 0
     failure_count = 0
 
+    # Initialize chunker once for all documents
+    chunker_obj = None
+    if export_chunks:
+        import json as _json
+
+        from docling_core.transforms.chunker.hierarchical_chunker import (
+            DocChunk,
+            HierarchicalChunker,
+        )
+        from docling_core.transforms.chunker.hybrid_chunker import (
+            HybridChunker,
+        )
+        from docling_core.transforms.chunker.tokenizer.huggingface import (
+            HuggingFaceTokenizer,
+        )
+
+        if chunker_type == ChunkerType.HIERARCHICAL:
+            chunker_obj = HierarchicalChunker()
+        else:  # default: hybrid
+            hf_tok = HuggingFaceTokenizer.from_pretrained(
+                model_name=chunk_tokenizer,
+                max_tokens=chunk_max_tokens,
+            )
+            chunker_obj = HybridChunker(tokenizer=hf_tok)
+
     for conv_res in conv_results:
         doc_failed = conv_res.status != ConversionStatus.SUCCESS
         if not doc_failed:
@@ -473,39 +498,14 @@ def export_documents(
                 with fname.open("w", encoding="utf-8") as fp:
                     fp.write(conv_res.document.export_to_doclang())
             # Export Chunks format:
-            if export_chunks:
-                import json as _json
-
-                from docling_core.transforms.chunker.hierarchical_chunker import (
-                    HierarchicalChunker,
-                )
-                from docling_core.transforms.chunker.hybrid_chunker import (
-                    HybridChunker,
-                )
-                from docling_core.transforms.chunker.tokenizer.huggingface import (
-                    HuggingFaceTokenizer,
-                )
-
-                if chunker_type == ChunkerType.HIERARCHICAL:
-                    chunker_obj = HierarchicalChunker()
-                else:  # default: hybrid
-                    hf_tok = HuggingFaceTokenizer.from_pretrained(
-                        model_name=chunk_tokenizer,
-                        max_tokens=chunk_max_tokens,  # None => tokenizer's own limit
-                    )
-                    chunker_obj = HybridChunker(tokenizer=hf_tok)
-
-                from docling_core.transforms.chunker.hierarchical_chunker import (
-                    DocChunk,
-                )
-
+            if export_chunks and chunker_obj is not None:
                 fname = output_dir / f"{doc_filename}.chunks.jsonl"
                 _log.info(f"writing Chunks output to {fname}")
                 with fname.open("w", encoding="utf-8") as fp:
                     for i, chunk in enumerate(
                         chunker_obj.chunk(dl_doc=conv_res.document)
                     ):
-                        doc_chunk = DocChunk.model_validate(chunk)
+                        doc_chunk = cast(DocChunk, chunk)
                         page_numbers = sorted(
                             {
                                 prov.page_no
