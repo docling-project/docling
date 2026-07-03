@@ -5,7 +5,6 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Type
 
-import cv2
 import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import TextCell
@@ -21,6 +20,13 @@ from docling.models.base_model import BaseModelWithOptions, BasePageModel
 
 _log = logging.getLogger(__name__)
 
+try:
+    import cv2
+
+    CV2_INSTALLED = True
+except ImportError:
+    CV2_INSTALLED = False
+
 _DILATION_KERNEL = np.ones((20, 20), dtype=np.uint8)
 
 
@@ -34,14 +40,14 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         accelerator_options: AcceleratorOptions,
     ):
         # Make sure any delay/error from import occurs on ocr model init and not first use
-        from scipy.ndimage import find_objects, label
+        from scipy.ndimage import binary_dilation, find_objects, label
 
         self.enabled = enabled
         self.options = options
 
     # Computes the optimum amount and coordinates of rectangles to OCR on a given page
     def get_ocr_rects(self, page: Page) -> List[BoundingBox]:
-        from scipy.ndimage import find_objects, label
+        from scipy.ndimage import binary_dilation, find_objects, label
 
         BITMAP_COVERAGE_TRESHOLD = 0.75
         assert page.size is not None
@@ -61,12 +67,15 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             np_image = np.array(image)
 
             # Dilate the image by 10 pixels to merge nearby bitmap rectangles
-            np_image = cv2.dilate(
-                (np_image > 0).astype(np.uint8),
-                _DILATION_KERNEL,
-                iterations=1,
-                anchor=(9, 9),
-            )
+            if CV2_INSTALLED:
+                np_image = cv2.dilate(
+                    (np_image > 0).astype(np.uint8),
+                    _DILATION_KERNEL,
+                    iterations=1,
+                    anchor=(9, 9),
+                )
+            else:
+                np_image = binary_dilation(np_image > 0, structure=_DILATION_KERNEL)
 
             # Find the connected components
             labeled_image, num_features = label(
