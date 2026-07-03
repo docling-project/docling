@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import re
 import warnings
@@ -26,15 +28,6 @@ from docling_core.types.doc import (
     TableItem,
 )
 from docling_core.types.doc.document import FineRef, Formatting, Script
-from docx import Document
-from docx.document import Document as DocxDocument
-from docx.oxml.table import CT_Tc
-from docx.oxml.xmlchemy import BaseOxmlElement
-from docx.styles.style import ParagraphStyle
-from docx.table import Table, _Cell
-from docx.text.hyperlink import Hyperlink
-from docx.text.paragraph import Paragraph
-from docx.text.run import Run
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
 from pydantic import AnyUrl, ValidationError
@@ -51,6 +44,28 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError, SecurityError
 
 _log = logging.getLogger(__name__)
+
+_DOCX_AVAILABLE: bool = False
+_DOCX_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from docx import Document
+    from docx.document import Document as DocxDocument
+    from docx.oxml.table import CT_Tc
+    from docx.oxml.xmlchemy import BaseOxmlElement
+    from docx.styles.style import ParagraphStyle
+    from docx.table import Table, _Cell
+    from docx.text.hyperlink import Hyperlink
+    from docx.text.paragraph import Paragraph
+    from docx.text.run import Run
+
+    _DOCX_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _DOCX_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'python-docx' package is required to process Word files. "
+    "Install it with `pip install 'docling-slim[format-docx]'`."
+)
 
 _STRICT_OOXML_NS_PREFIX: Final[str] = "http://purl.oclc.org/ooxml/"
 _TRANSITIONAL_NS_HOST: Final[str] = "http://schemas.openxmlformats.org/"
@@ -197,7 +212,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     """Images with an area (w*h) below this are dropped as layout artifacts."""
 
     @override
-    def __init__(self, in_doc: "InputDocument", path_or_stream: BytesIO | Path) -> None:
+    def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path) -> None:
+        if not _DOCX_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _DOCX_IMPORT_ERROR
         super().__init__(in_doc, path_or_stream)
         self.XML_KEY = f"{self._W_NS_CLARK}val"
         self.xml_namespaces = {

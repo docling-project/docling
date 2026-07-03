@@ -16,6 +16,15 @@ from pathlib import Path
 import pytest
 
 _EML_SAMPLE = Path(__file__).parent / "data" / "email" / "sources" / "eml_simple.eml"
+_MD_SAMPLE = Path(__file__).parent / "data" / "md" / "sources" / "mixed.md"
+_DOCX_SAMPLE = Path(__file__).parent / "data" / "docx" / "sources" / "word_tables.docx"
+_PPTX_SAMPLE = (
+    Path(__file__).parent / "data" / "pptx" / "sources" / "powerpoint_sample.pptx"
+)
+_XLSX_SAMPLE = Path(__file__).parent / "data" / "xlsx" / "sources" / "xlsx_01.xlsx"
+_TEX_SAMPLE = (
+    Path(__file__).parent / "data" / "latex" / "sources" / "1706.03762" / "main.tex"
+)
 
 
 def _run_with_blocked_module(
@@ -34,7 +43,7 @@ def _run_with_blocked_module(
 
 @pytest.mark.parametrize(
     "blocked_module",
-    ["mailparser", "marko"],
+    ["mailparser", "marko", "docx", "pptx", "openpyxl", "pylatexenc"],
 )
 def test_converter_constructs_without_optional_backend_dependency(
     blocked_module: str,
@@ -70,5 +79,85 @@ def test_email_backend_reports_missing_dependency_with_install_hint() -> None:
         "    raise AssertionError('expected ImportError when mail-parser is missing')\n"
     )
     result = _run_with_blocked_module("mailparser", body)
+    assert result.returncode == 0, result.stderr
+    assert "actionable-error-raised" in result.stdout
+
+
+@pytest.mark.parametrize(
+    ("blocked_module", "backend_import", "backend_class", "sample", "fmt", "extra"),
+    [
+        (
+            "mailparser",
+            "docling.backend.email_backend",
+            "EmailDocumentBackend",
+            _EML_SAMPLE,
+            "EMAIL",
+            "format-email",
+        ),
+        (
+            "marko",
+            "docling.backend.md_backend",
+            "MarkdownDocumentBackend",
+            _MD_SAMPLE,
+            "MD",
+            "format-markdown",
+        ),
+        (
+            "docx",
+            "docling.backend.msword_backend",
+            "MsWordDocumentBackend",
+            _DOCX_SAMPLE,
+            "DOCX",
+            "format-docx",
+        ),
+        (
+            "pptx",
+            "docling.backend.mspowerpoint_backend",
+            "MsPowerpointDocumentBackend",
+            _PPTX_SAMPLE,
+            "PPTX",
+            "format-pptx",
+        ),
+        (
+            "openpyxl",
+            "docling.backend.msexcel_backend",
+            "MsExcelDocumentBackend",
+            _XLSX_SAMPLE,
+            "XLSX",
+            "format-xlsx",
+        ),
+        (
+            "pylatexenc",
+            "docling.backend.latex_backend",
+            "LatexDocumentBackend",
+            _TEX_SAMPLE,
+            "LATEX",
+            "format-latex",
+        ),
+    ],
+)
+def test_backend_reports_missing_dependency_with_install_hint(
+    blocked_module: str,
+    backend_import: str,
+    backend_class: str,
+    sample: Path,
+    fmt: str,
+    extra: str,
+) -> None:
+    body = (
+        "from pathlib import Path\n"
+        f"from {backend_import} import {backend_class}\n"
+        "from docling.datamodel.base_models import InputFormat\n"
+        "from docling.datamodel.document import InputDocument\n"
+        f"path = Path({str(sample)!r})\n"
+        "try:\n"
+        f"    InputDocument(path_or_stream=path, format=InputFormat.{fmt}, backend={backend_class})\n"
+        "except ImportError as exc:\n"
+        f"    assert {extra!r} in str(exc), str(exc)\n"
+        "    print('actionable-error-raised')\n"
+        "else:\n"
+        f"    raise AssertionError('expected ImportError when {blocked_module} is missing')\n"
+    )
+    result = _run_with_blocked_module(blocked_module, body)
     assert result.returncode == 0, result.stderr
     assert "actionable-error-raised" in result.stdout

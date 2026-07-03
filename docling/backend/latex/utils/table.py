@@ -1,16 +1,8 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Callable, List, Optional
 
-if TYPE_CHECKING:
-    from typing import Any
-
 from docling_core.types.doc.document import TableCell, TableData
-from pylatexenc.latexwalker import (
-    LatexCharsNode,
-    LatexEnvironmentNode,
-    LatexMacroNode,
-    LatexWalker,
-    LatexWalkerParseError,
-)
 
 from docling.backend.latex.constants import (
     MACROS_ESCAPED,
@@ -18,11 +10,25 @@ from docling.backend.latex.constants import (
     TABLE_MACROS_RULE,
 )
 
+if TYPE_CHECKING:
+    from typing import Any
+
+try:  # pragma: no cover - import-time guard
+    from pylatexenc.latexwalker import (
+        LatexCharsNode,
+        LatexEnvironmentNode,
+        LatexMacroNode,
+        LatexWalker,
+        LatexWalkerParseError,
+    )
+except ImportError:
+    pass
+
 
 class TableHelperMixin:
     if TYPE_CHECKING:
 
-        def _nodes_to_text(self, nodes: "Any") -> str: ...
+        def _nodes_to_text(self, nodes: Any) -> str: ...
 
     def _process_table_macro_node(
         self,

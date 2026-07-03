@@ -1,12 +1,10 @@
+from __future__ import annotations
+
 import logging
 import re
+from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
-
-if TYPE_CHECKING:
-    from io import BytesIO
-    from pathlib import Path
-    from typing import Any
 
 import pypdfium2
 from docling_core.types.doc.document import (
@@ -17,14 +15,6 @@ from docling_core.types.doc.document import (
     NodeItem,
 )
 from PIL import Image
-from pylatexenc.latexwalker import (
-    LatexCharsNode,
-    LatexEnvironmentNode,
-    LatexGroupNode,
-    LatexMacroNode,
-    LatexWalker,
-    LatexWalkerParseError,
-)
 
 from docling.backend.latex.constants import (
     MACROS_ACCENTS,
@@ -44,12 +34,27 @@ from docling.backend.latex.constants import (
     MACROS_TEXT_STYLE,
 )
 
+if TYPE_CHECKING:
+    from typing import Any
+
+try:  # pragma: no cover - import-time guard
+    from pylatexenc.latexwalker import (
+        LatexCharsNode,
+        LatexEnvironmentNode,
+        LatexGroupNode,
+        LatexMacroNode,
+        LatexWalker,
+        LatexWalkerParseError,
+    )
+except ImportError:
+    pass
+
 _log = logging.getLogger(__name__)
 
 
 class MacroHandlerMixin:
     if TYPE_CHECKING:
-        path_or_stream: "BytesIO | Path"
+        path_or_stream: BytesIO | Path
         _input_stack: set[str]
         _custom_macros: dict[str, str]
         _custom_macro_num_args: dict[str, int]
@@ -57,13 +62,13 @@ class MacroHandlerMixin:
 
         def _process_nodes(
             self,
-            nodes: "Any",
-            doc: "Any",
-            parent: "Any" = ...,
-            formatting: "Any" = ...,
-            text_label: "Any" = ...,
+            nodes: Any,
+            doc: Any,
+            parent: Any = ...,
+            formatting: Any = ...,
+            text_label: Any = ...,
         ) -> None: ...
-        def _nodes_to_text(self, nodes: "Any") -> str: ...
+        def _nodes_to_text(self, nodes: Any) -> str: ...
 
     def _preprocess_custom_macros(self, latex_text: str) -> str:
         latex_text = re.sub(r"\\be\b", r"\\begin{equation}", latex_text)

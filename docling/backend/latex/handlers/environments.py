@@ -1,17 +1,10 @@
+from __future__ import annotations
+
 import logging
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, cast
 
-if TYPE_CHECKING:
-    from concurrent.futures import Future, ThreadPoolExecutor
-    from typing import Any
-
-    from docling.backend.latex.engines.tectonic import TectonicEngine
-    from docling.datamodel.backend_options import (
-        BaseBackendOptions,
-        LatexBackendOptions,
-    )
 from docling_core.types.doc import CodeLanguageLabel
 from docling_core.types.doc.document import (
     CodeMetaField,
@@ -22,9 +15,23 @@ from docling_core.types.doc.document import (
     NodeItem,
     PictureMeta,
 )
-from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
 
 from docling.backend.latex.constants import ENV_LIST, ENV_MATH, ENV_QUOTE, ENV_THEOREM
+
+if TYPE_CHECKING:
+    from concurrent.futures import Future, ThreadPoolExecutor
+    from typing import Any
+
+    from docling.backend.latex.engines.tectonic import TectonicEngine
+    from docling.datamodel.backend_options import (
+        BaseBackendOptions,
+        LatexBackendOptions,
+    )
+
+try:  # pragma: no cover - import-time guard
+    from pylatexenc.latexwalker import LatexEnvironmentNode, LatexMacroNode
+except ImportError:
+    pass
 
 _log = logging.getLogger(__name__)
 _TIKZ_END_PATTERN = re.compile(r"\\end\s*\{\s*tikzpicture\s*\}")
@@ -32,25 +39,25 @@ _TIKZ_END_PATTERN = re.compile(r"\\end\s*\{\s*tikzpicture\s*\}")
 
 class EnvironmentHandlerMixin:
     if TYPE_CHECKING:
-        options: "BaseBackendOptions"
+        options: BaseBackendOptions
         latex_preamble: str
-        path_or_stream: "Any"
-        _tectonic_engine: "TectonicEngine | None"
-        _tikz_executor: "ThreadPoolExecutor | None"
-        _tikz_futures: list["Future[Any]"]
+        path_or_stream: Any
+        _tectonic_engine: TectonicEngine | None
+        _tikz_executor: ThreadPoolExecutor | None
+        _tikz_futures: list[Future[Any]]
 
         def _process_nodes(
             self,
-            nodes: "Any",
-            doc: "Any",
-            parent: "Any" = ...,
-            formatting: "Any" = ...,
-            text_label: "Any" = ...,
+            nodes: Any,
+            doc: Any,
+            parent: Any = ...,
+            formatting: Any = ...,
+            text_label: Any = ...,
         ) -> None: ...
         def _clean_math(self, latex_str: str, env_name: str) -> str: ...
-        def _parse_table(self, node: "Any") -> "Any": ...
+        def _parse_table(self, node: Any) -> Any: ...
         def _extract_verbatim_content(self, latex_str: str, env_name: str) -> str: ...
-        def _extract_macro_arg(self, node: "Any") -> str: ...
+        def _extract_macro_arg(self, node: Any) -> str: ...
 
     def _find_document_env(self, nodes, depth: int = 0):
         if nodes is None or depth > 10:
