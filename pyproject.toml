@@ -129,7 +129,6 @@ format-opendocument = [
 # --- Web Formats (web = html + markdown) ---
 format-html = [
   'beautifulsoup4>=4.12.3,<5.0.0',
-  'lxml>=4.0.0,<7.0.0',
 ]
 
 format-markdown = [
@@ -148,6 +147,16 @@ format-latex = [
 format-email = [
   'docling-slim[format-html]',
   'mail-parser>=4.1.4,<5.0.0',
+]
+
+format-xml-jats = [
+  'docling-slim[format-html]',
+  'lxml>=4.0.0,<7.0.0',
+]
+
+format-xml-uspto = [
+  'docling-slim[format-html]',
+  'defusedxml>=0.7.1,<0.8.0',
 ]
 
 format-xml-xbrl = [
@@ -265,7 +274,7 @@ standard = [
 ]
 
 all = [
-  'docling-slim[standard,models-vlm-inline,format-audio,format-html-render,format-xml-xbrl,models-remote,models-onnxruntime,feat-ocr-easyocr,feat-ocr-tesserocr,feat-ocr-mac]',
+  'docling-slim[standard,models-vlm-inline,format-audio,format-html-render,format-xml-jats,format-xml-uspto,format-xml-xbrl,models-remote,models-onnxruntime,feat-ocr-easyocr,feat-ocr-tesserocr,feat-ocr-mac]',
 ]
 
 [dependency-groups]

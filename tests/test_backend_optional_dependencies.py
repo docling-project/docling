@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 _EML_SAMPLE = Path(__file__).parent / "data" / "email" / "sources" / "eml_simple.eml"
+_HTML_SAMPLE = Path(__file__).parent / "data" / "html" / "sources" / "hyperlink_01.html"
 _MD_SAMPLE = Path(__file__).parent / "data" / "md" / "sources" / "mixed.md"
 _DOCX_SAMPLE = Path(__file__).parent / "data" / "docx" / "sources" / "word_tables.docx"
 _PPTX_SAMPLE = (
@@ -25,6 +26,8 @@ _XLSX_SAMPLE = Path(__file__).parent / "data" / "xlsx" / "sources" / "xlsx_01.xl
 _TEX_SAMPLE = (
     Path(__file__).parent / "data" / "latex" / "sources" / "1706.03762" / "main.tex"
 )
+_JATS_SAMPLE = Path(__file__).parent / "data" / "jats" / "sources" / "pone.0234687.nxml"
+_USPTO_SAMPLE = Path(__file__).parent / "data" / "uspto" / "sources" / "ipg08672134.xml"
 
 
 def _run_with_blocked_module(
@@ -43,7 +46,7 @@ def _run_with_blocked_module(
 
 @pytest.mark.parametrize(
     "blocked_module",
-    ["mailparser", "marko", "docx", "pptx", "openpyxl", "pylatexenc"],
+    ["mailparser", "marko", "docx", "pptx", "openpyxl", "pylatexenc", "bs4"],
 )
 def test_converter_constructs_without_optional_backend_dependency(
     blocked_module: str,
@@ -68,6 +71,14 @@ def test_converter_constructs_without_optional_backend_dependency(
             _EML_SAMPLE,
             "EMAIL",
             "format-email",
+        ),
+        (
+            "bs4",
+            "docling.backend.html_backend",
+            "HTMLDocumentBackend",
+            _HTML_SAMPLE,
+            "HTML",
+            "format-html",
         ),
         (
             "marko",
@@ -108,6 +119,22 @@ def test_converter_constructs_without_optional_backend_dependency(
             _TEX_SAMPLE,
             "LATEX",
             "format-latex",
+        ),
+        (
+            "bs4",
+            "docling.backend.xml.jats_backend",
+            "JatsDocumentBackend",
+            _JATS_SAMPLE,
+            "XML_JATS",
+            "format-xml-jats",
+        ),
+        (
+            "bs4",
+            "docling.backend.xml.uspto_backend",
+            "PatentUsptoDocumentBackend",
+            _USPTO_SAMPLE,
+            "XML_USPTO",
+            "format-xml-uspto",
         ),
     ],
 )
