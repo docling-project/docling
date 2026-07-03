@@ -3,6 +3,7 @@ from typing import Any
 import pytest
 from PIL import Image
 
+from docling.datamodel.base_models import ApiImageRequestResult, VlmStopReason
 from docling.datamodel.stage_model_specs import EngineModelConfig
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.models.inference_engines.vlm.api_openai_compatible_engine import (
@@ -19,7 +20,7 @@ def captured_api_call(monkeypatch) -> dict[str, Any]:
 
     def _fake_api_image_request(**kwargs):
         captured.update(kwargs)
-        return "ok", 1, "stop"
+        return ApiImageRequestResult("ok", 1, VlmStopReason.END_OF_SEQUENCE)
 
     monkeypatch.setattr(
         "docling.models.inference_engines.vlm.api_openai_compatible_engine.api_image_request",
