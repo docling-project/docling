@@ -895,7 +895,9 @@ class _DocumentConversionInput(BaseModel):
 
         elif mime == "text/plain":
             content_str = content.decode("utf-8", errors="replace")
-            if InputFormat.XML_USPTO in formats and content_str.startswith("PATN\r\n"):
+            if InputFormat.XML_USPTO in formats and content_str.startswith(
+                ("PATN\r\n", "PATN\n")
+            ):
                 input_format = InputFormat.XML_USPTO
             elif (
                 InputFormat.MD in formats
