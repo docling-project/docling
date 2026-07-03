@@ -21,9 +21,10 @@ from __future__ import annotations
 
 import logging
 import traceback
+from dataclasses import dataclass, replace
 from io import BytesIO
 from pathlib import Path
-from typing import Final, cast
+from typing import Annotated, Final, cast
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -38,7 +39,7 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import Formatting, Script
 from lxml import etree
-from pydantic import BaseModel
+from pydantic import Field
 from typing_extensions import TypedDict, override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -82,10 +83,37 @@ _JATS_FORMAT_TAG_MAP: Final[dict[str, dict[str, bool | Script]]] = {
 }
 
 
-class InlineSegment(BaseModel):
-    label: DocItemLabel
-    text: str
-    formatting: Formatting | None = None
+@dataclass(slots=True)
+class InlineSegment:
+    """An ordered inline run of styled text or an inline formula."""
+
+    label: Annotated[
+        DocItemLabel,
+        Field(
+            description=(
+                "Docling item label that classifies this inline run when it is "
+                "emitted as a text item."
+            )
+        ),
+    ]
+    text: Annotated[
+        str,
+        Field(
+            description=(
+                "Literal text carried by the run, or the LaTeX body when the run "
+                "is a formula."
+            )
+        ),
+    ]
+    formatting: Annotated[
+        Formatting | None,
+        Field(
+            description=(
+                "Emphasis accumulated from the enclosing tags (bold, italic, "
+                "underline, strike, sub, sup), or None when the run is unstyled."
+            )
+        ),
+    ] = None
 
 
 class Abstract(TypedDict):
@@ -665,42 +693,23 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     def _extract_tex_math(node: etree._Element) -> str | None:
         if not node.text:
             return None
-        math_parts = node.text.split("$$")
-        return math_parts[1] if len(math_parts) == 3 else node.text.strip()
+        text = node.text.strip()
+        for delimiter in ("$$", "$"):
+            if (
+                len(text) > 2 * len(delimiter)
+                and text.startswith(delimiter)
+                and text.endswith(delimiter)
+            ):
+                text = text[len(delimiter) : -len(delimiter)].strip()
+                break
+        return text or None
 
     @staticmethod
     def _merge_formatting(formatting: Formatting | None, tag: str) -> Formatting | None:
         if tag not in _JATS_FORMAT_TAG_MAP:
             return formatting
-        base = formatting.model_copy() if formatting else Formatting()
+        base = formatting if formatting else Formatting()
         return base.model_copy(update=_JATS_FORMAT_TAG_MAP[tag])
-
-    @staticmethod
-    def _get_styled_text(
-        node: etree._Element, formatting: Formatting | None = None
-    ) -> list[InlineSegment]:
-        current = JatsDocumentBackend._merge_formatting(formatting, node.tag)
-        segments: list[InlineSegment] = []
-        if node.text:
-            text = node.text.replace("\n", " ")
-            if text:
-                segments.append(
-                    InlineSegment(
-                        label=DocItemLabel.TEXT, text=text, formatting=current
-                    )
-                )
-        for child in node:
-            if isinstance(child.tag, str):
-                segments.extend(JatsDocumentBackend._get_styled_text(child, current))
-            if child.tail:
-                tail = child.tail.replace("\n", " ")
-                if tail:
-                    segments.append(
-                        InlineSegment(
-                            label=DocItemLabel.TEXT, text=tail, formatting=current
-                        )
-                    )
-        return segments
 
     @staticmethod
     def _strip_segments(segments: list[InlineSegment]) -> list[InlineSegment]:
@@ -708,7 +717,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         for segment in segments:
             text = segment.text.strip()
             if text:
-                stripped.append(segment.model_copy(update={"text": text}))
+                stripped.append(replace(segment, text=text))
         return stripped
 
     @staticmethod
@@ -737,8 +746,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                     segments.append(
                         InlineSegment(label=DocItemLabel.FORMULA, text=formula)
                     )
-            elif tag in _JATS_FORMAT_TAG_MAP:
-                segments.extend(JatsDocumentBackend._get_styled_text(child, current))
             else:
                 segments.extend(
                     JatsDocumentBackend._walk_inline_formula(child, current)

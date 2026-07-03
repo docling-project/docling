@@ -253,6 +253,17 @@ def _inline_group_items(doc: DoclingDocument) -> list[list]:
             id="nested-emphasis-inside-formula",
         ),
         pytest.param(
+            # a tex-math nested inside an emphasis tag is still parsed as a
+            # formula (not leaked as raw ``$$...$$`` text)
+            "Val <inline-formula><italic><tex-math>$$x^2$$</tex-math></italic></inline-formula> shown.",
+            [
+                (DocItemLabel.TEXT, "Val", None),
+                (DocItemLabel.FORMULA, "x^2", None),
+                (DocItemLabel.TEXT, "shown.", None),
+            ],
+            id="tex-math-inside-emphasis",
+        ),
+        pytest.param(
             "Compare <italic>lhs</italic> <inline-formula><tex-math>$$a$$</tex-math> rhs</inline-formula> and <inline-formula><tex-math>$$b$$</tex-math></inline-formula> now.",
             [
                 (DocItemLabel.TEXT, "Compare lhs", None),
@@ -284,6 +295,12 @@ def test_jats_inline_formula_is_grouped(paragraph, expected):
             id="standalone-formula",
         ),
         pytest.param(
+            # per the JATS spec tex-math is bare; a stray single-$ pair is stripped
+            "<inline-formula><tex-math>$x^2$</tex-math></inline-formula>",
+            ["x^2"],
+            id="single-dollar-delimiters",
+        ),
+        pytest.param(
             # an inline-formula with no usable tex-math is dropped
             "Energy <inline-formula><tex-math/></inline-formula> equation.",
             [],
@@ -310,6 +327,31 @@ def test_jats_inline_formula_styled_content_markdown_rendering():
     md = doc.export_to_markdown()
     assert "*x*" in md
     assert "a^2" in md
+
+
+@pytest.mark.parametrize(
+    ("body", "expected"),
+    [
+        pytest.param(
+            "<disp-formula><tex-math>$$E=mc^2$$</tex-math></disp-formula>",
+            "E=mc^2",
+            id="direct-tex-math",
+        ),
+        pytest.param(
+            "<disp-formula><alternatives><tex-math>$$a+b$$</tex-math>"
+            "</alternatives></disp-formula>",
+            "a+b",
+            id="tex-math-under-alternatives",
+        ),
+    ],
+)
+def test_jats_disp_formula_is_block_formula(body, expected):
+    doc = convert_jats_body(f"<sec><title>T</title>{body}</sec>")
+
+    formulas = [t.text for t in doc.texts if t.label == DocItemLabel.FORMULA]
+    assert formulas == [expected]
+    # a block formula is emitted standalone, not inside an inline group
+    assert _inline_group_items(doc) == []
 
 
 def test_jats_empty_display_formula_does_not_drop_following_content():
