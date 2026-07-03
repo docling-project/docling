@@ -11,6 +11,7 @@ from pydantic import (
     ConfigDict,
     Field,
     field_validator,
+    model_validator,
 )
 from typing_extensions import deprecated
 
@@ -213,11 +214,18 @@ class OcrOptions(BaseOptions):
             examples=[["deu", "eng"]],
         ),
     ]
+
+    # Deprecated: superseded by `OcrMode.FORCE_FULL_PAGE_OCR`. Kept for backwards compatibility
+    # When set to True it forces `mode` to FORCE_FULL_PAGE_OCR
     force_full_page_ocr: Annotated[
         bool,
         Field(
             description="If enabled, a full-page OCR is always applied.",
             examples=[False],
+            deprecated=(
+                "`force_full_page_ocr` is deprecated; set "
+                "`mode=OcrMode.FORCE_FULL_PAGE_OCR` instead."
+            ),
         ),
     ] = False
     bitmap_area_threshold: Annotated[
@@ -231,7 +239,7 @@ class OcrOptions(BaseOptions):
         ),
     ] = 0.05
 
-    # Need to calibrate the default value
+    # TODO: Need to calibrate the default value
     sparse_cell_coverage_threshold: Annotated[
         float,
         Field(
@@ -242,6 +250,21 @@ class OcrOptions(BaseOptions):
             examples=[],
         ),
     ] = 0.30
+
+    @model_validator(mode="after")
+    def _apply_force_full_page_ocr(self) -> "OcrOptions":
+        r"""
+        Backwards-compatibility bridge for the deprecated `force_full_page_ocr`
+        flag: when it is set, force `mode` to `OcrMode.FORCE_FULL_PAGE_OCR`.
+        """
+        if self.force_full_page_ocr:
+            _log.warning(
+                "`force_full_page_ocr` is deprecated; overriding `mode` to %s."
+                "Set `mode=OcrMode.FORCE_FULL_PAGE_OCR` instead.",
+                OcrMode.FORCE_FULL_PAGE_OCR,
+            )
+            self.mode = OcrMode.FORCE_FULL_PAGE_OCR
+        return self
 
 
 class OcrAutoOptions(OcrOptions):

@@ -72,13 +72,14 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     def get_ocr_rects(self, page: Page) -> List[BoundingBox]:
         r"""
         Produce the input rects for the OCR according to the logic for each OcrMode
-        If `force_full_page_ocr` is set, return a big bbox covering the entire page
         """
         assert page.size is not None
 
-        # If `force_full_page_ocr` is set, return a big bbox covering the entire page
-        if self.options.force_full_page_ocr:
-            return [
+        # Compute the OCR rects according to the mode
+        ocr_rects: List[BoundingBox]
+        if self.options.mode == OcrMode.FORCE_FULL_PAGE_OCR:
+            # A big bbox covering the entire page
+            ocr_rects = [
                 BoundingBox(
                     l=0,
                     t=0,
@@ -87,10 +88,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                     coord_origin=CoordOrigin.TOPLEFT,
                 )
             ]
-
-        # Compute the OCR rects according to the mode
-        ocr_rects: List[BoundingBox]
-        if self.options.mode == OcrMode.PDF_BITMAPS_ONLY:
+        elif self.options.mode == OcrMode.PDF_BITMAPS_ONLY:
             ocr_rects = self._find_pdf_ocr_rects(page)
         elif self.options.mode == OcrMode.LAYOUT_DETECTIONS:
             ocr_rects = self._find_layout_ocr_rects(page)
@@ -328,13 +326,21 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     ) -> None:
         r"""
         Post-process the OCR cells and update the page object.
-        Updates parsed_page.textline_cells directly since page.cells is now read-only.
+        Updates parsed_page.textline_cells directly.
         """
         # Get existing cells from the read-only property
         existing_cells = page.cells
 
         # Combine existing and OCR cells with overlap filtering
-        final_cells = self._combine_cells(existing_cells, ocr_cells)
+        if self.options.mode == OcrMode.FORCE_FULL_PAGE_OCR:
+            final_cells = ocr_cells
+        else:
+            filtered_ocr_cells = self._filter_ocr_cells(ocr_cells, existing_cells)
+            final_cells = list(existing_cells) + filtered_ocr_cells
+
+        # Re-index in-place
+        for i, cell in enumerate(final_cells):
+            cell.index = i
 
         assert page.parsed_page is not None
 
@@ -346,7 +352,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # Filter out cells where from_ocr=False, keeping any OCR generated cells.
         # This ensures downstream components (e.g., table structure model) fall back to
         # OCR-extracted textline cells.
-        if self.options.force_full_page_ocr:
+        if self.options.mode == OcrMode.FORCE_FULL_PAGE_OCR:
             page.parsed_page.word_cells = [
                 c for c in page.parsed_page.word_cells if c.from_ocr
             ]
@@ -361,22 +367,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             conv_res.confidence.pages[page.page_no].ocr_score = float(
                 np.mean(ocr_confidences)
             )
-
-    def _combine_cells(
-        self, existing_cells: List[TextCell], ocr_cells: List[TextCell]
-    ) -> List[TextCell]:
-        r"""Combine existing and OCR cells with filtering and re-indexing."""
-        if self.options.force_full_page_ocr:
-            combined = ocr_cells
-        else:
-            filtered_ocr_cells = self._filter_ocr_cells(ocr_cells, existing_cells)
-            combined = list(existing_cells) + filtered_ocr_cells
-
-        # Re-index in-place
-        for i, cell in enumerate(combined):
-            cell.index = i
-
-        return combined
 
     def _filter_ocr_cells(
         self, ocr_cells: List[TextCell], programmatic_cells: List[TextCell]
