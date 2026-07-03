@@ -15,6 +15,7 @@ from docling_core.types.doc import (
     DoclingDocument,
     DocumentOrigin,
     Formatting,
+    ImageRef,
     ListItem,
     NodeItem,
     TableCell,
@@ -28,6 +29,7 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import (
     HTMLBackendOptions,
     MarkdownBackendOptions,
@@ -35,6 +37,7 @@ from docling.datamodel.backend_options import (
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.code_language import detect_code_language
 
 # marko is only installed by the `format-markdown` extra, but DocumentConverter
 # imports every backend eagerly. Importing it at module load would therefore
@@ -169,6 +172,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self.in_table = False
         self.md_table_buffer: list[str] = []
         self._html_blocks: int = 0
+        self._image_loader: Optional[ImageResourceLoader] = None
 
         try:
             if isinstance(self.path_or_stream, BytesIO):
@@ -459,7 +463,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     hyperlink=hyperlink,
                 )
 
-            doc.add_picture(parent=parent_item, caption=fig_caption)
+            image_ref = self._load_image_ref(element.dest)
+            doc.add_picture(parent=parent_item, image=image_ref, caption=fig_caption)
 
         elif isinstance(element, marko.inline.Emphasis):
             _log.debug(" - Emphasis: %s", element.children)
@@ -556,6 +561,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             doc.add_code(
                 parent=parent_item,
                 text=snippet_text,
+                code_language=detect_code_language(snippet_text, hint=element.lang),
                 formatting=formatting,
                 hyperlink=hyperlink,
             )
@@ -628,6 +634,37 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
+
+    def _get_image_loader(self) -> ImageResourceLoader:
+        """Lazily build the shared image-resource loader.
+
+        Resolving and decoding image sources (``data:`` URIs, local files, and
+        remote URLs) together with the relevant safety limits is shared with the
+        HTML backend through :class:`ImageResourceLoader`, so that logic is not
+        duplicated here.
+        """
+        if self._image_loader is None:
+            md_options = cast(MarkdownBackendOptions, self.options)
+            self._image_loader = ImageResourceLoader(
+                enable_local_fetch=md_options.enable_local_fetch,
+                enable_remote_fetch=md_options.enable_remote_fetch,
+                max_image_data_base64_bytes=md_options.max_image_data_base64_bytes,
+            )
+        return self._image_loader
+
+    def _load_image_ref(self, dest: str) -> Optional[ImageRef]:
+        """Resolve and decode a Markdown image source into an ``ImageRef``.
+
+        Returns ``None`` when image loading is disabled, the source is empty, or
+        the image cannot be loaded.
+        """
+        md_options = cast(MarkdownBackendOptions, self.options)
+        if not md_options.fetch_images or not dest:
+            return None
+        base_path = (
+            str(md_options.source_uri) if md_options.source_uri is not None else None
+        )
+        return self._get_image_loader().load_image_ref(dest, base_path)
 
     def is_valid(self) -> bool:
         return self.valid

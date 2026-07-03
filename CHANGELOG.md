@@ -1,3 +1,23 @@
+## [v2.108.0](https://github.com/docling-project/docling/releases/tag/v2.108.0) - 2026-07-01
+
+### Feature
+
+* Add fast ASR backend ([#2938](https://github.com/docling-project/docling/issues/2938)) ([`ed6a702`](https://github.com/docling-project/docling/commit/ed6a7025c395cc2044213e790a9801c6175733cc))
+* **xlsx:** EMF/WMF image support via LibreOffice ([#3714](https://github.com/docling-project/docling/issues/3714)) ([`6395151`](https://github.com/docling-project/docling/commit/6395151e271277d4a154e7e7f01c71fd72829482))
+* Accept HttpSource as a convert source for per-source headers ([#3695](https://github.com/docling-project/docling/issues/3695)) ([`d0a8b4a`](https://github.com/docling-project/docling/commit/d0a8b4a159d52d3377c4972638289f4d595576e8))
+* **jats/inline-formula:** Render inline tex-math formulas in paragraphs ([#3696](https://github.com/docling-project/docling/issues/3696)) ([`c7b1734`](https://github.com/docling-project/docling/commit/c7b1734217fcb958688589b70c27147cab86a9ae))
+
+### Fix
+
+* **md:** Load embedded base64 images in Markdown backend ([#3725](https://github.com/docling-project/docling/issues/3725)) ([`d876cbc`](https://github.com/docling-project/docling/commit/d876cbcf232e52a28f335eb2efb7e94ad4904f51))
+* **asr:** Log active audio filename in AsrPipeline._build_document ([#3535](https://github.com/docling-project/docling/issues/3535)) ([`8d747a3`](https://github.com/docling-project/docling/commit/8d747a354f1068d2092bed24f8283988d8553608))
+* **backend:** Guard optional email and markdown imports for slim installs ([#3702](https://github.com/docling-project/docling/issues/3702)) ([`2b9fda8`](https://github.com/docling-project/docling/commit/2b9fda890a1a2c2d9f83916fcce4cdc00e8c3943))
+
+### Documentation
+
+* Correct the explanation of the SE licence ([#3706](https://github.com/docling-project/docling/issues/3706)) ([`e0ea753`](https://github.com/docling-project/docling/commit/e0ea75380867903b8f2483833adcbe132b144e5f))
+* Clarify example EPUB’s licence ([#3705](https://github.com/docling-project/docling/issues/3705)) ([`13d78a2`](https://github.com/docling-project/docling/commit/13d78a25878609fdc7faec33bae9d1ff0690518b))
+
 ## [v2.107.0](https://github.com/docling-project/docling/releases/tag/v2.107.0) - 2026-06-24
 
 ### Feature

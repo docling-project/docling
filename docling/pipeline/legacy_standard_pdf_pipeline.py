@@ -178,6 +178,16 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
                 elements=all_elements, headers=all_headers, body=all_body
             )
 
+            # Surface the PDF outline (bookmarks/ToC) for the heading-hierarchy stage, only
+            # when bookmark inference is enabled and the backend is a PDF backend.
+            hh_opts = self.pipeline_options.heading_hierarchy_options
+            if (
+                hh_opts.enabled
+                and hh_opts.use_bookmarks
+                and isinstance(conv_res.input._backend, PdfDocumentBackend)
+            ):
+                conv_res._pdf_outline = conv_res.input._backend.get_document_outline()
+
             conv_res.document = self.reading_order_model(conv_res)
             conv_res.document = self.heading_hierarchy_model(conv_res)
 

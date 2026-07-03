@@ -34,6 +34,10 @@ from docling.datamodel.backend_options import (
 from docling.datamodel.settings import DEFAULT_PAGE_RANGE
 from docling.exceptions import DocumentLoadError
 from docling.utils.locks import pypdfium2_lock
+from docling.utils.pdf_outline import (
+    _PdfOutlineItem,
+    extract_outline_from_docling_parse,
+)
 
 if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
@@ -43,9 +47,10 @@ _log = logging.getLogger(__name__)
 
 def _make_docling_parse_decode_config(
     *,
+    enforce_same_font: bool = True,
     release_native_memory_every_n_pages: int | None = None,
 ) -> DecodeConfig:
-    config = DecodeConfig(enforce_same_font=True)
+    config = DecodeConfig(enforce_same_font=enforce_same_font)
 
     if release_native_memory_every_n_pages is not None:
         config.release_native_memory_every_n_pages = release_native_memory_every_n_pages
@@ -275,7 +280,9 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
             with pypdfium2_lock:
                 self._pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
             self.parser = DoclingPdfParser(loglevel="fatal")
-            decode_config = _make_docling_parse_decode_config()
+            decode_config = _make_docling_parse_decode_config(
+                enforce_same_font=self.options.enforce_same_font,
+            )
             self.dp_doc = self.parser.load(
                 path_or_stream=self.path_or_stream,
                 password=password,
@@ -327,6 +334,12 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
 
     def is_valid(self) -> bool:
         return self.page_count() > 0
+
+    def get_document_outline(self) -> list[_PdfOutlineItem]:
+        """Extract the outline via docling-parse's native table-of-contents (no pypdfium2)."""
+        if self.dp_doc is None:
+            return []
+        return extract_outline_from_docling_parse(self.dp_doc)
 
     def _close_native_document(self) -> None:
         if self.dp_doc is not None:
@@ -480,6 +493,7 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             else 128
         )
         decode_config = _make_docling_parse_decode_config(
+            enforce_same_font=self.options.enforce_same_font,
             release_native_memory_every_n_pages=native_memory_release_interval,
         )
         content_config = _make_docling_parse_page_content_config(
@@ -507,6 +521,27 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
 
     def page_count(self) -> int:
         return self.parser.page_count(self.doc_key)
+
+    def get_document_outline(self) -> list[_PdfOutlineItem]:
+        """Extract the outline via docling-parse (this backend holds no pypdfium2 handle).
+
+        The threaded parser exposes no table-of-contents accessor, so a lightweight lazy
+        docling-parse document is loaded purely to read the (cheap, structure-only) outline.
+        """
+        password = (
+            self.options.password.get_secret_value() if self.options.password else None
+        )
+        if isinstance(self.path_or_stream, BytesIO):
+            self.path_or_stream.seek(0)
+        dp_doc = DoclingPdfParser(loglevel="fatal").load(
+            path_or_stream=self.path_or_stream, lazy=True, password=password
+        )
+        if dp_doc is None:
+            return []
+        try:
+            return extract_outline_from_docling_parse(dp_doc)
+        finally:
+            dp_doc.unload()
 
     def load_page(self, page_no: int) -> PdfPageBackend:
         raise NotImplementedError(
