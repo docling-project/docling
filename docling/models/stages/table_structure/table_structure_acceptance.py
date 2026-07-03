@@ -200,6 +200,7 @@ def accept_reconciled_table_challenger(
     candidate_rows: int,
     candidate_cols: int,
     candidate_diagnostics: object,
+    allow_same_shape_text_slot_change: bool = False,
 ) -> TableStructureAcceptanceReport:
     baseline_token_count = len(_cell_text_tokens(baseline_cells))
     preserved_token_count = _count_tokens_preserved(
@@ -248,9 +249,13 @@ def accept_reconciled_table_challenger(
     # Same-shape repairs must not move text between logical slots.
     # Token multiset preservation is sufficient for grid-growth repairs, but
     # same-shape changes need stricter slot-level protection.
-    if grid_same_shape and _has_same_shape_text_slot_regression(
-        baseline_cells=baseline_cells,
-        candidate_cells=candidate_cells,
+    if (
+        grid_same_shape
+        and _has_same_shape_text_slot_regression(
+            baseline_cells=baseline_cells,
+            candidate_cells=candidate_cells,
+        )
+        and not allow_same_shape_text_slot_change
     ):
         return reject("text_slot_regression")
 

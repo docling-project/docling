@@ -82,7 +82,6 @@ from docling.models.stages.table_structure.table_structure_row_reassignment impo
     _row_index_for_interval,
     _row_index_for_y,
     infer_model_row_bands_from_cells,
-    reassign_text_preserving_rows,
     reassign_text_to_cells_preserving_rows,
 )
 from docling.models.stages.table_structure.table_structure_row_spans import (
@@ -115,6 +114,36 @@ class TableStructureReconciliationResult:
     diagnostics: TableTopologyDiagnostics
     changed: bool = False
     notes: tuple[str, ...] = ()
+
+
+SAME_SHAPE_SPAN_REPAIR_CANDIDATES = frozenset(
+    {
+        "topology_repair",
+        "overspan_geometry_fallback",
+        "row_span_reconciliation",
+    }
+)
+
+
+def _cell_span_topology(
+    cells: list[object],
+) -> tuple[tuple[int | None, int | None, int | None, int | None], ...]:
+    spans = [
+        (
+            _safe_int(getattr(cell, "start_row_offset_idx", None)),
+            _safe_int(getattr(cell, "end_row_offset_idx", None)),
+            _safe_int(getattr(cell, "start_col_offset_idx", None)),
+            _safe_int(getattr(cell, "end_col_offset_idx", None)),
+        )
+        for cell in cells
+    ]
+
+    return tuple(
+        sorted(
+            spans,
+            key=lambda span: tuple(-1 if value is None else value for value in span),
+        )
+    )
 
 
 def reconcile_table_structure(
@@ -425,6 +454,13 @@ def reconcile_table_structure(
 
     accepted_candidates = []
     for candidate in structure_candidates:
+        allow_same_shape_text_slot_change = (
+            candidate.name in SAME_SHAPE_SPAN_REPAIR_CANDIDATES
+            and candidate.num_rows == baseline_candidate.num_rows
+            and candidate.num_cols == baseline_candidate.num_cols
+            and _cell_span_topology(candidate.table_cells)
+            != _cell_span_topology(baseline_candidate.table_cells)
+        )
         acceptance_report = accept_reconciled_table_challenger(
             baseline_cells=baseline_candidate.table_cells,
             baseline_rows=baseline_candidate.num_rows,
@@ -434,6 +470,7 @@ def reconcile_table_structure(
             candidate_rows=candidate.num_rows,
             candidate_cols=candidate.num_cols,
             candidate_diagnostics=candidate.diagnostics,
+            allow_same_shape_text_slot_change=allow_same_shape_text_slot_change,
         )
         accepted_candidates.append((candidate, acceptance_report))
 
