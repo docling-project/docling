@@ -383,6 +383,30 @@ def test_docx_code_style_inheritance_and_cells(tmp_path):
     doc = _convert_built(d, tmp_path)
     assert [c.text for c in _code_items(doc)] == ["server {\n  listen 80;\n}"]
 
+    # The style font resolves through the base_style chain: a style without
+    # its own font inherits the monospace font of its parent style.
+    d = Document()
+    mono_base = d.styles.add_style("Mono Base", WD_STYLE_TYPE.PARAGRAPH)
+    mono_base.font.name = "Consolas"
+    mono_sub = d.styles.add_style("Mono Sub", WD_STYLE_TYPE.PARAGRAPH)
+    mono_sub.base_style = mono_base
+    d.add_paragraph("y = compute(2);", style="Mono Sub")
+    doc = _convert_built(d, tmp_path)
+    assert [c.text for c in _code_items(doc)] == ["y = compute(2);"], (
+        "A style inheriting a monospace font via base_style is detected"
+    )
+
+    # A style with no font anywhere in its chain contributes nothing; runs
+    # with explicit monospace fonts still count on their own.
+    d = Document()
+    d.styles.add_style("Plain Note", WD_STYLE_TYPE.PARAGRAPH)
+    para = d.add_paragraph(style="Plain Note")
+    para.add_run("x = 1;").font.name = "Consolas"
+    doc = _convert_built(d, tmp_path)
+    assert [c.text for c in _code_items(doc)] == ["x = 1;"], (
+        "Explicit run fonts count even when the style chain has no font"
+    )
+
     # A monospaced style applied to prose (no code punctuation) stays text.
     d = Document()
     memo = d.styles.add_style("Memo Mono", WD_STYLE_TYPE.PARAGRAPH)
