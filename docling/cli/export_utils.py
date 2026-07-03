@@ -13,6 +13,15 @@ _OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING = frozenset(
         OutputFormat.DOCLANG,
     }
 )
+_OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING = frozenset(
+    {
+        OutputFormat.TEXT,
+        OutputFormat.DOCTAGS,
+        OutputFormat.VTT,
+        OutputFormat.DOCLANG,
+        OutputFormat.CHUNKS,
+    }
+)
 
 
 def _should_generate_export_images(

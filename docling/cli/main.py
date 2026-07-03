@@ -518,10 +518,7 @@ def export_documents(
                             metadata["origin"] = doc_chunk.meta.origin.model_dump(
                                 mode="json"
                             )
-                        metadata["has_image"] = any(
-                            item.self_ref.startswith("#/pictures/")
-                            for item in doc_chunk.meta.doc_items
-                        )
+
                         contextualized = chunker_obj.contextualize(doc_chunk)
                         num_tokens: int | None = None
                         if isinstance(chunker_obj, HybridChunker):
@@ -630,18 +627,18 @@ def convert(  # noqa: C901
     ),
     chunker_type: ChunkerType = typer.Option(
         ChunkerType.HYBRID,
-        "--chunker",
-        help="Chunker to use with '--to chunks'.",
+        "--chunks-type",
+        help="Chunker type for '--to chunks'.",
     ),
     chunk_max_tokens: int | None = typer.Option(
         None,
-        "--max-tokens",
+        "--chunks-max-tokens",
         help="Max tokens per chunk. Defaults to the tokenizer's own limit.",
     ),
     chunk_tokenizer: str = typer.Option(
         "sentence-transformers/all-MiniLM-L6-v2",
-        "--tokenizer",
-        help="HuggingFace tokenizer model name/path. Determines token counting and default max-tokens.",
+        "--chunks-tokenizer",
+        help="HuggingFace tokenizer model name/path. Used only with --chunks-type hybrid.",
     ),
     show_layout: Annotated[
         bool,
