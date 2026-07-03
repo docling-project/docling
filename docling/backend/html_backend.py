@@ -2223,6 +2223,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             elif elem.name == "table":
                 # Dispatch nested tables to the block handler so they are parsed
                 # as tables instead of being flattened into the list item text.
+                # No _has_list_ancestor-style guard is needed here (unlike the
+                # list branch): _handle_block consumes the whole table, so its
+                # descendants are never re-walked by _process_nested_element.
                 self._handle_block(elem, doc)
                 self.parents[self.level + 1] = None
             else:

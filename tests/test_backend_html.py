@@ -267,6 +267,49 @@ def test_nested_table_in_list_item():
     assert md.count("Fault type.") == 1
 
 
+@pytest.mark.parametrize(
+    "inner",
+    [
+        # table as a direct child of <li>
+        b"<li>Step:<table><tbody><tr><td>A</td><td>B</td></tr></tbody></table></li>",
+        # table wrapped in a <div> inside <li> (reaches the table branch via the
+        # generic else-recursion path)
+        b"<li>Step:<div><table><tbody><tr><td>A</td><td>B</td></tr></tbody>"
+        b"</table></div></li>",
+    ],
+)
+def test_nested_table_in_list_item_wrappers(inner):
+    """#3508: the nested table is parsed regardless of an intermediate wrapper."""
+    html = b"<html><body><ol>" + inner + b"</ol></body></html>"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+    assert len(doc.tables) == 1
+
+
+def test_nested_table_in_description_list_item():
+    """#3508: same fix applies to a <table> nested in a <dl>/<dd>."""
+    html = (
+        b"<html><body><dl><dt>Term</dt>"
+        b"<dd>Def:<table><tbody><tr><td>A</td><td>B</td></tr></tbody></table></dd>"
+        b"</dl></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+    assert len(doc.tables) == 1
+
+
 def test_description_lists():
     """Test that HTML description lists (<dl>, <dt>, <dd>) are properly parsed."""
     test_set: list[tuple[bytes, str]] = []
