@@ -320,6 +320,11 @@ except ImportError:
 from genon.preprocessor.facade.enrichment.prompt_files import read_prompt_file
 from genon.preprocessor.facade.enrichment.prompt_template import PromptTemplate
 from genon.preprocessor.facade.enrichment.enrichment_config import EnrichmentConfig
+from genon.preprocessor.facade.enrichment.page_description import (
+    PageDescriptionOptions,
+    collect_page_texts,
+    describe_pages,
+)
 from genon.preprocessor.facade.enrichment.field_transforms import (
     DEFAULT_METADATA_FIELD_TRANSFORMS,
     apply_field_transforms,
@@ -443,7 +448,6 @@ _DEFAULT_IMAGE_DESCRIPTION_PROMPT_TEMPLATE = (
     "2) 문서 문맥과의 연결점을 포함\n"
     "3) 한국어로 작성"
 )
-
 
 @dataclass(frozen=True)
 class ImageDescriptionOptions:
@@ -2266,6 +2270,13 @@ class DocumentProcessor:
             _parse_optional_bool(table_image_cfg.get("enable"), "table_image.enable")
         )
 
+        # PPT 페이지 단위 image description(page-level) 옵션. 기존 PictureItem 단위 설명과 별개로,
+        # "페이지 자체"를 렌더링해 설명한 텍스트를 페이지별 TextItem 으로 주입한다(PPT 원본 전용).
+        # config 위치: formats.ppt.page_description. 공통 모듈(enrichment/page_description)로 파싱.
+        ppt_fmt_cfg = _as_dict(formats_cfg.get("ppt"))
+        page_img_cfg = _as_dict(ppt_fmt_cfg.get("page_description"))
+        self._page_desc_options = PageDescriptionOptions.from_config(page_img_cfg, self._config_dir)
+
         table_mode_str = str(pdf_cfg.get("table_structure_mode", "accurate")).lower().strip()
         table_structure_mode = _TABLE_FORMER_MODE_MAP.get(table_mode_str)
         if table_structure_mode is None:
@@ -2284,7 +2295,8 @@ class DocumentProcessor:
         )
         # 표 이미지 크롭(TableItem.get_image)은 페이지 이미지를 소스로 하므로,
         # table_image 가 켜지면 generate_page_images 를 True 로 강제 보장한다.
-        if self.table_image_enabled:
+        # 페이지 단위 image description 도 페이지 렌더 이미지를 소스로 하므로 동일하게 강제한다.
+        if self.table_image_enabled or self._page_desc_options.enabled:
             self.pipe_line_options.generate_page_images = True
         self.pipe_line_options.do_ocr = False
         self.pipe_line_options.ocr_options = ocr_options
@@ -2654,15 +2666,99 @@ class DocumentProcessor:
                 self.page_chunk_counts[chunk.meta.doc_items[0].prov[0].page_no] += 1
         return chunks
 
+    def split_documents_by_page(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
+        """PPT 전용 페이지 기반 청킹.
+
+        기본 1 page = 1 chunk. chunk_size(kwargs > yaml) 가 주어지면 연속 페이지를 토큰 기준
+        chunk_size 이하가 되도록 greedy 병합한다. 같은 페이지의 native text 와 주입된 page
+        description TextItem 은 prov.page_no 로 동일 페이지 청크에 자연히 묶인다.
+        """
+        chunk_size = _parse_optional_int(kwargs.get('chunk_size'), 'chunk_size')
+        if chunk_size is None:
+            chunk_size = self._chunk_size
+        chunker: GenosSmartChunker = GenosSmartChunker(
+            max_tokens=chunk_size if chunk_size is not None else 0,
+            merge_peers=True,
+            tokenizer=self._tokenizer,
+            tokenizer_type=self._tokenizer_type,
+        )
+        kwargs.setdefault("table_format", self._table_format)
+
+        # 전체 아이템 base chunk(정상 경로와 동일한 아이템 수집/헤더/누락표 복구 재사용)
+        base = next(iter(chunker.preprocess(dl_doc=documents, **kwargs)), None)
+        if base is None:
+            return []
+        items = base.meta.doc_items
+        header_short = getattr(base, "_header_short_info_list", []) or []
+
+        # prov page_no 로 그룹(아이템 순서 유지). prov 없으면 직전 페이지에 귀속.
+        page_items: dict = {}
+        page_headers: dict = {}
+        last_page = 1
+        for idx, it in enumerate(items):
+            prov = getattr(it, "prov", None) or []
+            pg = prov[0].page_no if prov and getattr(prov[0], "page_no", None) else last_page
+            last_page = pg
+            page_items.setdefault(pg, []).append(it)
+            page_headers.setdefault(pg, []).append(
+                header_short[idx] if idx < len(header_short) else {}
+            )
+
+        # 페이지별 1 청크 직렬화
+        page_chunks: List[DocChunk] = []
+        for pg in sorted(page_items.keys()):
+            its = page_items[pg]
+            text = chunker._generate_section_text_with_heading(
+                its, page_headers[pg], documents, **kwargs
+            )
+            if text and text.strip() and text.strip() != ".":
+                page_chunks.append(DocChunk(
+                    text=text,
+                    meta=DocMeta(doc_items=its, headings=None, captions=None, origin=documents.origin),
+                ))
+
+        # chunk_size>0 이면 연속 페이지 greedy 병합
+        if chunk_size and chunk_size > 0 and page_chunks:
+            merged: List[DocChunk] = [page_chunks[0]]
+            for ch in page_chunks[1:]:
+                cand_text = merged[-1].text + "\n" + ch.text
+                if chunker._count_tokens(cand_text) <= chunk_size:
+                    merged[-1] = DocChunk(
+                        text=cand_text,
+                        meta=DocMeta(
+                            doc_items=merged[-1].meta.doc_items + ch.meta.doc_items,
+                            headings=None, captions=None, origin=documents.origin,
+                        ),
+                    )
+                else:
+                    merged.append(ch)
+            page_chunks = merged
+
+        for ch in page_chunks:
+            if ch.meta.doc_items and ch.meta.doc_items[0].prov:
+                self.page_chunk_counts[ch.meta.doc_items[0].prov[0].page_no] += 1
+        _log.info(f"[ppt] page-based chunks: {len(page_chunks)} (chunk_size={chunk_size})")
+        return page_chunks
+
     def safe_join(self, iterable):
         if not isinstance(iterable, (list, tuple, set)):
             return ''
         return ''.join(map(str, iterable)) + '\n'
 
-    def enrichment(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+    def enrichment(self, document: DoclingDocument, is_ppt: bool = False, **kwargs: dict) -> DoclingDocument:
+        options = self.enrichment_options
+        # PPT 는 페이지 기반 1chunk 라 목차 계층이 무의미 → TOC 만 비활성(다른 enrichment 는 유지).
+        if is_ppt and getattr(options, "do_toc_enrichment", False):
+            try:
+                options = options.model_copy(update={"do_toc_enrichment": False})
+            except AttributeError:
+                import copy as _copy
+                options = _copy.copy(options)
+                options.do_toc_enrichment = False
+            _log.info("[intelligent] PPT — TOC enrichment skip")
         try:
             # 새로운 enriched result 받기
-            document = enrich_document(document, self.enrichment_options, **kwargs)
+            document = enrich_document(document, options, **kwargs)
             return document
         except LLMApiError as e:
             # Preserve provider error payload as-is for load status error message.
@@ -2682,6 +2778,32 @@ class DocumentProcessor:
         if enricher is None:
             return document
         return enricher.enrich(document, **kwargs)
+
+    def enrich_page_descriptions(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        """페이지 단위 image description: 각 페이지를 렌더링해 설명한 텍스트를 페이지별
+        TextItem 으로 주입한다(기존 PictureItem 단위 설명과 별개, 옵션 default False).
+        """
+        if not self._page_desc_options.enabled:
+            return document
+
+        # 페이지별 native text 수집(설명 주입 전) → 프롬프트({{page_text}})에 반영해 요청
+        page_texts = collect_page_texts(document)
+        page_descs = describe_pages(document, self._page_desc_options, page_texts=page_texts)
+        if not page_descs:
+            return document
+
+        for page_no in sorted(page_descs.keys()):
+            text = page_descs[page_no].strip()
+            if not text:
+                continue
+            prov = ProvenanceItem(
+                page_no=page_no,
+                bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                charspan=(0, len(text)),
+            )
+            document.add_text(label=DocItemLabel.TEXT, text=text, prov=prov)
+        _log.info(f"[page_image_description] 페이지 설명 주입: pages={len(page_descs)}")
+        return document
 
     async def enrich_metadata(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
         enricher = getattr(self, "metadata_enricher", None)
@@ -3190,12 +3312,12 @@ class DocumentProcessor:
         )
 
     async def _process_pdf(self, request: Request, file_path: str,
-                           converted_pdf_path: Optional[str], **kwargs: dict):
+                           converted_pdf_path: Optional[str], is_ppt: bool = False, **kwargs: dict):
         """PDF(또는 PDF 로 변환된) 입력을 docling 으로 로딩 후 공유 파이프라인으로 처리."""
         document = self._load_document(file_path, **kwargs)
         return await self._document_to_vectors(
             document, file_path, request,
-            converted_pdf_path=converted_pdf_path, ocr_table_cells=True, **kwargs
+            converted_pdf_path=converted_pdf_path, ocr_table_cells=True, is_ppt=is_ppt, **kwargs
         )
 
     def _load_document(self, file_path: str, **kwargs: dict) -> DoclingDocument:
@@ -3213,7 +3335,7 @@ class DocumentProcessor:
 
     async def _document_to_vectors(self, document: DoclingDocument, file_path: str,
                                    request: Request, *, converted_pdf_path: Optional[str],
-                                   ocr_table_cells: bool, **kwargs: dict) -> list:
+                                   ocr_table_cells: bool, is_ppt: bool = False, **kwargs: dict) -> list:
         """DoclingDocument → enrichment → 청킹 → 벡터 생성(공유 파이프라인).
 
         ocr_table_cells: 글리프 깨진 테이블 셀 재OCR 수행 여부(xlsx 직접 처리는 False).
@@ -3237,7 +3359,7 @@ class DocumentProcessor:
         if self.table_image_enabled:
             self._save_table_images(document, image_dir=artifacts_dir, reference_path=reference_path)
 
-        document = self.enrichment(document, **kwargs)
+        document = self.enrichment(document, is_ppt=is_ppt, **kwargs)
 
         enrichment_context = kwargs.get("_enrichment_context", {})
         if not isinstance(enrichment_context, dict):
@@ -3248,6 +3370,12 @@ class DocumentProcessor:
             document = self.enrich_image_descriptions(document, **enrichment_kwargs)
         except Exception as exc:
             _log.warning(f"[DocumentProcessor] facade image enrichment skipped: {exc}")
+        # 페이지 단위 image description 은 PPT 원본에만 적용(formats.ppt.page_description).
+        if is_ppt:
+            try:
+                document = self.enrich_page_descriptions(document, **enrichment_kwargs)
+            except Exception as exc:
+                _log.warning(f"[DocumentProcessor] page image enrichment skipped: {exc}")
         try:
             document = await self.enrich_metadata(document, **enrichment_kwargs)
         except Exception as exc:
@@ -3264,8 +3392,12 @@ class DocumentProcessor:
                 break
 
         if has_text_items:
-            # Extract Chunk from DoclingDocument
-            chunks: List[DocChunk] = self.split_documents(document, **kwargs)
+            # Extract Chunk from DoclingDocument.
+            # PPT 는 페이지 기반 청킹(기본 1 page 1 chunk, chunk_size 지정 시 페이지 결합).
+            if is_ppt:
+                chunks: List[DocChunk] = self.split_documents_by_page(document, **kwargs)
+            else:
+                chunks: List[DocChunk] = self.split_documents(document, **kwargs)
         else:
             # text가 있는 item이 없을 때 document에 임의의 text item 추가
             # 첫 번째 페이지의 기본 정보 사용 (1-based indexing)
@@ -3286,7 +3418,10 @@ class DocumentProcessor:
             )
 
             # split_documents 호출
-            chunks: List[DocChunk] = self.split_documents(document, **kwargs)
+            if is_ppt:
+                chunks: List[DocChunk] = self.split_documents_by_page(document, **kwargs)
+            else:
+                chunks: List[DocChunk] = self.split_documents(document, **kwargs)
         # await assert_cancelled(request)
 
         vectors = []
@@ -3370,7 +3505,11 @@ class DocumentProcessor:
         # 포맷별 처리: 직접 처리 가능 포맷은 xlsx 핸들러, 그 외는 PDF(docling) 처리.
         if ext in _XLSX_DIRECT_EXTS:
             return await self._process_xlsx(request, file_path, **kwargs)
-        return await self._process_pdf(request, file_path, converted_pdf_path, **kwargs)
+        # 원본이 PPT 였는지(변환 전 ext)를 명시 전달 — 페이지 기반 청킹/page description 게이팅용.
+        is_ppt = ext in ('.ppt', '.pptx')
+        return await self._process_pdf(
+            request, file_path, converted_pdf_path, is_ppt=is_ppt, **kwargs
+        )
 
 
 class GenosServiceException(Exception):

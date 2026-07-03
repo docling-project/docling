@@ -210,10 +210,16 @@ except ImportError:
     HTML = None
 
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.pipeline_options import PipelineOptions
+from docling.datamodel.pipeline_options import PipelineOptions, PdfPipelineOptions
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.pipeline.simple_pipeline import SimplePipeline
-from docling.document_converter import DocumentConverter, HwpxFormatOption, WordFormatOption
+from docling.document_converter import (
+    DocumentConverter, HwpxFormatOption, WordFormatOption, PdfFormatOption,
+)
+from genon.preprocessor.facade.enrichment.page_description import (
+    PageDescriptionOptions,
+    describe_pages,
+)
 from docling_core.transforms.chunker import BaseChunk, BaseChunker, DocChunk, DocMeta
 from docling_core.types import DoclingDocument as DLDocument
 from docling_core.types.doc import (
@@ -334,6 +340,17 @@ def _parse_optional_int(value: Any, key: str = "") -> Optional[int]:
     except (TypeError, ValueError):
         if key:
             _log.warning(f"[DocumentProcessor] Invalid int value for '{key}': {value!r}. Fallback to default.")
+        return None
+
+
+def _parse_optional_float(value: Any, key: str = "") -> Optional[float]:
+    if value is None or value == "":
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        if key:
+            _log.warning(f"[DocumentProcessor] Invalid float value for '{key}': {value!r}. Fallback to default.")
         return None
 
 
@@ -1744,6 +1761,13 @@ class DocumentProcessor:
         tabular_loader_cfg = _as_dict(loaders_cfg.get("tabular"))
         whisper_cfg = _as_dict(cfg.get("whisper"))
 
+        # PPT 페이지 단위 설명(page-level image description) 설정.
+        # config 위치: formats.ppt.page_description. 공통 모듈(enrichment/page_description)로 파싱.
+        formats_cfg = _as_dict(cfg.get("formats"))
+        ppt_fmt_cfg = _as_dict(formats_cfg.get("ppt"))
+        ppt_pd_cfg = _as_dict(ppt_fmt_cfg.get("page_description"))
+        self._page_desc_options = PageDescriptionOptions.from_config(ppt_pd_cfg, self._config_dir)
+
         # 청킹용 토크나이저 (chunking config 기반; 미지정 시 현행 기본값)
         self._tokenizer = _resolve_tokenizer(chunking_cfg)
 
@@ -1886,6 +1910,159 @@ class DocumentProcessor:
             if v is not None:
                 merged[k] = v
         return merged
+
+    def _get_ppt_pdf_converter(self) -> DocumentConverter:
+        """이미지 기반 PPT(→PDF) 파싱용 경량 docling 컨버터(lazy, 캐시).
+
+        첨부용은 dotsocr(genos_layout) 미수행 + do_ocr=False 로 최소 파싱만 수행한다.
+        페이지 단위 설명이 켜져 있으면 generate_page_images=True 로 페이지 렌더 이미지를 만든다.
+        """
+        converter = getattr(self, "_ppt_pdf_converter", None)
+        if converter is not None:
+            return converter
+        opts = PdfPipelineOptions()
+        opts.do_ocr = False
+        opts.do_table_structure = False
+        opts.generate_page_images = bool(self._page_desc_options.enabled)
+        opts.generate_picture_images = False
+        opts.images_scale = self._page_desc_options.images_scale
+        converter = DocumentConverter(
+            format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=opts)}
+        )
+        self._ppt_pdf_converter = converter
+        return converter
+
+    def _load_ppt_page_documents(self, file_path: str, **kwargs: dict) -> "Optional[list[Document]]":
+        """PPT/PPTX → PDF 변환 후 docling 경량 파싱 + 페이지 단위 image description.
+
+        페이지별 Document(metadata['page']=0-based) 리스트를 반환한다. PDF 변환이 불가하면
+        None 을 반환해 호출부가 레거시 langchain 경로로 폴백하도록 한다.
+        """
+        pdf_path = convert_to_pdf(file_path, use_pdf_sdk=kwargs.get('use_pdf_sdk', True))
+        if not pdf_path or not os.path.exists(pdf_path):
+            candidate = _get_pdf_path(file_path)
+            pdf_path = candidate if os.path.exists(candidate) else None
+        if not pdf_path:
+            _log.warning(f"[ppt] PDF 변환 실패 — 레거시 경로로 폴백: {os.path.basename(file_path)}")
+            return None
+
+        converter = self._get_ppt_pdf_converter()
+        document: DoclingDocument = converter.convert(pdf_path, raises_on_error=True).document
+
+        # 페이지별 네이티브 텍스트 수집
+        page_text_parts: dict[int, list[str]] = defaultdict(list)
+        for item, _ in document.iterate_items():
+            text = str(getattr(item, "text", "") or "").strip()
+            if not text:
+                continue
+            prov = getattr(item, "prov", None) or []
+            page_no = prov[0].page_no if prov and getattr(prov[0], "page_no", None) else 1
+            page_text_parts[page_no].append(text)
+        page_texts: dict[int, str] = {
+            pno: "\n".join(parts).strip() for pno, parts in page_text_parts.items()
+        }
+
+        # 페이지 단위 image description(옵션). enable=false 면 설명만 skip(파싱은 유지).
+        # native text 가 있으면 프롬프트({{page_text}})에 반영해 요청한다.
+        page_descs: dict[int, str] = describe_pages(
+            document, self._page_desc_options, page_texts=page_texts
+        )
+
+        all_pages: set[int] = set()
+        if getattr(document, "pages", None):
+            all_pages |= set(document.pages.keys())
+        all_pages |= set(page_texts.keys()) | set(page_descs.keys())
+        if not all_pages:
+            all_pages = {1}
+
+        # 같은 페이지의 native text 와 설명을 동일 청크(=동일 Document)로 병합한다.
+        documents: list[Document] = []
+        for page_no in sorted(all_pages):
+            native = page_texts.get(page_no, "").strip()
+            desc = page_descs.get(page_no, "").strip()
+            if native and desc:
+                content = f"{native}\n\n[페이지 이미지 설명]\n{desc}"
+            elif desc:
+                content = desc
+            else:
+                content = native
+            if not content:
+                # 빈 페이지(텍스트/설명 모두 없음) → '.' 폴백으로 Empty document 예외 방지
+                content = "."
+            documents.append(
+                Document(
+                    page_content=content,
+                    metadata={'source': file_path, 'page': page_no - 1},
+                )
+            )
+
+        _log.info(
+            f"[ppt] page documents 생성: pages={len(documents)}, "
+            f"described={len(page_descs)}, description_enabled={self._page_desc_options.enabled}"
+        )
+        return documents
+
+    def _chunk_ppt_pages(self, documents: "list[Document]", **kwargs: dict) -> "list[Document]":
+        """PPT 페이지 Document 를 청크로 구성한다.
+
+        기본: 1 page = 1 chunk. chunk_size(kwargs, 명시된 경우만) 가 주어지면 연속 페이지를
+        합친 길이가 chunk_size 이하가 되도록 greedy 병합한다. 병합 청크는 metadata['page']=시작,
+        metadata['end_page']=끝(0-based) 을 갖는다.
+        """
+        self.page_chunk_counts = defaultdict(int)
+        if not documents:
+            raise Exception('Empty document')
+
+        # chunk_size 우선순위: kwargs['chunk_size'] > chunking.generic.chunk_size(generic_chunk_size).
+        # 값이 없거나 <=0 이면 1 page = 1 chunk, 있으면 연속 페이지를 그 길이까지 결합.
+        chunk_size = _parse_optional_int(kwargs.get('chunk_size'), 'chunk_size')
+        if chunk_size is None:
+            chunk_size = _parse_optional_int(kwargs.get('generic_chunk_size'), 'generic_chunk_size')
+
+        chunks: list[Document] = []
+        if chunk_size is None or chunk_size <= 0:
+            # 1 page = 1 chunk
+            for doc in documents:
+                page = doc.metadata.get('page', 0)
+                chunks.append(Document(
+                    page_content=doc.page_content,
+                    metadata={**doc.metadata, 'end_page': page},
+                ))
+        else:
+            # 연속 페이지 greedy 병합
+            cur_parts: list[str] = []
+            cur_start: Optional[int] = None
+            cur_end: Optional[int] = None
+            cur_source = documents[0].metadata.get('source')
+
+            def _flush():
+                if cur_parts:
+                    chunks.append(Document(
+                        page_content="\n\n".join(cur_parts),
+                        metadata={'source': cur_source, 'page': cur_start, 'end_page': cur_end},
+                    ))
+
+            for doc in documents:
+                page = doc.metadata.get('page', 0)
+                text = doc.page_content
+                if cur_parts and len("\n\n".join(cur_parts + [text])) > chunk_size:
+                    _flush()
+                    cur_parts = [text]
+                    cur_start = page
+                    cur_end = page
+                else:
+                    cur_parts.append(text)
+                    if cur_start is None:
+                        cur_start = page
+                    cur_end = page
+            _flush()
+
+        chunks = [c for c in chunks if c.page_content]
+        if not chunks:
+            raise Exception('Empty document')
+        for chunk in chunks:
+            self.page_chunk_counts[chunk.metadata.get('page', 0)] += 1
+        return chunks
 
     def get_loader(
         self,
@@ -2050,8 +2227,11 @@ class DocumentProcessor:
         vectors = []
         for chunk_idx, chunk in enumerate(chunks):
             page = chunk.metadata.get('page', 1)
+            # PPT 페이지 결합 청크는 end_page 로 페이지 범위를 표현(미설정 시 단일 페이지).
+            end_page = chunk.metadata.get('end_page', page)
             if ext not in ['.hwpx', '.docx']:
                 page += 1
+                end_page += 1
             text = chunk.page_content
 
             if page != current_page:
@@ -2079,7 +2259,7 @@ class DocumentProcessor:
                 'n_word': len(text.split()),
                 'n_line': len(text.splitlines()),
                 'i_page': page,
-                'e_page': page,
+                'e_page': end_page,
                 'i_chunk_on_page': chunk_index_on_page,
                 'n_chunk_of_page': self.page_chunk_counts[page],
                 'i_chunk_on_doc': chunk_idx,
@@ -2220,6 +2400,19 @@ class DocumentProcessor:
 
         elif ext == '.docx':
             return await self.docx_processor(request, file_path, **kwargs)
+
+        elif ext in ('.ppt', '.pptx'):
+            # PPT: PDF 변환 → 경량 docling 파싱 → 페이지 단위 image description(옵션) →
+            # 페이지 기반 청킹(기본 1 page 1 chunk, chunk_size 지정 시 페이지 결합).
+            # 변환 실패 시에만 레거시 langchain 경로로 폴백한다.
+            documents: Optional[list[Document]] = self._load_ppt_page_documents(file_path, **kwargs)
+            if documents is None:
+                documents = self.load_documents(file_path, **kwargs)
+                chunks: list[Document] = self.split_documents(documents, **kwargs)
+            else:
+                chunks = self._chunk_ppt_pages(documents, **kwargs)
+            vectors: list[dict] = self.compose_vectors(file_path, chunks, **kwargs)
+            return vectors
 
         else:
             documents: list[Document] = self.load_documents(file_path, **kwargs)
