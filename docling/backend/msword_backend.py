@@ -1,6 +1,7 @@
 import logging
 import re
 import warnings
+import zipfile
 from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
@@ -36,7 +37,7 @@ from docx.text.paragraph import Paragraph
 from docx.text.run import Run
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
-from pydantic import AnyUrl
+from pydantic import AnyUrl, ValidationError
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -47,18 +48,133 @@ from docling.backend.docx.drawingml.utils import (
 from docling.backend.docx.latex.omml import oMath2Latex
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
-from docling.exceptions import DocumentLoadError
+from docling.exceptions import DocumentLoadError, SecurityError
 
 _log = logging.getLogger(__name__)
+
+_STRICT_OOXML_NS_PREFIX: Final[str] = "http://purl.oclc.org/ooxml/"
+_TRANSITIONAL_NS_HOST: Final[str] = "http://schemas.openxmlformats.org/"
+
+_STRICT_OOXML_MARKER: Final[bytes] = b"purl.oclc.org/ooxml"
+"""Byte string present in every Strict OOXML part that carries a Strict namespace URI."""
+
+_OOXML_ROOT_RELS: Final[str] = "_rels/.rels"
+"""OPC root relationships part; its ``officeDocument`` type identifies Strict vs Transitional."""
+
+_MAX_ROOT_RELS_SIZE: Final[int] = 64 * 1024  # 64 KiB
+"""Read cap for ``_rels/.rels`` during Strict detection (the part is typically ~500 bytes)."""
+
+_MAX_MEMBER_UNCOMPRESSED_SIZE: Final[int] = 512 * 1024 * 1024  # 512 MiB
+"""Per-member uncompressed size cap applied during Strict-to-Transitional rewriting."""
+
+_MAX_TOTAL_UNCOMPRESSED_SIZE: Final[int] = 2 * 1024 * 1024 * 1024  # 2 GiB
+"""Total uncompressed size cap for all members during Strict-to-Transitional rewriting."""
+
+_STRICT_OOXML_NS_OVERRIDES: Final[dict[str, str]] = {
+    "http://purl.oclc.org/ooxml/descriptions/base": "http://descriptions.openxmlformats.org/description/base",
+    "http://purl.oclc.org/ooxml/descriptions/full": "http://descriptions.openxmlformats.org/description/full",
+    "http://purl.oclc.org/ooxml/officeDocument/relationships/customXml": "http://schemas.openxmlformats.org/officeDocument/2006/customXml",
+    "http://purl.oclc.org/ooxml/officeDocument/relationships/metadata/thumbnail": "http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail",
+}
+"""Strict namespace URIs whose Transitional equivalents are irregular (Open XML SDK NamespaceIdMap)."""
+
+_STRICT_OOXML_NS_RE: Final = re.compile(
+    r"http://purl\.oclc\.org/ooxml/[A-Za-z0-9_./-]+"
+)
+"""Matches Strict OOXML namespace/relationship URIs."""
+
+
+def _strict_ns_to_transitional(strict_ns: str) -> str:
+    """Map a single Strict OOXML namespace/relationship URI to its Transitional form."""
+    if strict_ns in _STRICT_OOXML_NS_OVERRIDES:
+        return _STRICT_OOXML_NS_OVERRIDES[strict_ns]
+    rest = strict_ns[len(_STRICT_OOXML_NS_PREFIX) :]
+    rest = rest.replace("extendedProperties", "extended-properties")
+    rest = rest.replace("customProperties", "custom-properties")
+    segment, separator, tail = rest.partition("/")
+    if not separator:
+        return f"{_TRANSITIONAL_NS_HOST}{segment}/2006"
+    return f"{_TRANSITIONAL_NS_HOST}{segment}/2006/{tail}"
+
+
+def _is_strict_ooxml(archive: zipfile.ZipFile) -> bool:
+    """Cheaply decide whether an open .docx archive is a Strict OOXML package.
+
+    Only the small package root relationships part (``_rels/.rels``) is read, so
+    the common Transitional case does not pay for decompressing the whole file.
+    """
+    try:
+        with archive.open(_OOXML_ROOT_RELS) as root_rels:
+            return _STRICT_OOXML_MARKER in root_rels.read(_MAX_ROOT_RELS_SIZE)
+    except KeyError:
+        # No root relationships: not a well-formed OOXML package. Let python-docx
+        # deal with it on the unchanged path.
+        return False
+
+
+def _is_safe_zip_member(name: str) -> bool:
+    """Return whether a zip member name stays inside the archive root.
+
+    Guards against zip-slip: absolute paths, drive-letter paths and ``..``
+    traversal are rejected.
+    """
+    normalized = name.replace("\\", "/")
+    if normalized.startswith("/") or (len(normalized) > 1 and normalized[1] == ":"):
+        return False
+    return not any(part == ".." for part in normalized.split("/"))
+
+
+def _normalize_strict_ooxml(archive: zipfile.ZipFile) -> BytesIO:
+    """Rewrite an open Strict OOXML package to Transitional namespaces in memory.
+
+    Only XML/relationship parts that actually carry a Strict namespace are
+    decoded and rewritten; every other member (images, fonts, ...) is copied
+    through with its original compression, avoiding a needless decode pass. Each
+    member is decompressed exactly once. The archive is validated against
+    zip-slip and zip-bomb attacks while it is read.
+    """
+    normalized = BytesIO()
+    total_uncompressed = 0
+    with zipfile.ZipFile(normalized, "w", zipfile.ZIP_DEFLATED) as target:
+        for info in archive.infolist():
+            if not _is_safe_zip_member(info.filename):
+                raise SecurityError(f"ZIP slip attempt: {info.filename}")
+            if info.file_size > _MAX_MEMBER_UNCOMPRESSED_SIZE:
+                raise SecurityError(
+                    f"Refusing to expand oversized OOXML part: {info.filename}"
+                )
+            total_uncompressed += info.file_size
+            if total_uncompressed > _MAX_TOTAL_UNCOMPRESSED_SIZE:
+                raise SecurityError(
+                    "Refusing to expand OOXML package exceeding the uncompressed size limit"
+                )
+            content = archive.read(info.filename)
+            if (
+                info.filename.endswith((".xml", ".rels"))
+                and _STRICT_OOXML_MARKER in content
+            ):
+                content = _STRICT_OOXML_NS_RE.sub(
+                    lambda match: _strict_ns_to_transitional(match.group(0)),
+                    content.decode("utf-8"),
+                ).encode("utf-8")
+            target.writestr(info, content)
+    normalized.seek(0)
+    return normalized
 
 
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
     """Backend for parsing Microsoft Word (.docx) documents.
 
+    Both Transitional (ISO/IEC 29500-4) and Strict (ISO/IEC 29500-1) ``.docx``
+    packages are supported. Strict packages use ``purl.oclc.org`` namespace URIs
+    that ``python-docx`` does not recognise; they are normalised to their
+    Transitional equivalents in memory before parsing. Transitional files are
+    handed to ``python-docx`` unchanged.
+
     Note:
-        Images with a total area (width * height) less than or equal to
-        `SPACER_IMAGE_AREA_THRESHOLD` (default: 25px) are considered layout
-        artifacts (such as invisible spacers) and are discarded during parsing.
+        Images with a total area (width x height) less than or equal to
+        `SPACER_IMAGE_AREA_THRESHOLD` (default: 25 px2) are treated as invisible
+        layout spacers and discarded during parsing.
     """
 
     _W_NS: Final[str] = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -77,9 +193,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         "w14": "http://schemas.microsoft.com/office/word/2010/wordml",
     }
 
-    SPACER_IMAGE_AREA_THRESHOLD: Final[int] = (
-        25  # Images with an area (w*h) below this are dropped as layout artifacts
-    )
+    SPACER_IMAGE_AREA_THRESHOLD: Final[int] = 25
+    """Images with an area (w*h) below this are dropped as layout artifacts."""
 
     @override
     def __init__(self, in_doc: "InputDocument", path_or_stream: BytesIO | Path) -> None:
@@ -206,12 +321,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         path_or_stream: BytesIO | Path, document_hash: str
     ) -> DocxDocument:
         try:
-            if isinstance(path_or_stream, BytesIO):
-                return Document(path_or_stream)
-            elif isinstance(path_or_stream, Path):
+            if isinstance(path_or_stream, Path):
+                with zipfile.ZipFile(path_or_stream) as archive:
+                    if _is_strict_ooxml(archive):
+                        return Document(_normalize_strict_ooxml(archive))
                 return Document(str(path_or_stream))
+            elif isinstance(path_or_stream, BytesIO):
+                with zipfile.ZipFile(path_or_stream) as archive:
+                    if _is_strict_ooxml(archive):
+                        return Document(_normalize_strict_ooxml(archive))
+                path_or_stream.seek(0)
+                return Document(path_or_stream)
             else:
                 return None
+        except SecurityError:
+            raise
         except Exception as e:
             raise DocumentLoadError(
                 f"MsWordDocumentBackend could not load document with hash {document_hash}"
@@ -912,12 +1036,34 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         )
 
     def _get_hyperlink_target(self, hyperlink: Hyperlink) -> AnyUrl | Path | None:
+        """Resolve a hyperlink's address to a URL or a local path.
+
+        Addresses without a URL scheme are treated as (relative) filesystem
+        paths. Addresses with a scheme are parsed as URLs.
+
+        Malformed URLs (e.g. an address containing spaces) are handled
+        gracefully: the invalid target is dropped and ``None`` is returned so
+        that the link text is still preserved and conversion of the rest of the
+        document continues. This avoids a single bad hyperlink aborting the
+        whole conversion.
+
+        Args:
+            hyperlink: The DOCX hyperlink whose address should be resolved.
+
+        Returns:
+            An ``AnyUrl`` for a valid URL, a ``Path`` for a scheme-less address,
+            or ``None`` when there is no address or the URL is malformed.
+        """
         if hyperlink.address:
-            return (
-                AnyUrl(hyperlink.address)
-                if urlparse(hyperlink.address).scheme
-                else Path(hyperlink.address)
-            )
+            if not urlparse(hyperlink.address).scheme:
+                return Path(hyperlink.address)
+            try:
+                return AnyUrl(hyperlink.address)
+            except ValidationError:
+                _log.warning(
+                    "Skipping malformed hyperlink address: %r", hyperlink.address
+                )
+                return None
 
         return None
 

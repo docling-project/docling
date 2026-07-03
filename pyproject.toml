@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.108.0"  # DO NOT EDIT, updated automatically
+version = "2.109.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -169,11 +169,11 @@ format-audio = [
 # OCR ENGINES (feat-ocr-*)
 # ============================================================================
 feat-ocr-rapidocr = [
-  'rapidocr>=3.8,<4.0.0',
+  'rapidocr>=3.9.1,<4.0.0',
 ]
 
 feat-ocr-rapidocr-onnx = [
-  'rapidocr>=3.8,<4.0.0',
+  'rapidocr>=3.9.1,<4.0.0',
   'onnxruntime>=1.7.0,<2.0.0 ; python_version < "3.14"',
 ]
 
@@ -362,6 +362,7 @@ packages = ["docling"]
 only-include = ["docling", "pyproject.toml", "README.md", "LICENSE"]
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 markers = [
   "ml_ocr: OCR tests that download or execute OCR model code.",
   "ml_pdf_model: PDF conversion tests that download or execute document AI model code.",
