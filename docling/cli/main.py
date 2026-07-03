@@ -143,6 +143,11 @@ class HtmlImageFetchMode(str, Enum):
     ALL = "all"
 
 
+class ChunkerType(str, Enum):
+    HYBRID = "hybrid"
+    HIERARCHICAL = "hierarchical"
+
+
 def _is_http_url(source: str) -> bool:
     parsed = urlparse(source)
     return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
@@ -353,7 +358,7 @@ def export_documents(
     export_timings: bool,
     image_export_mode: ImageRefMode,
     export_chunks: bool = False,
-    chunker_type: str = "hybrid",
+    chunker_type: ChunkerType = ChunkerType.HYBRID,
     chunk_max_tokens: Optional[int] = None,
     chunk_tokenizer: str = "sentence-transformers/all-MiniLM-L6-v2",
 ):
@@ -480,7 +485,7 @@ def export_documents(
                     HuggingFaceTokenizer,
                 )
 
-                if chunker_type == "hierarchical":
+                if chunker_type == ChunkerType.HIERARCHICAL:
                     chunker_obj = HierarchicalChunker()
                 else:  # default: hybrid
                     hf_tok = HuggingFaceTokenizer.from_pretrained(
@@ -616,10 +621,10 @@ def convert(  # noqa: C901
     to_formats: list[OutputFormat] = typer.Option(
         None, "--to", help="Specify output formats. Defaults to Markdown."
     ),
-    chunker_type: str = typer.Option(
-        "hybrid",
+    chunker_type: ChunkerType = typer.Option(
+        ChunkerType.HYBRID,
         "--chunker",
-        help="Chunker to use with '--to chunks': 'hybrid' or 'hierarchical'.",
+        help="Chunker to use with '--to chunks'.",
     ),
     chunk_max_tokens: Optional[int] = typer.Option(
         None,
