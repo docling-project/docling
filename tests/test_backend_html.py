@@ -16,7 +16,9 @@ from pydantic import AnyUrl, ValidationError
 from docling.backend.html_backend import (
     _BR_SENTINEL,
     HTMLDocumentBackend,
-    _validate_url_safety,
+)
+from docling.backend.utils.image_resource_loader import (
+    validate_url_safety as _validate_url_safety,
 )
 from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
@@ -222,6 +224,92 @@ def test_ordered_lists():
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
 
 
+def test_nested_table_in_list_item():
+    """Regression for #3508: a <table> nested inside an <ol>/<li> must be parsed
+    as a table instead of being flattened into the list item's text.
+
+    Previously the nested table was recursed into as flow content, so its cells
+    collapsed into the list item text and the cells' inner <ul> items were hoisted
+    into the ordered list (breaking the numbering).
+    """
+    html = (
+        b"<html><body><ol>"
+        b"<li>First step.</li>"
+        b"<li>Second step:"
+        b"<table><thead><tr><th>Name</th><th>Desc</th></tr></thead>"
+        b"<tbody><tr><td>Type</td>"
+        b"<td>Fault type.<ul><li>Alpha</li><li>Beta</li></ul></td></tr>"
+        b"</tbody></table></li>"
+        b"<li>Third step.</li>"
+        b"</ol></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc: DoclingDocument = backend.convert()
+    assert doc
+
+    # The nested table must be parsed as a table (was 0 before the fix).
+    assert len(doc.tables) == 1
+    assert doc.tables[0].data.num_rows == 2
+    assert doc.tables[0].data.num_cols == 2
+
+    md = doc.export_to_markdown()
+    # Ordered-list numbering stays 1..3; the cell's inner <ul> is not hoisted.
+    assert "1. First step." in md
+    assert "2. Second step" in md
+    assert "3. Third step." in md
+    # Cell text lives in the table, not duplicated into the list item text.
+    assert md.count("Fault type.") == 1
+
+
+@pytest.mark.parametrize(
+    "inner",
+    [
+        # table as a direct child of <li>
+        b"<li>Step:<table><tbody><tr><td>A</td><td>B</td></tr></tbody></table></li>",
+        # table wrapped in a <div> inside <li> (reaches the table branch via the
+        # generic else-recursion path)
+        b"<li>Step:<div><table><tbody><tr><td>A</td><td>B</td></tr></tbody>"
+        b"</table></div></li>",
+    ],
+)
+def test_nested_table_in_list_item_wrappers(inner):
+    """#3508: the nested table is parsed regardless of an intermediate wrapper."""
+    html = b"<html><body><ol>" + inner + b"</ol></body></html>"
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+    assert len(doc.tables) == 1
+
+
+def test_nested_table_in_description_list_item():
+    """#3508: same fix applies to a <table> nested in a <dl>/<dd>."""
+    html = (
+        b"<html><body><dl><dt>Term</dt>"
+        b"<dd>Def:<table><tbody><tr><td>A</td><td>B</td></tr></tbody></table></dd>"
+        b"</dl></body></html>"
+    )
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(html))
+    doc = backend.convert()
+    assert len(doc.tables) == 1
+
+
 def test_description_lists():
     """Test that HTML description lists (<dl>, <dt>, <dd>) are properly parsed."""
     test_set: list[tuple[bytes, str]] = []
@@ -321,6 +409,20 @@ def test_extract_parent_hyperlinks():
     assert str(annotated_text_list[0].hyperlink) == a_tag.get("href")
 
 
+def test_code_language_hint_prefers_prefixed_class():
+    # A language- class wins over a bare class even when the bare class is itself
+    # a known language token, so a highlighter's real hint is not outranked by an
+    # unrelated utility class that happens to look like a language.
+    soup = BeautifulSoup(
+        '<pre class="bash"><code class="language-python">x = 1</code></pre>',
+        "html.parser",
+    )
+    assert HTMLDocumentBackend._code_language_hint(soup.pre) == "language-python"
+
+    plain = BeautifulSoup("<pre><code>x = 1</code></pre>", "html.parser")
+    assert HTMLDocumentBackend._code_language_hint(plain.pre) is None
+
+
 @pytest.fixture(scope="module")
 def html_paths() -> list[Path]:
     # Define the directory you want to search
@@ -369,8 +471,8 @@ def test_e2e_html_conversions(html_paths):
         assert verify_document(doc, str(gt_path) + ".json", GENERATE)
 
 
-@patch("docling.backend.html_backend.requests.get")
-@patch("docling.backend.html_backend.open", new_callable=mock_open)
+@patch("docling.backend.utils.image_resource_loader.requests.get")
+@patch("docling.backend.utils.image_resource_loader.open", new_callable=mock_open)
 def test_e2e_html_conversion_with_images(mock_local, mock_remote):
     source = "tests/data/html/sources/example_01.html"
     image_path = "tests/data/html/sources/example_image_01.png"
@@ -400,7 +502,7 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
 
     # fetching image remotely - need to mock Session.get instead of requests.get
     with patch(
-        "docling.backend.html_backend.requests.Session.get"
+        "docling.backend.utils.image_resource_loader.requests.Session.get"
     ) as mocked_session_get:
         mock_resp = Mock()
         mock_resp.status_code = 200
@@ -485,7 +587,9 @@ def test_fetch_remote_images(monkeypatch):
     converter = _create_html_converter(
         HTMLBackendOptions(fetch_images=False, source_uri="http://example.com")
     )
-    with patch("docling.backend.html_backend.requests.get") as mocked_get:
+    with patch(
+        "docling.backend.utils.image_resource_loader.requests.get"
+    ) as mocked_get:
         res = converter.convert(source)
         mocked_get.assert_not_called()
     assert res.document
@@ -493,7 +597,7 @@ def test_fetch_remote_images(monkeypatch):
     # no image fetching: the source location is False and enable_local_fetch is False
     converter = _create_html_converter(HTMLBackendOptions(fetch_images=True))
     with (
-        patch("docling.backend.html_backend.requests.get") as mocked_get,
+        patch("docling.backend.utils.image_resource_loader.requests.get") as mocked_get,
         pytest.warns(
             match="Fetching local resources is only allowed when set explicitly"
         ),
@@ -507,7 +611,7 @@ def test_fetch_remote_images(monkeypatch):
         HTMLBackendOptions(fetch_images=True, source_uri="http://example.com")
     )
     with (
-        patch("docling.backend.html_backend.requests.get") as mocked_get,
+        patch("docling.backend.utils.image_resource_loader.requests.get") as mocked_get,
         pytest.warns(
             match="Fetching remote resources is only allowed when set explicitly"
         ),
@@ -523,7 +627,7 @@ def test_fetch_remote_images(monkeypatch):
         )
     )
     with patch(
-        "docling.backend.html_backend.requests.Session.get"
+        "docling.backend.utils.image_resource_loader.requests.Session.get"
     ) as mocked_session_get:
         mocked_session_get.return_value = _create_mock_response()
         res = converter.convert(source)
@@ -537,7 +641,7 @@ def test_fetch_remote_images(monkeypatch):
         )
     )
     with (
-        patch("docling.backend.html_backend.open") as mocked_open,
+        patch("docling.backend.utils.image_resource_loader.open") as mocked_open,
         pytest.warns(match="a bytes-like object is required"),
     ):
         res = converter.convert(source)
@@ -565,7 +669,7 @@ def test_fetch_remote_images_with_custom_headers():
 
     converter = _create_html_converter(backend_options)
     with patch(
-        "docling.backend.html_backend.requests.Session.get"
+        "docling.backend.utils.image_resource_loader.requests.Session.get"
     ) as mocked_session_get:
         mocked_session_get.return_value = _create_mock_response()
         res = converter.convert("./tests/data/html/sources/example_01.html")
@@ -1083,6 +1187,63 @@ def test_path_traversal_blocked_in_resolve_relative_path():
         OperationNotAllowed, match="Local file access requires base_path"
     ):
         html_doc._load_image_data("image.png")
+
+
+def _make_html_backend(options=None):
+    html_path = Path("./tests/data/html/sources/example_01.html")
+    in_doc = InputDocument(
+        path_or_stream=html_path,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    return HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=html_path,
+        options=options or HTMLBackendOptions(),
+    )
+
+
+def test_browser_request_block_reason_policy():
+    """Render-mode request filtering: scheme allow-list plus remote-fetch gating."""
+    backend = _make_html_backend(HTMLBackendOptions(enable_remote_fetch=False))
+
+    # data:/file: schemes are always allowed during rendering
+    assert (
+        backend._get_browser_request_block_reason("data:image/png;base64,AAAA") is None
+    )
+    assert backend._get_browser_request_block_reason("file:///tmp/page.html") is None
+
+    # remote requests are blocked while remote fetch is disabled
+    reason = backend._get_browser_request_block_reason("http://example.com/img.png")
+    assert reason is not None and "remote fetch is disabled" in reason
+
+    # a non-remote, non-allowlisted scheme is refused
+    assert "is not allowed" in (
+        backend._get_browser_request_block_reason("gopher://example.com/x") or ""
+    )
+
+    # remote requests are permitted once remote fetch is enabled
+    backend = _make_html_backend(HTMLBackendOptions(enable_remote_fetch=True))
+    assert (
+        backend._get_browser_request_block_reason("http://example.com/img.png") is None
+    )
+
+
+def test_coerce_base_url():
+    backend = _make_html_backend()
+
+    # Remote and file:// URLs are passed through unchanged
+    assert (
+        backend._coerce_base_url("http://example.com/a.html")
+        == "http://example.com/a.html"
+    )
+    assert backend._coerce_base_url("file:///tmp/a.html") == "file:///tmp/a.html"
+
+    # A local filesystem path is normalized to a file URI
+    assert backend._coerce_base_url(
+        "tests/data/html/sources/example_01.html"
+    ).startswith("file://")
 
 
 def test_valid_local_paths_still_work():

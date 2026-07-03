@@ -1,10 +1,6 @@
-import base64
-import ipaddress
 import logging
 import math
-import os
 import re
-import socket
 import warnings
 from contextlib import contextmanager
 from copy import deepcopy
@@ -12,13 +8,13 @@ from dataclasses import dataclass, field as dataclass_field
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Final, Iterator, Literal, Optional, Union, cast
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 
-import requests
 from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
 from bs4.element import PreformattedString
 from docling_core.types.doc import (
     BoundingBox,
+    CodeLanguageLabel,
     CoordOrigin,
     DocItem,
     DocItemLabel,
@@ -46,17 +42,23 @@ from docling_core.types.doc import (
     TextItem,
 )
 from docling_core.types.doc.document import ContentLayer, Formatting, ImageRef, Script
-from PIL import Image, UnidentifiedImageError
+from PIL import Image
 from pydantic import AnyUrl, BaseModel, ValidationError
 from typing_extensions import Self, override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
+from docling.backend.utils.image_resource_loader import ImageResourceLoader
 from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
-from docling.exceptions import DocumentLoadError, OperationNotAllowed
+from docling.exceptions import DocumentLoadError
+from docling.utils.code_language import (
+    _HINT_PREFIXES,
+    detect_code_language,
+    normalize_code_language,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -155,36 +157,6 @@ _FORM_MARKER_ID_RE: Final = re.compile(r"^key(?P<key_id>[A-Za-z0-9]+)_marker$")
 _FORM_VALUE_ID_RE: Final = re.compile(
     r"^key(?P<key_id>[A-Za-z0-9]+)_value(?P<value_id>[A-Za-z0-9]+)$"
 )
-
-
-def _validate_url_safety(url: str) -> None:
-    parsed = urlparse(url)
-    hostname = parsed.hostname
-
-    if not hostname:
-        raise ValueError("URL must contain a valid hostname")
-
-    try:
-        ip = ipaddress.ip_address(hostname)
-    except ValueError:
-        try:
-            ip_str = socket.gethostbyname(hostname)
-            ip = ipaddress.ip_address(ip_str)
-        except (socket.gaierror, socket.herror) as e:
-            raise ValueError(f"Cannot resolve hostname: {hostname}") from e
-
-    if not (
-        ip.is_global
-        and not (
-            ip.is_private
-            or ip.is_loopback
-            or ip.is_link_local
-            or ip.is_reserved
-            or ip.is_multicast
-            or ip.is_unspecified
-        )
-    ):
-        raise ValueError(f"Access to restricted IP address not allowed: {ip}")
 
 
 _CUSTOM_CHECKBOX_CLASSES: Final = {"checkbox", "checkbox-box", "checkbox-input"}
@@ -445,6 +417,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self.base_path: Optional[str] = (
             str(options.source_uri) if options.source_uri is not None else None
         )
+        self._image_loader = ImageResourceLoader(
+            enable_local_fetch=options.enable_local_fetch,
+            enable_remote_fetch=options.enable_remote_fetch,
+            max_image_data_base64_bytes=options.max_image_data_base64_bytes,
+            max_remote_image_bytes=options.max_remote_image_bytes,
+            max_redirects=options.max_redirects,
+            headers=options.headers,
+        )
 
         # Initialize the parents for the hierarchy
         self.max_levels = 10
@@ -589,7 +569,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return width, height
 
     def _coerce_base_url(self, value: str) -> str:
-        if HTMLDocumentBackend._is_remote_url(value) or value.startswith("file://"):
+        if ImageResourceLoader.is_remote_url(value) or value.startswith("file://"):
             return value
         return Path(value).resolve().as_uri()
 
@@ -599,7 +579,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if scheme in {"file", "data", "about", "blob"}:
             return None
 
-        if HTMLDocumentBackend._is_remote_url(request_url):
+        if ImageResourceLoader.is_remote_url(request_url):
             if self.options.enable_remote_fetch:
                 return None
             return (
@@ -1327,61 +1307,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             for n in reversed(new_nodes):
                 parent.insert(idx, n)
 
-    @staticmethod
-    def _is_remote_url(value: str) -> bool:
-        parsed = urlparse(value)
-        return parsed.scheme in {"http", "https", "ftp", "s3", "gs"}
-
-    @staticmethod
-    def _is_local_path(value: str) -> bool:
-        """Check if value is a local filesystem path (not a URI)."""
-        parsed = urlparse(value)
-        return not parsed.netloc and (
-            not parsed.scheme
-            or (len(parsed.scheme) == 1 and parsed.scheme.isalpha())  # Windows case
-        )
-
-    def _is_absolute_path(self, loc: str) -> bool:
-        return Path(loc).is_absolute() or (  # Windows-specific absolute paths:
-            len((parsed_loc := urlparse(loc)).scheme) == 1
-            and parsed_loc.scheme.isalpha()
-            and not parsed_loc.netloc
-        )
-
     def _resolve_relative_path(self, loc: str) -> str:
-        loc = loc.strip()
-
-        # Strip file:// prefix for validation as local path
-        if loc.startswith(file_prefix := "file://"):
-            loc = loc[len(file_prefix) :]
-
-        abs_loc = loc
-
-        if self.base_path:
-            if loc.startswith("//"):
-                abs_loc = "https:" + loc
-            elif not loc.startswith(("http://", "https://", "data:", "#")):
-                if HTMLDocumentBackend._is_remote_url(self.base_path):
-                    abs_loc = urljoin(self.base_path, loc)
-                elif HTMLDocumentBackend._is_local_path(self.base_path):
-                    if self._is_absolute_path(loc):
-                        raise ValueError(
-                            f"Absolute paths are not allowed with local base_path: '{loc}'"
-                        )
-
-                    base_dir = Path(self.base_path).parent.resolve()
-                    resolved_path = (base_dir / loc).resolve()
-
-                    if not resolved_path.is_relative_to(base_dir):
-                        raise ValueError(
-                            f"Path traversal blocked: '{loc}' resolves outside base directory"
-                        )
-                    abs_loc = str(resolved_path)
-                else:
-                    raise ValueError(f"Invalid base_path format: '{self.base_path}'")
-
-        _log.debug(f"Resolved location {loc} to {abs_loc}")
-        return abs_loc
+        return self._image_loader.resolve_relative_path(loc, self.base_path)
 
     @staticmethod
     def group_cell_elements(
@@ -1938,7 +1865,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return AnnotatedTextList()
         if self._is_checkbox_label_tag(tag):
             return AnnotatedTextList()
-        if not ignore_list or (tag.name not in ["ul", "ol", "dl"]):
+        if not ignore_list or (tag.name not in ["ul", "ol", "dl", "table"]):
             for child in tag:
                 if isinstance(child, Tag) and child.name in _FORMAT_TAG_MAP:
                     with self._use_format([child.name]):
@@ -2293,6 +2220,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if not self._has_list_ancestor(elem, li):
                     self._handle_block(elem, doc)
                     self.parents[self.level + 1] = None
+            elif elem.name == "table":
+                # Dispatch nested tables to the block handler so they are parsed
+                # as tables instead of being flattened into the list item text.
+                # No _has_list_ancestor-style guard is needed here (unlike the
+                # list branch): _handle_block consumes the whole table, so its
+                # descendants are never re-walked by _process_nested_element.
+                self._handle_block(elem, doc)
+                self.parents[self.level + 1] = None
             else:
                 # Recursively process children for other elements (like divs)
                 for child in elem.children:
@@ -2757,6 +2692,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 tag, find_parent_annotation=True, keep_newlines=True
             )
             annotated_texts = text_list.simplify_text_elements()
+            language_hint = self._code_language_hint(tag)
             with self._use_inline_group(annotated_texts, doc) as inline_ref:
                 for annotated_text in annotated_texts:
                     text_clean = HTMLDocumentBackend._clean_unicode(
@@ -2770,6 +2706,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     docling_code2 = doc.add_code(
                         parent=self.parents[self.level],
                         text=text_clean,
+                        code_language=detect_code_language(
+                            text_clean, hint=language_hint
+                        ),
                         content_layer=self.content_layer,
                         formatting=annotated_text.formatting,
                         hyperlink=annotated_text.hyperlink,
@@ -3090,6 +3029,24 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if isinstance(classes, str):
             return {classes}
         return {str(value) for value in classes if isinstance(value, str)}
+
+    @staticmethod
+    def _code_language_hint(tag: Tag) -> str | None:
+        """Pick the language class a highlighter set on the ``<pre>`` or ``<code>``.
+
+        A ``language-``/``lang-`` prefixed class is preferred so an unrelated
+        utility class on the same element cannot outrank a real hint.
+        """
+        tokens: set[str] = set()
+        for element in (tag, *tag.find_all("code")):
+            tokens |= HTMLDocumentBackend._get_tag_classes(element)
+
+        prefixed = sorted(t for t in tokens if t.lower().startswith(_HINT_PREFIXES))
+        bare = sorted(tokens - set(prefixed))
+        for token in (*prefixed, *bare):
+            if normalize_code_language(token) is not CodeLanguageLabel.UNKNOWN:
+                return token
+        return None
 
     @staticmethod
     def _has_inline_display_style(tag: Tag) -> bool:
@@ -4519,112 +4476,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return input_item.get_ref()
 
     def _create_image_ref(self, src_url: str) -> Optional[ImageRef]:
-        try:
-            img_data = self._load_image_data(src_url)
-            if img_data:
-                img = Image.open(BytesIO(img_data))
-                return ImageRef.from_pil(img, dpi=int(img.info.get("dpi", (72,))[0]))
-        except (
-            requests.HTTPError,
-            ValidationError,
-            UnidentifiedImageError,
-            OperationNotAllowed,
-            TypeError,
-            ValueError,
-        ) as e:
-            warnings.warn(f"Could not process an image from {src_url}: {e}")
-
-        return None
+        return self._image_loader.create_image_ref(src_url, self.base_path)
 
     def _load_image_data(self, src_loc: str) -> Optional[bytes]:
-        if src_loc.lower().endswith(".svg"):
-            _log.debug(f"Skipping SVG file: {src_loc}")
-            return None
-
-        if HTMLDocumentBackend._is_remote_url(src_loc):
-            if not self.options.enable_remote_fetch:
-                raise OperationNotAllowed(
-                    "Fetching remote resources is only allowed when set explicitly. "
-                    "Set options.enable_remote_fetch=True."
-                )
-
-            _validate_url_safety(src_loc)
-
-            max_size = self.options.max_remote_image_bytes
-            headers = {"Range": f"bytes=0-{max_size - 1}"}
-
-            # Merge custom headers from options if provided
-            if self.options.headers:
-                headers.update(self.options.headers)
-
-            # Create session with redirect limit
-            session = requests.Session()
-            session.max_redirects = self.options.max_redirects
-
-            # Hook to validate each redirect target
-            def _check_redirect_safety(response, *args, **kwargs):
-                """Validate each redirect target before following it."""
-                if response.is_redirect or response.is_permanent_redirect:
-                    redirect_url = response.headers.get("location")
-                    if redirect_url:
-                        # Handle relative redirects
-                        if not redirect_url.startswith(("http://", "https://")):
-                            from urllib.parse import urljoin
-
-                            redirect_url = urljoin(response.url, redirect_url)
-
-                        # Validate the redirect target
-                        _validate_url_safety(redirect_url)
-
-            session.hooks["response"].append(_check_redirect_safety)
-
-            response = session.get(
-                src_loc, stream=True, headers=headers, timeout=(5, 30)
-            )
-            response.raise_for_status()
-
-            content_length = response.headers.get("content-length")
-            if content_length and int(content_length) > max_size:
-                raise ValueError(f"Resource size exceeds limit: {content_length} bytes")
-
-            chunks = []
-            total_size = 0
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    total_size += len(chunk)
-                    if total_size > max_size:
-                        raise ValueError("Downloaded data exceeds size limit")
-                    chunks.append(chunk)
-
-            return b"".join(chunks)
-        elif src_loc.startswith("data:"):
-            encoded_data = re.sub(r"^data:image/.+;base64,", "", src_loc)
-            decoded_data = base64.b64decode(encoded_data)
-
-            if len(decoded_data) > self.options.max_image_data_base64_bytes:
-                raise ValueError(
-                    f"Decoded image exceeds size limit of {self.options.max_image_data_base64_bytes} bytes."
-                )
-
-            return decoded_data
-
-        if not self.options.enable_local_fetch:
-            raise OperationNotAllowed(
-                "Fetching local resources is only allowed when set explicitly. "
-                "Set options.enable_local_fetch=True."
-            )
-
-        # Require base_path for directory confinement (validation done in _resolve_relative_path)
-        if not self.base_path:
-            raise OperationNotAllowed(
-                f"Local file access requires base_path for directory confinement: '{src_loc}'"
-            )
-
-        if os.path.isfile(src_loc) and os.access(src_loc, os.R_OK):
-            with open(src_loc, "rb") as f:
-                return f.read()
-        else:
-            raise ValueError("File does not exist or it is not readable.")
+        return self._image_loader.load_image_data(src_loc, self.base_path)
 
     @staticmethod
     def get_text(item: PageElement) -> str:

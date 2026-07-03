@@ -134,6 +134,10 @@ class MarkdownBackendOptions(BaseBackendOptions):
             "will use it to resolve relative paths in the markdown document."
         ),
     )
+    max_image_data_base64_bytes: PositiveInt = Field(
+        20 * 1024 * 1024,  # 20 MB
+        description="The maximum number of base64 data bytes that the backend will accept.",
+    )
 
 
 class EpubBackendOptions(BaseBackendOptions):
@@ -165,6 +169,14 @@ class PdfBackendOptions(BaseBackendOptions):
 
     kind: Literal["pdf"] = Field("pdf", exclude=True, repr=False)
     password: Optional[SecretStr] = None
+    enforce_same_font: bool = Field(
+        True,
+        description=(
+            "Whether docling-parse should split text cells at font boundaries. "
+            "Disable this when PDFs use separate fonts for base glyphs and "
+            "diacritics that should remain in the same text cell."
+        ),
+    )
 
 
 class ThreadedDoclingParseBackendOptions(PdfBackendOptions):
