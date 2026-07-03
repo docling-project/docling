@@ -106,6 +106,11 @@ except ImportError:
 from genon.preprocessor.facade.enrichment.enrichment_config import EnrichmentConfig
 from genon.preprocessor.facade.enrichment.prompt_files import read_prompt_file
 from genon.preprocessor.facade.enrichment.prompt_template import PromptTemplate
+from genon.preprocessor.facade.enrichment.page_description import (
+    PageDescriptionOptions,
+    collect_page_texts,
+    describe_pages,
+)
 
 try:
     import chardet
@@ -2106,6 +2111,13 @@ class DocumentProcessor:
         self._output_format = self._normalize_output_format(output_cfg.get("format", "json"))
         self._table_format = self._normalize_table_format(output_cfg.get("table_format", "html"))
 
+        # PPT 페이지 단위 image description(page-level). config: formats.ppt.page_description.
+        # 파서는 PPT 를 (레거시 langchain 대신) PDF→docling 으로 재라우팅해 페이지 설명을 주입한다.
+        formats_cfg = _as_dict(cfg.get("formats"))
+        ppt_pd_cfg = _as_dict(_as_dict(formats_cfg.get("ppt")).get("page_description"))
+        self._page_desc_options = PageDescriptionOptions.from_config(ppt_pd_cfg, self._intel._config_dir)
+        self._ppt_pdf_converter = None
+
     @staticmethod
     def _normalize_output_format(value: Any) -> str:
         fmt = str(value).strip().lower()
@@ -2239,6 +2251,61 @@ class DocumentProcessor:
 
     def _parse_other(self, file_path: str, **kwargs) -> list:
         return self._generic.load_documents(file_path, **kwargs)
+
+    def _get_ppt_pdf_converter(self) -> DocumentConverter:
+        """PPT(→PDF) 파싱용 경량 docling 컨버터(lazy, 캐시). dotsocr 미수행 + do_ocr=False.
+        page_description 이 켜지면 generate_page_images=True 로 페이지 렌더 이미지를 만든다.
+        """
+        if self._ppt_pdf_converter is not None:
+            return self._ppt_pdf_converter
+        opts = PdfPipelineOptions()
+        opts.do_ocr = False
+        opts.do_table_structure = False
+        opts.generate_page_images = bool(self._page_desc_options.enabled)
+        opts.generate_picture_images = False
+        opts.images_scale = self._page_desc_options.images_scale
+        self._ppt_pdf_converter = DocumentConverter(
+            format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=opts)}
+        )
+        return self._ppt_pdf_converter
+
+    def _parse_ppt_docling(self, file_path: str, **kwargs) -> "Optional[DoclingDocument]":
+        """PPT/PPTX → PDF 변환 후 경량 docling 파싱 + 페이지 단위 image description 주입.
+
+        페이지 설명은 페이지별 TextItem 으로 주입되어 parse 출력(elements)에 그대로 포함된다.
+        PDF 변환이 불가하면 None 을 반환해 호출부가 레거시 langchain 경로로 폴백하도록 한다.
+        """
+        pdf_path = convert_to_pdf(file_path)
+        if not pdf_path or not os.path.exists(pdf_path):
+            candidate = _get_pdf_path(file_path)
+            pdf_path = candidate if os.path.exists(candidate) else None
+        if not pdf_path:
+            _log.warning(f"[ppt] PDF 변환 실패 — 레거시 경로로 폴백: {os.path.basename(file_path)}")
+            return None
+
+        document: DoclingDocument = self._get_ppt_pdf_converter().convert(
+            pdf_path, raises_on_error=True
+        ).document
+
+        # 페이지별 native text 수집 → 프롬프트({{page_text}})에 반영해 페이지 설명 요청
+        page_texts = collect_page_texts(document)
+        page_descs = describe_pages(document, self._page_desc_options, page_texts=page_texts)
+        for page_no in sorted(page_descs.keys()):
+            desc = page_descs[page_no].strip()
+            if not desc:
+                continue
+            text = f"[페이지 이미지 설명]\n{desc}"
+            prov = ProvenanceItem(
+                page_no=page_no,
+                bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                charspan=(0, len(text)),
+            )
+            document.add_text(label=DocItemLabel.TEXT, text=text, prov=prov)
+        _log.info(
+            f"[ppt] parse page documents: pages={document.num_pages()}, "
+            f"described={len(page_descs)}, description_enabled={self._page_desc_options.enabled}"
+        )
+        return document
 
     async def _apply_docling_post_enrichment(self, document: DoclingDocument, **kwargs) -> DoclingDocument:
         """Facade 후처리 enrichment 훅."""
@@ -2693,6 +2760,22 @@ class DocumentProcessor:
                 result["metadata"] = enrichment_context["metadata"]
             return self._normalize_response(result)
 
-        # 기타 포맷: doc, ppt, pptx, txt, json, md, jpg, jpeg, png 등
+        # PPT: PDF 변환 → 경량 docling 파싱 + 페이지 단위 image description(옵션).
+        # 변환 실패 시에만 레거시 langchain 경로로 폴백한다. (파스 전용 — 청킹 없음)
+        if ext in (".ppt", ".pptx"):
+            doc = self._parse_ppt_docling(file_path, **kwargs)
+            if doc is not None:
+                doc = await self._apply_docling_post_enrichment(
+                    doc, _enrichment_context=enrichment_context, **kwargs
+                )
+                result = self._build_docling_response(doc)
+                if enrichment_context.get("metadata"):
+                    result["metadata"] = enrichment_context["metadata"]
+                return self._normalize_response(result)
+            # PDF 변환 실패 폴백
+            docs = self._parse_other(file_path, **kwargs)
+            return self._normalize_response(self._langchain_to_parse_format(docs))
+
+        # 기타 포맷: doc, txt, json, md, jpg, jpeg, png 등
         docs = self._parse_other(file_path, **kwargs)
         return self._normalize_response(self._langchain_to_parse_format(docs))

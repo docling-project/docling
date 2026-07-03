@@ -17,6 +17,20 @@ formats:
       # 1시트에 표가 여러 개(빈 행으로 분리)면 표별로 분리. false(기본)=시트=1표.
       multi_table: false
 
+  # PPT(.pptx): docling 경로. page_description="페이지 자체"를 VLM 설명 → 페이지별 TextItem 주입.
+  # PPT 는 페이지 기반 청킹(1 page 1 chunk, chunk_size 로 연속 페이지 결합) + TOC skip. (.ppt 레거시 미지원)
+  # enable=true 면 generate_page_images 자동 강제. native text 는 프롬프트({{page_text}})에 반영.
+  ppt:
+    page_description:
+      enable: true
+      url: "http://llmops-gateway-api-service:8080/rep/serving/<PAGE_DESCRIPTION_SERVING_ID>/v1/chat/completions"
+      api_key: ""
+      model: "model"
+      timeout: 360
+      concurrency: 16          # 페이지 설명 요청 병렬 수
+      # 선택 튜닝: images_scale(렌더 배율) / max_image_side(전송 이미지 최대 변) / max_tokens(출력 상한) / params(추가 VLM 파라미터)
+      prompt_template_file: prompt_page_image_description_default.md
+
 ocr:
   # OCR 수행 모드. "auto"(default)=휴리스틱 기반 재OCR / "force"=무조건 전체 OCR / "disable"=OCR 안 함
   # (PDF 입력에만 적용. DOCX/기타 포맷은 ocr_mode 무관)

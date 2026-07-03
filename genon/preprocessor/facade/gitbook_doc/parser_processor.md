@@ -658,9 +658,24 @@ filename: 보고서.pdf
 | `.hwp`, `.hwpx` | HwpDocumentLoader | 문서 구조 그대로 | GenosHwpDocumentBackend (HWP SDK) |
 | `.docx` | DocxDocumentLoader | 문서 구조 그대로 | GenosMsWordDocumentBackend |
 | `.csv`, `.xlsx`, `.xlsm` | `load_tables`(openpyxl 병합셀) / `formats.xlsx.processing_mode` (`tabular` 기본 \| `docling`) | `table` (HTML) | openpyxl, chardet |
-| `.doc`, `.ppt`, `.pptx`, `.txt`, `.json`, `.md`, `.jpg`, `.jpeg`, `.png` | GenericDocumentLoader (Langchain) | `paragraph` | LibreOffice (`soffice`), unstructured 라이브러리 |
+| `.ppt`, `.pptx` | PDF→경량 docling 재라우팅 + `formats.ppt.page_description`(페이지 설명) | 문서 구조 + 페이지 설명 element | LibreOffice (`soffice`), VLM 서빙(선택) |
+| `.doc`, `.txt`, `.json`, `.md`, `.jpg`, `.jpeg`, `.png` | GenericDocumentLoader (Langchain) | `paragraph` | LibreOffice (`soffice`), unstructured 라이브러리 |
 
-> **청킹(Chunk API) 연계**: docling 경로(`.pdf/.html/.htm/.docx/.hwp/.hwpx`)는 `output.format: docling`
+#### PPT 페이지 설명 (`formats.ppt.page_description`)
+
+`.ppt`/`.pptx` 는 **PDF→경량 docling** 으로 재라우팅해 파싱하며, `formats.ppt.page_description.enable: true` 이면 각 페이지를 **이미지로 렌더링해 VLM 으로 설명**하고 그 텍스트를 **페이지별 element(TextItem)로 주입**합니다(파스 출력 `data.elements`/`data.document` 에 그대로 포함). 파서는 **파스 전용**이라 청킹은 수행하지 않습니다. PDF 변환이 불가하면 레거시 langchain 경로로 폴백합니다. 페이지 native text 는 프롬프트의 **`{{page_text}}`** 변수로 전달됩니다.
+
+| 키 | 의미 | 기본값 |
+|----|------|--------|
+| `enable` | PPT 페이지 설명 활성화 | `false` |
+| `url` / `api_key` / `model` | VLM 서빙 endpoint / 키 / 모델명 | `<PAGE_DESCRIPTION_SERVING_ID>` / `""` / `model` |
+| `timeout` / `concurrency` | VLM 타임아웃(초) / 병렬 요청 수 | `360` / `16` |
+| `images_scale` / `max_image_side` / `max_tokens` / `params` | 렌더 배율 / 이미지 최대 변(px) / 출력 토큰 상한 / 추가 VLM 파라미터 | `2.0` / `0` / `0` / `{}` |
+| `prompt_template_file` | 프롬프트 `.md` 경로. `{{page_text}}` 치환 | `prompt_page_image_description_default.md` |
+
+> **주의** — 페이지 설명은 **파싱 단계 전용**입니다. Chunk API(`/chunker`)는 파서 출력(JSON)만 받으며 렌더된 페이지 이미지가 없어 페이지 설명을 수행하지 않습니다.
+
+> **청킹(Chunk API) 연계**: docling 경로(`.pdf/.html/.htm/.docx/.hwp/.hwpx`, `.ppt/.pptx`)는 `output.format: docling`
 > 일 때 `data.document` 를 만들어 구조 인식 청킹(GenosSmartChunker)에 쓰인다. 그 외 포맷은 항상
 > parse-format(`data.elements`)으로 반환되며, chunker 가 이를 공통 청킹한다 — 오디오는 `[AUDIO]`
 > 단일 벡터, csv/xlsx(`table`)는 `[DA]` 단일 벡터, 그 외 텍스트(`paragraph`)는 문자 기반 splitter

@@ -23,7 +23,7 @@ formats:
     # 렌더링해 VLM 설명하고 그 텍스트를 페이지별 TextItem 으로 주입한다(PPT 원본 전용).
     # native text 가 있으면 프롬프트에 포함해 요청. enable=true 면 generate_page_images 자동 강제.
     page_description:
-      enable: false
+      enable: true
       url: "http://llmops-gateway-api-service:8080/rep/serving/<IMAGE_DESCRIPTION_SERVING_ID>/v1/chat/completions"
       api_key: ""
       model: "model"
