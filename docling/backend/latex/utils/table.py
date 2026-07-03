@@ -22,7 +22,7 @@ try:  # pragma: no cover - import-time guard
         LatexWalkerParseError,
     )
 except ImportError:
-    pass
+    pass  # guarded by LatexDocumentBackend.__init__
 
 
 class TableHelperMixin:

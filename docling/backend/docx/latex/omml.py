@@ -19,7 +19,7 @@ from lxml.etree import _Element
 try:  # pragma: no cover - import-time guard
     from pylatexenc.latexencode import UnicodeToLatexEncoder
 except ImportError:
-    pass
+    pass  # guarded by MsWordDocumentBackend.__init__
 
 from docling.backend.docx.latex.latex_dict import (
     ALN,

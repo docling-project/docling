@@ -33,7 +33,7 @@ try:  # pragma: no cover - import-time guard
         LatexMathNode,
     )
 except ImportError:
-    pass
+    pass  # guarded by LatexDocumentBackend.__init__
 
 
 class TextHelperMixin:

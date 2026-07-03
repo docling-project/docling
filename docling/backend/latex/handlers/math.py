@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 try:  # pragma: no cover - import-time guard
     from pylatexenc.latexwalker import LatexMathNode
 except ImportError:
-    pass
+    pass  # guarded by LatexDocumentBackend.__init__
 
 
 class MathHandlerMixin:
