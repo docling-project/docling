@@ -79,6 +79,47 @@ def _make_docling_parse_page_content_config(
     )
 
 
+def _render_page_image_via_pdfium(
+    ppage: PdfPage,
+    page_size: Size,
+    scale: float,
+    cropbox: Optional[BoundingBox],
+) -> Image.Image:
+    """Render a page raster with pypdfium2.
+
+    Shared by the serial and threaded docling-parse page backends so both feed
+    the downstream layout model an identical raster. Diverging renderers (e.g.
+    the docling-parse rasterizer) produce subtly different images and can flip
+    layout detection (see issue #3512).
+    """
+    if not cropbox:
+        cropbox = BoundingBox(
+            l=0,
+            r=page_size.width,
+            t=0,
+            b=page_size.height,
+            coord_origin=CoordOrigin.TOPLEFT,
+        )
+        padbox = BoundingBox(l=0, r=0, t=0, b=0, coord_origin=CoordOrigin.BOTTOMLEFT)
+    else:
+        padbox = cropbox.to_bottom_left_origin(page_size.height).model_copy()
+        padbox.r = page_size.width - padbox.r
+        padbox.t = page_size.height - padbox.t
+
+    with pypdfium2_lock:
+        bitmap = ppage.render(
+            scale=scale * 1.5,
+            rotation=0,  # no additional rotation
+            crop=padbox.as_tuple(),
+        )
+        image = bitmap.to_pil().copy()
+        bitmap.close()
+    # We resize the image from 1.5x the given scale to make it sharper.
+    return image.resize(
+        size=(round(cropbox.width * scale), round(cropbox.height * scale))
+    )
+
+
 class DoclingParsePageBackend(ManagedPdfiumPageBackend):
     def __init__(
         self,
@@ -203,38 +244,9 @@ class DoclingParsePageBackend(ManagedPdfiumPageBackend):
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
     ) -> Image.Image:
-        page_size = self.get_size()
-
-        if not cropbox:
-            cropbox = BoundingBox(
-                l=0,
-                r=page_size.width,
-                t=0,
-                b=page_size.height,
-                coord_origin=CoordOrigin.TOPLEFT,
-            )
-            padbox = BoundingBox(
-                l=0, r=0, t=0, b=0, coord_origin=CoordOrigin.BOTTOMLEFT
-            )
-        else:
-            padbox = cropbox.to_bottom_left_origin(page_size.height).model_copy()
-            padbox.r = page_size.width - padbox.r
-            padbox.t = page_size.height - padbox.t
-
-        with pypdfium2_lock:
-            bitmap = self._ppage.render(
-                scale=scale * 1.5,
-                rotation=0,  # no additional rotation
-                crop=padbox.as_tuple(),
-            )
-            image = bitmap.to_pil().copy()
-            bitmap.close()
-        # We resize the image from 1.5x the given scale to make it sharper.
-        image = image.resize(
-            size=(round(cropbox.width * scale), round(cropbox.height * scale))
+        return _render_page_image_via_pdfium(
+            self._require_page(), self.get_size(), scale, cropbox
         )
-
-        return image
 
     def get_size(self) -> Size:
         with pypdfium2_lock:
@@ -380,9 +392,18 @@ def _resolve_threaded_page_numbers(
 
 
 class ThreadedDoclingParsePageBackend(PdfPageBackend):
-    def __init__(self, result: PageParseResult):
+    def __init__(
+        self,
+        result: PageParseResult,
+        doc_backend: Optional["ThreadedDoclingParseDocumentBackend"] = None,
+    ):
         self._result = result
         self._seg_page: Optional[SegmentedPdfPage] = None
+        # The owning document backend lazily provides a shared pypdfium2 document
+        # used to render page rasters with the same engine as the serial backend,
+        # so the downstream layout model sees an identical image (issue #3512).
+        self._doc_backend = doc_backend
+        self._ppage: Optional[PdfPage] = None
 
     @property
     def page_no(self) -> int:
@@ -446,13 +467,25 @@ class ThreadedDoclingParsePageBackend(PdfPageBackend):
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
     ) -> Image.Image:
+        if self._doc_backend is not None:
+            pdoc = self._doc_backend._ensure_pdoc()
+            with pypdfium2_lock:
+                if self._ppage is None:
+                    self._ppage = pdoc[self._result.page_number - 1]
+            return _render_page_image_via_pdfium(
+                self._ppage, self.get_size(), scale, cropbox
+            ).convert("RGB")
+        # Fallback: docling-parse rasterizer (renders a slightly different image).
         return self._result.get_image(scale=scale, cropbox=cropbox).convert("RGB")
 
     def get_size(self) -> Size:
         return Size(width=self._result.page_width, height=self._result.page_height)
 
     def unload(self) -> None:
-        return None
+        if self._ppage is not None:
+            with pypdfium2_lock:
+                self._ppage.close()
+            self._ppage = None
 
 
 class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
@@ -516,6 +549,25 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             page_numbers=requested_page_numbers,
         )
 
+        self._password = password
+        # pypdfium2 document, opened lazily on the first page render. Page rasters
+        # are rendered with pypdfium2 (same engine as the serial backend) so the
+        # downstream layout model receives an identical image; the docling-parse
+        # rasterizer produces a subtly different image that can change layout
+        # detection and drop tables (issue #3512). Kept lazy so that documents
+        # whose pages are never rendered incur no pypdfium2 load.
+        self._pdoc: Optional[pdfium.PdfDocument] = None
+
+    def _ensure_pdoc(self) -> pdfium.PdfDocument:
+        with pypdfium2_lock:
+            if self._pdoc is None:
+                if isinstance(self.path_or_stream, BytesIO):
+                    self.path_or_stream.seek(0)
+                self._pdoc = pdfium.PdfDocument(
+                    self.path_or_stream, password=self._password
+                )
+            return self._pdoc
+
     def is_valid(self) -> bool:
         return not self._closed and self.page_count() > 0
 
@@ -523,10 +575,12 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
         return self.parser.page_count(self.doc_key)
 
     def get_document_outline(self) -> list[_PdfOutlineItem]:
-        """Extract the outline via docling-parse (this backend holds no pypdfium2 handle).
+        """Extract the outline via docling-parse.
 
         The threaded parser exposes no table-of-contents accessor, so a lightweight lazy
         docling-parse document is loaded purely to read the (cheap, structure-only) outline.
+        The pypdfium2 document used for page rendering has no outline accessor either, so it
+        is not reused here.
         """
         password = (
             self.options.password.get_secret_value() if self.options.password else None
@@ -550,11 +604,15 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
 
     def iter_pages(self) -> Iterator[ThreadedDoclingParsePageBackend]:
         for result in self.parser.iterate_results():
-            yield ThreadedDoclingParsePageBackend(result)
+            yield ThreadedDoclingParsePageBackend(result, self)
 
     def unload(self) -> None:
         if self._closed:
             return
         self._closed = True
         self.parser.unload(self.doc_key)
+        if self._pdoc is not None:
+            with pypdfium2_lock:
+                self._pdoc.close()
+            self._pdoc = None
         super().unload()

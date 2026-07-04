@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 from docling_core.types.doc import CoordOrigin
 from docling_parse.pdf_parser import ContentLevel
-from PIL import Image, ImageDraw, ImageStat
+from PIL import Image, ImageChops, ImageDraw, ImageStat
 
 import docling.backend.docling_parse_backend as docling_parse_backend_module
 from docling.backend.docling_parse_backend import (
@@ -95,6 +95,48 @@ def test_crop_page_image(test_doc_path):
     # Explicitly clean up resources
     page_backend.unload()
     doc_backend.unload()
+
+
+def test_threaded_backend_renders_same_image_as_serial(test_doc_path):
+    """Both docling-parse backends must feed the layout model an identical raster.
+
+    The threaded backend previously rendered via the docling-parse rasterizer,
+    producing a subtly different image than the serial (pypdfium2) backend. That
+    divergence changed layout detection and dropped tables (issue #3512).
+    """
+    serial_backend = _get_backend(test_doc_path)
+    serial_page = serial_backend.load_page(0)
+    try:
+        serial_image = serial_page.get_page_image(scale=1.0)
+    finally:
+        serial_page.unload()
+        serial_backend.unload()
+
+    in_doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.PDF,
+        backend=ThreadedDoclingParseDocumentBackend,
+    )
+    threaded_backend = in_doc._backend
+    threaded_image = None
+    page_backends = []
+    try:
+        for page_backend in threaded_backend.iter_pages():
+            page_backends.append(page_backend)
+            if page_backend.page_no == 1:
+                threaded_image = page_backend.get_page_image(scale=1.0)
+    finally:
+        for page_backend in page_backends:
+            page_backend.unload()
+        threaded_backend.unload()
+
+    assert threaded_image is not None
+
+    assert threaded_image.size == serial_image.size
+    diff = ImageChops.difference(
+        serial_image.convert("RGB"), threaded_image.convert("RGB")
+    )
+    assert diff.getbbox() is None
 
 
 def test_num_pages(test_doc_path):
