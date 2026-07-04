@@ -95,10 +95,7 @@ class BoxNoteDocumentBackend(DeclarativeDocumentBackend):
 
         origin = DocumentOrigin(
             filename=self.file.name or "file.boxnote",
-            # DocumentOrigin only accepts MIME types registered in docling-core.
-            # Until application/vnd.box.boxnote is added there, use the JSON type
-            # it already accepts (a Box Note is JSON).
-            mimetype="application/json",
+            mimetype="application/vnd.box.boxnote",
             binary_hash=self.document_hash,
         )
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)

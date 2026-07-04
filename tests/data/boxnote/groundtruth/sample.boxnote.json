@@ -3,7 +3,7 @@
   "version": "1.10.0",
   "name": "sample",
   "origin": {
-    "mimetype": "application/json",
+    "mimetype": "application/vnd.box.boxnote",
     "binary_hash": 17703658933025322390,
     "filename": "sample.boxnote"
   },
