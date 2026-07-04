@@ -1,16 +1,20 @@
 import logging
 import os
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 from docling_core.types.doc import DocItemLabel, GroupItem, TableItem
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 from lxml import etree
 from PIL import Image
 
 import docling.backend.msword_backend as msword_backend_module
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
+from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
     ConversionResult,
@@ -345,6 +349,207 @@ def test_comments_extraction(documents):
         assert group.content_layer == "notes", (
             "Comments should be in NOTES content layer"
         )
+
+
+# ---------------------------------------------------------------------------
+# Track-changes helpers
+# ---------------------------------------------------------------------------
+
+
+def _make_track_changes_docx() -> BytesIO:
+    """Build an in-memory DOCX with tracked insertions and deletions.
+
+    Document structure
+    ------------------
+    Para 1  plain run         "Keep this text."
+    Para 2  plain + ins + del "Hello " + ins("world") + del("earth")
+    Para 3  insertion only    ins("Inserted paragraph.")
+    Para 4  deletion only     del("Deleted paragraph.")
+    """
+    from docx import Document
+
+    doc = Document()
+    for p in list(doc.paragraphs):
+        p._element.getparent().remove(p._element)
+    body = doc.element.body
+
+    # Para 1 - plain
+    p1 = OxmlElement("w:p")
+    r1 = OxmlElement("w:r")
+    t1 = OxmlElement("w:t")
+    t1.text = "Keep this text."
+    r1.append(t1)
+    p1.append(r1)
+    body.append(p1)
+
+    # Para 2 - plain + inserted + deleted
+    p2 = OxmlElement("w:p")
+    r_plain = OxmlElement("w:r")
+    t_plain = OxmlElement("w:t")
+    t_plain.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+    t_plain.text = "Hello "
+    r_plain.append(t_plain)
+    p2.append(r_plain)
+
+    ins1 = OxmlElement("w:ins")
+    ins1.set(qn("w:id"), "1")
+    ins1.set(qn("w:author"), "Test Author")
+    ins1.set(qn("w:date"), "2024-01-01T00:00:00Z")
+    r_ins_empty = OxmlElement("w:r")  # empty run — exercises the `if not run.text` guard
+    ins1.append(r_ins_empty)
+    r_ins1 = OxmlElement("w:r")
+    t_ins1 = OxmlElement("w:t")
+    t_ins1.text = "world"
+    r_ins1.append(t_ins1)
+    ins1.append(r_ins1)
+    p2.append(ins1)
+
+    del1 = OxmlElement("w:del")
+    del1.set(qn("w:id"), "2")
+    del1.set(qn("w:author"), "Test Author")
+    del1.set(qn("w:date"), "2024-01-01T00:00:00Z")
+    r_del_empty = OxmlElement("w:r")  # empty run — exercises the `if not text` guard
+    del1.append(r_del_empty)
+    r_del1 = OxmlElement("w:r")
+    dt1 = OxmlElement("w:delText")
+    dt1.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+    dt1.text = "earth"
+    r_del1.append(dt1)
+    del1.append(r_del1)
+    p2.append(del1)
+
+    body.append(p2)
+
+    # Para 3 - insertion only
+    p3 = OxmlElement("w:p")
+    ins2 = OxmlElement("w:ins")
+    ins2.set(qn("w:id"), "3")
+    ins2.set(qn("w:author"), "Test Author")
+    ins2.set(qn("w:date"), "2024-01-01T00:00:00Z")
+    r_ins2 = OxmlElement("w:r")
+    t_ins2 = OxmlElement("w:t")
+    t_ins2.text = "Inserted paragraph."
+    r_ins2.append(t_ins2)
+    ins2.append(r_ins2)
+    p3.append(ins2)
+    body.append(p3)
+
+    # Para 4 - deletion only
+    p4 = OxmlElement("w:p")
+    del2 = OxmlElement("w:del")
+    del2.set(qn("w:id"), "4")
+    del2.set(qn("w:author"), "Test Author")
+    del2.set(qn("w:date"), "2024-01-01T00:00:00Z")
+    r_del2 = OxmlElement("w:r")
+    dt2 = OxmlElement("w:delText")
+    dt2.text = "Deleted paragraph."
+    r_del2.append(dt2)
+    del2.append(r_del2)
+    p4.append(del2)
+    body.append(p4)
+
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf
+
+
+def _convert_track_changes(mode: str) -> DoclingDocument:
+    buf = _make_track_changes_docx()
+    options = MsWordBackendOptions(track_changes=mode)
+    in_doc = InputDocument(
+        path_or_stream=buf,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+        filename="track_changes.docx",
+        backend_options=options,
+    )
+    return in_doc._backend.convert()
+
+
+def _all_text(doc: DoclingDocument) -> str:
+    return " ".join(
+        item.text for item, _ in doc.iterate_items() if hasattr(item, "text")
+    )
+
+
+# ---------------------------------------------------------------------------
+# Track-changes tests
+# ---------------------------------------------------------------------------
+
+
+def test_track_changes_accept():
+    """'accept' mode: include insertions, exclude deletions."""
+    doc = _convert_track_changes("accept")
+    text = _all_text(doc)
+
+    assert "Keep this text." in text, "Plain text must be preserved"
+    assert "Hello" in text, "Plain run before tracked change must be preserved"
+    assert "world" in text, "Inserted text must be included in accept mode"
+    assert "earth" not in text, "Deleted text must be excluded in accept mode"
+    assert "Inserted paragraph." in text, "Insertion-only paragraph must be included"
+    assert "Deleted paragraph." not in text, "Deletion-only paragraph must be excluded"
+
+
+def test_track_changes_reject():
+    """'reject' mode: exclude insertions, include deletions."""
+    doc = _convert_track_changes("reject")
+    text = _all_text(doc)
+
+    assert "Keep this text." in text, "Plain text must be preserved"
+    assert "world" not in text, "Inserted text must be excluded in reject mode"
+    assert "earth" in text, "Deleted text must be included in reject mode"
+    assert "Inserted paragraph." not in text, (
+        "Insertion-only paragraph must be excluded"
+    )
+    assert "Deleted paragraph." in text, "Deletion-only paragraph must be included"
+
+
+def test_track_changes_raw():
+    """'raw' mode: include both insertions and deletions."""
+    doc = _convert_track_changes("raw")
+    text = _all_text(doc)
+
+    assert "Keep this text." in text
+    assert "world" in text, "Inserted text must appear in raw mode"
+    assert "earth" in text, "Deleted text must appear in raw mode"
+    assert "Inserted paragraph." in text
+    assert "Deleted paragraph." in text
+
+
+def test_track_changes_raw_change_type():
+    """'raw' mode: inserted text carries change_type='inserted', deleted text 'deleted'."""
+    doc = _convert_track_changes("raw")
+
+    found_inserted = False
+    found_deleted = False
+    for item, _ in doc.iterate_items():
+        if not isinstance(item, TextItem):
+            continue
+        ct = item.change_type
+        if "world" in item.text and ct == "inserted":
+            found_inserted = True
+        if "earth" in item.text and ct == "deleted":
+            found_deleted = True
+
+    assert found_inserted, "Inserted text must have change_type='inserted' in raw mode"
+    assert found_deleted, "Deleted text must have change_type='deleted' in raw mode"
+
+
+def test_track_changes_default_is_accept():
+    """Default backend options should behave like 'accept'."""
+    buf = _make_track_changes_docx()
+    in_doc = InputDocument(
+        path_or_stream=buf,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+        filename="track_changes.docx",
+    )
+    doc = in_doc._backend.convert()
+    text = _all_text(doc)
+
+    assert "world" in text, "Insertions should be included by default"
+    assert "earth" not in text, "Deletions should be excluded by default"
 
 
 @pytest.mark.parametrize(
