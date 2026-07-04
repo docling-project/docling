@@ -19,7 +19,11 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.comments import Comment
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
-from docling.backend.msexcel_backend import MsExcelDocumentBackend
+from docling.backend.msexcel_backend import (
+    ExcelCell,
+    ExcelTable,
+    MsExcelDocumentBackend,
+)
 from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
@@ -444,6 +448,107 @@ def test_table_with_title():
     assert table.data.num_cols == 2, (
         f"Table should have 2 columns, got {table.data.num_cols}"
     )
+
+
+def test_merged_section_label_above_table_preserves_column_headers() -> None:
+    path = next(
+        item
+        for item in get_excel_paths()
+        if item.stem == "xlsx_09_section_label_header"
+    )
+    headers = ["#", "Genre", "Sub-Genre", "Title", "Author", "Publisher", "Added"]
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.XLSX])
+    doc = converter.convert(path).document
+
+    assert [text.text for text in doc.texts] == ["Reading List"]
+    assert len(doc.tables) == 1
+
+    table = doc.tables[0]
+    assert table.prov[0].bbox.t == 1
+    assert table.data.num_rows == 3
+    assert table.data.num_cols == len(headers)
+    assert all(cell.text != "Reading List" for cell in table.data.table_cells)
+
+    header_cells = [
+        cell for cell in table.data.table_cells if cell.start_row_offset_idx == 0
+    ]
+    assert [cell.text for cell in header_cells] == headers
+    assert all(cell.column_header for cell in header_cells)
+
+    html = doc.export_to_html()
+    assert '<th colspan="2">Reading List</th>' not in html
+    assert "<th>#</th>" in html
+    assert "<th>Genre</th>" in html
+
+
+def test_split_leading_section_label_helper() -> None:
+    backend = object.__new__(MsExcelDocumentBackend)
+
+    no_split_table = ExcelTable(
+        anchor=(2, 4),
+        num_rows=1,
+        num_cols=3,
+        data=[
+            ExcelCell(row=0, col=0, text="Reading List", row_span=1, col_span=2),
+            ExcelCell(row=0, col=2, text="", row_span=1, col_span=1),
+        ],
+    )
+    title_cell, unchanged_table = backend._split_leading_section_label(no_split_table)
+    assert title_cell is None
+    assert unchanged_table == no_split_table
+
+    not_header_table = ExcelTable(
+        anchor=(2, 4),
+        num_rows=2,
+        num_cols=3,
+        data=[
+            ExcelCell(row=0, col=0, text="Reading List", row_span=1, col_span=2),
+            ExcelCell(row=0, col=1, text="", row_span=1, col_span=1),
+            ExcelCell(row=0, col=2, text="", row_span=1, col_span=1),
+            ExcelCell(row=1, col=0, text="Only one header", row_span=1, col_span=1),
+            ExcelCell(row=1, col=1, text="", row_span=1, col_span=1),
+            ExcelCell(row=1, col=2, text="", row_span=1, col_span=1),
+        ],
+    )
+    title_cell, unchanged_table = backend._split_leading_section_label(not_header_table)
+    assert title_cell is None
+    assert unchanged_table == not_header_table
+
+    split_table = ExcelTable(
+        anchor=(2, 4),
+        num_rows=3,
+        num_cols=4,
+        data=[
+            ExcelCell(row=0, col=0, text="Reading List", row_span=1, col_span=2),
+            ExcelCell(row=0, col=1, text="", row_span=1, col_span=1),
+            ExcelCell(row=0, col=2, text="", row_span=1, col_span=1),
+            ExcelCell(row=0, col=3, text="", row_span=1, col_span=1),
+            ExcelCell(row=1, col=0, text="#", row_span=1, col_span=1),
+            ExcelCell(row=1, col=1, text="Genre", row_span=1, col_span=1),
+            ExcelCell(row=1, col=2, text="Sub-Genre", row_span=1, col_span=1),
+            ExcelCell(row=1, col=3, text="Title", row_span=1, col_span=1),
+            ExcelCell(row=2, col=0, text="1", row_span=1, col_span=1),
+            ExcelCell(row=2, col=1, text="Fiction", row_span=1, col_span=1),
+            ExcelCell(row=2, col=2, text="Mystery", row_span=1, col_span=1),
+            ExcelCell(row=2, col=3, text="The Hound", row_span=1, col_span=1),
+        ],
+    )
+
+    title_cell, split_result = backend._split_leading_section_label(split_table)
+
+    assert title_cell is not None
+    assert title_cell.text == "Reading List"
+    assert split_result.anchor == (2, 5)
+    assert split_result.num_rows == 2
+    assert split_result.num_cols == 4
+    assert [cell.row for cell in split_result.data] == [0, 0, 0, 0, 1, 1, 1, 1]
+    assert [cell.text for cell in split_result.data[:4]] == [
+        "#",
+        "Genre",
+        "Sub-Genre",
+        "Title",
+    ]
 
 
 def test_bytesio_stream():
