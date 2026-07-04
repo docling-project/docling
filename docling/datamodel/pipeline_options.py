@@ -1964,6 +1964,17 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = TableStructureOptions()
+    recover_orphaned_table_text: Annotated[
+        bool,
+        Field(
+            description=(
+                "Recover OCR'd text inside TABLE regions that the table structure model's predicted grid did not bind "
+                "to any cell, re-emitting it as body text immediately after the table instead of silently dropping it. "
+                "Recovery is skipped if any populated table cell has no spatial bounds. Disabled by default, which "
+                "preserves the existing table/body output exactly. Only applicable when `do_table_structure=True`."
+            )
+        ),
+    ] = False
     ocr_options: Annotated[
         OcrOptions,
         Field(
