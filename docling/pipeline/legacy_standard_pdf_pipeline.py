@@ -58,7 +58,11 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
                 or self.pipeline_options.generate_table_images
             )
 
-        self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
+        self.reading_order_model = ReadingOrderModel(
+            options=ReadingOrderOptions(
+                recover_orphaned_table_text=self.pipeline_options.recover_orphaned_table_text
+            )
+        )
         self.heading_hierarchy_model = HeadingHierarchyModel(
             options=self.pipeline_options.heading_hierarchy_options
         )
