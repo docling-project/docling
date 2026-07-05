@@ -1254,7 +1254,69 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             self.options.do_chart_parsing
         ):
             return doc
-        
+        content_layer = self._get_sheet_content_layer(sheet)
+
+        # _charts is openpyxl's parsed list of chart objects on this sheet.
+        for chart in sheet._charts:  # type: ignore[attr-defined]
+            try:
+                # classification: the docling picture label for this chart type.
+                classification = _CHART_TAGNAME_TO_CLASSIFICATION.get(
+                    chart.tagname, PictureClassificationLabel.OTHER_CHART
+                )
+                # caption: the chart's title text, or None if the chart is untitled.
+                caption_text = self._chart_title_text(chart)
+                # table_data: the chart's series/categories rebuilt as a grid.
+                table_data = self._chart_to_table_data(chart)
+
+                # Position of the chart on the sheet, in cell-index units, reused
+                # from the same anchor helper the image code uses.
+                bbox = BoundingBox.from_tuple(
+                    self._anchor_to_tuple(chart.anchor),
+                    origin=CoordOrigin.TOPLEFT,
+                )
+
+                # A caption must be a real doc item to be referenced; create a
+                # TextItem for it only when the chart actually has a title.
+                caption_item = (
+                    doc.add_text(
+                        label=DocItemLabel.CAPTION,
+                        text=caption_text,
+                        content_layer=content_layer,
+                    )
+                    if caption_text
+                    else None
+                )
+
+                picture = doc.add_picture(
+                    parent=self.parent,
+                    caption=caption_item,
+                    prov=ProvenanceItem(
+                        page_no=page_no,
+                        charspan=(0, 0),
+                        bbox=bbox,
+                    ),
+                    content_layer=content_layer,
+                )
+
+                # Attach classification + reconstructed data to the picture meta.
+                picture.meta = PictureMeta(
+                    classification=PictureClassificationMetaField(
+                        predictions=[
+                            PictureClassificationPrediction(
+                                class_name=classification
+                            )
+                        ]
+                    ),
+                    tabular_chart=(
+                        TabularChartMetaField(chart_data=table_data)
+                        if table_data is not None
+                        else None
+                    ),
+                )
+            except Exception:
+                _log.error("could not extract a chart from the excel sheet")
+
+        return doc
         
     @staticmethod
     def _chart_title_text(chart: Any) -> str | None:
@@ -1463,7 +1525,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         
         values = []
         for row in range(min_row, max_row + 1):
-            for col in range(min_row, max_row + 1):
+            for col in range(min_col, max_col + 1):
                 value = target_sheet.cell(row = row, column=col).value
                 values.append("" if value is None else str(value))
         
