@@ -371,6 +371,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         line = re.sub(rf"(^|\s){_CELL_SPEC}(?=\|)", r"\1", line)
         # Split by "|" and remove the leading empty string from the first "|"
         cells = line.split("|")[1:]
+        # A "|" that terminates the line (trailing-pipe row style, e.g.
+        # "|A|B|") marks the end of the row, not the start of a new cell, so it
+        # must not yield a phantom empty cell that would inflate the column
+        # count. Mid-row empty cells (e.g. "|A||B") are kept.
+        if cells and line.rstrip().endswith("|"):
+            cells = cells[:-1]
         # Strip whitespace from each cell (empty cells become empty strings)
         return [cell.strip() for cell in cells]
 

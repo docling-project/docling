@@ -78,6 +78,31 @@ def test_table_cell_content_preserved():
     ]
 
 
+def test_table_trailing_pipe_no_phantom_cell():
+    # A "|" that terminates a row (trailing-pipe style) must not add a phantom
+    # empty cell, which would inflate the table's column count.
+    assert AsciiDocBackend._parse_table_line("|Header 1|Header 2|") == [
+        "Header 1",
+        "Header 2",
+    ]
+    assert AsciiDocBackend._parse_table_line("|Cell 10|Cell 11|Cell 12|") == [
+        "Cell 10",
+        "Cell 11",
+        "Cell 12",
+    ]
+    # Leading and mid-row empty cells must still be preserved.
+    assert AsciiDocBackend._parse_table_line("|Cell 1 | | Cell 3") == [
+        "Cell 1",
+        "",
+        "Cell 3",
+    ]
+    assert AsciiDocBackend._parse_table_line("|| Cell 14 | Cell 15 |") == [
+        "",
+        "Cell 14",
+        "Cell 15",
+    ]
+
+
 def test_empty_table_does_not_crash():
     # An empty table must yield an empty grid rather than raising.
     data = AsciiDocBackend._populate_table_as_grid([])

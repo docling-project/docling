@@ -27,10 +27,10 @@ bla bla bla bli bla ble
 
 ## Section 4: test tables
 
-| Header 1 | Header 2 |  |
-| - | - | - |
-| Value 1 | Value 2 |  |
-| Value 3 | Value 4 |  |
+| Header 1 | Header 2 |
+| - | - |
+| Value 1 | Value 2 |
+| Value 3 | Value 4 |
 
 Caption for the table 1
 
@@ -63,15 +63,15 @@ Caption for the table 4
 
 Table 5 with multiple empty cells
 
-| Column 1 Heading | Column 2 Heading | Column 3 Heading |  |
-| - | - | - | - |
-| Cell 1 |  | Cell 3 |  |
-| Cell 4 |  |  |  |
-| Cell 7 |  |  |  |
-| Cell 10 | Cell 11 | Cell 12 |  |
-|  | Cell 14 | Cell 15 |  |
-|  |  |  |  |
-| Cell 19 | Cell 20 | Cell 21 |  |
+| Column 1 Heading | Column 2 Heading | Column 3 Heading |
+| - | - | - |
+| Cell 1 |  | Cell 3 |
+| Cell 4 |  |  |
+| Cell 7 |  |  |
+| Cell 10 | Cell 11 | Cell 12 |
+|  | Cell 14 | Cell 15 |
+|  |  |  |
+| Cell 19 | Cell 20 | Cell 21 |
 
 #### SubSubSection 2.1.1
 
