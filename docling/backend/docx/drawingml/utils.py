@@ -114,22 +114,23 @@ def get_pil_from_dml_docx(
         return None
 
     temp_dir = Path(mkdtemp())
-    temp_docx = Path(temp_dir / "drawing_only.docx")
-    temp_pdf = Path(temp_dir / "drawing_only.pdf")
+    try:
+        temp_docx = Path(temp_dir / "drawing_only.docx")
+        temp_pdf = Path(temp_dir / "drawing_only.pdf")
 
-    # 1) Save docx temporarily
-    docx.save(str(temp_docx))
+        # 1) Save docx temporarily
+        docx.save(str(temp_docx))
 
-    # 2) Export to PDF
-    converter(temp_docx, temp_pdf)
+        # 2) Export to PDF
+        converter(temp_docx, temp_pdf)
 
-    # 3) Load PDF as PNG
-    pdf = pypdfium2.PdfDocument(temp_pdf)
-    page = pdf[0]
-    image = crop_whitespace(page.render(scale=2).to_pil())
-    page.close()
-    pdf.close()
-
-    shutil.rmtree(temp_dir, ignore_errors=True)
+        # 3) Load PDF as PNG
+        pdf = pypdfium2.PdfDocument(temp_pdf)
+        page = pdf[0]
+        image = crop_whitespace(page.render(scale=2).to_pil())
+        page.close()
+        pdf.close()
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
     return image
