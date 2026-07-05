@@ -41,7 +41,7 @@ KSERVE_OCR_LANGUAGES = [
     ),
 )
 def test_kserve_v2_ocr_conversion() -> None:
-    input_path = Path("tests/data_scanned/ocr_test.pdf")
+    input_path = Path("tests/data/scanned/sources/ocr_test.pdf")
 
     for transport in KSERVE_OCR_TRANSPORTS:
         url = os.environ[KSERVE_OCR_URL_ENVS[transport]]

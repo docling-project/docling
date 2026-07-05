@@ -42,7 +42,7 @@ from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.backend_options import HTMLBackendOptions, XBRLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
-from docling.exceptions import OperationNotAllowed
+from docling.exceptions import DocumentLoadError, OperationNotAllowed
 
 _XBRL_AVAILABLE: bool = False
 _XBRL_IMPORT_ERROR: ImportError | None = None
@@ -178,7 +178,7 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
             self.model_xbrl = model
             self.valid = True
         except Exception as exc:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 "Could not initialize XBRL backend for file with hash"
                 f" {self.document_hash}."
             ) from exc

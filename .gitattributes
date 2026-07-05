@@ -1,3 +1,24 @@
+# Normalize line endings for all text files
+* text=auto
+
+# Python source files - always use LF
+*.py text eol=lf
+
+# Jupyter notebooks - always use LF
+*.ipynb text eol=lf
+
+# Configuration files - always use LF
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+
+# Shell scripts - always use LF
+*.sh text eol=lf
+
+# Linguist overrides
 tests/data/** linguist-vendored
 tests/data_scanned/** linguist-vendored
 docs/** linguist-vendored

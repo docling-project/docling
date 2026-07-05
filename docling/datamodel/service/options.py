@@ -1,4 +1,5 @@
 # Define the input options for the API
+import json
 import warnings
 from typing import Annotated, Any, Optional, Union
 
@@ -329,12 +330,12 @@ class ConvertDocumentsOptions(BaseModel):
                 "Image export mode for the document (in case of JSON,"
                 " Markdown or HTML). "
                 f"Allowed values: {', '.join([v.value for v in ImageRefMode])}. "
-                "Optional, defaults to Embedded."
+                "Optional, defaults to Placeholder."
             ),
-            examples=[ImageRefMode.EMBEDDED.value],
+            examples=[ImageRefMode.PLACEHOLDER.value],
             # pattern="embedded|placeholder|referenced",
         ),
-    ] = ImageRefMode.EMBEDDED
+    ] = ImageRefMode.PLACEHOLDER
 
     do_ocr: Annotated[
         bool,
@@ -494,12 +495,23 @@ class ConvertDocumentsOptions(BaseModel):
         bool,
         Field(
             description=(
-                "If enabled, images will be extracted from the document. "
-                "Boolean. Optional, defaults to true."
+                "If enabled, picture element images are generated and included in "
+                "the output. Boolean. Optional, defaults to true."
             ),
             examples=[True],
         ),
     ] = True
+
+    include_page_images: Annotated[
+        bool,
+        Field(
+            description=(
+                "If enabled, full-page images are generated and included in the "
+                "output. Boolean. Optional, defaults to false."
+            ),
+            examples=[False],
+        ),
+    ] = False
 
     images_scale: Annotated[
         float,
@@ -809,6 +821,31 @@ class ConvertDocumentsOptions(BaseModel):
             ],
         ),
     ] = None
+
+    @field_validator(
+        "ocr_custom_config",
+        "table_structure_custom_config",
+        "layout_custom_config",
+        "picture_classification_custom_config",
+        mode="before",
+    )
+    @classmethod
+    def _decode_json_string_config(cls, value: Any) -> Any:
+        """Accept a JSON-encoded string for nested config fields.
+
+        Local-file conversions submit options as ``multipart/form-data``, where
+        nested configs are sent as JSON strings because form fields cannot carry
+        objects. Decode them back into dicts here. Values that already arrive as
+        objects (e.g. via JSON request bodies) are returned unchanged.
+        """
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except json.JSONDecodeError as exc:
+                raise ValueError(
+                    f"Invalid JSON for nested config field: {exc}"
+                ) from exc
+        return value
 
     # Field validators for deprecated fields - trigger warnings on assignment
     @field_validator("picture_description_api", mode="before")

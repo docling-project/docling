@@ -33,7 +33,7 @@ pytestmark = pytest.mark.ml_asr
 
 @pytest.fixture
 def test_audio_path():
-    return Path("./tests/data/audio/sample_10s.mp3")
+    return Path("./tests/data/audio/sources/sample_10s.mp3")
 
 
 def get_asr_converter():
@@ -83,7 +83,7 @@ def test_asr_pipeline_conversion(test_audio_path):
 @pytest.fixture
 def silent_audio_path():
     """Fixture to provide the path to a silent audio file."""
-    path = Path("./tests/data/audio/silent_1s.wav")
+    path = Path("./tests/data/audio/sources/silent_1s.wav")
     if not path.exists():
         pytest.skip("Silent audio file for testing not found at " + str(path))
     return path
@@ -113,7 +113,7 @@ def test_has_text_and_determine_status_helpers():
     pipeline = AsrPipeline(pipeline_options)
 
     # Create an empty ConversionResult with proper InputDocument
-    doc_path = Path("./tests/data/audio/sample_10s.mp3")
+    doc_path = Path("./tests/data/audio/sources/sample_10s.mp3")
 
     input_doc = InputDocument(
         path_or_stream=doc_path,
@@ -150,7 +150,7 @@ def test_is_backend_supported_noop_backend():
         pass
 
     # Create a proper NoOpBackend instance
-    doc_path = Path("./tests/data/audio/sample_10s.mp3")
+    doc_path = Path("./tests/data/audio/sources/sample_10s.mp3")
     input_doc = InputDocument(
         path_or_stream=doc_path,
         format=InputFormat.AUDIO,
@@ -197,12 +197,43 @@ def test_native_and_mlx_transcribe_language_handling(monkeypatch, tmp_path):
     )
     with patch.dict("sys.modules", {"mlx_whisper": Mock()}):
         mm = _MlxWhisperModel(
-            True, None, AcceleratorOptions(device=AcceleratorDevice.MPS), opts_m
+            True, None, AcceleratorOptions(device=AcceleratorDevice.CPU), opts_m
         )
         mm.mlx_whisper = Mock()
         mm.mlx_whisper.transcribe.return_value = {"segments": []}
         mm.transcribe(tmp_path / "b.wav")
         mm.mlx_whisper.transcribe.assert_called()
+
+
+def test_native_whisper_passes_decode_options_to_transcribe(tmp_path):
+    """Native Whisper forwards decoding options to whisper.transcribe."""
+    from docling.pipeline.asr_pipeline import _NativeWhisperModel
+
+    opts = InlineAsrNativeWhisperOptions(
+        repo_id="tiny",
+        word_timestamps=False,
+        beam_size=3,
+        condition_on_previous_text=False,
+    )
+
+    with patch.dict("sys.modules", {"whisper": Mock()}):
+        model = _NativeWhisperModel(
+            enabled=True,
+            artifacts_path=None,
+            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
+            asr_options=opts,
+        )
+
+    model.model = Mock()
+    model.model.transcribe.return_value = {"segments": []}
+
+    model.transcribe(tmp_path / "sample.wav")
+
+    model.model.transcribe.assert_called_once()
+    call_kwargs = model.model.transcribe.call_args.kwargs
+
+    assert call_kwargs["beam_size"] == 3
+    assert call_kwargs["condition_on_previous_text"] is False
 
 
 def test_native_init_with_artifacts_path_and_device_logging(tmp_path):
@@ -387,7 +418,7 @@ def test_mlx_whisper_reports_missing_ffmpeg_before_transcription(
         model = _MlxWhisperModel(
             enabled=True,
             artifacts_path=None,
-            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.MPS),
+            accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
             asr_options=options,
         )
 
@@ -421,7 +452,7 @@ def test_mlx_run_success_and_failure(tmp_path):
             language="en",
         )
         model = _MlxWhisperModel(
-            True, None, AcceleratorOptions(device=AcceleratorDevice.MPS), opts
+            True, None, AcceleratorOptions(device=AcceleratorDevice.CPU), opts
         )
         model.mlx_whisper = Mock()
         model.mlx_whisper.transcribe.return_value = {
@@ -444,7 +475,7 @@ def test_mlx_run_success_and_failure(tmp_path):
             language="en",
         )
         model2 = _MlxWhisperModel(
-            True, None, AcceleratorOptions(device=AcceleratorDevice.MPS), opts2
+            True, None, AcceleratorOptions(device=AcceleratorDevice.CPU), opts2
         )
         model2.mlx_whisper = Mock()
         model2.mlx_whisper.transcribe.side_effect = RuntimeError("fail")
@@ -523,7 +554,7 @@ def test_mlx_whisper_handles_zero_duration_timestamps(tmp_path):
             language="en",
         )
         model = _MlxWhisperModel(
-            True, None, AcceleratorOptions(device=AcceleratorDevice.MPS), opts
+            True, None, AcceleratorOptions(device=AcceleratorDevice.CPU), opts
         )
         model.mlx_whisper = Mock()
 

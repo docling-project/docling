@@ -23,6 +23,9 @@ from docling.models.stages.code_formula.code_formula_model import (
     CodeFormulaModel,
     CodeFormulaModelOptions,
 )
+from docling.models.stages.heading_hierarchy.heading_hierarchy_model import (
+    HeadingHierarchyModel,
+)
 from docling.models.stages.page_assemble.page_assemble_model import (
     PageAssembleModel,
     PageAssembleOptions,
@@ -56,6 +59,9 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
             )
 
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
+        self.heading_hierarchy_model = HeadingHierarchyModel(
+            options=self.pipeline_options.heading_hierarchy_options
+        )
 
         ocr_model = self.get_ocr_model(artifacts_path=self.artifacts_path)
 
@@ -172,7 +178,18 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
                 elements=all_elements, headers=all_headers, body=all_body
             )
 
+            # Surface the PDF outline (bookmarks/ToC) for the heading-hierarchy stage, only
+            # when bookmark inference is enabled and the backend is a PDF backend.
+            hh_opts = self.pipeline_options.heading_hierarchy_options
+            if (
+                hh_opts.enabled
+                and hh_opts.use_bookmarks
+                and isinstance(conv_res.input._backend, PdfDocumentBackend)
+            ):
+                conv_res._pdf_outline = conv_res.input._backend.get_document_outline()
+
             conv_res.document = self.reading_order_model(conv_res)
+            conv_res.document = self.heading_hierarchy_model(conv_res)
 
             # Generate page images in the output
             if self.pipeline_options.generate_page_images:

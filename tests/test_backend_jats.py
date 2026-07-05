@@ -3,7 +3,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DoclingDocument
+from docling_core.types.doc import DocItemLabel, DoclingDocument, GroupLabel
 
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult
@@ -26,24 +26,174 @@ def get_converter():
     return converter
 
 
-def convert_jats_contribs(contribs: str, affiliations: str = "") -> DoclingDocument:
+def convert_jats_body(body: str) -> DoclingDocument:
+    xml = f"""<!DOCTYPE article
+PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
+<article article-type="research-article">
+  <body>
+    {body}
+  </body>
+</article>
+"""
+    stream = DocumentStream(
+        name="body-test.nxml",
+        stream=BytesIO(xml.encode()),
+    )
+
+    conv_result: ConversionResult = get_converter().convert(stream)
+    return conv_result.document
+
+
+def convert_jats_article_meta(article_meta: str) -> DoclingDocument:
     xml = f"""<!DOCTYPE article
 PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Archiving and Interchange DTD v1.2 20190208//EN" "JATS-archivearticle1.dtd">
 <article article-type="research-article">
   <front>
     <article-meta>
-      <title-group><article-title>Author Variant Test</article-title></title-group>
-      <contrib-group>{contribs}</contrib-group>
-      {affiliations}
+      {article_meta}
     </article-meta>
   </front>
 </article>
 """
-    stream = DocumentStream(
-        name="author-variant-test.nxml", stream=BytesIO(xml.encode())
-    )
+    stream = DocumentStream(name="article-meta-test.nxml", stream=BytesIO(xml.encode()))
     conv_result: ConversionResult = get_converter().convert(stream)
     return conv_result.document
+
+
+def convert_jats_contribs(contribs: str, affiliations: str = "") -> DoclingDocument:
+    return convert_jats_article_meta(
+        f"""
+      <title-group><article-title>Author Variant Test</article-title></title-group>
+      <contrib-group>{contribs}</contrib-group>
+      {affiliations}
+"""
+    )
+
+
+def test_jats_structured_abstract_sections_are_preserved():
+    doc = convert_jats_article_meta(
+        """
+      <title-group><article-title>Structured Abstract Test</article-title></title-group>
+      <abstract>
+        <sec>
+          <title>Background</title>
+          <p>Background text.</p>
+        </sec>
+        <sec>
+          <title>Methods</title>
+          <p>Methods text.</p>
+        </sec>
+      </abstract>
+"""
+    )
+
+    md = doc.export_to_markdown()
+    assert "## Abstract" in md
+    assert "Background: Background text." in md
+    assert "Methods: Methods text." in md
+
+
+def _inline_group_items(doc: DoclingDocument) -> list[list]:
+    """Return the resolved child items of every INLINE group, in document order."""
+    return [
+        [child.resolve(doc) for child in group.children]
+        for group in doc.groups
+        if group.label == GroupLabel.INLINE
+    ]
+
+
+@pytest.mark.parametrize(
+    ("paragraph", "expected"),
+    [
+        pytest.param(
+            "The mass energy relation <inline-formula><tex-math>$$E=mc^2$$</tex-math></inline-formula> is famous.",
+            [
+                (DocItemLabel.TEXT, "The mass energy relation"),
+                (DocItemLabel.FORMULA, "E=mc^2"),
+                (DocItemLabel.TEXT, "is famous."),
+            ],
+            id="text-formula-text",
+        ),
+        pytest.param(
+            "Given <inline-formula><tex-math>$$a^2$$</tex-math></inline-formula> and <inline-formula><tex-math>$$b^2$$</tex-math></inline-formula> we sum.",
+            [
+                (DocItemLabel.TEXT, "Given"),
+                (DocItemLabel.FORMULA, "a^2"),
+                (DocItemLabel.TEXT, "and"),
+                (DocItemLabel.FORMULA, "b^2"),
+                (DocItemLabel.TEXT, "we sum."),
+            ],
+            id="multiple-formulas",
+        ),
+        pytest.param(
+            # tex-math is not always wrapped in $$...$$ in real JATS files
+            "The relation <inline-formula><tex-math>E=mc^2</tex-math></inline-formula> holds.",
+            [
+                (DocItemLabel.TEXT, "The relation"),
+                (DocItemLabel.FORMULA, "E=mc^2"),
+                (DocItemLabel.TEXT, "holds."),
+            ],
+            id="bare-tex-math",
+        ),
+    ],
+)
+def test_jats_inline_formula_is_grouped(paragraph, expected):
+    doc = convert_jats_body(f"<sec><title>T</title><p>{paragraph}</p></sec>")
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 1
+    assert [(item.label, item.text) for item in groups[0]] == expected
+
+
+@pytest.mark.parametrize(
+    ("paragraph", "expected_formulas"),
+    [
+        pytest.param(
+            # a single segment is added directly, without an inline group
+            "<inline-formula><tex-math>$$E=mc^2$$</tex-math></inline-formula>",
+            ["E=mc^2"],
+            id="standalone-formula",
+        ),
+        pytest.param(
+            # an inline-formula with no usable tex-math is dropped
+            "Energy <inline-formula><tex-math/></inline-formula> equation.",
+            [],
+            id="no-usable-tex-math",
+        ),
+    ],
+)
+def test_jats_inline_formula_is_not_grouped(paragraph, expected_formulas):
+    doc = convert_jats_body(f"<sec><title>T</title><p>{paragraph}</p></sec>")
+
+    assert _inline_group_items(doc) == []
+    formulas = [t.text for t in doc.texts if t.label == DocItemLabel.FORMULA]
+    assert formulas == expected_formulas
+
+
+def test_jats_footnotes_are_preserved():
+    doc = convert_jats_body(
+        """
+        <sec>
+          <title>Footnote Test</title>
+
+          <fn-group>
+                <fn id="fn1">
+                    <label>1</label>
+                    <p>First footnote</p>
+                </fn>
+
+                <fn id="fn2">
+                    <label>2</label>
+                    <p>Second footnote</p>
+                </fn>
+            </fn-group>
+        </sec>
+        """
+    )
+
+    md = doc.export_to_markdown()
+    assert "First footnote" in md
+    assert "Second footnote" in md
 
 
 @pytest.mark.parametrize(
@@ -113,9 +263,7 @@ def test_e2e_jats_conversions(use_stream=False):
     converter = get_converter()
 
     for jats_path in jats_paths:
-        gt_path = (
-            jats_path.parent.parent / "groundtruth" / "docling_v2" / jats_path.name
-        )
+        gt_path = jats_path.parent.parent / "groundtruth" / jats_path.name
         if use_stream:
             buf = BytesIO(jats_path.open("rb").read())
             stream = DocumentStream(name=jats_path.name, stream=buf)

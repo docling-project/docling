@@ -1,7 +1,8 @@
 from collections import defaultdict
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Type, Union
+from typing import TYPE_CHECKING, Annotated, Any, Optional, Type, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -22,14 +23,17 @@ from docling_core.types.io import (
 # DO NOT REMOVE; explicitly exposed from this location
 from PIL.Image import Image
 from pydantic import (
+    AnyHttpUrl,
     AnyUrl,
     BaseModel,
     ConfigDict,
     Field,
     FieldSerializationInfo,
+    PrivateAttr,
     computed_field,
     field_serializer,
     field_validator,
+    model_validator,
 )
 
 if TYPE_CHECKING:
@@ -38,6 +42,30 @@ if TYPE_CHECKING:
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.datamodel.pipeline_options import PipelineOptions
+
+
+class HttpSource(BaseModel):
+    """A remote document source: a URL bundled with the headers used to fetch it.
+
+    Lives in the core datamodel (alongside ``DocumentStream``) so the converter
+    can accept it as an input; the serving layer subclasses it for its request
+    schema.
+    """
+
+    url: Annotated[
+        AnyHttpUrl,
+        Field(
+            description="HTTP url to process",
+            examples=["https://arxiv.org/pdf/2206.01062"],
+        ),
+    ]
+    headers: Annotated[
+        dict[str, Any],
+        Field(
+            description="Additional headers used to fetch the urls, "
+            "e.g. authorization, agent, etc"
+        ),
+    ] = {}
 
 
 class BaseFormatOption(BaseModel):
@@ -75,6 +103,9 @@ class InputFormat(str, Enum):
     MD = "md"
     CSV = "csv"
     XLSX = "xlsx"
+    ODT = "odt"
+    ODS = "ods"
+    ODP = "odp"
     XML_USPTO = "xml_uspto"
     XML_JATS = "xml_jats"
     XML_XBRL = "xml_xbrl"
@@ -98,6 +129,7 @@ class OutputFormat(str, Enum):
     DOCTAGS = "doctags"
     VTT = "vtt"
     DOCLANG = "doclang"
+    DCLX = "dclx"
 
 
 FormatToExtensions: dict[InputFormat, list[str]] = {
@@ -113,6 +145,9 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
     InputFormat.XLSX: ["xlsx", "xlsm"],
+    InputFormat.ODT: ["odt", "ott"],
+    InputFormat.ODS: ["ods", "ots"],
+    InputFormat.ODP: ["odp", "otp"],
     InputFormat.XML_USPTO: ["xml", "txt"],
     InputFormat.METS_GBS: ["tar.gz"],
     InputFormat.JSON_DOCLING: ["json"],
@@ -151,6 +186,18 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.CSV: ["text/csv"],
     InputFormat.XLSX: [
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    ],
+    InputFormat.ODT: [
+        "application/vnd.oasis.opendocument.text",
+        "application/vnd.oasis.opendocument.text-template",
+    ],
+    InputFormat.ODS: [
+        "application/vnd.oasis.opendocument.spreadsheet",
+        "application/vnd.oasis.opendocument.spreadsheet-template",
+    ],
+    InputFormat.ODP: [
+        "application/vnd.oasis.opendocument.presentation",
+        "application/vnd.oasis.opendocument.presentation-template",
     ],
     InputFormat.XML_USPTO: ["application/xml", "text/plain"],
     InputFormat.METS_GBS: ["application/mets+xml"],
@@ -205,10 +252,47 @@ class VlmStopReason(str, Enum):
     UNSPECIFIED = "unspecified"  # Defaul none value
 
 
+class FailureCategory(str, Enum):
+    """Error category shared by task-scope (``PublicFailureInfo``) and
+    document/page-scope (``ErrorItem``) errors, so the jobkit bridge can pass one
+    to the other without translation.
+
+    Task-scope only: CAPACITY, TARGET_UNAVAILABLE, INTERNAL.
+    Document/page-scope only: BACKEND_FAILURE, INFERENCE_FAILURE.
+    Shared: POLICY, SOURCE_UNAVAILABLE, TIMEOUT.
+
+    UNKNOWN is the default for uncategorized errors, distinct from INTERNAL (a
+    known service defect).
+    """
+
+    POLICY = "policy"
+    CAPACITY = "capacity"
+    SOURCE_UNAVAILABLE = "source_unavailable"
+    TARGET_UNAVAILABLE = "target_unavailable"
+    TIMEOUT = "timeout"
+    INTERNAL = "internal"
+    BACKEND_FAILURE = "backend_failure"
+    INFERENCE_FAILURE = "inference_failure"
+    UNKNOWN = "unknown"
+
+
 class ErrorItem(BaseModel):
+    """Structured error information from document conversion.
+
+    Attributes:
+        component_type: The component that generated the error.
+        module_name: The module where the error occurred.
+        error_message: Human-readable error description.
+        category: Semantic category of the error for filtering.
+        page_no: 1-indexed page the error is attributable to, or None for
+            document-scoped errors.
+    """
+
     component_type: DoclingComponentType
     module_name: str
     error_message: str
+    category: FailureCategory = FailureCategory.UNKNOWN
+    page_no: int | None = None
 
 
 class Cluster(BaseModel):
@@ -247,8 +331,28 @@ class VlmPrediction(BaseModel):
     generated_tokens: list[VlmPredictionToken] = []
     generation_time: float = -1
     num_tokens: int | None = None
+    usage: Any | None = None
     stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
     input_prompt: str | None = None
+
+
+@dataclass(frozen=True)
+class ApiImageRequestResult:
+    """Image API response with optional provider usage metadata."""
+
+    text: str
+    num_tokens: int | None
+    stop_reason: VlmStopReason
+    usage: Any | None = None
+
+
+@dataclass(frozen=True)
+class ApiImageStreamingRequestResult:
+    """Streaming image API response with optional provider usage metadata."""
+
+    text: str
+    num_tokens: int | None
+    usage: Any | None = None
 
 
 class ContainerElement(
@@ -416,7 +520,7 @@ class OpenAiApiResponse(BaseModel):
     model: str | None = None  # returned by openai
     choices: list[OpenAiResponseChoice]
     created: int
-    usage: OpenAiResponseUsage
+    usage: OpenAiResponseUsage | None = None
 
 
 # Create a type alias for score values
@@ -505,10 +609,50 @@ class ConfidenceReport(PageConfidenceScores):
     pages: dict[int, PageConfidenceScores] = Field(
         default_factory=lambda: defaultdict(PageConfidenceScores)
     )
+    _mean_score_override: ScoreValue = PrivateAttr(default=np.nan)
+    _low_score_override: ScoreValue = PrivateAttr(default=np.nan)
+
+    @staticmethod
+    def _coerce_override_score(value: Any) -> ScoreValue:
+        if value is None:
+            return ScoreValue(np.nan)
+        if isinstance(value, str) and value.strip().lower() in {
+            "nan",
+            "null",
+            "none",
+            "",
+        }:
+            return ScoreValue(np.nan)
+        return ScoreValue(value)
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def _accept_flat_confidence_scores(cls, value, handler):
+        mean_override = ScoreValue(np.nan)
+        low_override = ScoreValue(np.nan)
+
+        if isinstance(value, dict):
+            mean_override = cls._coerce_override_score(value.get("mean_score"))
+            low_override = cls._coerce_override_score(value.get("low_score"))
+            value = dict(value)
+            value.pop("mean_score", None)
+            value.pop("low_score", None)
+            value.pop("mean_grade", None)
+            value.pop("low_grade", None)
+
+        model = handler(value)
+        if not model.pages:
+            model._mean_score_override = mean_override
+            model._low_score_override = low_override
+        return model
 
     @computed_field  # type: ignore
     @property
     def mean_score(self) -> ScoreValue:
+        if not np.isnan(self._mean_score_override):
+            return self._mean_score_override
+        if not self.pages:
+            return super().mean_score
         return ScoreValue(
             np.nanmean(
                 [c.mean_score for c in self.pages.values()],
@@ -518,6 +662,10 @@ class ConfidenceReport(PageConfidenceScores):
     @computed_field  # type: ignore
     @property
     def low_score(self) -> ScoreValue:
+        if not np.isnan(self._low_score_override):
+            return self._low_score_override
+        if not self.pages:
+            return super().low_score
         return ScoreValue(
             np.nanmean(
                 [c.low_score for c in self.pages.values()],

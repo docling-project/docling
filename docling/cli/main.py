@@ -41,15 +41,8 @@ from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
 from rich.console import Console
 
-from docling.backend.docling_parse_backend import (
-    DoclingParseDocumentBackend,
-    ThreadedDoclingParseDocumentBackend,
-)
-from docling.backend.image_backend import ImageDocumentBackend
-from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
-from docling.backend.pdf_backend import PdfDocumentBackend
-from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.cli.export_utils import (
+    _export_flags_from_formats,
     _is_empty_output,
     _should_generate_export_images,
     _split_list,
@@ -57,20 +50,34 @@ from docling.cli.export_utils import (
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
     WHISPER_BASE,
+    WHISPER_BASE_EN_S2T,
     WHISPER_BASE_MLX,
     WHISPER_BASE_NATIVE,
+    WHISPER_BASE_S2T,
+    WHISPER_DISTIL_LARGE_V3_5_S2T,
+    WHISPER_DISTIL_LARGE_V3_S2T,
+    WHISPER_DISTIL_MEDIUM_EN_S2T,
+    WHISPER_DISTIL_SMALL_EN_S2T,
     WHISPER_LARGE,
     WHISPER_LARGE_MLX,
     WHISPER_LARGE_NATIVE,
+    WHISPER_LARGE_V3_S2T,
+    WHISPER_LARGE_V3_TURBO_S2T,
     WHISPER_MEDIUM,
+    WHISPER_MEDIUM_EN_S2T,
     WHISPER_MEDIUM_MLX,
     WHISPER_MEDIUM_NATIVE,
+    WHISPER_MEDIUM_S2T,
     WHISPER_SMALL,
+    WHISPER_SMALL_EN_S2T,
     WHISPER_SMALL_MLX,
     WHISPER_SMALL_NATIVE,
+    WHISPER_SMALL_S2T,
     WHISPER_TINY,
+    WHISPER_TINY_EN_S2T,
     WHISPER_TINY_MLX,
     WHISPER_TINY_NATIVE,
+    WHISPER_TINY_S2T,
     WHISPER_TURBO,
     WHISPER_TURBO_MLX,
     WHISPER_TURBO_NATIVE,
@@ -119,6 +126,9 @@ from docling.document_converter import (
     HTMLFormatOption,
     LatexFormatOption,
     MarkdownFormatOption,
+    OdpFormatOption,
+    OdsFormatOption,
+    OdtFormatOption,
     PdfFormatOption,
     PowerpointFormatOption,
     WordFormatOption,
@@ -129,8 +139,6 @@ from docling.models.factories import (
     get_table_structure_factory,
 )
 from docling.models.factories.base_factory import BaseFactory
-from docling.pipeline.asr_pipeline import AsrPipeline
-from docling.pipeline.vlm_pipeline import VlmPipeline
 from docling.utils.profiling import ProfilingItem
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
@@ -193,6 +201,27 @@ def _iter_input_paths_from_directory(
             yield path
 
 
+def _expand_from_formats(from_formats: list[str] | None) -> list[InputFormat]:
+    if from_formats is None:
+        return list(InputFormat)
+
+    expanded_formats: list[InputFormat] = []
+    for from_format in from_formats:
+        normalized_format = from_format.lower()
+        if normalized_format == "odf":
+            expanded_formats.extend([InputFormat.ODT, InputFormat.ODS, InputFormat.ODP])
+            continue
+        try:
+            expanded_formats.append(InputFormat(normalized_format))
+        except ValueError:
+            choices = ", ".join([format.value for format in InputFormat] + ["odf"])
+            raise typer.BadParameter(
+                f"{from_format!r} is not one of {choices}"
+            ) from None
+
+    return list(dict.fromkeys(expanded_formats))
+
+
 ocr_factory_internal = get_ocr_factory(allow_external_plugins=False)
 ocr_engines_enum_internal = ocr_factory_internal.get_enum()
 
@@ -237,11 +266,37 @@ DOCLING_ASCII_ART = r"""
 """
 
 
+class _DefaultCommandGroup(typer.core.TyperGroup):
+    """Route a bare ``docling <source>`` invocation to the ``convert`` command.
+
+    Historically the CLI exposed a single command, so Typer let users run
+    ``docling report.pdf`` without naming it. Adding a second command
+    (``convert-remote``) would otherwise force ``docling convert report.pdf``
+    on everyone. This group preserves the old behavior: when the first token is
+    not a known subcommand (nor the top-level ``--help``), it is treated as
+    arguments to ``convert``. ``docling --help`` still shows the command list.
+    """
+
+    default_command = "convert"
+
+    def parse_args(self, ctx, args):
+        if args and args[0] not in self.commands and args[0] not in ("--help", "-h"):
+            args = [self.default_command, *args]
+        return super().parse_args(ctx, args)
+
+
 app = typer.Typer(
     name="Docling",
+    cls=_DefaultCommandGroup,
     no_args_is_help=True,
     add_completion=False,
     pretty_exceptions_enable=False,
+    epilog=(
+        "Remote conversion: when installed with the `service-client` extra, "
+        "use `docling convert-remote` and read `docling convert-remote --help` "
+        "for authentication (DOCLING_SERVICE_URL / DOCLING_SERVICE_API_KEY), "
+        "supported options, and exit codes before invoking it."
+    ),
 )
 
 
@@ -295,6 +350,203 @@ def show_external_plugins_callback(value: bool):
         raise typer.Exit()
 
 
+def _export_json_format(
+    conv_res: ConversionResult,
+    output_dir: Path,
+    doc_filename: str,
+    image_export_mode: ImageRefMode,
+) -> None:
+    fname = output_dir / f"{doc_filename}.json"
+    _log.info(f"writing JSON output to {fname}")
+    conv_res.document.save_as_json(filename=fname, image_mode=image_export_mode)
+
+
+def _export_yaml_format(
+    conv_res: ConversionResult,
+    output_dir: Path,
+    doc_filename: str,
+    image_export_mode: ImageRefMode,
+) -> None:
+    fname = output_dir / f"{doc_filename}.yaml"
+    _log.info(f"writing YAML output to {fname}")
+    conv_res.document.save_as_yaml(filename=fname, image_mode=image_export_mode)
+
+
+def _export_html_format(
+    conv_res: ConversionResult,
+    output_dir: Path,
+    doc_filename: str,
+    image_export_mode: ImageRefMode,
+) -> None:
+    fname = output_dir / f"{doc_filename}.html"
+    _log.info(f"writing HTML output to {fname}")
+    conv_res.document.save_as_html(
+        filename=fname, image_mode=image_export_mode, split_page_view=False
+    )
+
+
+def _export_html_split_page_format(
+    conv_res: ConversionResult,
+    output_dir: Path,
+    doc_filename: str,
+    image_export_mode: ImageRefMode,
+    show_layout: bool,
+) -> None:
+    fname = output_dir / f"{doc_filename}.html"
+    _log.info(f"writing HTML output to {fname}")
+    if show_layout:
+        ser = HTMLDocSerializer(
+            doc=conv_res.document,
+            params=HTMLParams(
+                image_mode=image_export_mode,
+                output_style=HTMLOutputStyle.SPLIT_PAGE,
+            ),
+        )
+        visualizer = LayoutVisualizer()
+        visualizer.params.show_label = False
+        ser_res = ser.serialize(visualizer=visualizer)
+        with open(fname, "w") as fw:
+            fw.write(ser_res.text)
+    else:
+        conv_res.document.save_as_html(
+            filename=fname,
+            image_mode=image_export_mode,
+            split_page_view=True,
+        )
+
+
+def _export_text_format(
+    conv_res: ConversionResult,
+    output_dir: Path,
+    doc_filename: str,
+) -> None:
+    fname = output_dir / f"{doc_filename}.txt"
+    _log.info(f"writing TXT output to {fname}")
+    conv_res.document.save_as_markdown(
+        filename=fname,
+        strict_text=True,
+        image_mode=ImageRefMode.PLACEHOLDER,
+    )
+
+
+def _export_markdown_format(
+    conv_res: ConversionResult,
+    output_dir: Path,
+    doc_filename: str,
+    image_export_mode: ImageRefMode,
+) -> bool:
+    fname = output_dir / f"{doc_filename}.md"
+    _log.info(f"writing Markdown output to {fname}")
+    conv_res.document.save_as_markdown(filename=fname, image_mode=image_export_mode)
+    if _is_empty_output(fname):
+        error_message = (
+            f"Markdown export produced empty output for {conv_res.input.file.name}"
+        )
+        _log.error(error_message)
+        conv_res.errors.append(
+            ErrorItem(
+                component_type=DoclingComponentType.DOC_ASSEMBLER,
+                module_name="export_documents",
+                error_message=error_message,
+            )
+        )
+        conv_res.status = ConversionStatus.FAILURE
+        return True
+    return False
+
+
+def _export_doctags_format(
+    conv_res: ConversionResult,
+    output_dir: Path,
+    doc_filename: str,
+) -> None:
+    fname = output_dir / f"{doc_filename}.doctags"
+    _log.info(f"writing Doc Tags output to {fname}")
+    conv_res.document.save_as_doctags(filename=fname)
+
+
+def _export_vtt_format(
+    conv_res: ConversionResult,
+    output_dir: Path,
+    doc_filename: str,
+) -> None:
+    fname = output_dir / f"{doc_filename}.vtt"
+    _log.info(f"writing WebVTT output to {fname}")
+    conv_res.document.save_as_vtt(filename=fname)
+
+
+def _export_doclang_format(
+    conv_res: ConversionResult,
+    output_dir: Path,
+    doc_filename: str,
+) -> None:
+    fname = output_dir / f"{doc_filename}.dclg.xml"
+    _log.info(f"writing DocLang output to {fname}")
+    with fname.open("w", encoding="utf-8") as fp:
+        fp.write(conv_res.document.export_to_doclang())
+
+
+def _export_dclx_format(
+    conv_res: ConversionResult,
+    output_dir: Path,
+    doc_filename: str,
+) -> None:
+    fname = output_dir / f"{doc_filename}.dclx"
+    _log.info(f"writing DCLX output to {fname}")
+    conv_res.document.save_as_doclang_archive(filename=fname)
+
+
+def _print_profiling_timings(
+    conv_res: ConversionResult,
+    doc_filename: str,
+) -> None:
+    table = rich.table.Table(title=f"Profiling Summary, {doc_filename}")
+    metric_columns = [
+        "Stage",
+        "count",
+        "total",
+        "mean",
+        "median",
+        "min",
+        "max",
+        "0.1 percentile",
+        "0.9 percentile",
+    ]
+    for col in metric_columns:
+        table.add_column(col, style="bold")
+    for stage_key, item in conv_res.timings.items():
+        col_dict = {
+            "Stage": stage_key,
+            "count": item.count,
+            "total": item.total(),
+            "mean": item.avg(),
+            "median": item.percentile(0.5),
+            "min": item.percentile(0.0),
+            "max": item.percentile(1.0),
+            "0.1 percentile": item.percentile(0.1),
+            "0.9 percentile": item.percentile(0.9),
+        }
+        row_values = [str(col_dict[col]) for col in metric_columns]
+        table.add_row(*row_values)
+
+    console.print(table)
+
+
+def _export_profiling_data(
+    conv_res: ConversionResult,
+    output_dir: Path,
+    doc_filename: str,
+) -> None:
+    TimingsT = TypeAdapter(dict[str, ProfilingItem])
+    now = datetime.datetime.now()
+    timings_file = Path(
+        output_dir / f"{doc_filename}-timings-{now:%Y-%m-%d_%H-%M-%S}.json"
+    )
+    with timings_file.open("wb") as fp:
+        r = TimingsT.dump_json(conv_res.timings, indent=2)
+        fp.write(r)
+
+
 def export_documents(
     conv_results: Iterable[ConversionResult],
     output_dir: Path,
@@ -311,6 +563,7 @@ def export_documents(
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
+    export_dclx: bool = False,
 ):
     success_count = 0
     failure_count = 0
@@ -320,151 +573,51 @@ def export_documents(
         if not doc_failed:
             doc_filename = conv_res.input.file.stem
 
-            # Export JSON format:
             if export_json:
-                fname = output_dir / f"{doc_filename}.json"
-                _log.info(f"writing JSON output to {fname}")
-                conv_res.document.save_as_json(
-                    filename=fname, image_mode=image_export_mode
+                _export_json_format(
+                    conv_res, output_dir, doc_filename, image_export_mode
                 )
 
-            # Export YAML format:
             if export_yaml:
-                fname = output_dir / f"{doc_filename}.yaml"
-                _log.info(f"writing YAML output to {fname}")
-                conv_res.document.save_as_yaml(
-                    filename=fname, image_mode=image_export_mode
+                _export_yaml_format(
+                    conv_res, output_dir, doc_filename, image_export_mode
                 )
 
-            # Export HTML format:
             if export_html:
-                fname = output_dir / f"{doc_filename}.html"
-                _log.info(f"writing HTML output to {fname}")
-                conv_res.document.save_as_html(
-                    filename=fname, image_mode=image_export_mode, split_page_view=False
+                _export_html_format(
+                    conv_res, output_dir, doc_filename, image_export_mode
                 )
 
-            # Export HTML format:
             if export_html_split_page:
-                fname = output_dir / f"{doc_filename}.html"
-                _log.info(f"writing HTML output to {fname}")
-                if show_layout:
-                    ser = HTMLDocSerializer(
-                        doc=conv_res.document,
-                        params=HTMLParams(
-                            image_mode=image_export_mode,
-                            output_style=HTMLOutputStyle.SPLIT_PAGE,
-                        ),
-                    )
-                    visualizer = LayoutVisualizer()
-                    visualizer.params.show_label = False
-                    ser_res = ser.serialize(
-                        visualizer=visualizer,
-                    )
-                    with open(fname, "w") as fw:
-                        fw.write(ser_res.text)
-                else:
-                    conv_res.document.save_as_html(
-                        filename=fname,
-                        image_mode=image_export_mode,
-                        split_page_view=True,
-                    )
+                _export_html_split_page_format(
+                    conv_res, output_dir, doc_filename, image_export_mode, show_layout
+                )
 
-            # Export Text format:
             if export_txt:
-                fname = output_dir / f"{doc_filename}.txt"
-                _log.info(f"writing TXT output to {fname}")
-                conv_res.document.save_as_markdown(
-                    filename=fname,
-                    strict_text=True,
-                    image_mode=ImageRefMode.PLACEHOLDER,
-                )
+                _export_text_format(conv_res, output_dir, doc_filename)
 
-            # Export Markdown format:
             if export_md:
-                fname = output_dir / f"{doc_filename}.md"
-                _log.info(f"writing Markdown output to {fname}")
-                conv_res.document.save_as_markdown(
-                    filename=fname, image_mode=image_export_mode
+                doc_failed = _export_markdown_format(
+                    conv_res, output_dir, doc_filename, image_export_mode
                 )
-                if _is_empty_output(fname):
-                    error_message = (
-                        "Markdown export produced empty output for "
-                        f"{conv_res.input.file.name}"
-                    )
-                    _log.error(error_message)
-                    conv_res.errors.append(
-                        ErrorItem(
-                            component_type=DoclingComponentType.DOC_ASSEMBLER,
-                            module_name="export_documents",
-                            error_message=error_message,
-                        )
-                    )
-                    conv_res.status = ConversionStatus.FAILURE
-                    doc_failed = True
 
-            # Export Document Tags format:
             if export_doctags:
-                fname = output_dir / f"{doc_filename}.doctags"
-                _log.info(f"writing Doc Tags output to {fname}")
-                conv_res.document.save_as_doctags(filename=fname)
+                _export_doctags_format(conv_res, output_dir, doc_filename)
 
-            # Export WebVTT format:
             if export_vtt:
-                fname = output_dir / f"{doc_filename}.vtt"
-                _log.info(f"writing WebVTT output to {fname}")
-                conv_res.document.save_as_vtt(filename=fname)
+                _export_vtt_format(conv_res, output_dir, doc_filename)
 
-            # Export DocLang format:
             if export_doclang:
-                fname = output_dir / f"{doc_filename}.dclg.xml"
-                _log.info(f"writing DocLang output to {fname}")
-                with fname.open("w", encoding="utf-8") as fp:
-                    fp.write(conv_res.document.export_to_doclang())
+                _export_doclang_format(conv_res, output_dir, doc_filename)
 
-            # Print profiling timings
+            if export_dclx:
+                _export_dclx_format(conv_res, output_dir, doc_filename)
+
             if print_timings:
-                table = rich.table.Table(title=f"Profiling Summary, {doc_filename}")
-                metric_columns = [
-                    "Stage",
-                    "count",
-                    "total",
-                    "mean",
-                    "median",
-                    "min",
-                    "max",
-                    "0.1 percentile",
-                    "0.9 percentile",
-                ]
-                for col in metric_columns:
-                    table.add_column(col, style="bold")
-                for stage_key, item in conv_res.timings.items():
-                    col_dict = {
-                        "Stage": stage_key,
-                        "count": item.count,
-                        "total": item.total(),
-                        "mean": item.avg(),
-                        "median": item.percentile(0.5),
-                        "min": item.percentile(0.0),
-                        "max": item.percentile(1.0),
-                        "0.1 percentile": item.percentile(0.1),
-                        "0.9 percentile": item.percentile(0.9),
-                    }
-                    row_values = [str(col_dict[col]) for col in metric_columns]
-                    table.add_row(*row_values)
+                _print_profiling_timings(conv_res, doc_filename)
 
-                console.print(table)
-
-            # Export profiling timings
             if export_timings:
-                TimingsT = TypeAdapter(dict[str, ProfilingItem])
-                now = datetime.datetime.now()
-                timings_file = Path(
-                    output_dir / f"{doc_filename}-timings-{now:%Y-%m-%d_%H-%M-%S}.json"
-                )
-                with timings_file.open("wb") as fp:
-                    r = TimingsT.dump_json(conv_res.timings, indent=2)
-                    fp.write(r)
+                _export_profiling_data(conv_res, output_dir, doc_filename)
 
         if doc_failed:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
@@ -493,10 +646,10 @@ def convert(  # noqa: C901
             help="PDF files to convert. Can be local file / directory paths or URL.",
         ),
     ],
-    from_formats: list[InputFormat] = typer.Option(
+    from_formats: list[str] = typer.Option(
         None,
         "--from",
-        help="Input formats to accept. Defaults to all supported formats.",
+        help="Input formats to accept. Use 'odf' for odt, ods, and odp. Defaults to all supported formats.",
     ),
     to_formats: list[OutputFormat] = typer.Option(
         None, "--to", help="Specify output formats. Defaults to Markdown."
@@ -749,6 +902,33 @@ def convert(  # noqa: C901
         ),
     ] = False,
 ):
+    # Heavy backend/converter/pipeline imports are deferred to here so the CLI
+    # (and `convert-remote`) stay importable without the local PDF stack
+    # (pypdfium2 / docling_parse). Only local `convert` needs them.
+    from docling.backend.docling_parse_backend import (
+        DoclingParseDocumentBackend,
+        ThreadedDoclingParseDocumentBackend,
+    )
+    from docling.backend.image_backend import ImageDocumentBackend
+    from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
+    from docling.backend.pdf_backend import PdfDocumentBackend
+    from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+    from docling.document_converter import (
+        AudioFormatOption,
+        DocumentConverter,
+        EpubFormatOption,
+        ExcelFormatOption,
+        FormatOption,
+        HTMLFormatOption,
+        LatexFormatOption,
+        MarkdownFormatOption,
+        PdfFormatOption,
+        PowerpointFormatOption,
+        WordFormatOption,
+    )
+    from docling.pipeline.asr_pipeline import AsrPipeline
+    from docling.pipeline.vlm_pipeline import VlmPipeline
+
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
     if verbose == 0:
@@ -764,8 +944,7 @@ def convert(  # noqa: C901
     settings.debug.visualize_ocr = debug_visualize_ocr
     settings.perf.page_batch_size = page_batch_size
 
-    if from_formats is None:
-        from_formats = list(InputFormat)
+    from_formats = _expand_from_formats(from_formats)
 
     parsed_headers: dict[str, str] | None = None
     if headers is not None:
@@ -856,15 +1035,7 @@ def convert(  # noqa: C901
         if to_formats is None:
             to_formats = [OutputFormat.MARKDOWN]
 
-        export_json = OutputFormat.JSON in to_formats
-        export_yaml = OutputFormat.YAML in to_formats
-        export_html = OutputFormat.HTML in to_formats
-        export_html_split_page = OutputFormat.HTML_SPLIT_PAGE in to_formats
-        export_md = OutputFormat.MARKDOWN in to_formats
-        export_txt = OutputFormat.TEXT in to_formats
-        export_doctags = OutputFormat.DOCTAGS in to_formats
-        export_vtt = OutputFormat.VTT in to_formats
-        export_doclang = OutputFormat.DOCLANG in to_formats
+        export_flags = _export_flags_from_formats(to_formats)
 
         ocr_factory = get_ocr_factory(allow_external_plugins=allow_external_plugins)
         ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore
@@ -987,6 +1158,9 @@ def convert(  # noqa: C901
                 InputFormat.XLSX: ExcelFormatOption(
                     pipeline_options=simple_format_option
                 ),
+                InputFormat.ODT: OdtFormatOption(pipeline_options=simple_format_option),
+                InputFormat.ODP: OdpFormatOption(pipeline_options=simple_format_option),
+                InputFormat.ODS: OdsFormatOption(pipeline_options=simple_format_option),
                 InputFormat.HTML: HTMLFormatOption(
                     pipeline_options=simple_format_option,
                     backend_options=html_backend_options,
@@ -1016,6 +1190,7 @@ def convert(  # noqa: C901
 
         elif pipeline == ProcessingPipeline.VLM:
             pipeline_options = VlmPipelineOptions(
+                accelerator_options=accelerator_options,
                 enable_remote_services=enable_remote_services,
             )
 
@@ -1093,6 +1268,36 @@ def convert(  # noqa: C901
         elif asr_model == AsrModelType.WHISPER_TURBO_NATIVE:
             asr_pipeline_options.asr_options = WHISPER_TURBO_NATIVE
 
+        # Explicit WhisperS2T models (CTranslate2 backend - fastest)
+        elif asr_model == AsrModelType.WHISPER_TINY_S2T:
+            asr_pipeline_options.asr_options = WHISPER_TINY_S2T
+        elif asr_model == AsrModelType.WHISPER_TINY_EN_S2T:
+            asr_pipeline_options.asr_options = WHISPER_TINY_EN_S2T
+        elif asr_model == AsrModelType.WHISPER_BASE_S2T:
+            asr_pipeline_options.asr_options = WHISPER_BASE_S2T
+        elif asr_model == AsrModelType.WHISPER_BASE_EN_S2T:
+            asr_pipeline_options.asr_options = WHISPER_BASE_EN_S2T
+        elif asr_model == AsrModelType.WHISPER_SMALL_S2T:
+            asr_pipeline_options.asr_options = WHISPER_SMALL_S2T
+        elif asr_model == AsrModelType.WHISPER_SMALL_EN_S2T:
+            asr_pipeline_options.asr_options = WHISPER_SMALL_EN_S2T
+        elif asr_model == AsrModelType.WHISPER_DISTIL_SMALL_EN_S2T:
+            asr_pipeline_options.asr_options = WHISPER_DISTIL_SMALL_EN_S2T
+        elif asr_model == AsrModelType.WHISPER_MEDIUM_S2T:
+            asr_pipeline_options.asr_options = WHISPER_MEDIUM_S2T
+        elif asr_model == AsrModelType.WHISPER_MEDIUM_EN_S2T:
+            asr_pipeline_options.asr_options = WHISPER_MEDIUM_EN_S2T
+        elif asr_model == AsrModelType.WHISPER_DISTIL_MEDIUM_EN_S2T:
+            asr_pipeline_options.asr_options = WHISPER_DISTIL_MEDIUM_EN_S2T
+        elif asr_model == AsrModelType.WHISPER_LARGE_V3_S2T:
+            asr_pipeline_options.asr_options = WHISPER_LARGE_V3_S2T
+        elif asr_model == AsrModelType.WHISPER_DISTIL_LARGE_V3_S2T:
+            asr_pipeline_options.asr_options = WHISPER_DISTIL_LARGE_V3_S2T
+        elif asr_model == AsrModelType.WHISPER_LARGE_V3_TURBO_S2T:
+            asr_pipeline_options.asr_options = WHISPER_LARGE_V3_TURBO_S2T
+        elif asr_model == AsrModelType.WHISPER_DISTIL_LARGE_V3_5_S2T:
+            asr_pipeline_options.asr_options = WHISPER_DISTIL_LARGE_V3_5_S2T
+
         else:
             _log.error(f"{asr_model} is not known")
             raise ValueError(f"{asr_model} is not known")
@@ -1126,16 +1331,8 @@ def convert(  # noqa: C901
         export_documents(
             conv_results,
             output_dir=output,
-            export_json=export_json,
-            export_yaml=export_yaml,
-            export_html=export_html,
-            export_html_split_page=export_html_split_page,
+            **export_flags,
             show_layout=show_layout,
-            export_md=export_md,
-            export_txt=export_txt,
-            export_doctags=export_doctags,
-            export_vtt=export_vtt,
-            export_doclang=export_doclang,
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,
@@ -1145,6 +1342,19 @@ def convert(  # noqa: C901
 
     _log.info(f"All documents were converted in {end_time:.2f} seconds.")
 
+
+# Register `convert-remote` only when the service-client extra is installed.
+# Imported here (after `app`, `export_documents`, and the source-collection
+# helpers are defined) so the command is attached before the click app is built
+# below.
+try:
+    from docling.cli.remote import register as _register_remote
+except ImportError:
+    _log.debug(
+        "Skipping `convert-remote` registration because service-client dependencies are unavailable."
+    )
+else:
+    _register_remote(app)
 
 click_app = typer.main.get_command(app)
 

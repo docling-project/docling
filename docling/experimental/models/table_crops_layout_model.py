@@ -8,10 +8,10 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
-from docling_core.types.doc import DocItemLabel
+from docling_core.types.doc import BoundingBox, DocItemLabel
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import BoundingBox, Cluster, LayoutPrediction, Page
+from docling.datamodel.base_models import Cluster, LayoutPrediction, Page
 from docling.datamodel.document import ConversionResult
 from docling.experimental.datamodel.table_crops_layout_options import (
     TableCropsLayoutOptions,

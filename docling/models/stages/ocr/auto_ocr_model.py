@@ -9,6 +9,7 @@ from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     EasyOcrOptions,
+    NemotronOcrOptions,
     OcrAutoOptions,
     OcrMacOptions,
     OcrOptions,
@@ -16,6 +17,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.stages.ocr.easyocr_model import EasyOcrModel
+from docling.models.stages.ocr.nemotron_ocr_model import NemotronOcrModel
 from docling.models.stages.ocr.ocr_mac_model import OcrMacModel
 from docling.models.stages.ocr.rapid_ocr_model import RapidOcrModel
 
@@ -56,6 +58,27 @@ class OcrAutoModel(BaseOcrModel):
                     _log.info("Auto OCR model selected ocrmac.")
                 except ImportError:
                     _log.info("ocrmac cannot be used because ocrmac is not installed.")
+
+            if "linux" == sys.platform:
+                try:
+                    import nemotron_ocr.inference.pipeline_v2
+
+                    NemotronOcrModel.validate_runtime(accelerator_options)
+
+                    self._engine = NemotronOcrModel(
+                        enabled=self.enabled,
+                        artifacts_path=artifacts_path,
+                        options=NemotronOcrOptions(
+                            bitmap_area_threshold=self.options.bitmap_area_threshold,
+                            force_full_page_ocr=self.options.force_full_page_ocr,
+                        ),
+                        accelerator_options=accelerator_options,
+                    )
+                    _log.info("Auto OCR model selected nemotron.")
+                except ImportError:
+                    _log.info("Nemotron cannot be used because it is not installed.")
+                except (RuntimeError, FileNotFoundError) as exc:
+                    _log.warning("Nemotron OCR cannot be used: %s", exc)
 
             if self._engine is None:
                 try:

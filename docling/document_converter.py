@@ -33,6 +33,11 @@ from docling.backend.msexcel_backend import MsExcelDocumentBackend
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.backend.noop_backend import NoOpBackend
+from docling.backend.opendocument_backend import (
+    OdpDocumentBackend,
+    OdsDocumentBackend,
+    OdtDocumentBackend,
+)
 from docling.backend.webvtt_backend import WebVTTDocumentBackend
 from docling.backend.xml.doclang_backend import DocLangDocumentBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
@@ -54,12 +59,15 @@ from docling.datamodel.base_models import (
     DoclingComponentType,
     DocumentStream,
     ErrorItem,
+    FailureCategory,
+    HttpSource,
     InputFormat,
 )
 from docling.datamodel.document import (
     ConversionResult,
     InputDocument,
     _DocumentConversionInput,
+    build_invalid_input_errors,
 )
 from docling.datamodel.pipeline_options import ConvertPipelineOptions, PipelineOptions
 from docling.datamodel.settings import (
@@ -114,6 +122,21 @@ class WordFormatOption(FormatOption):
 class PowerpointFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = MsPowerpointDocumentBackend
+
+
+class OdtFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = OdtDocumentBackend
+
+
+class OdsFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = OdsDocumentBackend
+
+
+class OdpFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = OdpDocumentBackend
 
 
 class MarkdownFormatOption(FormatOption):
@@ -216,6 +239,9 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.XLSX: ExcelFormatOption(),
         InputFormat.DOCX: WordFormatOption(),
         InputFormat.PPTX: PowerpointFormatOption(),
+        InputFormat.ODT: OdtFormatOption(),
+        InputFormat.ODS: OdsFormatOption(),
+        InputFormat.ODP: OdpFormatOption(),
         InputFormat.MD: MarkdownFormatOption(),
         InputFormat.ASCIIDOC: AsciiDocFormatOption(),
         InputFormat.HTML: HTMLFormatOption(),
@@ -376,7 +402,7 @@ class DocumentConverter:
     @validate_call(config=ConfigDict(strict=True))
     def convert(
         self,
-        source: Union[Path, str, DocumentStream],  # TODO review naming
+        source: Union[Path, str, DocumentStream, HttpSource],  # TODO review naming
         headers: Optional[dict[str, str]] = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
@@ -389,10 +415,11 @@ class DocumentConverter:
         content), use the `convert_string` method.
 
         Args:
-            source: Source of input document given as file path, URL, or
-                DocumentStream.
+            source: Source of input document given as file path, URL,
+                DocumentStream, or HttpSource (a URL bundled with its own headers).
             headers: Optional headers given as a dictionary of string key-value pairs,
-                in case of URL input source.
+                in case of URL input source. Ignored for HttpSource inputs, which
+                carry their own headers (these override the batch headers per key).
             raises_on_error: Whether to raise an error on the first conversion failure.
                 If False, errors are captured in the ConversionResult objects.
             max_num_pages: Maximum number of pages accepted per document.
@@ -440,7 +467,9 @@ class DocumentConverter:
     @validate_call(config=ConfigDict(strict=True))
     def convert_all(
         self,
-        source: Iterable[Union[Path, str, DocumentStream]],  # TODO review naming
+        source: Iterable[
+            Union[Path, str, DocumentStream, HttpSource]
+        ],  # TODO review naming
         headers: Optional[dict[str, str]] = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
@@ -451,9 +480,10 @@ class DocumentConverter:
 
         Args:
             source: Source of input documents given as an iterable of file paths, URLs,
-                or DocumentStreams.
+                DocumentStreams, or HttpSources (a URL bundled with its own headers).
             headers: Optional headers given as a (single) dictionary of string
-                key-value pairs, in case of URL input source.
+                key-value pairs, in case of URL input source. Per-source HttpSource
+                headers override these (merged per key) for that source only.
             raises_on_error: Whether to raise an error on the first conversion failure.
             max_num_pages: Maximum number of pages accepted per document.
                 Documents exceeding this number will not be converted.
@@ -506,7 +536,7 @@ class DocumentConverter:
                     error_details = f" Errors: {'; '.join(error_messages)}"
                 raise ConversionError(
                     f"Conversion failed for: {conv_res.input.file} with status: "
-                    f"{conv_res.status}.{error_details}"
+                    f"{conv_res.status.value}.{error_details}"
                 )
             else:
                 yield conv_res
@@ -669,17 +699,15 @@ class DocumentConverter:
             conv_res = self._execute_pipeline(in_doc, raises_on_error=raises_on_error)
         else:
             error_message = f"File format not allowed: {in_doc.file}"
-            if raises_on_error:
-                raise ConversionError(error_message)
-            else:
-                error_item = ErrorItem(
-                    component_type=DoclingComponentType.USER_INPUT,
-                    module_name="",
-                    error_message=error_message,
-                )
-                conv_res = ConversionResult(
-                    input=in_doc, status=ConversionStatus.SKIPPED, errors=[error_item]
-                )
+            error_item = ErrorItem(
+                component_type=DoclingComponentType.USER_INPUT,
+                module_name="",
+                error_message=error_message,
+                category=FailureCategory.POLICY,
+            )
+            conv_res = ConversionResult(
+                input=in_doc, status=ConversionStatus.SKIPPED, errors=[error_item]
+            )
 
         return conv_res
 
@@ -724,7 +752,12 @@ class DocumentConverter:
                         input=in_doc,
                         status=ConversionStatus.FAILURE,
                     )
-            finally:
-                self._unload_input_document(in_doc)
+        else:
+            _log.warning("Input document %s is not valid.", in_doc.file)
+            conv_res = ConversionResult(
+                input=in_doc,
+                status=ConversionStatus.FAILURE,
+                errors=build_invalid_input_errors(in_doc),
+            )
 
         return conv_res

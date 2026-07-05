@@ -15,6 +15,7 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Literal,
+    NamedTuple,
     Optional,
     Type,
     Union,
@@ -32,31 +33,22 @@ from docling_core.types.doc import (
     TableItem,
     TextItem,
 )
-from docling_core.types.doc.document import ListItem
-from docling_core.types.legacy_doc.base import (
-    BaseText,
-    Figure,
-    GlmTableCell,
-    PageDimensions,
-    PageReference,
-    Prov,
-    Ref,
-    Table as DsSchemaTable,
-    TableCell,
+from docling_core.utils.file import (
+    FileSizeLimitExceededError,
+    resolve_remote_filename,
+    resolve_source_to_stream,
 )
-from docling_core.types.legacy_doc.document import (
-    CCSDocumentDescription as DsDocumentDescription,
-    CCSFileInfoObject as DsFileInfoObject,
-    ExportedCCSDocument as DsDocument,
+from pydantic import (
+    AnyHttpUrl,
+    BaseModel,
+    Field,
+    PrivateAttr,
+    TypeAdapter,
+    ValidationError,
 )
-from docling_core.utils.file import resolve_source_to_stream
-from docling_core.utils.legacy import docling_document_to_legacy
-from pydantic import BaseModel, Field
-from typing_extensions import deprecated
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
-    DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
 from docling.datamodel.backend_options import (
@@ -67,15 +59,20 @@ from docling.datamodel.base_models import (
     AssembledUnit,
     ConfidenceReport,
     ConversionStatus,
+    DoclingComponentType,
     DocumentStream,
     ErrorItem,
+    FailureCategory,
     FormatToExtensions,
     FormatToMimeType,
+    HttpSource,
     InputFormat,
     MimeTypeToFormat,
     Page,
 )
 from docling.datamodel.settings import DocumentLimits
+from docling.exceptions import DocumentLoadError
+from docling.utils.pdf_outline import _PdfOutlineItem
 from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash, safe_version
 
@@ -108,6 +105,18 @@ layout_label_to_ds_type = {
 _EMPTY_DOCLING_DOC = DoclingDocument(name="dummy")
 
 
+class InputRejection(NamedTuple):
+    """Why an input document was flagged invalid, captured where it is known.
+
+    Set on ``InputDocument`` in ``__init__`` and ``create_invalid`` so the
+    converter can emit a categorized ``ErrorItem`` instead of an empty errors
+    list. Transient plumbing (a private attr), not part of the serialized model.
+    """
+
+    message: str
+    category: FailureCategory
+
+
 class InputDocument(BaseModel):
     """A document as an input of a Docling conversion."""
 
@@ -133,6 +142,8 @@ class InputDocument(BaseModel):
     page_count: int = Field(0, description="Number of pages in the input document.")
 
     _backend: AbstractDocumentBackend
+    # Reason this input was flagged invalid, if any (transient, not serialized).
+    _rejection: Optional[InputRejection] = PrivateAttr(default=None)
 
     def __init__(
         self,
@@ -157,7 +168,7 @@ class InputDocument(BaseModel):
                 self.file = path_or_stream
                 self.filesize = path_or_stream.stat().st_size
                 if self.filesize > self.limits.max_file_size:
-                    self.valid = False
+                    self._reject_filesize()
                 else:
                     self.document_hash = create_file_hash(path_or_stream)
                     self._init_doc(backend, path_or_stream)
@@ -171,7 +182,7 @@ class InputDocument(BaseModel):
                 self.filesize = path_or_stream.getbuffer().nbytes
 
                 if self.filesize > self.limits.max_file_size:
-                    self.valid = False
+                    self._reject_filesize()
                 else:
                     self.document_hash = create_file_hash(path_or_stream)
                     self._init_doc(backend, path_or_stream)
@@ -188,40 +199,158 @@ class InputDocument(BaseModel):
                     self.page_count = self._backend.page_count()
                     if not self.page_count <= self.limits.max_num_pages:
                         self.valid = False
+                        self._rejection = InputRejection(
+                            message=(
+                                f"Document has {self.page_count} pages, exceeding the "
+                                f"max_num_pages limit of {self.limits.max_num_pages}."
+                            ),
+                            category=FailureCategory.POLICY,
+                        )
                     elif self.page_count < self.limits.page_range[0]:
                         self.valid = False
+                        self._rejection = InputRejection(
+                            message=(
+                                f"Document has {self.page_count} pages, fewer than the "
+                                f"requested page_range start {self.limits.page_range[0]}."
+                            ),
+                            category=FailureCategory.POLICY,
+                        )
 
         except (FileNotFoundError, OSError) as e:
             self.valid = False
+            self._rejection = self._rejection or InputRejection(
+                message=f"File {self.file.name} not found or cannot be opened.",
+                category=FailureCategory.SOURCE_UNAVAILABLE,
+            )
             _log.exception(
                 f"File {self.file.name} not found or cannot be opened.", exc_info=e
             )
-            # raise
         except RuntimeError as e:
+            # Local RuntimeErrors (e.g. the "Unexpected type" guard) that aren't a
+            # backend bad-input signal; categorized UNKNOWN. (Backend parse
+            # failures are handled in _init_doc and don't reach here.)
             self.valid = False
+            self._rejection = self._rejection or InputRejection(
+                message=(
+                    "An unexpected error occurred while opening the document "
+                    f"{self.file.name}."
+                ),
+                category=FailureCategory.UNKNOWN,
+            )
             _log.exception(
                 "An unexpected error occurred while opening the document "
                 f"{self.file.name}",
                 exc_info=e,
             )
-            # raise
+
+    @classmethod
+    def create_invalid(
+        cls,
+        *,
+        filename: str,
+        format: InputFormat,
+        filesize: int,
+        limits: Optional[DocumentLimits] = None,
+        rejection: Optional[InputRejection] = None,
+    ) -> "InputDocument":
+        """Build an InputDocument flagged invalid without opening a backend.
+
+        Used when the input is rejected before a stream is available, e.g. an
+        HTTP download aborted for exceeding ``limits.max_file_size``. The normal
+        constructor derives ``filesize`` from the actual path/stream, which is
+        unavailable in that case, so the fields are set explicitly here.
+
+        ``__init__`` is overridden to load from a path/stream and open a backend,
+        so the validated constructor cannot be used to set bare field values;
+        ``model_construct`` is the supported way to do that. Only fields that
+        differ from their declared defaults are passed; the rest (e.g.
+        ``backend_options``, ``page_count``) fall back to those defaults.
+
+        ``rejection`` carries the (message, category) reason so the converter can
+        emit a categorized ``ErrorItem`` instead of an empty errors list.
+        """
+        doc = cls.model_construct(
+            file=PurePath(filename),
+            document_hash="",
+            valid=False,
+            limits=limits or DocumentLimits(),
+            format=format,
+            filesize=filesize,
+        )
+        doc._rejection = rejection
+        return doc
+
+    def _reject_filesize(self) -> None:
+        self.valid = False
+        self._rejection = InputRejection(
+            message=(
+                f"File size {self.filesize} exceeds the max_file_size limit of "
+                f"{self.limits.max_file_size} bytes."
+            ),
+            category=FailureCategory.POLICY,
+        )
 
     def _init_doc(
         self,
         backend: Type[AbstractDocumentBackend],
         path_or_stream: Union[BytesIO, Path],
     ) -> None:
-        if self.backend_options:
-            self._backend = backend(
-                self,
-                path_or_stream=path_or_stream,
-                options=self.backend_options,
+        try:
+            if self.backend_options:
+                self._backend = backend(
+                    self,
+                    path_or_stream=path_or_stream,
+                    options=self.backend_options,
+                )
+            else:
+                self._backend = backend(self, path_or_stream=path_or_stream)
+        except Exception as exc:
+            # A DocumentLoadError (bad input bytes) is recorded as a
+            # BACKEND_FAILURE rejection, like the is_valid() branch below.
+            # Anything else (missing dependency, bug) propagates so an internal
+            # defect is not mislabeled.
+            if not isinstance(exc, DocumentLoadError):
+                raise
+            self.valid = False
+            self._rejection = InputRejection(
+                message=str(exc) or "The document backend could not parse the input.",
+                category=FailureCategory.BACKEND_FAILURE,
             )
-        else:
-            self._backend = backend(self, path_or_stream=path_or_stream)
+            return
 
         if not self._backend.is_valid():
             self.valid = False
+            self._rejection = InputRejection(
+                message="The document backend could not parse the input.",
+                category=FailureCategory.BACKEND_FAILURE,
+            )
+
+
+def build_invalid_input_errors(in_doc: "InputDocument") -> list[ErrorItem]:
+    """Build the ErrorItem list for an invalid input document.
+
+    Surfaces the rejection reason captured during construction so the document
+    reaches the user as a categorized error instead of an empty errors list.
+    Falls back to a generic UNKNOWN entry if no reason was recorded.
+    """
+    rejection = in_doc._rejection
+    if rejection is None:
+        return [
+            ErrorItem(
+                component_type=DoclingComponentType.USER_INPUT,
+                module_name="",
+                error_message="Input document is not valid.",
+                category=FailureCategory.UNKNOWN,
+            )
+        ]
+    return [
+        ErrorItem(
+            component_type=DoclingComponentType.USER_INPUT,
+            module_name="",
+            error_message=rejection.message,
+            category=rejection.category,
+        )
+    ]
 
 
 class DocumentFormat(str, Enum):
@@ -254,10 +383,28 @@ class ConversionAssets(BaseModel):
 
     document: DoclingDocument = _EMPTY_DOCLING_DOC
 
-    @property
-    @deprecated("Use document instead.")
-    def legacy_document(self):
-        return docling_document_to_legacy(self.document)
+    def has_errors(self, category: Optional[FailureCategory] = None) -> bool:
+        """Whether any error was recorded.
+
+        Args:
+            category: If given, only errors of this category count; otherwise
+                any recorded error qualifies.
+        """
+        if category is None:
+            return bool(self.errors)
+        return any(e.category == category for e in self.errors)
+
+    def has_timeout_errors(self) -> bool:
+        """Whether any error has category TIMEOUT."""
+        return self.has_errors(FailureCategory.TIMEOUT)
+
+    def has_inference_errors(self) -> bool:
+        """Whether any error has category INFERENCE_FAILURE."""
+        return self.has_errors(FailureCategory.INFERENCE_FAILURE)
+
+    def has_parse_errors(self) -> bool:
+        """Whether any error has category BACKEND_FAILURE (backend/parse failure)."""
+        return self.has_errors(FailureCategory.BACKEND_FAILURE)
 
     def save(
         self,
@@ -419,6 +566,11 @@ class ConversionResult(ConversionAssets):
     input: InputDocument
     assembled: AssembledUnit = AssembledUnit()
 
+    # PDF bookmark/ToC outline, surfaced from the backend for the heading-hierarchy stage.
+    # Private transient plumbing: a Pydantic private attr (not a model field, never serialized);
+    # the heading stage resets it to None once consumed.
+    _pdf_outline: Optional[list[_PdfOutlineItem]] = PrivateAttr(default=None)
+
 
 class _DummyBackend(AbstractDocumentBackend):
     def __init__(self, *args, **kwargs):
@@ -440,7 +592,7 @@ class _DummyBackend(AbstractDocumentBackend):
 
 
 class _DocumentConversionInput(BaseModel):
-    path_or_stream_iterator: Iterable[Union[Path, str, DocumentStream]]
+    path_or_stream_iterator: Iterable[Union[Path, str, DocumentStream, HttpSource]]
     headers: Optional[dict[str, str]] = None
     limits: Optional[DocumentLimits] = DocumentLimits()
 
@@ -449,11 +601,59 @@ class _DocumentConversionInput(BaseModel):
         format_options: Mapping[InputFormat, "BaseFormatOption"],
     ) -> Iterable[InputDocument]:
         for item in self.path_or_stream_iterator:
-            obj = (
-                resolve_source_to_stream(item, self.headers)
-                if isinstance(item, str)
-                else item
-            )
+            # `backend_input` is what backend_options_for_input() sees: the raw
+            # URL string (not the HttpSource model) so HTML source_uri resolution
+            # keeps working unchanged.
+            backend_input: Union[Path, str, DocumentStream]
+            if isinstance(item, (str, HttpSource)):
+                if isinstance(item, HttpSource):
+                    source_uri = str(item.url)
+                    # Per-source headers override the batch-wide headers; the
+                    # batch dict stays the base so the `headers` arg keeps working.
+                    req_headers = {**(self.headers or {}), **item.headers}
+                else:
+                    source_uri = item
+                    req_headers = self.headers
+                backend_input = source_uri
+                try:
+                    obj = resolve_source_to_stream(
+                        source_uri,
+                        req_headers,
+                        max_file_size=self.limits.max_file_size,
+                    )
+                except FileSizeLimitExceededError as exc:
+                    yield self._build_invalid_input_document(
+                        name=exc.filename,
+                        format_options=format_options,
+                        file_size=exc.size,
+                        rejection=InputRejection(
+                            message=(
+                                f"File size {exc.size} exceeds the max_file_size "
+                                f"limit of {self.limits.max_file_size} bytes."
+                            ),
+                            category=FailureCategory.POLICY,
+                        ),
+                    )
+                    continue
+                except (OSError, ValueError) as exc:
+                    # A source that cannot be fetched or resolved -- unreachable
+                    # URL, HTTP error status, connection/timeout failure, unsafe or
+                    # malformed URL, missing local file, ... -- must not abort the
+                    # whole batch. Emit an invalid InputDocument so it surfaces as a
+                    # document-level FAILURE that still honors raises_on_error
+                    # (i.e. aborts only when abort_on_error is set). requests'
+                    # RequestException subclasses derive from OSError, so this also
+                    # covers all HTTP fetch errors without importing requests here.
+                    _log.error("Failed to resolve input source %r: %s", item, exc)
+                    yield self._build_invalid_input_document(
+                        name=self._filename_from_source(source_uri),
+                        format_options=format_options,
+                        rejection=self._classify_source_error(exc),
+                    )
+                    continue
+            else:
+                obj = item
+                backend_input = item
             format = self._guess_format(obj)
             backend: Type[AbstractDocumentBackend]
             backend_options: Optional[BackendOptions] = None
@@ -466,7 +666,7 @@ class _DocumentConversionInput(BaseModel):
             else:
                 options = format_options[format]
                 backend = options.backend
-                backend_options = options.backend_options_for_input(item)
+                backend_options = options.backend_options_for_input(backend_input)
 
             path_or_stream: Union[BytesIO, Path]
             if isinstance(obj, Path):
@@ -484,6 +684,59 @@ class _DocumentConversionInput(BaseModel):
                 backend=backend,
                 backend_options=backend_options,
             )
+
+    def _build_invalid_input_document(
+        self,
+        name: str,
+        format_options: Mapping[InputFormat, "BaseFormatOption"],
+        file_size: int = 0,
+        rejection: Optional[InputRejection] = None,
+    ) -> InputDocument:
+        guessed_format = self._guess_format(DocumentStream(name=name, stream=BytesIO()))
+        if guessed_format is None:
+            guessed_format = next(iter(format_options.keys()))
+
+        return InputDocument.create_invalid(
+            filename=name,
+            format=guessed_format,
+            filesize=file_size,
+            limits=self.limits,
+            rejection=rejection,
+        )
+
+    @staticmethod
+    def _classify_source_error(exc: BaseException) -> InputRejection:
+        """Map a source-resolution failure to an InputRejection.
+
+        Splits HTTP status rejections the same way as the jobkit task path
+        (``_classify_http_status``): policy status codes map to POLICY, every
+        other status or transport failure maps to SOURCE_UNAVAILABLE.
+        ``response.status_code`` is read by duck-typing to avoid a ``requests``
+        import.
+        """
+        response = getattr(exc, "response", None)
+        status_code = getattr(response, "status_code", None)
+        if status_code in {401, 403, 404, 413, 415, 422}:
+            return InputRejection(message=str(exc), category=FailureCategory.POLICY)
+        return InputRejection(
+            message=str(exc) or "Source document could not be reached.",
+            category=FailureCategory.SOURCE_UNAVAILABLE,
+        )
+
+    @staticmethod
+    def _filename_from_source(source: str) -> str:
+        """Best-effort filename for a source that could not be resolved.
+
+        Reuses docling-core's ``resolve_remote_filename`` for URLs (the same
+        helper ``resolve_source_to_stream`` uses to name successful fetches) so a
+        failed source is labeled consistently; the URL path basename is used with
+        the query string dropped. Non-URL sources fall back to the path basename.
+        """
+        try:
+            http_url = TypeAdapter(AnyHttpUrl).validate_python(source)
+        except ValidationError:
+            return PurePath(source).name or source
+        return resolve_remote_filename(http_url=http_url, response_headers={})
 
     def _guess_format(self, obj: Union[Path, DocumentStream]) -> Optional[InputFormat]:
         content = b""  # empty binary blob
@@ -582,13 +835,17 @@ class _DocumentConversionInput(BaseModel):
         try:
             with zipfile.ZipFile(source) as zf:
                 names = set(zf.namelist())
-            mime_root = "application/vnd.openxmlformats-officedocument"
-            if "word/document.xml" in names:
-                return mime_root + ".wordprocessingml.document"
-            elif "xl/workbook.xml" in names:
-                return mime_root + ".spreadsheetml.sheet"
-            elif "ppt/presentation.xml" in names:
-                return mime_root + ".presentationml.presentation"
+                mime_root = "application/vnd.openxmlformats-officedocument"
+                if "word/document.xml" in names:
+                    return mime_root + ".wordprocessingml.document"
+                elif "xl/workbook.xml" in names:
+                    return mime_root + ".spreadsheetml.sheet"
+                elif "ppt/presentation.xml" in names:
+                    return mime_root + ".presentationml.presentation"
+                if "mimetype" in names:
+                    odf_mime = zf.read("mimetype").decode("ascii", errors="ignore")
+                    if odf_mime.startswith("application/vnd.oasis.opendocument."):
+                        return odf_mime.strip()
         except (zipfile.BadZipFile, OSError):
             pass
         finally:
@@ -638,7 +895,9 @@ class _DocumentConversionInput(BaseModel):
 
         elif mime == "text/plain":
             content_str = content.decode("utf-8", errors="replace")
-            if InputFormat.XML_USPTO in formats and content_str.startswith("PATN\r\n"):
+            if InputFormat.XML_USPTO in formats and content_str.startswith(
+                ("PATN\r\n", "PATN\n")
+            ):
                 input_format = InputFormat.XML_USPTO
             elif (
                 InputFormat.MD in formats
@@ -659,13 +918,9 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.ASCIIDOC][0]
         elif ext in FormatToExtensions[InputFormat.HTML]:
             mime = FormatToMimeType[InputFormat.HTML][0]
-        elif (
-            ext in FormatToExtensions[InputFormat.XML_USPTO]
-            and ext in FormatToExtensions[InputFormat.MD]
-        ):
-            # "txt" appears in both XML_USPTO and MD extension lists.  Leave mime=None
-            # so the content-probing chain (_detect_html_xhtml, _detect_csv, then the
-            # "text/plain" fallback + _guess_from_content) can pick the right format.
+        elif ext in FormatToExtensions[InputFormat.XML_USPTO]:
+            # USPTO text files share the "txt" extension with Markdown. Leave mime=None
+            # so content probing can distinguish PATN text from plain Markdown text.
             pass
         elif ext in FormatToExtensions[InputFormat.MD]:
             mime = FormatToMimeType[InputFormat.MD][0]
@@ -681,6 +936,12 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.PPTX][0]
         elif ext in FormatToExtensions[InputFormat.XLSX]:
             mime = FormatToMimeType[InputFormat.XLSX][0]
+        elif ext in FormatToExtensions[InputFormat.ODT]:
+            mime = FormatToMimeType[InputFormat.ODT][0]
+        elif ext in FormatToExtensions[InputFormat.ODS]:
+            mime = FormatToMimeType[InputFormat.ODS][0]
+        elif ext in FormatToExtensions[InputFormat.ODP]:
+            mime = FormatToMimeType[InputFormat.ODP][0]
         elif ext in FormatToExtensions[InputFormat.VTT]:
             mime = FormatToMimeType[InputFormat.VTT][0]
         elif ext in FormatToExtensions[InputFormat.LATEX]:

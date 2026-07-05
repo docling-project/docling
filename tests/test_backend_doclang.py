@@ -19,8 +19,8 @@ DOCLANG_XML = """<doclang>
 """
 
 ROUNDTRIP_GT_PATHS = [
-    Path("tests/data/groundtruth/docling_v2/deepseek_simple.md.json"),
-    Path("tests/data/groundtruth/docling_v2/csv-semicolon.csv.json"),
+    Path("tests/data/md_deepseek/groundtruth/deepseek_simple.md.json"),
+    Path("tests/data/csv/groundtruth/csv-semicolon.csv.json"),
 ]
 
 

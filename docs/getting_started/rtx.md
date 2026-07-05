@@ -49,7 +49,14 @@ Follow the official installation guide at [NVIDIA cuDNN Downloads](https://devel
 
 ### 4. Install PyTorch with CUDA Support
 
-To use GPU acceleration with Docling, you need to install PyTorch with CUDA support using the special `extra-index-url`:
+To use GPU acceleration with Docling, you need to install PyTorch with CUDA support using the special `extra-index-url`.
+
+**NOTE** if you have already installed Docling and CUDA is not available, it is likely the CPU versions of PyTorch are installed, the existing PyTorch modules need to be removed first:
+
+```bash
+# Uninstall CPU specific modules before CUDA ones
+pip uninstall torch torchaudio -y
+```
 
 ```bash
 # For CUDA 12.8 (current default for PyTorch)

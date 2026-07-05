@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 import logging
 import re
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 
-import mailparser
 from docling_core.types.doc import DocItemLabel, DoclingDocument, DocumentOrigin
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -12,12 +13,38 @@ from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import DocumentLoadError
+
+# mail-parser is only installed by the `format-email` extra, but
+# DocumentConverter imports every backend eagerly. Importing it at module load
+# would therefore break `import docling` on installs that omit the extra (the
+# slim packages in particular). Guard the import like the opendocument and xbrl
+# backends do, and surface the failure only when an email is actually parsed.
+# See https://github.com/docling-project/docling/issues/3613.
+_MAILPARSER_AVAILABLE: bool = False
+_MAILPARSER_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    import mailparser
+
+    _MAILPARSER_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _MAILPARSER_IMPORT_ERROR = e
 
 _log = logging.getLogger(__name__)
+
+_INSTALL_HINT = (
+    "The 'mail-parser' package is required to process email files. "
+    "Install it with `pip install 'docling[format-email]'`."
+)
 
 
 class EmailDocumentBackend(DeclarativeDocumentBackend):
     def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path):
+        # Raised before super().__init__() so a missing optional dependency
+        # gives an actionable message rather than a NameError when mailparser
+        # is dereferenced below.
+        if not _MAILPARSER_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _MAILPARSER_IMPORT_ERROR
         super().__init__(in_doc, path_or_stream)
 
         self.valid = False
@@ -33,7 +60,7 @@ class EmailDocumentBackend(DeclarativeDocumentBackend):
 
             self.valid = self.mail is not None
         except Exception as exc:
-            raise RuntimeError(
+            raise DocumentLoadError(
                 f"Could not initialize email backend for file with hash {self.document_hash}."
             ) from exc
 

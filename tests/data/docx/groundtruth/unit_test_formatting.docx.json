@@ -1,0 +1,1017 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.10.0",
+  "name": "unit_test_formatting",
+  "origin": {
+    "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "binary_hash": 4350524979083842953,
+    "filename": "unit_test_formatting.docx"
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "children": [],
+    "content_layer": "furniture",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "children": [
+      {
+        "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/texts/1"
+      },
+      {
+        "$ref": "#/texts/2"
+      },
+      {
+        "$ref": "#/texts/3"
+      },
+      {
+        "$ref": "#/texts/4"
+      },
+      {
+        "$ref": "#/groups/0"
+      },
+      {
+        "$ref": "#/texts/12"
+      },
+      {
+        "$ref": "#/groups/1"
+      },
+      {
+        "$ref": "#/texts/25"
+      },
+      {
+        "$ref": "#/texts/26"
+      },
+      {
+        "$ref": "#/texts/27"
+      },
+      {
+        "$ref": "#/texts/28"
+      },
+      {
+        "$ref": "#/groups/5"
+      },
+      {
+        "$ref": "#/groups/6"
+      },
+      {
+        "$ref": "#/groups/7"
+      },
+      {
+        "$ref": "#/groups/9"
+      }
+    ],
+    "content_layer": "body",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [
+    {
+      "self_ref": "#/groups/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/5"
+        },
+        {
+          "$ref": "#/texts/6"
+        },
+        {
+          "$ref": "#/texts/7"
+        },
+        {
+          "$ref": "#/texts/8"
+        },
+        {
+          "$ref": "#/texts/9"
+        },
+        {
+          "$ref": "#/texts/10"
+        },
+        {
+          "$ref": "#/texts/11"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/13"
+        },
+        {
+          "$ref": "#/texts/14"
+        },
+        {
+          "$ref": "#/texts/15"
+        },
+        {
+          "$ref": "#/texts/16"
+        },
+        {
+          "$ref": "#/groups/3"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/2",
+      "parent": {
+        "$ref": "#/texts/16"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/17"
+        },
+        {
+          "$ref": "#/texts/18"
+        },
+        {
+          "$ref": "#/texts/19"
+        },
+        {
+          "$ref": "#/texts/20"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/3",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/21"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/4",
+      "parent": {
+        "$ref": "#/texts/21"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/22"
+        },
+        {
+          "$ref": "#/texts/23"
+        },
+        {
+          "$ref": "#/texts/24"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/5",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/29"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "page header",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/6",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/30"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "page footer",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/7",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/8"
+        },
+        {
+          "$ref": "#/texts/34"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "page header",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/8",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/31"
+        },
+        {
+          "$ref": "#/texts/32"
+        },
+        {
+          "$ref": "#/texts/33"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/9",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/35"
+        },
+        {
+          "$ref": "#/texts/36"
+        },
+        {
+          "$ref": "#/pictures/0"
+        },
+        {
+          "$ref": "#/texts/37"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "page footer",
+      "label": "section"
+    }
+  ],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "italic",
+      "text": "italic",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "bold",
+      "text": "bold",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "underline",
+      "text": "underline",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": true,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "hyperlink",
+      "text": "hyperlink",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "hyperlink": "https://github.com/DS4SD/docling"
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "italic and bold hyperlink",
+      "text": "italic and bold hyperlink",
+      "formatting": {
+        "bold": true,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "hyperlink": "https://github.com/DS4SD/docling"
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Normal",
+      "text": "Normal",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "italic",
+      "text": "italic",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "bold",
+      "text": "bold",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "underline",
+      "text": "underline",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": true,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "and",
+      "text": "and",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "hyperlink",
+      "text": "hyperlink",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "hyperlink": "https://github.com/DS4SD/docling"
+    },
+    {
+      "self_ref": "#/texts/11",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "on the same line",
+      "text": "on the same line",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/12",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/13",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Italic bullet 1",
+      "text": "Italic bullet 1",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/14",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Bold bullet 2",
+      "text": "Bold bullet 2",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/15",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Underline bullet 3",
+      "text": "Underline bullet 3",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": true,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/16",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/2"
+        }
+      ],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "",
+      "text": "",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/17",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Some",
+      "text": "Some",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/18",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "italic",
+      "text": "italic",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/19",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "bold",
+      "text": "bold",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/20",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "underline",
+      "text": "underline",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": true,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/21",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/4"
+        }
+      ],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "",
+      "text": "",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/22",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Nested",
+      "text": "Nested",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/23",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "italic",
+      "text": "italic",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/24",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "bold",
+      "text": "bold",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/25",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/26",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The second page of the document with same header and footer",
+      "text": "The second page of the document with same header and footer",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/27",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/28",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The third page of the document with different header and footer",
+      "text": "The third page of the document with different header and footer",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/29",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "This is a header",
+      "text": "This is a header",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/30",
+      "parent": {
+        "$ref": "#/groups/6"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "This is a footer",
+      "text": "This is a footer",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/31",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "Another",
+      "text": "Another",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/32",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "header",
+      "text": "header",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/33",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "in bold",
+      "text": "in bold",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/34",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "With 2 paragraphs",
+      "text": "With 2 paragraphs",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/35",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "Another footer",
+      "text": "Another footer",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/36",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "With",
+      "text": "With",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/37",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "3 paragraphs and a picture",
+      "text": "3 paragraphs and a picture",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    }
+  ],
+  "pictures": [
+    {
+      "self_ref": "#/pictures/0",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "picture",
+      "prov": [],
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "image": {
+        "mimetype": "image/png",
+        "dpi": 72,
+        "size": {
+          "width": 48.0,
+          "height": 48.0
+        },
+        "uri": "data:image/png;base64,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"
+      },
+      "annotations": []
+    }
+  ],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {}
+}
