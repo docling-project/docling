@@ -115,6 +115,11 @@ class InputRejection(NamedTuple):
 
     message: str
     category: FailureCategory
+    # The exception that caused the rejection, when one exists. Lets the
+    # converter re-raise ``ConversionError`` with ``from`` so applications can
+    # classify failures via ``__cause__`` (e.g. an encrypted PDF surfaces the
+    # underlying ``PdfiumError``). See issue #1920.
+    original_error: Optional[BaseException] = None
 
 
 class InputDocument(BaseModel):
@@ -221,6 +226,7 @@ class InputDocument(BaseModel):
             self._rejection = self._rejection or InputRejection(
                 message=f"File {self.file.name} not found or cannot be opened.",
                 category=FailureCategory.SOURCE_UNAVAILABLE,
+                original_error=e,
             )
             _log.exception(
                 f"File {self.file.name} not found or cannot be opened.", exc_info=e
@@ -236,6 +242,7 @@ class InputDocument(BaseModel):
                     f"{self.file.name}."
                 ),
                 category=FailureCategory.UNKNOWN,
+                original_error=e,
             )
             _log.exception(
                 "An unexpected error occurred while opening the document "
@@ -315,6 +322,7 @@ class InputDocument(BaseModel):
             self._rejection = InputRejection(
                 message=str(exc) or "The document backend could not parse the input.",
                 category=FailureCategory.BACKEND_FAILURE,
+                original_error=exc,
             )
             return
 
@@ -324,6 +332,20 @@ class InputDocument(BaseModel):
                 message="The document backend could not parse the input.",
                 category=FailureCategory.BACKEND_FAILURE,
             )
+
+
+def get_input_rejection_cause(in_doc: "InputDocument") -> Optional[BaseException]:
+    """Return the exception behind an invalid input document, if one exists.
+
+    Companion to ``build_invalid_input_errors``: lets the converter raise
+    ``ConversionError`` with ``from`` so the original backend exception (e.g.
+    ``PdfiumError`` for an encrypted PDF) stays reachable via ``__cause__``
+    for programmatic error classification. See issue #1920.
+    """
+    rejection = in_doc._rejection
+    if rejection is None:
+        return None
+    return rejection.original_error
 
 
 def build_invalid_input_errors(in_doc: "InputDocument") -> list[ErrorItem]:
