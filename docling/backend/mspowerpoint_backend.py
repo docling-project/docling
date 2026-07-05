@@ -587,7 +587,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         # It's a title
                         doc_label = DocItemLabel.TITLE
                     elif placeholder_type == PP_PLACEHOLDER.SUBTITLE:
-                        DocItemLabel.SECTION_HEADER
+                        doc_label = DocItemLabel.SECTION_HEADER
 
                 # output accumulated inline text:
                 doc.add_text(
