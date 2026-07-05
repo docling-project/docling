@@ -23,15 +23,15 @@ from docling_core.types.doc import (
     GroupItem,
     GroupLabel,
     ImageRef,
-    PictureClassificationLabel,        
-    PictureClassificationMetaField,    
-    PictureClassificationPrediction,   
-    PictureMeta,                       
+    PictureClassificationLabel,
+    PictureClassificationMetaField,
+    PictureClassificationPrediction,
+    PictureMeta,
     ProvenanceItem,
     Size,
     TableCell,
     TableData,
-    TabularChartMetaField,             
+    TabularChartMetaField,
 )
 from lxml import etree
 from openpyxl import load_workbook
@@ -42,9 +42,9 @@ from openpyxl.drawing.spreadsheet_drawing import (
     SpreadsheetDrawing,
     TwoCellAnchor,
 )
-from openpyxl.utils.cell import range_boundaries
 from openpyxl.packaging.relationship import get_dependents, get_rels_path
 from openpyxl.styles import PatternFill
+from openpyxl.utils.cell import range_boundaries
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.xml.constants import IMAGE_NS
 from PIL import Image as PILImage, UnidentifiedImageError
@@ -79,9 +79,7 @@ _SAFE_XML_PARSER: Final = etree.XMLParser(
 # Maps an openpyxl chart object's ``tagname`` (the DrawingML element name, e.g.
 # "barChart") to the docling picture-classification label we tag the emitted
 # PictureItem with. Chart types not listed fall back to OTHER_CHART.
-_CHART_TAGNAME_TO_CLASSIFICATION: Final[
-    dict[str, PictureClassificationLabel]
-] = {
+_CHART_TAGNAME_TO_CLASSIFICATION: Final[dict[str, PictureClassificationLabel]] = {
     "barChart": PictureClassificationLabel.BAR_CHART,
     "bar3DChart": PictureClassificationLabel.BAR_CHART,
     "lineChart": PictureClassificationLabel.LINE_CHART,
@@ -503,8 +501,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             doc = self._find_tables_in_sheet(doc, sheet, page_no)
             doc = self._find_images_in_sheet(doc, sheet, page_no)
         # Charts can be live on both Worksheet and Chartsheet objects
-        if isinstance(sheet, Worksheet) or isinstance(sheet,Chartsheet):
-            doc = self._find_chart_in_sheet(doc,sheet,page_no)
+        if isinstance(sheet, Worksheet) or isinstance(sheet, Chartsheet):
+            doc = self._find_chart_in_sheet(doc, sheet, page_no)
             self._sort_sheet_children_by_position(doc, page_no)
 
         return doc
@@ -1230,7 +1228,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         return doc
 
-    def _find_chart_in_sheet(self, doc: DoclingDocument,sheet: Worksheet | Chartsheet, page_no : int) -> DoclingDocument:
+    def _find_chart_in_sheet(
+        self, doc: DoclingDocument, sheet: Worksheet | Chartsheet, page_no: int
+    ) -> DoclingDocument:
         """Find native charts on a sheet and attach them as classified pictures.
 
         openpyxl parses each embedded chart (bar, line, pie, scatter, ...) into
@@ -1250,8 +1250,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         # Respect the opt-in flag
         if not (
-            isinstance(self.options,MsExcelBackendOptions) and
-            self.options.do_chart_parsing
+            isinstance(self.options, MsExcelBackendOptions)
+            and self.options.do_chart_parsing
         ):
             return doc
         content_layer = self._get_sheet_content_layer(sheet)
@@ -1302,9 +1302,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 picture.meta = PictureMeta(
                     classification=PictureClassificationMetaField(
                         predictions=[
-                            PictureClassificationPrediction(
-                                class_name=classification
-                            )
+                            PictureClassificationPrediction(class_name=classification)
                         ]
                     ),
                     tabular_chart=(
@@ -1317,7 +1315,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 _log.error("could not extract a chart from the excel sheet")
 
         return doc
-        
+
     @staticmethod
     def _chart_title_text(chart: Any) -> str | None:
         """Extract the plain-text title of an openpyxl chart, if any.
@@ -1340,19 +1338,19 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         # check again cause some code paths set a plan string title
         if isinstance(title, str):
             return title or None
-        tx = title.tx # the text holder has .rich(formatted) or .strRef
+        tx = title.tx  # the text holder has .rich(formatted) or .strRef
         if tx is None or tx.rich is None:
             return None
-        
+
         runs = []
-        for paragraph in tx.rich.p: # each paragraph in the title
-            for run in paragraph.r or []: # each styled run in the paragraph
-                if run.t: # The run's literal text
+        for paragraph in tx.rich.p:  # each paragraph in the title
+            for run in paragraph.r or []:  # each styled run in the paragraph
+                if run.t:  # The run's literal text
                     runs.append(run.t)
         text = "".join(runs).strip()
         return text or None
 
-    def _chart_to_table_data(self,chart: Any) -> TableData | None:
+    def _chart_to_table_data(self, chart: Any) -> TableData | None:
         """Reconstruct a chart's underlying data grid as a TableData.
 
         Layout produced (categories down the first column, one column per series):
@@ -1377,14 +1375,14 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         # Categories: the shared x-axis labels such as years,names,... Taken from the first
         # series that has them; scatter charts keep them in xVal
-        categories : list[str] = []
+        categories: list[str] = []
         for series in series_list:
             cat_ref = self._ref_formula(series.cat) or self._ref_formula(series.xVal)
             if cat_ref:
                 categories = self._resolve_reference(cat_ref)
                 break
-        
-        columns: list[tuple[str,list[str]]] = []
+
+        columns: list[tuple[str, list[str]]] = []
 
         for series in series_list:
             # Value_ref: reference to this series numbers (y-values)
@@ -1402,37 +1400,38 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 name = ""
             columns.append((name, values))
         # num_data_rows: the tallest column decides how many data rows we emit.
-        num_data_rows = max(
-            [len(categories)] + [len(values) for _, values in columns]
-        )
+        num_data_rows = max([len(categories)] + [len(values) for _, values in columns])
         if num_data_rows == 0:
             return None
-        
-        num_rows = num_data_rows + 1 # Add 1 for the header row
+
+        num_rows = num_data_rows + 1  # Add 1 for the header row
         num_cols = 1 + len(columns)
-        cells : list[TableCell] = []
+        cells: list[TableCell] = []
 
         # Header row (row 0): Blank category header + series name
         header_labels = [""] + [name for name, _ in columns]
         for col_idx, label in enumerate(header_labels):
             cells.append(
                 TableCell(
-                    text = label,
-                    row_span= 1,
-                    col_span= 1,
-                    start_row_offset_idx= 0,
-                    end_row_offset_idx= 1,
-                    start_col_offset_idx= col_idx,
-                    end_col_offset_idx= col_idx + 1,
-                    column_header= True,
-                    row_header= False,
+                    text=label,
+                    row_span=1,
+                    col_span=1,
+                    start_row_offset_idx=0,
+                    end_row_offset_idx=1,
+                    start_col_offset_idx=col_idx,
+                    end_col_offset_idx=col_idx + 1,
+                    column_header=True,
+                    row_header=False,
                 )
             )
         # Data rows
         for data_row in range(num_data_rows):
             row_idx = data_row + 1
             category = categories[data_row] if data_row < len(categories) else ""
-            row_texts = [category] + [(values[data_row] if data_row < len(values) else "") for _, values in columns]
+            row_texts = [category] + [
+                (values[data_row] if data_row < len(values) else "")
+                for _, values in columns
+            ]
             for col_idx, text in enumerate(row_texts):
                 cells.append(
                     TableCell(
@@ -1447,7 +1446,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                         row_header=(col_idx == 0),  # first col holds category labels
                     )
                 )
-        
+
         return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
 
     @staticmethod
@@ -1472,7 +1471,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         num_ref = getattr(data_source, "numRef", None)
         if num_ref is not None and num_ref.f:
             return num_ref.f
-        str_ref = getattr(data_source,"strRef",None)
+        str_ref = getattr(data_source, "strRef", None)
         if str_ref is not None and str_ref.f:
             return str_ref.f
         return None
@@ -1513,7 +1512,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         if sheet_name not in self.workbook.sheetnames:
             _log.debug("Chart references unknown sheet %r", sheet_name)
             return []
-        
+
         target_sheet = self.workbook[sheet_name]
 
         try:
@@ -1522,17 +1521,14 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         except Exception:
             _log.debug("Could not parse chart range %r", cell_range)
             return []
-        
+
         values = []
         for row in range(min_row, max_row + 1):
             for col in range(min_col, max_col + 1):
-                value = target_sheet.cell(row = row, column=col).value
+                value = target_sheet.cell(row=row, column=col).value
                 values.append("" if value is None else str(value))
-        
+
         return values
-
-
-
 
     @staticmethod
     def _find_page_size(

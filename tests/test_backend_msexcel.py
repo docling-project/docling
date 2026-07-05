@@ -10,6 +10,7 @@ from docling_core.transforms.serializer.markdown_excel import (
 from docling_core.types.doc import (
     ContentLayer,
     GroupLabel,
+    PictureClassificationLabel,
     PictureItem,
     TableItem,
     TextItem,
@@ -278,18 +279,25 @@ def test_page_range_with_sheet_names() -> None:
 
 
 def test_chartsheet(documents) -> None:
-    """Test the conversion of Chartsheets.
+    """Test that chart parsing is opt-in and off by default.
+
+    ``do_chart_parsing`` defaults to False, so the default converter does not
+    extract the "Duck Chart" chart: no picture is produced and the chart sheet's
+    page keeps its empty extent. The opt-in path is covered by
+    ``test_chart_parsing_enabled``.
 
     Args:
         documents: The paths and converted documents.
     """
     doc = next(item for path, item in documents if path.stem == "xlsx_03_chartsheet")
-    assert len(doc.pages) == 2
 
-    # Chartseet content is for now ignored
+    assert len(doc.pages) == 2
     assert doc.groups[1].name == "Duck Chart"
-    assert doc.pages[2].size.height == 0
+
+    # Chart parsing is disabled by default, so the chart is ignored.
+    assert len(list(doc.pictures)) == 0
     assert doc.pages[2].size.width == 0
+    assert doc.pages[2].size.height == 0
 
 
 def test_chartsheet_data_values(documents) -> None:
@@ -336,6 +344,52 @@ def test_chartsheet_data_values(documents) -> None:
             break
 
     assert found_310, "Should find the value 310 (total ducks for 2024) in the document"
+
+
+def test_chart_parsing_enabled() -> None:
+    """Test that do_chart_parsing=True turns a native chart into a picture.
+
+    The "Duck Chart" bar chart references the table on the "Duck Observations"
+    sheet. With chart parsing enabled it should be emitted as a single bar-chart
+    PictureItem, captioned with the chart title, and carrying the chart's
+    underlying data reconstructed as a table.
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_03_chartsheet")
+
+    options = MsExcelBackendOptions(do_chart_parsing=True)
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+    doc = converter.convert(path).document
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1, f"Expected one chart picture, got {len(pictures)}"
+
+    picture = pictures[0]
+    assert picture.prov[0].page_no == 2
+    assert (
+        picture.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.BAR_CHART
+    )
+    assert picture.caption_text(doc) == "Wild Duck Observations by Year"
+
+    # The two series and their shared categories are rebuilt as a table:
+    #   | <blank> | Freshwater Ducks | Saltwater Ducks |
+    #   | 2019    | 120              | 80              |
+    #   ...
+    #   | 2024    | 180              | 130             |
+    chart_data = picture.meta.tabular_chart.chart_data
+    assert (chart_data.num_rows, chart_data.num_cols) == (7, 3)
+    grid = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+        for cell in chart_data.table_cells
+    }
+    assert grid[(0, 1)] == "Freshwater Ducks"
+    assert grid[(0, 2)] == "Saltwater Ducks"
+    assert grid[(6, 0)] == "2024"
+    assert grid[(6, 1)] == "180"
+    assert grid[(6, 2)] == "130"
 
 
 def test_inflated_rows_handling(documents) -> None:
