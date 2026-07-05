@@ -1889,7 +1889,7 @@ requires-dist = [
     { name = "pylatexenc", marker = "extra == 'format-latex'", specifier = ">=2.10,<3.0" },
     { name = "pypdfium2", marker = "extra == 'format-pdf-docling'", specifier = ">=4.30.0,!=4.30.1,<6.0.0" },
     { name = "pypdfium2", marker = "extra == 'format-pdf-pypdfium2'", specifier = ">=4.30.0,!=4.30.1,<6.0.0" },
-    { name = "python-docx", marker = "extra == 'format-docx'", specifier = ">=1.1.2,<2.0.0" },
+    { name = "python-docx", marker = "extra == 'format-docx'", specifier = ">=1.2.0,<2.0.0" },
     { name = "python-dotenv", marker = "extra == 'cli'", specifier = "~=1.0" },
     { name = "python-dotenv", marker = "extra == 'service-client'", specifier = "~=1.0" },
     { name = "python-pptx", marker = "extra == 'format-pptx'", specifier = ">=1.0.2,<2.0.0" },

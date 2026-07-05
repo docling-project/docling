@@ -106,7 +106,7 @@ format-pdf = [
 
 # --- Office Formats (office = docx + pptx + xlsx) ---
 format-docx = [
-  'python-docx>=1.1.2,<2.0.0',
+  'python-docx>=1.2.0,<2.0.0',
 ]
 
 format-pptx = [
