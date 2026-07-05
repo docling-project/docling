@@ -1,39 +1,23 @@
 {
-  "num_vectors": 2,
+  "num_vectors": 1,
   "vectors": [
     {
-      "text": "문서 제목: HTML 파싱 테스트\n\n이 문서는 HTML 백엔드의 기본 파싱 기능을 검증하기 위한 샘플입니다. 다양한 HTML 요소를 포함합니다.\n\n1. 텍스트 포맷팅\n\n일반 텍스트 단락입니다. 문장 안에 굵은 텍스트와 기울임 텍스트를 포함합니다.\n\nbold 태그와 italic 태그도 지원합니다. 밑줄과 취소선도 처리됩니다.\n\n인라인 코드: print(\"Hello, World!\") 형태로 표시됩니다.\n\n위 첨자: H2O, 아래 첨자: E=mc2\n\n하이퍼링크: 예시 링크입니다.\n\n2. 헤딩 계층 구조\n\n2.1 소제목 수준 3\n\n헤딩 3 아래의 내용입니다. HTML 백엔드는 h1부터 h6까지 계층 구조를 인식합니다.\n\n2.1.1 소제목 수준 4\n\n헤딩 4 아래의 내용입니다. 문서의 계층 구조가 올바르게 파싱되어야 합니다.\n\n소제목 수준 5\n\n헤딩 5 아래의 내용입니다.\n\n소제목 수준 6\n\n헤딩 6 아래의 내용으로, 가장 깊은 헤딩 수준입니다.\n\n3. 코드 블록\n\npre 태그를 이용한 코드 블록 예시입니다:\n\ndef parse_html(content: str) -> dict:\n    \"\"\"HTML 문서를 파싱하여 구조화된 데이터로 반환합니다.\"\"\"\n    soup = BeautifulSoup(content, \"html.parser\")\n    return {\n        \"title\": soup.title.string if soup.title else \"\",\n        \"headings\": [h.get_text() for h in soup.find_all([\"h1\", \"h2\", \"h3\"])],\n    }\n\n4. 인용문\n\n이것은 인용문입니다. blockquote 태그 안의 텍스트는 별도의 블록으로 처리됩니다.\n\n5. 단락 구조\n\n첫 번째 단락입니다. 단락은 p 태그로 구분됩니다. 각 단락은 독립적인 텍스트 블록으로 파싱되어야 합니다.",
-      "n_char": 925,
-      "n_word": 175,
-      "n_line": 53,
+      "text": "문서 제목: HTML 파싱 테스트\n\n이 문서는 HTML 백엔드의 기본 파싱 기능을 검증하기 위한 샘플입니다. 다양한 HTML 요소를 포함합니다.\n\n1. 텍스트 포맷팅\n\n일반 텍스트 단락입니다. 문장 안에 굵은 텍스트와 기울임 텍스트를 포함합니다.\n\nbold 태그와 italic 태그도 지원합니다. 밑줄과 취소선도 처리됩니다.\n\n인라인 코드: print(\"Hello, World!\") 형태로 표시됩니다.\n\n아래 첨자: H2O, 위 첨자: E=mc2\n\n하이퍼링크: 예시 링크입니다.\n\n2. 헤딩 계층 구조\n\n2.1 소제목 수준 3\n\n헤딩 3 아래의 내용입니다. HTML 백엔드는 h1부터 h6까지 계층 구조를 인식합니다.\n\n2.1.1 소제목 수준 4\n\n헤딩 4 아래의 내용입니다. 문서의 계층 구조가 올바르게 파싱되어야 합니다.\n\n소제목 수준 5\n\n헤딩 5 아래의 내용입니다.\n\n소제목 수준 6\n\n헤딩 6 아래의 내용으로, 가장 깊은 헤딩 수준입니다.\n\n3. 코드 블록\n\npre 태그를 이용한 코드 블록 예시입니다:\n\ndef parse_html(content: str) -> dict:\n    \"\"\"HTML 문서를 파싱하여 구조화된 데이터로 반환합니다.\"\"\"\n    soup = BeautifulSoup(content, \"html.parser\")\n    return {\n        \"title\": soup.title.string if soup.title else \"\",\n        \"headings\": [h.get_text() for h in soup.find_all([\"h1\", \"h2\", \"h3\"])],\n    }\n\n4. 인용문\n\n이것은 인용문입니다. blockquote 태그 안의 텍스트는 별도의 블록으로 처리됩니다.\n\n5. 단락 구조\n\n첫 번째 단락입니다. 단락은 p 태그로 구분됩니다. 각 단락은 독립적인 텍스트 블록으로 파싱되어야 합니다.\n\n두 번째 단락입니다. HTML 백엔드는 단락 사이의 공백을 올바르게 처리해야 합니다. 이 단락에는 여러 문장이 포함되어 있습니다. 문장이 길어져도 하나의 단락 블록으로 유지되어야 합니다.\n\n세 번째 단락으로, 한국어 텍스트 처리를 검증합니다. 문서 처리 시 UTF-8 인코딩이 올바르게 유지되어야 하며, 특수 문자(예: &, <, >, \")도 올바르게 처리되어야 합니다.\n\n6. 수평선 구분\n\n수평선 아래 내용입니다.\n\n수평선 위 내용입니다.\n\n7. 주소 및 footer\n\n작성자: HTML 파싱 테스트팀 이메일: test@example.com 날짜: 2024-01-01\n\n문서 끝: 이 문서는 HTML 백엔드 파싱 테스트용입니다.",
+      "n_char": 1280,
+      "n_word": 252,
+      "n_line": 69,
       "i_page": 2,
       "e_page": 2,
       "i_chunk_on_page": 0,
       "n_chunk_of_page": 0,
       "i_chunk_on_doc": 0,
-      "n_chunk_of_doc": 2,
+      "n_chunk_of_doc": 1,
       "n_page": 0,
-      "reg_date": "2026-05-07T13:03:42Z",
-      "chunk_bboxes": null,
-      "media_files": null
-    },
-    {
-      "text": "5. 단락 구조\n\n첫 번째 단락입니다. 단락은 p 태그로 구분됩니다. 각 단락은 독립적인 텍스트 블록으로 파싱되어야 합니다.\n\n두 번째 단락입니다. HTML 백엔드는 단락 사이의 공백을 올바르게 처리해야 합니다. 이 단락에는 여러 문장이 포함되어 있습니다. 문장이 길어져도 하나의 단락 블록으로 유지되어야 합니다.\n\n세 번째 단락으로, 한국어 텍스트 처리를 검증합니다. 문서 처리 시 UTF-8 인코딩이 올바르게 유지되어야 하며, 특수 문자(예: &, <, >, \")도 올바르게 처리되어야 합니다.\n\n6. 수평선 구분\n\n수평선 아래 내용입니다.\n\n수평선 위 내용입니다.\n\n7. 주소 및 footer\n\n작성자: HTML 파싱 테스트팀 이메일: test@example.com 날짜: 2024-01-01\n\n문서 끝: 이 문서는 HTML 백엔드 파싱 테스트용입니다.",
-      "n_char": 424,
-      "n_word": 94,
-      "n_line": 19,
-      "i_page": 2,
-      "e_page": 2,
-      "i_chunk_on_page": 1,
-      "n_chunk_of_page": 0,
-      "i_chunk_on_doc": 1,
-      "n_chunk_of_doc": 2,
-      "n_page": 0,
-      "reg_date": "2026-05-07T13:03:42Z",
+      "reg_date": "2026-07-05T21:49:54Z",
       "chunk_bboxes": null,
       "media_files": null
     }
   ],
   "label_distribution": {},
-  "total_characters": 1349
+  "total_characters": 1280
 }

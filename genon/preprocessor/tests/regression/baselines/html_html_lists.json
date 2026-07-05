@@ -1,39 +1,23 @@
 {
-  "num_vectors": 2,
+  "num_vectors": 1,
   "vectors": [
     {
-      "text": "리스트 파싱 테스트\n\nHTML 백엔드의 다양한 리스트 파싱 기능을 검증하는 샘플 문서입니다.\n\n1. 순서 없는 리스트 (ul)\n\n기본적인 bullet 리스트입니다.\n\n첫 번째 항목\n\n두 번째 항목\n\n세 번째 항목\n\n네 번째 항목\n\n2. 순서 있는 리스트 (ol)\n\n번호가 붙는 순서 리스트입니다.\n\n문서 분석 단계\n\n데이터 추출 단계\n\n구조화 단계\n\n검증 단계\n\n저장 단계\n\n3. start 속성이 있는 순서 리스트\n\n특정 번호부터 시작하는 순서 리스트입니다.\n\n앞 단계에서 이어지는 목록:\n\n인덱싱 단계\n\n검색 최적화 단계\n\n배포 단계\n\n4. 중첩 순서 없는 리스트\n\nul 안에 ul이 중첩된 리스트입니다.\n\n프론트엔드 기술\n\nHTML/CSS\n\nJavaScript\n\nReact\n\nVue.js\n\nAngular\n\nTypeScript\n\n백엔드 기술\n\nPython\n\nFastAPI\n\nDjango\n\nGo\n\nRust\n\n인프라\n\nDocker\n\nKubernetes\n\n5. 중첩 순서 있는 리스트\n\nol 안에 ol이 중첩된 단계별 절차입니다.\n\n프로젝트 초기화\n\n요구사항 분석\n\n기술 스택 선정\n\n환경 구성\n\n개발 단계\n\n핵심 기능 구현\n\n테스트 작성\n\n코드 리뷰\n\n배포 단계\n\n스테이징 환경 배포\n\nQA 검증\n\n프로덕션 배포\n\n6. 혼합 중첩 리스트 (ul + ol)\n\n순서 없는 리스트 안에 순서 있는 리스트가 혼합된 구조입니다.\n\n문서 처리 파이프라인\n\n입력 파일 로드\n\n형식 감지\n\n파싱 실행\n\n지원 파일 형식\n\nPDF\n\nDOCX\n\nHTML\n\nMarkdown\n\n7. 포맷팅이 포함된 리스트\n\n리스트 항목 안에 텍스트 포맷팅이 포함된 경우입니다.\n\n중요: 이 항목은 굵은 텍스트로 강조되었습니다.\n\n참고: 이 항목은 기울임체로 표시됩니다.\n\n코드 예시: import docling\n\n링크가 포함된 항목: GitHub 저장소를 참고하세요.\n\n경고: 굵은 텍스트와 기울임체가 혼합된 항목입니다.\n\n8. 리스트와 단락 혼합\n\n각 리스트 항목이 여러 문장으로 구성된 복합 구조입니다.",
-      "n_char": 989,
-      "n_word": 224,
-      "n_line": 145,
+      "text": "리스트 파싱 테스트\n\nHTML 백엔드의 다양한 리스트 파싱 기능을 검증하는 샘플 문서입니다.\n\n1. 순서 없는 리스트 (ul)\n\n기본적인 bullet 리스트입니다.\n\n첫 번째 항목\n\n두 번째 항목\n\n세 번째 항목\n\n네 번째 항목\n\n2. 순서 있는 리스트 (ol)\n\n번호가 붙는 순서 리스트입니다.\n\n문서 분석 단계\n\n데이터 추출 단계\n\n구조화 단계\n\n검증 단계\n\n저장 단계\n\n3. start 속성이 있는 순서 리스트\n\n특정 번호부터 시작하는 순서 리스트입니다.\n\n앞 단계에서 이어지는 목록:\n\n인덱싱 단계\n\n검색 최적화 단계\n\n배포 단계\n\n4. 중첩 순서 없는 리스트\n\nul 안에 ul이 중첩된 리스트입니다.\n\n프론트엔드 기술\n\nHTML/CSS\n\nJavaScript\n\nReact\n\nVue.js\n\nAngular\n\nTypeScript\n\n백엔드 기술\n\nPython\n\nFastAPI\n\nDjango\n\nGo\n\nRust\n\n인프라\n\nDocker\n\nKubernetes\n\n5. 중첩 순서 있는 리스트\n\nol 안에 ol이 중첩된 단계별 절차입니다.\n\n프로젝트 초기화\n\n요구사항 분석\n\n기술 스택 선정\n\n환경 구성\n\n개발 단계\n\n핵심 기능 구현\n\n테스트 작성\n\n코드 리뷰\n\n배포 단계\n\n스테이징 환경 배포\n\nQA 검증\n\n프로덕션 배포\n\n6. 혼합 중첩 리스트 (ul + ol)\n\n순서 없는 리스트 안에 순서 있는 리스트가 혼합된 구조입니다.\n\n문서 처리 파이프라인\n\n입력 파일 로드\n\n형식 감지\n\n파싱 실행\n\n지원 파일 형식\n\nPDF\n\nDOCX\n\nHTML\n\nMarkdown\n\n7. 포맷팅이 포함된 리스트\n\n리스트 항목 안에 텍스트 포맷팅이 포함된 경우입니다.\n\n중요: 이 항목은 굵은 텍스트로 강조되었습니다.\n\n참고: 이 항목은 기울임체로 표시됩니다.\n\n코드 예시: import docling\n\n링크가 포함된 항목: GitHub 저장소를 참고하세요.\n\n경고: 굵은 텍스트와 기울임체가 혼합된 항목입니다.\n\n8. 리스트와 단락 혼합\n\n각 리스트 항목이 여러 문장으로 구성된 복합 구조입니다.\n\n첫 번째 항목의 첫 번째 단락입니다. 항목 내에 단락이 포함될 수 있습니다.\n\n첫 번째 항목의 두 번째 단락입니다. 이 구조는 복잡한 문서에서 자주 사용됩니다.\n\n두 번째 항목입니다. 단일 단락으로만 구성된 항목입니다.\n\n세 번째 항목의 설명입니다.\n\n추가 정보가 담긴 단락입니다. 리스트 항목 내 단락은 올바르게 파싱되어야 합니다.\n\n9. 정의 목록 (dl)\n\n용어와 정의를 나타내는 dl 리스트입니다.",
+      "n_char": 1217,
+      "n_word": 279,
+      "n_line": 159,
       "i_page": 2,
       "e_page": 2,
       "i_chunk_on_page": 0,
       "n_chunk_of_page": 0,
       "i_chunk_on_doc": 0,
-      "n_chunk_of_doc": 2,
+      "n_chunk_of_doc": 1,
       "n_page": 0,
-      "reg_date": "2026-05-07T13:03:42Z",
-      "chunk_bboxes": null,
-      "media_files": null
-    },
-    {
-      "text": "경고: 굵은 텍스트와 기울임체가 혼합된 항목입니다.\n\n8. 리스트와 단락 혼합\n\n각 리스트 항목이 여러 문장으로 구성된 복합 구조입니다.\n\n첫 번째 항목의 첫 번째 단락입니다. 항목 내에 단락이 포함될 수 있습니다.\n\n첫 번째 항목의 두 번째 단락입니다. 이 구조는 복잡한 문서에서 자주 사용됩니다.\n\n두 번째 항목입니다. 단일 단락으로만 구성된 항목입니다.\n\n세 번째 항목의 설명입니다.\n\n추가 정보가 담긴 단락입니다. 리스트 항목 내 단락은 올바르게 파싱되어야 합니다.\n\n9. 정의 목록 (dl)\n\n용어와 정의를 나타내는 dl 리스트입니다.",
-      "n_char": 304,
-      "n_word": 73,
-      "n_line": 19,
-      "i_page": 2,
-      "e_page": 2,
-      "i_chunk_on_page": 1,
-      "n_chunk_of_page": 0,
-      "i_chunk_on_doc": 1,
-      "n_chunk_of_doc": 2,
-      "n_page": 0,
-      "reg_date": "2026-05-07T13:03:42Z",
+      "reg_date": "2026-07-05T21:49:54Z",
       "chunk_bboxes": null,
       "media_files": null
     }
   ],
   "label_distribution": {},
-  "total_characters": 1293
+  "total_characters": 1217
 }
