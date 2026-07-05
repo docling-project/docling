@@ -1309,7 +1309,19 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Returns:
             A TableData, or None if the chart exposes no usable series.
         """
-        pass
+        series_list = list(chart.series)
+        if not series_list:
+            return None
+
+        # Categories: the shared x-axis labels such as years,names,... Taken from the first
+        # series that has them; scatter charts keep them in xVal
+        categories : list[str] = []
+        for series in series_list:
+            cat_ref = self._ref_formula(series.cat) or self._ref_formula(series.xVal)
+            if cat_ref:
+                categories = self._resolve_reference(cat_ref)
+                break
+        
 
     @staticmethod
     def _ref_formula(data_source: Any) -> str | None:
@@ -1328,7 +1340,15 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Returns:
             The range-formula string, or None if absent.
         """
-        pass
+        if data_source is None:
+            return None
+        num_ref = getattr(data_source, "numRef", None)
+        if num_ref is not None and num_ref.f:
+            return num_ref.f
+        str_ref = getattr(data_source,"strRef",None)
+        if str_ref is not None and str_ref.f:
+            return str_ref.f
+        return None
 
     def _resolve_reference(self, ref: str) -> list[str]:
         """Resolve a chart range reference to a flat list of cell-value strings.
@@ -1348,7 +1368,43 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             an empty list if the sheet is missing (e.g. filtered out) or the
             reference can't be parsed.
         """
-        pass
+        if self.workbook is None:
+            return []
+        # Split "Sheet!Range" into sheet name and the A1 range. A sheet name may
+        # itself contain "!" so split on the last one; quoted names ('a!b')
+        # have surrounding quotes, with '' meaning a literal quote.
+
+        if "!" in ref:
+            sheet_part, cell_range = ref.rsplit("!", 1)
+            sheet_part = sheet_part.strip()
+            if sheet_part.startswith("'") and sheet_part.endswith("'"):
+                sheet_part = sheet_part[1:-1].replace("''", "'")
+            sheet_name = sheet_part
+        else:
+            # Unqualified reference: assume the currently active sheet.
+            sheet_name, cell_range = self.workbook.active.title, ref
+        if sheet_name not in self.workbook.sheetnames:
+            _log.debug("Chart references unknown sheet %r", sheet_name)
+            return []
+        
+        target_sheet = self.workbook[sheet_name]
+
+        try:
+            # range_boundaries: "$B$2:$B$7" -> (min_col, min_row, max_col, max_row)
+            min_col, min_row, max_col, max_row = range_boundaries(cell_range)
+        except Exception:
+            _log.debug("Could not parse chart range %r", cell_range)
+            return []
+        
+        values = []
+        for row in range(min_row, max_row + 1):
+            for col in range(min_row, max_row + 1):
+                value = target_sheet.cell(row = row, column=col).value
+                values.append("" if value is None else str(value))
+        
+        return values
+
+
 
 
     @staticmethod
