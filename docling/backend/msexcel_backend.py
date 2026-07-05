@@ -1322,6 +1322,71 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 categories = self._resolve_reference(cat_ref)
                 break
         
+        columns: list[tuple[str,list[str]]] = []
+
+        for series in series_list:
+            # Value_ref: reference to this series numbers (y-values)
+            value_ref = self._ref_formula(series.val) or self._ref_formula(series.yVal)
+            values = self._resolve_reference(value_ref) if value_ref else []
+
+            # Name: series display name from a reference or a literal value
+            name_ref = self._ref_formula(series.tx)
+            if name_ref:
+                resolved = self._resolve_reference(name_ref)
+                name = resolved[0] if resolved else ""
+            elif series.tx is not None and series.tx.v is not None:
+                name = str(series.tx.v)
+            else:
+                name = ""
+            columns.append((name, values))
+        # num_data_rows: the tallest column decides how many data rows we emit.
+        num_data_rows = max(
+            [len(categories)] + [len(values) for _, values in columns]
+        )
+        if num_data_rows == 0:
+            return None
+        
+        num_rows = num_data_rows + 1 # Add 1 for the header row
+        num_cols = 1 + len(columns)
+        cells : list[TableCell] = []
+
+        # Header row (row 0): Blank category header + series name
+        header_labels = [""] + [name for name, _ in columns]
+        for col_idx, label in enumerate(header_labels):
+            cells.append(
+                TableCell(
+                    text = label,
+                    row_span= 1,
+                    col_span= 1,
+                    start_row_offset_idx= 0,
+                    end_row_offset_idx= 1,
+                    start_col_offset_idx= col_idx,
+                    end_col_offset_idx= col_idx + 1,
+                    column_header= True,
+                    row_header= False,
+                )
+            )
+        # Data rows
+        for data_row in range(num_data_rows):
+            row_idx = data_row + 1
+            category = categories[data_row] if data_row < len(categories) else ""
+            row_texts = [category] + [(values[data_row] if data_row < len(values) else "") for _, values in columns]
+            for col_idx, text in enumerate(row_texts):
+                cells.append(
+                    TableCell(
+                        text=text,
+                        row_span=1,
+                        col_span=1,
+                        start_row_offset_idx=row_idx,
+                        end_row_offset_idx=row_idx + 1,
+                        start_col_offset_idx=col_idx,
+                        end_col_offset_idx=col_idx + 1,
+                        column_header=False,
+                        row_header=(col_idx == 0),  # first col holds category labels
+                    )
+                )
+        
+        return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
 
     @staticmethod
     def _ref_formula(data_source: Any) -> str | None:
