@@ -1271,7 +1271,24 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Returns:
             str: The concatenated title text, or None.
         """
-        pass
+        title = chart.title
+        if title is None:
+            return None
+
+        # check again cause some code paths set a plan string title
+        if isinstance(title, str):
+            return title or None
+        tx = title.tx # the text holder has .rich(formatted) or .strRef
+        if tx is None or tx.rich is None:
+            return None
+        
+        runs = []
+        for paragraph in tx.rich.p: # each paragraph in the title
+            for run in paragraph.r or []: # each styled run in the paragraph
+                if run.t: # The run's literal text
+                    runs.append(run.t)
+        text = "".join(runs).strip()
+        return text or None
 
     def _chart_to_table_data(self,chart: Any) -> TableData | None:
         """Reconstruct a chart's underlying data grid as a TableData.
