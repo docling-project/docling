@@ -615,7 +615,13 @@ class _BaseDoclingServiceClient:
         except (TypeError, ValueError, IndexError, OverflowError):
             return None
 
-        now = datetime.now(tz=retry_at.tzinfo or timezone.utc)
+        # parsedate_to_datetime returns a naive datetime for HTTP-dates carrying
+        # an unknown timezone (e.g. "-0000"); assume UTC so the subtraction below
+        # does not mix naive and aware datetimes.
+        if retry_at.tzinfo is None:
+            retry_at = retry_at.replace(tzinfo=timezone.utc)
+
+        now = datetime.now(tz=timezone.utc)
         return max(0.0, (retry_at - now).total_seconds())
 
     def _raise_for_result_404(
