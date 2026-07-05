@@ -510,6 +510,47 @@ LIGHTONOCR_VLLM_API = ApiVlmOptions(
     response_format=ResponseFormat.MARKDOWN,
 )
 
+# Unlimited-OCR
+UNLIMITED_OCR_TRANSFORMERS = InlineVlmOptions(
+    repo_id="baidu/Unlimited-OCR",
+    prompt="document parsing.",
+    response_format=ResponseFormat.MARKDOWN,
+    trust_remote_code=True,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL,
+    transformers_prompt_style=TransformersPromptStyle.RAW,
+    supported_devices=[AcceleratorDevice.CUDA],
+    torch_dtype="bfloat16",
+    scale=2.0,
+    temperature=0.0,
+    max_new_tokens=32768,
+    extra_generation_config={
+        "transformers_custom_inference": "unlimited_ocr",
+        "unlimited_ocr_base_size": 1024,
+        "unlimited_ocr_image_size": 640,
+        "unlimited_ocr_crop_mode": True,
+        "unlimited_ocr_no_repeat_ngram_size": 35,
+        "unlimited_ocr_ngram_window": 128,
+    },
+)
+
+UNLIMITED_OCR_SGLANG_API = ApiVlmOptions(
+    url="http://localhost:10000/v1/chat/completions",
+    params=dict(
+        model="Unlimited-OCR",
+        max_tokens=32768,
+        skip_special_tokens=False,
+        images_config={"image_mode": "gundam"},
+        custom_params={"ngram_size": 35, "window_size": 128},
+    ),
+    prompt="document parsing.",
+    timeout=1200,
+    scale=2.0,
+    temperature=0.0,
+    concurrency=1,
+    response_format=ResponseFormat.MARKDOWN,
+)
+
 # DeepSeek-OCR
 DEEPSEEKOCR_OLLAMA = ApiVlmOptions(
     url="http://localhost:11434/v1/chat/completions",
@@ -582,4 +623,6 @@ class VlmModelType(str, Enum):
     GLMOCR_VLLM = "glm_ocr_vllm"
     LIGHTONOCR = "lightonocr"
     LIGHTONOCR_VLLM = "lightonocr_vllm"
+    UNLIMITED_OCR = "unlimited_ocr"
+    UNLIMITED_OCR_SGLANG = "unlimited_ocr_sglang"
     DEEPSEEKOCR_OLLAMA = "deepseekocr_ollama"

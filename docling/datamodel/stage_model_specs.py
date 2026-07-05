@@ -1389,6 +1389,63 @@ VLM_CONVERT_FALCON_OCR = StageModelPreset(
     default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
+VLM_CONVERT_UNLIMITED_OCR = StageModelPreset(
+    preset_id="unlimited_ocr",
+    name="Unlimited-OCR",
+    description="Baidu Unlimited-OCR model for long-horizon OCR and markdown conversion (3B parameters)",
+    model_spec=VlmModelSpec(
+        name="Unlimited-OCR-3B",
+        default_repo_id="baidu/Unlimited-OCR",
+        prompt="document parsing.",
+        response_format=ResponseFormat.MARKDOWN,
+        max_new_tokens=32768,
+        trust_remote_code=True,
+        supported_engines={
+            VlmEngineType.TRANSFORMERS,
+            VlmEngineType.API,
+            VlmEngineType.API_OPENAI,
+        },
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL,
+                    "transformers_prompt_style": TransformersPromptStyle.RAW,
+                    "transformers_custom_inference": "unlimited_ocr",
+                    "torch_dtype": "bfloat16",
+                    "unlimited_ocr_base_size": 1024,
+                    "unlimited_ocr_image_size": 640,
+                    "unlimited_ocr_crop_mode": True,
+                    "unlimited_ocr_no_repeat_ngram_size": 35,
+                    "unlimited_ocr_ngram_window": 128,
+                },
+            ),
+        },
+        api_overrides={
+            VlmEngineType.API: ApiModelConfig(
+                params={
+                    "model": "Unlimited-OCR",
+                    "max_tokens": 32768,
+                    "skip_special_tokens": False,
+                    "images_config": {"image_mode": "gundam"},
+                    "custom_params": {"ngram_size": 35, "window_size": 128},
+                }
+            ),
+            VlmEngineType.API_OPENAI: ApiModelConfig(
+                params={
+                    "model": "Unlimited-OCR",
+                    "max_tokens": 32768,
+                    "skip_special_tokens": False,
+                    "images_config": {"image_mode": "gundam"},
+                    "custom_params": {"ngram_size": 35, "window_size": 128},
+                }
+            ),
+        },
+    ),
+    scale=2.0,
+    default_engine_type=VlmEngineType.TRANSFORMERS,
+)
+
 VLM_CONVERT_LIGHTONOCR = StageModelPreset(
     preset_id="lightonocr",
     name="LightOnOCR-2-1B",

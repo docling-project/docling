@@ -4,6 +4,7 @@ import importlib
 import importlib.metadata
 import logging
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
@@ -16,6 +17,7 @@ from transformers import (
     AutoModelForCausalLM,
     AutoModelForImageTextToText,
     AutoProcessor,
+    AutoTokenizer,
     BitsAndBytesConfig,
     GenerationConfig,
     PreTrainedModel,
@@ -51,6 +53,7 @@ _log = logging.getLogger(__name__)
 
 _DOTS_REPO_IDS = {"rednote-hilab/dots.ocr", "rednote-hilab/dots.mocr"}
 _DOTS_FLASH_ATTN_REQUIRED_REPO_IDS = {"rednote-hilab/dots.mocr"}
+_UNLIMITED_OCR_INFERENCE = "unlimited_ocr"
 
 
 def _coerce_transformers_model_type(value: Any) -> TransformersModelType:
@@ -102,6 +105,11 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self.processor: Any | None = None
         self.vlm_model: PreTrainedModel | None = None
         self.generation_config: GenerationConfig | None = None
+        self.custom_inference: str | None = (
+            model_config.extra_config.get("transformers_custom_inference")
+            if model_config is not None
+            else None
+        )
         self.strip_stop_strings = (
             bool(
                 model_config.extra_config.get("transformers_strip_stop_strings", False)
@@ -132,6 +140,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             supported_devices=supported_devices,
         )
         _log.info(f"Using device: {self.device}")
+        self._raise_if_unlimited_ocr_without_cuda()
 
         # Load model if model_config is provided
         if self.model_config is not None and self.model_config.repo_id is not None:
@@ -220,11 +229,18 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         elif model_type == TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT:
             model_cls = AutoModelForImageTextToText  # type: ignore[assignment]
 
-        self.processor = AutoProcessor.from_pretrained(
-            artifacts_path,
-            trust_remote_code=self.options.trust_remote_code,
-            revision=revision,
-        )
+        if self.custom_inference == _UNLIMITED_OCR_INFERENCE:
+            self.processor = AutoTokenizer.from_pretrained(
+                artifacts_path,
+                trust_remote_code=self.options.trust_remote_code,
+                revision=revision,
+            )
+        else:
+            self.processor = AutoProcessor.from_pretrained(
+                artifacts_path,
+                trust_remote_code=self.options.trust_remote_code,
+                revision=revision,
+            )
         tokenizer = self._get_tokenizer()
         if tokenizer is not None and hasattr(tokenizer, "padding_side"):
             tokenizer.padding_side = "left"
@@ -284,6 +300,80 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
 
         _log.info(f"Loaded model {repo_id} (revision: {revision})")
 
+    def _raise_if_unlimited_ocr_without_cuda(self) -> None:
+        if self.custom_inference == _UNLIMITED_OCR_INFERENCE and (
+            self.device is None or not self.device.startswith("cuda")
+        ):
+            raise NotImplementedError(
+                "baidu/Unlimited-OCR inline Transformers inference requires a CUDA "
+                "device because the upstream model.infer implementation moves "
+                "tensors with .cuda(). Use a CUDA accelerator or an "
+                "OpenAI-compatible SGLang endpoint."
+            )
+
+    def _predict_batch_with_unlimited_ocr(
+        self, input_batch: List[VlmEngineInput]
+    ) -> List[VlmEngineOutput]:
+        """Run baidu/Unlimited-OCR through its custom ``infer`` method."""
+        if self.vlm_model is None or self.processor is None:
+            raise RuntimeError(
+                "Model not loaded. Ensure EngineModelConfig was provided during initialization."
+            )
+        self._raise_if_unlimited_ocr_without_cuda()
+
+        images = preprocess_image_batch([inp.image for inp in input_batch])
+        extra_config = (
+            self.model_config.extra_config if self.model_config is not None else {}
+        )
+        base_size = int(extra_config.get("unlimited_ocr_base_size", 1024))
+        image_size = int(extra_config.get("unlimited_ocr_image_size", 640))
+        crop_mode = bool(extra_config.get("unlimited_ocr_crop_mode", True))
+        no_repeat_ngram_size = int(
+            extra_config.get("unlimited_ocr_no_repeat_ngram_size", 35)
+        )
+        ngram_window = int(extra_config.get("unlimited_ocr_ngram_window", 128))
+
+        outputs: list[VlmEngineOutput] = []
+        start_time = time.time()
+        with tempfile.TemporaryDirectory(prefix="docling_unlimited_ocr_") as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            for index, (image, input_data) in enumerate(zip(images, input_batch)):
+                image_path = tmp_path / f"page_{index + 1:04d}.png"
+                output_path = tmp_path / f"output_{index + 1:04d}"
+                image.save(image_path)
+                prompt = input_data.prompt
+                if "<image>" not in prompt:
+                    prompt = f"<image>{prompt}"
+
+                result = self.vlm_model.infer(
+                    self.processor,
+                    prompt=prompt,
+                    image_file=str(image_path),
+                    output_path=str(output_path),
+                    base_size=base_size,
+                    image_size=image_size,
+                    crop_mode=crop_mode,
+                    save_results=False,
+                    eval_mode=True,
+                    max_length=input_data.max_new_tokens,
+                    no_repeat_ngram_size=no_repeat_ngram_size,
+                    ngram_window=ngram_window,
+                    temperature=input_data.temperature,
+                )
+                outputs.append(
+                    VlmEngineOutput(
+                        text="" if result is None else str(result),
+                        stop_reason="unspecified",
+                        metadata={
+                            "generation_time": (time.time() - start_time)
+                            / len(input_batch),
+                            "batch_size": len(input_batch),
+                        },
+                    )
+                )
+
+        return outputs
+
     def _get_tokenizer(self) -> Any:
         """Resolve the tokenizer from the processor.
 
@@ -319,6 +409,9 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             raise RuntimeError(
                 "Model not loaded. Ensure EngineModelConfig was provided during initialization."
             )
+
+        if self.custom_inference == _UNLIMITED_OCR_INFERENCE:
+            return self._predict_batch_with_unlimited_ocr(input_batch)
 
         # Get prompt style from first input's extra config
         first_input = input_batch[0]
