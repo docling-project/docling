@@ -7,7 +7,6 @@ Runs after the layout (prediction) stage. It always computes the page
 
 from __future__ import annotations
 
-import warnings
 from collections.abc import Sequence
 from typing import List, Type
 
@@ -87,13 +86,6 @@ class LayoutPostprocessingModel(BaseLayoutPostprocessingModel):
         page: Page,
         clusters: List[Cluster],
     ) -> None:
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                "Mean of empty slice|invalid value encountered in scalar divide",
-                RuntimeWarning,
-                "numpy",
-            )
-            conv_res.confidence.pages[page.page_no].layout_score = float(
-                np.mean([c.confidence for c in clusters])
-            )
+        conv_res.confidence.pages[page.page_no].layout_score = (
+            float(np.mean([c.confidence for c in clusters])) if clusters else 0.0
+        )

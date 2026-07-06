@@ -28,8 +28,6 @@ try:
 except ImportError:
     CV2_INSTALLED = False
 
-_DILATION_KERNEL = np.ones((20, 20), dtype=np.uint8)
-
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     MAXOUT_COVERAGE_THRESHOLD = 0.75
@@ -150,8 +148,13 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         if dilation_size > 0:
             # Grow the rects by dilation_size / 2 pixels in all directions.
-            structure = np.ones((dilation_size, dilation_size))
-            np_image = binary_dilation(np_image > 0, structure=structure)
+            kernel = np.ones((dilation_size, dilation_size), dtype=np.uint8)
+            if CV2_INSTALLED:
+                np_image = cv2.dilate(
+                    (np_image > 0).astype(np.uint8), kernel, iterations=1
+                )
+            else:
+                np_image = binary_dilation(np_image > 0, structure=kernel)
 
         # Find the connected components
         labeled_image, _ = label(np_image > 0)  # Label white regions

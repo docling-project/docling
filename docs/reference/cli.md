@@ -32,7 +32,7 @@ docling [OPTIONS] source
 | `--asr-model` | `whisper_tiny`, `whisper_small`, `whisper_medium`, `whisper_base`, `whisper_large`, `whisper_turbo`, `whisper_tiny_mlx`, `whisper_small_mlx`, `whisper_medium_mlx`, `whisper_base_mlx`, `whisper_large_mlx`, `whisper_turbo_mlx`, `whisper_tiny_native`, `whisper_small_native`, `whisper_medium_native`, `whisper_base_native`, `whisper_large_native`, `whisper_turbo_native` | `whisper_tiny` | Choose the ASR model to use with audio/video files. |
 | `--ocr` / `--no-ocr` | flag | `true` | If enabled, the bitmap content will be processed using OCR. |
 | `--force-ocr` / `--no-force-ocr` | flag | `false` | **Deprecated** — use `--ocr-mode force_full_page_ocr`. Replace any existing text with OCR generated text over the full content. |
-| `--ocr-mode` | `force_full_page_ocr`, `pdf_bitmaps_only`, `layout_detections`, `layout_without_pdf_text` | `layout_without_pdf_text` | Which document regions are fed to the OCR engine. |
+| `--ocr-mode` | `force_full_page_ocr`, `pdf_bitmaps_only`, `layout_detections` | `pdf_bitmaps_only` | Which document regions are fed to the OCR engine. |
 | `--tables` / `--no-tables` | flag | `true` | If enabled, the table structure model will be used to extract table information. |
 | `--ocr-engine` | `text` | `auto` | The OCR engine to use. When --allow-external-plugins is *not* set, the available values are: auto, easyocr, kserve_v2_ocr, ocrmac, rapidocr, tesserocr, tesseract. Use the option --show-external-plugins to see the options allowed with external plugins. |
 | `--ocr-lang` | `text` |  | Provide a comma-separated list of languages used by the OCR engine. Note that each OCR engine has different values for the language names. |
