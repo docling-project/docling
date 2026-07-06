@@ -236,13 +236,12 @@ class MsExcelBackendOptions(BaseBackendOptions):
     )
 
     do_chart_parsing: bool = Field(
-        False,
+        True,
         description=(
             "Whether to parse native charts embedded in worksheets and chart "
             "sheets. Each chart becomes a PictureItem classified by chart type "
             "(bar, line, pie, scatter) and carrying the chart's underlying data "
-            "reconstructed as a table. Opt-in (default False) to keep existing "
-            "conversion output unchanged."
+            "reconstructed as a table. Set to False to skip chart parsing."
         ),
     )
 
