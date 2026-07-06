@@ -116,6 +116,7 @@ from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
     normalize_pdf_backend,
 )
+from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
 from docling.datamodel.settings import settings
 from docling.document_converter import (
     AudioFormatOption,
@@ -283,6 +284,53 @@ class _DefaultCommandGroup(typer.core.TyperGroup):
         if args and args[0] not in self.commands and args[0] not in ("--help", "-h"):
             args = [self.default_command, *args]
         return super().parse_args(ctx, args)
+
+
+def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
+    """Map an AsrModelType enum member to its preset InlineAsrOptions.
+
+    Shared mapping so both audio and (later) video CLI setup resolve
+    ASR presets the same way.
+    """
+    mapping: dict[AsrModelType, InlineAsrOptions] = {
+        AsrModelType.WHISPER_TINY: WHISPER_TINY,
+        AsrModelType.WHISPER_SMALL: WHISPER_SMALL,
+        AsrModelType.WHISPER_MEDIUM: WHISPER_MEDIUM,
+        AsrModelType.WHISPER_BASE: WHISPER_BASE,
+        AsrModelType.WHISPER_LARGE: WHISPER_LARGE,
+        AsrModelType.WHISPER_TURBO: WHISPER_TURBO,
+        AsrModelType.WHISPER_TINY_MLX: WHISPER_TINY_MLX,
+        AsrModelType.WHISPER_SMALL_MLX: WHISPER_SMALL_MLX,
+        AsrModelType.WHISPER_MEDIUM_MLX: WHISPER_MEDIUM_MLX,
+        AsrModelType.WHISPER_BASE_MLX: WHISPER_BASE_MLX,
+        AsrModelType.WHISPER_LARGE_MLX: WHISPER_LARGE_MLX,
+        AsrModelType.WHISPER_TURBO_MLX: WHISPER_TURBO_MLX,
+        AsrModelType.WHISPER_TINY_NATIVE: WHISPER_TINY_NATIVE,
+        AsrModelType.WHISPER_SMALL_NATIVE: WHISPER_SMALL_NATIVE,
+        AsrModelType.WHISPER_MEDIUM_NATIVE: WHISPER_MEDIUM_NATIVE,
+        AsrModelType.WHISPER_BASE_NATIVE: WHISPER_BASE_NATIVE,
+        AsrModelType.WHISPER_LARGE_NATIVE: WHISPER_LARGE_NATIVE,
+        AsrModelType.WHISPER_TURBO_NATIVE: WHISPER_TURBO_NATIVE,
+        AsrModelType.WHISPER_TINY_S2T: WHISPER_TINY_S2T,
+        AsrModelType.WHISPER_TINY_EN_S2T: WHISPER_TINY_EN_S2T,
+        AsrModelType.WHISPER_BASE_S2T: WHISPER_BASE_S2T,
+        AsrModelType.WHISPER_BASE_EN_S2T: WHISPER_BASE_EN_S2T,
+        AsrModelType.WHISPER_SMALL_S2T: WHISPER_SMALL_S2T,
+        AsrModelType.WHISPER_SMALL_EN_S2T: WHISPER_SMALL_EN_S2T,
+        AsrModelType.WHISPER_DISTIL_SMALL_EN_S2T: WHISPER_DISTIL_SMALL_EN_S2T,
+        AsrModelType.WHISPER_MEDIUM_S2T: WHISPER_MEDIUM_S2T,
+        AsrModelType.WHISPER_MEDIUM_EN_S2T: WHISPER_MEDIUM_EN_S2T,
+        AsrModelType.WHISPER_DISTIL_MEDIUM_EN_S2T: WHISPER_DISTIL_MEDIUM_EN_S2T,
+        AsrModelType.WHISPER_LARGE_V3_S2T: WHISPER_LARGE_V3_S2T,
+        AsrModelType.WHISPER_DISTIL_LARGE_V3_S2T: WHISPER_DISTIL_LARGE_V3_S2T,
+        AsrModelType.WHISPER_DISTIL_LARGE_V3_5_S2T: WHISPER_DISTIL_LARGE_V3_5_S2T,
+        AsrModelType.WHISPER_LARGE_V3_TURBO_S2T: WHISPER_LARGE_V3_TURBO_S2T,
+    }
+    try:
+        return mapping[asr_model]
+    except KeyError:
+        _log.error(f"{asr_model} is not known")
+        raise ValueError(f"{asr_model} is not known")
 
 
 app = typer.Typer(
@@ -1129,80 +1177,7 @@ def convert(  # noqa: C901
         )
 
         # Auto-selecting models (choose best implementation for hardware)
-        if asr_model == AsrModelType.WHISPER_TINY:
-            asr_pipeline_options.asr_options = WHISPER_TINY
-        elif asr_model == AsrModelType.WHISPER_SMALL:
-            asr_pipeline_options.asr_options = WHISPER_SMALL
-        elif asr_model == AsrModelType.WHISPER_MEDIUM:
-            asr_pipeline_options.asr_options = WHISPER_MEDIUM
-        elif asr_model == AsrModelType.WHISPER_BASE:
-            asr_pipeline_options.asr_options = WHISPER_BASE
-        elif asr_model == AsrModelType.WHISPER_LARGE:
-            asr_pipeline_options.asr_options = WHISPER_LARGE
-        elif asr_model == AsrModelType.WHISPER_TURBO:
-            asr_pipeline_options.asr_options = WHISPER_TURBO
-
-        # Explicit MLX models (force MLX implementation)
-        elif asr_model == AsrModelType.WHISPER_TINY_MLX:
-            asr_pipeline_options.asr_options = WHISPER_TINY_MLX
-        elif asr_model == AsrModelType.WHISPER_SMALL_MLX:
-            asr_pipeline_options.asr_options = WHISPER_SMALL_MLX
-        elif asr_model == AsrModelType.WHISPER_MEDIUM_MLX:
-            asr_pipeline_options.asr_options = WHISPER_MEDIUM_MLX
-        elif asr_model == AsrModelType.WHISPER_BASE_MLX:
-            asr_pipeline_options.asr_options = WHISPER_BASE_MLX
-        elif asr_model == AsrModelType.WHISPER_LARGE_MLX:
-            asr_pipeline_options.asr_options = WHISPER_LARGE_MLX
-        elif asr_model == AsrModelType.WHISPER_TURBO_MLX:
-            asr_pipeline_options.asr_options = WHISPER_TURBO_MLX
-
-        # Explicit Native models (force native implementation)
-        elif asr_model == AsrModelType.WHISPER_TINY_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_TINY_NATIVE
-        elif asr_model == AsrModelType.WHISPER_SMALL_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_SMALL_NATIVE
-        elif asr_model == AsrModelType.WHISPER_MEDIUM_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_MEDIUM_NATIVE
-        elif asr_model == AsrModelType.WHISPER_BASE_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_BASE_NATIVE
-        elif asr_model == AsrModelType.WHISPER_LARGE_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_LARGE_NATIVE
-        elif asr_model == AsrModelType.WHISPER_TURBO_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_TURBO_NATIVE
-
-        # Explicit WhisperS2T models (CTranslate2 backend - fastest)
-        elif asr_model == AsrModelType.WHISPER_TINY_S2T:
-            asr_pipeline_options.asr_options = WHISPER_TINY_S2T
-        elif asr_model == AsrModelType.WHISPER_TINY_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_TINY_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_BASE_S2T:
-            asr_pipeline_options.asr_options = WHISPER_BASE_S2T
-        elif asr_model == AsrModelType.WHISPER_BASE_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_BASE_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_SMALL_S2T:
-            asr_pipeline_options.asr_options = WHISPER_SMALL_S2T
-        elif asr_model == AsrModelType.WHISPER_SMALL_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_SMALL_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_DISTIL_SMALL_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_DISTIL_SMALL_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_MEDIUM_S2T:
-            asr_pipeline_options.asr_options = WHISPER_MEDIUM_S2T
-        elif asr_model == AsrModelType.WHISPER_MEDIUM_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_MEDIUM_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_DISTIL_MEDIUM_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_DISTIL_MEDIUM_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_LARGE_V3_S2T:
-            asr_pipeline_options.asr_options = WHISPER_LARGE_V3_S2T
-        elif asr_model == AsrModelType.WHISPER_DISTIL_LARGE_V3_S2T:
-            asr_pipeline_options.asr_options = WHISPER_DISTIL_LARGE_V3_S2T
-        elif asr_model == AsrModelType.WHISPER_LARGE_V3_TURBO_S2T:
-            asr_pipeline_options.asr_options = WHISPER_LARGE_V3_TURBO_S2T
-        elif asr_model == AsrModelType.WHISPER_DISTIL_LARGE_V3_5_S2T:
-            asr_pipeline_options.asr_options = WHISPER_DISTIL_LARGE_V3_5_S2T
-
-        else:
-            _log.error(f"{asr_model} is not known")
-            raise ValueError(f"{asr_model} is not known")
+        asr_pipeline_options.asr_options = _resolve_asr_options(asr_model)
 
         _log.debug(f"ASR pipeline_options: {asr_pipeline_options}")
 
