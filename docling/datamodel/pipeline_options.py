@@ -106,8 +106,8 @@ class OcrMode(str, Enum):
     # Layout detections which can bear text. No PDF information is needed/used.
     LAYOUT_DETECTIONS = "layout_detections"
 
-    # Layout detections, without the ones that overlap with text-bearing pdf cells
-    LAYOUT_DETECTIONS_WITHOUT_PDF_TEXT = "layout_without_pdf_text"
+    # Layout detections augmented with PDF cell information
+    PDF_AUGMENTED_LAYOUT = "pdf_augmented_layout"
 
 
 class TableFormerMode(str, Enum):
@@ -203,10 +203,10 @@ class OcrOptions(BaseOptions):
                 OcrMode.FORCE_FULL_PAGE_OCR,
                 OcrMode.PDF_BITMAPS_ONLY,
                 OcrMode.LAYOUT_DETECTIONS,
-                OcrMode.LAYOUT_DETECTIONS_WITHOUT_PDF_TEXT,
+                OcrMode.PDF_AUGMENTED_LAYOUT,
             ],
         ),
-    ] = OcrMode.LAYOUT_DETECTIONS_WITHOUT_PDF_TEXT
+    ] = OcrMode.PDF_AUGMENTED_LAYOUT
 
     lang: Annotated[
         list[str],

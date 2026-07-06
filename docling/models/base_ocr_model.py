@@ -92,8 +92,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             ocr_rects = self._find_pdf_ocr_rects(page)
         elif self.options.mode == OcrMode.LAYOUT_DETECTIONS:
             ocr_rects = self._find_layout_ocr_rects(page)
-        elif self.options.mode == OcrMode.LAYOUT_DETECTIONS_WITHOUT_PDF_TEXT:
-            ocr_rects = self._find_layout_ocr_rects_without_pdf_text(page)
+        elif self.options.mode == OcrMode.PDF_AUGMENTED_LAYOUT:
+            ocr_rects = self._find_pdf_augmented_layout(page)
         return ocr_rects
 
     def _find_pdf_ocr_rects(self, page: Page) -> List[BoundingBox]:
@@ -150,7 +150,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         return ocr_rects
 
-    def _find_layout_ocr_rects_without_pdf_text(self, page: Page) -> List[BoundingBox]:
+    def _find_pdf_augmented_layout(self, page: Page) -> List[BoundingBox]:
         r"""
         1. Filter the layout clusters accoring to the dense/sparse logic.
         2. Build the ocr_rects out of:

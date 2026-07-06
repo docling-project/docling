@@ -626,7 +626,7 @@ def convert(  # noqa: C901
             ...,
             help="Which document regions are fed to the OCR engine.",
         ),
-    ] = OcrMode.LAYOUT_DETECTIONS_WITHOUT_PDF_TEXT,
+    ] = OcrMode.PDF_AUGMENTED_LAYOUT,
     tables: Annotated[
         bool,
         typer.Option(

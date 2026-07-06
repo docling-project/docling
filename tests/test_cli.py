@@ -628,7 +628,7 @@ def test_cli_ocr_mode_sets_options_mode(tmp_path, monkeypatch, mode):
 def test_cli_ocr_mode_defaults_to_layout_without_pdf_text(tmp_path, monkeypatch):
     result, ocr_options = _capture_cli_ocr_options(monkeypatch, [], tmp_path)
     assert result.exit_code == 0
-    assert ocr_options.mode is OcrMode.LAYOUT_DETECTIONS_WITHOUT_PDF_TEXT
+    assert ocr_options.mode is OcrMode.PDF_AUGMENTED_LAYOUT
 
 
 def test_cli_force_ocr_is_deprecated_and_maps_to_full_page(tmp_path, monkeypatch):
