@@ -93,48 +93,48 @@ defaults:
   # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
   log_level: 4
 
-  # hwp/docx 분기 기본 청커: "recursive" | "hybrid"
-  chunker_type: "recursive"
-
-  # 입력 포맷 자동 PDF 변환 엔진 선택
+  # 입력 포맷 자동 PDF 변환 엔진 선택 (ppt/txt/md/img→pdf, hwp 폴백 등 전 변환 경로 공용)
   use_pdf_sdk: true
 
-  # hwp/hwpx 처리 시 기본 SDK 백엔드 사용 여부
-  use_hwp_sdk: true
+# 포맷별 옵션 컨테이너
+formats:
+  # HWP/HWPX: SDK 백엔드 파싱 옵션
+  hwp:
+    # SDK 백엔드 사용 여부 (false=레거시 backend 로 폴백)
+    use_hwp_sdk: true
+    # use_hwp_sdk=true 일 때만 유효한 SDK 출력 덤프(디버그)
+    dump_sdk_output: false
+    # 이미지 저장 여부
+    save_images: true
 
-  # use_hwp_sdk=true 일 때만 유효한 SDK 출력 덤프
-  dump_sdk_output: false
-
-  # hwp/hwpx 처리 시 이미지 저장 여부
-  save_images: true
+  # PPT(ppt/pptx) 페이지 설명(VLM). 상세는 3.2 formats.ppt.page_description 참고
+  ppt:
+    page_description:
+      enable: false
+      # ... (아래 formats.ppt 소절 참고)
 
 chunking:
-  # 청킹용 토크나이저 기본값(hybrid 경로 등). tokenizer_path 가 실제 존재하면 그 경로,
-  # 없으면 tokenizer_id(HF) 로 폴백 (외부 네트워크 차단 환경 대비)
-  tokenizer_path: "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
-  tokenizer_id: "sentence-transformers/all-MiniLM-L6-v2"
+  # 청킹 모드: "recursive"(문자수 기반, 기본) | "hybrid"(layout 구조 기반; hwp/hwpx/docx 에만 적용)
+  chunker_type: "recursive"
 
-  # pdf/txt/md/ppt 등 일반 텍스트 splitter 기본값
-  generic:
-    chunk_size: 1000
-    chunk_overlap: 100
+  # 청크 크기(공통): recursive 모드=문자 수 · hybrid 모드=토큰 수. 0=크기 기반 분할 안 함(전체 1청크)
+  chunk_size: 1000000
 
-  # hwp/hwpx/docx + recursive 분기 기본값
+  # 문자수 기반 청킹 (전 포맷 공용: pdf/txt/md/img/ppt/hwp/hwpx/docx). chunker_type: recursive 일 때.
   recursive:
-    chunk_size: 8192
     chunk_overlap: 100
-    # 임베딩 입력 안정성을 위한 토큰 절대 상한
-    token_chunk_size_cap: 60000
-    # 비우면 로컬 경로(/models/...) 우선, 없으면 HF ID fallback
-    tokenizer_id: ""
 
-  # hwp/hwpx/docx + hybrid 분기 기본값
+  # layout 구조 기반 청킹 (선택 모드). chunker_type: hybrid 일 때 hwp/hwpx/docx 에만 적용.
+  # (토크나이저는 아래 chunking.tokenizer_path/tokenizer_id 를 공용으로 사용)
   hybrid:
     # 토큰 수 계산 방식. "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
     tokenizer_type: "char"
-    tokenizer_id: ""
-    chunk_size: 10000000
     merge_peers: true
+
+  # 청킹용 토크나이저 기본값(hybrid huggingface 모드 등). tokenizer_path 가 실제 존재하면 그 경로,
+  # 없으면 tokenizer_id(HF) 로 폴백 (외부 네트워크 차단 환경 대비)
+  tokenizer_path: "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
+  tokenizer_id: "sentence-transformers/all-MiniLM-L6-v2"
 
 loaders:
   image:
@@ -165,48 +165,50 @@ whisper:
 
 모든 기본값과 동작은 코드(`DocumentProcessor.__init__`)에서 검증되었습니다. 값이 누락되거나 무효하면 표의 기본값으로 폴백합니다.
 
-#### defaults
+#### defaults (전역)
 
 | 키 | 기본값 | 설명 |
 |----|--------|------|
 | `log_level` | `4` (INFO) | 로깅 레벨. 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG |
-| `chunker_type` | `"recursive"` | hwp/hwpx/docx 분기의 기본 청커. `recursive` 또는 `hybrid`. 그 외 값은 `recursive`로 폴백 |
-| `use_pdf_sdk` | `true` | 입력 포맷 자동 PDF 변환 시 SDK 엔진 사용 여부 (PPT/DOC/이미지/HWP 폴백 변환에 영향) |
-| `use_hwp_sdk` | `true` | hwp/hwpx 처리 시 기본 SDK 백엔드(`GenosHwpDocumentBackend`) 사용 여부 |
-| `dump_sdk_output` | `false` | SDK 원본 출력 덤프 여부. `use_hwp_sdk=true` 일 때만 유효 |
+| `use_pdf_sdk` | `true` | 입력 포맷 자동 PDF 변환 시 SDK 엔진 사용 여부 (PPT/DOC/이미지/HWP 폴백 변환에 영향, 전 변환 경로 공용) |
+
+#### formats.hwp (HWP/HWPX 전용)
+
+| 키 | 기본값 | 설명 |
+|----|--------|------|
+| `use_hwp_sdk` | `true` | hwp/hwpx 처리 시 기본 SDK 백엔드(`GenosHwpDocumentBackend`) 사용 여부. `false`면 레거시 backend로 폴백 |
+| `dump_sdk_output` | `false` | SDK 원본 출력 덤프 여부(디버그). `use_hwp_sdk=true` 일 때만 유효 |
 | `save_images` | `true` | hwp/hwpx 처리 시 추출 이미지 저장 여부 |
 
-#### chunking (청킹용 토크나이저 기본값)
+> 구버전 config 호환: `formats.hwp` 가 없으면 예전 위치(`defaults.use_hwp_sdk` 등)를 폴백으로 읽습니다.
+
+#### chunking
 
 | 키 | 기본값 | 설명 |
 |----|--------|------|
-| `tokenizer_path` | `/models/...all-MiniLM-L6-v2` | 청킹용 토크나이저 로컬 경로(hybrid `huggingface` 모드 및 recursive 60K 토큰 cap 계산에 사용). 경로가 실제 존재하면 그 경로 사용 |
+| `chunker_type` | `"recursive"` | 청킹 모드. `recursive`(문자수 기반, 전 포맷 공용) 또는 `hybrid`(layout 기반, hwp/hwpx/docx 에만 적용). 그 외 값은 `recursive`로 폴백. 구버전 호환: 없으면 `defaults.chunker_type` 폴백 |
+| `chunk_size` | `1000000` | **공통 청크 크기.** recursive 모드=문자 수, hybrid 모드=토큰 수로 해석. `0`(또는 음수)=크기 기반 분할 안 함 → 전체 문서를 1청크로 둠. recursive/hybrid 는 `chunker_type`으로 택일되므로 값 하나를 활성 모드가 자기 단위로 사용 |
+| `tokenizer_path` | `/models/...all-MiniLM-L6-v2` | 청킹용 토크나이저 로컬 경로(hybrid `huggingface` 모드에서 사용). 경로가 실제 존재하면 그 경로 사용 |
 | `tokenizer_id` | `sentence-transformers/all-MiniLM-L6-v2` | `tokenizer_path` 가 없을 때 폴백할 HF ID (외부 네트워크 차단 환경 대비) |
 
-#### chunking.generic (pdf/txt/md/ppt 등 일반 splitter)
+> `chunk_size`/`chunker_type`/`tokenizer_*` 는 하위 블록이 아닌 `chunking` 공통 레벨에 둡니다. per-block 로 `chunking.recursive.chunk_size` / `chunking.hybrid.chunk_size` 를 지정하면 해당 모드에 한해 공통값을 덮어씁니다(선택).
+
+#### chunking.recursive (문자수 기반, 전 포맷 공용 — 기본 모드)
 
 | 키 | 기본값 | 설명 |
 |----|--------|------|
-| `chunk_size` | `1000` | 일반 텍스트 분할 청크 크기(문자 단위). 0 이하면 1000으로 폴백 |
 | `chunk_overlap` | `100` | 청크 간 오버랩(문자 단위). 음수면 100으로 폴백 |
 
-#### chunking.recursive (hwp/hwpx/docx + recursive 분기, 기본 청커)
+> 청크 크기는 공통 `chunking.chunk_size`(문자 수)로 지정합니다. `0`이면 문자 분할 없이 전체를 1청크로 둡니다.
 
-| 키 | 기본값 | 설명 |
-|----|--------|------|
-| `chunk_size` | `8192` | 청크 크기(문자 단위). 한국어 기준 약 12K~16K 토큰. 0 이하면 8192로 폴백 |
-| `chunk_overlap` | `100` | 청크 간 오버랩(문자 단위). 음수면 100으로 폴백 |
-| `token_chunk_size_cap` | `60000` | 토큰 절대 상한. 어떤 chunk_size에서도 한 청크가 이 값을 초과하면 토큰 단위로 강제 재분할 (임베딩 입력 한도 ~128K 토큰의 절반 안전 마진) |
-| `tokenizer_id` | `""` | 비우면 로컬 경로(`/models/...sentence-transformers-all-MiniLM-L6-v2`) 우선, 없으면 HF ID로 fallback |
-
-#### chunking.hybrid (hwp/hwpx/docx + hybrid 분기)
+#### chunking.hybrid (layout 기반 — hwp/hwpx/docx 전용 선택 모드)
 
 | 키 | 기본값 | 설명 |
 |----|--------|------|
 | `tokenizer_type` | `"char"` | 토큰 수 계산 방식. `char`(기본)=문자 수 기준(HF 토크나이저 미로드, 외부 모델 의존 없음) / `huggingface`=HF 토크나이저 기준. 그 외 값은 `char`로 폴백 |
-| `tokenizer_id` | `""` | `huggingface` 모드에서만 사용. 비우면 chunking 상위 토크나이저(로컬 경로 우선, 없으면 HF ID)로 fallback |
-| `chunk_size` | `10000000` | 청크당 최대 크기. `char` 모드면 문자 수, `huggingface` 모드면 토큰 수. 기본값은 사실상 제한 없음 → hybrid를 레이아웃 기반 병합 도구로만 사용. 0 이하/누락 시 코드 fallback(`1e30`) |
 | `merge_peers` | `true` | 같은 제목/캡션을 가진 작은 청크를 크기 제한 내에서 병합 |
+
+> hybrid 의 청크 크기(토큰 수)도 공통 `chunking.chunk_size` 로 지정합니다. 기본 `1000000`은 사실상 제한이 없어 hybrid를 레이아웃 기반 병합 도구로만 쓰게 됩니다. `huggingface` 모드 토크나이저는 위 `chunking.tokenizer_path/tokenizer_id` 를 공용으로 사용합니다.
 
 #### loaders.image
 
@@ -237,15 +239,17 @@ whisper:
 
 #### chunker_type: recursive vs hybrid
 
-- **recursive (기본)**: `DoclingDocument`를 markdown으로 export한 뒤 `RecursiveCharacterTextSplitter`로 **문자 단위** 분할합니다. 단락/헤딩/표 경계의 줄바꿈이 보존되어 문장 중간에서 잘리는 현상이 적고, 페이지 단위 정확도를 가집니다. 대부분의 경우 권장됩니다.
-- **hybrid**: 레이아웃 계층 구조를 유지하며 청크 크기 기반으로 청크를 조절합니다. 크기 계산 방식은 `chunking.hybrid.tokenizer_type`(기본 `char`=문자 수 / `huggingface`=HF 토큰 수)으로 선택합니다. 기본 `chunk_size=10000000`은 사실상 제한이 없는 수준이라, 이 전처리기에서는 주로 레이아웃 기반 병합 도구로 동작합니다. 청크 단위 bbox 정확도가 필요할 때 사용합니다.
-- **60K 토큰 cap**: recursive 분기에서는 chunk_size와 무관하게 한 청크가 `token_chunk_size_cap`(기본 60000) 토큰을 넘으면 토큰 단위로 강제 재분할됩니다. 기본 8192자 청크에서는 보통 트리거되지 않으며, 큰 chunk_size를 지정했을 때의 안전망입니다.
+- **recursive (기본, 전 포맷 공용)**: 문자 수 기반 청킹입니다. hwp/hwpx/docx 는 `DoclingDocument`를 markdown으로 export한 뒤, pdf/txt/md/img 는 로드된 텍스트를 대상으로 `RecursiveCharacterTextSplitter`로 **문자 단위** 분할합니다(공통 `chunk_size` 문자 수). 단락/헤딩/표 경계의 줄바꿈이 보존되어 문장 중간에서 잘리는 현상이 적고, 페이지 단위 정확도를 가집니다. 대부분의 경우 권장됩니다.
+- **`chunk_size=0` → 전체 1청크**: 공통 `chunk_size` 가 `0`(또는 음수)이면 문자 분할을 하지 않고 문서 전체를 한 청크로 둡니다(PPT 는 예외적으로 "1 page = 1 chunk" 유지). 검색 정밀도를 위해 문서를 잘게 나누려면 `chunk_size` 를 적정 문자 수(예: 2000)로 지정하세요.
+- **hybrid (hwp/hwpx/docx 전용)**: 레이아웃 계층 구조를 유지하며 청크 크기 기반으로 청크를 조절합니다. layout 파싱이 되는 hwp/hwpx/docx 에만 적용되고, pdf/txt/md/img/ppt 는 `chunker_type: hybrid` 로 두어도 각자 문자수/페이지 기반으로 동작합니다. 크기 계산 방식은 `chunking.hybrid.tokenizer_type`(기본 `char`=문자 수 / `huggingface`=HF 토큰 수)으로 선택하며, 크기는 공통 `chunk_size`(토큰 수)로 지정합니다. 기본값(`1000000`)은 사실상 제한이 없어 주로 레이아웃 기반 병합 도구로 동작합니다. 청크 단위 bbox 정확도가 필요할 때 사용합니다.
+
+> **임베딩 토큰 상한 주의**: 이전 버전의 60K 토큰 강제 재분할(안전망)은 제거되었습니다. `chunk_size` 가 매우 크거나 `0`(전체 1청크)이면 한 청크가 임베딩 모델 입력 한도를 초과할 수 있습니다. 대용량/토큰과다 문서는 `chunk_size` 를 적정 값으로 지정해 방지하세요.
 
 #### formats.ppt.page_description (PPT 페이지 설명 — 속도 최적화)
 
 PPT(`.ppt`/`.pptx`)를 **PDF→경량 docling 파싱** 후 각 페이지를 **이미지로 렌더링해 VLM 으로 설명**하고, 페이지의 native text 와 **동일 청크**로 구성합니다. 첨부용은 즉시 응답이 목적이라 **속도 우선**으로 튜닝합니다(이미지·출력 축소, 병렬↑, 간결 프롬프트).
 
-- **청킹**: **1 page = 1 chunk**. `chunking.generic.chunk_size` 가 `>0` 이면 연속 페이지를 그 크기(문자 수)까지 결합합니다(`0`=페이지별 1청크 고정). bbox 는 첨부용 원칙대로 미추출.
+- **청킹**: **1 page = 1 chunk**. 공통 `chunking.chunk_size` 가 `>0` 이면 연속 페이지를 그 크기(문자 수)까지 결합합니다(`0`=페이지별 1청크 고정). bbox 는 첨부용 원칙대로 미추출.
 - **enable=false** 여도 PPT 는 docling 경량 파싱으로 처리되며, 설명 생성만 생략됩니다(텍스트/설명이 모두 없는 페이지는 `.` 로 채워 Empty 예외 방지).
 - native text 는 프롬프트의 **`{{page_text}}`** 변수로 전달됩니다.
 
@@ -289,34 +293,33 @@ config yaml의 기본값은 `DocumentProcessor.__init__`에서 `self._default_kw
 | kwargs | 대응 config | 비고 |
 |--------|-------------|------|
 | `log_level` | `defaults.log_level` | |
-| `chunker_type` | `defaults.chunker_type` | |
+| `chunker_type` | `chunking.chunker_type` | |
 | `use_pdf_sdk` | `defaults.use_pdf_sdk` | |
-| `use_hwp_sdk` | `defaults.use_hwp_sdk` | |
-| `chunk_size` | generic/recursive 분기의 chunk_size를 직접 지정 | 미지정 시 분기별 config 기본값 사용 |
-| `chunk_overlap` | generic/recursive 분기의 chunk_overlap | 미지정 시 분기별 config 기본값 사용 |
+| `use_hwp_sdk` | `formats.hwp.use_hwp_sdk` | |
+| `chunk_size` | `chunking.chunk_size` (공통) | 활성 모드 단위(recursive=문자 수 / hybrid=토큰 수). 미지정 시 config 기본값 사용 |
+| `chunk_overlap` | `chunking.recursive.chunk_overlap` | 미지정 시 config 기본값 사용 |
 
-> `chunk_size`/`chunk_overlap`은 일반 분기(PDF/TXT 등)와 recursive 분기 모두에서 우선 적용되고, 미지정 시 각각 `chunking.generic.*` 또는 `chunking.recursive.*` 기본값으로 폴백합니다.
+> `chunk_size`/`chunk_overlap`은 모든 문자수 청킹 경로(pdf/txt/md/img/ppt + hwp/hwpx/docx recursive)에 공통 적용되고, 미지정 시 `chunking.chunk_size` / `chunking.recursive.chunk_overlap` 기본값으로 폴백합니다.
 
 ### 3.4 자주 쓰는 튜닝 시나리오
 
-**① 청크 크기 조정** — 더 작은 청크로 검색 정밀도를 높이고 싶을 때:
+**① 청크 크기 조정** — 더 작은 청크로 검색 정밀도를 높이고 싶을 때 (공통 `chunk_size`):
 
 ```yaml
 chunking:
+  chunk_size: 2000        # 문자 수 (recursive 모드). 0=전체 문서를 1청크
   recursive:
-    chunk_size: 2000
     chunk_overlap: 200
 ```
 
-**② hybrid 청커 사용** — 청크 단위 bbox 정확도가 필요할 때:
+**② hybrid 청커 사용** — hwp/hwpx/docx 에서 청크 단위 bbox 정확도가 필요할 때:
 
 ```yaml
-defaults:
-  chunker_type: "hybrid"
 chunking:
+  chunker_type: "hybrid"
+  chunk_size: 1000        # hybrid 모드에서는 토큰 수. 실제 분할 제한을 두려면 작은 값 지정
   hybrid:
     tokenizer_type: "char"  # char=문자 수 기준 | huggingface=HF 토큰 수 기준
-    chunk_size: 1000        # 실제 분할 제한을 두려면 작은 값 지정(char 모드면 문자 수)
     merge_peers: true
 ```
 
@@ -331,8 +334,9 @@ whisper:
 **④ HWP SDK 비활성화** — 엔터프라이즈 SDK 없이 레거시 백엔드로 처리할 때:
 
 ```yaml
-defaults:
-  use_hwp_sdk: false
+formats:
+  hwp:
+    use_hwp_sdk: false
 ```
 
 ---
@@ -366,7 +370,8 @@ defaults:
         └── 기타 (.pdf, .ppt,    ► get_loader() ──► LangChain Loader
             .doc, .jpg, .txt,                          │
             .json, .md, .html 등)                      ▼
-                                       RecursiveCharacterTextSplitter (generic)
+                                    문자수 청킹(recursive, 공통 chunk_size)
+                                    (PPT 는 페이지 기반: 1 page=1 chunk)
                                                        │
                                                        ▼
                                               ┌─────────────────────────────┐
@@ -413,13 +418,13 @@ HWP/HWPX 파일은 변환 실패 시 단계적으로 폴백합니다.
 | 클래스/함수 | 역할 | config 연관 |
 |-------------|------|-------------|
 | `DocumentProcessor` | 메인 엔트리포인트. config 로딩 + 확장자 라우팅 + generic 분기 처리 | 전체 |
-| `HwpProcessor` | hwp/hwpx 통합 처리 (SDK 백엔드 + 폴백) | `defaults.use_hwp_sdk/dump_sdk_output/save_images`, `chunking.recursive/hybrid` |
-| `DocxProcessor` | docx Docling 파싱 + 청킹 | `chunking.recursive/hybrid` |
+| `HwpProcessor` | hwp/hwpx 통합 처리 (SDK 백엔드 + 폴백) | `formats.hwp.{use_hwp_sdk,dump_sdk_output,save_images}`, `chunking.*` |
+| `DocxProcessor` | docx Docling 파싱 + 청킹 | `chunking.*` |
 | `AudioLoader` | 오디오 분할 + Whisper STT 병렬 호출 | `whisper.*` |
 | `TabularLoader` | CSV/XLSX → DataFrame 파싱, `[DA]` 마커 부착 | `loaders.tabular.encoding_detect_sample_bytes` |
 | `TextLoader` | txt/json/md 인코딩 자동 감지 로드 | — |
-| `HierarchicalChunker` / `HybridChunker` | 레이아웃 기반/토큰 기반 청킹 | `chunking.hybrid.*` |
-| `_split_with_recursive_chunker` | recursive 분기 헬퍼 (markdown export + 문자 분할) | `chunking.recursive.*` |
+| `HierarchicalChunker` / `HybridChunker` | 레이아웃 기반/토큰 기반 청킹 | `chunking.chunk_size`, `chunking.hybrid.*` |
+| `_char_split_text` / `_split_with_recursive_chunker` | 문자수 청킹 공용 헬퍼(전 포맷) / recursive 분기(markdown export + 문자 분할) | `chunking.chunk_size`, `chunking.recursive.chunk_overlap` |
 
 ---
 
@@ -454,8 +459,8 @@ HWP/HWPX 파일은 변환 실패 시 단계적으로 폴백합니다.
 |------|------|------|
 | `chunk length is 0` (`GenosServiceException`) | HWP/DOCX에서 추출된 청크가 0개 | 원본 파일이 비었거나 파싱 실패. 다른 백엔드(`use_hwp_sdk` 변경)나 PDF 폴백 확인 |
 | 오디오 전사 결과 비어있음 | `whisper.url`이 placeholder(`<WHISPER_ENDPOINT>`) | config에서 실제 STT 서버 주소로 변경 |
-| HWP 변환 실패 후 에러 | SDK/레거시 백엔드/PDF 변환 모두 실패 | `use_hwp_sdk`, `use_pdf_sdk` 조정. LibreOffice(`soffice`) 설치 확인 |
-| 청크가 비정상적으로 큼 | chunk_size를 매우 크게 지정 | `token_chunk_size_cap`(기본 60000) 안전망 동작 확인. chunk_size 축소 |
+| HWP 변환 실패 후 에러 | SDK/레거시 백엔드/PDF 변환 모두 실패 | `formats.hwp.use_hwp_sdk`, `defaults.use_pdf_sdk` 조정. LibreOffice(`soffice`) 설치 확인 |
+| 청크가 비정상적으로 큼 / 임베딩 입력 초과 | 기본 `chunk_size` 가 크거나 `0`(전체 1청크)이라 한 청크가 임베딩 토큰 한도 초과 (60K 토큰 안전망 제거됨) | `chunking.chunk_size` 를 적정 문자 수(예: 2000~8000)로 지정 |
 | 한글 텍스트 깨짐 (CSV/TXT) | 인코딩 감지 실패 | TXT는 다단 인코딩 폴백 사용. CSV는 `encoding_detect_sample_bytes` 증대 |
 | 로그가 너무 많음/적음 | `log_level` 설정 | config `defaults.log_level` 조정 (4=INFO 기본) |
 | config가 적용 안 됨 | `resource_dev` 파일이 우선 로드됨 | 로딩 우선순위([2장](#2-빠른-시작)) 확인. 의도치 않은 `resource_dev` 파일 제거 |
@@ -468,7 +473,7 @@ HWP/HWPX 파일은 변환 실패 시 단계적으로 폴백합니다.
 
 ### A. 설정 로딩 (`DocumentProcessor.__init__`)
 
-생성 시 `_resolve_default_attachment_config_path()`로 config 경로를 결정(`resource_dev` → `resource`)한 뒤 `_load_config()`로 읽습니다. 각 섹션(`defaults`/`chunking`/`loaders`/`whisper`)은 `_parse_optional_bool/_parse_optional_int` 등으로 검증되어 `self._default_kwargs`에 평탄화됩니다. `chunk_size`/`overlap`은 분기별로 `generic_*`/`recursive_*` prefix로 저장됩니다. 무효 값은 표의 기본값으로 폴백하고 경고 로그를 남깁니다.
+생성 시 `_resolve_default_attachment_config_path()`로 config 경로를 결정(`resource_dev` → `resource`)한 뒤 `_load_config()`로 읽습니다. 각 섹션(`defaults`/`formats`/`chunking`/`loaders`/`whisper`)은 `_parse_optional_bool/_parse_optional_int` 등으로 검증되어 `self._default_kwargs`에 평탄화됩니다. `chunker_type`·공통 `chunk_size` 는 `chunking` 에서, HWP 옵션은 `formats.hwp` 에서 읽습니다(각각 구버전 위치 `defaults.*` 폴백 지원). 공통 `chunk_size` 는 `recursive_chunk_size`/`hybrid_chunk_size` 양쪽 소스로 쓰이고, 문자 오버랩은 `recursive_chunk_overlap` 로 저장됩니다. 무효 값은 표의 기본값으로 폴백하고 경고 로그를 남깁니다.
 
 ### B. 라우팅 (`DocumentProcessor.__call__`)
 
@@ -496,7 +501,8 @@ HWP/HWPX 파일은 변환 실패 시 단계적으로 폴백합니다.
 
 ### D. 청킹 내부
 
-- **recursive (`_split_with_recursive_chunker`)**: `export_to_markdown(page_break_placeholder="<!-- PB -->")`로 단일 markdown 생성 → `RecursiveCharacterTextSplitter`(문자 단위) → 60K 토큰 cap 후처리 → placeholder 카운트로 페이지 매핑 복원. 반환은 `list[dict]{text, page_no, pages, doc_items}`. 한 청크가 여러 페이지에 걸칠 수 있어 페이지 단위 정확도를 가집니다.
+- **문자수 청킹(`_char_split_text`)**: 공용 헬퍼. `chunk_size>0` 이면 `RecursiveCharacterTextSplitter`로 문자 단위 분할, `<=0` 이면 분할 없이 전체를 1청크로 둡니다. pdf/txt/md/img 는 로드된 텍스트에, hwp/hwpx/docx(recursive)는 markdown export 에 적용됩니다. (별도 토큰 상한 후처리는 없음 — 60K cap 제거됨)
+- **recursive (`_split_with_recursive_chunker`)**: `export_to_markdown(page_break_placeholder="<!-- PB -->")`로 단일 markdown 생성 → `_char_split_text`(문자 단위) → placeholder 카운트로 페이지 매핑 복원. 반환은 `list[dict]{text, page_no, pages, doc_items}`. 한 청크가 여러 페이지에 걸칠 수 있어 페이지 단위 정확도를 가집니다.
 - **hybrid (`HybridChunker`)**: `HierarchicalChunker`로 레이아웃 청크 생성 → `_split_by_doc_items`(슬라이딩 윈도우) → `_split_using_plain_text`(semchunk) → `merge_peers=true`면 동일 메타데이터 청크 병합. 청크 단위 bbox 정확도.
 - 두 분기는 `compose_vectors`에서 `chunker_type`으로 다시 분기해 처리됩니다 (recursive=dict, hybrid=DocChunk).
 

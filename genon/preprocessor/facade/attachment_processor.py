@@ -1253,27 +1253,38 @@ class HybridChunker(BaseChunker):
 # 페이지 정보는 export_to_markdown(page_break_placeholder=...)로 삽입한 마커를
 # 청크별로 카운트해 복원한다. 한 청크가 여러 페이지에 걸칠 수 있다.
 _RECURSIVE_PAGE_BREAK = "<!-- PB -->"
-_RECURSIVE_CHUNK_SIZE_CAP = 60000  # 임베딩 입력 한도(~128K 토큰)의 절반 안전 마진
 
 
-def _resolve_recursive_tokenizer(tokenizer_id=None):
-    if tokenizer_id is None:
-        local = Path(_DEFAULT_TOKENIZER_LOCAL_PATH)
-        tokenizer_id = local if local.exists() else _DEFAULT_TOKENIZER_ID
-    return AutoTokenizer.from_pretrained(tokenizer_id)
+def _char_split_text(text: str, chunk_size=None, chunk_overlap=None) -> list[str]:
+    """문자수 기반 청킹 공용 헬퍼 (generic/recursive 경로 공유).
+
+    chunk_size 가 0 이하/None 이면 분할하지 않고 전체를 1청크로 둔다.
+    chunk_size > 0 이면 RecursiveCharacterTextSplitter 로 문자 단위 분할한다.
+    """
+    if not text:
+        return []
+
+    cs = int(chunk_size) if chunk_size is not None else 0
+    co = max(int(chunk_overlap), 0) if chunk_overlap is not None else 100
+
+    if cs > 0:
+        raw_chunks = RecursiveCharacterTextSplitter(
+            chunk_size=cs, chunk_overlap=co,
+        ).split_text(text)
+    else:
+        raw_chunks = [text]
+
+    return [c for c in raw_chunks if c]
 
 
 def _split_with_recursive_chunker(
     document: DoclingDocument,
     chunk_size=None,
     chunk_overlap=None,
-    tokenizer_id=None,
-    token_chunk_size_cap=None,
 ) -> List[dict]:
-    """Markdown export + RecursiveCharacterTextSplitter로 docling 문서를 분할.
+    """Markdown export + 문자수 기반 청킹(_char_split_text)으로 docling 문서를 분할.
 
-    1) char 단위로 1차 분할 (chunk_size 기본 8192).
-    2) 한 청크가 60,000 토큰을 초과하면 토큰 단위로 강제 재분할 — 임베딩 한도 절대 상한 (이슈 #183).
+    chunk_size 로 문자 분할 (0 이하이면 분할 안 함 = 전체 1청크).
 
     Returns: list of dict {text, page_no, pages, doc_items}
     """
@@ -1281,33 +1292,12 @@ def _split_with_recursive_chunker(
     if not md_full:
         return []
 
-    cs = max(int(chunk_size), 1) if chunk_size is not None else 8192
     co = max(int(chunk_overlap), 0) if chunk_overlap is not None else 100
-    token_chunk_size_cap = (
-        max(int(token_chunk_size_cap), 1)
-        if token_chunk_size_cap is not None
-        else _RECURSIVE_CHUNK_SIZE_CAP
+    raw_chunks = _char_split_text(
+        md_full,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
     )
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=cs,
-        chunk_overlap=co,
-    )
-    raw_chunks = splitter.split_text(md_full)
-
-    # 60K 토큰 절대 상한 — 어떤 chunk_size 설정에서도 초과 청크는 토큰 단위로 강제 재분할
-    tokenizer = _resolve_recursive_tokenizer(tokenizer_id)
-    token_splitter = RecursiveCharacterTextSplitter.from_huggingface_tokenizer(
-        tokenizer,
-        chunk_size=token_chunk_size_cap,
-        chunk_overlap=0,
-    )
-    safe_chunks: list[str] = []
-    for raw in raw_chunks:
-        if len(tokenizer.tokenize(raw)) <= token_chunk_size_cap:
-            safe_chunks.append(raw)
-        else:
-            safe_chunks.extend(token_splitter.split_text(raw))
-    raw_chunks = safe_chunks
 
     # 페이지별 doc_items 캐시 (반복 조회 방지)
     page_items_cache: dict[int, list] = {}
@@ -1414,8 +1404,6 @@ class DocxProcessor:
                 document,
                 chunk_size=recursive_chunk_size,
                 chunk_overlap=recursive_chunk_overlap,
-                tokenizer_id=kwargs.get("recursive_tokenizer_id"),
-                token_chunk_size_cap=kwargs.get("recursive_token_chunk_size_cap"),
             )
             for ch in chunks:
                 self.page_chunk_counts[ch["page_no"]] += 1
@@ -1434,9 +1422,6 @@ class DocxProcessor:
             "tokenizer": self._tokenizer,
             "tokenizer_type": kwargs.get("hybrid_tokenizer_type", "char"),
         }
-        hybrid_tokenizer = kwargs.get("hybrid_tokenizer_id")
-        if hybrid_tokenizer:
-            chunker_kwargs["tokenizer"] = hybrid_tokenizer
         chunker = HybridChunker(**chunker_kwargs)
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=document, **kwargs))
         for chunk in chunks:
@@ -1593,8 +1578,6 @@ class HwpProcessor:
                 document,
                 chunk_size=recursive_chunk_size,
                 chunk_overlap=recursive_chunk_overlap,
-                tokenizer_id=kwargs.get("recursive_tokenizer_id"),
-                token_chunk_size_cap=kwargs.get("recursive_token_chunk_size_cap"),
             )
             for ch in chunks:
                 page_chunk_counts[ch["page_no"]] += 1
@@ -1613,9 +1596,6 @@ class HwpProcessor:
             "tokenizer": self._tokenizer,
             "tokenizer_type": kwargs.get("hybrid_tokenizer_type", "char"),
         }
-        hybrid_tokenizer = kwargs.get("hybrid_tokenizer_id")
-        if hybrid_tokenizer:
-            chunker_kwargs["tokenizer"] = hybrid_tokenizer
         chunker = HybridChunker(**chunker_kwargs)
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=document, **kwargs))
         for chunk in chunks:
@@ -1765,13 +1745,17 @@ class DocumentProcessor:
         # config 위치: formats.ppt.page_description. 공통 모듈(enrichment/page_description)로 파싱.
         formats_cfg = _as_dict(cfg.get("formats"))
         ppt_fmt_cfg = _as_dict(formats_cfg.get("ppt"))
+        hwp_fmt_cfg = _as_dict(formats_cfg.get("hwp"))
         ppt_pd_cfg = _as_dict(ppt_fmt_cfg.get("page_description"))
         self._page_desc_options = PageDescriptionOptions.from_config(ppt_pd_cfg, self._config_dir)
 
         # 청킹용 토크나이저 (chunking config 기반; 미지정 시 현행 기본값)
         self._tokenizer = _resolve_tokenizer(chunking_cfg)
 
-        chunker_type = str(defaults_cfg.get("chunker_type", "recursive")).strip().lower()
+        # 청킹 모드는 chunking.chunker_type 에서 읽는다(구버전 호환: 없으면 defaults.chunker_type).
+        chunker_type = str(
+            chunking_cfg.get("chunker_type", defaults_cfg.get("chunker_type", "recursive"))
+        ).strip().lower()
         if chunker_type not in {"recursive", "hybrid"}:
             _log.warning(
                 f"[DocumentProcessor] Unknown defaults.chunker_type '{chunker_type}', fallback to 'recursive'."
@@ -1779,48 +1763,56 @@ class DocumentProcessor:
             chunker_type = "recursive"
 
         use_pdf_sdk = _parse_optional_bool(defaults_cfg.get("use_pdf_sdk"), "defaults.use_pdf_sdk")
-        use_hwp_sdk = _parse_optional_bool(defaults_cfg.get("use_hwp_sdk"), "defaults.use_hwp_sdk")
+
+        # HWP/HWPX 전용 옵션은 formats.hwp 에서 읽는다(구버전 호환: 없으면 defaults 폴백).
+        use_hwp_sdk = _parse_optional_bool(hwp_fmt_cfg.get("use_hwp_sdk"), "formats.hwp.use_hwp_sdk")
+        if use_hwp_sdk is None:
+            use_hwp_sdk = _parse_optional_bool(defaults_cfg.get("use_hwp_sdk"), "defaults.use_hwp_sdk")
         dump_sdk_output = _parse_optional_bool(
-            defaults_cfg.get("dump_sdk_output"), "defaults.dump_sdk_output"
+            hwp_fmt_cfg.get("dump_sdk_output"), "formats.hwp.dump_sdk_output"
         )
-        save_images = _parse_optional_bool(defaults_cfg.get("save_images"), "defaults.save_images")
+        if dump_sdk_output is None:
+            dump_sdk_output = _parse_optional_bool(
+                defaults_cfg.get("dump_sdk_output"), "defaults.dump_sdk_output"
+            )
+        save_images = _parse_optional_bool(hwp_fmt_cfg.get("save_images"), "formats.hwp.save_images")
+        if save_images is None:
+            save_images = _parse_optional_bool(defaults_cfg.get("save_images"), "defaults.save_images")
 
         log_level = _parse_optional_int(defaults_cfg.get("log_level"), "defaults.log_level")
         if log_level is None:
             log_level = 4
 
-        generic_chunk_size = _parse_optional_int(
-            generic_chunk_cfg.get("chunk_size"), "chunking.generic.chunk_size"
-        )
-        if generic_chunk_size is None or generic_chunk_size <= 0:
-            generic_chunk_size = 1000
-        generic_chunk_overlap = _parse_optional_int(
-            generic_chunk_cfg.get("chunk_overlap"), "chunking.generic.chunk_overlap"
-        )
-        if generic_chunk_overlap is None or generic_chunk_overlap < 0:
-            generic_chunk_overlap = 100
+        # 청크 크기 공통 옵션(chunking.chunk_size). recursive/hybrid 는 chunker_type 으로
+        # 택일되므로 값 하나를 활성 모드가 자기 단위(recursive=문자 수 · hybrid=토큰 수)로 해석한다.
+        common_chunk_size = _parse_optional_int(chunking_cfg.get("chunk_size"), "chunking.chunk_size")
 
+        # 문자수 기반 통합 청킹 설정. 우선순위: recursive.chunk_size > chunking.chunk_size(공통)
+        # > (레거시)chunking.generic.chunk_size > 0.
         recursive_chunk_size = _parse_optional_int(
             recursive_chunk_cfg.get("chunk_size"), "chunking.recursive.chunk_size"
         )
-        if recursive_chunk_size is None or recursive_chunk_size <= 0:
-            recursive_chunk_size = 8192
+        if recursive_chunk_size is None:
+            recursive_chunk_size = common_chunk_size
+        if recursive_chunk_size is None:
+            recursive_chunk_size = _parse_optional_int(
+                generic_chunk_cfg.get("chunk_size"), "chunking.generic.chunk_size"
+            )
+        if recursive_chunk_size is None or recursive_chunk_size < 0:
+            recursive_chunk_size = 0  # 0 = 전체 문서를 1청크로 (문자수 분할 안 함)
         recursive_chunk_overlap = _parse_optional_int(
-            recursive_chunk_cfg.get("chunk_overlap"), "chunking.recursive.chunk_overlap"
+            recursive_chunk_cfg.get("chunk_overlap", generic_chunk_cfg.get("chunk_overlap")),
+            "chunking.recursive.chunk_overlap",
         )
         if recursive_chunk_overlap is None or recursive_chunk_overlap < 0:
             recursive_chunk_overlap = 100
-        recursive_token_cap = _parse_optional_int(
-            recursive_chunk_cfg.get("token_chunk_size_cap"),
-            "chunking.recursive.token_chunk_size_cap",
-        )
-        if recursive_token_cap is None or recursive_token_cap <= 0:
-            recursive_token_cap = _RECURSIVE_CHUNK_SIZE_CAP
-        recursive_tokenizer_id = str(recursive_chunk_cfg.get("tokenizer_id") or "").strip() or None
 
+        # hybrid(토큰 수). 우선순위: hybrid.chunk_size > chunking.chunk_size(공통) > 무제한 기본값.
         hybrid_chunk_size = _parse_optional_int(
             hybrid_chunk_cfg.get("chunk_size"), "chunking.hybrid.chunk_size"
         )
+        if hybrid_chunk_size is None:
+            hybrid_chunk_size = common_chunk_size
         if hybrid_chunk_size is None or hybrid_chunk_size <= 0:
             hybrid_chunk_size = _DEFAULT_HYBRID_MAX_TOKENS
         hybrid_merge_peers = _parse_optional_bool(
@@ -1828,7 +1820,6 @@ class DocumentProcessor:
         )
         if hybrid_merge_peers is None:
             hybrid_merge_peers = True
-        hybrid_tokenizer_id = str(hybrid_chunk_cfg.get("tokenizer_id") or "").strip() or None
         hybrid_tokenizer_type = str(hybrid_chunk_cfg.get("tokenizer_type", "char")).strip().lower()
         if hybrid_tokenizer_type not in {"char", "huggingface"}:
             _log.warning(
@@ -1870,15 +1861,10 @@ class DocumentProcessor:
             "use_hwp_sdk": True if use_hwp_sdk is None else use_hwp_sdk,
             "dump_sdk_output": False if dump_sdk_output is None else dump_sdk_output,
             "save_images": True if save_images is None else save_images,
-            "generic_chunk_size": generic_chunk_size,
-            "generic_chunk_overlap": generic_chunk_overlap,
             "recursive_chunk_size": recursive_chunk_size,
             "recursive_chunk_overlap": recursive_chunk_overlap,
-            "recursive_token_chunk_size_cap": recursive_token_cap,
-            "recursive_tokenizer_id": recursive_tokenizer_id,
             "hybrid_chunk_size": hybrid_chunk_size,
             "hybrid_merge_peers": hybrid_merge_peers,
-            "hybrid_tokenizer_id": hybrid_tokenizer_id,
             "hybrid_tokenizer_type": hybrid_tokenizer_type,
             "image_ocr_languages": image_ocr_languages,
             "tabular_encoding_detect_sample_bytes": tabular_sample_bytes,
@@ -2027,11 +2013,11 @@ class DocumentProcessor:
                 },
             )]
 
-        # chunk_size 우선순위: kwargs['chunk_size'] > chunking.generic.chunk_size(generic_chunk_size).
+        # chunk_size 우선순위: kwargs['chunk_size'] > chunking.recursive.chunk_size(recursive_chunk_size).
         # 값이 없거나 <=0 이면 1 page = 1 chunk, 있으면 연속 페이지를 그 길이까지 결합.
         chunk_size = _parse_optional_int(kwargs.get('chunk_size'), 'chunk_size')
         if chunk_size is None:
-            chunk_size = _parse_optional_int(kwargs.get('generic_chunk_size'), 'generic_chunk_size')
+            chunk_size = _parse_optional_int(kwargs.get('recursive_chunk_size'), 'recursive_chunk_size')
 
         chunks: list[Document] = []
         if chunk_size is None or chunk_size <= 0:
@@ -2186,18 +2172,23 @@ class DocumentProcessor:
         return documents
 
     def split_documents(self, documents, **kwargs: dict) -> list[Document]:
+        # 문자수 기반 통합 청킹 (chunking.recursive 설정 공유). chunk_size<=0 이면 문서당 1청크.
         chunk_size = kwargs.get('chunk_size')
         if chunk_size is None:
-            chunk_size = kwargs.get('generic_chunk_size', 1000)
+            chunk_size = kwargs.get('recursive_chunk_size', 0)
         chunk_overlap = kwargs.get('chunk_overlap')
         if chunk_overlap is None:
-            chunk_overlap = kwargs.get('generic_chunk_overlap', 100)
+            chunk_overlap = kwargs.get('recursive_chunk_overlap', 100)
 
-        chunk_size = max(int(chunk_size), 1)
-        chunk_overlap = max(int(chunk_overlap), 0)
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size,
-                                                       chunk_overlap=chunk_overlap,)
-        chunks = text_splitter.split_documents(documents)
+        chunks = [
+            Document(page_content=part, metadata=dict(doc.metadata))
+            for doc in documents
+            for part in _char_split_text(
+                doc.page_content,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+            )
+        ]
         chunks = [chunk for chunk in chunks if chunk.page_content]
         if not chunks:
             raise Exception('Empty document')
