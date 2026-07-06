@@ -241,6 +241,45 @@ whisper:
 - **hybrid**: 레이아웃 계층 구조를 유지하며 청크 크기 기반으로 청크를 조절합니다. 크기 계산 방식은 `chunking.hybrid.tokenizer_type`(기본 `char`=문자 수 / `huggingface`=HF 토큰 수)으로 선택합니다. 기본 `chunk_size=10000000`은 사실상 제한이 없는 수준이라, 이 전처리기에서는 주로 레이아웃 기반 병합 도구로 동작합니다. 청크 단위 bbox 정확도가 필요할 때 사용합니다.
 - **60K 토큰 cap**: recursive 분기에서는 chunk_size와 무관하게 한 청크가 `token_chunk_size_cap`(기본 60000) 토큰을 넘으면 토큰 단위로 강제 재분할됩니다. 기본 8192자 청크에서는 보통 트리거되지 않으며, 큰 chunk_size를 지정했을 때의 안전망입니다.
 
+#### formats.ppt.page_description (PPT 페이지 설명 — 속도 최적화)
+
+PPT(`.ppt`/`.pptx`)를 **PDF→경량 docling 파싱** 후 각 페이지를 **이미지로 렌더링해 VLM 으로 설명**하고, 페이지의 native text 와 **동일 청크**로 구성합니다. 첨부용은 즉시 응답이 목적이라 **속도 우선**으로 튜닝합니다(이미지·출력 축소, 병렬↑, 간결 프롬프트).
+
+- **청킹**: **1 page = 1 chunk**. `chunking.generic.chunk_size` 가 `>0` 이면 연속 페이지를 그 크기(문자 수)까지 결합합니다(`0`=페이지별 1청크 고정). bbox 는 첨부용 원칙대로 미추출.
+- **enable=false** 여도 PPT 는 docling 경량 파싱으로 처리되며, 설명 생성만 생략됩니다(텍스트/설명이 모두 없는 페이지는 `.` 로 채워 Empty 예외 방지).
+- native text 는 프롬프트의 **`{{page_text}}`** 변수로 전달됩니다.
+
+```yaml
+formats:
+  ppt:
+    page_description:
+      enable: true
+      url: "http://.../rep/serving/<PAGE_DESCRIPTION_SERVING_ID>/v1/chat/completions"
+      api_key: ""
+      model: "model"
+      timeout: 360
+      concurrency: 32          # 병렬↑ (VLM 서버 처리량 한도 내)
+      images_scale: 1.0        # 렌더 배율↓ (payload·image token↓)
+      max_image_side: 1536     # 전송 전 이미지 최대 변(px) 캡. 0=원본
+      max_tokens: 512          # 출력 토큰 상한(생성 시간↓). 0=상한 없음
+      # params: { max_completion_tokens: 512 }   # 서버가 다른 키를 쓰면 여기로
+      prompt_template_file: prompt_page_image_description_fast.md   # 간결(2~3문장) 프롬프트
+```
+
+| 키 | 의미 | 기본값(첨부 권장) |
+|----|------|--------|
+| `enable` | PPT 페이지 설명 활성화 | `false`(운영 시 `true`) |
+| `url` / `api_key` / `model` | VLM 서빙 endpoint / 키 / 모델명 | `<PAGE_DESCRIPTION_SERVING_ID>` / `""` / `model` |
+| `timeout` | VLM 요청 타임아웃(초) | `360` |
+| `concurrency` | 페이지 설명 병렬 요청 수 | `32` |
+| `images_scale` | 페이지 렌더 배율(작을수록 빠름) | `1.0` |
+| `max_image_side` | 전송 전 이미지 최대 변(px). `0`=원본 | `1536` |
+| `max_tokens` | VLM 출력 토큰 상한. `0`=상한 없음 | `512` |
+| `params` | 추가 VLM 파라미터(dict) | `{}` |
+| `prompt_template_file` | 프롬프트 `.md` 경로. `{{page_text}}` 치환 | `prompt_page_image_description_fast.md` |
+
+> **속도 방법 요약**: (1) `concurrency`↑ 로 페이지 병렬 처리, (2) `images_scale`↓ + `max_image_side` 로 payload·image token↓, (3) `max_tokens` + 간결 프롬프트로 생성 시간↓.
+
 ### 3.3 런타임 kwargs override
 
 config yaml의 기본값은 `DocumentProcessor.__init__`에서 `self._default_kwargs`로 로드됩니다. 호출 시 `params`(kwargs)로 동일 항목을 넘기면 **해당 호출에 한해 기본값을 덮어씁니다**. 병합 규칙은 `_merge_runtime_kwargs`로, **런타임 값 중 `None`이 아닌 것만** 기본값을 덮어씁니다.

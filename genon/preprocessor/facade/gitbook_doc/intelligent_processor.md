@@ -26,6 +26,7 @@ RAG 지식베이스 구축을 위한 **품질 최우선** 전처리기입니다.
     - [3.3 레이아웃 설정](#33-레이아웃-설정)
       - [`repetition_penalty` 사용 가이드](#repetition_penalty-사용-가이드)
     - [3.4 PDF 파이프라인 설정](#34-pdf-파이프라인-설정)
+      - [PPT 페이지 설명 (`formats.ppt.page_description`)](#341a-ppt-페이지-설명-formatspptpage_description)
       - [3.4.2 xlsx(엑셀) 직접 처리 (`formats.xlsx`)](#342-xlsx엑셀-직접-처리-formatsxlsx)
       - [3.4.3 표 텍스트 형식 (`output.table_format`)](#343-표-텍스트-형식-outputtable_format)
     - [3.5 Enrichment 설정](#35-enrichment-설정)
@@ -373,6 +374,43 @@ docling PDF 파싱 성능/품질 노브입니다.
 - 청크 내 표 텍스트(MD/HTML)는 **그대로 유지**됩니다(하이브리드).
 
 > **주의** — 표 이미지는 페이지 이미지를 잘라 만들므로, `enable: true` 이면 `pdf_pipeline.generate_page_images` 가 내부적으로 **강제 `true`** 로 보정됩니다(별도 설정 불필요).
+
+### 3.4.1a PPT 페이지 설명 (`formats.ppt.page_description`)
+
+PPT(`.ppt`/`.pptx`)는 슬라이드가 이미지 위주여서 텍스트 추출만으로는 의미가 소실되기 쉽습니다. 이 옵션은 각 페이지를 **이미지로 렌더링해 VLM(Vision LM)에 보내 페이지 설명을 생성**하고, 그 설명을 해당 페이지 텍스트로 문서에 주입합니다. 기존 `image_description`(페이지 내부 그림 오브젝트 단위)과 달리 **"페이지 자체"를 통째로** 설명합니다.
+
+- **적용 대상**: PPT(`.ppt`/`.pptx`) 원본만. 적재용은 PPT→PDF→docling 변환 후 각 페이지를 설명합니다.
+- **청킹**: PPT 는 **1 page = 1 chunk**(페이지의 native text + 페이지 설명이 동일 청크). `chunking.chunk_size` 가 지정되면 연속 페이지를 그 크기까지 결합합니다.
+- **TOC**: PPT 는 페이지 단위라 목차 계층이 무의미 → **TOC enrichment 를 자동 skip**합니다.
+- `enable: true` 면 `pdf_pipeline.generate_page_images` 가 내부적으로 **강제 `true`** 로 보정됩니다.
+- 페이지의 native text 는 프롬프트의 **`{{page_text}}`** 변수로 함께 전달되어 설명 품질을 높입니다.
+
+```yaml
+formats:
+  ppt:
+    page_description:
+      enable: false
+      url: "http://llmops-gateway-api-service:8080/rep/serving/<PAGE_DESCRIPTION_SERVING_ID>/v1/chat/completions"
+      api_key: ""
+      model: "model"
+      timeout: 360
+      concurrency: 16
+      prompt_template_file: prompt_page_image_description_default.md
+```
+
+| 키 | 의미 | 기본값 |
+|----|------|--------|
+| `enable` | PPT 페이지 설명 활성화 | `false` |
+| `url` / `api_key` / `model` | VLM(chat/completions) 서빙 endpoint / 키 / 모델명 | `<PAGE_DESCRIPTION_SERVING_ID>` / `""` / `model` |
+| `timeout` | VLM 요청 타임아웃(초) | `360` |
+| `concurrency` | 페이지 설명 병렬 요청 수 | `16` |
+| `images_scale` | 페이지 렌더 해상도 배율(클수록 고해상도/느림) | `2.0` |
+| `max_image_side` | 전송 전 이미지 최대 변(px)으로 다운스케일. `0`=원본 | `0` |
+| `max_tokens` | VLM 출력 토큰 상한(생성 시간↓). `0`=상한 없음 | `0` |
+| `params` | 추가 VLM 파라미터(dict). 서버가 `max_completion_tokens` 등 다른 키를 쓸 때 사용 | `{}` |
+| `prompt_template_file` | 프롬프트 `.md` 경로(권장). `{{page_text}}` 치환 | — |
+
+> **주의** — 페이지 설명은 **파싱 단계 전용** 기능입니다. Chunk API(`/chunker`)는 파서 출력(JSON)만 받으며 렌더된 페이지 이미지가 없어 페이지 설명을 수행하지 않습니다.
 
 ### 3.4.2 xlsx(엑셀) 직접 처리 (`formats.xlsx`)
 

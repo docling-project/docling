@@ -8,7 +8,8 @@ jobs:
   smoke:
     runs-on: ubuntu-latest
     env:
-      PYTHONPATH: ${{ github.workspace }}
+      # develop.yml/conftest 와 동일: facade.* 와 genon.preprocessor.facade.* 둘 다 해석되도록
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/genon/preprocessor
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6

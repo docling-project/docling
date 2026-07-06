@@ -28,7 +28,7 @@ chunking:
 
   # pdf/txt/md/ppt 등 일반 텍스트 splitter 기본값
   generic:
-    chunk_size: 1000
+    chunk_size: 10000000
     chunk_overlap: 100
 
   # hwp/hwpx/docx + recursive 분기 기본값
@@ -47,6 +47,30 @@ chunking:
     tokenizer_id: ""
     chunk_size: 10000000
     merge_peers: true
+
+# 포맷별 옵션 컨테이너
+formats:
+  # PPT(ppt/pptx): PDF 변환 → 경량 docling 파싱 → 페이지 기반 청킹(기본 1 page 1 chunk,
+  # chunk_size 지정 시 연속 페이지 결합). page_description 으로 "페이지 자체"를 VLM 설명.
+  # (첨부용은 dotsocr 미수행 + do_ocr=false 최소 파싱, bbox 미추출)
+  ppt:
+    # 첨부용은 속도 우선: 병렬도↑, 이미지/출력 축소, 간결 프롬프트.
+    page_description:
+      # true 면 각 페이지를 렌더링해 VLM 설명(+native text 프롬프트 포함). false 면 파싱만 수행.
+      enable: false
+      # VLM(chat/completions) 엔드포인트
+      url: "http://llmops-gateway-api-service:8080/rep/serving/<PAGE_DESCRIPTION_SERVING_ID>/v1/chat/completions"
+      api_key: ""
+      model: "model"
+      timeout: 360
+      concurrency: 32          # 페이지 설명 요청 병렬 수(속도↑; VLM 서버 처리량 한도 내)
+      images_scale: 1.0        # 페이지 렌더 배율↓(payload·image token↓ → 추론↓)
+      max_image_side: 1536     # 전송 전 이미지 최대 변(px) 캡(payload↓). 0=원본
+      max_tokens: 512          # VLM 출력 토큰 상한(생성 시간↓). 0=상한 없음
+      # 서버가 max_completion_tokens 등 다른 키를 쓰면 params 로 전달:
+      # params: { max_completion_tokens: 512 }
+      # 프롬프트: 첨부용은 간결(2~3문장) 버전 사용
+      prompt_template_file: prompt_page_image_description_fast.md
 
 loaders:
   image:
