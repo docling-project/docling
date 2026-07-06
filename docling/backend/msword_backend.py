@@ -249,7 +249,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.numbered_headers: dict[int, int] = {}
         self.equation_bookends: str = "<eq>{EQ}</eq>"
         # Track processed textbox elements to avoid duplication
-        self.processed_textbox_elements: list[int] = []
+        self.processed_textbox_elements: set[int] = set()
         self.docx_to_pdf_converter: Callable | None = None
         self.docx_to_pdf_converter_init = False
         self.display_drawingml_warning = True
@@ -574,10 +574,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 if textbox_elements:
                     # Mark the parent element as processed
-                    self.processed_textbox_elements.append(element_id)
+                    self.processed_textbox_elements.add(element_id)
                     # Also mark all found textbox elements as processed
                     for tb_element in textbox_elements:
-                        self.processed_textbox_elements.append(id(tb_element))
+                        self.processed_textbox_elements.add(id(tb_element))
 
                     _log.debug(
                         f"Found textbox content with {len(textbox_elements)} elements"
@@ -1370,7 +1370,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _collect_textbox_paragraphs(self, textbox_elements):
         """Collect and organize paragraphs from textbox elements."""
-        processed_paragraphs = []
+        processed_paragraphs: set[int] = set()
         container_paragraphs = {}
 
         for element in textbox_elements:
@@ -1380,7 +1380,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 continue
 
             tag_name = etree.QName(element).localname
-            processed_paragraphs.append(element_id)
+            processed_paragraphs.add(element_id)
 
             # Handle paragraphs directly found (VML textboxes)
             if tag_name == "p":
@@ -1407,7 +1407,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 for p in paragraphs:
                     p_id = id(p)
                     if p_id not in processed_paragraphs:
-                        processed_paragraphs.append(p_id)
+                        processed_paragraphs.add(p_id)
                         container_paragraphs[container_id].append(
                             (p, self._get_paragraph_position(p))
                         )
@@ -1421,7 +1421,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 for p in paragraphs:
                     p_id = id(p)
                     if p_id not in processed_paragraphs:
-                        processed_paragraphs.append(p_id)
+                        processed_paragraphs.add(p_id)
                         container_paragraphs[container_id].append(
                             (p, self._get_paragraph_position(p))
                         )

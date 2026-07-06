@@ -145,6 +145,30 @@ def test_textbox_extraction(documents):
     assert textbox_found
 
 
+def test_processed_textbox_elements_is_a_set():
+    """The textbox dedup tracker must stay a set for O(1) membership.
+
+    ``_walk_linear`` membership-checks ``processed_textbox_elements`` once per
+    body element, so backing it with a list makes textbox-heavy DOCX conversion
+    quadratic in the number of textbox elements. Convert a document that
+    actually contains textboxes and assert the tracker was populated and remains
+    a set, so a regression back to a list is caught here rather than only in
+    conversion timing.
+    """
+    docx_path = Path("./tests/data/docx/sources/textbox.docx")
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = in_doc._backend
+    backend.convert()
+
+    assert isinstance(backend.processed_textbox_elements, set)
+    # The fixture has textboxes, so the dedup path ran and marked elements.
+    assert backend.processed_textbox_elements
+
+
 def test_heading_levels(documents):
     name = "word_sample.docx"
     doc = next(item[1] for item in documents if item[0].name == name)
