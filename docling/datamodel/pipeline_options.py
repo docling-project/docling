@@ -106,9 +106,6 @@ class OcrMode(str, Enum):
     # Layout detections which can bear text. No PDF information is needed/used.
     LAYOUT_DETECTIONS = "layout_detections"
 
-    # Layout detections augmented with PDF cell information
-    # PDF_AUGMENTED_LAYOUT = "pdf_augmented_layout"
-
 
 class TableFormerMode(str, Enum):
     """Operating modes for TableFormer table structure extraction model.
@@ -238,17 +235,6 @@ class OcrOptions(BaseOptions):
             examples=[0.05, 0.1],
         ),
     ] = 0.05
-
-    # sparse_cell_coverage_threshold: Annotated[
-    #     float,
-    #     Field(
-    #         description=(
-    #             "A sparse layout detection is omitted from the OCR rects if its coverage with"
-    #             "textual PDF cells is more than this threshold"
-    #         ),
-    #         examples=[],
-    #     ),
-    # ] = 0.30
 
     @model_validator(mode="after")
     def _apply_force_full_page_ocr(self) -> "OcrOptions":
