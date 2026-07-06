@@ -58,7 +58,7 @@ MISSING_FFMPEG_MESSAGE: Final[str] = (
 
 
 def _process_conversation(
-    conversation: list["ConversationItem"], conv_res: ConversionResult
+    conversation: list["_ConversationItem"], conv_res: ConversionResult
 ) -> None:
     """Process the conversation items and add them to the document."""
     # Ensure we have a proper DoclingDocument
@@ -113,7 +113,7 @@ def _process_conversation(
                 continue
 
 
-class ConversationWord(BaseModel):
+class _ConversationWord(BaseModel):
     text: str
     start_time: float | None = Field(
         None, description="Start time in seconds from video start"
@@ -123,7 +123,7 @@ class ConversationWord(BaseModel):
     )
 
 
-class ConversationItem(BaseModel):
+class _ConversationItem(BaseModel):
     text: str
     start_time: float | None = Field(
         None, description="Start time in seconds from video start"
@@ -135,17 +135,17 @@ class ConversationItem(BaseModel):
     speaker: str | None = Field(
         None, description="Speaker name, defaults to speaker-{speaker_id}"
     )
-    words: list[ConversationWord] | None = Field(
+    words: list[_ConversationWord] | None = Field(
         None, description="Individual words with time-stamps"
     )
 
     def __lt__(self, other):
-        if not isinstance(other, ConversationItem):
+        if not isinstance(other, _ConversationItem):
             return NotImplemented
         return self.start_time < other.start_time
 
     def __eq__(self, other):
-        if not isinstance(other, ConversationItem):
+        if not isinstance(other, _ConversationItem):
             return NotImplemented
         return self.start_time == other.start_time
 
@@ -276,7 +276,7 @@ class _NativeWhisperModel:
                         f"Failed to delete temporary file {temp_file_path}: {e}"
                     )
 
-    def transcribe(self, fpath: Path) -> list[ConversationItem]:
+    def transcribe(self, fpath: Path) -> list[_ConversationItem]:
         result = self.model.transcribe(
             str(fpath),
             verbose=self.verbose,
@@ -287,16 +287,16 @@ class _NativeWhisperModel:
             temperature=self.temperature,
         )
 
-        convo: list[ConversationItem] = []
+        convo: list[_ConversationItem] = []
         for _ in result["segments"]:
-            item = ConversationItem(
+            item = _ConversationItem(
                 start_time=_["start"], end_time=_["end"], text=_["text"], words=[]
             )
             if "words" in _ and self.word_timestamps:
                 item.words = []
                 for __ in _["words"]:
                     item.words.append(
-                        ConversationWord(
+                        _ConversationWord(
                             start_time=__["start"],
                             end_time=__["end"],
                             text=__["word"],
@@ -379,7 +379,7 @@ class _MlxWhisperModel:
         conv_res.status = ConversionStatus.FAILURE
         return conv_res
 
-    def transcribe(self, fpath: Path) -> list[ConversationItem]:
+    def transcribe(self, fpath: Path) -> list[_ConversationItem]:
         """Transcribe audio using MLX Whisper.
 
         Args:
@@ -399,11 +399,11 @@ class _MlxWhisperModel:
             compression_ratio_threshold=self.compression_ratio_threshold,
         )
 
-        convo: list[ConversationItem] = []
+        convo: list[_ConversationItem] = []
 
         # MLX Whisper returns segments similar to native Whisper
         for segment in result.get("segments", []):
-            item = ConversationItem(
+            item = _ConversationItem(
                 start_time=segment.get("start"),
                 end_time=segment.get("end"),
                 text=segment.get("text", "").strip(),
@@ -415,7 +415,7 @@ class _MlxWhisperModel:
                 item.words = []
                 for word_data in segment["words"]:
                     item.words.append(
-                        ConversationWord(
+                        _ConversationWord(
                             start_time=word_data.get("start"),
                             end_time=word_data.get("end"),
                             text=word_data.get("word", ""),
@@ -565,7 +565,7 @@ class _WhisperS2TModel:
                         f"Failed to delete temporary file {temp_file_path}: {e}"
                     )
 
-    def transcribe(self, fpath: Path) -> list[ConversationItem]:
+    def transcribe(self, fpath: Path) -> list[_ConversationItem]:
         """
         Transcribe audio using WhisperS2T.
 
@@ -583,7 +583,7 @@ class _WhisperS2TModel:
             batch_size=self.batch_size,
         )
 
-        convo: list[ConversationItem] = []
+        convo: list[_ConversationItem] = []
 
         if out and len(out) > 0:
             for segment in out[0]:
@@ -591,14 +591,14 @@ class _WhisperS2TModel:
                 if self.word_timestamps and "word_timestamps" in segment:
                     for w in segment["word_timestamps"]:
                         words.append(
-                            ConversationWord(
+                            _ConversationWord(
                                 start_time=w.get("start"),
                                 end_time=w.get("end"),
                                 text=w.get("word", ""),
                             )
                         )
 
-                item = ConversationItem(
+                item = _ConversationItem(
                     start_time=segment.get("start_time"),
                     end_time=segment.get("end_time"),
                     text=segment.get("text", "").strip(),
@@ -613,26 +613,24 @@ class _WhisperS2TModel:
 # Backward-compatibility aliases (private names retained so existing
 # imports keep working).
 # ============================================================
-_ConversationWord = ConversationWord
-_ConversationItem = ConversationItem
 
 
 # ============================================================
 # Transcriber protocol + factory (new; consumed by AsrPipeline and VideoPipeline)
 # ============================================================
-class AsrTranscriber(Protocol):
+class _AsrTranscriber(Protocol):
     """Structural type for ASR backends.
 
     Any object exposing `run(conv_res) -> ConversionResult` and
-    `transcribe(fpath: Path) -> list[ConversationItem]` satisfies this.
+    `transcribe(fpath: Path) -> list[_ConversationItem]` satisfies this.
     """
 
-    def transcribe(self, fpath: Path) -> list[ConversationItem]: ...
+    def transcribe(self, fpath: Path) -> list[_ConversationItem]: ...
 
     def run(self, conv_res: ConversionResult) -> ConversionResult: ...
 
 
-class AsrModelFactory:
+class _AsrModelFactory:
     """Builds a concrete ASR transcriber from ASR options.
 
     Shared by AsrPipeline and (later) VideoPipeline so both construct
@@ -644,7 +642,7 @@ class AsrModelFactory:
         asr_options: InlineAsrOptions,
         artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
-    ) -> AsrTranscriber:
+    ) -> _AsrTranscriber:
         if isinstance(asr_options, InlineAsrNativeWhisperOptions):
             return _NativeWhisperModel(
                 enabled=True,

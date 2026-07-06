@@ -12,10 +12,8 @@ from docling.datamodel.pipeline_options import AsrPipelineOptions
 # (`from docling.pipeline.asr_pipeline import _NativeWhisperModel`, etc.)
 # keep resolving. New code should import from asr_transcriber directly.
 from docling.pipeline.asr_transcriber import (
-    AsrModelFactory,
-    AsrTranscriber,
-    ConversationItem,
-    ConversationWord,
+    _AsrModelFactory,
+    _AsrTranscriber,
     _ConversationItem,
     _ConversationWord,
     _MlxWhisperModel,
@@ -35,7 +33,7 @@ class AsrPipeline(BasePipeline):
         self.keep_backend = True
 
         self.pipeline_options: AsrPipelineOptions = pipeline_options
-        self._model: AsrTranscriber = AsrModelFactory.create(
+        self._model: _AsrTranscriber = _AsrModelFactory.create(
             asr_options=self.pipeline_options.asr_options,
             artifacts_path=self.artifacts_path,
             accelerator_options=pipeline_options.accelerator_options,
