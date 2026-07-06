@@ -185,7 +185,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                 for i in cells_index.intersection(cluster.bbox.as_tuple())
             ]
             if cluster.label in self.SPARSE_LABELS:
-                coverage = self._compute_coverage(cluster.bbox, candidate_cell_bboxes)
+                coverage = self._compute_coverage_of_text_cells(
+                    cluster.bbox, candidate_cell_bboxes
+                )
                 if coverage < self.options.sparse_cell_coverage_threshold:
                     ocr_rects.append(cluster.bbox)
             elif len(candidate_cell_bboxes) == 0:
@@ -198,7 +200,12 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     def _filter_clusters(self, clusters: List[Cluster]) -> List[Cluster]:
         r"""
         - Keep all clusters with "dense" labels.
-        - Keep a "sparse" cluster only if no "dense" cluster overlaps.
+        - Keep clusters with "sparse" labels only when they do not overlap any
+          dense cluster; a sparse cluster overlapping a dense one is dropped to
+          avoid re-OCRing text already covered by the dense region.
+
+        When `FILTER_OUT_OVERLAPPING_CLUSTERS` is disabled, the overlap check is
+        skipped and every cluster with a known dense or sparse label is kept.
         """
         filtered_clusters: List[Cluster] = []
 
@@ -234,7 +241,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         return filtered_clusters
 
-    def _compute_coverage(
+    def _compute_coverage_of_text_cells(
         self, bbox: BoundingBox, text_cell_bboxes: List[BoundingBox]
     ) -> float:
         r"""
