@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "docling-slim"
-version = "2.108.0"  # DO NOT EDIT, updated automatically
+version = "2.110.0"  # DO NOT EDIT, updated automatically
 description = "Modular version of the Docling package: SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -48,7 +48,7 @@ requires-python = '>=3.10,<4.0'
 # MINIMAL BASE (8 packages) - ~50MB
 dependencies = [
   'pydantic>=2.0.0,<3.0.0',
-  'docling-core>=2.84.0,<3.0.0',
+  'docling-core>=2.86.0,<3.0.0',
   'pydantic-settings>=2.3.0,<3.0.0',
   'filetype>=1.2.0,<2.0.0',
   'requests>=2.32.2,<3.0.0',
@@ -129,7 +129,6 @@ format-opendocument = [
 # --- Web Formats (web = html + markdown) ---
 format-html = [
   'beautifulsoup4>=4.12.3,<5.0.0',
-  'lxml>=4.0.0,<7.0.0',
 ]
 
 format-markdown = [
@@ -148,6 +147,16 @@ format-latex = [
 format-email = [
   'docling-slim[format-html]',
   'mail-parser>=4.1.4,<5.0.0',
+]
+
+format-xml-jats = [
+  'docling-slim[format-html]',
+  'lxml>=4.0.0,<7.0.0',
+]
+
+format-xml-uspto = [
+  'docling-slim[format-html]',
+  'defusedxml>=0.7.1,<0.8.0',
 ]
 
 format-xml-xbrl = [
@@ -265,7 +274,7 @@ standard = [
 ]
 
 all = [
-  'docling-slim[standard,models-vlm-inline,format-audio,format-html-render,format-xml-xbrl,models-remote,models-onnxruntime,feat-ocr-easyocr,feat-ocr-tesserocr,feat-ocr-mac]',
+  'docling-slim[standard,models-vlm-inline,format-audio,format-html-render,format-xml-jats,format-xml-uspto,format-xml-xbrl,models-remote,models-onnxruntime,feat-ocr-easyocr,feat-ocr-tesserocr,feat-ocr-mac]',
 ]
 
 [dependency-groups]

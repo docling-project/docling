@@ -36,6 +36,8 @@ Security Note:
     the required DTD structure.
 """
 
+from __future__ import annotations
+
 import html
 import logging
 import re
@@ -48,9 +50,6 @@ from xml.sax import SAXParseException
 from xml.sax.handler import ContentHandler, feature_external_ges, feature_external_pes
 from xml.sax.xmlreader import AttributesImpl
 
-from bs4 import BeautifulSoup, Tag
-from defusedxml.common import DefusedXmlException
-from defusedxml.sax import make_parser
 from docling_core.types.doc import (
     DocItem,
     DocItemLabel,
@@ -68,6 +67,22 @@ from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+
+_BS4_AVAILABLE: bool = False
+_BS4_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from bs4 import BeautifulSoup, Tag
+    from defusedxml.common import DefusedXmlException
+    from defusedxml.sax import make_parser
+
+    _BS4_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _BS4_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'beautifulsoup4' and 'defusedxml' packages are required to process USPTO patent files. "
+    "Install them with `pip install 'docling-slim[format-xml-uspto]'`."
+)
 
 _log = logging.getLogger(__name__)
 
@@ -95,6 +110,8 @@ class PatentHeading(Enum):
 class PatentUsptoDocumentBackend(DeclarativeDocumentBackend):
     @override
     def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path) -> None:
+        if not _BS4_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _BS4_IMPORT_ERROR
         super().__init__(in_doc, path_or_stream)
 
         self.patent_content: str = ""

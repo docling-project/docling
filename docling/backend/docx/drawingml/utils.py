@@ -1,13 +1,17 @@
+from __future__ import annotations
+
 import os
 import shutil
 import subprocess
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 import pypdfium2
-from docx.document import Document
 from PIL import Image, ImageChops
+
+if TYPE_CHECKING:
+    from docx.document import Document
 
 
 def get_libreoffice_cmd(raise_if_unavailable: bool = False) -> Optional[str]:

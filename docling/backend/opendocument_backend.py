@@ -80,7 +80,7 @@ _log = logging.getLogger(__name__)
 
 _INSTALL_HINT = (
     "The 'odfdo' package is required to process OpenDocument files. "
-    "Install it with `pip install 'docling[opendocument]'`."
+    "Install it with `pip install 'docling-slim[format-opendocument]'`."
 )
 
 _ODF_CHART_CLASS_TO_PICTURE_CLASSIFICATION = {
