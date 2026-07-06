@@ -310,3 +310,14 @@ Formalise in `CONTRIBUTING.md`:
 > addition has ever appeared. The downgrade-projector layer additionally
 > handles future new `DocItem` subtypes (4 occurrences in 50 releases) where
 > the client truly cannot process a feature at all.
+
+
+### Conclusion
+
+The following sections describe 3 possible layers (non-exclusive) for compatibility.
+Since we want to keep the benefits of strict validation and keep the compatibility logic in the server system, we will proceed with the implementation of the **Layer 2** as remediation strategy.
+
+As part of the solution, we will need to:
+- automate the downgrade projectors as much as possible
+- add validation scripts in the CI/CD
+- coordinate the downgrade projectors and `DoclingDocument` versioning with `Doclang` 
