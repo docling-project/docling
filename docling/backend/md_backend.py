@@ -37,6 +37,7 @@ from docling.datamodel.backend_options import (
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.code_language import detect_code_language
 
 # marko is only installed by the `format-markdown` extra, but DocumentConverter
 # imports every backend eagerly. Importing it at module load would therefore
@@ -60,7 +61,7 @@ _log = logging.getLogger(__name__)
 
 _INSTALL_HINT = (
     "The 'marko' package is required to process Markdown files. "
-    "Install it with `pip install 'docling[format-markdown]'`."
+    "Install it with `pip install 'docling-slim[format-markdown]'`."
 )
 
 _MARKER_BODY = "DOCLING_DOC_MD_HTML_EXPORT"
@@ -560,6 +561,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             doc.add_code(
                 parent=parent_item,
                 text=snippet_text,
+                code_language=detect_code_language(snippet_text, hint=element.lang),
                 formatting=formatting,
                 hyperlink=hyperlink,
             )

@@ -16,6 +16,18 @@ from pathlib import Path
 import pytest
 
 _EML_SAMPLE = Path(__file__).parent / "data" / "email" / "sources" / "eml_simple.eml"
+_HTML_SAMPLE = Path(__file__).parent / "data" / "html" / "sources" / "hyperlink_01.html"
+_MD_SAMPLE = Path(__file__).parent / "data" / "md" / "sources" / "mixed.md"
+_DOCX_SAMPLE = Path(__file__).parent / "data" / "docx" / "sources" / "word_tables.docx"
+_PPTX_SAMPLE = (
+    Path(__file__).parent / "data" / "pptx" / "sources" / "powerpoint_sample.pptx"
+)
+_XLSX_SAMPLE = Path(__file__).parent / "data" / "xlsx" / "sources" / "xlsx_01.xlsx"
+_TEX_SAMPLE = (
+    Path(__file__).parent / "data" / "latex" / "sources" / "1706.03762" / "main.tex"
+)
+_JATS_SAMPLE = Path(__file__).parent / "data" / "jats" / "sources" / "pone.0234687.nxml"
+_USPTO_SAMPLE = Path(__file__).parent / "data" / "uspto" / "sources" / "ipg08672134.xml"
 
 
 def _run_with_blocked_module(
@@ -34,7 +46,7 @@ def _run_with_blocked_module(
 
 @pytest.mark.parametrize(
     "blocked_module",
-    ["mailparser", "marko"],
+    ["mailparser", "marko", "docx", "pptx", "openpyxl", "pylatexenc", "bs4"],
 )
 def test_converter_constructs_without_optional_backend_dependency(
     blocked_module: str,
@@ -49,26 +61,105 @@ def test_converter_constructs_without_optional_backend_dependency(
     assert result.returncode == 0, result.stderr
 
 
-def test_email_backend_reports_missing_dependency_with_install_hint() -> None:
-    # Using a backend whose optional dependency is absent must fail with an
-    # actionable ImportError that names the extra to install, not a NameError or
-    # an error mislabeled as a corrupt-document failure.
+@pytest.mark.parametrize(
+    ("blocked_module", "backend_import", "backend_class", "sample", "fmt", "extra"),
+    [
+        (
+            "mailparser",
+            "docling.backend.email_backend",
+            "EmailDocumentBackend",
+            _EML_SAMPLE,
+            "EMAIL",
+            "format-email",
+        ),
+        (
+            "bs4",
+            "docling.backend.html_backend",
+            "HTMLDocumentBackend",
+            _HTML_SAMPLE,
+            "HTML",
+            "format-html",
+        ),
+        (
+            "marko",
+            "docling.backend.md_backend",
+            "MarkdownDocumentBackend",
+            _MD_SAMPLE,
+            "MD",
+            "format-markdown",
+        ),
+        (
+            "docx",
+            "docling.backend.msword_backend",
+            "MsWordDocumentBackend",
+            _DOCX_SAMPLE,
+            "DOCX",
+            "format-docx",
+        ),
+        (
+            "pptx",
+            "docling.backend.mspowerpoint_backend",
+            "MsPowerpointDocumentBackend",
+            _PPTX_SAMPLE,
+            "PPTX",
+            "format-pptx",
+        ),
+        (
+            "openpyxl",
+            "docling.backend.msexcel_backend",
+            "MsExcelDocumentBackend",
+            _XLSX_SAMPLE,
+            "XLSX",
+            "format-xlsx",
+        ),
+        (
+            "pylatexenc",
+            "docling.backend.latex_backend",
+            "LatexDocumentBackend",
+            _TEX_SAMPLE,
+            "LATEX",
+            "format-latex",
+        ),
+        (
+            "bs4",
+            "docling.backend.xml.jats_backend",
+            "JatsDocumentBackend",
+            _JATS_SAMPLE,
+            "XML_JATS",
+            "format-xml-jats",
+        ),
+        (
+            "bs4",
+            "docling.backend.xml.uspto_backend",
+            "PatentUsptoDocumentBackend",
+            _USPTO_SAMPLE,
+            "XML_USPTO",
+            "format-xml-uspto",
+        ),
+    ],
+)
+def test_backend_reports_missing_dependency_with_install_hint(
+    blocked_module: str,
+    backend_import: str,
+    backend_class: str,
+    sample: Path,
+    fmt: str,
+    extra: str,
+) -> None:
     body = (
         "from pathlib import Path\n"
-        "from docling.backend.email_backend import EmailDocumentBackend\n"
+        f"from {backend_import} import {backend_class}\n"
         "from docling.datamodel.base_models import InputFormat\n"
         "from docling.datamodel.document import InputDocument\n"
-        f"path = Path({str(_EML_SAMPLE)!r})\n"
+        f"path = Path({str(sample)!r})\n"
         "try:\n"
-        "    InputDocument(\n"
-        "        path_or_stream=path, format=InputFormat.EMAIL, backend=EmailDocumentBackend\n"
-        "    )\n"
+        f"    InputDocument(path_or_stream=path, format=InputFormat.{fmt}, backend={backend_class})\n"
         "except ImportError as exc:\n"
-        "    assert 'format-email' in str(exc), str(exc)\n"
+        f"    assert {extra!r} in str(exc), str(exc)\n"
         "    print('actionable-error-raised')\n"
         "else:\n"
-        "    raise AssertionError('expected ImportError when mail-parser is missing')\n"
+        f"    raise AssertionError('expected ImportError when {blocked_module} is missing')\n"
     )
-    result = _run_with_blocked_module("mailparser", body)
+    result = _run_with_blocked_module(blocked_module, body)
     assert result.returncode == 0, result.stderr
     assert "actionable-error-raised" in result.stdout

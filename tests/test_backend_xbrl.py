@@ -25,7 +25,7 @@ GENERATE = GEN_TEST_DATA
 
 @pytest.fixture(scope="module")
 def xbrl_paths() -> list[tuple[Path, Path]]:
-    directory = Path(os.path.dirname(__file__) + "/data/xbrl/")
+    directory = Path(os.path.dirname(__file__) + "/data/xbrl/sources/")
     xml_files = sorted(
         [
             item

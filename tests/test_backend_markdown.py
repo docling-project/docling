@@ -3,7 +3,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import PictureItem
+from docling_core.types.doc import CodeItem, CodeLanguageLabel, PictureItem
 from PIL import Image
 
 from docling.backend.md_backend import MarkdownDocumentBackend
@@ -246,3 +246,30 @@ def test_convert_embedded_base64_image_enforces_size_limit():
     ]
     assert len(pictures) == 1
     assert pictures[0].image is None
+
+
+def test_code_block_language_detection():
+    markdown = (
+        "```python\n"
+        "import sys\n"
+        "print(sys.argv)\n"
+        "```\n\n"
+        "```\n"
+        "SELECT id FROM users;\n"
+        "```\n\n"
+        "```\n"
+        "ambiguous snippet here\n"
+        "```\n"
+    )
+    conv_result = get_converter().convert_string(markdown, format=InputFormat.MD)
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    code_items = [
+        item for item in conv_result.document.texts if isinstance(item, CodeItem)
+    ]
+    languages = [item.code_language for item in code_items]
+    assert languages == [
+        CodeLanguageLabel.PYTHON,
+        CodeLanguageLabel.SQL,
+        CodeLanguageLabel.UNKNOWN,
+    ]

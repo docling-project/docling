@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections
 import logging
 import posixpath
@@ -29,18 +31,6 @@ from docling_core.types.doc import (
     TableData,
 )
 from lxml import etree
-from openpyxl import load_workbook
-from openpyxl.chartsheet.chartsheet import Chartsheet
-from openpyxl.drawing.image import Image
-from openpyxl.drawing.spreadsheet_drawing import (
-    OneCellAnchor,
-    SpreadsheetDrawing,
-    TwoCellAnchor,
-)
-from openpyxl.packaging.relationship import get_dependents, get_rels_path
-from openpyxl.styles import PatternFill
-from openpyxl.worksheet.worksheet import Worksheet
-from openpyxl.xml.constants import IMAGE_NS
 from PIL import Image as PILImage, UnidentifiedImageError
 from pydantic import BaseModel, Field, NonNegativeInt, PositiveInt
 from pydantic.dataclasses import dataclass
@@ -60,6 +50,31 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
+
+_OPENPYXL_AVAILABLE: bool = False
+_OPENPYXL_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from openpyxl import load_workbook
+    from openpyxl.chartsheet.chartsheet import Chartsheet
+    from openpyxl.drawing.image import Image
+    from openpyxl.drawing.spreadsheet_drawing import (
+        OneCellAnchor,
+        SpreadsheetDrawing,
+        TwoCellAnchor,
+    )
+    from openpyxl.packaging.relationship import get_dependents, get_rels_path
+    from openpyxl.styles import PatternFill
+    from openpyxl.worksheet.worksheet import Worksheet
+    from openpyxl.xml.constants import IMAGE_NS
+
+    _OPENPYXL_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _OPENPYXL_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'openpyxl' package is required to process Excel files. "
+    "Install it with `pip install 'docling-slim[format-xlsx]'`."
+)
 
 
 # Safe XML parser — prevents XXE, DTD-over-network, and entity-expansion attacks.
@@ -172,7 +187,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     @override
     def __init__(
         self,
-        in_doc: "InputDocument",
+        in_doc: InputDocument,
         path_or_stream: BytesIO | Path,
         options: MsExcelBackendOptions | None = None,
     ) -> None:
@@ -186,6 +201,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Raises:
             RuntimeError: An error occurred parsing the file.
         """
+        if not _OPENPYXL_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _OPENPYXL_IMPORT_ERROR
         if options is None:
             options = MsExcelBackendOptions()
         super().__init__(in_doc, path_or_stream, options)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import math
 import re
@@ -10,10 +12,9 @@ from pathlib import Path
 from typing import Any, Final, Iterator, Literal, Optional, Union, cast
 from urllib.parse import urlparse
 
-from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
-from bs4.element import PreformattedString
 from docling_core.types.doc import (
     BoundingBox,
+    CodeLanguageLabel,
     CoordOrigin,
     DocItem,
     DocItemLabel,
@@ -53,6 +54,26 @@ from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
+from docling.utils.code_language import (
+    _HINT_PREFIXES,
+    detect_code_language,
+    normalize_code_language,
+)
+
+_BS4_AVAILABLE: bool = False
+_BS4_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
+    from bs4.element import PreformattedString
+
+    _BS4_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _BS4_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'beautifulsoup4' package is required to process HTML files. "
+    "Install it with `pip install 'docling-slim[format-html]'`."
+)
 
 _log = logging.getLogger(__name__)
 
@@ -306,7 +327,7 @@ class AnnotatedTextList(list):
             source_tag_id=current_source_tag_id,
         )
 
-    def simplify_text_elements(self) -> "AnnotatedTextList":
+    def simplify_text_elements(self) -> AnnotatedTextList:
         simplified = AnnotatedTextList()
         if not self:
             return self
@@ -402,6 +423,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         path_or_stream: Union[BytesIO, Path],
         options: Optional[HTMLBackendOptions] = None,
     ):
+        if not _BS4_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _BS4_IMPORT_ERROR
         if options is None:
             options = HTMLBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
@@ -1859,7 +1882,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return AnnotatedTextList()
         if self._is_checkbox_label_tag(tag):
             return AnnotatedTextList()
-        if not ignore_list or (tag.name not in ["ul", "ol", "dl"]):
+        if not ignore_list or (tag.name not in ["ul", "ol", "dl", "table"]):
             for child in tag:
                 if isinstance(child, Tag) and child.name in _FORMAT_TAG_MAP:
                     with self._use_format([child.name]):
@@ -2214,6 +2237,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if not self._has_list_ancestor(elem, li):
                     self._handle_block(elem, doc)
                     self.parents[self.level + 1] = None
+            elif elem.name == "table":
+                # Dispatch nested tables to the block handler so they are parsed
+                # as tables instead of being flattened into the list item text.
+                # No _has_list_ancestor-style guard is needed here (unlike the
+                # list branch): _handle_block consumes the whole table, so its
+                # descendants are never re-walked by _process_nested_element.
+                self._handle_block(elem, doc)
+                self.parents[self.level + 1] = None
             else:
                 # Recursively process children for other elements (like divs)
                 for child in elem.children:
@@ -2678,6 +2709,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 tag, find_parent_annotation=True, keep_newlines=True
             )
             annotated_texts = text_list.simplify_text_elements()
+            language_hint = self._code_language_hint(tag)
             with self._use_inline_group(annotated_texts, doc) as inline_ref:
                 for annotated_text in annotated_texts:
                     text_clean = HTMLDocumentBackend._clean_unicode(
@@ -2691,6 +2723,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     docling_code2 = doc.add_code(
                         parent=self.parents[self.level],
                         text=text_clean,
+                        code_language=detect_code_language(
+                            text_clean, hint=language_hint
+                        ),
                         content_layer=self.content_layer,
                         formatting=annotated_text.formatting,
                         hyperlink=annotated_text.hyperlink,
@@ -3011,6 +3046,24 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if isinstance(classes, str):
             return {classes}
         return {str(value) for value in classes if isinstance(value, str)}
+
+    @staticmethod
+    def _code_language_hint(tag: Tag) -> str | None:
+        """Pick the language class a highlighter set on the ``<pre>`` or ``<code>``.
+
+        A ``language-``/``lang-`` prefixed class is preferred so an unrelated
+        utility class on the same element cannot outrank a real hint.
+        """
+        tokens: set[str] = set()
+        for element in (tag, *tag.find_all("code")):
+            tokens |= HTMLDocumentBackend._get_tag_classes(element)
+
+        prefixed = sorted(t for t in tokens if t.lower().startswith(_HINT_PREFIXES))
+        bare = sorted(tokens - set(prefixed))
+        for token in (*prefixed, *bare):
+            if normalize_code_language(token) is not CodeLanguageLabel.UNKNOWN:
+                return token
+        return None
 
     @staticmethod
     def _has_inline_display_style(tag: Tag) -> bool:

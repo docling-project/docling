@@ -15,10 +15,6 @@ from docling.datamodel.vlm_model_specs import (
     SMOLDOCLING_MLX,
     SMOLDOCLING_TRANSFORMERS,
 )
-from docling.models.stages.chart_extraction.granite_vision import (
-    ChartExtractionModelGraniteVision,
-    ChartExtractionModelGraniteVisionV4,
-)
 from docling.models.stages.code_formula.code_formula_model import CodeFormulaModel
 from docling.models.stages.layout.layout_model import LayoutModel
 from docling.models.stages.ocr.easyocr_model import EasyOcrModel
@@ -33,9 +29,6 @@ from docling.models.stages.picture_classifier.document_picture_classifier import
 )
 from docling.models.stages.table_structure.table_structure_model import (
     TableStructureModel,
-)
-from docling.models.stages.table_structure.table_structure_model_v2 import (
-    TableStructureModelV2,
 )
 from docling.models.utils.hf_model_download import download_hf_model
 
@@ -88,6 +81,10 @@ def download_models(
         )
 
     if with_tableformer_v2:
+        from docling.models.stages.table_structure.table_structure_model_v2 import (
+            TableStructureModelV2,
+        )
+
         _log.info("Downloading TableFormerV2 model...")
         TableStructureModelV2.download_models(
             local_dir=output_dir / TableStructureModelV2._model_repo_folder,
@@ -182,6 +179,10 @@ def download_models(
         )
 
     if with_granite_chart_extraction:
+        from docling.models.stages.chart_extraction.granite_vision import (
+            ChartExtractionModelGraniteVision,
+        )
+
         _log.info("Downloading Granite Vision Charts Extraction model...")
         ChartExtractionModelGraniteVision.download_models(
             local_dir=output_dir / ChartExtractionModelGraniteVision._model_repo_folder,
@@ -190,6 +191,10 @@ def download_models(
         )
 
     if with_granite_chart_extraction_v4:
+        from docling.models.stages.chart_extraction.granite_vision import (
+            ChartExtractionModelGraniteVisionV4,
+        )
+
         _log.info("Downloading Granite Vision 4.1 Charts Extraction model...")
         ChartExtractionModelGraniteVisionV4.download_models(
             local_dir=output_dir

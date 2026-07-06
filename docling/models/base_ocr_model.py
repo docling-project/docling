@@ -21,6 +21,15 @@ from docling.models.base_model import BaseModelWithOptions, BasePageModel
 
 _log = logging.getLogger(__name__)
 
+try:
+    import cv2
+
+    CV2_INSTALLED = True
+except ImportError:
+    CV2_INSTALLED = False
+
+_DILATION_KERNEL = np.ones((20, 20), dtype=np.uint8)
+
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     MAXOUT_COVERAGE_THRESHOLD = 0.75
