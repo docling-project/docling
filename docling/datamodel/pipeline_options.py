@@ -103,7 +103,7 @@ class OcrMode(str, Enum):
     # Only bitmaps embedded inside a programmatic PDF. No layout information is used.
     PDF_BITMAPS_ONLY = "pdf_bitmaps_only"
 
-    # Layout detections which can bear text. No PDF information is needed/used.
+    # Layout detections only. No PDF information is needed/used.
     LAYOUT_DETECTIONS = "layout_detections"
 
 
