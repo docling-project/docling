@@ -61,7 +61,7 @@ _log = logging.getLogger(__name__)
 
 _INSTALL_HINT = (
     "The 'marko' package is required to process Markdown files. "
-    "Install it with `pip install 'docling[format-markdown]'`."
+    "Install it with `pip install 'docling-slim[format-markdown]'`."
 )
 
 _MARKER_BODY = "DOCLING_DOC_MD_HTML_EXPORT"

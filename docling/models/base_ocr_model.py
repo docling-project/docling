@@ -20,6 +20,15 @@ from docling.models.base_model import BaseModelWithOptions, BasePageModel
 
 _log = logging.getLogger(__name__)
 
+try:
+    import cv2
+
+    CV2_INSTALLED = True
+except ImportError:
+    CV2_INSTALLED = False
+
+_DILATION_KERNEL = np.ones((20, 20), dtype=np.uint8)
+
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     def __init__(
@@ -58,10 +67,15 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             np_image = np.array(image)
 
             # Dilate the image by 10 pixels to merge nearby bitmap rectangles
-            structure = np.ones(
-                (20, 20)
-            )  # Create a 20x20 structure element (10 pixels in all directions)
-            np_image = binary_dilation(np_image > 0, structure=structure)
+            if CV2_INSTALLED:
+                np_image = cv2.dilate(
+                    (np_image > 0).astype(np.uint8),
+                    _DILATION_KERNEL,
+                    iterations=1,
+                    anchor=(9, 9),
+                )
+            else:
+                np_image = binary_dilation(np_image > 0, structure=_DILATION_KERNEL)
 
             # Find the connected components
             labeled_image, num_features = label(

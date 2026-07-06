@@ -1,3 +1,10 @@
+## [v2.110.0](https://github.com/docling-project/docling/releases/tag/v2.110.0) - 2026-07-04
+
+### Feature
+
+* Speed up OCR by using OpenCV for dilation ([#3746](https://github.com/docling-project/docling/issues/3746)) ([`2c47875`](https://github.com/docling-project/docling/commit/2c47875712be916cc1ce40ff00e1ed84b6b3cf24))
+* Added the export into dclx ([#3750](https://github.com/docling-project/docling/issues/3750)) ([`7c98fb1`](https://github.com/docling-project/docling/commit/7c98fb1f39c20ab042003f64f3625c29a46af50f))
+
 ## [v2.109.0](https://github.com/docling-project/docling/releases/tag/v2.109.0) - 2026-07-03
 
 ### Feature
