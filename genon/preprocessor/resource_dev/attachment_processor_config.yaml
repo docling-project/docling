@@ -5,51 +5,20 @@ defaults:
   # 5=DEBUG, 4=INFO, 3=WARNING, 2=ERROR, 1=CRITICAL, 0=NOLOG
   log_level: 4
 
-  # hwp/docx 분기 기본 청커: "recursive" | "hybrid"
-  chunker_type: "recursive"
-
-  # 입력 포맷 자동 PDF 변환 엔진 선택
+  # 입력 포맷 자동 PDF 변환 엔진 선택 (ppt/txt/md/img→pdf, hwp 폴백 등 전 변환 경로 공용)
   use_pdf_sdk: true
-
-  # hwp/hwpx 처리 시 기본 SDK 백엔드 사용 여부
-  use_hwp_sdk: true
-
-  # use_hwp_sdk=true 일 때만 유효한 SDK 출력 덤프
-  dump_sdk_output: false
-
-  # hwp/hwpx 처리 시 이미지 저장 여부
-  save_images: true
-
-chunking:
-  # 청킹용 토크나이저 기본값(hybrid 경로 등). tokenizer_path 가 실제 존재하면 그 경로,
-  # 없으면 tokenizer_id(HF) 로 폴백 (외부 네트워크 차단 환경 대비)
-  tokenizer_path: "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
-  tokenizer_id: "sentence-transformers/all-MiniLM-L6-v2"
-
-  # pdf/txt/md/ppt 등 일반 텍스트 splitter 기본값
-  generic:
-    chunk_size: 10000000
-    chunk_overlap: 100
-
-  # hwp/hwpx/docx + recursive 분기 기본값
-  recursive:
-    chunk_size: 8192
-    chunk_overlap: 100
-    # 임베딩 입력 안정성을 위한 토큰 절대 상한
-    token_chunk_size_cap: 60000
-    # 비우면 로컬 경로(/models/...) 우선, 없으면 HF ID fallback
-    tokenizer_id: ""
-
-  # hwp/hwpx/docx + hybrid 분기 기본값
-  hybrid:
-    # 토큰 수 계산 방식. "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
-    tokenizer_type: "char"
-    tokenizer_id: ""
-    chunk_size: 10000000
-    merge_peers: true
 
 # 포맷별 옵션 컨테이너
 formats:
+  # HWP/HWPX: SDK 백엔드 파싱 옵션
+  hwp:
+    # SDK 백엔드 사용 여부 (false=레거시 backend 로 폴백)
+    use_hwp_sdk: true
+    # use_hwp_sdk=true 일 때만 유효한 SDK 출력 덤프(디버그)
+    dump_sdk_output: false
+    # 이미지 저장 여부
+    save_images: true
+
   # PPT(ppt/pptx): PDF 변환 → 경량 docling 파싱 → 페이지 기반 청킹(기본 1 page 1 chunk,
   # chunk_size 지정 시 연속 페이지 결합). page_description 으로 "페이지 자체"를 VLM 설명.
   # (첨부용은 dotsocr 미수행 + do_ocr=false 최소 파싱, bbox 미추출)
@@ -71,6 +40,29 @@ formats:
       # params: { max_completion_tokens: 512 }
       # 프롬프트: 첨부용은 간결(2~3문장) 버전 사용
       prompt_template_file: prompt_page_image_description_fast.md
+
+chunking:
+  # 청킹 모드: "recursive"(문자수 기반, 기본) | "hybrid"(layout 구조 기반; hwp/hwpx/docx 에만 적용)
+  chunker_type: "recursive"
+
+  # 청크 크기(공통): recursive 모드=문자 수 · hybrid 모드=토큰 수. 0=크기 기반 분할 안 함(전체 1청크)
+  chunk_size: 1000000
+
+  # 문자수 기반 청킹 (전 포맷 공용: pdf/txt/md/img/ppt/hwp/hwpx/docx). chunker_type: recursive 일 때.
+  recursive:
+    chunk_overlap: 100
+
+  # layout 구조 기반 청킹 (선택 모드). chunker_type: hybrid 일 때 hwp/hwpx/docx 에만 적용.
+  # (토크나이저는 위 chunking.tokenizer_path/tokenizer_id 를 공용으로 사용)
+  hybrid:
+    # 토큰 수 계산 방식. "char"(default)=문자 수 기준 | "huggingface"=HF 토크나이저 기준
+    tokenizer_type: "char"
+    merge_peers: true
+
+  # 청킹용 토크나이저 기본값(hybrid 경로 등). tokenizer_path 가 실제 존재하면 그 경로,
+  # 없으면 tokenizer_id(HF) 로 폴백 (외부 네트워크 차단 환경 대비)
+  tokenizer_path: "/models/doc_parser_models/sentence-transformers-all-MiniLM-L6-v2"
+  tokenizer_id: "sentence-transformers/all-MiniLM-L6-v2"
 
 loaders:
   image:
