@@ -22,6 +22,7 @@ from docling.datamodel.image_classification_engine_options import (
 )
 from docling.datamodel.pipeline_options import (
     NemotronOcrOptions,
+    OcrMode,
     PdfPipelineOptions,
     TableFormerMode,
 )
@@ -458,6 +459,7 @@ def test_page_error_carries_page_no(test_doc_path):
 def test_ocr_coverage_threshold(test_doc_path):
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = True
+    pipeline_options.ocr_options.mode = OcrMode.PDF_BITMAPS_ONLY
     pipeline_options.ocr_options.bitmap_area_threshold = 1.1
 
     converter = DocumentConverter(

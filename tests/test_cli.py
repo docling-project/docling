@@ -14,7 +14,7 @@ from docling.cli.main import app
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.backend_options import ThreadedDoclingParseBackendOptions
 from docling.datamodel.base_models import InputFormat, OutputFormat
-from docling.datamodel.pipeline_options import PdfBackend, VlmPipelineOptions
+from docling.datamodel.pipeline_options import OcrMode, PdfBackend, VlmPipelineOptions
 from docling.document_converter import PdfFormatOption
 
 runner = CliRunner()
@@ -591,6 +591,76 @@ def test_cli_accepts_threaded_docling_parse_backend(
     assert captured_backend_options is not None
     assert captured_backend_options.parser_threads == 7
     assert captured_backend_options.release_native_memory_every_n_pages == 64
+
+
+def _capture_cli_ocr_options(monkeypatch, extra_args, tmp_path):
+    """Invoke `docling convert` with a fake converter and return the built OcrOptions."""
+    captured: dict[str, Any] = {}
+
+    class _FakeDocumentConverter:
+        def __init__(self, *, allowed_formats, format_options):
+            pdf_option = format_options[InputFormat.PDF]
+            captured["ocr_options"] = pdf_option.pipeline_options.ocr_options
+
+        def convert_all(self, input_doc_paths, headers=None, raises_on_error=False):
+            return []
+
+    monkeypatch.setattr(
+        "docling.document_converter.DocumentConverter", _FakeDocumentConverter
+    )
+    source = "./tests/data/pdf/sources/2305.03393v1-pg9.pdf"
+    result = runner.invoke(
+        app, [source, "--output", str(tmp_path / "out"), *extra_args]
+    )
+    return result, captured.get("ocr_options")
+
+
+@pytest.mark.parametrize("mode", list(OcrMode))
+def test_cli_ocr_mode_sets_options_mode(tmp_path, monkeypatch, mode):
+    result, ocr_options = _capture_cli_ocr_options(
+        monkeypatch, ["--ocr-mode", mode.value], tmp_path
+    )
+    assert result.exit_code == 0
+    assert ocr_options is not None
+    assert ocr_options.mode is mode
+
+
+def test_cli_ocr_mode_defaults_to_layout_without_pdf_text(tmp_path, monkeypatch):
+    result, ocr_options = _capture_cli_ocr_options(monkeypatch, [], tmp_path)
+    assert result.exit_code == 0
+    assert ocr_options.mode is OcrMode.LAYOUT_DETECTIONS_WITHOUT_PDF_TEXT
+
+
+def test_cli_force_ocr_is_deprecated_and_maps_to_full_page(tmp_path, monkeypatch):
+    with pytest.warns(DeprecationWarning, match="--force-ocr"):
+        result, ocr_options = _capture_cli_ocr_options(
+            monkeypatch, ["--force-ocr"], tmp_path
+        )
+    assert result.exit_code == 0
+    assert ocr_options.mode is OcrMode.FORCE_FULL_PAGE_OCR
+
+
+def test_cli_force_ocr_wins_over_ocr_mode(tmp_path, monkeypatch):
+    with pytest.warns(DeprecationWarning, match="--force-ocr"):
+        result, ocr_options = _capture_cli_ocr_options(
+            monkeypatch, ["--force-ocr", "--ocr-mode", "layout_detections"], tmp_path
+        )
+    assert result.exit_code == 0
+    assert ocr_options.mode is OcrMode.FORCE_FULL_PAGE_OCR
+
+
+def test_cli_invalid_ocr_mode_is_rejected(tmp_path):
+    result = runner.invoke(
+        app,
+        [
+            "./tests/data/pdf/sources/2305.03393v1-pg9.pdf",
+            "--output",
+            str(tmp_path / "out"),
+            "--ocr-mode",
+            "not_a_mode",
+        ],
+    )
+    assert result.exit_code != 0
 
 
 def test_cli_passes_accelerator_options_to_vlm_pipeline(

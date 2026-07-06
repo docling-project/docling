@@ -12,6 +12,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     EasyOcrOptions,
     OcrMacOptions,
+    OcrMode,
     OcrOptions,
     PdfPipelineOptions,
     RapidOcrOptions,
@@ -65,11 +66,11 @@ def test_e2e_conversions():
         (TesseractCliOcrOptions(), True),
         (EasyOcrOptions(), False),
         (TesseractOcrOptions(psm=3), True),
-        (TesseractOcrOptions(force_full_page_ocr=True), True),
-        (TesseractOcrOptions(force_full_page_ocr=True, lang=["auto"]), True),
-        (TesseractCliOcrOptions(force_full_page_ocr=True), True),
-        (TesseractCliOcrOptions(force_full_page_ocr=True, lang=["auto"]), True),
-        (EasyOcrOptions(force_full_page_ocr=True), False),
+        (TesseractOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR), True),
+        (TesseractOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR, lang=["auto"]), True),
+        (TesseractCliOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR), True),
+        (TesseractCliOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR, lang=["auto"]), True),
+        (EasyOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR), False),
     ]
 
     for rapidocr_backend in ["onnxruntime", "torch"]:
@@ -79,13 +80,18 @@ def test_e2e_conversions():
 
         engines.append((RapidOcrOptions(backend=rapidocr_backend), False))
         engines.append(
-            (RapidOcrOptions(backend=rapidocr_backend, force_full_page_ocr=True), False)
+            (
+                RapidOcrOptions(
+                    backend=rapidocr_backend, mode=OcrMode.FORCE_FULL_PAGE_OCR
+                ),
+                False,
+            )
         )
         engines.append(
             (
                 RapidOcrOptions(
                     backend=rapidocr_backend,
-                    force_full_page_ocr=True,
+                    mode=OcrMode.FORCE_FULL_PAGE_OCR,
                     rec_font_path="test",
                     rapidocr_params={"Rec.font_path": None},  # overwrites rec_font_path
                 ),
@@ -96,7 +102,7 @@ def test_e2e_conversions():
     # only works on mac
     if "darwin" == sys.platform:
         engines.append((OcrMacOptions(), True))
-        engines.append((OcrMacOptions(force_full_page_ocr=True), True))
+        engines.append((OcrMacOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR), True))
 
     for ocr_options, supports_rotation in engines:
         print(

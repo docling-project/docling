@@ -348,7 +348,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         page.parsed_page.textline_cells = final_cells
         page.parsed_page.has_lines = len(final_cells) > 0
 
-        # When force_full_page_ocr is used, PDF-extracted word/char cells are unreliable.
+        # In OcrMode.FORCE_FULL_PAGE_OCR, PDF-extracted word/char cells are unreliable.
         # Filter out cells where from_ocr=False, keeping any OCR generated cells.
         # This ensures downstream components (e.g., table structure model) fall back to
         # OCR-extracted textline cells.

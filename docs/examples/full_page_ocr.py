@@ -15,9 +15,9 @@
 #
 # Choosing an OCR backend
 # - Uncomment one `ocr_options = ...` line below. Exactly one should be active.
-# - `force_full_page_ocr=True` processes each page purely via OCR (often slower
-#   than hybrid detection). Use when layout extraction is unreliable or the PDF
-#   contains scanned pages.
+# - `mode=OcrMode.FORCE_FULL_PAGE_OCR` processes each page purely via OCR (often
+#   slower than hybrid detection). Use when layout extraction is unreliable or the
+#   PDF contains scanned pages.
 # - If you switch OCR backends, ensure the corresponding option class is imported,
 #   e.g., `EasyOcrOptions`, `TesseractOcrOptions`, `OcrMacOptions`, `RapidOcrOptions`.
 #
@@ -32,6 +32,7 @@ from pathlib import Path
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     NemotronOcrOptions,
+    OcrMode,
     PdfPipelineOptions,
     TableStructureOptions,
     TesseractCliOcrOptions,
@@ -60,12 +61,12 @@ def main():
     # Any of the OCR options can be used: EasyOcrOptions, TesseractOcrOptions,
     # TesseractCliOcrOptions, OcrMacOptions (macOS only), RapidOcrOptions,
     # NemotronOcrOptions (Linux x86_64, Python 3.12, CUDA 13.x only)
-    # ocr_options = EasyOcrOptions(force_full_page_ocr=True)
-    # ocr_options = NemotronOcrOptions(force_full_page_ocr=True)
-    # ocr_options = TesseractOcrOptions(force_full_page_ocr=True)
-    # ocr_options = OcrMacOptions(force_full_page_ocr=True)
-    # ocr_options = RapidOcrOptions(force_full_page_ocr=True)
-    ocr_options = TesseractCliOcrOptions(force_full_page_ocr=True)
+    # ocr_options = EasyOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR)
+    # ocr_options = NemotronOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR)
+    # ocr_options = TesseractOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR)
+    # ocr_options = OcrMacOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR)
+    # ocr_options = RapidOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR)
+    ocr_options = TesseractCliOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR)
     pipeline_options.ocr_options = ocr_options
 
     converter = DocumentConverter(

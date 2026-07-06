@@ -10,6 +10,7 @@ from docling.datamodel.document import ConversionResult, DoclingDocument
 from docling.datamodel.pipeline_options import (
     EasyOcrOptions,
     OcrMacOptions,
+    OcrMode,
     OcrOptions,
     RapidOcrOptions,
     TesseractCliOcrOptions,
@@ -52,22 +53,22 @@ def test_e2e_webp_conversions():
         EasyOcrOptions(),
         TesseractOcrOptions(),
         TesseractCliOcrOptions(),
-        EasyOcrOptions(force_full_page_ocr=True),
-        TesseractOcrOptions(force_full_page_ocr=True),
-        TesseractOcrOptions(force_full_page_ocr=True, lang=["auto"]),
-        TesseractCliOcrOptions(force_full_page_ocr=True),
-        TesseractCliOcrOptions(force_full_page_ocr=True, lang=["auto"]),
+        EasyOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR),
+        TesseractOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR),
+        TesseractOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR, lang=["auto"]),
+        TesseractCliOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR),
+        TesseractCliOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR, lang=["auto"]),
     ]
 
     # rapidocr is only available for Python >=3.6,<3.14
     if sys.version_info < (3, 14):
         engines.append(RapidOcrOptions())
-        engines.append(RapidOcrOptions(force_full_page_ocr=True))
+        engines.append(RapidOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR))
 
     # only works on mac
     if "darwin" == sys.platform:
         engines.append(OcrMacOptions())
-        engines.append(OcrMacOptions(force_full_page_ocr=True))
+        engines.append(OcrMacOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR))
     for ocr_options in engines:
         print(
             f"Converting with ocr_engine: {ocr_options.kind}, language: {ocr_options.lang}"

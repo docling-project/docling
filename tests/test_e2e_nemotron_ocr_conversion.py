@@ -13,6 +13,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     NemotronOcrOptions,
+    OcrMode,
     OcrOptions,
     PdfPipelineOptions,
 )
@@ -126,7 +127,7 @@ def test_e2e_nemotron_ocr_conversions():
         (NemotronOcrOptions(), "nemotron-ocr"),  # Default options
         (NemotronOcrOptions(batch_size=3), "nemotron-ocr"),  # Lower batch_size
         (
-            NemotronOcrOptions(force_full_page_ocr=True),
+            NemotronOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR),
             "nemotron-ocr.full-page",
         ),  # Full page
     ]
@@ -135,7 +136,7 @@ def test_e2e_nemotron_ocr_conversions():
         print(
             f"Converting with ocr_engine: {ocr_options.kind}, "
             f"merge_level: {ocr_options.merge_level}, "
-            f"force_full_page_ocr: {ocr_options.force_full_page_ocr}"
+            f"mode: {ocr_options.mode}"
         )
         converter = get_converter(ocr_options=ocr_options)
         for pdf_path in pdf_paths:
@@ -164,7 +165,7 @@ def test_e2e_nemotron_ocr_multipage_batching():
     configs: list[tuple[OcrOptions, str]] = [
         (NemotronOcrOptions(batch_size=batch_size), "nemotron-ocr"),
         (
-            NemotronOcrOptions(batch_size=batch_size, force_full_page_ocr=True),
+            NemotronOcrOptions(batch_size=batch_size, mode=OcrMode.FORCE_FULL_PAGE_OCR),
             "nemotron-ocr.full-page",
         ),
     ]
@@ -172,7 +173,7 @@ def test_e2e_nemotron_ocr_multipage_batching():
     for ocr_options, engine_suffix in configs:
         print(
             f"Converting multi-page with batch_size: {ocr_options.batch_size}, "
-            f"force_full_page_ocr: {ocr_options.force_full_page_ocr}"
+            f"mode: {ocr_options.mode}"
         )
         converter = get_converter(ocr_options=ocr_options, ocr_batch_size=batch_size)
         doc_result: ConversionResult = converter.convert(pdf_path)

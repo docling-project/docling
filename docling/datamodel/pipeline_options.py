@@ -1,4 +1,5 @@
 import logging
+import warnings
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -257,12 +258,10 @@ class OcrOptions(BaseOptions):
         Backwards-compatibility bridge for the deprecated `force_full_page_ocr`
         flag: when it is set, force `mode` to `OcrMode.FORCE_FULL_PAGE_OCR`.
         """
-        if self.force_full_page_ocr:
-            _log.warning(
-                "`force_full_page_ocr` is deprecated; overriding `mode` to %s."
-                "Set `mode=OcrMode.FORCE_FULL_PAGE_OCR` instead.",
-                OcrMode.FORCE_FULL_PAGE_OCR,
-            )
+        with warnings.catch_warnings():  # deprecated force_full_page_ocr
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            forced = self.force_full_page_ocr
+        if forced:
             self.mode = OcrMode.FORCE_FULL_PAGE_OCR
         return self
 
