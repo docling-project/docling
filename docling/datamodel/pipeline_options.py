@@ -107,7 +107,7 @@ class OcrMode(str, Enum):
     LAYOUT_DETECTIONS = "layout_detections"
 
     # Layout detections augmented with PDF cell information
-    PDF_AUGMENTED_LAYOUT = "pdf_augmented_layout"
+    # PDF_AUGMENTED_LAYOUT = "pdf_augmented_layout"
 
 
 class TableFormerMode(str, Enum):
@@ -203,10 +203,9 @@ class OcrOptions(BaseOptions):
                 OcrMode.FORCE_FULL_PAGE_OCR,
                 OcrMode.PDF_BITMAPS_ONLY,
                 OcrMode.LAYOUT_DETECTIONS,
-                OcrMode.PDF_AUGMENTED_LAYOUT,
             ],
         ),
-    ] = OcrMode.PDF_AUGMENTED_LAYOUT
+    ] = OcrMode.PDF_BITMAPS_ONLY
 
     lang: Annotated[
         list[str],
@@ -240,17 +239,16 @@ class OcrOptions(BaseOptions):
         ),
     ] = 0.05
 
-    # TODO: Need to calibrate the default value
-    sparse_cell_coverage_threshold: Annotated[
-        float,
-        Field(
-            description=(
-                "A sparse layout detection is omitted from the OCR rects if its coverage with"
-                "textual PDF cells is more than this threshold"
-            ),
-            examples=[],
-        ),
-    ] = 0.30
+    # sparse_cell_coverage_threshold: Annotated[
+    #     float,
+    #     Field(
+    #         description=(
+    #             "A sparse layout detection is omitted from the OCR rects if its coverage with"
+    #             "textual PDF cells is more than this threshold"
+    #         ),
+    #         examples=[],
+    #     ),
+    # ] = 0.30
 
     @model_validator(mode="after")
     def _apply_force_full_page_ocr(self) -> "OcrOptions":

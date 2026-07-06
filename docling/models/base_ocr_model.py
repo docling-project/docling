@@ -6,14 +6,14 @@ from pathlib import Path
 from typing import List, Optional, Type
 
 import numpy as np
-from docling_core.types.doc import BoundingBox, CoordOrigin, DocItemLabel, Size
+from docling_core.types.doc import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.page import TextCell
 from PIL import Image, ImageDraw
 from rtree import index
 from scipy.ndimage import binary_dilation, find_objects, label
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import Cluster, Page
+from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import OcrMode, OcrOptions
 from docling.datamodel.settings import settings
@@ -33,39 +33,40 @@ _DILATION_KERNEL = np.ones((20, 20), dtype=np.uint8)
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     MAXOUT_COVERAGE_THRESHOLD = 0.75
-    SPARSE_LABELS = [
-        DocItemLabel.PICTURE,
-        DocItemLabel.CHART,
-        DocItemLabel.TABLE,
-        DocItemLabel.DOCUMENT_INDEX,
-        DocItemLabel.KEY_VALUE_REGION,
-        DocItemLabel.FORM,
-    ]
-    DENSE_LABELS = [
-        DocItemLabel.CAPTION,
-        DocItemLabel.FOOTNOTE,
-        DocItemLabel.LIST_ITEM,
-        DocItemLabel.PAGE_FOOTER,
-        DocItemLabel.PAGE_HEADER,
-        DocItemLabel.SECTION_HEADER,
-        DocItemLabel.TEXT,
-        DocItemLabel.TITLE,
-        DocItemLabel.CHECKBOX_SELECTED,
-        DocItemLabel.CHECKBOX_UNSELECTED,
-        DocItemLabel.HANDWRITTEN_TEXT,
-        DocItemLabel.PARAGRAPH,
-        DocItemLabel.REFERENCE,
-        DocItemLabel.FIELD_REGION,
-        DocItemLabel.FIELD_HEADING,
-        DocItemLabel.FIELD_ITEM,
-        DocItemLabel.FIELD_KEY,
-        DocItemLabel.FIELD_VALUE,
-        DocItemLabel.FIELD_HINT,
-        DocItemLabel.MARKER,
-        DocItemLabel.FORMULA,
-        DocItemLabel.CODE,
-    ]
-    FILTER_OUT_OVERLAPPING_CLUSTERS: bool = False
+
+    # FILTER_OUT_OVERLAPPING_CLUSTERS: bool = False
+    # SPARSE_LABELS = [
+    #     DocItemLabel.PICTURE,
+    #     DocItemLabel.CHART,
+    #     DocItemLabel.TABLE,
+    #     DocItemLabel.DOCUMENT_INDEX,
+    #     DocItemLabel.KEY_VALUE_REGION,
+    #     DocItemLabel.FORM,
+    # ]
+    # DENSE_LABELS = [
+    #     DocItemLabel.CAPTION,
+    #     DocItemLabel.FOOTNOTE,
+    #     DocItemLabel.LIST_ITEM,
+    #     DocItemLabel.PAGE_FOOTER,
+    #     DocItemLabel.PAGE_HEADER,
+    #     DocItemLabel.SECTION_HEADER,
+    #     DocItemLabel.TEXT,
+    #     DocItemLabel.TITLE,
+    #     DocItemLabel.CHECKBOX_SELECTED,
+    #     DocItemLabel.CHECKBOX_UNSELECTED,
+    #     DocItemLabel.HANDWRITTEN_TEXT,
+    #     DocItemLabel.PARAGRAPH,
+    #     DocItemLabel.REFERENCE,
+    #     DocItemLabel.FIELD_REGION,
+    #     DocItemLabel.FIELD_HEADING,
+    #     DocItemLabel.FIELD_ITEM,
+    #     DocItemLabel.FIELD_KEY,
+    #     DocItemLabel.FIELD_VALUE,
+    #     DocItemLabel.FIELD_HINT,
+    #     DocItemLabel.MARKER,
+    #     DocItemLabel.FORMULA,
+    #     DocItemLabel.CODE,
+    # ]
 
     def __init__(
         self,
@@ -101,8 +102,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             ocr_rects = self._find_pdf_ocr_rects(page)
         elif self.options.mode == OcrMode.LAYOUT_DETECTIONS:
             ocr_rects = self._find_layout_ocr_rects(page)
-        elif self.options.mode == OcrMode.PDF_AUGMENTED_LAYOUT:
-            ocr_rects = self._find_pdf_augmented_layout(page)
         return ocr_rects
 
     def _find_pdf_ocr_rects(self, page: Page) -> List[BoundingBox]:
@@ -143,145 +142,143 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
     def _find_layout_ocr_rects(self, page: Page) -> List[BoundingBox]:
         r"""
-        1. Filter the layout clusters accoring to the dense/sparse logic.
+        1. Collect the bboxes of all layout clusters.
         2. Deduplicate the candidate ocr_rects.
         """
         if page.predictions.layout is None:
             return []
 
-        # Filter the layout detections to get the initial ocr_rects
-        ocr_rects = [
-            c.bbox for c in self._filter_clusters(page.predictions.layout.clusters)
-        ]
+        # Use every layout detection bbox as an initial ocr_rect
+        ocr_rects = [c.bbox for c in page.predictions.layout.clusters]
 
         # Deduplicate the ocr_rects
         _, ocr_rects = self._deduplicate_rects(page.size, ocr_rects)
 
         return ocr_rects
 
-    def _find_pdf_augmented_layout(self, page: Page) -> List[BoundingBox]:
-        r"""
-        1. Filter the layout clusters accoring to the dense/sparse logic.
-        2. Build the ocr_rects out of:
-           a. The dense clusters that do not overlap with any PDF cell with text.
-           b. The filtered sparse clusters that are covered by cells less than a threshold.
-        3. Deduplicate the candidate ocr_rects.
-        """
-        # If there is no page.backend, this equals to _find_layout_ocr_rects()
-        if page._backend is None:
-            return self._find_layout_ocr_rects(page)
-        if page.predictions.layout is None:
-            return []
+    # def _find_pdf_augmented_layout(self, page: Page) -> List[BoundingBox]:
+    #     r"""
+    #     1. Filter the layout clusters accoring to the dense/sparse logic.
+    #     2. Build the ocr_rects out of:
+    #        a. The dense clusters that do not overlap with any PDF cell with text.
+    #        b. The filtered sparse clusters that are covered by cells less than a threshold.
+    #     3. Deduplicate the candidate ocr_rects.
+    #     """
+    #     # If there is no page.backend, this equals to _find_layout_ocr_rects()
+    #     if page._backend is None:
+    #         return self._find_layout_ocr_rects(page)
+    #     if page.predictions.layout is None:
+    #         return []
+    #
+    #     # Create an R-tree index with the text-bearing PDF cell bboxes
+    #     p = index.Property()
+    #     p.dimension = 2
+    #     cells_index = index.Index(properties=p)
+    #     cell_bboxes: List[BoundingBox] = []
+    #     for cell in page._backend.get_text_cells():
+    #         txt = cell.text
+    #         if txt is None or txt.strip() == "":
+    #             continue
+    #         cell_bbox = cell.rect.to_bounding_box()
+    #         cells_index.insert(len(cell_bboxes), cell_bbox.as_tuple())
+    #         cell_bboxes.append(cell_bbox)
+    #
+    #     # Iterate over the clusters to pick up the OCR rects
+    #     ocr_rects: List[BoundingBox] = []
+    #     for cluster in self._filter_clusters(page.predictions.layout.clusters):
+    #         candidate_cell_bboxes = [
+    #             cell_bboxes[i]
+    #             for i in cells_index.intersection(cluster.bbox.as_tuple())
+    #         ]
+    #         if cluster.label in self.SPARSE_LABELS:
+    #             coverage = self._compute_coverage_of_text_cells(
+    #                 cluster.bbox, candidate_cell_bboxes
+    #             )
+    #             if coverage < self.options.sparse_cell_coverage_threshold:
+    #                 ocr_rects.append(cluster.bbox)
+    #         elif len(candidate_cell_bboxes) == 0:
+    #             ocr_rects.append(cluster.bbox)
+    #
+    #     # Deduplicate the ocr_rects
+    #     _, ocr_rects = self._deduplicate_rects(page.size, ocr_rects)
+    #     return ocr_rects
 
-        # Create an R-tree index with the text-bearing PDF cell bboxes
-        p = index.Property()
-        p.dimension = 2
-        cells_index = index.Index(properties=p)
-        cell_bboxes: List[BoundingBox] = []
-        for cell in page._backend.get_text_cells():
-            txt = cell.text
-            if txt is None or txt.strip() == "":
-                continue
-            cell_bbox = cell.rect.to_bounding_box()
-            cells_index.insert(len(cell_bboxes), cell_bbox.as_tuple())
-            cell_bboxes.append(cell_bbox)
+    # def _filter_clusters(self, clusters: List[Cluster]) -> List[Cluster]:
+    #     r"""
+    #     - Keep all clusters with "dense" labels.
+    #     - Keep clusters with "sparse" labels only when they do not overlap any
+    #       dense cluster; a sparse cluster overlapping a dense one is dropped to
+    #       avoid re-OCRing text already covered by the dense region.
+    #
+    #     When `FILTER_OUT_OVERLAPPING_CLUSTERS` is disabled, the overlap check is
+    #     skipped and every cluster with a known dense or sparse label is kept.
+    #     """
+    #     filtered_clusters: List[Cluster] = []
+    #
+    #     # Check if to skip any overlapping filtering
+    #     if not BaseOcrModel.FILTER_OUT_OVERLAPPING_CLUSTERS:
+    #         valid_labels = set(BaseOcrModel.SPARSE_LABELS) | set(
+    #             BaseOcrModel.DENSE_LABELS
+    #         )
+    #         filtered_clusters = [c for c in clusters if c.label in valid_labels]
+    #         return filtered_clusters
+    #
+    #     # Build an index for the dense bboxes
+    #     p = index.Property()
+    #     p.dimension = 2
+    #     dense_idx = index.Index(properties=p)
+    #     idx_id = 0
+    #     for cluster in clusters:
+    #         if cluster.label in self.SPARSE_LABELS:
+    #             continue
+    #         tuple_bbox = cluster.bbox.as_tuple()
+    #         dense_idx.insert(idx_id, tuple_bbox)
+    #         idx_id += 1
+    #
+    #     # Select only the non-overlapping sparse bboxes
+    #     for cluster in clusters:
+    #         if cluster.label in self.DENSE_LABELS:
+    #             filtered_clusters.append(cluster)
+    #             continue
+    #         tuple_bbox = cluster.bbox.as_tuple()
+    #         overlapping_dense_bboxes = list(dense_idx.intersection(tuple_bbox))
+    #         if len(overlapping_dense_bboxes) == 0:
+    #             filtered_clusters.append(cluster)
+    #
+    #     return filtered_clusters
 
-        # Iterate over the clusters to pick up the OCR rects
-        ocr_rects: List[BoundingBox] = []
-        for cluster in self._filter_clusters(page.predictions.layout.clusters):
-            candidate_cell_bboxes = [
-                cell_bboxes[i]
-                for i in cells_index.intersection(cluster.bbox.as_tuple())
-            ]
-            if cluster.label in self.SPARSE_LABELS:
-                coverage = self._compute_coverage_of_text_cells(
-                    cluster.bbox, candidate_cell_bboxes
-                )
-                if coverage < self.options.sparse_cell_coverage_threshold:
-                    ocr_rects.append(cluster.bbox)
-            elif len(candidate_cell_bboxes) == 0:
-                ocr_rects.append(cluster.bbox)
-
-        # Deduplicate the ocr_rects
-        _, ocr_rects = self._deduplicate_rects(page.size, ocr_rects)
-        return ocr_rects
-
-    def _filter_clusters(self, clusters: List[Cluster]) -> List[Cluster]:
-        r"""
-        - Keep all clusters with "dense" labels.
-        - Keep clusters with "sparse" labels only when they do not overlap any
-          dense cluster; a sparse cluster overlapping a dense one is dropped to
-          avoid re-OCRing text already covered by the dense region.
-
-        When `FILTER_OUT_OVERLAPPING_CLUSTERS` is disabled, the overlap check is
-        skipped and every cluster with a known dense or sparse label is kept.
-        """
-        filtered_clusters: List[Cluster] = []
-
-        # Check if to skip any overlapping filtering
-        if not BaseOcrModel.FILTER_OUT_OVERLAPPING_CLUSTERS:
-            valid_labels = set(BaseOcrModel.SPARSE_LABELS) | set(
-                BaseOcrModel.DENSE_LABELS
-            )
-            filtered_clusters = [c for c in clusters if c.label in valid_labels]
-            return filtered_clusters
-
-        # Build an index for the dense bboxes
-        p = index.Property()
-        p.dimension = 2
-        dense_idx = index.Index(properties=p)
-        idx_id = 0
-        for cluster in clusters:
-            if cluster.label in self.SPARSE_LABELS:
-                continue
-            tuple_bbox = cluster.bbox.as_tuple()
-            dense_idx.insert(idx_id, tuple_bbox)
-            idx_id += 1
-
-        # Select only the non-overlapping sparse bboxes
-        for cluster in clusters:
-            if cluster.label in self.DENSE_LABELS:
-                filtered_clusters.append(cluster)
-                continue
-            tuple_bbox = cluster.bbox.as_tuple()
-            overlapping_dense_bboxes = list(dense_idx.intersection(tuple_bbox))
-            if len(overlapping_dense_bboxes) == 0:
-                filtered_clusters.append(cluster)
-
-        return filtered_clusters
-
-    def _compute_coverage_of_text_cells(
-        self, bbox: BoundingBox, text_cell_bboxes: List[BoundingBox]
-    ) -> float:
-        r"""
-        Compute the fraction of `bbox`'s area that is covered by the given
-        text-bearing PDF cell bboxes.
-
-        The clipped intersections are rasterized into a binary mask so that
-        overlapping cells are counted once (and the result stays within [0, 1]).
-        All bboxes must share `bbox`'s coordinate origin.
-        """
-        if not text_cell_bboxes or bbox.area() <= 0:
-            return 0.0
-
-        width = max(round(bbox.width), 1)
-        height = max(round(bbox.height), 1)
-
-        mask = Image.new("1", (width, height))  # '1' mode is binary
-        draw = ImageDraw.Draw(mask)
-        for cell_bbox in text_cell_bboxes:
-            intersection = bbox.get_intersection_bbox(cell_bbox)
-            if intersection is None:
-                continue
-            # Translate the intersection into the mask's local top-left coordinates.
-            x0 = round(intersection.l - bbox.l)
-            y0 = round(intersection.t - bbox.t)
-            x1 = round(intersection.r - bbox.l)
-            y1 = round(intersection.b - bbox.t)
-            draw.rectangle([(x0, y0), (x1, y1)], fill=1)
-
-        covered_pixels = int(np.count_nonzero(np.asarray(mask)))
-        return covered_pixels / (width * height)
+    # def _compute_coverage_of_text_cells(
+    #     self, bbox: BoundingBox, text_cell_bboxes: List[BoundingBox]
+    # ) -> float:
+    #     r"""
+    #     Compute the fraction of `bbox`'s area that is covered by the given
+    #     text-bearing PDF cell bboxes.
+    #
+    #     The clipped intersections are rasterized into a binary mask so that
+    #     overlapping cells are counted once (and the result stays within [0, 1]).
+    #     All bboxes must share `bbox`'s coordinate origin.
+    #     """
+    #     if not text_cell_bboxes or bbox.area() <= 0:
+    #         return 0.0
+    #
+    #     width = max(round(bbox.width), 1)
+    #     height = max(round(bbox.height), 1)
+    #
+    #     mask = Image.new("1", (width, height))  # '1' mode is binary
+    #     draw = ImageDraw.Draw(mask)
+    #     for cell_bbox in text_cell_bboxes:
+    #         intersection = bbox.get_intersection_bbox(cell_bbox)
+    #         if intersection is None:
+    #             continue
+    #         # Translate the intersection into the mask's local top-left coordinates.
+    #         x0 = round(intersection.l - bbox.l)
+    #         y0 = round(intersection.t - bbox.t)
+    #         x1 = round(intersection.r - bbox.l)
+    #         y1 = round(intersection.b - bbox.t)
+    #         draw.rectangle([(x0, y0), (x1, y1)], fill=1)
+    #
+    #     covered_pixels = int(np.count_nonzero(np.asarray(mask)))
+    #     return covered_pixels / (width * height)
 
     def _deduplicate_rects(
         self, size: Size, rects: Iterable[BoundingBox], dilation_size=0
