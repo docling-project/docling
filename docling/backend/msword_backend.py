@@ -843,8 +843,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             parts.append(str(counter))
         return ".".join(parts) + "."
 
-    def _is_numbered_list(self, numId: int, ilvl: int) -> bool:
-        """Check if a list is numbered based on its numFmt value."""
+    def _has_visible_numbering_format(self, numId: int, ilvl: int) -> bool:
+        """Return True when numbering.xml defines a visible marker for numId/ilvl."""
         try:
             lvl_element = self._get_level_element(numId, ilvl)
             if lvl_element is None:
@@ -871,6 +871,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         except Exception as e:
             _log.debug(f"Error determining if list is numbered: {e}")
             return False
+
+    def _is_numbered_heading(self, paragraph: Paragraph) -> bool:
+        """Return True when heading numbering would render a visible marker."""
+        numid, ilvl = self._get_numId_and_ilvl(paragraph)
+        return numid is not None and self._has_visible_numbering_format(
+            numid, ilvl or 0
+        )
 
     def _get_outline_level_from_style(self, paragraph: Paragraph) -> int | None:
         """Extract outlineLvl from paragraph's style definition.
@@ -1626,7 +1633,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and p_style_id not in ["Title", "Heading"]
         ):
             # Check if this is actually a numbered list by examining the numFmt
-            is_numbered = self._is_numbered_list(numid, ilevel)
+            is_numbered = self._has_visible_numbering_format(numid, ilevel)
 
             # If there are equations in the list item, handle them specially
             if len(equations) > 0:
@@ -1688,13 +1695,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[0] = te
             elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
-            style_element = getattr(paragraph.style, "element", None)
-            if style_element is not None:
-                is_numbered_style = (
-                    "<w:numPr>" in style_element.xml or "<w:numPr>" in element.xml
-                )
-            else:
-                is_numbered_style = False
+            is_numbered_style = self._is_numbered_heading(paragraph)
             h1 = self._add_heading(doc, p_level, text, is_numbered_style)
             elem_ref.extend(h1)
 

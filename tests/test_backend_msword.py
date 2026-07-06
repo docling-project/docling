@@ -867,6 +867,17 @@ def test_handle_text_elements_heading_defaults_to_non_numbered_when_style_missin
     assert captured["heading"] == (1, "Heading text", False)
 
 
+def test_heading_outline_numfmt_none_docx():
+    docx_path = Path("./tests/data/docx/sources/heading_outline_numfmt_none.docx")
+    converter = get_converter()
+    doc = converter.convert(docx_path).document
+    md = doc.export_to_markdown(compact_tables=True)
+
+    assert "### REFERENCES" in md
+    assert "### 1 REFERENCES" not in md
+    assert "### 2 References" not in md
+
+
 def test_handle_text_elements_inline_equations_stop_when_text_is_consumed(
     backend, monkeypatch
 ):
