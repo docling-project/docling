@@ -8,6 +8,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
+from .groundtruth_paths import get_regular_groundtruth_paths
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_conversion_result_v2
 
@@ -65,7 +66,7 @@ def test_e2e_pdfs_conversions():
         verify_doctags = pdf_path.name not in SKIP_DOCTAGS_COMPARISON
 
         verify_conversion_result_v2(
-            input_path=pdf_path,
+            gt=get_regular_groundtruth_paths(pdf_path),
             doc_result=doc_result,
             generate=GENERATE_V2,
             verify_doctags=verify_doctags,
