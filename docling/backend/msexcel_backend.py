@@ -530,7 +530,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             doc = self._find_tables_in_sheet(doc, sheet, page_no)
             doc = self._find_images_in_sheet(doc, sheet, page_no)
         # Charts can be on both Worksheet and Chartsheet objects
-        if isinstance(sheet, Worksheet) or isinstance(sheet, Chartsheet):
+        if isinstance(sheet, (Worksheet, Chartsheet)):
             doc = self._find_chart_in_sheet(doc, sheet, page_no)
         self._sort_sheet_children_by_position(doc, page_no)
 
