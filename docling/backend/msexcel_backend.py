@@ -1341,7 +1341,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     ),
                 )
             except Exception:
-                _log.error("could not extract a chart from the excel sheet")
+                _log.error("could not extract a chart from the excel sheet", exc_info=True)
 
         return doc
 
