@@ -13,6 +13,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import KserveV2OcrOptions, PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
+from .groundtruth_paths import get_ocr_groundtruth_paths
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_conversion_result_v2
 
@@ -69,10 +70,9 @@ def test_kserve_v2_ocr_conversion() -> None:
             doc_result: ConversionResult = converter.convert(input_path)
 
             verify_conversion_result_v2(
-                input_path=input_path,
+                gt=get_ocr_groundtruth_paths(input_path, engine="kserve_v2_ocr"),
                 doc_result=doc_result,
                 generate=GEN_TEST_DATA,
-                ocr_engine="kserve_v2_ocr",
                 fuzzy=True,
             )
 

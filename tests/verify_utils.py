@@ -20,6 +20,8 @@ from pydantic import BaseModel, TypeAdapter
 from docling.datamodel.base_models import ConversionStatus, Page
 from docling.datamodel.document import ConversionResult
 
+from .groundtruth_paths import GroundTruthPaths
+
 COORD_PREC = 2  # decimal places for coordinates
 CONFID_PREC = 3  # decimal places for confidence
 STRICT_BBOX_TOL_RATIO = 0.0025  # allow minor cross-platform layout variance
@@ -353,15 +355,16 @@ def verify_dt(doc_pred_dt: str, doc_true_dt: str, fuzzy: bool):
 
 
 def verify_conversion_result_v2(
-    input_path: Path,
+    gt: GroundTruthPaths,
     doc_result: ConversionResult,
     generate: bool = False,
-    ocr_engine: Optional[str] = None,
     fuzzy: bool = False,
     verify_doctags: bool = True,
     indent: int = 2,
 ):
     PageMetaList = TypeAdapter(list[_TestPagesMeta])
+
+    input_path = doc_result.input.file
 
     assert doc_result.status == ConversionStatus.SUCCESS, (
         f"Doc {input_path} did not convert successfully."
@@ -375,26 +378,24 @@ def verify_conversion_result_v2(
     doc_pred_md = doc_result.document.export_to_markdown(compact_tables=True)
     doc_pred_dt = doc_result.document.export_to_doctags()
 
-    engine_suffix = "" if ocr_engine is None else f".{ocr_engine}"
+    pages_path = gt.pages_meta
+    json_path = gt.doc_json
+    md_path = gt.md
+    dt_path = gt.doctags
 
-    gt_subpath = input_path.parent.parent / "groundtruth" / input_path.name
-
-    pages_path = gt_subpath.with_suffix(f"{engine_suffix}.pages.meta.json")
-    json_path = gt_subpath.with_suffix(f"{engine_suffix}.json")
-    md_path = gt_subpath.with_suffix(f"{engine_suffix}.md")
-    dt_path = gt_subpath.with_suffix(f"{engine_suffix}.doctags.txt")
-
-    # print("generate: ", generate)
     if generate:  # only used when re-generating truth
         pages_path.parent.mkdir(parents=True, exist_ok=True)
 
-        pages_data = PageMetaList.dump_json(doc_pred_pages_meta, indent=2)
+        pages_data = PageMetaList.dump_json(doc_pred_pages_meta, indent=indent)
         with open(pages_path, mode="w", encoding="utf-8") as fw:
             fw.write(pages_data.decode())
 
         json_path.parent.mkdir(parents=True, exist_ok=True)
         doc_pred.save_as_json(
-            json_path, coord_precision=COORD_PREC, confid_precision=CONFID_PREC
+            json_path,
+            indent=indent,
+            coord_precision=COORD_PREC,
+            confid_precision=CONFID_PREC,
         )
 
         md_path.parent.mkdir(parents=True, exist_ok=True)

@@ -23,6 +23,7 @@ from docling.models.stages.ocr.nemotron_ocr_model import (
     resolve_nemotronocr_language,
 )
 
+from .groundtruth_paths import get_ocr_groundtruth_paths
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_conversion_result_v2
 
@@ -145,10 +146,9 @@ def test_e2e_nemotron_ocr_conversions():
             doc_result: ConversionResult = converter.convert(pdf_path)
 
             verify_conversion_result_v2(
-                input_path=pdf_path,
+                gt=get_ocr_groundtruth_paths(pdf_path, engine=engine_suffix),
                 doc_result=doc_result,
                 generate=GENERATE_V2,
-                ocr_engine=engine_suffix,
                 fuzzy=True,
             )
 
@@ -179,9 +179,8 @@ def test_e2e_nemotron_ocr_multipage_batching():
         doc_result: ConversionResult = converter.convert(pdf_path)
 
         verify_conversion_result_v2(
-            input_path=pdf_path,
+            gt=get_ocr_groundtruth_paths(pdf_path, engine=engine_suffix),
             doc_result=doc_result,
             generate=GENERATE_V2,
-            ocr_engine=engine_suffix,
             fuzzy=True,
         )

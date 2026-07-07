@@ -17,6 +17,7 @@ from docling.datamodel.pipeline_options import (
     TesseractOcrOptions,
 )
 from docling.document_converter import DocumentConverter, ImageFormatOption
+from tests.groundtruth_paths import get_regular_groundtruth_paths
 from tests.verify_utils import verify_conversion_result_v2
 
 from .test_data_gen_flag import GEN_TEST_DATA
@@ -82,7 +83,7 @@ def test_e2e_webp_conversions():
             )
 
             verify_conversion_result_v2(
-                input_path=webp_path,
+                gt=get_regular_groundtruth_paths(webp_path),
                 doc_result=doc_result,
                 generate=GENERATE,
                 fuzzy=True,
