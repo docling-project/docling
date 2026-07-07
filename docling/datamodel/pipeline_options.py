@@ -1534,10 +1534,10 @@ class VideoPipelineOptions(PipelineOptions):
         Field(gt=0, description="Fixed frame sampling interval in seconds."),
     ] = 10.0
 
-    scene_change_threshold: Annotated[
+    scene_change_prominence: Annotated[
         float,
-        Field(ge=0, description="Threshold for frame-difference scene cuts."),
-    ] = 0.35
+        Field(ge=0, description="Prominence for local peak detection of scene cuts."),
+    ] = 0.05
 
     scene_change_probe_fps: Annotated[
         float,

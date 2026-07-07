@@ -194,7 +194,7 @@ class VideoPipeline(BasePipeline):
             if opts.generate_frame_images:
                 if opts.frame_sampling_mode == VideoFrameSamplingMode.SCENE_CHANGE:
                     sampler = SimpleSceneChangeFrameSampler(
-                        threshold=opts.scene_change_threshold,
+                        prominence=opts.scene_change_prominence,
                         probe_fps=opts.scene_change_probe_fps,
                         min_scene_duration_seconds=opts.min_scene_duration_seconds,
                         max_frames=opts.max_sampled_frames,

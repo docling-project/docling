@@ -23,6 +23,7 @@ from typing import Final
 import numpy as np
 from PIL import Image
 from pydantic import BaseModel, ConfigDict, Field
+from scipy.signal import find_peaks
 
 
 class VideoFrameSamplingMode(str, Enum):
@@ -168,35 +169,44 @@ class FixedIntervalFrameSampler:
 
 
 class SimpleSceneChangeFrameSampler:
-    """Detect scenes via mean-absolute pixel difference of probe frames.
+    """Detect scenes via local peak detection on the frame-difference signal.
 
-    Probes the video at ``probe_fps`` (downscaled RGB), starts a new scene when
-    the normalized frame difference exceeds ``threshold`` and enough time has
-    elapsed since the last boundary, and emits one representative frame per
-    scene (taken at the scene midpoint).
+    No global threshold required. The sampler:
+    1. Probes the video at ``probe_fps`` (small RGB thumbnails).
+    2. Computes mean-absolute pixel difference between consecutive frames.
+    3. Smooths the resulting 1-D signal with a moving average.
+    4. Detects scene boundaries as local peaks using scipy.signal.find_peaks
+       with a prominence criterion — self-calibrating per video, no manual
+       threshold needed.
+    5. Selects the sharpest frame in a window around each scene midpoint
+       as the representative keyframe, avoiding motion-blurred frames.
     """
 
     def __init__(
         self,
-        threshold: float = 0.35,
         probe_fps: float = 1.0,
+        prominence: float = 0.05,
         min_scene_duration_seconds: float = 2.0,
         max_frames: int | None = None,
         probe_size: int = 64,
+        smooth_window: int = 5,
+        sharpness_candidates: int = 5,
     ):
-        if threshold < 0:
-            raise ValueError("threshold must be >= 0")
         if probe_fps <= 0:
             raise ValueError("probe_fps must be > 0")
+        if prominence < 0:
+            raise ValueError("prominence must be >= 0")
         if min_scene_duration_seconds < 0:
             raise ValueError("min_scene_duration_seconds must be >= 0")
         if max_frames is not None and max_frames <= 0:
             raise ValueError("max_frames must be > 0 when set")
-        self.threshold = threshold
         self.probe_fps = probe_fps
+        self.prominence = prominence
         self.min_scene_duration_seconds = min_scene_duration_seconds
         self.max_frames = max_frames
         self.probe_size = probe_size
+        self.smooth_window = smooth_window
+        self.sharpness_candidates = sharpness_candidates
 
     def _probe_frames(self, video_path: Path) -> list[tuple[float, Image.Image]]:
         """Extract downscaled RGB probe frames at probe_fps."""
@@ -205,14 +215,13 @@ class SimpleSceneChangeFrameSampler:
         probes: list[tuple[float, Image.Image]] = []
         t = 0.0
         while duration == 0.0 or t < duration:
-            image = _extract_frame(video_path, t)
-            if image is None:
+            img = _extract_frame(video_path, t)
+            if img is None:
                 break
-            small = image.convert("RGB").resize((self.probe_size, self.probe_size))
+            small = img.convert("RGB").resize((self.probe_size, self.probe_size))
             probes.append((t, small))
             t += step
-            # Safety bound if duration is unknown.
-            if duration == 0.0 and len(probes) > 100000:
+            if duration == 0.0 and len(probes) > 100_000:
                 break
         return probes
 
@@ -225,26 +234,67 @@ class SimpleSceneChangeFrameSampler:
             return 0.0
         return float(np.abs(arr_a - arr_b).mean()) / 255.0
 
+    @staticmethod
+    def _sharpness(image: Image.Image) -> float:
+        """Laplacian variance — higher = sharper, used to avoid blurry keyframes."""
+        gray = np.asarray(image.convert("L"), dtype=np.float32)
+        lap = (
+            gray[:-2, 1:-1]
+            + gray[2:, 1:-1]
+            + gray[1:-1, :-2]
+            + gray[1:-1, 2:]
+            - 4 * gray[1:-1, 1:-1]
+        )
+        return float(np.var(lap))
+
+    def _best_frame(
+        self, video_path: Path, start: float, end: float, scene_id: int
+    ) -> VideoFrame | None:
+        """Pick the sharpest frame in a window centred on the scene midpoint."""
+        mid = (start + end) / 2.0
+        half = (end - start) / 2.0 * 0.4
+        n = self.sharpness_candidates
+        candidates = [
+            max(start, min(end, mid + half * (i - n // 2) / max(n // 2, 1)))
+            for i in range(n)
+        ]
+        best_frame: VideoFrame | None = None
+        best_score = -1.0
+        for t in candidates:
+            img = _extract_frame(video_path, t)
+            if img is None:
+                continue
+            score = self._sharpness(img)
+            if score > best_score:
+                best_score = score
+                best_frame = VideoFrame(timestamp=t, image=img, scene_id=scene_id)
+        return best_frame
+
     def detect_scenes(self, video_path: Path) -> list[VideoScene]:
-        _require_ffmpeg()
+        """Detect scene boundaries using local peak detection on frame diffs."""
         probes = self._probe_frames(video_path)
-        if not probes:
+        if len(probes) < 2:
             return []
 
-        boundaries: list[float] = [probes[0][0]]
-        last_boundary = probes[0][0]
-        prev = probes[0][1]
-        for ts, frame in probes[1:]:
-            diff = self._mean_abs_diff(prev, frame)
-            if (
-                diff >= self.threshold
-                and (ts - last_boundary) >= self.min_scene_duration_seconds
-            ):
-                boundaries.append(ts)
-                last_boundary = ts
-            prev = frame
+        timestamps = [p[0] for p in probes]
+        diffs = np.array(
+            [
+                self._mean_abs_diff(probes[i][1], probes[i + 1][1])
+                for i in range(len(probes) - 1)
+            ]
+        )
 
-        end_time = probes[-1][0]
+        w = max(1, self.smooth_window)
+        smoothed = np.convolve(diffs, np.ones(w) / w, mode="same")
+
+        min_dist = max(1, int(self.min_scene_duration_seconds * self.probe_fps))
+        peaks, _ = find_peaks(smoothed, prominence=self.prominence, distance=min_dist)
+
+        # Filter peaks too close to video start
+        valid_peaks = [p for p in peaks if timestamps[p] >= self.min_scene_duration_seconds]
+        boundaries = [timestamps[0]] + [timestamps[p] for p in valid_peaks]
+        end_time = timestamps[-1]
+
         scenes: list[VideoScene] = []
         for idx, start in enumerate(boundaries):
             stop = boundaries[idx + 1] if idx + 1 < len(boundaries) else end_time
@@ -252,18 +302,16 @@ class SimpleSceneChangeFrameSampler:
         return scenes
 
     def sample(self, video_path: Path) -> list[VideoFrame]:
+        """Sample one sharp representative frame per detected scene."""
         scenes = self.detect_scenes(video_path)
         frames: list[VideoFrame] = []
         for scene in scenes:
             if self.max_frames is not None and len(frames) >= self.max_frames:
                 break
-            midpoint = (scene.start_time + scene.end_time) / 2.0
-            image = _extract_frame(video_path, midpoint)
-            if image is None:
-                image = _extract_frame(video_path, scene.start_time)
-            if image is None:
-                continue
-            frame = VideoFrame(timestamp=midpoint, image=image, scene_id=scene.scene_id)
-            scene.representative_frame = frame
-            frames.append(frame)
+            frame = self._best_frame(
+                video_path, scene.start_time, scene.end_time, scene.scene_id
+            )
+            if frame is not None:
+                scene.representative_frame = frame
+                frames.append(frame)
         return frames
