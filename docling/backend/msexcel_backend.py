@@ -1358,7 +1358,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             chart: An openpyxl chart object (BarChart, LineChart, ...).
 
         Returns:
-            str: The concatenated title text, or None.
+            The concatenated title text, or None.
         """
         title = chart.title
         if title is None:
