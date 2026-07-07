@@ -235,7 +235,7 @@ class MsExcelBackendOptions(BaseBackendOptions):
         ),
     )
 
-    do_chart_parsing: bool = Field(
+    parse_charts: bool = Field(
         True,
         description=(
             "Whether to parse native charts embedded in worksheets and chart "

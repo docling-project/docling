@@ -281,7 +281,7 @@ def test_page_range_with_sheet_names() -> None:
 def test_chartsheet(documents) -> None:
     """Test that a native chart is parsed into a classified picture with data.
 
-    ``do_chart_parsing`` defaults to True, so the default converter extracts the
+    ``parse_charts`` defaults to True, so the default converter extracts the
     "Duck Chart" bar chart. It should become a single PictureItem classified as a
     bar chart, captioned with the chart title, and carrying the chart's underlying
     data reconstructed as a table. The opt-out path is covered by
@@ -375,7 +375,7 @@ def test_chartsheet_data_values(documents) -> None:
 
 
 def test_chart_parsing_disabled() -> None:
-    """Test that do_chart_parsing=False suppresses chart pictures.
+    """Test that parse_charts=False suppresses chart pictures.
 
     xlsx_03_chartsheet contains a single bar chart and no other images, so with
     chart parsing turned off the converted document has no pictures and the chart
@@ -383,7 +383,7 @@ def test_chart_parsing_disabled() -> None:
     """
     path = next(item for item in get_excel_paths() if item.stem == "xlsx_03_chartsheet")
 
-    options = MsExcelBackendOptions(do_chart_parsing=False)
+    options = MsExcelBackendOptions(parse_charts=False)
     format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
     converter = DocumentConverter(
         allowed_formats=[InputFormat.XLSX], format_options=format_options
