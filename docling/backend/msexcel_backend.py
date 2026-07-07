@@ -529,10 +529,10 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         if isinstance(sheet, Worksheet):
             doc = self._find_tables_in_sheet(doc, sheet, page_no)
             doc = self._find_images_in_sheet(doc, sheet, page_no)
-        # Charts can be live on both Worksheet and Chartsheet objects
+        # Charts can be on both Worksheet and Chartsheet objects
         if isinstance(sheet, Worksheet) or isinstance(sheet, Chartsheet):
             doc = self._find_chart_in_sheet(doc, sheet, page_no)
-            self._sort_sheet_children_by_position(doc, page_no)
+        self._sort_sheet_children_by_position(doc, page_no)
 
         return doc
 
