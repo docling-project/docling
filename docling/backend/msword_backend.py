@@ -83,6 +83,18 @@ _STRICT_OOXML_NS_RE: Final = re.compile(
 )
 """Matches Strict OOXML namespace/relationship URIs."""
 
+_VISIBLE_NUMBERING_FORMATS: Final[frozenset[str]] = frozenset(
+    {
+        "decimal",
+        "lowerRoman",
+        "upperRoman",
+        "lowerLetter",
+        "upperLetter",
+        "decimalZero",
+    }
+)
+"""OOXML numFmt values that produce visible list/heading markers."""
+
 
 def _strict_ns_to_transitional(strict_ns: str) -> str:
     """Map a single Strict OOXML namespace/relationship URI to its Transitional form."""
@@ -857,19 +869,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             num_fmt = num_fmt_element.get(self.XML_KEY)
 
-            numbered_formats = {
-                "decimal",
-                "lowerRoman",
-                "upperRoman",
-                "lowerLetter",
-                "upperLetter",
-                "decimalZero",
-            }
-
-            return num_fmt in numbered_formats
+            return num_fmt in _VISIBLE_NUMBERING_FORMATS
 
         except Exception as e:
-            _log.debug(f"Error determining if list is numbered: {e}")
+            _log.debug(f"Error determining visible numbering format: {e}")
             return False
 
     def _is_numbered_heading(self, paragraph: Paragraph) -> bool:
