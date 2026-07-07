@@ -290,72 +290,27 @@ class VideoPipeline(BasePipeline):
 
 import html as _html_lib
 
-
-_VIDEO_HTML_CSS = """
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-    font-family: Arial, sans-serif;
-    background: #f5f5f5;
-    padding: 2rem;
-}
-.container {
-    max-width: 860px;
-    margin: 0 auto;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 12px rgba(0,0,0,.12);
-    overflow: hidden;
-}
-.header {
-    background: #1a1a2e;
-    color: white;
-    padding: 1.5rem 2rem;
-}
-.header h1 { font-size: 1.4rem; font-weight: 600; }
-.header .subtitle { font-size: 0.85rem; opacity: 0.7; margin-top: 0.3rem; }
-.timeline { padding: 1.5rem 2rem; }
-.event {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1.2rem;
-    align-items: flex-start;
-}
-.timestamp {
-    min-width: 72px;
-    font-size: 0.75rem;
-    font-family: monospace;
-    color: #888;
-    padding-top: 0.2rem;
-    text-align: right;
-}
-.content { flex: 1; }
-.transcript {
-    background: #f8f9fa;
-    border-left: 3px solid #4a90d9;
-    border-radius: 0 6px 6px 0;
-    padding: 0.6rem 0.9rem;
-    font-size: 0.95rem;
-    line-height: 1.5;
-    color: #222;
-}
-.frame {
-    border-radius: 6px;
-    overflow: hidden;
-    border: 1px solid #e0e0e0;
-}
-.frame img {
-    display: block;
-    max-width: 100%;
-    height: auto;
-}
-.frame .scene-label {
-    font-size: 0.72rem;
-    color: #999;
-    padding: 4px 8px;
-    background: #fafafa;
-    border-top: 1px solid #eee;
-}
-"""
+_VIDEO_HTML_CSS = (
+    "* { box-sizing: border-box; margin: 0; padding: 0; }"
+    "body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 2rem; }"
+    ".container { max-width: 860px; margin: 0 auto; background: white;"
+    " border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.12); overflow: hidden; }"
+    ".header { background: #1a1a2e; color: white; padding: 1.5rem 2rem; }"
+    ".header h1 { font-size: 1.4rem; font-weight: 600; }"
+    ".header .subtitle { font-size: 0.85rem; opacity: 0.7; margin-top: 0.3rem; }"
+    ".timeline { padding: 1.5rem 2rem; }"
+    ".event { display: flex; gap: 1rem; margin-bottom: 1.2rem; align-items: flex-start; }"
+    ".timestamp { min-width: 72px; font-size: 0.75rem; font-family: monospace;"
+    " color: #888; padding-top: 0.2rem; text-align: right; }"
+    ".content { flex: 1; }"
+    ".transcript { background: #f8f9fa; border-left: 3px solid #4a90d9;"
+    " border-radius: 0 6px 6px 0; padding: 0.6rem 0.9rem; font-size: 0.95rem;"
+    " line-height: 1.5; color: #222; }"
+    ".frame { border-radius: 6px; overflow: hidden; border: 1px solid #e0e0e0; }"
+    ".frame img { display: block; max-width: 100%; height: auto; }"
+    ".frame .scene-label { font-size: 0.72rem; color: #999; padding: 4px 8px;"
+    " background: #fafafa; border-top: 1px solid #eee; }"
+)
 
 
 def _fmt_time(seconds: float) -> str:
@@ -377,17 +332,19 @@ def export_video_document_to_html(document: DoclingDocument, title: str = "") ->
 
     for item, _ in document.iterate_items():
         source = getattr(item, "source", None)
+        if isinstance(source, list):
+            source = source[0] if source else None
         ts = source.start_time if source is not None else 0.0
 
         if hasattr(item, "text") and item.text and item.text.strip():
             end_ts = source.end_time if source is not None else ts
-            ts_label = f"{_fmt_time(ts)} → {_fmt_time(end_ts)}"
+            ts_label = f"{_fmt_time(ts)} -> {_fmt_time(end_ts)}"
             snippet = (
-                f'<div class="event">'
+                '<div class="event">'
                 f'<div class="timestamp">{ts_label}</div>'
-                f'<div class="content">'
+                '<div class="content">'
                 f'<div class="transcript">{_html_lib.escape(item.text.strip())}</div>'
-                f"</div></div>"
+                "</div></div>"
             )
             events.append((ts, 1, snippet))
 
@@ -398,47 +355,42 @@ def export_video_document_to_html(document: DoclingDocument, title: str = "") ->
             if not uri.startswith("data:"):
                 uri = f"data:image/png;base64,{uri}"
             identifier = source.identifier if source else None
-            scene_label = (
-                f'<div class="scene-label">'
-                f'{_html_lib.escape(str(identifier)) if identifier else "frame"}'
-                f" &nbsp;·&nbsp; {_fmt_time(ts)}</div>"
-            )
+            label = _html_lib.escape(str(identifier)) if identifier else "frame"
             snippet = (
-                f'<div class="event">'
+                '<div class="event">'
                 f'<div class="timestamp">{_fmt_time(ts)}</div>'
-                f'<div class="content">'
-                f'<div class="frame">'
+                '<div class="content"><div class="frame">'
                 f'<img src="{uri}" alt="frame at {_fmt_time(ts)}"/>'
-                f"{scene_label}"
-                f"</div></div></div>"
+                f'<div class="scene-label">{label} &nbsp;·&nbsp; {_fmt_time(ts)}</div>'
+                "</div></div></div>"
             )
             events.append((ts, 0, snippet))
 
     events.sort(key=lambda e: (e[0], e[1]))
-
     doc_title = _html_lib.escape(title or getattr(document, "name", "Video") or "Video")
     n_frames = sum(1 for e in events if e[1] == 0)
     n_texts = sum(1 for e in events if e[1] == 1)
-    subtitle = f"{n_frames} frame{'s' if n_frames != 1 else ''} · {n_texts} transcript segment{'s' if n_texts != 1 else ''}"
+    subtitle = f"{n_frames} frame(s) · {n_texts} transcript segment(s)"
     body = "\n".join(e[2] for e in events) or "<p style='color:#999'>No content.</p>"
 
-    return f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>{doc_title}</title>
-<style>{_VIDEO_HTML_CSS}</style>
-</head>
-<body>
-<div class="container">
-  <div class="header">
-    <h1>{doc_title}</h1>
-    <div class="subtitle">{subtitle}</div>
-  </div>
-  <div class="timeline">
-{body}
-  </div>
-</div>
-</body>
-</html>"""
+    return (
+        "<!DOCTYPE html>\n"
+        '<html lang="en">\n'
+        "<head>\n"
+        '<meta charset="UTF-8"/>\n'
+        f"<title>{doc_title}</title>\n"
+        f"<style>{_VIDEO_HTML_CSS}</style>\n"
+        "</head>\n"
+        "<body>\n"
+        '<div class="container">\n'
+        '  <div class="header">\n'
+        f"    <h1>{doc_title}</h1>\n"
+        f'    <div class="subtitle">{subtitle}</div>\n'
+        "  </div>\n"
+        '  <div class="timeline">\n'
+        f"{body}\n"
+        "  </div>\n"
+        "</div>\n"
+        "</body>\n"
+        "</html>"
+    )
