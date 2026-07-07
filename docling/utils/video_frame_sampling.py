@@ -189,7 +189,7 @@ class SimpleSceneChangeFrameSampler:
         min_scene_duration_seconds: float = 2.0,
         max_frames: int | None = None,
         probe_size: int = 64,
-        smooth_window: int = 5,
+        smooth_window: int = 2,
         sharpness_candidates: int = 5,
     ):
         if probe_fps <= 0:
