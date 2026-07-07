@@ -744,8 +744,6 @@ class DocumentConverter:
                     self._unload_input_document(in_doc)
         else:
             try:
-                if raises_on_error:
-                    raise ConversionError(f"Input document {in_doc.file} is not valid.")
                 _log.warning("Input document %s is not valid.", in_doc.file)
                 conv_res = ConversionResult(
                     input=in_doc,
