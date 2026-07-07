@@ -37,7 +37,7 @@ def test_gt_dir_override_and_tag_before_format_suffix():
     [
         (None, None, None),
         ("nemotron-ocr", None, "nemotron-ocr"),
-        (None, "force_full_page_ocr", "force_full_page_ocr"),
+        (None, "full_page_ocr", "full_page_ocr"),
         ("nemotron-ocr", "full-page", "nemotron-ocr.full-page"),
     ],
 )

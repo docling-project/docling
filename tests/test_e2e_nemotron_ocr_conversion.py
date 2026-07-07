@@ -128,7 +128,7 @@ def test_e2e_nemotron_ocr_conversions():
         (NemotronOcrOptions(), "nemotron-ocr"),  # Default options
         (NemotronOcrOptions(batch_size=3), "nemotron-ocr"),  # Lower batch_size
         (
-            NemotronOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR),
+            NemotronOcrOptions(mode=OcrMode.FULL_PAGE_OCR),
             "nemotron-ocr.full-page",
         ),  # Full page
     ]
@@ -165,7 +165,7 @@ def test_e2e_nemotron_ocr_multipage_batching():
     configs: list[tuple[OcrOptions, str]] = [
         (NemotronOcrOptions(batch_size=batch_size), "nemotron-ocr"),
         (
-            NemotronOcrOptions(batch_size=batch_size, mode=OcrMode.FORCE_FULL_PAGE_OCR),
+            NemotronOcrOptions(batch_size=batch_size, mode=OcrMode.FULL_PAGE_OCR),
             "nemotron-ocr.full-page",
         ),
     ]

@@ -763,7 +763,7 @@ def convert(  # noqa: C901
         typer.Option(
             ...,
             help=(
-                "DEPRECATED: use `--ocr-mode force_full_page_ocr` instead. "
+                "DEPRECATED: use `--ocr-mode full_page_ocr` instead. "
                 "Replace any existing text with OCR generated text over the full content."
             ),
         ),
@@ -1103,11 +1103,11 @@ def convert(  # noqa: C901
         if force_ocr:
             warnings.warn(
                 "`--force-ocr` is deprecated; use "
-                f"`--ocr-mode {OcrMode.FORCE_FULL_PAGE_OCR.value}` instead.",
+                f"`--ocr-mode {OcrMode.FULL_PAGE_OCR.value}` instead.",
                 DeprecationWarning,
                 stacklevel=2,
             )
-            resolved_ocr_mode = OcrMode.FORCE_FULL_PAGE_OCR
+            resolved_ocr_mode = OcrMode.FULL_PAGE_OCR
         else:
             resolved_ocr_mode = ocr_mode
         ocr_options: OcrOptions = ocr_factory.create_options(  # type: ignore

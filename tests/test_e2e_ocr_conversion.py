@@ -67,11 +67,11 @@ def test_e2e_conversions():
         (TesseractCliOcrOptions(), True),
         (EasyOcrOptions(), False),
         (TesseractOcrOptions(psm=3), True),
-        (TesseractOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR), True),
-        (TesseractOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR, lang=["auto"]), True),
-        (TesseractCliOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR), True),
-        (TesseractCliOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR, lang=["auto"]), True),
-        (EasyOcrOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR), False),
+        (TesseractOcrOptions(mode=OcrMode.FULL_PAGE_OCR), True),
+        (TesseractOcrOptions(mode=OcrMode.FULL_PAGE_OCR, lang=["auto"]), True),
+        (TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE_OCR), True),
+        (TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE_OCR, lang=["auto"]), True),
+        (EasyOcrOptions(mode=OcrMode.FULL_PAGE_OCR), False),
     ]
 
     for rapidocr_backend in ["onnxruntime", "torch"]:
@@ -82,9 +82,7 @@ def test_e2e_conversions():
         engines.append((RapidOcrOptions(backend=rapidocr_backend), False))
         engines.append(
             (
-                RapidOcrOptions(
-                    backend=rapidocr_backend, mode=OcrMode.FORCE_FULL_PAGE_OCR
-                ),
+                RapidOcrOptions(backend=rapidocr_backend, mode=OcrMode.FULL_PAGE_OCR),
                 False,
             )
         )
@@ -92,7 +90,7 @@ def test_e2e_conversions():
             (
                 RapidOcrOptions(
                     backend=rapidocr_backend,
-                    mode=OcrMode.FORCE_FULL_PAGE_OCR,
+                    mode=OcrMode.FULL_PAGE_OCR,
                     rec_font_path="test",
                     rapidocr_params={"Rec.font_path": None},  # overwrites rec_font_path
                 ),
@@ -103,7 +101,7 @@ def test_e2e_conversions():
     # only works on mac
     if "darwin" == sys.platform:
         engines.append((OcrMacOptions(), True))
-        engines.append((OcrMacOptions(mode=OcrMode.FORCE_FULL_PAGE_OCR), True))
+        engines.append((OcrMacOptions(mode=OcrMode.FULL_PAGE_OCR), True))
 
     for ocr_options, supports_rotation in engines:
         print(

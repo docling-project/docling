@@ -51,7 +51,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         # Compute the OCR rects according to the mode
         ocr_rects: List[BoundingBox]
-        if self.options.mode == OcrMode.FORCE_FULL_PAGE_OCR:
+        if self.options.mode == OcrMode.FULL_PAGE_OCR:
             # A big bbox covering the entire page
             ocr_rects = [
                 BoundingBox(
@@ -64,7 +64,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             ]
         elif self.options.mode == OcrMode.PDF_BITMAPS_ONLY:
             ocr_rects = self._find_pdf_ocr_rects(page)
-        elif self.options.mode == OcrMode.LAYOUT_DETECTIONS:
+        elif self.options.mode == OcrMode.CLUSTER_OCR:
             ocr_rects = self._find_layout_ocr_rects(page)
         return ocr_rects
 
@@ -190,7 +190,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         existing_cells = page.cells
 
         # Combine existing and OCR cells with overlap filtering
-        if self.options.mode == OcrMode.FORCE_FULL_PAGE_OCR:
+        if self.options.mode == OcrMode.FULL_PAGE_OCR:
             final_cells = ocr_cells
         else:
             filtered_ocr_cells = self._filter_ocr_cells(ocr_cells, existing_cells)
@@ -206,11 +206,11 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         page.parsed_page.textline_cells = final_cells
         page.parsed_page.has_lines = len(final_cells) > 0
 
-        # In OcrMode.FORCE_FULL_PAGE_OCR, PDF-extracted word/char cells are unreliable.
+        # In OcrMode.FULL_PAGE_OCR, PDF-extracted word/char cells are unreliable.
         # Filter out cells where from_ocr=False, keeping any OCR generated cells.
         # This ensures downstream components (e.g., table structure model) fall back to
         # OCR-extracted textline cells.
-        if self.options.mode == OcrMode.FORCE_FULL_PAGE_OCR:
+        if self.options.mode == OcrMode.FULL_PAGE_OCR:
             page.parsed_page.word_cells = [
                 c for c in page.parsed_page.word_cells if c.from_ocr
             ]

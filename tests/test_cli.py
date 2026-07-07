@@ -638,16 +638,16 @@ def test_cli_force_ocr_is_deprecated_and_maps_to_full_page(tmp_path, monkeypatch
             monkeypatch, ["--force-ocr"], tmp_path
         )
     assert result.exit_code == 0
-    assert ocr_options.mode is OcrMode.FORCE_FULL_PAGE_OCR
+    assert ocr_options.mode is OcrMode.FULL_PAGE_OCR
 
 
 def test_cli_force_ocr_wins_over_ocr_mode(tmp_path, monkeypatch):
     with pytest.warns(DeprecationWarning, match="--force-ocr"):
         result, ocr_options = _capture_cli_ocr_options(
-            monkeypatch, ["--force-ocr", "--ocr-mode", "layout_detections"], tmp_path
+            monkeypatch, ["--force-ocr", "--ocr-mode", "cluster_ocr"], tmp_path
         )
     assert result.exit_code == 0
-    assert ocr_options.mode is OcrMode.FORCE_FULL_PAGE_OCR
+    assert ocr_options.mode is OcrMode.FULL_PAGE_OCR
 
 
 def test_cli_invalid_ocr_mode_is_rejected(tmp_path):
