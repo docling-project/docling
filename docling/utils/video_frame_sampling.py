@@ -15,6 +15,7 @@ Both return ``VideoFrame`` objects carrying the frame image and its timestamp.
 import logging
 import shutil
 import subprocess
+from enum import Enum
 from io import BytesIO
 from pathlib import Path
 from typing import Final
@@ -22,6 +23,14 @@ from typing import Final
 import numpy as np
 from PIL import Image
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class VideoFrameSamplingMode(str, Enum):
+    """Frame sampling strategy for the video pipeline."""
+
+    FIXED_INTERVAL = "fixed_interval"
+    SCENE_CHANGE = "scene_change"
+
 
 _log = logging.getLogger(__name__)
 

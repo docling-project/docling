@@ -1512,6 +1512,51 @@ class AsrPipelineOptions(PipelineOptions):
     ] = asr_model_specs.WHISPER_TINY
 
 
+class VideoPipelineOptions(PipelineOptions):
+    """Configuration options for the video pipeline.
+
+    Controls ASR transcription, frame sampling strategy, and optional
+    scene description for video documents.
+    """
+
+    asr_options: Annotated[
+        InlineAsrOptions,
+        Field(description="ASR model configuration for the video audio track."),
+    ] = asr_model_specs.WHISPER_TINY
+
+    frame_sampling_mode: Annotated[
+        str,
+        Field(description="How representative video frames are selected."),
+    ] = "fixed_interval"
+
+    frame_interval_seconds: Annotated[
+        float,
+        Field(gt=0, description="Fixed frame sampling interval in seconds."),
+    ] = 10.0
+
+    scene_change_threshold: Annotated[
+        float,
+        Field(ge=0, description="Threshold for frame-difference scene cuts."),
+    ] = 0.35
+
+    scene_change_probe_fps: Annotated[
+        float,
+        Field(gt=0, description="Low frame rate used for scene-change probing."),
+    ] = 1.0
+
+    min_scene_duration_seconds: Annotated[
+        float,
+        Field(ge=0, description="Minimum duration before accepting a new scene."),
+    ] = 2.0
+
+    max_sampled_frames: Annotated[
+        int | None,
+        Field(default=None, gt=0, description="Optional cap on sampled frames."),
+    ] = None
+
+    generate_frame_images: bool = True
+
+
 class VlmExtractionPipelineOptions(PipelineOptions):
     """Options for VLM-based structured information extraction pipeline.
 

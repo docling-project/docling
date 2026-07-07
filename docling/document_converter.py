@@ -84,6 +84,7 @@ from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
+from docling.pipeline.video_pipeline import VideoPipeline
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
@@ -227,6 +228,11 @@ class AudioFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = NoOpBackend
 
 
+class VideoFormatOption(FormatOption):
+    pipeline_cls: Type = VideoPipeline
+    backend: Type[AbstractDocumentBackend] = NoOpBackend
+
+
 class LatexFormatOption(FormatOption):
     """Format options for LaTeX documents."""
 
@@ -273,6 +279,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
             pipeline_cls=SimplePipeline, backend=DoclingJSONBackend
         ),
         InputFormat.AUDIO: AudioFormatOption(),
+        InputFormat.VIDEO: VideoFormatOption(),
         InputFormat.VTT: FormatOption(
             pipeline_cls=SimplePipeline, backend=WebVTTDocumentBackend
         ),
