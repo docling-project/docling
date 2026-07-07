@@ -437,6 +437,7 @@ def test_export_documents_marks_stat_errors_as_failure(tmp_path, monkeypatch):
         (ImageRefMode.EMBEDDED, [OutputFormat.TEXT, OutputFormat.DOCTAGS], False),
         (ImageRefMode.EMBEDDED, [OutputFormat.DOCLANG], False),
         (ImageRefMode.EMBEDDED, [OutputFormat.MARKDOWN], True),
+        (ImageRefMode.EMBEDDED, [OutputFormat.DCLX], True),
         (
             ImageRefMode.EMBEDDED,
             [OutputFormat.TEXT, OutputFormat.MARKDOWN],
