@@ -21,6 +21,7 @@ Below you can find a listing of all supported input and output formats.
 | WAV, MP3, M4A, AAC, OGG, FLAC | Audio formats (requires `asr` extra — see [Processing audio and video](processing_audio_media.md)) |
 | MP4, AVI, MOV | Video formats — audio track is extracted and transcribed (requires `asr` extra and `ffmpeg`) |
 | WebVTT | Web Video Text Tracks format for displaying timed text |
+| Chunks (JSONL) | Chunked document output for RAG pipelines; configurable via `--chunks-type`, `--chunks-max-tokens`, `--chunks-tokenizer` |
 
 Schema-specific support:
 

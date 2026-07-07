@@ -11,6 +11,7 @@ _OUTPUT_FORMATS_NOT_SUPPORTING_IMAGE_EMBEDDING = frozenset(
         OutputFormat.DOCTAGS,
         OutputFormat.VTT,
         OutputFormat.DOCLANG,
+        OutputFormat.CHUNKS,
     }
 )
 
@@ -44,6 +45,7 @@ def _export_flags_from_formats(to_formats: list[OutputFormat]) -> dict[str, bool
         "export_vtt": OutputFormat.VTT in to_formats,
         "export_doclang": OutputFormat.DOCLANG in to_formats,
         "export_dclx": OutputFormat.DCLX in to_formats,
+        "export_chunks": OutputFormat.CHUNKS in to_formats,
     }
 
 

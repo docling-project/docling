@@ -130,6 +130,7 @@ class OutputFormat(str, Enum):
     VTT = "vtt"
     DOCLANG = "doclang"
     DCLX = "dclx"
+    CHUNKS = "chunks"
 
 
 FormatToExtensions: dict[InputFormat, list[str]] = {
