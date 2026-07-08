@@ -308,7 +308,7 @@ class SimpleSceneChangeFrameSampler:
             prominence = (
                 self.prominence
                 if self.prominence is not None
-                else float(np.std(smoothed) * 2)
+                else float(np.std(diffs) * 1)
             )
             _log.debug("Prominence mode: prominence=%.4f", prominence)
             peaks, _ = find_peaks(smoothed, prominence=prominence, distance=min_dist)
