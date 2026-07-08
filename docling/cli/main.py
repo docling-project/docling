@@ -783,6 +783,24 @@ def convert(  # noqa: C901
         AsrModelType,
         typer.Option(..., help="Choose the ASR model to use with audio/video files."),
     ] = AsrModelType.WHISPER_TINY,
+    video_sampling_mode: Annotated[
+        str,
+        typer.Option(..., help="Video frame sampling mode: 'fixed' or 'scene'."),
+    ] = "fixed",
+    video_frame_interval: Annotated[
+        float,
+        typer.Option(..., help="Seconds between frames in fixed interval mode."),
+    ] = 10.0,
+    video_cuts_per_minute: Annotated[
+        float,
+        typer.Option(
+            ..., help="Target cuts per minute in scene mode (overrides prominence)."
+        ),
+    ] = 0.0,
+    video_prominence: Annotated[
+        float,
+        typer.Option(..., help="Scene change prominence threshold (0=auto)."),
+    ] = 0.0,
     ocr: Annotated[
         bool,
         typer.Option(
@@ -1318,6 +1336,34 @@ def convert(  # noqa: C901
             pipeline_options=asr_pipeline_options,
         )
         format_options[InputFormat.AUDIO] = audio_format_option
+
+        # Video pipeline options
+        from docling.datamodel.pipeline_options import VideoPipelineOptions
+        from docling.pipeline.video_pipeline import VideoPipeline
+        from docling.utils.video_frame_sampling import VideoFrameSamplingMode
+
+        video_pipeline_options = VideoPipelineOptions()
+        video_pipeline_options.asr_options = _resolve_asr_options(asr_model)
+        if video_sampling_mode == "scene":
+            video_pipeline_options.frame_sampling_mode = (
+                VideoFrameSamplingMode.SCENE_CHANGE
+            )
+            video_pipeline_options.cuts_per_minute = (
+                video_cuts_per_minute if video_cuts_per_minute > 0 else None
+            )
+            video_pipeline_options.scene_change_prominence = (
+                video_prominence if video_prominence > 0 else None
+            )
+        else:
+            video_pipeline_options.frame_sampling_mode = (
+                VideoFrameSamplingMode.FIXED_INTERVAL
+            )
+            video_pipeline_options.frame_interval_seconds = video_frame_interval
+        video_format_option = VideoFormatOption(
+            pipeline_cls=VideoPipeline,
+            pipeline_options=video_pipeline_options,
+        )
+        format_options[InputFormat.VIDEO] = video_format_option
 
         # Common options for all pipelines
         if artifacts_path is not None:
