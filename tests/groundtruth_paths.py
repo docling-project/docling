@@ -64,25 +64,21 @@ def get_regular_groundtruth_paths(
 def get_ocr_groundtruth_paths(
     input_path: Path,
     *,
+    mode: OcrMode,
     engine: Optional[str] = None,
-    mode: Optional[str] = None,
-    gt_dir: Optional[Path] = None,
 ) -> GroundTruthPaths:
-    """Build GT paths for an OCR conversion, tagged by engine and (optional) mode.
+    """Build GT paths for a general OCR conversion, organized by OCR mode"""
+    model_name = "general"
 
-    Returns:
-        The four GT file locations as a :class:`GroundTruthPaths`.
-    """
-    if engine is None and mode is None:
-        tag: Optional[str] = None
-    elif mode is None:
-        tag = engine
-    elif engine is None:
-        tag = mode
-    else:
-        tag = f"{engine}.{mode}"
+    mode_dir_name = _OCR_MODE_TO_DIR_NAME.get(mode, ".")
+    mode_tag = _OCR_MODE_TO_TAG.get(mode, "")
+    tag = mode_tag if engine is None else f"{engine}.{mode_tag}"
 
-    gt_paths = get_regular_groundtruth_paths(input_path, gt_dir=gt_dir, tag=tag)
+    general_gt_dir = (
+        input_path.parent.parent / "groundtruth" / model_name / mode_dir_name
+    )
+
+    gt_paths = get_regular_groundtruth_paths(input_path, gt_dir=general_gt_dir, tag=tag)
     return gt_paths
 
 

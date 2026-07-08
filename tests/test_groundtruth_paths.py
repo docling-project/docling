@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from docling.datamodel.pipeline_options import OcrMode
 from tests.groundtruth_paths import (
     get_ocr_groundtruth_paths,
     get_regular_groundtruth_paths,
@@ -33,17 +34,22 @@ def test_gt_dir_override_and_tag_before_format_suffix():
 
 
 @pytest.mark.parametrize(
-    ("engine", "mode", "expected_tag"),
+    ("engine", "expected_tag"),
     [
-        (None, None, None),
-        ("nemotron-ocr", None, "nemotron-ocr"),
-        (None, "full_page_ocr", "full_page_ocr"),
-        ("nemotron-ocr", "full-page", "nemotron-ocr.full-page"),
+        (None, "full_page_ocr"),
+        ("kserve_v2_ocr", "kserve_v2_ocr.full_page_ocr"),
     ],
 )
-def test_ocr_tag_composition(engine, mode, expected_tag):
+def test_ocr_paths_use_mode_subdir_and_tag(engine, expected_tag):
     input_path = Path("tests/data/scanned/sources/ocr_test.pdf")
 
-    # ocr_groundtruth_paths is a thin tag-composer over groundtruth_paths.
-    ocr_gt = get_ocr_groundtruth_paths(input_path, engine=engine, mode=mode)
-    assert ocr_gt == get_regular_groundtruth_paths(input_path, tag=expected_tag)
+    # get_ocr_groundtruth_paths nests GT under `groundtruth/general/<mode>/`
+    # and tags each file with the mode (optionally prefixed with the engine).
+    gt_dir = input_path.parent.parent / "groundtruth" / "general" / "full_page_ocr"
+
+    ocr_gt = get_ocr_groundtruth_paths(
+        input_path, mode=OcrMode.FULL_PAGE_OCR, engine=engine
+    )
+    assert ocr_gt == get_regular_groundtruth_paths(
+        input_path, gt_dir=gt_dir, tag=expected_tag
+    )

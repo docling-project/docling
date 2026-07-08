@@ -10,7 +10,11 @@ from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import KserveV2OcrOptions, PdfPipelineOptions
+from docling.datamodel.pipeline_options import (
+    KserveV2OcrOptions,
+    OcrMode,
+    PdfPipelineOptions,
+)
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
 from .groundtruth_paths import get_ocr_groundtruth_paths
@@ -70,7 +74,9 @@ def test_kserve_v2_ocr_conversion() -> None:
             doc_result: ConversionResult = converter.convert(input_path)
 
             verify_conversion_result_v2(
-                gt=get_ocr_groundtruth_paths(input_path, engine="kserve_v2_ocr"),
+                gt=get_ocr_groundtruth_paths(
+                    input_path, engine="kserve_v2_ocr", mode=OcrMode.FULL_PAGE_OCR
+                ),
                 doc_result=doc_result,
                 generate=GEN_TEST_DATA,
                 fuzzy=True,
