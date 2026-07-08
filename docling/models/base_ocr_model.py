@@ -242,14 +242,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         3. For each component, return the bounding box of the union of its rects.
         4. Compute the coverage as the exact area of the union of all rects
            (sweep-line / Klee's algorithm) divided by the page area.
-
-        Notes / semantic differences vs. the raster version:
-        - Coordinates are continuous (no pixel rounding, no ``-1`` inclusive-pixel
-          adjustment on the far edges).
-        - R-tree intersection treats edge- and corner-touching boxes as
-          connected, whereas the raster path uses 4-connectivity (edge-touching
-          only). Corner-only contacts have zero area, so coverage is unaffected;
-          only the grouping of diagonally-adjacent rects may differ.
         """
         page_w = round(size.width)
         page_h = round(size.height)
