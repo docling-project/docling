@@ -1,0 +1,99 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.10.0",
+  "name": "ocr_test_rotated_270",
+  "origin": {
+    "mimetype": "application/pdf",
+    "binary_hash": 10890858393843077593,
+    "filename": "ocr_test_rotated_270.pdf"
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "children": [],
+    "content_layer": "furniture",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "children": [
+      {
+        "$ref": "#/texts/0"
+      }
+    ],
+    "content_layer": "body",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 1.33,
+            "t": 595.2,
+            "r": 19.25,
+            "b": 514.6,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            7
+          ]
+        },
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 28.3,
+            "t": 595.2,
+            "r": 47.18,
+            "b": 162.84,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            8,
+            51
+          ]
+        },
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 53.72,
+            "t": 595.2,
+            "r": 73.42,
+            "b": 164.01,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            52,
+            94
+          ]
+        }
+      ],
+      "orig": "package JSON and Markdown in an easy self contained Docling bundles PDF document conversion to",
+      "text": "package JSON and Markdown in an easy self contained Docling bundles PDF document conversion to"
+    }
+  ],
+  "pictures": [],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {
+    "1": {
+      "size": {
+        "width": 841.92,
+        "height": 595.2
+      },
+      "page_no": 1
+    }
+  }
+}

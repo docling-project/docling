@@ -109,7 +109,7 @@ def test_e2e_conversions():
             doc_result: ConversionResult = converter.convert(pdf_path)
 
             verify_conversion_result_v2(
-                gt=get_ocr_groundtruth_paths(pdf_path, mode=OcrMode.FULL_PAGE_OCR),
+                gt=get_ocr_groundtruth_paths(pdf_path, mode=ocr_options.mode),
                 doc_result=doc_result,
                 generate=GENERATE_V2,
                 fuzzy=True,

@@ -1,0 +1,4 @@
+<doctag><text><loc_296><loc_2><loc_362><loc_14>package</text>
+<text><loc_0><loc_19><loc_362><loc_30>JSON and Markdown in an easy self contained</text>
+<text><loc_0><loc_35><loc_361><loc_43>Jocting punales rur aocument conversion to</text>
+</doctag>
