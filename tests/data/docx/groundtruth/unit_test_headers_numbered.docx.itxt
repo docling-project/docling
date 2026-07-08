@@ -79,3 +79,9 @@ item-0 at level 0: unspecified: group _root_
           item-78 at level 5: list_item: Second sub-item at this level
           item-79 at level 5: list_item: Third sub-item at this level
   item-80 at level 1: text: 
+  item-81 at level 1: text: 
+  item-82 at level 1: section: group header-0
+    item-83 at level 2: section: group header-1
+      item-84 at level 3: section_header: REFERENCES
+  item-85 at level 1: text: This is the first reference.
+  item-86 at level 1: text: This is the second reference.

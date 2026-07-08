@@ -562,6 +562,13 @@ def export_documents(
                 _log.info(f"writing DocLang output to {fname}")
                 with fname.open("w", encoding="utf-8") as fp:
                     fp.write(conv_res.document.export_to_doclang())
+
+            # Export DCLX format:
+            if export_dclx:
+                fname = output_dir / f"{doc_filename}.dclx"
+                _log.info(f"writing DCLX output to {fname}")
+                conv_res.document.save_as_doclang_archive(filename=fname)
+
             # Export Chunks format:
             if export_chunks and chunker_obj is not None:
                 fname = output_dir / f"{doc_filename}.chunks.jsonl"

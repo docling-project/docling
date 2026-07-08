@@ -10,6 +10,7 @@ from docling_core.transforms.serializer.markdown_excel import (
 from docling_core.types.doc import (
     ContentLayer,
     GroupLabel,
+    PictureClassificationLabel,
     PictureItem,
     TableItem,
     TextItem,
@@ -231,7 +232,7 @@ def test_pages(documents) -> None:
 
     # page sizes as number of cells
     assert doc.pages.get(1).size.as_tuple() == (3.0, 7.0)
-    assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
+    assert doc.pages.get(2).size.as_tuple() == (16.0, 36.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
     # Sheet4 is hidden (ContentLayer.INVISIBLE) but still has real content
     assert doc.pages.get(4).size.as_tuple() == (1.0, 2.0)
@@ -250,7 +251,7 @@ def test_page_range() -> None:
 
     assert set(doc.pages.keys()) == {2, 3, 4}
     # original page numbering is preserved, so sizes match the full-document ones
-    assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
+    assert doc.pages.get(2).size.as_tuple() == (16.0, 36.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
     # Sheet4 is hidden (ContentLayer.INVISIBLE) but still has real content
     assert doc.pages.get(4).size.as_tuple() == (1.0, 2.0)
@@ -278,18 +279,53 @@ def test_page_range_with_sheet_names() -> None:
 
 
 def test_chartsheet(documents) -> None:
-    """Test the conversion of Chartsheets.
+    """Test that a native chart is parsed into a classified picture with data.
+
+    ``parse_charts`` defaults to True, so the default converter extracts the
+    "Duck Chart" bar chart. It should become a single PictureItem classified as a
+    bar chart, captioned with the chart title, and carrying the chart's underlying
+    data reconstructed as a table. The opt-out path is covered by
+    ``test_chart_parsing_disabled``.
 
     Args:
         documents: The paths and converted documents.
     """
     doc = next(item for path, item in documents if path.stem == "xlsx_03_chartsheet")
-    assert len(doc.pages) == 2
 
-    # Chartseet content is for now ignored
+    assert len(doc.pages) == 2
     assert doc.groups[1].name == "Duck Chart"
-    assert doc.pages[2].size.height == 0
-    assert doc.pages[2].size.width == 0
+
+    # The chart anchors on the second sheet, so page 2 has a non-zero extent.
+    assert doc.pages[2].size.width > 0
+    assert doc.pages[2].size.height > 0
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1, f"Expected one chart picture, got {len(pictures)}"
+
+    picture = pictures[0]
+    assert picture.prov[0].page_no == 2
+    assert (
+        picture.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.BAR_CHART
+    )
+    assert picture.caption_text(doc) == "Wild Duck Observations by Year"
+
+    # The two series and their shared categories are rebuilt as a table:
+    #   | <blank> | Freshwater Ducks | Saltwater Ducks |
+    #   | 2019    | 120              | 80              |
+    #   ...
+    #   | 2024    | 180              | 130             |
+    chart_data = picture.meta.tabular_chart.chart_data
+    assert (chart_data.num_rows, chart_data.num_cols) == (7, 3)
+    grid = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+        for cell in chart_data.table_cells
+    }
+    assert grid[(0, 1)] == "Freshwater Ducks"
+    assert grid[(0, 2)] == "Saltwater Ducks"
+    assert grid[(6, 0)] == "2024"
+    assert grid[(6, 1)] == "180"
+    assert grid[(6, 2)] == "130"
 
 
 def test_chartsheet_data_values(documents) -> None:
@@ -336,6 +372,27 @@ def test_chartsheet_data_values(documents) -> None:
             break
 
     assert found_310, "Should find the value 310 (total ducks for 2024) in the document"
+
+
+def test_chart_parsing_disabled() -> None:
+    """Test that parse_charts=False suppresses chart pictures.
+
+    xlsx_03_chartsheet contains a single bar chart and no other images, so with
+    chart parsing turned off the converted document has no pictures and the chart
+    sheet's page keeps its empty extent.
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_03_chartsheet")
+
+    options = MsExcelBackendOptions(parse_charts=False)
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+    doc = converter.convert(path).document
+
+    assert len(list(doc.pictures)) == 0
+    assert doc.pages[2].size.width == 0
+    assert doc.pages[2].size.height == 0
 
 
 def test_inflated_rows_handling(documents) -> None:
@@ -385,8 +442,8 @@ def test_inflated_rows_handling(documents) -> None:
     assert doc.pages.get(1).size.as_tuple() == (3.0, 7.0), (
         f"Page 1 should be 3x7 cells, got {doc.pages.get(1).size.as_tuple()}"
     )
-    assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0), (
-        f"Page 2 should be 9x18 cells, got {doc.pages.get(2).size.as_tuple()}"
+    assert doc.pages.get(2).size.as_tuple() == (16.0, 36.0), (
+        f"Page 2 should be 16x36 cells, got {doc.pages.get(2).size.as_tuple()}"
     )
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0), (
         f"Page 3 should be 13x36 cells, got {doc.pages.get(3).size.as_tuple()}"
@@ -484,7 +541,7 @@ def test_bytesio_stream():
 
     # Verify page sizes match expected dimensions
     assert doc.pages.get(1).size.as_tuple() == (3.0, 7.0)
-    assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
+    assert doc.pages.get(2).size.as_tuple() == (16.0, 36.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
     # Sheet4 is hidden (ContentLayer.INVISIBLE) but still has real content
     assert doc.pages.get(4).size.as_tuple() == (1.0, 2.0)

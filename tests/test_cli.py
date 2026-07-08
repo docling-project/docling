@@ -1,5 +1,6 @@
 import base64
 import re
+import zipfile
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -115,6 +116,34 @@ def test_cli_exports_doclang(tmp_path):
     content = converted.read_text(encoding="utf-8")
     assert re.search(r'<doclang version="\d+\.\d+">', content) is not None
     assert "DocLang CLI" in content
+
+
+def test_cli_exports_dclx(tmp_path):
+    source = tmp_path / "input.md"
+    source.write_text("# DCLX CLI\n\nHello from Markdown.", encoding="utf-8")
+    output = tmp_path / "out"
+
+    result = runner.invoke(
+        app,
+        [
+            str(source),
+            "--from",
+            "md",
+            "--to",
+            "dclx",
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert result.exit_code == 0
+    converted = output / "input.dclx"
+    assert converted.exists()
+
+    # Verify the output is a valid zip file
+    with zipfile.ZipFile(converted) as archive:
+        payload = b"".join(archive.read(name) for name in archive.namelist())
+    assert b"DCLX CLI" in payload
 
 
 def test_cli_from_odf_expands_to_open_document_formats(
