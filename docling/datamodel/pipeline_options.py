@@ -1536,7 +1536,11 @@ class VideoPipelineOptions(PipelineOptions):
 
     scene_change_prominence: Annotated[
         float | None,
-        Field(default=None, ge=0, description="Prominence for local peak detection. None = auto-calibrate."),
+        Field(
+            default=None,
+            ge=0,
+            description="Prominence for local peak detection. None = auto-calibrate.",
+        ),
     ] = None
 
     scene_change_probe_fps: Annotated[
