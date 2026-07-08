@@ -9,6 +9,7 @@ Orchestrates three steps:
    DoclingDocument.
 """
 
+import html as _html_lib
 import logging
 import shutil
 import subprocess
@@ -289,7 +290,6 @@ class VideoPipeline(BasePipeline):
 # HTML export utility
 # ---------------------------------------------------------------------------
 
-import html as _html_lib
 
 _VIDEO_HTML_CSS = (
     "* { box-sizing: border-box; margin: 0; padding: 0; }"
