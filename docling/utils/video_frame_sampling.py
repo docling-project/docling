@@ -185,7 +185,8 @@ class SimpleSceneChangeFrameSampler:
     def __init__(
         self,
         probe_fps: float = 1.0,
-        prominence: float = 0.05,
+        prominence: float | None = None,
+        cuts_per_minute: float | None = None,
         min_scene_duration_seconds: float = 2.0,
         max_frames: int | None = None,
         probe_size: int = 64,
@@ -194,7 +195,7 @@ class SimpleSceneChangeFrameSampler:
     ):
         if probe_fps <= 0:
             raise ValueError("probe_fps must be > 0")
-        if prominence < 0:
+        if prominence is not None and prominence < 0:
             raise ValueError("prominence must be >= 0")
         if min_scene_duration_seconds < 0:
             raise ValueError("min_scene_duration_seconds must be >= 0")
@@ -202,6 +203,7 @@ class SimpleSceneChangeFrameSampler:
             raise ValueError("max_frames must be > 0 when set")
         self.probe_fps = probe_fps
         self.prominence = prominence
+        self.cuts_per_minute = cuts_per_minute
         self.min_scene_duration_seconds = min_scene_duration_seconds
         self.max_frames = max_frames
         self.probe_size = probe_size
@@ -288,10 +290,33 @@ class SimpleSceneChangeFrameSampler:
         smoothed = np.convolve(diffs, np.ones(w) / w, mode="same")
 
         min_dist = max(1, int(self.min_scene_duration_seconds * self.probe_fps))
-        peaks, _ = find_peaks(smoothed, prominence=self.prominence, distance=min_dist)
+        if self.cuts_per_minute is not None:
+            target_interval = max(
+                min_dist, int((60.0 / self.cuts_per_minute) * self.probe_fps)
+            )
+            noise_floor = float(np.percentile(smoothed, 75))
+            peaks, _ = find_peaks(
+                smoothed, distance=target_interval, prominence=noise_floor
+            )
+            _log.debug(
+                "Cuts/min mode: interval=%d frames, noise_floor=%.4f, peaks=%d",
+                target_interval,
+                noise_floor,
+                len(peaks),
+            )
+        else:
+            prominence = (
+                self.prominence
+                if self.prominence is not None
+                else float(np.std(smoothed) * 2)
+            )
+            _log.debug("Prominence mode: prominence=%.4f", prominence)
+            peaks, _ = find_peaks(smoothed, prominence=prominence, distance=min_dist)
 
         # Filter peaks too close to video start
-        valid_peaks = [p for p in peaks if timestamps[p] >= self.min_scene_duration_seconds]
+        valid_peaks = [
+            p for p in peaks if timestamps[p] >= self.min_scene_duration_seconds
+        ]
         boundaries = [timestamps[0]] + [timestamps[p] for p in valid_peaks]
         end_time = timestamps[-1]
 

@@ -1554,6 +1554,8 @@ class VideoPipelineOptions(PipelineOptions):
         Field(default=None, gt=0, description="Optional cap on sampled frames."),
     ] = None
 
+    scene_change_smooth_window: int = 2
+    cuts_per_minute: float | None = None
     generate_frame_images: bool = True
 
 
