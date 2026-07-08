@@ -3,11 +3,25 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
+from docling.datamodel.pipeline_options import OcrMode
+
 # The four ground-truth artifacts produced per converted document
 _PAGES_META_SUFFIX = ".pages.meta.json"
 _JSON_SUFFIX = ".json"
 _MD_SUFFIX = ".md"
 _DOCTAGS_SUFFIX = ".doctags.txt"
+
+_OCR_MODE_TO_DIR_NAME = {
+    OcrMode.FULL_PAGE_OCR: OcrMode.FULL_PAGE_OCR.value,
+    OcrMode.CLUSTER_OCR: OcrMode.CLUSTER_OCR.value,
+    OcrMode.PDF_CLUSTER_OCR: OcrMode.PDF_CLUSTER_OCR.value,
+}
+
+_OCR_MODE_TO_TAG = {
+    OcrMode.FULL_PAGE_OCR: OcrMode.FULL_PAGE_OCR.value,
+    OcrMode.CLUSTER_OCR: OcrMode.CLUSTER_OCR.value,
+    OcrMode.PDF_CLUSTER_OCR: OcrMode.PDF_CLUSTER_OCR.value,
+}
 
 
 class GroundTruthPaths(BaseModel):
@@ -69,4 +83,26 @@ def get_ocr_groundtruth_paths(
         tag = f"{engine}.{mode}"
 
     gt_paths = get_regular_groundtruth_paths(input_path, gt_dir=gt_dir, tag=tag)
+    return gt_paths
+
+
+def get_nemotron_ocr_groundtruth_paths(
+    input_path: Path,
+    *,
+    mode: OcrMode,
+) -> GroundTruthPaths:
+    """Build GT paths for nemotron OCR"""
+    model_name = "nemotron_ocr"
+
+    mode_dir_name = _OCR_MODE_TO_DIR_NAME.get(mode, ".")
+    mode_tag = _OCR_MODE_TO_TAG.get(mode, "")
+    tag = f"{model_name}.{mode_tag}"
+
+    nemotron_gt_dir = (
+        input_path.parent.parent / "groundtruth" / model_name / mode_dir_name
+    )
+
+    gt_paths = get_regular_groundtruth_paths(
+        input_path, gt_dir=nemotron_gt_dir, tag=tag
+    )
     return gt_paths

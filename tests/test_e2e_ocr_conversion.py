@@ -63,10 +63,12 @@ def test_e2e_conversions():
     pdf_paths = get_pdf_paths()
 
     engines: List[Tuple[OcrOptions, bool]] = [
+        # Default OCR mode
         (TesseractOcrOptions(), True),
         (TesseractCliOcrOptions(), True),
         (EasyOcrOptions(), False),
         (TesseractOcrOptions(psm=3), True),
+        # Full page OCR
         (TesseractOcrOptions(mode=OcrMode.FULL_PAGE_OCR), True),
         (TesseractOcrOptions(mode=OcrMode.FULL_PAGE_OCR, lang=["auto"]), True),
         (TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE_OCR), True),

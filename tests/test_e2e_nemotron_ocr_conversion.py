@@ -23,7 +23,7 @@ from docling.models.stages.ocr.nemotron_ocr_model import (
     resolve_nemotronocr_language,
 )
 
-from .groundtruth_paths import get_ocr_groundtruth_paths
+from .groundtruth_paths import get_nemotron_ocr_groundtruth_paths
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_conversion_result_v2
 
@@ -124,16 +124,13 @@ def test_e2e_nemotron_ocr_conversions():
     # List all PDF files in the directory and its subdirectories
     pdf_paths = sorted(directory.rglob("ocr_test*.pdf"))
 
-    configs: list[tuple[OcrOptions, str]] = [
-        (NemotronOcrOptions(), "nemotron-ocr"),  # Default options
-        (NemotronOcrOptions(batch_size=3), "nemotron-ocr"),  # Lower batch_size
-        (
-            NemotronOcrOptions(mode=OcrMode.FULL_PAGE_OCR),
-            "nemotron-ocr.full-page",
-        ),  # Full page
+    configs: list[OcrOptions] = [
+        NemotronOcrOptions(),  # Default options
+        NemotronOcrOptions(batch_size=3),
+        NemotronOcrOptions(mode=OcrMode.FULL_PAGE_OCR),
     ]
 
-    for ocr_options, engine_suffix in configs:
+    for ocr_options in configs:
         print(
             f"Converting with ocr_engine: {ocr_options.kind}, "
             f"merge_level: {ocr_options.merge_level}, "
@@ -146,7 +143,7 @@ def test_e2e_nemotron_ocr_conversions():
             doc_result: ConversionResult = converter.convert(pdf_path)
 
             verify_conversion_result_v2(
-                gt=get_ocr_groundtruth_paths(pdf_path, engine=engine_suffix),
+                gt=get_nemotron_ocr_groundtruth_paths(pdf_path, mode=ocr_options.mode),
                 doc_result=doc_result,
                 generate=GENERATE_V2,
                 fuzzy=True,
@@ -162,15 +159,12 @@ def test_e2e_nemotron_ocr_multipage_batching():
     # that span across pages
     batch_size = 1 if GENERATE_V2 else 3
 
-    configs: list[tuple[OcrOptions, str]] = [
-        (NemotronOcrOptions(batch_size=batch_size), "nemotron-ocr"),
-        (
-            NemotronOcrOptions(batch_size=batch_size, mode=OcrMode.FULL_PAGE_OCR),
-            "nemotron-ocr.full-page",
-        ),
+    configs: list[OcrOptions] = [
+        NemotronOcrOptions(batch_size=batch_size),
+        NemotronOcrOptions(batch_size=batch_size, mode=OcrMode.FULL_PAGE_OCR),
     ]
 
-    for ocr_options, engine_suffix in configs:
+    for ocr_options in configs:
         print(
             f"Converting multi-page with batch_size: {ocr_options.batch_size}, "
             f"mode: {ocr_options.mode}"
@@ -179,7 +173,7 @@ def test_e2e_nemotron_ocr_multipage_batching():
         doc_result: ConversionResult = converter.convert(pdf_path)
 
         verify_conversion_result_v2(
-            gt=get_ocr_groundtruth_paths(pdf_path, engine=engine_suffix),
+            gt=get_nemotron_ocr_groundtruth_paths(pdf_path, mode=ocr_options.mode),
             doc_result=doc_result,
             generate=GENERATE_V2,
             fuzzy=True,
