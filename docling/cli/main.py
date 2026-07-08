@@ -799,7 +799,10 @@ def convert(  # noqa: C901
     ] = 0.0,
     video_prominence: Annotated[
         float,
-        typer.Option(..., help="Scene change prominence threshold (0=auto). Recommended: 0.03 for meetings, 0.01 for lectures."),
+        typer.Option(
+            ...,
+            help="Scene change prominence threshold (0=auto). Recommended: 0.03 for meetings, 0.01 for lectures.",
+        ),
     ] = 0.0,
     ocr: Annotated[
         bool,
@@ -1342,6 +1345,23 @@ def convert(  # noqa: C901
         from docling.document_converter import VideoFormatOption
         from docling.pipeline.video_pipeline import VideoPipeline
         from docling.utils.video_frame_sampling import VideoFrameSamplingMode
+
+        if (
+            InputFormat.VIDEO in from_formats
+            and video_sampling_mode == "fixed"
+            and video_frame_interval == 10.0
+            and video_cuts_per_minute == 0.0
+            and video_prominence == 0.0
+        ):
+            raise typer.BadParameter(
+                "No video config specified. Please set sampling options.\n"
+                "Examples:\n"
+                "  Meetings:  --video-sampling-mode scene --video-prominence 0.03\n"
+                "  Lectures:  --video-sampling-mode scene --video-cuts-per-minute 2\n"
+                "  General:   --video-sampling-mode fixed --video-frame-interval 10\n"
+                "Run with --help for all options.",
+                param_hint="--video-sampling-mode",
+            )
 
         video_pipeline_options = VideoPipelineOptions()
         video_pipeline_options.asr_options = _resolve_asr_options(asr_model)
