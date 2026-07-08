@@ -3,7 +3,7 @@ import warnings
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Any, ClassVar, Literal, Optional, Union
+from typing import Annotated, Any, ClassVar, Literal
 
 from docling_core.types.doc import PictureClassificationLabel
 from pydantic import (
@@ -103,9 +103,12 @@ class OcrMode(str, Enum):
     # Layout detections only. No PDF information is needed/used.
     CLUSTER_OCR = "cluster_ocr"
 
+    # Eliminate those clusters that contain exclusively text PDF cells
+    PDF_CLUSTER_OCR = "pdf_cluster_ocr"
+
     # TODO: Sunset this mode
     # Only bitmaps embedded inside a programmatic PDF. No layout information is used.
-    PDF_BITMAPS_ONLY = "pdf_bitmaps_only"
+    # PDF_BITMAPS_ONLY = "pdf_bitmaps_only"
 
 
 class TableFormerMode(str, Enum):
@@ -199,11 +202,12 @@ class OcrOptions(BaseOptions):
             description="Which document regions to feed as input to the OCR",
             examples=[
                 OcrMode.FULL_PAGE_OCR,
-                OcrMode.PDF_BITMAPS_ONLY,
                 OcrMode.CLUSTER_OCR,
+                OcrMode.PDF_CLUSTER_OCR,
+                # OcrMode.PDF_BITMAPS_ONLY,
             ],
         ),
-    ] = OcrMode.PDF_BITMAPS_ONLY
+    ] = OcrMode.PDF_CLUSTER_OCR
 
     lang: Annotated[
         list[str],
@@ -226,16 +230,16 @@ class OcrOptions(BaseOptions):
             ),
         ),
     ] = False
-    bitmap_area_threshold: Annotated[
-        float,
-        Field(
-            description=(
-                "Percentage of the page area for a PDF bitmap to be processed with OCR."
-                "It is used when OcrMode is PDF_BITMAPS_ONLY"
-            ),
-            examples=[0.05, 0.1],
-        ),
-    ] = 0.05
+    # bitmap_area_threshold: Annotated[
+    #     float,
+    #     Field(
+    #         description=(
+    #             "Percentage of the page area for a PDF bitmap to be processed with OCR."
+    #             "It is used when OcrMode is PDF_BITMAPS_ONLY"
+    #         ),
+    #         examples=[0.05, 0.1],
+    #     ),
+    # ] = 0.05
 
     @model_validator(mode="after")
     def _apply_force_full_page_ocr(self) -> "OcrOptions":
@@ -315,19 +319,19 @@ class RapidOcrOptions(OcrOptions):
         ),
     ] = 0.5
     use_det: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             description="Enable text detection stage. If None, uses RapidOCR default behavior."
         ),
     ] = None
     use_cls: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             description="Enable text direction classification stage. If None, uses RapidOCR default behavior."
         ),
     ] = None
     use_rec: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             description="Enable text recognition stage. If None, uses RapidOCR default behavior."
         ),
@@ -339,38 +343,38 @@ class RapidOcrOptions(OcrOptions):
         ),
     ] = False
     det_model_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Custom path to text detection model. If None, uses default RapidOCR model."
         ),
     ] = None
     cls_model_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Custom path to text classification model. If None, uses default RapidOCR model."
         ),
     ] = None
     rec_model_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Custom path to text recognition model. If None, uses default RapidOCR model."
         ),
     ] = None
     rec_keys_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Custom path to recognition keys file. If None, uses default RapidOCR keys."
         ),
     ] = None
     rec_font_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Deprecated. Use font_path instead.",
             deprecated=True,
         ),
     ] = None
     font_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Custom path to font file for text rendering in visualization."
         ),
@@ -442,7 +446,7 @@ class EasyOcrOptions(OcrOptions):
         ),
     ] = ["fr", "de", "es", "en"]
     use_gpu: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             description=(
                 "Enable GPU acceleration for EasyOCR. If None, automatically detects and uses GPU if available. "
@@ -460,7 +464,7 @@ class EasyOcrOptions(OcrOptions):
         ),
     ] = 0.5
     model_storage_directory: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description=(
                 "Directory path for storing downloaded EasyOCR models. If None, uses default EasyOCR cache location. "
@@ -469,7 +473,7 @@ class EasyOcrOptions(OcrOptions):
         ),
     ] = None
     recog_network: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description=(
                 "Recognition network architecture to use. Options: `standard` (default, balanced), `craft` (higher "
@@ -524,7 +528,7 @@ class TesseractCliOcrOptions(OcrOptions):
         ),
     ] = "tesseract"
     path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description=(
                 "Path to Tesseract data directory containing language files. If None, uses Tesseract's default "
@@ -533,7 +537,7 @@ class TesseractCliOcrOptions(OcrOptions):
         ),
     ] = None
     psm: Annotated[
-        Optional[int],
+        int | None,
         Field(
             description=(
                 "Page Segmentation Mode for Tesseract. Values 0-13 control how Tesseract segments the page. "
@@ -560,7 +564,7 @@ class TesseractOcrOptions(OcrOptions):
         ),
     ] = ["fra", "deu", "spa", "eng"]
     path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description=(
                 "Path to Tesseract data directory containing language files. If None, uses Tesseract's default "
@@ -569,7 +573,7 @@ class TesseractOcrOptions(OcrOptions):
         ),
     ] = None
     psm: Annotated[
-        Optional[int],
+        int | None,
         Field(
             description=(
                 "Page Segmentation Mode for Tesseract. Values 0-13 control how Tesseract segments the page. "
@@ -718,7 +722,7 @@ class PictureDescriptionBaseOptions(BaseOptions):
         ),
     ] = 0.05
     classification_allow: Annotated[
-        Optional[list[PictureClassificationLabel]],
+        list[PictureClassificationLabel] | None,
         Field(
             description=(
                 "List of picture classification labels to allow for description. Only pictures classified with these "
@@ -728,7 +732,7 @@ class PictureDescriptionBaseOptions(BaseOptions):
         ),
     ] = None
     classification_deny: Annotated[
-        Optional[list[PictureClassificationLabel]],
+        list[PictureClassificationLabel] | None,
         Field(
             description=(
                 "List of picture classification labels to exclude from description. Pictures classified with these "
@@ -1004,7 +1008,7 @@ class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         default=2.0, description="Image scaling factor for preprocessing"
     )
 
-    max_size: Optional[int] = Field(
+    max_size: int | None = Field(
         default=None, description="Maximum image dimension (width or height)"
     )
 
@@ -1040,7 +1044,7 @@ class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
         default=2.0, description="Image scaling factor for preprocessing"
     )
 
-    max_size: Optional[int] = Field(
+    max_size: int | None = Field(
         default=None, description="Maximum image dimension (width or height)"
     )
 
@@ -1222,7 +1226,7 @@ class PipelineOptions(BaseOptions):
     """
 
     document_timeout: Annotated[
-        Optional[float],
+        float | None,
         Field(
             description=(
                 "Maximum processing time in seconds before aborting document conversion. When exceeded, the pipeline "
@@ -1264,7 +1268,7 @@ class PipelineOptions(BaseOptions):
         ),
     ] = False
     artifacts_path: Annotated[
-        Optional[Union[Path, str]],
+        Path | str | None,
         Field(
             description=(
                 "Local directory containing pre-downloaded model artifacts (weights, configs). If None, models are "
@@ -1424,7 +1428,7 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
         ),
     ] = False
     vlm_options: Annotated[
-        Union[VlmConvertOptions, InlineVlmOptions, ApiVlmOptions],
+        VlmConvertOptions | InlineVlmOptions | ApiVlmOptions,
         Field(
             description=(
                 "Vision-Language Model configuration for document understanding. Uses new VlmConvertOptions "
@@ -1722,7 +1726,7 @@ class HeadingHierarchyOptions(BaseModel):
         ),
     ] = True
     numbering_schemes: Annotated[
-        Optional[list[str]],
+        list[str] | None,
         Field(
             description=(
                 "Optional override of the numbering-scheme precedence (highest level first). "

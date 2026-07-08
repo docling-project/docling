@@ -626,10 +626,10 @@ def test_cli_ocr_mode_sets_options_mode(tmp_path, monkeypatch, mode):
     assert ocr_options.mode is mode
 
 
-def test_cli_ocr_mode_defaults_to_pdf_bitmaps_only(tmp_path, monkeypatch):
+def test_cli_ocr_mode_defaults_to_pdf_cluster_ocr(tmp_path, monkeypatch):
     result, ocr_options = _capture_cli_ocr_options(monkeypatch, [], tmp_path)
     assert result.exit_code == 0
-    assert ocr_options.mode is OcrMode.PDF_BITMAPS_ONLY
+    assert ocr_options.mode is OcrMode.PDF_CLUSTER_OCR
 
 
 def test_cli_force_ocr_is_deprecated_and_maps_to_full_page(tmp_path, monkeypatch):

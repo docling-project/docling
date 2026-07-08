@@ -3,7 +3,6 @@ import logging
 from abc import abstractmethod
 from collections.abc import Iterable
 from pathlib import Path
-from typing import List, Optional, Type
 
 import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
@@ -36,21 +35,21 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         self,
         *,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         options: OcrOptions,
         accelerator_options: AcceleratorOptions,
     ):
         self.enabled = enabled
         self.options = options
 
-    def get_ocr_rects(self, page: Page) -> List[BoundingBox]:
+    def get_ocr_rects(self, page: Page) -> list[BoundingBox]:
         r"""
         Produce the input rects for the OCR according to the logic for each OcrMode
         """
         assert page.size is not None
 
         # Compute the OCR rects according to the mode
-        ocr_rects: List[BoundingBox]
+        ocr_rects: list[BoundingBox]
         if self.options.mode == OcrMode.FULL_PAGE_OCR:
             # A big bbox covering the entire page
             ocr_rects = [
@@ -62,49 +61,15 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                     coord_origin=CoordOrigin.TOPLEFT,
                 )
             ]
-        elif self.options.mode == OcrMode.PDF_BITMAPS_ONLY:
-            ocr_rects = self._find_pdf_ocr_rects(page)
         elif self.options.mode == OcrMode.CLUSTER_OCR:
-            ocr_rects = self._find_layout_ocr_rects(page)
+            ocr_rects = self._find_cluster_ocr_rects(page)
+        elif self.options.mode == OcrMode.PDF_CLUSTER_OCR:
+            ocr_rects = self._find_pdf_clusters_ocr_rects(page)
+        # elif self.options.mode == OcrMode.PDF_BITMAPS_ONLY:
+        #     ocr_rects = self._find_pdf_ocr_rects(page)
         return ocr_rects
 
-    def _find_pdf_ocr_rects(self, page: Page) -> List[BoundingBox]:
-        r"""
-        Compute the OCR rectangles coming ONLY from the programmatic PDF cells
-
-        1. Deduplicate the bitmap rects.
-        2. If coverage > MAXOUT_COVERAGE_THRESHOLD, return a single bbox covering the entire page.
-        3. Else if coverage > `bitmap_area_threshold`, return the deduplicated rects.
-        4. Otherwise return an empty list.
-        """
-        if page._backend is None:
-            return []
-
-        # Get the programmatic PDF cells and deduplicate them
-        bitmap_rects = page._backend.get_bitmap_rects()
-        coverage, ocr_rects = self._deduplicate_rects(page.size, bitmap_rects, 20)
-
-        # return full-page rectangle if page is dominantly covered with bitmaps
-        if coverage > max(
-            BaseOcrModel.MAXOUT_COVERAGE_THRESHOLD, self.options.bitmap_area_threshold
-        ):
-            return [
-                BoundingBox(
-                    l=0,
-                    t=0,
-                    r=page.size.width,
-                    b=page.size.height,
-                    coord_origin=CoordOrigin.TOPLEFT,
-                )
-            ]
-        # return individual rectangles if the bitmap coverage is above the threshold
-        elif coverage > self.options.bitmap_area_threshold:
-            return ocr_rects
-
-        # Overall coverage of bitmaps is too low, drop all bitmap rectangles.
-        return []
-
-    def _find_layout_ocr_rects(self, page: Page) -> List[BoundingBox]:
+    def _find_cluster_ocr_rects(self, page: Page) -> list[BoundingBox]:
         r"""
         1. Collect the bboxes of all layout clusters.
         2. Deduplicate the candidate ocr_rects.
@@ -119,6 +84,89 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         _, ocr_rects = self._deduplicate_rects(page.size, ocr_rects)
 
         return ocr_rects
+
+    def _find_pdf_clusters_ocr_rects(self, page: Page) -> list[BoundingBox]:
+        r"""
+        Compute the OCR rects from the layout clusters of a programmatic PDF.
+
+        1. Start from the layout clusters.
+        2. Eliminate clusters that intersect exclusively with programmatic text PDF cells
+           The following clusters therefore remain:
+           - Clusters without any overlapping PDF cell.
+           - Clusters with at least one overlapping non-text region (e.g. bitmap, shape).
+        3. Deduplicate the remaining cluster bboxes.
+        """
+        if page.predictions.layout is None:
+            return []
+        if page._backend is None:
+            return self._find_cluster_ocr_rects(page)
+
+        # Create index for the text PDF cells
+        p = index.Property()
+        p.dimension = 2
+        text_index = index.Index(properties=p)
+        for i, text_cell in enumerate(page._backend.get_text_cells()):
+            text_index.insert(i, text_cell.rect.to_bounding_box().as_tuple())
+
+        # Create index for the non-text PDF cells
+        non_text_index = index.Index(properties=p)
+        for i, bbox in enumerate(page._backend.get_bitmap_rects()):
+            non_text_index.insert(i, bbox.as_tuple())
+
+        # Collect the non-eliminated cluster bboxes
+        ocr_rects: list[BoundingBox] = []
+        for cluster in page.predictions.layout.clusters:
+            cluster_bbox_tuple = cluster.bbox.as_tuple()
+            text_overlaps = list(text_index.intersection(cluster_bbox_tuple))
+            non_text_overlaps = list(non_text_index.intersection(cluster_bbox_tuple))
+
+            # Get the clusters that overlap with non-txt PDF cells
+            if len(non_text_overlaps) > 0:
+                ocr_rects.append(cluster.bbox)
+            # And the ones that don't overlap with any PDF cells
+            elif len(text_overlaps) == 0:
+                ocr_rects.append(cluster.bbox)
+
+        # Deduplicate the surviving cluster bboxes.
+        _, ocr_rects = self._deduplicate_rects(page.size, ocr_rects)
+
+        return ocr_rects
+
+    # def _find_pdf_ocr_rects(self, page: Page) -> list[BoundingBox]:
+    #     r"""
+    #     Compute the OCR rectangles coming ONLY from the programmatic PDF cells
+    #
+    #     1. Deduplicate the bitmap rects.
+    #     2. If coverage > MAXOUT_COVERAGE_THRESHOLD, return a single bbox covering the entire page.
+    #     3. Else if coverage > `bitmap_area_threshold`, return the deduplicated rects.
+    #     4. Otherwise return an empty list.
+    #     """
+    #     if page._backend is None:
+    #         return []
+    #
+    #     # Get the programmatic PDF cells and deduplicate them
+    #     bitmap_rects = page._backend.get_bitmap_rects()
+    #     coverage, ocr_rects = self._deduplicate_rects(page.size, bitmap_rects, 20)
+    #
+    #     # return full-page rectangle if page is dominantly covered with bitmaps
+    #     if coverage > max(
+    #         BaseOcrModel.MAXOUT_COVERAGE_THRESHOLD, self.options.bitmap_area_threshold
+    #     ):
+    #         return [
+    #             BoundingBox(
+    #                 l=0,
+    #                 t=0,
+    #                 r=page.size.width,
+    #                 b=page.size.height,
+    #                 coord_origin=CoordOrigin.TOPLEFT,
+    #             )
+    #         ]
+    #     # return individual rectangles if the bitmap coverage is above the threshold
+    #     elif coverage > self.options.bitmap_area_threshold:
+    #         return ocr_rects
+    #
+    #     # Overall coverage of bitmaps is too low, drop all bitmap rectangles.
+    #     return []
 
     def _deduplicate_rects(
         self, size: Size, rects: Iterable[BoundingBox], dilation_size=0
@@ -176,9 +224,133 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         area_frac = np.sum(np_image > 0) / (size.width * size.height)
         return (area_frac, bounding_boxes)  # fraction covered  # boxes
 
+    def _deduplicate_rects2(
+        self, size: Size, rects: Iterable[BoundingBox], dilation_size=0
+    ) -> tuple[float, list[BoundingBox]]:
+        r"""
+        Instead of rasterizing the page into a 1-bit image and running connected
+        components over the pixels, this works directly on the rectangle
+        geometry, which is O(page_pixels)-independent and typically much cheaper
+        when the number of rects is small:
+
+        1. Normalize each rect to an axis-aligned box, grow it by
+           ``dilation_size / 2`` on every side (mirroring the binary dilation)
+           and clip it to the page bounds.
+        2. Merge overlapping/touching rects into connected components using an
+           R-tree spatial index (O(N log N + K) neighbor queries) plus union-find
+           for transitive grouping.
+        3. For each component, return the bounding box of the union of its rects.
+        4. Compute the coverage as the exact area of the union of all rects
+           (sweep-line / Klee's algorithm) divided by the page area.
+
+        Notes / semantic differences vs. the raster version:
+        - Coordinates are continuous (no pixel rounding, no ``-1`` inclusive-pixel
+          adjustment on the far edges).
+        - R-tree intersection treats edge- and corner-touching boxes as
+          connected, whereas the raster path uses 4-connectivity (edge-touching
+          only). Corner-only contacts have zero area, so coverage is unaffected;
+          only the grouping of diagonally-adjacent rects may differ.
+        """
+        page_w = round(size.width)
+        page_h = round(size.height)
+        page_area = float(page_w * page_h)
+
+        # 1. Normalize, dilate and clip the input rects.
+        pad = dilation_size / 2.0
+        boxes: list[tuple[float, float, float, float]] = []
+        for rect in rects:
+            x0, y0, x1, y1 = rect.as_tuple()
+            # Corners may be unordered depending on the coord origin: normalize.
+            left, right = (x0, x1) if x0 <= x1 else (x1, x0)
+            top, bottom = (y0, y1) if y0 <= y1 else (y1, y0)
+            # Grow (dilation) and clip to the page bounds.
+            left = max(0.0, left - pad)
+            top = max(0.0, top - pad)
+            right = min(float(page_w), right + pad)
+            bottom = min(float(page_h), bottom + pad)
+            if right <= left or bottom <= top:
+                continue  # degenerate after clipping
+            boxes.append((left, top, right, bottom))
+
+        if not boxes or page_area <= 0:
+            return (0.0, [])
+
+        arr = np.array(boxes, dtype=float)  # columns: left, top, right, bottom
+        n = len(boxes)
+
+        # 2. Connected components: R-tree neighbor queries + union-find.
+        parent = list(range(n))
+
+        def find(i: int) -> int:
+            root = i
+            while parent[root] != root:
+                root = parent[root]
+            while parent[i] != root:  # path compression
+                parent[i], i = root, parent[i]
+            return root
+
+        def union(i: int, j: int) -> None:
+            ri, rj = find(i), find(j)
+            if ri != rj:
+                parent[ri] = rj
+
+        spatial = index.Index()
+        for i, box in enumerate(boxes):
+            spatial.insert(i, box)
+        for i, box in enumerate(boxes):
+            for j in spatial.intersection(box):
+                if j > i:
+                    union(i, j)
+
+        # 3. Union bounding box per connected component.
+        components: dict[int, list[int]] = {}
+        for i in range(n):
+            components.setdefault(find(i), []).append(i)
+
+        bounding_boxes = [
+            BoundingBox(
+                l=float(arr[members, 0].min()),
+                t=float(arr[members, 1].min()),
+                r=float(arr[members, 2].max()),
+                b=float(arr[members, 3].max()),
+                coord_origin=CoordOrigin.TOPLEFT,
+            )
+            for members in components.values()
+        ]
+
+        # 4. Exact area of the union of all rects via a vertical sweep line.
+        union_area = 0.0
+        x_edges = np.unique(arr[:, [0, 2]])
+        for k in range(len(x_edges) - 1):
+            x_lo = x_edges[k]
+            x_hi = x_edges[k + 1]
+            dx = x_hi - x_lo
+            if dx <= 0:
+                continue
+            # Rects spanning the whole [x_lo, x_hi] slab contribute here.
+            active = arr[(arr[:, 0] <= x_lo) & (arr[:, 2] >= x_hi)]
+            if active.size == 0:
+                continue
+            # Union length of the active y-intervals.
+            intervals = active[:, [1, 3]]
+            intervals = intervals[intervals[:, 0].argsort()]
+            cur_top, cur_bottom = intervals[0]
+            y_len = 0.0
+            for y_top, y_bottom in intervals[1:]:
+                if y_top > cur_bottom:
+                    y_len += cur_bottom - cur_top
+                    cur_top, cur_bottom = y_top, y_bottom
+                else:
+                    cur_bottom = max(cur_bottom, y_bottom)
+            y_len += cur_bottom - cur_top
+            union_area += dx * y_len
+
+        area_frac = union_area / page_area
+        return (area_frac, bounding_boxes)
+
     def post_process_cells(
         self,
-        ocr_cells: List[TextCell],
+        ocr_cells: list[TextCell],
         page: Page,
         conv_res: ConversionResult,
     ) -> None:
@@ -227,8 +399,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             )
 
     def _filter_ocr_cells(
-        self, ocr_cells: List[TextCell], programmatic_cells: List[TextCell]
-    ) -> List[TextCell]:
+        self, ocr_cells: list[TextCell], programmatic_cells: list[TextCell]
+    ) -> list[TextCell]:
         r"""
         Filter OCR cells by dropping any OCR cell that intersects with a programmatic PDF cell
         """
@@ -313,5 +485,5 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
     @classmethod
     @abstractmethod
-    def get_options_type(cls) -> Type[OcrOptions]:
+    def get_options_type(cls) -> type[OcrOptions]:
         pass
