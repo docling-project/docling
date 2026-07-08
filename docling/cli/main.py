@@ -799,7 +799,7 @@ def convert(  # noqa: C901
     ] = 0.0,
     video_prominence: Annotated[
         float,
-        typer.Option(..., help="Scene change prominence threshold (0=auto)."),
+        typer.Option(..., help="Scene change prominence threshold (0=auto). Recommended: 0.03 for meetings, 0.01 for lectures."),
     ] = 0.0,
     ocr: Annotated[
         bool,

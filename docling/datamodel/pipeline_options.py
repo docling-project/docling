@@ -1517,6 +1517,11 @@ class VideoPipelineOptions(PipelineOptions):
 
     Controls ASR transcription, frame sampling strategy, and optional
     scene description for video documents.
+
+    Recommended configs by use case:
+      - Business meetings:  frame_sampling_mode=SCENE_CHANGE, scene_change_prominence=0.03
+      - Lecture recordings: frame_sampling_mode=SCENE_CHANGE, cuts_per_minute=2.0
+      - General video:      frame_sampling_mode=FIXED_INTERVAL, frame_interval_seconds=10.0
     """
 
     asr_options: Annotated[
