@@ -1339,6 +1339,7 @@ def convert(  # noqa: C901
 
         # Video pipeline options
         from docling.datamodel.pipeline_options import VideoPipelineOptions
+        from docling.document_converter import VideoFormatOption
         from docling.pipeline.video_pipeline import VideoPipeline
         from docling.utils.video_frame_sampling import VideoFrameSamplingMode
 
