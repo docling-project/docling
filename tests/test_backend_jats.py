@@ -201,13 +201,12 @@ def _inline_group_items(doc: DoclingDocument) -> list[list]:
         ),
         pytest.param(
             # loose text inside <inline-formula> around the <tex-math> is preserved
+            # (adjacent unstyled runs are coalesced into one segment)
             "The relation <inline-formula>foo <tex-math>$$E=mc^2$$</tex-math> bar</inline-formula> holds.",
             [
-                (DocItemLabel.TEXT, "The relation", None),
-                (DocItemLabel.TEXT, "foo", None),
+                (DocItemLabel.TEXT, "The relation foo", None),
                 (DocItemLabel.FORMULA, "E=mc^2", None),
-                (DocItemLabel.TEXT, "bar", None),
-                (DocItemLabel.TEXT, "holds.", None),
+                (DocItemLabel.TEXT, "bar holds.", None),
             ],
             id="text-inside-inline-formula",
         ),
@@ -234,8 +233,7 @@ def _inline_group_items(doc: DoclingDocument) -> list[list]:
         pytest.param(
             "Index <inline-formula>x<sub>i</sub> <tex-math>$$x_i$$</tex-math></inline-formula> shown.",
             [
-                (DocItemLabel.TEXT, "Index", None),
-                (DocItemLabel.TEXT, "x", None),
+                (DocItemLabel.TEXT, "Index x", None),
                 (DocItemLabel.TEXT, "i", (False, False, False, False, Script.SUB)),
                 (DocItemLabel.FORMULA, "x_i", None),
                 (DocItemLabel.TEXT, "shown.", None),
@@ -264,12 +262,18 @@ def _inline_group_items(doc: DoclingDocument) -> list[list]:
             id="tex-math-inside-emphasis",
         ),
         pytest.param(
+            # emphasis outside the formula is now preserved (general text styling),
+            # and adjacent unstyled runs are coalesced
             "Compare <italic>lhs</italic> <inline-formula><tex-math>$$a$$</tex-math> rhs</inline-formula> and <inline-formula><tex-math>$$b$$</tex-math></inline-formula> now.",
             [
-                (DocItemLabel.TEXT, "Compare lhs", None),
+                (DocItemLabel.TEXT, "Compare", None),
+                (
+                    DocItemLabel.TEXT,
+                    "lhs",
+                    (False, True, False, False, Script.BASELINE),
+                ),
                 (DocItemLabel.FORMULA, "a", None),
-                (DocItemLabel.TEXT, "rhs", None),
-                (DocItemLabel.TEXT, "and", None),
+                (DocItemLabel.TEXT, "rhs and", None),
                 (DocItemLabel.FORMULA, "b", None),
                 (DocItemLabel.TEXT, "now.", None),
             ],
@@ -327,6 +331,39 @@ def test_jats_inline_formula_styled_content_markdown_rendering():
     md = doc.export_to_markdown()
     assert "*x*" in md
     assert "a^2" in md
+
+
+def test_jats_paragraph_emphasis_is_preserved():
+    doc = convert_jats_body(
+        "<sec><title>T</title>"
+        "<p>The species <italic>Homo sapiens</italic> is <bold>common</bold>.</p>"
+        "</sec>"
+    )
+
+    groups = _inline_group_items(doc)
+    assert len(groups) == 1
+    assert [_formatting_tuple(item) for item in groups[0]] == [
+        (DocItemLabel.TEXT, "The species", None),
+        (
+            DocItemLabel.TEXT,
+            "Homo sapiens",
+            (False, True, False, False, Script.BASELINE),
+        ),
+        (DocItemLabel.TEXT, "is", None),
+        (DocItemLabel.TEXT, "common", (True, False, False, False, Script.BASELINE)),
+        (DocItemLabel.TEXT, ".", None),
+    ]
+
+
+def test_jats_plain_paragraph_stays_a_single_text_item():
+    doc = convert_jats_body(
+        "<sec><title>T</title><p>Plain text with a <xref>1</xref> citation.</p></sec>"
+    )
+
+    # no emphasis (and coalesced xref) → a single TEXT item, no inline group
+    assert _inline_group_items(doc) == []
+    texts = [t.text for t in doc.texts if t.label == DocItemLabel.TEXT]
+    assert texts == ["Plain text with a 1 citation."]
 
 
 @pytest.mark.parametrize(

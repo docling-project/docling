@@ -761,22 +761,58 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return segments
 
     @staticmethod
-    def _get_inline_formula_segments(
-        node: etree._Element, pending_text: str
-    ) -> tuple[list[InlineSegment], str]:
-        child_segments = JatsDocumentBackend._strip_segments(
-            JatsDocumentBackend._walk_inline_formula(node)
-        )
-        if not child_segments:
-            return [], pending_text
-        segments: list[InlineSegment] = []
-        if pending_text.strip():
+    def _append_run(
+        segments: list[InlineSegment], text: str, formatting: Formatting | None
+    ) -> None:
+        """Append a text run, merging into the previous run when formatting matches.
+
+        Coalescing keeps a run of equally-formatted text (the common case: plain
+        paragraphs, citation cross-references) as a single segment, so unstyled
+        content is emitted as one ``TextItem`` rather than a fragmented group.
+        """
+        text = text.replace("\n", " ")
+        if not text:
+            return
+        if (
+            segments
+            and segments[-1].label == DocItemLabel.TEXT
+            and segments[-1].formatting == formatting
+        ):
+            segments[-1] = replace(segments[-1], text=segments[-1].text + text)
+        else:
             segments.append(
-                InlineSegment(label=DocItemLabel.TEXT, text=pending_text.strip())
+                InlineSegment(label=DocItemLabel.TEXT, text=text, formatting=formatting)
             )
-            pending_text = ""
-        segments.extend(child_segments)
-        return segments, pending_text
+
+    @staticmethod
+    def _extend_segments(
+        segments: list[InlineSegment], more: list[InlineSegment]
+    ) -> None:
+        """Extend ``segments`` with ``more``, coalescing adjacent equal-format text."""
+        for segment in more:
+            if segment.label == DocItemLabel.TEXT:
+                JatsDocumentBackend._append_run(
+                    segments, segment.text, segment.formatting
+                )
+            else:
+                segments.append(segment)
+
+    @staticmethod
+    def _emit_inline(
+        doc: DoclingDocument, parent: NodeItem, segments: list[InlineSegment]
+    ) -> None:
+        """Emit inline segments under ``parent``, wrapping many in an inline group."""
+        segments = JatsDocumentBackend._strip_segments(segments)
+        if not segments:
+            return
+        container = doc.add_inline_group(parent=parent) if len(segments) > 1 else parent
+        for segment in segments:
+            doc.add_text(
+                label=segment.label,
+                text=segment.text,
+                formatting=segment.formatting,
+                parent=container,
+            )
 
     def _add_figure_captions(
         self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
@@ -1030,27 +1066,27 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             )
 
     def _walk_linear(
-        self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
-    ) -> str:
+        self,
+        doc: DoclingDocument,
+        parent: NodeItem,
+        node: etree._Element,
+        formatting: Formatting | None = None,
+    ) -> list[InlineSegment]:
         skip_tags = ["term"]
         flush_tags = ["ack", "sec", "list", "boxed-text", "disp-formula", "fig"]
         new_parent: NodeItem = parent
+        current = JatsDocumentBackend._merge_formatting(formatting, node.tag)
         inline_segments: list[InlineSegment] = []
-        node_text: str = (
-            node.text.replace("\n", " ")
-            if (node.tag not in skip_tags and node.text)
-            else ""
-        )
+        if node.tag not in skip_tags and node.text:
+            JatsDocumentBackend._append_run(inline_segments, node.text, current)
 
         for child in list(node):
             stop_walk: bool = False
 
-            # flush text into TextItem for some tags in paragraph nodes
-            if node.tag == "p" and node_text.strip() and child.tag in flush_tags:
-                doc.add_text(
-                    label=DocItemLabel.TEXT, text=node_text.strip(), parent=parent
-                )
-                node_text = ""
+            # flush pending inline content before a block child in a paragraph
+            if node.tag == "p" and child.tag in flush_tags:
+                JatsDocumentBackend._emit_inline(doc, parent, inline_segments)
+                inline_segments = []
 
             # add elements and decide whether to stop walking
             if child.tag in ("sec", "ack"):
@@ -1132,48 +1168,30 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 self._add_equation(doc, parent, child)
                 stop_walk = True
             elif child.tag == "inline-formula":
-                # Inline formulas are only rendered inline within a paragraph;
-                # their content is converted to styled inline segments.
-                if node.tag == "p":
-                    new_segments, node_text = (
-                        JatsDocumentBackend._get_inline_formula_segments(
-                            child, node_text
-                        )
-                    )
-                    inline_segments.extend(new_segments)
+                # An inline formula becomes styled inline segments; its tex-math
+                # stays inline, unlike a block-level <disp-formula>.
+                JatsDocumentBackend._extend_segments(
+                    inline_segments,
+                    JatsDocumentBackend._walk_inline_formula(child, current),
+                )
                 stop_walk = True
 
             # step into child
             if not stop_walk:
-                new_text = self._walk_linear(doc, new_parent, child)
+                child_segments = self._walk_linear(doc, new_parent, child, current)
                 if not (node.getparent().tag == "p" and node.tag in flush_tags):
-                    node_text += new_text
+                    JatsDocumentBackend._extend_segments(
+                        inline_segments, child_segments
+                    )
                 if child.tag in ("sec", "ack") and text:
                     self.hlevel -= 1
 
             # pick up the tail text
-            node_text += child.tail.replace("\n", " ") if child.tail else ""
+            if child.tail:
+                JatsDocumentBackend._append_run(inline_segments, child.tail, current)
 
-        # create paragraph
+        # emit the paragraph, or backpropagate inline content to the parent
         if node.tag == "p":
-            if node_text.strip():
-                inline_segments.append(
-                    InlineSegment(label=DocItemLabel.TEXT, text=node_text.strip())
-                )
-            if inline_segments:
-                container = (
-                    doc.add_inline_group(parent=parent)
-                    if len(inline_segments) > 1
-                    else parent
-                )
-                for segment in inline_segments:
-                    doc.add_text(
-                        label=segment.label,
-                        text=segment.text,
-                        formatting=segment.formatting,
-                        parent=container,
-                    )
-            return ""
-        else:
-            # backpropagate the text
-            return node_text
+            JatsDocumentBackend._emit_inline(doc, parent, inline_segments)
+            return []
+        return inline_segments
