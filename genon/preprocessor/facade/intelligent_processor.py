@@ -1311,13 +1311,14 @@ class GenosSmartChunker(BaseChunker):
             ))
 
         # ================================================================
-        # 2.5단계: 너무 긴 청크는 분할
+        # 2.5단계: 너무 긴 청크는 분할 (인덱스 꼬임 방지를 위해 새 리스트 사용)
         # ================================================================
         if self.max_tokens > 0:
-            for i in range(len(sections_with_text)):
-                text, items, h_infos, h_short = sections_with_text[i]
+            final_sections = []  # 결과를 담을 새 리스트
+            for text, items, h_infos, h_short in sections_with_text:
                 token_count = self._count_tokens(text)
                 if token_count < self.max_tokens:
+                    final_sections.append((text, items, h_infos, h_short))
                     continue
 
                 # caption 및 table 내 그림은 같은 섹션에 있도록 조정
@@ -1337,8 +1338,7 @@ class GenosSmartChunker(BaseChunker):
                 # 아이템 그룹들을 토큰 기준으로 균등 분할
                 split_info = split_items_evenly_by_tokens(item_token_counts, self.max_tokens)
 
-                # item_groups를 섹션으로 다시 구성
-                new_sections = []
+                # 분할된 결과들을 새 리스트에 추가
                 for (a, b) in split_info:
 
                     # 각 그룹에서 items, h_infos, h_short로 분리
@@ -1354,12 +1354,9 @@ class GenosSmartChunker(BaseChunker):
                     new_text = self._generate_section_text_with_heading(
                         group_items, group_h_short, dl_doc, **kwargs
                     )
-                    new_sections.append((new_text, group_items, group_h_infos, group_h_short))
+                    final_sections.append((new_text, group_items, group_h_infos, group_h_short))
 
-                # 원래 섹션을 새로 분할된 섹션들로 교체
-                sections_with_text.pop(i)
-                for new_section in reversed(new_sections):
-                    sections_with_text.insert(i, new_section)
+            sections_with_text = final_sections  # 전체 리스트 교체
 
         # ================================================================
         # 3단계: 단독 타이틀(1줄만) → 다음 섹션으로 병합
