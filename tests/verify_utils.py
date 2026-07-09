@@ -25,6 +25,8 @@ from pydantic import BaseModel, TypeAdapter
 from docling.datamodel.base_models import ConversionStatus, Page
 from docling.datamodel.document import ConversionResult
 
+from .groundtruth_paths import GroundTruthPaths
+
 COORD_PREC = 2  # decimal places for coordinates
 CONFID_PREC = 3  # decimal places for confidence
 STRICT_BBOX_TOL_RATIO = 0.0025  # allow minor cross-platform layout variance
@@ -380,16 +382,17 @@ def verify_dt(doc_pred_dt: str, doc_true_dt: str, fuzzy: bool):
 
 
 def verify_conversion_result_v2(
-    input_path: Path,
+    gt: GroundTruthPaths,
     doc_result: ConversionResult,
     generate: bool = False,
-    ocr_engine: Optional[str] = None,
     fuzzy: bool = False,
     verify_doctags: bool = True,
+    verify_doclang: bool = False,
     indent: int = 2,
-    artifact_suffix: Optional[str] = None,
 ):
     PageMetaList = TypeAdapter(list[_TestPagesMeta])
+
+    input_path = doc_result.input.file
 
     assert doc_result.status == ConversionStatus.SUCCESS, (
         f"Doc {input_path} did not convert successfully."
@@ -402,30 +405,26 @@ def verify_conversion_result_v2(
     doc_pred: DoclingDocument = doc_result.document
     doc_pred_md = doc_result.document.export_to_markdown(compact_tables=True)
     doc_pred_dt = doc_result.document.export_to_doctags()
-    doc_pred_doclang = _export_clean_doclang(doc_result.document)
 
-    suffix = artifact_suffix if artifact_suffix is not None else ocr_engine
-    engine_suffix = "" if suffix is None else f".{suffix}"
+    pages_path = gt.pages_meta
+    json_path = gt.doc_json
+    md_path = gt.md
+    dt_path = gt.doctags
+    doclang_path = gt.doclang
 
-    gt_subpath = input_path.parent.parent / "groundtruth" / input_path.name
-
-    pages_path = gt_subpath.with_suffix(f"{engine_suffix}.pages.meta.json")
-    json_path = gt_subpath.with_suffix(f"{engine_suffix}.json")
-    md_path = gt_subpath.with_suffix(f"{engine_suffix}.md")
-    dt_path = gt_subpath.with_suffix(f"{engine_suffix}.doctags.txt")
-    doclang_path = gt_subpath.with_suffix(f"{engine_suffix}.doclang.xml")
-
-    # print("generate: ", generate)
     if generate:  # only used when re-generating truth
         pages_path.parent.mkdir(parents=True, exist_ok=True)
 
-        pages_data = PageMetaList.dump_json(doc_pred_pages_meta, indent=2)
+        pages_data = PageMetaList.dump_json(doc_pred_pages_meta, indent=indent)
         with open(pages_path, mode="w", encoding="utf-8") as fw:
             fw.write(pages_data.decode())
 
         json_path.parent.mkdir(parents=True, exist_ok=True)
         doc_pred.save_as_json(
-            json_path, coord_precision=COORD_PREC, confid_precision=CONFID_PREC
+            json_path,
+            indent=indent,
+            coord_precision=COORD_PREC,
+            confid_precision=CONFID_PREC,
         )
 
         md_path.parent.mkdir(parents=True, exist_ok=True)
@@ -436,9 +435,11 @@ def verify_conversion_result_v2(
         with open(dt_path, mode="w", encoding="utf-8") as fw:
             fw.write(doc_pred_dt)
 
-        doclang_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(doclang_path, mode="w", encoding="utf-8") as fw:
-            fw.write(doc_pred_doclang)
+        if verify_doclang:
+            doc_pred_doclang = _export_clean_doclang(doc_result.document)
+            doclang_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(doclang_path, mode="w", encoding="utf-8") as fw:
+                fw.write(doc_pred_doclang)
     else:  # default branch in test
         with open(pages_path, encoding="utf-8") as fr:
             doc_true_pages_meta = PageMetaList.validate_json(fr.read())
@@ -452,8 +453,9 @@ def verify_conversion_result_v2(
         with open(dt_path, encoding="utf-8") as fr:
             doc_true_dt = fr.read()
 
-        with open(doclang_path, encoding="utf-8") as fr:
-            doc_true_doclang = fr.read()
+        if verify_doclang:
+            with open(doclang_path, encoding="utf-8") as fr:
+                doc_true_doclang = fr.read()
 
         if not fuzzy:
             assert verify_cells(doc_pred_pages_meta, doc_true_pages_meta), (
@@ -476,9 +478,11 @@ def verify_conversion_result_v2(
                 f"Mismatch in DocTags prediction for {input_path}"
             )
 
-        assert verify_text(doc_true_doclang, doc_pred_doclang, fuzzy=False), (
-            f"Mismatch in DocLang prediction for {input_path}"
-        )
+        if verify_doclang:
+            doc_pred_doclang = _export_clean_doclang(doc_result.document)
+            assert verify_text(doc_true_doclang, doc_pred_doclang, fuzzy=False), (
+                f"Mismatch in DocLang prediction for {input_path}"
+            )
 
 
 def verify_document(

@@ -19,6 +19,7 @@ from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
 )
 from docling.backend.asciidoc_backend import AsciiDocBackend
+from docling.backend.boxnote_backend import BoxNoteDocumentBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_backend import (
     DoclingParseDocumentBackend,
@@ -105,6 +106,11 @@ class FormatOption(BaseFormatOption):
             self.pipeline_options = self.pipeline_cls.get_default_options()
 
         return self
+
+
+class BoxNoteFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = BoxNoteDocumentBackend
 
 
 class CsvFormatOption(FormatOption):
@@ -240,6 +246,7 @@ class EpubFormatOption(FormatOption):
 def _get_default_option(format: InputFormat) -> FormatOption:
     format_to_default_options = {
         InputFormat.CSV: CsvFormatOption(),
+        InputFormat.BOXNOTE: BoxNoteFormatOption(),
         InputFormat.XLSX: ExcelFormatOption(),
         InputFormat.DOCX: WordFormatOption(),
         InputFormat.PPTX: PowerpointFormatOption(),
