@@ -188,17 +188,19 @@ class VideoPipeline(BasePipeline):
                     transcript_items = merge_into_sentences(transcript_items)
                     # Run diarization while WAV is still available
                     if self.pipeline_options.enable_diarization:
-                      try:
-                        diarization = diarize(wav_path)
-                        transcript_items = assign_speakers(
-                            transcript_items, diarization
-                        )
-                        _log.info(
-                            "Diarization: %d speakers detected",
-                            diarization.num_speakers,
-                        )
-                    except Exception as exc:
-                        _log.warning("Speaker diarization failed: %s", exc)
+                        try:
+                            diarization = diarize(wav_path)
+                            transcript_items = assign_speakers(
+                                transcript_items, diarization
+                            )
+                            _log.info(
+                                "Diarization: %d speakers detected",
+                                diarization.num_speakers,
+                            )
+                        except Exception as exc:
+                            _log.warning("Speaker diarization failed: %s", exc)
+                            diarization = DiarizationResult()
+                    else:
                         diarization = DiarizationResult()
                 else:
                     diarization = DiarizationResult()
