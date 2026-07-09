@@ -97,13 +97,16 @@ def _stub_vlm_for_unit_tests(request, monkeypatch):
         return
 
     try:
-        import facade.parser_processor as parser_mod
+        # 이미지 설명 VLM 호출부는 enrichment.image_description 로 이동했다.
+        # facade 는 절대경로(genon.preprocessor.facade.*)로 이 모듈을 로드하므로
+        # 같은 모듈 객체를 얻으려면 동일 경로로 import 해야 한다(이중 import 방지).
+        import genon.preprocessor.facade.enrichment.image_description as image_desc_mod
     except Exception:
-        # parser_processor를 사용하지 않는 unit 테스트도 있으므로 조용히 패스
+        # image_description 을 사용하지 않는 unit 테스트도 있으므로 조용히 패스
         return
 
     monkeypatch.setattr(
-        parser_mod,
+        image_desc_mod,
         "api_image_request",
         lambda *args, **kwargs: "",
         raising=False,

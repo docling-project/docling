@@ -257,8 +257,18 @@ enrichment:
       before_items: 3
       after_items: 2
       max_context_chars: 1500
-      # 파일 안에서 {{before_context}} / {{caption}} / {{after_context}} 치환
+      # 파일 안에서 {{before_context}} / {{caption}} / {{after_context}} / {{doc_summary}} 치환
       prompt_template_file: prompt_image_description_default.md
+      # 본문요약: 이미지·차트 description 공통 컨텍스트({{doc_summary}} 로 주입)
+      doc_summary:
+        enable: false
+        prompt_file: prompt_doc_summary.md
+        max_chars: 6000
+      # 차트 처리
+      chart:
+        enable: false          # true 면 차트 처리 수행(아니면 일반 image description)
+        detection: auto         # auto=docling 자동판별(차트만 차트 프롬프트) | all=모든 이미지를 차트로
+        chart_prompt_file: prompt_chart_description_default.md
 
   # 커스텀 필드 추출 (여러 개 지정 가능). 인라인 옵션 또는 외부 config_file 사용.
   # - custom_fields:
@@ -407,8 +417,14 @@ whisper:
 | `image_description` | `after_items` | `2` | 이미지 뒤 문맥으로 넣을 텍스트 item 수 |
 | `image_description` | `max_context_chars` | `1500` | 프롬프트 전체 최대 문자 수 (초과 시 절단) |
 | `image_description` | `prompt_template_file` | — | 프롬프트 템플릿 `.md` 파일 경로(권장). 미지정 시 inline `prompt_template` → 내장 기본 프롬프트 |
-| `image_description` | `prompt_template` | 내장 기본 프롬프트 | inline 프롬프트 템플릿(`*_file` 미지정 시 fallback). `{{before_context}}`, `{{caption}}`, `{{after_context}}` 치환 |
+| `image_description` | `prompt_template` | 내장 기본 프롬프트 | inline 프롬프트 템플릿(`*_file` 미지정 시 fallback). `{{before_context}}`, `{{caption}}`, `{{after_context}}`, `{{doc_summary}}` 치환 |
+| `image_description` | `doc_summary.enable` / `.prompt_file` / `.max_chars` | `false` / `prompt_doc_summary.md` / `6000` | 문서 본문요약 생성(공통 `{{doc_summary}}` 컨텍스트). `{{full_text}}` 치환 |
+| `image_description` | `chart.enable` | `false` | 차트 처리 활성화(false 면 일반 image description 만) |
+| `image_description` | `chart.detection` | `auto` | `auto`=docling 자동판별(차트로 분류된 이미지만) / `all`=모든 이미지를 차트로 |
+| `image_description` | `chart.chart_prompt_file` | `prompt_chart_description_default.md` | 차트 전용 프롬프트 `.md` |
 | `custom_fields` | (인라인 옵션 또는 `config_file`) | — | 커스텀 필드 추출 enricher. 여러 개 지정 가능. 아래 [커스텀 필드 enricher](#커스텀-필드-enricher) 참고 |
+
+> `chart.enable: true` 면 변환 단계에서 docling 그림 분류가 자동 활성화됩니다. **런타임 kwargs**(호출 `params`, 0/1)로 오버라이드 가능: `img_desc`→`image_description.enable`, `chart_desc`(별칭 `chart_convert`)→`chart.enable`, `chart_detection`(1=auto/0=all), `doc_summary`→`doc_summary.enable`. `chart_detection=1`(auto) 은 `chart.enable: true` 로 분류가 켜져 있어야 하며 아니면 `all` 로 강등됩니다.
 
 > 이미지 설명 enrichment는 `pdf_pipeline.generate_picture_images: false`인 경우 동작하지 않습니다 (그림 이미지가 생성되지 않으므로).
 
@@ -560,6 +576,7 @@ enrichment 프롬프트는 YAML 안에 inline 으로 박지 않고 **별도 `.md
 | `{{after_context}}` | 이미지 뒤 문맥 텍스트(`after_items` 개) | 이미지 직후 텍스트 아이템들 |
 | `{{caption}}` | 이미지 캡션 | `PictureItem.caption_text(document)` |
 | `{{section_header}}` | 이미지 직전 섹션 헤더 | 이미지 위쪽에서 가장 가까운 section_header/title |
+| `{{doc_summary}}` | 문서 본문요약(공통 컨텍스트). `doc_summary.enable: true` 일 때만 채워짐 | 문서 BODY 텍스트 LLM 1회 요약 |
 
 > 값이 없는 reserved 변수는 **빈 문자열**로 치환됩니다. 카운트(`page_count` 등)는 정수지만 문자열로 렌더링됩니다. `raw_text`/`full_text` 는 토큰이 매우 클 수 있으니 보통 둘 중 하나만 사용합니다.
 

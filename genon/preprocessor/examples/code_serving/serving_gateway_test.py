@@ -47,6 +47,11 @@ requests 등 외부 의존 없이 표준 라이브러리(urllib)만 사용한다
     # 6) 업로드 → 청킹 E2E (--upload-file 지정 시 e2e 가 업로드 파싱을 사용)
     python serving_gateway_test.py --mode e2e \
         --upload-file ./report.pdf --out /tmp/chunks.json
+
+    # 7) 차트 description 검증 (kwargs 오버라이드). chart_detection=1=auto(docling 자동판별)/0=all
+    python serving_gateway_test.py --mode parser_upload --upload-file ./chart.pdf \
+        --param img_desc=1 --param chart_desc=1 --param chart_detection=1 \
+        --param doc_summary=1 --out-doc /tmp/doc.json
 """
 from __future__ import annotations
 
@@ -204,13 +209,32 @@ def _handle_parser_data(args, data) -> dict:
     )
 
 
+def _extra_params(args) -> dict:
+    """--param KEY=VALUE (반복) 를 kwargs dict 로 변환. 값은 int 로 우선 해석.
+
+    예: --param img_desc=1 --param chart_desc=1 --param chart_detection=1 --param doc_summary=1
+    """
+    params: dict = {}
+    for raw in getattr(args, "param", None) or []:
+        if "=" not in raw:
+            raise SystemExit(f"--param 은 KEY=VALUE 형식이어야 합니다: {raw!r}")
+        key, _, value = raw.partition("=")
+        key = key.strip()
+        value = value.strip()
+        try:
+            params[key] = int(value)
+        except ValueError:
+            params[key] = value
+    return params
+
+
 def do_parser(args) -> dict:
     """파싱 서빙 호출(서버 로컬 경로) → DoclingDocument JSON(data.document) 반환."""
     if not args.file_path:
         raise SystemExit("--file-path 가 필요합니다(서버가 접근 가능한 경로).")
     data = _request(
         args, "POST", "parser",
-        payload={"file_path": args.file_path, "params": {}},
+        payload={"file_path": args.file_path, "params": _extra_params(args)},
     )
     return _handle_parser_data(args, data)
 
@@ -225,7 +249,7 @@ def do_parser_upload(args) -> dict:
     print(f"[parser_upload] 업로드 → {path.name} ({path.stat().st_size} bytes)")
     data = _request_multipart(
         args, "parser_upload",
-        fields={"params": json.dumps({})},
+        fields={"params": json.dumps(_extra_params(args))},
         files={"file": (path.name, path.read_bytes(), "application/octet-stream")},
     )
     return _handle_parser_data(args, data)
@@ -286,6 +310,9 @@ def build_parser() -> argparse.ArgumentParser:
                         "e2e 에 지정하면 업로드 파싱을 사용")
     p.add_argument("--chunk-size", type=int, default=0,
                    help="청크 최대 크기(0=토큰/문자 기반 분할 안 함). 청킹 config 기본값을 덮어씀")
+    p.add_argument("--param", action="append", default=[], metavar="KEY=VALUE",
+                   help="파싱 kwargs 오버라이드(반복 가능). "
+                        "예: --param img_desc=1 --param chart_desc=1 --param chart_detection=1 --param doc_summary=1")
     p.add_argument("--doc-json", default=None, help="chunker 모드: 입력 docling JSON 파일 경로")
     p.add_argument("--out", default=None, help="청크 결과 JSON 저장 경로 또는 디렉터리(옵션)")
     p.add_argument("--out-doc", default=None, help="parser 모드: docling JSON 저장 경로 또는 디렉터리(옵션)")

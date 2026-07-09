@@ -8,8 +8,8 @@
 # 인라인에서 null이 아닌 값을 지정하면 이 파일의 값보다 우선 적용됨.
 
 # ── LLM 연결 ────────────────────────────────────────────────────────────────
-url: "https://genos.genon.ai/api/gateway/rep/serving/752/v1/chat/completions"
-api_key: "d1a9e0acab6243019008a96cd8af868e"
+url: "https://genos.genon.ai/api/gateway/rep/serving/776/v1/chat/completions"
+api_key: "30241fdbb58d42e48a36495da34a6de7"
 model: model
 
 # ── LLM 생성 파라미터 ────────────────────────────────────────────────────────

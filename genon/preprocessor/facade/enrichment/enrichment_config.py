@@ -295,11 +295,10 @@ class EnrichmentConfig:
                 else:
                     metadata_opts = {}
             elif category == "image_description":
-                if enabled:
-                    opts.setdefault("enabled", True)
-                    image_desc_cfg = opts
-                else:
-                    image_desc_cfg = {"enabled": False}
+                # enable=false 여도 나머지 옵션(chart/body_summary/프롬프트 등)은 보존한다.
+                # 런타임 kwargs(chart_desc/doc_summary 등)로 켤 때 프롬프트가 필요하기 때문.
+                opts["enabled"] = bool(enabled)
+                image_desc_cfg = opts
             elif category == "custom_fields":
                 if enabled and opts:
                     if "resource_path" not in opts:
