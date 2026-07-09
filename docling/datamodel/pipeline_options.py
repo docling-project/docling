@@ -1566,6 +1566,7 @@ class VideoPipelineOptions(PipelineOptions):
     scene_change_smooth_window: int = 2
     cuts_per_minute: float | None = None
     generate_frame_images: bool = True
+    enable_diarization: bool = False
 
 
 class VlmExtractionPipelineOptions(PipelineOptions):

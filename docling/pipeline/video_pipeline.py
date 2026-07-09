@@ -187,7 +187,8 @@ class VideoPipeline(BasePipeline):
                     transcript_items = self._asr_model.transcribe(wav_path)
                     transcript_items = merge_into_sentences(transcript_items)
                     # Run diarization while WAV is still available
-                    try:
+                    if opts.enable_diarization:
+                      try:
                         diarization = diarize(wav_path)
                         transcript_items = assign_speakers(
                             transcript_items, diarization
