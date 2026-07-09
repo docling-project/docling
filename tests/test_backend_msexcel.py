@@ -395,6 +395,62 @@ def test_chart_parsing_disabled() -> None:
     assert doc.pages[2].size.height == 0
 
 
+def test_chart_image_rendering_disabled_by_default(documents) -> None:
+    """Test that charts carry no rendered image unless the option is enabled.
+
+    The default converter (used by the ``documents`` fixture) leaves
+    render_chart_images=False, so the xlsx_03 chart picture keeps its
+    classification and tabular data but no pixels. This guards the promise that
+    the feature does not change default output for existing users.
+    """
+    doc = next(item for path, item in documents if path.stem == "xlsx_03_chartsheet")
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1
+    assert pictures[0].image is None, (
+        "chart picture should have no image when render_chart_images is off"
+    )
+
+
+def test_chart_image_rendering(libreoffice_available) -> None:
+    """Test that render_chart_images=True attaches a LibreOffice-rendered image.
+
+    LibreOffice output is not byte-stable, and the cropped image size depends on
+    the LibreOffice version and page setup, so the pixels are not compared
+    against groundtruth. We assert the picture gains a non-trivial image while
+    keeping the classification and tabular data extracted from the chart.
+
+    Requires LibreOffice; skipped when it is not installed.
+    """
+    if not libreoffice_available:
+        pytest.skip("LibreOffice is not installed — chart rendering cannot be tested")
+
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_03_chartsheet")
+
+    options = MsExcelBackendOptions(render_chart_images=True)
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+    doc = converter.convert(path).document
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1, f"Expected one chart picture, got {len(pictures)}"
+
+    picture = pictures[0]
+    assert (
+        picture.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.BAR_CHART
+    )
+    assert picture.meta.tabular_chart is not None
+
+    image = picture.get_image(doc=doc)
+    assert image is not None, "chart picture should carry a rendered image"
+    assert image.width > 50 and image.height > 50, (
+        f"rendered chart image is implausibly small: {image.size}"
+    )
+
+
 def test_inflated_rows_handling(documents) -> None:
     """Test that files with inflated max_row are handled correctly.
 
