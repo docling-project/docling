@@ -133,13 +133,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     def _deduplicate_rects(
         self, size: Size, rects: Iterable[BoundingBox], dilation_size=0
     ) -> tuple[float, list[BoundingBox]]:
-        r"""proxy function used during debugging only"""
-        return self._deduplicate_rects_raster(size, rects, dilation_size=dilation_size)
-        # return self._deduplicate_rects_geom(size, rects, dilation_size=dilation_size)
-
-    def _deduplicate_rects_raster(
-        self, size: Size, rects: Iterable[BoundingBox], dilation_size=0
-    ) -> tuple[float, list[BoundingBox]]:
         r"""
         Deduplicate the given rects and compute the coverage ratio defined as sum(rects)/image_size
 
@@ -192,117 +185,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # Compute area fraction on page covered by bitmaps
         area_frac = np.sum(np_image > 0) / (size.width * size.height)
         return (area_frac, bounding_boxes)  # fraction covered  # boxes
-
-    def _deduplicate_rects_geom(
-        self, size: Size, rects: Iterable[BoundingBox], dilation_size=0
-    ) -> tuple[float, list[BoundingBox]]:
-        r"""
-        1. Normalize each rect to an axis-aligned box, grow it by
-           ``dilation_size / 2`` on every side (mirroring the binary dilation)
-           and clip it to the page bounds.
-        2. Merge overlapping/touching rects into connected components using an
-           R-tree spatial index (O(N log N + K) neighbor queries) plus union-find
-           for transitive grouping.
-        3. For each component, return the bounding box of the union of its rects.
-        4. Compute the coverage as the exact area of the union of all rects
-           (sweep-line / Klee's algorithm) divided by the page area.
-        """
-        page_w = round(size.width)
-        page_h = round(size.height)
-        page_area = float(page_w * page_h)
-
-        # 1. Normalize, dilate and clip the input rects.
-        pad = dilation_size / 2.0
-        boxes: list[tuple[float, float, float, float]] = []
-        for rect in rects:
-            x0, y0, x1, y1 = rect.as_tuple()
-            # Corners may be unordered depending on the coord origin: normalize.
-            left, right = (x0, x1) if x0 <= x1 else (x1, x0)
-            top, bottom = (y0, y1) if y0 <= y1 else (y1, y0)
-            # Grow (dilation) and clip to the page bounds.
-            left = max(0.0, left - pad)
-            top = max(0.0, top - pad)
-            right = min(float(page_w), right + pad)
-            bottom = min(float(page_h), bottom + pad)
-            if right <= left or bottom <= top:
-                continue  # degenerate after clipping
-            boxes.append((left, top, right, bottom))
-
-        if not boxes or page_area <= 0:
-            return (0.0, [])
-
-        arr = np.array(boxes, dtype=float)  # columns: left, top, right, bottom
-        n = len(boxes)
-
-        # 2. Connected components: R-tree neighbor queries + union-find.
-        parent = list(range(n))
-
-        def find(i: int) -> int:
-            root = i
-            while parent[root] != root:
-                root = parent[root]
-            while parent[i] != root:  # path compression
-                parent[i], i = root, parent[i]
-            return root
-
-        def union(i: int, j: int) -> None:
-            ri, rj = find(i), find(j)
-            if ri != rj:
-                parent[ri] = rj
-
-        spatial = index.Index()
-        for i, box in enumerate(boxes):
-            spatial.insert(i, box)
-        for i, box in enumerate(boxes):
-            for j in spatial.intersection(box):
-                if j > i:
-                    union(i, j)
-
-        # 3. Union bounding box per connected component.
-        components: dict[int, list[int]] = {}
-        for i in range(n):
-            components.setdefault(find(i), []).append(i)
-
-        bounding_boxes = [
-            BoundingBox(
-                l=float(arr[members, 0].min()),
-                t=float(arr[members, 1].min()),
-                r=float(arr[members, 2].max()),
-                b=float(arr[members, 3].max()),
-                coord_origin=CoordOrigin.TOPLEFT,
-            )
-            for members in components.values()
-        ]
-
-        # 4. Exact area of the union of all rects via a vertical sweep line.
-        union_area = 0.0
-        x_edges = np.unique(arr[:, [0, 2]])
-        for k in range(len(x_edges) - 1):
-            x_lo = x_edges[k]
-            x_hi = x_edges[k + 1]
-            dx = x_hi - x_lo
-            if dx <= 0:
-                continue
-            # Rects spanning the whole [x_lo, x_hi] slab contribute here.
-            active = arr[(arr[:, 0] <= x_lo) & (arr[:, 2] >= x_hi)]
-            if active.size == 0:
-                continue
-            # Union length of the active y-intervals.
-            intervals = active[:, [1, 3]]
-            intervals = intervals[intervals[:, 0].argsort()]
-            cur_top, cur_bottom = intervals[0]
-            y_len = 0.0
-            for y_top, y_bottom in intervals[1:]:
-                if y_top > cur_bottom:
-                    y_len += cur_bottom - cur_top
-                    cur_top, cur_bottom = y_top, y_bottom
-                else:
-                    cur_bottom = max(cur_bottom, y_bottom)
-            y_len += cur_bottom - cur_top
-            union_area += dx * y_len
-
-        area_frac = union_area / page_area
-        return (area_frac, bounding_boxes)
 
     def post_process_cells(
         self,
