@@ -61,18 +61,19 @@ def get_converter(ocr_options: OcrOptions):
 def test_e2e_conversions():
     pdf_paths = get_pdf_paths()
 
-    configs: list[OcrOptions] = [
+    # Each config is (OcrOptions, supports_rotation)
+    configs: list[tuple[OcrOptions, bool]] = [
         # Default OCR mode
-        TesseractOcrOptions(),
-        TesseractCliOcrOptions(),
-        EasyOcrOptions(),
-        TesseractOcrOptions(psm=3),
+        (TesseractOcrOptions(), True),
+        (TesseractCliOcrOptions(), True),
+        (EasyOcrOptions(), False),
+        (TesseractOcrOptions(psm=3), True),
         # Full page OCR
-        TesseractOcrOptions(mode=OcrMode.FULL_PAGE_OCR),
-        TesseractOcrOptions(mode=OcrMode.FULL_PAGE_OCR, lang=["auto"]),
-        TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE_OCR),
-        TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE_OCR, lang=["auto"]),
-        EasyOcrOptions(mode=OcrMode.FULL_PAGE_OCR),
+        (TesseractOcrOptions(mode=OcrMode.FULL_PAGE_OCR), True),
+        (TesseractOcrOptions(mode=OcrMode.FULL_PAGE_OCR, lang=["auto"]), True),
+        (TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE_OCR), True),
+        (TesseractCliOcrOptions(mode=OcrMode.FULL_PAGE_OCR, lang=["auto"]), True),
+        (EasyOcrOptions(mode=OcrMode.FULL_PAGE_OCR), False),
     ]
 
     for rapidocr_backend in ["onnxruntime", "torch"]:
@@ -80,36 +81,46 @@ def test_e2e_conversions():
             # skip onnxruntime backend on Python 3.14
             continue
 
-        configs.append(RapidOcrOptions(backend=rapidocr_backend))
+        configs.append((RapidOcrOptions(backend=rapidocr_backend), False))
         configs.append(
-            RapidOcrOptions(backend=rapidocr_backend, mode=OcrMode.FULL_PAGE_OCR)
+            (
+                RapidOcrOptions(backend=rapidocr_backend, mode=OcrMode.FULL_PAGE_OCR),
+                False,
+            )
         )
         configs.append(
-            RapidOcrOptions(
-                backend=rapidocr_backend,
-                mode=OcrMode.FULL_PAGE_OCR,
-                rec_font_path="test",
-                rapidocr_params={"Rec.font_path": None},  # overwrites rec_font_path
+            (
+                RapidOcrOptions(
+                    backend=rapidocr_backend,
+                    mode=OcrMode.FULL_PAGE_OCR,
+                    rec_font_path="test",
+                    rapidocr_params={"Rec.font_path": None},  # overwrites rec_font_path
+                ),
+                False,
             )
         )
 
     # only works on mac
     if "darwin" == sys.platform:
-        configs.append(OcrMacOptions())
-        configs.append(OcrMacOptions(mode=OcrMode.FULL_PAGE_OCR))
+        configs.append((OcrMacOptions(), True))
+        configs.append((OcrMacOptions(mode=OcrMode.FULL_PAGE_OCR), True))
 
-    for ocr_options in configs:
+    for ocr_options, supports_rotation in configs:
         print(
             f"Converting with ocr_engine: {ocr_options.kind}, language: {ocr_options.lang}"
         )
         converter = get_converter(ocr_options=ocr_options)
         for pdf_path in pdf_paths:
+            if not supports_rotation and "rotated" in pdf_path.name:
+                continue
             print(f"converting {pdf_path}")
 
             doc_result: ConversionResult = converter.convert(pdf_path)
 
             verify_conversion_result_v2(
-                gt=get_ocr_groundtruth_paths(pdf_path, mode=ocr_options.mode),
+                gt=get_ocr_groundtruth_paths(
+                    pdf_path, mode=ocr_options.mode, engine=ocr_options.kind
+                ),
                 doc_result=doc_result,
                 generate=GENERATE_V2,
                 fuzzy=True,

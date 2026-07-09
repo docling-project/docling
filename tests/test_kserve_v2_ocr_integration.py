@@ -75,7 +75,9 @@ def test_kserve_v2_ocr_conversion() -> None:
 
             verify_conversion_result_v2(
                 gt=get_ocr_groundtruth_paths(
-                    input_path, engine="kserve_v2_ocr", mode=OcrMode.FULL_PAGE_OCR
+                    input_path,
+                    engine=pipeline_options.ocr_options.kind,
+                    mode=OcrMode.FULL_PAGE_OCR,
                 ),
                 doc_result=doc_result,
                 generate=GEN_TEST_DATA,

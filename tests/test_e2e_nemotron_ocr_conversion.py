@@ -23,13 +23,29 @@ from docling.models.stages.ocr.nemotron_ocr_model import (
     resolve_nemotronocr_language,
 )
 
-from .groundtruth_paths import get_nemotron_ocr_groundtruth_paths
+from .groundtruth_paths import GroundTruthPaths, get_regular_groundtruth_paths
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_conversion_result_v2
 
 _log = logging.getLogger(__name__)
 
 GENERATE_V2 = GEN_TEST_DATA
+
+
+def get_nemotron_ocr_groundtruth_paths(
+    input_path: Path,
+    *,
+    mode: OcrMode,
+) -> GroundTruthPaths:
+    """Build GT paths for nemotron OCR, organized by OCR mode.
+
+    Each mode maps to a sub-directory named after ``mode.value``; files are tagged
+    ``nemotron_ocr.<mode.value>``.
+    """
+    model_name = "nemotron_ocr"
+    gt_dir = input_path.parent.parent / "groundtruth" / model_name / mode.value
+    tag = f"{model_name}.{mode.value}"
+    return get_regular_groundtruth_paths(input_path, gt_dir=gt_dir, tag=tag)
 
 
 def _nemotron_available() -> bool:
