@@ -40,6 +40,11 @@ from docling.pipeline.asr_transcriber import (
 )
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
+from docling.utils.speaker_diarization import (
+    DiarizationResult,
+    assign_speakers,
+    diarize,
+)
 from docling.utils.video_frame_sampling import (
     FixedIntervalFrameSampler,
     SimpleSceneChangeFrameSampler,
@@ -179,7 +184,21 @@ class VideoPipeline(BasePipeline):
                 audio_ok = _extract_audio(video_path, wav_path)
                 if audio_ok and wav_path.exists() and wav_path.stat().st_size > 0:
                     transcript_items = self._asr_model.transcribe(wav_path)
+                    # Run diarization while WAV is still available
+                    try:
+                        diarization = diarize(wav_path)
+                        transcript_items = assign_speakers(
+                            transcript_items, diarization
+                        )
+                        _log.info(
+                            "Diarization: %d speakers detected",
+                            diarization.num_speakers,
+                        )
+                    except Exception as exc:
+                        _log.warning("Speaker diarization failed: %s", exc)
+                        diarization = DiarizationResult()
                 else:
+                    diarization = DiarizationResult()
                     _log.warning(
                         "Audio extraction produced no output for %s; "
                         "document will contain frames only.",
@@ -189,7 +208,7 @@ class VideoPipeline(BasePipeline):
                 if wav_path.exists():
                     wav_path.unlink()
 
-            # 4. Sample frames
+            # 5. Sample frames
             opts = self.pipeline_options
             frames: list[VideoFrame] = []
             if opts.generate_frame_images:
@@ -309,6 +328,7 @@ _VIDEO_HTML_CSS = (
     " line-height: 1.5; color: #222; }"
     ".frame { border-radius: 6px; overflow: hidden; border: 1px solid #e0e0e0; }"
     ".frame img { display: block; max-width: 100%; height: auto; }"
+    ".speaker { font-size: 0.78rem; font-weight: 600; color: #4a90d9; margin-right: 0.4rem; }"
     ".frame .scene-label { font-size: 0.72rem; color: #999; padding: 4px 8px;"
     " background: #fafafa; border-top: 1px solid #eee; }"
 )
@@ -340,11 +360,17 @@ def export_video_document_to_html(document: DoclingDocument, title: str = "") ->
         if hasattr(item, "text") and item.text and item.text.strip():
             end_ts = source.end_time if source is not None else ts
             ts_label = f"{_fmt_time(ts)} -> {_fmt_time(end_ts)}"
+            speaker = source.voice if source and source.voice else None
+            speaker_tag = (
+                f'<span class="speaker">{_html_lib.escape(str(speaker))}</span> '
+                if speaker
+                else ""
+            )
             snippet = (
                 '<div class="event">'
                 f'<div class="timestamp">{ts_label}</div>'
                 '<div class="content">'
-                f'<div class="transcript">{_html_lib.escape(item.text.strip())}</div>'
+                f'<div class="transcript">{speaker_tag}{_html_lib.escape(item.text.strip())}</div>'
                 "</div></div>"
             )
             events.append((ts, 1, snippet))
