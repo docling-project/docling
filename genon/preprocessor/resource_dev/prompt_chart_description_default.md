@@ -1,6 +1,6 @@
 Convert the image into retrieval-friendly Korean text.
 
-[Body Summary]
+[Doc Summary]
 {{doc_summary}}
 
 [Section Header]
