@@ -17,7 +17,7 @@ _log = logging.getLogger(__name__)
 
 _MIN_SPEAKERS = 2
 _MAX_SPEAKERS = 8
-_WINDOW_STEP = 0.1  # seconds between embedding windows
+_WINDOW_STEP = 0.5  # seconds between embedding windows
 
 
 @dataclass
@@ -71,7 +71,7 @@ def diarize(
         DiarizationResult with per-segment speaker labels.
     """
     try:
-        from resemblyzer import VoiceEncoder, preprocess_wav
+        from resemblyzer import VoiceEncoder
     except ImportError:
         _log.warning(
             "resemblyzer is not installed. Speaker diarization disabled. "
@@ -80,7 +80,26 @@ def diarize(
         return DiarizationResult()
 
     _log.info("Loading audio for diarization: %s", wav_path)
-    wav = preprocess_wav(wav_path)
+    import soundfile as sf
+    from resemblyzer.audio import (
+        audio_norm_target_dBFS,
+        normalize_volume,
+        sampling_rate as _RESEMBLYZER_SR,
+    )
+
+    raw, file_sr = sf.read(str(wav_path), dtype="float32")
+    if raw.ndim > 1:  # collapse stereo to mono
+        raw = raw.mean(axis=1)
+    if file_sr != _RESEMBLYZER_SR:
+        import librosa
+
+        raw = librosa.resample(raw, orig_sr=file_sr, target_sr=_RESEMBLYZER_SR)
+    # Normalize volume the way resemblyzer.preprocess_wav does, but WITHOUT its
+    # silence trimming. Trimming compresses the timeline (e.g. 300s -> 253s),
+    # so diarization timestamps no longer line up with the ASR transcript
+    # timeline: segments past the trimmed length get no speaker and earlier ones
+    # can be misattributed. Keeping the full waveform preserves 1:1 alignment.
+    wav = normalize_volume(raw, audio_norm_target_dBFS, increase_only=True)
     if len(wav) == 0:
         _log.warning("Empty audio — skipping diarization")
         return DiarizationResult()
@@ -106,7 +125,19 @@ def diarize(
         return DiarizationResult()
 
     _log.info("Encoding %d audio windows", len(wav_splits))
-    embeddings = np.array([encoder.embed_utterance(w) for w in wav_splits])
+    # ASR (Whisper) earlier in the pipeline raises torch's thread count to the
+    # full core count. Encoding is thousands of tiny sequential forward passes,
+    # where fanning each one across every core costs far more in thread dispatch
+    # than it saves (observed ~12x slowdown). Cap threads while encoding, then
+    # restore the previous setting.
+    import torch
+
+    prev_threads = torch.get_num_threads()
+    torch.set_num_threads(min(4, prev_threads))
+    try:
+        embeddings = np.array([encoder.embed_utterance(w) for w in wav_splits])
+    finally:
+        torch.set_num_threads(prev_threads)
 
     # Determine number of speakers
     n = num_speakers if num_speakers is not None else _estimate_num_speakers(embeddings)

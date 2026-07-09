@@ -71,6 +71,33 @@ def _require_ffmpeg() -> None:
         raise RuntimeError(MISSING_FFMPEG_MESSAGE)
 
 
+# Auto-prominence calibration. The frame-diff signal is mostly ambient motion
+# (near-zero for static screen shares, elevated for podcasts/vlogs where people
+# move constantly) with sparse spikes at genuine scene cuts.
+_AUTO_PROMINENCE_FLOOR: Final[float] = 0.012
+"""Minimum auto threshold. Keeps static footage sensitive to subtle cuts while
+staying above codec noise (~0.005-0.01). Below this, tiny diffs are ignored."""
+
+_AUTO_PROMINENCE_K: Final[float] = 5.0
+"""Robust sigmas above ambient motion a peak must clear to count as a cut.
+Higher = stricter (fewer scenes on busy video); lower = more sensitive."""
+
+
+def _auto_prominence(diffs: np.ndarray) -> float:
+    """Adapt the scene-cut threshold to how busy the video is.
+
+    Uses the median frame difference as the ambient-motion floor and the
+    (robust) median absolute deviation as its spread, so the threshold rises
+    automatically for high-motion footage — ignoring hand-waving and body
+    movement — and drops toward the floor for static screens, catching subtle
+    cuts. Robust statistics are used so the cut spikes themselves do not inflate
+    the estimate (unlike a plain standard deviation).
+    """
+    median = float(np.median(diffs))
+    mad = float(np.median(np.abs(diffs - median))) * 1.4826  # ~= std for normal noise
+    return max(_AUTO_PROMINENCE_FLOOR, median + _AUTO_PROMINENCE_K * mad)
+
+
 def _probe_duration(video_path: Path) -> float:
     """Return the video duration in seconds using ffprobe, or 0.0 on failure."""
     if shutil.which("ffprobe") is None:
@@ -133,6 +160,51 @@ def _extract_frame(video_path: Path, timestamp: float) -> Image.Image | None:
     except Exception as exc:  # pragma: no cover - defensive
         _log.debug("Failed to decode extracted frame at %.3fs: %s", timestamp, exc)
         return None
+
+
+def _extract_frames_grid(
+    video_path: Path, fps: float, size: int
+) -> list[tuple[float, Image.Image]]:
+    """Decode the whole video once at ``fps``, returning ``(timestamp, image)`` pairs.
+
+    Uses a single ffmpeg pass emitting downscaled raw RGB frames, which is far
+    cheaper than spawning one ffmpeg process per timestamp (each spawn re-opens
+    and re-seeks the file). Frames are square ``size`` x ``size`` thumbnails;
+    the timestamp of frame ``i`` is ``i / fps``.
+    """
+    proc = subprocess.run(
+        [
+            "ffmpeg",
+            "-nostdin",
+            "-i",
+            str(video_path),
+            "-vf",
+            f"fps={fps},scale={size}:{size}",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgb24",
+            "-",
+        ],
+        capture_output=True,
+        check=False,
+    )
+    if proc.returncode != 0 or not proc.stdout:
+        _log.debug(
+            "Batch frame probe produced no output (rc=%s): %s",
+            proc.returncode,
+            proc.stderr.decode("utf-8", "replace")[-200:],
+        )
+        return []
+
+    frame_bytes = size * size * 3
+    buf = proc.stdout
+    count = len(buf) // frame_bytes
+    frames: list[tuple[float, Image.Image]] = []
+    for i in range(count):
+        chunk = buf[i * frame_bytes : (i + 1) * frame_bytes]
+        frames.append((i / fps, Image.frombytes("RGB", (size, size), chunk)))
+    return frames
 
 
 class FixedIntervalFrameSampler:
@@ -211,21 +283,8 @@ class SimpleSceneChangeFrameSampler:
         self.sharpness_candidates = sharpness_candidates
 
     def _probe_frames(self, video_path: Path) -> list[tuple[float, Image.Image]]:
-        """Extract downscaled RGB probe frames at probe_fps."""
-        duration = _probe_duration(video_path)
-        step = 1.0 / self.probe_fps
-        probes: list[tuple[float, Image.Image]] = []
-        t = 0.0
-        while duration == 0.0 or t < duration:
-            img = _extract_frame(video_path, t)
-            if img is None:
-                break
-            small = img.convert("RGB").resize((self.probe_size, self.probe_size))
-            probes.append((t, small))
-            t += step
-            if duration == 0.0 and len(probes) > 100_000:
-                break
-        return probes
+        """Extract downscaled RGB probe frames at probe_fps in a single decode pass."""
+        return _extract_frames_grid(video_path, self.probe_fps, self.probe_size)
 
     @staticmethod
     def _mean_abs_diff(a: Image.Image, b: Image.Image) -> float:
@@ -305,11 +364,10 @@ class SimpleSceneChangeFrameSampler:
                 len(peaks),
             )
         else:
-            prominence = (
-                self.prominence
-                if self.prominence is not None
-                else float(np.std(diffs) * 1)
-            )
+            if self.prominence is not None:
+                prominence = self.prominence
+            else:
+                prominence = _auto_prominence(diffs)
             _log.debug("Prominence mode: prominence=%.4f", prominence)
             peaks, _ = find_peaks(smoothed, prominence=prominence, distance=min_dist)
 

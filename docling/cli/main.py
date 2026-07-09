@@ -801,7 +801,7 @@ def convert(  # noqa: C901
         float,
         typer.Option(
             ...,
-            help="Scene change prominence threshold (0=auto). Recommended: 0.03 for meetings, 0.01 for lectures.",
+            help="Scene change prominence threshold. 0 = auto (adapts sensitivity to video motion; recommended). Set a fixed value (e.g. 0.01) only to override.",
         ),
     ] = 0.0,
     video_diarization: Annotated[
