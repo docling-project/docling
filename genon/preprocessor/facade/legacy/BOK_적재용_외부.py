@@ -204,10 +204,10 @@ ENRICH_API_PROVIDER = "custom"
 # METADATA_MODEL = "model"
 
 # genon qwen3.5
-TOC_API_BASE_URL = "https://genos.genon.ai/api/gateway/rep/serving/752/v1/chat/completions"
-METADATA_API_BASE_URL = "https://genos.genon.ai/api/gateway/rep/serving/752/v1/chat/completions"
-TOC_API_KEY = "d1a9e0acab6243019008a96cd8af868e"
-METADATA_API_KEY = "d1a9e0acab6243019008a96cd8af868e"
+TOC_API_BASE_URL = "https://genos.genon.ai/api/gateway/rep/serving/776/v1/chat/completions"
+METADATA_API_BASE_URL = "https://genos.genon.ai/api/gateway/rep/serving/776/v1/chat/completions"
+TOC_API_KEY = "30241fdbb58d42e48a36495da34a6de7"
+METADATA_API_KEY = "30241fdbb58d42e48a36495da34a6de7"
 TOC_MODEL = "model"
 METADATA_MODEL = "model"
 

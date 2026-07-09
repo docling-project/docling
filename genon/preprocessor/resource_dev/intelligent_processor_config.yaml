@@ -24,8 +24,8 @@ formats:
     # native text 가 있으면 프롬프트에 포함해 요청. enable=true 면 generate_page_images 자동 강제.
     page_description:
       enable: true
-      url: "https://genos.genon.ai/api/gateway/rep/serving/752/v1/chat/completions"
-      api_key: "d1a9e0acab6243019008a96cd8af868e"
+      url: "https://genos.genon.ai/api/gateway/rep/serving/776/v1/chat/completions"
+      api_key: "30241fdbb58d42e48a36495da34a6de7"
       model: "model"
       timeout: 360
       concurrency: 16          # 페이지 설명 요청 병렬 수
@@ -111,8 +111,8 @@ enrichment:
   - toc:
       enable: true
       # 동작 보존: 기존 하드코딩 값(서빙 502)을 그대로 사용
-      url: "https://genos.genon.ai/api/gateway/rep/serving/752/v1/chat/completions"
-      api_key: "d1a9e0acab6243019008a96cd8af868e"
+      url: "https://genos.genon.ai/api/gateway/rep/serving/776/v1/chat/completions"
+      api_key: "30241fdbb58d42e48a36495da34a6de7"
       model: "model"
       temperature: 0.0
       top_p: 0.00001
@@ -143,8 +143,8 @@ enrichment:
       # 동작 보존: 기존 하드코딩 값(서빙 502)을 그대로 사용
       # system_prompt 가 설정되면 facade custom metadata enricher를 사용하고,
       # 비어있으면 docling 내장 metadata 추출 경로를 사용한다.
-      url: "https://genos.genon.ai/api/gateway/rep/serving/752/v1/chat/completions"
-      api_key: "d1a9e0acab6243019008a96cd8af868e"
+      url: "https://genos.genon.ai/api/gateway/rep/serving/776/v1/chat/completions"
+      api_key: "30241fdbb58d42e48a36495da34a6de7"
       model: "model"
       max_tokens: 10000
       temperature: 0.0
@@ -184,9 +184,9 @@ enrichment:
   # NOTE: image_description / custom_fields 는 facade 후처리 enricher로 동작한다.
   #       필요 시 enable 값을 조정해서 사용.
   - image_description:
-      enable: false
-      url: "https://genos.genon.ai/api/gateway/rep/serving/752/v1/chat/completions"
-      api_key: "d1a9e0acab6243019008a96cd8af868e"
+      enable: true
+      url: "https://genos.genon.ai/api/gateway/rep/serving/776/v1/chat/completions"
+      api_key: "30241fdbb58d42e48a36495da34a6de7"
       model: "model"
       # 이미지 설명 요청 병렬 수 (기본 16, 문서 내 이미지가 많을 때 처리속도에 영향)
       concurrency: 16
@@ -194,13 +194,23 @@ enrichment:
       after_items: 2
       max_context_chars: 1500
       prompt_template_file: prompt_image_description_default.md
+      # ── 본문요약: 이미지·차트 description 공통 컨텍스트({{doc_summary}} 변수 주입) ──
+      doc_summary:
+        enable: false
+        prompt_file: prompt_doc_summary.md   # {{full_text}} 기반 문서 요약 프롬프트
+        max_chars: 6000                        # 요약 입력 본문 최대 길이
+      # ── 차트 처리 ──
+      chart:
+        enable: false          # false=일반 image description만 / true=차트 처리 수행
+        detection: auto         # auto=docling 자동판별(차트 분류 이미지만 차트 프롬프트) | all=모든 이미지를 차트로 처리
+        chart_prompt_file: prompt_chart_description_default.md
 
   # ── 커스텀 LLM enricher ────────────────────────────────────────────────────
   # 복수 항목 허용: 각각 독립 LLM 호출, 결과는 metadata 병합
   - custom_fields:
       enable: false
-      url: "https://genos.genon.ai/api/gateway/rep/serving/752/v1/chat/completions"
-      api_key: "d1a9e0acab6243019008a96cd8af868e"
+      url: "https://genos.genon.ai/api/gateway/rep/serving/776/v1/chat/completions"
+      api_key: "30241fdbb58d42e48a36495da34a6de7"
       model: "model"
       max_tokens: 1000
       temperature: 0.0

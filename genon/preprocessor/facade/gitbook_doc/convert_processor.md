@@ -260,8 +260,18 @@ enrichment:
       before_items: 3
       after_items: 2
       max_context_chars: 1500
-      # 파일 안에서 {{before_context}} / {{caption}} / {{after_context}} 치환
+      # 파일 안에서 {{before_context}} / {{caption}} / {{after_context}} / {{doc_summary}} 치환
       prompt_template_file: prompt_image_description_default.md
+      # 본문요약: 이미지·차트 description 공통 컨텍스트({{doc_summary}} 로 주입)
+      doc_summary:
+        enable: false
+        prompt_file: prompt_doc_summary.md
+        max_chars: 6000
+      # 차트 처리
+      chart:
+        enable: false          # true 면 차트 처리 수행(아니면 일반 image description)
+        detection: auto         # auto=docling 자동판별(차트만 차트 프롬프트) | all=모든 이미지를 차트로
+        chart_prompt_file: prompt_chart_description_default.md
 ```
 
 > 위 블록은 `resource/` 기본본 기준입니다. `resource_dev/` 본에는 사이트 운영을 위한 실제 endpoint/key 와 추가 `custom_fields` 항목 예시가 들어 있을 수 있으며, 배포 시 두 본의 placeholder/실값을 환경에 맞게 정리해야 합니다.
@@ -500,7 +510,7 @@ output:
 |------|------|-----------|
 | `toc` | 계층적 목차(TOC) 자동 생성 | docling enrichment (`DataEnrichmentOptions`) |
 | `metadata` | 작성일·작성자 등 메타데이터 추출 | 커스텀 신호(`system_prompt`/`user_prompt`/`*_file`/`output_fields`/`parser`) 중 하나라도 지정 시 facade custom metadata enricher, 아무 신호 없으면 docling 내장 metadata 경로 |
-| `image_description` | 이미지 설명 생성 | facade 후처리 enricher (`FacadeImageDescriptionEnricher`) |
+| `image_description` | 이미지 설명 생성 | facade 후처리 enricher (`ImageDescriptionEnricher`) |
 | `custom_fields` | 사용자 정의 필드 추출 | facade 후처리 enricher (`CustomFieldsEnricher`) |
 
 **공통 항목별 옵션**: 모든 enricher 는 `enable`, `url`, `api_key`, `model` 을 항목별로 가집니다. `url` 의 `<*_SERVING_ID>` 는 사이트별 교체가 필요하고, `api_key` 는 k8s 내부 통신 시 불필요합니다.
@@ -640,8 +650,25 @@ convert 의 기본 변환 대상은 `created_date`이며 `authors` 등 나머지
 | `concurrency` | `16` | 이미지 설명 요청 병렬 수 |
 | `before_items` / `after_items` | `3` / `2` | 앞/뒤 문맥으로 포함할 아이템 수 |
 | `max_context_chars` | `1500` | 문맥 최대 문자 수 |
-| `prompt_template_file` | `.md` 파일 | 프롬프트 템플릿 파일 경로(권장). `{{before_context}}`/`{{caption}}`/`{{after_context}}` 치환 |
+| `prompt_template_file` | `.md` 파일 | 프롬프트 템플릿 파일 경로(권장). `{{before_context}}`/`{{caption}}`/`{{after_context}}`/`{{doc_summary}}` 치환 |
 | `prompt_template` | (YAML 본문) | inline 프롬프트(`*_file` 미지정 시 fallback) |
+| `doc_summary.enable` / `.prompt_file` / `.max_chars` | `false` / `prompt_doc_summary.md` / `6000` | 문서 본문요약 생성(공통 `{{doc_summary}}` 컨텍스트). `{{full_text}}` 치환 |
+| `chart.enable` | `false` | 차트 처리 활성화(false 면 일반 image description 만) |
+| `chart.detection` | `auto` | `auto`=docling 자동판별(차트로 분류된 이미지만 차트 프롬프트) / `all`=모든 이미지를 차트로 처리 |
+| `chart.chart_prompt_file` | `prompt_chart_description_default.md` | 차트 전용 프롬프트 `.md` |
+
+> `chart.enable: true` 면 변환 단계에서 docling 그림 분류가 자동 활성화됩니다. `doc_summary`/`chart` 는 별도 LLM 호출을 유발하므로 기본 off 입니다.
+
+**런타임 kwargs 오버라이드 (이미지·차트 description)** — 호출 `params` 로 0/1 플래그 전달 시 config 기본값을 덮어씁니다.
+
+| kwargs | 대응 config | 의미 |
+|--------|-------------|------|
+| `img_desc` | `image_description.enable` | 이미지 description 사용유무 |
+| `chart_desc` | `image_description.chart.enable` | 차트 description 사용유무 (별칭 `chart_convert`) |
+| `chart_detection` | `image_description.chart.detection` | `1`=auto / `0`=all |
+| `doc_summary` | `image_description.doc_summary.enable` | 문서 본문요약 사용유무 |
+
+> `chart_detection=1`(auto) 은 config `chart.enable: true` 로 그림 분류가 켜져 있어야 하며, 꺼진 경우 `all` 로 강등됩니다(경고).
 
 #### custom_fields (복수 허용)
 
@@ -712,6 +739,7 @@ enrichment 프롬프트는 YAML 안에 inline 으로 박지 않고 **별도 `.md
 | `{{after_context}}` | 이미지 뒤 문맥 텍스트(`after_items` 개) | 이미지 직후 텍스트 아이템들 |
 | `{{caption}}` | 이미지 캡션 | `PictureItem.caption_text(document)` |
 | `{{section_header}}` | 이미지 직전 섹션 헤더 | 이미지 위쪽에서 가장 가까운 section_header/title |
+| `{{doc_summary}}` | 문서 본문요약(공통 컨텍스트). `doc_summary.enable: true` 일 때만 채워짐 | 문서 BODY 텍스트 LLM 1회 요약 |
 
 > 값이 없는 reserved 변수는 **빈 문자열**로 치환됩니다. 카운트(`page_count` 등)는 정수지만 문자열로 렌더링됩니다. `raw_text`/`full_text` 는 토큰이 매우 클 수 있으니 보통 둘 중 하나만 사용합니다.
 

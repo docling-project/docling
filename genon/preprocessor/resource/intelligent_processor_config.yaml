@@ -169,6 +169,16 @@ enrichment:
       after_items: 2
       max_context_chars: 1500
       prompt_template_file: prompt_image_description_default.md
+      # ── 본문요약: 이미지·차트 description 공통 컨텍스트({{doc_summary}} 변수 주입) ──
+      doc_summary:
+        enable: false
+        prompt_file: prompt_doc_summary.md   # {{full_text}} 기반 문서 요약 프롬프트
+        max_chars: 6000                        # 요약 입력 본문 최대 길이
+      # ── 차트 처리 ──
+      chart:
+        enable: false          # false=일반 image description만 / true=차트 처리 수행
+        detection: auto         # auto=docling 자동판별(차트 분류 이미지만 차트 프롬프트) | all=모든 이미지를 차트로 처리
+        chart_prompt_file: prompt_chart_description_default.md
 
 # 청킹(GenosSmartChunker) 설정
 chunking:

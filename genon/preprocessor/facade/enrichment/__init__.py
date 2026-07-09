@@ -8,6 +8,12 @@ from .field_transforms import (
     parse_created_date,
     serialize_metadata_value_for_output,
 )
+from .image_description import (
+    ImageDescriptionEnricher,
+    ImageDescriptionOptions,
+    PictureDescriptionExtractor,
+    resolve_runtime_image_options,
+)
 
 __all__ = [
     "CustomFieldsEnricher",
@@ -18,4 +24,8 @@ __all__ = [
     "normalize_metadata_value",
     "parse_created_date",
     "serialize_metadata_value_for_output",
+    "ImageDescriptionEnricher",
+    "ImageDescriptionOptions",
+    "PictureDescriptionExtractor",
+    "resolve_runtime_image_options",
 ]

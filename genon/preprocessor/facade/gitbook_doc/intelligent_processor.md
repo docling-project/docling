@@ -262,8 +262,18 @@ enrichment:
       before_items: 3
       after_items: 2
       max_context_chars: 1500
-      # 파일 안에서 {{before_context}} / {{caption}} / {{after_context}} 치환
+      # 파일 안에서 {{before_context}} / {{caption}} / {{after_context}} / {{doc_summary}} 치환
       prompt_template_file: prompt_image_description_default.md
+      # 본문요약: 이미지·차트 description 공통 컨텍스트({{doc_summary}} 로 주입)
+      doc_summary:
+        enable: false
+        prompt_file: prompt_doc_summary.md   # {{full_text}} 기반 문서 요약
+        max_chars: 6000
+      # 차트 처리
+      chart:
+        enable: false          # true 면 차트 처리 수행(아니면 일반 image description)
+        detection: auto         # auto=docling 자동판별(차트만 차트 프롬프트) | all=모든 이미지를 차트로
+        chart_prompt_file: prompt_chart_description_default.md
 ```
 
 > 위는 캐노니컬 스키마를 그대로 반영한 것입니다(프롬프트 본문은 `...` 로 축약). `output` / `whisper` 섹션은 [§3.6](#36-출력--whisper-설정) 참조.
@@ -604,10 +614,30 @@ field_transforms:
 | `concurrency` | 이미지 설명 요청 병렬 수 | 16 |
 | `before_items` / `after_items` | 캡션 앞/뒤 문맥으로 포함할 아이템 수 | 3 / 2 |
 | `max_context_chars` | 문맥 최대 글자 수 | 1500 |
-| `prompt_template_file` | 프롬프트 `.md` 파일 경로(권장). `{{before_context}}` / `{{caption}}` / `{{after_context}}` 치환 | — |
+| `prompt_template_file` | 프롬프트 `.md` 파일 경로(권장). `{{before_context}}` / `{{caption}}` / `{{after_context}}` / `{{doc_summary}}` 치환 | — |
 | `prompt_template` | inline 프롬프트(`*_file` 미지정 시 fallback) | — |
+| `doc_summary.enable` | 문서 본문요약 생성(이미지·차트 프롬프트 공통 `{{doc_summary}}` 컨텍스트로 주입) | `false` |
+| `doc_summary.prompt_file` | 본문요약 프롬프트 `.md`(`{{full_text}}` 치환) | `prompt_doc_summary.md` |
+| `doc_summary.max_chars` | 요약 입력으로 넣을 본문 최대 글자 수 | 6000 |
+| `chart.enable` | 차트 처리 활성화(false 면 일반 image description 만) | `false` |
+| `chart.detection` | `auto`=docling 자동판별(차트로 분류된 이미지만 차트 프롬프트) / `all`=모든 이미지를 차트로 처리 | `auto` |
+| `chart.chart_prompt_file` | 차트 전용 프롬프트 `.md`(`{{doc_summary}}` 등 동일 변수) | `prompt_chart_description_default.md` |
 
 > `pdf_pipeline.generate_picture_images: false` 면 이 항목은 enable 이어도 동작하지 않습니다.
+> `chart.enable: true` 면 변환 단계에서 docling 그림 분류(`do_picture_classification`)가 자동 활성화됩니다(모델 `ds4sd--DocumentFigureClassifier` 는 빌드 시 `/models` 에 포함). `doc_summary`/`chart` 는 별도 LLM 호출을 유발하므로 기본 off 입니다.
+
+**런타임 kwargs 오버라이드 (이미지·차트 description)**
+
+호출 시 `params`(kwargs)로 아래 0/1 플래그를 주면 해당 호출에 한해 config 기본값을 덮어씁니다(미지정 시 config 값 유지).
+
+| kwargs | 대응 config | 의미 |
+|--------|-------------|------|
+| `img_desc` | `image_description.enable` | 이미지 description 사용유무 |
+| `chart_desc` | `image_description.chart.enable` | 차트 description 사용유무 (레거시 별칭 `chart_convert`) |
+| `chart_detection` | `image_description.chart.detection` | `1`=auto(docling 자동판별) / `0`=all(모든 이미지를 차트로) |
+| `doc_summary` | `image_description.doc_summary.enable` | 문서 본문요약 사용유무 |
+
+> `chart_detection=1`(auto) 은 변환 단계 그림 분류가 켜져 있어야 동작합니다. config `chart.enable: false` 로 분류가 꺼진 배포에서는 auto 요청이 자동으로 `all` 로 강등됩니다(경고 로그). 런타임 auto 를 쓰려면 config 에서 `chart.enable: true` 로 두세요.
 
 #### custom_fields
 
@@ -658,6 +688,7 @@ enrichment 프롬프트는 YAML 안에 inline 으로 박지 않고 **별도 `.md
 | `{{after_context}}` | 이미지 뒤 문맥 텍스트(`after_items` 개) | 이미지 직후 텍스트 아이템들 |
 | `{{caption}}` | 이미지 캡션 | `PictureItem.caption_text(document)` |
 | `{{section_header}}` | 이미지 직전 섹션 헤더 | 이미지 위쪽에서 가장 가까운 section_header/title |
+| `{{doc_summary}}` | 문서 본문요약(공통 컨텍스트). `doc_summary.enable: true` 일 때만 채워짐 | 문서 BODY 텍스트 LLM 1회 요약 |
 
 > 값이 없는 reserved 변수는 **빈 문자열**로 치환됩니다. 카운트(`page_count` 등)는 정수지만 문자열로 렌더링됩니다. `raw_text`/`full_text` 는 토큰이 매우 클 수 있으니 보통 둘 중 하나만 사용합니다.
 
@@ -952,7 +983,7 @@ def __init__(self, config_path: Optional[str] = None):
 - OCR: `ocr_mode`(auto/force/disable, 비정상값 auto), `_build_ocr_options()`(paddle/upstage), glyph 임계값, `table_cell_ocr_timeout`.
 - layout: `layout_options.layout_model_type` = `GENOS_LAYOUT`, `genos_layout_options.endpoint/api_key`, `settings.perf.page_batch_size`.
 - pdf_pipeline: `PdfPipelineOptions` 에 `generate_page_images / generate_picture_images / images_scale / do_table_structure=True / table_structure_options.mode / accelerator_options(num_threads, device)` 주입. `do_ocr=False`.
-- enrichment: `ec` 로부터 `DataEnrichmentOptions`(toc + 내장 metadata) + `_MetadataEnricher` + `_CustomFieldsEnricher[]` + `FacadeImageDescriptionEnricher` + `_metadata_field_transforms` 구성.
+- enrichment: `ec` 로부터 `DataEnrichmentOptions`(toc + 내장 metadata) + `_MetadataEnricher` + `_CustomFieldsEnricher[]` + `ImageDescriptionEnricher` + `_metadata_field_transforms` 구성.
 - 컨버터 4종(`converter`/`second_converter`/`ocr_converter`/`ocr_second_converter`) — OCR×백엔드 매트릭스, 주 실패 시 보조 폴백.
 
 ### A.2 동적 이미지 옵션
