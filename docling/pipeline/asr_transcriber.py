@@ -664,6 +664,53 @@ class _WhisperS2TModel:
 # ============================================================
 # Transcriber protocol + factory (new; consumed by AsrPipeline and VideoPipeline)
 # ============================================================
+
+
+def merge_into_sentences(
+    items: list["_ConversationItem"],
+) -> list["_ConversationItem"]:
+    """Merge Whisper segments into complete sentences.
+
+    Consecutive segments are merged until a sentence-ending punctuation
+    mark (. ? !) is found. The merged item spans the full time range
+    of all contributing segments and concatenates their text.
+
+    This produces one block per sentence, which maps cleanly to one
+    speaker per block for diarization.
+    """
+    if not items:
+        return []
+
+    merged: list[_ConversationItem] = []
+    current: _ConversationItem | None = None
+
+    for item in items:
+        if current is None:
+            current = _ConversationItem(
+                start_time=item.start_time,
+                end_time=item.end_time,
+                text=item.text.strip(),
+                speaker=item.speaker,
+                words=list(item.words or []),
+            )
+        else:
+            current.end_time = item.end_time
+            current.text = current.text.rstrip() + " " + item.text.strip()
+            if item.words:
+                current.words = (current.words or []) + list(item.words)
+
+        # Flush on sentence boundary
+        if current.text.rstrip().endswith((".", "?", "!")):
+            merged.append(current)
+            current = None
+
+    # Flush any remaining text
+    if current is not None:
+        merged.append(current)
+
+    return merged
+
+
 class _AsrTranscriber(Protocol):
     """Structural type for ASR backends.
 

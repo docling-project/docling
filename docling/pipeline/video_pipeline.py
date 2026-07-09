@@ -37,6 +37,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VideoPipelineOptions
 from docling.pipeline.asr_transcriber import (
     _AsrModelFactory,
+    merge_into_sentences,
 )
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
@@ -184,6 +185,7 @@ class VideoPipeline(BasePipeline):
                 audio_ok = _extract_audio(video_path, wav_path)
                 if audio_ok and wav_path.exists() and wav_path.stat().st_size > 0:
                     transcript_items = self._asr_model.transcribe(wav_path)
+                    transcript_items = merge_into_sentences(transcript_items)
                     # Run diarization while WAV is still available
                     try:
                         diarization = diarize(wav_path)
