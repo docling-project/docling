@@ -1354,7 +1354,7 @@ def convert(  # noqa: C901
         from docling.utils.video_frame_sampling import VideoFrameSamplingMode
 
         if (
-            InputFormat.VIDEO in from_formats
+            from_formats == [InputFormat.VIDEO]
             and video_sampling_mode == "fixed"
             and video_frame_interval == 10.0
             and video_cuts_per_minute == 0.0
