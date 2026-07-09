@@ -17,7 +17,7 @@ _log = logging.getLogger(__name__)
 
 _MIN_SPEAKERS = 2
 _MAX_SPEAKERS = 8
-_WINDOW_STEP = 0.5  # seconds between embedding windows
+_WINDOW_STEP = 0.1  # seconds between embedding windows
 
 
 @dataclass
@@ -134,7 +134,8 @@ def diarize(
                 cur_start = ts
                 cur_end = ts + _WINDOW_STEP
 
-        segments.append(SpeakerSegment(cur_start, cur_end, cur_speaker))
+        # Extend last segment to end of audio
+        segments.append(SpeakerSegment(cur_start, len(wav) / sr, cur_speaker))
 
     return DiarizationResult(
         segments=segments,
