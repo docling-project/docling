@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Iterable
 
-from docling_core.types.doc import TableCell
+from docling_core.types.doc import BoundingBox, TableCell
 
 
 @dataclass
@@ -443,6 +443,7 @@ def _make_table_cell(
     column_header: bool = False,
     row_header: bool = False,
     row_section: bool = False,
+    bbox: object | None = None,
 ) -> TableCell:
     return TableCell.model_validate(
         {
@@ -456,8 +457,39 @@ def _make_table_cell(
             "column_header": column_header,
             "row_header": row_header,
             "row_section": row_section,
-            "bbox": None,
+            "bbox": bbox,
         }
+    )
+
+
+def _bbox_from_samples(samples: list[dict[str, object]]) -> BoundingBox | None:
+    bounds: list[tuple[float, float, float, float]] = []
+
+    for sample in samples:
+        bbox = sample.get("bbox")
+        if bbox is None:
+            continue
+
+        left = _bbox_left(bbox)
+        right = _bbox_right(bbox)
+        top = getattr(bbox, "t", None)
+        bottom = getattr(bbox, "b", None)
+        if left is None or right is None or top is None or bottom is None:
+            continue
+
+        min_x, max_x = sorted((left, right))
+        min_y, max_y = sorted((float(top), float(bottom)))
+        if min_x < max_x and min_y < max_y:
+            bounds.append((min_x, min_y, max_x, max_y))
+
+    if not bounds:
+        return None
+
+    return BoundingBox(
+        l=min(left for left, _, _, _ in bounds),
+        t=min(top for _, top, _, _ in bounds),
+        r=max(right for _, _, right, _ in bounds),
+        b=max(bottom for _, _, _, bottom in bounds),
     )
 
 
@@ -774,10 +806,12 @@ def infer_table_from_text_geometry(
     fallback_cols = len(col_centers)
 
     grid_text: dict[tuple[int, int], list[str]] = {}
+    grid_samples: dict[tuple[int, int], list[dict[str, object]]] = {}
     for sample in samples:
         row_idx = _nearest_band(float(sample["center_y"]), row_centers)
         col_idx = _nearest_band(float(sample["center_x"]), col_centers)
         grid_text.setdefault((row_idx, col_idx), []).append(str(sample["text"]))
+        grid_samples.setdefault((row_idx, col_idx), []).append(sample)
 
     span_priors = _predicted_span_priors(cells, row_centers, col_centers)
 
@@ -863,6 +897,7 @@ def infer_table_from_text_geometry(
                 column_header=column_header,
                 row_header=row_header,
                 row_section=row_section,
+                bbox=_bbox_from_samples(grid_samples.get((row_idx, col_idx), [])),
             )
             fallback_cells.append(fallback_cell)
 

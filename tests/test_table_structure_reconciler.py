@@ -1,6 +1,6 @@
 from docling_core.types.doc import TableCell
 
-from docling.models.stages.table_structure.table_structure_reconciler import (
+from docling.models.stages.table_structure.table_structure_columns import (
     ColumnGridCandidate,
     TextInterval,
     assign_intervals_to_grid,
@@ -9,12 +9,23 @@ from docling.models.stages.table_structure.table_structure_reconciler import (
     collect_model_cell_metadata_prior,
     find_repeated_vertical_gutters,
     group_intervals_by_row,
-    infer_model_row_bands_from_cells,
     reconcile_column_grid_from_intervals,
     reconcile_column_grid_from_text_cells,
     reconcile_columns_preserving_rows_from_text_cells,
     remap_model_cells_to_column_grid,
     select_column_grid_candidate,
+)
+from docling.models.stages.table_structure.table_structure_row_boundary import (
+    RowBoundarySplitCandidate,
+    apply_row_boundary_split,
+    detect_row_text_contamination,
+    propose_row_boundary_splits,
+)
+from docling.models.stages.table_structure.table_structure_row_reassignment import (
+    infer_model_row_bands_from_cells,
+)
+from docling.models.stages.table_structure.table_structure_row_spans import (
+    reconcile_row_spans_from_empty_cells,
 )
 
 
@@ -784,10 +795,6 @@ def test_infer_model_row_bands_from_cells_uses_fixed_model_rows():
 
 
 def test_detect_row_text_contamination_reports_repeated_vertical_bands():
-    from docling.models.stages.table_structure.table_structure_reconciler import (
-        detect_row_text_contamination,
-    )
-
     model_cells = [
         fake_model_cell("A B", 2, 3, 1, 2, 100, 200),
         fake_model_cell("C D", 2, 3, 2, 3, 200, 300),
@@ -815,10 +822,6 @@ def test_detect_row_text_contamination_reports_repeated_vertical_bands():
 
 
 def test_detect_row_text_contamination_ignores_isolated_multiline_cell():
-    from docling.models.stages.table_structure.table_structure_reconciler import (
-        detect_row_text_contamination,
-    )
-
     model_cells = [
         fake_model_cell("A B", 2, 3, 1, 2, 100, 200),
         fake_model_cell("C", 2, 3, 2, 3, 200, 300),
@@ -838,10 +841,6 @@ def test_detect_row_text_contamination_ignores_isolated_multiline_cell():
 
 
 def test_detect_row_text_contamination_uses_text_membership_when_bbox_is_between_bands():
-    from docling.models.stages.table_structure.table_structure_reconciler import (
-        detect_row_text_contamination,
-    )
-
     model_cells = [
         fake_model_cell("A1 A2", 2, 3, 1, 2, 100, 200),
         fake_model_cell("B1 B2", 2, 3, 2, 3, 200, 300),
@@ -872,10 +871,6 @@ def test_detect_row_text_contamination_uses_text_membership_when_bbox_is_between
 
 
 def test_propose_row_boundary_splits_from_repeated_vertical_contamination():
-    from docling.models.stages.table_structure.table_structure_reconciler import (
-        propose_row_boundary_splits,
-    )
-
     model_cells = [
         fake_model_cell("A1 A2", 2, 3, 1, 2, 100, 200),
         fake_model_cell("B1 B2", 2, 3, 2, 3, 200, 300),
@@ -904,10 +899,6 @@ def test_propose_row_boundary_splits_from_repeated_vertical_contamination():
 
 
 def test_propose_row_boundary_splits_rejects_single_column_evidence():
-    from docling.models.stages.table_structure.table_structure_reconciler import (
-        propose_row_boundary_splits,
-    )
-
     model_cells = [
         fake_model_cell("A1 A2", 2, 3, 1, 2, 100, 200),
         fake_model_cell("B1", 2, 3, 2, 3, 200, 300),
@@ -927,11 +918,6 @@ def test_propose_row_boundary_splits_rejects_single_column_evidence():
 
 
 def test_apply_row_boundary_split_inserts_row_and_reassigns_text_by_y_band():
-    from docling.models.stages.table_structure.table_structure_reconciler import (
-        apply_row_boundary_split,
-        propose_row_boundary_splits,
-    )
-
     model_cells = [
         fake_model_cell("Header", 1, 2, 0, 3, 0, 300),
         fake_model_cell("G2", 2, 3, 0, 1, 0, 100),
@@ -1020,11 +1006,6 @@ def test_apply_row_boundary_split_inserts_row_and_reassigns_text_by_y_band():
 
 
 def test_apply_row_boundary_split_rejects_cells_crossing_split_row():
-    from docling.models.stages.table_structure.table_structure_reconciler import (
-        RowBoundarySplitCandidate,
-        apply_row_boundary_split,
-    )
-
     model_cells = [
         fake_model_cell("A", 1, 3, 0, 1, 0, 100),
     ]
@@ -1050,10 +1031,6 @@ def test_apply_row_boundary_split_rejects_cells_crossing_split_row():
 
 
 def test_reconcile_row_spans_from_empty_cells_assigns_empty_rows_by_nearest_label():
-    from docling.models.stages.table_structure.table_structure_reconciler import (
-        reconcile_row_spans_from_empty_cells,
-    )
-
     model_cells = [
         fake_model_cell("Header", 0, 1, 0, 2, 0, 200),
         fake_model_cell("A", 1, 2, 0, 1, 0, 100),
@@ -1098,10 +1075,6 @@ def test_reconcile_row_spans_from_empty_cells_assigns_empty_rows_by_nearest_labe
 
 
 def test_reconcile_row_spans_from_empty_cells_rejects_header_rows():
-    from docling.models.stages.table_structure.table_structure_reconciler import (
-        reconcile_row_spans_from_empty_cells,
-    )
-
     model_cells = [
         fake_model_cell("Header A", 0, 1, 0, 1, 0, 100),
         fake_model_cell("", 1, 2, 0, 1, 0, 100),
@@ -1120,10 +1093,6 @@ def test_reconcile_row_spans_from_empty_cells_rejects_header_rows():
 
 
 def test_reconcile_row_spans_from_empty_cells_rejects_single_missing_slot_in_dense_column():
-    from docling.models.stages.table_structure.table_structure_reconciler import (
-        reconcile_row_spans_from_empty_cells,
-    )
-
     model_cells = [
         fake_model_cell("Header", 0, 1, 0, 1, 0, 100),
         fake_model_cell("A", 1, 2, 0, 1, 0, 100),

@@ -10,6 +10,7 @@ from typing import Iterable
 from docling.models.stages.table_structure.table_structure_columns import (
     ReconciledTableGrid,
     TextInterval,
+    _bbox_from_intervals,
     _cell_horizontal_bounds,
 )
 from docling.models.stages.table_structure.table_structure_reconciler_common import (
@@ -440,24 +441,24 @@ def apply_row_boundary_split(
             lower_text = _text_from_intervals(lower_intervals)
 
             if upper_text:
-                new_cells.append(
-                    _copy_cell_with_offsets(
-                        cell,
-                        start_row=split_start,
-                        end_row=split_start + 1,
-                        text=upper_text,
-                    )
+                upper_cell = _copy_cell_with_offsets(
+                    cell,
+                    start_row=split_start,
+                    end_row=split_start + 1,
+                    text=upper_text,
                 )
+                upper_cell.bbox = _bbox_from_intervals(upper_intervals)
+                new_cells.append(upper_cell)
 
             if lower_text:
-                new_cells.append(
-                    _copy_cell_with_offsets(
-                        cell,
-                        start_row=split_start + 1,
-                        end_row=split_start + 2,
-                        text=lower_text,
-                    )
+                lower_cell = _copy_cell_with_offsets(
+                    cell,
+                    start_row=split_start + 1,
+                    end_row=split_start + 2,
+                    text=lower_text,
                 )
+                lower_cell.bbox = _bbox_from_intervals(lower_intervals)
+                new_cells.append(lower_cell)
 
             # If there is text but no interval evidence, keep it in the upper
             # row instead of deleting it. This prevents text loss.

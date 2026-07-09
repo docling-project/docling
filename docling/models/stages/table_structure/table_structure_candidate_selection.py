@@ -65,6 +65,13 @@ def _structure_coverage_ratio(diagnostics: object) -> float:
     return float(value)
 
 
+VALID_CANDIDATE_SCORE = 1000.0
+ISSUE_DELTA_SCORE = 100.0
+COVERAGE_RATIO_SCORE = 10.0
+GRID_GROWTH_SCORE = 5.0
+LATER_STAGE_SCORE = 0.1
+
+
 def _score_structure_candidate(
     *,
     baseline: StructureReconciliationCandidate,
@@ -76,20 +83,18 @@ def _score_structure_candidate(
     score = 0.0
 
     if _structure_diagnostics_valid(candidate.diagnostics):
-        score += 1000.0
+        score += VALID_CANDIDATE_SCORE
 
-    score += (baseline_issues - candidate_issues) * 100.0
-    score += _structure_coverage_ratio(candidate.diagnostics) * 10.0
+    score += (baseline_issues - candidate_issues) * ISSUE_DELTA_SCORE
+    score += _structure_coverage_ratio(candidate.diagnostics) * COVERAGE_RATIO_SCORE
 
     if candidate.num_rows > baseline.num_rows:
-        score += 5.0
+        score += GRID_GROWTH_SCORE
 
     if candidate.num_cols > baseline.num_cols:
-        score += 5.0
+        score += GRID_GROWTH_SCORE
 
-    # Prefer later reconciliation stages only after safety gates have accepted
-    # them; this makes the selector deterministic without hardcoding a PDF.
-    score += len(candidate.notes) * 0.1
+    score += len(candidate.notes) * LATER_STAGE_SCORE
 
     return score
 

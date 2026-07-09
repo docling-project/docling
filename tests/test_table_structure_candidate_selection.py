@@ -9,7 +9,7 @@ from docling.models.stages.table_structure.table_structure_candidate_selection i
     StructureReconciliationCandidate,
     select_reconciled_structure_candidate,
 )
-from docling.models.stages.table_structure.table_structure_reconciler import (
+from docling.models.stages.table_structure.table_structure_columns import (
     _column_growth_supported_by_gutter_evidence,
 )
 from docling.models.stages.table_structure.table_topology import (

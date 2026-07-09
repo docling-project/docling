@@ -11,6 +11,7 @@ from docling.models.stages.table_structure.table_structure_columns import (
     ColumnGridCandidate,
     ReconciledTableGrid,
     TextInterval,
+    _bbox_from_intervals,
     _column_index_for_x,
     _copy_cell_for_column_remap,
 )
@@ -18,7 +19,6 @@ from docling.models.stages.table_structure.table_structure_reconciler_common imp
     _cell_column_offsets,
     _cell_row_offsets,
     _first_float_value,
-    _joined_interval_text,
     _safe_int,
 )
 from docling.models.stages.table_structure.table_topology import (
@@ -282,6 +282,7 @@ def reassign_text_to_cells_preserving_rows(
                 split_cell.start_col_offset_idx = col_idx
                 split_cell.end_col_offset_idx = col_idx + 1
                 split_cell.col_span = 1
+                split_cell.bbox = _bbox_from_intervals(col_intervals)
 
                 # Column-only text reassignment hard rule:
                 # rows and row spans are preserved exactly.
@@ -291,6 +292,9 @@ def reassign_text_to_cells_preserving_rows(
             text = _joined_interval_text(interval for _, _, interval in matched)
             if text:
                 copied_cell.text = text
+                copied_cell.bbox = _bbox_from_intervals(
+                    interval for _, _, interval in matched
+                )
             reassigned_cells.append(copied_cell)
 
     diagnostics = validate_table_topology(
@@ -326,53 +330,6 @@ class ModelRowBand:
     @property
     def center_y(self) -> float:
         return (self.top + self.bottom) / 2.0
-
-
-def _bbox_vertical_bounds(bbox: object | None) -> tuple[float, float] | None:
-    if bbox is None:
-        return None
-
-    if isinstance(bbox, dict):
-        top = _first_float_value(
-            bbox.get("t"),
-            bbox.get("top"),
-            bbox.get("y0"),
-        )
-        bottom = _first_float_value(
-            bbox.get("b"),
-            bbox.get("bottom"),
-            bbox.get("y1"),
-        )
-    else:
-        top = _first_float_value(
-            getattr(bbox, "t", None),
-            getattr(bbox, "top", None),
-            getattr(bbox, "y0", None),
-        )
-        bottom = _first_float_value(
-            getattr(bbox, "b", None),
-            getattr(bbox, "bottom", None),
-            getattr(bbox, "y1", None),
-        )
-
-    if top is None or bottom is None:
-        return None
-
-    if bottom < top:
-        top, bottom = bottom, top
-
-    if bottom <= top:
-        return None
-
-    return top, bottom
-
-
-def _cell_vertical_bounds(cell: object) -> tuple[float, float] | None:
-    bounds = _bbox_vertical_bounds(getattr(cell, "bbox", None))
-    if bounds is not None:
-        return bounds
-
-    return _bbox_vertical_bounds(getattr(cell, "cell_bbox", None))
 
 
 def infer_model_row_bands_from_cells(

@@ -11,87 +11,17 @@ from docling.models.stages.table_structure.table_structure_candidate_selection i
     select_reconciled_structure_candidate,
 )
 from docling.models.stages.table_structure.table_structure_columns import (
-    ColumnGridCandidate,
-    ColumnGridSelection,
-    GridAssignment,
-    GutterCandidate,
-    ModelCellMetadataPrior,
-    ReconciledTableGrid,
-    TextInterval,
-    _bbox_horizontal_bounds,
-    _cell_horizontal_bounds,
-    _column_growth_supported_by_gutter_evidence,
-    _column_index_for_x,
-    _column_range_for_horizontal_bounds,
-    _copy_cell_for_column_remap,
-    _proportional_column_range,
-    _safe_float,
-    _table_horizontal_bounds,
-    assign_intervals_to_grid,
-    build_column_grid_candidate,
-    build_table_cells_from_assignment,
-    build_validated_table_from_selection,
-    collect_model_cell_metadata_prior,
     collect_text_intervals,
-    find_repeated_vertical_gutters,
-    group_intervals_by_row,
-    reconcile_column_grid_from_intervals,
-    reconcile_column_grid_from_text_cells,
     reconcile_columns_preserving_rows_from_text_cells,
-    remap_model_cells_to_column_grid,
-    select_column_grid_candidate,
 )
 from docling.models.stages.table_structure.table_structure_reconciler_common import (
-    _cell_col_range,
-    _cell_column_offsets,
-    _cell_row_offsets,
-    _cell_row_range,
-    _copy_cell_with_offsets,
-    _first_float_value,
-    _infer_split_upper_row_is_column_header,
-    _joined_interval_text,
-    _row_has_column_header,
     _safe_int,
-    _set_cell_header_flags,
 )
 from docling.models.stages.table_structure.table_structure_row_boundary import (
-    RowBoundarySplitCandidate,
-    RowTextContamination,
-    _cluster_intervals_into_y_bands,
-    _collect_cell_text_intervals,
-    _interval_horizontal_bounds,
-    _interval_inside_cell_bbox,
-    _interval_near_cell_vertical_band,
-    _interval_text_matches_cell,
-    _interval_vertical_bounds,
-    _largest_band_boundary,
-    _normalize_cell_text_for_matching,
-    _RowTextBandCandidate,
-    _split_cell_intervals_by_boundary,
-    _text_from_intervals,
     apply_row_boundary_split,
-    detect_row_text_contamination,
     propose_row_boundary_splits,
 )
-from docling.models.stages.table_structure.table_structure_row_reassignment import (
-    ModelRowBand,
-    _bbox_vertical_bounds,
-    _cell_vertical_bounds,
-    _copy_cell_with_text_and_columns,
-    _estimate_fixed_row_bands_from_cells,
-    _row_index_for_interval,
-    _row_index_for_y,
-    infer_model_row_bands_from_cells,
-    reassign_text_to_cells_preserving_rows,
-)
 from docling.models.stages.table_structure.table_structure_row_spans import (
-    _build_slot_to_cell_indices,
-    _candidate_empty_rows_for_span_column,
-    _cell_is_single_slot,
-    _cell_text,
-    _header_rows,
-    _nearest_label_cell_for_empty_row,
-    _row_text_counts,
     reconcile_row_spans_from_empty_cells,
 )
 from docling.models.stages.table_structure.table_topology import (
@@ -190,6 +120,7 @@ def reconcile_table_structure(
         notes=(),
     )
     structure_candidates: list[StructureReconciliationCandidate] = []
+    source_cells = list(text_cells or [])
 
     current_cells = list(table_cells)
     current_rows = num_rows
@@ -232,7 +163,7 @@ def reconcile_table_structure(
         current_cells,
         current_rows,
         num_cols=current_cols,
-        text_cells=list(text_cells or []),
+        text_cells=source_cells,
     ):
         (
             fallback_cells,
@@ -245,7 +176,7 @@ def reconcile_table_structure(
             current_rows,
             current_cols,
             current_otsl,
-            text_cells=list(text_cells or []),
+            text_cells=source_cells,
             allow_same_row_count=allow_same_row_count,
             allow_column_count_growth=allow_column_count_growth,
         )
@@ -275,7 +206,7 @@ def reconcile_table_structure(
         current_cells,
         current_rows,
         current_otsl,
-        text_cells=list(text_cells or []),
+        text_cells=source_cells,
         num_cols=current_cols,
     ):
         (
@@ -289,7 +220,7 @@ def reconcile_table_structure(
             current_rows,
             current_cols,
             current_otsl,
-            text_cells=list(text_cells or []),
+            text_cells=source_cells,
             allow_same_row_count=allow_same_row_count,
             allow_column_count_growth=allow_column_count_growth,
         )
@@ -319,7 +250,7 @@ def reconcile_table_structure(
 
     if enable_column_reconciliation:
         column_grid = reconcile_columns_preserving_rows_from_text_cells(
-            text_cells,
+            source_cells,
             table_bbox=table_bbox,
             model_cells=current_cells,
             model_num_rows=current_rows,
@@ -354,7 +285,7 @@ def reconcile_table_structure(
                 )
             )
 
-    intervals = collect_text_intervals(text_cells or [])
+    intervals = collect_text_intervals(source_cells)
 
     if enable_row_boundary_reconciliation and intervals:
         row_boundary_splits = propose_row_boundary_splits(
@@ -471,6 +402,7 @@ def reconcile_table_structure(
             candidate_cols=candidate.num_cols,
             candidate_diagnostics=candidate.diagnostics,
             allow_same_shape_text_slot_change=allow_same_shape_text_slot_change,
+            source_cells=source_cells,
         )
         accepted_candidates.append((candidate, acceptance_report))
 

@@ -7,6 +7,8 @@ from math import ceil
 from statistics import median
 from typing import Iterable
 
+from docling_core.types.doc import BoundingBox, TableCell
+
 from docling.models.stages.table_structure.table_structure_reconciler_common import (
     _cell_col_range,
     _cell_row_range,
@@ -392,7 +394,6 @@ def build_column_grid_candidate(
     )
 
 
-@dataclass
 @dataclass(frozen=True)
 class GridAssignment:
     num_rows: int
@@ -569,13 +570,12 @@ def build_table_cells_from_assignment(
     assignment: GridAssignment,
     model_cells: Iterable[object] | None = None,
 ) -> list[object]:
-    from docling_core.types.doc import TableCell
-
     table_cells: list[object] = []
     metadata_prior = collect_model_cell_metadata_prior(model_cells)
 
     for row_idx in range(assignment.num_rows):
         for col_idx in range(assignment.num_cols):
+            slot_intervals = assignment.slots.get((row_idx, col_idx), [])
             texts = assignment.texts_at(row_idx, col_idx)
             if not texts:
                 continue
@@ -599,13 +599,26 @@ def build_table_cells_from_assignment(
                         and row_idx not in metadata_prior.column_header_rows
                     ),
                     row_section=row_idx in metadata_prior.row_section_rows,
+                    bbox=_bbox_from_intervals(slot_intervals),
                 )
             )
 
     return table_cells
 
 
-@dataclass
+def _bbox_from_intervals(intervals: Iterable[TextInterval]) -> BoundingBox | None:
+    intervals = list(intervals)
+    if not intervals:
+        return None
+
+    return BoundingBox(
+        l=min(min(interval.left, interval.right) for interval in intervals),
+        t=min(min(interval.top, interval.bottom) for interval in intervals),
+        r=max(max(interval.left, interval.right) for interval in intervals),
+        b=max(max(interval.top, interval.bottom) for interval in intervals),
+    )
+
+
 @dataclass(frozen=True)
 class ReconciledTableGrid:
     table_cells: list[object]
