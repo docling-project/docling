@@ -87,3 +87,11 @@ whisper:
   chunk_overlap_ms: 300
   # 끝에 / 를 주면 디렉터리로 간주해 내부에 파일명 기준 하위 폴더 생성
   tmp_dir_prefix: "./tmp_audios_"
+
+# PII 마스킹(#315) — GenOS Guardrail 연동.
+# on/off 는 요청별 kwargs(guardrail_masking, 기본 off)로 제어. 아래는 접속 정보(환경 종속값)만.
+# 적용 범위: docx/hwp(docling), 기타 langchain 경로(else/ppt·hwp 폴백). audio/tabular 는 보류(미적용).
+guardrail_masking:
+  url: ""           # 예: "http://<내부 gateway>/api/gateway" (dry-run 경로는 코드가 붙임)
+  guardrail_id:     # 적용할 가드레일 인스턴스 ID(단일)
+  timeout: 30       # dry-run 호출 타임아웃(초)

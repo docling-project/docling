@@ -821,6 +821,27 @@ filename: 보고서.pdf
 
 > **청크 크기**: convert 경로의 청크 크기는 `split_documents()` → `GenosSmartChunker(max_tokens=...)` 로 결정됩니다. 값은 호출 kwargs `chunk_size` 가 우선이고, 없으면 yaml `chunking.chunk_size`, 둘 다 없으면 `0`(크기 기반 분할 안 함)입니다. 크기 단위는 `chunking.tokenizer_type` 으로 정해집니다(`char`=문자 수, `huggingface`=HF 토큰 수). char 모드에서는 HF 토크나이저를 로드하지 않습니다.
 
+### PII 마스킹 (개인정보 비식별화, `guardrail_masking`)
+
+문서 텍스트의 개인정보를 GenOS Guardrail 에 위임해 마스킹합니다. convert 는 docling 기반이라
+intelligent 와 동일하게 동작합니다 — **청킹 직전 문서당 1회 호출**, 청크별 `pii_status` 메타 기록.
+
+- **켜기**: 요청 kwargs `guardrail_masking: true` (기본 `false`). yaml 이 아니라 업로드 건별 제어.
+- **접속 정보 (yaml)**:
+  ```yaml
+  guardrail_masking:
+    url: ""           # 예: "http://<내부 gateway>/api/gateway"
+    guardrail_id:     # 가드레일 인스턴스 ID(단일)
+    timeout: 30
+  ```
+- **출력**: 청크별 `pii_status` = `none` / `masked` / `exposed` / `unknown` (기능 off 면 필드 없음).
+- **실패 시**: fail-open — 원문 통과 + warning + `pii_status=unknown`.
+- **운영 주의**: 마스킹용 가드레일에는 "마스킹 처리하여 제공" 필터만 구성하세요(차단 필터가 섞이면
+  문서 본문이 안내문구로 통째 교체 → `exposed`).
+
+> 동작·응답 형태(부분치환/통째교체/동일)·`pii_status` 값 정의·한계의 **상세 설명은 지능형 전처리기
+> 매뉴얼의 "PII 마스킹" 절**을 참고하세요. 4개 전처리기 공통 동작입니다.
+
 ---
 
 ## 4. 처리 동작 개요 (보조)
@@ -927,6 +948,7 @@ class GenOSVectorMeta(BaseModel):
     created_date: int = None     # 확장 필드: 작성일 YYYYMMDD 정수 (예: 20250115)
     authors: str = None          # 확장 필드: 작성자 (JSON 문자열)
     title: str = None            # 확장 필드: 문서 제목
+    pii_status: str = None       # PII 마스킹 상태 (none/masked/exposed/unknown; 기능 off 면 None). 3.x PII 마스킹 참고
 ```
 
 **확장 필드 (attachment 대비 추가)**:
@@ -936,6 +958,7 @@ class GenOSVectorMeta(BaseModel):
 | `created_date` | `enrichment.metadata` + `field_transforms(date_int)` | 작성일 `YYYYMMDD` 정수. 추출 실패 시 본문 휴리스틱(`doc_text_scan`), 그래도 실패 시 0 |
 | `authors` | `enrichment.metadata` (passthrough) | 작성자 정보 (JSON 문자열) |
 | `title` | 문서 첫 `TITLE` 아이템 | 문서 제목 |
+| `pii_status` | PII 마스킹 (`guardrail_masking`) | 청크별 개인정보 마스킹 상태. `guardrail_masking` on 일 때만 채워짐 (PII 마스킹 절 참고) |
 | `HEADER:` (text 선두) | `GenosSmartChunker` 헤더 경로 | 청크가 속한 섹션 헤더 경로 접두어 (예: `HEADER: 제1장 총칙, 제1절 목적`) |
 
 > `extra='allow'` 이므로 `custom_fields` enricher 가 추출한 임의 키도 예약 필드와 충돌하지 않는 한 그대로 벡터에 passthrough 됩니다(중첩 값은 JSON 문자열로 직렬화).

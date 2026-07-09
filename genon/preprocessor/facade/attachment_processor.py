@@ -457,6 +457,151 @@ def install_packages(packages):
             subprocess.run([sys.executable, "-m", "pip", "install", package], check=True)
 
 
+# ============================================================================
+# PII 마스킹 (이슈 #315) — GenOS Guardrail 연동
+# 문서 텍스트를 가드레일 dry-run 에 1회 보내 마스킹된 결과를 받아 반영한다.
+# 단일 파일 배포 특성상 이 블록은 각 facade(intelligent/attachment/convert/parser)에
+# 동일하게 복제되어야 한다. 수정 시 4곳을 함께 동기화한다.
+# ----------------------------------------------------------------------------
+_PII_SEP = "\n<<<GRSEP>>>\n"   # 아이템 구분자(희귀 문자열; 응답에서 소실되면 B형으로 처리)
+
+# pii_status 값 (Enum 미사용 — ocr_mode 방식과 통일: str + 유효값 집합)
+PII_NONE = "none"        # 검사함·PII 없음
+PII_MASKED = "masked"    # 탐지 + 마스킹 완료 (A형)
+PII_EXPOSED = "exposed"  # 탐지됐으나 마스킹 못함 (B형: 차단/통째교체) → 노출된 채 남음
+PII_UNKNOWN = "unknown"  # 가드레일 호출 실패 → fail-open, 판정 불가
+PII_STATUS_VALUES = {PII_NONE, PII_MASKED, PII_EXPOSED, PII_UNKNOWN}
+
+def _pii_collect_text_items(document: DoclingDocument) -> list:
+    """마스킹 대상 텍스트 아이템 목록 [(self_ref, item)] 을 문서 순서대로 반환.
+    표(TableItem)/그림(PictureItem)은 제외(표 셀 PII 는 현 범위 밖 — 8절 한계).
+    그 외 .text 를 가진 아이템(Text/List/Code/SectionHeader 등) 전부 대상."""
+    out = []
+    for item, _ in document.iterate_items():
+        if isinstance(item, (TableItem, PictureItem)):
+            continue
+        text = getattr(item, "text", None)
+        if isinstance(text, str) and text.strip():
+            out.append((item.self_ref, item))
+    return out
+
+
+def _pii_call_guardrail(url: str, guardrail_id, payload: str, timeout: int = 30):
+    """가드레일 dry-run 을 1회 호출한다(마스킹 경로 공용 — docling/langchain).
+    성공 시 응답 content(str), 미설정·실패 시 None(fail-open)."""
+    import requests
+    if not url or guardrail_id is None:
+        _log.warning("[guardrail] url/guardrail_id 미설정 — 마스킹 skip(fail-open)")
+        return None
+    try:
+        endpoint = f"{url.rstrip('/')}/guardrail/{guardrail_id}/dry-run"
+        resp = requests.post(endpoint, json={"content": payload}, timeout=timeout)
+        resp.raise_for_status()
+        body = resp.json()
+        if body.get("code") != 0:
+            raise RuntimeError(f"guardrail code={body.get('code')}")
+        masked = (body.get("data") or {}).get("content")
+        if not isinstance(masked, str):
+            raise RuntimeError("응답에 data.content 없음")
+        return masked
+    except Exception as exc:
+        _log.warning(f"[guardrail] 호출 실패 — 마스킹 skip(fail-open): {exc}")
+        return None
+
+
+def _pii_apply_masking(document: DoclingDocument, url: str, guardrail_id, timeout: int = 30) -> dict:
+    """가드레일 dry-run 1회 호출로 문서 텍스트를 마스킹하고 아이템별 pii_status 맵을 반환한다.
+
+    반환: {self_ref: none|masked|exposed|unknown}
+      - A형/동일: 변화한 아이템 text 를 마스킹본으로 교체(masked), 무변화는 none
+      - B형(구분자 소실): 원문 보존, 전부 exposed
+      - 실패(예외/설정누락): 원문 보존, 전부 unknown (fail-open)
+    호출은 문서당 1회. 아이템들을 _PII_SEP 로 이어 보내고 응답을 같은 구분자로 되쪼갠다.
+    """
+    items = _pii_collect_text_items(document)
+    if not items:
+        return {}
+    refs = [ref for ref, _ in items]
+    payload = _PII_SEP.join(it.text for _, it in items)
+    masked = _pii_call_guardrail(url, guardrail_id, payload, timeout)
+    if masked is None:
+        return {ref: PII_UNKNOWN for ref in refs}
+
+    parts = masked.split(_PII_SEP)
+    if len(parts) != len(items):
+        # 구분자 소실 = B형(전체 교체/차단). 마스킹 적용 불가 → 원문 보존, 전부 exposed.
+        _log.warning("[guardrail] 응답 조각 수 불일치(B형/차단 추정) — 원문 보존, exposed 표기")
+        return {ref: PII_EXPOSED for ref in refs}
+
+    status = {}
+    for (ref, item), new_text in zip(items, parts):
+        if new_text != item.text:
+            item.text = new_text   # 마스킹 적용
+            status[ref] = PII_MASKED
+        else:
+            status[ref] = PII_NONE
+    return status
+
+
+def _pii_chunk_status(item_refs, status_map: dict):
+    """청크가 품은 아이템 ref 들의 pii_status 를 집계한다.
+    우선순위 exposed > masked > unknown > none. 마스킹 대상 아이템이 하나도 없으면 None(표기 안 함)."""
+    present = [status_map.get(r) for r in item_refs if r in status_map]
+    if not present:
+        return None
+    for level in (PII_EXPOSED, PII_MASKED, PII_UNKNOWN):
+        if level in present:
+            return level
+    return PII_NONE
+
+
+def _pii_status_agg(cur, new):
+    """두 pii_status 중 강한 신호를 반환. 우선순위 exposed > masked > unknown > none."""
+    order = {PII_EXPOSED: 3, PII_MASKED: 2, PII_UNKNOWN: 1, PII_NONE: 0}
+    return new if order.get(new, -1) >= order.get(cur, -1) else cur
+
+
+def _pii_apply_masking_langchain(documents, url, guardrail_id, timeout: int = 30) -> dict:
+    """langchain Document 리스트(page_content)를 가드레일 dry-run 1회로 마스킹한다(#315).
+    docling 아이템(self_ref)이 없는 경로(attachment else/ppt·hwp 폴백)용. page 단위로 pii_status 집계.
+
+    반환: {page: none|masked|exposed|unknown}  (page = doc.metadata['page'])
+    - A형/동일: 변화한 doc 의 page_content 를 마스킹본으로 교체, 변화=masked/무변화=none
+    - B형(구분자 소실): 원문 보존, 전부 exposed / 실패: 원문 보존, 전부 unknown (fail-open)
+    """
+    docs = [d for d in documents
+            if isinstance(getattr(d, "page_content", None), str) and d.page_content.strip()]
+    if not docs:
+        return {}
+    pages = [d.metadata.get("page") for d in docs]
+
+    def _fill(status):
+        m = {}
+        for p in pages:
+            m[p] = _pii_status_agg(m.get(p), status)
+        return m
+
+    payload = _PII_SEP.join(d.page_content for d in docs)
+    masked = _pii_call_guardrail(url, guardrail_id, payload, timeout)  # 공용 HTTP 코어
+    if masked is None:
+        return _fill(PII_UNKNOWN)
+
+    parts = masked.split(_PII_SEP)
+    if len(parts) != len(docs):
+        _log.warning("[guardrail] 응답 조각 수 불일치(B형/차단 추정) — 원문 보존, exposed 표기")
+        return _fill(PII_EXPOSED)
+
+    m = {}
+    for d, new_text in zip(docs, parts):
+        p = d.metadata.get("page")
+        if new_text != d.page_content:
+            d.page_content = new_text
+            m[p] = _pii_status_agg(m.get(p), PII_MASKED)
+        else:
+            m[p] = _pii_status_agg(m.get(p), PII_NONE)
+    return m
+
+
 class GenOSVectorMeta(BaseModel):
     class Config:
         extra = 'allow'
@@ -475,6 +620,7 @@ class GenOSVectorMeta(BaseModel):
     reg_date: str | None = None
     chunk_bboxes: str | None = None
     media_files: str | None = None
+    pii_status: str | None = None    # #315 PII 마스킹: none/masked/exposed/unknown (미적용 시 None)
 
 
 class GenOSVectorMetaBuilder:
@@ -494,8 +640,14 @@ class GenOSVectorMetaBuilder:
         self.reg_date: Optional[str] = None
         self.chunk_bboxes: Optional[str] = None
         self.media_files: Optional[str] = None
+        self.pii_status: Optional[str] = None   # #315 PII 마스킹
         # self.title: Optional[str] = None
         # self.created_date: Optional[int] = None
+
+    def set_pii_status(self, pii_status: Optional[str]) -> "GenOSVectorMetaBuilder":
+        """#315 청크 PII 상태 설정 (none/masked/exposed/unknown, 미적용 시 None)"""
+        self.pii_status = pii_status
+        return self
 
     def set_text(self, text: str) -> "GenOSVectorMetaBuilder":
         """텍스트와 관련된 데이터를 설정"""
@@ -580,6 +732,7 @@ class GenOSVectorMetaBuilder:
             reg_date=self.reg_date,
             chunk_bboxes=self.chunk_bboxes,
             media_files=self.media_files,
+            pii_status=self.pii_status,  # #315 PII 마스킹
         )
 
 class TextLoader:
@@ -1342,9 +1495,13 @@ def _split_with_recursive_chunker(
 
 
 class DocxProcessor:
-    def __init__(self, tokenizer=None):
+    def __init__(self, tokenizer=None, guardrail_url="", guardrail_id=None, guardrail_timeout=30):
         # 청킹용 토크나이저 (config 기반; 미지정 시 현행 기본값)
         self._tokenizer = tokenizer if tokenizer is not None else _resolve_tokenizer({})
+        # PII 마스킹(#315) 접속 정보 — DocumentProcessor 가 config 에서 읽어 주입.
+        self._guardrail_url = guardrail_url
+        self._guardrail_id = guardrail_id
+        self._guardrail_timeout = guardrail_timeout
         self.page_chunk_counts = defaultdict(int)
         self.pipeline_options = PipelineOptions()
         self.converter = DocumentConverter(
@@ -1432,6 +1589,7 @@ class DocxProcessor:
     async def compose_vectors(self, document: DoclingDocument, chunks, file_path: str, request: Request,
                               **kwargs: dict) -> list[dict]:
         chunker_type = kwargs.get("chunker_type", "recursive")
+        pii_status_map: dict = kwargs.get("_pii_status_map") or {}  # #315 self_ref -> pii_status
 
         global_metadata = dict(
             n_chunk_of_doc=len(chunks),
@@ -1457,6 +1615,11 @@ class DocxProcessor:
                 current_page = chunk_page
                 chunk_index_on_page = 0
 
+            # #315 청크 pii_status: 이 청크가 품은 아이템들의 flag 집계 (미적용 시 None)
+            chunk_pii = _pii_chunk_status(
+                [getattr(it, "self_ref", None) for it in doc_items], pii_status_map
+            )
+
             vector = (GenOSVectorMetaBuilder()
                       .set_text(content)
                       .set_page_info(chunk_page, chunk_index_on_page, self.page_chunk_counts[chunk_page])
@@ -1464,6 +1627,7 @@ class DocxProcessor:
                       .set_global_metadata(**global_metadata)
                       .set_chunk_bboxes(doc_items, document)
                       .set_media_files(doc_items)
+                      .set_pii_status(chunk_pii)
                       ).build()
             vectors.append(vector)
 
@@ -1484,16 +1648,29 @@ class DocxProcessor:
         artifacts_dir, reference_path = self.get_paths(file_path)
         document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
 
+        # PII 마스킹(#315): 청킹 전, 문서가 한 덩어리일 때 가드레일 1회 호출.
+        pii_status_map: dict = {}
+        if kwargs.get("guardrail_masking", False):
+            pii_status_map = _pii_apply_masking(
+                document, self._guardrail_url, self._guardrail_id, self._guardrail_timeout
+            )
+
         chunks = self.split_documents(document, **kwargs)
         if len(chunks) == 0:
             raise GenosServiceException(1, "chunk length is 0")
-        return await self.compose_vectors(document, chunks, file_path, request, **kwargs)
+        return await self.compose_vectors(
+            document, chunks, file_path, request, _pii_status_map=pii_status_map, **kwargs
+        )
 
 
 class HwpProcessor:
-    def __init__(self, tokenizer=None):
+    def __init__(self, tokenizer=None, guardrail_url="", guardrail_id=None, guardrail_timeout=30):
         # 청킹용 토크나이저 (config 기반; 미지정 시 현행 기본값)
         self._tokenizer = tokenizer if tokenizer is not None else _resolve_tokenizer({})
+        # PII 마스킹(#315) 접속 정보 — DocumentProcessor 가 config 에서 읽어 주입.
+        self._guardrail_url = guardrail_url
+        self._guardrail_id = guardrail_id
+        self._guardrail_timeout = guardrail_timeout
 
     def get_paths(self, file_path: str):
         """이미지 등 리소스가 저장될 경로 계산 (기존 로직 유지)"""
@@ -1607,6 +1784,7 @@ class HwpProcessor:
                               request: Any, **kwargs: dict) -> list[dict]:
         """빌더를 사용하여 최종 GenOSVectorMeta 리스트 생성"""
         chunker_type = kwargs.get("chunker_type", "recursive")
+        pii_status_map: dict = kwargs.get("_pii_status_map") or {}  # #315 self_ref -> pii_status
 
         global_metadata = dict(
             n_chunk_of_doc=len(chunks),
@@ -1633,6 +1811,11 @@ class HwpProcessor:
                 current_page = chunk_page
                 chunk_index_on_page = 0
 
+            # #315 청크 pii_status: 이 청크가 품은 아이템들의 flag 집계 (미적용 시 None)
+            chunk_pii = _pii_chunk_status(
+                [getattr(it, "self_ref", None) for it in doc_items], pii_status_map
+            )
+
             builder = GenOSVectorMetaBuilder()
             vector_obj = (builder
                       .set_text(content)
@@ -1641,6 +1824,7 @@ class HwpProcessor:
                       .set_global_metadata(**global_metadata)
                       .set_chunk_bboxes(doc_items, document)
                       .set_media_files(doc_items)
+                      .set_pii_status(chunk_pii)
                       ).build()
             vectors.append(vector_obj)
             chunk_index_on_page += 1
@@ -1704,11 +1888,20 @@ class HwpProcessor:
             reference_path=reference_path
         )
 
+        # PII 마스킹(#315): 청킹 전, 문서가 한 덩어리일 때 가드레일 1회 호출.
+        pii_status_map: dict = {}
+        if kwargs.get("guardrail_masking", False):
+            pii_status_map = _pii_apply_masking(
+                document, self._guardrail_url, self._guardrail_id, self._guardrail_timeout
+            )
+
         # 3. 청킹 + 4. 벡터화
         chunks, page_chunk_counts = self.split_documents(document, **kwargs)
         if len(chunks) == 0:
             raise GenosServiceException(1, "chunk length is 0")
-        return await self.compose_vectors(document, chunks, page_chunk_counts, request, **kwargs)
+        return await self.compose_vectors(
+            document, chunks, page_chunk_counts, request, _pii_status_map=pii_status_map, **kwargs
+        )
 
 class GenosServiceException(Exception):
     """GenOS 와의 의존성 부분 제거를 위해 추가"""
@@ -1886,9 +2079,23 @@ class DocumentProcessor:
             "whisper_tmp_dir_prefix": whisper_tmp_dir_prefix,
         }
 
+        # PII 마스킹(#315): GenOS Guardrail 접속 정보(환경 종속값). on/off 는 요청별 kwargs.
+        gm_cfg = _as_dict(cfg.get("guardrail_masking"))
+        self._guardrail_url = str(gm_cfg.get("url") or "").strip()
+        self._guardrail_id = _parse_optional_int(gm_cfg.get("guardrail_id"), "guardrail_masking.guardrail_id")
+        gm_timeout = _parse_optional_int(gm_cfg.get("timeout"), "guardrail_masking.timeout")
+        self._guardrail_timeout = gm_timeout if gm_timeout and gm_timeout > 0 else 30
+
         self.page_chunk_counts = defaultdict(int)
-        self.hwp_processor = HwpProcessor(tokenizer=self._tokenizer)
-        self.docx_processor = DocxProcessor(tokenizer=self._tokenizer)
+        _gm = (self._guardrail_url, self._guardrail_id, self._guardrail_timeout)
+        self.hwp_processor = HwpProcessor(
+            tokenizer=self._tokenizer,
+            guardrail_url=_gm[0], guardrail_id=_gm[1], guardrail_timeout=_gm[2],
+        )
+        self.docx_processor = DocxProcessor(
+            tokenizer=self._tokenizer,
+            guardrail_url=_gm[0], guardrail_id=_gm[1], guardrail_timeout=_gm[2],
+        )
 
     def _merge_runtime_kwargs(self, kwargs: dict) -> dict:
         merged = dict(self._default_kwargs)
@@ -2199,6 +2406,7 @@ class DocumentProcessor:
         return chunks
 
     def compose_vectors(self, file_path: str, chunks: list[Document], **kwargs: dict) -> list[dict]:
+        pii_status_map: dict = kwargs.get("_pii_status_map") or {}  # #315 page -> pii_status
         ext = os.path.splitext(file_path)[-1].lower()
         real_type = self.get_real_file_type(file_path)
 
@@ -2234,6 +2442,16 @@ class DocumentProcessor:
             page = chunk.metadata.get('page', 1)
             # PPT 페이지 결합 청크는 end_page 로 페이지 범위를 표현(미설정 시 단일 페이지).
             end_page = chunk.metadata.get('end_page', page)
+            # #315 pii_status 는 page 보정(+1) 전 원본 metadata page 로 조회 (마스킹 맵 키와 일치).
+            #   병합 청크는 [page..end_page] 전 페이지의 flag 를 집계해야 병합된 다른 페이지의
+            #   masked/exposed 를 놓치지 않는다(시작 페이지만 보면 under-report).
+            _raw_start = chunk.metadata.get('page')
+            _raw_end = chunk.metadata.get('end_page', _raw_start)
+            if isinstance(_raw_start, int) and isinstance(_raw_end, int) and _raw_end >= _raw_start:
+                _pii_pages = list(range(_raw_start, _raw_end + 1))
+            else:
+                _pii_pages = [_raw_start]
+            chunk_pii = _pii_chunk_status(_pii_pages, pii_status_map)
             if ext not in ['.hwpx', '.docx']:
                 page += 1
                 end_page += 1
@@ -2268,6 +2486,7 @@ class DocumentProcessor:
                 'i_chunk_on_page': chunk_index_on_page,
                 'n_chunk_of_page': self.page_chunk_counts[page],
                 'i_chunk_on_doc': chunk_idx,
+                'pii_status': chunk_pii,  # #315 PII 마스킹
                 **global_metadata
             }))
             chunk_index_on_page += 1
@@ -2326,6 +2545,7 @@ class DocumentProcessor:
 
         ext = os.path.splitext(file_path)[-1].lower()
         if ext in ('.wav', '.mp3', '.m4a'):
+            # TODO(#315): PII 마스킹 미적용(보류) — AudioLoader 는 자체 vector 포맷이라 별도 논의 후 적용.
             # Generate a temporal path saving audio chunks: the audio file is supposed to be splited to several chunks due to limitted length by the model
             file_stem = os.path.basename(file_path).split('.')[0]
             tmp_prefix = str(kwargs.get("whisper_tmp_dir_prefix", "./tmp_audios_"))
@@ -2365,6 +2585,7 @@ class DocumentProcessor:
             return vectors
 
         elif ext in ('.csv', '.xlsx'):
+            # TODO(#315): PII 마스킹 미적용(보류) — TabularLoader 는 자체 vector 포맷이라 별도 논의 후 적용.
             loader = TabularLoader(
                 file_path,
                 ext,
@@ -2387,8 +2608,13 @@ class DocumentProcessor:
                 if converted:
                     _log.info(f"[DocumentProcessor] PDF 변환 성공: {converted}")
                     documents: list[Document] = self.load_documents(converted, **kwargs)
+                    # PII 마스킹(#315): 청킹 전, langchain Document 를 1회 호출로 마스킹.
+                    pii_map = (_pii_apply_masking_langchain(
+                        documents, self._guardrail_url, self._guardrail_id, self._guardrail_timeout)
+                        if kwargs.get("guardrail_masking", False) else {})
                     chunks: list[Document] = self.split_documents(documents, **kwargs)
-                    vectors: list[dict] = self.compose_vectors(converted, chunks, **kwargs)
+                    vectors: list[dict] = self.compose_vectors(
+                        converted, chunks, _pii_status_map=pii_map, **kwargs)
                     return vectors
                 else:
                     # 이슈 #286 — HWP SDK 도 실패하고 PDF 변환기마저 없으면, 원인을 명확히
@@ -2413,17 +2639,32 @@ class DocumentProcessor:
             documents: Optional[list[Document]] = self._load_ppt_page_documents(file_path, **kwargs)
             if documents is None:
                 documents = self.load_documents(file_path, **kwargs)
+                # PII 마스킹(#315): 청킹 전 1회 호출.
+                pii_map = (_pii_apply_masking_langchain(
+                    documents, self._guardrail_url, self._guardrail_id, self._guardrail_timeout)
+                    if kwargs.get("guardrail_masking", False) else {})
                 chunks: list[Document] = self.split_documents(documents, **kwargs)
             else:
+                # PII 마스킹(#315): 페이지 결합 청킹 전 1회 호출.
+                pii_map = (_pii_apply_masking_langchain(
+                    documents, self._guardrail_url, self._guardrail_id, self._guardrail_timeout)
+                    if kwargs.get("guardrail_masking", False) else {})
                 chunks = self._chunk_ppt_pages(documents, **kwargs)
-            vectors: list[dict] = self.compose_vectors(file_path, chunks, **kwargs)
+            vectors: list[dict] = self.compose_vectors(
+                file_path, chunks, _pii_status_map=pii_map, **kwargs)
             return vectors
 
         else:
             documents: list[Document] = self.load_documents(file_path, **kwargs)
 
+            # PII 마스킹(#315): 청킹 전, langchain Document 를 1회 호출로 마스킹.
+            pii_map = (_pii_apply_masking_langchain(
+                documents, self._guardrail_url, self._guardrail_id, self._guardrail_timeout)
+                if kwargs.get("guardrail_masking", False) else {})
+
             chunks: list[Document] = self.split_documents(documents, **kwargs)
 
-            vectors: list[dict] = self.compose_vectors(file_path, chunks, **kwargs)
+            vectors: list[dict] = self.compose_vectors(
+                file_path, chunks, _pii_status_map=pii_map, **kwargs)
 
             return vectors

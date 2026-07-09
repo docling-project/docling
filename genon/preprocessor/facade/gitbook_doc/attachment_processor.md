@@ -448,8 +448,31 @@ HWP/HWPX 파일은 변환 실패 시 단계적으로 폴백합니다.
 | `reg_date` | str | 처리 일시 (ISO 8601) |
 | `chunk_bboxes` | str | 청크 위치 정보 (정규화된 bbox, JSON 문자열) |
 | `media_files` | str | 연관 미디어 파일 정보 (JSON 문자열) |
+| `pii_status` | str | PII 마스킹 상태(청크별): `none`/`masked`/`exposed`/`unknown`. `guardrail_masking` on 일 때만 채워짐 (아래 PII 마스킹 절) |
 
 > `extra = 'allow'`로 정의되어 추가 필드도 허용됩니다. 일반 분기(PDF/TXT 등)와 CSV/오디오 경로는 bbox/media 추출을 생략(속도 우선)하며, `chunk_bboxes`/`media_files`는 빈 값/플레이스홀더로 채워집니다. HWP/DOCX 경로는 doc_items 기반으로 실제 bbox/media를 채웁니다.
+
+### PII 마스킹 (개인정보 비식별화, `guardrail_masking`)
+
+문서 텍스트의 개인정보를 GenOS Guardrail 에 위임해 마스킹합니다(청킹 직전 문서당 1회 호출, 청크별 `pii_status` 기록).
+
+- **켜기**: 요청 kwargs `guardrail_masking: true` (기본 `false`). yaml 아님, 업로드 건별 제어.
+- **접속 정보 (yaml)**:
+  ```yaml
+  guardrail_masking:
+    url: ""           # 예: "http://<내부 gateway>/api/gateway"
+    guardrail_id:     # 가드레일 인스턴스 ID(단일)
+    timeout: 30
+  ```
+- **적용 범위 (attachment)**:
+  - **docx / hwp·hwpx** (docling 경로): 아이템 단위 마스킹 + 아이템→청크 `pii_status` 집계.
+  - **그 외 langchain 경로**(PDF/TXT/이미지 등, PPT·HWP PDF 폴백 포함): 페이지 단위 마스킹 + **페이지 단위** `pii_status`(같은 페이지의 여러 청크는 같은 상태를 공유 — 과다표시 가능, 안전 방향).
+  - **오디오(wav/mp3/m4a)·tabular(csv/xlsx)**: 현재 **미적용(보류)** — 자체 vector 포맷이라 별도 논의 예정.
+- **출력**: `pii_status` = `none`/`masked`/`exposed`/`unknown` (기능 off 면 필드 없음).
+- **실패 시**: fail-open — 원문 통과 + warning + `pii_status=unknown`.
+- **운영 주의**: 마스킹용 가드레일에는 "마스킹 처리하여 제공" 필터만 구성하세요.
+
+> 동작·응답 형태·`pii_status` 값 정의·한계의 **상세 설명은 지능형 전처리기 매뉴얼의 "PII 마스킹" 절**을 참고하세요. 4개 전처리기 공통 동작입니다.
 
 ---
 

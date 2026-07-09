@@ -512,6 +512,105 @@ def install_packages(packages):
             subprocess.run([sys.executable, "-m", "pip", "install", package], check=True)
 
 
+# ============================================================================
+# PII 마스킹 (이슈 #315) — GenOS Guardrail 연동
+# 문서 텍스트를 가드레일 dry-run 에 1회 보내 마스킹된 결과를 받아 반영한다.
+# 단일 파일 배포 특성상 이 블록은 각 facade(intelligent/attachment/convert/parser)에
+# 동일하게 복제되어야 한다. 수정 시 4곳을 함께 동기화한다.
+# ----------------------------------------------------------------------------
+_PII_SEP = "\n<<<GRSEP>>>\n"   # 아이템 구분자(희귀 문자열; 응답에서 소실되면 B형으로 처리)
+
+# pii_status 값 (Enum 미사용 — ocr_mode 방식과 통일: str + 유효값 집합)
+PII_NONE = "none"        # 검사함·PII 없음
+PII_MASKED = "masked"    # 탐지 + 마스킹 완료 (A형)
+PII_EXPOSED = "exposed"  # 탐지됐으나 마스킹 못함 (B형: 차단/통째교체) → 노출된 채 남음
+PII_UNKNOWN = "unknown"  # 가드레일 호출 실패 → fail-open, 판정 불가
+PII_STATUS_VALUES = {PII_NONE, PII_MASKED, PII_EXPOSED, PII_UNKNOWN}
+
+def _pii_collect_text_items(document: DoclingDocument) -> list:
+    """마스킹 대상 텍스트 아이템 목록 [(self_ref, item)] 을 문서 순서대로 반환.
+    표(TableItem)/그림(PictureItem)은 제외(표 셀 PII 는 현 범위 밖 — 8절 한계).
+    그 외 .text 를 가진 아이템(Text/List/Code/SectionHeader 등) 전부 대상."""
+    out = []
+    for item, _ in document.iterate_items():
+        if isinstance(item, (TableItem, PictureItem)):
+            continue
+        text = getattr(item, "text", None)
+        if isinstance(text, str) and text.strip():
+            out.append((item.self_ref, item))
+    return out
+
+
+def _pii_call_guardrail(url: str, guardrail_id, payload: str, timeout: int = 30):
+    """가드레일 dry-run 을 1회 호출한다(마스킹 경로 공용 — docling/langchain).
+    성공 시 응답 content(str), 미설정·실패 시 None(fail-open)."""
+    import requests
+    if not url or guardrail_id is None:
+        _log.warning("[guardrail] url/guardrail_id 미설정 — 마스킹 skip(fail-open)")
+        return None
+    try:
+        endpoint = f"{url.rstrip('/')}/guardrail/{guardrail_id}/dry-run"
+        resp = requests.post(endpoint, json={"content": payload}, timeout=timeout)
+        resp.raise_for_status()
+        body = resp.json()
+        if body.get("code") != 0:
+            raise RuntimeError(f"guardrail code={body.get('code')}")
+        masked = (body.get("data") or {}).get("content")
+        if not isinstance(masked, str):
+            raise RuntimeError("응답에 data.content 없음")
+        return masked
+    except Exception as exc:
+        _log.warning(f"[guardrail] 호출 실패 — 마스킹 skip(fail-open): {exc}")
+        return None
+
+
+def _pii_apply_masking(document: DoclingDocument, url: str, guardrail_id, timeout: int = 30) -> dict:
+    """가드레일 dry-run 1회 호출로 문서 텍스트를 마스킹하고 아이템별 pii_status 맵을 반환한다.
+
+    반환: {self_ref: none|masked|exposed|unknown}
+      - A형/동일: 변화한 아이템 text 를 마스킹본으로 교체(masked), 무변화는 none
+      - B형(구분자 소실): 원문 보존, 전부 exposed
+      - 실패(예외/설정누락): 원문 보존, 전부 unknown (fail-open)
+    호출은 문서당 1회. 아이템들을 _PII_SEP 로 이어 보내고 응답을 같은 구분자로 되쪼갠다.
+    """
+    items = _pii_collect_text_items(document)
+    if not items:
+        return {}
+    refs = [ref for ref, _ in items]
+    payload = _PII_SEP.join(it.text for _, it in items)
+    masked = _pii_call_guardrail(url, guardrail_id, payload, timeout)
+    if masked is None:
+        return {ref: PII_UNKNOWN for ref in refs}
+
+    parts = masked.split(_PII_SEP)
+    if len(parts) != len(items):
+        # 구분자 소실 = B형(전체 교체/차단). 마스킹 적용 불가 → 원문 보존, 전부 exposed.
+        _log.warning("[guardrail] 응답 조각 수 불일치(B형/차단 추정) — 원문 보존, exposed 표기")
+        return {ref: PII_EXPOSED for ref in refs}
+
+    status = {}
+    for (ref, item), new_text in zip(items, parts):
+        if new_text != item.text:
+            item.text = new_text   # 마스킹 적용
+            status[ref] = PII_MASKED
+        else:
+            status[ref] = PII_NONE
+    return status
+
+
+def _pii_chunk_status(item_refs, status_map: dict):
+    """청크가 품은 아이템 ref 들의 pii_status 를 집계한다.
+    우선순위 exposed > masked > unknown > none. 마스킹 대상 아이템이 하나도 없으면 None(표기 안 함)."""
+    present = [status_map.get(r) for r in item_refs if r in status_map]
+    if not present:
+        return None
+    for level in (PII_EXPOSED, PII_MASKED, PII_UNKNOWN):
+        if level in present:
+            return level
+    return PII_NONE
+
+
+
 # ============================================================
 # TextLoader (from attachment_processor.py)
 # ============================================================
@@ -2111,6 +2210,15 @@ class DocumentProcessor:
         self._output_format = self._normalize_output_format(output_cfg.get("format", "json"))
         self._table_format = self._normalize_table_format(output_cfg.get("table_format", "html"))
 
+        # PII 마스킹(#315): GenOS Guardrail 접속 정보. on/off 는 요청별 kwargs(guardrail_masking).
+        # 주의: output.format=docling 이면 텍스트 마스킹은 되지만 pii_status 는 chunking 으로 전달할
+        #       채널이 없어 표기되지 않는다(파서 아이템은 self_ref 만, 별도 채널은 chunking 이 폐기).
+        gm_cfg = _as_dict(cfg.get("guardrail_masking"))
+        self._guardrail_url = str(gm_cfg.get("url") or "").strip()
+        self._guardrail_id = _parse_optional_int(gm_cfg.get("guardrail_id"), "guardrail_masking.guardrail_id")
+        gm_timeout = _parse_optional_int(gm_cfg.get("timeout"), "guardrail_masking.timeout")
+        self._guardrail_timeout = gm_timeout if gm_timeout and gm_timeout > 0 else 30
+
         # PPT 페이지 단위 image description(page-level). config: formats.ppt.page_description.
         # 파서는 PPT 를 (레거시 langchain 대신) PDF→docling 으로 재라우팅해 페이지 설명을 주입한다.
         formats_cfg = _as_dict(cfg.get("formats"))
@@ -2416,8 +2524,12 @@ class DocumentProcessor:
         return f"시트명: {name}\n" if name else ""
 
     @staticmethod
-    def _docling_to_parse_format(doc: DoclingDocument, table_format: str = "html") -> dict:
-        """DoclingDocument → sample_result.json 호환 출력 포맷."""
+    def _docling_to_parse_format(doc: DoclingDocument, table_format: str = "html",
+                                 pii_status_map: Optional[dict] = None) -> dict:
+        """DoclingDocument → sample_result.json 호환 출력 포맷.
+        pii_status_map(#315) 이 주어지면 element 에 pii_status(none/masked/exposed) 를 부착한다
+        (아이템 self_ref 기준). chunking 이 이 필드를 청크 단위로 집계한다."""
+        pii_status_map = pii_status_map or {}
         elements = []
         element_id = 0
         default_page_no = 1
@@ -2474,6 +2586,10 @@ class DocumentProcessor:
                 "id": element_id,
                 "page": page_no,
             }
+            # #315 PII: 마스킹 적용된 경우 아이템별 pii_status 를 element 에 부착(없으면 미부착)
+            _pii = pii_status_map.get(getattr(item, "self_ref", None))
+            if _pii is not None:
+                element["pii_status"] = _pii
             if isinstance(item, PictureItem):
                 image_description = PictureDescriptionExtractor.extract(item)
                 if image_description:
@@ -2578,22 +2694,35 @@ class DocumentProcessor:
             "content": content,
         }
 
-    def _build_docling_response(self, doc: DoclingDocument, clear_coordinates: bool = False) -> dict:
-        """Docling 경로의 최종 응답 생성."""
+    def _build_docling_response(self, doc: DoclingDocument, clear_coordinates: bool = False,
+                                guardrail_masking: bool = False) -> dict:
+        """Docling 경로의 최종 응답 생성.
+        guardrail_masking(#315)=True 면 반환 전 텍스트를 가드레일로 1회 마스킹한다."""
         output_format = getattr(self, "_output_format", "json")
         table_format = getattr(self, "_table_format", "html")
+
+        # PII 마스킹(#315): 반환 전 문서 텍스트를 마스킹하고 아이템별 pii_status 맵을 얻는다.
+        pii_status_map: dict = {}
+        if guardrail_masking:
+            pii_status_map = _pii_apply_masking(
+                doc, self._guardrail_url, self._guardrail_id, self._guardrail_timeout
+            )
 
         if output_format == "docling":
             # 복원 가능한 DoclingDocument 원본 JSON(model_dump)을 그대로 반환.
             # DoclingDocument.model_validate(data["document"]) 로 무손실 복원 가능 → Chunk API 입력.
             # clear_coordinates / table_format 은 원본 보존을 위해 docling 포맷에서는 무시한다.
+            # 주의(#315): 마스킹된 텍스트는 반영되지만, pii_status 는 docling 포맷으로 chunking 에
+            #   전달할 채널이 없어 생략된다(아이템 extra='forbid' + chunking 이 형제키 폐기). DESIGN 6절.
             return {
                 "document": self._serialize_docling_document(doc),
                 "usage": {"pages": doc.num_pages()},
             }
 
         if output_format == "json":
-            result = self._docling_to_parse_format(doc, table_format=table_format)
+            result = self._docling_to_parse_format(
+                doc, table_format=table_format, pii_status_map=pii_status_map
+            )
             if clear_coordinates:
                 for element in result.get("elements", []):
                     element["coordinates"] = []
@@ -2721,6 +2850,7 @@ class DocumentProcessor:
             )
 
         if ext in (".wav", ".mp3", ".m4a"):
+            # TODO(#315): PII 마스킹 미적용(보류) — 오디오 전사 텍스트는 별도 논의 후 적용.
             text = self._parse_audio(file_path, **kwargs)
             return self._normalize_response(self._audio_to_parse_format(text))
 
@@ -2729,8 +2859,10 @@ class DocumentProcessor:
             if self._xlsx_cfg["processing_mode"] == "docling":
                 from genon.preprocessor.converters.xlsx_processor import build_docling_document
                 doc = build_docling_document(file_path)
-                return self._normalize_response(self._build_docling_response(doc))
+                return self._normalize_response(self._build_docling_response(
+                    doc, guardrail_masking=kwargs.get("guardrail_masking", False)))
             # tabular 모드(기본): openpyxl 병합셀 처리 → 시트당 HTML 표.
+            # TODO(#315): PII 마스킹 미적용(보류) — tabular 산출은 별도 논의 후 적용.
             data_dict = self._parse_tabular(file_path)
             return self._normalize_response(self._tabular_to_parse_format(data_dict))
 
@@ -2739,7 +2871,7 @@ class DocumentProcessor:
         if ext in (".hwp", ".hwpx"):
             doc = self._parse_hwp_hwpx(file_path, **kwargs)
             doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
-            result = self._build_docling_response(doc)
+            result = self._build_docling_response(doc, guardrail_masking=kwargs.get("guardrail_masking", False))
             if enrichment_context.get("metadata"):
                 result["metadata"] = enrichment_context["metadata"]
             return self._normalize_response(result)
@@ -2747,7 +2879,7 @@ class DocumentProcessor:
         if ext == ".docx":
             doc = self._parse_docx(file_path, **kwargs)
             doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
-            result = self._build_docling_response(doc, clear_coordinates=True)
+            result = self._build_docling_response(doc, clear_coordinates=True, guardrail_masking=kwargs.get("guardrail_masking", False))
             if enrichment_context.get("metadata"):
                 result["metadata"] = enrichment_context["metadata"]
             return self._normalize_response(result)
@@ -2755,7 +2887,7 @@ class DocumentProcessor:
         if ext in (".pdf", ".html", ".htm"):
             doc = self._parse_docling(file_path, _enrichment_context=enrichment_context, **kwargs)
             doc = await self._apply_docling_post_enrichment(doc, _enrichment_context=enrichment_context, **kwargs)
-            result = self._build_docling_response(doc)
+            result = self._build_docling_response(doc, guardrail_masking=kwargs.get("guardrail_masking", False))
             if enrichment_context.get("metadata"):
                 result["metadata"] = enrichment_context["metadata"]
             return self._normalize_response(result)
@@ -2768,14 +2900,16 @@ class DocumentProcessor:
                 doc = await self._apply_docling_post_enrichment(
                     doc, _enrichment_context=enrichment_context, **kwargs
                 )
-                result = self._build_docling_response(doc)
+                result = self._build_docling_response(doc, guardrail_masking=kwargs.get("guardrail_masking", False))
                 if enrichment_context.get("metadata"):
                     result["metadata"] = enrichment_context["metadata"]
                 return self._normalize_response(result)
             # PDF 변환 실패 폴백
+            # TODO(#315): PII 마스킹 미적용(보류) — langchain 폴백 경로. docling 아닌 파서 산출은 별도 논의.
             docs = self._parse_other(file_path, **kwargs)
             return self._normalize_response(self._langchain_to_parse_format(docs))
 
         # 기타 포맷: doc, txt, json, md, jpg, jpeg, png 등
+        # TODO(#315): PII 마스킹 미적용(보류) — langchain 경로(doc/txt/md/이미지 등)는 별도 논의 후 적용.
         docs = self._parse_other(file_path, **kwargs)
         return self._normalize_response(self._langchain_to_parse_format(docs))

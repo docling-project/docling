@@ -1823,7 +1823,7 @@ class GenOSVectorMeta(BaseModel):
     created_date: int = None
     appendix: str = None ## !! appendix feature (2025-09-30, geonhee kim) !!
     file_path: Optional[str] = None
-
+    pii_status: Optional[str] = None  # #315 PII 마스킹: 앞단(parser)이 element 에 실은 값을 집계·전달
 
 class GenOSVectorMetaBuilder:
     def __init__(self):
@@ -1846,7 +1846,13 @@ class GenOSVectorMetaBuilder:
         self.created_date: Optional[int] = None
         self.appendix: Optional[str] = None # !! appendix feature (2025-09-30, geonhee kim) !!
         self.file_path: Optional[str] = None
+        self.pii_status: Optional[str] = None  # #315 PII 마스킹
         self.extra_metadata: dict[str, Any] = {}
+
+    def set_pii_status(self, pii_status: Optional[str]) -> "GenOSVectorMetaBuilder":
+        """#315 청크 PII 상태 설정 (parser 가 전달한 값; chunking 은 가드레일 호출 안 함)"""
+        self.pii_status = pii_status
+        return self
 
     def set_text(self, text: str) -> "GenOSVectorMetaBuilder":
         """텍스트와 관련된 데이터를 설정"""
@@ -1935,6 +1941,7 @@ class GenOSVectorMetaBuilder:
             "created_date": self.created_date,
             "appendix": self.appendix or "", # !! appendix feature (2025-09-30, geonhee kim) !!
             "file_path": self.file_path,
+            "pii_status": self.pii_status,  # #315 PII 마스킹
             **self.extra_metadata,
         }
         return GenOSVectorMeta.model_validate(payload)
@@ -2983,6 +2990,9 @@ class DocumentProcessor:
         chunk_overlap = max(int(chunk_overlap), 0)
 
         # element → page 단위 Document 재구성 (빈 내용 제외)
+        # #315: parser 가 element 에 실은 pii_status 를 metadata 로 실어 청크까지 전달한다.
+        #   RecursiveCharacterTextSplitter 는 document 간 병합을 안 하므로 청크=한 element →
+        #   element 단위 pii_status 가 청크에 정확히 매핑된다(가드레일 재호출 없음).
         docs: list = []
         for el in elements:
             content = str((el or {}).get("content", "") or "")
@@ -2993,7 +3003,11 @@ class DocumentProcessor:
                 page = int(page)
             except (TypeError, ValueError):
                 page = 1
-            docs.append(Document(page_content=content, metadata={"page": page}))
+            meta = {"page": page}
+            _pii = (el or {}).get("pii_status")
+            if _pii is not None:
+                meta["pii_status"] = _pii
+            docs.append(Document(page_content=content, metadata=meta))
 
         if not docs:
             raise GenosServiceException(1, "chunk length is 0")
@@ -3035,6 +3049,7 @@ class DocumentProcessor:
                 'i_chunk_on_page': chunk_index_on_page,
                 'n_chunk_of_page': page_chunk_counts[page],
                 'i_chunk_on_doc': idx,
+                'pii_status': c.metadata.get("pii_status"),  # #315 element→청크 전달값
                 **global_metadata,
             }))
             chunk_index_on_page += 1
