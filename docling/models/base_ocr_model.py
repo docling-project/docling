@@ -65,8 +65,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             ocr_rects = self._find_cluster_ocr_rects(page)
         elif self.options.mode == OcrMode.PDF_CLUSTER_OCR:
             ocr_rects = self._find_pdf_clusters_ocr_rects(page)
-        # elif self.options.mode == OcrMode.PDF_BITMAPS_ONLY:
-        #     ocr_rects = self._find_pdf_ocr_rects(page)
         return ocr_rects
 
     def _find_cluster_ocr_rects(self, page: Page) -> list[BoundingBox]:
@@ -132,43 +130,14 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         return ocr_rects
 
-    # def _find_pdf_ocr_rects(self, page: Page) -> list[BoundingBox]:
-    #     r"""
-    #     Compute the OCR rectangles coming ONLY from the programmatic PDF cells
-    #
-    #     1. Deduplicate the bitmap rects.
-    #     2. If coverage > MAXOUT_COVERAGE_THRESHOLD, return a single bbox covering the entire page.
-    #     3. Else if coverage > `bitmap_area_threshold`, return the deduplicated rects.
-    #     4. Otherwise return an empty list.
-    #     """
-    #     if page._backend is None:
-    #         return []
-    #
-    #     # Get the programmatic PDF cells and deduplicate them
-    #     bitmap_rects = page._backend.get_bitmap_rects()
-    #     coverage, ocr_rects = self._deduplicate_rects(page.size, bitmap_rects, 20)
-    #
-    #     # return full-page rectangle if page is dominantly covered with bitmaps
-    #     if coverage > max(
-    #         BaseOcrModel.MAXOUT_COVERAGE_THRESHOLD, self.options.bitmap_area_threshold
-    #     ):
-    #         return [
-    #             BoundingBox(
-    #                 l=0,
-    #                 t=0,
-    #                 r=page.size.width,
-    #                 b=page.size.height,
-    #                 coord_origin=CoordOrigin.TOPLEFT,
-    #             )
-    #         ]
-    #     # return individual rectangles if the bitmap coverage is above the threshold
-    #     elif coverage > self.options.bitmap_area_threshold:
-    #         return ocr_rects
-    #
-    #     # Overall coverage of bitmaps is too low, drop all bitmap rectangles.
-    #     return []
-
     def _deduplicate_rects(
+        self, size: Size, rects: Iterable[BoundingBox], dilation_size=0
+    ) -> tuple[float, list[BoundingBox]]:
+        r"""proxy function used during debugging only"""
+        return self._deduplicate_rects_raster(size, rects, dilation_size=dilation_size)
+        # return self._deduplicate_rects_geom(size, rects, dilation_size=dilation_size)
+
+    def _deduplicate_rects_raster(
         self, size: Size, rects: Iterable[BoundingBox], dilation_size=0
     ) -> tuple[float, list[BoundingBox]]:
         r"""
@@ -224,15 +193,10 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         area_frac = np.sum(np_image > 0) / (size.width * size.height)
         return (area_frac, bounding_boxes)  # fraction covered  # boxes
 
-    def _deduplicate_rects2(
+    def _deduplicate_rects_geom(
         self, size: Size, rects: Iterable[BoundingBox], dilation_size=0
     ) -> tuple[float, list[BoundingBox]]:
         r"""
-        Instead of rasterizing the page into a 1-bit image and running connected
-        components over the pixels, this works directly on the rectangle
-        geometry, which is O(page_pixels)-independent and typically much cheaper
-        when the number of rects is small:
-
         1. Normalize each rect to an axis-aligned box, grow it by
            ``dilation_size / 2`` on every side (mirroring the binary dilation)
            and clip it to the page bounds.

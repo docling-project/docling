@@ -106,10 +106,6 @@ class OcrMode(str, Enum):
     # Eliminate those clusters that contain exclusively text PDF cells
     PDF_CLUSTER_OCR = "pdf_cluster_ocr"
 
-    # TODO: Sunset this mode
-    # Only bitmaps embedded inside a programmatic PDF. No layout information is used.
-    # PDF_BITMAPS_ONLY = "pdf_bitmaps_only"
-
 
 class TableFormerMode(str, Enum):
     """Operating modes for TableFormer table structure extraction model.
@@ -204,7 +200,6 @@ class OcrOptions(BaseOptions):
                 OcrMode.FULL_PAGE_OCR,
                 OcrMode.CLUSTER_OCR,
                 OcrMode.PDF_CLUSTER_OCR,
-                # OcrMode.PDF_BITMAPS_ONLY,
             ],
         ),
     ] = OcrMode.PDF_CLUSTER_OCR
@@ -230,16 +225,6 @@ class OcrOptions(BaseOptions):
             ),
         ),
     ] = False
-    # bitmap_area_threshold: Annotated[
-    #     float,
-    #     Field(
-    #         description=(
-    #             "Percentage of the page area for a PDF bitmap to be processed with OCR."
-    #             "It is used when OcrMode is PDF_BITMAPS_ONLY"
-    #         ),
-    #         examples=[0.05, 0.1],
-    #     ),
-    # ] = 0.05
 
     @model_validator(mode="after")
     def _apply_force_full_page_ocr(self) -> "OcrOptions":
