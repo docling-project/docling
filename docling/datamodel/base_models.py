@@ -110,6 +110,7 @@ class InputFormat(str, Enum):
     XML_JATS = "xml_jats"
     XML_XBRL = "xml_xbrl"
     XML_DOCLANG = "xml_doclang"
+    DCLX = "dclx"
     METS_GBS = "mets_gbs"
     JSON_DOCLING = "json_docling"
     AUDIO = "audio"
@@ -143,6 +144,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.XML_JATS: ["xml", "nxml"],
     InputFormat.XML_XBRL: ["xml", "xbrl"],
     InputFormat.XML_DOCLANG: ["dclg", "dclg.xml"],
+    InputFormat.DCLX: ["dclx"],
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],

@@ -40,6 +40,7 @@ from docling.backend.opendocument_backend import (
     OdtDocumentBackend,
 )
 from docling.backend.webvtt_backend import WebVTTDocumentBackend
+from docling.backend.xml.doclang_archive_backend import DocLangArchiveBackend
 from docling.backend.xml.doclang_backend import DocLangDocumentBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
@@ -192,6 +193,11 @@ class XMLDocLangFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = DocLangDocumentBackend
 
 
+class DclxFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = DocLangArchiveBackend
+
+
 class XBRLFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = XBRLDocumentBackend
@@ -255,6 +261,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.XML_USPTO: PatentUsptoFormatOption(),
         InputFormat.XML_JATS: XMLJatsFormatOption(),
         InputFormat.XML_DOCLANG: XMLDocLangFormatOption(),
+        InputFormat.DCLX: DclxFormatOption(),
         InputFormat.XML_XBRL: XBRLFormatOption(),
         InputFormat.METS_GBS: FormatOption(
             pipeline_cls=StandardPdfPipeline, backend=MetsGbsDocumentBackend
