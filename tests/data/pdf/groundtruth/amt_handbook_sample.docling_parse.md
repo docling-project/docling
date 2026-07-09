@@ -16,6 +16,8 @@ Figure 7-26. Self-locking nuts.
 
 <!-- image -->
 
+Figure 7-27. Stainless steel self-locking nut.
+
 .
 
 ## Stainless Steel Self-Locking Nut
@@ -26,6 +28,4 @@ The stainless steel self-locking nut may be spun on and off by hand as its locki
 
 The elastic  stop  nut  is  a  standard  nut  with  the  height increased  to  accommodate  a  fiber  locking  collar.  This
 
-Figure 7-27. Stainless steel self-locking nut.
-
-<!-- image -->
+Nut case
