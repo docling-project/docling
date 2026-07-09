@@ -41,7 +41,7 @@ def test_gt_dir_override_and_tag_before_format_suffix():
     ],
 )
 def test_ocr_paths_use_mode_subdir_and_tag(engine, expected_tag):
-    input_path = Path("tests/data/scanned/sources/ocr_test.pdf")
+    input_path = Path("tests/data/ocr/sources/ocr_test.pdf")
 
     # get_ocr_groundtruth_paths nests GT under `groundtruth/general/<mode>/`
     # and tags each file with the mode (optionally prefixed with the engine).

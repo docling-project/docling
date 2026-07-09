@@ -119,7 +119,7 @@ def test_nemotron_language_resolution(req_languages, expected):
 
 
 def test_e2e_nemotron_ocr_conversions():
-    directory = Path("./tests/data/scanned/sources")
+    directory = Path("./tests/data/ocr/sources")
 
     # List all PDF files in the directory and its subdirectories
     pdf_paths = sorted(directory.rglob("ocr_test*.pdf"))
@@ -152,7 +152,7 @@ def test_e2e_nemotron_ocr_conversions():
 
 def test_e2e_nemotron_ocr_multipage_batching():
     """Exercise cross-page batching and the per-page redistribution of results."""
-    pdf_path = Path("./tests/data/scanned/sources/nemotron_multipage.pdf")
+    pdf_path = Path("./tests/data/ocr/sources/nemotron_multipage.pdf")
 
     # Reference GT is generated with batch_size=1
     # During test the batch_size is chosen not to divide the number of pages, to ensure batches
