@@ -89,7 +89,7 @@ def diarize(
 
     # Build per-window timestamps and embeddings
     sr = 16000
-    window_samples = int(encoder.params.sampling_rate * 1.5)  # ~1.5s windows
+    window_samples = int(sr * 1.5)  # ~1.5s windows at 16kHz
     step_samples = int(_WINDOW_STEP * sr)
 
     timestamps: list[float] = []
