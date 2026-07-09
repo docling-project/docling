@@ -804,6 +804,13 @@ def convert(  # noqa: C901
             help="Scene change prominence threshold (0=auto). Recommended: 0.03 for meetings, 0.01 for lectures.",
         ),
     ] = 0.0,
+    video_diarization: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help="Enable speaker diarization (who said what). Requires resemblyzer.",
+        ),
+    ] = False,
     ocr: Annotated[
         bool,
         typer.Option(
