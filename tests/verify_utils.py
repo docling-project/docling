@@ -4,6 +4,11 @@ import os
 from pathlib import Path
 from typing import Optional
 
+from defusedxml.minidom import parseString
+from docling_core.transforms.serializer.doclang import (
+    DocLangDocSerializer,
+    DocLangParams,
+)
 from docling_core.types.doc import (
     CodeItem,
     DocItem,
@@ -28,6 +33,28 @@ FUZZY_BBOX_TOL_RATIO = (
 )
 STRICT_IMAGE_SIZE_TOL_RATIO = 0.015  # allow ~1.5% cross-platform image size variance
 FUZZY_IMAGE_SIZE_TOL_RATIO = 0.05  # OCR/image output varies more, allow ~5%
+
+
+def _is_xml_char(char: str) -> bool:
+    codepoint = ord(char)
+    return (
+        codepoint in {0x09, 0x0A, 0x0D}
+        or 0x20 <= codepoint <= 0xD7FF
+        or 0xE000 <= codepoint <= 0xFFFD
+        or 0x10000 <= codepoint <= 0x10FFFF
+    )
+
+
+def _export_clean_doclang(doc: DoclingDocument) -> str:
+    raw_doclang = DocLangDocSerializer(
+        doc=doc,
+        params=DocLangParams(pretty_indentation=None),
+    ).serialize().text
+    clean_doclang = "".join(char for char in raw_doclang if _is_xml_char(char))
+    root = parseString(clean_doclang).documentElement
+    if root is None:
+        raise ValueError("DocLang XML serialization did not produce a document root")
+    return root.toprettyxml(indent="  ").rstrip() + "\n"
 
 
 class _TestPagesMeta(BaseModel):
@@ -360,6 +387,7 @@ def verify_conversion_result_v2(
     fuzzy: bool = False,
     verify_doctags: bool = True,
     indent: int = 2,
+    artifact_suffix: Optional[str] = None,
 ):
     PageMetaList = TypeAdapter(list[_TestPagesMeta])
 
@@ -374,8 +402,10 @@ def verify_conversion_result_v2(
     doc_pred: DoclingDocument = doc_result.document
     doc_pred_md = doc_result.document.export_to_markdown(compact_tables=True)
     doc_pred_dt = doc_result.document.export_to_doctags()
+    doc_pred_doclang = _export_clean_doclang(doc_result.document)
 
-    engine_suffix = "" if ocr_engine is None else f".{ocr_engine}"
+    suffix = artifact_suffix if artifact_suffix is not None else ocr_engine
+    engine_suffix = "" if suffix is None else f".{suffix}"
 
     gt_subpath = input_path.parent.parent / "groundtruth" / input_path.name
 
@@ -383,6 +413,7 @@ def verify_conversion_result_v2(
     json_path = gt_subpath.with_suffix(f"{engine_suffix}.json")
     md_path = gt_subpath.with_suffix(f"{engine_suffix}.md")
     dt_path = gt_subpath.with_suffix(f"{engine_suffix}.doctags.txt")
+    doclang_path = gt_subpath.with_suffix(f"{engine_suffix}.doclang.xml")
 
     # print("generate: ", generate)
     if generate:  # only used when re-generating truth
@@ -404,6 +435,10 @@ def verify_conversion_result_v2(
         dt_path.parent.mkdir(parents=True, exist_ok=True)
         with open(dt_path, mode="w", encoding="utf-8") as fw:
             fw.write(doc_pred_dt)
+
+        doclang_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(doclang_path, mode="w", encoding="utf-8") as fw:
+            fw.write(doc_pred_doclang)
     else:  # default branch in test
         with open(pages_path, encoding="utf-8") as fr:
             doc_true_pages_meta = PageMetaList.validate_json(fr.read())
@@ -416,6 +451,9 @@ def verify_conversion_result_v2(
 
         with open(dt_path, encoding="utf-8") as fr:
             doc_true_dt = fr.read()
+
+        with open(doclang_path, encoding="utf-8") as fr:
+            doc_true_doclang = fr.read()
 
         if not fuzzy:
             assert verify_cells(doc_pred_pages_meta, doc_true_pages_meta), (
@@ -437,6 +475,10 @@ def verify_conversion_result_v2(
             assert verify_dt(doc_pred_dt, doc_true_dt, fuzzy=fuzzy), (
                 f"Mismatch in DocTags prediction for {input_path}"
             )
+
+        assert verify_text(doc_true_doclang, doc_pred_doclang, fuzzy=False), (
+            f"Mismatch in DocLang prediction for {input_path}"
+        )
 
 
 def verify_document(

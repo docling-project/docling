@@ -1,0 +1,216 @@
+<doclang version="0.7">
+  <heading level="2">
+    <location value="60"/>
+    <location value="37"/>
+    <location value="230"/>
+    <location value="46"/>
+    <rtl>اميدنامه پذيرش در بازار اصلی - کاالی داخلی</rtl>
+  </heading>
+  <picture>
+    <location value="334"/>
+    <location value="22"/>
+    <location value="415"/>
+    <location value="63"/>
+    <heading level="2">
+      <location value="335"/>
+      <location value="56"/>
+      <location value="414"/>
+      <location value="62"/>
+      <rtl>شرکت بورس کاالی ايران</rtl>
+    </heading>
+  </picture>
+  <heading level="2">
+    <location value="325"/>
+    <location value="84"/>
+    <location value="412"/>
+    <location value="92"/>
+    <rtl>-2 --2-5 استاندارد کاال</rtl>
+  </heading>
+  <text>
+    <location value="57"/>
+    <location value="98"/>
+    <location value="228"/>
+    <location value="126"/>
+    <rtl>شمشه و شمشال توليد شده به روش ريخته گری پيوسته مورد مصرف در فوالدهای سازه ای - مطابق آناليز پيوست</rtl>
+  </text>
+  <text>
+    <location value="396"/>
+    <location value="99"/>
+    <location value="447"/>
+    <location value="107"/>
+    <rtl>نام استاندارد</rtl>
+  </text>
+  <text>
+    <location value="363"/>
+    <location value="132"/>
+    <location value="446"/>
+    <location value="139"/>
+    <rtl>شماره استاندارد ملی</rtl>
+  </text>
+  <text>
+    <location value="204"/>
+    <location value="131"/>
+    <location value="226"/>
+    <location value="135"/>
+    20300
+  </text>
+  <text>
+    <location value="203"/>
+    <location value="145"/>
+    <location value="215"/>
+    <location value="151"/>
+    <checkbox class="unselected"/>
+    <rtl>ب بلی</rtl>
+  </text>
+  <text>
+    <location value="170"/>
+    <location value="145"/>
+    <location value="182"/>
+    <location value="151"/>
+    <checkbox class="selected"/>
+    <rtl>خير</rtl>
+  </text>
+  <text>
+    <location value="351"/>
+    <location value="146"/>
+    <location value="446"/>
+    <location value="153"/>
+    <rtl>استاندارد اجباری است؟</rtl>
+  </text>
+  <text>
+    <location value="144"/>
+    <location value="159"/>
+    <location value="447"/>
+    <location value="167"/>
+    <rtl>مرجع صادرکننده استاندارد سازمان ملی استاندارد ايران</rtl>
+  </text>
+  <text>
+    <location value="251"/>
+    <location value="172"/>
+    <location value="447"/>
+    <location value="194"/>
+    <rtl>آيا توليدکننده محصول، استاندارد مذکور را اخذ نموده است؟</rtl>
+  </text>
+  <text>
+    <location value="170"/>
+    <location value="172"/>
+    <location value="213"/>
+    <location value="179"/>
+    <checkbox class="selected"/>
+    <rtl>بلی خير</rtl>
+  </text>
+  <heading level="2">
+    <location value="353"/>
+    <location value="214"/>
+    <location value="434"/>
+    <location value="222"/>
+    <rtl>- -3 پذيرش در بورس</rtl>
+  </heading>
+  <text>
+    <location value="120"/>
+    <location value="227"/>
+    <location value="161"/>
+    <location value="232"/>
+    1403/09/19
+  </text>
+  <text>
+    <location value="349"/>
+    <location value="228"/>
+    <location value="424"/>
+    <location value="235"/>
+    <rtl>تاريخ ارائه مدارک</rtl>
+  </text>
+  <text>
+    <location value="120"/>
+    <location value="241"/>
+    <location value="161"/>
+    <location value="245"/>
+    1403/10/04
+  </text>
+  <text>
+    <location value="370"/>
+    <location value="241"/>
+    <location value="424"/>
+    <location value="249"/>
+    <rtl>تاريخ پذيرش</rtl>
+  </text>
+  <text>
+    <location value="134"/>
+    <location value="255"/>
+    <location value="424"/>
+    <location value="263"/>
+    <rtl>شماره جلسه کميته عرضه 436</rtl>
+  </text>
+  <text>
+    <location value="120"/>
+    <location value="268"/>
+    <location value="161"/>
+    <location value="273"/>
+    1403/10/05
+  </text>
+  <text>
+    <location value="344"/>
+    <location value="269"/>
+    <location value="424"/>
+    <location value="277"/>
+    <rtl>تاريخ درج اميدنامه</rtl>
+  </text>
+  <text>
+    <location value="106"/>
+    <location value="282"/>
+    <location value="175"/>
+    <location value="288"/>
+    <rtl>کارگزاری آرمون بورس</rtl>
+  </text>
+  <text>
+    <location value="364"/>
+    <location value="283"/>
+    <location value="424"/>
+    <location value="291"/>
+    <rtl>مشاور پذيرش</rtl>
+  </text>
+  <text>
+    <location value="242"/>
+    <location value="298"/>
+    <location value="424"/>
+    <location value="319"/>
+    <rtl>نحوة تعيين قيمت پايه پس از پذيرش کاال در بورس</rtl>
+  </text>
+  <text>
+    <location value="94"/>
+    <location value="297"/>
+    <location value="184"/>
+    <location value="303"/>
+    <rtl>بر اساس قيمت های جهانی</rtl>
+  </text>
+  <list>
+    <ldiv/>
+    <location value="229"/>
+    <location value="325"/>
+    <location value="424"/>
+    <location value="346"/>
+    <rtl>حداقل درصد عرضه از توليد/ کل فروش/ فروش داخلی</rtl>
+  </list>
+  <text>
+    <location value="74"/>
+    <location value="324"/>
+    <location value="207"/>
+    <location value="331"/>
+    <rtl>حداقل %50 از توليد ساليانه يا 47.500 تن</rtl>
+  </text>
+  <text>
+    <location value="93"/>
+    <location value="351"/>
+    <location value="424"/>
+    <location value="360"/>
+    <rtl>خطای مجاز تحويل 5% آخرين محموله قابل تحويل</rtl>
+  </text>
+  <page_footer>
+    <layer value="furniture"/>
+    <location value="230"/>
+    <location value="475"/>
+    <location value="251"/>
+    <location value="480"/>
+    Page 7
+  </page_footer>
+</doclang>
