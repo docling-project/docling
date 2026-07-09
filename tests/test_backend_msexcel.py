@@ -451,6 +451,42 @@ def test_chart_image_rendering(libreoffice_available) -> None:
     )
 
 
+def test_chart_render_does_not_mutate_source_chart() -> None:
+    """Test that assembling the render workbook leaves the source chart intact.
+
+    ``Worksheet.add_chart`` overwrites ``chart.anchor``. Were the backend to
+    hand its own chart object to the temporary render workbook, the source
+    chart's anchor would be replaced by a plain "A1" string and every later
+    provenance bbox would silently collapse to (0, 0, 0, 0). Only the workbook
+    assembly is exercised, so this runs without LibreOffice.
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_03_chartsheet")
+    in_doc = InputDocument(
+        path_or_stream=path,
+        format=InputFormat.XLSX,
+        filename=path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=path,
+        options=MsExcelBackendOptions(render_chart_images=True),
+    )
+    chart = next(
+        chart
+        for name in backend.workbook.sheetnames
+        for chart in backend.workbook[name]._charts
+    )
+    bbox_before = backend._anchor_to_tuple(chart.anchor)
+    assert bbox_before != (0, 0, 0, 0), "test fixture should have a real anchor"
+
+    assert backend._build_standalone_chart_workbook(chart) is not None
+
+    assert backend._anchor_to_tuple(chart.anchor) == bbox_before, (
+        "assembling the render workbook must not overwrite the source anchor"
+    )
+
+
 def test_inflated_rows_handling(documents) -> None:
     """Test that files with inflated max_row are handled correctly.
 

@@ -6,6 +6,7 @@ import posixpath
 import shutil
 import subprocess
 import warnings
+from copy import deepcopy
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -1589,7 +1590,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         if not any(copied):
             return None
 
-        chart_sheet.add_chart(chart, "A1")
+        # ``add_chart`` overwrites ``chart.anchor``; copy so the workbook's own
+        # chart keeps the anchor its provenance bbox is derived from.
+        chart_sheet.add_chart(deepcopy(chart), "A1")
         return standalone
 
     def _copy_reference_into(self, target: Workbook, ref: str) -> bool:
