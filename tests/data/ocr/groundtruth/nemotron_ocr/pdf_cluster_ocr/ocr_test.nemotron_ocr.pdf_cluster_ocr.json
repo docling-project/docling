@@ -1,11 +1,11 @@
 {
   "schema_name": "DoclingDocument",
   "version": "1.10.0",
-  "name": "ocr_test_rotated_90",
+  "name": "ocr_test",
   "origin": {
     "mimetype": "application/pdf",
-    "binary_hash": 6989291015361162334,
-    "filename": "ocr_test_rotated_90.pdf"
+    "binary_hash": 14853448746796404529,
+    "filename": "ocr_test.pdf"
   },
   "furniture": {
     "self_ref": "#/furniture",
@@ -39,34 +39,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 74.94,
-            "t": 504.42,
-            "r": 124.04,
-            "b": 73.56,
+            "l": 72.24,
+            "t": 766.28,
+            "r": 504.29,
+            "b": 693.4,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            86
-          ]
-        },
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 130.45,
-            "t": 153.5,
-            "r": 150.44,
-            "b": 71.73,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            87,
             94
           ]
         }
       ],
-      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package",
-      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
+      "orig": "Docling bundles PDF document conversion to USON and Markdown in an easy self contained package",
+      "text": "Docling bundles PDF document conversion to USON and Markdown in an easy self contained package"
     }
   ],
   "pictures": [],
@@ -76,8 +62,8 @@
   "pages": {
     "1": {
       "size": {
-        "width": 841.92,
-        "height": 595.2
+        "width": 595.2,
+        "height": 841.92
       },
       "page_no": 1
     }

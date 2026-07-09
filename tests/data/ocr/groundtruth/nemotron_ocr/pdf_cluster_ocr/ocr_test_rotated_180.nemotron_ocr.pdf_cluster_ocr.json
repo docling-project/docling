@@ -1,11 +1,11 @@
 {
   "schema_name": "DoclingDocument",
   "version": "1.10.0",
-  "name": "ocr_test_rotated_90",
+  "name": "ocr_test_rotated_180",
   "origin": {
     "mimetype": "application/pdf",
-    "binary_hash": 6989291015361162334,
-    "filename": "ocr_test_rotated_90.pdf"
+    "binary_hash": 2530576989861832966,
+    "filename": "ocr_test_rotated_180.pdf"
   },
   "furniture": {
     "self_ref": "#/furniture",
@@ -39,34 +39,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 74.94,
-            "t": 504.42,
-            "r": 124.04,
-            "b": 73.56,
+            "l": 90.45,
+            "t": 178.28,
+            "r": 522.21,
+            "b": 42.2,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            86
-          ]
-        },
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 130.45,
-            "t": 153.5,
-            "r": 150.44,
-            "b": 71.73,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            87,
-            94
+            104
           ]
         }
       ],
-      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package",
-      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
+      "orig": "Backags Moraeae USON and oerrcoonn in an easy self contained Uf aocument Ceeeeaenn to Cecunn Menaues FUE",
+      "text": "Backags Moraeae USON and oerrcoonn in an easy self contained Uf aocument Ceeeeaenn to Cecunn Menaues FUE"
     }
   ],
   "pictures": [],
@@ -76,8 +62,8 @@
   "pages": {
     "1": {
       "size": {
-        "width": 841.92,
-        "height": 595.2
+        "width": 595.2,
+        "height": 841.92
       },
       "page_no": 1
     }
