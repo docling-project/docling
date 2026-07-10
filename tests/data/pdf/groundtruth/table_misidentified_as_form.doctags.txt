@@ -1,0 +1,8 @@
+<doctag><otsl><loc_65><loc_96><loc_358><loc_169></otsl>
+<otsl><loc_64><loc_269><loc_356><loc_293></otsl>
+<otsl><loc_65><loc_317><loc_357><loc_366></otsl>
+<picture><loc_97><loc_443><loc_118><loc_456></picture>
+<picture><loc_440><loc_398><loc_454><loc_415></picture>
+<picture><loc_364><loc_445><loc_420><loc_457></picture>
+<picture><loc_465><loc_17><loc_491><loc_59></picture>
+</doctag>
