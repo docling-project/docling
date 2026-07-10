@@ -666,7 +666,7 @@ class _WhisperS2TModel:
 # ============================================================
 
 
-def merge_into_sentences(
+def _merge_into_sentences(
     items: list["_ConversationItem"],
 ) -> list["_ConversationItem"]:
     """Merge Whisper segments into complete sentences.
