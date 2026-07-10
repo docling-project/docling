@@ -496,14 +496,7 @@ def export_documents(
             if export_html:
                 fname = output_dir / f"{doc_filename}.html"
                 _log.info(f"writing HTML output to {fname}")
-                if conv_res.input.format == InputFormat.VIDEO:
-                    from docling.pipeline.video_pipeline import (
-                        export_video_document_to_html,
-                    )
-
-                    fname.write_text(export_video_document_to_html(conv_res.document))
-                else:
-                    conv_res.document.save_as_html(
+                conv_res.document.save_as_html(
                         filename=fname,
                         image_mode=image_export_mode,
                         split_page_view=False,
