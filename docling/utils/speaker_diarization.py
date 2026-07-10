@@ -168,7 +168,7 @@ def diarize(
         # Extend last segment to end of audio
         segments.append(_SpeakerSegment(cur_start, len(wav) / sr, cur_speaker))
 
-    return DiarizationResult(
+    return _DiarizationResult(
         segments=segments,
         num_speakers=n,
         speaker_ids=speaker_ids,
