@@ -1,3 +1,54 @@
+## [v2.111.0](https://github.com/docling-project/docling/releases/tag/v2.111.0) - 2026-07-08
+
+### Feature
+
+* **msexcel:** Parse native charts into classified pictures ([#3756](https://github.com/docling-project/docling/issues/3756)) ([`ceeeda9`](https://github.com/docling-project/docling/commit/ceeeda996675127ce8ed60e66467709cf6c52106))
+* **boxnote:** Add a BoxNote document backend ([#3722](https://github.com/docling-project/docling/issues/3722)) ([`4b4b9d8`](https://github.com/docling-project/docling/commit/4b4b9d8c923dc0249feb84af4c6e1d5fbe4162a4))
+* **cli:** Extend output formats with chunk in jsonl format ([#3732](https://github.com/docling-project/docling/issues/3732)) ([`fbd39b8`](https://github.com/docling-project/docling/commit/fbd39b870859afbae21645ebe0e417109777da5a))
+
+### Fix
+
+* Guard against None _log in CodeFormulaVlmModel.__del__ during interpreter shutdown ([#3534](https://github.com/docling-project/docling/issues/3534)) ([`52b8bdb`](https://github.com/docling-project/docling/commit/52b8bdbecee98591784a70609b81f7c22749d411))
+* Sanitize subprocess call in tesseract_ocr_cli_model.py ([#3283](https://github.com/docling-project/docling/issues/3283)) ([`dbaf9ff`](https://github.com/docling-project/docling/commit/dbaf9ff26663ad73ce4f529c080ec0308aebd511))
+* **docx:** Ignore heading numPr when numFmt is none ([#3760](https://github.com/docling-project/docling/issues/3760)) ([`dc4c0bb`](https://github.com/docling-project/docling/commit/dc4c0bb041feaf0924cf4e26582d6f5c11b4a721))
+* **deps:** Require python-docx>=1.2.0 for DOCX comment extraction ([#3770](https://github.com/docling-project/docling/issues/3770)) ([`63cb843`](https://github.com/docling-project/docling/commit/63cb843ee978ca360423e4cf3830d603cae1c528))
+* Make DCLX naturally included page-images ([#3765](https://github.com/docling-project/docling/issues/3765)) ([`88b1a09`](https://github.com/docling-project/docling/commit/88b1a09d7c932d6ecd090c913d2259c91133ed4f))
+* Guard backend imports to prevent ImportError on slim installs ([#3751](https://github.com/docling-project/docling/issues/3751)) ([`2ec33bc`](https://github.com/docling-project/docling/commit/2ec33bc70e2331f77858489cb5f8e37e94901090))
+
+### Documentation
+
+* **deepseekocr:** Fix parse_deepseekocr_markdown Args docstring ([#3766](https://github.com/docling-project/docling/issues/3766)) ([`d93579a`](https://github.com/docling-project/docling/commit/d93579a8d7dc4ff45999d65334a5dedc1e2cedc2))
+* Plan for DoclingDocument version compatibility ([#3761](https://github.com/docling-project/docling/issues/3761)) ([`fe72816`](https://github.com/docling-project/docling/commit/fe72816f849c42d1fb467f5c18308c4dcf8abd15))
+
+## [v2.110.0](https://github.com/docling-project/docling/releases/tag/v2.110.0) - 2026-07-04
+
+### Feature
+
+* Speed up OCR by using OpenCV for dilation ([#3746](https://github.com/docling-project/docling/issues/3746)) ([`2c47875`](https://github.com/docling-project/docling/commit/2c47875712be916cc1ce40ff00e1ed84b6b3cf24))
+* Added the export into dclx ([#3750](https://github.com/docling-project/docling/issues/3750)) ([`7c98fb1`](https://github.com/docling-project/docling/commit/7c98fb1f39c20ab042003f64f3625c29a46af50f))
+
+## [v2.109.0](https://github.com/docling-project/docling/releases/tag/v2.109.0) - 2026-07-03
+
+### Feature
+
+* Allow overriding same-font enforcement ([#3737](https://github.com/docling-project/docling/issues/3737)) ([`0064a45`](https://github.com/docling-project/docling/commit/0064a4558bf820c1af0ef425fe0dbf43036ac7cc))
+* Use PP-OCRv6 RapidOCR defaults ([#3677](https://github.com/docling-project/docling/issues/3677)) ([`01235ce`](https://github.com/docling-project/docling/commit/01235ceef710d822dc5ad1c4173e60990f1d1e9f))
+* **asr:** Expose and forward native Whisper decoding options ([#3717](https://github.com/docling-project/docling/issues/3717)) ([`4f37eee`](https://github.com/docling-project/docling/commit/4f37eeee07a1741526671eff5329b3cca2e685b8))
+* Add code language detection ([#3721](https://github.com/docling-project/docling/issues/3721)) ([`648fcf1`](https://github.com/docling-project/docling/commit/648fcf15cd42b4b7500ba0578a559cf848d37bee))
+* **pdf:** Infer heading levels from PDF bookmarks/ToC ([#3688](https://github.com/docling-project/docling/issues/3688)) ([`9cbef42`](https://github.com/docling-project/docling/commit/9cbef428c63cf42b0fada976e07dbcf62e0eab88))
+
+### Fix
+
+* **html:** Parse tables nested inside list items (#3508) ([#3738](https://github.com/docling-project/docling/issues/3738)) ([`8c162bd`](https://github.com/docling-project/docling/commit/8c162bd4c70055ba2b959e6aea17435b1b948172))
+* Forward VLM convert runtime generation settings ([#3322](https://github.com/docling-project/docling/issues/3322)) ([`1c03fd4`](https://github.com/docling-project/docling/commit/1c03fd47b22c80deb1f2c9359614e891221c4045))
+* **tests:** Correct XBRL source path to point to 'sources/' subdirectory ([#3734](https://github.com/docling-project/docling/issues/3734)) ([`b77612c`](https://github.com/docling-project/docling/commit/b77612ce4770d052aa90af23681b55ab0be38971))
+* **docx:** Support Strict OOXML (.docx) files ([#3729](https://github.com/docling-project/docling/issues/3729)) ([`528eb5b`](https://github.com/docling-project/docling/commit/528eb5b4b7bbb5b8253df0cf130feb24c9fd1fc4))
+* **msword:** Don't abort conversion on a malformed hyperlink address ([#3744](https://github.com/docling-project/docling/issues/3744)) ([`c979c6a`](https://github.com/docling-project/docling/commit/c979c6a6bca2568ab7a0e392a87b46e0bf6d2f8b))
+
+### Documentation
+
+* **asr:** Document backend selection and WhisperS2T ([#3730](https://github.com/docling-project/docling/issues/3730)) ([`e0b1ca5`](https://github.com/docling-project/docling/commit/e0b1ca5964b11fb71f7e747b75ad4be8500d8f39))
+
 ## [v2.108.0](https://github.com/docling-project/docling/releases/tag/v2.108.0) - 2026-07-01
 
 ### Feature

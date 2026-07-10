@@ -92,7 +92,7 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
         if not _XBRL_AVAILABLE:
             raise ImportError(
                 "The 'arelle-release' package is required to process XBRL documents. "
-                "Please install it using `pip install 'docling[xbrl]'`"
+                "Please install it using `pip install 'docling-slim[format-xml-xbrl]'`"
             ) from _XBRL_IMPORT_ERROR
 
         super().__init__(in_doc, path_or_stream)
@@ -249,7 +249,7 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
         """
         _log.debug("Starting XBRL instance conversion...")
         if not self.is_valid() or not self.model_xbrl:
-            raise RuntimeError("Invalid document with hash {self.document_hash}")
+            raise RuntimeError(f"Invalid document with hash {self.document_hash}")
 
         origin = DocumentOrigin(
             filename=self.file.name or "file",

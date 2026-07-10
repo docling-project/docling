@@ -8,8 +8,10 @@ import warnings
 from collections.abc import Iterable
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Type
+from typing import Annotated, Type, cast
 from urllib.parse import urlparse
+
+from docling.datamodel.service.responses import ChunkedDocumentResultItem
 
 # Check for CLI dependencies
 try:
@@ -116,6 +118,7 @@ from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
     normalize_pdf_backend,
 )
+from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
 from docling.datamodel.settings import settings
 from docling.document_converter import (
     AudioFormatOption,
@@ -155,6 +158,11 @@ class HtmlImageFetchMode(str, Enum):
     LOCAL = "local"
     REMOTE = "remote"
     ALL = "all"
+
+
+class ChunkerType(str, Enum):
+    HYBRID = "hybrid"
+    HIERARCHICAL = "hierarchical"
 
 
 def _is_http_url(source: str) -> bool:
@@ -285,6 +293,53 @@ class _DefaultCommandGroup(typer.core.TyperGroup):
         return super().parse_args(ctx, args)
 
 
+def _resolve_asr_options(asr_model: AsrModelType) -> InlineAsrOptions:
+    """Map an AsrModelType enum member to its preset InlineAsrOptions.
+
+    Shared mapping so both audio and (later) video CLI setup resolve
+    ASR presets the same way.
+    """
+    mapping: dict[AsrModelType, InlineAsrOptions] = {
+        AsrModelType.WHISPER_TINY: WHISPER_TINY,
+        AsrModelType.WHISPER_SMALL: WHISPER_SMALL,
+        AsrModelType.WHISPER_MEDIUM: WHISPER_MEDIUM,
+        AsrModelType.WHISPER_BASE: WHISPER_BASE,
+        AsrModelType.WHISPER_LARGE: WHISPER_LARGE,
+        AsrModelType.WHISPER_TURBO: WHISPER_TURBO,
+        AsrModelType.WHISPER_TINY_MLX: WHISPER_TINY_MLX,
+        AsrModelType.WHISPER_SMALL_MLX: WHISPER_SMALL_MLX,
+        AsrModelType.WHISPER_MEDIUM_MLX: WHISPER_MEDIUM_MLX,
+        AsrModelType.WHISPER_BASE_MLX: WHISPER_BASE_MLX,
+        AsrModelType.WHISPER_LARGE_MLX: WHISPER_LARGE_MLX,
+        AsrModelType.WHISPER_TURBO_MLX: WHISPER_TURBO_MLX,
+        AsrModelType.WHISPER_TINY_NATIVE: WHISPER_TINY_NATIVE,
+        AsrModelType.WHISPER_SMALL_NATIVE: WHISPER_SMALL_NATIVE,
+        AsrModelType.WHISPER_MEDIUM_NATIVE: WHISPER_MEDIUM_NATIVE,
+        AsrModelType.WHISPER_BASE_NATIVE: WHISPER_BASE_NATIVE,
+        AsrModelType.WHISPER_LARGE_NATIVE: WHISPER_LARGE_NATIVE,
+        AsrModelType.WHISPER_TURBO_NATIVE: WHISPER_TURBO_NATIVE,
+        AsrModelType.WHISPER_TINY_S2T: WHISPER_TINY_S2T,
+        AsrModelType.WHISPER_TINY_EN_S2T: WHISPER_TINY_EN_S2T,
+        AsrModelType.WHISPER_BASE_S2T: WHISPER_BASE_S2T,
+        AsrModelType.WHISPER_BASE_EN_S2T: WHISPER_BASE_EN_S2T,
+        AsrModelType.WHISPER_SMALL_S2T: WHISPER_SMALL_S2T,
+        AsrModelType.WHISPER_SMALL_EN_S2T: WHISPER_SMALL_EN_S2T,
+        AsrModelType.WHISPER_DISTIL_SMALL_EN_S2T: WHISPER_DISTIL_SMALL_EN_S2T,
+        AsrModelType.WHISPER_MEDIUM_S2T: WHISPER_MEDIUM_S2T,
+        AsrModelType.WHISPER_MEDIUM_EN_S2T: WHISPER_MEDIUM_EN_S2T,
+        AsrModelType.WHISPER_DISTIL_MEDIUM_EN_S2T: WHISPER_DISTIL_MEDIUM_EN_S2T,
+        AsrModelType.WHISPER_LARGE_V3_S2T: WHISPER_LARGE_V3_S2T,
+        AsrModelType.WHISPER_DISTIL_LARGE_V3_S2T: WHISPER_DISTIL_LARGE_V3_S2T,
+        AsrModelType.WHISPER_DISTIL_LARGE_V3_5_S2T: WHISPER_DISTIL_LARGE_V3_5_S2T,
+        AsrModelType.WHISPER_LARGE_V3_TURBO_S2T: WHISPER_LARGE_V3_TURBO_S2T,
+    }
+    try:
+        return mapping[asr_model]
+    except KeyError:
+        _log.error(f"{asr_model} is not known")
+        raise ValueError(f"{asr_model} is not known")
+
+
 app = typer.Typer(
     name="Docling",
     cls=_DefaultCommandGroup,
@@ -366,9 +421,39 @@ def export_documents(
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
+    export_dclx: bool = False,
+    export_chunks: bool = False,
+    chunker_type: ChunkerType = ChunkerType.HYBRID,
+    chunk_max_tokens: int | None = None,
+    chunk_tokenizer: str = "sentence-transformers/all-MiniLM-L6-v2",
 ):
     success_count = 0
     failure_count = 0
+
+    # Initialize chunker once for all documents
+    chunker_obj = None
+    if export_chunks:
+        import json as _json
+
+        from docling_core.transforms.chunker.hierarchical_chunker import (
+            DocChunk,
+            HierarchicalChunker,
+        )
+        from docling_core.transforms.chunker.hybrid_chunker import (
+            HybridChunker,
+        )
+        from docling_core.transforms.chunker.tokenizer.huggingface import (
+            HuggingFaceTokenizer,
+        )
+
+        if chunker_type == ChunkerType.HIERARCHICAL:
+            chunker_obj = HierarchicalChunker()
+        else:  # default: hybrid
+            hf_tok = HuggingFaceTokenizer.from_pretrained(
+                model_name=chunk_tokenizer,
+                max_tokens=chunk_max_tokens,
+            )
+            chunker_obj = HybridChunker(tokenizer=hf_tok)
 
     for conv_res in conv_results:
         doc_failed = conv_res.status != ConversionStatus.SUCCESS
@@ -477,6 +562,61 @@ def export_documents(
                 with fname.open("w", encoding="utf-8") as fp:
                     fp.write(conv_res.document.export_to_doclang())
 
+            # Export DCLX format:
+            if export_dclx:
+                fname = output_dir / f"{doc_filename}.dclx"
+                _log.info(f"writing DCLX output to {fname}")
+                conv_res.document.save_as_doclang_archive(filename=fname)
+
+            # Export Chunks format:
+            if export_chunks and chunker_obj is not None:
+                fname = output_dir / f"{doc_filename}.chunks.jsonl"
+                _log.info(f"writing Chunks output to {fname}")
+                with fname.open("w", encoding="utf-8") as fp:
+                    for i, chunk in enumerate(
+                        chunker_obj.chunk(dl_doc=conv_res.document)
+                    ):
+                        doc_chunk = cast(DocChunk, chunk)
+                        page_numbers = sorted(
+                            {
+                                prov.page_no
+                                for item in doc_chunk.meta.doc_items
+                                for prov in item.prov
+                            }
+                        )
+                        metadata = {}
+                        if doc_chunk.meta.origin:
+                            metadata["origin"] = doc_chunk.meta.origin.model_dump(
+                                mode="json"
+                            )
+
+                        contextualized = chunker_obj.contextualize(doc_chunk)
+                        num_tokens: int | None = None
+                        if isinstance(chunker_obj, HybridChunker):
+                            num_tokens = chunker_obj.tokenizer.count_tokens(
+                                contextualized
+                            )
+                        chunk_record = ChunkedDocumentResultItem(
+                            filename=doc_filename,
+                            chunk_index=i,
+                            text=contextualized,
+                            raw_text=doc_chunk.text,
+                            num_tokens=num_tokens,
+                            headings=doc_chunk.meta.headings,
+                            captions=doc_chunk.meta.captions,
+                            doc_items=[
+                                item.self_ref for item in doc_chunk.meta.doc_items
+                            ],
+                            page_numbers=page_numbers,
+                            metadata=metadata,
+                        )
+                        fp.write(
+                            _json.dumps(
+                                chunk_record.model_dump(mode="json"),
+                                ensure_ascii=False,
+                            )
+                            + "\n"
+                        )
             # Print profiling timings
             if print_timings:
                 table = rich.table.Table(title=f"Profiling Summary, {doc_filename}")
@@ -555,6 +695,21 @@ def convert(  # noqa: C901
     ),
     to_formats: list[OutputFormat] = typer.Option(
         None, "--to", help="Specify output formats. Defaults to Markdown."
+    ),
+    chunker_type: ChunkerType = typer.Option(
+        ChunkerType.HYBRID,
+        "--chunks-type",
+        help="Chunker type for '--to chunks'.",
+    ),
+    chunk_max_tokens: int | None = typer.Option(
+        None,
+        "--chunks-max-tokens",
+        help="Max tokens per chunk. Defaults to the tokenizer's own limit.",
+    ),
+    chunk_tokenizer: str = typer.Option(
+        "sentence-transformers/all-MiniLM-L6-v2",
+        "--chunks-tokenizer",
+        help="HuggingFace tokenizer model name/path. Used only with --chunks-type hybrid.",
     ),
     show_layout: Annotated[
         bool,
@@ -1129,80 +1284,7 @@ def convert(  # noqa: C901
         )
 
         # Auto-selecting models (choose best implementation for hardware)
-        if asr_model == AsrModelType.WHISPER_TINY:
-            asr_pipeline_options.asr_options = WHISPER_TINY
-        elif asr_model == AsrModelType.WHISPER_SMALL:
-            asr_pipeline_options.asr_options = WHISPER_SMALL
-        elif asr_model == AsrModelType.WHISPER_MEDIUM:
-            asr_pipeline_options.asr_options = WHISPER_MEDIUM
-        elif asr_model == AsrModelType.WHISPER_BASE:
-            asr_pipeline_options.asr_options = WHISPER_BASE
-        elif asr_model == AsrModelType.WHISPER_LARGE:
-            asr_pipeline_options.asr_options = WHISPER_LARGE
-        elif asr_model == AsrModelType.WHISPER_TURBO:
-            asr_pipeline_options.asr_options = WHISPER_TURBO
-
-        # Explicit MLX models (force MLX implementation)
-        elif asr_model == AsrModelType.WHISPER_TINY_MLX:
-            asr_pipeline_options.asr_options = WHISPER_TINY_MLX
-        elif asr_model == AsrModelType.WHISPER_SMALL_MLX:
-            asr_pipeline_options.asr_options = WHISPER_SMALL_MLX
-        elif asr_model == AsrModelType.WHISPER_MEDIUM_MLX:
-            asr_pipeline_options.asr_options = WHISPER_MEDIUM_MLX
-        elif asr_model == AsrModelType.WHISPER_BASE_MLX:
-            asr_pipeline_options.asr_options = WHISPER_BASE_MLX
-        elif asr_model == AsrModelType.WHISPER_LARGE_MLX:
-            asr_pipeline_options.asr_options = WHISPER_LARGE_MLX
-        elif asr_model == AsrModelType.WHISPER_TURBO_MLX:
-            asr_pipeline_options.asr_options = WHISPER_TURBO_MLX
-
-        # Explicit Native models (force native implementation)
-        elif asr_model == AsrModelType.WHISPER_TINY_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_TINY_NATIVE
-        elif asr_model == AsrModelType.WHISPER_SMALL_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_SMALL_NATIVE
-        elif asr_model == AsrModelType.WHISPER_MEDIUM_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_MEDIUM_NATIVE
-        elif asr_model == AsrModelType.WHISPER_BASE_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_BASE_NATIVE
-        elif asr_model == AsrModelType.WHISPER_LARGE_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_LARGE_NATIVE
-        elif asr_model == AsrModelType.WHISPER_TURBO_NATIVE:
-            asr_pipeline_options.asr_options = WHISPER_TURBO_NATIVE
-
-        # Explicit WhisperS2T models (CTranslate2 backend - fastest)
-        elif asr_model == AsrModelType.WHISPER_TINY_S2T:
-            asr_pipeline_options.asr_options = WHISPER_TINY_S2T
-        elif asr_model == AsrModelType.WHISPER_TINY_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_TINY_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_BASE_S2T:
-            asr_pipeline_options.asr_options = WHISPER_BASE_S2T
-        elif asr_model == AsrModelType.WHISPER_BASE_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_BASE_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_SMALL_S2T:
-            asr_pipeline_options.asr_options = WHISPER_SMALL_S2T
-        elif asr_model == AsrModelType.WHISPER_SMALL_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_SMALL_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_DISTIL_SMALL_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_DISTIL_SMALL_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_MEDIUM_S2T:
-            asr_pipeline_options.asr_options = WHISPER_MEDIUM_S2T
-        elif asr_model == AsrModelType.WHISPER_MEDIUM_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_MEDIUM_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_DISTIL_MEDIUM_EN_S2T:
-            asr_pipeline_options.asr_options = WHISPER_DISTIL_MEDIUM_EN_S2T
-        elif asr_model == AsrModelType.WHISPER_LARGE_V3_S2T:
-            asr_pipeline_options.asr_options = WHISPER_LARGE_V3_S2T
-        elif asr_model == AsrModelType.WHISPER_DISTIL_LARGE_V3_S2T:
-            asr_pipeline_options.asr_options = WHISPER_DISTIL_LARGE_V3_S2T
-        elif asr_model == AsrModelType.WHISPER_LARGE_V3_TURBO_S2T:
-            asr_pipeline_options.asr_options = WHISPER_LARGE_V3_TURBO_S2T
-        elif asr_model == AsrModelType.WHISPER_DISTIL_LARGE_V3_5_S2T:
-            asr_pipeline_options.asr_options = WHISPER_DISTIL_LARGE_V3_5_S2T
-
-        else:
-            _log.error(f"{asr_model} is not known")
-            raise ValueError(f"{asr_model} is not known")
+        asr_pipeline_options.asr_options = _resolve_asr_options(asr_model)
 
         _log.debug(f"ASR pipeline_options: {asr_pipeline_options}")
 
@@ -1238,6 +1320,9 @@ def convert(  # noqa: C901
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,
+            chunker_type=chunker_type,
+            chunk_max_tokens=chunk_max_tokens,
+            chunk_tokenizer=chunk_tokenizer,
         )
 
         end_time = time.time() - start_time

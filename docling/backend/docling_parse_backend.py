@@ -47,9 +47,10 @@ _log = logging.getLogger(__name__)
 
 def _make_docling_parse_decode_config(
     *,
+    enforce_same_font: bool = True,
     release_native_memory_every_n_pages: int | None = None,
 ) -> DecodeConfig:
-    config = DecodeConfig(enforce_same_font=True)
+    config = DecodeConfig(enforce_same_font=enforce_same_font)
 
     if release_native_memory_every_n_pages is not None:
         config.release_native_memory_every_n_pages = release_native_memory_every_n_pages
@@ -279,7 +280,9 @@ class DoclingParseDocumentBackend(ManagedPdfiumDocumentBackend):
             with pypdfium2_lock:
                 self._pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
             self.parser = DoclingPdfParser(loglevel="fatal")
-            decode_config = _make_docling_parse_decode_config()
+            decode_config = _make_docling_parse_decode_config(
+                enforce_same_font=self.options.enforce_same_font,
+            )
             self.dp_doc = self.parser.load(
                 path_or_stream=self.path_or_stream,
                 password=password,
@@ -490,6 +493,7 @@ class ThreadedDoclingParseDocumentBackend(PdfDocumentBackend):
             else 128
         )
         decode_config = _make_docling_parse_decode_config(
+            enforce_same_font=self.options.enforce_same_font,
             release_native_memory_every_n_pages=native_memory_release_interval,
         )
         content_config = _make_docling_parse_page_content_config(

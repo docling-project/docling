@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import warnings
 from io import BytesIO
@@ -20,10 +22,6 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import ContentLayer
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
-from pptx import Presentation, presentation
-from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
-from pptx.exc import InvalidXmlError
-from pptx.oxml.text import CT_TextLineBreak
 from typing_extensions import override
 
 from docling.backend.abstract_backend import (
@@ -35,6 +33,23 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
+
+_PPTX_AVAILABLE: bool = False
+_PPTX_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from pptx import Presentation, presentation
+    from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
+    from pptx.exc import InvalidXmlError
+    from pptx.oxml.text import CT_TextLineBreak
+
+    _PPTX_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _PPTX_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'python-pptx' package is required to process PowerPoint files. "
+    "Install it with `pip install 'docling-slim[format-pptx]'`."
+)
 
 
 class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
@@ -66,8 +81,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     )
 
     def __init__(
-        self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
+        self, in_doc: InputDocument, path_or_stream: Union[BytesIO, Path]
     ) -> None:
+        if not _PPTX_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _PPTX_IMPORT_ERROR
         super().__init__(in_doc, path_or_stream)
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
         self.page_range = in_doc.limits.page_range

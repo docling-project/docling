@@ -169,6 +169,14 @@ class PdfBackendOptions(BaseBackendOptions):
 
     kind: Literal["pdf"] = Field("pdf", exclude=True, repr=False)
     password: Optional[SecretStr] = None
+    enforce_same_font: bool = Field(
+        True,
+        description=(
+            "Whether docling-parse should split text cells at font boundaries. "
+            "Disable this when PDFs use separate fonts for base glyphs and "
+            "diacritics that should remain in the same text cell."
+        ),
+    )
 
 
 class ThreadedDoclingParseBackendOptions(PdfBackendOptions):
@@ -226,6 +234,17 @@ class MsExcelBackendOptions(BaseBackendOptions):
             "cells) as TextItem instead of TableItem."
         ),
     )
+
+    parse_charts: bool = Field(
+        True,
+        description=(
+            "Whether to parse native charts embedded in worksheets and chart "
+            "sheets. Each chart becomes a PictureItem classified by chart type "
+            "(bar, line, pie, scatter) and carrying the chart's underlying data "
+            "reconstructed as a table. Set to False to skip chart parsing."
+        ),
+    )
+
     gap_tolerance: int = Field(
         0,
         description=(

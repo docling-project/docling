@@ -443,15 +443,7 @@ def test_get_heading_and_level_non_heading(
 
 
 def test_external_image_references():
-    """Test that .docx files with external image references convert without crashing.
-
-    Docx files saved from web browsers often have images as external references
-    (TargetMode="External") pointing to URLs or file:// paths rather than embedded
-    in word/media/. Previously this caused a ValueError from python-docx:
-    "target_part property on _Relationship is undefined when target mode is External"
-
-    See: https://github.com/docling-project/docling/issues/3113
-    """
+    """Test that .docx files with external image references convert without crashing."""
     docx_path = Path("./tests/data/docx/sources/docx_external_image.docx")
     assert docx_path.exists(), f"Test file not found: {docx_path}"
 
@@ -470,6 +462,134 @@ def test_external_image_references():
     assert "Test Document with External Image" in md
     assert "text before the image" in md
     assert "after the external image" in md
+
+
+def test_transitional_docx_skips_strict_normalization(monkeypatch):
+    """Transitional files must take the cheap fast path (no full normalization)."""
+    import zipfile
+    from io import BytesIO
+
+    def _boom(archive):  # pragma: no cover - only runs on regression
+        raise AssertionError("Transitional file must not be normalized")
+
+    monkeypatch.setattr(msword_backend_module, "_normalize_strict_ooxml", _boom)
+
+    transitional_path = Path("./tests/data/docx/sources/Transitional.docx")
+
+    with zipfile.ZipFile(transitional_path) as archive:
+        assert msword_backend_module._is_strict_ooxml(archive) is False
+
+    # Both the Path and the in-memory stream load paths must stay on the fast path.
+    assert MsWordDocumentBackend.load_msword_file(transitional_path, "hash") is not None
+    stream = BytesIO(transitional_path.read_bytes())
+    assert MsWordDocumentBackend.load_msword_file(stream, "hash") is not None
+
+
+def test_strict_ooxml_detection_reads_root_rels():
+    """Strict is detected from the root relationships part, else treated as plain."""
+    import zipfile
+
+    with zipfile.ZipFile(Path("./tests/data/docx/sources/Strict.docx")) as archive:
+        assert msword_backend_module._is_strict_ooxml(archive) is True
+
+    # A package without a root relationships part is not classified as Strict.
+    empty = _make_strict_zip({}, include_root_rels=False)
+    with zipfile.ZipFile(empty) as archive:
+        assert msword_backend_module._is_strict_ooxml(archive) is False
+
+
+@pytest.mark.parametrize(
+    ("strict_ns", "expected"),
+    [
+        (
+            "http://purl.oclc.org/ooxml/wordprocessingml/main",
+            "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+        ),
+        # Override table entry (irregular Strict -> Transitional mapping).
+        (
+            "http://purl.oclc.org/ooxml/officeDocument/relationships/customXml",
+            "http://schemas.openxmlformats.org/officeDocument/2006/customXml",
+        ),
+        # Single-segment namespace: no path tail after the first segment.
+        (
+            "http://purl.oclc.org/ooxml/sharedTypes",
+            "http://schemas.openxmlformats.org/sharedTypes/2006",
+        ),
+        # camelCase property namespace hyphenated in Transitional.
+        (
+            "http://purl.oclc.org/ooxml/extendedProperties",
+            "http://schemas.openxmlformats.org/extended-properties/2006",
+        ),
+    ],
+)
+def test_strict_ns_to_transitional_mapping(strict_ns, expected):
+    """The Strict->Transitional namespace mapping covers regular and irregular forms."""
+    assert msword_backend_module._strict_ns_to_transitional(strict_ns) == expected
+
+
+def _make_strict_zip(extra_members: dict[str, bytes], include_root_rels: bool = True):
+    """Build a minimal in-memory package that classifies as Strict OOXML."""
+    import zipfile
+    from io import BytesIO
+
+    root_rels = (
+        b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        b'<Relationship Id="rId1" '
+        b'Type="http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument" '
+        b'Target="word/document.xml"/></Relationships>'
+    )
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        if include_root_rels:
+            archive.writestr("_rels/.rels", root_rels)
+        for name, content in extra_members.items():
+            archive.writestr(name, content)
+    buffer.seek(0)
+    return buffer
+
+
+@pytest.mark.parametrize("evil_name", ["../evil.xml", "/etc/passwd", "..\\evil.xml"])
+def test_strict_ooxml_rejects_zip_slip(evil_name):
+    """A Strict package with a traversal or absolute member name is rejected."""
+    import zipfile
+
+    from docling.exceptions import SecurityError
+
+    buffer = _make_strict_zip({evil_name: b"<x/>"})
+    with zipfile.ZipFile(buffer) as archive:
+        assert msword_backend_module._is_strict_ooxml(archive) is True
+        with pytest.raises(SecurityError, match="ZIP slip"):
+            msword_backend_module._normalize_strict_ooxml(archive)
+
+
+@pytest.mark.parametrize(
+    ("cap_attr", "message"),
+    [
+        ("_MAX_TOTAL_UNCOMPRESSED_SIZE", "uncompressed size"),
+        ("_MAX_MEMBER_UNCOMPRESSED_SIZE", "oversized OOXML part"),
+    ],
+)
+def test_strict_ooxml_rejects_zip_bomb(monkeypatch, cap_attr, message):
+    """A Strict package exceeding the per-member or total budget is rejected."""
+    import zipfile
+
+    from docling.exceptions import SecurityError
+
+    monkeypatch.setattr(msword_backend_module, cap_attr, 128)
+    buffer = _make_strict_zip({"word/document.xml": b"A" * 4096})
+    with zipfile.ZipFile(buffer) as archive:
+        with pytest.raises(SecurityError, match=message):
+            msword_backend_module._normalize_strict_ooxml(archive)
+
+
+def test_load_msword_file_propagates_security_error():
+    """A malicious Strict stream surfaces SecurityError instead of a load error."""
+    from docling.exceptions import SecurityError
+
+    buffer = _make_strict_zip({"../evil.xml": b"<x/>"})
+    with pytest.raises(SecurityError, match="ZIP slip"):
+        MsWordDocumentBackend.load_msword_file(buffer, "hash")
 
 
 def test_inline_sdt_references(tmp_path):
@@ -1021,3 +1141,52 @@ def test_invisible_spacer_logic():
     # Test normal, valid graphic
     valid_img = Image.new("RGB", (50, 50), (100, 150, 200))
     assert backend._is_invisible_spacer(valid_img) is False
+
+
+def test_malformed_hyperlink_does_not_abort_conversion(tmp_path):
+    """A single malformed hyperlink address (e.g. containing a space) must not
+    raise a pydantic ValidationError that aborts the whole DOCX conversion.
+
+    Regression test: previously ``_get_hyperlink_target`` called
+    ``AnyUrl(address)`` unguarded, so any address with a scheme but invalid
+    contents crashed the pipeline.
+    """
+    from docx import Document
+    from docx.opc.constants import RELATIONSHIP_TYPE as RT
+    from docx.oxml.ns import qn
+
+    doc = Document()
+    para = doc.add_paragraph("Before link. ")
+    # Ordinary real-world URL that happens to contain a space -> AnyUrl rejects it.
+    r_id = doc.part.relate_to(
+        "http://exa mple.com/bad url", RT.HYPERLINK, is_external=True
+    )
+    hyperlink = etree.SubElement(para._p, qn("w:hyperlink"))
+    hyperlink.set(qn("r:id"), r_id)
+    run = etree.SubElement(hyperlink, qn("w:r"))
+    etree.SubElement(run, qn("w:t")).text = "click me"
+    doc.add_paragraph("After link.")
+
+    docx_path = tmp_path / "malformed_hyperlink.docx"
+    doc.save(docx_path)
+
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    result = in_doc._backend.convert()
+
+    # Conversion succeeds and the link's visible text is preserved.
+    md = result.export_to_markdown()
+    assert "click me" in md
+    assert "Before link." in md
+    assert "After link." in md
+
+    # The broken link target is dropped rather than crashing the run.
+    hyperlinks = [
+        item.hyperlink
+        for item, _ in result.iterate_items()
+        if isinstance(item, TextItem) and item.hyperlink is not None
+    ]
+    assert hyperlinks == []

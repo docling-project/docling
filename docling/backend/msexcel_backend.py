@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections
 import logging
 import posixpath
@@ -23,24 +25,17 @@ from docling_core.types.doc import (
     GroupItem,
     GroupLabel,
     ImageRef,
+    PictureClassificationLabel,
+    PictureClassificationMetaField,
+    PictureClassificationPrediction,
+    PictureMeta,
     ProvenanceItem,
     Size,
     TableCell,
     TableData,
+    TabularChartMetaField,
 )
 from lxml import etree
-from openpyxl import load_workbook
-from openpyxl.chartsheet.chartsheet import Chartsheet
-from openpyxl.drawing.image import Image
-from openpyxl.drawing.spreadsheet_drawing import (
-    OneCellAnchor,
-    SpreadsheetDrawing,
-    TwoCellAnchor,
-)
-from openpyxl.packaging.relationship import get_dependents, get_rels_path
-from openpyxl.styles import PatternFill
-from openpyxl.worksheet.worksheet import Worksheet
-from openpyxl.xml.constants import IMAGE_NS
 from PIL import Image as PILImage, UnidentifiedImageError
 from pydantic import BaseModel, Field, NonNegativeInt, PositiveInt
 from pydantic.dataclasses import dataclass
@@ -61,6 +56,32 @@ from docling.exceptions import DocumentLoadError
 
 _log = logging.getLogger(__name__)
 
+_OPENPYXL_AVAILABLE: bool = False
+_OPENPYXL_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from openpyxl import load_workbook
+    from openpyxl.chartsheet.chartsheet import Chartsheet
+    from openpyxl.drawing.image import Image
+    from openpyxl.drawing.spreadsheet_drawing import (
+        OneCellAnchor,
+        SpreadsheetDrawing,
+        TwoCellAnchor,
+    )
+    from openpyxl.packaging.relationship import get_dependents, get_rels_path
+    from openpyxl.styles import PatternFill
+    from openpyxl.utils.cell import range_boundaries
+    from openpyxl.worksheet.worksheet import Worksheet
+    from openpyxl.xml.constants import IMAGE_NS
+
+    _OPENPYXL_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _OPENPYXL_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'openpyxl' package is required to process Excel files. "
+    "Install it with `pip install 'docling-slim[format-xlsx]'`."
+)
+
 
 # Safe XML parser — prevents XXE, DTD-over-network, and entity-expansion attacks.
 _SAFE_XML_PARSER: Final = etree.XMLParser(
@@ -69,6 +90,22 @@ _SAFE_XML_PARSER: Final = etree.XMLParser(
     no_network=True,
     dtd_validation=False,
 )
+
+# Maps an openpyxl chart object's ``tagname`` (the DrawingML element name, e.g.
+# "barChart") to the docling picture-classification label we tag the emitted
+# PictureItem with. Chart types not listed fall back to OTHER_CHART.
+_CHART_TAGNAME_TO_CLASSIFICATION: Final[dict[str, PictureClassificationLabel]] = {
+    "barChart": PictureClassificationLabel.BAR_CHART,
+    "bar3DChart": PictureClassificationLabel.BAR_CHART,
+    "lineChart": PictureClassificationLabel.LINE_CHART,
+    "line3DChart": PictureClassificationLabel.LINE_CHART,
+    "pieChart": PictureClassificationLabel.PIE_CHART,
+    "pie3DChart": PictureClassificationLabel.PIE_CHART,
+    "doughnutChart": PictureClassificationLabel.PIE_CHART,
+    "scatterChart": PictureClassificationLabel.SCATTER_CHART,
+    "areaChart": PictureClassificationLabel.OTHER_CHART,
+    "area3DChart": PictureClassificationLabel.OTHER_CHART,
+}
 
 
 def _has_unsafe_zip_paths(namelist: list[str]) -> bool:
@@ -172,7 +209,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     @override
     def __init__(
         self,
-        in_doc: "InputDocument",
+        in_doc: InputDocument,
         path_or_stream: BytesIO | Path,
         options: MsExcelBackendOptions | None = None,
     ) -> None:
@@ -186,6 +223,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Raises:
             RuntimeError: An error occurred parsing the file.
         """
+        if not _OPENPYXL_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _OPENPYXL_IMPORT_ERROR
         if options is None:
             options = MsExcelBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
@@ -478,9 +517,10 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         if isinstance(sheet, Worksheet):
             doc = self._find_tables_in_sheet(doc, sheet, page_no)
             doc = self._find_images_in_sheet(doc, sheet, page_no)
-            self._sort_sheet_children_by_position(doc, page_no)
-
-        # TODO: parse charts in sheet
+        # Charts can be on both Worksheet and Chartsheet objects
+        if isinstance(sheet, (Worksheet, Chartsheet)):
+            doc = self._find_chart_in_sheet(doc, sheet, page_no)
+        self._sort_sheet_children_by_position(doc, page_no)
 
         return doc
 
@@ -1204,6 +1244,288 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             doc = self._find_unsupported_images_in_sheet(doc, sheet, page_no)
 
         return doc
+
+    def _find_chart_in_sheet(
+        self, doc: DoclingDocument, sheet: Worksheet | Chartsheet, page_no: int
+    ) -> DoclingDocument:
+        """Find native charts on a sheet and attach them as classified pictures.
+
+        openpyxl parses each embedded chart (bar, line, pie, scatter, ...) into
+        ``sheet._charts``.  For every chart we emit a PictureItem whose meta
+        carries (a) the chart-type classification and (b) the chart's underlying
+        numbers reconstructed as a TableData.  This mirrors the ODF backend so
+        XLSX and ODS charts have the same downstream shape.
+
+        Args:
+            doc: The DoclingDocument to update.
+            sheet: The worksheet or chart sheet being parsed.
+            page_no: The 1-based page number of this sheet, used for provenance.
+
+        Returns:
+            The updated DoclingDocument.
+        """
+
+        if not (
+            isinstance(self.options, MsExcelBackendOptions)
+            and self.options.parse_charts
+        ):
+            return doc
+        content_layer = self._get_sheet_content_layer(sheet)
+
+        for chart in sheet._charts:  # type: ignore[attr-defined]
+            try:
+                classification = _CHART_TAGNAME_TO_CLASSIFICATION.get(
+                    chart.tagname, PictureClassificationLabel.OTHER_CHART
+                )
+                caption_text = self._chart_title_text(chart)
+                table_data = self._chart_to_table_data(chart)
+
+                bbox = BoundingBox.from_tuple(
+                    self._anchor_to_tuple(chart.anchor),
+                    origin=CoordOrigin.TOPLEFT,
+                )
+
+                caption_item = (
+                    doc.add_text(
+                        label=DocItemLabel.CAPTION,
+                        text=caption_text,
+                        content_layer=content_layer,
+                    )
+                    if caption_text
+                    else None
+                )
+
+                picture = doc.add_picture(
+                    parent=self.parent,
+                    caption=caption_item,
+                    prov=ProvenanceItem(
+                        page_no=page_no,
+                        charspan=(0, 0),
+                        bbox=bbox,
+                    ),
+                    content_layer=content_layer,
+                )
+
+                picture.meta = PictureMeta(
+                    classification=PictureClassificationMetaField(
+                        predictions=[
+                            PictureClassificationPrediction(class_name=classification)
+                        ]
+                    ),
+                    tabular_chart=(
+                        TabularChartMetaField(chart_data=table_data)
+                        if table_data is not None
+                        else None
+                    ),
+                )
+            except Exception:
+                _log.error(
+                    "could not extract a chart from the excel sheet", exc_info=True
+                )
+
+        return doc
+
+    @staticmethod
+    def _chart_title_text(chart: Any) -> str | None:
+        """Extract the plain-text title of an openpyxl chart, if any.
+
+        A chart title is stored as DrawingML rich text: ``chart.title`` is a
+        Title object whose ``.tx.rich.p`` is a list of paragraphs, each with a
+        list of runs ``.r``, each run carrying its text in ``.t``.  We flatten
+        all runs into a single string.  Returns None when the chart has no title.
+
+        Args:
+            chart: An openpyxl chart object (BarChart, LineChart, ...).
+
+        Returns:
+            The concatenated title text, or None.
+        """
+        title = chart.title
+        if title is None:
+            return None
+
+        if isinstance(title, str):
+            return title or None
+        tx = title.tx
+        if tx is None or tx.rich is None:
+            return None
+
+        runs: list[str] = []
+        for paragraph in tx.rich.p:
+            for run in paragraph.r or []:
+                if run.t:
+                    runs.append(run.t)
+        text = "".join(runs).strip()
+        return text or None
+
+    def _chart_to_table_data(self, chart: Any) -> TableData | None:
+        """Reconstruct a chart's underlying data grid as a TableData.
+
+        Layout produced (categories down the first column, one column per series):
+
+            | <blank> | <series 0 name> | <series 1 name> | ...
+            | cat_0   | val_0,0         | val_1,0         | ...
+            | cat_1   | val_0,1         | val_1,1         | ...
+
+        Chart data is stored in openpyxl as *references* back into the workbook
+        (e.g. "'Sheet1'!$B$2:$B$7"), which we resolve to cached cell values.
+        Scatter charts use ``xVal``/``yVal`` instead of ``cat``/``val``.
+
+        Args:
+            chart: An openpyxl chart object.
+
+        Returns:
+            A TableData, or None if the chart exposes no usable series.
+        """
+        series_list = list(chart.series)
+        if not series_list:
+            return None
+
+        categories: list[str] = []
+        for series in series_list:
+            cat_ref = self._ref_formula(series.cat) or self._ref_formula(series.xVal)
+            if cat_ref:
+                categories = self._resolve_reference(cat_ref)
+                break
+
+        columns: list[tuple[str, list[str]]] = []
+
+        for series in series_list:
+            value_ref = self._ref_formula(series.val) or self._ref_formula(series.yVal)
+            values = self._resolve_reference(value_ref) if value_ref else []
+
+            name_ref = self._ref_formula(series.tx)
+            if name_ref:
+                resolved = self._resolve_reference(name_ref)
+                name = resolved[0] if resolved else ""
+            elif series.tx is not None and series.tx.v is not None:
+                name = str(series.tx.v)
+            else:
+                name = ""
+            columns.append((name, values))
+
+        num_data_rows = max([len(categories)] + [len(values) for _, values in columns])
+        if num_data_rows == 0:
+            return None
+
+        num_rows = num_data_rows + 1
+        num_cols = 1 + len(columns)
+        cells: list[TableCell] = []
+
+        header_labels = [""] + [name for name, _ in columns]
+        for col_idx, label in enumerate(header_labels):
+            cells.append(
+                TableCell(
+                    text=label,
+                    row_span=1,
+                    col_span=1,
+                    start_row_offset_idx=0,
+                    end_row_offset_idx=1,
+                    start_col_offset_idx=col_idx,
+                    end_col_offset_idx=col_idx + 1,
+                    column_header=True,
+                    row_header=False,
+                )
+            )
+        for data_row in range(num_data_rows):
+            row_idx = data_row + 1
+            category = categories[data_row] if data_row < len(categories) else ""
+            row_texts = [category] + [
+                (values[data_row] if data_row < len(values) else "")
+                for _, values in columns
+            ]
+            for col_idx, text in enumerate(row_texts):
+                cells.append(
+                    TableCell(
+                        text=text,
+                        row_span=1,
+                        col_span=1,
+                        start_row_offset_idx=row_idx,
+                        end_row_offset_idx=row_idx + 1,
+                        start_col_offset_idx=col_idx,
+                        end_col_offset_idx=col_idx + 1,
+                        column_header=False,
+                        row_header=(col_idx == 0),
+                    )
+                )
+
+        return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
+
+    @staticmethod
+    def _ref_formula(data_source: Any) -> str | None:
+        """Return the cell-range formula string from a chart data source.
+
+        A chart's series title/categories/values are each a small openpyxl
+        object (SeriesLabel, AxDataSource, NumDataSource) that may hold either a
+        numeric reference (``.numRef``) or a string reference (``.strRef``); both
+        expose the range formula on ``.f`` (e.g. "'Sheet1'!$B$2:$B$7").  These
+        objects don't share a common base exposing both attributes, so we probe
+        each — a narrowly-scoped getattr against a third-party API.
+
+        Args:
+            data_source: A chart data-source object, or None.
+
+        Returns:
+            The range-formula string, or None if absent.
+        """
+        if data_source is None:
+            return None
+        num_ref = getattr(data_source, "numRef", None)
+        if num_ref is not None and num_ref.f:
+            return num_ref.f
+        str_ref = getattr(data_source, "strRef", None)
+        if str_ref is not None and str_ref.f:
+            return str_ref.f
+        return None
+
+    def _resolve_reference(self, ref: str) -> list[str]:
+        """Resolve a chart range reference to a flat list of cell-value strings.
+
+        Charts point at their data by reference rather than embedding it, e.g.
+        ``"'Duck Observations'!$B$2:$B$7"``.  We split off the (possibly quoted)
+        sheet name, convert the range to bounds with openpyxl's
+        ``range_boundaries``, and read the *cached* values from the workbook
+        (the backend loads with ``data_only=True``, so we get computed numbers,
+        not formulas).  Values are returned in row-major order.
+
+        Args:
+            ref: A range reference string, optionally sheet-qualified.
+
+        Returns:
+            The referenced cell values as strings ("" for empty cells).  Returns
+            an empty list if the sheet is missing (e.g. filtered out) or the
+            reference can't be parsed.
+        """
+        if self.workbook is None:
+            return []
+
+        if "!" in ref:
+            sheet_part, cell_range = ref.rsplit("!", 1)
+            sheet_part = sheet_part.strip()
+            if sheet_part.startswith("'") and sheet_part.endswith("'"):
+                sheet_part = sheet_part[1:-1].replace("''", "'")
+            sheet_name = sheet_part
+        else:
+            sheet_name, cell_range = self.workbook.active.title, ref
+        if sheet_name not in self.workbook.sheetnames:
+            _log.debug("Chart references unknown sheet %r", sheet_name)
+            return []
+
+        target_sheet = self.workbook[sheet_name]
+
+        try:
+            min_col, min_row, max_col, max_row = range_boundaries(cell_range)
+        except Exception:
+            _log.debug("Could not parse chart range %r", cell_range)
+            return []
+
+        values: list[str] = []
+        for row in range(min_row, max_row + 1):
+            for col in range(min_col, max_col + 1):
+                value = target_sheet.cell(row=row, column=col).value
+                values.append("" if value is None else str(value))
+
+        return values
 
     @staticmethod
     def _find_page_size(

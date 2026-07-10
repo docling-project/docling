@@ -8,12 +8,18 @@ special characters.
 Adapted from https://github.com/xiilei/dwml/blob/master/dwml/omml.py on 23/01/2025.
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Any, Iterator
 
 import lxml.etree as ET
 from lxml.etree import _Element
-from pylatexenc.latexencode import UnicodeToLatexEncoder
+
+try:  # pragma: no cover - import-time guard
+    from pylatexenc.latexencode import UnicodeToLatexEncoder
+except ImportError:
+    pass  # guarded by MsWordDocumentBackend.__init__
 
 from docling.backend.docx.latex.latex_dict import (
     ALN,
@@ -295,11 +301,6 @@ class oMath2Latex(Tag2Method):
 
     _t_dict: dict[str, str] = T
     __direct_tags: tuple[str, ...] = ("box", "num", "den", "deg", "e")
-    u: UnicodeToLatexEncoder = UnicodeToLatexEncoder(
-        replacement_latex_protection="braces-all",
-        unknown_char_policy="keep",
-        unknown_char_warning=False,
-    )
 
     def __init__(self, element: _Element):
         """Initialize OMML to LaTeX converter.
@@ -307,6 +308,11 @@ class oMath2Latex(Tag2Method):
         Args:
             element: Root oMath XML element to convert.
         """
+        self.u: UnicodeToLatexEncoder = UnicodeToLatexEncoder(
+            replacement_latex_protection="braces-all",
+            unknown_char_policy="keep",
+            unknown_char_warning=False,
+        )
         self._latex = self.process_children(element)
 
     def __str__(self) -> str:
