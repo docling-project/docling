@@ -603,16 +603,9 @@ def _convert(docx_path):
 
 
 def test_table_row_with_grid_before_is_preserved(tmp_path):
-    """Rows that start late via ``w:gridBefore`` must not drop cells.
+    """A row starting late via ``w:gridBefore`` keeps its cells at the right column.
 
-    ``_Row.cells`` returns only the cells actually present, so a ``gridBefore``
-    row is shorter than the grid width. The vertical-merge scan used to index
-    that shorter row positionally and raise ``IndexError``, which
-    ``_walk_linear`` swallowed at DEBUG level, aborting the whole table. On top
-    of that, ``grid_cols_before`` (a column count) was used as a row offset,
-    shifting a late-starting cell down a row instead of right a column.
-
-    See https://github.com/docling-project/docling/issues/3739
+    The late-starting cell belongs one column to the right, not one row down.
     """
     # 2x2; row 1 starts late (gridBefore=1). Its only remaining cell is B2:
     #   grid col:   0    1
@@ -631,9 +624,7 @@ def test_table_row_with_grid_before_is_preserved(tmp_path):
     assert len(doc.tables) == 1
     by_text = {c.text: c for c in doc.tables[0].data.table_cells}
 
-    # No cell dropped, table not aborted.
     assert {"A1", "B1", "B2"}.issubset(by_text)
-    # B1 stays at grid (0, 1); B2 is shifted RIGHT into (1, 1), not DOWN.
     b1, b2 = by_text["B1"], by_text["B2"]
     assert (b1.start_row_offset_idx, b1.start_col_offset_idx) == (0, 1)
     assert (b2.start_row_offset_idx, b2.start_col_offset_idx) == (1, 1)
@@ -641,11 +632,10 @@ def test_table_row_with_grid_before_is_preserved(tmp_path):
 
 
 def test_vertical_merge_survives_grid_before_row(tmp_path):
-    """A vertical merge must keep its row span across a row that starts late.
+    """A vertical merge keeps its row span across a row that starts late.
 
-    The merge scan is now indexed by true grid column instead of by position
-    within the (shorter) ``gridBefore`` row, so a cell merged down a column is
-    no longer truncated to a single row when the row below starts late.
+    The merged cell's continuation sits at the same grid column even though the
+    row below it holds fewer cells.
     """
     # 3 cols; grid col 2 is vertically merged across rows 0-1, row 1 starts late:
     #   grid col:   0    1    2
@@ -666,11 +656,9 @@ def test_vertical_merge_survives_grid_before_row(tmp_path):
     cells = doc.tables[0].data.table_cells
     by_pos = {(c.start_row_offset_idx, c.start_col_offset_idx): c for c in cells}
 
-    # First row is intact (no IndexError abort).
     assert by_pos[(0, 0)].text == "P"
     assert by_pos[(0, 1)].text == "Q"
 
-    # X spans both rows at grid column 2 (row_span was wrongly 1 before).
     merged = by_pos[(0, 2)]
     assert merged.text.startswith("X")
     assert merged.row_span == 2
