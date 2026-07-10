@@ -497,10 +497,10 @@ def export_documents(
                 fname = output_dir / f"{doc_filename}.html"
                 _log.info(f"writing HTML output to {fname}")
                 conv_res.document.save_as_html(
-                        filename=fname,
-                        image_mode=image_export_mode,
-                        split_page_view=False,
-                    )
+                    filename=fname,
+                    image_mode=image_export_mode,
+                    split_page_view=False,
+                )
 
             # Export HTML format:
             if export_html_split_page:

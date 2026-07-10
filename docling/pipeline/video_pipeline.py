@@ -308,4 +308,3 @@ class VideoPipeline(BasePipeline):
                     temp_video.unlink()
                 except Exception:
                     pass
-
