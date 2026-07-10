@@ -21,7 +21,7 @@ _WINDOW_STEP = 0.5  # seconds between embedding windows
 
 
 @dataclass
-class SpeakerSegment:
+class _SpeakerSegment:
     """A time segment attributed to a single speaker."""
 
     start_time: float
@@ -30,10 +30,10 @@ class SpeakerSegment:
 
 
 @dataclass
-class DiarizationResult:
+class _DiarizationResult:
     """Output of speaker diarization."""
 
-    segments: list[SpeakerSegment] = field(default_factory=list)
+    segments: list[_SpeakerSegment] = field(default_factory=list)
     num_speakers: int = 0
     speaker_ids: list[str] = field(default_factory=list)
 
@@ -60,7 +60,7 @@ def _estimate_num_speakers(embeddings: np.ndarray) -> int:
 def diarize(
     wav_path: Path,
     num_speakers: int | None = None,
-) -> DiarizationResult:
+) -> _DiarizationResult:
     """Run speaker diarization on a WAV file.
 
     Args:
@@ -77,7 +77,7 @@ def diarize(
             "resemblyzer is not installed. Speaker diarization disabled. "
             "Install with: pip install resemblyzer"
         )
-        return DiarizationResult()
+        return _DiarizationResult()
 
     _log.info("Loading audio for diarization: %s", wav_path)
     import soundfile as sf
@@ -102,7 +102,7 @@ def diarize(
     wav = normalize_volume(raw, audio_norm_target_dBFS, increase_only=True)
     if len(wav) == 0:
         _log.warning("Empty audio — skipping diarization")
-        return DiarizationResult()
+        return _DiarizationResult()
 
     encoder = VoiceEncoder(device="cpu")
 
@@ -122,7 +122,7 @@ def diarize(
 
     if not wav_splits:
         _log.warning("Audio too short for diarization")
-        return DiarizationResult()
+        return _DiarizationResult()
 
     _log.info("Encoding %d audio windows", len(wav_splits))
     # ASR (Whisper) earlier in the pipeline raises torch's thread count to the
@@ -149,7 +149,7 @@ def diarize(
     speaker_ids = [f"SPEAKER_{i:02d}" for i in range(n)]
 
     # Build continuous speaker segments by merging consecutive same-speaker windows
-    segments: list[SpeakerSegment] = []
+    segments: list[_SpeakerSegment] = []
     if len(timestamps) > 0:
         cur_speaker = speaker_ids[labels[0]]
         cur_start = timestamps[0]
@@ -160,13 +160,13 @@ def diarize(
             if spk == cur_speaker:
                 cur_end = ts + _WINDOW_STEP
             else:
-                segments.append(SpeakerSegment(cur_start, cur_end, cur_speaker))
+                segments.append(_SpeakerSegment(cur_start, cur_end, cur_speaker))
                 cur_speaker = spk
                 cur_start = ts
                 cur_end = ts + _WINDOW_STEP
 
         # Extend last segment to end of audio
-        segments.append(SpeakerSegment(cur_start, len(wav) / sr, cur_speaker))
+        segments.append(_SpeakerSegment(cur_start, len(wav) / sr, cur_speaker))
 
     return DiarizationResult(
         segments=segments,
@@ -177,7 +177,7 @@ def diarize(
 
 def assign_speakers(
     transcript_items: list,
-    diarization: DiarizationResult,
+    diarization: _DiarizationResult,
 ) -> list:
     """Assign speaker labels to transcript ConversationItems.
 
@@ -186,7 +186,7 @@ def assign_speakers(
 
     Args:
         transcript_items: List of ConversationItem from ASR transcriber.
-        diarization: DiarizationResult from diarize().
+        diarization: _DiarizationResult from diarize().
 
     Returns:
         The same list with .speaker set on each item.

@@ -199,11 +199,11 @@ class VideoPipeline(BasePipeline):
                             )
                         except Exception as exc:
                             _log.warning("Speaker diarization failed: %s", exc)
-                            diarization = DiarizationResult()
+                            diarization = _DiarizationResult()
                     else:
-                        diarization = DiarizationResult()
+                        diarization = _DiarizationResult()
                 else:
-                    diarization = DiarizationResult()
+                    diarization = _DiarizationResult()
                     _log.warning(
                         "Audio extraction produced no output for %s; "
                         "document will contain frames only.",
