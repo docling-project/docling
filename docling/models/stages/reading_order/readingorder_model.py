@@ -392,8 +392,12 @@ class ReadingOrderModel:
         elif label == DocItemLabel.FORMULA:
             current_list = None
 
+            # Carry the extracted text instead of leaving it empty: the code/
+            # formula enrichment stage overwrites it with LaTeX when enabled,
+            # but with enrichment disabled (the default) an empty text drops
+            # the content from every export (issue #3780).
             new_item = out_doc.add_text(
-                label=DocItemLabel.FORMULA, text="", orig=cap_text, prov=prov
+                label=DocItemLabel.FORMULA, text=cap_text, orig=cap_text, prov=prov
             )
         else:
             current_list = None

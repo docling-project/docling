@@ -7226,7 +7226,7 @@
         }
       ],
       "orig": "l box = \u03bb iou l iou + \u03bb l 1 l = \u03bbl s +(1 -\u03bb ) l box (1)",
-      "text": ""
+      "text": "l box = \u03bb iou l iou + \u03bb l 1 l = \u03bbl s +(1 -\u03bb ) l box (1)"
     },
     {
       "self_ref": "#/texts/233",
@@ -7363,7 +7363,7 @@
         }
       ],
       "orig": "Image width and height \u2264 1024 pixels Structural tags length \u2264 512 tokens. (2)",
-      "text": ""
+      "text": "Image width and height \u2264 1024 pixels Structural tags length \u2264 512 tokens. (2)"
     },
     {
       "self_ref": "#/texts/238",
@@ -7676,7 +7676,7 @@
         }
       ],
       "orig": "TEDS( T a , T b ) = 1 -EditDist ( T a , T b ) max( | T a | , | T b | ) (3)",
-      "text": ""
+      "text": "TEDS( T a , T b ) = 1 -EditDist ( T a , T b ) max( | T a | , | T b | ) (3)"
     },
     {
       "self_ref": "#/texts/249",
@@ -16300,7 +16300,7 @@
         }
       ],
       "orig": "alignment = arg min c { D c } D c = max { x c } -min { x c } (4)",
-      "text": ""
+      "text": "alignment = arg min c { D c } D c = max { x c } -min { x c } (4)"
     },
     {
       "self_ref": "#/texts/563",
