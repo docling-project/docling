@@ -28,15 +28,6 @@ from docling_core.types.doc import (
     TableItem,
 )
 from docling_core.types.doc.document import FineRef, Formatting, Script
-from docx import Document
-from docx.document import Document as DocxDocument
-from docx.oxml.simpletypes import ST_Merge
-from docx.oxml.xmlchemy import BaseOxmlElement
-from docx.styles.style import ParagraphStyle
-from docx.table import Table, _Cell
-from docx.text.hyperlink import Hyperlink
-from docx.text.paragraph import Paragraph
-from docx.text.run import Run
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
 from pydantic import AnyUrl, ValidationError
@@ -59,7 +50,7 @@ _DOCX_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
     from docx import Document
     from docx.document import Document as DocxDocument
-    from docx.oxml.table import CT_Tc
+    from docx.oxml.simpletypes import ST_Merge
     from docx.oxml.xmlchemy import BaseOxmlElement
     from docx.styles.style import ParagraphStyle
     from docx.table import Table, _Cell
