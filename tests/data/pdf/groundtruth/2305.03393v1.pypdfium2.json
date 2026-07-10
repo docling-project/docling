@@ -747,8 +747,8 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            0,
-            435
+            236,
+            671
           ]
         }
       ],
@@ -2491,8 +2491,8 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            0,
-            421
+            234,
+            655
           ]
         }
       ],
@@ -2640,8 +2640,8 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            0,
-            132
+            543,
+            675
           ]
         }
       ],
@@ -4704,8 +4704,8 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            0,
-            84
+            154,
+            238
           ]
         }
       ],
@@ -6583,8 +6583,8 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            0,
-            163
+            300,
+            463
           ]
         }
       ],

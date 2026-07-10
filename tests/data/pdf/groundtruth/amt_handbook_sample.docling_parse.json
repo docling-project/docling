@@ -268,8 +268,8 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            0,
-            370
+            123,
+            493
           ]
         }
       ],
@@ -839,10 +839,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 69.2,
-            "t": 240.53,
+            "l": 68.89,
+            "t": 240.65,
             "r": 594.0,
-            "b": 78.69,
+            "b": 78.52,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

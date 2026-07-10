@@ -19,32 +19,16 @@
     <location value="76"/>
     <location value="87"/>
     <location value="162"/>
-    <location value="109"/>
-    Birgit Pfitzmann IBM Research Rueschlikon, Switzerland
+    <location value="116"/>
+    Birgit Pfitzmann IBM Research Rueschlikon, Switzerland bpf@zurich.ibm.com
   </text>
   <text>
     <thread thread_id="1"/>
     <location value="213"/>
     <location value="87"/>
     <location value="299"/>
-    <location value="109"/>
-    Christoph Auer IBM Research Rueschlikon, Switzerland
-  </text>
-  <text>
-    <thread thread_id="2"/>
-    <location value="84"/>
-    <location value="111"/>
-    <location value="154"/>
     <location value="116"/>
-    bpf@zurich.ibm.com
-  </text>
-  <text>
-    <thread thread_id="2"/>
-    <location value="221"/>
-    <location value="111"/>
-    <location value="292"/>
-    <location value="116"/>
-    cau@zurich.ibm.com
+    Christoph Auer IBM Research Rueschlikon, Switzerland cau@zurich.ibm.com
   </text>
   <text>
     <location value="144"/>
@@ -54,7 +38,7 @@
     Ahmed S. Nassar IBM Research Rueschlikon, Switzerland
   </text>
   <text>
-    <thread thread_id="3"/>
+    <thread thread_id="2"/>
     <location value="151"/>
     <location value="149"/>
     <location value="224"/>
@@ -62,117 +46,41 @@
     ahn@zurich.ibm.com
   </text>
   <text>
-    <thread thread_id="3"/>
+    <thread thread_id="2"/>
     <location value="351"/>
     <location value="87"/>
     <location value="437"/>
-    <location value="109"/>
-    Michele Dolfi IBM Research Rueschlikon, Switzerland
-  </text>
-  <text>
-    <thread thread_id="3"/>
-    <location value="359"/>
-    <location value="111"/>
-    <location value="429"/>
     <location value="116"/>
-    dol@zurich.ibm.com
-  </text>
-  <heading level="2">
-    <location value="45"/>
-    <location value="161"/>
-    <location value="94"/>
-    <location value="167"/>
-    ABSTRACT
-  </heading>
-  <text>
-    <location value="45"/>
-    <location value="170"/>
-    <location value="247"/>
-    <location value="345"/>
-    Accurate document layout analysis is a key requirement for highquality PDF document conversion. With the recent availability of public, large ground-truth datasets such as PubLayNet and DocBank, deep-learning models have proven to be very effective at layout detection and segmentation. While these datasets are of adequate size to train such models, they severely lack in layout variability since they are sourced from scientific article repositories such as PubMed and arXiv only. Consequently, the accuracy of the layout segmentation drops significantly when these models are applied on more challenging and diverse layouts. In this paper, we present DocLayNet , a new, publicly available, document-layout annotation dataset in COCO format. It contains 80863 manually annotated pages from diverse data sources to represent a wide variability in layouts. For each PDF page, the layout annotations provide labelled bounding-boxes with a choice of 11 distinct classes. DocLayNet also provides a subset of double- and triple-annotated pages to determine the inter-annotator agreement. In multiple experiments, we provide baseline accuracy scores (in mAP) for a set of popular object detection models. We also demonstrate that these models fall approximately 10% behind the inter-annotator agreement. Furthermore, we provide evidence that DocLayNet is of sufficient size. Lastly, we compare models trained on PubLayNet, DocBank and DocLayNet, showing that layout predictions of the DocLayNettrained models are more robust and thus the preferred choice for general-purpose document-layout analysis.
-  </text>
-  <heading level="2">
-    <location value="45"/>
-    <location value="357"/>
-    <location value="113"/>
-    <location value="363"/>
-    CCS CONCEPTS
-  </heading>
-  <text>
-    <location value="45"/>
-    <location value="365"/>
-    <location value="249"/>
-    <location value="386"/>
-    · Informationsystems → Documentstructure ; · Appliedcomputing → Document analysis ; · Computing methodologies → Machine learning ; Computer vision ; Object detection ;
+    Michele Dolfi IBM Research Rueschlikon, Switzerland dol@zurich.ibm.com
   </text>
   <text>
-    <location value="45"/>
-    <location value="410"/>
-    <location value="247"/>
-    <location value="435"/>
-    Permission to make digital or hard copies of part or all of this work for personal or classroom use is granted without fee provided that copies are not made or distributed for profit or commercial advantage and that copies bear this notice and the full citation on the first page. Copyrights for third-party components of this work must be honored. For all other uses, contact the owner/author(s).
-  </text>
-  <text>
-    <location value="45"/>
-    <location value="437"/>
-    <location value="166"/>
-    <location value="441"/>
-<![CDATA[KDD '22, August 14-18, 2022, Washington, DC, USA]]>  </text>
-  <text>
-    <location value="45"/>
-    <location value="442"/>
-    <location value="156"/>
-    <location value="446"/>
-    © 2022 Copyright held by the owner/author(s).
-  </text>
-  <text>
-    <location value="45"/>
-    <location value="447"/>
-    <location value="131"/>
-    <location value="451"/>
-    ACM ISBN 978-1-4503-9385-0/22/08.
-  </text>
-  <text>
-    <href uri="https://doi.org/10.1145/3534678.3539043"/>
-    <location value="45"/>
-    <location value="453"/>
-    <location value="140"/>
-    <location value="457"/>
-    https://doi.org/10.1145/3534678.3539043
-  </text>
-  <heading level="2">
-    <location value="302"/>
-    <location value="125"/>
-    <location value="347"/>
-    <location value="131"/>
-    Peter Staar
-  </heading>
-  <text>
-    <location value="301"/>
-    <location value="133"/>
-    <location value="348"/>
-    <location value="139"/>
-    IBM Research
-  </text>
-  <text>
+    <thread thread_id="2"/>
     <location value="282"/>
-    <location value="141"/>
+    <location value="125"/>
     <location value="368"/>
-    <location value="146"/>
-    Rueschlikon, Switzerland
+    <location value="154"/>
+    Peter Staar IBM Research Rueschlikon, Switzerland taa@zurich.ibm.com
   </text>
   <text>
-    <location value="290"/>
-    <location value="149"/>
-    <location value="360"/>
-    <location value="154"/>
-    taa@zurich.ibm.com
+    <thread thread_id="2"/>
+    <location value="274"/>
+    <location value="165"/>
+    <location value="303"/>
+    <location value="167"/>
+    OPERATION (cont.)
+  </text>
+  <text>
+    <location value="334"/>
+    <location value="165"/>
+    <location value="359"/>
+    <location value="167"/>
+    MODEL AY11236
   </text>
   <picture>
     <location value="272"/>
-    <location value="162"/>
+    <location value="168"/>
     <location value="462"/>
-    <location value="327"/>
+    <location value="326"/>
     <text>
       <location value="274"/>
       <location value="228"/>
@@ -249,13 +157,6 @@
       <location value="294"/>
       <location value="225"/>
       3. Make sure that both the images in
-    </text>
-    <text>
-      <location value="274"/>
-      <location value="165"/>
-      <location value="303"/>
-      <location value="167"/>
-      OPERATION (cont.)
     </text>
     <text>
       <location value="273"/>
@@ -934,13 +835,6 @@
       <location value="372"/>
       <location value="183"/>
       Knob
-    </text>
-    <text>
-      <location value="334"/>
-      <location value="165"/>
-      <location value="359"/>
-      <location value="167"/>
-      MODEL AY11236
     </text>
     <text>
       <location value="333"/>
@@ -1683,13 +1577,13 @@
       <location value="316"/>
       165 gas lamps were lighting the City of Sydney.
     </text>
-    <heading level="2">
+    <text>
       <location value="276"/>
       <location value="272"/>
       <location value="323"/>
       <location value="292"/>
       Looking back on 175 years of looking forward.
-    </heading>
+    </text>
     <text>
       <location value="276"/>
       <location value="241"/>
@@ -1703,20 +1597,6 @@
       <location value="459"/>
       <location value="235"/>
       29
-    </text>
-    <text>
-      <location value="416"/>
-      <location value="163"/>
-      <location value="454"/>
-      <location value="165"/>
-      signs, signals and road markings
-    </text>
-    <text>
-      <location value="410"/>
-      <location value="163"/>
-      <location value="412"/>
-      <location value="165"/>
-      3
     </text>
     <text>
       <location value="417"/>
@@ -2279,19 +2159,96 @@
     <location value="405"/>
     PDF document conversion, layout segmentation, object-detection, data set, Machine Learning
   </text>
-  <text>
+  <heading level="2">
     <location value="266"/>
     <location value="414"/>
     <location value="339"/>
     <location value="418"/>
     ACMReference Format:
-  </text>
+  </heading>
   <text>
     <location value="266"/>
     <location value="421"/>
     <location value="468"/>
     <location value="457"/>
 <![CDATA[Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, and Peter Staar. 2022. DocLayNet: A Large Human-Annotated Dataset for DocumentLayout Analysis. In Proceedings of the 28th ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD '22), August 14-18, 2022, Washington, DC, USA. ACM, New York, NY, USA, 9 pages. https://doi.org/10.1145/ 3534678.3539043]]>  </text>
+  <heading level="2">
+    <location value="45"/>
+    <location value="161"/>
+    <location value="94"/>
+    <location value="167"/>
+    ABSTRACT
+  </heading>
+  <text>
+    <location value="45"/>
+    <location value="170"/>
+    <location value="247"/>
+    <location value="345"/>
+    Accurate document layout analysis is a key requirement for highquality PDF document conversion. With the recent availability of public, large ground-truth datasets such as PubLayNet and DocBank, deep-learning models have proven to be very effective at layout detection and segmentation. While these datasets are of adequate size to train such models, they severely lack in layout variability since they are sourced from scientific article repositories such as PubMed and arXiv only. Consequently, the accuracy of the layout segmentation drops significantly when these models are applied on more challenging and diverse layouts. In this paper, we present DocLayNet , a new, publicly available, document-layout annotation dataset in COCO format. It contains 80863 manually annotated pages from diverse data sources to represent a wide variability in layouts. For each PDF page, the layout annotations provide labelled bounding-boxes with a choice of 11 distinct classes. DocLayNet also provides a subset of double- and triple-annotated pages to determine the inter-annotator agreement. In multiple experiments, we provide baseline accuracy scores (in mAP) for a set of popular object detection models. We also demonstrate that these models fall approximately 10% behind the inter-annotator agreement. Furthermore, we provide evidence that DocLayNet is of sufficient size. Lastly, we compare models trained on PubLayNet, DocBank and DocLayNet, showing that layout predictions of the DocLayNettrained models are more robust and thus the preferred choice for general-purpose document-layout analysis.
+  </text>
+  <heading level="2">
+    <location value="45"/>
+    <location value="357"/>
+    <location value="113"/>
+    <location value="363"/>
+    CCS CONCEPTS
+  </heading>
+  <text>
+    <location value="45"/>
+    <location value="365"/>
+    <location value="249"/>
+    <location value="386"/>
+    · Informationsystems → Documentstructure ; · Appliedcomputing → Document analysis ; · Computing methodologies → Machine learning ; Computer vision ; Object detection ;
+  </text>
+  <text>
+    <location value="45"/>
+    <location value="410"/>
+    <location value="247"/>
+    <location value="435"/>
+    Permission to make digital or hard copies of part or all of this work for personal or classroom use is granted without fee provided that copies are not made or distributed for profit or commercial advantage and that copies bear this notice and the full citation on the first page. Copyrights for third-party components of this work must be honored. For all other uses, contact the owner/author(s).
+  </text>
+  <text>
+    <location value="45"/>
+    <location value="437"/>
+    <location value="166"/>
+    <location value="441"/>
+<![CDATA[KDD '22, August 14-18, 2022, Washington, DC, USA]]>  </text>
+  <text>
+    <location value="45"/>
+    <location value="442"/>
+    <location value="156"/>
+    <location value="446"/>
+    © 2022 Copyright held by the owner/author(s).
+  </text>
+  <text>
+    <location value="45"/>
+    <location value="447"/>
+    <location value="131"/>
+    <location value="451"/>
+    ACM ISBN 978-1-4503-9385-0/22/08.
+  </text>
+  <text>
+    <href uri="https://doi.org/10.1145/3534678.3539043"/>
+    <location value="45"/>
+    <location value="453"/>
+    <location value="140"/>
+    <location value="457"/>
+    https://doi.org/10.1145/3534678.3539043
+  </text>
+  <text>
+    <location value="410"/>
+    <location value="163"/>
+    <location value="412"/>
+    <location value="165"/>
+    3
+  </text>
+  <text>
+    <location value="416"/>
+    <location value="163"/>
+    <location value="454"/>
+    <location value="165"/>
+    signs, signals and road markings
+  </text>
   <page_break/>
   <page_header>
     <layer value="furniture"/>
@@ -2435,7 +2392,7 @@
     DocLayNet contains 80863 PDF pages. Among these, 7059 carry two instances of human annotations, and 1591 carry three. This amounts to 91104 total annotation instances. The annotations provide layout information in the shape of labeled, rectangular boundingboxes. We define 11 distinct labels for layout features, namely Caption , Footnote , Formula , List-item , Page-footer , Page-header , Picture , Section-header , Table , Text , and Title . Our reasoning for picking this particular label set is detailed in Section 4.
   </text>
   <text>
-    <thread thread_id="4"/>
+    <thread thread_id="3"/>
     <location value="266"/>
     <location value="439"/>
     <location value="467"/>
@@ -2444,7 +2401,7 @@
   </text>
   <page_break/>
   <text>
-    <thread thread_id="4"/>
+    <thread thread_id="3"/>
     <location value="45"/>
     <location value="182"/>
     <location value="246"/>
@@ -2465,7 +2422,7 @@
     <location value="467"/>
     <location value="44"/>
 <![CDATA[KDD '22, August 14-18, 2022, Washington, DC, USA]]>  </page_header>
-  <picture>
+  <table>
     <location value="74"/>
     <location value="60"/>
     <location value="220"/>
@@ -2477,91 +2434,21 @@
       <location value="165"/>
       Figure 2: Distribution of DocLayNet pages across document categories.
     </caption>
-    <text>
-      <location value="198"/>
-      <location value="87"/>
-      <location value="220"/>
-      <location value="91"/>
-      Patents
-    </text>
-    <text>
-      <location value="170"/>
-      <location value="92"/>
-      <location value="179"/>
-      <location value="96"/>
-      8%
-    </text>
-    <text>
-      <location value="173"/>
-      <location value="61"/>
-      <location value="199"/>
-      <location value="66"/>
-      Scientific
-    </text>
-    <text>
-      <location value="154"/>
-      <location value="78"/>
-      <location value="167"/>
-      <location value="82"/>
-      17%
-    </text>
-    <text>
-      <location value="74"/>
-      <location value="75"/>
-      <location value="99"/>
-      <location value="79"/>
-      Financial
-    </text>
-    <text>
-      <location value="114"/>
-      <location value="85"/>
-      <location value="127"/>
-      <location value="89"/>
-      32%
-    </text>
-    <text>
-      <location value="79"/>
-      <location value="122"/>
-      <location value="101"/>
-      <location value="127"/>
-      Tenders
-    </text>
-    <text>
-      <location value="117"/>
-      <location value="111"/>
-      <location value="126"/>
-      <location value="115"/>
-      6%
-    </text>
-    <text>
-      <location value="117"/>
-      <location value="138"/>
-      <location value="132"/>
-      <location value="143"/>
-      Laws
-    </text>
-    <text>
-      <location value="132"/>
-      <location value="120"/>
-      <location value="144"/>
-      <location value="124"/>
-      16%
-    </text>
-    <text>
-      <location value="189"/>
-      <location value="123"/>
-      <location value="213"/>
-      <location value="128"/>
-      Manuals
-    </text>
-    <text>
-      <location value="163"/>
-      <location value="112"/>
-      <location value="175"/>
-      <location value="116"/>
-      21%
-    </text>
-  </picture>
+    <ecel/>
+    <ched/>
+    Scientific
+    <nl/>
+    <fcel/>
+    Financial
+    <fcel/>
+    Patents 8% 17%
+    <nl/>
+    <fcel/>
+    Tenders
+    <fcel/>
+    Manuals
+    <nl/>
+  </table>
   <text>
     <location value="45"/>
     <location value="239"/>
@@ -2617,7 +2504,7 @@
     4 ANNOTATION CAMPAIGN
   </heading>
   <text>
-    <thread thread_id="5"/>
+    <thread thread_id="4"/>
     <location value="266"/>
     <location value="409"/>
     <location value="468"/>
@@ -2626,7 +2513,7 @@
   </text>
   <page_break/>
   <text>
-    <thread thread_id="5"/>
+    <thread thread_id="4"/>
     <location value="45"/>
     <location value="410"/>
     <location value="246"/>
@@ -2641,9 +2528,9 @@
     <location value="44"/>
 <![CDATA[KDD '22, August 14-18, 2022, Washington, DC, USA Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, and Peter Staar]]>  </page_header>
   <table>
-    <location value="86"/>
+    <location value="87"/>
     <location value="90"/>
-    <location value="426"/>
+    <location value="425"/>
     <location value="188"/>
     <caption>
       <location value="45"/>
@@ -2993,10 +2880,10 @@
     <nl/>
   </table>
   <picture>
-    <location value="45"/>
+    <location value="44"/>
     <location value="203"/>
     <location value="244"/>
-    <location value="348"/>
+    <location value="349"/>
     <caption>
       <location value="45"/>
       <location value="359"/>
@@ -3006,7 +2893,7 @@
     </caption>
   </picture>
   <text>
-    <thread thread_id="6"/>
+    <thread thread_id="5"/>
     <location value="45"/>
     <location value="439"/>
     <location value="247"/>
@@ -3014,7 +2901,7 @@
     Phase 1: Data selection and preparation. Our inclusion criteria for documents were described in Section 3. A large effort went into ensuring that all documents are free to use. The data sources
   </text>
   <text>
-    <thread thread_id="6"/>
+    <thread thread_id="5"/>
     <location value="266"/>
     <location value="201"/>
     <location value="468"/>
@@ -3138,6 +3025,7 @@
     The complete annotation guideline is over 100 pages long and a detailed description is obviously out of scope for this paper. Nevertheless, it will be made publicly available alongside with DocLayNet for future reference.
   </text>
   <text>
+    <thread thread_id="6"/>
     <location value="45"/>
     <location value="373"/>
     <location value="247"/>
@@ -3145,66 +3033,55 @@
     Phase 3: Training. After a first trial with a small group of people, we realised that providing the annotation guideline and a set of random practice pages did not yield the desired quality level for layout annotation. Therefore we prepared a subset of pages with two different complexity levels, each with a practice and an exam part. 974 pages were reference-annotated by one proficient core team member. Annotation staff were then given the task to annotate the same subsets (blinded from the reference). By comparing the annotations of each staff member with the reference annotations, we could quantify how closely their annotations matched the reference. Only after passing two exam levels with high annotation quality, staff were admitted into the production phase. Practice iterations
   </text>
   <text>
-    <location value="270"/>
-    <location value="64"/>
-    <location value="273"/>
-    <location value="67"/>
-    A
+    <thread thread_id="6"/>
+    <location value="266"/>
+    <location value="340"/>
+    <location value="467"/>
+    <location value="345"/>
+    were carried out over a timeframe of 12 weeks, after which 8 of the
   </text>
   <text>
-    <location value="270"/>
-    <location value="122"/>
-    <location value="273"/>
-    <location value="125"/>
-    B
-  </text>
+    <thread thread_id="6"/>
+    <location value="266"/>
+    <location value="354"/>
+    <location value="468"/>
+    <location value="458"/>
+<![CDATA[Phase 4: Production annotation. The previously selected 80K pages were annotated with the defined 11 class labels by 32 annotators. This production phase took around three months to complete. All annotations were created online through CCS, which visualises the programmatic PDF text-cells as an overlay on the page. The page annotation are obtained by drawing rectangular bounding-boxes, as shown in Figure 3. With regard to the annotation practices, we implemented a few constraints and capabilities on the tooling level. First, we only allow non-overlapping, vertically oriented, rectangular boxes. For the large majority of documents, this constraint was sufficient and it speeds up the annotation considerably in comparison with arbitrary segmentation shapes. Second, annotator staff were not able to see each other's annotations. This was enforced by design to avoid any bias in the annotation, which could skew the numbers of the inter-annotator agreement (see Table 1). We wanted]]>  </text>
+  <page_break/>
   <text>
-    <location value="270"/>
-    <location value="165"/>
-    <location value="273"/>
-    <location value="168"/>
-    C
-  </text>
-  <text>
-    <location value="284"/>
-    <location value="56"/>
-    <location value="349"/>
-    <location value="59"/>
-    Compliant with guidelines
-  </text>
-  <text>
-    <location value="284"/>
-    <location value="116"/>
-    <location value="348"/>
-    <location value="118"/>
-    1ef23f5e6d7f10d393f9947e8208285dce9ae87250ac483ac4b4a59d51b4e037
-  </text>
-  <text>
-    <location value="284"/>
-    <location value="159"/>
-    <location value="348"/>
-    <location value="160"/>
-    03c31a2ee1ed1b583c28957f475ee545d144e1b5a264dc4dd068c8d2f6a64860
-  </text>
-  <text>
-    <location value="284"/>
-    <location value="232"/>
-    <location value="348"/>
-    <location value="233"/>
-    1a5cd524f1844c1260c8e8c073e1f442423c264583212b0d0b6626fc780e6ed4
+    <thread thread_id="6"/>
+    <location value="45"/>
+    <location value="240"/>
+    <location value="247"/>
+    <location value="373"/>
+    to avoid this at any cost in order to have clear, unbiased baseline numbers for human document-layout annotation. Third, we introduced the feature of snapping boxes around text segments to obtain a pixel-accurate annotation and again reduce time and effort. The CCS annotation tool automatically shrinks every user-drawn box to the minimum bounding-box around the enclosed text-cells for all purely text-based segments, which excludes only Table and Picture . For the latter, we instructed annotation staff to minimise inclusion of surrounding whitespace while including all graphical lines. A downside of snapping boxes to enclosed text cells is that some wrongly parsed PDF pages cannot be annotated correctly and need to be skipped. Fourth, we established a way to flag pages as rejected for cases where no valid annotation according to the label guidelines could be achieved. Example cases for this would be PDF pages that render incorrectly or contain layouts that are impossible to capture with non-overlapping rectangles. Such rejected pages are not contained in the final dataset. With all these measures in place, experienced annotation staff managed to annotate a single page in a typical timeframe of 20s to 60s, depending on its complexity.
   </text>
   <picture>
     <location value="265"/>
-    <location value="234"/>
+    <location value="55"/>
     <location value="499"/>
     <location value="343"/>
-    <caption>
-      <location value="266"/>
-      <location value="340"/>
-      <location value="467"/>
-      <location value="345"/>
-      were carried out over a timeframe of 12 weeks, after which 8 of the
-    </caption>
+    <text>
+      <location value="284"/>
+      <location value="116"/>
+      <location value="348"/>
+      <location value="118"/>
+      1ef23f5e6d7f10d393f9947e8208285dce9ae87250ac483ac4b4a59d51b4e037
+    </text>
+    <text>
+      <location value="284"/>
+      <location value="56"/>
+      <location value="349"/>
+      <location value="59"/>
+      Compliant with guidelines
+    </text>
+    <text>
+      <location value="378"/>
+      <location value="56"/>
+      <location value="457"/>
+      <location value="59"/>
+      Plausible but invalid alternative
+    </text>
     <text>
       <location value="293"/>
       <location value="237"/>
@@ -3213,11 +3090,46 @@
       Borderline case: Two guideline-compliant alternatives
     </text>
     <text>
+      <location value="284"/>
+      <location value="159"/>
+      <location value="348"/>
+      <location value="160"/>
+      03c31a2ee1ed1b583c28957f475ee545d144e1b5a264dc4dd068c8d2f6a64860
+    </text>
+    <text>
+      <location value="284"/>
+      <location value="232"/>
+      <location value="348"/>
+      <location value="233"/>
+      1a5cd524f1844c1260c8e8c073e1f442423c264583212b0d0b6626fc780e6ed4
+    </text>
+    <text>
       <location value="335"/>
       <location value="297"/>
       <location value="398"/>
       <location value="298"/>
       05237a14f2524e3f53c8454b074409d05078038a6a36b770fcc8ec7e540deae0
+    </text>
+    <text>
+      <location value="270"/>
+      <location value="64"/>
+      <location value="273"/>
+      <location value="67"/>
+      A
+    </text>
+    <text>
+      <location value="270"/>
+      <location value="122"/>
+      <location value="273"/>
+      <location value="125"/>
+      B
+    </text>
+    <text>
+      <location value="270"/>
+      <location value="165"/>
+      <location value="273"/>
+      <location value="168"/>
+      C
     </text>
     <text>
       <location value="270"/>
@@ -3255,29 +3167,6 @@
     <location value="352"/>
     40 initially allocated annotators did not pass the bar.
   </text>
-  <text>
-    <location value="266"/>
-    <location value="354"/>
-    <location value="468"/>
-    <location value="458"/>
-<![CDATA[Phase 4: Production annotation. The previously selected 80K pages were annotated with the defined 11 class labels by 32 annotators. This production phase took around three months to complete. All annotations were created online through CCS, which visualises the programmatic PDF text-cells as an overlay on the page. The page annotation are obtained by drawing rectangular bounding-boxes, as shown in Figure 3. With regard to the annotation practices, we implemented a few constraints and capabilities on the tooling level. First, we only allow non-overlapping, vertically oriented, rectangular boxes. For the large majority of documents, this constraint was sufficient and it speeds up the annotation considerably in comparison with arbitrary segmentation shapes. Second, annotator staff were not able to see each other's annotations. This was enforced by design to avoid any bias in the annotation, which could skew the numbers of the inter-annotator agreement (see Table 1). We wanted]]>  </text>
-  <text>
-    <thread thread_id="7"/>
-    <location value="378"/>
-    <location value="56"/>
-    <location value="457"/>
-    <location value="59"/>
-    Plausible but invalid alternative
-  </text>
-  <page_break/>
-  <text>
-    <thread thread_id="7"/>
-    <location value="45"/>
-    <location value="240"/>
-    <location value="247"/>
-    <location value="373"/>
-    to avoid this at any cost in order to have clear, unbiased baseline numbers for human document-layout annotation. Third, we introduced the feature of snapping boxes around text segments to obtain a pixel-accurate annotation and again reduce time and effort. The CCS annotation tool automatically shrinks every user-drawn box to the minimum bounding-box around the enclosed text-cells for all purely text-based segments, which excludes only Table and Picture . For the latter, we instructed annotation staff to minimise inclusion of surrounding whitespace while including all graphical lines. A downside of snapping boxes to enclosed text cells is that some wrongly parsed PDF pages cannot be annotated correctly and need to be skipped. Fourth, we established a way to flag pages as rejected for cases where no valid annotation according to the label guidelines could be achieved. Example cases for this would be PDF pages that render incorrectly or contain layouts that are impossible to capture with non-overlapping rectangles. Such rejected pages are not contained in the final dataset. With all these measures in place, experienced annotation staff managed to annotate a single page in a typical timeframe of 20s to 60s, depending on its complexity.
-  </text>
   <page_header>
     <layer value="furniture"/>
     <location value="45"/>
@@ -3288,7 +3177,7 @@
   <table>
     <location value="55"/>
     <location value="127"/>
-    <location value="235"/>
+    <location value="234"/>
     <location value="226"/>
     <caption>
       <location value="45"/>
@@ -3310,13 +3199,13 @@
     <nl/>
     <ecel/>
     <ecel/>
-    <fcel/>
+    <ched/>
     R50
-    <fcel/>
+    <ched/>
     R101
-    <fcel/>
+    <ched/>
     R101
-    <fcel/>
+    <ched/>
     v5x6
     <nl/>
     <rhed/>
@@ -3484,7 +3373,7 @@
     5 EXPERIMENTS
   </heading>
   <text>
-    <thread thread_id="8"/>
+    <thread thread_id="7"/>
     <location value="45"/>
     <location value="397"/>
     <location value="247"/>
@@ -3492,7 +3381,7 @@
     The primary goal of DocLayNet is to obtain high-quality ML models capable of accurate document-layout analysis on a wide variety of challenging layouts. As discussed in Section 2, object detection models are currently the easiest to use, due to the standardisation of ground-truth data in COCO format [16] and the availability of general frameworks such as detectron2 [17]. Furthermore, baseline numbers in PubLayNet and DocBank were obtained using standard object detection models such as Mask R-CNN and Faster R-CNN. As such, we will relate to these object detection methods in this
   </text>
   <text>
-    <thread thread_id="8"/>
+    <thread thread_id="7"/>
     <location value="266"/>
     <location value="249"/>
     <location value="467"/>
@@ -3501,7 +3390,7 @@
   </text>
   <table>
     <location value="270"/>
-    <location value="72"/>
+    <location value="73"/>
     <location value="460"/>
     <location value="168"/>
     <caption>
@@ -3515,13 +3404,12 @@
     70
     <ecel/>
     <nl/>
-    <fcel/>
-    65 0.50:0.95
+    <ecel/>
     <fcel/>
     70
     <nl/>
     <fcel/>
-    60
+    60 0.50:0.95
     <fcel/>
     65
     <nl/>
@@ -3540,9 +3428,10 @@
     <fcel/>
     50
     <nl/>
-    <ecel/>
     <fcel/>
-    10 1 10 2
+    0
+    <fcel/>
+    40 60 80 100 10 1 10 2
     <nl/>
   </table>
   <text>
@@ -3585,8 +3474,8 @@
   <table>
     <location value="71"/>
     <location value="98"/>
-    <location value="219"/>
-    <location value="189"/>
+    <location value="218"/>
+    <location value="190"/>
     <caption>
       <location value="45"/>
       <location value="57"/>
@@ -3759,7 +3648,7 @@
     Impact of Class Labels
   </heading>
   <text>
-    <thread thread_id="9"/>
+    <thread thread_id="8"/>
     <location value="45"/>
     <location value="361"/>
     <location value="247"/>
@@ -3767,7 +3656,7 @@
     The choice and number of labels can have a significant effect on the overall model performance. Since PubLayNet, DocBank and DocLayNet all have different label sets, it is of particular interest to understand and quantify this influence of the label set on the model performance. We investigate this by either down-mapping labels into more common ones (e.g. Caption → Text ) or excluding them from the annotations entirely. Furthermore, it must be stressed that all mappings and exclusions were performed on the data before model training. In Table 3, we present the mAP scores for a Mask R-CNN R50 network on different label sets. Where a label is down-mapped, we show its corresponding label, otherwise it was excluded. We present three different label sets, with 6, 5 and 4 different labels respectively. The set of 5 labels contains the same labels as PubLayNet. However, due to the different definition of
   </text>
   <text>
-    <thread thread_id="9"/>
+    <thread thread_id="8"/>
     <location value="266"/>
     <location value="215"/>
     <location value="468"/>
@@ -3777,7 +3666,7 @@
   <table>
     <location value="299"/>
     <location value="98"/>
-    <location value="434"/>
+    <location value="433"/>
     <location value="197"/>
     <caption>
       <location value="266"/>
@@ -3949,7 +3838,7 @@
     Dataset Comparison
   </heading>
   <text>
-    <thread thread_id="10"/>
+    <thread thread_id="9"/>
     <location value="266"/>
     <location value="403"/>
     <location value="468"/>
@@ -3957,24 +3846,30 @@
 <![CDATA[Throughout this paper, we claim that DocLayNet's wider variety of document layouts leads to more robust layout detection models. In Table 5, we provide evidence for that. We trained models on each of the available datasets (PubLayNet, DocBank and DocLayNet) and evaluated them on the test sets of the other datasets. Due to the different label sets and annotation styles, a direct comparison is not possible. Hence, we focussed on the common labels among the datasets. Between PubLayNet and DocLayNet, these are Picture ,]]>  </text>
   <page_break/>
   <text>
-    <thread thread_id="10"/>
+    <thread thread_id="9"/>
+    <location value="45"/>
+    <location value="253"/>
+    <location value="246"/>
+    <location value="286"/>
+<![CDATA[Section-header , Table and Text . Before training, we either mapped or excluded DocLayNet's other labels as specified in table 3, and also PubLayNet's List to Text . Note that the different clustering of lists (by list-element vs. whole list objects) naturally decreases the mAP score for Text .]]>  </text>
+  <page_header>
+    <layer value="furniture"/>
     <location value="45"/>
     <location value="39"/>
     <location value="467"/>
     <location value="44"/>
-<![CDATA[KDD '22, August 14-18, 2022, Washington, DC, USA Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, and Peter Staar]]>  </text>
-  <text>
-    <thread thread_id="10"/>
-    <location value="45"/>
-    <location value="57"/>
-    <location value="247"/>
-    <location value="97"/>
-<![CDATA[Table 5: Prediction Performance (mAP@0.5-0.95) of a Mask R-CNN R50 network across the PubLayNet, DocBank & DocLayNet data-sets. By evaluating on common label classes of each dataset, we observe that the DocLayNet-trained model has much less pronounced variations in performance across all datasets.]]>  </text>
+<![CDATA[KDD '22, August 14-18, 2022, Washington, DC, USA Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, and Peter Staar]]>  </page_header>
   <table>
     <location value="65"/>
-    <location value="111"/>
-    <location value="226"/>
+    <location value="112"/>
+    <location value="225"/>
     <location value="218"/>
+    <caption>
+      <location value="45"/>
+      <location value="57"/>
+      <location value="247"/>
+      <location value="97"/>
+<![CDATA[Table 5: Prediction Performance (mAP@0.5-0.95) of a Mask R-CNN R50 network across the PubLayNet, DocBank & DocLayNet data-sets. By evaluating on common label classes of each dataset, we observe that the DocLayNet-trained model has much less pronounced variations in performance across all datasets.]]>    </caption>
     <ecel/>
     <ecel/>
     <ched/>
@@ -4129,12 +4024,6 @@
   </table>
   <text>
     <location value="45"/>
-    <location value="253"/>
-    <location value="246"/>
-    <location value="286"/>
-<![CDATA[Section-header , Table and Text . Before training, we either mapped or excluded DocLayNet's other labels as specified in table 3, and also PubLayNet's List to Text . Note that the different clustering of lists (by list-element vs. whole list objects) naturally decreases the mAP score for Text .]]>  </text>
-  <text>
-    <location value="45"/>
     <location value="288"/>
     <location value="247"/>
     <location value="378"/>
@@ -4212,80 +4101,22 @@
     <location value="269"/>
     <location value="262"/>
     <location value="467"/>
-    <location value="276"/>
-    Hervé Déjean, Jean-Luc Meunier, Liangcai Gao, Yilun Huang, Yu Fang, Florian Kleber, and Eva-Maria Lang. ICDAR 2019 Competition on Table Detection and Recognition (cTDaR), April 2019. http://sac.founderit.com/.
-    <ldiv>
-      <marker>[4]</marker>
-    </ldiv>
-    <location value="269"/>
-    <location value="277"/>
-    <location value="468"/>
-    <location value="297"/>
-    Antonio Jimeno Yepes, Peter Zhong, and Douglas Burdick. Competition on scientific literature parsing. In Proceedings of the International Conference on Document Analysis and Recognition , ICDAR, pages 605-617. LNCS 12824, SpringerVerlag, sep 2021.
-    <ldiv>
-      <marker>[5]</marker>
-    </ldiv>
-    <location value="269"/>
-    <location value="298"/>
-    <location value="468"/>
-    <location value="317"/>
-    Logan Markewich, Hao Zhang, Yubin Xing, Navid Lambert-Shirzad, Jiang Zhexin, Roy Lee, Zhi Li, and Seok-Bum Ko. Segmentation for document layout analysis: not dead yet. International Journal on Document Analysis and Recognition (IJDAR) , pages 1-11, 01 2022.
-    <ldiv>
-      <marker>[6]</marker>
-    </ldiv>
-    <location value="269"/>
-    <location value="318"/>
-    <location value="467"/>
-    <location value="333"/>
-    Xu Zhong, Jianbin Tang, and Antonio Jimeno-Yepes. Publaynet: Largest dataset ever for document layout analysis. In Proceedings of the International Conference on Document Analysis and Recognition , ICDAR, pages 1015-1022, sep 2019.
-    <ldiv>
-      <marker>[7]</marker>
-    </ldiv>
-    <location value="269"/>
-    <location value="334"/>
-    <location value="468"/>
-    <location value="358"/>
-    Minghao Li, Yiheng Xu, Lei Cui, Shaohan Huang, Furu Wei, Zhoujun Li, and Ming Zhou. Docbank: A benchmark dataset for document layout analysis. In Proceedings of the 28th International Conference on Computational Linguistics , COLING, pages 949-960. International Committee on Computational Linguistics, dec 2020.
-    <ldiv>
-      <marker>[8]</marker>
-    </ldiv>
-    <location value="269"/>
-    <location value="360"/>
-    <location value="468"/>
-    <location value="374"/>
-    Riaz Ahmad, Muhammad Tanvir Afzal, and M. Qadir. Information extraction from pdf sources based on rule-based system using integrated formats. In SemWebEval@ESWC , 2016.
-    <ldiv>
-      <marker>[9]</marker>
-    </ldiv>
-    <location value="269"/>
-    <location value="375"/>
-    <location value="468"/>
-    <location value="394"/>
-    Ross B. Girshick, Jeff Donahue, Trevor Darrell, and Jitendra Malik. Rich feature hierarchies for accurate object detection and semantic segmentation. In IEEE Conference on Computer Vision and Pattern Recognition , CVPR, pages 580-587. IEEE Computer Society, jun 2014.
-    <ldiv>
-      <marker>[10]</marker>
-    </ldiv>
+    <location value="271"/>
+    Hervé Déjean, Jean-Luc Meunier, Liangcai Gao, Yilun Huang, Yu Fang, Florian Kleber, and Eva-Maria Lang. ICDAR 2019 Competition on Table Detection and
+    <ldiv/>
     <location value="266"/>
-    <location value="396"/>
-    <location value="467"/>
-    <location value="405"/>
-    Ross B. Girshick. Fast R-CNN. In 2015 IEEE International Conference on Computer Vision , ICCV, pages 1440-1448. IEEE Computer Society, dec 2015.
-    <ldiv>
-      <marker>[11]</marker>
-    </ldiv>
-    <location value="266"/>
-    <location value="406"/>
-    <location value="467"/>
-    <location value="420"/>
-    Shaoqing Ren, Kaiming He, Ross Girshick, and Jian Sun. Faster r-cnn: Towards real-time object detection with region proposal networks. IEEE Transactions on Pattern Analysis and Machine Intelligence , 39(6):1137-1149, 2017.
+    <location value="272"/>
+    <location value="468"/>
+    <location value="431"/>
+    Recognition (cTDaR), April 2019. http://sac.founderit.com/. [4] Antonio Jimeno Yepes, Peter Zhong, and Douglas Burdick. Competition on scientific literature parsing. In Proceedings of the International Conference on Document Analysis and Recognition , ICDAR, pages 605-617. LNCS 12824, SpringerVerlag, sep 2021. [5] Logan Markewich, Hao Zhang, Yubin Xing, Navid Lambert-Shirzad, Jiang Zhexin, Roy Lee, Zhi Li, and Seok-Bum Ko. Segmentation for document layout analysis: not dead yet. International Journal on Document Analysis and Recognition (IJDAR) , pages 1-11, 01 2022. [6] Xu Zhong, Jianbin Tang, and Antonio Jimeno-Yepes. Publaynet: Largest dataset ever for document layout analysis. In Proceedings of the International Conference on Document Analysis and Recognition , ICDAR, pages 1015-1022, sep 2019. [7] Minghao Li, Yiheng Xu, Lei Cui, Shaohan Huang, Furu Wei, Zhoujun Li, and Ming Zhou. Docbank: A benchmark dataset for document layout analysis. In Proceedings of the 28th International Conference on Computational Linguistics , COLING, pages 949-960. International Committee on Computational Linguistics, dec 2020. [8] Riaz Ahmad, Muhammad Tanvir Afzal, and M. Qadir. Information extraction from pdf sources based on rule-based system using integrated formats. In SemWebEval@ESWC , 2016. [9] Ross B. Girshick, Jeff Donahue, Trevor Darrell, and Jitendra Malik. Rich feature hierarchies for accurate object detection and semantic segmentation. In IEEE Conference on Computer Vision and Pattern Recognition , CVPR, pages 580-587. IEEE Computer Society, jun 2014. [10] Ross B. Girshick. Fast R-CNN. In 2015 IEEE International Conference on Computer Vision , ICCV, pages 1440-1448. IEEE Computer Society, dec 2015. [11] Shaoqing Ren, Kaiming He, Ross Girshick, and Jian Sun. Faster r-cnn: Towards real-time object detection with region proposal networks. IEEE Transactions on Pattern Analysis and Machine Intelligence , 39(6):1137-1149, 2017. Kaiming He, Georgia Gkioxari, Piotr Dollár, and Ross B. Girshick. Mask R-CNN. , ICCV, pages 2980-2988.
     <ldiv>
       <marker>[12]</marker>
     </ldiv>
     <location value="266"/>
     <location value="421"/>
-    <location value="468"/>
+    <location value="406"/>
     <location value="436"/>
-    Kaiming He, Georgia Gkioxari, Piotr Dollár, and Ross B. Girshick. Mask R-CNN. In IEEE International Conference on Computer Vision , ICCV, pages 2980-2988. IEEE Computer Society, Oct 2017.
+    In IEEE International Conference on Computer Vision IEEE Computer Society, Oct 2017.
     <ldiv>
       <marker>[13]</marker>
     </ldiv>
@@ -4313,7 +4144,7 @@
 <![CDATA[KDD '22, August 14-18, 2022, Washington, DC, USA]]>  </page_header>
   <picture>
     <location value="46"/>
-    <location value="57"/>
+    <location value="58"/>
     <location value="457"/>
     <location value="290"/>
     <caption>

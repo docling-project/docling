@@ -1,11 +1,11 @@
 <doclang version="0.7">
-  <heading level="2">
+  <text>
     <location value="241"/>
     <location value="18"/>
     <location value="350"/>
     <location value="33"/>
     Front cover
-  </heading>
+  </text>
   <heading level="2">
     <location value="30"/>
     <location value="55"/>
@@ -20,24 +20,10 @@
     <location value="210"/>
     Implement roles and separation of duties
   </text>
-  <text>
-    <location value="30"/>
-    <location value="226"/>
-    <location value="169"/>
-    <location value="245"/>
-    Leverage row permissions on the database
-  </text>
-  <text>
-    <location value="30"/>
-    <location value="261"/>
-    <location value="163"/>
-    <location value="280"/>
-    Protect columns by defining column masks
-  </text>
   <picture>
-    <location value="80"/>
+    <location value="40"/>
     <location value="200"/>
-    <location value="488"/>
+    <location value="485"/>
     <location value="453"/>
     <text>
       <location value="416"/>
@@ -46,12 +32,26 @@
       <location value="451"/>
       Jim Bainbridge Hernando Bedoya Rob Bestgen Mike Cain Dan Cruikshank Jim Denton Doug Mack Tom McKinley Kent Milligan
     </text>
+    <text>
+      <location value="30"/>
+      <location value="226"/>
+      <location value="169"/>
+      <location value="245"/>
+      Leverage row permissions on the database
+    </text>
+    <text>
+      <location value="30"/>
+      <location value="261"/>
+      <location value="163"/>
+      <location value="280"/>
+      Protect columns by defining column masks
+    </text>
   </picture>
   <picture>
-    <location value="267"/>
+    <location value="265"/>
     <location value="459"/>
     <location value="486"/>
-    <location value="502"/>
+    <location value="501"/>
     <text>
       <location value="263"/>
       <location value="460"/>
@@ -82,228 +82,236 @@
     <location value="458"/>
     <location value="462"/>
     <fcel/>
-    Notices . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    Notices . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     . vii
     <nl/>
     <fcel/>
-    Trademarks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    Trademarks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     viii
     <nl/>
     <fcel/>
-    DB2 for i Center of Excellence . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    DB2 for i Center of Excellence . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     . ix
     <nl/>
+    <ecel/>
+    <srow/>
+    .
+    <nl/>
+    <rhed/>
+    Preface . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
-    Preface . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    xi
+    <nl/>
+    <rhed/>
+    Authors. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     . xi
     <nl/>
-    <fcel/>
-    Authors. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    <fcel/>
-    . xi
-    <nl/>
-    <fcel/>
-    Now you can become a published author, too! . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <rhed/>
+    Now you can become a published author, too! . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     xiii
     <nl/>
-    <fcel/>
-    Comments welcome. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <rhed/>
+    Comments welcome. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     xiii
     <nl/>
-    <fcel/>
-    Stay connected to IBM Redbooks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <rhed/>
+    Stay connected to IBM Redbooks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     xiv
     <nl/>
-    <fcel/>
-    Chapter 1. Securing and protecting IBM DB2 data . . . . . . . . . . . . . . . . . . . . . . .
-    <fcel/>
+    <srow/>
+    Chapter 1. Securing and protecting IBM DB2 data . . . . . . . . . . . . . . . . . . . . . .
+    <srow/>
     . 1
     <nl/>
-    <fcel/>
-    1.1 Security fundamentals. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <rhed/>
+    . .
+    <ecel/>
+    <nl/>
+    <rhed/>
+    1.1 Security fundamentals. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     . 2
     <nl/>
-    <fcel/>
-    1.2 Current state of IBM i security. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <rhed/>
+    1.2 Current state of IBM i security. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     . 2
     <nl/>
-    <fcel/>
-    1.3 DB2 for i security controls . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <rhed/>
+    1.3 DB2 for i security controls . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     . 3
     <nl/>
-    <fcel/>
-    1.3.1 Existing row and column control . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <rhed/>
+    1.3.1 Existing row and column control . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     . 4
     <nl/>
-    <fcel/>
-    1.3.2 New controls: Row and Column Access Control. . . . . . . . . . . . . . . . . . . . .
+    <rhed/>
+    1.3.2 New controls: Row and Column Access Control. . . . . . . . . . . . . . . . . . . .
     <fcel/>
     . 5
     <nl/>
-    <fcel/>
-    Chapter 2. Roles and separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    <fcel/>
+    <srow/>
+    Chapter 2. Roles and separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <srow/>
     . 7
     <nl/>
-    <fcel/>
-    2.1 Roles. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    <fcel/>
-    . 8
-    <nl/>
-    <fcel/>
-    2.1.1 DDM and DRDA application server access: QIBM_DB_DDMDRDA . . . . .
+    <rhed/>
+    2.1 Roles. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     . 8
     <nl/>
-    <fcel/>
-    2.1.2 Toolbox application server access: QIBM_DB_ZDA. . . . . . . . . . . . . . . . . .
+    <rhed/>
+    2.1.1 DDM and DRDA application server access: QIBM_DB_DDMDRDA . . . .
     <fcel/>
     . 8
     <nl/>
+    <rhed/>
+    2.1.2 Toolbox application server access: QIBM_DB_ZDA. . . . . . . . . . . . . . . . .
     <fcel/>
-    2.1.3 Database Administrator function: QIBM_DB_SQLADM . . . . . . . . . . . . . . .
+    . 8
+    <nl/>
+    <rhed/>
+    2.1.3 Database Administrator function: QIBM_DB_SQLADM . . . . . . . . . . . . . .
     <fcel/>
     . 9
     <nl/>
-    <fcel/>
-    2.1.4 Database Information function: QIBM_DB_SYSMON . . . . . . . . . . . . . . . .
-    <fcel/>
-    . 9
-    <nl/>
-    <fcel/>
-    2.1.5 Security Administrator function: QIBM_DB_SECADM . . . . . . . . . . . . . . . .
+    <rhed/>
+    2.1.4 Database Information function: QIBM_DB_SYSMON . . . . . . . . . . . . . . .
     <fcel/>
     . 9
     <nl/>
+    <rhed/>
+    2.1.5 Security Administrator function: QIBM_DB_SECADM . . . . . . . . . . . . . . .
     <fcel/>
-    2.1.6 Change Function Usage CL command. . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    . 9
+    <nl/>
+    <rhed/>
+    2.1.6 Change Function Usage CL command. . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     10
     <nl/>
-    <fcel/>
+    <rhed/>
     2.1.7 Verifying function usage IDs for RCAC with the FUNCTION_USAGE view
     <fcel/>
     10
     <nl/>
-    <fcel/>
-    2.2 Separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <rhed/>
+    2.2 Separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     10
     <nl/>
     <srow/>
-    Chapter 3. Row and Column Access Control . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    Chapter 3. Row and Column Access Control . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <srow/>
     13
     <nl/>
     <rhed/>
-    3.1 Explanation of RCAC and the concept of access control . . . . . . . . . . . . . . . . . .
+    3.1 Explanation of RCAC and the concept of access control . . . . . . . . . . . . . . . . .
     <fcel/>
     14
     <nl/>
     <rhed/>
-    3.1.1 Row permission and column mask definitions . . . . . . . . . . . . . . . . . . . . . .
+    3.1.1 Row permission and column mask definitions . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     14
     <nl/>
     <rhed/>
-    3.1.2 Enabling and activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    3.1.2 Enabling and activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     16
     <nl/>
     <rhed/>
-    3.2 Special registers and built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    3.2 Special registers and built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     18
     <nl/>
     <rhed/>
-    3.2.1 Special registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    3.2.1 Special registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     18
     <nl/>
     <rhed/>
-    3.2.2 Built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    3.2.2 Built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     19
     <nl/>
     <rhed/>
-    3.3 VERIFY_GROUP_FOR_USER function. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    3.3 VERIFY_GROUP_FOR_USER function. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     20
     <nl/>
     <rhed/>
-    3.4 Establishing and controlling accessibility by using the RCAC rule text. . . . . . . .
+    3.4 Establishing and controlling accessibility by using the RCAC rule text. . . . . . .
     <fcel/>
     21
     <nl/>
     <rhed/>
-    3.5 SELECT, INSERT, and UPDATE behavior with RCAC . . . . . . . . . . . . . . . . . . .
+    3.5 SELECT, INSERT, and UPDATE behavior with RCAC . . . . . . . . . . . . . . . . . .
     <fcel/>
     22
     <nl/>
-    <rhed/>
-    3.6 Human resources example . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-    <fcel/>
+    <srow/>
+    3.6 Human resources example . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <srow/>
     22
     <nl/>
     <rhed/>
-    3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . .
+    3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . .
     <fcel/>
     23
     <nl/>
     <rhed/>
-    3.6.2 Creating group profiles for the users and their roles. . . . . . . . . . . . . . . . . .
+    3.6.2 Creating group profiles for the users and their roles. . . . . . . . . . . . . . . . .
     <fcel/>
     23
     <nl/>
     <rhed/>
-    3.6.3 Demonstrating data access without RCAC. . . . . . . . . . . . . . . . . . . . . . . . .
+    3.6.3 Demonstrating data access without RCAC. . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     24
     <nl/>
     <rhed/>
-    3.6.4 Defining and creating row permissions . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    3.6.4 Defining and creating row permissions . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     25
     <nl/>
     <rhed/>
-    masks
-    <ecel/>
-    <nl/>
-    <rhed/>
-    3.6.5 Defining and creating column . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    3.6.5 Defining and creating column masks . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     26
     <nl/>
     <rhed/>
-    3.6.7 Demonstrating data access with RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . 3.6.8
+    3.6.6 Activating RCAC. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    <fcel/>
+    28
+    <nl/>
+    <rhed/>
+    3.6.7 Demonstrating data access with RCAC . . . . . . . . . . . . . . . . . . . . . . . . . .
     <fcel/>
     29
     <nl/>
     <rhed/>
-    Demonstrating data access with a view and RCAC . . . . . . . . . . . . . . . . . .
+    3.6.8 Demonstrating data access with a view and RCAC . . . . . . . . . . . . . . . . .
     <fcel/>
     32
     <nl/>
   </index>
-  <page_footer>
-    <layer value="furniture"/>
+  <footnote>
     <location value="54"/>
     <location value="488"/>
     <location value="215"/>
     <location value="494"/>
     © Copyright IBM Corp. 2014. All rights reserved.
-  </page_footer>
+  </footnote>
   <page_footer>
     <layer value="furniture"/>
     <location value="451"/>
@@ -313,13 +321,13 @@
     iii
   </page_footer>
   <page_break/>
-  <heading level="2">
+  <text>
     <location value="54"/>
     <location value="48"/>
     <location value="197"/>
     <location value="55"/>
     DB2 for i Center of Excellence
-  </heading>
+  </text>
   <text>
     <location value="79"/>
     <location value="90"/>
@@ -357,14 +365,8 @@
     <location value="121"/>
     <location value="271"/>
     <location value="196"/>
-    <location value="276"/>
-    /g115/g3 /g55 /g68/g78/g72/g3 /g68/g71/g89/g68/g81/g87/g68/g74/g72/g3 /g82/g73/g3 /g68/g70/g70/g72/g86/g86/g3 /g87/g82/g3 /g68/g3
-    <ldiv/>
-    <location value="127"/>
-    <location value="276"/>
-    <location value="194"/>
     <location value="281"/>
-    /g90/g82/g85/g79/g71/g90/g76/g71/g72/g3 /g86/g82/g88/g85/g70/g72/g3 /g82/g73/g3 /g72/g91/g83/g72/g85/g87/g76/g86/g72
+    /g115/g3 /g55 /g68/g78/g72/g3 /g68/g71/g89/g68/g81/g87/g68/g74/g72/g3 /g82/g73/g3 /g68/g70/g70/g72/g86/g86/g3 /g87/g82/g3 /g68/g3 /g90/g82/g85/g79/g71/g90/g76/g71/g72/g3 /g86/g82/g88/g85/g70/g72/g3 /g82/g73/g3 /g72/g91/g83/g72/g85/g87/g76/g86/g72
   </list>
   <picture>
     <location value="54"/>
@@ -393,12 +395,19 @@
     <location value="186"/>
     Expert help to achieve your business requirements
   </text>
-  <text>
+  <heading level="2">
     <location value="234"/>
     <location value="204"/>
+    <location value="371"/>
+    <location value="209"/>
+    We build confident, satisfied clients
+  </heading>
+  <text>
+    <location value="234"/>
+    <location value="212"/>
     <location value="408"/>
     <location value="223"/>
-    We build confident, satisfied clients No one else has the vast consulting experiences, skills sharing and renown service offerings to do what we can do for you.
+    No one else has the vast consulting experiences, skills sharing and renown service offerings to do what we can do for you.
   </text>
   <text>
     <location value="234"/>
@@ -413,13 +422,13 @@
     <location value="419"/>
     <location value="275"/>
 <![CDATA[With combined experiences and direct access to development groups, we're the experts in IBM DB2® for i. The DB2 for i Center of Excellence (CoE) can help you achieve-perhaps reexamine and exceed-your business requirements and gain more confidence and satisfaction in IBM product data management products and solutions.]]>  </text>
-  <text>
+  <heading level="2">
     <location value="234"/>
     <location value="283"/>
     <location value="364"/>
     <location value="288"/>
     Who we are, some of what we do
-  </text>
+  </heading>
   <text>
     <location value="234"/>
     <location value="290"/>
@@ -567,6 +576,13 @@
     <location value="201"/>
     <location value="154"/>
   </picture>
+  <text>
+    <location value="68"/>
+    <location value="174"/>
+    <location value="96"/>
+    <location value="178"/>
+    Chapter 1.
+  </text>
   <heading level="2">
     <location value="419"/>
     <location value="60"/>
@@ -575,11 +591,11 @@
     1
   </heading>
   <heading level="2">
-    <location value="68"/>
+    <location value="114"/>
     <location value="165"/>
     <location value="459"/>
     <location value="200"/>
-    Chapter 1. Securing and protecting IBM DB2 data
+    Securing and protecting IBM DB2 data
   </heading>
   <text>
     <location value="114"/>
@@ -612,23 +628,16 @@
     <ldiv/>
     <location value="114"/>
     <location value="350"/>
-    <location value="119"/>
+    <location value="237"/>
     <location value="356"/>
-    /SM590000
+    /SM590000 Current state of IBM i security
     <ldiv/>
     <location value="114"/>
     <location value="358"/>
-    <location value="119"/>
+    <location value="222"/>
     <location value="364"/>
-    /SM590000
+    /SM590000 DB2 for i security controls
   </list>
-  <text>
-    <location value="126"/>
-    <location value="350"/>
-    <location value="237"/>
-    <location value="364"/>
-    Current state of IBM i security DB2 for i security controls
-  </text>
   <footnote>
     <location value="114"/>
     <location value="463"/>
@@ -643,14 +652,13 @@
     <location value="475"/>
     2 http://www.ponemon.org /
   </footnote>
-  <page_footer>
-    <layer value="furniture"/>
+  <footnote>
     <location value="54"/>
     <location value="488"/>
     <location value="215"/>
     <location value="494"/>
     © Copyright IBM Corp. 2014. All rights reserved.
-  </page_footer>
+  </footnote>
   <page_footer>
     <layer value="furniture"/>
     <location value="453"/>
@@ -830,27 +838,26 @@
     <location value="69"/>
     The following CL commands can be used to work with, display, or change function usage IDs:
   </text>
-  <text>
+  <list>
+    <ldiv/>
     <location value="114"/>
     <location value="74"/>
     <location value="252"/>
     <location value="80"/>
     /SM590000 Work Function Usage ( WRKFCNUSG )
-  </text>
-  <text>
+    <ldiv/>
     <location value="114"/>
     <location value="82"/>
     <location value="262"/>
     <location value="88"/>
     /SM590000 Change Function Usage ( CHGFCNUSG )
-  </text>
-  <text>
+    <ldiv/>
     <location value="114"/>
     <location value="90"/>
     <location value="260"/>
     <location value="96"/>
     /SM590000 Display Function Usage ( DSPFCNUSG )
-  </text>
+  </list>
   <text>
     <location value="114"/>
     <location value="104"/>
@@ -879,18 +886,18 @@
     <location value="172"/>
     The FUNCTION_USAGE view contains function usage configuration details. Table 2-1 describes the columns in the FUNCTION_USAGE view.
   </text>
-  <text>
-    <location value="114"/>
-    <location value="181"/>
-    <location value="238"/>
-    <location value="186"/>
-    Table 2-1   FUNCTION_USAGE view
-  </text>
   <table>
     <location value="118"/>
-    <location value="188"/>
-    <location value="451"/>
+    <location value="190"/>
+    <location value="453"/>
     <location value="282"/>
+    <caption>
+      <location value="114"/>
+      <location value="181"/>
+      <location value="238"/>
+      <location value="186"/>
+      Table 2-1   FUNCTION_USAGE view
+    </caption>
     <ched/>
     Column name
     <ched/>
@@ -934,19 +941,12 @@
     <location value="306"/>
     To discover who has authorization to define and manage RCAC, you can use the query that is shown in Example 2-1.
   </text>
-  <text>
-    <location value="114"/>
-    <location value="315"/>
-    <location value="387"/>
-    <location value="320"/>
-    Example 2-1   Query to determine who has authority to define and manage RCAC
-  </text>
   <code>
     <location value="114"/>
     <location value="326"/>
     <location value="277"/>
     <location value="378"/>
-<![CDATA[SELECT     function_id, user_name, usage, user_type FROM       function_usage WHERE      function_id='QIBM_DB_SECADM' ORDER BY   user_name;]]>  </code>
+<![CDATA[SELECT     function_id, user_name, usage, user_type FROM       function_usage WHERE      function_id='QIBM_DB_SECADM' ORDER BY   user_name;]]><![CDATA[<caption><location value="114"/><location value="315"/><location value="387"/><location value="320"/>Example 2-1   Query to determine who has authority to define and manage RCAC</caption>]]>  </code>
   <heading level="2">
     <location value="54"/>
     <location value="401"/>
@@ -1182,12 +1182,12 @@
     <location value="84"/>
     Names the row permission for row access control
   </text>
-  <text>
+  <heading level="2">
     <location value="124"/>
     <location value="91"/>
     <location value="287"/>
     <location value="97"/>
-<![CDATA[CREATE PERMISSION < permission name >]]>  </text>
+<![CDATA[CREATE PERMISSION < permission name >]]>  </heading>
   <text>
     <location value="260"/>
     <location value="108"/>
@@ -1255,26 +1255,19 @@
     <location value="221"/>
     ENFORCED FOR ALL ACCESS ENFORCED FOR ALL ACCESS
   </heading>
-  <text>
-    <location value="261"/>
-    <location value="230"/>
-    <location value="441"/>
-    <location value="235"/>
-    Specifies that the row permission is to be initially enabled
-  </text>
   <heading level="2">
     <location value="124"/>
     <location value="242"/>
-    <location value="160"/>
-    <location value="257"/>
-    ENABLE ENABLE DISABLE ;
+    <location value="155"/>
+    <location value="248"/>
+    ENABLE ENABLE
   </heading>
   <text>
-    <location value="261"/>
-    <location value="244"/>
-    <location value="441"/>
-    <location value="249"/>
-    S ifi th t th i i i t b i iti ll di bl d Specifies that the row permission is to be initially disabled
+    <location value="124"/>
+    <location value="251"/>
+    <location value="160"/>
+    <location value="257"/>
+    DISABLE ;
   </text>
   <text>
     <location value="114"/>
@@ -1297,6 +1290,30 @@
     <location value="323"/>
     A column mask is a database object that manifests a column value access control rule for a specific column in a specific table. It uses a CASE expression that describes what you see when you access the column. For example, a teller can see only the last four digits of a tax identification number.
   </text>
+  <text>
+    <location value="261"/>
+    <location value="230"/>
+    <location value="441"/>
+    <location value="235"/>
+    Specifies that the row permission is to be initially enabled
+  </text>
+  <text>
+    <thread thread_id="1"/>
+    <location value="261"/>
+    <location value="244"/>
+    <location value="441"/>
+    <location value="249"/>
+    S ifi th t th i i i t b i iti ll di bl d Specifies that the row permission is to be initially disabled
+  </text>
+  <page_break/>
+  <text>
+    <thread thread_id="1"/>
+    <location value="114"/>
+    <location value="46"/>
+    <location value="345"/>
+    <location value="52"/>
+    Table 3-1 summarizes these special registers and their values.
+  </text>
   <page_footer>
     <layer value="furniture"/>
     <location value="289"/>
@@ -1305,29 +1322,21 @@
     <location value="494"/>
     Chapter 3. Row and Column Access Control 15
   </page_footer>
-  <page_break/>
-  <text>
-    <location value="114"/>
-    <location value="46"/>
-    <location value="345"/>
-    <location value="52"/>
-    Table 3-1 summarizes these special registers and their values.
-  </text>
-  <text>
-    <location value="114"/>
-    <location value="60"/>
-    <location value="312"/>
-    <location value="66"/>
-    Table 3-1   Special registers and their corresponding values
-  </text>
   <table>
     <location value="119"/>
     <location value="71"/>
-    <location value="448"/>
+    <location value="449"/>
     <location value="128"/>
-    <fcel/>
+    <caption>
+      <location value="114"/>
+      <location value="60"/>
+      <location value="312"/>
+      <location value="66"/>
+      Table 3-1   Special registers and their corresponding values
+    </caption>
+    <ched/>
     Special register
-    <fcel/>
+    <ched/>
     Corresponding value
     <nl/>
     <fcel/>
@@ -1401,17 +1410,17 @@
   <text>
     <location value="116"/>
     <location value="289"/>
-    <location value="236"/>
-    <location value="350"/>
-    CALL proc1 P roc1: Owner = JOE SET OPTION USRPRF=*OWNER USER = ALICE CURRENT USER = JOE
+    <location value="153"/>
+    <location value="294"/>
+    CALL proc1
   </text>
-  <text>
+  <code>
     <location value="116"/>
-    <location value="366"/>
-    <location value="160"/>
+    <location value="306"/>
+    <location value="236"/>
     <location value="371"/>
-    USER = ALICE
-  </text>
+    P roc1: Owner = JOE SET OPTION USRPRF=*OWNER USER = ALICE CURRENT USER = JOE USER = ALICE
+  </code>
   <text>
     <location value="116"/>
     <location value="374"/>
@@ -1465,9 +1474,9 @@
   </text>
   <table>
     <location value="58"/>
-    <location value="68"/>
+    <location value="70"/>
     <location value="446"/>
-    <location value="189"/>
+    <location value="188"/>
     <caption>
       <location value="54"/>
       <location value="60"/>
@@ -1603,15 +1612,9 @@
   <text>
     <location value="126"/>
     <location value="372"/>
-    <location value="340"/>
-    <location value="385"/>
-<![CDATA[VERIFY_GROUP_FOR_USER (CURRENT_USER, 'MGR') VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JANE', 'MGR')]]>  </text>
-  <text>
-    <location value="126"/>
-    <location value="387"/>
     <location value="377"/>
     <location value="393"/>
-<![CDATA[VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JANE', 'MGR', 'STEVE')]]>  </text>
+<![CDATA[VERIFY_GROUP_FOR_USER (CURRENT_USER, 'MGR') VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JANE', 'MGR') VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JANE', 'MGR', 'STEVE')]]>  </text>
   <text>
     <location value="126"/>
     <location value="398"/>
@@ -1817,8 +1820,8 @@
   </list>
   <picture>
     <location value="120"/>
-    <location value="82"/>
-    <location value="447"/>
+    <location value="81"/>
+    <location value="448"/>
     <location value="305"/>
     <caption>
       <location value="114"/>
@@ -1831,7 +1834,7 @@
   <picture>
     <location value="53"/>
     <location value="358"/>
-    <location value="424"/>
+    <location value="425"/>
     <location value="430"/>
     <caption>
       <location value="54"/>
@@ -1881,13 +1884,13 @@
     <location value="35"/>
     ®
   </page_header>
-  <heading level="2">
+  <text>
     <location value="240"/>
     <location value="18"/>
     <location value="347"/>
     <location value="33"/>
     Back cover
-  </heading>
+  </text>
   <heading level="2">
     <location value="23"/>
     <location value="48"/>
@@ -1910,7 +1913,7 @@
     Leverage row permissions on the database
   </text>
   <text>
-    <thread thread_id="1"/>
+    <thread thread_id="2"/>
     <location value="22"/>
     <location value="220"/>
     <location value="102"/>
@@ -1918,7 +1921,7 @@
     Protect columns by defining column masks
   </text>
   <text>
-    <thread thread_id="1"/>
+    <thread thread_id="2"/>
     <location value="128"/>
     <location value="157"/>
     <location value="347"/>
@@ -1940,9 +1943,9 @@
     REDP-5110-00
   </text>
   <picture>
-    <location value="398"/>
+    <location value="397"/>
     <location value="52"/>
-    <location value="495"/>
+    <location value="496"/>
     <location value="123"/>
     <text>
       <location value="397"/>
@@ -1963,28 +1966,161 @@
     <location value="391"/>
     <location value="160"/>
     <location value="468"/>
+    <location value="168"/>
+    INTERNATIONAL
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="169"/>
+    <location value="443"/>
+    <location value="177"/>
+    TECHNICAL
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="178"/>
+    <location value="434"/>
+    <location value="186"/>
+    SUPPORT
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="187"/>
+    <location value="461"/>
     <location value="195"/>
-    INTERNATIONAL TECHNICAL SUPPORT ORGANIZATION
+    ORGANIZATION
   </text>
   <text>
     <location value="391"/>
     <location value="227"/>
+    <location value="478"/>
+    <location value="234"/>
+    BUILDING TECHNICAL
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="235"/>
     <location value="492"/>
+    <location value="242"/>
+    INFORMATION BASED ON
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="243"/>
+    <location value="487"/>
     <location value="250"/>
-    BUILDING TECHNICAL INFORMATION BASED ON PRACTICAL EXPERIENCE
+    PRACTICAL EXPERIENCE
   </text>
   <text>
     <location value="391"/>
     <location value="258"/>
     <location value="492"/>
+    <location value="265"/>
+    IBM Redbooks are developed
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="266"/>
+    <location value="474"/>
+    <location value="272"/>
+    by the IBM International
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="273"/>
+    <location value="454"/>
+    <location value="279"/>
+    Technical Support
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="280"/>
+    <location value="483"/>
+    <location value="286"/>
+    Organization. Experts from
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="287"/>
+    <location value="492"/>
+    <location value="293"/>
+    IBM, Customers and Partners
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="294"/>
+    <location value="492"/>
+    <location value="300"/>
+    from around the world create
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="301"/>
+    <location value="487"/>
+    <location value="307"/>
+    timely technical information
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="308"/>
+    <location value="490"/>
+    <location value="315"/>
+    based on realistic scenarios.
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="315"/>
+    <location value="483"/>
+    <location value="322"/>
+    Specific recommendations
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="322"/>
+    <location value="475"/>
+    <location value="329"/>
+    are provided to help you
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="330"/>
+    <location value="490"/>
+    <location value="336"/>
+    implement IT solutions more
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="337"/>
+    <location value="453"/>
+    <location value="343"/>
+    effectively in your
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="344"/>
+    <location value="436"/>
     <location value="350"/>
-    IBM Redbooks are developed by the IBM International Technical Support Organization. Experts from IBM, Customers and Partners from around the world create timely technical information based on realistic scenarios. Specific recommendations are provided to help you implement IT solutions more effectively in your environment.
+    environment.
   </text>
   <text>
     <location value="391"/>
     <location value="374"/>
     <location value="478"/>
+    <location value="381"/>
+    For more information:
+  </text>
+  <text>
+    <location value="391"/>
+    <location value="382"/>
+    <location value="425"/>
     <location value="389"/>
-    For more information: ibm.com /redbooks
+    ibm.com
+  </text>
+  <text>
+    <location value="425"/>
+    <location value="382"/>
+    <location value="462"/>
+    <location value="389"/>
+    /redbooks
   </text>
 </doclang>

@@ -47,7 +47,7 @@
     <location value="308"/>
     <location value="378"/>
     <location value="322"/>
-    Keywords: Table Structure Recognition · Data Representation · Transformers · Optimization.
+    Keywords: Table Structure Recognition · Data Representation · Trans- formers · Optimization.
   </text>
   <heading level="2">
     <location value="113"/>
@@ -74,12 +74,11 @@
   <page_break/>
   <text>
     <thread thread_id="1"/>
-    <location value="113"/>
-    <location value="292"/>
-    <location value="402"/>
-    <location value="337"/>
-    today, table detection in documents is a well understood problem, and the latest state-of-the-art (SOTA) object detection methods provide an accuracy comparable to human observers [7,8,10,14,23]. On the other hand, the problem of table structure recognition (TSR) is a lot more challenging and remains a very active area of research, in which many novel machine learning algorithms are being explored [3,4,5,9,11,12,13,14,17,18,21,22].
-  </text>
+    <location value="127"/>
+    <location value="270"/>
+    <location value="160"/>
+    <location value="274"/>
+<![CDATA[rowspan="2"]]>  </text>
   <page_header>
     <layer value="furniture"/>
     <location value="113"/>
@@ -97,30 +96,10 @@
     M. Lysak, et al.
   </page_header>
   <picture>
-    <location value="128"/>
+    <location value="125"/>
     <location value="135"/>
-    <location value="273"/>
-    <location value="161"/>
-    <text>
-      <location value="129"/>
-      <location value="138"/>
-      <location value="134"/>
-      <location value="143"/>
-      A
-    </text>
-    <text>
-      <location value="269"/>
-      <location value="138"/>
-      <location value="273"/>
-      <location value="143"/>
-      B
-    </text>
-  </picture>
-  <picture>
-    <location value="127"/>
-    <location value="167"/>
     <location value="389"/>
-    <location value="274"/>
+    <location value="271"/>
     <caption>
       <location value="113"/>
       <location value="80"/>
@@ -320,30 +299,126 @@
     <text>
       <location value="127"/>
       <location value="258"/>
-      <location value="196"/>
-      <location value="263"/>
-      vocabulary for this table:
-    </text>
-    <text>
-      <location value="197"/>
-      <location value="258"/>
-      <location value="204"/>
-      <location value="263"/>
-      12
-    </text>
-    <text>
-      <location value="206"/>
-      <location value="258"/>
       <location value="225"/>
       <location value="263"/>
-      tokens
+      vocabulary for this table: 12 tokens
     </text>
-    <code>
+    <text>
+      <location value="129"/>
+      <location value="138"/>
+      <location value="134"/>
+      <location value="143"/>
+      A
+    </text>
+    <text>
+      <location value="269"/>
+      <location value="138"/>
+      <location value="273"/>
+      <location value="143"/>
+      B
+    </text>
+    <text>
       <location value="128"/>
       <location value="181"/>
+      <location value="147"/>
+      <location value="185"/>
+<![CDATA[<table>]]>    </text>
+    <text>
+      <location value="134"/>
+      <location value="186"/>
+      <location value="145"/>
+      <location value="190"/>
+<![CDATA[<tr>]]>    </text>
+    <text>
+      <location value="141"/>
+      <location value="190"/>
+      <location value="294"/>
+      <location value="194"/>
+<![CDATA[<td colspan='2' rowspan='2' > </td> <td colspan='3' > </td>]]>    </text>
+    <text>
+      <location value="134"/>
+      <location value="194"/>
+      <location value="146"/>
+      <location value="199"/>
+<![CDATA[</tr>]]>    </text>
+    <text>
+      <location value="134"/>
+      <location value="199"/>
+      <location value="145"/>
+      <location value="203"/>
+<![CDATA[<tr>]]>    </text>
+    <text>
+      <location value="141"/>
+      <location value="203"/>
+      <location value="222"/>
+      <location value="207"/>
+<![CDATA[<td> </td> <td> </td> <td> </td>]]>    </text>
+    <text>
+      <location value="134"/>
+      <location value="208"/>
+      <location value="146"/>
+      <location value="212"/>
+<![CDATA[</tr>]]>    </text>
+    <text>
+      <location value="134"/>
+      <location value="212"/>
+      <location value="145"/>
+      <location value="216"/>
+<![CDATA[<tr>]]>    </text>
+    <text>
+      <location value="141"/>
+      <location value="217"/>
       <location value="312"/>
+      <location value="221"/>
+<![CDATA[<td rowspan='3' > </td> <td> </td> <td> </td> <td> </td> <td> </td>]]>    </text>
+    <text>
+      <location value="134"/>
+      <location value="221"/>
+      <location value="146"/>
+      <location value="225"/>
+<![CDATA[</tr>]]>    </text>
+    <text>
+      <location value="134"/>
+      <location value="225"/>
+      <location value="145"/>
+      <location value="229"/>
+<![CDATA[<tr>]]>    </text>
+    <text>
+      <location value="141"/>
+      <location value="230"/>
+      <location value="250"/>
+      <location value="234"/>
+<![CDATA[<td> </td> <td> </td> <td> </td> <td> </td>]]>    </text>
+    <text>
+      <location value="134"/>
+      <location value="234"/>
+      <location value="146"/>
+      <location value="238"/>
+<![CDATA[</tr>]]>    </text>
+    <text>
+      <location value="134"/>
+      <location value="239"/>
+      <location value="145"/>
+      <location value="243"/>
+<![CDATA[<tr>]]>    </text>
+    <text>
+      <location value="141"/>
+      <location value="243"/>
+      <location value="250"/>
+      <location value="247"/>
+<![CDATA[<td> </td> <td> </td> <td> </td> <td> </td>]]>    </text>
+    <text>
+      <location value="134"/>
+      <location value="247"/>
+      <location value="146"/>
+      <location value="251"/>
+<![CDATA[</tr>]]>    </text>
+    <text>
+      <location value="128"/>
+      <location value="252"/>
+      <location value="149"/>
       <location value="256"/>
-<![CDATA[<table> <tr> <td colspan='2' rowspan='2' > </td> <td colspan='3' > </td> </tr> <tr> <td> </td> <td> </td> <td> </td> </tr> <tr> <td rowspan='3' > </td> <td> </td> <td> </td> <td> </td> <td> </td> </tr> <tr> <td> </td> <td> </td> <td> </td> <td> </td> </tr> <tr> <td> </td> <td> </td> <td> </td> <td> </td> </tr> </table>]]>    </code>
+<![CDATA[</table>]]>    </text>
     <text>
       <location value="331"/>
       <location value="266"/>
@@ -407,30 +482,12 @@
       <location value="269"/>
 <![CDATA[colspan="3"]]>    </text>
     <text>
-      <location value="127"/>
-      <location value="270"/>
-      <location value="160"/>
-      <location value="274"/>
-<![CDATA[rowspan="2"]]>    </text>
-    <text>
-      <location value="163"/>
-      <location value="270"/>
-      <location value="195"/>
-      <location value="274"/>
-<![CDATA[rowspan="3"]]>    </text>
-    <text>
-      <location value="198"/>
-      <location value="270"/>
-      <location value="225"/>
-      <location value="274"/>
-<![CDATA[> </table>]]>    </text>
-    <heading level="2">
       <location value="129"/>
       <location value="167"/>
       <location value="155"/>
       <location value="172"/>
       C HTML
-    </heading>
+    </text>
     <text>
       <location value="137"/>
       <location value="172"/>
@@ -439,6 +496,25 @@
       sequence length: 55
     </text>
   </picture>
+  <text>
+    <location value="163"/>
+    <location value="270"/>
+    <location value="195"/>
+    <location value="274"/>
+<![CDATA[rowspan="3"]]>  </text>
+  <text>
+    <location value="198"/>
+    <location value="270"/>
+    <location value="225"/>
+    <location value="274"/>
+<![CDATA[> </table>]]>  </text>
+  <text>
+    <location value="113"/>
+    <location value="292"/>
+    <location value="402"/>
+    <location value="337"/>
+    today, table detection in documents is a well understood problem, and the latest state-of-the-art (SOTA) object detection methods provide an accuracy comparable to human observers [7,8,10,14,23]. On the other hand, the problem of table structure recognition (TSR) is a lot more challenging and remains a very active area of research, in which many novel machine learning algorithms are being explored [3,4,5,9,11,12,13,14,17,18,21,22].
+  </text>
   <text>
     <location value="113"/>
     <location value="339"/>
@@ -503,9 +579,17 @@
     <layer value="furniture"/>
     <location value="113"/>
     <location value="59"/>
+    <location value="117"/>
+    <location value="66"/>
+    4
+  </page_header>
+  <page_header>
+    <layer value="furniture"/>
+    <location value="140"/>
+    <location value="59"/>
     <location value="194"/>
     <location value="66"/>
-    4 M. Lysak, et al.
+    M. Lysak, et al.
   </page_header>
   <text>
     <location value="113"/>
@@ -568,7 +652,7 @@
   </page_header>
   <picture>
     <location value="115"/>
-    <location value="150"/>
+    <location value="151"/>
     <location value="399"/>
     <location value="219"/>
     <caption>
@@ -721,8 +805,8 @@
   <picture>
     <location value="141"/>
     <location value="107"/>
-    <location value="235"/>
-    <location value="126"/>
+    <location value="375"/>
+    <location value="181"/>
     <caption>
       <location value="113"/>
       <location value="80"/>
@@ -730,13 +814,367 @@
       <location value="101"/>
       Fig. 3. OTSL description of table structure: A - table example; B - graphical representation of table structure; C - mapping structure on a grid; D - OTSL structure encoding; E - explanation on cell encoding
     </caption>
+    <text>
+      <location value="313"/>
+      <location value="109"/>
+      <location value="319"/>
+      <location value="115"/>
+      C
+    </text>
+    <text>
+      <location value="334"/>
+      <location value="109"/>
+      <location value="340"/>
+      <location value="115"/>
+      C
+    </text>
+    <text>
+      <location value="313"/>
+      <location value="125"/>
+      <location value="329"/>
+      <location value="131"/>
+      C C
+    </text>
+    <text>
+      <location value="324"/>
+      <location value="133"/>
+      <location value="330"/>
+      <location value="139"/>
+      C
+    </text>
+    <text>
+      <location value="334"/>
+      <location value="117"/>
+      <location value="360"/>
+      <location value="123"/>
+      C C C
+    </text>
+    <text>
+      <location value="334"/>
+      <location value="125"/>
+      <location value="360"/>
+      <location value="131"/>
+      C C C
+    </text>
+    <text>
+      <location value="334"/>
+      <location value="133"/>
+      <location value="360"/>
+      <location value="139"/>
+      C C C
+    </text>
+    <text>
+      <location value="323"/>
+      <location value="140"/>
+      <location value="360"/>
+      <location value="146"/>
+      C C C C
+    </text>
+    <text>
+      <location value="364"/>
+      <location value="108"/>
+      <location value="375"/>
+      <location value="114"/>
+      NL
+    </text>
+    <text>
+      <location value="364"/>
+      <location value="117"/>
+      <location value="375"/>
+      <location value="122"/>
+      NL
+    </text>
+    <text>
+      <location value="364"/>
+      <location value="125"/>
+      <location value="375"/>
+      <location value="130"/>
+      NL
+    </text>
+    <text>
+      <location value="364"/>
+      <location value="132"/>
+      <location value="375"/>
+      <location value="138"/>
+      NL
+    </text>
+    <text>
+      <location value="364"/>
+      <location value="141"/>
+      <location value="375"/>
+      <location value="146"/>
+      NL
+    </text>
+    <text>
+      <location value="313"/>
+      <location value="133"/>
+      <location value="319"/>
+      <location value="139"/>
+      U
+    </text>
+    <text>
+      <location value="313"/>
+      <location value="140"/>
+      <location value="319"/>
+      <location value="146"/>
+      U
+    </text>
+    <text>
+      <location value="313"/>
+      <location value="117"/>
+      <location value="319"/>
+      <location value="123"/>
+      U
+    </text>
+    <text>
+      <location value="324"/>
+      <location value="109"/>
+      <location value="329"/>
+      <location value="115"/>
+      L
+    </text>
+    <text>
+      <location value="345"/>
+      <location value="109"/>
+      <location value="349"/>
+      <location value="115"/>
+      L
+    </text>
+    <text>
+      <location value="354"/>
+      <location value="109"/>
+      <location value="359"/>
+      <location value="115"/>
+      L
+    </text>
+    <text>
+      <location value="324"/>
+      <location value="117"/>
+      <location value="329"/>
+      <location value="123"/>
+      X
+    </text>
+    <text>
+      <location value="236"/>
+      <location value="158"/>
+      <location value="242"/>
+      <location value="164"/>
+      C
+    </text>
+    <text>
+      <location value="236"/>
+      <location value="166"/>
+      <location value="242"/>
+      <location value="172"/>
+      U
+    </text>
+    <text>
+      <location value="236"/>
+      <location value="174"/>
+      <location value="242"/>
+      <location value="180"/>
+      U
+    </text>
+    <text>
+      <location value="247"/>
+      <location value="158"/>
+      <location value="252"/>
+      <location value="164"/>
+      L
+    </text>
+    <text>
+      <location value="257"/>
+      <location value="158"/>
+      <location value="262"/>
+      <location value="164"/>
+      L
+    </text>
+    <text>
+      <location value="267"/>
+      <location value="158"/>
+      <location value="271"/>
+      <location value="164"/>
+      L
+    </text>
+    <text>
+      <location value="247"/>
+      <location value="166"/>
+      <location value="272"/>
+      <location value="172"/>
+      X X X
+    </text>
+    <text>
+      <location value="247"/>
+      <location value="174"/>
+      <location value="272"/>
+      <location value="180"/>
+      X X X
+    </text>
+    <text>
+      <location value="164"/>
+      <location value="174"/>
+      <location value="180"/>
+      <location value="180"/>
+      C L
+    </text>
+    <text>
+      <location value="185"/>
+      <location value="174"/>
+      <location value="190"/>
+      <location value="180"/>
+      L
+    </text>
+    <text>
+      <location value="194"/>
+      <location value="174"/>
+      <location value="199"/>
+      <location value="180"/>
+      L
+    </text>
+    <text>
+      <location value="164"/>
+      <location value="158"/>
+      <location value="170"/>
+      <location value="164"/>
+      C
+    </text>
+    <text>
+      <location value="209"/>
+      <location value="158"/>
+      <location value="215"/>
+      <location value="164"/>
+      C
+    </text>
+    <text>
+      <location value="209"/>
+      <location value="166"/>
+      <location value="215"/>
+      <location value="172"/>
+      U
+    </text>
+    <text>
+      <location value="210"/>
+      <location value="174"/>
+      <location value="216"/>
+      <location value="180"/>
+      U
+    </text>
+    <text>
+      <location value="280"/>
+      <location value="157"/>
+      <location value="328"/>
+      <location value="161"/>
+<![CDATA[1 - simple cells: "C"]]>    </text>
+    <text>
+      <location value="280"/>
+      <location value="164"/>
+      <location value="353"/>
+      <location value="168"/>
+<![CDATA[2 - horizontal merges: "C", "L"]]>    </text>
+    <text>
+      <location value="280"/>
+      <location value="170"/>
+      <location value="347"/>
+      <location value="174"/>
+<![CDATA[3 - vertical merges: "C", "U"]]>    </text>
+    <text>
+      <location value="280"/>
+      <location value="176"/>
+      <location value="357"/>
+      <location value="180"/>
+<![CDATA[4 - 2d merges: "C", "L", "U", "X"]]>    </text>
+    <text>
+      <location value="155"/>
+      <location value="158"/>
+      <location value="158"/>
+      <location value="162"/>
+      1
+    </text>
+    <text>
+      <location value="156"/>
+      <location value="174"/>
+      <location value="159"/>
+      <location value="177"/>
+      2
+    </text>
+    <text>
+      <location value="200"/>
+      <location value="158"/>
+      <location value="203"/>
+      <location value="161"/>
+      3
+    </text>
+    <text>
+      <location value="227"/>
+      <location value="157"/>
+      <location value="230"/>
+      <location value="161"/>
+      4
+    </text>
+    <text>
+      <location value="192"/>
+      <location value="108"/>
+      <location value="195"/>
+      <location value="112"/>
+      2
+    </text>
+    <text>
+      <location value="215"/>
+      <location value="123"/>
+      <location value="218"/>
+      <location value="127"/>
+      1
+    </text>
+    <text>
+      <location value="156"/>
+      <location value="115"/>
+      <location value="159"/>
+      <location value="119"/>
+      3
+    </text>
+    <text>
+      <location value="164"/>
+      <location value="109"/>
+      <location value="167"/>
+      <location value="113"/>
+      4
+    </text>
+    <text>
+      <location value="142"/>
+      <location value="109"/>
+      <location value="147"/>
+      <location value="114"/>
+      A
+    </text>
+    <text>
+      <location value="142"/>
+      <location value="134"/>
+      <location value="147"/>
+      <location value="139"/>
+      B
+    </text>
+    <text>
+      <location value="229"/>
+      <location value="109"/>
+      <location value="234"/>
+      <location value="114"/>
+      C
+    </text>
+    <text>
+      <location value="301"/>
+      <location value="109"/>
+      <location value="306"/>
+      <location value="114"/>
+      D
+    </text>
+    <text>
+      <location value="142"/>
+      <location value="157"/>
+      <location value="147"/>
+      <location value="162"/>
+      E
+    </text>
   </picture>
-  <formula>
-    <location value="142"/>
-    <location value="108"/>
-    <location value="375"/>
-    <location value="180"/>
-  </formula>
   <heading level="2">
     <location value="113"/>
     <location value="197"/>
@@ -774,12 +1212,15 @@
     <location value="189"/>
     <location value="261"/>
     Cross cell rule :
-    <ldiv/>
+  </list>
+  <text>
     <location value="127"/>
     <location value="263"/>
     <location value="402"/>
     <location value="284"/>
-<![CDATA[The left neighbour of an "X" cell must be either another "X" cell or a "U" cell, and the upper neighbour of an "X" cell must be either another "X" cell or an "L" cell.]]>    <ldiv>
+<![CDATA[The left neighbour of an "X" cell must be either another "X" cell or a "U" cell, and the upper neighbour of an "X" cell must be either another "X" cell or an "L" cell.]]>  </text>
+  <list class="ordered">
+    <ldiv>
       <marker>4.</marker>
     </ldiv>
     <location value="116"/>
@@ -860,10 +1301,10 @@
     <location value="292"/>
     To evaluate the impact of OTSL on prediction accuracy and inference times, we conducted a series of experiments based on the TableFormer model (Figure 4) with two objectives: Firstly we evaluate the prediction quality and performance of OTSL vs. HTML after performing Hyper Parameter Optimization (HPO) on the canonical PubTabNet data set. Secondly we pick the best hyper-parameters found in the first step and evaluate how OTSL impacts the performance of TableFormer after training on other publicly available data sets (FinTabNet, PubTables-1M [14]). The ground truth (GT) from all data sets has been converted into OTSL format for this purpose, and will be made publicly available.
   </text>
-  <picture>
-    <location value="121"/>
+  <table>
+    <location value="122"/>
     <location value="328"/>
-    <location value="382"/>
+    <location value="364"/>
     <location value="380"/>
     <caption>
       <location value="113"/>
@@ -872,446 +1313,49 @@
       <location value="326"/>
       Fig. 4. Architecture sketch of the TableFormer model, which is a representative for the Im2Seq approach.
     </caption>
-    <text>
-      <location value="123"/>
-      <location value="350"/>
-      <location value="125"/>
-      <location value="351"/>
-      1.
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="350"/>
-      <location value="130"/>
-      <location value="351"/>
-      Item
-    </text>
-    <text>
-      <location value="136"/>
-      <location value="346"/>
-      <location value="144"/>
-      <location value="348"/>
-      Amount
-    </text>
-    <text>
-      <location value="124"/>
-      <location value="346"/>
-      <location value="130"/>
-      <location value="348"/>
-      Names
-    </text>
-    <text>
-      <location value="133"/>
-      <location value="350"/>
-      <location value="137"/>
-      <location value="351"/>
-      1000
-    </text>
-    <text>
-      <location value="133"/>
-      <location value="352"/>
-      <location value="136"/>
-      <location value="354"/>
-      500
-    </text>
-    <text>
-      <location value="133"/>
-      <location value="355"/>
-      <location value="137"/>
-      <location value="356"/>
-      3500
-    </text>
-    <text>
-      <location value="133"/>
-      <location value="358"/>
-      <location value="136"/>
-      <location value="359"/>
-      150
-    </text>
-    <text>
-      <location value="141"/>
-      <location value="350"/>
-      <location value="145"/>
-      <location value="351"/>
-      unit
-    </text>
-    <text>
-      <location value="141"/>
-      <location value="352"/>
-      <location value="145"/>
-      <location value="354"/>
-      unit
-    </text>
-    <text>
-      <location value="141"/>
-      <location value="355"/>
-      <location value="145"/>
-      <location value="356"/>
-      unit
-    </text>
-    <text>
-      <location value="141"/>
-      <location value="358"/>
-      <location value="145"/>
-      <location value="359"/>
-      unit
-    </text>
-    <text>
-      <location value="123"/>
-      <location value="352"/>
-      <location value="125"/>
-      <location value="354"/>
-      2.
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="352"/>
-      <location value="130"/>
-      <location value="354"/>
-      Item
-    </text>
-    <text>
-      <location value="123"/>
-      <location value="355"/>
-      <location value="125"/>
-      <location value="356"/>
-      3.
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="355"/>
-      <location value="130"/>
-      <location value="356"/>
-      Item
-    </text>
-    <text>
-      <location value="123"/>
-      <location value="358"/>
-      <location value="125"/>
-      <location value="359"/>
-      4.
-    </text>
-    <text>
-      <location value="126"/>
-      <location value="358"/>
-      <location value="130"/>
-      <location value="359"/>
-      Item
-    </text>
-    <text>
-      <location value="127"/>
-      <location value="334"/>
-      <location value="143"/>
-      <location value="337"/>
-      Extracted
-    </text>
-    <text>
-      <location value="124"/>
-      <location value="338"/>
-      <location value="147"/>
-      <location value="340"/>
-      Table Images
-    </text>
-    <text>
-      <location value="162"/>
-      <location value="339"/>
-      <location value="184"/>
-      <location value="342"/>
-      Standardized
-    </text>
-    <text>
-      <location value="167"/>
-      <location value="343"/>
-      <location value="179"/>
-      <location value="345"/>
-      Images
-    </text>
-    <text>
-      <location value="229"/>
-      <location value="330"/>
-      <location value="238"/>
-      <location value="332"/>
-      BBox
-    </text>
-    <text>
-      <location value="226"/>
-      <location value="332"/>
-      <location value="241"/>
-      <location value="335"/>
-      Decoder
-    </text>
-    <text>
-      <location value="278"/>
-      <location value="329"/>
-      <location value="291"/>
-      <location value="331"/>
-      BBoxes
-    </text>
-    <text>
-      <location value="315"/>
-      <location value="337"/>
-      <location value="341"/>
-      <location value="340"/>
-      BBoxes can be
-    </text>
-    <text>
-      <location value="313"/>
-      <location value="340"/>
-      <location value="343"/>
-      <location value="343"/>
-      traced back to the
-    </text>
-    <text>
-      <location value="314"/>
-      <location value="343"/>
-      <location value="342"/>
-      <location value="346"/>
-      original image to
-    </text>
-    <text>
-      <location value="315"/>
-      <location value="346"/>
-      <location value="340"/>
-      <location value="348"/>
-      extract content
-    </text>
-    <text>
-      <location value="321"/>
-      <location value="364"/>
-      <location value="363"/>
-      <location value="367"/>
-      Structure Tags sequence
-    </text>
-    <text>
-      <location value="321"/>
-      <location value="367"/>
-      <location value="363"/>
-      <location value="370"/>
-      provide full description of
-    </text>
-    <text>
-      <location value="327"/>
-      <location value="370"/>
-      <location value="357"/>
-      <location value="373"/>
-      the table structure
-    </text>
-    <text>
-      <location value="246"/>
-      <location value="374"/>
-      <location value="270"/>
-      <location value="376"/>
-      Structure Tags
-    </text>
-    <text>
-      <location value="246"/>
-      <location value="377"/>
-      <location value="272"/>
-      <location value="379"/>
-      in OTSL format
-    </text>
-    <text>
-      <location value="279"/>
-      <location value="350"/>
-      <location value="305"/>
-      <location value="353"/>
-      BBoxes in sync
-    </text>
-    <text>
-      <location value="279"/>
-      <location value="353"/>
-      <location value="309"/>
-      <location value="355"/>
-      with tag sequence
-    </text>
-    <text>
-      <location value="195"/>
-      <location value="333"/>
-      <location value="209"/>
-      <location value="336"/>
-      Encoder
-    </text>
-    <text>
-      <location value="226"/>
-      <location value="353"/>
-      <location value="241"/>
-      <location value="356"/>
-      Structure
-    </text>
-    <text>
-      <location value="226"/>
-      <location value="355"/>
-      <location value="241"/>
-      <location value="358"/>
-      Decoder
-    </text>
-    <text>
-      <location value="278"/>
-      <location value="334"/>
-      <location value="300"/>
-      <location value="336"/>
-      [x1, y2, x2, y2]
-    </text>
-    <text>
-      <location value="278"/>
-      <location value="337"/>
-      <location value="303"/>
-      <location value="340"/>
-<![CDATA[[x1', y2', x2', y2']]]>    </text>
-    <text>
-      <location value="278"/>
-      <location value="341"/>
-      <location value="305"/>
-      <location value="344"/>
-<![CDATA[[x1'', y2'', x2'', y2'']]]>    </text>
-    <text>
-      <location value="278"/>
-      <location value="345"/>
-      <location value="281"/>
-      <location value="348"/>
-      ...
-    </text>
-    <text>
-      <location value="273"/>
-      <location value="334"/>
-      <location value="276"/>
-      <location value="337"/>
-      1
-    </text>
-    <text>
-      <location value="274"/>
-      <location value="338"/>
-      <location value="276"/>
-      <location value="340"/>
-      2
-    </text>
-    <text>
-      <location value="274"/>
-      <location value="342"/>
-      <location value="276"/>
-      <location value="344"/>
-      3
-    </text>
-    <text>
-      <location value="355"/>
-      <location value="341"/>
-      <location value="357"/>
-      <location value="344"/>
-      3
-    </text>
-    <text>
-      <location value="379"/>
-      <location value="335"/>
-      <location value="381"/>
-      <location value="337"/>
-      2
-    </text>
-    <text>
-      <location value="355"/>
-      <location value="334"/>
-      <location value="357"/>
-      <location value="337"/>
-      1
-    </text>
-    <text>
-      <location value="279"/>
-      <location value="360"/>
-      <location value="288"/>
-      <location value="364"/>
-      C C
-    </text>
-    <text>
-      <location value="279"/>
-      <location value="365"/>
-      <location value="293"/>
-      <location value="368"/>
-      C C C
-    </text>
-    <text>
-      <location value="279"/>
-      <location value="369"/>
-      <location value="293"/>
-      <location value="372"/>
-      C C C
-    </text>
-    <text>
-      <location value="279"/>
-      <location value="373"/>
-      <location value="293"/>
-      <location value="376"/>
-      C C C
-    </text>
-    <text>
-      <location value="279"/>
-      <location value="377"/>
-      <location value="293"/>
-      <location value="380"/>
-      C C C
-    </text>
-    <text>
-      <location value="295"/>
-      <location value="360"/>
-      <location value="301"/>
-      <location value="363"/>
-      NL
-    </text>
-    <text>
-      <location value="295"/>
-      <location value="364"/>
-      <location value="301"/>
-      <location value="368"/>
-      NL
-    </text>
-    <text>
-      <location value="295"/>
-      <location value="369"/>
-      <location value="301"/>
-      <location value="372"/>
-      NL
-    </text>
-    <text>
-      <location value="295"/>
-      <location value="373"/>
-      <location value="301"/>
-      <location value="376"/>
-      NL
-    </text>
-    <text>
-      <location value="296"/>
-      <location value="377"/>
-      <location value="301"/>
-      <location value="380"/>
-      NL
-    </text>
-    <text>
-      <location value="291"/>
-      <location value="360"/>
-      <location value="293"/>
-      <location value="363"/>
-      L
-    </text>
-    <text>
-      <location value="277"/>
-      <location value="365"/>
-      <location value="279"/>
-      <location value="368"/>
-      3
-    </text>
-    <text>
-      <location value="285"/>
-      <location value="359"/>
-      <location value="287"/>
-      <location value="361"/>
-      2
-    </text>
-    <text>
-      <location value="277"/>
-      <location value="359"/>
-      <location value="279"/>
-      <location value="361"/>
-      1
-    </text>
-  </picture>
+    <ched/>
+    Amount Names Extracted Table Images
+    <ched/>
+    Encoder
+    <ched/>
+    BBox Decoder
+    <ched/>
+<![CDATA[BBoxes [x 1 , y 2 , x 2 , y 2 ] [x 1 ', y 2 ', x 2 ', y 2 '] [x 1 '', y 2' ', x 2 '', y 2 ''] ...]]>    <ched/>
+    BBoxes can be traced back to the original image to extract content 3 1
+    <nl/>
+    <fcel/>
+    1. Item 1000 500 3500 150 unit unit unit unit 2. Item 3. Item 4. Item
+    <ecel/>
+    <fcel/>
+    Structure Decoder
+    <fcel/>
+    BBoxes in sync with tag sequence C C NL L 2 1
+    <fcel/>
+    Structure Tags sequence provide full description of
+    <nl/>
+    <ecel/>
+    <ecel/>
+    <ecel/>
+    <fcel/>
+    C C C C C C NL NL NL 3
+    <fcel/>
+    the table structure
+    <nl/>
+    <ecel/>
+    <ecel/>
+    <ecel/>
+    <fcel/>
+    C C C C C C NL
+    <ecel/>
+    <nl/>
+  </table>
+  <text>
+    <location value="379"/>
+    <location value="335"/>
+    <location value="381"/>
+    <location value="337"/>
+    2
+  </text>
   <text>
     <thread thread_id="5"/>
     <location value="113"/>
@@ -1361,7 +1405,7 @@
   </text>
   <table>
     <location value="120"/>
-    <location value="219"/>
+    <location value="220"/>
     <location value="394"/>
     <location value="302"/>
     <caption>
@@ -1548,7 +1592,7 @@
     10 M. Lysak, et al.
   </page_header>
   <table>
-    <location value="123"/>
+    <location value="124"/>
     <location value="103"/>
     <location value="390"/>
     <location value="168"/>
@@ -2404,9 +2448,17 @@
     <layer value="furniture"/>
     <location value="113"/>
     <location value="59"/>
+    <location value="120"/>
+    <location value="66"/>
+    12
+  </page_header>
+  <page_header>
+    <layer value="furniture"/>
+    <location value="140"/>
+    <location value="59"/>
     <location value="194"/>
     <location value="66"/>
-    12 M. Lysak, et al.
+    M. Lysak, et al.
   </page_header>
   <heading level="2">
     <location value="113"/>
