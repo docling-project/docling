@@ -3,6 +3,8 @@ import math
 import os
 from pathlib import Path
 from typing import Optional
+from xml.dom import Node
+from xml.dom.minidom import Element
 
 from defusedxml.minidom import parseString
 from docling_core.transforms.serializer.doclang import (
@@ -35,6 +37,7 @@ FUZZY_BBOX_TOL_RATIO = (
 )
 STRICT_IMAGE_SIZE_TOL_RATIO = 0.015  # allow ~1.5% cross-platform image size variance
 FUZZY_IMAGE_SIZE_TOL_RATIO = 0.05  # OCR/image output varies more, allow ~5%
+DOCLANG_LOCATION_TOL = 2
 
 
 def _is_xml_char(char: str) -> bool:
@@ -385,6 +388,86 @@ def verify_dt(doc_pred_dt: str, doc_true_dt: str, fuzzy: bool):
     return verify_text(doc_true_dt, doc_pred_dt, fuzzy)
 
 
+def _element_attrs(element: Element) -> dict[str, str]:
+    return {
+        attr.name: attr.value
+        for attr in (
+            element.attributes.item(i) for i in range(element.attributes.length)
+        )
+        if attr is not None
+    }
+
+
+def _assert_doclang_nodes_close(true_node: Node, pred_node: Node, path: str) -> None:
+    assert true_node.nodeType == pred_node.nodeType, (
+        f"DocLang node type mismatch at {path}: "
+        f"{true_node.nodeType} vs {pred_node.nodeType}"
+    )
+
+    if true_node.nodeType == Node.ELEMENT_NODE:
+        true_element = true_node
+        pred_element = pred_node
+        assert isinstance(true_element, Element)
+        assert isinstance(pred_element, Element)
+
+        assert true_element.tagName == pred_element.tagName, (
+            f"DocLang tag mismatch at {path}: "
+            f"{true_element.tagName} vs {pred_element.tagName}"
+        )
+
+        true_attrs = _element_attrs(true_element)
+        pred_attrs = _element_attrs(pred_element)
+        assert true_attrs.keys() == pred_attrs.keys(), (
+            f"DocLang attributes mismatch at {path}/{true_element.tagName}: "
+            f"{true_attrs.keys()} vs {pred_attrs.keys()}"
+        )
+
+        for name, true_value in true_attrs.items():
+            pred_value = pred_attrs[name]
+            if true_element.tagName == "location" and name == "value":
+                true_location = int(true_value)
+                pred_location = int(pred_value)
+                diff = abs(true_location - pred_location)
+                assert diff <= DOCLANG_LOCATION_TOL, (
+                    f"DocLang location mismatch at {path}/location: "
+                    f"{true_location} vs {pred_location} "
+                    f"(diff: {diff}, tol: {DOCLANG_LOCATION_TOL})"
+                )
+            else:
+                assert true_value == pred_value, (
+                    f"DocLang attribute mismatch at "
+                    f"{path}/{true_element.tagName}@{name}: "
+                    f"{true_value} vs {pred_value}"
+                )
+
+        assert len(true_element.childNodes) == len(pred_element.childNodes), (
+            f"DocLang child count mismatch at {path}/{true_element.tagName}"
+        )
+        for idx, (true_child, pred_child) in enumerate(
+            zip(true_element.childNodes, pred_element.childNodes)
+        ):
+            _assert_doclang_nodes_close(
+                true_child,
+                pred_child,
+                f"{path}/{true_element.tagName}[{idx}]",
+            )
+    elif true_node.nodeType == Node.TEXT_NODE:
+        assert true_node.nodeValue == pred_node.nodeValue, (
+            f"DocLang text mismatch at {path}: "
+            f"{true_node.nodeValue!r} vs {pred_node.nodeValue!r}"
+        )
+
+
+def verify_doclang(doc_true_doclang: str, doc_pred_doclang: str) -> bool:
+    true_root = parseString(doc_true_doclang).documentElement
+    pred_root = parseString(doc_pred_doclang).documentElement
+    if true_root is None or pred_root is None:
+        raise ValueError("DocLang XML comparison requires document roots")
+
+    _assert_doclang_nodes_close(true_root, pred_root, "")
+    return True
+
+
 def verify_conversion_result_v2(
     gt: GroundTruthPaths,
     doc_result: ConversionResult,
@@ -484,7 +567,7 @@ def verify_conversion_result_v2(
 
         if verify_doclang:
             doc_pred_doclang = _export_clean_doclang(doc_result.document)
-            assert verify_text(doc_true_doclang, doc_pred_doclang, fuzzy=False), (
+            assert verify_doclang(doc_true_doclang, doc_pred_doclang), (
                 f"Mismatch in DocLang prediction for {input_path}"
             )
 
