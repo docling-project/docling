@@ -13,16 +13,18 @@ extractors are provided so each backend uses its own native capability:
 from __future__ import annotations
 
 import logging
+from functools import cache
 from typing import TYPE_CHECKING
 
-import pypdfium2 as pdfium
-import pypdfium2.raw as pdfium_c
 from pydantic import BaseModel
-from pypdfium2._helpers.misc import PdfiumError
 
 from docling.utils.locks import pypdfium2_lock
 
+# pypdfium2 must only be imported lazily here: ``datamodel.document`` imports this module
+# for ``_PdfOutlineItem``, putting it on the ``docling.service_client`` import chain, which
+# has to stay importable under docling-slim[service-client] (no PDF backend installed).
 if TYPE_CHECKING:
+    import pypdfium2 as pdfium
     from docling_parse.pdf_parser import (
         PdfDocument as DoclingParsePdfDocument,
         PdfTableOfContents,
@@ -49,15 +51,22 @@ class _PdfOutlineItem(BaseModel):
     y_top: float | None = None
 
 
-# Destination view modes whose coordinates carry a usable vertical (top) position, mapped to
-# the index of that coordinate within the position tuple. Coordinates are in PDF space
-# (bottom-left origin). Modes not listed (FIT, FITV, FITB, FITBV, unknown) provide no top.
-_VIEW_TOP_INDEX = {
-    pdfium_c.PDFDEST_VIEW_XYZ: 1,  # [x, y, zoom]
-    pdfium_c.PDFDEST_VIEW_FITH: 0,  # [y]
-    pdfium_c.PDFDEST_VIEW_FITBH: 0,  # [y]
-    pdfium_c.PDFDEST_VIEW_FITR: 3,  # [left, bottom, right, top]
-}
+@cache
+def _view_top_index() -> dict[int, int]:
+    """Destination view modes whose coordinates carry a usable vertical (top) position.
+
+    Maps each mode to the index of that coordinate within the position tuple. Coordinates are
+    in PDF space (bottom-left origin). Modes not listed (FIT, FITV, FITB, FITBV, unknown)
+    provide no top.
+    """
+    import pypdfium2.raw as pdfium_c
+
+    return {
+        pdfium_c.PDFDEST_VIEW_XYZ: 1,  # [x, y, zoom]
+        pdfium_c.PDFDEST_VIEW_FITH: 0,  # [y]
+        pdfium_c.PDFDEST_VIEW_FITBH: 0,  # [y]
+        pdfium_c.PDFDEST_VIEW_FITR: 3,  # [left, bottom, right, top]
+    }
 
 
 def _dest_top_pdf(dest: pdfium.PdfDest) -> tuple[int | None, float | None]:
@@ -67,7 +76,7 @@ def _dest_top_pdf(dest: pdfium.PdfDest) -> tuple[int | None, float | None]:
     """
     page_index = dest.get_index()
     mode, pos = dest.get_view()
-    idx = _VIEW_TOP_INDEX.get(mode)
+    idx = _view_top_index().get(mode)
     y_pdf = pos[idx] if idx is not None and idx < len(pos) else None
     return page_index, y_pdf
 
@@ -79,6 +88,8 @@ def extract_outline_from_pdfium(pdoc: pdfium.PdfDocument) -> list[_PdfOutlineIte
     the target page height. Returns an empty list when the document has no outline or it cannot
     be read.
     """
+    from pypdfium2._helpers.misc import PdfiumError
+
     items: list[_PdfOutlineItem] = []
     page_heights: dict[int, float] = {}
 
