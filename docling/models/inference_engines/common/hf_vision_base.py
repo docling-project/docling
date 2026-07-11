@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from numbers import Integral, Real
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.models.inference_engines.vlm._utils import resolve_model_artifacts_path
@@ -19,6 +21,86 @@ if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
 
 _log = logging.getLogger(__name__)
+
+
+class NumpyImageProcessor:
+    """Dependency-light, torch-free stand-in for a transformers image processor.
+
+    Reproduces the resize/rescale/normalize preprocessing described by a
+    ``preprocessor_config.json`` using only numpy + Pillow and returns
+    ``{"pixel_values": np.ndarray}`` shaped ``(N, C, H, W)``. It exists so the ONNX
+    Runtime object-detection engine can preprocess inputs in environments without
+    torch/torchvision: transformers >= 5 gates its image-processor classes behind
+    those backends, so ``AutoImageProcessor.from_pretrained`` is unavailable there.
+
+    For the default docling layout presets (RT-DETR: resize to a fixed square, no
+    rescale/normalize) the output is byte-identical to the transformers slow image
+    processor.
+    """
+
+    # PIL resampling filter for the integer codes stored by transformers/PIL.
+    _RESAMPLE = {
+        0: Image.Resampling.NEAREST,
+        1: Image.Resampling.LANCZOS,
+        2: Image.Resampling.BILINEAR,
+        3: Image.Resampling.BICUBIC,
+        4: Image.Resampling.BOX,
+        5: Image.Resampling.HAMMING,
+    }
+
+    def __init__(self, config: Dict[str, Any]) -> None:
+        self.size: Optional[Dict[str, int]] = config.get("size")
+        self.do_resize: bool = bool(config.get("do_resize", False))
+        self.do_rescale: bool = bool(config.get("do_rescale", False))
+        self.do_normalize: bool = bool(config.get("do_normalize", False))
+        self.rescale_factor: float = float(config.get("rescale_factor", 1.0 / 255.0))
+        self.image_mean: Optional[List[float]] = config.get("image_mean")
+        self.image_std: Optional[List[float]] = config.get("image_std")
+        self.resample = self._RESAMPLE.get(
+            int(config.get("resample", 2)), Image.Resampling.BILINEAR
+        )
+
+    @classmethod
+    def from_config_file(cls, path: Path) -> NumpyImageProcessor:
+        with path.open(encoding="utf-8") as handle:
+            return cls(json.load(handle))
+
+    def _target_hw(self) -> Optional[Tuple[int, int]]:
+        size = self.size or {}
+        if "height" in size and "width" in size:
+            return int(size["height"]), int(size["width"])
+        edge = size.get("shortest_edge") or size.get("longest_edge")
+        if edge is not None:
+            return int(edge), int(edge)
+        return None
+
+    def __call__(
+        self, images: Any, return_tensors: str = "np", **_: Any
+    ) -> Dict[str, np.ndarray]:
+        if not isinstance(images, (list, tuple)):
+            images = [images]
+        target = self._target_hw()
+        frames: List[np.ndarray] = []
+        for image in images:
+            pil = image.convert("RGB")
+            if self.do_resize and target is not None:
+                pil = pil.resize((target[1], target[0]), resample=self.resample)
+            frames.append(np.asarray(pil))
+        batch = np.stack(frames, axis=0)  # (N, H, W, C), uint8
+        if self.do_rescale or self.do_normalize:
+            batch = batch.astype(np.float32)
+        if self.do_rescale:
+            batch = batch * self.rescale_factor
+        if (
+            self.do_normalize
+            and self.image_mean is not None
+            and self.image_std is not None
+        ):
+            mean = np.asarray(self.image_mean, dtype=np.float32)
+            std = np.asarray(self.image_std, dtype=np.float32)
+            batch = (batch - mean) / std
+        pixel_values = np.ascontiguousarray(batch.transpose(0, 3, 1, 2))
+        return {"pixel_values": pixel_values}
 
 
 class HfVisionModelMixin(HuggingFaceModelDownloadMixin):
@@ -85,6 +167,17 @@ class HfVisionModelMixin(HuggingFaceModelDownloadMixin):
 
             _log.debug("Loading image processor from %s", model_folder)
             return AutoImageProcessor.from_pretrained(str(model_folder))
+        except ImportError:
+            # transformers >= 5 gates its image-processor classes behind the
+            # torch/torchvision backends. In a torch-free environment the ONNX
+            # object-detection engine still needs preprocessing, so fall back to a
+            # dependency-light numpy processor built from preprocessor_config.json.
+            _log.info(
+                "transformers image processor unavailable (torch-free environment); "
+                "using numpy preprocessing fallback for %s",
+                model_folder,
+            )
+            return NumpyImageProcessor.from_config_file(preprocessor_config)
         except Exception as exc:
             raise RuntimeError(
                 f"Failed to load image processor from {model_folder}: {exc}"

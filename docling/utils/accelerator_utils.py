@@ -1,4 +1,5 @@
 import logging
+from contextlib import suppress
 from typing import List, Optional
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
@@ -17,13 +18,20 @@ def decide_device(
     1. AUTO: Check for the best available device on the system.
     2. User-defined: Check if the device actually exists, otherwise fall-back to CPU
     """
-    import torch
+    has_torch = False
+    with suppress(ImportError):
+        import torch
+
+        has_torch = True
 
     device = "cpu"
 
-    has_cuda = torch.backends.cuda.is_built() and torch.cuda.is_available()
-    has_mps = torch.backends.mps.is_built() and torch.backends.mps.is_available()
-    has_xpu = hasattr(torch, "xpu") and torch.xpu.is_available()
+    if has_torch:
+        has_cuda = torch.backends.cuda.is_built() and torch.cuda.is_available()
+        has_mps = torch.backends.mps.is_built() and torch.backends.mps.is_available()
+        has_xpu = hasattr(torch, "xpu") and torch.xpu.is_available()
+    else:
+        has_cuda = has_mps = has_xpu = False
 
     if supported_devices is not None:
         if has_cuda and AcceleratorDevice.CUDA not in supported_devices:
