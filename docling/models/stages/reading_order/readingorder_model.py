@@ -12,14 +12,76 @@ from docling_core.types.doc import (
     TableData,
 )
 from docling_core.types.doc.document import ContentLayer
-from docling_ibm_models.list_item_normalizer.list_marker_processor import (
-    ListItemMarkerProcessor,
-)
-from docling_ibm_models.reading_order.reading_order_rb import (
-    PageElement as ReadingOrderPageElement,
-    ReadingOrderPredictor,
-)
 from pydantic import BaseModel, ConfigDict
+
+try:
+    from docling_ibm_models.list_item_normalizer.list_marker_processor import (
+        ListItemMarkerProcessor,
+    )
+    from docling_ibm_models.reading_order.reading_order_rb import (
+        PageElement as ReadingOrderPageElement,
+        ReadingOrderPredictor,
+    )
+except ImportError:
+    # The rule-based reading-order model and list-marker normalization are absent,
+    # the reading order falls back to a geometric sort (top-to-bottom, left-to-right — the same
+    # ordering the rule-based PageElement uses as its primitive) and list items are left
+    # unchanged. Caption/footnote/merge association is skipped.
+    import logging as _logging
+
+    from docling_core.types.doc.base import BoundingBox, Size
+    from docling_core.types.doc.document import RefItem
+    from docling_core.types.doc.labels import DocItemLabel
+
+    _logging.getLogger(__name__).warning(
+        "docling-ibm-models is not installed; using a torch-free geometric reading-order "
+        "fallback (rule-based reading order + list-item normalization disabled)."
+    )
+
+    class ReadingOrderPageElement(
+        BoundingBox
+    ):  # torch-free stand-in for the rule-based PageElement
+        eps: float = 1.0e-3
+        cid: int
+        # Always supplied at construction, so no default is needed.
+        ref: RefItem
+        text: str = ""
+        page_no: int
+        page_size: Size
+        label: DocItemLabel
+
+        def __lt__(self, other: "ReadingOrderPageElement") -> bool:
+            if self.page_no == other.page_no:
+                if self.overlaps_horizontally(other):
+                    return self.b > other.b
+                return self.l < other.l
+            return self.page_no < other.page_no
+
+    class ReadingOrderPredictor:  # torch-free geometric fallback
+        def predict_reading_order(
+            self, page_elements: list["ReadingOrderPageElement"]
+        ) -> list["ReadingOrderPageElement"]:
+            return sorted(page_elements)
+
+        def predict_to_captions(
+            self, sorted_elements: list["ReadingOrderPageElement"]
+        ) -> dict[int, list[int]]:
+            return {}
+
+        def predict_to_footnotes(
+            self, sorted_elements: list["ReadingOrderPageElement"]
+        ) -> dict[int, list[int]]:
+            return {}
+
+        def predict_merges(
+            self, sorted_elements: list["ReadingOrderPageElement"]
+        ) -> dict[int, list[int]]:
+            return {}
+
+    class ListItemMarkerProcessor:  # torch-free no-op
+        def process_list_item(self, list_item):
+            return list_item
+
 
 from docling.datamodel.base_models import (
     BasePageElement,
