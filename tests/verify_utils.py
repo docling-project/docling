@@ -48,10 +48,14 @@ def _is_xml_char(char: str) -> bool:
 
 
 def _export_clean_doclang(doc: DoclingDocument) -> str:
-    raw_doclang = DocLangDocSerializer(
-        doc=doc,
-        params=DocLangParams(pretty_indentation=None),
-    ).serialize().text
+    raw_doclang = (
+        DocLangDocSerializer(
+            doc=doc,
+            params=DocLangParams(pretty_indentation=None),
+        )
+        .serialize()
+        .text
+    )
     clean_doclang = "".join(char for char in raw_doclang if _is_xml_char(char))
     root = parseString(clean_doclang).documentElement
     if root is None:

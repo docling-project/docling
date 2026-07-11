@@ -145,9 +145,7 @@ def test_doclang_backend_groundtruth_differences_report():
         pypdfium2_path = gt_dir / f"{stem}.pypdfium2.doclang.xml"
 
         if not pypdfium2_path.exists():
-            rows.append(
-                f"| {stem} | missing pypdfium2 | - | - | - | - | - | - | - |"
-            )
+            rows.append(f"| {stem} | missing pypdfium2 | - | - | - | - | - | - | - |")
             continue
 
         docling_parse_xml = docling_parse_path.read_text(encoding="utf-8")
