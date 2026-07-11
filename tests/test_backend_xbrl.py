@@ -10,7 +10,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DoclingDocument
+from docling_core.types.doc.document import DoclingDocument
 
 from docling.datamodel.backend_options import XBRLBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat

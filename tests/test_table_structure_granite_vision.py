@@ -172,7 +172,7 @@ def test_model_disabled_skips_pages():
     """When enabled=False, predict_tables returns empty prediction without running inference."""
     from unittest.mock import MagicMock
 
-    from docling_core.types.doc import DocItemLabel
+    from docling_core.types.doc.labels import DocItemLabel
 
     model = GraniteVisionTableStructureModel(
         enabled=False,

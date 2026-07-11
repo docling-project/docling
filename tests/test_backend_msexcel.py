@@ -7,15 +7,15 @@ from docling_core.transforms.serializer.markdown import MarkdownParams
 from docling_core.transforms.serializer.markdown_excel import (
     MsExcelMarkdownDocSerializer,
 )
-from docling_core.types.doc import (
-    ContentLayer,
+from docling_core.types.doc.common.content_layer import ContentLayer
+from docling_core.types.doc.document import DEFAULT_CONTENT_LAYERS
+from docling_core.types.doc.items.picture.picture import PictureItem
+from docling_core.types.doc.items.table.table import TableItem
+from docling_core.types.doc.items.text import TextItem
+from docling_core.types.doc.labels import (
     GroupLabel,
     PictureClassificationLabel,
-    PictureItem,
-    TableItem,
-    TextItem,
 )
-from docling_core.types.doc.document import DEFAULT_CONTENT_LAYERS
 from openpyxl import Workbook, load_workbook
 from openpyxl.comments import Comment
 
@@ -89,7 +89,7 @@ def documents() -> list[tuple[Path, DoclingDocument]]:
 
 def test_comments_extraction(documents) -> None:
     """Test that cell comments are extracted into the NOTES content layer."""
-    from docling_core.types.doc import GroupItem
+    from docling_core.types.doc.items.group import GroupItem
 
     doc = next(item for path, item in documents if path.stem == "xlsx_comments")
 
@@ -141,7 +141,7 @@ def test_comments_extraction(documents) -> None:
 
 def test_comment_cell_coordinates(documents) -> None:
     """Test that comment names include cell coordinates."""
-    from docling_core.types.doc import GroupItem
+    from docling_core.types.doc.items.group import GroupItem
 
     doc = next(item for path, item in documents if path.stem == "xlsx_comments")
 

@@ -7,7 +7,9 @@ from typing import TYPE_CHECKING, Literal, Optional
 import numpy
 import torch
 import torchvision.transforms as T  # type: ignore[import-untyped]
-from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
+from docling_core.types.doc.base import BoundingBox
+from docling_core.types.doc.items.table.table_data import TableCell
+from docling_core.types.doc.labels import DocItemLabel
 from docling_core.types.doc.page import (
     TextCell,
 )

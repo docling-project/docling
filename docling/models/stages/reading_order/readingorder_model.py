@@ -1,17 +1,21 @@
 from pathlib import Path
 
-from docling_core.types.doc import (
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
-    GroupLabel,
-    NodeItem,
+from docling_core.types.doc.common.content_layer import ContentLayer
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.common.reference import (
     ProvenanceItem,
     RefItem,
+)
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.node import NodeItem
+from docling_core.types.doc.items.table.table_data import (
     RichTableCell,
     TableData,
 )
-from docling_core.types.doc.document import ContentLayer
+from docling_core.types.doc.labels import (
+    DocItemLabel,
+    GroupLabel,
+)
 from docling_ibm_models.list_item_normalizer.list_marker_processor import (
     ListItemMarkerProcessor,
 )

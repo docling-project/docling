@@ -6,20 +6,26 @@ from io import BytesIO
 from pathlib import Path
 from typing import Final, Optional, Union
 
-from docling_core.types.doc import (
+from docling_core.types.doc.base import (
     BoundingBox,
     CoordOrigin,
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
-    GroupLabel,
+    Size,
+)
+from docling_core.types.doc.common.content_layer import ContentLayer
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.common.reference import (
     ImageRef,
     ProvenanceItem,
-    Size,
+)
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.table.table_data import (
     TableCell,
     TableData,
 )
-from docling_core.types.doc.document import ContentLayer
+from docling_core.types.doc.labels import (
+    DocItemLabel,
+    GroupLabel,
+)
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
 from typing_extensions import override

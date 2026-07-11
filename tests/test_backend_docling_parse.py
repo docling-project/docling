@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from docling_core.types.doc import CoordOrigin
+from docling_core.types.doc.base import CoordOrigin
 from docling_parse.pdf_parser import ContentLevel
 from PIL import Image, ImageDraw, ImageStat
 

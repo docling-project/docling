@@ -17,7 +17,8 @@ clusters survive de-overlap, so a count assertion would be brittle.
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc.document import PictureItem, TableItem
+from docling_core.types.doc.items.picture.picture import PictureItem
+from docling_core.types.doc.items.table.table import TableItem
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat

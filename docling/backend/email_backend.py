@@ -6,7 +6,9 @@ from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 
-from docling_core.types.doc import DocItemLabel, DoclingDocument, DocumentOrigin
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.labels import DocItemLabel
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend

@@ -7,7 +7,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Callable, List, Optional
 
-from docling_core.types.doc import NodeItem
+from docling_core.types.doc.items.node import NodeItem
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,

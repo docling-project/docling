@@ -3,14 +3,12 @@ from dataclasses import dataclass, field
 from io import BytesIO
 from pathlib import Path
 
-from docling_core.types.doc import (
-    ContentLayer,
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
-    Formatting,
-    TrackSource,
-)
+from docling_core.types.doc.common.content_layer import ContentLayer
+from docling_core.types.doc.common.formatting import Formatting
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.common.source import TrackSource
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.labels import DocItemLabel
 from docling_core.types.doc.webvtt import (
     WebVTTCueBoldSpan,
     WebVTTCueComponent,

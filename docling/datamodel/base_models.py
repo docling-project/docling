@@ -5,16 +5,16 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Optional, Type, Union
 
 import numpy as np
-from docling_core.types.doc import (
+from docling_core.types.doc.base import (
     BoundingBox,
-    DocItemLabel,
-    NodeItem,
-    PictureDataType,
+    PydanticSerCtxKey,
     Size,
-    TableCell,
+    round_pydantic_float,
 )
-from docling_core.types.doc.base import PydanticSerCtxKey, round_pydantic_float
-from docling_core.types.doc.document import Orientation
+from docling_core.types.doc.items.node import NodeItem
+from docling_core.types.doc.items.picture.picture import PictureDataType
+from docling_core.types.doc.items.table.table_data import Orientation, TableCell
+from docling_core.types.doc.labels import DocItemLabel
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
 from docling_core.types.io import (
     DocumentStream as DocumentStream,

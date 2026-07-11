@@ -1,7 +1,8 @@
 from io import BytesIO
 from pathlib import Path
 
-from docling_core.types.doc import DocItemLabel, TextItem
+from docling_core.types.doc.items.text import TextItem
+from docling_core.types.doc.labels import DocItemLabel
 
 from docling.backend.email_backend import EmailDocumentBackend
 from docling.datamodel.base_models import InputFormat

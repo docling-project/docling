@@ -5,15 +5,15 @@ import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, cast
 
-from docling_core.types.doc import CodeLanguageLabel
-from docling_core.types.doc.document import (
-    CodeMetaField,
+from docling_core.types.doc.common.formatting import Formatting
+from docling_core.types.doc.common.meta import CodeMetaField
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.node import NodeItem
+from docling_core.types.doc.items.picture.meta import PictureMeta
+from docling_core.types.doc.labels import (
+    CodeLanguageLabel,
     DocItemLabel,
-    DoclingDocument,
-    Formatting,
     GroupLabel,
-    NodeItem,
-    PictureMeta,
 )
 
 from docling.backend.latex.constants import ENV_LIST, ENV_MATH, ENV_QUOTE, ENV_THEOREM

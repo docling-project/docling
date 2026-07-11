@@ -11,14 +11,11 @@ from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
-from docling_core.types.doc import (
-    CodeItem,
-    DocItemLabel,
-    DoclingDocument,
-    NodeItem,
-    TextItem,
-)
-from docling_core.types.doc.labels import CodeLanguageLabel
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.code import CodeItem
+from docling_core.types.doc.items.node import NodeItem
+from docling_core.types.doc.items.text import TextItem
+from docling_core.types.doc.labels import CodeLanguageLabel, DocItemLabel
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions

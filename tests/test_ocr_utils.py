@@ -1,7 +1,10 @@
 from typing import Tuple
 
 import pytest
-from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc.base import (
+    BoundingBox,
+    CoordOrigin,
+)
 from docling_core.types.doc.page import BoundingRectangle
 
 from docling.utils.orientation import rotate_bounding_box

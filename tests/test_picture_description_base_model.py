@@ -3,13 +3,13 @@ from types import SimpleNamespace
 from typing import ClassVar, List, Type
 
 import pytest
-from docling_core.types.doc import (
-    DoclingDocument,
+from docling_core.types.doc.base import BoundingBox, Size
+from docling_core.types.doc.common.reference import (
     ImageRef,
-    PictureItem,
     ProvenanceItem,
 )
-from docling_core.types.doc.base import BoundingBox, Size
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.picture.picture import PictureItem
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions

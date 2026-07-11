@@ -18,7 +18,7 @@ from typing import IO, Any, Literal, TypeVar, cast, overload
 from urllib.parse import urlencode, urlparse
 
 import httpx
-from docling_core.types.doc import DoclingDocument
+from docling_core.types.doc.document import DoclingDocument
 from docling_core.types.io import DocumentStream
 from pydantic import ValidationError
 

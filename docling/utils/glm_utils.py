@@ -3,19 +3,23 @@ from pathlib import Path
 from typing import List
 
 import pandas as pd
-from docling_core.types.doc import (
+from docling_core.types.doc.base import (
     BoundingBox,
     CoordOrigin,
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
-    GroupLabel,
-    ProvenanceItem,
     Size,
+)
+from docling_core.types.doc.common.content_layer import ContentLayer
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.common.reference import ProvenanceItem
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.table.table_data import (
     TableCell,
     TableData,
 )
-from docling_core.types.doc.document import ContentLayer
+from docling_core.types.doc.labels import (
+    DocItemLabel,
+    GroupLabel,
+)
 
 
 def resolve_item(paths, obj):

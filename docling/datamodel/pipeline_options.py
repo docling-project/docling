@@ -4,7 +4,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any, ClassVar, Literal, Optional, Union
 
-from docling_core.types.doc import PictureClassificationLabel
+from docling_core.types.doc.labels import PictureClassificationLabel
 from pydantic import (
     AnyUrl,
     BaseModel,

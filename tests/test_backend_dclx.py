@@ -2,7 +2,8 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DocItemLabel, DoclingDocument
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.labels import DocItemLabel
 
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import _DocumentConversionInput

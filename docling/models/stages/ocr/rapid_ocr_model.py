@@ -4,7 +4,10 @@ from pathlib import Path
 from typing import Literal, Type, TypedDict
 
 import numpy
-from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc.base import (
+    BoundingBox,
+    CoordOrigin,
+)
 from docling_core.types.doc.page import BoundingRectangle, TextCell
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions

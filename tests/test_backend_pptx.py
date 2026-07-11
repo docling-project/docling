@@ -2,7 +2,9 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from docling_core.types.doc import ContentLayer, GroupItem, TextItem
+from docling_core.types.doc.common.content_layer import ContentLayer
+from docling_core.types.doc.items.group import GroupItem
+from docling_core.types.doc.items.text import TextItem
 
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.datamodel.base_models import InputFormat

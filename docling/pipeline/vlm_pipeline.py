@@ -6,20 +6,20 @@ from pathlib import Path
 from typing import List, Union, cast
 
 from docling_core.transforms.deserializer.doclang import DocLangDocDeserializer
-from docling_core.types.doc import (
-    ContentLayer,
-    DocItem,
-    DoclingDocument,
-    ImageRef,
-    PictureItem,
-    ProvenanceItem,
-    TextItem,
-)
 from docling_core.types.doc.base import (
     BoundingBox,
     Size,
 )
-from docling_core.types.doc.document import DocTagsDocument
+from docling_core.types.doc.common.content_layer import ContentLayer
+from docling_core.types.doc.common.reference import (
+    ImageRef,
+    ProvenanceItem,
+)
+from docling_core.types.doc.doctags import DocTagsDocument
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.node import DocItem
+from docling_core.types.doc.items.picture.picture import PictureItem
+from docling_core.types.doc.items.text import TextItem
 from PIL import Image as PILImage
 from typing_extensions import override
 

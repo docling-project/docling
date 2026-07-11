@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 import numpy as np
-from docling_core.types.doc import BoundingBox, DocItemLabel
+from docling_core.types.doc.base import BoundingBox
+from docling_core.types.doc.labels import DocItemLabel
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions

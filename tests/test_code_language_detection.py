@@ -2,7 +2,7 @@ import threading
 import time
 
 import pytest
-from docling_core.types.doc import CodeLanguageLabel
+from docling_core.types.doc.labels import CodeLanguageLabel
 
 from docling.utils.code_language import (
     detect_code_language,

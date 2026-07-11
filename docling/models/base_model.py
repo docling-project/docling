@@ -4,13 +4,13 @@ from collections.abc import Iterable
 from typing import Any, Generic, Optional, Protocol, Type, Union
 
 import numpy as np
-from docling_core.types.doc import (
-    BoundingBox,
+from docling_core.types.doc.base import BoundingBox
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.node import (
     DocItem,
-    DoclingDocument,
     NodeItem,
-    PictureItem,
 )
+from docling_core.types.doc.items.picture.picture import PictureItem
 from PIL.Image import Image
 from typing_extensions import TypeVar
 

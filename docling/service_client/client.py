@@ -25,7 +25,9 @@ from typing import IO, TYPE_CHECKING, Any, TypeAlias, TypeVar
 from urllib.parse import urlencode, urlparse
 
 import httpx
-from docling_core.types.doc import DoclingDocument, ImageRef, PictureItem
+from docling_core.types.doc.common.reference import ImageRef
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.picture.picture import PictureItem
 from docling_core.types.io import DocumentStream
 from PIL import Image as PILImage
 from pydantic import AnyHttpUrl, TypeAdapter, ValidationError

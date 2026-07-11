@@ -4,7 +4,10 @@ import logging
 from pathlib import Path
 from typing import Iterable, Optional, Type
 
-from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc.base import (
+    BoundingBox,
+    CoordOrigin,
+)
 from docling_core.types.doc.page import TextCell
 
 from docling.datamodel.accelerator_options import AcceleratorOptions

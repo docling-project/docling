@@ -5,16 +5,18 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from docling_core.types.doc import (
-    DocItemLabel,
-    DoclingDocument,
-    DocumentOrigin,
-    Formatting,
-    GroupLabel,
-    NodeItem,
+from docling_core.types.doc.common.formatting import Formatting
+from docling_core.types.doc.common.origin import DocumentOrigin
+from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.items.node import NodeItem
+from docling_core.types.doc.items.table.table_data import (
     RichTableCell,
     TableCell,
     TableData,
+)
+from docling_core.types.doc.labels import (
+    DocItemLabel,
+    GroupLabel,
 )
 from pydantic import AnyUrl, TypeAdapter, ValidationError
 from typing_extensions import override
