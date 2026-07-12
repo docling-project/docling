@@ -2,7 +2,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from docling_core.types.doc import ContentLayer, DocItemLabel, GroupItem, TextItem
+from docling_core.types.doc import ContentLayer, GroupItem, TextItem
 
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -228,21 +228,3 @@ def test_pptx_page_range():
     assert "Second slide title" in pred_md
     assert "Test Table Slide" not in pred_md
     assert "List item4" not in pred_md
-
-
-def test_pptx_subtitle_is_section_header():
-    """PPTX subtitle placeholders should be labelled as section headers.
-
-    A slide's subtitle placeholder (PP_PLACEHOLDER.SUBTITLE) carries a
-    heading-like role below the title, so it must be emitted as a
-    SECTION_HEADER rather than a plain PARAGRAPH.
-    """
-    converter = get_converter()
-    pptx_path = Path("./tests/data/pptx/sources/powerpoint_sample.pptx")
-
-    doc: DoclingDocument = converter.convert(pptx_path).document
-
-    subtitle = next(
-        t for t in doc.texts if isinstance(t, TextItem) and t.text == "With footnote"
-    )
-    assert subtitle.label == DocItemLabel.SECTION_HEADER

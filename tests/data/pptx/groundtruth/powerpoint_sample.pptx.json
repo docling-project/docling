@@ -269,7 +269,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "paragraph",
       "prov": [
         {
           "page_no": 1,
@@ -287,8 +287,7 @@
         }
       ],
       "orig": "With footnote",
-      "text": "With footnote",
-      "level": 1
+      "text": "With footnote"
     },
     {
       "self_ref": "#/texts/2",

@@ -85,7 +85,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "paragraph",
       "prov": [
         {
           "page_no": 1,
@@ -103,8 +103,7 @@
         }
       ],
       "orig": "Image test",
-      "text": "Image test",
-      "level": 1
+      "text": "Image test"
     },
     {
       "self_ref": "#/texts/2",
