@@ -14,14 +14,14 @@ jobs:
         with:
           created_time: ${{ github.event.issue.created_at }}
           script: |
-        from datetime import datetime, timedelta, timezone
-        kst = timezone(timedelta(hours=9))
-        created_time = get_input("created_time")
-        # GitHub timestamps end with 'Z' (UTC); fromisoformat in 3.11+ accepts it,
-        # but normalize for older runtimes too.
-        iso = created_time.replace("Z", "+00:00")
-        dt_kst = datetime.fromisoformat(iso).astimezone(kst)
-        set_output("time", dt_kst.strftime("%Y-%m-%d %H:%M:%S"))
+            from datetime import datetime, timedelta, timezone
+            kst = timezone(timedelta(hours=9))
+            created_time = get_input("created_time")
+            # GitHub timestamps end with 'Z' (UTC); fromisoformat in 3.11+ accepts it,
+            # but normalize for older runtimes too.
+            iso = created_time.replace("Z", "+00:00")
+            dt_kst = datetime.fromisoformat(iso).astimezone(kst)
+            set_output("time", dt_kst.strftime("%Y-%m-%d %H:%M:%S"))
       - name: Create Slack payload
         id: create_payload
         run: |
