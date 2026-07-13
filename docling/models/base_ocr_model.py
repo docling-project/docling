@@ -29,7 +29,10 @@ except ImportError:
 
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
-    MAXOUT_COVERAGE_THRESHOLD = 0.75
+    r"""
+    Base class for all OCR models.
+    It offers common OCR functionalities
+    """
 
     def __init__(
         self,
