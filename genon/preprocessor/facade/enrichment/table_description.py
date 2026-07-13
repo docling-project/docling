@@ -285,27 +285,28 @@ def refined_html_to_format(refined_html: str, table_format: str, compact_tables:
         return refined_html
 
 
-def _refined_html_to_markdown(html: str, compact_tables: bool = True) -> str:
-    """<table> HTML 을 docling 파서로 grid 복원 후 markdown 표로 렌더.
+def _parse_refined_table_data(html: str):
+    """재구성 <table> HTML 을 docling TableData(grid) 로 복원한다. 구조적으로 유효하지 않으면 None.
 
-    복원한 TableData 를 임시 DoclingDocument 에 넣고 docling `MarkdownDocSerializer`
-    (compact_tables 반영)로 직렬화한다. native docling 표의 markdown 경로와 동일 serializer 라
-    포맷이 완전히 일치하며, compact_tables=True 면 컬럼 정렬 패딩이 제거된다. 병합셀은 grid 에 반영.
+    유효 = <table> 존재 + grid 비어있지 않음 + 2행 이상(헤더+데이터) + 첫 행 non-empty.
+    백엔드 파서는 중첩표를 거부하므로 내부 표는 평문으로 평탄화한다.
     """
+    if not html or not html.strip():
+        return None
+    # <table> 여닫음 쌍 검사: bs4 는 누락된 </table> 를 자동 보정하므로, 잘린(truncated) HTML 을
+    # 걸러내려면 원문에서 여는/닫는 태그 수가 일치(≥1)하는지 먼저 확인한다.
+    open_cnt = len(re.findall(r"<table\b", html, re.IGNORECASE))
+    close_cnt = len(re.findall(r"</table\s*>", html, re.IGNORECASE))
+    if open_cnt == 0 or open_cnt != close_cnt:
+        return None
     # 지연 import (모듈 로드 시 하드 의존 회피)
     from bs4 import BeautifulSoup, Tag
     from docling.backend.genos_vlm_html_backend import GenosVlmHTMLDocumentBackend
-    from docling_core.types.doc.document import DoclingDocument
-    from docling_core.transforms.serializer.markdown import (
-        MarkdownDocSerializer,
-        MarkdownParams,
-    )
 
     soup = BeautifulSoup(html, "html.parser")
     table_tag = soup.find("table")
     if not isinstance(table_tag, Tag):
-        return ""
-    # 백엔드 파서는 중첩표를 거부하므로 평문으로 평탄화한다.
+        return None
     nested = table_tag.find("table")
     while isinstance(nested, Tag):
         txt = nested.get_text(" ", strip=True)
@@ -317,10 +318,48 @@ def _refined_html_to_markdown(html: str, compact_tables: bool = True) -> str:
 
     table_data = GenosVlmHTMLDocumentBackend.parse_table_data(table_tag)
     grid = getattr(table_data, "grid", None)
-    if table_data is None or not grid:
-        return ""
-    # 데이터 행이 없거나(헤더만) 첫 행이 비면 유효한 markdown 표가 아님 → HTML 폴백.
-    if len(grid) < 2 or not grid[0]:
+    # grid 없음 / 데이터 행 없음(헤더만) / 첫 행 빈 경우는 유효한 표가 아님.
+    if table_data is None or not grid or len(grid) < 2 or not grid[0]:
+        return None
+    return table_data
+
+
+def is_valid_refined_html(refined_html: str) -> bool:
+    """재구성 HTML 이 구조적으로 유효한 표인지 검사. False 면 원본 표로 폴백해야 한다."""
+    try:
+        return _parse_refined_table_data(refined_html) is not None
+    except Exception as exc:
+        _log.warning("[table_description] refined html 검증 실패, 원본 사용: %s", exc)
+        return False
+
+
+def is_valid_table_summary(summary: str) -> bool:
+    """표 요약이 정상 산문인지 검사. 마커나 원문 <table> 이 섞이면(refine 파싱 잔재) False → 요약 폐기."""
+    if not summary or not summary.strip():
+        return False
+    if TABLE_HTML_MARKER in summary or TABLE_SUMMARY_MARKER in summary:
+        return False
+    if re.search(r"</?table\b", summary, re.IGNORECASE):
+        return False
+    return True
+
+
+def _refined_html_to_markdown(html: str, compact_tables: bool = True) -> str:
+    """<table> HTML 을 docling 파서로 grid 복원 후 markdown 표로 렌더.
+
+    복원한 TableData 를 임시 DoclingDocument 에 넣고 docling `MarkdownDocSerializer`
+    (compact_tables 반영)로 직렬화한다. native docling 표의 markdown 경로와 동일 serializer 라
+    포맷이 완전히 일치하며, compact_tables=True 면 컬럼 정렬 패딩이 제거된다. 병합셀은 grid 에 반영.
+    """
+    # 지연 import (모듈 로드 시 하드 의존 회피)
+    from docling_core.types.doc.document import DoclingDocument
+    from docling_core.transforms.serializer.markdown import (
+        MarkdownDocSerializer,
+        MarkdownParams,
+    )
+
+    table_data = _parse_refined_table_data(html)
+    if table_data is None:
         return ""
 
     doc = DoclingDocument(name="refined_table")
@@ -528,10 +567,15 @@ class TableDescriptionEnricher:
     def _parse_refine_output(output_text: str) -> "tuple[str, str]":
         """refine 통합 응답을 (summary, refined_html) 로 파싱.
 
-        마커가 없으면 전체를 요약으로 간주(refined_html="") — 파이프라인 비차단.
+        마커가 하나라도 있는데 정상 HTML…SUMMARY 구조로 매칭되지 않으면(응답이 잘리거나
+        degeneration 으로 깨진 경우) refine 실패로 간주해 ("", "") 를 반환한다(→ 원본 표 폴백).
+        마커가 전혀 없으면 일반 요약으로 간주(refined_html="") — 파이프라인 비차단.
         """
         match = _REFINE_SPLIT_RE.search(output_text)
         if not match:
+            if TABLE_HTML_MARKER in output_text or TABLE_SUMMARY_MARKER in output_text:
+                _log.warning("[TableDescriptionEnricher] refine 응답 마커 불완전 → 폐기(원본 표 사용)")
+                return "", ""
             return output_text.strip(), ""
         refined_html = (match.group("html") or "").strip()
         # 코드펜스가 섞여 오면 제거
@@ -730,13 +774,25 @@ class TableDescriptionEnricher:
                     and (getattr(ann, "content", None) or {}).get("provenance") == self.options.provenance
                 )
             ]
-            if summary:
+            if summary and is_valid_table_summary(summary):
                 tbl.annotations.append(
                     DescriptionAnnotation(text=summary, provenance=self.options.provenance)
                 )
-            if refined_html:
+            elif summary:
+                # 마커/원문 <table> 이 섞인 비정상 요약: 부착하지 않음(원본 표/설명 없음으로 폴백).
+                _log.warning(
+                    "[TableDescriptionEnricher] invalid table summary (markup/marker), drop: "
+                    f"seq={seq}, page={page_no}"
+                )
+            if refined_html and is_valid_refined_html(refined_html):
                 tbl.annotations.append(
                     MiscAnnotation(content={"refined_html": refined_html, "provenance": self.options.provenance})
+                )
+            elif refined_html:
+                # 재구성 표가 구조적으로 깨진 경우: 부착하지 않음 → 다운스트림이 원본 표로 폴백.
+                _log.warning(
+                    "[TableDescriptionEnricher] refined table invalid, fallback to original: "
+                    f"seq={seq}, page={page_no}"
                 )
             elapsed = time.perf_counter() - table_started_at
             with stats_lock:
