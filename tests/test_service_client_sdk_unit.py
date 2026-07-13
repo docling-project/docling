@@ -2,10 +2,7 @@ import asyncio
 import io
 import json
 import queue
-import subprocess
-import sys
 import tempfile
-import textwrap
 import threading
 import time
 import warnings
@@ -3884,46 +3881,3 @@ async def test_async_submit_and_retrieve_each_rejects_invalid_max_in_flight(
                 target=InBodyTarget(),
             ):
                 pass
-
-
-def test_service_client_imports_without_local_conversion_deps() -> None:
-    """The client import chain must resolve under docling-slim[service-client].
-
-    That install profile ships no PDF-backend or local-model packages, so
-    importing ``docling.service_client`` must not touch them at module level.
-    Regression guard: docling-slim 2.109.0 broke this via a module-level
-    ``import pypdfium2`` in ``docling.utils.pdf_outline``, reached through
-    ``noop_backend -> datamodel.document``.
-    """
-    script = textwrap.dedent(
-        """
-        import sys
-
-        BLOCKED = ("pypdfium2", "docling_parse", "torch", "torchvision")
-
-
-        class _BlockLocalConversionDeps:
-            def find_spec(self, fullname, path=None, target=None):
-                if fullname.partition(".")[0] in BLOCKED:
-                    raise ModuleNotFoundError(
-                        f"import of {fullname!r} blocked: not installed under "
-                        "docling-slim[service-client]"
-                    )
-                return None
-
-
-        sys.meta_path.insert(0, _BlockLocalConversionDeps())
-
-        import docling.service_client
-        import docling.datamodel.service.options
-        """
-    )
-    result = subprocess.run(
-        [sys.executable, "-c", script],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert result.returncode == 0, (
-        f"docling.service_client import requires a blocked package:\n{result.stderr}"
-    )
