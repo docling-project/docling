@@ -70,6 +70,7 @@ from docling.datamodel.document import (
     InputDocument,
     _DocumentConversionInput,
     build_invalid_input_errors,
+    get_input_rejection_cause,
 )
 from docling.datamodel.pipeline_options import ConvertPipelineOptions, PipelineOptions
 from docling.datamodel.settings import (
@@ -548,10 +549,14 @@ class DocumentConverter:
                 if conv_res.errors:
                     error_messages = [err.error_message for err in conv_res.errors]
                     error_details = f" Errors: {'; '.join(error_messages)}"
+                # Chain the underlying exception (when one was captured during
+                # input construction) so callers can classify failures via
+                # ``__cause__`` — e.g. an encrypted PDF surfaces the original
+                # ``PdfiumError``. See issue #1920.
                 raise ConversionError(
                     f"Conversion failed for: {conv_res.input.file} with status: "
                     f"{conv_res.status.value}.{error_details}"
-                )
+                ) from get_input_rejection_cause(conv_res.input)
             else:
                 yield conv_res
 

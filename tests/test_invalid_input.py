@@ -199,6 +199,40 @@ def test_convert_no_pipeline_with_exception():
         )
 
 
+def test_convert_invalid_pdf_bytes_chains_original_exception(
+    converter: DocumentConverter,
+):
+    """Regression test for #1920: ConversionError must preserve the underlying
+    backend exception via ``__cause__`` so applications can classify failures
+    (e.g. encrypted vs. corrupted PDFs) programmatically."""
+    from docling.exceptions import DocumentLoadError
+
+    stream = DocumentStream(name="invalid.pdf", stream=BytesIO(b"not a valid pdf file"))
+    with pytest.raises(ConversionError) as exc_info:
+        converter.convert(stream, raises_on_error=True)
+
+    cause = exc_info.value.__cause__
+    assert cause is not None, "ConversionError should chain the backend exception"
+    assert isinstance(cause, DocumentLoadError)
+    # The backend itself chains the parser error (e.g. PdfiumError), so the
+    # root cause stays reachable for fine-grained classification.
+    assert cause.__cause__ is not None
+
+
+def test_convert_invalid_pdf_bytes_wout_exception_records_original_error(
+    converter: DocumentConverter,
+):
+    """With raises_on_error=False the rejection still captures the original
+    exception, keeping both error-handling modes equally informative."""
+    stream = DocumentStream(name="invalid.pdf", stream=BytesIO(b"not a valid pdf file"))
+    result = converter.convert(stream, raises_on_error=False)
+
+    assert result.status == ConversionStatus.FAILURE
+    rejection = result.input._rejection
+    assert rejection is not None
+    assert rejection.original_error is not None
+
+
 def test_convert_unloads_input_backend_when_pipeline_initialization_fails():
     backends = []
 
