@@ -47,7 +47,10 @@ from docling_core.transforms.chunker import (
 #     ChunkingSerializerProvider,
 #     DocChunk,
 # )
-# from docling_core.transforms.serializer.markdown import MarkdownTableSerializer
+from docling_core.transforms.serializer.markdown import (
+    MarkdownDocSerializer,
+    MarkdownParams,
+)
 from docling_core.types import DoclingDocument
 
 from pandas import DataFrame
@@ -151,6 +154,7 @@ SAVE_IMAGES = False                  # JSON simple pipeline 이미지 저장 기
 CHUNK_MAX_TOKENS = 0                 # 0 = 토큰/문자 기반 분할 안 함(구조 기반)
 CHUNK_MERGE_PEERS = True
 CHUNK_TOKENIZER_TYPE = "char"        # "char"(문자 수) | "huggingface"(HF 토큰)
+CHUNK_TABLE_COMPACT_MARKDOWN = True  # 표 markdown 컬럼 정렬 패딩 제거 → 대형 표 청크 축소
 
 # --- Enrichment (TOC + metadata) ---
 TOC_ENABLE = True                   # do_toc_enrichment
@@ -464,6 +468,14 @@ class GenosSmartChunker(BaseChunker):
             export_to_html = kwargs.get('export_to_html', 1)
             if export_to_html == 1:
                 table_text = table_item.export_to_html(dl_doc)
+            elif CHUNK_TABLE_COMPACT_MARKDOWN:
+                # TableItem.export_to_markdown()은 compact 옵션이 없어 직접 serializer 구성
+                # (컬럼 정렬 패딩 제거 → 대형 표 markdown 크기 대폭 축소)
+                serializer = MarkdownDocSerializer(
+                    doc=dl_doc,
+                    params=MarkdownParams(compact_tables=True),
+                )
+                table_text = serializer.serialize(item=table_item).text
             else:
                 table_text = table_item.export_to_markdown(dl_doc)
             if table_text and table_text.strip():

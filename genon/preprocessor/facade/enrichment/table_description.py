@@ -265,10 +265,11 @@ def resolve_runtime_table_options(
     )
 
 
-def refined_html_to_format(refined_html: str, table_format: str) -> str:
+def refined_html_to_format(refined_html: str, table_format: str, compact_tables: bool = True) -> str:
     """refine 재구성 HTML 표를 output table_format 에 맞춰 반환한다.
 
     - table_format == "markdown": HTML 을 docling TableData(grid) 로 재파싱해 markdown 표로 변환.
+      compact_tables=True 면 컬럼 정렬 패딩을 제거한다(대형 표 축소).
     - 그 외(html 등): 원본 HTML 그대로.
     - 변환 실패/표 미검출/예외 시 원본 HTML 로 폴백(내용 손실·파이프라인 차단 방지).
     """
@@ -277,23 +278,28 @@ def refined_html_to_format(refined_html: str, table_format: str) -> str:
     if str(table_format).strip().lower() != "markdown":
         return refined_html
     try:
-        md = _refined_html_to_markdown(refined_html)
+        md = _refined_html_to_markdown(refined_html, compact_tables)
         return md or refined_html
     except Exception as exc:
         _log.warning("[table_description] refined html→markdown 변환 실패, HTML 유지: %s", exc)
         return refined_html
 
 
-def _refined_html_to_markdown(html: str) -> str:
-    """<table> HTML 을 docling 파서로 grid 복원 후 github pipe 표로 렌더.
+def _refined_html_to_markdown(html: str, compact_tables: bool = True) -> str:
+    """<table> HTML 을 docling 파서로 grid 복원 후 markdown 표로 렌더.
 
-    docling `TableItem.export_to_markdown(no-doc)` 와 동일 방식(grid → tabulate github)이라
-    일반 docling 표의 markdown 출력과 스타일이 일치한다. 병합셀은 grid 에 채워져 반영된다.
+    복원한 TableData 를 임시 DoclingDocument 에 넣고 docling `MarkdownDocSerializer`
+    (compact_tables 반영)로 직렬화한다. native docling 표의 markdown 경로와 동일 serializer 라
+    포맷이 완전히 일치하며, compact_tables=True 면 컬럼 정렬 패딩이 제거된다. 병합셀은 grid 에 반영.
     """
     # 지연 import (모듈 로드 시 하드 의존 회피)
     from bs4 import BeautifulSoup, Tag
     from docling.backend.genos_vlm_html_backend import GenosVlmHTMLDocumentBackend
-    from tabulate import tabulate
+    from docling_core.types.doc.document import DoclingDocument
+    from docling_core.transforms.serializer.markdown import (
+        MarkdownDocSerializer,
+        MarkdownParams,
+    )
 
     soup = BeautifulSoup(html, "html.parser")
     table_tag = soup.find("table")
@@ -310,19 +316,19 @@ def _refined_html_to_markdown(html: str) -> str:
         nested = table_tag.find("table")
 
     table_data = GenosVlmHTMLDocumentBackend.parse_table_data(table_tag)
-    if table_data is None or not getattr(table_data, "grid", None):
+    grid = getattr(table_data, "grid", None)
+    if table_data is None or not grid:
+        return ""
+    # 데이터 행이 없거나(헤더만) 첫 행이 비면 유효한 markdown 표가 아님 → HTML 폴백.
+    if len(grid) < 2 or not grid[0]:
         return ""
 
-    rows = [
-        [(getattr(cell, "text", "") or "").replace("\n", " ") for cell in row]
-        for row in table_data.grid
-    ]
-    if len(rows) > 1 and rows[0]:
-        try:
-            return tabulate(rows[1:], headers=rows[0], tablefmt="github")
-        except ValueError:
-            return tabulate(rows[1:], headers=rows[0], tablefmt="github", disable_numparse=True)
-    return ""
+    doc = DoclingDocument(name="refined_table")
+    tbl = doc.add_table(data=table_data)
+    return MarkdownDocSerializer(
+        doc=doc,
+        params=MarkdownParams(compact_tables=compact_tables),
+    ).serialize(item=tbl).text
 
 
 class TableDescriptionExtractor:

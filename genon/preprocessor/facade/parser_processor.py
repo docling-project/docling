@@ -88,6 +88,10 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.base import CoordOrigin
 from docling_core.types.doc.document import CodeItem, ContentLayer, ListItem
+from docling_core.transforms.serializer.markdown import (
+    MarkdownDocSerializer,
+    MarkdownParams,
+)
 
 try:
     from genon.preprocessor.facade.enrichment.custom_fields_enricher import CustomFieldsEnricher
@@ -1814,6 +1818,8 @@ class DocumentProcessor:
         output_cfg = _as_dict(cfg.get("output"))
         self._output_format = self._normalize_output_format(output_cfg.get("format", "json"))
         self._table_format = self._normalize_table_format(output_cfg.get("table_format", "html"))
+        # markdown 표 compact(컬럼 정렬 패딩 제거) 여부. 기본 True. html 포맷엔 무관.
+        self._compact_tables = bool(output_cfg.get("compact_tables", True))
 
         # PPT 페이지 단위 image description(page-level). config: formats.ppt.page_description.
         # 파서는 PPT 를 (레거시 langchain 대신) PDF→docling 으로 재라우팅해 페이지 설명을 주입한다.
@@ -2084,12 +2090,21 @@ class DocumentProcessor:
 
     @staticmethod
     def _export_table_content(
-        item: TableItem, doc: DoclingDocument, table_format: str = "html"
+        item: TableItem, doc: DoclingDocument, table_format: str = "html",
+        compact_tables: bool = True,
     ) -> str:
         """TableItem을 지정한 포맷(html/markdown)으로 변환."""
         try:
             if table_format == "markdown":
-                text = item.export_to_markdown(doc=doc)
+                if compact_tables:
+                    # TableItem.export_to_markdown() 은 compact 옵션이 없어 직접 serializer 구성
+                    # (컬럼 정렬 패딩 제거 → 대형 표 markdown 크기 대폭 축소)
+                    text = MarkdownDocSerializer(
+                        doc=doc,
+                        params=MarkdownParams(compact_tables=True),
+                    ).serialize(item=item).text
+                else:
+                    text = item.export_to_markdown(doc=doc)
             else:
                 text = item.export_to_html(doc=doc)
             if text and text.strip():
@@ -2128,7 +2143,8 @@ class DocumentProcessor:
         return f"시트명: {name}\n" if name else ""
 
     @staticmethod
-    def _docling_to_parse_format(doc: DoclingDocument, table_format: str = "html") -> dict:
+    def _docling_to_parse_format(doc: DoclingDocument, table_format: str = "html",
+                                 compact_tables: bool = True) -> dict:
         """DoclingDocument → sample_result.json 호환 출력 포맷."""
         elements = []
         element_id = 0
@@ -2172,6 +2188,7 @@ class DocumentProcessor:
                     item=item,
                     doc=doc,
                     table_format=table_format,
+                    compact_tables=compact_tables,
                 )
                 sheet_prefix = DocumentProcessor._docling_sheet_prefix(item, doc)
                 # refine ON 이면 재구성 HTML 로 표 본체 교체, 요약이 있으면 항상 병기.
@@ -2179,7 +2196,7 @@ class DocumentProcessor:
                 table_summary = TableDescriptionExtractor.extract_summary(item)
                 if refined_html:
                     # refine 은 항상 HTML 로 재구성 → output table_format 에 맞춰 변환(markdown 등).
-                    text = sheet_prefix + refined_html_to_format(refined_html, table_format)
+                    text = sheet_prefix + refined_html_to_format(refined_html, table_format, compact_tables)
                 else:
                     # xlsx docling 표면 시트명 접두 추가(비-xlsx 는 "" 라 영향 없음).
                     text = sheet_prefix + text
@@ -2304,6 +2321,7 @@ class DocumentProcessor:
         """Docling 경로의 최종 응답 생성."""
         output_format = getattr(self, "_output_format", "json")
         table_format = getattr(self, "_table_format", "html")
+        compact_tables = bool(getattr(self, "_compact_tables", True))
 
         if output_format == "docling":
             # 복원 가능한 DoclingDocument 원본 JSON(model_dump)을 그대로 반환.
@@ -2315,7 +2333,8 @@ class DocumentProcessor:
             }
 
         if output_format == "json":
-            result = self._docling_to_parse_format(doc, table_format=table_format)
+            result = self._docling_to_parse_format(doc, table_format=table_format,
+                                                   compact_tables=compact_tables)
             if clear_coordinates:
                 for element in result.get("elements", []):
                     element["coordinates"] = []

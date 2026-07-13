@@ -37,3 +37,7 @@ chunking:
 # 청킹 단계에서는 입력 docling 문서에 이미 들어있는 이미지/표 참조를 활용한다.
 table_image:
   enable: false
+
+# 표 텍스트 직렬화 옵션(markdown 표 표현). export_to_html=0(markdown) 경로에만 적용.
+output:
+  compact_tables: true    # markdown 표 컬럼 정렬 패딩 제거(대형 표 청크 축소). html 포맷엔 무관.

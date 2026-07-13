@@ -103,6 +103,7 @@ table_image:
 # 표 텍스트 직렬화 형식(청크 text 내 docling 표 표현). tabular 모드(행=벡터)는 무관.
 output:
   table_format: "html"   # "html"(default) | "markdown"
+  compact_tables: true    # markdown 표 컬럼 정렬 패딩 제거(대형 표 청크 축소). html 포맷엔 무관.
 
 # ── enrichment ────────────────────────────────────────────────────────────────
 # 각 항목은 {이름: {옵션}} 형식의 list.

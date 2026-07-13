@@ -101,6 +101,10 @@ from docling_core.transforms.chunker import (
     DocChunk,
     DocMeta,
 )
+from docling_core.transforms.serializer.markdown import (
+    MarkdownDocSerializer,
+    MarkdownParams,
+)
 from docling_core.types import DoclingDocument
 
 from pandas import DataFrame
@@ -601,6 +605,13 @@ class GenosSmartChunker(BaseChunker):
             export_to_html = kwargs.get('export_to_html', 1)
             if export_to_html == 1:
                 table_text = table_item.export_to_html(dl_doc)
+            elif bool(kwargs.get("compact_tables", True)):
+                # TableItem.export_to_markdown() 은 compact 옵션이 없어 직접 serializer 구성
+                # (컬럼 정렬 패딩 제거 → 대형 표 markdown 크기 대폭 축소)
+                table_text = MarkdownDocSerializer(
+                    doc=dl_doc,
+                    params=MarkdownParams(compact_tables=True),
+                ).serialize(item=table_item).text
             else:
                 table_text = table_item.export_to_markdown(dl_doc)
             if table_text and table_text.strip():
@@ -1610,6 +1621,10 @@ class DocumentProcessor:
             _parse_optional_bool(table_image_cfg.get("enable"), "table_image.enable")
         )
 
+        # markdown 표 compact(컬럼 정렬 패딩 제거) 여부. 기본 True. html 포맷엔 무관.
+        output_cfg = _as_dict(cfg.get("output"))
+        self._compact_tables = bool(output_cfg.get("compact_tables", True))
+
         table_mode_str = str(pdf_cfg.get("table_structure_mode", "accurate")).lower().strip()
         table_structure_mode = _TABLE_FORMER_MODE_MAP.get(table_mode_str)
         if table_structure_mode is None:
@@ -1964,6 +1979,7 @@ class DocumentProcessor:
             tokenizer_type = self._tokenizer_type,
         )
 
+        kwargs.setdefault("compact_tables", self._compact_tables)
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
         for chunk in chunks:
             if chunk.meta.doc_items[0].prov:

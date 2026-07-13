@@ -265,6 +265,10 @@ from docling_core.transforms.chunker import (
     DocChunk,
     DocMeta,
 )
+from docling_core.transforms.serializer.markdown import (
+    MarkdownDocSerializer,
+    MarkdownParams,
+)
 from docling_core.types import DoclingDocument
 
 from pandas import DataFrame
@@ -804,6 +808,11 @@ class GenosSmartChunker(BaseChunker):
         fmt = str(fmt).strip().lower()
         return "markdown" if fmt == "markdown" else "html"
 
+    @staticmethod
+    def _resolve_compact_tables(kwargs: dict) -> bool:
+        """markdown 표를 compact(컬럼 정렬 패딩 제거)로 낼지 결정. 기본 True."""
+        return bool(kwargs.get("compact_tables", True))
+
     def _extract_table_text(self, table_item: TableItem, dl_doc: DoclingDocument, **kwargs) -> str:
         """테이블 청크 텍스트를 만든다.
 
@@ -816,7 +825,8 @@ class GenosSmartChunker(BaseChunker):
         table_summary = TableDescriptionExtractor.extract_summary(table_item)
 
         # refine 은 항상 HTML 로 재구성 → output table_format 에 맞춰 변환(markdown 등).
-        refined = refined_html_to_format(refined_html, self._resolve_table_format(kwargs))
+        refined = refined_html_to_format(
+            refined_html, self._resolve_table_format(kwargs), self._resolve_compact_tables(kwargs))
         base_text = refined or self._compute_table_base_text(table_item, dl_doc, **kwargs)
         if table_summary:
             if base_text:
@@ -828,7 +838,15 @@ class GenosSmartChunker(BaseChunker):
         """테이블에서 텍스트를 추출하는 일반화된 메서드"""
         try:
             if self._resolve_table_format(kwargs) == "markdown":
-                table_text = table_item.export_to_markdown(dl_doc)
+                if self._resolve_compact_tables(kwargs):
+                    # TableItem.export_to_markdown() 은 compact 옵션이 없어 직접 serializer 구성
+                    # (컬럼 정렬 패딩 제거 → 대형 표 markdown 크기 대폭 축소)
+                    table_text = MarkdownDocSerializer(
+                        doc=dl_doc,
+                        params=MarkdownParams(compact_tables=True),
+                    ).serialize(item=table_item).text
+                else:
+                    table_text = table_item.export_to_markdown(dl_doc)
             else:
                 table_text = table_item.export_to_html(dl_doc)
             if table_text and table_text.strip():
@@ -1755,6 +1773,8 @@ class DocumentProcessor:
             )
             table_format = "html"
         self._table_format = table_format
+        # markdown 표 compact(컬럼 정렬 패딩 제거) 여부. 기본 True. html 포맷엔 무관.
+        self._compact_tables = bool(output_cfg.get("compact_tables", True))
 
         # OCR 엔드포인트는 ocr.paddle.ocr_endpoint 가 정식 위치.
         # 구버전 호환: ocr.ocr_endpoint(상위) / 최상위 ocr_endpoint 도 폴백으로 인식.
@@ -2260,6 +2280,7 @@ class DocumentProcessor:
 
         # 표 직렬화 형식(html|markdown)을 청커로 전달(런타임 kwarg 가 있으면 우선).
         kwargs.setdefault("table_format", self._table_format)
+        kwargs.setdefault("compact_tables", self._compact_tables)
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
         for chunk in chunks:
             if chunk.meta.doc_items[0].prov:
@@ -2283,6 +2304,7 @@ class DocumentProcessor:
             tokenizer_type=self._tokenizer_type,
         )
         kwargs.setdefault("table_format", self._table_format)
+        kwargs.setdefault("compact_tables", self._compact_tables)
 
         # 전체 아이템 base chunk(정상 경로와 동일한 아이템 수집/헤더/누락표 복구 재사용)
         base = next(iter(chunker.preprocess(dl_doc=documents, **kwargs)), None)
