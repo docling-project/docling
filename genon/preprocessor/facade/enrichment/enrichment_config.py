@@ -142,7 +142,9 @@ def _parse_thinking(opts: dict) -> "tuple[str, str]":
 _ENRICHMENT_LIST_NAMES: dict[str, set[str]] = {
     "toc": {"toc", "toc_enricher"},
     "metadata": {"metadata", "extract_metadata", "metadata_enricher", "extract_metadata_enricher"},
+    "doc_summary": {"doc_summary", "doc_summary_enricher"},
     "image_description": {"image_description", "image_description_enricher"},
+    "table_description": {"table_description", "table_description_enricher"},
     "custom_fields": {"custom_fields", "custom_fields_enricher"},
 }
 
@@ -227,7 +229,9 @@ class EnrichmentConfig:
 
     toc: _TocConfig
     metadata: _MetadataConfig
+    doc_summary_cfg: dict
     image_description_cfg: dict
+    table_description_cfg: dict
     custom_fields_cfgs: list
     api_url: str
     api_key: str
@@ -263,7 +267,9 @@ class EnrichmentConfig:
         metadata_enabled = False
         metadata_precheck: dict = {}
 
+        doc_summary_cfg: dict = {"enabled": False}
         image_desc_cfg: dict = {"enabled": False}
+        table_desc_cfg: dict = {"enabled": False}
         custom_fields_cfgs: list = []
 
         for item in items:
@@ -294,11 +300,21 @@ class EnrichmentConfig:
                     metadata_opts = opts
                 else:
                     metadata_opts = {}
+            elif category == "doc_summary":
+                # enable=false 여도 나머지 옵션(url/prompt/max_chars 등)은 보존한다.
+                # 런타임 kwargs(doc_summary=1)로 켤 때 설정이 필요하기 때문.
+                opts["enabled"] = bool(enabled)
+                doc_summary_cfg = opts
             elif category == "image_description":
-                # enable=false 여도 나머지 옵션(chart/body_summary/프롬프트 등)은 보존한다.
-                # 런타임 kwargs(chart_desc/doc_summary 등)로 켤 때 프롬프트가 필요하기 때문.
+                # enable=false 여도 나머지 옵션(chart/프롬프트 등)은 보존한다.
+                # 런타임 kwargs(chart_desc 등)로 켤 때 프롬프트가 필요하기 때문.
                 opts["enabled"] = bool(enabled)
                 image_desc_cfg = opts
+            elif category == "table_description":
+                # enable=false 여도 나머지 옵션(refine/body_summary/프롬프트 등)은 보존한다.
+                # 런타임 kwargs(table_desc/table_refine/doc_summary 등)로 켤 때 프롬프트가 필요하기 때문.
+                opts["enabled"] = bool(enabled)
+                table_desc_cfg = opts
             elif category == "custom_fields":
                 if enabled and opts:
                     if "resource_path" not in opts:
@@ -406,7 +422,9 @@ class EnrichmentConfig:
                 thinking=meta_thinking,
                 thinking_dialect=meta_thinking_dialect,
             ),
+            doc_summary_cfg=doc_summary_cfg,
             image_description_cfg=image_desc_cfg,
+            table_description_cfg=table_desc_cfg,
             custom_fields_cfgs=custom_fields_cfgs,
             api_url="",
             api_key="",
@@ -576,7 +594,9 @@ class EnrichmentConfig:
                 thinking=meta_thinking,
                 thinking_dialect=meta_thinking_dialect,
             ),
+            doc_summary_cfg=_as_dict(cfg.get("doc_summary")),
             image_description_cfg=_as_dict(cfg.get("image_description")),
+            table_description_cfg=_as_dict(cfg.get("table_description")),
             custom_fields_cfgs=cf_list,
             api_url=global_url,
             api_key=global_key,

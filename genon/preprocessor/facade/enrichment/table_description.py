@@ -1,15 +1,16 @@
-"""image_description.py — PictureItem 단위 이미지/차트 description 공용 모듈.
+"""table_description.py — TableItem 단위 표 description 공용 모듈.
 
-각 PictureItem 을 앞뒤 문맥·캡션·섹션헤더(+선택적 본문요약)와 함께 VLM 에 보내 설명을
-생성하고 DescriptionAnnotation 으로 붙인다. 차트로 분류된(또는 전체) 이미지에는 차트 전용
-프롬프트를 적용할 수 있다.
+각 TableItem 을 앞뒤 문맥·캡션·섹션헤더(+선택적 본문요약)와 함께 VLM 에 보내 한국어
+요약을 생성하고 DescriptionAnnotation 으로 붙인다. refine 옵션이 켜지면 같은 VLM 호출에서
+표 구조를 충실한 HTML 로 재구성해 MiscAnnotation(content["refined_html"]) 으로 함께 붙인다.
 
-- `ImageDescriptionOptions`        : config(enrichment.image_description) → 옵션 dataclass
-- `ImageDescriptionEnricher` : 문서 순회 + 이미지별 VLM 호출(ThreadPoolExecutor)
-- `resolve_runtime_image_options`  : 런타임 kwargs(0/1) → base 옵션 override
+- `TableDescriptionOptions`      : config(enrichment.table_description) → 옵션 dataclass
+- `TableDescriptionEnricher`     : 문서 순회 + 표별 VLM 호출(ThreadPoolExecutor)
+- `resolve_runtime_table_options`: 런타임 kwargs(0/1) → base 옵션 override
+- `TableDescriptionExtractor`    : parse-format 출력용 요약/재구성 HTML 추출
 
-차트 판별은 `chart_detection` 모듈에 위임한다. 문서 본문요약({{doc_summary}})은 별도
-`doc_summary` 단계가 `_enrichment_context` 에 넣어둔 값을 공유해서 사용한다.
+문서 본문요약({{doc_summary}})은 별도 `doc_summary` 단계가 `_enrichment_context` 에 넣어둔 값을
+공유해서 사용한다. image_description.py 를 1:1 미러링한다.
 """
 from __future__ import annotations
 
@@ -27,18 +28,27 @@ from docling_core.types.doc import (
     DescriptionAnnotation,
     DocItem,
     PictureItem,
+    TableItem,
 )
-from docling_core.types.doc.document import ContentLayer
+from docling_core.types.doc.document import ContentLayer, MiscAnnotation
 from docling.utils.api_image_request import api_image_request
 
 from genon.preprocessor.facade.enrichment.prompt_files import read_prompt_file
 from genon.preprocessor.facade.enrichment.prompt_template import PromptTemplate
-from genon.preprocessor.facade.enrichment.chart_detection import is_chart
 
 _log = logging.getLogger(__name__)
 
 
-# ── 소형 파싱 헬퍼(패키지 자기완결; page_description 컨벤션과 동일) ─────────────
+# refine 통합 응답 마커 규약: 프롬프트가 아래 두 마커를 정확히 출력하도록 강제한다.
+TABLE_HTML_MARKER = "[[[TABLE_HTML]]]"
+TABLE_SUMMARY_MARKER = "[[[TABLE_SUMMARY]]]"
+_REFINE_SPLIT_RE = re.compile(
+    r"\[\[\[TABLE_HTML\]\]\](?P<html>.*?)\[\[\[TABLE_SUMMARY\]\]\](?P<summary>.*)",
+    re.DOTALL,
+)
+
+
+# ── 소형 파싱 헬퍼(image_description.py 와 동일 컨벤션) ────────────────────────
 def _as_dict(value: Any) -> dict:
     return value if isinstance(value, dict) else {}
 
@@ -57,7 +67,7 @@ def _parse_optional_bool(value: Any, key: str = "") -> Optional[bool]:
         if text in {"0", "false", "no", "n", "off"}:
             return False
     if key:
-        _log.warning(f"[ImageDescriptionOptions] Invalid bool value for '{key}': {value!r}. Fallback to default.")
+        _log.warning(f"[TableDescriptionOptions] Invalid bool value for '{key}': {value!r}. Fallback to default.")
     return None
 
 
@@ -68,7 +78,7 @@ def _parse_optional_int(value: Any, key: str = "") -> Optional[int]:
         return int(value)
     except (TypeError, ValueError):
         if key:
-            _log.warning(f"[ImageDescriptionOptions] Invalid int value for '{key}': {value!r}. Fallback to default.")
+            _log.warning(f"[TableDescriptionOptions] Invalid int value for '{key}': {value!r}. Fallback to default.")
         return None
 
 
@@ -95,75 +105,76 @@ def _read_optional_prompt(config_dir: Path, prompt_file: str | None, default: st
     try:
         return read_prompt_file(str(prompt_file), config_dir)
     except Exception as exc:
-        _log.warning("[image_description] prompt read failed: file=%s error=%s", prompt_file, exc)
+        _log.warning("[table_description] prompt read failed: file=%s error=%s", prompt_file, exc)
         return default
 
 
-_DEFAULT_IMAGE_DESCRIPTION_PROMPT_TEMPLATE = (
-    "문서의 일부 이미지를 설명해줘. "
-    "아래 문맥을 참고해서 핵심 정보를 2~4문장으로 간결하게 작성해줘.\n\n"
-    "[앞 문맥]\n{{before_context}}\n\n"
+_DEFAULT_TABLE_DESCRIPTION_PROMPT_TEMPLATE = (
+    "문서의 표 이미지를 설명해줘. "
+    "아래 문맥을 참고해서 표가 담고 있는 핵심 정보를 2~4문장으로 간결하게 작성해줘.\n\n"
+    "[문서 요약]\n{{doc_summary}}\n\n"
+    "[섹션 헤더]\n{{section_header}}\n\n"
     "[캡션]\n{{caption}}\n\n"
+    "[앞 문맥]\n{{before_context}}\n\n"
     "[뒤 문맥]\n{{after_context}}\n\n"
     "요구사항:\n"
-    "1) 추측은 최소화하고 이미지에서 확인 가능한 사실 중심으로 작성\n"
-    "2) 문서 문맥과의 연결점을 포함\n"
+    "1) 추측은 최소화하고 표에서 확인 가능한 사실(항목/수치/단위) 중심으로 작성\n"
+    "2) 판독 불가한 값은 '판독 불가'로 표기\n"
     "3) 한국어로 작성"
 )
 
 
 @dataclass(frozen=True)
-class ImageDescriptionOptions:
+class TableDescriptionOptions:
     enabled: bool = False
     api_url: str = ""
     api_key: str = ""
     model: str = "model"
     timeout: float = 360.0
-    concurrency: int = 16
+    concurrency: int = 8
     before_items: int = 3
     after_items: int = 2
     max_context_chars: int = 1500
     include_caption: bool = True
     include_section_header: bool = True
     same_page_first: bool = True
-    provenance: str = "facade_image_description"
-    prompt_template: str = _DEFAULT_IMAGE_DESCRIPTION_PROMPT_TEMPLATE
+    provenance: str = "facade_table_description"
+    prompt_template: str = _DEFAULT_TABLE_DESCRIPTION_PROMPT_TEMPLATE
     template_mode: str = "strict"
     variables: dict[str, Any] = field(default_factory=dict)
     headers: dict[str, str] = field(default_factory=dict)
     params: dict[str, Any] = field(default_factory=dict)
-    # 차트 처리: enabled 이면 detection 방식에 따라 chart 프롬프트로 전환
-    chart_enabled: bool = False
-    chart_detection: str = "auto"  # "auto"=docling 자동판별 | "all"=모든 이미지를 차트로 처리
-    chart_prompt_template: str = ""
+    # 구조 재구성(refine): enabled 이면 통합 프롬프트로 재구성 HTML + 요약을 함께 생성
+    refine_enabled: bool = False
+    refine_prompt_template: str = ""
 
     @classmethod
     def from_config(
         cls,
         *,
-        image_desc_cfg: dict,
+        table_desc_cfg: dict,
         fallback_api_url: str,
         fallback_api_key: str,
         fallback_model: str,
         config_dir: "Optional[Path]" = None,
-    ) -> "ImageDescriptionOptions":
-        image_desc_cfg = _as_dict(image_desc_cfg)
+    ) -> "TableDescriptionOptions":
+        table_desc_cfg = _as_dict(table_desc_cfg)
         base_dir = config_dir if config_dir is not None else Path.cwd()
 
         # prompt_template 우선순위: prompt_template_file > inline prompt_template > built-in default
-        prompt_template_file = image_desc_cfg.get("prompt_template_file")
+        prompt_template_file = table_desc_cfg.get("prompt_template_file")
         if isinstance(prompt_template_file, str) and prompt_template_file.strip():
             prompt_template = read_prompt_file(prompt_template_file.strip(), base_dir)
         else:
-            prompt_template = image_desc_cfg.get("prompt_template")
+            prompt_template = table_desc_cfg.get("prompt_template")
             if not isinstance(prompt_template, str):
-                prompt_template = _DEFAULT_IMAGE_DESCRIPTION_PROMPT_TEMPLATE
+                prompt_template = _DEFAULT_TABLE_DESCRIPTION_PROMPT_TEMPLATE
 
-        img_variables = image_desc_cfg.get("variables")
-        img_variables = dict(img_variables) if isinstance(img_variables, dict) else {}
-        _tmpl_cfg = image_desc_cfg.get("template")
-        img_mode = (_tmpl_cfg.get("mode") if isinstance(_tmpl_cfg, dict) else None) \
-            or image_desc_cfg.get("template_mode") or "strict"
+        tbl_variables = table_desc_cfg.get("variables")
+        tbl_variables = dict(tbl_variables) if isinstance(tbl_variables, dict) else {}
+        _tmpl_cfg = table_desc_cfg.get("template")
+        tbl_mode = (_tmpl_cfg.get("mode") if isinstance(_tmpl_cfg, dict) else None) \
+            or table_desc_cfg.get("template_mode") or "strict"
 
         def _parse_optional_float(value: Any, key: str) -> Optional[float]:
             if value is None or value == "":
@@ -172,23 +183,23 @@ class ImageDescriptionOptions:
                 return float(value)
             except (TypeError, ValueError):
                 _log.warning(
-                    f"[ImageDescriptionOptions] Invalid float value for '{key}': {value!r}. Fallback to default."
+                    f"[TableDescriptionOptions] Invalid float value for '{key}': {value!r}. Fallback to default."
                 )
                 return None
 
-        enabled = _parse_optional_bool(image_desc_cfg.get("enabled"), "enabled")
-        timeout = _parse_optional_float(image_desc_cfg.get("timeout"), "timeout")
-        concurrency = _parse_optional_int(image_desc_cfg.get("concurrency"), "concurrency")
-        before_items = _parse_optional_int(image_desc_cfg.get("before_items"), "before_items")
-        after_items = _parse_optional_int(image_desc_cfg.get("after_items"), "after_items")
+        enabled = _parse_optional_bool(table_desc_cfg.get("enabled"), "enabled")
+        timeout = _parse_optional_float(table_desc_cfg.get("timeout"), "timeout")
+        concurrency = _parse_optional_int(table_desc_cfg.get("concurrency"), "concurrency")
+        before_items = _parse_optional_int(table_desc_cfg.get("before_items"), "before_items")
+        after_items = _parse_optional_int(table_desc_cfg.get("after_items"), "after_items")
         max_context_chars = _parse_optional_int(
-            image_desc_cfg.get("max_context_chars"), "max_context_chars"
+            table_desc_cfg.get("max_context_chars"), "max_context_chars"
         )
-        include_caption = _parse_optional_bool(image_desc_cfg.get("include_caption"), "include_caption")
+        include_caption = _parse_optional_bool(table_desc_cfg.get("include_caption"), "include_caption")
         include_section_header = _parse_optional_bool(
-            image_desc_cfg.get("include_section_header"), "include_section_header"
+            table_desc_cfg.get("include_section_header"), "include_section_header"
         )
-        same_page_first = _parse_optional_bool(image_desc_cfg.get("same_page_first"), "same_page_first")
+        same_page_first = _parse_optional_bool(table_desc_cfg.get("same_page_first"), "same_page_first")
 
         timeout = 360.0 if timeout is None or timeout <= 0 else timeout
         if concurrency is None or concurrency <= 0:
@@ -200,24 +211,18 @@ class ImageDescriptionOptions:
         if max_context_chars is None or max_context_chars <= 0:
             max_context_chars = 1500
 
-        # ── 차트(chart) 하위 블록 ──
-        chart_cfg = _as_dict(image_desc_cfg.get("chart"))
-        chart_enabled = _parse_optional_bool(chart_cfg.get("enable"), "chart.enable")
-        chart_detection = str(chart_cfg.get("detection") or "auto").strip().lower()
-        if chart_detection not in {"auto", "all"}:
-            _log.warning(
-                f"[ImageDescriptionOptions] Unknown chart.detection '{chart_detection}', fallback to 'auto'."
-            )
-            chart_detection = "auto"
-        chart_prompt_template = _read_optional_prompt(
-            base_dir, chart_cfg.get("chart_prompt_file"), default=""
+        # ── 구조 재구성(refine) 하위 블록 ──
+        refine_cfg = _as_dict(table_desc_cfg.get("refine"))
+        refine_enabled = _parse_optional_bool(refine_cfg.get("enable"), "refine.enable")
+        refine_prompt_template = _read_optional_prompt(
+            base_dir, refine_cfg.get("prompt_file"), default=""
         )
 
         return cls(
             enabled=False if enabled is None else enabled,
-            api_url=str(image_desc_cfg.get("api_url") or image_desc_cfg.get("url") or fallback_api_url or "").strip(),
-            api_key=str(image_desc_cfg.get("api_key") or fallback_api_key or "").strip(),
-            model=str(image_desc_cfg.get("model") or fallback_model or "model").strip(),
+            api_url=str(table_desc_cfg.get("api_url") or table_desc_cfg.get("url") or fallback_api_url or "").strip(),
+            api_key=str(table_desc_cfg.get("api_key") or fallback_api_key or "").strip(),
+            model=str(table_desc_cfg.get("model") or fallback_model or "model").strip(),
             timeout=timeout,
             concurrency=concurrency,
             before_items=before_items,
@@ -227,109 +232,107 @@ class ImageDescriptionOptions:
             include_section_header=True if include_section_header is None else include_section_header,
             same_page_first=True if same_page_first is None else same_page_first,
             provenance=str(
-                image_desc_cfg.get("provenance", "facade_image_description")
+                table_desc_cfg.get("provenance", "facade_table_description")
             ).strip()
-            or "facade_image_description",
+            or "facade_table_description",
             prompt_template=prompt_template,
-            template_mode=str(img_mode).strip().lower(),
-            variables=img_variables,
-            headers=_as_dict(image_desc_cfg.get("headers")),
-            params=_as_dict(image_desc_cfg.get("params")),
-            chart_enabled=False if chart_enabled is None else chart_enabled,
-            chart_detection=chart_detection,
-            chart_prompt_template=chart_prompt_template,
-        )
-
-    @classmethod
-    def from_legacy_processor(cls, processor: Any) -> "ImageDescriptionOptions":
-        def _safe_int(value: Any, default: int, min_value: int) -> int:
-            try:
-                parsed = int(value)
-            except (TypeError, ValueError):
-                return default
-            return parsed if parsed >= min_value else default
-
-        def _safe_float(value: Any, default: float, min_value: float) -> float:
-            try:
-                parsed = float(value)
-            except (TypeError, ValueError):
-                return default
-            return parsed if parsed >= min_value else default
-
-        return cls(
-            enabled=bool(getattr(processor, "image_description_enabled", False)),
-            api_url=str(getattr(processor, "image_description_api_url", "") or "").strip(),
-            api_key=str(getattr(processor, "image_description_api_key", "") or "").strip(),
-            model=str(getattr(processor, "image_description_model", "model") or "model").strip(),
-            timeout=_safe_float(getattr(processor, "image_description_timeout", 20.0), 20.0, 0.00001),
-            concurrency=_safe_int(getattr(processor, "image_description_concurrency", 4), 4, 1),
-            before_items=_safe_int(getattr(processor, "image_description_before_items", 3), 3, 0),
-            after_items=_safe_int(getattr(processor, "image_description_after_items", 2), 2, 0),
-            max_context_chars=_safe_int(
-                getattr(processor, "image_description_max_context_chars", 1500), 1500, 1
-            ),
-            include_caption=bool(getattr(processor, "image_description_include_caption", True)),
-            include_section_header=bool(
-                getattr(processor, "image_description_include_section_header", True)
-            ),
-            same_page_first=bool(getattr(processor, "image_description_same_page_first", True)),
-            provenance=str(
-                getattr(processor, "image_description_provenance", "facade_image_description")
-                or "facade_image_description"
-            ).strip(),
-            prompt_template=str(
-                getattr(
-                    processor,
-                    "image_description_prompt_template",
-                    _DEFAULT_IMAGE_DESCRIPTION_PROMPT_TEMPLATE,
-                )
-            ),
-            headers=dict(getattr(processor, "image_description_headers", {}) or {}),
-            params=dict(getattr(processor, "image_description_params", {}) or {}),
+            template_mode=str(tbl_mode).strip().lower(),
+            variables=tbl_variables,
+            headers=_as_dict(table_desc_cfg.get("headers")),
+            params=_as_dict(table_desc_cfg.get("params")),
+            refine_enabled=False if refine_enabled is None else refine_enabled,
+            refine_prompt_template=refine_prompt_template,
         )
 
 
-def resolve_runtime_image_options(
-    base: ImageDescriptionOptions,
+def resolve_runtime_table_options(
+    base: TableDescriptionOptions,
     *,
-    img_desc: int,
-    chart_desc: int,
-    chart_detection: int,
-    classification_available: bool,
-) -> ImageDescriptionOptions:
+    table_desc: int,
+    table_refine: int,
+) -> TableDescriptionOptions:
     """런타임 kwargs(0/1)로 base 옵션을 override 한 새 옵션을 반환한다.
 
-    - enabled            = img_desc==1 or chart_desc==1
-    - chart_enabled      = chart_desc==1
-    - chart_detection    = "auto" if chart_detection==1 else "all"
-      (auto 지만 변환 단계 그림 분류가 꺼져 있으면 annotation 이 없으므로 all 로 강등)
+    - enabled        = table_desc==1
+    - refine_enabled = table_refine==1
 
     doc_summary 는 별도 doc_summary 단계가 _enrichment_context 로 공유하므로 여기서 다루지 않는다.
     """
-    detection = "auto" if chart_detection == 1 else "all"
-    if chart_desc == 1 and detection == "auto" and not classification_available:
-        _log.warning(
-            "[runtime_feature] chart_detection=auto 요청이나 그림 분류 미활성(config chart.enable=false) "
-            "→ detection=all 로 강등"
-        )
-        detection = "all"
     return replace(
         base,
-        enabled=(img_desc == 1 or chart_desc == 1),
-        chart_enabled=(chart_desc == 1),
-        chart_detection=detection,
+        enabled=(table_desc == 1),
+        refine_enabled=(table_refine == 1),
     )
 
 
-class PictureDescriptionExtractor:
-    """PictureItem 에 부착된 DescriptionAnnotation 의 텍스트를 추출한다.
+def refined_html_to_format(refined_html: str, table_format: str) -> str:
+    """refine 재구성 HTML 표를 output table_format 에 맞춰 반환한다.
 
-    parse-format 출력(파서)에서 그림 설명 텍스트를 뽑을 때 사용. 첫 번째 유효한
-    DescriptionAnnotation.text 를 반환하고, 없으면 빈 문자열.
+    - table_format == "markdown": HTML 을 docling TableData(grid) 로 재파싱해 markdown 표로 변환.
+    - 그 외(html 등): 원본 HTML 그대로.
+    - 변환 실패/표 미검출/예외 시 원본 HTML 로 폴백(내용 손실·파이프라인 차단 방지).
+    """
+    if not refined_html:
+        return refined_html
+    if str(table_format).strip().lower() != "markdown":
+        return refined_html
+    try:
+        md = _refined_html_to_markdown(refined_html)
+        return md or refined_html
+    except Exception as exc:
+        _log.warning("[table_description] refined html→markdown 변환 실패, HTML 유지: %s", exc)
+        return refined_html
+
+
+def _refined_html_to_markdown(html: str) -> str:
+    """<table> HTML 을 docling 파서로 grid 복원 후 github pipe 표로 렌더.
+
+    docling `TableItem.export_to_markdown(no-doc)` 와 동일 방식(grid → tabulate github)이라
+    일반 docling 표의 markdown 출력과 스타일이 일치한다. 병합셀은 grid 에 채워져 반영된다.
+    """
+    # 지연 import (모듈 로드 시 하드 의존 회피)
+    from bs4 import BeautifulSoup, Tag
+    from docling.backend.genos_vlm_html_backend import GenosVlmHTMLDocumentBackend
+    from tabulate import tabulate
+
+    soup = BeautifulSoup(html, "html.parser")
+    table_tag = soup.find("table")
+    if not isinstance(table_tag, Tag):
+        return ""
+    # 백엔드 파서는 중첩표를 거부하므로 평문으로 평탄화한다.
+    nested = table_tag.find("table")
+    while isinstance(nested, Tag):
+        txt = nested.get_text(" ", strip=True)
+        if txt:
+            nested.replace_with(txt)
+        else:
+            nested.decompose()
+        nested = table_tag.find("table")
+
+    table_data = GenosVlmHTMLDocumentBackend.parse_table_data(table_tag)
+    if table_data is None or not getattr(table_data, "grid", None):
+        return ""
+
+    rows = [
+        [(getattr(cell, "text", "") or "").replace("\n", " ") for cell in row]
+        for row in table_data.grid
+    ]
+    if len(rows) > 1 and rows[0]:
+        try:
+            return tabulate(rows[1:], headers=rows[0], tablefmt="github")
+        except ValueError:
+            return tabulate(rows[1:], headers=rows[0], tablefmt="github", disable_numparse=True)
+    return ""
+
+
+class TableDescriptionExtractor:
+    """TableItem 에 부착된 annotation 에서 요약/재구성 HTML 을 추출한다.
+
+    parse-format 출력(파서)에서 표 설명 텍스트·재구성 HTML 을 뽑을 때 사용.
     """
 
     @staticmethod
-    def extract(item: PictureItem) -> str:
+    def extract_summary(item: TableItem) -> str:
         for annotation in getattr(item, "annotations", []) or []:
             if not isinstance(annotation, DescriptionAnnotation):
                 continue
@@ -338,26 +341,40 @@ class PictureDescriptionExtractor:
                 return text
         return ""
 
+    @staticmethod
+    def extract_refined_html(item: TableItem) -> str:
+        for annotation in getattr(item, "annotations", []) or []:
+            if not isinstance(annotation, MiscAnnotation):
+                continue
+            content = getattr(annotation, "content", None) or {}
+            html = str(content.get("refined_html", "") or "").strip()
+            if html:
+                return html
+        return ""
 
-class ImageDescriptionEnricher:
-    def __init__(self, options: ImageDescriptionOptions):
+
+class TableDescriptionEnricher:
+    def __init__(self, options: TableDescriptionOptions):
         self.options = options
-        # {{doc_summary}} 는 이미지·차트 프롬프트 공통 변수 → strict 모드 로드 허용
+        # {{doc_summary}} 는 표 프롬프트 공통 변수 → strict 모드 로드 허용
         allowed_names = set(getattr(options, "variables", {}) or {})
         allowed_names.add("doc_summary")
         mode = getattr(options, "template_mode", "strict")
-        self._prompt_tpl = PromptTemplate(
+        self._summary_prompt_tpl = PromptTemplate(
             options.prompt_template,
             mode=mode,
             allowed_names=allowed_names,
         )
-        # 차트 전용 프롬프트(비어 있으면 base 프롬프트로 폴백)
-        chart_prompt = getattr(options, "chart_prompt_template", "") or options.prompt_template
-        self._chart_prompt_tpl = PromptTemplate(
-            chart_prompt,
+        # refine 전용 통합 프롬프트(비어 있으면 요약 프롬프트로 폴백)
+        refine_prompt = getattr(options, "refine_prompt_template", "") or options.prompt_template
+        self._refine_prompt_tpl = PromptTemplate(
+            refine_prompt,
             mode=mode,
             allowed_names=allowed_names,
         )
+        # 같은 페이지에 표가 여러 개면 ThreadPoolExecutor 가 공유 page.image 를 동시에 crop/디코드하며
+        # PIL lazy-load 가 깨진다. crop+디코드만 직렬화한다(느린 VLM 호출은 lock 밖에서 병렬 유지).
+        self._page_image_lock = threading.Lock()
 
     @staticmethod
     def _get_item_page_no(item: DocItem, default_page_no: int = 1) -> int:
@@ -374,7 +391,8 @@ class ImageDescriptionEnricher:
         return re.sub(r"\s+", " ", text).strip()
 
     def _is_context_candidate(self, item: DocItem) -> bool:
-        if isinstance(item, PictureItem):
+        # 표/그림 자체는 문맥 텍스트 후보에서 제외
+        if isinstance(item, (TableItem, PictureItem)):
             return False
 
         text = self._to_single_line(str(getattr(item, "text", "") or ""))
@@ -390,8 +408,8 @@ class ImageDescriptionEnricher:
     def _collect_neighbor_context(
         self,
         items: list[DocItem],
-        picture_index: int,
-        picture_page_no: int,
+        table_index: int,
+        table_page_no: int,
         max_items: int,
         direction: str,
     ) -> list[str]:
@@ -399,9 +417,9 @@ class ImageDescriptionEnricher:
             return []
 
         if direction == "before":
-            scan_range = range(picture_index - 1, -1, -1)
+            scan_range = range(table_index - 1, -1, -1)
         else:
-            scan_range = range(picture_index + 1, len(items))
+            scan_range = range(table_index + 1, len(items))
 
         sequential: list[str] = []
         same_page: list[str] = []
@@ -422,9 +440,9 @@ class ImageDescriptionEnricher:
                 continue
 
             candidate_page_no = self._get_item_page_no(
-                candidate, default_page_no=picture_page_no
+                candidate, default_page_no=table_page_no
             )
-            if candidate_page_no == picture_page_no:
+            if candidate_page_no == table_page_no:
                 same_page.append(text)
             else:
                 cross_page.append(text)
@@ -434,23 +452,21 @@ class ImageDescriptionEnricher:
 
         if self.options.same_page_first:
             if direction == "before":
-                # 그룹 우선순위(same page -> cross page)는 유지하면서 문서 순서로 정렬
                 same_page = list(reversed(same_page))
                 cross_page = list(reversed(cross_page))
             selected = (same_page + cross_page)[:max_items]
         else:
             selected = sequential[:max_items]
             if direction == "before":
-                # 앞 문맥은 문서 순서(먼저 나온 텍스트 → 최근 텍스트)로 정렬한다.
                 selected.reverse()
         return selected
 
     def _collect_section_header_context(
         self,
         items: list[DocItem],
-        picture_index: int,
+        table_index: int,
     ) -> str:
-        for idx in range(picture_index - 1, -1, -1):
+        for idx in range(table_index - 1, -1, -1):
             candidate = items[idx]
             label = getattr(candidate, "label", None)
             label_value = label.value if hasattr(label, "value") else str(label or "")
@@ -472,7 +488,7 @@ class ImageDescriptionEnricher:
         caption: str,
         section_header: str = "",
         *,
-        use_chart: bool = False,
+        use_refine: bool = False,
         doc_summary: str = "",
     ) -> str:
         safe_before = before_context or "-"
@@ -480,7 +496,7 @@ class ImageDescriptionEnricher:
         safe_caption = caption or "-"
         safe_header = section_header or "-"
         safe_summary = doc_summary or "-"
-        tpl = self._chart_prompt_tpl if use_chart else self._prompt_tpl
+        tpl = self._refine_prompt_tpl if use_refine else self._summary_prompt_tpl
         try:
             prompt = tpl.render(
                 before_context=safe_before,
@@ -492,23 +508,44 @@ class ImageDescriptionEnricher:
             )
         except Exception as exc:
             _log.warning(
-                f"[ImageDescriptionEnricher] Invalid prompt_template, fallback to default: {exc}"
+                f"[TableDescriptionEnricher] Invalid prompt_template, fallback to default: {exc}"
             )
             prompt = (
-                "문맥을 참고해서 이미지를 설명해줘.\n\n"
+                "문맥을 참고해서 표를 설명해줘.\n\n"
                 f"[앞 문맥]\n{safe_before}\n\n"
                 f"[캡션]\n{safe_caption}\n\n"
                 f"[뒤 문맥]\n{safe_after}"
             )
         return self._truncate_context(prompt)
 
-    def _annotate_single_picture(
+    @staticmethod
+    def _parse_refine_output(output_text: str) -> "tuple[str, str]":
+        """refine 통합 응답을 (summary, refined_html) 로 파싱.
+
+        마커가 없으면 전체를 요약으로 간주(refined_html="") — 파이프라인 비차단.
+        """
+        match = _REFINE_SPLIT_RE.search(output_text)
+        if not match:
+            return output_text.strip(), ""
+        refined_html = (match.group("html") or "").strip()
+        # 코드펜스가 섞여 오면 제거
+        refined_html = re.sub(r"^```[a-zA-Z]*\n?|\n?```$", "", refined_html).strip()
+        summary = (match.group("summary") or "").strip()
+        return summary, refined_html
+
+    def _annotate_single_table(
         self,
         document: DoclingDocument,
-        picture_item: PictureItem,
+        table_item: TableItem,
         prompt: str,
-    ) -> Optional[DescriptionAnnotation]:
-        image = picture_item.get_image(document, prov_index=0)
+        use_refine: bool,
+    ) -> "Optional[tuple[str, str]]":
+        """표 1개를 VLM 으로 처리해 (summary, refined_html) 반환. 실패/빈값이면 None."""
+        # 공유 page.image 의 동시 crop/디코드(PIL lazy-load race) 방지: 취득+강제 로드만 직렬화.
+        with self._page_image_lock:
+            image = table_item.get_image(document, prov_index=0)
+            if image is not None:
+                image = image.copy()  # lock 안에서 강제 decode/load → 공유 버퍼와 분리된 독립 이미지
         if image is None:
             return None
 
@@ -531,10 +568,21 @@ class ImageDescriptionEnricher:
         output_text = str(output or "").strip()
         if not output_text:
             return None
-        return DescriptionAnnotation(
-            text=output_text,
-            provenance=self.options.provenance,
+
+        if use_refine:
+            summary, refined_html = self._parse_refine_output(output_text)
+        else:
+            summary, refined_html = output_text, ""
+
+        _log.debug(
+            "[TableDescriptionEnricher] table description result: "
+            f"seq={getattr(table_item, 'seq', '?')}, "
+            f"summary={summary}, refined_html={refined_html}"
         )
+
+        if not summary and not refined_html:
+            return None
+        return summary, refined_html
 
     def enrich(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
         if not self.options.enabled:
@@ -544,7 +592,7 @@ class ImageDescriptionEnricher:
 
         if not self.options.api_url:
             _log.warning(
-                "[ImageDescriptionEnricher] enabled=true but api_url is empty; skip"
+                "[TableDescriptionEnricher] enabled=true but api_url is empty; skip"
             )
             return document
 
@@ -560,27 +608,25 @@ class ImageDescriptionEnricher:
         # 문서 본문요약은 doc_summary 단계가 _enrichment_context 에 넣어둔 값을 공유한다.
         doc_summary = str((kwargs.get("_enrichment_context") or {}).get("doc_summary", "") or "")
 
-        chart_enabled = self.options.chart_enabled
-        chart_all = chart_enabled and self.options.chart_detection == "all"
-        chart_auto = chart_enabled and self.options.chart_detection == "auto"
+        use_refine = self.options.refine_enabled
 
-        targets: list[tuple[int, PictureItem, str]] = []
+        targets: list[tuple[int, TableItem, str]] = []
         for idx, item in enumerate(items):
-            if not isinstance(item, PictureItem):
+            if not isinstance(item, TableItem):
                 continue
 
             page_no = self._get_item_page_no(item, default_page_no=1)
             before_context_items = self._collect_neighbor_context(
                 items=items,
-                picture_index=idx,
-                picture_page_no=page_no,
+                table_index=idx,
+                table_page_no=page_no,
                 max_items=self.options.before_items,
                 direction="before",
             )
             after_context_items = self._collect_neighbor_context(
                 items=items,
-                picture_index=idx,
-                picture_page_no=page_no,
+                table_index=idx,
+                table_page_no=page_no,
                 max_items=self.options.after_items,
                 direction="after",
             )
@@ -588,7 +634,7 @@ class ImageDescriptionEnricher:
             section_header = ""
             if self.options.include_section_header:
                 section_header = self._collect_section_header_context(
-                    items=items, picture_index=idx
+                    items=items, table_index=idx
                 )
                 if section_header:
                     before_context_items = [section_header] + before_context_items
@@ -602,13 +648,12 @@ class ImageDescriptionEnricher:
 
             before_context = "\n".join(before_context_items)
             after_context = "\n".join(after_context_items)
-            use_chart = chart_all or (chart_auto and is_chart(item))
 
             _log.debug(
-                f"[ImageDescriptionEnricher] picture target: seq={len(targets)+1}, page={page_no}, "
+                f"[TableDescriptionEnricher] table target: seq={len(targets)+1}, page={page_no}, "
                 f"caption={'(empty)' if not caption else caption[:30]}, "
                 f"section_header={'(empty)' if not section_header else section_header[:30]}, "
-                f"use_chart={use_chart}, "
+                f"use_refine={use_refine}, "
                 f"before_context_items={len(before_context_items)}, after_context_items={len(after_context_items)}"
             )
 
@@ -617,24 +662,24 @@ class ImageDescriptionEnricher:
                 after_context=after_context,
                 caption=caption,
                 section_header=section_header,
-                use_chart=use_chart,
+                use_refine=use_refine,
                 doc_summary=doc_summary,
             )
-            picture_seq = len(targets) + 1
-            targets.append((picture_seq, item, prompt))
+            table_seq = len(targets) + 1
+            targets.append((table_seq, item, prompt))
 
         if not targets:
             elapsed = time.perf_counter() - stage_started_at
             _log.info(
-                f"[ImageDescriptionEnricher] no picture target for image description; "
+                f"[TableDescriptionEnricher] no table target for table description; "
                 f"elapsed={elapsed:.3f}s"
             )
             return document
 
         total_targets = len(targets)
         _log.info(
-            f"[ImageDescriptionEnricher] image description start: "
-            f"targets={total_targets}, concurrency={self.options.concurrency}"
+            f"[TableDescriptionEnricher] table description start: "
+            f"targets={total_targets}, concurrency={self.options.concurrency}, refine={use_refine}"
         )
 
         stats_lock = threading.Lock()
@@ -642,45 +687,56 @@ class ImageDescriptionEnricher:
         failed_count = 0
         skipped_count = 0
 
-        def _annotate_target(target: tuple[int, PictureItem, str]) -> None:
+        def _annotate_target(target: tuple[int, TableItem, str]) -> None:
             nonlocal success_count, failed_count, skipped_count
-            seq, pic, prompt = target
-            picture_started_at = time.perf_counter()
-            page_no = self._get_item_page_no(pic, default_page_no=1)
+            seq, tbl, prompt = target
+            table_started_at = time.perf_counter()
+            page_no = self._get_item_page_no(tbl, default_page_no=1)
             try:
-                annotation = self._annotate_single_picture(document, pic, prompt)
+                result = self._annotate_single_table(document, tbl, prompt, use_refine)
             except Exception as exc:
-                elapsed = time.perf_counter() - picture_started_at
+                elapsed = time.perf_counter() - table_started_at
                 with stats_lock:
                     failed_count += 1
                 _log.warning(
-                    f"[ImageDescriptionEnricher] image description failed: "
+                    f"[TableDescriptionEnricher] table description failed: "
                     f"seq={seq}, page={page_no}, elapsed={elapsed:.3f}s, error={exc}"
                 )
                 return
-            if annotation is None:
-                elapsed = time.perf_counter() - picture_started_at
+            if result is None:
+                elapsed = time.perf_counter() - table_started_at
                 with stats_lock:
                     skipped_count += 1
                 _log.debug(
-                    f"[ImageDescriptionEnricher] image description empty: "
+                    f"[TableDescriptionEnricher] table description empty: "
                     f"seq={seq}, page={page_no}, elapsed={elapsed:.3f}s"
                 )
                 return
-            pic.annotations = [
+
+            summary, refined_html = result
+            # 동일 provenance 로 앞서 붙인 annotation 을 제거(재실행 안전)
+            tbl.annotations = [
                 ann
-                for ann in pic.annotations
-                if not (
-                    isinstance(ann, DescriptionAnnotation)
-                    and getattr(ann, "provenance", "") == self.options.provenance
+                for ann in tbl.annotations
+                if getattr(ann, "provenance", "") != self.options.provenance
+                and not (
+                    isinstance(ann, MiscAnnotation)
+                    and (getattr(ann, "content", None) or {}).get("provenance") == self.options.provenance
                 )
             ]
-            pic.annotations.append(annotation)
-            elapsed = time.perf_counter() - picture_started_at
+            if summary:
+                tbl.annotations.append(
+                    DescriptionAnnotation(text=summary, provenance=self.options.provenance)
+                )
+            if refined_html:
+                tbl.annotations.append(
+                    MiscAnnotation(content={"refined_html": refined_html, "provenance": self.options.provenance})
+                )
+            elapsed = time.perf_counter() - table_started_at
             with stats_lock:
                 success_count += 1
             _log.debug(
-                f"[ImageDescriptionEnricher] image description done: "
+                f"[TableDescriptionEnricher] table description done: "
                 f"seq={seq}, page={page_no}, elapsed={elapsed:.3f}s"
             )
 
@@ -689,7 +745,7 @@ class ImageDescriptionEnricher:
 
         total_elapsed = time.perf_counter() - stage_started_at
         _log.info(
-            f"[ImageDescriptionEnricher] image description done: "
+            f"[TableDescriptionEnricher] table description done: "
             f"targets={total_targets}, success={success_count}, skipped={skipped_count}, "
             f"failed={failed_count}, elapsed={total_elapsed:.3f}s"
         )

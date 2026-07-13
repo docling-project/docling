@@ -111,6 +111,18 @@ from genon.preprocessor.facade.enrichment.image_description import (
     PictureDescriptionExtractor,
     resolve_runtime_image_options,
 )
+from genon.preprocessor.facade.enrichment.table_description import (
+    TableDescriptionOptions,
+    TableDescriptionEnricher,
+    TableDescriptionExtractor,
+    refined_html_to_format,
+    resolve_runtime_table_options,
+)
+from genon.preprocessor.facade.enrichment.doc_summary import (
+    DocSummaryOptions,
+    DocSummaryEnricher,
+    resolve_runtime_doc_summary_options,
+)
 
 try:
     import chardet
@@ -987,6 +999,34 @@ class IntelligentDocumentProcessor:
                     f"[IntelligentDocumentProcessor] do_picture_classification 설정 실패: {exc}"
                 )
 
+        # 표 description 옵션. VLM 이 표 영역을 crop 하려면 페이지 이미지가 필요하므로
+        # base 옵션이 켜져 있으면 컨버터 생성 전에 generate_page_images 를 강제한다.
+        self.table_description_options = TableDescriptionOptions.from_config(
+            table_desc_cfg=ec.table_description_cfg,
+            fallback_api_url=ec.api_url,
+            fallback_api_key=ec.api_key,
+            fallback_model=ec.model,
+            config_dir=self._config_dir,
+        )
+        self._base_table_description_options = self.table_description_options
+        if self.table_description_options.enabled:
+            try:
+                self.pipe_line_options.generate_page_images = True
+            except Exception as exc:
+                _log.warning(
+                    f"[IntelligentDocumentProcessor] generate_page_images 설정 실패: {exc}"
+                )
+
+        # 문서 본문요약(doc_summary) 옵션. image/table 이 공유하는 {{doc_summary}} 를 1회 계산.
+        self.doc_summary_options = DocSummaryOptions.from_config(
+            doc_summary_cfg=ec.doc_summary_cfg,
+            fallback_api_url=ec.api_url,
+            fallback_api_key=ec.api_key,
+            fallback_model=ec.model,
+            config_dir=self._config_dir,
+        )
+        self._base_doc_summary_options = self.doc_summary_options
+
         # pipe_line_options 의 layout 설정이 deep copy 에 포함되므로 별도 재설정 불필요
         self.ocr_pipe_line_options = self.pipe_line_options.model_copy(deep=True)
         self.ocr_pipe_line_options.do_ocr = True
@@ -997,6 +1037,10 @@ class IntelligentDocumentProcessor:
         self.image_description_enricher = ImageDescriptionEnricher(
             self.image_description_options
         )
+        self.table_description_enricher = TableDescriptionEnricher(
+            self.table_description_options
+        )
+        self.doc_summary_enricher = DocSummaryEnricher(self.doc_summary_options)
         self.custom_fields_enrichers: "list[CustomFieldsEnricher]" = (
             [CustomFieldsEnricher(**c) for c in ec.custom_fields_cfgs]
             if CustomFieldsEnricher is not None else []
@@ -1245,8 +1289,9 @@ class IntelligentDocumentProcessor:
         detection_default = _as_int_flag(
             runtime.get("chart_detection"), 1 if (base and base.chart_detection == "auto") else 0
         )
+        dbase = getattr(self, "_base_doc_summary_options", None)
         summary_default = _as_int_flag(
-            runtime.get("doc_summary"), 1 if (base and base.body_summary_enabled) else 0
+            runtime.get("doc_summary"), 1 if (dbase and dbase.enabled) else 0
         )
 
         normalized["img_desc"] = _as_int_flag(normalized.get("img_desc"), img_default)
@@ -1257,6 +1302,17 @@ class IntelligentDocumentProcessor:
             normalized.get("chart_detection"), detection_default
         )
         normalized["doc_summary"] = _as_int_flag(normalized.get("doc_summary"), summary_default)
+
+        # 표 description 런타임 토글(table_desc→enable, table_refine→refine.enable)
+        tbase = getattr(self, "_base_table_description_options", None)
+        table_default = _as_int_flag(
+            runtime.get("table_desc"), 1 if (tbase and tbase.enabled) else 0
+        )
+        refine_default = _as_int_flag(
+            runtime.get("table_refine"), 1 if (tbase and tbase.refine_enabled) else 0
+        )
+        normalized["table_desc"] = _as_int_flag(normalized.get("table_desc"), table_default)
+        normalized["table_refine"] = _as_int_flag(normalized.get("table_refine"), refine_default)
         return normalized
 
     def _configure_runtime_image_mode(self, kwargs: dict):
@@ -1278,7 +1334,6 @@ class IntelligentDocumentProcessor:
             img_desc=img_desc,
             chart_desc=chart_desc,
             chart_detection=chart_detection,
-            doc_summary=doc_summary,
             classification_available=getattr(
                 self.pipe_line_options, "do_picture_classification", False
             ),
@@ -1287,14 +1342,45 @@ class IntelligentDocumentProcessor:
             self.image_description_options
         )
         _log.info(
-            "[runtime_feature] image mode enabled=%s img_desc=%s chart_desc=%s "
-            "detection=%s doc_summary=%s",
+            "[runtime_feature] image mode enabled=%s img_desc=%s chart_desc=%s detection=%s",
             self.image_description_options.enabled,
             img_desc,
             chart_desc,
             self.image_description_options.chart_detection,
-            doc_summary,
         )
+
+        # 표 description 런타임 재구성
+        tbase = getattr(self, "_base_table_description_options", None)
+        if tbase is not None:
+            table_desc = _as_int_flag(kwargs.get("table_desc"), 0)
+            table_refine = _as_int_flag(kwargs.get("table_refine"), 0)
+            self.table_description_options = resolve_runtime_table_options(
+                tbase,
+                table_desc=table_desc,
+                table_refine=table_refine,
+            )
+            self.table_description_enricher = TableDescriptionEnricher(
+                self.table_description_options
+            )
+            _log.info(
+                "[runtime_feature] table mode enabled=%s table_desc=%s table_refine=%s",
+                self.table_description_options.enabled,
+                table_desc,
+                table_refine,
+            )
+
+        # doc_summary 런타임 재구성(image/table 공통 컨텍스트 제공)
+        dbase = getattr(self, "_base_doc_summary_options", None)
+        if dbase is not None:
+            self.doc_summary_options = resolve_runtime_doc_summary_options(
+                dbase, doc_summary=doc_summary
+            )
+            self.doc_summary_enricher = DocSummaryEnricher(self.doc_summary_options)
+            _log.info(
+                "[runtime_feature] doc_summary mode enabled=%s doc_summary=%s",
+                self.doc_summary_options.enabled,
+                doc_summary,
+            )
 
     def _get_or_create_image_description_enricher(self) -> ImageDescriptionEnricher:
         enricher = getattr(self, "image_description_enricher", None)
@@ -1307,6 +1393,30 @@ class IntelligentDocumentProcessor:
 
     def enrich_image_descriptions(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
         enricher = self._get_or_create_image_description_enricher()
+        return enricher.enrich(document, **kwargs)
+
+    def _get_or_create_doc_summary_enricher(self) -> DocSummaryEnricher:
+        enricher = getattr(self, "doc_summary_enricher", None)
+        if enricher is None:
+            base = getattr(self, "_base_doc_summary_options", None)
+            enricher = DocSummaryEnricher(base or DocSummaryOptions())
+            self.doc_summary_enricher = enricher
+        return enricher
+
+    def enrich_doc_summary(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        enricher = self._get_or_create_doc_summary_enricher()
+        return enricher.enrich(document, **kwargs)
+
+    def _get_or_create_table_description_enricher(self) -> TableDescriptionEnricher:
+        enricher = getattr(self, "table_description_enricher", None)
+        if enricher is None:
+            base = getattr(self, "_base_table_description_options", None)
+            enricher = TableDescriptionEnricher(base or TableDescriptionOptions())
+            self.table_description_enricher = enricher
+        return enricher
+
+    def enrich_table_descriptions(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
+        enricher = self._get_or_create_table_description_enricher()
         return enricher.enrich(document, **kwargs)
 
     async def enrich_metadata(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
@@ -1904,9 +2014,17 @@ class DocumentProcessor:
     async def _apply_docling_post_enrichment(self, document: DoclingDocument, **kwargs) -> DoclingDocument:
         """Facade 후처리 enrichment 훅."""
         try:
+            document = self._intel.enrich_doc_summary(document, **kwargs)
+        except Exception as exc:
+            _log.warning(f"[DocumentProcessor] facade doc_summary enrichment skipped: {exc}")
+        try:
             document = self._intel.enrich_image_descriptions(document, **kwargs)
         except Exception as exc:
             _log.warning(f"[DocumentProcessor] facade image enrichment skipped: {exc}")
+        try:
+            document = self._intel.enrich_table_descriptions(document, **kwargs)
+        except Exception as exc:
+            _log.warning(f"[DocumentProcessor] facade table enrichment skipped: {exc}")
         try:
             document = await self._intel.enrich_metadata(document, **kwargs)
         except Exception as exc:
@@ -2055,8 +2173,18 @@ class DocumentProcessor:
                     doc=doc,
                     table_format=table_format,
                 )
-                # xlsx docling 표면 시트명 접두 추가(비-xlsx 는 "" 라 영향 없음).
-                text = DocumentProcessor._docling_sheet_prefix(item, doc) + text
+                sheet_prefix = DocumentProcessor._docling_sheet_prefix(item, doc)
+                # refine ON 이면 재구성 HTML 로 표 본체 교체, 요약이 있으면 항상 병기.
+                refined_html = TableDescriptionExtractor.extract_refined_html(item)
+                table_summary = TableDescriptionExtractor.extract_summary(item)
+                if refined_html:
+                    # refine 은 항상 HTML 로 재구성 → output table_format 에 맞춰 변환(markdown 등).
+                    text = sheet_prefix + refined_html_to_format(refined_html, table_format)
+                else:
+                    # xlsx docling 표면 시트명 접두 추가(비-xlsx 는 "" 라 영향 없음).
+                    text = sheet_prefix + text
+                if table_summary:
+                    text = text + "\n---\n[표 설명]\n" + table_summary
             else:
                 text = getattr(item, "text", "") or ""
 
