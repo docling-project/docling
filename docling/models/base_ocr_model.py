@@ -2,6 +2,7 @@ import copy
 import logging
 from abc import abstractmethod
 from collections.abc import Iterable
+from enum import Enum
 from pathlib import Path
 
 import numpy as np
@@ -26,6 +27,14 @@ try:
     CV2_INSTALLED = True
 except ImportError:
     CV2_INSTALLED = False
+
+
+class MergeCellsPriority(str, Enum):
+    # Take the OCR cells ONLY if they do not overlap with any PDF cell
+    PDF_FIRST = "pdf_cells_first"
+
+    # Take the PDF cells ONLY if they do not overlap with any OCR cell
+    OCR_FIRST = "ocr_cells_first"
 
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
@@ -195,9 +204,26 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         page: Page,
         conv_res: ConversionResult,
     ) -> None:
+        return self._do_post_process_cells(
+            ocr_cells, page, conv_res, MergeCellsPriority.PDF_FIRST
+        )
+        # return self._do_post_process_cells(
+        #     ocr_cells, page, conv_res, MergeCellsPriority.OCR_FIRST
+        # )
+
+    def _do_post_process_cells(
+        self,
+        ocr_cells: list[TextCell],
+        page: Page,
+        conv_res: ConversionResult,
+        priority: MergeCellsPriority = MergeCellsPriority.PDF_FIRST,
+    ) -> None:
         r"""
-        Post-process the OCR cells and update the page object.
-        Updates parsed_page.textline_cells directly.
+        Post-process the OCR cells and update the page object according to the algorithm:
+
+        - If FULL_PAGE_OCR: Any existing PDF cells are ignored and only the OCR cells are used.
+        - If CLUSTER_OCR or PDF_CLUSTER_OCR: The priority parameter controls how the PDF/OCR cells
+          are merged
         """
         # Get existing cells from the read-only property
         existing_cells = page.cells
@@ -206,8 +232,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         if self.options.mode == OcrMode.FULL_PAGE_OCR:
             final_cells = ocr_cells
         else:
-            filtered_ocr_cells = self._filter_ocr_cells(ocr_cells, existing_cells)
-            final_cells = list(existing_cells) + filtered_ocr_cells
+            final_cells = self._merge_ocr_and_pdf_cells(
+                ocr_cells, existing_cells, priority
+            )
 
         # Re-index in-place
         for i, cell in enumerate(final_cells):
@@ -239,34 +266,54 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
                 np.mean(ocr_confidences)
             )
 
-    def _filter_ocr_cells(
-        self, ocr_cells: list[TextCell], programmatic_cells: list[TextCell]
+    def _merge_ocr_and_pdf_cells(
+        self,
+        ocr_cells: list[TextCell],
+        pdf_cells: list[TextCell],
+        priority: MergeCellsPriority,
     ) -> list[TextCell]:
         r"""
-        Filter OCR cells by dropping any OCR cell that intersects with a programmatic PDF cell
+        Merge PDF and OCR cells, resolving overlaps according to `priority`.
         """
-        # Create R-tree index for programmatic cells
+        # The prioritized cells are always kept
+        # the secondary cells are added only where they don't overlap a prioritized cell.
+        if priority == MergeCellsPriority.PDF_FIRST:
+            prioritized_cells, secondary_cells = pdf_cells, ocr_cells
+        else:
+            prioritized_cells, secondary_cells = ocr_cells, pdf_cells
+
         p = index.Property()
         p.dimension = 2
         idx = index.Index(properties=p)
-        for i, cell in enumerate(programmatic_cells):
-            idx.insert(i, cell.rect.to_bounding_box().as_tuple())
 
-        def is_overlapping_with_existing_cells(ocr_cell):
-            # Query the R-tree to get overlapping rectangles
-            possible_matches_index = list(
-                idx.intersection(ocr_cell.rect.to_bounding_box().as_tuple())
+        # The R-tree bbox intersection is a weak criterion but it works.
+        merged_cells = list(prioritized_cells)
+
+        if len(prioritized_cells) <= len(secondary_cells):
+            # Index the (smaller) prioritized cells; keep each secondary cell that
+            # doesn't overlap any of them.
+            for i, cell in enumerate(prioritized_cells):
+                idx.insert(i, cell.rect.to_bounding_box().as_tuple())
+            for cell in secondary_cells:
+                if not any(idx.intersection(cell.rect.to_bounding_box().as_tuple())):
+                    merged_cells.append(cell)
+        else:
+            # Index the (smaller) secondary cells; drop the ones overlapping any
+            # prioritized cell and keep the rest.
+            for i, cell in enumerate(secondary_cells):
+                idx.insert(i, cell.rect.to_bounding_box().as_tuple())
+            overlapping_ids: set[int] = set()
+            for cell in prioritized_cells:
+                overlapping_ids.update(
+                    idx.intersection(cell.rect.to_bounding_box().as_tuple())
+                )
+            merged_cells.extend(
+                cell
+                for i, cell in enumerate(secondary_cells)
+                if i not in overlapping_ids
             )
 
-            return (
-                len(possible_matches_index) > 0
-            )  # this is a weak criterion but it works.
-
-        filtered_ocr_cells = [
-            rect for rect in ocr_cells if not is_overlapping_with_existing_cells(rect)
-        ]
-
-        return filtered_ocr_cells
+        return merged_cells
 
     def draw_ocr_rects_and_cells(self, conv_res, page, ocr_rects, show: bool = False):
         r"""
