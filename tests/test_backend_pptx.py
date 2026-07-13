@@ -2,17 +2,35 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from docling_core.types.doc import ContentLayer, GroupItem, TextItem
+from docling_core.types.doc import (
+    ContentLayer,
+    GroupItem,
+    PictureClassificationLabel,
+    TextItem,
+)
 
+from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
+from docling.datamodel.backend_options import MsPowerpointBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, PowerpointFormatOption
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
+
+CHART_PPTX = Path("./tests/data/pptx/sources/pptx_chart.pptx")
+
+
+@pytest.fixture(scope="module")
+def libreoffice_available() -> bool:
+    """Return True when a working LibreOffice installation is detected."""
+    try:
+        return get_libreoffice_cmd(raise_if_unavailable=True) is not None
+    except Exception:
+        return False
 
 
 def get_pptx_paths():
@@ -228,3 +246,95 @@ def test_pptx_page_range():
     assert "Second slide title" in pred_md
     assert "Test Table Slide" not in pred_md
     assert "List item4" not in pred_md
+
+
+def test_chart_parsed_as_classified_picture_with_data():
+    """A native PPTX chart becomes one classified picture carrying its data.
+
+    ``pptx_chart.pptx`` holds a single clustered-column chart titled "Wild Duck
+    Observations by Year" with two series over four years. It should convert to
+    exactly one PictureItem classified as a bar chart, captioned with the chart
+    title, and carrying the chart's plotted numbers reconstructed as a table:
+
+        | <blank> | Freshwater Ducks | Saltwater Ducks |
+        | 2019    | 120              | 80              |
+        ...
+        | 2022    | 175              | 130             |
+    """
+    converter = get_converter()
+    doc = converter.convert(CHART_PPTX).document
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1, f"Expected one chart picture, got {len(pictures)}"
+
+    picture = pictures[0]
+    assert (
+        picture.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.BAR_CHART
+    )
+    assert picture.caption_text(doc) == "Wild Duck Observations by Year"
+
+    chart_data = picture.meta.tabular_chart.chart_data
+    assert (chart_data.num_rows, chart_data.num_cols) == (5, 3)
+    grid = {
+        (cell.start_row_offset_idx, cell.start_col_offset_idx): cell.text
+        for cell in chart_data.table_cells
+    }
+    assert grid[(0, 1)] == "Freshwater Ducks"
+    assert grid[(0, 2)] == "Saltwater Ducks"
+    assert grid[(1, 0)] == "2019"
+    assert grid[(4, 0)] == "2022"
+    assert grid[(4, 1)] == "175"
+    assert grid[(4, 2)] == "130"
+
+
+def test_chart_image_not_rendered_by_default():
+    """Charts carry classification and data but no image unless opted in.
+
+    render_chart_images defaults to False, so the chart picture keeps its
+    classification and reconstructed data but no pixels. This guards the promise
+    that the feature does not change default output size for existing users.
+    """
+    converter = get_converter()
+    doc = converter.convert(CHART_PPTX).document
+
+    picture = next(iter(doc.pictures))
+    assert picture.meta.tabular_chart is not None
+    assert picture.image is None, (
+        "chart picture should have no image when render_chart_images is off"
+    )
+
+
+def test_chart_image_rendering(libreoffice_available):
+    """render_chart_images=True attaches a LibreOffice-rendered image.
+
+    LibreOffice output is not byte-stable and the cropped image size depends on
+    the LibreOffice version, so pixels are not compared against groundtruth. We
+    assert the picture gains a non-trivial image while keeping the classification
+    and tabular data. Requires LibreOffice; skipped when it is not installed.
+    """
+    if not libreoffice_available:
+        pytest.skip("LibreOffice is not installed — chart rendering cannot be tested")
+
+    options = MsPowerpointBackendOptions(render_chart_images=True)
+    format_options = {InputFormat.PPTX: PowerpointFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.PPTX], format_options=format_options
+    )
+    doc = converter.convert(CHART_PPTX).document
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1, f"Expected one chart picture, got {len(pictures)}"
+
+    picture = pictures[0]
+    assert (
+        picture.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.BAR_CHART
+    )
+    assert picture.meta.tabular_chart is not None
+
+    image = picture.get_image(doc=doc)
+    assert image is not None, "chart picture should carry a rendered image"
+    assert image.width > 50 and image.height > 50, (
+        f"rendered chart image is implausibly small: {image.size}"
+    )
