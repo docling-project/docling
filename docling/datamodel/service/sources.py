@@ -2,7 +2,7 @@ import base64
 from io import BytesIO
 from typing import Annotated, List, Optional
 
-from pydantic import BaseModel, Field, HttpUrl, SecretStr, StrictStr
+from pydantic import BaseModel, Field, HttpUrl, SecretStr, StrictStr, model_validator
 
 # HttpSource lives in the core datamodel so DocumentConverter can accept it as an
 # input source; re-exported here to keep the service-layer import path stable.
@@ -378,3 +378,11 @@ class GoogleDriveCoordinates(BaseModel):
             description="OAuth 2.0 Client ID' credentials (available in Google Cloud console). One of 'credentials_path' or 'credentials' is required.",
         ),
     ]
+
+    @model_validator(mode="after")
+    def validate_auth_inputs(self) -> "GoogleDriveCoordinates":
+        if not (self.token_path or self.refresh_token):
+            raise ValueError("One of 'token_path' or 'refresh_token' is required.")
+        if not (self.credentials_path or self.credentials):
+            raise ValueError("One of 'credentials_path' or 'credentials' is required.")
+        return self

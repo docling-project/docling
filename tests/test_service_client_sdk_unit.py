@@ -21,6 +21,7 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import BoundingBox, ProvenanceItem, Size
 from PIL import Image as PILImage
+from pydantic import ValidationError
 
 import docling.service_client._async_client as async_module
 import docling.service_client.client as client_module
@@ -37,6 +38,8 @@ from docling.datamodel.service.options import (
 )
 from docling.datamodel.service.requests import (
     AnyHttpSourceRequest,
+    GoogleCloudStorageSourceRequest,
+    GoogleDriveSourceRequest,
     HttpSourceRequest,
     S3SourceRequest,
 )
@@ -51,7 +54,10 @@ from docling.datamodel.service.responses import (
     TaskStatusResponse,
     WebsocketMessage,
 )
+from docling.datamodel.service.sources import GoogleDriveCoordinates
 from docling.datamodel.service.targets import (
+    AzureBlobTarget,
+    GoogleCloudStorageTarget,
     InBodyTarget,
     PresignedUrlTarget,
     S3Target,
@@ -1931,6 +1937,95 @@ def test_submit_batch_posts_batch_request() -> None:
     )
 
 
+def test_submit_batch_serializes_inline_gcs_secrets_without_redaction() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["payload"] = request.content.decode("utf-8")
+        return httpx.Response(
+            200, json=_status_response("task-gcs", "pending").model_dump(mode="json")
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.close()
+        client._http_client = httpx.Client(
+            transport=transport,
+            timeout=client._http_client.timeout,
+        )
+        client.submit_batch(
+            sources=[
+                GoogleCloudStorageSourceRequest(
+                    bucket="incoming",
+                    service_account_key={
+                        "project_id": "my-project",
+                        "private_key_id": "kid-123",
+                        "private_key": "private-key-value",
+                        "client_email": "svc@example.com",
+                        "client_id": "client-id-123",
+                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                        "token_uri": "https://oauth2.googleapis.com/token",
+                        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                        "client_x509_cert_url": "https://example.com/cert",
+                        "universe_domain": "googleapis.com",
+                    },
+                )
+            ],
+            target=PresignedUrlTarget(),
+        )
+
+    payload = json.loads(str(captured["payload"]))
+    creds = payload["sources"][0]["service_account_key"]
+    assert creds["private_key"] == "private-key-value"
+    assert creds["client_email"] == "svc@example.com"
+    assert "**********" not in json.dumps(creds)
+
+
+def test_submit_batch_serializes_inline_drive_secrets_without_redaction() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["payload"] = request.content.decode("utf-8")
+        return httpx.Response(
+            200,
+            json=_status_response("task-drive", "pending").model_dump(mode="json"),
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._http_client.close()
+        client._http_client = httpx.Client(
+            transport=transport,
+            timeout=client._http_client.timeout,
+        )
+        client.submit_batch(
+            sources=[
+                GoogleDriveSourceRequest(
+                    path_id="folder-123",
+                    refresh_token="refresh-token-value",
+                    credentials={
+                        "client_id": "client-id",
+                        "project_id": "project-id",
+                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                        "token_uri": "https://oauth2.googleapis.com/token",
+                        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                        "client_secret": "client-secret-value",
+                        "redirect_uris": ["http://localhost"],
+                    },
+                )
+            ],
+            target=PresignedUrlTarget(),
+        )
+
+    payload = json.loads(str(captured["payload"]))
+    source = payload["sources"][0]
+    assert source["refresh_token"] == "refresh-token-value"
+    assert source["credentials"]["client_secret"] == "client-secret-value"
+    assert "**********" not in json.dumps(source)
+
+
 def test_submit_batch_returns_presigned_result_for_presigned_target() -> None:
     presigned_result = PresignedUrlConvertResponse(
         num_converted=1,
@@ -2026,6 +2121,53 @@ def test_submit_batch_returns_counts_result_for_s3_target() -> None:
         result = job.result(timeout=1.0)
 
     assert result is s3_result
+
+
+def test_submit_returns_counts_result_for_storage_target() -> None:
+    storage_result = PresignedUrlConvertDocumentResponse(
+        num_converted=1,
+        num_succeeded=1,
+        num_partially_succeeded=0,
+        num_failed=0,
+        processing_time=0.25,
+    )
+
+    with DoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_convert_task = MethodType(
+            lambda self, source, options, target, request_headers=None: (
+                _status_response("task-storage", "pending")
+            ),
+            client,
+        )
+        client._wait_for_terminal_status = MethodType(
+            lambda self, task_id, timeout: _status_response(task_id, "success"),
+            client,
+        )
+        client._fetch_presigned_document_result = MethodType(
+            lambda self, task_id, last_status: storage_result,
+            client,
+        )
+
+        job = client.submit(
+            source="https://example.org/sample.pdf",
+            target=GoogleCloudStorageTarget(bucket="converted", key_prefix="done/"),
+        )
+        result = job.result(timeout=1.0)
+
+    assert result is storage_result
+
+
+def test_google_drive_coordinates_require_auth_inputs() -> None:
+    with pytest.raises(ValidationError, match="token_path"):
+        GoogleDriveCoordinates(path_id="folder-123")
+
+    valid = GoogleDriveCoordinates(
+        path_id="folder-123",
+        refresh_token="refresh-token",
+        credentials_path="/tmp/client-secret.json",
+    )
+
+    assert valid.refresh_token == "refresh-token"
 
 
 def test_submit_batch_forwards_request_headers() -> None:
@@ -3533,6 +3675,53 @@ async def test_async_submit_batch_returns_counts_result_for_s3_target() -> None:
         result = await job.result(timeout=1.0)
 
     assert result is s3_result
+
+
+@pytest.mark.anyio
+async def test_async_submit_batch_returns_counts_result_for_azure_target() -> None:
+    storage_result = PresignedUrlConvertDocumentResponse(
+        num_converted=1,
+        num_succeeded=1,
+        num_partially_succeeded=0,
+        num_failed=0,
+        processing_time=0.25,
+    )
+
+    async with AsyncDoclingServiceClient(url=TEST_BASE_URL) as client:
+        client._submit_batch_task = MethodType(
+            lambda self, sources, options, target, async_client, request_headers=None: (
+                asyncio.sleep(0, result=_status_response("task-azure", "pending"))
+            ),
+            client,
+        )
+        client._fetch_presigned_document_result = MethodType(
+            lambda self, task_id, last_status, async_client: asyncio.sleep(
+                0, result=storage_result
+            ),
+            client,
+        )
+        client._status_watcher = MethodType(  # type: ignore[method-assign]
+            lambda self: SimpleNamespace(
+                iter_updates=lambda tid, timeout=None: (x async for x in []),
+                wait_for_terminal=lambda tid, timeout=None: asyncio.sleep(
+                    0, result=_status_response(tid, "success")
+                ),
+            ),
+            client,
+        )
+
+        job = await client.submit_batch(
+            sources=[AnyHttpSourceRequest(url="https://example.org/sample.pdf")],
+            target=AzureBlobTarget(
+                account_name="acct",
+                container="converted",
+                connection_string="UseDevelopmentStorage=true",
+                blob_prefix="done/",
+            ),
+        )
+        result = await job.result(timeout=1.0)
+
+    assert result is storage_result
 
 
 # --- submit_chunk ---
