@@ -6,6 +6,7 @@ import posixpath
 import shutil
 import subprocess
 import warnings
+from copy import deepcopy
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -59,7 +60,7 @@ _log = logging.getLogger(__name__)
 _OPENPYXL_AVAILABLE: bool = False
 _OPENPYXL_IMPORT_ERROR: ImportError | None = None
 try:  # pragma: no cover - import-time guard
-    from openpyxl import load_workbook
+    from openpyxl import Workbook, load_workbook
     from openpyxl.chartsheet.chartsheet import Chartsheet
     from openpyxl.drawing.image import Image
     from openpyxl.drawing.spreadsheet_drawing import (
@@ -89,6 +90,13 @@ _SAFE_XML_PARSER: Final = etree.XMLParser(
     load_dtd=False,
     no_network=True,
     dtd_validation=False,
+)
+
+_CHART_RENDER_HINT = (
+    "LibreOffice is required to render Excel charts as images "
+    "(render_chart_images=True). Install LibreOffice and make sure `soffice` is "
+    "on PATH. Charts still keep their classification and reconstructed tabular "
+    "data without it."
 )
 
 # Maps an openpyxl chart object's ``tagname`` (the DrawingML element name, e.g.
@@ -581,10 +589,32 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             )
 
             for excel_table in tables:
+                title_cell, excel_table = self._split_leading_section_label(excel_table)
                 origin_col = excel_table.anchor[0]
                 origin_row = excel_table.anchor[1]
                 num_rows = excel_table.num_rows
                 num_cols = excel_table.num_cols
+                if title_cell is not None:
+                    doc.add_text(
+                        text=title_cell.text,
+                        label=DocItemLabel.TEXT,
+                        parent=self.parent,
+                        prov=ProvenanceItem(
+                            page_no=page_no,
+                            charspan=(0, 0),
+                            bbox=BoundingBox.from_tuple(
+                                (
+                                    origin_col + title_cell.col,
+                                    origin_row - 1,
+                                    origin_col + title_cell.col + title_cell.col_span,
+                                    origin_row,
+                                ),
+                                origin=CoordOrigin.TOPLEFT,
+                            ),
+                        ),
+                        content_layer=content_layer,
+                    )
+
                 if treat_singleton_as_text and len(excel_table.data) == 1:
                     doc.add_text(
                         text=excel_table.data[0].text,
@@ -682,6 +712,56 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     )
 
         return doc
+
+    def _split_leading_section_label(
+        self, table: ExcelTable
+    ) -> tuple[ExcelCell | None, ExcelTable]:
+        """Split a merged section label from an adjacent data table."""
+        if table.num_rows < 2 or table.num_cols < 2:
+            return None, table
+
+        first_row_cells = [cell for cell in table.data if cell.row == 0]
+        first_row_text_cells = [cell for cell in first_row_cells if cell.text.strip()]
+        if len(first_row_text_cells) != 1:
+            return None, table
+
+        title_cell = first_row_text_cells[0]
+        if (
+            title_cell.col != 0
+            or title_cell.row_span != 1
+            or title_cell.col_span <= 1
+            or title_cell.col_span > table.num_cols
+        ):
+            return None, table
+
+        second_row_header_cells = [
+            cell
+            for cell in table.data
+            if cell.row == 1 and cell.text.strip() and cell.col_span == 1
+        ]
+        if len(second_row_header_cells) < 2:
+            return None, table
+
+        data = [
+            ExcelCell(
+                row=cell.row - 1,
+                col=cell.col,
+                text=cell.text,
+                row_span=cell.row_span,
+                col_span=cell.col_span,
+            )
+            for cell in table.data
+            if cell.row > 0
+        ]
+        return (
+            title_cell,
+            ExcelTable(
+                anchor=(table.anchor[0], table.anchor[1] + 1),
+                num_rows=table.num_rows - 1,
+                num_cols=table.num_cols,
+                data=data,
+            ),
+        )
 
     def _find_true_data_bounds(self, sheet: Worksheet) -> DataRegion:
         """Find the true data boundaries (min/max rows and columns) in a worksheet.
@@ -1272,7 +1352,17 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             return doc
         content_layer = self._get_sheet_content_layer(sheet)
 
-        for chart in sheet._charts:  # type: ignore[attr-defined]
+        charts = sheet._charts  # type: ignore[attr-defined]
+        if not charts:
+            return doc
+
+        # Rendering a chart to an actual image is opt-in and needs LibreOffice.
+        render_charts = self.options.render_chart_images
+        if render_charts and self._get_libreoffice_converter() is None:
+            _log.warning(_CHART_RENDER_HINT)
+            render_charts = False
+
+        for chart in charts:
             try:
                 classification = _CHART_TAGNAME_TO_CLASSIFICATION.get(
                     chart.tagname, PictureClassificationLabel.OTHER_CHART
@@ -1284,6 +1374,21 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     self._anchor_to_tuple(chart.anchor),
                     origin=CoordOrigin.TOPLEFT,
                 )
+
+                # On any rendering failure fall back to the no-image behavior:
+                # the picture still carries its classification and chart data.
+                image_ref = None
+                if render_charts:
+                    try:
+                        chart_image = self._render_chart_image(chart)
+                        if chart_image is not None:
+                            image_ref = ImageRef.from_pil(image=chart_image, dpi=72)
+                    except Exception:
+                        _log.warning(
+                            "could not render a chart image; keeping chart data "
+                            "without image",
+                            exc_info=True,
+                        )
 
                 caption_item = (
                     doc.add_text(
@@ -1297,6 +1402,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
                 picture = doc.add_picture(
                     parent=self.parent,
+                    image=image_ref,
                     caption=caption_item,
                     prov=ProvenanceItem(
                         page_no=page_no,
@@ -1450,6 +1556,170 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 )
 
         return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=cells)
+
+    @staticmethod
+    def _to_float(text: str) -> float | None:
+        """Parse a cell string into a float, or None if it is not numeric.
+
+        Cached values arrive as strings; a chart plots them only when they are
+        written back as numbers. Non-numeric cells (blank, labels) return None
+        so the caller can leave them as text.
+        """
+        try:
+            return float(text)
+        except (TypeError, ValueError):
+            return None
+
+    def _render_chart_image(self, chart: Any) -> PILImage.Image | None:
+        """Render a native chart to an image via LibreOffice.
+
+        XLSX stores charts as vector definitions with no embedded raster.  To
+        obtain a picture we isolate the chart into a throwaway single-chart
+        workbook (its data copied onto hidden sheets so the series still
+        resolve), convert that to PDF with LibreOffice — the same external tool
+        already used for EMF/WMF images — and rasterize the first page with
+        pypdfium2, trimming the surrounding whitespace.
+
+        Args:
+            chart: An openpyxl chart object.
+
+        Returns:
+            A PIL Image, or None when LibreOffice is unavailable, the chart has
+            no resolvable data, or the conversion fails.
+        """
+        converter = self._get_libreoffice_converter()
+        if converter is None:
+            return None
+
+        standalone = self._build_standalone_chart_workbook(chart)
+        if standalone is None:
+            return None
+
+        temp_dir = Path(mkdtemp())
+        try:
+            input_path = temp_dir / "chart.xlsx"
+            output_path = temp_dir / "chart.pdf"
+            standalone.save(input_path)
+            converter(input_path, output_path)
+            if not output_path.exists():
+                _log.debug("LibreOffice produced no PDF output for a chart")
+                return None
+            pdf = pypdfium2.PdfDocument(str(output_path))
+            page = pdf[0]
+            pil_image = crop_whitespace(page.render(scale=2).to_pil())
+            page.close()
+            pdf.close()
+            return pil_image
+        except Exception as exc:
+            _log.debug("Chart rendering via LibreOffice failed: %s", exc)
+            return None
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def _build_standalone_chart_workbook(self, chart: Any) -> Workbook | None:
+        """Build a one-chart workbook with the chart's data on hidden sheets.
+
+        A chart references its data by sheet-qualified ranges (e.g.
+        ``"'Sheet1'!$B$2:$B$7"``).  Every referenced range is recreated here —
+        same sheet name, same cell coordinates, cached values — on hidden
+        sheets, and the chart is anchored alone on a single visible sheet.
+        LibreOffice prints only the visible sheet, so the resulting PDF holds
+        just the chart.
+
+        Args:
+            chart: An openpyxl chart object.
+
+        Returns:
+            A populated Workbook, or None when the chart exposes no resolvable
+            data references.
+        """
+        if self.workbook is None:
+            return None
+
+        references: list[str] = []
+        for series in chart.series:
+            for data_source in (
+                series.cat,
+                series.xVal,
+                series.val,
+                series.yVal,
+                series.tx,
+            ):
+                formula = self._ref_formula(data_source)
+                if formula:
+                    references.append(formula)
+        if not references:
+            return None
+
+        standalone = Workbook()
+        # A fresh Workbook always holds exactly one worksheet; take it directly
+        # rather than via ``.active``, which is typed as optional.
+        chart_sheet = standalone.worksheets[0]
+        chart_sheet.title = "chart_render"
+
+        # Every reference must be copied, so this cannot short-circuit.
+        copied = [self._copy_reference_into(standalone, ref) for ref in references]
+        if not any(copied):
+            return None
+
+        # ``add_chart`` overwrites ``chart.anchor``; copy so the workbook's own
+        # chart keeps the anchor its provenance bbox is derived from.
+        chart_sheet.add_chart(deepcopy(chart), "A1")
+        return standalone
+
+    def _copy_reference_into(self, target: Workbook, ref: str) -> bool:
+        """Copy one chart data range into ``target`` on a hidden sheet.
+
+        Recreates the referenced sheet by name if needed, hides it, and writes
+        the cached cell values at their original coordinates.  Numeric-looking
+        text is coerced to numbers so the chart plots it as values rather than
+        labels.
+
+        Args:
+            target: The standalone Workbook being assembled.
+            ref: A sheet-qualified range reference, e.g. "'Sheet1'!$B$2:$B$7".
+
+        Returns:
+            True when the referenced range was resolved and copied.
+        """
+        if self.workbook is None or "!" not in ref:
+            return False
+
+        sheet_part, cell_range = ref.rsplit("!", 1)
+        sheet_part = sheet_part.strip()
+        if sheet_part.startswith("'") and sheet_part.endswith("'"):
+            sheet_part = sheet_part[1:-1].replace("''", "'")
+        if sheet_part not in self.workbook.sheetnames:
+            _log.debug("Chart references unknown sheet %r", sheet_part)
+            return False
+
+        try:
+            bounds = range_boundaries(cell_range)
+        except Exception:
+            _log.debug("Could not parse chart range %r", cell_range)
+            return False
+        if any(bound is None for bound in bounds):
+            # Open-ended ranges (e.g. "B:B") carry no usable row bounds.
+            _log.debug("Chart range %r is not fully bounded", cell_range)
+            return False
+        min_col, min_row, max_col, max_row = cast(tuple[int, int, int, int], bounds)
+
+        source_sheet = self.workbook[sheet_part]
+        if sheet_part in target.sheetnames:
+            dest_sheet = target[sheet_part]
+        else:
+            dest_sheet = target.create_sheet(sheet_part)
+            dest_sheet.sheet_state = "hidden"
+
+        for row in range(min_row, max_row + 1):
+            for col in range(min_col, max_col + 1):
+                value = source_sheet.cell(row=row, column=col).value
+                if isinstance(value, str):
+                    numeric = self._to_float(value)
+                    if numeric is not None:
+                        value = numeric
+                dest_sheet.cell(row=row, column=col, value=value)
+        return True
 
     @staticmethod
     def _ref_formula(data_source: Any) -> str | None:

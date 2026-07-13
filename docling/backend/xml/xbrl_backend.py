@@ -249,7 +249,7 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
         """
         _log.debug("Starting XBRL instance conversion...")
         if not self.is_valid() or not self.model_xbrl:
-            raise RuntimeError("Invalid document with hash {self.document_hash}")
+            raise RuntimeError(f"Invalid document with hash {self.document_hash}")
 
         origin = DocumentOrigin(
             filename=self.file.name or "file",

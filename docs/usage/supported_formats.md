@@ -27,7 +27,8 @@ Schema-specific support:
 
 | Format | Description |
 |--------|-------------|
-| DocLang XML | XML format following [DocLang](https://doclang.ai); supported extensions: `.dclg`, `.dclg.xml` |
+| DocLang XML | XML format following [DocLang](https://doclang.ai); supported extensions: `.dclg`, `.dclg.xml`, and generic `.xml` with a `<doclang>` root element |
+| DocLang archive | Zipped DocLang bundle including page images; supported extension: `.dclx` |
 | USPTO XML | XML format followed by [USPTO](https://www.uspto.gov/patents) patents |
 | JATS XML | XML format followed by [JATS](https://jats.nlm.nih.gov/) articles |
 | XBRL XML | XML format for business and financial reporting following [XBRL](https://www.xbrl.org/) standard |

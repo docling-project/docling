@@ -20,7 +20,11 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.comments import Comment
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
-from docling.backend.msexcel_backend import MsExcelDocumentBackend
+from docling.backend.msexcel_backend import (
+    ExcelCell,
+    ExcelTable,
+    MsExcelDocumentBackend,
+)
 from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
@@ -395,6 +399,98 @@ def test_chart_parsing_disabled() -> None:
     assert doc.pages[2].size.height == 0
 
 
+def test_chart_image_rendering_disabled_by_default(documents) -> None:
+    """Test that charts carry no rendered image unless the option is enabled.
+
+    The default converter (used by the ``documents`` fixture) leaves
+    render_chart_images=False, so the xlsx_03 chart picture keeps its
+    classification and tabular data but no pixels. This guards the promise that
+    the feature does not change default output for existing users.
+    """
+    doc = next(item for path, item in documents if path.stem == "xlsx_03_chartsheet")
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1
+    assert pictures[0].image is None, (
+        "chart picture should have no image when render_chart_images is off"
+    )
+
+
+def test_chart_image_rendering(libreoffice_available) -> None:
+    """Test that render_chart_images=True attaches a LibreOffice-rendered image.
+
+    LibreOffice output is not byte-stable, and the cropped image size depends on
+    the LibreOffice version and page setup, so the pixels are not compared
+    against groundtruth. We assert the picture gains a non-trivial image while
+    keeping the classification and tabular data extracted from the chart.
+
+    Requires LibreOffice; skipped when it is not installed.
+    """
+    if not libreoffice_available:
+        pytest.skip("LibreOffice is not installed — chart rendering cannot be tested")
+
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_03_chartsheet")
+
+    options = MsExcelBackendOptions(render_chart_images=True)
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+    doc = converter.convert(path).document
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1, f"Expected one chart picture, got {len(pictures)}"
+
+    picture = pictures[0]
+    assert (
+        picture.meta.classification.predictions[0].class_name
+        == PictureClassificationLabel.BAR_CHART
+    )
+    assert picture.meta.tabular_chart is not None
+
+    image = picture.get_image(doc=doc)
+    assert image is not None, "chart picture should carry a rendered image"
+    assert image.width > 50 and image.height > 50, (
+        f"rendered chart image is implausibly small: {image.size}"
+    )
+
+
+def test_chart_render_does_not_mutate_source_chart() -> None:
+    """Test that assembling the render workbook leaves the source chart intact.
+
+    ``Worksheet.add_chart`` overwrites ``chart.anchor``. Were the backend to
+    hand its own chart object to the temporary render workbook, the source
+    chart's anchor would be replaced by a plain "A1" string and every later
+    provenance bbox would silently collapse to (0, 0, 0, 0). Only the workbook
+    assembly is exercised, so this runs without LibreOffice.
+    """
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_03_chartsheet")
+    in_doc = InputDocument(
+        path_or_stream=path,
+        format=InputFormat.XLSX,
+        filename=path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=path,
+        options=MsExcelBackendOptions(render_chart_images=True),
+    )
+    chart = next(
+        chart
+        for name in backend.workbook.sheetnames
+        for chart in backend.workbook[name]._charts
+    )
+    bbox_before = backend._anchor_to_tuple(chart.anchor)
+    assert bbox_before != (0, 0, 0, 0), "test fixture should have a real anchor"
+
+    assert backend._build_standalone_chart_workbook(chart) is not None
+
+    assert backend._anchor_to_tuple(chart.anchor) == bbox_before, (
+        "assembling the render workbook must not overwrite the source anchor"
+    )
+
+
 def test_inflated_rows_handling(documents) -> None:
     """Test that files with inflated max_row are handled correctly.
 
@@ -501,6 +597,107 @@ def test_table_with_title():
     assert table.data.num_cols == 2, (
         f"Table should have 2 columns, got {table.data.num_cols}"
     )
+
+
+def test_merged_section_label_above_table_preserves_column_headers() -> None:
+    path = next(
+        item
+        for item in get_excel_paths()
+        if item.stem == "xlsx_09_section_label_header"
+    )
+    headers = ["#", "Genre", "Sub-Genre", "Title", "Author", "Publisher", "Added"]
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.XLSX])
+    doc = converter.convert(path).document
+
+    assert [text.text for text in doc.texts] == ["Reading List"]
+    assert len(doc.tables) == 1
+
+    table = doc.tables[0]
+    assert table.prov[0].bbox.t == 1
+    assert table.data.num_rows == 3
+    assert table.data.num_cols == len(headers)
+    assert all(cell.text != "Reading List" for cell in table.data.table_cells)
+
+    header_cells = [
+        cell for cell in table.data.table_cells if cell.start_row_offset_idx == 0
+    ]
+    assert [cell.text for cell in header_cells] == headers
+    assert all(cell.column_header for cell in header_cells)
+
+    html = doc.export_to_html()
+    assert '<th colspan="2">Reading List</th>' not in html
+    assert "<th>#</th>" in html
+    assert "<th>Genre</th>" in html
+
+
+def test_split_leading_section_label_helper() -> None:
+    backend = object.__new__(MsExcelDocumentBackend)
+
+    no_split_table = ExcelTable(
+        anchor=(2, 4),
+        num_rows=1,
+        num_cols=3,
+        data=[
+            ExcelCell(row=0, col=0, text="Reading List", row_span=1, col_span=2),
+            ExcelCell(row=0, col=2, text="", row_span=1, col_span=1),
+        ],
+    )
+    title_cell, unchanged_table = backend._split_leading_section_label(no_split_table)
+    assert title_cell is None
+    assert unchanged_table == no_split_table
+
+    not_header_table = ExcelTable(
+        anchor=(2, 4),
+        num_rows=2,
+        num_cols=3,
+        data=[
+            ExcelCell(row=0, col=0, text="Reading List", row_span=1, col_span=2),
+            ExcelCell(row=0, col=1, text="", row_span=1, col_span=1),
+            ExcelCell(row=0, col=2, text="", row_span=1, col_span=1),
+            ExcelCell(row=1, col=0, text="Only one header", row_span=1, col_span=1),
+            ExcelCell(row=1, col=1, text="", row_span=1, col_span=1),
+            ExcelCell(row=1, col=2, text="", row_span=1, col_span=1),
+        ],
+    )
+    title_cell, unchanged_table = backend._split_leading_section_label(not_header_table)
+    assert title_cell is None
+    assert unchanged_table == not_header_table
+
+    split_table = ExcelTable(
+        anchor=(2, 4),
+        num_rows=3,
+        num_cols=4,
+        data=[
+            ExcelCell(row=0, col=0, text="Reading List", row_span=1, col_span=2),
+            ExcelCell(row=0, col=1, text="", row_span=1, col_span=1),
+            ExcelCell(row=0, col=2, text="", row_span=1, col_span=1),
+            ExcelCell(row=0, col=3, text="", row_span=1, col_span=1),
+            ExcelCell(row=1, col=0, text="#", row_span=1, col_span=1),
+            ExcelCell(row=1, col=1, text="Genre", row_span=1, col_span=1),
+            ExcelCell(row=1, col=2, text="Sub-Genre", row_span=1, col_span=1),
+            ExcelCell(row=1, col=3, text="Title", row_span=1, col_span=1),
+            ExcelCell(row=2, col=0, text="1", row_span=1, col_span=1),
+            ExcelCell(row=2, col=1, text="Fiction", row_span=1, col_span=1),
+            ExcelCell(row=2, col=2, text="Mystery", row_span=1, col_span=1),
+            ExcelCell(row=2, col=3, text="The Hound", row_span=1, col_span=1),
+        ],
+    )
+
+    title_cell, split_result = backend._split_leading_section_label(split_table)
+
+    assert title_cell is not None
+    assert title_cell.text == "Reading List"
+    assert split_result.anchor == (2, 5)
+    assert split_result.num_rows == 2
+    assert split_result.num_cols == 4
+    assert [cell.row for cell in split_result.data] == [0, 0, 0, 0, 1, 1, 1, 1]
+    assert [cell.text for cell in split_result.data[:4]] == [
+        "#",
+        "Genre",
+        "Sub-Genre",
+        "Title",
+    ]
 
 
 def test_bytesio_stream():

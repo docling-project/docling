@@ -40,6 +40,7 @@ from docling.backend.opendocument_backend import (
     OdtDocumentBackend,
 )
 from docling.backend.webvtt_backend import WebVTTDocumentBackend
+from docling.backend.xml.doclang_archive_backend import DocLangArchiveBackend
 from docling.backend.xml.doclang_backend import DocLangDocumentBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
@@ -192,6 +193,11 @@ class XMLDocLangFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = DocLangDocumentBackend
 
 
+class DclxFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = DocLangArchiveBackend
+
+
 class XBRLFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = XBRLDocumentBackend
@@ -255,6 +261,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.XML_USPTO: PatentUsptoFormatOption(),
         InputFormat.XML_JATS: XMLJatsFormatOption(),
         InputFormat.XML_DOCLANG: XMLDocLangFormatOption(),
+        InputFormat.DCLX: DclxFormatOption(),
         InputFormat.XML_XBRL: XBRLFormatOption(),
         InputFormat.METS_GBS: FormatOption(
             pipeline_cls=StandardPdfPipeline, backend=MetsGbsDocumentBackend
@@ -718,32 +725,46 @@ class DocumentConverter:
 
         return conv_res
 
+    def _unload_input_document(self, in_doc: InputDocument) -> None:
+        backend = getattr(in_doc, "_backend", None)
+        if backend is not None:
+            backend.unload()
+
     def _execute_pipeline(
         self, in_doc: InputDocument, raises_on_error: bool
     ) -> ConversionResult:
         if in_doc.valid:
-            pipeline = self._get_pipeline(in_doc.format)
-            if pipeline is not None:
-                conv_res = pipeline.execute(in_doc, raises_on_error=raises_on_error)
-            else:
-                if raises_on_error:
-                    raise ConversionError(
-                        f"No pipeline could be initialized for {in_doc.file}."
-                    )
+            pipeline_started = False
+            try:
+                pipeline = self._get_pipeline(in_doc.format)
+                if pipeline is not None:
+                    pipeline_started = True
+                    conv_res = pipeline.execute(in_doc, raises_on_error=raises_on_error)
                 else:
-                    _log.warning(
-                        "No pipeline could be initialized for %s.", in_doc.file
-                    )
-                    conv_res = ConversionResult(
-                        input=in_doc,
-                        status=ConversionStatus.FAILURE,
-                    )
+                    if raises_on_error:
+                        raise ConversionError(
+                            f"No pipeline could be initialized for {in_doc.file}."
+                        )
+                    else:
+                        _log.warning(
+                            "No pipeline could be initialized for %s.", in_doc.file
+                        )
+                        conv_res = ConversionResult(
+                            input=in_doc,
+                            status=ConversionStatus.FAILURE,
+                        )
+            finally:
+                if not pipeline_started:
+                    self._unload_input_document(in_doc)
         else:
-            _log.warning("Input document %s is not valid.", in_doc.file)
-            conv_res = ConversionResult(
-                input=in_doc,
-                status=ConversionStatus.FAILURE,
-                errors=build_invalid_input_errors(in_doc),
-            )
+            try:
+                _log.warning("Input document %s is not valid.", in_doc.file)
+                conv_res = ConversionResult(
+                    input=in_doc,
+                    status=ConversionStatus.FAILURE,
+                    errors=build_invalid_input_errors(in_doc),
+                )
+            finally:
+                self._unload_input_document(in_doc)
 
         return conv_res

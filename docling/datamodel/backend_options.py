@@ -245,6 +245,18 @@ class MsExcelBackendOptions(BaseBackendOptions):
         ),
     )
 
+    render_chart_images: bool = Field(
+        False,
+        description=(
+            "Whether to render an image for each native chart and attach it to "
+            "the chart PictureItem. The chart is isolated into a temporary "
+            "workbook and rasterized with LibreOffice, the same external tool "
+            "used for EMF/WMF images. Opt-in (default False) because it "
+            "requires a LibreOffice installation and inflates the output size. "
+            "Only takes effect when parse_charts is True."
+        ),
+    )
+
     gap_tolerance: int = Field(
         0,
         description=(

@@ -1,3 +1,18 @@
+## [v2.112.0](https://github.com/docling-project/docling/releases/tag/v2.112.0) - 2026-07-11
+
+### Feature
+
+* **msexcel:** Render native Excel charts as images ([#3777](https://github.com/docling-project/docling/issues/3777)) ([`2753007`](https://github.com/docling-project/docling/commit/2753007506d6e3617fc7c3e30a82b822b01dab74))
+* **dclx:** Add DocLang archive input backend ([#3779](https://github.com/docling-project/docling/issues/3779)) ([`475ce65`](https://github.com/docling-project/docling/commit/475ce65ad46065d5edcdf437f53eb3c745af4b9a))
+
+### Fix
+
+* **xlsx:** Preserve headers after section labels ([#3727](https://github.com/docling-project/docling/issues/3727)) ([`7fc3e6b`](https://github.com/docling-project/docling/commit/7fc3e6be240b9b020c21a5817271ecc61d234508))
+* Unload input backend on pipeline initialization failure ([#3715](https://github.com/docling-project/docling/issues/3715)) ([`caf6c00`](https://github.com/docling-project/docling/commit/caf6c000aee6645c38a1ffe588710c5e3b4936cd))
+* **xbrl:** Interpolate document hash in convert error message ([#3769](https://github.com/docling-project/docling/issues/3769)) ([`df7050b`](https://github.com/docling-project/docling/commit/df7050b34cd1adb588942098213d3222c67256d1))
+* **uspto:** Add missing capital X to math-italic entity table ([#3767](https://github.com/docling-project/docling/issues/3767)) ([`0836f1e`](https://github.com/docling-project/docling/commit/0836f1eab8caf04300bf7afa7c241d722016e6c0))
+* Restore DCLX output in CLI ([#3775](https://github.com/docling-project/docling/issues/3775)) ([`e13faed`](https://github.com/docling-project/docling/commit/e13faed57381d6f2e552142203e6a605b7308d94))
+
 ## [v2.111.0](https://github.com/docling-project/docling/releases/tag/v2.111.0) - 2026-07-08
 
 ### Feature
