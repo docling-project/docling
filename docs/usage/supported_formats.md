@@ -21,12 +21,14 @@ Below you can find a listing of all supported input and output formats.
 | WAV, MP3, M4A, AAC, OGG, FLAC | Audio formats (requires `asr` extra — see [Processing audio and video](processing_audio_media.md)) |
 | MP4, AVI, MOV | Video formats — audio track is extracted and transcribed (requires `asr` extra and `ffmpeg`) |
 | WebVTT | Web Video Text Tracks format for displaying timed text |
+| BoxNote | Box Notes collaborative note format |
 
 Schema-specific support:
 
 | Format | Description |
 |--------|-------------|
-| DocLang XML | XML format following [DocLang](https://doclang.ai); supported extensions: `.dclg`, `.dclg.xml` |
+| DocLang XML | XML format following [DocLang](https://doclang.ai); supported extensions: `.dclg`, `.dclg.xml`, and generic `.xml` with a `<doclang>` root element |
+| DocLang archive | Zipped DocLang bundle including page images; supported extension: `.dclx` |
 | USPTO XML | XML format followed by [USPTO](https://www.uspto.gov/patents) patents |
 | JATS XML | XML format followed by [JATS](https://jats.nlm.nih.gov/) articles |
 | XBRL XML | XML format for business and financial reporting following [XBRL](https://www.xbrl.org/) standard |
@@ -43,3 +45,5 @@ Schema-specific support:
 | Text | Plain text, i.e. without Markdown markers |
 | [Doctags](https://arxiv.org/pdf/2503.11576) | Markup format for efficiently representing the full content and layout characteristics of a document |
 | WebVTT | Web Video Text Tracks format for displaying timed text |
+| DocLang archive | Zipped DocLang bundle including page images; CLI output format: `dclx` |
+| Chunks (JSONL) | Chunked document output for RAG pipelines; configurable via `--chunks-type`, `--chunks-max-tokens`, `--chunks-tokenizer` |

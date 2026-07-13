@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import re
 import warnings
@@ -26,15 +28,6 @@ from docling_core.types.doc import (
     TableItem,
 )
 from docling_core.types.doc.document import FineRef, Formatting, Script
-from docx import Document
-from docx.document import Document as DocxDocument
-from docx.oxml.table import CT_Tc
-from docx.oxml.xmlchemy import BaseOxmlElement
-from docx.styles.style import ParagraphStyle
-from docx.table import Table, _Cell
-from docx.text.hyperlink import Hyperlink
-from docx.text.paragraph import Paragraph
-from docx.text.run import Run
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
 from pydantic import AnyUrl, ValidationError
@@ -51,6 +44,28 @@ from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError, SecurityError
 
 _log = logging.getLogger(__name__)
+
+_DOCX_AVAILABLE: bool = False
+_DOCX_IMPORT_ERROR: ImportError | None = None
+try:  # pragma: no cover - import-time guard
+    from docx import Document
+    from docx.document import Document as DocxDocument
+    from docx.oxml.table import CT_Tc
+    from docx.oxml.xmlchemy import BaseOxmlElement
+    from docx.styles.style import ParagraphStyle
+    from docx.table import Table, _Cell
+    from docx.text.hyperlink import Hyperlink
+    from docx.text.paragraph import Paragraph
+    from docx.text.run import Run
+
+    _DOCX_AVAILABLE = True
+except ImportError as e:  # pragma: no cover - import-time guard
+    _DOCX_IMPORT_ERROR = e
+
+_INSTALL_HINT = (
+    "The 'python-docx' package is required to process Word files. "
+    "Install it with `pip install 'docling-slim[format-docx]'`."
+)
 
 _STRICT_OOXML_NS_PREFIX: Final[str] = "http://purl.oclc.org/ooxml/"
 _TRANSITIONAL_NS_HOST: Final[str] = "http://schemas.openxmlformats.org/"
@@ -82,6 +97,18 @@ _STRICT_OOXML_NS_RE: Final = re.compile(
     r"http://purl\.oclc\.org/ooxml/[A-Za-z0-9_./-]+"
 )
 """Matches Strict OOXML namespace/relationship URIs."""
+
+_VISIBLE_NUMBERING_FORMATS: Final[frozenset[str]] = frozenset(
+    {
+        "decimal",
+        "lowerRoman",
+        "upperRoman",
+        "lowerLetter",
+        "upperLetter",
+        "decimalZero",
+    }
+)
+"""OOXML numFmt values that produce visible list/heading markers."""
 
 
 def _strict_ns_to_transitional(strict_ns: str) -> str:
@@ -197,7 +224,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     """Images with an area (w*h) below this are dropped as layout artifacts."""
 
     @override
-    def __init__(self, in_doc: "InputDocument", path_or_stream: BytesIO | Path) -> None:
+    def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path) -> None:
+        if not _DOCX_AVAILABLE:
+            raise ImportError(_INSTALL_HINT) from _DOCX_IMPORT_ERROR
         super().__init__(in_doc, path_or_stream)
         self.XML_KEY = f"{self._W_NS_CLARK}val"
         self.xml_namespaces = {
@@ -843,8 +872,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             parts.append(str(counter))
         return ".".join(parts) + "."
 
-    def _is_numbered_list(self, numId: int, ilvl: int) -> bool:
-        """Check if a list is numbered based on its numFmt value."""
+    def _has_visible_numbering_format(self, numId: int, ilvl: int) -> bool:
+        """Return True when numbering.xml defines a visible marker for numId/ilvl."""
         try:
             lvl_element = self._get_level_element(numId, ilvl)
             if lvl_element is None:
@@ -857,20 +886,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             num_fmt = num_fmt_element.get(self.XML_KEY)
 
-            numbered_formats = {
-                "decimal",
-                "lowerRoman",
-                "upperRoman",
-                "lowerLetter",
-                "upperLetter",
-                "decimalZero",
-            }
-
-            return num_fmt in numbered_formats
+            return num_fmt in _VISIBLE_NUMBERING_FORMATS
 
         except Exception as e:
-            _log.debug(f"Error determining if list is numbered: {e}")
+            _log.debug(f"Error determining visible numbering format: {e}")
             return False
+
+    def _is_numbered_heading(self, paragraph: Paragraph) -> bool:
+        """Return True when heading numbering would render a visible marker."""
+        numid, ilvl = self._get_numId_and_ilvl(paragraph)
+        return numid is not None and self._has_visible_numbering_format(
+            numid, ilvl or 0
+        )
 
     def _get_outline_level_from_style(self, paragraph: Paragraph) -> int | None:
         """Extract outlineLvl from paragraph's style definition.
@@ -1626,7 +1653,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and p_style_id not in ["Title", "Heading"]
         ):
             # Check if this is actually a numbered list by examining the numFmt
-            is_numbered = self._is_numbered_list(numid, ilevel)
+            is_numbered = self._has_visible_numbering_format(numid, ilevel)
 
             # If there are equations in the list item, handle them specially
             if len(equations) > 0:
@@ -1688,13 +1715,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[0] = te
             elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
-            style_element = getattr(paragraph.style, "element", None)
-            if style_element is not None:
-                is_numbered_style = (
-                    "<w:numPr>" in style_element.xml or "<w:numPr>" in element.xml
-                )
-            else:
-                is_numbered_style = False
+            is_numbered_style = self._is_numbered_heading(paragraph)
             h1 = self._add_heading(doc, p_level, text, is_numbered_style)
             elem_ref.extend(h1)
 

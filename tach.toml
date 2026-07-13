@@ -443,12 +443,24 @@ layer = "pipeline"
 depends_on = ["docling.datamodel"]
 
 [[modules]]
+path = "docling.pipeline.asr_transcriber"
+layer = "pipeline"
+depends_on = [
+  "docling.backend",
+  "docling.datamodel",
+  "docling.datamodel.pipeline_options_asr_model",
+  "docling.pipeline.base_pipeline",
+  "docling.utils",
+]
+
+[[modules]]
 path = "docling.pipeline.asr_pipeline"
 layer = "pipeline"
 depends_on = [
   "docling.backend",
   "docling.datamodel",
   "docling.datamodel.pipeline_options_asr_model",
+  "docling.pipeline.asr_transcriber",
   "docling.pipeline.base_pipeline",
   "docling.utils",
 ]
