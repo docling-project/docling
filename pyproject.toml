@@ -104,7 +104,7 @@ format-pdf = [
   'docling-slim[format-pdf-pypdfium2,format-pdf-docling]',
 ]
 
-# --- Office Formats (office = docx + pptx + xlsx) ---
+# --- Office Formats ---
 format-docx = [
   'python-docx>=1.2.0,<2.0.0',
 ]
