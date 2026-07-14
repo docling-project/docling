@@ -35,8 +35,9 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
+from docling.backend.docx.drawingml.utils import convert_to_modern_format
 from docling.datamodel.backend_options import MsPowerpointBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
@@ -85,10 +86,13 @@ _CHART_RENDER_HINT = (
 
 
 class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
-    """Backend for parsing PPTX documents.
+    """Backend for parsing PowerPoint presentations (PPTX and PPT files).
 
-    Converts PPTX presentations into structured DoclingDocument format,
-    extracting text, tables, images, lists, and comments from slides.
+    Converts presentations into structured DoclingDocument format, extracting
+    text, tables, images, lists, and comments from slides.
+
+    Legacy ``.ppt`` files (binary PowerPoint 97-2003 format) are first converted
+    to ``.pptx`` via LibreOffice before parsing.
 
     Note:
         Comments are extracted and added to the NOTES content layer. Unlike Word documents,
@@ -120,6 +124,8 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     ) -> None:
         if not _PPTX_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _PPTX_IMPORT_ERROR
+        if in_doc.format == InputFormat.PPT:
+            path_or_stream = convert_to_modern_format(path_or_stream, "ppt", "pptx")
         if options is None:
             options = MsPowerpointBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
@@ -172,7 +178,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     @classmethod
     @override
     def supported_formats(cls) -> set[InputFormat]:
-        return {InputFormat.PPTX}
+        return {InputFormat.PPTX, InputFormat.PPT}
 
     @override
     def convert(self) -> DoclingDocument:
@@ -183,7 +189,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         """
         origin = DocumentOrigin(
             filename=self.file.name or "file",
-            mimetype="application/vnd.ms-powerpoint",
+            mimetype=FormatToMimeType[self.input_format][0],
             binary_hash=self.document_hash,
         )
 

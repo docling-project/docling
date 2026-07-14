@@ -95,7 +95,9 @@ class InputFormat(str, Enum):
     """A document format supported by document backend parsers."""
 
     DOCX = "docx"
+    DOC = "doc"
     PPTX = "pptx"
+    PPT = "ppt"
     HTML = "html"
     IMAGE = "image"
     PDF = "pdf"
@@ -103,6 +105,7 @@ class InputFormat(str, Enum):
     MD = "md"
     CSV = "csv"
     XLSX = "xlsx"
+    XLS = "xls"
     ODT = "odt"
     ODS = "ods"
     ODP = "odp"
@@ -138,7 +141,9 @@ class OutputFormat(str, Enum):
 
 FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.DOCX: ["docx", "dotx", "docm", "dotm"],
+    InputFormat.DOC: ["doc", "dot"],
     InputFormat.PPTX: ["pptx", "potx", "ppsx", "pptm", "potm", "ppsm"],
+    InputFormat.PPT: ["ppt", "pot", "pps"],
     InputFormat.PDF: ["pdf"],
     InputFormat.MD: ["md", "txt", "text", "qmd", "rmd", "Rmd"],
     InputFormat.HTML: ["html", "htm", "xhtml"],
@@ -150,6 +155,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
     InputFormat.XLSX: ["xlsx", "xlsm"],
+    InputFormat.XLS: ["xls", "xlt"],
     InputFormat.ODT: ["odt", "ott"],
     InputFormat.ODS: ["ods", "ots"],
     InputFormat.ODP: ["odp", "otp"],
@@ -170,10 +176,17 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.template",
     ],
+    InputFormat.DOC: [
+        "application/msword",
+        "application/x-msword",
+    ],
     InputFormat.PPTX: [
         "application/vnd.openxmlformats-officedocument.presentationml.template",
         "application/vnd.openxmlformats-officedocument.presentationml.slideshow",
         "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ],
+    InputFormat.PPT: [
+        "application/vnd.ms-powerpoint",
     ],
     InputFormat.HTML: ["text/html", "application/xhtml+xml"],
     InputFormat.XML_JATS: ["application/xml"],
@@ -193,6 +206,10 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.CSV: ["text/csv"],
     InputFormat.XLSX: [
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    ],
+    InputFormat.XLS: [
+        "application/vnd.ms-excel",
+        "application/x-msexcel",
     ],
     InputFormat.ODT: [
         "application/vnd.oasis.opendocument.text",

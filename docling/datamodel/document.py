@@ -984,10 +984,16 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.PDF][0]
         elif ext in FormatToExtensions[InputFormat.DOCX]:
             mime = FormatToMimeType[InputFormat.DOCX][0]
+        elif ext in FormatToExtensions[InputFormat.DOC]:
+            mime = FormatToMimeType[InputFormat.DOC][0]
         elif ext in FormatToExtensions[InputFormat.PPTX]:
             mime = FormatToMimeType[InputFormat.PPTX][0]
+        elif ext in FormatToExtensions[InputFormat.PPT]:
+            mime = FormatToMimeType[InputFormat.PPT][0]
         elif ext in FormatToExtensions[InputFormat.XLSX]:
             mime = FormatToMimeType[InputFormat.XLSX][0]
+        elif ext in FormatToExtensions[InputFormat.XLS]:
+            mime = FormatToMimeType[InputFormat.XLS][0]
         elif ext in FormatToExtensions[InputFormat.ODT]:
             mime = FormatToMimeType[InputFormat.ODT][0]
         elif ext in FormatToExtensions[InputFormat.ODS]:

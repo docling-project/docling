@@ -47,11 +47,12 @@ from docling.backend.abstract_backend import (
     PaginatedDocumentBackend,
 )
 from docling.backend.docx.drawingml.utils import (
+    convert_to_modern_format,
     crop_whitespace,
     get_libreoffice_cmd,
 )
 from docling.datamodel.backend_options import MsExcelBackendOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError
 
@@ -183,7 +184,7 @@ class ExcelTable(BaseModel):
 
 
 class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
-    """Backend for parsing Excel workbooks.
+    """Backend for parsing Excel workbooks (XLSX and XLS files).
 
     The backend converts an Excel workbook into a DoclingDocument object.
     Each worksheet is converted into a separate page.
@@ -198,11 +199,16 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     bounding box object with the cell indices as units (0-based index). The size of this
     bounding box is the number of columns and rows that the table or picture spans.
 
+    Legacy ``.xls`` files (binary Excel 97-2004 format) are first converted to
+    ``.xlsx`` via LibreOffice before parsing.
+
     Limitations:
         - Threaded comments (Excel 365+) are only extracted when the file is provided
           as a Path. When provided as a BytesIO stream, threaded comments cannot be
           extracted because the stream is consumed by openpyxl during initialization.
           Old-style cell comments (notes) are always extracted regardless of input type.
+        - Legacy ``.xls`` files are always converted to a ``BytesIO`` stream before
+          parsing, so threaded comments are not available for that format.
     """
 
     # Maximum seconds to wait for a single LibreOffice EMF/WMF conversion.
@@ -233,6 +239,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
         if not _OPENPYXL_AVAILABLE:
             raise ImportError(_INSTALL_HINT) from _OPENPYXL_IMPORT_ERROR
+        if in_doc.format == InputFormat.XLS:
+            path_or_stream = convert_to_modern_format(path_or_stream, "xls", "xlsx")
         if options is None:
             options = MsExcelBackendOptions()
         super().__init__(in_doc, path_or_stream, options)
@@ -414,7 +422,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
     @classmethod
     @override
     def supported_formats(cls) -> set[InputFormat]:
-        return {InputFormat.XLSX}
+        return {InputFormat.XLSX, InputFormat.XLS}
 
     @override
     def convert(self) -> DoclingDocument:
@@ -429,7 +437,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
         origin = DocumentOrigin(
             filename=self.file.name or "file.xlsx",
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            mimetype=FormatToMimeType[self.input_format][0],
             binary_hash=self.document_hash,
         )
 

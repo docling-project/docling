@@ -40,12 +40,14 @@ from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.docx.drawingml.utils import (
+    convert_to_modern_format,
     get_docx_to_pdf_converter,
     get_pil_from_dml_docx,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
 from docling.datamodel.backend_options import MsWordBackendOptions
 from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import FormatToMimeType, InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import DocumentLoadError, SecurityError
 
@@ -229,13 +231,16 @@ def _normalize_strict_ooxml(archive: zipfile.ZipFile) -> BytesIO:
 
 
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
-    """Backend for parsing Microsoft Word (.docx) documents.
+    """Backend for parsing Word documents (DOCX and DOC files).
 
     Both Transitional (ISO/IEC 29500-4) and Strict (ISO/IEC 29500-1) ``.docx``
     packages are supported. Strict packages use ``purl.oclc.org`` namespace URIs
     that ``python-docx`` does not recognise; they are normalised to their
     Transitional equivalents in memory before parsing. Transitional files are
     handed to ``python-docx`` unchanged.
+
+    Legacy ``.doc`` files (binary Word 97-2004 format) are first converted to
+    ``.docx`` via LibreOffice before parsing.
 
     Note:
         Images with a total area (width x height) less than or equal to
@@ -274,6 +279,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             raise ImportError(_INSTALL_HINT) from _DOCX_IMPORT_ERROR
         if options is None:
             options = MsWordBackendOptions()
+        if in_doc.format == InputFormat.DOC:
+            path_or_stream = convert_to_modern_format(path_or_stream, "doc", "docx")
         super().__init__(in_doc, path_or_stream, options)
         self.XML_KEY = f"{self._W_NS_CLARK}val"
         self.xml_namespaces = {
@@ -359,7 +366,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     @classmethod
     @override
     def supported_formats(cls) -> set[InputFormat]:
-        return {InputFormat.DOCX}
+        return {InputFormat.DOCX, InputFormat.DOC}
 
     @override
     def convert(self) -> DoclingDocument:
@@ -371,7 +378,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         origin = DocumentOrigin(
             filename=self.file.name or "file",
-            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            mimetype=FormatToMimeType[self.input_format][0],
             binary_hash=self.document_hash,
         )
 
