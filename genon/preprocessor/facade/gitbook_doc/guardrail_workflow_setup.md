@@ -1,6 +1,6 @@
 # 민감정보 분류 워크플로우 구성·배포 안내
 
-전처리기의 `guardrail_masking` 기능이 호출하는 **GenOS 분류 워크플로우** 를 GenOS 에서 만들고
+전처리기의 `guardrail_masking` 기능이 호출하는 **GenOS 가드레일 워크플로우** 를 GenOS 에서 만들고
 배포해 전처리기와 연결하는 절차입니다.
 
 - 전처리기 쪽 사용법(config/동작)은 각 전처리기 매뉴얼의 「민감정보 분류/마스킹」 절을 참고하세요.
@@ -12,10 +12,10 @@
 
 ```
 문서 업로드(guardrail_masking: true)
-   → 전처리기가 청킹 직전 문서 전체를 워크플로우에 1회 POST
+   → 전처리기가 청킹 이전에, 문서를 워크플로우에 1회 POST
      POST {url}/workflow/{workflow_id}/run/v2   (Authorization: Bearer {api_key})
      body: {"question": "<문서 전체 텍스트>"}
-   → 워크플로우(Python 단계)가 정규식 + LLM 분류 → sensitive_infos[] 반환
+   → 워크플로우가 '가드레일 인스턴스(정규식 필터로 구성)' + 'LLM 호출(정규식으로 못잡는 요소 감지)'을 통해 마스킹 작업 진행 → sensitive_infos[] 반환
    → 전처리기가 청킹 후 quote_origin 매칭 → content_category 부착(+옵션 마스킹)
 ```
 
@@ -74,52 +74,59 @@
 
 ## 2. 워크플로우 Python 단계 코드
 
-`run(data)` 하나로 정규식 + LLM 분류를 수행하는 스텝 코드가 저장소에 있습니다:
-`00_system/issue_branch/issue_315/workflow_run_step.py`. 핵심 구조만 발췌합니다.
+`run(data)` 하나로 **[정규식=가드레일 인스턴스] + [의미=LLM]** 분류를 수행하는 스텝 코드가
+저장소에 있습니다: [`workflow_guardrail.py`](workflow_guardrail.py) (이 파일을 그대로 복사해 워크플로우
+Python 단계에 붙여 넣으세요). 핵심 구조만 발췌합니다.
 
 ```python
-import os, re, json, requests
+import os, json, difflib, requests
 
-# LLM 접속(모델서빙). 인증키는 코드 하드코딩 대신 워크플로우 "환경 변수"로 주입한다.
-_LLM_URL   = os.environ.get("GUARDRAIL_LLM_URL", "https://genos.genon.ai/api/gateway/rep/serving/776/v1/chat/completions")
-_LLM_KEY   = os.environ.get("GUARDRAIL_LLM_KEY", "")
+# 정규식은 코드에 하드코딩하지 않는다. 운영이 가드레일 인스턴스(정규식 필터)에 정의한 것을 단일
+# 소스로 삼아, 그 인스턴스 dry-run 을 호출해 마스킹 결과를 받고 원문과 diff 해서 스팬을 복원한다.
+_GR_BASE = os.environ.get("GUARDRAIL_DRYRUN_BASE", "http://llmops-gateway-api-service:8080")  # 내부 게이트웨이(무인증)
+_GR_ID   = os.environ.get("GUARDRAIL_ID", "99")   # 정규식 필터가 등록된 가드레일 인스턴스 ID
+
+_LLM_URL = os.environ.get("GUARDRAIL_LLM_URL", "https://genos.genon.ai/api/gateway/rep/serving/776/v1/chat/completions")
+_LLM_KEY = os.environ.get("GUARDRAIL_LLM_KEY", "")
 _LLM_MODEL = os.environ.get("GUARDRAIL_LLM_MODEL", "model")
-
-# 단어 범위(정규식) — 매칭부 전체를 마스킹 토큰으로 치환
-_REGEX_RULES = [ ("주민번호", r"...", "[주민등록번호]"), ("휴대전화", r"...", "[휴대전화번호]"),
-                 ("전자메일", r"...", "[전자메일]"), ... ]
-
-# 의미 범위(LLM) — 부동산/인사 등. quote_masked == quote_origin (치환 안 함, 라벨만)
 _SYSTEM_PROMPT = """... 부동산 정보 / 인사 정보 를 의미로 판별. quote_origin 은 원문 그대로 복사 ..."""
 
 async def run(data: dict) -> dict:
     text = data.get("text") or data.get("question", "") or ""
     if not text:
         return {"text": "", "sensitive_infos": []}   # dict 반환 시 text 키 필수(09050003 방지)
-    infos = _run_regex(text) + _run_llm(text)
+    infos = _run_guardrail_regex(text) + _run_llm(text)   # 정규식(인스턴스 dry-run+diff) + 의미(LLM)
     return {"text": json.dumps({"sensitive_infos": infos}, ensure_ascii=False),
             "sensitive_infos": infos}
 ```
 
-- **정규식류**(주민번호·전화·이메일 등)는 코드에서 바로 잡아 `quote_masked` 에 토큰을 채웁니다.
-- **의미류**(부동산·인사)는 LLM(모델 776 등)에 넘겨 판별하고, 치환 없이 라벨만 달도록
-  `quote_masked = quote_origin` 으로 둡니다.
-- 프롬프트 품질·카테고리 정의는 운영이 조정합니다(전처리기는 구조만 소비).
+- **정규식류**(주민번호·전화·이메일 등): 가드레일 인스턴스 dry-run(`{base}/guardrail/{id}/dry-run`,
+  `{"content": text}`)을 호출해 **마스킹된 전체 텍스트** 를 받고, 원문과 `difflib` diff 하여 치환된
+  스팬을 복원 → `quote_origin`(원문), `quote_masked`(치환토큰), `specific_category`(토큰→소분류),
+  `category="민감 정보"`. 운영이 필터를 추가/수정하면 **워크플로우 수정 없이 자동 반영**됩니다.
+  - dry-run 은 **클러스터 내부에서 무인증** 호출됩니다(외부 genos.genon.ai 경유만 인증 필요).
+  - 치환토큰이 `[주민등록번호]`처럼 구분되면 소분류까지 복원됩니다. 모르는 토큰은 토큰 안쪽 텍스트를
+    소분류로 쓰고 `category` 는 항상 `민감 정보` 로 매핑합니다.
+- **의미류**(부동산·인사): LLM(모델 776 등)이 판별, 치환 없이 라벨만(`quote_masked == quote_origin`).
+- 프롬프트 품질·정규식 필터·카테고리 정의는 모두 **운영(GenOS 가드레일/워크플로우) 소유** 입니다.
 
 ---
 
 ## 3. GenOS 배포 절차
 
-1. **모델서빙 확인** — 분류 LLM(예: 모델 776 qwen)이 서빙 중인지, 호출 URL/키를 확인합니다.
-   나중에 GPT OSS 120B 등으로 교체할 경우 `GUARDRAIL_LLM_URL` 만 바꾸면 됩니다.
-2. **워크플로우 생성** — GenOS 워크플로우에서 새 워크플로우를 만들고 **Python 단계** 를 추가해
-   위 `run(data)` 코드를 붙여 넣습니다(정규식만/LLM만 쓰려면 해당 부분만 남깁니다).
-3. **환경 변수 설정** — 워크플로우의 환경 변수에 인증키 등을 넣습니다(코드 하드코딩 금지).
-   - `GUARDRAIL_LLM_URL` = 분류 LLM 서빙 chat/completions URL
-   - `GUARDRAIL_LLM_KEY` = 그 서빙 인증키
-   - `GUARDRAIL_LLM_MODEL` = 모델명(서빙 설정에 맞게)
-4. **배포** 후 `workflow_id` 를 확인합니다(워크플로우 상세/주소에 노출되는 정수 ID).
-5. **인증키(AuthKeyBearer) 발급** — 워크플로우 실행 라우트(`/workflow/{id}/run`)는 Bearer 인증을
+1. **정규식 가드레일 인스턴스 준비** — GenOS 가드레일에서 정규식 필터(주민번호·전화·이메일 등)를
+   등록한 인스턴스를 만들고 그 **가드레일 ID**(예: 99)를 확인합니다. 각 필터의 "치환 규칙"은
+   `[주민등록번호]` 처럼 구분되는 토큰을 권장합니다(소분류 복원에 사용). 정규식은 Python `re` 문법.
+2. **모델서빙 확인** — 의미분류 LLM(예: 모델 776 qwen)의 호출 URL/키를 확인합니다.
+   나중에 GPT OSS 120B 등으로 교체하려면 `GUARDRAIL_LLM_URL` 만 바꾸면 됩니다.
+3. **워크플로우 생성** — GenOS 워크플로우에서 새 워크플로우를 만들고 **Python 단계** 에
+   [`workflow_guardrail.py`](workflow_guardrail.py) 전체를 붙여 넣습니다.
+4. **환경 변수 설정** — 워크플로우 환경 변수(코드 하드코딩 금지).
+   - `GUARDRAIL_DRYRUN_BASE` = 내부 게이트웨이 베이스(예: `http://llmops-gateway-api-service:8080`)
+   - `GUARDRAIL_ID` = 정규식 가드레일 인스턴스 ID(예: 99)
+   - `GUARDRAIL_LLM_URL` / `GUARDRAIL_LLM_KEY` / `GUARDRAIL_LLM_MODEL` = 의미분류 LLM 접속
+5. **배포** 후 `workflow_id` 를 확인합니다(워크플로우 상세/주소에 노출되는 정수 ID).
+6. **인증키(AuthKeyBearer) 발급** — 워크플로우 실행 라우트(`/workflow/{id}/run`)는 Bearer 인증을
    요구합니다. 이 키가 전처리기 config 의 `api_key` 로 들어갑니다.
 
 ### 배포 검증
@@ -166,5 +173,7 @@ guardrail_masking:
 | 배포 시 `09050003` (응답에 text/json 없음) | Python 단계 dict 반환에 `text` 키 누락 → 스텝 코드처럼 `text` 도 함께 반환 |
 | 워크플로우 직접 호출 401 | admin 토큰이 아니라 **워크플로우 AuthKeyBearer** 필요. config `api_key` 확인 |
 | 라벨이 하나도 안 붙음 | `category` 가 비어 옴 / `quote_origin` 이 원문과 불일치(프롬프트가 변형) → 프롬프트에서 원문 그대로 반환 강제 |
+| 정규식류(주민번호·전화 등)가 안 잡힘 | 워크플로우가 가드레일 인스턴스 dry-run 을 못 부름 → `GUARDRAIL_DRYRUN_BASE`(내부 게이트웨이)·`GUARDRAIL_ID` 확인, 인스턴스에 정규식 필터 등록됐는지 확인 |
+| 정규식은 잡히나 소분류가 토큰 그대로 | 가드레일 필터 "치환 규칙" 이 `[주민등록번호]` 같은 표준 토큰이 아님 → 토큰 표준화 or 매핑 테이블(`_TOKEN_SPEC`) 보강 |
 | 마스킹이 안 됨 | `masking_enabled: false` 이거나 요청 `guardrail_masking` off. 둘 다 on 이어야 치환 |
 | 호출 자체가 안 감 | config `url`/`workflow_id`/`api_key` 중 빈 값 → 전처리기가 fail-open(원문 통과 + warning 로그) |
