@@ -149,6 +149,7 @@ def test_e2e_nemotron_ocr_conversions():
         NemotronOcrOptions(),  # Default options
         NemotronOcrOptions(batch_size=3),
         NemotronOcrOptions(mode=OcrMode.FULL_PAGE),
+        NemotronOcrOptions(mode=OcrMode.LAYOUT_REGIONS),
     ]
 
     for ocr_options in configs:
