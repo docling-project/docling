@@ -1530,9 +1530,9 @@ class VideoPipelineOptions(PipelineOptions):
     ] = asr_model_specs.WHISPER_TINY
 
     frame_sampling_mode: Annotated[
-        str,
+        VideoFrameSamplingMode,
         Field(description="How representative video frames are selected."),
-    ] = "fixed_interval"
+    ] = VideoFrameSamplingMode.FIXED_INTERVAL
 
     frame_interval_seconds: Annotated[
         float,
